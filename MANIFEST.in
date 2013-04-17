@@ -1,0 +1,4 @@
+include *.ini
+include *.rst
+
+recursive-include ichnaea *.py

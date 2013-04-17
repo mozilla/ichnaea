@@ -3,6 +3,7 @@
 *.db
 *.py[co]
 coverage.xml
+data
 nosetests.xml
 pyramid.log
 bin
