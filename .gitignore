@@ -1,0 +1,13 @@
+.*
+*~
+*.db
+*.py[co]
+coverage.xml
+nosetests.xml
+pyramid.log
+bin
+build
+dist
+include
+lib
+man
