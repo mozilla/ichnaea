@@ -38,8 +38,8 @@ def get_cell_location(request):
             }
         else:
             return {
-                'latitude': result.lat,
-                'longitude': result.lon,
+                'latitude': str(result.lat),
+                'longitude': str(result.lon),
                 # TODO figure out actual meaning of `range`
                 # we want to return accuracy in meters at 95% percentile
                 'accuracy': result.range,
