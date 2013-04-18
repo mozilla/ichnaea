@@ -6,6 +6,7 @@ __version__ = '0.1'
 here = os.path.abspath(os.path.dirname(__file__))
 
 requires = [
+    'argparse',
     'cornice',
     'statsd-client',
 ]
@@ -51,5 +52,7 @@ setup(name='ichnaea',
     entry_points="""\
     [paste.app_factory]
     main = ichnaea:main
+    [console_scripts]
+    ichnaea_import = ichnaea.importer:main
     """,
 )

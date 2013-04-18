@@ -1,11 +1,11 @@
 from decimal import Decimal
 from cornice import Service
 import pyramid.httpexceptions as exc
-from pyramid.response import Response
 from statsd import StatsdTimer
 
 from ichnaea.db import Cell
 
+HUNDREDK = Decimal(100000)
 
 
 cell_location = Service(
@@ -16,7 +16,7 @@ cell_location = Service(
 
 
 def quantize(value):
-    return Decimal(value).quantize(Decimal('1.00000'))
+    return (Decimal(value) / HUNDREDK).quantize(Decimal('1.00000'))
 
 
 @cell_location.get(renderer='decimaljson')
@@ -45,7 +45,7 @@ def get_cell_location(request):
                 'lon': quantize(result.lon),
                 # TODO figure out actual meaning of `range`
                 # we want to return accuracy in meters at 95% percentile
-                'accuracy': 2000
+                'accuracy': 20000
                 }
 
 heartbeat = Service(name='heartbeat', path='/__heartbeat__')

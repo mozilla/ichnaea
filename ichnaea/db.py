@@ -1,6 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy import Column, Index
-from sqlalchemy import Date, Integer, REAL
+from sqlalchemy import Column, Index, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -14,21 +13,15 @@ class Cell(_Model):
     )
 
     id = Column(Integer, primary_key=True)
-
-    # we should store longs here and define the coordinate digit
-    # precision
-    lat = Column(REAL)
-    lon = Column(REAL)
+    # lat/lon * 100000
+    lat = Column(Integer)
+    lon = Column(Integer)
 
     mcc = Column(Integer)
     mnc = Column(Integer)
     lac = Column(Integer)
     cid = Column(Integer)
     range = Column(Integer)
-    samples = Column(Integer)
-    created_at = Column(Date)
-    updated_at = Column(Date)
-    zero = Column(Integer)
 
 cell_table = Cell.__table__
 
