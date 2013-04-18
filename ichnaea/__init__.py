@@ -56,9 +56,6 @@ def main(global_config, **settings):
 
     statsd.init_statsd(statsd_settings)
 
-    cors_origins = settings.get('cors.origins', '*')
-    cors_origins = cors_origins.split(',')
-
     config.registry.db = Database(settings['database'])
     config.add_subscriber(attach_db_session, NewRequest)
 

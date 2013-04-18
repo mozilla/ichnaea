@@ -12,7 +12,7 @@ cell_location = Service(
     name='cell_location',
     path='/v1/cell/{mcc}/{mnc}/{lac}/{cid}',
     description="Get cell location information.",
-    cors_policy={'origins': ('*',), 'credentials': True})
+)
 
 
 def quantize(value):
@@ -53,7 +53,7 @@ cell_measurement = Service(
     name='cell_measurement',
     path='/v1/cell',
     description="Post cell location measurement.",
-    cors_policy={'origins': ('*',), 'credentials': True})
+)
 
 
 @cell_measurement.post(renderer='decimaljson', accept="application/json")
