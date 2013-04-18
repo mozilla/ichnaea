@@ -48,6 +48,19 @@ def get_cell_location(request):
                 'accuracy': 20000
                 }
 
+
+cell_measurement = Service(
+    name='cell_measurement',
+    path='/v1/cell',
+    description="Post cell location measurement.",
+    cors_policy={'origins': ('*',), 'credentials': True})
+
+
+@cell_measurement.post(renderer='decimaljson', accept="application/json")
+def post_cell_measurement(request):
+    return {'status': 'success'}
+
+
 heartbeat = Service(name='heartbeat', path='/__heartbeat__')
 
 
