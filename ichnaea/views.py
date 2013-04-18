@@ -34,8 +34,8 @@ def get_cell_location(request):
             raise exc.HTTPNotFound()
         else:
             return {
-                'latitude': result.lat,
-                'longitude': result.lon,
+                'lat': result.lat,
+                'lon': result.lon,
                 # TODO figure out actual meaning of `range`
                 # we want to return accuracy in meters at 95% percentile
                 'accuracy': 20000,
