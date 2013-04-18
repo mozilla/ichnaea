@@ -15,4 +15,4 @@ For setup run::
     sqlite3 cells.db < import.sql
 
     bin/pserve ichnaea.ini
-    curl "http://localhost:7001/v1/cell?mcc=504&mnc=500&lac=59&cid=2048"
+    curl http://localhost:7001/v1/cell/724/5/31421/60420242
