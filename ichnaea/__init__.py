@@ -1,5 +1,5 @@
-import logging
 import decimal
+import logging
 
 import simplejson as json
 from pyramid.config import Configurator
@@ -17,8 +17,9 @@ class DecimalJSON(object):
 
     def __call__(self, info):
         def _render(value, system):
-            decimal.getcontext().prec = 13
-            ret = json.dumps(value, use_decimal=True)
+            with decimal.localcontext() as ctx:
+                ctx.prec = 5
+                ret = json.dumps(value, use_decimal=True)
             request = system.get('request')
             if request is not None:
                 callback = request.params.get(self.jsonp_param_name)
