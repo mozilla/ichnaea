@@ -1,5 +1,6 @@
 from cornice import Service
 import pyramid.httpexceptions as exc
+from pyramid.response import Response
 from statsd import StatsdTimer
 
 from ichnaea.db import Cell
@@ -12,7 +13,7 @@ cell_location = Service(
     cors_policy={'origins': ('*',), 'credentials': True})
 
 
-@cell_location.get(renderer='json')
+@cell_location.get()
 def get_cell_location(request):
     # TODO validation
     mcc = int(request.matchdict['mcc'])
@@ -33,13 +34,14 @@ def get_cell_location(request):
         if result is None:
             raise exc.HTTPNotFound()
         else:
-            return {
-                'lat': result.lat,
-                'lon': result.lon,
+            # work around float representation issues in Python 2.6
+            return Response('{"lat": %s, "lon": %s, "accuracy": %s}' % (
+                result.lat,
+                result.lon,
                 # TODO figure out actual meaning of `range`
                 # we want to return accuracy in meters at 95% percentile
-                'accuracy': 20000,
-            }
+                20000,
+            ))
 
 heartbeat = Service(name='heartbeat', path='/__heartbeat__')
 
