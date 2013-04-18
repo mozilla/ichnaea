@@ -11,7 +11,7 @@ For setup run::
     bin/pserve ichnaea.ini
     Ctrl-C
 
-    <download and unpack cells.txt.gz to data/cells.txt>
+    <download and unpack http://dump.opencellid.org/cells.txt.gz to data/cells.txt>
     sqlite3 cells.db < import.sql
 
     bin/pserve ichnaea.ini

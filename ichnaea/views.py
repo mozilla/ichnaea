@@ -1,9 +1,11 @@
+from decimal import Decimal
 from cornice import Service
 import pyramid.httpexceptions as exc
 from pyramid.response import Response
 from statsd import StatsdTimer
 
 from ichnaea.db import Cell
+
 
 
 cell_location = Service(
@@ -13,7 +15,11 @@ cell_location = Service(
     cors_policy={'origins': ('*',), 'credentials': True})
 
 
-@cell_location.get()
+def quantize(value):
+    return Decimal(value).quantize(Decimal('1.0000000000000'))
+
+
+@cell_location.get(renderer='decimaljson')
 def get_cell_location(request):
     # TODO validation
     mcc = int(request.matchdict['mcc'])
@@ -31,17 +37,16 @@ def get_cell_location(request):
 
     with StatsdTimer('get_cell_location'):
         result = query.first()
+
         if result is None:
             raise exc.HTTPNotFound()
-        else:
-            # work around float representation issues in Python 2.6
-            return Response('{"lat": %s, "lon": %s, "accuracy": %s}' % (
-                result.lat,
-                result.lon,
+
+        return {'lat': quantize(result.lat),
+                'lon': quantize(result.lon),
                 # TODO figure out actual meaning of `range`
                 # we want to return accuracy in meters at 95% percentile
-                20000,
-            ))
+                'accuracy': 2000
+                }
 
 heartbeat = Service(name='heartbeat', path='/__heartbeat__')
 

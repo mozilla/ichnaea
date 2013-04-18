@@ -1,5 +1,7 @@
 import logging
+import decimal
 
+import simplejson as json
 from pyramid.config import Configurator
 from pyramid.events import NewRequest
 import statsd
@@ -7,6 +9,29 @@ import statsd
 from ichnaea.db import Database
 
 logger = logging.getLogger('ichnaea')
+
+
+class DecimalJSON(object):
+    def __init__(self, jsonp_param_name='callback'):
+        self.jsonp_param_name = jsonp_param_name
+
+    def __call__(self, info):
+        def _render(value, system):
+            decimal.getcontext().prec = 13
+            ret = json.dumps(value, use_decimal=True)
+            request = system.get('request')
+            if request is not None:
+                callback = request.params.get(self.jsonp_param_name)
+                if callback is None:
+                    request.response.content_type = 'application/json'
+                else:
+                    request.response.content_type = 'text/javascript'
+                    ret = '%(callback)s(%(json)s);' % {
+                        'callback': callback,
+                        'json': ret
+                    }
+            return ret
+        return _render
 
 
 def attach_db_session(event):
@@ -36,4 +61,6 @@ def main(global_config, **settings):
     config.registry.db = Database(settings['database'])
     config.add_subscriber(attach_db_session, NewRequest)
 
+    # add decimal json renderer
+    config.add_renderer('decimaljson', DecimalJSON())
     return config.make_wsgi_app()

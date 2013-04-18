@@ -10,8 +10,12 @@ class Cell(_Model):
     __tablename__ = 'cell'
 
     id = Column(Integer, primary_key=True)
+
+    # we should store longs here and define the coordinate digit
+    # precision
     lat = Column(REAL)
     lon = Column(REAL)
+
     mcc = Column(Integer)
     mnc = Column(Integer)
     lac = Column(Integer)
