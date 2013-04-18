@@ -16,7 +16,7 @@ cell_location = Service(
 
 
 def quantize(value):
-    return Decimal(value).quantize(Decimal('1.0000000000000'))
+    return Decimal(value).quantize(Decimal('1.00000'))
 
 
 @cell_location.get(renderer='decimaljson')
