@@ -1,4 +1,5 @@
 from cornice import Service
+import pyramid.httpexceptions as exc
 from statsd import StatsdTimer
 
 from ichnaea.db import Cell
@@ -6,7 +7,7 @@ from ichnaea.db import Cell
 
 cell_location = Service(
     name='cell_location',
-    path='/v1/cell',
+    path='/v1/cell/{mcc}/{mnc}/{lac}/{cid}',
     description="Get cell location information.",
     cors_policy={'origins': ('*',), 'credentials': True})
 
@@ -14,35 +15,30 @@ cell_location = Service(
 @cell_location.get(renderer='json')
 def get_cell_location(request):
     # TODO validation
-    mcc = int(request.GET['mcc'])
-    mnc = int(request.GET['mnc'])
-    lac = int(request.GET.get('lac', -1))
-    cid = int(request.GET.get('cid', -1))
+    mcc = int(request.matchdict['mcc'])
+    mnc = int(request.matchdict['mnc'])
+    lac = int(request.matchdict['lac'])
+    cid = int(request.matchdict['cid'])
 
     session = request.db_session
-    query = session.query(Cell).filter(Cell.mcc == mcc).filter(Cell.mnc == mnc)
+    query = session.query(Cell).filter(Cell.mcc == mcc)
+    query = query.filter(Cell.mnc == mnc)
+    query = query.filter(Cell.cid == cid)
 
     if lac >= 0:
-        query.filter(Cell.lac == lac)
-    if cid >= 0:
-        query.filter(Cell.cid == cid)
+        query = query.filter(Cell.lac == lac)
 
     with StatsdTimer('get_cell_location'):
         result = query.first()
         if result is None:
-            # TODO raise error
-            return {
-                'latitude': 0,
-                'longitude': 0,
-                'accuracy': 0,
-            }
+            raise exc.HTTPNotFound()
         else:
             return {
-                'latitude': str(result.lat),
-                'longitude': str(result.lon),
+                'latitude': result.lat,
+                'longitude': result.lon,
                 # TODO figure out actual meaning of `range`
                 # we want to return accuracy in meters at 95% percentile
-                'accuracy': result.range,
+                'accuracy': 20000,
             }
 
 heartbeat = Service(name='heartbeat', path='/__heartbeat__')
