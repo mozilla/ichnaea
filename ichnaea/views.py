@@ -19,7 +19,7 @@ def quantize(value):
     return (Decimal(value) / MILLION).quantize(Decimal('1.000000'))
 
 
-@location_search.post(renderer='decimaljson')
+@location_search.post(renderer='decimaljson', accept="application/json")
 def location_search_post(request):
     data = request.json
     cell = data['cell'][0]
@@ -50,15 +50,15 @@ def location_search_post(request):
                 }
 
 
-cell_measurement = Service(
-    name='cell_measurement',
-    path='/v1/cell',
-    description="Post cell location measurement.",
+location_measurement = Service(
+    name='location_measurement',
+    path='/v1/location/{lat}/{lon}',
+    description="Provide a measurement result for a location.",
 )
 
 
-@cell_measurement.post(renderer='decimaljson', accept="application/json")
-def post_cell_measurement(request):
+@location_measurement.post(renderer='decimaljson', accept="application/json")
+def location_measurement_post(request):
     return {'status': 'success'}
 
 
