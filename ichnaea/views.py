@@ -24,6 +24,73 @@ def location_search_post(request):
     """
     Determine the current location based on provided data about
     nearby cell towers or wifi base stations.
+
+    The request body is a nested JSON mapping, for example:
+
+    .. code-block:: javascript
+
+        {
+            "cell": [
+                {
+                    "mcc": 724,
+                    "mnc": 5,
+                    "lac": 31421,
+                    "cid": 60420242,
+                    "strength": 57
+                }
+            ]
+            "wifi": [
+                {
+                    "bssid": "02:8E:F2:62:EC:A4",
+                    "ssid": "my network",
+                    "strength": 42
+                }
+            ]
+        }
+
+    The mapping can contain zero to many entries per category. At least for one
+    category an entry has to be provided.
+
+    The strength should be an integer in the range of 0 to 100, where 100 means
+    perfect reception and lower numbers mean gradually worse reception.
+
+    For `cell` entries, the `strength` and `lac` keys are optional.
+
+    For `wifi` entires, only the `bssid` field is required.
+
+    A successful result will be:
+
+    .. code-block:: javascript
+
+        {
+            "status": "ok",
+            "lat": -22.753919,
+            "lon": -43.437108,
+            "accuracy": 20000
+        }
+
+    The latitude and longitude are numbers, with at most six decimal digits of
+    precision. The accuracy is an integer measured in meters.
+
+    If no position can be determined, you instead get:
+
+    .. code-block:: javascript
+
+        {
+            "status": "not_found"
+        }
+
+    If the request couldn't be processed or a validation error occurred, you
+    get a HTTP status code of 400 and a JSON body:
+
+    .. code-block:: javascript
+
+        {
+            "status": "error",
+            "errors": {}
+        }
+
+    The errors mapping contains detailed information about the errors.
     """
 
     data = request.json
