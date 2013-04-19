@@ -112,14 +112,16 @@ def location_search_post(request):
         result = query.first()
 
         if result is None:
-            raise exc.HTTPNotFound()
+            return {
+                'status': 'not_found',
+            }
 
-        return {'lat': quantize(result.lat),
-                'lon': quantize(result.lon),
-                # TODO figure out actual meaning of `range`
-                # we want to return accuracy in meters at 95% percentile
-                'accuracy': 20000
-                }
+        return {
+            'status': 'ok',
+            'lat': quantize(result.lat),
+            'lon': quantize(result.lon),
+            'accuracy': 20000,
+        }
 
 
 location_measurement = Service(
@@ -132,10 +134,55 @@ location_measurement = Service(
 @location_measurement.post(renderer='json', accept="application/json")
 def location_measurement_post(request):
     """
-    Sent back data about nearby cell towers and wifi base stations.
+    Send back data about nearby cell towers and wifi base stations.
+
+    :param lat: The latitude, as a string representation of a float
+    :param lon: The longitude, as a string representation of a float
+
+    An example request is::
+
+    .. code-block:: javascript
+
+        {
+            "cell": [
+                {
+                    "mcc": 724,
+                    "mnc": 5,
+                    "lac": 31421,
+                    "cid": 60420242,
+                    "strength": 57
+                }
+            ]
+            "wifi": [
+                {
+                    "bssid": "02:8E:F2:62:EC:A4",
+                    "ssid": "my network",
+                    "strength": 42
+                }
+            ]
+        }
+
+    A successful result will be:
+
+    .. code-block:: javascript
+
+        {
+            "status": "ok",
+        }
+
+    If an error occurred, you get a 400 HTTP status code and a body of:
+
+    .. code-block:: javascript
+
+        {
+            "status": "error",
+            "errors": {}
+        }
+
+    The errors mapping contains detailed information about the errors.
     """
 
-    return {'status': 'success'}
+    return {'status': 'ok'}
 
 
 heartbeat = Service(name='heartbeat', path='/__heartbeat__')
