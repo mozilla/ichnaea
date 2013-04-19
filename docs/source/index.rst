@@ -13,6 +13,7 @@ We currently provide two API:
   see around you, given a location
 
 
+The source code is located at : https://github.com/mozilla/ichnaea
 
 
 API
@@ -31,6 +32,31 @@ API
 
 .. toctree::
    :maxdepth: 2
+
+
+
+How to run your own server
+::::::::::::::::::::::::::
+
+Run the following commands to download the Database and the server:
+
+.. code-block:: bash
+
+   git clone https://github.com/mozilla/ichnaea
+   cd ichnaea
+   make
+   curl http://dump.opencellid.org/cells.txt.gz | gunzip > data/cells.txt
+   bin/ichnaea_import ichnaea.ini data/cells.txt
+
+
+Then run the server:
+
+.. code-block:: bash
+
+   bin/pserve ichnaea.ini
+
+
+From there you can access the service on port 7001.
 
 
 
