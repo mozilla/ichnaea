@@ -12,6 +12,7 @@ requires = [
 ]
 
 test_requires = requires + [
+    'beautifulsoup4',
     'coverage',
     'nose',
     'Webtest',
