@@ -1,3 +1,4 @@
+===============
 Mozilla Ichnaea
 ===============
 
@@ -17,7 +18,7 @@ The source code is located at : https://github.com/mozilla/ichnaea
 
 
 API
-:::
+===
 
 .. services::
    :modules: ichnaea.views
@@ -29,12 +30,17 @@ API
    :service: location_measurement
 
 
+Table of contents
+=================
+
 .. toctree::
    :maxdepth: 2
 
+   changelog
+
 
 How to run your own server
-::::::::::::::::::::::::::
+==========================
 
 Run the following commands to download the database and the server:
 
