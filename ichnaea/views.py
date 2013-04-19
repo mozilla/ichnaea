@@ -1,6 +1,5 @@
 from decimal import Decimal
 from cornice import Service
-import pyramid.httpexceptions as exc
 from statsd import StatsdTimer
 
 from ichnaea.db import Cell
