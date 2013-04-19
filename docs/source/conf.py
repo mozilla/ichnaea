@@ -31,8 +31,8 @@ class Mock(object):
         return Mock()
 
 
-MOCK_MODULES = ['sqlalchemy', 'sqlalchemy.ext.declarative',
-                'ext.declarative']
+# add mocked imports here
+MOCK_MODULES = []
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
