@@ -20,6 +20,15 @@ class TestSearch(TestCase):
         self.assertEqual(res.body, '{"status": "not_found"}')
 
 
+class TestMeasure(TestCase):
+
+    def test_ok(self):
+        app = _make_app()
+        res = app.post('/v1/location/12.345678/23.456789', '{}')
+        self.assertEqual(res.status_code, 204)
+        self.assertEqual(res.body, '')
+
+
 class TestHeartbeat(TestCase):
 
     def test_ok(self):

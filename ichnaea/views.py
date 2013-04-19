@@ -1,5 +1,6 @@
 from decimal import Decimal
 from cornice import Service
+from pyramid.httpexceptions import HTTPNoContent
 from statsd import StatsdTimer
 
 from ichnaea.db import Cell
@@ -176,8 +177,7 @@ def location_measurement_post(request):
 
     The errors mapping contains detailed information about the errors.
     """
-
-    return {'status': 'ok'}
+    return HTTPNoContent()
 
 
 heartbeat = Service(name='heartbeat', path='/__heartbeat__')
