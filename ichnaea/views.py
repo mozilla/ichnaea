@@ -85,7 +85,6 @@ def location_search_post(request):
     .. code-block:: javascript
 
         {
-            "status": "error",
             "errors": {}
         }
 
@@ -177,7 +176,6 @@ def location_measurement_post(request):
     .. code-block:: javascript
 
         {
-            "status": "error",
             "errors": {}
         }
 
