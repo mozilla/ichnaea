@@ -14,6 +14,7 @@ requires = [
 test_requires = requires + [
     'coverage',
     'nose',
+    'Webtest',
 ]
 
 with open(os.path.join(here, 'README.rst')) as f:
