@@ -137,7 +137,11 @@ def location_measurement_post(request):
     :param lat: The latitude, as a string representation of a float
     :param lon: The longitude, as a string representation of a float
 
-    An example request is:
+    An example request against URL::
+
+        /v1/location/-22.753919/-43.437108
+
+    with a body of:
 
     .. code-block:: javascript
 
