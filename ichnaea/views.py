@@ -163,13 +163,8 @@ def location_measurement_post(request):
             ]
         }
 
-    A successful result will be:
-
-    .. code-block:: javascript
-
-        {
-            "status": "ok",
-        }
+    On successful submission, you get a 204 status code back without any
+    data in the body.
 
     If an error occurred, you get a 400 HTTP status code and a body of:
 
