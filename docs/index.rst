@@ -14,9 +14,6 @@ We currently provide two API:
   given a location
 
 
-The source code is located at : https://github.com/mozilla/ichnaea
-
-
 API
 ===
 
@@ -37,6 +34,19 @@ Table of contents
    :maxdepth: 2
 
    changelog
+
+
+Development
+===========
+
+All source code is available on `github under ichnaea
+<https://github.com/mozilla/ichnaea>`_.
+
+Bugs and support issues should be reported on the `ichnaea github issue tracker
+<https://github.com/mozilla/ichnaea/issues>`_.
+
+The developers of ``ichnaea`` can frequently be found on the Mozilla IRC
+network in the #geo channel.
 
 
 How to run your own server
