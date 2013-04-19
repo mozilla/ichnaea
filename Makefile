@@ -26,10 +26,10 @@ clean:
 test: build
 	$(BIN)/nosetests -s -d -v --with-coverage --cover-package ichnaea ichnaea
 
-$(SPHINX):
+bin/sphinx-build:
 	bin/pip install sphinx
 
 
-docs:  $(SPHINX)
-	SPHINXBUILD=../bin/sphinx-build make -C docs html $^
+docs:  bin/sphinx-build
+	cd docs; ../bin/sphinx-build source build
 
