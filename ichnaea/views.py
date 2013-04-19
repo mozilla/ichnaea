@@ -8,10 +8,10 @@ from ichnaea.db import Cell
 MILLION = Decimal(1000000)
 
 
-cell_location = Service(
-    name='cell_location',
-    path='/v1/cell/{mcc}/{mnc}/{lac}/{cid}',
-    description="Get cell location information.",
+location_search = Service(
+    name='location_search',
+    path='/v1/search',
+    description="Search for your current location.",
 )
 
 
@@ -19,13 +19,14 @@ def quantize(value):
     return (Decimal(value) / MILLION).quantize(Decimal('1.000000'))
 
 
-@cell_location.get(renderer='decimaljson')
-def get_cell_location(request):
-    # TODO validation
-    mcc = int(request.matchdict['mcc'])
-    mnc = int(request.matchdict['mnc'])
-    lac = int(request.matchdict['lac'])
-    cid = int(request.matchdict['cid'])
+@location_search.post(renderer='decimaljson')
+def location_search_post(request):
+    data = request.json
+    cell = data['cell'][0]
+    mcc = cell['mcc']
+    mnc = cell['mnc']
+    lac = cell['lac']
+    cid = cell['cid']
 
     session = request.db_session
     query = session.query(Cell).filter(Cell.mcc == mcc)
