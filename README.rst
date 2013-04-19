@@ -1,15 +1,16 @@
-Ichnaea
+===============
+Mozilla Ichnaea
+===============
+
+``Mozilla Ichnaea`` is an application to provide geo location coordinates
+in response to user requests.
+
+See `the full docs`_ for more information.
+
+License
 =======
 
-Mozilla Ichnaea is an application to provide geo location coordinates
-in respond to user requests.
+``mozilla-ichnaea`` is offered under the Apache License 2.0.
 
 
-For setup run::
-
-    make
-
-    curl http://dump.opencellid.org/cells.txt.gz | gunzip > data/cells.txt
-    bin/ichnaea_import ichnaea.ini data/cells.txt
-
-    bin/pserve ichnaea.ini
+.. _the full docs: http://mozilla-ichnaea.rtfd.org/
