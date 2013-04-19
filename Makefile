@@ -27,7 +27,7 @@ test: build
 	$(BIN)/nosetests -s -d -v --with-coverage --cover-package ichnaea ichnaea
 
 bin/sphinx-build:
-	bin/pip install sphinx
+	bin/pip install Sphinx
 
 
 docs:  bin/sphinx-build
