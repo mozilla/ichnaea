@@ -41,7 +41,6 @@ def location_search_post(request):
             "wifi": [
                 {
                     "bssid": "02:8E:F2:62:EC:A4",
-                    "ssid": "my network",
                     "strength": 42
                 }
             ]
@@ -155,7 +154,6 @@ def location_measurement_post(request):
             "wifi": [
                 {
                     "bssid": "02:8E:F2:62:EC:A4",
-                    "ssid": "my network",
                     "strength": 42
                 }
             ]
