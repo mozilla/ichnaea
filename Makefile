@@ -31,5 +31,4 @@ bin/sphinx-build:
 
 
 docs:  bin/sphinx-build
-	cd docs; ../bin/sphinx-build source build
-
+	cd docs; make html

@@ -2,15 +2,15 @@ Mozilla Ichnaea
 ===============
 
 **Mozilla Ichnaea** is a service to provide geo location coordinates in
-respond to user requests.
+response to user requests.
 
 We currently provide two API:
 
 - one for searching for your current location, given what you
   see around you.
 
-- one for sending back to the server information about what you
-  see around you, given a location
+- one for sending back information about what you see around you,
+  given a location
 
 
 The source code is located at : https://github.com/mozilla/ichnaea
@@ -29,16 +29,14 @@ API
    :service: location_measurement
 
 
-
 .. toctree::
    :maxdepth: 2
-
 
 
 How to run your own server
 ::::::::::::::::::::::::::
 
-Run the following commands to download the Database and the server:
+Run the following commands to download the database and the server:
 
 .. code-block:: bash
 
@@ -57,6 +55,3 @@ Then run the server:
 
 
 From there you can access the service on port 7001.
-
-
-
