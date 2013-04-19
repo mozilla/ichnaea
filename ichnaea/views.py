@@ -65,7 +65,7 @@ def location_search_post(request):
             "status": "ok",
             "lat": -22.753919,
             "lon": -43.437108,
-            "accuracy": 20000
+            "accuracy": 1000
         }
 
     The latitude and longitude are numbers, with six decimal places of
