@@ -12,8 +12,6 @@ logger = logging.getLogger('ichnaea')
 
 
 class DecimalJSON(object):
-    def __init__(self, jsonp_param_name='callback'):
-        self.jsonp_param_name = jsonp_param_name
 
     def __call__(self, info):
         def _render(value, system):
@@ -22,15 +20,7 @@ class DecimalJSON(object):
                 ret = json.dumps(value, use_decimal=True)
             request = system.get('request')
             if request is not None:
-                callback = request.params.get(self.jsonp_param_name)
-                if callback is None:
-                    request.response.content_type = 'application/json'
-                else:
-                    request.response.content_type = 'text/javascript'
-                    ret = '%(callback)s(%(json)s);' % {
-                        'callback': callback,
-                        'json': ret
-                    }
+                request.response.content_type = 'application/json'
             return ret
         return _render
 
