@@ -69,8 +69,8 @@ def location_search_post(request):
             "accuracy": 20000
         }
 
-    The latitude and longitude are numbers, with at most six decimal digits of
-    precision. The accuracy is an integer measured in meters.
+    The latitude and longitude are numbers, with six decimal places of
+    actual precision. The accuracy is an integer measured in meters.
 
     If no position can be determined, you instead get:
 
