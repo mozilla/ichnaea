@@ -56,8 +56,11 @@ if on_rtd:
 import cornice
 
 sys.path.insert(0, os.path.abspath(cornice.__file__))
-extensions = ['cornice.ext.sphinxext']
-
+extensions = [
+    'cornice.ext.sphinxext',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.viewcode',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
