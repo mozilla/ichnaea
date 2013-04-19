@@ -19,7 +19,7 @@ def quantize(value):
     return (Decimal(value) / MILLION).quantize(Decimal('1.000000'))
 
 
-@location_search.post(renderer='decimaljson', accept="application/json")
+@location_search.post(renderer='json', accept="application/json")
 def location_search_post(request):
     """
     Determine the current location based on provided data about
@@ -62,7 +62,7 @@ location_measurement = Service(
 )
 
 
-@location_measurement.post(renderer='decimaljson', accept="application/json")
+@location_measurement.post(renderer='json', accept="application/json")
 def location_measurement_post(request):
     """
     Sent back data about nearby cell towers and wifi base stations.

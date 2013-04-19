@@ -49,6 +49,6 @@ def main(global_config, **settings):
     config.registry.db = Database(settings['database'])
     config.add_subscriber(attach_db_session, NewRequest)
 
-    # add decimal json renderer
-    config.add_renderer('decimaljson', DecimalJSON())
+    # replace json renderer with decimal json variant
+    config.add_renderer('json', DecimalJSON())
     return config.make_wsgi_app()
