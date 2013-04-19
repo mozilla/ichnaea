@@ -4,14 +4,26 @@ from webtest import TestApp
 from ichnaea import main
 
 
+def _make_app():
+    global_config = {}
+    wsgiapp = main(global_config, database='sqlite://')
+    return TestApp(wsgiapp)
+
+
+class TestSearch(TestCase):
+
+    def test_not_found(self):
+        app = _make_app()
+        res = app.post('/v1/search',
+            '{"cell": [{"mcc": 1, "mnc": 2, "lac": 3, "cid": 4}]}')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.body, '{"status": "not_found"}')
+
+
 class TestHeartbeat(TestCase):
 
-    def setUp(self):
-        global_config = {}
-        wsgiapp = main(global_config, database='sqlite://')
-        self.app = TestApp(wsgiapp)
-
     def test_ok(self):
-        res = self.app.get('/__heartbeat__')
+        app = _make_app()
+        res = app.get('/__heartbeat__')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.body, '{"status": "OK"}')
