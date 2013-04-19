@@ -47,14 +47,15 @@ def location_search_post(request):
         }
 
     The mapping can contain zero to many entries per category. At least for one
-    category an entry has to be provided.
+    category an entry has to be provided. Empty categories can be omitted
+    entirely.
 
     The strength should be an integer in the range of 0 to 100, where 100 means
     perfect reception and lower numbers mean gradually worse reception.
 
-    For `cell` entries, the `strength` and `lac` keys are optional.
+    For `cell` entries, the `mcc`, `mnc` and `cid` keys are required.
 
-    For `wifi` entires, only the `bssid` field is required.
+    For `wifi` entires, the `bssid` key is required.
 
     A successful result will be:
 
