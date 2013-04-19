@@ -2,6 +2,8 @@
 *~
 *.db
 *.py[co]
+*.egg-info
+*.pid
 coverage.xml
 data
 nosetests.xml
