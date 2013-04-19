@@ -13,7 +13,7 @@ class Cell(_Model):
     )
 
     id = Column(Integer, primary_key=True)
-    # lat/lon * 100000
+    # lat/lon * 1000000
     lat = Column(Integer)
     lon = Column(Integer)
 

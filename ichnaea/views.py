@@ -5,7 +5,7 @@ from statsd import StatsdTimer
 
 from ichnaea.db import Cell
 
-HUNDREDK = Decimal(100000)
+MILLION = Decimal(1000000)
 
 
 cell_location = Service(
@@ -16,7 +16,7 @@ cell_location = Service(
 
 
 def quantize(value):
-    return (Decimal(value) / HUNDREDK).quantize(Decimal('1.00000'))
+    return (Decimal(value) / MILLION).quantize(Decimal('1.000000'))
 
 
 @cell_location.get(renderer='decimaljson')

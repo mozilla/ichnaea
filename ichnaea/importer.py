@@ -34,8 +34,8 @@ def load_file(settings, source_file):
             try:
                 cell = Cell(
                     id=id_,
-                    lat=int(float(fields[1]) * 100000),
-                    lon=int(float(fields[2]) * 100000),
+                    lat=int(float(fields[1]) * 1000000),
+                    lon=int(float(fields[2]) * 1000000),
                     mcc=_int(fields[3]),
                     mnc=_int(fields[4]),
                     lac=_int(fields[5]),
