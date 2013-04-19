@@ -64,6 +64,10 @@ location_measurement = Service(
 
 @location_measurement.post(renderer='decimaljson', accept="application/json")
 def location_measurement_post(request):
+    """
+    Sent back data about nearby cell towers and wifi base stations.
+    """
+
     return {'status': 'success'}
 
 
