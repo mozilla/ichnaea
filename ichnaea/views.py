@@ -38,7 +38,7 @@ def location_search_post(request):
                     "cid": 60420242,
                     "strength": 57
                 }
-            ]
+            ],
             "wifi": [
                 {
                     "bssid": "02:8E:F2:62:EC:A4",
@@ -152,7 +152,7 @@ def location_measurement_post(request):
                     "cid": 60420242,
                     "strength": 57
                 }
-            ]
+            ],
             "wifi": [
                 {
                     "bssid": "02:8E:F2:62:EC:A4",
