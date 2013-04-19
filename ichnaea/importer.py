@@ -57,6 +57,7 @@ def load_file(settings, source_file):
         # commit the rest
         session.add_all(cells)
         session.commit()
+        session.execute('VACUUM')
 
 
 def main():
