@@ -8,7 +8,7 @@ VTENV_OPTS ?= --distribute
 BUILD_DIRS = bin build include lib lib64 man share
 
 
-.PHONY: all test
+.PHONY: all test docs
 
 all: build
 
@@ -25,3 +25,11 @@ clean:
 
 test: build
 	$(BIN)/nosetests -s -d -v --with-coverage --cover-package ichnaea ichnaea
+
+$(SPHINX):
+	bin/pip install sphinx
+
+
+docs:  $(SPHINX)
+	SPHINXBUILD=../bin/sphinx-build make -C docs html $^
+
