@@ -21,6 +21,11 @@ def quantize(value):
 
 @location_search.post(renderer='decimaljson', accept="application/json")
 def location_search_post(request):
+    """
+    Determine the current location based on provided data about
+    nearby cell towers or wifi base stations.
+    """
+
     data = request.json
     cell = data['cell'][0]
     mcc = cell['mcc']
