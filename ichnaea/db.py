@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy import Column, Index, Integer
+from sqlalchemy import Column, Index, Integer, LargeBinary
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -30,6 +30,12 @@ class Measure(_Model):
     __tablename__ = 'measure'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    # lat/lon * 1000000
+    lat = Column(Integer)
+    lon = Column(Integer)
+    # json blobs
+    cell = Column(LargeBinary)
+    wifi = Column(LargeBinary)
 
 measure_table = Measure.__table__
 

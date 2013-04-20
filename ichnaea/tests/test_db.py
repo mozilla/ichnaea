@@ -94,6 +94,10 @@ class TestMeasure(TestCase):
 
     def test_fields(self):
         measure = self._make_one()
+        measure.lat = 12345678
+        measure.lon = 23456789
+        measure.cell = "[]"
+        measure.wifi = "[]"
 
         session = self._get_session()
         session.add(measure)
@@ -101,3 +105,7 @@ class TestMeasure(TestCase):
 
         result = session.query(measure.__class__).first()
         self.assertEqual(result.id, 1)
+        self.assertEqual(result.lat, 12345678)
+        self.assertEqual(result.lon, 23456789)
+        self.assertEqual(result.cell, "[]")
+        self.assertEqual(result.wifi, "[]")
