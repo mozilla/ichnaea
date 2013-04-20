@@ -1,5 +1,5 @@
 from colander import MappingSchema, SchemaNode, SequenceSchema
-from colander import Integer, String
+from colander import Decimal, Integer, String
 
 
 class CellSchema(MappingSchema):
@@ -29,5 +29,7 @@ class SearchSchema(MappingSchema):
 
 
 class MeasureSchema(MappingSchema):
+    lat = SchemaNode(Decimal(quant="1.000000"), location="path")
+    lon = SchemaNode(Decimal(quant="1.000000"), location="path")
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())
