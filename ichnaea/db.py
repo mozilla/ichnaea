@@ -29,7 +29,7 @@ cell_table = Cell.__table__
 class Measure(_Model):
     __tablename__ = 'measure'
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
 
 measure_table = Measure.__table__
 

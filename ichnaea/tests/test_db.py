@@ -54,3 +54,50 @@ class TestCell(TestCase):
         self.assertEqual(result.lat, 12345678)
         self.assertEqual(result.mcc, 100)
         self.assertEqual(result.cid, 234567)
+
+
+class TestMeasureDB(TestCase):
+
+    def _make_one(self):
+        from ichnaea.db import MeasureDB
+        return MeasureDB('sqlite://')
+
+    def test_constructor(self):
+        db = self._make_one()
+        self.assertEqual(db.engine.name, 'sqlite')
+
+    def test_session(self):
+        db = self._make_one()
+        session = db.session()
+        self.assertTrue(session.bind is db.engine)
+
+    def test_table_creation(self):
+        db = self._make_one()
+        session = db.session()
+        result = session.execute('select * from measure;')
+        self.assertTrue(result.first() is None)
+
+
+class TestMeasure(TestCase):
+
+    def _make_one(self):
+        from ichnaea.db import Measure
+        return Measure()
+
+    def _get_session(self):
+        from ichnaea.db import MeasureDB
+        return MeasureDB('sqlite://').session()
+
+    def test_constructor(self):
+        measure = self._make_one()
+        self.assertTrue(measure.id is None)
+
+    def test_fields(self):
+        measure = self._make_one()
+
+        session = self._get_session()
+        session.add(measure)
+        session.commit()
+
+        result = session.query(measure.__class__).first()
+        self.assertEqual(result.id, 1)
