@@ -2,6 +2,7 @@ from unittest import TestCase
 from webtest import TestApp
 
 from ichnaea import main
+from ichnaea.db import Cell
 
 
 def _make_app():
@@ -11,6 +12,26 @@ def _make_app():
 
 
 class TestSearch(TestCase):
+
+    def test_ok(self):
+        app = _make_app()
+        session = app.app.registry.db.session()
+        cell = Cell()
+        cell.lat = 12345678
+        cell.lon = 23456789
+        cell.mcc = 123
+        cell.mnc = 1
+        cell.lac = 2
+        cell.cid = 1234
+        session.add(cell)
+        session.commit()
+
+        res = app.post_json('/v1/search',
+            {"cell": [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.body, '{"status": "ok", "lat": 12.345678, '
+            '"lon": 23.456789, "accuracy": 20000}')
 
     def test_not_found(self):
         app = _make_app()
