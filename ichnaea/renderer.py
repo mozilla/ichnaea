@@ -1,12 +1,19 @@
-import decimal
+from decimal import Decimal
+from decimal import localcontext
 
 import simplejson as json
 
+MILLION = Decimal(1000000)
+
 
 def dump_decimal_json(value):
-    with decimal.localcontext() as ctx:
+    with localcontext() as ctx:
         ctx.prec = 6
         return json.dumps(value, use_decimal=True)
+
+
+def quantize(value):
+    return (Decimal(value) / MILLION).quantize(Decimal('1.000000'))
 
 
 class DecimalJSON(object):

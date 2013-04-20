@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from cornice import Service
 from pyramid.httpexceptions import HTTPError, HTTPNoContent
 from pyramid.response import Response
@@ -7,9 +5,8 @@ from statsd import StatsdTimer
 
 from ichnaea.db import Cell
 from ichnaea.renderer import dump_decimal_json
+from ichnaea.renderer import quantize
 from ichnaea.schema import SearchSchema
-
-MILLION = Decimal(1000000)
 
 
 class _JSONError(HTTPError):
@@ -22,10 +19,6 @@ class _JSONError(HTTPError):
 
 def error_handler(errors):
     return _JSONError(errors, errors.status)
-
-
-def quantize(value):
-    return (Decimal(value) / MILLION).quantize(Decimal('1.000000'))
 
 
 location_search = Service(
