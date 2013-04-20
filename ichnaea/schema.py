@@ -26,3 +26,8 @@ class WifisSchema(SequenceSchema):
 class SearchSchema(MappingSchema):
     cell = CellsSchema(missing=None)
     wifi = WifisSchema(missing=None)
+
+
+class MeasureSchema(MappingSchema):
+    cell = CellsSchema(missing=None)
+    wifi = WifisSchema(missing=None)

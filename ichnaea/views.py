@@ -6,7 +6,7 @@ from statsd import StatsdTimer
 from ichnaea.db import Cell
 from ichnaea.renderer import dump_decimal_json
 from ichnaea.renderer import quantize
-from ichnaea.schema import SearchSchema
+from ichnaea.schema import SearchSchema, MeasureSchema
 
 
 class _JSONError(HTTPError):
@@ -140,7 +140,8 @@ location_measurement = Service(
 )
 
 
-@location_measurement.post(renderer='json', accept="application/json")
+@location_measurement.post(renderer='json', accept="application/json",
+                           schema=MeasureSchema, error_handler=error_handler)
 def location_measurement_post(request):
     """
     Send back data about nearby cell towers and wifi base stations.
