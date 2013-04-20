@@ -49,6 +49,27 @@ class TestSearch(TestCase):
         self.assertTrue('errors' in res.json)
         self.assertFalse('status' in res.json)
 
+    def test_error_no_data(self):
+        app = _make_app()
+        res = app.post_json('/v1/search', {"cell": []}, expect_errors=True)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertTrue('errors' in res.json)
+
+    def test_error_unknown_key(self):
+        app = _make_app()
+        res = app.post_json('/v1/search', {"foo": 0}, expect_errors=True)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertTrue('errors' in res.json)
+
+    def test_error_no_mapping(self):
+        app = _make_app()
+        res = app.post_json('/v1/search', [1], expect_errors=True)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertTrue('errors' in res.json)
+
 
 class TestMeasure(TestCase):
 
@@ -72,6 +93,20 @@ class TestMeasure(TestCase):
         app = _make_app()
         res = app.post_json('/v1/location/12.345678/23.456789',
             {"cell": []}, expect_errors=True)
+        self.assertEqual(res.status_code, 400)
+        self.assertTrue('errors' in res.json)
+
+    def test_error_unknown_key(self):
+        app = _make_app()
+        res = app.post_json('/v1/location/12.345678/23.456789',
+            {"foo": 1}, expect_errors=True)
+        self.assertEqual(res.status_code, 400)
+        self.assertTrue('errors' in res.json)
+
+    def test_error_no_mapping(self):
+        app = _make_app()
+        res = app.post_json('/v1/location/12.345678/23.456789',
+            [1], expect_errors=True)
         self.assertEqual(res.status_code, 400)
         self.assertTrue('errors' in res.json)
 

@@ -21,7 +21,7 @@ def error_handler(errors):
     return _JSONError(errors, errors.status)
 
 
-MSG_CELL_OR_WIFI = 'You need to provide at least one cell or wifi entry.'
+MSG_ONE_OF = 'You need to provide a mapping with least one cell or wifi entry.'
 
 
 def cell_or_wifi(request):
@@ -29,7 +29,7 @@ def cell_or_wifi(request):
     cell = data.get('cell', ())
     wifi = data.get('wifi', ())
     if not (any(cell) or any(wifi)):
-        request.errors.add('body', 'body', MSG_CELL_OR_WIFI)
+        request.errors.add('body', 'body', MSG_ONE_OF)
 
 
 location_search = Service(
