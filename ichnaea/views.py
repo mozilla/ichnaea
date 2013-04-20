@@ -25,6 +25,8 @@ MSG_ONE_OF = 'You need to provide a mapping with least one cell or wifi entry.'
 
 
 def cell_or_wifi(request):
+    if len(request.errors):
+        return
     data = request.validated
     cell = data.get('cell', ())
     wifi = data.get('wifi', ())
