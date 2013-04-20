@@ -1,4 +1,7 @@
 from decimal import Decimal
+
+from colander import MappingSchema, SchemaNode, SequenceSchema
+from colander import Integer, String
 from cornice import Service
 from pyramid.httpexceptions import HTTPNoContent
 from statsd import StatsdTimer
@@ -8,6 +11,10 @@ from ichnaea.db import Cell
 MILLION = Decimal(1000000)
 
 
+def quantize(value):
+    return (Decimal(value) / MILLION).quantize(Decimal('1.000000'))
+
+
 location_search = Service(
     name='location_search',
     path='/v1/search',
@@ -15,11 +22,34 @@ location_search = Service(
 )
 
 
-def quantize(value):
-    return (Decimal(value) / MILLION).quantize(Decimal('1.000000'))
+class CellSchema(MappingSchema):
+    mcc = SchemaNode(Integer(), location="body", type='int')
+    mnc = SchemaNode(Integer(), location="body", type='int')
+    lac = SchemaNode(Integer(), location="body", type='int')
+    cid = SchemaNode(Integer(), location="body", type='int')
+    strength = SchemaNode(Integer(), location="body", type='int', missing=0)
 
 
-@location_search.post(renderer='json', accept="application/json")
+class CellsSchema(SequenceSchema):
+    cell = CellSchema()
+
+
+class WifiSchema(MappingSchema):
+    bssid = SchemaNode(String(), location="body", type='str')
+    strength = SchemaNode(Integer(), location="body", type='int', missing=0)
+
+
+class WifisSchema(SequenceSchema):
+    wifi = WifiSchema()
+
+
+class SearchSchema(MappingSchema):
+    cell = CellsSchema(missing=None)
+    wifi = WifisSchema(missing=None)
+
+
+@location_search.post(renderer='json', accept="application/json",
+                      schema=SearchSchema)
 def location_search_post(request):
     """
     Determine the current location based on provided data about
@@ -92,7 +122,7 @@ def location_search_post(request):
     The errors mapping contains detailed information about the errors.
     """
 
-    data = request.json
+    data = request.validated
     cell = data['cell'][0]
     mcc = cell['mcc']
     mnc = cell['mnc']

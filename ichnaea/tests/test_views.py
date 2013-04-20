@@ -41,6 +41,13 @@ class TestSearch(TestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "not_found"}')
 
+    def test_error(self):
+        app = _make_app()
+        res = app.post_json('/v1/search', {"cell": [{}]}, expect_errors=True)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertTrue('errors' in res.json)
+
 
 class TestMeasure(TestCase):
 
