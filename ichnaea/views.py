@@ -3,12 +3,26 @@ from decimal import Decimal
 from colander import MappingSchema, SchemaNode, SequenceSchema
 from colander import Integer, String
 from cornice import Service
-from pyramid.httpexceptions import HTTPNoContent
+from pyramid.httpexceptions import HTTPError, HTTPNoContent
+from pyramid.response import Response
 from statsd import StatsdTimer
 
 from ichnaea.db import Cell
+from ichnaea.renderer import dump_decimal_json
 
 MILLION = Decimal(1000000)
+
+
+class _JSONError(HTTPError):
+    def __init__(self, errors, status=400):
+        body = {'errors': errors}
+        Response.__init__(self, dump_decimal_json(body))
+        self.status = status
+        self.content_type = 'application/json'
+
+
+def error_handler(errors):
+    return _JSONError(errors, errors.status)
 
 
 def quantize(value):
@@ -49,7 +63,7 @@ class SearchSchema(MappingSchema):
 
 
 @location_search.post(renderer='json', accept="application/json",
-                      schema=SearchSchema)
+                      schema=SearchSchema, error_handler=error_handler)
 def location_search_post(request):
     """
     Determine the current location based on provided data about

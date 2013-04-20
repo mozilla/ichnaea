@@ -47,6 +47,7 @@ class TestSearch(TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
+        self.assertFalse('status' in res.json)
 
 
 class TestMeasure(TestCase):
