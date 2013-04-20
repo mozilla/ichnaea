@@ -21,6 +21,17 @@ def error_handler(errors):
     return _JSONError(errors, errors.status)
 
 
+MSG_CELL_OR_WIFI = 'You need to provide at least one cell or wifi entry.'
+
+
+def cell_or_wifi(request):
+    data = request.validated
+    cell = data.get('cell', ())
+    wifi = data.get('wifi', ())
+    if not (any(cell) or any(wifi)):
+        request.errors.add('body', 'body', MSG_CELL_OR_WIFI)
+
+
 location_search = Service(
     name='location_search',
     path='/v1/search',
@@ -29,7 +40,8 @@ location_search = Service(
 
 
 @location_search.post(renderer='json', accept="application/json",
-                      schema=SearchSchema, error_handler=error_handler)
+                      schema=SearchSchema, error_handler=error_handler,
+                      validators=cell_or_wifi)
 def location_search_post(request):
     """
     Determine the current location based on provided data about
@@ -141,7 +153,8 @@ location_measurement = Service(
 
 
 @location_measurement.post(renderer='json', accept="application/json",
-                           schema=MeasureSchema, error_handler=error_handler)
+                           schema=MeasureSchema, error_handler=error_handler,
+                           validators=cell_or_wifi)
 def location_measurement_post(request):
     """
     Send back data about nearby cell towers and wifi base stations.

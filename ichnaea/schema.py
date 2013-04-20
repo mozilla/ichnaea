@@ -24,10 +24,10 @@ class WifisSchema(SequenceSchema):
 
 
 class SearchSchema(MappingSchema):
-    cell = CellsSchema(missing=None)
-    wifi = WifisSchema(missing=None)
+    cell = CellsSchema(missing=())
+    wifi = WifisSchema(missing=())
 
 
 class MeasureSchema(MappingSchema):
-    cell = CellsSchema(missing=None)
-    wifi = WifisSchema(missing=None)
+    cell = CellsSchema(missing=())
+    wifi = WifisSchema(missing=())
