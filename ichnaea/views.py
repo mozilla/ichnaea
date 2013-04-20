@@ -188,6 +188,9 @@ def location_measurement_post(request):
 
     The errors mapping contains detailed information about the errors.
     """
+    data = request.validated
+    data['cell'][0]
+    # todo store cell data
     return HTTPNoContent()
 
 

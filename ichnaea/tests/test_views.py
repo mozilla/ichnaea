@@ -59,6 +59,15 @@ class TestMeasure(TestCase):
         self.assertEqual(res.status_code, 204)
         self.assertEqual(res.body, '')
 
+    def test_error(self):
+        app = _make_app()
+        res = app.post_json('/v1/location/12.345678/23.456789',
+            {"cell": [{}]}, expect_errors=True)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertTrue('errors' in res.json)
+        self.assertFalse('status' in res.json)
+
 
 class TestHeartbeat(TestCase):
 
