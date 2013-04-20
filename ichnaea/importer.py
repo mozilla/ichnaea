@@ -4,7 +4,7 @@ import csv
 from pyramid.paster import bootstrap
 from sqlalchemy import func
 
-from ichnaea.db import Database, Cell
+from ichnaea.db import CellDB, Cell
 
 
 def _int(value):
@@ -15,7 +15,7 @@ def _int(value):
 
 
 def load_file(settings, source_file):
-    db = Database(settings['database'])
+    db = CellDB(settings['celldb'])
     session = db.session()
     result = session.query(func.max(Cell.id)).first()
     max_id = result[0]

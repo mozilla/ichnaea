@@ -123,7 +123,7 @@ def location_search_post(request):
     lac = cell['lac']
     cid = cell['cid']
 
-    session = request.db_session
+    session = request.celldb_session
     query = session.query(Cell).filter(Cell.mcc == mcc)
     query = query.filter(Cell.mnc == mnc)
     query = query.filter(Cell.cid == cid)

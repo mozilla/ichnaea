@@ -1,11 +1,11 @@
 from unittest import TestCase
 
 
-class TestDB(TestCase):
+class TestCellDB(TestCase):
 
     def _make_one(self):
-        from ichnaea.db import Database
-        return Database('sqlite://')
+        from ichnaea.db import CellDB
+        return CellDB('sqlite://')
 
     def test_constructor(self):
         db = self._make_one()
@@ -30,8 +30,8 @@ class TestCell(TestCase):
         return Cell()
 
     def _get_session(self):
-        from ichnaea.db import Database
-        return Database('sqlite://').session()
+        from ichnaea.db import CellDB
+        return CellDB('sqlite://').session()
 
     def test_constructor(self):
         cell = self._make_one()

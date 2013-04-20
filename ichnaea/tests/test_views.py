@@ -7,7 +7,7 @@ from ichnaea.db import Cell
 
 def _make_app():
     global_config = {}
-    wsgiapp = main(global_config, database='sqlite://')
+    wsgiapp = main(global_config, celldb='sqlite://')
     return TestApp(wsgiapp)
 
 
@@ -15,7 +15,7 @@ class TestSearch(TestCase):
 
     def test_ok(self):
         app = _make_app()
-        session = app.app.registry.db.session()
+        session = app.app.registry.celldb.session()
         cell = Cell()
         cell.lat = 12345678
         cell.lon = 23456789

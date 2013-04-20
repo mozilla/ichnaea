@@ -4,7 +4,7 @@ from pyramid.config import Configurator
 from pyramid.events import NewRequest
 import statsd
 
-from ichnaea.db import Database
+from ichnaea.db import CellDB
 from ichnaea.renderer import DecimalJSON
 
 logger = logging.getLogger('ichnaea')
@@ -12,7 +12,7 @@ logger = logging.getLogger('ichnaea')
 
 def attach_db_session(event):
     request = event.request
-    event.request.db_session = request.registry.db.session()
+    event.request.celldb_session = request.registry.celldb.session()
 
 
 def main(global_config, **settings):
@@ -31,7 +31,7 @@ def main(global_config, **settings):
 
     statsd.init_statsd(statsd_settings)
 
-    config.registry.db = Database(settings['database'])
+    config.registry.celldb = CellDB(settings['celldb'])
     config.add_subscriber(attach_db_session, NewRequest)
 
     # replace json renderer with decimal json variant

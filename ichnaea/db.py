@@ -26,7 +26,7 @@ class Cell(_Model):
 cell_table = Cell.__table__
 
 
-class Database(object):
+class CellDB(object):
 
     def __init__(self, sqluri):
         self.engine = create_engine(sqluri)
