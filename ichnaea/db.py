@@ -26,15 +26,36 @@ class Cell(_Model):
 cell_table = Cell.__table__
 
 
-class CellDB(object):
+class Measure(_Model):
+    __tablename__ = 'measure'
+
+    id = Column(Integer, primary_key=True)
+
+measure_table = Measure.__table__
+
+
+class BaseDB(object):
 
     def __init__(self, sqluri):
         self.engine = create_engine(sqluri)
         self.session_factory = sessionmaker(
             bind=self.engine, autocommit=False, autoflush=False)
 
+    def session(self):
+        return self.session_factory()
+
+
+class CellDB(BaseDB):
+
+    def __init__(self, sqluri):
+        super(CellDB, self).__init__(sqluri)
         cell_table.metadata.bind = self.engine
         cell_table.create(checkfirst=True)
 
-    def session(self):
-        return self.session_factory()
+
+class MeasureDB(BaseDB):
+
+    def __init__(self, sqluri):
+        super(MeasureDB, self).__init__(sqluri)
+        measure_table.metadata.bind = self.engine
+        measure_table.create(checkfirst=True)

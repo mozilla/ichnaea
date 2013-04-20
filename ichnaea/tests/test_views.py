@@ -7,7 +7,7 @@ from ichnaea.db import Cell
 
 def _make_app():
     global_config = {}
-    wsgiapp = main(global_config, celldb='sqlite://')
+    wsgiapp = main(global_config, celldb='sqlite://', measuredb='sqlite://')
     return TestApp(wsgiapp)
 
 
