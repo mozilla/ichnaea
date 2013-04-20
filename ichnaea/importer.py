@@ -1,4 +1,5 @@
 import argparse
+import csv
 
 from pyramid.paster import bootstrap
 from sqlalchemy import func
@@ -18,13 +19,14 @@ def load_file(settings, source_file):
     session = db.session()
     result = session.query(func.max(Cell.id)).first()
     max_id = result[0]
+    cell_insert = Cell.__table__.insert()
 
     with open(source_file, 'r') as fd:
+        reader = csv.reader(fd, delimiter=',')
         cells = []
         counter = 0
 
-        for line in fd.readlines():
-            fields = line.split(',')
+        for fields in reader:
             id_ = int(fields[0])
             # skip already processed items - we rely on the data file
             # to be sorted by id
@@ -32,7 +34,7 @@ def load_file(settings, source_file):
                 continue
 
             try:
-                cell = Cell(
+                cell = dict(
                     id=id_,
                     lat=int(float(fields[1]) * 1000000),
                     lon=int(float(fields[2]) * 1000000),
@@ -49,13 +51,13 @@ def load_file(settings, source_file):
             # commit every 1000 new records
             counter += 1
             if counter % 10000 == 0:
-                print('Adding 10000 new records.')
-                session.add_all(cells)
-                session.commit()
+                session.execute(cell_insert, cells)
+                print('Added %s records.' % counter)
                 cells = []
 
         # commit the rest
-        session.add_all(cells)
+        session.execute(cell_insert, cells)
+        print('Added %s records.' % counter)
         session.commit()
         session.execute('VACUUM')
 
