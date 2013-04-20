@@ -73,6 +73,20 @@ Then run the server:
 From there you can access the service on port 7001.
 
 
+Extra data sources
+==================
+
+**dump.opencellid.org**
+
+- http://dump.opencellid.org/cells.txt.gz
+- http://dump.opencellid.org/measures.txt.gz
+
+**www.opencellids.org/en/download/**
+
+- http://opencellid.enaikoon.de:8080/gpsSuiteCellIDServer/exportFiles/basestations.tar.gz
+- http://opencellid.enaikoon.de:8080/gpsSuiteCellIDServer/exportFiles/measurements.tar.gz
+
+
 License
 =======
 
