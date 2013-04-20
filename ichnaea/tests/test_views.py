@@ -112,6 +112,11 @@ class TestMeasure(TestCase):
         res = app.post('/v1/location/12.345678/23.456789', "\xae", status=400)
         self.assertTrue('errors' in res.json)
 
+    def test_invalid_types(self):
+        app = _make_app()
+        res = app.post('/v1/location/foo/1,2', "\xae", status=400)
+        self.assertTrue('errors' in res.json)
+
 
 class TestHeartbeat(TestCase):
 
