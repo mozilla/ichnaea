@@ -3,7 +3,7 @@ from pyramid.httpexceptions import HTTPError, HTTPNoContent
 from pyramid.response import Response
 from statsd import StatsdTimer
 
-from ichnaea.db import Cell
+from ichnaea.db import Cell, Measure
 from ichnaea.renderer import dump_decimal_json
 from ichnaea.renderer import quantize
 from ichnaea.schema import SearchSchema, MeasureSchema
@@ -204,8 +204,16 @@ def location_measurement_post(request):
     The errors mapping contains detailed information about the errors.
     """
     data = request.validated
-    data['cell'][0]
-    # todo store cell data
+    session = request.measuredb.session()
+    measure = Measure()
+    measure.lat = int(data['lat'] * 1000000)
+    measure.lon = int(data['lon'] * 1000000)
+    if data.get('cell'):
+        measure.cell = dump_decimal_json(data['cell'])
+    if data.get('wifi'):
+        measure.wifi = dump_decimal_json(data['wifi'])
+    session.add(measure)
+    session.commit()
     return HTTPNoContent()
 
 

@@ -2,7 +2,8 @@ from unittest import TestCase
 from webtest import TestApp
 
 from ichnaea import main
-from ichnaea.db import Cell
+from ichnaea.db import Cell, Measure
+from ichnaea.renderer import dump_decimal_json
 
 
 def _make_app():
@@ -76,10 +77,20 @@ class TestMeasure(TestCase):
 
     def test_ok(self):
         app = _make_app()
+        cell_data = [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
         res = app.post_json('/v1/location/12.345678/23.456789',
-            {"cell": [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]},
-            status=204)
+            {"cell": cell_data}, status=204)
         self.assertEqual(res.body, '')
+        session = app.app.registry.measuredb.session()
+        result = session.query(Measure).all()
+        self.assertEqual(len(result), 1)
+        item = result[0]
+        self.assertEqual(item.lat, 12345678)
+        self.assertEqual(item.lon, 23456789)
+        # colander schema adds default value
+        cell_data[0]['strength'] = 0
+        self.assertEqual(item.cell, dump_decimal_json(cell_data))
+        self.assertTrue(item.wifi is None)
 
     def test_error(self):
         app = _make_app()
