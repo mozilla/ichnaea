@@ -66,6 +66,11 @@ class TestSearch(TestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
 
+    def test_no_json(self):
+        app = _make_app()
+        res = app.post('/v1/search', "\xae", status=400)
+        self.assertTrue('errors' in res.json)
+
 
 class TestMeasure(TestCase):
 
@@ -100,6 +105,11 @@ class TestMeasure(TestCase):
         app = _make_app()
         res = app.post_json('/v1/location/12.345678/23.456789',
             [1], status=400)
+        self.assertTrue('errors' in res.json)
+
+    def test_no_json(self):
+        app = _make_app()
+        res = app.post('/v1/location/12.345678/23.456789', "\xae", status=400)
         self.assertTrue('errors' in res.json)
 
 
