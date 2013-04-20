@@ -54,7 +54,8 @@ class TestMeasure(TestCase):
 
     def test_ok(self):
         app = _make_app()
-        res = app.post_json('/v1/location/12.345678/23.456789', {})
+        res = app.post_json('/v1/location/12.345678/23.456789',
+            {"cell": [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]})
         self.assertEqual(res.status_code, 204)
         self.assertEqual(res.body, '')
 
