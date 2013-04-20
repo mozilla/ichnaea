@@ -71,3 +71,13 @@ Then run the server:
 
 
 From there you can access the service on port 7001.
+
+
+License
+=======
+
+The ``mozilla-ichnaea`` source code is offered under the Apache License 2.0.
+
+The initial data is taken from `opencellid.org <http://opencellid.org/>`_
+kindly offered under the `Creative Common Attribution-Share Alike 3.0 Unported
+<http://creativecommons.org/licenses/by-sa/3.0/>`_ license.
