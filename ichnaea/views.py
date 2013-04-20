@@ -1,7 +1,5 @@
 from decimal import Decimal
 
-from colander import MappingSchema, SchemaNode, SequenceSchema
-from colander import Integer, String
 from cornice import Service
 from pyramid.httpexceptions import HTTPError, HTTPNoContent
 from pyramid.response import Response
@@ -9,6 +7,7 @@ from statsd import StatsdTimer
 
 from ichnaea.db import Cell
 from ichnaea.renderer import dump_decimal_json
+from ichnaea.schema import SearchSchema
 
 MILLION = Decimal(1000000)
 
@@ -34,32 +33,6 @@ location_search = Service(
     path='/v1/search',
     description="Search for your current location.",
 )
-
-
-class CellSchema(MappingSchema):
-    mcc = SchemaNode(Integer(), location="body", type='int')
-    mnc = SchemaNode(Integer(), location="body", type='int')
-    lac = SchemaNode(Integer(), location="body", type='int')
-    cid = SchemaNode(Integer(), location="body", type='int')
-    strength = SchemaNode(Integer(), location="body", type='int', missing=0)
-
-
-class CellsSchema(SequenceSchema):
-    cell = CellSchema()
-
-
-class WifiSchema(MappingSchema):
-    bssid = SchemaNode(String(), location="body", type='str')
-    strength = SchemaNode(Integer(), location="body", type='int', missing=0)
-
-
-class WifisSchema(SequenceSchema):
-    wifi = WifiSchema()
-
-
-class SearchSchema(MappingSchema):
-    cell = CellsSchema(missing=None)
-    wifi = WifisSchema(missing=None)
 
 
 @location_search.post(renderer='json', accept="application/json",
