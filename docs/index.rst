@@ -59,8 +59,8 @@ Run the following commands to download the database and the server:
    git clone https://github.com/mozilla/ichnaea
    cd ichnaea
    make
-   curl http://dump.opencellid.org/cells.txt.gz | gunzip > data/cells.txt
-   bin/ichnaea_import ichnaea.ini data/cells.txt
+   curl http://opencellid.enaikoon.de:8080/gpsSuiteCellIDServer/exportFiles/basestations.tar.gz | tar xzC data/
+   bin/ichnaea_import ichnaea.ini data/basestations.csv
 
 
 Then run the server:
@@ -76,15 +76,15 @@ From there you can access the service on port 7001.
 Extra data sources
 ==================
 
-**dump.opencellid.org**
-
-- http://dump.opencellid.org/cells.txt.gz
-- http://dump.opencellid.org/measures.txt.gz
-
 **www.opencellids.org/en/download/**
 
 - http://opencellid.enaikoon.de:8080/gpsSuiteCellIDServer/exportFiles/basestations.tar.gz
 - http://opencellid.enaikoon.de:8080/gpsSuiteCellIDServer/exportFiles/measurements.tar.gz
+
+**dump.opencellid.org**
+
+- http://dump.opencellid.org/cells.txt.gz
+- http://dump.opencellid.org/measures.txt.gz
 
 
 License
@@ -94,4 +94,6 @@ The ``mozilla-ichnaea`` source code is offered under the Apache License 2.0.
 
 The initial data is taken from `opencellid.org <http://opencellid.org/>`_
 kindly offered under the `Creative Common Attribution-Share Alike 3.0 Unported
-<http://creativecommons.org/licenses/by-sa/3.0/>`_ license.
+<http://creativecommons.org/licenses/by-sa/3.0/>`_ license. In addition data
+is taken from the opencellid server hosted by
+`enaikoon.de <http://www.enaikoon.de>`_ under the same license.

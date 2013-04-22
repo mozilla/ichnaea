@@ -22,7 +22,7 @@ def load_file(settings, source_file):
     cell_insert = Cell.__table__.insert()
 
     with open(source_file, 'r') as fd:
-        reader = csv.reader(fd, delimiter=',')
+        reader = csv.reader(fd, delimiter=';')
         cells = []
         counter = 0
 
@@ -36,13 +36,13 @@ def load_file(settings, source_file):
             try:
                 cell = dict(
                     id=id_,
-                    lat=int(float(fields[1]) * 1000000),
-                    lon=int(float(fields[2]) * 1000000),
-                    mcc=_int(fields[3]),
-                    mnc=_int(fields[4]),
-                    lac=_int(fields[5]),
-                    cid=_int(fields[6]),
-                    range=_int(fields[7]),
+                    lat=int(float(fields[2]) * 1000000),
+                    lon=int(float(fields[3]) * 1000000),
+                    mcc=_int(fields[4]),
+                    mnc=_int(fields[5]),
+                    lac=_int(fields[6]),
+                    cid=_int(fields[7]),
+                    range=_int(fields[8]),
                 )
             except ValueError:
                 continue
