@@ -85,7 +85,3 @@ def main(argv):
 
 def console_entry():  # pragma: no cover
     main(sys.argv)
-
-
-if __name__ == '__main__':  # pragma: no cover
-    console_entry()
