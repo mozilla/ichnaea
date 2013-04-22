@@ -9,6 +9,7 @@ requires = [
     'argparse',
     'colander',
     'cornice',
+    'konfig',
     'statsd-client',
 ]
 
