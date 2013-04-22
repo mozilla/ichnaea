@@ -1,5 +1,6 @@
 import argparse
 import csv
+import sys
 
 from pyramid.paster import bootstrap
 from sqlalchemy import func
@@ -14,7 +15,7 @@ def _int(value):
         return 0
 
 
-def load_file(settings, source_file):
+def load_file(settings, source_file, batch_size=10000):
     db = CellDB(settings['celldb'])
     session = db.session()
     result = session.query(func.max(Cell.id)).first()
@@ -29,8 +30,8 @@ def load_file(settings, source_file):
         for fields in reader:
             id_ = int(fields[0])
             # skip already processed items - we rely on the data file
-            # to be sorted by id
-            if id_ <= max_id:
+            # to have consistent ids between exports
+            if id_ <= max_id:  # pragma: no cover
                 continue
 
             try:
@@ -44,13 +45,13 @@ def load_file(settings, source_file):
                     cid=_int(fields[7]),
                     range=_int(fields[8]),
                 )
-            except ValueError:
+            except (ValueError, IndexError):
                 continue
             cells.append(cell)
 
             # commit every 1000 new records
             counter += 1
-            if counter % 10000 == 0:
+            if counter % batch_size == 0:
                 session.execute(cell_insert, cells)
                 print('Added %s records.' % counter)
                 cells = []
@@ -60,25 +61,31 @@ def load_file(settings, source_file):
         print('Added %s records.' % counter)
         session.commit()
         session.execute('VACUUM')
-    # return db for tests
-    return db
+    # return for tests
+    return counter
 
 
-def main():
-    parser = argparse.ArgumentParser(description='Ichaneae Importer')
+def main(argv):
+    parser = argparse.ArgumentParser(
+        prog=argv[0], description='Ichaneae Importer')
 
     parser.add_argument('config', help="config file")
     parser.add_argument('source', help="source file")
-    args = parser.parse_args()
+    args = parser.parse_args(argv[1:])
 
     env = bootstrap(args.config)
     settings = env['registry'].settings
     closer = env['closer']
     try:
-        load_file(settings, args.source)
+        counter = load_file(settings, args.source)
     finally:
         closer()
+    return counter
 
 
-if __name__ == '__main__':
-    main()
+def console_entry():  # pragma: no cover
+    main(sys.argv)
+
+
+if __name__ == '__main__':  # pragma: no cover
+    console_entry()
