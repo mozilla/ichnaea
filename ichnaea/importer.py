@@ -60,6 +60,8 @@ def load_file(settings, source_file):
         print('Added %s records.' % counter)
         session.commit()
         session.execute('VACUUM')
+    # return db for tests
+    return db
 
 
 def main():
