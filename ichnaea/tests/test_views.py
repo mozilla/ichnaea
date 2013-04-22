@@ -106,16 +106,10 @@ class TestMeasure(TestCase):
     def test_error(self):
         app = _make_app()
         res = app.post_json('/v1/location/12.345678/23.456789',
-            {"cell": [{}]}, status=400)
+            {"cell": []}, status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
         self.assertFalse('status' in res.json)
-
-    def test_error_no_data(self):
-        app = _make_app()
-        res = app.post_json('/v1/location/12.345678/23.456789',
-            {"cell": []}, status=400)
-        self.assertTrue('errors' in res.json)
 
     def test_error_unknown_key(self):
         app = _make_app()

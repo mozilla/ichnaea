@@ -20,28 +20,58 @@ class TestRequest(DummyRequest):
 
 class TestSearchSchema(TestCase):
 
-    def _make_one(self):
+    def _make_schema(self):
         from ichnaea.schema import SearchSchema
         return CorniceSchema.from_colander(SearchSchema)
 
-    def test_empty(self):
-        schema = self._make_one()
+    def _make_request(self, body):
         request = TestRequest()
-        request.body = '{}'
+        request.body = body
+        return request
+
+    def test_empty(self):
+        schema = self._make_schema()
+        request = self._make_request('{}')
         validate_colander_schema(schema, request)
         self.assertEqual(request.errors, [])
         self.assertEqual(request.validated, {'cell': (), 'wifi': ()})
 
     def test_empty_cell_entry(self):
-        schema = self._make_one()
-        request = TestRequest()
-        request.body = '{"cell": [{}]}'
+        schema = self._make_schema()
+        request = self._make_request('{"cell": [{}]}')
         validate_colander_schema(schema, request)
         self.assertTrue(request.errors)
 
     def test_wrong_cell_data(self):
-        schema = self._make_one()
+        schema = self._make_schema()
+        request = self._make_request(
+            '{"cell": [{"mcc": "a", "mnc": 2, "lac": 3, "cid": 4}]}')
+        validate_colander_schema(schema, request)
+        self.assertTrue(request.errors)
+
+
+class TestMeasureSchema(TestCase):
+
+    def _make_schema(self):
+        from ichnaea.schema import MeasureSchema
+        return CorniceSchema.from_colander(MeasureSchema)
+
+    def _make_request(self, body):
         request = TestRequest()
-        request.body = '{"cell": [{"mcc": "a", "mnc": 2, "lac": 3, "cid": 4}]}'
+        request.body = body
+        request.matchdict = {'lat': '12.345678', 'lon': '23.456789'}
+        return request
+
+    def test_empty(self):
+        schema = self._make_schema()
+        request = self._make_request('{}')
+        validate_colander_schema(schema, request)
+        self.assertEqual(request.errors, [])
+        self.assertEqual(set(request.validated.keys()),
+            set(['cell', 'wifi', 'lat', 'lon']))
+
+    def test_empty_wifi_entry(self):
+        schema = self._make_schema()
+        request = self._make_request('{"wifi": [{}]}')
         validate_colander_schema(schema, request)
         self.assertTrue(request.errors)
