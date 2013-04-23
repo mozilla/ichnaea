@@ -7,7 +7,7 @@ class CellSchema(MappingSchema):
     mnc = SchemaNode(Integer(), location="body", type='int')
     lac = SchemaNode(Integer(), location="body", type='int')
     cid = SchemaNode(Integer(), location="body", type='int')
-    strength = SchemaNode(Integer(), location="body", type='int', missing=0)
+    signal = SchemaNode(Integer(), location="body", type='int', missing=0)
 
 
 class CellsSchema(SequenceSchema):
@@ -18,7 +18,7 @@ class WifiSchema(MappingSchema):
     mac = SchemaNode(String(), location="body", type='str')
     channel = SchemaNode(Integer(), location="body", type='int', missing=0)
     noise = SchemaNode(Integer(), location="body", type='int', missing=0)
-    strength = SchemaNode(Integer(), location="body", type='int', missing=0)
+    signal = SchemaNode(Integer(), location="body", type='int', missing=0)
 
 
 class WifisSchema(SequenceSchema):

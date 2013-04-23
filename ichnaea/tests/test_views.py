@@ -92,7 +92,7 @@ class TestMeasure(TestCase):
         self.assertEqual(item.lat, 12345678)
         self.assertEqual(item.lon, 23456789)
         # colander schema adds default value
-        cell_data[0]['strength'] = 0
+        cell_data[0]['signal'] = 0
         self.assertEqual(item.cell, dump_decimal_json(cell_data))
         self.assertTrue(item.wifi is None)
 
@@ -111,7 +111,7 @@ class TestMeasure(TestCase):
         # colander schema adds default values
         wifi_data[0]['channel'] = 0
         wifi_data[0]['noise'] = 0
-        wifi_data[0]['strength'] = 0
+        wifi_data[0]['signal'] = 0
         self.assertEqual(item.wifi, dump_decimal_json(wifi_data))
         self.assertTrue(item.cell is None)
 

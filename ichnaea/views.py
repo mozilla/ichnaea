@@ -61,7 +61,7 @@ def location_search_post(request):
                     "mnc": 5,
                     "lac": 31421,
                     "cid": 60420242,
-                    "strength": -60
+                    "signal": -60
                 }
             ],
             "wifi": [
@@ -69,7 +69,7 @@ def location_search_post(request):
                     "mac": "02:8E:F2:62:EC:A4",
                     "channel": 11,
                     "noise": 40,
-                    "strength": -50
+                    "signal": -50
                 }
             ]
         }
@@ -84,7 +84,7 @@ def location_search_post(request):
 
     For `wifi` entires, the `mac` key is required.
 
-    The strength is the signal strength measured in dBm, the noise is the
+    The signal is the signal strength measured in dBm, the noise is the
     signal to noise ratio measured in dB.
 
     In a CDMA network, the system id (sid) should be sent in the mnc field,
@@ -196,7 +196,7 @@ def location_measurement_post(request):
                     "mnc": 5,
                     "lac": 31421,
                     "cid": 60420242,
-                    "strength": -60
+                    "signal": -60
                 }
             ],
             "wifi": [
@@ -204,7 +204,7 @@ def location_measurement_post(request):
                     "mac": "02:8E:F2:62:EC:A4",
                     "channel": 11,
                     "noise": 40,
-                    "strength": -50
+                    "signal": -50
                 }
             ]
         }
