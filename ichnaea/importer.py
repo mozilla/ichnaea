@@ -37,6 +37,8 @@ def load_file(settings, source_file, batch_size=10000):
             try:
                 cell = dict(
                     id=id_,
+                    # TODO figure out if we have cdma networks
+                    radio=0,
                     lat=int(float(fields[2]) * 1000000),
                     lon=int(float(fields[3]) * 1000000),
                     mcc=_int(fields[4]),
