@@ -34,7 +34,8 @@ class TestSearchSchema(TestCase):
         request = self._make_request('{}')
         validate_colander_schema(schema, request)
         self.assertEqual(request.errors, [])
-        self.assertEqual(request.validated, {'cell': (), 'wifi': ()})
+        self.assertEqual(request.validated,
+            {'cell': (), 'wifi': (), 'radio': 'gsm'})
 
     def test_empty_cell_entry(self):
         schema = self._make_schema()
@@ -68,7 +69,7 @@ class TestMeasureSchema(TestCase):
         validate_colander_schema(schema, request)
         self.assertEqual(request.errors, [])
         self.assertEqual(set(request.validated.keys()),
-                         set(['cell', 'wifi', 'lat', 'lon']))
+                         set(['cell', 'radio', 'wifi', 'lat', 'lon']))
 
     def test_empty_wifi_entry(self):
         schema = self._make_schema()

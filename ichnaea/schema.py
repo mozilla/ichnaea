@@ -1,5 +1,5 @@
 from colander import MappingSchema, SchemaNode, SequenceSchema
-from colander import Decimal, Integer, String
+from colander import Decimal, Integer, String, OneOf
 
 
 class CellSchema(MappingSchema):
@@ -15,7 +15,7 @@ class CellsSchema(SequenceSchema):
 
 
 class WifiSchema(MappingSchema):
-    bssid = SchemaNode(String(), location="body", type='str')
+    mac = SchemaNode(String(), location="body", type='str')
     strength = SchemaNode(Integer(), location="body", type='int', missing=0)
 
 
@@ -24,6 +24,8 @@ class WifisSchema(SequenceSchema):
 
 
 class SearchSchema(MappingSchema):
+    radio = SchemaNode(String(), location="body", type='str',
+                       validator=OneOf(['gsm', 'cdma']), missing='gsm')
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())
 
@@ -31,5 +33,7 @@ class SearchSchema(MappingSchema):
 class MeasureSchema(MappingSchema):
     lat = SchemaNode(Decimal(quant="1.000000"), location="path")
     lon = SchemaNode(Decimal(quant="1.000000"), location="path")
+    radio = SchemaNode(String(), location="body", type='str',
+                       validator=OneOf(['gsm', 'cdma']), missing='gsm')
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())

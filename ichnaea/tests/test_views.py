@@ -47,7 +47,7 @@ class TestSearch(TestCase):
     def test_wifi_not_found(self):
         app = _make_app()
         res = app.post_json('/v1/search',
-                            {"wifi": [{"bssid": "ab:cd:12:34"}]},
+                            {"wifi": [{"mac": "ab:cd:12:34"}]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "not_found"}')
@@ -98,7 +98,7 @@ class TestMeasure(TestCase):
 
     def test_ok_wifi(self):
         app = _make_app()
-        wifi_data = [{"bssid": "ab:12:34"}]
+        wifi_data = [{"mac": "ab:12:34"}]
         res = app.post_json('/v1/location/12.345678/23.456789',
                             {"wifi": wifi_data}, status=204)
         self.assertEqual(res.body, '')
