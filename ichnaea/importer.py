@@ -33,16 +33,24 @@ def load_file(settings, source_file, batch_size=10000):
             # to have consistent ids between exports
             if id_ <= max_id:  # pragma: no cover
                 continue
-
             try:
+                radio = 0
+                mcc = _int(fields[4])
+                if mcc > 1000:  # pragma: no cover
+                    continue
+                mnc = _int(fields[5])
+                if radio == 0 and mnc > 1000:  # pragma: no cover
+                    continue
+                elif radio == 1 and mnc > 32767:  # pragma: no cover
+                    continue
                 cell = dict(
                     id=id_,
                     # TODO figure out if we have cdma networks
-                    radio=0,
+                    radio=radio,
                     lat=int(float(fields[2]) * 1000000),
                     lon=int(float(fields[3]) * 1000000),
-                    mcc=_int(fields[4]),
-                    mnc=_int(fields[5]),
+                    mcc=mcc,
+                    mnc=mnc,
                     lac=_int(fields[6]),
                     cid=_int(fields[7]),
                     range=_int(fields[8]),

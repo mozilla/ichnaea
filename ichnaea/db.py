@@ -22,9 +22,13 @@ class Cell(_Model):
     # lat/lon * 1000000
     lat = Column(Integer)
     lon = Column(Integer)
-    radio = Column(SmallInteger)  # mapped via RADIO_TYPE
-    mcc = Column(Integer)
-    mnc = Column(Integer)
+    # mapped via RADIO_TYPE
+    radio = Column(SmallInteger)
+    # int in the range 0-1000
+    mcc = Column(SmallInteger)
+    # int in the range 0-1000 for gsm
+    # int in the range 0-32767 for cdma (system id)
+    mnc = Column(SmallInteger)
     lac = Column(Integer)
     cid = Column(Integer)
     range = Column(Integer)
