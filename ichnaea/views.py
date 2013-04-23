@@ -54,19 +54,22 @@ def location_search_post(request):
     .. code-block:: javascript
 
         {
+            "radio": "gsm",
             "cell": [
                 {
                     "mcc": 724,
                     "mnc": 5,
                     "lac": 31421,
                     "cid": 60420242,
-                    "strength": 57
+                    "strength": -60
                 }
             ],
             "wifi": [
                 {
-                    "bssid": "02:8E:F2:62:EC:A4",
-                    "strength": 42
+                    "mac": "02:8E:F2:62:EC:A4",
+                    "channel": 11,
+                    "noise": 40,
+                    "strength": -50
                 }
             ]
         }
@@ -75,12 +78,18 @@ def location_search_post(request):
     category an entry has to be provided. Empty categories can be omitted
     entirely.
 
-    The strength should be an integer in the range of 0 to 100, where 100 means
-    perfect reception and lower numbers mean gradually worse reception.
+    The radio entry must be one of "gsm" or "cdma".
 
     For `cell` entries, the `mcc`, `mnc` and `cid` keys are required.
 
-    For `wifi` entires, the `bssid` key is required.
+    For `wifi` entires, the `mac` key is required.
+
+    The strength is the signal strength measured in dBm, the noise is the
+    signal to noise ratio measured in dB.
+
+    In a CDMA network, the system id (sid) should be sent in the mnc field,
+    the network id (nid) in the lac field and base station id (bid) in the
+    cid field.
 
     A successful result will be:
 
@@ -94,7 +103,8 @@ def location_search_post(request):
         }
 
     The latitude and longitude are numbers, with six decimal places of
-    actual precision. The accuracy is an integer measured in meters.
+    actual precision. The accuracy is an integer measured in meters and defines
+    a circle around the given location.
 
     If no position can be determined, you instead get:
 
@@ -179,22 +189,27 @@ def location_measurement_post(request):
     .. code-block:: javascript
 
         {
+            "radio": "gsm",
             "cell": [
                 {
                     "mcc": 724,
                     "mnc": 5,
                     "lac": 31421,
                     "cid": 60420242,
-                    "strength": 57
+                    "strength": -60
                 }
             ],
             "wifi": [
                 {
-                    "bssid": "02:8E:F2:62:EC:A4",
-                    "strength": 42
+                    "mac": "02:8E:F2:62:EC:A4",
+                    "channel": 11,
+                    "noise": 40,
+                    "strength": -50
                 }
             ]
         }
+
+    The fields have the same meaning as explained in the search API.
 
     On successful submission, you get a 204 status code back without any
     data in the body.
