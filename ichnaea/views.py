@@ -117,6 +117,12 @@ def location_search_post(request):
     """
 
     data = request.validated
+    if not(data['cell']):
+        # we don't have any wifi entries yet
+        return {
+            'status': 'not_found',
+        }
+
     cell = data['cell'][0]
     mcc = cell['mcc']
     mnc = cell['mnc']
