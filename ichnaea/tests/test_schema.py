@@ -68,7 +68,7 @@ class TestMeasureSchema(TestCase):
         validate_colander_schema(schema, request)
         self.assertEqual(request.errors, [])
         self.assertEqual(set(request.validated.keys()),
-            set(['cell', 'wifi', 'lat', 'lon']))
+                         set(['cell', 'wifi', 'lat', 'lon']))
 
     def test_empty_wifi_entry(self):
         schema = self._make_schema()

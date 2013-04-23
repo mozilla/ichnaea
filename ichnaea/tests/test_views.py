@@ -28,25 +28,27 @@ class TestSearch(TestCase):
         session.commit()
 
         res = app.post_json('/v1/search',
-            {"cell": [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]},
-            status=200)
+                            {"cell": [{"mcc": 123, "mnc": 1,
+                                       "lac": 2, "cid": 1234}]},
+                            status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "ok", "lat": 12.345678, '
-            '"lon": 23.456789, "accuracy": 20000}')
+                                   '"lon": 23.456789, "accuracy": 20000}')
 
     def test_not_found(self):
         app = _make_app()
         res = app.post_json('/v1/search',
-            {"cell": [{"mcc": 1, "mnc": 2, "lac": 3, "cid": 4}]},
-            status=200)
+                            {"cell": [{"mcc": 1, "mnc": 2,
+                                       "lac": 3, "cid": 4}]},
+                            status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "not_found"}')
 
     def test_wifi_not_found(self):
         app = _make_app()
         res = app.post_json('/v1/search',
-            {"wifi": [{"bssid": "ab:cd:12:34"}]},
-            status=200)
+                            {"wifi": [{"bssid": "ab:cd:12:34"}]},
+                            status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "not_found"}')
 
@@ -81,7 +83,7 @@ class TestMeasure(TestCase):
         app = _make_app()
         cell_data = [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
         res = app.post_json('/v1/location/12.345678/23.456789',
-            {"cell": cell_data}, status=204)
+                            {"cell": cell_data}, status=204)
         self.assertEqual(res.body, '')
         session = app.app.registry.measuredb.session()
         result = session.query(Measure).all()
@@ -98,7 +100,7 @@ class TestMeasure(TestCase):
         app = _make_app()
         wifi_data = [{"bssid": "ab:12:34"}]
         res = app.post_json('/v1/location/12.345678/23.456789',
-            {"wifi": wifi_data}, status=204)
+                            {"wifi": wifi_data}, status=204)
         self.assertEqual(res.body, '')
         session = app.app.registry.measuredb.session()
         result = session.query(Measure).all()
@@ -114,7 +116,7 @@ class TestMeasure(TestCase):
     def test_error(self):
         app = _make_app()
         res = app.post_json('/v1/location/12.345678/23.456789',
-            {"cell": []}, status=400)
+                            {"cell": []}, status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
         self.assertFalse('status' in res.json)
@@ -122,13 +124,13 @@ class TestMeasure(TestCase):
     def test_error_unknown_key(self):
         app = _make_app()
         res = app.post_json('/v1/location/12.345678/23.456789',
-            {"foo": 1}, status=400)
+                            {"foo": 1}, status=400)
         self.assertTrue('errors' in res.json)
 
     def test_error_no_mapping(self):
         app = _make_app()
-        res = app.post_json('/v1/location/12.345678/23.456789',
-            [1], status=400)
+        res = app.post_json('/v1/location/12.345678/23.456789', [1],
+                            status=400)
         self.assertTrue('errors' in res.json)
 
     def test_no_json(self):
