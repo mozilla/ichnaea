@@ -35,7 +35,7 @@ class TestSearchSchema(TestCase):
         validate_colander_schema(schema, request)
         self.assertEqual(request.errors, [])
         self.assertEqual(request.validated,
-            {'cell': (), 'wifi': (), 'radio': 'gsm'})
+                         {'cell': (), 'wifi': (), 'radio': 'gsm'})
 
     def test_empty_cell_entry(self):
         schema = self._make_schema()
