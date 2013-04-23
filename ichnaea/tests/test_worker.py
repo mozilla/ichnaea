@@ -7,7 +7,7 @@ class TestWorker(unittest.TestCase):
 
     def test_async_measure(self):
         try:
-            import redis
+            import redis        # NOQA
         except ImportError:
             return
 
