@@ -20,6 +20,7 @@ class TestSearch(TestCase):
         cell = Cell()
         cell.lat = 12345678
         cell.lon = 23456789
+        cell.radio = 0
         cell.mcc = 123
         cell.mnc = 1
         cell.lac = 2
@@ -28,7 +29,8 @@ class TestSearch(TestCase):
         session.commit()
 
         res = app.post_json('/v1/search',
-                            {"cell": [{"mcc": 123, "mnc": 1,
+                            {"radio": "gsm",
+                             "cell": [{"mcc": 123, "mnc": 1,
                                        "lac": 2, "cid": 1234}]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')

@@ -3,7 +3,7 @@ from pyramid.httpexceptions import HTTPError, HTTPNoContent
 from pyramid.response import Response
 from statsd import StatsdTimer
 
-from ichnaea.db import Cell
+from ichnaea.db import Cell, RADIO_TYPE
 from ichnaea.renderer import dump_decimal_json
 from ichnaea.renderer import quantize
 from ichnaea.schema import SearchSchema, MeasureSchema
@@ -134,6 +134,7 @@ def location_search_post(request):
             'status': 'not_found',
         }
 
+    radio = RADIO_TYPE.get(data['radio'], 0)
     cell = data['cell'][0]
     mcc = cell['mcc']
     mnc = cell['mnc']
@@ -141,7 +142,9 @@ def location_search_post(request):
     cid = cell['cid']
 
     session = request.celldb.session()
-    query = session.query(Cell).filter(Cell.mcc == mcc)
+    query = session.query(Cell)
+    query = query.filter(Cell.radio == radio)
+    query = query.filter(Cell.mcc == mcc)
     query = query.filter(Cell.mnc == mnc)
     query = query.filter(Cell.cid == cid)
 

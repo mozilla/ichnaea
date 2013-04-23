@@ -1,4 +1,4 @@
-from ichnaea.db import Measure
+from ichnaea.db import Measure, RADIO_TYPE
 from ichnaea.renderer import dump_decimal_json
 
 
@@ -13,6 +13,7 @@ def add_measure(request, async=False):
     measure.lat = int(data['lat'] * 1000000)
     measure.lon = int(data['lon'] * 1000000)
     if data.get('cell'):
+        measure.radio = RADIO_TYPE.get(data['radio'], 0)
         measure.cell = dump_decimal_json(data['cell'])
     if data.get('wifi'):
         measure.wifi = dump_decimal_json(data['wifi'])

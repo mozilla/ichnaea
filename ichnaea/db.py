@@ -1,22 +1,28 @@
 from sqlalchemy import create_engine
-from sqlalchemy import Column, Index, Integer, LargeBinary
+from sqlalchemy import Column, Index, Integer, LargeBinary, SmallInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 _Model = declarative_base()
 
 
+RADIO_TYPE = {
+    'gsm': 0,
+    'cdma': 1,
+}
+
+
 class Cell(_Model):
     __tablename__ = 'cell'
     __table_args__ = (
-        Index('cell_idx', 'mcc', 'mnc', 'lac', 'cid'),
+        Index('cell_idx', 'radio', 'mcc', 'mnc', 'lac', 'cid'),
     )
 
     id = Column(Integer, primary_key=True)
     # lat/lon * 1000000
     lat = Column(Integer)
     lon = Column(Integer)
-
+    radio = Column(SmallInteger)  # mapped via RADIO_TYPE
     mcc = Column(Integer)
     mnc = Column(Integer)
     lac = Column(Integer)
@@ -33,6 +39,7 @@ class Measure(_Model):
     # lat/lon * 1000000
     lat = Column(Integer)
     lon = Column(Integer)
+    radio = Column(SmallInteger)  # mapped via RADIO_TYPE
     # json blobs
     cell = Column(LargeBinary)
     wifi = Column(LargeBinary)
