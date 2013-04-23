@@ -1,14 +1,25 @@
 from ichnaea.db import Measure, RADIO_TYPE
 from ichnaea.renderer import dump_decimal_json
+from ichnaea.db import MeasureDB
 
 
-def add_measure(request, async=False):
-    data = request.validated
+def add_measure(request):
+    if request.registry.settings.get('async'):
+        return push_measure(request)
+    return _add_measure(request.validated,
+                        db_instance=request.measuredb)
 
-    if async:
-        push_measure(data)
 
-    session = request.measuredb.session()
+def _get_db(sqluri):
+    # XXX keep the connector in a thread locals
+    return MeasureDB(sqluri)
+
+
+def _add_measure(data, db_instance=None, sqluri=None):
+    if db_instance is None:
+        db_instance = _get_db(sqluri)
+
+    session = db_instance.session()
     measure = Measure()
     measure.lat = int(data['lat'] * 1000000)
     measure.lon = int(data['lon'] * 1000000)
@@ -21,5 +32,7 @@ def add_measure(request, async=False):
     session.commit()
 
 
-def push_measure(data):
-    raise NotImplementedError()
+def push_measure(request):
+    data = dump_decimal_json(request.validated)
+    request.queue.enqueue('ichnaea.worker:_add_measure', data=data,
+                          sqluri=request.measuredb.sqluri)

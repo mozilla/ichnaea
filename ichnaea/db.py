@@ -74,5 +74,6 @@ class MeasureDB(BaseDB):
 
     def __init__(self, sqluri):
         super(MeasureDB, self).__init__(sqluri)
+        self.sqluri = sqluri
         measure_table.metadata.bind = self.engine
         measure_table.create(checkfirst=True)

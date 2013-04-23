@@ -228,7 +228,7 @@ def location_measurement_post(request):
 
     The errors mapping contains detailed information about the errors.
     """
-    add_measure(request, async=False)
+    add_measure(request)
     return HTTPNoContent()
 
 

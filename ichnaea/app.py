@@ -10,6 +10,8 @@ def attach_dbs(event):
     request = event.request
     event.request.celldb = request.registry.celldb
     event.request.measuredb = request.registry.measuredb
+    if hasattr(request.registry, 'queue'):
+        event.request.queue = request.registry.queue
 
 
 def main(global_config, **settings):
@@ -17,6 +19,17 @@ def main(global_config, **settings):
     config.include("cornice")
     config.scan("ichnaea.views")
     settings = config.registry.settings
+
+    # retools queue
+    if settings.get('async'):
+        host = settings.get('redis.host', '127.0.0.0.1')
+        port = int(settings.get('redis.port', '6379'))
+
+        from redis import Redis
+        _redis = Redis(host=host, port=port)
+
+        from retools.queue import QueueManager
+        config.registry.queue = QueueManager(_redis)
 
     # statsd settings
     statsd_settings = {
