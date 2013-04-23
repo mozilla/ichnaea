@@ -16,6 +16,8 @@ class CellsSchema(SequenceSchema):
 
 class WifiSchema(MappingSchema):
     mac = SchemaNode(String(), location="body", type='str')
+    channel = SchemaNode(Integer(), location="body", type='int', missing=0)
+    noise = SchemaNode(Integer(), location="body", type='int', missing=0)
     strength = SchemaNode(Integer(), location="body", type='int', missing=0)
 
 
