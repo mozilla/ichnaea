@@ -127,7 +127,7 @@ def location_search_post(request):
     """
 
     data = request.validated
-    if not(data['cell']):
+    if not data['cell']:
         # we don't have any wifi entries yet
         return {
             'status': 'not_found',
