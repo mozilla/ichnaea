@@ -46,10 +46,18 @@ class TestSearch(TestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "not_found"}')
 
-    def test_wifi_not_found(self):
+    def test_one_wifi(self):
         app = _make_app()
         res = app.post_json('/v1/search',
                             {"wifi": [{"mac": "ab:cd:12:34"}]},
+                            status=400)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertTrue('errors' in res.json)
+
+    def test_wifi_not_found(self):
+        app = _make_app()
+        res = app.post_json('/v1/search', {"wifi": [
+                            {"mac": "ab:cd:12:34"}, {"mac": "cd:ef:23:45"}]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "not_found"}')
@@ -100,7 +108,7 @@ class TestMeasure(TestCase):
 
     def test_ok_wifi(self):
         app = _make_app()
-        wifi_data = [{"mac": "ab:12:34"}]
+        wifi_data = [{"mac": "ab:12:34"}, {"mac": "cd:34:56"}]
         res = app.post_json('/v1/location/12.345678/23.456789',
                             {"wifi": wifi_data}, status=204)
         self.assertEqual(res.body, '')
@@ -111,9 +119,10 @@ class TestMeasure(TestCase):
         self.assertEqual(item.lat, 12345678)
         self.assertEqual(item.lon, 23456789)
         # colander schema adds default values
-        wifi_data[0]['channel'] = 0
-        wifi_data[0]['noise'] = 0
-        wifi_data[0]['signal'] = 0
+        for i in range(2):
+            wifi_data[i]['channel'] = 0
+            wifi_data[i]['noise'] = 0
+            wifi_data[i]['signal'] = 0
         self.assertEqual(item.wifi, dump_decimal_json(wifi_data))
         self.assertTrue(item.cell is None)
 

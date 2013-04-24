@@ -23,6 +23,7 @@ def error_handler(errors):
 
 
 MSG_ONE_OF = 'You need to provide a mapping with least one cell or wifi entry.'
+MSG_TWO_WIFI = 'You need to specify at least two wifi entries.'
 
 
 def cell_or_wifi(request):
@@ -31,8 +32,11 @@ def cell_or_wifi(request):
     data = request.validated
     cell = data.get('cell', ())
     wifi = data.get('wifi', ())
-    if not (any(cell) or any(wifi)):
-        request.errors.add('body', 'body', MSG_ONE_OF)
+    if not any(wifi):
+        if not any(cell):
+            request.errors.add('body', 'body', MSG_ONE_OF)
+    elif len(wifi) < 2:
+        request.errors.add('body', 'body', MSG_TWO_WIFI)
 
 
 location_search = Service(
