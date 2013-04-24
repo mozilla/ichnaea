@@ -2,7 +2,7 @@ import os
 from tempfile import mkstemp
 from unittest import TestCase
 
-LINE = '1;2;1.23456;-2.3;1;2;3;4;0;0;2013-04-20 02:59:43;2013-04-20 02:59:43;1'
+LINE = '2;2;1.23456;-2.3;1;2;3;4;0;0;2013-04-20 02:59:43;2013-04-20 02:59:43;1'
 
 
 class TestLoadFile(TestCase):
@@ -35,9 +35,9 @@ class TestLoadFile(TestCase):
     def test_corrupt_lines(self):
         func, settings, tmpfile = self._make_one()
         os.write(tmpfile[0], LINE + '\n')
-        os.write(tmpfile[0], '2;\\N\n')
-        os.write(tmpfile[0], '3;\\N;abc\n')
-        os.write(tmpfile[0], '4;\\N;1.0;2.1;abc\n')
+        os.write(tmpfile[0], '3;\\N\n')
+        os.write(tmpfile[0], '4;\\N;abc\n')
+        os.write(tmpfile[0], '5;\\N;1.0;2.1;abc\n')
         counter = func(settings, tmpfile[1])
         self.assertEqual(counter, 1)
 
