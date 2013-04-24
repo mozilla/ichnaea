@@ -1,10 +1,12 @@
 from colander import MappingSchema, SchemaNode, SequenceSchema
-from colander import Decimal, Integer, String, OneOf
+from colander import Decimal, Integer, String, OneOf, Range
 
 
 class CellSchema(MappingSchema):
-    mcc = SchemaNode(Integer(), location="body", type='int')
-    mnc = SchemaNode(Integer(), location="body", type='int')
+    mcc = SchemaNode(Integer(),
+                     location="body", type='int', validator=Range(0, 1000))
+    mnc = SchemaNode(Integer(),
+                     location="body", type='int', validator=Range(0, 32767))
     lac = SchemaNode(Integer(), location="body", type='int')
     cid = SchemaNode(Integer(), location="body", type='int')
     signal = SchemaNode(Integer(), location="body", type='int', missing=0)
