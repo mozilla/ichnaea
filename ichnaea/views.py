@@ -67,10 +67,13 @@ def location_search_post(request):
             ],
             "wifi": [
                 {
-                    "mac": "02:8E:F2:62:EC:A4",
+                    "mac": "01:23:45:67:89:AB",
                     "channel": 11,
                     "noise": 40,
                     "signal": -50
+                },
+                {
+                    "mac": "01:23:45:67:AB:12"
                 }
             ]
         }
@@ -83,7 +86,8 @@ def location_search_post(request):
 
     For `cell` entries, the `mcc`, `mnc` and `cid` keys are required.
 
-    For `wifi` entires, the `mac` key is required.
+    For `wifi` entries, the `mac` key is required. If any wifi lookup is made,
+    at least two entries need to be provided.
 
     The signal is the signal strength measured in dBm, the noise is the
     signal to noise ratio measured in dB.
@@ -205,10 +209,13 @@ def location_measurement_post(request):
             ],
             "wifi": [
                 {
-                    "mac": "02:8E:F2:62:EC:A4",
+                    "mac": "01:23:45:67:89:AB",
                     "channel": 11,
                     "noise": 40,
                     "signal": -50
+                },
+                {
+                    "mac": "01:23:45:67:AB:12"
                 }
             ]
         }
