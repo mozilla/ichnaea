@@ -22,6 +22,20 @@ def load_file(settings, source_file, batch_size=10000):
     max_id = result[0]
     cell_insert = Cell.__table__.insert()
 
+    if not max_id:
+        # insert test data for @nsm
+        session.execute(cell_insert, [{
+            "id": 1,
+            "lat": 19175710,
+            "lon": 72964500,
+            "radio": 0,
+            "mcc": 405,
+            "mnc": 15,
+            "lac": 15821,
+            "cid": 2663101,
+            "range": 0
+        }])
+
     with open(source_file, 'r') as fd:
         reader = csv.reader(fd, delimiter=';')
         cells = []
