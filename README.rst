@@ -20,6 +20,6 @@ Current Development CI Status
    :width: 82px
    :height: 13px
    :alt: Travis CI build report
-   :target: https://travis-ci.org/mozilla/ichnaea.png
+   :target: https://travis-ci.org/mozilla/ichnaea
 
 .. _the full docs: http://mozilla-ichnaea.rtfd.org/
