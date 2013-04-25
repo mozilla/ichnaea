@@ -17,13 +17,7 @@ def attach_dbs(event):
         event.request.queue = request.registry.queue
 
 
-def main(global_config, **settings):
-    config = Configurator(settings=settings)
-    config.include("cornice")
-    config.scan("ichnaea.views")
-    settings = config.registry.settings
-
-    # private config overrides
+def private_override(settings):
     private_config = settings.get('private')
     if private_config and os.path.isfile(private_config):
         parser = ConfigParser({'here': os.path.dirname(private_config)})
@@ -34,6 +28,16 @@ def main(global_config, **settings):
                 value = main_section.get(name)
                 if value:
                     settings[name] = value
+
+
+def main(global_config, **settings):
+    config = Configurator(settings=settings)
+    config.include("cornice")
+    config.scan("ichnaea.views")
+    settings = config.registry.settings
+
+    # private config overrides
+    private_override(settings)
 
     # retools queue
     if settings.get('async') == '1':

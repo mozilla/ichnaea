@@ -5,6 +5,7 @@ import sys
 from pyramid.paster import bootstrap
 from sqlalchemy import func
 
+from ichnaea.app import private_override
 from ichnaea.db import CellDB, Cell
 
 
@@ -16,6 +17,7 @@ def _int(value):
 
 
 def load_file(settings, source_file, batch_size=10000):
+    private_override(settings)
     db = CellDB(settings['celldb'])
     session = db.session()
     result = session.query(func.max(Cell.id)).first()
