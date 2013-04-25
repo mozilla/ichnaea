@@ -79,6 +79,7 @@ def load_file(settings, source_file, batch_size=10000):
             counter += 1
             if counter % batch_size == 0:
                 session.execute(cell_insert, cells)
+                session.commit()
                 print('Added %s records.' % counter)
                 cells = []
 
