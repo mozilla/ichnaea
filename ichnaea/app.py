@@ -30,13 +30,13 @@ def main(global_config, **settings):
         parser.read([private_config])
         if parser.has_section('app:main'):
             main_section = parser['app:main']
-            for name in ('celldb', 'measuredb'):
+            for name in ('celldb', 'measuredb', 'async'):
                 value = main_section.get(name)
                 if value:
                     settings[name] = value
 
     # retools queue
-    if settings.get('async'):
+    if settings.get('async') == '1':
         host = settings.get('redis.host', '127.0.0.0.1')
         port = int(settings.get('redis.port', '6379'))
 
