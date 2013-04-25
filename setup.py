@@ -8,6 +8,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 requires = [
     'argparse',
     'colander',
+    'configparser',
     'cornice',
     'konfig',
     'statsd-client',

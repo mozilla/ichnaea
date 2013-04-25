@@ -1,3 +1,6 @@
+import os
+
+from configparser import ConfigParser
 from pyramid.config import Configurator
 from pyramid.events import NewRequest
 import statsd
@@ -19,6 +22,18 @@ def main(global_config, **settings):
     config.include("cornice")
     config.scan("ichnaea.views")
     settings = config.registry.settings
+
+    # private config overrides
+    private_config = settings.get('private')
+    if private_config and os.path.isfile(private_config):
+        parser = ConfigParser({'here': os.path.dirname(private_config)})
+        parser.read([private_config])
+        if parser.has_section('app:main'):
+            main_section = parser['app:main']
+            for name in ('celldb', 'measuredb'):
+                value = main_section.get(name)
+                if value:
+                    settings[name] = value
 
     # retools queue
     if settings.get('async'):

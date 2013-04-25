@@ -7,6 +7,7 @@
 coverage.xml
 data
 nosetests.xml
+private.ini
 pyramid.log
 bin
 build
