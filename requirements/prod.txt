@@ -2,6 +2,7 @@ Chameleon==2.11
 Mako==0.7.3
 MarkupSafe==0.15
 PasteDeploy==1.5.0
+PyMySQL==0.5
 SQLAlchemy==0.8.0
 WebOb==1.2.3
 argparse==1.2.1

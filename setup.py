@@ -11,6 +11,7 @@ requires = [
     'configparser',
     'cornice',
     'konfig',
+    'PyMySQL',
     'statsd-client',
 ]
 
