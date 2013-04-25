@@ -92,7 +92,7 @@ class TestMeasure(TestCase):
     def test_ok_cell(self):
         app = _make_app()
         cell_data = [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
-        res = app.post_json('/v1/location', {"lat": 12.345678,
+        res = app.post_json('/v1/submit', {"lat": 12.345678,
             "lon": 23.456789, "radio": "gsm", "cell": cell_data}, status=204)
         self.assertEqual(res.body, '')
         session = app.app.registry.measuredb.session()
@@ -109,7 +109,7 @@ class TestMeasure(TestCase):
     def test_ok_wifi(self):
         app = _make_app()
         wifi_data = [{"mac": "ab:12:34"}, {"mac": "cd:34:56"}]
-        res = app.post_json('/v1/location', {"lat": 12.345678,
+        res = app.post_json('/v1/submit', {"lat": 12.345678,
             "lon": 23.456789, "wifi": wifi_data}, status=204)
         self.assertEqual(res.body, '')
         session = app.app.registry.measuredb.session()
@@ -128,7 +128,7 @@ class TestMeasure(TestCase):
 
     def test_error(self):
         app = _make_app()
-        res = app.post_json('/v1/location',
+        res = app.post_json('/v1/submit',
                             {"lat": 12.3, "lon": 23.4, "cell": []}, status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
@@ -136,18 +136,18 @@ class TestMeasure(TestCase):
 
     def test_error_unknown_key(self):
         app = _make_app()
-        res = app.post_json('/v1/location',
+        res = app.post_json('/v1/submit',
                             {"lat": 12.3, "lon": 23.4, "foo": 1}, status=400)
         self.assertTrue('errors' in res.json)
 
     def test_error_no_mapping(self):
         app = _make_app()
-        res = app.post_json('/v1/location', [1], status=400)
+        res = app.post_json('/v1/submit', [1], status=400)
         self.assertTrue('errors' in res.json)
 
     def test_no_json(self):
         app = _make_app()
-        res = app.post('/v1/location', "\xae", status=400)
+        res = app.post('/v1/submit', "\xae", status=400)
         self.assertTrue('errors' in res.json)
 
 

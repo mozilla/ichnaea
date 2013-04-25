@@ -10,8 +10,8 @@ We currently provide two API:
 - one for searching for your current location, given what you
   see around you.
 
-- one for sending back information about what you see around you,
-  given a location
+- one for submitting information about what you see around you,
+  given a location.
 
 
 API
@@ -19,12 +19,12 @@ API
 
 .. services::
    :modules: ichnaea.views
-   :service: location_search
+   :service: search
 
 
 .. services::
    :modules: ichnaea.views
-   :service: location_measurement
+   :service: submit
 
 
 Table of contents

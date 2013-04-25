@@ -39,17 +39,17 @@ def cell_or_wifi(request):
         request.errors.add('body', 'body', MSG_TWO_WIFI)
 
 
-location_search = Service(
-    name='location_search',
+search = Service(
+    name='search',
     path='/v1/search',
     description="Search for your current location.",
 )
 
 
-@location_search.post(renderer='json', accept="application/json",
+@search.post(renderer='json', accept="application/json",
                       schema=SearchSchema, error_handler=error_handler,
                       validators=cell_or_wifi)
-def location_search_post(request):
+def search_post(request):
     """
     Determine the current location based on provided data about
     nearby cell towers or wifi base stations.
@@ -175,23 +175,23 @@ def location_search_post(request):
         }
 
 
-location_measurement = Service(
-    name='location_measurement',
-    path='/v1/location',
-    description="Provide a measurement result for a location.",
+submit = Service(
+    name='submit',
+    path='/v1/submit',
+    description="Submit a measurement result for a location.",
 )
 
 
-@location_measurement.post(renderer='json', accept="application/json",
-                           schema=MeasureSchema, error_handler=error_handler,
-                           validators=cell_or_wifi)
-def location_measurement_post(request):
+@submit.post(renderer='json', accept="application/json",
+             schema=MeasureSchema, error_handler=error_handler,
+             validators=cell_or_wifi)
+def submit_post(request):
     """
-    Send back data about nearby cell towers and wifi base stations.
+    Submit data about nearby cell towers and wifi base stations.
 
     An example request against URL::
 
-        /v1/location
+        /v1/submit
 
     with a body of:
 
