@@ -16,6 +16,10 @@ class Cell(_Model):
     __tablename__ = 'cell'
     __table_args__ = (
         Index('cell_idx', 'radio', 'mcc', 'mnc', 'lac', 'cid'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+        }
     )
 
     id = Column(Integer, primary_key=True)
@@ -38,6 +42,12 @@ cell_table = Cell.__table__
 
 class Measure(_Model):
     __tablename__ = 'measure'
+    __table_args__ = {
+        'mysql_engine': 'InnoDB',
+        'mysql_charset': 'utf8',
+        'mysql_row_format': 'compressed',
+        'mysql_key_block_size': '4',
+    }
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     # lat/lon * 1000000
