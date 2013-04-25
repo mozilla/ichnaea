@@ -12,6 +12,12 @@ def dump_decimal_json(value):
         return json.dumps(value, use_decimal=True)
 
 
+def loads_decimal_json(value):
+    with localcontext() as ctx:
+        ctx.prec = 6
+        return json.loads(value, use_decimal=True)
+
+
 def quantize(value):
     return (Decimal(value) / MILLION).quantize(Decimal('1.000000'))
 

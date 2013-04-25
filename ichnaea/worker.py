@@ -1,5 +1,5 @@
 from ichnaea.db import Measure, RADIO_TYPE
-from ichnaea.renderer import dump_decimal_json
+from ichnaea.renderer import dump_decimal_json, loads_decimal_json
 from ichnaea.db import MeasureDB
 
 
@@ -18,6 +18,9 @@ def _get_db(sqluri):
 def _add_measure(data, db_instance=None, sqluri=None):
     if db_instance is None:
         db_instance = _get_db(sqluri)
+
+    if isinstance(data, basestring):
+        data = loads_decimal_json(data)
 
     session = db_instance.session()
     measure = Measure()
