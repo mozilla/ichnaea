@@ -60,19 +60,17 @@ class TestMeasureSchema(TestCase):
     def _make_request(self, body):
         request = TestRequest()
         request.body = body
-        request.matchdict = {'lat': '12.345678', 'lon': '23.456789'}
         return request
 
     def test_empty(self):
         schema = self._make_schema()
         request = self._make_request('{}')
         validate_colander_schema(schema, request)
-        self.assertEqual(request.errors, [])
-        self.assertEqual(set(request.validated.keys()),
-                         set(['cell', 'radio', 'wifi', 'lat', 'lon']))
+        self.assertTrue(request.errors)
 
     def test_empty_wifi_entry(self):
         schema = self._make_schema()
-        request = self._make_request('{"wifi": [{}]}')
+        request = self._make_request(
+            '{"lat": 12.345678, "lon": 23.456789, "wifi": [{}]}')
         validate_colander_schema(schema, request)
         self.assertTrue(request.errors)

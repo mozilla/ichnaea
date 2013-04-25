@@ -177,7 +177,7 @@ def location_search_post(request):
 
 location_measurement = Service(
     name='location_measurement',
-    path='/v1/location/{lat}/{lon}',
+    path='/v1/location',
     description="Provide a measurement result for a location.",
 )
 
@@ -189,18 +189,17 @@ def location_measurement_post(request):
     """
     Send back data about nearby cell towers and wifi base stations.
 
-    :param lat: The latitude, as a string representation of a float
-    :param lon: The longitude, as a string representation of a float
-
     An example request against URL::
 
-        /v1/location/-22.753919/-43.437108
+        /v1/location
 
     with a body of:
 
     .. code-block:: javascript
 
         {
+            "lat": -22.753919,
+            "lon": -43.437108,
             "radio": "gsm",
             "cell": [
                 {
