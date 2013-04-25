@@ -87,7 +87,6 @@ def load_file(settings, source_file, batch_size=10000):
         session.execute(cell_insert, cells)
         print('Added %s records.' % counter)
         session.commit()
-        session.execute('VACUUM')
     # return for tests
     return counter
 
