@@ -30,6 +30,12 @@ def private_override(settings):
                     settings[name] = value
 
 
+def _is_true(value):
+    if isinstance(value, str):
+        value = value.lower() in ('true', '1')
+    return value
+
+
 def main(global_config, **settings):
     config = Configurator(settings=settings)
     config.include("cornice")
@@ -40,7 +46,7 @@ def main(global_config, **settings):
     private_override(settings)
 
     # retools queue
-    if settings.get('async') == '1':
+    if _is_true(settings.get('async')):
         host = settings.get('redis.host', '127.0.0.0.1')
         port = int(settings.get('redis.port', '6379'))
 

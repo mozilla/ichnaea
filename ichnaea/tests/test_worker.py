@@ -29,8 +29,9 @@ class TestWorker(unittest.TestCase):
         BasePipeline.execute = _execute
 
         try:
-            res = app.post_json('/v1/location/12.345678/23.456789',
-                                {"cell": cell_data}, status=204)
+            res = app.post_json('/v1/submit', {"lat": 12.345678,
+                                               "lon": 23.456789,
+                                               "cell": cell_data}, status=204)
         finally:
             BasePipeline.execute = old
 
