@@ -1,3 +1,5 @@
+import threading
+
 from ichnaea.db import Measure, RADIO_TYPE
 from ichnaea.renderer import dump_decimal_json, loads_decimal_json
 from ichnaea.db import MeasureDB
@@ -10,9 +12,14 @@ def add_measure(request):
                         db_instance=request.measuredb)
 
 
+_LOCALS = threading.local()
+_LOCALS.dbs = {}
+
+
 def _get_db(sqluri):
-    # XXX keep the connector in a thread locals
-    return MeasureDB(sqluri)
+    if sqluri not in _LOCALS.dbs:
+        _LOCALS.dbs[sqluri] = MeasureDB(sqluri)
+    return _LOCALS.dbs[sqluri]
 
 
 def _add_measure(data, db_instance=None, sqluri=None):

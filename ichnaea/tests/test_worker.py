@@ -1,6 +1,8 @@
 import unittest
 from webtest import TestApp
+
 from ichnaea import main
+from ichnaea.worker import _get_db
 
 
 class TestWorker(unittest.TestCase):
@@ -36,3 +38,7 @@ class TestWorker(unittest.TestCase):
             BasePipeline.execute = old
 
         self.assertEqual(res.body, '')
+
+    def test_get_db(self):
+        db = _get_db('sqlite:///:memory:')
+        self.assertTrue(db is _get_db('sqlite:///:memory:'))
