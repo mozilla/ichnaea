@@ -1,4 +1,5 @@
 import os
+import sys
 from setuptools import setup, find_packages
 
 __version__ = '0.1'
@@ -6,13 +7,15 @@ __version__ = '0.1'
 here = os.path.abspath(os.path.dirname(__file__))
 
 requires = [
-    'argparse',
     'colander',
     'configparser',
     'cornice',
     'PyMySQL',
     'statsd-client',
 ]
+
+if sys.version_info < (2, 7):
+    requires.append('argparse')
 
 test_requires = requires + [
     'beautifulsoup4',
