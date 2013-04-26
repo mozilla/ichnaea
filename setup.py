@@ -10,7 +10,6 @@ requires = [
     'colander',
     'configparser',
     'cornice',
-    'konfig',
     'PyMySQL',
     'statsd-client',
 ]
