@@ -19,6 +19,7 @@ test_requires = requires + [
     'beautifulsoup4',
     'coverage',
     'nose',
+    'unittest2',
     'Webtest',
 ]
 
