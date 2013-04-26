@@ -3,12 +3,13 @@ from webtest import TestApp
 
 from ichnaea import main
 from ichnaea.db import Cell, Measure
-from ichnaea.renderer import dump_decimal_json
+from ichnaea.renderer import dump_decimal_json, loads_decimal_json
 
 
 def _make_app():
     global_config = {}
-    wsgiapp = main(global_config, celldb='sqlite://', measuredb='sqlite://')
+    wsgiapp = main(global_config, celldb='sqlite://', measuredb='sqlite://',
+                   batch_size=-1)
     return TestApp(wsgiapp)
 
 
@@ -104,7 +105,11 @@ class TestMeasure(TestCase):
         self.assertEqual(item.lon, 23456789)
         # colander schema adds default value
         cell_data[0]['signal'] = 0
-        self.assertEqual(item.cell, dump_decimal_json(cell_data))
+
+        wanted = loads_decimal_json(item.cell)
+        self.assertTrue(len(wanted), 1)
+        self.assertTrue(len(cell_data), 1)
+        self.assertDictEqual(wanted[0], cell_data[0])
         self.assertTrue(item.wifi is None)
 
     def test_ok_wifi(self):
