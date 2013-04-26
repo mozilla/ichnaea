@@ -29,7 +29,8 @@ with open(os.path.join(here, 'CHANGES.rst')) as f:
     CHANGES = f.read()
 
 
-setup(name='ichnaea',
+setup(
+    name='ichnaea',
     version=__version__,
     description='Mozilla Ichnaea',
     long_description=README + '\n\n' + CHANGES,
