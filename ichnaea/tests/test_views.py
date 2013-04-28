@@ -95,6 +95,8 @@ class TestMeasure(TestCase):
         cell_data = [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
         res = app.post_json('/v1/submit',
                             {"lat": 12.345678, "lon": 23.456789,
+                             "accuracy": 10, "altitude": 123,
+                             "altitude_accuracy": 7,
                              "radio": "gsm", "cell": cell_data}, status=204)
         self.assertEqual(res.body, '')
         session = app.app.registry.measuredb.session()
@@ -103,6 +105,9 @@ class TestMeasure(TestCase):
         item = result[0]
         self.assertEqual(item.lat, 12345678)
         self.assertEqual(item.lon, 23456789)
+        self.assertEqual(item.accuracy, 10)
+        self.assertEqual(item.altitude, 123)
+        self.assertEqual(item.altitude_accuracy, 7)
         # colander schema adds default value
         cell_data[0]['signal'] = 0
 
@@ -117,6 +122,7 @@ class TestMeasure(TestCase):
         wifi_data = [{"mac": "ab:12:34"}, {"mac": "cd:34:56"}]
         res = app.post_json('/v1/submit',
                             {"lat": 12.345678, "lon": 23.456789,
+                             "accuracy": 17,
                              "wifi": wifi_data}, status=204)
         self.assertEqual(res.body, '')
         session = app.app.registry.measuredb.session()
@@ -125,6 +131,9 @@ class TestMeasure(TestCase):
         item = result[0]
         self.assertEqual(item.lat, 12345678)
         self.assertEqual(item.lon, 23456789)
+        self.assertEqual(item.accuracy, 17)
+        self.assertEqual(item.altitude, 0)
+        self.assertEqual(item.altitude_accuracy, 0)
         # colander schema adds default values
         for i in range(2):
             wifi_data[i]['channel'] = 0

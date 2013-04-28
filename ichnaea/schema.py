@@ -37,6 +37,12 @@ class SearchSchema(MappingSchema):
 class MeasureSchema(MappingSchema):
     lat = SchemaNode(Decimal(quant="1.000000"), location="body")
     lon = SchemaNode(Decimal(quant="1.000000"), location="body")
+    accuracy = SchemaNode(Integer(), location="body", type='int',
+                          missing=0, validator=Range(0, 32767))
+    altitude = SchemaNode(Integer(), location="body", type='int',
+                          missing=0, validator=Range(-32768, 32767))
+    altitude_accuracy = SchemaNode(Integer(), location="body", type='int',
+                                   missing=0, validator=Range(0, 32767))
     radio = SchemaNode(String(), location="body", type='str',
                        validator=OneOf(['gsm', 'cdma']), missing='gsm')
     cell = CellsSchema(missing=())

@@ -53,6 +53,9 @@ class Measure(_Model):
     # lat/lon * 1000000
     lat = Column(Integer)
     lon = Column(Integer)
+    accuracy = Column(SmallInteger)
+    altitude = Column(SmallInteger)
+    altitude_accuracy = Column(SmallInteger)
     radio = Column(SmallInteger)  # mapped via RADIO_TYPE
     # json blobs
     cell = Column(LargeBinary)

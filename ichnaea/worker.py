@@ -102,6 +102,9 @@ def _add_measures(measures, db_instance=None, sqluri=None):
         measure = Measure()
         measure.lat = int(data['lat'] * 1000000)
         measure.lon = int(data['lon'] * 1000000)
+        measure.accuracy = data['accuracy']
+        measure.altitude = data['altitude']
+        measure.altitude_accuracy = data['altitude_accuracy']
         if data.get('cell'):
             measure.radio = RADIO_TYPE.get(data['radio'], 0)
             measure.cell = dump_decimal_json(data['cell'])

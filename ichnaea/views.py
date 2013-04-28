@@ -200,6 +200,9 @@ def submit_post(request):
         {
             "lat": -22.753919,
             "lon": -43.437108,
+            "accuracy": 10,
+            "altitude": 100,
+            "altitude_accuracy": 1,
             "radio": "gsm",
             "cell": [
                 {
@@ -224,6 +227,12 @@ def submit_post(request):
         }
 
     The fields have the same meaning as explained in the search API.
+
+    The only required fields are `lat` and `lon` and at least one cell or wifi
+    entry.
+
+    The altitude, accuracy and altitude_accuracy fields are all measured in
+    meters. Altitude measures the height above or below the mean sea level.
 
     On successful submission, you get a 204 status code back without any
     data in the body.
