@@ -179,17 +179,8 @@ class TestMeasure(TestCase):
 
     def test_batches(self):
         app = _make_app()
-        wifi_data = [
-            {"mac": "99"},
-            {"mac": "aa", "frequency": 2427},
-            {"mac": "bb", "channel": 7},
-            {"mac": "cc", "frequency": 5200},
-            {"mac": "dd", "frequency": 5700},
-            {"mac": "ee", "frequency": 3100},
-            {"mac": "ff", "frequency": 2412, "channel": 9},
-        ]
-
-        items = [{"lat": 12.345678, "lon": 23.456789 + i, "wifi": wifi_data}
+        wifi_data = [{"mac": "aa"}, {"mac": "bb"}]
+        items = [{"lat": 12.34, "lon": 23.45 + i, "wifi": wifi_data}
                  for i in range(10)]
         res = app.post_json('/v1/submit', {"items": items}, status=204)
         self.assertEqual(res.body, '')
