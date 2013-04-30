@@ -5,6 +5,9 @@ Mozilla Ichnaea
 **Mozilla Ichnaea** is a service to provide geo location coordinates in
 response to user requests.
 
+More information about the specific instance hosted by Mozilla can be found
+at https://wiki.mozilla.org/Services/Location
+
 We currently provide two API:
 
 - one for searching for your current location, given what you
