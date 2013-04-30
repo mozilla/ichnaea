@@ -42,8 +42,8 @@ Development
 All source code is available on `github under ichnaea
 <https://github.com/mozilla/ichnaea>`_.
 
-Bugs and support issues should be reported on the `ichnaea github issue tracker
-<https://github.com/mozilla/ichnaea/issues>`_.
+Bugs should be reported in the `Mozilla Services :: Location component of
+Bugzilla <https://bugzilla.mozilla.org/describecomponents.cgi?product=Mozilla%20Services&component=Location>`_.
 
 The developers of ``ichnaea`` can frequently be found on the Mozilla IRC
 network in the #geo channel.
