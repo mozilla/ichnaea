@@ -93,14 +93,15 @@ class TestMeasure(TestCase):
     def test_ok_cell(self):
         app = _make_app()
         cell_data = [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
-        res = app.post_json('/v1/submit', {"items": [{"lat": 12.345678,
-                                                      "lon": 23.456789,
-                                                      "accuracy": 10,
-                                                      "altitude": 123,
-                                                      "altitude_accuracy": 7,
-                                                      "radio": "gsm",
-                                                      "cell": cell_data}]},
-                            status=204)
+        res = app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.345678,
+                                      "lon": 23.456789,
+                                      "accuracy": 10,
+                                      "altitude": 123,
+                                      "altitude_accuracy": 7,
+                                      "radio": "gsm",
+                                      "cell": cell_data}]},
+            status=204)
         self.assertEqual(res.body, '')
         session = app.app.registry.measuredb.session()
         result = session.query(Measure).all()
@@ -123,11 +124,12 @@ class TestMeasure(TestCase):
     def test_ok_wifi(self):
         app = _make_app()
         wifi_data = [{"mac": "ab:12:34"}, {"mac": "cd:34:56"}]
-        res = app.post_json('/v1/submit', {"items": [{"lat": 12.345678,
-                                                      "lon": 23.456789,
-                                                      "accuracy": 17,
-                                                     "wifi": wifi_data}]},
-                            status=204)
+        res = app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.345678,
+                                      "lon": 23.456789,
+                                      "accuracy": 17,
+                                      "wifi": wifi_data}]},
+            status=204)
         self.assertEqual(res.body, '')
         session = app.app.registry.measuredb.session()
         result = session.query(Measure).all()
@@ -153,10 +155,11 @@ class TestMeasure(TestCase):
             {"mac": "ee", "frequency": 3100},
             {"mac": "ff", "frequency": 2412, "channel": 9},
         ]
-        res = app.post_json('/v1/submit', {"items": [{"lat": 12.345678,
-                                                      "lon": 23.456789,
-                                                      "wifi": wifi_data}]},
-                            status=204)
+        res = app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.345678,
+                                      "lon": 23.456789,
+                                      "wifi": wifi_data}]},
+            status=204)
         self.assertEqual(res.body, '')
         session = app.app.registry.measuredb.session()
         result = session.query(Measure).all()
@@ -197,20 +200,18 @@ class TestMeasure(TestCase):
 
     def test_error(self):
         app = _make_app()
-        res = app.post_json('/v1/submit', {"items": [{"lat": 12.3,
-                                                      "lon": 23.4,
-                                                      "cell": []}]},
-                            status=400)
+        res = app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.3, "lon": 23.4, "cell": []}]},
+            status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
         self.assertFalse('status' in res.json)
 
     def test_error_unknown_key(self):
         app = _make_app()
-        res = app.post_json('/v1/submit', {"items": [{"lat": 12.3,
-                                                      "lon": 23.4,
-                                                      "foo": 1}]},
-                            status=400)
+        res = app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.3, "lon": 23.4, "foo": 1}]},
+            status=400)
         self.assertTrue('errors' in res.json)
 
     def test_error_no_mapping(self):
