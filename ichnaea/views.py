@@ -117,12 +117,12 @@ def search_post(request):
 
         {
             "status": "ok",
-            "lat": -22.753919,
-            "lon": -43.437108,
+            "lat": -22.7539192,
+            "lon": -43.4371081,
             "accuracy": 1000
         }
 
-    The latitude and longitude are numbers, with six decimal places of
+    The latitude and longitude are numbers, with seven decimal places of
     actual precision. The accuracy is an integer measured in meters and defines
     a circle around the given location.
 
@@ -210,8 +210,8 @@ def submit_post(request):
 
         {'items': [
            {
-            "lat": -22.753919,
-            "lon": -43.437108,
+            "lat": -22.7539192,
+            "lon": -43.4371081,
             "accuracy": 10,
             "altitude": 100,
             "altitude_accuracy": 1,

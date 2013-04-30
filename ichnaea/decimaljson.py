@@ -3,10 +3,10 @@ from decimal import localcontext
 
 import simplejson as json
 
-FACTOR = Decimal(1000000)
-EXPONENT_STR = '1.000000'
+FACTOR = Decimal(10000000)
+EXPONENT_STR = '1.0000000'
 EXPONENT = Decimal(EXPONENT_STR)
-PRECISION = 6
+PRECISION = 7
 
 
 def dumps(value):

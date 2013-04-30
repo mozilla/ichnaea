@@ -23,7 +23,7 @@ class Cell(_Model):
     )
 
     id = Column(Integer, primary_key=True)
-    # lat/lon * 1000000
+    # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
     # mapped via RADIO_TYPE
@@ -50,7 +50,7 @@ class Measure(_Model):
     }
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    # lat/lon * 1000000
+    # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
     accuracy = Column(SmallInteger)

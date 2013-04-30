@@ -71,6 +71,6 @@ class TestMeasureSchema(TestCase):
     def test_empty_wifi_entry(self):
         schema = self._make_schema()
         request = self._make_request(
-            '{"lat": 12.345678, "lon": 23.456789, "wifi": [{}]}')
+            '{"lat": 12.3456781, "lon": 23.4567892, "wifi": [{}]}')
         validate_colander_schema(schema, request)
         self.assertTrue(request.errors)

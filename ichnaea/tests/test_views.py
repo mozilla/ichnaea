@@ -19,8 +19,8 @@ class TestSearch(TestCase):
         app = _make_app()
         session = app.app.registry.celldb.session()
         cell = Cell()
-        cell.lat = 12345678
-        cell.lon = 23456789
+        cell.lat = 123456781
+        cell.lon = 234567892
         cell.radio = 0
         cell.mcc = 123
         cell.mnc = 1
@@ -35,8 +35,8 @@ class TestSearch(TestCase):
                                        "lac": 2, "cid": 1234}]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"status": "ok", "lat": 12.345678, '
-                                   '"lon": 23.456789, "accuracy": 20000}')
+        self.assertEqual(res.body, '{"status": "ok", "lat": 12.3456781, '
+                                   '"lon": 23.4567892, "accuracy": 20000}')
 
     def test_not_found(self):
         app = _make_app()
@@ -94,8 +94,8 @@ class TestMeasure(TestCase):
         app = _make_app()
         cell_data = [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
         res = app.post_json(
-            '/v1/submit', {"items": [{"lat": 12.345678,
-                                      "lon": 23.456789,
+            '/v1/submit', {"items": [{"lat": 12.3456781,
+                                      "lon": 23.4567892,
                                       "accuracy": 10,
                                       "altitude": 123,
                                       "altitude_accuracy": 7,
@@ -107,8 +107,8 @@ class TestMeasure(TestCase):
         result = session.query(Measure).all()
         self.assertEqual(len(result), 1)
         item = result[0]
-        self.assertEqual(item.lat, 12345678)
-        self.assertEqual(item.lon, 23456789)
+        self.assertEqual(item.lat, 123456781)
+        self.assertEqual(item.lon, 234567892)
         self.assertEqual(item.accuracy, 10)
         self.assertEqual(item.altitude, 123)
         self.assertEqual(item.altitude_accuracy, 7)
@@ -125,8 +125,8 @@ class TestMeasure(TestCase):
         app = _make_app()
         wifi_data = [{"mac": "ab:12:34"}, {"mac": "cd:34:56"}]
         res = app.post_json(
-            '/v1/submit', {"items": [{"lat": 12.345678,
-                                      "lon": 23.456789,
+            '/v1/submit', {"items": [{"lat": 12.3456781,
+                                      "lon": 23.4567892,
                                       "accuracy": 17,
                                       "wifi": wifi_data}]},
             status=204)
@@ -135,8 +135,8 @@ class TestMeasure(TestCase):
         result = session.query(Measure).all()
         self.assertEqual(len(result), 1)
         item = result[0]
-        self.assertEqual(item.lat, 12345678)
-        self.assertEqual(item.lon, 23456789)
+        self.assertEqual(item.lat, 123456781)
+        self.assertEqual(item.lon, 234567892)
         self.assertEqual(item.accuracy, 17)
         self.assertEqual(item.altitude, 0)
         self.assertEqual(item.altitude_accuracy, 0)
