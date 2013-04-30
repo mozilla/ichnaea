@@ -73,6 +73,7 @@ def search_post(request):
                 {
                     "mac": "01:23:45:67:89:AB",
                     "channel": 11,
+                    "frequency": 2412,
                     "noise": 40,
                     "signal": -50
                 },
@@ -94,7 +95,7 @@ def search_post(request):
     at least two entries need to be provided.
 
     The signal is the signal strength measured in dBm, the noise is the
-    signal to noise ratio measured in dB.
+    signal to noise ratio measured in dB. The frequency is measured in MHz.
 
     In a CDMA network, the system id (sid) should be sent in the mnc field,
     the network id (nid) in the lac field and base station id (bid) in the
@@ -217,6 +218,7 @@ def submit_post(request):
                 {
                     "mac": "01:23:45:67:89:AB",
                     "channel": 11,
+                    "frequency": 2412,
                     "noise": 40,
                     "signal": -50
                 },

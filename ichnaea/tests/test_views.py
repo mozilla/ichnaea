@@ -3,7 +3,7 @@ from webtest import TestApp
 
 from ichnaea import main
 from ichnaea.db import Cell, Measure
-from ichnaea.renderer import dump_decimal_json, loads_decimal_json
+from ichnaea.renderer import loads_decimal_json
 
 
 def _make_app():
@@ -134,12 +134,8 @@ class TestMeasure(TestCase):
         self.assertEqual(item.accuracy, 17)
         self.assertEqual(item.altitude, 0)
         self.assertEqual(item.altitude_accuracy, 0)
-        # colander schema adds default values
-        for i in range(2):
-            wifi_data[i]['channel'] = 0
-            wifi_data[i]['noise'] = 0
-            wifi_data[i]['signal'] = 0
-        self.assertEqual(item.wifi, dump_decimal_json(wifi_data))
+        self.assertTrue('"mac": "ab:12:34"' in item.wifi)
+        self.assertTrue('"mac": "cd:34:56"' in item.wifi)
         self.assertTrue(item.cell is None)
 
     def test_error(self):
