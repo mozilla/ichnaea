@@ -89,6 +89,24 @@ def _get_db(sqluri):
     return _LOCALS.dbs[sqluri]
 
 
+def _process_wifi(values):
+    # convert frequency into channel numbers
+    result = []
+    for entry in values:
+        # always remove frequency
+        freq = entry.pop('frequency')
+        # if no explicit channel was given, calculate
+        if freq and not entry['channel']:
+            if 2411 < freq < 2473:
+                # 2.4 GHz band
+                entry['channel'] = (freq - 2407) // 5
+            elif 5169 < freq < 5826:
+                # 5 GHz band
+                entry['channel'] = (freq - 5000) // 5
+        result.append(entry)
+    return result
+
+
 def _add_measures(measures, db_instance=None, sqluri=None):
 
     if db_instance is None:
@@ -109,7 +127,7 @@ def _add_measures(measures, db_instance=None, sqluri=None):
             measure.radio = RADIO_TYPE.get(data['radio'], 0)
             measure.cell = dump_decimal_json(data['cell'])
         if data.get('wifi'):
-            measure.wifi = dump_decimal_json(data['wifi'])
+            measure.wifi = dump_decimal_json(_process_wifi(data['wifi']))
         session.add(measure)
 
     session.commit()

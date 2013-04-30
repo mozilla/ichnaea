@@ -138,6 +138,37 @@ class TestMeasure(TestCase):
         self.assertTrue('"mac": "cd:34:56"' in item.wifi)
         self.assertTrue(item.cell is None)
 
+    def test_ok_wifi_frequency(self):
+        app = _make_app()
+        wifi_data = [
+            {"mac": "99"},
+            {"mac": "aa", "frequency": 2427},
+            {"mac": "bb", "channel": 7},
+            {"mac": "cc", "frequency": 5200},
+            {"mac": "dd", "frequency": 5700},
+            {"mac": "ee", "frequency": 3100},
+            {"mac": "ff", "frequency": 2412, "channel": 9},
+        ]
+        res = app.post_json('/v1/submit',
+                            {"lat": 12.345678, "lon": 23.456789,
+                             "wifi": wifi_data}, status=204)
+        self.assertEqual(res.body, '')
+        session = app.app.registry.measuredb.session()
+        result = session.query(Measure).all()
+        self.assertEqual(len(result), 1)
+        item = result[0]
+        measure_wifi = loads_decimal_json(item.wifi)
+        measure_wifi = dict([(m['mac'], m) for m in measure_wifi])
+        for k, v in measure_wifi.items():
+            self.assertFalse('frequency' in v)
+        self.assertEqual(measure_wifi['99']['channel'], 0)
+        self.assertEqual(measure_wifi['aa']['channel'], 4)
+        self.assertEqual(measure_wifi['bb']['channel'], 7)
+        self.assertEqual(measure_wifi['cc']['channel'], 40)
+        self.assertEqual(measure_wifi['dd']['channel'], 140)
+        self.assertEqual(measure_wifi['ee']['channel'], 0)
+        self.assertEqual(measure_wifi['ff']['channel'], 9)
+
     def test_error(self):
         app = _make_app()
         res = app.post_json('/v1/submit',
