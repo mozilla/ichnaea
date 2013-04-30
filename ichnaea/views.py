@@ -26,13 +26,7 @@ MSG_ONE_OF = 'You need to provide a mapping with least one cell or wifi entry.'
 MSG_TWO_WIFI = 'You need to specify at least two wifi entries.'
 
 
-def cell_or_wifi(request):
-    if len(request.errors):
-        return
-    _check_cell_or_wifi(request.validated, request)
-
-
-def _check_cell_or_wifi(data, request):
+def check_cell_or_wifi(data, request):
     cell = data.get('cell', ())
     wifi = data.get('wifi', ())
     if not any(wifi):
@@ -42,11 +36,17 @@ def _check_cell_or_wifi(data, request):
         request.errors.add('body', 'body', MSG_TWO_WIFI)
 
 
-def cell_or_wifi_list(request):
+def search_validator(request):
+    if len(request.errors):
+        return
+    check_cell_or_wifi(request.validated, request)
+
+
+def submit_validator(request):
     if len(request.errors):
         return
     for item in request.validated['items']:
-        if not _check_cell_or_wifi(item, request):
+        if not check_cell_or_wifi(item, request):
             # quit on first Error
             return
 
@@ -59,7 +59,7 @@ search = Service(
 
 @search.post(renderer='json', accept="application/json",
                       schema=SearchSchema, error_handler=error_handler,
-                      validators=cell_or_wifi)
+                      validators=search_validator)
 def search_post(request):
     """
     Determine the current location based on provided data about
@@ -196,7 +196,7 @@ submit = Service(
 
 @submit.post(renderer='json', accept="application/json",
              schema=SubmitSchema, error_handler=error_handler,
-             validators=cell_or_wifi_list)
+             validators=submit_validator)
 def submit_post(request):
     """
     Submit data about nearby cell towers and wifi base stations.
