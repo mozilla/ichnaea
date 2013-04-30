@@ -50,9 +50,9 @@ class MeasureSchema(MappingSchema):
     wifi = WifisSchema(missing=())
 
 
-class _MeasuresSchema(SequenceSchema):
+class MeasuresSchema(SequenceSchema):
     measure = MeasureSchema()
 
 
-class MeasuresSchema(MappingSchema):
-    items = _MeasuresSchema()
+class SubmitSchema(MappingSchema):
+    items = MeasuresSchema()

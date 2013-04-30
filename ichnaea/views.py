@@ -6,7 +6,7 @@ from statsd import StatsdTimer
 from ichnaea.db import Cell, RADIO_TYPE
 from ichnaea.renderer import dump_decimal_json
 from ichnaea.renderer import quantize
-from ichnaea.schema import SearchSchema, MeasuresSchema
+from ichnaea.schema import SearchSchema, SubmitSchema
 from ichnaea.worker import add_measures
 
 
@@ -195,7 +195,7 @@ submit = Service(
 
 
 @submit.post(renderer='json', accept="application/json",
-             schema=MeasuresSchema, error_handler=error_handler,
+             schema=SubmitSchema, error_handler=error_handler,
              validators=cell_or_wifi_list)
 def submit_post(request):
     """
