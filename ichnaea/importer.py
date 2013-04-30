@@ -7,6 +7,7 @@ from sqlalchemy import func
 
 from ichnaea.app import private_override
 from ichnaea.db import CellDB, Cell
+from ichnaea.decimaljson import to_precise_int
 
 
 def _int(value):
@@ -63,8 +64,8 @@ def load_file(settings, source_file, batch_size=10000):
                     id=id_,
                     # TODO figure out if we have cdma networks
                     radio=radio,
-                    lat=int(float(fields[2]) * 1000000),
-                    lon=int(float(fields[3]) * 1000000),
+                    lat=to_precise_int(fields[2]),
+                    lon=to_precise_int(fields[3]),
                     mcc=mcc,
                     mnc=mnc,
                     lac=_int(fields[6]),

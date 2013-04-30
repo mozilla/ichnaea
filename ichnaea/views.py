@@ -4,8 +4,7 @@ from pyramid.response import Response
 from statsd import StatsdTimer
 
 from ichnaea.db import Cell, RADIO_TYPE
-from ichnaea.decimaljson import dumps
-from ichnaea.decimaljson import quantize
+from ichnaea.decimaljson import dumps, quantize
 from ichnaea.schema import SearchSchema, SubmitSchema
 from ichnaea.worker import add_measures
 

@@ -3,24 +3,32 @@ from decimal import localcontext
 
 import simplejson as json
 
-MILLION = Decimal(1000000)
-ONE_SIX_ZEROS = Decimal('1.000000')
+FACTOR = Decimal(1000000)
+EXPONENT_STR = '1.000000'
+EXPONENT = Decimal(EXPONENT_STR)
+PRECISION = 6
 
 
 def dumps(value):
     with localcontext() as ctx:
-        ctx.prec = 6
+        ctx.prec = PRECISION
         return json.dumps(value, use_decimal=True)
 
 
 def loads(value):
     with localcontext() as ctx:
-        ctx.prec = 6
+        ctx.prec = PRECISION
         return json.loads(value, use_decimal=True)
 
 
 def quantize(value):
-    return (Decimal(value) / MILLION).quantize(ONE_SIX_ZEROS)
+    return (Decimal(value) / FACTOR).quantize(EXPONENT)
+
+
+def to_precise_int(value):
+    if isinstance(value, str):
+        value = Decimal(value)
+    return int(value * FACTOR)
 
 
 class Renderer(object):

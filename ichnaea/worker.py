@@ -3,7 +3,7 @@ import datetime
 from Queue import Queue
 
 from ichnaea.db import Measure, RADIO_TYPE
-from ichnaea.decimaljson import dumps, loads
+from ichnaea.decimaljson import dumps, loads, to_precise_int
 from ichnaea.db import MeasureDB
 
 
@@ -117,8 +117,8 @@ def _add_measures(measures, db_instance=None, sqluri=None):
         if isinstance(data, basestring):
             data = loads(data)
         measure = Measure()
-        measure.lat = int(data['lat'] * 1000000)
-        measure.lon = int(data['lon'] * 1000000)
+        measure.lat = to_precise_int(data['lat'])
+        measure.lon = to_precise_int(data['lon'])
         measure.accuracy = data['accuracy']
         measure.altitude = data['altitude']
         measure.altitude_accuracy = data['altitude_accuracy']
