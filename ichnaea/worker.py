@@ -43,7 +43,7 @@ class TimedQueue(Queue):
 _BATCH = TimedQueue(maxsize=_BATCH_SIZE)
 
 
-def add_measure(request):
+def add_measures(request):
     """Adds measures in a queue and dump them to the database when
     a batch is ready.
 
@@ -59,13 +59,13 @@ def add_measure(request):
         batch_age = datetime.timedelta(seconds=batch_age)
 
     # data
-    data = dump_decimal_json(request.validated)
+    measures = [dump_decimal_json(measure)
+                for measure in request.validated['items']]
 
-    if batch_size == -1:
-        # no batch
-        measures = [data]
-    else:
-        _BATCH.put(data)
+    if batch_size != -1:
+        # we are batching in memory
+        for measure in measures:
+            _BATCH.put(measure)
 
         # using a lock so only on thread gets to empty the queue
         with _LOCK:

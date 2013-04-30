@@ -6,8 +6,8 @@ from statsd import StatsdTimer
 from ichnaea.db import Cell, RADIO_TYPE
 from ichnaea.renderer import dump_decimal_json
 from ichnaea.renderer import quantize
-from ichnaea.schema import SearchSchema, MeasureSchema
-from ichnaea.worker import add_measure
+from ichnaea.schema import SearchSchema, MeasuresSchema
+from ichnaea.worker import add_measures
 
 
 class _JSONError(HTTPError):
@@ -29,7 +29,10 @@ MSG_TWO_WIFI = 'You need to specify at least two wifi entries.'
 def cell_or_wifi(request):
     if len(request.errors):
         return
-    data = request.validated
+    _check_cell_or_wifi(request.validated, request)
+
+
+def _check_cell_or_wifi(data, request):
     cell = data.get('cell', ())
     wifi = data.get('wifi', ())
     if not any(wifi):
@@ -38,6 +41,14 @@ def cell_or_wifi(request):
     elif len(wifi) < 2:
         request.errors.add('body', 'body', MSG_TWO_WIFI)
 
+
+def cell_or_wifi_list(request):
+    if len(request.errors):
+        return
+    for item in request.validated['items']:
+        if not _check_cell_or_wifi(item, request):
+            # quit on first Error
+            return
 
 search = Service(
     name='search',
@@ -184,8 +195,8 @@ submit = Service(
 
 
 @submit.post(renderer='json', accept="application/json",
-             schema=MeasureSchema, error_handler=error_handler,
-             validators=cell_or_wifi)
+             schema=MeasuresSchema, error_handler=error_handler,
+             validators=cell_or_wifi_list)
 def submit_post(request):
     """
     Submit data about nearby cell towers and wifi base stations.
@@ -194,11 +205,12 @@ def submit_post(request):
 
         /v1/submit
 
-    with a body of:
+    with a body of items:
 
     .. code-block:: javascript
 
-        {
+        {'items': [
+           {
             "lat": -22.753919,
             "lon": -43.437108,
             "accuracy": 10,
@@ -226,6 +238,8 @@ def submit_post(request):
                     "mac": "01:23:45:67:AB:12"
                 }
             ]
+           }
+           ]
         }
 
     The fields have the same meaning as explained in the search API.
@@ -249,7 +263,7 @@ def submit_post(request):
 
     The errors mapping contains detailed information about the errors.
     """
-    add_measure(request)
+    add_measures(request)
     return HTTPNoContent()
 
 

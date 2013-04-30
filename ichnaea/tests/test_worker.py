@@ -34,9 +34,9 @@ class TestWorker(unittest.TestCase):
 
         try:
             for i in range(21):
-                res = app.post_json('/v1/submit', {"lat": 12.345678,
+                res = app.post_json('/v1/submit', {"items": [{"lat": 12.345678,
                                                    "lon": 23.456789,
-                                                   "cell": cell_data},
+                                                   "cell": cell_data}]},
                                     status=204)
         finally:
             BasePipeline.execute = old
@@ -73,9 +73,9 @@ class TestWorker(unittest.TestCase):
 
         try:
             for i in range(4):
-                res = app.post_json('/v1/submit', {"lat": 12.345678,
+                res = app.post_json('/v1/submit', {"items": [{"lat": 12.345678,
                                                    "lon": 23.456789,
-                                                   "cell": cell_data},
+                                                   "cell": cell_data}]},
                                     status=204)
                 time.sleep(.3)
         finally:

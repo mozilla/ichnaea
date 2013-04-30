@@ -48,3 +48,11 @@ class MeasureSchema(MappingSchema):
                        validator=OneOf(['gsm', 'cdma']), missing='gsm')
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())
+
+
+class _MeasuresSchema(SequenceSchema):
+    measure = MeasureSchema()
+
+
+class MeasuresSchema(MappingSchema):
+    items = _MeasuresSchema()
