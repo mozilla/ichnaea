@@ -2,11 +2,11 @@ from decimal import Decimal
 from unittest import TestCase
 
 
-class TestDecimalJSON(TestCase):
+class TestRenderer(TestCase):
 
     def _make_one(self):
-        from ichnaea.renderer import DecimalJSON
-        return DecimalJSON()(None)
+        from ichnaea.decimaljson import Renderer
+        return Renderer()(None)
 
     def test_basic(self):
         render = self._make_one()

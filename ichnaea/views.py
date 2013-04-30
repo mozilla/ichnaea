@@ -4,8 +4,8 @@ from pyramid.response import Response
 from statsd import StatsdTimer
 
 from ichnaea.db import Cell, RADIO_TYPE
-from ichnaea.renderer import dump_decimal_json
-from ichnaea.renderer import quantize
+from ichnaea.decimaljson import dumps
+from ichnaea.decimaljson import quantize
 from ichnaea.schema import SearchSchema, SubmitSchema
 from ichnaea.worker import add_measures
 
@@ -13,7 +13,7 @@ from ichnaea.worker import add_measures
 class _JSONError(HTTPError):
     def __init__(self, errors, status=400):
         body = {'errors': errors}
-        Response.__init__(self, dump_decimal_json(body))
+        Response.__init__(self, dumps(body))
         self.status = status
         self.content_type = 'application/json'
 

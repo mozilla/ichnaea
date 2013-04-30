@@ -6,7 +6,7 @@ from pyramid.events import NewRequest
 import statsd
 
 from ichnaea.db import CellDB, MeasureDB
-from ichnaea.renderer import DecimalJSON
+from ichnaea import decimaljson
 
 
 def attach_dbs(event):
@@ -71,5 +71,5 @@ def main(global_config, **settings):
     config.add_subscriber(attach_dbs, NewRequest)
 
     # replace json renderer with decimal json variant
-    config.add_renderer('json', DecimalJSON())
+    config.add_renderer('json', decimaljson.Renderer())
     return config.make_wsgi_app()

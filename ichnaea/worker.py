@@ -3,7 +3,7 @@ import datetime
 from Queue import Queue
 
 from ichnaea.db import Measure, RADIO_TYPE
-from ichnaea.renderer import dump_decimal_json, loads_decimal_json
+from ichnaea.decimaljson import dumps, loads
 from ichnaea.db import MeasureDB
 
 
@@ -59,8 +59,7 @@ def add_measures(request):
         batch_age = datetime.timedelta(seconds=batch_age)
 
     # data
-    measures = [dump_decimal_json(measure)
-                for measure in request.validated['items']]
+    measures = [dumps(measure) for measure in request.validated['items']]
 
     if batch_size != -1:
         # we are batching in memory
@@ -116,7 +115,7 @@ def _add_measures(measures, db_instance=None, sqluri=None):
 
     for data in measures:
         if isinstance(data, basestring):
-            data = loads_decimal_json(data)
+            data = loads(data)
         measure = Measure()
         measure.lat = int(data['lat'] * 1000000)
         measure.lon = int(data['lon'] * 1000000)
@@ -125,9 +124,9 @@ def _add_measures(measures, db_instance=None, sqluri=None):
         measure.altitude_accuracy = data['altitude_accuracy']
         if data.get('cell'):
             measure.radio = RADIO_TYPE.get(data['radio'], 0)
-            measure.cell = dump_decimal_json(data['cell'])
+            measure.cell = dumps(data['cell'])
         if data.get('wifi'):
-            measure.wifi = dump_decimal_json(_process_wifi(data['wifi']))
+            measure.wifi = dumps(_process_wifi(data['wifi']))
         session.add(measure)
 
     session.commit()

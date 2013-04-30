@@ -3,7 +3,7 @@ from webtest import TestApp
 
 from ichnaea import main
 from ichnaea.db import Cell, Measure
-from ichnaea.renderer import loads_decimal_json
+from ichnaea.decimaljson import loads
 
 
 def _make_app():
@@ -115,7 +115,7 @@ class TestMeasure(TestCase):
         # colander schema adds default value
         cell_data[0]['signal'] = 0
 
-        wanted = loads_decimal_json(item.cell)
+        wanted = loads(item.cell)
         self.assertTrue(len(wanted), 1)
         self.assertTrue(len(cell_data), 1)
         self.assertDictEqual(wanted[0], cell_data[0])
@@ -165,7 +165,7 @@ class TestMeasure(TestCase):
         result = session.query(Measure).all()
         self.assertEqual(len(result), 1)
         item = result[0]
-        measure_wifi = loads_decimal_json(item.wifi)
+        measure_wifi = loads(item.wifi)
         measure_wifi = dict([(m['mac'], m) for m in measure_wifi])
         for k, v in measure_wifi.items():
             self.assertFalse('frequency' in v)
