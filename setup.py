@@ -13,6 +13,8 @@ requires = [
     'retools',
     'PyMySQL',
     'statsd-client',
+    'chaussette',
+    'konfig'
 ]
 
 if sys.version_info < (2, 7):
