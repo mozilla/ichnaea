@@ -9,11 +9,6 @@ from ichnaea.worker import _get_db
 class TestWorker(unittest.TestCase):
 
     def test_async_measure(self):
-        try:
-            import redis        # NOQA
-        except ImportError:
-            return
-
         global_config = {}
         app = main(global_config, celldb='sqlite://', measuredb='sqlite://',
                    async=True, batch_size=10, **{'redis.host': '127.0.0.1',
@@ -47,11 +42,6 @@ class TestWorker(unittest.TestCase):
         self.assertEqual(called[0], 2)
 
     def test_async_old_batch(self):
-        try:
-            import redis        # NOQA
-        except ImportError:
-            return
-
         global_config = {}
         app = main(global_config, celldb='sqlite://', measuredb='sqlite://',
                    async=True, batch_age=.5,
