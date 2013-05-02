@@ -4,14 +4,7 @@ from ichnaea.db import Cell, RADIO_TYPE
 from ichnaea.decimaljson import quantize
 
 
-def search_request(request):
-    data = request.validated
-    if not data['cell']:
-        # we don't have any wifi entries yet
-        return {
-            'status': 'not_found',
-        }
-
+def search_cell(session, data):
     radio = RADIO_TYPE.get(data['radio'], 0)
     cell = data['cell'][0]
     mcc = cell['mcc']
@@ -19,7 +12,6 @@ def search_request(request):
     lac = cell['lac']
     cid = cell['cid']
 
-    session = request.celldb.session()
     query = session.query(Cell)
     query = query.filter(Cell.radio == radio)
     query = query.filter(Cell.mcc == mcc)
@@ -29,17 +21,34 @@ def search_request(request):
     if lac >= 0:
         query = query.filter(Cell.lac == lac)
 
+    result = query.first()
+    if result is None:
+        return
+
+    return {
+        'lat': quantize(result.lat),
+        'lon': quantize(result.lon),
+        'accuracy': 20000,
+    }
+
+
+def search_request(request):
+    data = request.validated
+    if not data['cell']:
+        # we don't have any wifi entries yet
+        return {'status': 'not_found'}
+
+    session = request.celldb.session()
+
     with StatsdTimer('get_cell_location'):
-        result = query.first()
+        result = search_cell(session, data)
 
-        if result is None:
-            return {
-                'status': 'not_found',
-            }
+    if result is None:
+        return {'status': 'not_found'}
 
-        return {
-            'status': 'ok',
-            'lat': quantize(result.lat),
-            'lon': quantize(result.lon),
-            'accuracy': 20000,
-        }
+    return {
+        'status': 'ok',
+        'lat': result['lat'],
+        'lon': result['lon'],
+        'accuracy': result['accuracy'],
+    }
