@@ -239,6 +239,9 @@ def submit_post(request):
     The altitude, accuracy and altitude_accuracy fields are all measured in
     meters. Altitude measures the height above or below the mean sea level.
 
+    The timestamp has to be in UTC time. If not provided, the server time
+    will be used.
+
     On successful submission, you get a 204 status code back without any
     data in the body.
 
