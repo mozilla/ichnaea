@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest2 import TestCase
 from webtest import TestApp
 
@@ -180,6 +181,26 @@ class TestMeasure(TestCase):
         # let's add a bad one
         items.append({'whatever': 'xx'})
         res = app.post_json('/v1/submit', {"items": items}, status=400)
+
+    def test_time(self):
+        app = _make_app()
+        time = "2012-03-15T11:12:13.456Z"
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0, "lon": 2.0, "wifi": [{"mac": "a"}], "time": time},
+                {"lat": 2.0, "lon": 3.0, "wifi": [{"mac": "b"}]},
+            ]},
+            status=204)
+        session = app.app.registry.measuredb.session()
+        result = session.query(Measure).all()
+        self.assertEqual(len(result), 2)
+        for item in result:
+            if '"mac": "a"' in item.wifi:
+                self.assertEqual(
+                    item.time, datetime(2012, 3, 15, 11, 12, 13, 456000))
+            else:
+                self.assertEqual(
+                    item.time.date(), datetime.utcnow().date())
 
     def test_error(self):
         app = _make_app()

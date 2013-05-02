@@ -204,6 +204,7 @@ def submit_post(request):
            {
             "lat": -22.7539192,
             "lon": -43.4371081,
+            "time": "2012-03-15T11:12:13.456Z",
             "accuracy": 10,
             "altitude": 100,
             "altitude_accuracy": 1,

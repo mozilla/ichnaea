@@ -2,6 +2,8 @@ import threading
 import datetime
 from Queue import Queue
 
+from colander.iso8601 import parse_date
+
 from ichnaea.db import Measure, RADIO_TYPE
 from ichnaea.decimaljson import dumps, loads, to_precise_int
 from ichnaea.db import MeasureDB
@@ -59,7 +61,11 @@ def add_measures(request):
         batch_age = datetime.timedelta(seconds=batch_age)
 
     # data
-    measures = [dumps(measure) for measure in request.validated['items']]
+    measures = []
+    for measure in request.validated['items']:
+        if measure['time'] is None:
+            measure['time'] = datetime.datetime.utcnow()
+        measures.append(dumps(measure))
 
     if batch_size != -1:
         # we are batching in memory
@@ -117,6 +123,10 @@ def _add_measures(measures, db_instance=None, sqluri=None):
         if isinstance(data, basestring):
             data = loads(data)
         measure = Measure()
+        time = data['time']
+        if isinstance(time, basestring):
+            time = parse_date(time)
+        measure.time = time
         measure.lat = to_precise_int(data['lat'])
         measure.lon = to_precise_int(data['lon'])
         measure.accuracy = data['accuracy']

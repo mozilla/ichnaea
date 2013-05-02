@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from decimal import localcontext
 
@@ -9,10 +10,16 @@ EXPONENT = Decimal(EXPONENT_STR)
 PRECISION = 7
 
 
+def encode_datetime(obj):
+    if isinstance(obj, datetime):
+        return obj.strftime('%Y-%m-%dT%H:%M:%S.%f')
+    raise TypeError(repr(obj) + " is not JSON serializable")
+
+
 def dumps(value):
     with localcontext() as ctx:
         ctx.prec = PRECISION
-        return json.dumps(value, use_decimal=True)
+        return json.dumps(value, use_decimal=True, default=encode_datetime)
 
 
 def loads(value):

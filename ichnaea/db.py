@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine
-from sqlalchemy import Column, Index, Integer, LargeBinary, SmallInteger
+from sqlalchemy import Column, Index
+from sqlalchemy import DateTime, Integer, LargeBinary, SmallInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -53,6 +54,7 @@ class Measure(_Model):
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
+    time = Column(DateTime)
     accuracy = Column(SmallInteger)
     altitude = Column(SmallInteger)
     altitude_accuracy = Column(SmallInteger)

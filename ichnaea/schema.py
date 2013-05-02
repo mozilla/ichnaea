@@ -1,5 +1,5 @@
 from colander import MappingSchema, SchemaNode, SequenceSchema
-from colander import Decimal, Integer, String, OneOf, Range
+from colander import DateTime, Decimal, Integer, String, OneOf, Range
 
 from ichnaea.decimaljson import EXPONENT_STR
 
@@ -40,6 +40,7 @@ class SearchSchema(MappingSchema):
 class MeasureSchema(MappingSchema):
     lat = SchemaNode(Decimal(quant=EXPONENT_STR), location="body")
     lon = SchemaNode(Decimal(quant=EXPONENT_STR), location="body")
+    time = SchemaNode(DateTime(), location="body", missing=None)
     accuracy = SchemaNode(Integer(), location="body", type='int',
                           missing=0, validator=Range(0, 32767))
     altitude = SchemaNode(Integer(), location="body", type='int',
