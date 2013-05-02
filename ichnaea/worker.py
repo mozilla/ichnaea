@@ -11,10 +11,8 @@ from ichnaea.queue import TimedQueue
 
 _LOCALS = threading.local()
 _LOCALS.dbs = {}
-_BATCH_SIZE = 100
-_MAX_AGE = datetime.timedelta(seconds=600)
 _LOCK = threading.RLock()
-_BATCH = TimedQueue(maxsize=_BATCH_SIZE)
+_BATCH = TimedQueue(maxsize=1000)
 
 
 def add_measures(request):
@@ -25,12 +23,8 @@ def add_measures(request):
     """
     # options
     settings = request.registry.settings
-    batch_size = int(settings.get('batch_size', _BATCH_SIZE))
-    batch_age = settings.get('batch_age')
-    if batch_age is None:
-        batch_age = _MAX_AGE
-    else:
-        batch_age = datetime.timedelta(seconds=batch_age)
+    batch_size = settings['batch_size']
+    batch_age = settings['batch_age']
 
     # data
     measures = []

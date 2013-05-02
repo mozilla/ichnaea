@@ -1,3 +1,4 @@
+import datetime
 import os
 
 from configparser import ConfigParser
@@ -55,6 +56,12 @@ def main(global_config, **settings):
 
         from retools.queue import QueueManager
         config.registry.queue = QueueManager(_redis)
+
+    # batch settings
+    batch_size = int(settings.get('batch_size', 100))
+    settings['batch_size'] = batch_size
+    batch_age = float(settings.get('batch_age', 600.0))
+    settings['batch_age'] = datetime.timedelta(seconds=batch_age)
 
     # statsd settings
     statsd_settings = {
