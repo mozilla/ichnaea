@@ -1,7 +1,5 @@
 import datetime
-import os
 
-from configparser import ConfigParser
 from pyramid.config import Configurator
 from pyramid.events import NewRequest
 import statsd

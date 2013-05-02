@@ -52,7 +52,7 @@ class TestMain(TestCase):
 
     def test_main(self):
         config, data, func = self._make_one()
-        os.write(config[0], '[app:main]\nuse = egg:ichnaea\n')
+        os.write(config[0], '[ichnaea]\n')
         os.write(config[0], 'celldb=sqlite://\n')
         os.write(config[0], 'measuredb=sqlite://\n')
         os.write(data[0], LINE)

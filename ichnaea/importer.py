@@ -2,10 +2,9 @@ import argparse
 import csv
 import sys
 
-from pyramid.paster import bootstrap
+from konfig import Config
 from sqlalchemy import func
 
-from ichnaea.app import private_override
 from ichnaea.db import CellDB, Cell
 from ichnaea.decimaljson import to_precise_int
 
@@ -18,7 +17,6 @@ def _int(value):
 
 
 def load_file(settings, source_file, batch_size=10000):
-    private_override(settings)
     db = CellDB(settings['celldb'])
     session = db.session()
     result = session.query(func.max(Cell.id)).first()
@@ -99,15 +97,8 @@ def main(argv):
     parser.add_argument('config', help="config file")
     parser.add_argument('source', help="source file")
     args = parser.parse_args(argv[1:])
-
-    env = bootstrap(args.config)
-    settings = env['registry'].settings
-    closer = env['closer']
-    try:
-        counter = load_file(settings, args.source)
-    finally:
-        closer()
-    return counter
+    settings = Config(args.config).get_map('ichnaea')
+    return load_file(settings, args.source)
 
 
 def console_entry():  # pragma: no cover
