@@ -1,12 +1,12 @@
 import threading
 import datetime
-from Queue import Queue
 
 from colander.iso8601 import parse_date
 
 from ichnaea.db import Measure, RADIO_TYPE
 from ichnaea.decimaljson import dumps, loads, to_precise_int
 from ichnaea.db import MeasureDB
+from ichnaea.queue import TimedQueue
 
 
 _LOCALS = threading.local()
@@ -14,34 +14,6 @@ _LOCALS.dbs = {}
 _BATCH_SIZE = 100
 _MAX_AGE = datetime.timedelta(seconds=600)
 _LOCK = threading.RLock()
-
-
-class TimedQueue(Queue):
-    """A Queue with an age for the first item
-    """
-    def __init__(self, maxsize=0):
-        Queue.__init__(self, maxsize)
-        self._first_put_time = None
-
-    @property
-    def age(self):
-        if self._first_put_time is None:
-            return datetime.timedelta(seconds=0)
-        return datetime.datetime.utcnow() - self._first_put_time
-
-    def put(self, item, block=True, timeout=None):
-        # first item
-        if self.empty():
-            self._first_put_time = datetime.datetime.utcnow()
-        return Queue.put(self, item, block=block, timeout=timeout)
-
-    def get(self, block=True, timeout=None):
-        res = Queue.get(self, block=block, timeout=timeout)
-        if self.empty():
-            self._first_put_time = None
-        return res
-
-
 _BATCH = TimedQueue(maxsize=_BATCH_SIZE)
 
 
