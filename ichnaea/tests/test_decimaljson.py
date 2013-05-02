@@ -1,5 +1,8 @@
 from decimal import Decimal
 from unittest import TestCase
+from datetime import timedelta
+
+from ichnaea.decimaljson import dumps
 
 
 class TestRenderer(TestCase):
@@ -21,3 +24,6 @@ class TestRenderer(TestCase):
         render = self._make_one()
         d = Decimal("12.34")
         self.assertEqual(render({'a': d}, {}), '{"a": 12.34}')
+
+    def test_error(self):
+        self.assertRaises(TypeError, dumps, timedelta(days=1))
