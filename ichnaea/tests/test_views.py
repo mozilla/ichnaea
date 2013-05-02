@@ -47,14 +47,6 @@ class TestSearch(TestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "not_found"}')
 
-    def test_one_wifi(self):
-        app = _make_app()
-        res = app.post_json('/v1/search',
-                            {"wifi": [{"mac": "ab:cd:12:34"}]},
-                            status=400)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertTrue('errors' in res.json)
-
     def test_wifi_not_found(self):
         app = _make_app()
         res = app.post_json('/v1/search', {"wifi": [

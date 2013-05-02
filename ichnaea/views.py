@@ -22,17 +22,13 @@ def error_handler(errors):
 
 
 MSG_ONE_OF = 'You need to provide a mapping with least one cell or wifi entry.'
-MSG_TWO_WIFI = 'You need to specify at least two wifi entries.'
 
 
 def check_cell_or_wifi(data, request):
     cell = data.get('cell', ())
     wifi = data.get('wifi', ())
-    if not any(wifi):
-        if not any(cell):
-            request.errors.add('body', 'body', MSG_ONE_OF)
-    elif len(wifi) < 2:
-        request.errors.add('body', 'body', MSG_TWO_WIFI)
+    if not any(wifi) and not any(cell):
+        request.errors.add('body', 'body', MSG_ONE_OF)
 
 
 def search_validator(request):
@@ -86,9 +82,6 @@ def search_post(request):
                     "frequency": 2412,
                     "noise": 40,
                     "signal": -50
-                },
-                {
-                    "mac": "01:23:45:67:AB:12"
                 }
             ]
         }
@@ -101,8 +94,7 @@ def search_post(request):
 
     For `cell` entries, the `mcc`, `mnc` and `cid` keys are required.
 
-    For `wifi` entries, the `mac` key is required. If any wifi lookup is made,
-    at least two entries need to be provided.
+    For `wifi` entries, the `mac` key is required.
 
     The signal is the signal strength measured in dBm, the noise is the
     signal to noise ratio measured in dB. The frequency is measured in MHz.
@@ -232,9 +224,6 @@ def submit_post(request):
                     "frequency": 2412,
                     "noise": 40,
                     "signal": -50
-                },
-                {
-                    "mac": "01:23:45:67:AB:12"
                 }
             ]
            }
