@@ -1,5 +1,5 @@
 from cornice import Service
-from pyramid.httpexceptions import HTTPError
+from pyramid.httpexceptions import HTTPError, HTTPNoContent
 from pyramid.response import Response
 
 from ichnaea.decimaljson import dumps
@@ -216,7 +216,8 @@ def submit_post(request):
 
     The errors mapping contains detailed information about the errors.
     """
-    return submit_request(request)
+    submit_request(request)
+    return HTTPNoContent()
 
 
 heartbeat = Service(name='heartbeat', path='/__heartbeat__')

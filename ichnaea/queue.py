@@ -5,7 +5,7 @@ from Queue import Queue
 class TimedQueue(Queue):
     """A Queue with an age for the first item
     """
-    def __init__(self, maxsize=0):
+    def __init__(self, maxsize=1000):
         Queue.__init__(self, maxsize)
         self._first_put_time = None
 
