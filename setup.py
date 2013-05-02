@@ -14,7 +14,8 @@ requires = [
     'PyMySQL',
     'statsd-client',
     'chaussette',
-    'konfig'
+    'konfig',
+    'circus'
 ]
 
 if sys.version_info < (2, 7):

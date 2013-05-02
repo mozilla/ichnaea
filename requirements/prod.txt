@@ -26,3 +26,4 @@ zope.deprecation==4.0.2
 zope.interface==4.0.5
 chaussette==0.9
 konfig==0.4
+circus==0.7.1
