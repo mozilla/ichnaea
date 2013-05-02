@@ -36,6 +36,7 @@ Table of contents
 .. toctree::
    :maxdepth: 2
 
+   deploy
    changelog
 
 
@@ -51,29 +52,6 @@ Bugzilla <https://bugzilla.mozilla.org/describecomponents.cgi?product=Mozilla%20
 The developers of ``ichnaea`` can frequently be found on the Mozilla IRC
 network in the #geo channel.
 
-
-How to run your own server
-==========================
-
-Run the following commands to download the database and the server:
-
-.. code-block:: bash
-
-   git clone https://github.com/mozilla/ichnaea
-   cd ichnaea
-   make
-   curl http://opencellid.enaikoon.de:8080/gpsSuiteCellIDServer/exportFiles/basestations.tar.gz | tar xzC data/
-   bin/ichnaea_import ichnaea.ini data/basestations.csv
-
-
-Then run the server:
-
-.. code-block:: bash
-
-   bin/pserve ichnaea.ini
-
-
-From there you can access the service on port 7001.
 
 
 Extra data sources
