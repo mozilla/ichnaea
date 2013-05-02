@@ -1,12 +1,11 @@
 from cornice import Service
-from pyramid.httpexceptions import HTTPError, HTTPNoContent
+from pyramid.httpexceptions import HTTPError
 from pyramid.response import Response
-from statsd import StatsdTimer
 
-from ichnaea.db import Cell, RADIO_TYPE
-from ichnaea.decimaljson import dumps, quantize
+from ichnaea.decimaljson import dumps
 from ichnaea.schema import SearchSchema, SubmitSchema
-from ichnaea.worker import add_measures
+from ichnaea.search import search_request
+from ichnaea.submit import submit_request
 
 
 class _JSONError(HTTPError):
@@ -137,45 +136,7 @@ def search_post(request):
 
     The errors mapping contains detailed information about the errors.
     """
-
-    data = request.validated
-    if not data['cell']:
-        # we don't have any wifi entries yet
-        return {
-            'status': 'not_found',
-        }
-
-    radio = RADIO_TYPE.get(data['radio'], 0)
-    cell = data['cell'][0]
-    mcc = cell['mcc']
-    mnc = cell['mnc']
-    lac = cell['lac']
-    cid = cell['cid']
-
-    session = request.celldb.session()
-    query = session.query(Cell)
-    query = query.filter(Cell.radio == radio)
-    query = query.filter(Cell.mcc == mcc)
-    query = query.filter(Cell.mnc == mnc)
-    query = query.filter(Cell.cid == cid)
-
-    if lac >= 0:
-        query = query.filter(Cell.lac == lac)
-
-    with StatsdTimer('get_cell_location'):
-        result = query.first()
-
-        if result is None:
-            return {
-                'status': 'not_found',
-            }
-
-        return {
-            'status': 'ok',
-            'lat': quantize(result.lat),
-            'lon': quantize(result.lon),
-            'accuracy': 20000,
-        }
+    return search_request(request)
 
 
 submit = Service(
@@ -255,8 +216,7 @@ def submit_post(request):
 
     The errors mapping contains detailed information about the errors.
     """
-    add_measures(request)
-    return HTTPNoContent()
+    return submit_request(request)
 
 
 heartbeat = Service(name='heartbeat', path='/__heartbeat__')
