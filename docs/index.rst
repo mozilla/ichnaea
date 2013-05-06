@@ -2,8 +2,8 @@
 Mozilla Ichnaea
 ===============
 
-**Mozilla Ichnaea** is a service to provide geo location coordinates in
-response to user requests.
+``Mozilla Ichnaea`` is an application to provide geo-location coordinates
+from other sources of data (cellphone towers, wifi networks, etc.).
 
 More information about the specific instance hosted by Mozilla can be found
 at https://wiki.mozilla.org/Services/Location
@@ -16,6 +16,10 @@ We currently provide two API:
 - one for submitting information about what you see around you,
   given a location.
 
+About the name
+==============
+
+In Greek mythology, Ichnaea (Iknaia) means "the tracker".
 
 API
 ===

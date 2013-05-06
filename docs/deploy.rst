@@ -1,6 +1,5 @@
-Deploying
-=========
-
+Installing / Deploying
+======================
 
 Run the following commands to download the database and the server:
 
@@ -17,7 +16,7 @@ Make sure Redis is running. Under Debuntu:
 .. code-block:: bash
 
    sudo apt-get install redis-server
-   sudo /etc/init.d/redis-server start
+   sudo service redis start
 
 Then run the server:
 
@@ -34,5 +33,5 @@ You can also run the service as a daemon:
 
    bin/circusd --daemon ichnaea.ini
 
-And interact with it using circusctl. See https://circus.readthedocs.org/
-
+And interact with it using circusctl. Have a look at `the Circus documentation
+<https://circus.readthedocs.org/>`_ for more information on this.
