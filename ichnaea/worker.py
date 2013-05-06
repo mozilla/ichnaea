@@ -34,7 +34,7 @@ def _process_wifi(values):
     return result
 
 
-def add_measures(measures, db_instance=None, sqluri=None):
+def insert_measures(measures, db_instance=None, sqluri=None):
     if db_instance is None:
         db_instance = _get_db(sqluri)
 
@@ -63,6 +63,6 @@ def add_measures(measures, db_instance=None, sqluri=None):
     session.commit()
 
 
-def push_measures(request, measures):
-    request.queue.enqueue('ichnaea.worker:add_measures', measures=measures,
+def queue_measures(request, measures):
+    request.queue.enqueue('ichnaea.worker:insert_measures', measures=measures,
                           sqluri=request.measuredb.sqluri)

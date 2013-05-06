@@ -3,7 +3,7 @@ import threading
 
 from ichnaea.decimaljson import dumps
 from ichnaea.queue import TimedQueue
-from ichnaea.worker import add_measures, push_measures
+from ichnaea.worker import insert_measures, queue_measures
 
 _LOCK = threading.RLock()
 _BATCH = TimedQueue()
@@ -39,6 +39,6 @@ def submit_request(request):
             measures = [_BATCH.get() for i in range(current_size)]
 
     if async:
-        push_measures(request, measures)
+        queue_measures(request, measures)
     else:
-        add_measures(measures, db_instance=request.measuredb)
+        insert_measures(measures, db_instance=request.measuredb)

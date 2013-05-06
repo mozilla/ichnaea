@@ -52,8 +52,8 @@ search = Service(
 
 
 @search.post(renderer='json', accept="application/json",
-                      schema=SearchSchema, error_handler=error_handler,
-                      validators=search_validator)
+             schema=SearchSchema, error_handler=error_handler,
+             validators=search_validator)
 def search_post(request):
     """
     Determine the current location based on provided data about
