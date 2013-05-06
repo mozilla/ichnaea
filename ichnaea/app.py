@@ -5,6 +5,7 @@ from pyramid.events import NewRequest
 import statsd
 
 from ichnaea.db import CellDB, MeasureDB
+from ichnaea.util import _is_true
 from ichnaea import decimaljson
 
 
@@ -14,12 +15,6 @@ def attach_dbs(event):
     event.request.measuredb = request.registry.measuredb
     if hasattr(request.registry, 'queue'):
         event.request.queue = request.registry.queue
-
-
-def _is_true(value):
-    if isinstance(value, str):
-        value = value.lower() in ('true', '1')
-    return value
 
 
 def main(global_config, **settings):
