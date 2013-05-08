@@ -69,7 +69,11 @@ measure_table = Measure.__table__
 class BaseDB(object):
 
     def __init__(self, sqluri):
-        self.engine = create_engine(sqluri)
+        options = dict(pool_recycle=3600, pool_size=10, pool_timeout=10)
+        if sqluri.startswith('sqlite'):
+            del options['pool_size']
+            del options['pool_timeout']
+        self.engine = create_engine(sqluri, **options)
         self.session_factory = sessionmaker(
             bind=self.engine, autocommit=False, autoflush=False)
 
