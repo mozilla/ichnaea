@@ -93,7 +93,10 @@ def search_post(request):
 
     For `cell` entries, the `mcc`, `mnc` and `cid` keys are required.
 
-    For `wifi` entries, the `mac` key is required.
+    For `wifi` entries, the `mac` key is required. The client must check the
+    Wifi SSID for a `_nomap` suffix. Wifi's with such a suffix most not be
+    submitted to the server. Wifi's with a hidden SSID should not be submitted
+    to the server either.
 
     The signal is the signal strength measured in dBm, the noise is the
     signal to noise ratio measured in dB. The frequency is measured in MHz.
