@@ -27,13 +27,25 @@ def load_file(settings, source_file, batch_size=10000):
         # insert test data for @nsm
         session.execute(cell_insert, [{
             "id": 1,
-            "lat": 19175710,
-            "lon": 72964500,
+            "lat": 191757100,
+            "lon": 729645000,
             "radio": 0,
             "mcc": 405,
             "mnc": 15,
             "lac": 15821,
             "cid": 2663101,
+            "range": 0
+        }])
+        # insert test data for @kanru
+        session.execute(cell_insert, [{
+            "id": 2,
+            "lat": 250324090,
+            "lon": 1215673029,
+            "radio": 0,
+            "mcc": 466,
+            "mnc": 92,
+            "lac": 10293,
+            "cid": 19233895,
             "range": 0
         }])
 
