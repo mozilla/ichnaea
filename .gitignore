@@ -7,7 +7,8 @@
 coverage.xml
 data
 nosetests.xml
-private.ini
+private-circus.ini
+private-ichnaea.ini
 pyramid.log
 bin
 build
