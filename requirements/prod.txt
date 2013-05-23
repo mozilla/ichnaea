@@ -27,3 +27,6 @@ zope.interface==4.0.5
 chaussette==0.9
 konfig==0.4
 circus==0.7.1
+iowait==0.1
+pyzmq==13.1.0
+psutil==0.7.0
