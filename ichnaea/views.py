@@ -89,29 +89,15 @@ def search_post(request):
     category an entry has to be provided. Empty categories can be omitted
     entirely.
 
-    The radio entry must be one of "gsm", "cdma", "umts" or "lte"
+    The radio entry must be one of "gsm", "cdma", "umts" or "lte".
 
-    For `cell` entries, the `mcc`, `mnc` and `cid` keys are required.
+    See :ref:`cell_records` for a detailed explanation of the cell record
+    fields for the different network standards.
 
     For `wifi` entries, the `mac` key is required. The client must check the
     Wifi SSID for a `_nomap` suffix. Wifi's with such a suffix most not be
     submitted to the server. Wifi's with a hidden SSID should not be submitted
     to the server either.
-
-    The signal is the signal strength measured in dBm, the noise is the
-    signal to noise ratio measured in dB. The frequency is measured in MHz.
-
-    In a CDMA network, the system id (sid) should be sent in the mnc field,
-    the network id (nid) in the lac field and base station id (bid) in the
-    cid field.
-
-    In UMTS networks an additional field called `psc` can be submitted with
-    the primary scrambling code as an integer, for example: `98`.
-
-    In LTE networks the mcc and mnc have the same meaning as in GSM/UMTS
-    networks. The cell identity (ci) should be sent in the `cid` field. As
-    optional fields the tracking area code (tac) can be sent in the `lac` field
-    and the physical cell id (pci) can be sent in the `psc` field.
 
     A successful result will be:
 
