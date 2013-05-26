@@ -140,7 +140,7 @@ Example:
             "lac": 12345,
             "cid": 12345,
             "psc": 123,
-            "signal": -51
+            "signal": -95
         }
     ]
 
@@ -161,4 +161,4 @@ psc
 
 signal
     The received signal strength (RSSI) in dBm, typically in the range of
-    -51 to -113 (optional).
+    -95 to -115 (optional).
