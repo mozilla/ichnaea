@@ -108,6 +108,11 @@ def search_post(request):
     In UMTS networks an additional field called `psc` can be submitted with
     the primary scrambling code as an integer, for example: `98`.
 
+    In LTE networks the mcc and mnc have the same meaning as in GSM/UMTS
+    networks. The cell identity (ci) should be sent in the `cid` field. As
+    optional fields the tracking area code (tac) can be sent in the `lac` field
+    and the physical cell id (pci) can be sent in the `psc` field.
+
     A successful result will be:
 
     .. code-block:: javascript
