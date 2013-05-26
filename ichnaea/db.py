@@ -36,6 +36,8 @@ class Cell(_Model):
     mnc = Column(SmallInteger)
     lac = Column(Integer)
     cid = Column(Integer)
+    # int in the range 0-511
+    psc = Column(SmallInteger)
     range = Column(Integer)
 
 cell_table = Cell.__table__

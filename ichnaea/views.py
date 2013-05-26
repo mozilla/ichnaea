@@ -105,6 +105,9 @@ def search_post(request):
     the network id (nid) in the lac field and base station id (bid) in the
     cid field.
 
+    In UMTS networks an additional field called `psc` can be submitted with
+    the primary scrambling code as an integer, for example: `98`.
+
     A successful result will be:
 
     .. code-block:: javascript

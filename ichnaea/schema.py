@@ -5,12 +5,14 @@ from ichnaea.decimaljson import EXPONENT_STR
 
 
 class CellSchema(MappingSchema):
-    mcc = SchemaNode(Integer(),
-                     location="body", type='int', validator=Range(0, 1000))
-    mnc = SchemaNode(Integer(),
-                     location="body", type='int', validator=Range(0, 32767))
+    mcc = SchemaNode(Integer(), location="body", type='int',
+                     validator=Range(0, 1000))
+    mnc = SchemaNode(Integer(), location="body", type='int',
+                     validator=Range(0, 32767))
     lac = SchemaNode(Integer(), location="body", type='int')
     cid = SchemaNode(Integer(), location="body", type='int')
+    psc = SchemaNode(Integer(), location="body", type='int',
+                     validator=Range(0, 511), missing=0)
     signal = SchemaNode(Integer(), location="body", type='int', missing=0)
 
 
