@@ -79,7 +79,6 @@ def search_post(request):
                     "mac": "01:23:45:67:89:AB",
                     "channel": 11,
                     "frequency": 2412,
-                    "noise": 40,
                     "signal": -50
                 }
             ]
@@ -181,7 +180,6 @@ def submit_post(request):
                     "mac": "01:23:45:67:89:AB",
                     "channel": 11,
                     "frequency": 2412,
-                    "noise": 40,
                     "signal": -50
                 }
             ]

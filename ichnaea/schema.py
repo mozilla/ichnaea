@@ -27,7 +27,6 @@ class WifiSchema(MappingSchema):
     mac = SchemaNode(String(), location="body", type='str')
     frequency = SchemaNode(Integer(), location="body", type='int', missing=0)
     channel = SchemaNode(Integer(), location="body", type='int', missing=0)
-    noise = SchemaNode(Integer(), location="body", type='int', missing=0)
     signal = SchemaNode(Integer(), location="body", type='int', missing=0)
 
 
