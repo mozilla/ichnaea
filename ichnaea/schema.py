@@ -10,7 +10,7 @@ class CellSchema(MappingSchema):
     mnc = SchemaNode(Integer(), location="body", type='int',
                      validator=Range(0, 32767))
     lac = SchemaNode(Integer(), location="body", type='int',
-                     validator=Range(0, 65535), missing=0)
+                     validator=Range(0, 2147483647), missing=0)
     cid = SchemaNode(Integer(), location="body", type='int',
                      validator=Range(0, 268435455), missing=0)
     psc = SchemaNode(Integer(), location="body", type='int',
