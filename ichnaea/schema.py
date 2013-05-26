@@ -2,6 +2,7 @@ from colander import MappingSchema, SchemaNode, SequenceSchema
 from colander import DateTime, Decimal, Integer, String, OneOf, Range
 
 from ichnaea.decimaljson import EXPONENT_STR
+from ichnaea.db import RADIO_TYPE_KEYS
 
 
 class CellSchema(MappingSchema):
@@ -36,7 +37,7 @@ class WifisSchema(SequenceSchema):
 
 class SearchSchema(MappingSchema):
     radio = SchemaNode(String(), location="body", type='str',
-                       validator=OneOf(['gsm', 'cdma', 'lte']), missing='')
+                       validator=OneOf(RADIO_TYPE_KEYS), missing='')
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())
 
@@ -52,7 +53,7 @@ class MeasureSchema(MappingSchema):
     altitude_accuracy = SchemaNode(Integer(), location="body", type='int',
                                    missing=0, validator=Range(0, 32767))
     radio = SchemaNode(String(), location="body", type='str',
-                       validator=OneOf(['gsm', 'cdma', 'lte']), missing='')
+                       validator=OneOf(RADIO_TYPE_KEYS), missing='')
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())
 

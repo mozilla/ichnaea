@@ -10,7 +10,10 @@ _Model = declarative_base()
 RADIO_TYPE = {
     'gsm': 0,
     'cdma': 1,
+    'umts': 2,
+    'lte': 3,
 }
+RADIO_TYPE_KEYS = list(RADIO_TYPE.keys())
 
 
 class Cell(_Model):
