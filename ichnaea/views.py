@@ -94,7 +94,7 @@ def search_post(request):
     fields for the different network standards.
 
     For `wifi` entries, the `mac` key is required. The client must check the
-    Wifi SSID for a `_nomap` suffix. Wifi's with such a suffix most not be
+    Wifi SSID for a `_nomap` suffix. Wifi's with such a suffix must not be
     submitted to the server. Wifi's with a hidden SSID should not be submitted
     to the server either.
 
