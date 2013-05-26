@@ -89,7 +89,7 @@ def search_post(request):
     category an entry has to be provided. Empty categories can be omitted
     entirely.
 
-    The radio entry must be one of "gsm" or "cdma".
+    The radio entry must be one of "gsm", "cdma" or "lte"
 
     For `cell` entries, the `mcc`, `mnc` and `cid` keys are required.
 

@@ -36,7 +36,7 @@ class WifisSchema(SequenceSchema):
 
 class SearchSchema(MappingSchema):
     radio = SchemaNode(String(), location="body", type='str',
-                       validator=OneOf(['gsm', 'cdma']), missing='gsm')
+                       validator=OneOf(['gsm', 'cdma', 'lte']), missing='')
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())
 
@@ -52,7 +52,7 @@ class MeasureSchema(MappingSchema):
     altitude_accuracy = SchemaNode(Integer(), location="body", type='int',
                                    missing=0, validator=Range(0, 32767))
     radio = SchemaNode(String(), location="body", type='str',
-                       validator=OneOf(['gsm', 'cdma']), missing='gsm')
+                       validator=OneOf(['gsm', 'cdma', 'lte']), missing='')
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())
 
