@@ -109,6 +109,7 @@ class TestMeasure(TestCase):
         cell_data[0]['psc'] = 0
         cell_data[0]['asu'] = 0
         cell_data[0]['signal'] = 0
+        cell_data[0]['ta'] = 0
 
         wanted = loads(item.cell)
         self.assertTrue(len(wanted), 1)

@@ -27,7 +27,8 @@ Example:
             "lac": 12345,
             "cid": 12345,
             "signal": -61,
-            "asu": 26
+            "asu": 26,
+            "ta": 10
         }
     ]
 
@@ -50,6 +51,9 @@ signal
 asu
     The arbitrary strength unit. An integer in the range of 0 to 31 (optional).
     The formula: ``RSSI [dBm] = (2x ASU) – 113``.
+
+ta
+    The timing advance. An integer in the range of 0 to 63 (optional).
 
 
 UMTS
@@ -158,7 +162,8 @@ Example:
             "cid": 12345,
             "psc": 123,
             "signal": -69,
-            "asu": 71
+            "asu": 71,
+            "ta": 10
         }
     ]
 
@@ -184,3 +189,6 @@ signal
 asu
     The arbitrary strength unit. An integer in the range of 0 to 95 (optional).
     The formula: ``RSRP [dBm] = ASU – 140``.
+
+ta
+    The timing advance. An integer in the range of 0 to 63 (optional).

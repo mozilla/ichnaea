@@ -19,6 +19,8 @@ class CellSchema(MappingSchema):
     asu = SchemaNode(Integer(), location="body", type='int',
                      validator=Range(-5, 255), missing=0)
     signal = SchemaNode(Integer(), location="body", type='int', missing=0)
+    ta = SchemaNode(Integer(), location="body", type='int',
+                    validator=Range(0, 63), missing=0)
 
 
 class CellsSchema(SequenceSchema):
