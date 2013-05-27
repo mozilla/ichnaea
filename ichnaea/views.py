@@ -111,8 +111,8 @@ def search_post(request):
         }
 
     The latitude and longitude are numbers, with seven decimal places of
-    actual precision. The accuracy is an integer measured in meters and defines
-    a circle around the given location.
+    actual precision. The coordinate reference system is WGS 84. The accuracy
+    is an integer measured in meters and defines a circle around the location.
 
     If no position can be determined, you instead get:
 
@@ -194,7 +194,8 @@ def submit_post(request):
     entry.
 
     The altitude, accuracy and altitude_accuracy fields are all measured in
-    meters. Altitude measures the height above or below the mean sea level.
+    meters. Altitude measures the height above or below the mean sea level,
+    as defined by WGS 84.
 
     The timestamp has to be in UTC time, encoded in ISO 8601. If not
     provided, the server time will be used.
