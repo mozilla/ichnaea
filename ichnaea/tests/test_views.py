@@ -37,7 +37,7 @@ class TestSearch(TestCase):
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "ok", "lat": 12.3456781, '
-                                   '"lon": 23.4567892, "accuracy": 20000}')
+                                   '"lon": 23.4567892, "accuracy": 35000}')
 
     def test_not_found(self):
         app = _make_app()
