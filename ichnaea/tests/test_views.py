@@ -107,6 +107,7 @@ class TestMeasure(TestCase):
         self.assertEqual(item.altitude_accuracy, 7)
         # colander schema adds default value
         cell_data[0]['psc'] = 0
+        cell_data[0]['asu'] = 0
         cell_data[0]['signal'] = 0
 
         wanted = loads(item.cell)

@@ -26,7 +26,8 @@ Example:
             "mnc": 123,
             "lac": 12345,
             "cid": 12345,
-            "signal": -51
+            "signal": -61,
+            "asu": 26
         }
     ]
 
@@ -46,6 +47,10 @@ signal
     The received signal strength (RSSI) in dBm, typically in the range of
     -51 to -113 (optional).
 
+asu
+    The arbitrary strength unit. An integer in the range of 0 to 31 (optional).
+    The formula: ``RSSI [dBm] = (2x ASU) – 113``.
+
 
 UMTS
 ====
@@ -62,7 +67,8 @@ Example:
             "lac": 12345,
             "cid": 123456789,
             "psc": 123,
-            "signal": -25
+            "signal": -68,
+            "asu": 48
         }
     ]
 
@@ -86,6 +92,10 @@ signal
     The received signal code power (RSCP) in dBm, typically in the range of
     -25 to -121 (optional).
 
+asu
+    The arbitrary strength unit. An integer in the range of -5 to 91 (optional).
+    The formula: ``RSCP [dBm] = ASU - 116``.
+
 
 CDMA
 ====
@@ -104,7 +114,8 @@ Example:
             "mnc": 12345,
             "lac": 12345,
             "cid": 12345,
-            "signal": -75
+            "signal": -75,
+            "asu": 16
         }
     ]
 
@@ -124,6 +135,12 @@ signal
     The received signal strength (RSSI) in dBm, typically in the range of
     -75 to -100 (optional).
 
+asu
+    The arbitrary strength unit. An integer in the range of 1 to 16 (optional).
+    Conversion rule:: ``RSSI [dBm] >= -75: ASU = 16``,
+    ``RSSI [dBm] >= -82: ASU = 8``, ``RSSI [dBm] >= -90: ASU = 4``,
+    ``RSSI [dBm] >= -95: ASU = 2``, ``RSSI [dBm] >= -100: ASU = 1``.
+
 
 LTE
 ===
@@ -140,7 +157,8 @@ Example:
             "lac": 12345,
             "cid": 12345,
             "psc": 123,
-            "signal": -95
+            "signal": -69,
+            "asu": 71
         }
     ]
 
@@ -160,5 +178,9 @@ psc
     The physical cell id as an integer in the range of 0 to 503 (optional).
 
 signal
-    The received signal strength (RSSI) in dBm, typically in the range of
-    -95 to -115 (optional).
+    The received signal strength (RSRP) in dBm, typically in the range of
+    -45 to -137 (optional).
+
+asu
+    The arbitrary strength unit. An integer in the range of 0 to 95 (optional).
+    The formula:: ``RSRP [dBm] = ASU – 140``.

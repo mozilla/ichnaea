@@ -16,6 +16,8 @@ class CellSchema(MappingSchema):
                      validator=Range(0, 268435455), missing=0)
     psc = SchemaNode(Integer(), location="body", type='int',
                      validator=Range(0, 511), missing=0)
+    asu = SchemaNode(Integer(), location="body", type='int',
+                     validator=Range(-5, 255), missing=0)
     signal = SchemaNode(Integer(), location="body", type='int', missing=0)
 
 

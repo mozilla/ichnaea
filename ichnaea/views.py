@@ -71,7 +71,8 @@ def search_post(request):
                     "mnc": 5,
                     "lac": 31421,
                     "cid": 60420242,
-                    "signal": -60
+                    "signal": -61,
+                    "asu": 26
                 }
             ],
             "wifi": [
