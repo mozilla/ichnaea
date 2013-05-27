@@ -137,7 +137,7 @@ signal
 
 asu
     The arbitrary strength unit. An integer in the range of 1 to 16 (optional).
-    Conversion rule:: ``RSSI [dBm] >= -75: ASU = 16``,
+    Conversion rule: ``RSSI [dBm] >= -75: ASU = 16``,
     ``RSSI [dBm] >= -82: ASU = 8``, ``RSSI [dBm] >= -90: ASU = 4``,
     ``RSSI [dBm] >= -95: ASU = 2``, ``RSSI [dBm] >= -100: ASU = 1``.
 
@@ -183,4 +183,4 @@ signal
 
 asu
     The arbitrary strength unit. An integer in the range of 0 to 95 (optional).
-    The formula:: ``RSRP [dBm] = ASU – 140``.
+    The formula: ``RSRP [dBm] = ASU – 140``.
