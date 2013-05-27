@@ -41,6 +41,7 @@ Table of contents
    :maxdepth: 2
 
    cell
+   calculation
    deploy
    changelog
 
