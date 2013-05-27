@@ -28,7 +28,7 @@ def search_cell(session, data):
     return {
         'lat': quantize(result.lat),
         'lon': quantize(result.lon),
-        'accuracy': 20000,
+        'accuracy': 35000,
     }
 
 
