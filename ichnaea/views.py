@@ -10,7 +10,7 @@ from ichnaea.submit import submit_request
 
 class _JSONError(HTTPError):
     def __init__(self, errors, status=400):
-        body = {'errors': errors}
+        body = {'status': 'error', 'errors': errors}
         Response.__init__(self, dumps(body))
         self.status = status
         self.content_type = 'application/json'
@@ -131,6 +131,7 @@ def search_post(request):
     .. code-block:: javascript
 
         {
+            "status": "error,
             "errors": {}
         }
 
@@ -211,6 +212,7 @@ def submit_post(request):
     .. code-block:: javascript
 
         {
+            "status": "error",
             "errors": {}
         }
 
