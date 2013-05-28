@@ -7,7 +7,7 @@ SQLAlchemy==0.8.0
 WebOb==1.2.3
 argparse==1.2.1
 chaussette==0.9
-circus==0.8
+circus==0.8.1
 colander==1.0a2
 configparser==3.3.0r2
 cornice==0.13
