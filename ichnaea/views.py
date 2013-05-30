@@ -77,7 +77,7 @@ def search_post(request):
             ],
             "wifi": [
                 {
-                    "mac": "01:23:45:67:89:AB",
+                    "key": "3680873e9b83738eb72946d19e971e023e51fd01",
                     "channel": 11,
                     "frequency": 2412,
                     "signal": -50
@@ -94,10 +94,24 @@ def search_post(request):
     See :ref:`cell_records` for a detailed explanation of the cell record
     fields for the different network standards.
 
-    For `wifi` entries, the `mac` key is required. The client must check the
+    For `wifi` entries, the `key` field is required. The client must check the
     Wifi SSID for a `_nomap` suffix. Wifi's with such a suffix must not be
     submitted to the server. Wifi's with a hidden SSID should not be submitted
     to the server either.
+
+    The `key` is a SHA1 hash of the concatenated BSSID and SSID of the wifi
+    network. So for example for a bssid of `01:23:45:67:89:ab` and a
+    ssid of `network name`, the result should be:
+    `3680873e9b83738eb72946d19e971e023e51fd01`. In Python this would be coded
+    as:
+
+    .. code-block:: python
+
+        import hashlib
+
+        bssid = '01:23:45:67:89:ab'.encode('utf-8')
+        ssid = 'network name'.encode('utf-8')
+        key = hashlib.sha1(bssid + ssid).hexdigest()
 
     A successful result will be:
 
@@ -178,7 +192,7 @@ def submit_post(request):
             ],
             "wifi": [
                 {
-                    "mac": "01:23:45:67:89:AB",
+                    "key": "3680873e9b83738eb72946d19e971e023e51fd01",
                     "channel": 11,
                     "frequency": 2412,
                     "signal": -50

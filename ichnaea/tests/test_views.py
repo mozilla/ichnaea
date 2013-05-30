@@ -51,7 +51,7 @@ class TestSearch(TestCase):
     def test_wifi_not_found(self):
         app = _make_app()
         res = app.post_json('/v1/search', {"wifi": [
-                            {"mac": "ab:cd:12:34"}, {"mac": "cd:ef:23:45"}]},
+                            {"key": "abcd"}, {"key": "cdef"}]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "not_found"}')
@@ -119,7 +119,7 @@ class TestMeasure(TestCase):
 
     def test_ok_wifi(self):
         app = _make_app()
-        wifi_data = [{"mac": "ab:12:34"}, {"mac": "cd:34:56"}]
+        wifi_data = [{"key": "ab12"}, {"key": "cd34"}]
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3456781,
                                       "lon": 23.4567892,
@@ -136,20 +136,20 @@ class TestMeasure(TestCase):
         self.assertEqual(item.accuracy, 17)
         self.assertEqual(item.altitude, 0)
         self.assertEqual(item.altitude_accuracy, 0)
-        self.assertTrue('"mac": "ab:12:34"' in item.wifi)
-        self.assertTrue('"mac": "cd:34:56"' in item.wifi)
+        self.assertTrue('"key": "ab12"' in item.wifi)
+        self.assertTrue('"key": "cd34"' in item.wifi)
         self.assertTrue(item.cell is None)
 
     def test_ok_wifi_frequency(self):
         app = _make_app()
         wifi_data = [
-            {"mac": "99"},
-            {"mac": "aa", "frequency": 2427},
-            {"mac": "bb", "channel": 7},
-            {"mac": "cc", "frequency": 5200},
-            {"mac": "dd", "frequency": 5700},
-            {"mac": "ee", "frequency": 3100},
-            {"mac": "ff", "frequency": 2412, "channel": 9},
+            {"key": "99"},
+            {"key": "aa", "frequency": 2427},
+            {"key": "bb", "channel": 7},
+            {"key": "cc", "frequency": 5200},
+            {"key": "dd", "frequency": 5700},
+            {"key": "ee", "frequency": 3100},
+            {"key": "ff", "frequency": 2412, "channel": 9},
         ]
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.345678,
@@ -162,7 +162,7 @@ class TestMeasure(TestCase):
         self.assertEqual(len(result), 1)
         item = result[0]
         measure_wifi = loads(item.wifi)
-        measure_wifi = dict([(m['mac'], m) for m in measure_wifi])
+        measure_wifi = dict([(m['key'], m) for m in measure_wifi])
         for k, v in measure_wifi.items():
             self.assertFalse('frequency' in v)
         self.assertEqual(measure_wifi['99']['channel'], 0)
@@ -175,7 +175,7 @@ class TestMeasure(TestCase):
 
     def test_batches(self):
         app = _make_app()
-        wifi_data = [{"mac": "aa"}, {"mac": "bb"}]
+        wifi_data = [{"key": "aa"}, {"key": "bb"}]
         items = [{"lat": 12.34, "lon": 23.45 + i, "wifi": wifi_data}
                  for i in range(10)]
         res = app.post_json('/v1/submit', {"items": items}, status=204)
@@ -190,15 +190,15 @@ class TestMeasure(TestCase):
         time = "2012-03-15T11:12:13.456Z"
         app.post_json(
             '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0, "wifi": [{"mac": "a"}], "time": time},
-                {"lat": 2.0, "lon": 3.0, "wifi": [{"mac": "b"}]},
+                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}], "time": time},
+                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
             ]},
             status=204)
         session = app.app.registry.measuredb.session()
         result = session.query(Measure).all()
         self.assertEqual(len(result), 2)
         for item in result:
-            if '"mac": "a"' in item.wifi:
+            if '"key": "a"' in item.wifi:
                 self.assertEqual(
                     item.time, datetime(2012, 3, 15, 11, 12, 13, 456000))
             else:
