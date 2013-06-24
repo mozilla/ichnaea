@@ -6,6 +6,8 @@ Mozilla Ichnaea
 from other sources of data (cellphone towers, wifi networks, etc.).
 
 See `the full docs`_ for more information.
+Please use http://bugzilla.mozilla.org to report issues, using the
+Services::Location component.
 
 License
 =======
