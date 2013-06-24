@@ -22,7 +22,7 @@ Then run the server:
 
 .. code-block:: bash
 
-   bin/circusd ichnaea.ini
+   bin/circusd circus.ini
 
 This command will launch 2 python workers and a redis worker.
 From there you can access the service on port 7001.
@@ -31,7 +31,7 @@ You can also run the service as a daemon:
 
 .. code-block:: bash
 
-   bin/circusd --daemon ichnaea.ini
+   bin/circusd --daemon circus.ini
 
 And interact with it using circusctl. Have a look at `the Circus documentation
 <https://circus.readthedocs.org/>`_ for more information on this.

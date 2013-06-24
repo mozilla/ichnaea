@@ -6,11 +6,17 @@ PyMySQL==0.5
 SQLAlchemy==0.8.0
 WebOb==1.2.3
 argparse==1.2.1
+chaussette==0.9
+circus==0.8.1
 colander==1.0a2
 configparser==3.3.0r2
 cornice==0.13
+iowait==0.1
+konfig==0.4
 ordereddict==1.1
+psutil==0.7.0
 pyramid==1.4
+pyzmq==13.1.0
 redis==2.7.4
 repoze.lru==0.6
 retools==0.3
@@ -24,6 +30,3 @@ waitress==0.8.2
 wsgiref==0.1.2
 zope.deprecation==4.0.2
 zope.interface==4.0.5
-chaussette==0.9
-konfig==0.4
-circus==0.7.1

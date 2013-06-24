@@ -2,7 +2,7 @@ import os
 from tempfile import mkstemp
 from unittest import TestCase
 
-LINE = '2;2;1.23456;-2.3;1;2;3;4;0;0;2013-04-20 02:59:43;2013-04-20 02:59:43;1'
+LINE = '9;2;1.23456;-2.3;1;2;3;4;0;0;2013-04-20 02:59:43;2013-04-20 02:59:43;1'
 
 
 class TestLoadFile(TestCase):

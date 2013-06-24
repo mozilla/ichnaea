@@ -10,7 +10,10 @@ _Model = declarative_base()
 RADIO_TYPE = {
     'gsm': 0,
     'cdma': 1,
+    'umts': 2,
+    'lte': 3,
 }
+RADIO_TYPE_KEYS = list(RADIO_TYPE.keys())
 
 
 class Cell(_Model):
@@ -36,6 +39,8 @@ class Cell(_Model):
     mnc = Column(SmallInteger)
     lac = Column(Integer)
     cid = Column(Integer)
+    # int in the range 0-511
+    psc = Column(SmallInteger)
     range = Column(Integer)
 
 cell_table = Cell.__table__
@@ -69,7 +74,11 @@ measure_table = Measure.__table__
 class BaseDB(object):
 
     def __init__(self, sqluri):
-        self.engine = create_engine(sqluri)
+        options = dict(pool_recycle=3600, pool_size=10, pool_timeout=10)
+        if sqluri.startswith('sqlite'):
+            del options['pool_size']
+            del options['pool_timeout']
+        self.engine = create_engine(sqluri, **options)
         self.session_factory = sessionmaker(
             bind=self.engine, autocommit=False, autoflush=False)
 

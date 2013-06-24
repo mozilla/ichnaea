@@ -71,15 +71,15 @@ def search_post(request):
                     "mnc": 5,
                     "lac": 31421,
                     "cid": 60420242,
-                    "signal": -60
+                    "signal": -61,
+                    "asu": 26
                 }
             ],
             "wifi": [
                 {
-                    "mac": "01:23:45:67:89:AB",
+                    "key": "3680873e9b83738eb72946d19e971e023e51fd01",
                     "channel": 11,
                     "frequency": 2412,
-                    "noise": 40,
                     "signal": -50
                 }
             ]
@@ -89,18 +89,29 @@ def search_post(request):
     category an entry has to be provided. Empty categories can be omitted
     entirely.
 
-    The radio entry must be one of "gsm" or "cdma".
+    The radio entry must be one of "gsm", "cdma", "umts" or "lte".
 
-    For `cell` entries, the `mcc`, `mnc` and `cid` keys are required.
+    See :ref:`cell_records` for a detailed explanation of the cell record
+    fields for the different network standards.
 
-    For `wifi` entries, the `mac` key is required.
+    For `wifi` entries, the `key` field is required. The client must check the
+    Wifi SSID for a `_nomap` suffix. Wifi's with such a suffix must not be
+    submitted to the server. Wifi's with a hidden SSID should not be submitted
+    to the server either.
 
-    The signal is the signal strength measured in dBm, the noise is the
-    signal to noise ratio measured in dB. The frequency is measured in MHz.
+    The `key` is a SHA1 hash of the concatenated BSSID and SSID of the wifi
+    network. So for example for a bssid of `01:23:45:67:89:ab` and a
+    ssid of `network name`, the result should be:
+    `3680873e9b83738eb72946d19e971e023e51fd01`. In Python this would be coded
+    as:
 
-    In a CDMA network, the system id (sid) should be sent in the mnc field,
-    the network id (nid) in the lac field and base station id (bid) in the
-    cid field.
+    .. code-block:: python
+
+        import hashlib
+
+        bssid = '01:23:45:67:89:ab'.encode('utf-8')
+        ssid = 'network name'.encode('utf-8')
+        key = hashlib.sha1(bssid + ssid).hexdigest()
 
     A successful result will be:
 
@@ -114,8 +125,8 @@ def search_post(request):
         }
 
     The latitude and longitude are numbers, with seven decimal places of
-    actual precision. The accuracy is an integer measured in meters and defines
-    a circle around the given location.
+    actual precision. The coordinate reference system is WGS 84. The accuracy
+    is an integer measured in meters and defines a circle around the location.
 
     If no position can be determined, you instead get:
 
@@ -182,10 +193,9 @@ def submit_post(request):
             ],
             "wifi": [
                 {
-                    "mac": "01:23:45:67:89:AB",
+                    "key": "3680873e9b83738eb72946d19e971e023e51fd01",
                     "channel": 11,
                     "frequency": 2412,
-                    "noise": 40,
                     "signal": -50
                 }
             ]
@@ -199,7 +209,8 @@ def submit_post(request):
     entry.
 
     The altitude, accuracy and altitude_accuracy fields are all measured in
-    meters. Altitude measures the height above or below the mean sea level.
+    meters. Altitude measures the height above or below the mean sea level,
+    as defined by WGS 84.
 
     The timestamp has to be in UTC time, encoded in ISO 8601. If not
     provided, the server time will be used.
