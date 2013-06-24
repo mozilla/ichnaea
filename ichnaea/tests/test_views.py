@@ -61,8 +61,7 @@ class TestSearch(TestCase):
         res = app.post_json('/v1/search', {"cell": []}, status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
-        self.assertTrue('status' in res.json)
-        self.assertEquals(res.json['status'], 'error')
+        self.assertFalse('status' in res.json)
 
     def test_error_unknown_key(self):
         app = _make_app()
@@ -213,7 +212,7 @@ class TestMeasure(TestCase):
             status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
-        self.assertEquals(res.json['status'], 'error')
+        self.assertFalse('status' in res.json)
 
     def test_error_unknown_key(self):
         app = _make_app()
