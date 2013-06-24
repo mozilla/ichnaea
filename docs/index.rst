@@ -16,6 +16,7 @@ We currently provide two API:
 - one for submitting information about what you see around you,
   given a location.
 
+
 About the name
 ==============
 
@@ -59,11 +60,10 @@ The developers of ``ichnaea`` can frequently be found on the Mozilla IRC
 network in the #geo channel.
 
 
-
 Extra data sources
 ==================
 
-**www.opencellids.org/en/download/**
+**opencellid.enaikoon.de**
 
 - http://opencellid.enaikoon.de:8080/gpsSuiteCellIDServer/exportFiles/basestations.tar.gz
 - http://opencellid.enaikoon.de:8080/gpsSuiteCellIDServer/exportFiles/measurements.tar.gz
