@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 from pyramid.config import Configurator
 from pyramid.events import NewRequest
@@ -7,6 +8,8 @@ import statsd
 from ichnaea.db import CellDB, MeasureDB
 from ichnaea.util import _is_true
 from ichnaea import decimaljson
+
+logger = logging.getLogger('ichnaea')
 
 
 def attach_dbs(event):
@@ -47,8 +50,16 @@ def main(global_config, **settings):
         'STATSD_SAMPLE_RATE': float(settings.get('statsd.sample', 1.0)),
         'STATSD_BUCKET_PREFIX': settings.get('statsd.prefix', ''),
     }
-
     statsd.init_statsd(statsd_settings)
+
+    # logging
+    global logger
+    logger.setLevel(logging.DEBUG)
+    sh = logging.StreamHandler()
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    sh.setFormatter(formatter)
+    logger.addHandler(sh)
 
     config.registry.celldb = CellDB(settings['celldb'])
     config.registry.measuredb = MeasureDB(settings['measuredb'])

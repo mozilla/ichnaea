@@ -1,4 +1,5 @@
 import datetime
+import logging
 import threading
 
 from ichnaea.decimaljson import dumps
@@ -7,6 +8,8 @@ from ichnaea.worker import insert_measures, queue_measures
 
 _LOCK = threading.RLock()
 _BATCH = TimedQueue()
+
+logger = logging.getLogger('ichnaea')
 
 
 def submit_request(request):
@@ -17,6 +20,7 @@ def submit_request(request):
     batch_age = settings['batch_age']
 
     # data
+    logger.debug('submit' + repr(request.validated))
     measures = []
     for measure in request.validated['items']:
         if measure['time'] is None:
