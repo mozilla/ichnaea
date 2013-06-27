@@ -41,7 +41,7 @@ class TestSearchSchema(TestCase):
         schema = self._make_schema()
         request = self._make_request('{"cell": [{}]}')
         validate_colander_schema(schema, request)
-        self.assertTrue(request.errors)
+        self.assertTrue('cell' in request.validated)
 
     def test_wrong_cell_data(self):
         schema = self._make_schema()
