@@ -1,3 +1,5 @@
+import logging
+
 from cornice import Service
 from pyramid.httpexceptions import HTTPError, HTTPNoContent
 from pyramid.response import Response
@@ -6,6 +8,8 @@ from ichnaea.decimaljson import dumps
 from ichnaea.schema import SearchSchema, SubmitSchema
 from ichnaea.search import search_request
 from ichnaea.submit import submit_request
+
+logger = logging.getLogger('ichnaea')
 
 
 class _JSONError(HTTPError):
@@ -17,6 +21,7 @@ class _JSONError(HTTPError):
 
 
 def error_handler(errors):
+    logger.debug('error_handler' + repr(errors))
     return _JSONError(errors, errors.status)
 
 
