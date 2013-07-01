@@ -19,4 +19,4 @@ def submit_request(request):
             measure['time'] = datetime.datetime.utcnow()
         measures.append(dumps(measure))
 
-    insert_measures(measures, db_instance=request.measuredb)
+    insert_measures(measures, db_instance=request.database)

@@ -10,7 +10,7 @@ class TestLoadFile(TestCase):
     def _make_one(self):
         from ichnaea.importer import load_file
         tmpfile = mkstemp()
-        settings = {'celldb': 'sqlite://'}
+        settings = {'database': 'sqlite://'}
         return load_file, settings, tmpfile
 
     def test_no_lines(self):
@@ -53,8 +53,7 @@ class TestMain(TestCase):
     def test_main(self):
         config, data, func = self._make_one()
         os.write(config[0], '[ichnaea]\n')
-        os.write(config[0], 'celldb=sqlite://\n')
-        os.write(config[0], 'measuredb=sqlite://\n')
+        os.write(config[0], 'database=sqlite://\n')
         os.write(data[0], LINE)
         counter = func(['main', config[1], data[1]])
         self.assertEqual(counter, 1)

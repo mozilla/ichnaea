@@ -8,9 +8,7 @@ from ichnaea.decimaljson import loads
 
 
 def _make_app():
-    global_config = {}
-    wsgiapp = main(global_config, celldb='sqlite://', measuredb='sqlite://',
-                   batch_size=-1)
+    wsgiapp = main({}, database='sqlite://')
     return TestApp(wsgiapp)
 
 
@@ -18,7 +16,7 @@ class TestSearch(TestCase):
 
     def test_ok(self):
         app = _make_app()
-        session = app.app.registry.celldb.session()
+        session = app.app.registry.database.session()
         cell = Cell()
         cell.lat = 123456781
         cell.lon = 234567892
@@ -96,7 +94,7 @@ class TestMeasure(TestCase):
                                       "cell": cell_data}]},
             status=204)
         self.assertEqual(res.body, '')
-        session = app.app.registry.measuredb.session()
+        session = app.app.registry.database.session()
         result = session.query(Measure).all()
         self.assertEqual(len(result), 1)
         item = result[0]
@@ -127,7 +125,7 @@ class TestMeasure(TestCase):
                                       "wifi": wifi_data}]},
             status=204)
         self.assertEqual(res.body, '')
-        session = app.app.registry.measuredb.session()
+        session = app.app.registry.database.session()
         result = session.query(Measure).all()
         self.assertEqual(len(result), 1)
         item = result[0]
@@ -157,7 +155,7 @@ class TestMeasure(TestCase):
                                       "wifi": wifi_data}]},
             status=204)
         self.assertEqual(res.body, '')
-        session = app.app.registry.measuredb.session()
+        session = app.app.registry.database.session()
         result = session.query(Measure).all()
         self.assertEqual(len(result), 1)
         item = result[0]
@@ -194,7 +192,7 @@ class TestMeasure(TestCase):
                 {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
             ]},
             status=204)
-        session = app.app.registry.measuredb.session()
+        session = app.app.registry.database.session()
         result = session.query(Measure).all()
         self.assertEqual(len(result), 2)
         for item in result:

@@ -42,7 +42,7 @@ def search_request(request):
         # we don't have any wifi entries yet
         return {'status': 'not_found'}
 
-    session = request.celldb.session()
+    session = request.database.session()
     result = search_cell(session, data)
 
     if result is None:

@@ -4,7 +4,7 @@ from colander.iso8601 import parse_date
 
 from ichnaea.db import Measure, RADIO_TYPE
 from ichnaea.decimaljson import dumps, loads, to_precise_int
-from ichnaea.db import MeasureDB
+from ichnaea.db import Database
 
 _LOCALS = threading.local()
 _LOCALS.dbs = {}
@@ -12,7 +12,7 @@ _LOCALS.dbs = {}
 
 def _get_db(sqluri):
     if sqluri not in _LOCALS.dbs:
-        _LOCALS.dbs[sqluri] = MeasureDB(sqluri)
+        _LOCALS.dbs[sqluri] = Database(sqluri)
     return _LOCALS.dbs[sqluri]
 
 

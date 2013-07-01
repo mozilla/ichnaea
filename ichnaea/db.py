@@ -71,7 +71,7 @@ class Measure(_Model):
 measure_table = Measure.__table__
 
 
-class BaseDB(object):
+class Database(object):
 
     def __init__(self, sqluri):
         options = dict(pool_recycle=3600, pool_size=10, pool_timeout=10)
@@ -82,22 +82,11 @@ class BaseDB(object):
         self.session_factory = sessionmaker(
             bind=self.engine, autocommit=False, autoflush=False)
 
-    def session(self):
-        return self.session_factory()
-
-
-class CellDB(BaseDB):
-
-    def __init__(self, sqluri):
-        super(CellDB, self).__init__(sqluri)
+        # bind and create tables
         cell_table.metadata.bind = self.engine
         cell_table.create(checkfirst=True)
-
-
-class MeasureDB(BaseDB):
-
-    def __init__(self, sqluri):
-        super(MeasureDB, self).__init__(sqluri)
-        self.sqluri = sqluri
         measure_table.metadata.bind = self.engine
         measure_table.create(checkfirst=True)
+
+    def session(self):
+        return self.session_factory()

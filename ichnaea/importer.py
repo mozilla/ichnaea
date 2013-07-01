@@ -5,7 +5,7 @@ import sys
 from konfig import Config
 from sqlalchemy import func
 
-from ichnaea.db import CellDB, Cell
+from ichnaea.db import Database, Cell
 from ichnaea.decimaljson import to_precise_int
 
 
@@ -17,7 +17,7 @@ def _int(value):
 
 
 def load_file(settings, source_file, batch_size=10000):
-    db = CellDB(settings['celldb'])
+    db = Database(settings['database'])
     session = db.session()
     result = session.query(func.max(Cell.id)).first()
     max_id = result[0]

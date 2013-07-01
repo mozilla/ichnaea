@@ -3,16 +3,15 @@ import logging
 from pyramid.config import Configurator
 from pyramid.events import NewRequest
 
-from ichnaea.db import CellDB, MeasureDB
+from ichnaea.db import Database
 from ichnaea import decimaljson
 
 logger = logging.getLogger('ichnaea')
 
 
-def attach_dbs(event):
+def attach_database(event):
     request = event.request
-    event.request.celldb = request.registry.celldb
-    event.request.measuredb = request.registry.measuredb
+    event.request.database = request.registry.database
 
 
 def main(global_config, **settings):
@@ -30,9 +29,8 @@ def main(global_config, **settings):
     sh.setFormatter(formatter)
     logger.addHandler(sh)
 
-    config.registry.celldb = CellDB(settings['celldb'])
-    config.registry.measuredb = MeasureDB(settings['measuredb'])
-    config.add_subscriber(attach_dbs, NewRequest)
+    config.registry.database = Database(settings['database'])
+    config.add_subscriber(attach_database, NewRequest)
 
     # replace json renderer with decimal json variant
     config.add_renderer('json', decimaljson.Renderer())
