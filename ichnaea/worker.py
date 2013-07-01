@@ -61,8 +61,3 @@ def insert_measures(measures, db_instance=None, sqluri=None):
         session.add(measure)
 
     session.commit()
-
-
-def queue_measures(request, measures):
-    request.queue.enqueue('ichnaea.worker:insert_measures', measures=measures,
-                          sqluri=request.measuredb.sqluri)
