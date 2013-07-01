@@ -3,11 +3,11 @@ Mako==0.7.3
 MarkupSafe==0.15
 PasteDeploy==1.5.0
 PyMySQL==0.5
-SQLAlchemy==0.8.0
+SQLAlchemy==0.8.1
 WebOb==1.2.3
 argparse==1.2.1
 circus==0.8.1
-colander==1.0a2
+colander==1.0a5
 configparser==3.3.0r2
 cornice==0.13
 gunicorn==0.14.6
