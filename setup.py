@@ -11,9 +11,8 @@ requires = [
     'configparser',
     'cornice',
     'PyMySQL',
-    'chaussette',
     'konfig',
-    'circus'
+    'circus',
 ]
 
 if sys.version_info < (2, 7):
@@ -62,8 +61,6 @@ setup(
     test_suite="ichnaea",
     extras_require={'test': test_requires},
     entry_points="""\
-    [paste.app_factory]
-    main = ichnaea:main
     [console_scripts]
     ichnaea_import = ichnaea.importer:console_entry
     """,

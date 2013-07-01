@@ -8,8 +8,6 @@ Run the following commands to download the database and the server:
    git clone https://github.com/mozilla/ichnaea
    cd ichnaea
    make
-   curl http://opencellid.enaikoon.de:8080/gpsSuiteCellIDServer/exportFiles/basestations.tar.gz | tar xzC data/
-   bin/ichnaea_import ichnaea.ini data/basestations.csv
 
 And run the server:
 
@@ -17,7 +15,7 @@ And run the server:
 
    bin/circusd circus.ini
 
-This command will launch 2 python workers.
+This command will launch 2 Python workers.
 From there you can access the service on port 7001.
 
 You can also run the service as a daemon:
