@@ -16,6 +16,7 @@ def submit_request(request):
         try:
             measure['time'] = iso8601.parse_date(measure['time'])
         except (iso8601.ParseError, TypeError):
+            logger.debug('submit_time' + repr(measure['time']))
             measure['time'] = datetime.datetime.utcnow()
         measures.append(dumps(measure))
 

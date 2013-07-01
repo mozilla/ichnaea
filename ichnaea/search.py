@@ -1,9 +1,5 @@
-import logging
-
 from ichnaea.db import Cell, RADIO_TYPE
 from ichnaea.decimaljson import quantize
-
-logger = logging.getLogger('ichnaea')
 
 
 def search_cell(session, data):
@@ -36,8 +32,6 @@ def search_cell(session, data):
 
 def search_request(request):
     data = request.validated
-    logger.debug('search' + repr(data))
-
     if not data['cell']:
         # we don't have any wifi entries yet
         return {'status': 'not_found'}
