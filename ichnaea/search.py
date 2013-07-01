@@ -1,7 +1,5 @@
 import logging
 
-from statsd import StatsdTimer
-
 from ichnaea.db import Cell, RADIO_TYPE
 from ichnaea.decimaljson import quantize
 
@@ -45,9 +43,7 @@ def search_request(request):
         return {'status': 'not_found'}
 
     session = request.celldb.session()
-
-    with StatsdTimer('get_cell_location'):
-        result = search_cell(session, data)
+    result = search_cell(session, data)
 
     if result is None:
         return {'status': 'not_found'}
