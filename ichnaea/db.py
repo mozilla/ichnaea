@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy import Column, Index
-from sqlalchemy import DateTime, Integer, LargeBinary, SmallInteger
+from sqlalchemy import DateTime, Integer, LargeBinary, SmallInteger, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -45,6 +45,22 @@ class Cell(_Model):
 cell_table = Cell.__table__
 
 
+class Wifi(_Model):
+    __tablename__ = 'wifi'
+    __table_args__ = {
+        'mysql_engine': 'InnoDB',
+        'mysql_charset': 'utf8',
+    }
+
+    key = Column(String(40), primary_key=True)
+    # lat/lon * decimaljson.FACTOR
+    lat = Column(Integer)
+    lon = Column(Integer)
+    range = Column(Integer)
+
+wifi_table = Wifi.__table__
+
+
 class Measure(_Model):
     __tablename__ = 'measure'
     __table_args__ = {
@@ -84,6 +100,8 @@ class Database(object):
         # bind and create tables
         cell_table.metadata.bind = self.engine
         cell_table.create(checkfirst=True)
+        wifi_table.metadata.bind = self.engine
+        wifi_table.create(checkfirst=True)
         measure_table.metadata.bind = self.engine
         measure_table.create(checkfirst=True)
 
