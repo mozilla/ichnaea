@@ -28,6 +28,8 @@ def main(global_config, **settings):
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     sh.setFormatter(formatter)
     logger.addHandler(sh)
+    waitress_log = logging.getLogger('waitress')
+    waitress_log.addHandler(sh)
 
     config.registry.database = Database(settings['database'])
     config.add_subscriber(attach_database, NewRequest)
