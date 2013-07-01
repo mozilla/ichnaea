@@ -36,11 +36,10 @@ class Cell(_Model):
     mcc = Column(SmallInteger)
     # int in the range 0-1000 for gsm
     # int in the range 0-32767 for cdma (system id)
-    mnc = Column(SmallInteger)
+    mnc = Column(Integer)
     lac = Column(Integer)
     cid = Column(Integer)
-    # int in the range 0-511
-    psc = Column(SmallInteger)
+    psc = Column(Integer)
     range = Column(Integer)
 
 cell_table = Cell.__table__
@@ -60,9 +59,9 @@ class Measure(_Model):
     lat = Column(Integer)
     lon = Column(Integer)
     time = Column(DateTime)
-    accuracy = Column(SmallInteger)
-    altitude = Column(SmallInteger)
-    altitude_accuracy = Column(SmallInteger)
+    accuracy = Column(Integer)
+    altitude = Column(Integer)
+    altitude_accuracy = Column(Integer)
     radio = Column(SmallInteger)  # mapped via RADIO_TYPE
     # json blobs
     cell = Column(LargeBinary)
