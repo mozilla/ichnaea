@@ -10,13 +10,14 @@ logger = logging.getLogger('ichnaea')
 
 
 def submit_request(request):
-    logger.debug('submit' + repr(request.validated))
     measures = []
     for measure in request.validated['items']:
         try:
             measure['time'] = iso8601.parse_date(measure['time'])
         except (iso8601.ParseError, TypeError):
-            logger.debug('submit_time' + repr(measure['time']))
+            if measure['time']:
+                # ignore debug log for empty values
+                logger.debug('submit_time_error' + repr(measure['time']))
             measure['time'] = datetime.datetime.utcnow()
         measures.append(dumps(measure))
 
