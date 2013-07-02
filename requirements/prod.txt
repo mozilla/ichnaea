@@ -11,6 +11,7 @@ colander==1.0a5
 configparser==3.3.0r2
 cornice==0.13
 gunicorn==0.14.6
+heka-py==0.10
 iowait==0.1
 konfig==0.4
 ordereddict==1.1
