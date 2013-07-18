@@ -9,7 +9,7 @@ def map_stats_request(request):
     query = session.query(Measure.lat, Measure.lon)
     unique = set()
     for lat, lon in query:
-        unique.add(((lat // 100000) / 1000.0, (lon // 100000) / 1000.0))
+        unique.add(((lat // 100000) / 100.0, (lon // 100000) / 100.0))
     rows = StringIO()
     csvwriter = csv.writer(rows)
     csvwriter.writerow(('lat', 'lon'))
