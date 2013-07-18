@@ -31,6 +31,8 @@ def main(global_config, **settings):
     waitress_log = logging.getLogger('waitress')
     waitress_log.addHandler(sh)
 
+    config.add_static_view(name='static', path='ichnaea:static')
+
     config.registry.database = Database(settings['database'])
     config.add_subscriber(attach_database, NewRequest)
 
