@@ -20,7 +20,7 @@
 var map = L.mapbox.map('map', 'hannosch.map-j01ew28b').setView([0, 0], 2);
 var markerLayer = L.mapbox.markerLayer().addTo(map);
 $.ajax({
-    url: '/static/data.csv',
+    url: '/v1/map_stats',
     dataType: 'text',
     success: function csvLoad(csv) {
         markerLayer.setGeoJSON(csv2geojson.csv2geojson(csv));
