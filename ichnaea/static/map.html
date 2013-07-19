@@ -10,26 +10,26 @@
   <script src='https://api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.js'></script>
   <script src="/static/csv2geojson.js"></script>
   <script src="/static/leaflet.markercluster.js"></script>
-  <script type='text/javascript'>
-  var map = L.mapbox.map('map', 'hannosch.map-j01ew28b').setView([0, 0], 2);
-  var markers = new L.MarkerClusterGroup();
-  $.ajax({
-      url: '/v1/map_stats',
-      dataType: 'text',
-      success: function csvLoad(csv) {
-          geoJsonLayer = L.geoJson(csv2geojson.csv2geojson(csv), {
-              onEachFeature: function (feature, layer) {
-                  layer.bindPopup(feature.properties.address);
-              }
-          });
-          markers.addLayer(geoJsonLayer);
-          map.addLayer(markers);
-          map.fitBounds(markers.getBounds());
-      }
-  });
-  </script>
 </head>
 <body>
 <div id='map'></div>
+<script type='text/javascript'>
+var map = L.mapbox.map('map', 'hannosch.map-j01ew28b').setView([0, 0], 2);
+var markers = new L.MarkerClusterGroup();
+$.ajax({
+    url: '/v1/map_stats',
+    dataType: 'text',
+    success: function csvLoad(csv) {
+        geoJsonLayer = L.geoJson(csv2geojson.csv2geojson(csv), {
+            onEachFeature: function (feature, layer) {
+                layer.bindPopup(feature.properties.address);
+            }
+        });
+        markers.addLayer(geoJsonLayer);
+        map.addLayer(markers);
+        map.fitBounds(markers.getBounds());
+    }
+});
+</script>
 </body>
 </html>
