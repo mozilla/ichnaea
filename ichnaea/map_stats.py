@@ -13,5 +13,5 @@ def map_stats_request(request):
     csvwriter = csv.writer(rows)
     csvwriter.writerow(('lat', 'lon'))
     for lat, lon in result.fetchall():
-        csvwriter.writerow((lat / 100.0, lon / 100.0))
+        csvwriter.writerow((int(lat) / 100.0, int(lon) / 100.0))
     return rows.getvalue()
