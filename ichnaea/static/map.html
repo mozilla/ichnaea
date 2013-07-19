@@ -2,43 +2,34 @@
 <html>
 <head>
   <meta charset="UTF-8">
+
+  <link rel="stylesheet" href="https://api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.css" />
+  <link rel="stylesheet" href="/static/map_stats.css" />
+
   <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js'></script>
   <script src='https://api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.js'></script>
-  <link href='https://api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.css' rel='stylesheet' />
-  <!--[if lte IE 8]>
-    <link href='https://api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.ie.css' rel='stylesheet' >
-  <![endif]-->
   <script src="/static/csv2geojson.js"></script>
-  <style>
-    body { margin:0; padding:0; }
-    #map { position:absolute; top:0; bottom:0; width:100%; }
-  </style>
-  <link rel="stylesheet" href="/static/MarkerCluster.css" />
-  <link rel="stylesheet" href="/static/MarkerCluster.Default.css" />
-  <!--[if lte IE 8]>
-    <link rel="stylesheet" href="/static/MarkerCluster.Default.ie.css" />
-  <![endif]-->
   <script src="/static/leaflet.markercluster.js"></script>
+  <script type='text/javascript'>
+  var map = L.mapbox.map('map', 'hannosch.map-j01ew28b').setView([0, 0], 2);
+  var markers = new L.MarkerClusterGroup();
+  $.ajax({
+      url: '/v1/map_stats',
+      dataType: 'text',
+      success: function csvLoad(csv) {
+          geoJsonLayer = L.geoJson(csv2geojson.csv2geojson(csv), {
+              onEachFeature: function (feature, layer) {
+                  layer.bindPopup(feature.properties.address);
+              }
+          });
+          markers.addLayer(geoJsonLayer);
+          map.addLayer(markers);
+          map.fitBounds(markers.getBounds());
+      }
+  });
+  </script>
 </head>
 <body>
 <div id='map'></div>
-<script type='text/javascript'>
-var map = L.mapbox.map('map', 'hannosch.map-j01ew28b').setView([0, 0], 2);
-var markers = new L.MarkerClusterGroup();
-$.ajax({
-    url: '/v1/map_stats',
-    dataType: 'text',
-    success: function csvLoad(csv) {
-        geoJsonLayer = L.geoJson(csv2geojson.csv2geojson(csv), {
-            onEachFeature: function (feature, layer) {
-                layer.bindPopup(feature.properties.address);
-            }
-        });
-        markers.addLayer(geoJsonLayer);
-        map.addLayer(markers);
-        map.fitBounds(markers.getBounds());
-    }
-});
-</script>
 </body>
 </html>
