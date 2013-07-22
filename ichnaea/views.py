@@ -8,6 +8,7 @@ from ichnaea.decimaljson import dumps
 from ichnaea.map_stats import map_stats_request
 from ichnaea.schema import SearchSchema, SubmitSchema
 from ichnaea.search import search_request
+from ichnaea.stats import stats_request
 from ichnaea.submit import submit_request
 
 logger = logging.getLogger('ichnaea')
@@ -251,3 +252,11 @@ map_stats = Service(name='map_stats', path='/v1/map_stats')
 @map_stats.get(renderer='string')
 def get_map_stats(request):
     return map_stats_request(request)
+
+
+stats = Service(name='stats', path='/v1/stats')
+
+
+@stats.get(renderer='json')
+def get_stats(request):
+    return stats_request(request)
