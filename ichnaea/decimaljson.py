@@ -1,3 +1,4 @@
+from datetime import date
 from datetime import datetime
 from decimal import Decimal
 from decimal import localcontext
@@ -13,6 +14,8 @@ PRECISION = 7
 def encode_datetime(obj):
     if isinstance(obj, datetime):
         return obj.strftime('%Y-%m-%dT%H:%M:%S.%f')
+    elif isinstance(obj, date):
+        return obj.strftime('%Y-%m-%d')
     raise TypeError(repr(obj) + " is not JSON serializable")
 
 
