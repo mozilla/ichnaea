@@ -1,3 +1,5 @@
+import datetime
+
 from sqlalchemy.sql.expression import text
 
 from ichnaea.db import Measure
@@ -22,6 +24,8 @@ def stats_request(request):
     rows = session.execute(text(query))
     result = {'histogram': {}}
     for day, num in rows.fetchall():
+        if isinstance(day, datetime.date):
+            day = day.strftime('%Y-%m-%d')
         result['histogram'][day] = num
     total = session.query(Measure).count()
     result['total'] = total
