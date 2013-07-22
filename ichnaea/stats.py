@@ -22,11 +22,11 @@ def stats_request(request):
     else:
         query = MEASURE_HISTOGRAM_MYSQL
     rows = session.execute(text(query))
-    result = {'histogram': {}}
+    result = {'histogram': []}
     for day, num in rows.fetchall():
         if isinstance(day, datetime.date):
             day = day.strftime('%Y-%m-%d')
-        result['histogram'][day] = num
+        result['histogram'].append({'day': day, 'num': num})
     total = session.query(Measure).count()
     result['total'] = total
     return result

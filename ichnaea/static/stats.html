@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Mozilla Location Service - Statistics</title>
+
+  <link rel="stylesheet" href="/static/rickshaw.min.css" />
+  <link rel="stylesheet" href="/static/stats.css" />
+
+  <script src='/static/jquery.min.js'></script>
+  <script src='/static/d3.min.js'></script>
+  <script src='/static/d3.layout.min.js'></script>
+  <script src='/static/rickshaw.min.js'></script>
+</head>
+<body>
+<h1>Mozilla Location Service - Statistics</h1>
+<h2>Measurements</h2>
+<p>Total measurements:
+    <span id="total_measurements">0</span>
+</p>
+<h2>New measurements in the last 30 days</h2>
+<div id="chart_container">
+        <div id="y_axis"></div>
+        <div id="chart"></div>
+        <div id="x_axis"></div>
+</div>
+<script type='text/javascript'>
+
+var result = {};
+$.ajax({
+    url: '/v1/stats',
+    dataType: "json",
+    async: false,
+    success: function(json) {
+        result = json;
+    }
+});
+
+$("#total_measurements")[0].innerHTML = result.total
+
+var entries = [];
+for (var i = 0; i < result.histogram.length; i++) {
+    item = result.histogram[i];
+    entries.push({x: Date.parse(item.day), y: item.num});
+};
+
+var graph = new Rickshaw.Graph( {
+    element: document.querySelector("#chart"),
+    width: 600,
+    height: 300,
+    series: [ {
+            data: entries, 
+            color: 'steelblue'
+    } ]
+} );
+
+var format_date = function(n) {
+    var d = new Date(0);
+    d.setUTCMilliseconds(n);
+    return d.toLocaleDateString();
+};
+
+var x_axis = new Rickshaw.Graph.Axis.X( {
+    graph: graph,
+    orientation: 'bottom',
+    element: document.getElementById('x_axis'),
+    pixelsPerTick: 100,
+    tickFormat: format_date,
+} );
+
+var y_axis = new Rickshaw.Graph.Axis.Y( {
+    graph: graph,
+    orientation: 'left',
+    tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
+    element: document.getElementById('y_axis'),
+} );
+
+graph.render();
+
+</script>
+</body>
+</html>
