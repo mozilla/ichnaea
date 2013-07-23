@@ -184,6 +184,7 @@ def submit_post(request):
             "lat": -22.7539192,
             "lon": -43.4371081,
             "time": "2012-03-15T11:12:13.456Z",
+            "token": "c2eb78ccb69a4ac29056a48e7f507165",
             "accuracy": 10,
             "altitude": 100,
             "altitude_accuracy": 1,
@@ -220,6 +221,11 @@ def submit_post(request):
 
     The timestamp has to be in UTC time, encoded in ISO 8601. If not
     provided, the server time will be used.
+
+    The additional `token` field can be submitted and should contain a unique
+    client id. A client id can be generated as a random uuid. You should only
+    submit a client id if you want to take part in the leaderboard part of
+    the project.
 
     On successful submission, you get a 204 status code back without any
     data in the body.

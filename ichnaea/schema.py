@@ -42,6 +42,7 @@ class MeasureSchema(MappingSchema):
     lat = SchemaNode(Decimal(quant=EXPONENT_STR), location="body")
     lon = SchemaNode(Decimal(quant=EXPONENT_STR), location="body")
     time = SchemaNode(String(), location="body", missing='')
+    token = SchemaNode(String(), location="body", missing='')
     accuracy = SchemaNode(Integer(), location="body", type='int', missing=0)
     altitude = SchemaNode(Integer(), location="body", type='int', missing=0)
     altitude_accuracy = SchemaNode(Integer(), location="body", type='int',

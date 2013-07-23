@@ -48,6 +48,7 @@ def insert_measures(measures, db_instance=None, sqluri=None):
         if isinstance(time, basestring):
             time = parse_date(time)
         measure.time = time
+        measure.token = data['token']
         measure.lat = to_precise_int(data['lat'])
         measure.lon = to_precise_int(data['lon'])
         measure.accuracy = data['accuracy']

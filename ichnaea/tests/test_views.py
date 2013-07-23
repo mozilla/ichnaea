@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import uuid4
 from unittest2 import TestCase
 from webtest import TestApp
 
@@ -216,6 +217,21 @@ class TestMeasure(TestCase):
         result = session.query(Measure).all()
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0].time, result[1].time)
+
+    def test_token(self):
+        app = _make_app()
+        uid = uuid4().hex
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}], "token": uid},
+                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}], "token": uid},
+            ]},
+            status=204)
+        session = app.app.registry.database.session()
+        result = session.query(Measure).all()
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0].token, uid)
+        self.assertEqual(result[0].token, uid)
 
     def test_error(self):
         app = _make_app()

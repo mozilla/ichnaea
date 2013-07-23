@@ -63,18 +63,22 @@ wifi_table = Wifi.__table__
 
 class Measure(_Model):
     __tablename__ = 'measure'
-    __table_args__ = {
-        'mysql_engine': 'InnoDB',
-        'mysql_charset': 'utf8',
-        'mysql_row_format': 'compressed',
-        'mysql_key_block_size': '4',
-    }
+    __table_args__ = (
+        Index('measure_token_idx', 'token', 'id'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+            'mysql_row_format': 'compressed',
+            'mysql_key_block_size': '4',
+        }
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
     time = Column(DateTime)
+    token = Column(String(36))
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)
