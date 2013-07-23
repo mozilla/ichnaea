@@ -1,5 +1,8 @@
 import datetime
+import operator
+from urllib import quote
 
+from sqlalchemy import func
 from sqlalchemy.sql.expression import text
 
 from ichnaea.db import Measure
@@ -22,11 +25,16 @@ def stats_request(request):
     else:
         query = MEASURE_HISTOGRAM_MYSQL
     rows = session.execute(text(query))
-    result = {'histogram': []}
+    result = {'histogram': [], 'leaders': []}
     for day, num in rows.fetchall():
         if isinstance(day, datetime.date):
             day = day.strftime('%Y-%m-%d')
         result['histogram'].append({'day': day, 'num': num})
-    total = session.query(Measure).count()
-    result['total'] = total
+    result['total'] = session.query(Measure).count()
+
+    rows = session.query(Measure.token, func.count(Measure.id)).\
+        filter(Measure.token != "").\
+        group_by(Measure.token).all()
+    for token, num in sorted(rows, key=operator.itemgetter(1), reverse=True):
+        result['leaders'].append({'token': quote(token[:8]), 'num': num})
     return result
