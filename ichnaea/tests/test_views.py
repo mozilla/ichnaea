@@ -203,6 +203,20 @@ class TestMeasure(TestCase):
                 self.assertEqual(
                     item.time.date(), datetime.utcnow().date())
 
+    def test_time_future(self):
+        app = _make_app()
+        time = "2070-01-01T11:12:13.456Z"
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}], "time": time},
+                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
+            ]},
+            status=204)
+        session = app.app.registry.database.session()
+        result = session.query(Measure).all()
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0].time, result[1].time)
+
     def test_error(self):
         app = _make_app()
         res = app.post_json(
