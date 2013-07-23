@@ -65,6 +65,7 @@ class Measure(_Model):
     __tablename__ = 'measure'
     __table_args__ = (
         Index('measure_token_idx', 'token', 'id'),
+        Index('measure_time_idx', 'time', 'id'),
         {
             'mysql_engine': 'InnoDB',
             'mysql_charset': 'utf8',
