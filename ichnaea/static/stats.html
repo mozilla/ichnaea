@@ -24,6 +24,19 @@
         <div id="chart"></div>
         <div id="x_axis"></div>
 </div>
+<h2>Leaders</h2>
+<div id="leader_container">
+    <table id="leader_table" border="1">
+        <thead>
+            <tr>
+                <th>User token</th>
+                <th>Contributed measurements</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
 <script type='text/javascript'>
 
 var result = {};
@@ -37,6 +50,12 @@ $.ajax({
 });
 
 $("#total_measurements")[0].innerHTML = result.total
+
+for (var i = 0; i < result.leaders.length; i++) {
+    item = result.leaders[i];
+    $("#leader_table tbody").append('<tr><td>' + item.token +
+        '</td><td>' + item.num +'</td></tr>');
+}
 
 var entries = [];
 for (var i = 0; i < result.histogram.length; i++) {
