@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Mozilla Location Service</title>
+</head>
+<body>
+<h1>Mozilla Location Service</h1>
+<h2>Pages</h2>
+<ul>
+    <li><a href="/static/stats.html">Statistics</a></li>
+    <li><a href="/static/map.html">Coverage Map</a></li>
+</ul>
+<h2>Links</h2>
+<ul>
+    <li><a href="https://wiki.mozilla.org/Services/Location">
+        Project overview</a>
+    </li>
+</ul>
+</body>
+</html>

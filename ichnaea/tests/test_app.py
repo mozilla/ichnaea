@@ -4,6 +4,7 @@ from ichnaea import application
 
 
 class TestIchnaea(TestCase):
+
     def test_ok(self):
         app = TestApp(application)
-        app.get('/', status=404)
+        app.get('/', status=200)

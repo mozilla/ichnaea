@@ -37,6 +37,9 @@ def main(global_config, **settings):
     config.add_route('robots', '/robots.txt')
     config.add_view(robotstxt_view, route_name='robots', http_cache=86400)
 
+    config.add_route('homepage', '/')
+    config.scan('ichnaea.content.views')
+
     config.registry.database = Database(settings['database'])
     config.add_subscriber(attach_database, NewRequest)
 
