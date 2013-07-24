@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Mozilla Location Service - Measurement Map</title>
 
   <link rel="stylesheet" href="/static/mapbox.css" />
