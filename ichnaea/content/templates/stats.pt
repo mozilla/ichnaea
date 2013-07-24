@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:tal="http://xml.zope.org/namespaces/tal">
 <head>
   <meta charset="UTF-8" />
   <title>Mozilla Location Service - Statistics</title>
@@ -34,6 +35,10 @@
             </tr>
         </thead>
         <tbody>
+            <tr tal:repeat="row leaders">
+                <td>${row.token}</td>
+                <td>${row.num}</td>
+            </tr>
         </tbody>
     </table>
 </div>
@@ -49,12 +54,6 @@ $.ajax({
     }
 });
 
-for (var i = 0; i < result.leaders.length; i++) {
-    item = result.leaders[i];
-    $("#leader_table tbody").append('<tr><td>' + item.token +
-        '</td><td>' + item.num +'</td></tr>');
-}
-
 var entries = [];
 for (var i = 0; i < result.histogram.length; i++) {
     item = result.histogram[i];
@@ -63,8 +62,8 @@ for (var i = 0; i < result.histogram.length; i++) {
 
 var graph = new Rickshaw.Graph( {
     element: document.querySelector("#chart"),
-    width: 600,
-    height: 300,
+    width: 480,
+    height: 240,
     series: [ {
             data: entries, 
             color: 'steelblue'
@@ -81,7 +80,7 @@ var x_axis = new Rickshaw.Graph.Axis.X( {
     graph: graph,
     orientation: 'bottom',
     element: document.getElementById('x_axis'),
-    pixelsPerTick: 80,
+    pixelsPerTick: 100,
     tickFormat: format_date,
 } );
 
