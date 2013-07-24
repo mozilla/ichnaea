@@ -3,8 +3,9 @@ import logging
 from pyramid.config import Configurator
 from pyramid.events import NewRequest
 
-from ichnaea.db import Database
 from ichnaea import decimaljson
+from ichnaea.db import Database
+from ichnaea.views import robotstxt_view
 
 logger = logging.getLogger('ichnaea')
 
@@ -33,6 +34,8 @@ def main(global_config, **settings):
 
     config.add_static_view(
         name='static', path='ichnaea:static', cache_max_age=3600)
+    config.add_route('robots', '/robots.txt')
+    config.add_view(robotstxt_view, route_name='robots', http_cache=86400)
 
     config.registry.database = Database(settings['database'])
     config.add_subscriber(attach_database, NewRequest)
