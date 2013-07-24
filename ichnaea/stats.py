@@ -30,8 +30,6 @@ def stats_request(request):
         if isinstance(day, datetime.date):
             day = day.strftime('%Y-%m-%d')
         result['histogram'].append({'day': day, 'num': num})
-    result['total'] = session.query(Measure).count()
-
     rows = session.query(Measure.token, func.count(Measure.id)).\
         filter(Measure.token != "").\
         group_by(Measure.token).all()

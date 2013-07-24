@@ -16,7 +16,7 @@
 <h1>Mozilla Location Service - Statistics</h1>
 <h2>Measurements</h2>
 <p>Total measurements:
-    <span id="total_measurements">0</span>
+    <span id="total_measurements">${total_measures}</span>
 </p>
 <h2>New measurements in the last 30 days</h2>
 <div id="chart_container">
@@ -48,8 +48,6 @@ $.ajax({
         result = json;
     }
 });
-
-$("#total_measurements")[0].innerHTML = result.total
 
 for (var i = 0; i < result.leaders.length; i++) {
     item = result.leaders[i];

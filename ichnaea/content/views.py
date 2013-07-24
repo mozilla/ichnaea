@@ -1,5 +1,7 @@
 from pyramid.view import view_config
 
+from ichnaea.db import Measure
+
 
 def configure_content(config):
     config.add_route('homepage', '/')
@@ -19,4 +21,7 @@ def map_view(request):
 
 @view_config(route_name='stats', renderer='templates/stats.pt')
 def stats_view(request):
-    return {}
+    session = request.database.session()
+    result = {}
+    result['total_measures'] = session.query(Measure).count()
+    return result
