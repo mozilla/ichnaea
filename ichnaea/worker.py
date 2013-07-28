@@ -1,19 +1,7 @@
-import threading
-
 from colander.iso8601 import parse_date
 
 from ichnaea.db import Measure, RADIO_TYPE
 from ichnaea.decimaljson import dumps, loads, to_precise_int
-from ichnaea.db import Database
-
-_LOCALS = threading.local()
-_LOCALS.dbs = {}
-
-
-def _get_db(sqluri):
-    if sqluri not in _LOCALS.dbs:
-        _LOCALS.dbs[sqluri] = Database(sqluri)
-    return _LOCALS.dbs[sqluri]
 
 
 def _process_wifi(values):
@@ -34,12 +22,7 @@ def _process_wifi(values):
     return result
 
 
-def insert_measures(measures, db_instance=None, sqluri=None):
-    if db_instance is None:
-        db_instance = _get_db(sqluri)
-
-    session = db_instance.session()
-
+def insert_measures(measures, session):
     for data in measures:
         if isinstance(data, basestring):
             data = loads(data)
@@ -60,5 +43,3 @@ def insert_measures(measures, db_instance=None, sqluri=None):
         if data.get('wifi'):
             measure.wifi = dumps(_process_wifi(data['wifi']))
         session.add(measure)
-
-    session.commit()
