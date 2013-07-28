@@ -231,7 +231,36 @@ class TestMeasure(TestCase):
         result = session.query(Measure).all()
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0].token, uid)
+        self.assertEqual(result[1].token, uid)
+
+    def test_token_header(self):
+        app = _make_app()
+        uid = uuid4().hex
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
+                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
+            ]},
+            headers={'X-Token': uid},
+            status=204)
+        session = app.app.registry.database.session()
+        result = session.query(Measure).all()
+        self.assertEqual(len(result), 2)
         self.assertEqual(result[0].token, uid)
+        self.assertEqual(result[1].token, uid)
+
+    def test_token_header_error(self):
+        app = _make_app()
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
+            ]},
+            headers={'X-Token': "123.45"},
+            status=204)
+        session = app.app.registry.database.session()
+        result = session.query(Measure).all()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].token, "")
 
     def test_error(self):
         app = _make_app()

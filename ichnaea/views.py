@@ -222,11 +222,6 @@ def submit_post(request):
     The timestamp has to be in UTC time, encoded in ISO 8601. If not
     provided, the server time will be used.
 
-    The additional `token` field can be submitted and should contain a unique
-    client id. A client id can be generated as a random uuid. You should only
-    submit a client id if you want to take part in the leaderboard part of
-    the project.
-
     On successful submission, you get a 204 status code back without any
     data in the body.
 

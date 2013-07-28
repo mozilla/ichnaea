@@ -12,6 +12,10 @@ logger = logging.getLogger('ichnaea')
 def submit_request(request):
     measures = []
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
+    header_token = request.headers.get('X-Token', '')
+    if not (24 <= len(header_token) <= 40):
+        # doesn't look like it's a uuid
+        header_token = ""
     for measure in request.validated['items']:
         try:
             measure['time'] = iso8601.parse_date(measure['time'])
@@ -24,6 +28,8 @@ def submit_request(request):
             # don't accept future time values
             if measure['time'] > utcnow:
                 measure['time'] = utcnow
+        if header_token:
+            measure['token'] = header_token
         measures.append(dumps(measure))
 
     insert_measures(measures, db_instance=request.database)
