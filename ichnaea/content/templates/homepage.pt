@@ -3,19 +3,56 @@
 <head>
   <meta charset="UTF-8" />
   <title>Mozilla Location Service</title>
+
+  <link rel="stylesheet" href="/static/css/base.css" />
 </head>
 <body>
-<h1>Mozilla Location Service</h1>
-<h2>Pages</h2>
-<ul>
-    <li><a href="/stats">Statistics</a></li>
-    <li><a href="/map">Coverage Map</a></li>
-</ul>
-<h2>Links</h2>
-<ul>
-    <li><a href="https://wiki.mozilla.org/Services/Location">
-        Project overview</a>
-    </li>
-</ul>
+<div id="outer-wrapper">
+
+<div id="wrapper">
+    <header id="masthead">
+        <nav id="nav-main" role="navigation">
+            <ul id="nav-main-menu">
+                <li class="first"><a href="/">Home</a></li>
+                <li><a href="/stats">Statistics</a></li>
+                <li class="last"><a href="/map">Map</a></li>
+            </ul>
+        </nav>
+
+        <h2><a href="/">Mozilla Location Service</a></h2>
+    </header>
+</div>
+
+<h1 id="main-feature">Pages</h1>
+
+<section id="main-content">
+    <p>
+        <ul>
+            <li><a href="/stats">Statistics</a></li>
+            <li><a href="/map">Coverage Map</a></li>
+        </ul>
+    </p>
+</section>
+
+<footer id="colophon">
+    <div class="footer-logo">
+        <img src="/static/images/mozilla-logo.png" alt="Mozilla" />
+    </div>
+    <div class="footer-license">
+        This content is ©2012–2013 by Mozilla.
+    </div>
+
+    <ul class="footer-nav">
+        <li><a href="https://wiki.mozilla.org/Services/Location">
+            Project overview</a>
+        </li>
+        <li><a href="https://github.com/mozilla/ichnaea/">
+            Source Code</a>
+        </li>
+    </ul>
+</footer>
+
+</div>
+
 </body>
 </html>

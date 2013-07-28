@@ -11,7 +11,7 @@ from ichnaea.db import User
 
 
 HERE = os.path.dirname(__file__)
-FAVICON_PATH = os.path.join(HERE, 'images', 'favicon.ico')
+FAVICON_PATH = os.path.join(HERE, 'static', 'favicon.ico')
 
 
 def configure_content(config):
@@ -24,6 +24,11 @@ def configure_content(config):
 
     config.add_route('robots', '/robots.txt')
     config.add_view(robotstxt_view, route_name='robots', http_cache=86400)
+
+    config.add_static_view(
+        name='static', path='ichnaea.content:static', cache_max_age=3600)
+
+    config.scan('ichnaea.content.views')
 
 
 @view_config(route_name='homepage', renderer='templates/homepage.pt')
