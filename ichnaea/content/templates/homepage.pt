@@ -23,15 +23,18 @@
     </header>
 </div>
 
-<h1 id="main-feature">Pages</h1>
+<h1 id="main-feature">Overview</h1>
 
 <section id="main-content">
+    <p>Welcome to the Mozilla Location Service.</p>
     <p>
-        <ul>
-            <li><a href="/stats">Statistics</a></li>
-            <li><a href="/map">Coverage Map</a></li>
-        </ul>
+        The project is still in its early stages, so please excuse
+        the lack of content and visual polish.
     </p>
+    <ul>
+        <li><a href="/stats">Statistics</a></li>
+        <li><a href="/map">Coverage Map</a></li>
+    </ul>
 </section>
 
 <footer id="colophon">

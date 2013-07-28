@@ -123,6 +123,11 @@ h1, h2, h3, h4, h5, h6 {
     color: #484848;
 }
 
+h1 {
+    font-size: 36px;
+    letter-spacing: -1.5px;
+}
+
 h2 {
     font-size: 32px;
     letter-spacing: -1px;
@@ -158,6 +163,31 @@ li {
     margin-left: 24px;
 }
 
+.table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+.table caption {
+    text-align: left;
+    padding-bottom: 1px;
+    margin-bottom: -1px;
+    width: 100%;
+}
+
+.table th, .table td {
+    border-top: 1px solid rgba(0, 0, 0, 0.2);
+    padding: 10px 20px 10px 0;
+    text-align: left;
+}
+.table thead th, .table thead td {
+    border-top: 0;
+    padding-top: 0;
+    font-size: 16px;
+    font-family: 'Open Sans Light', sans-serif;
+    font-weight: normal;
+}
+
 #masthead,
 #main-feature,
 #main-content,
@@ -170,6 +200,11 @@ li {
     width: 896px;
     
 }
+
+#main-feature {
+    padding-bottom: 10px;
+}
+
 
 #masthead:after, #main-feature:after, #main-content:after, #colophon:after {
     display: block;
@@ -247,4 +282,27 @@ li {
 .footer-nav li {
     list-style-type: none;
     margin: 0 0 2px 0;
+}
+
+/* Stats, Charts */
+
+#chart_container {
+        position: relative;
+        font-family: Arial, Helvetica, sans-serif;
+}
+#chart {
+    position: relative;
+    left: 40px;
+    display: block;
+}
+#y_axis {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 40px;
+}
+#x_axis {
+    position: relative;
+    left: 40px;
+    height: 40px;
 }

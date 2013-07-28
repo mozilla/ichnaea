@@ -5,8 +5,8 @@
   <meta charset="UTF-8" />
   <title>Mozilla Location Service - Statistics</title>
 
+  <link rel="stylesheet" href="/static/css/base.css" />
   <link rel="stylesheet" href="/static/rickshaw.min.css" />
-  <link rel="stylesheet" href="/static/stats.css" />
 
   <script src='/static/jquery.min.js'></script>
   <script src='/static/d3.min.js'></script>
@@ -14,34 +14,74 @@
   <script src='/static/rickshaw.min.js'></script>
 </head>
 <body>
-<h1>Mozilla Location Service - Statistics</h1>
-<h2>Measurements</h2>
-<p>Total measurements:
-    <span id="total_measurements">${total_measures}</span>
-</p>
-<h2>New measurements in the last 30 days</h2>
-<div id="chart_container">
-        <div id="y_axis"></div>
-        <div id="chart"></div>
-        <div id="x_axis"></div>
+<div id="outer-wrapper">
+
+<div id="wrapper">
+    <header id="masthead">
+        <nav id="nav-main" role="navigation">
+            <ul id="nav-main-menu">
+                <li class="first"><a href="/">Home</a></li>
+                <li><a href="/stats">Statistics</a></li>
+                <li class="last"><a href="/map">Map</a></li>
+            </ul>
+        </nav>
+
+        <h2><a href="/">Mozilla Location Service</a></h2>
+    </header>
 </div>
-<h2>Leaders</h2>
-<div id="leader_container">
-    <table id="leader_table" border="1">
-        <thead>
-            <tr>
-                <th>User (token)</th>
-                <th>Contributed measurements</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr tal:repeat="row leaders">
-                <td>${row.nickname} (${row.token}&hellip;)</td>
-                <td>${row.num}</td>
-            </tr>
-        </tbody>
-    </table>
+
+<h1 id="main-feature">Statistics</h1>
+
+<section id="main-content">
+    <p>Overall statistics and leaderboard.</p>
+    <h2>Measurements</h2>
+    <p>Total measurements:
+        <span id="total_measurements">${total_measures}</span>
+    </p>
+    <h3>New measurements in the last 30 days</h3>
+    <div id="chart_container">
+            <div id="y_axis"></div>
+            <div id="chart"></div>
+            <div id="x_axis"></div>
+    </div>
+    <h2>Leaders</h2>
+    <div id="leader_container">
+        <table id="leader_table" class="table">
+            <thead>
+                <tr>
+                    <th>User (token)</th>
+                    <th>Contributed measurements</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr tal:repeat="row leaders">
+                    <td>${row.nickname} (${row.token}&hellip;)</td>
+                    <td>${row.num}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<footer id="colophon">
+    <div class="footer-logo">
+        <img src="/static/images/mozilla-logo.png" alt="Mozilla" />
+    </div>
+    <div class="footer-license">
+        This content is ©2012–2013 by Mozilla.
+    </div>
+
+    <ul class="footer-nav">
+        <li><a href="https://wiki.mozilla.org/Services/Location">
+            Project overview</a>
+        </li>
+        <li><a href="https://github.com/mozilla/ichnaea/">
+            Source Code</a>
+        </li>
+    </ul>
+</footer>
 </div>
+
 <script type='text/javascript'>
 
 var result = {};
@@ -62,7 +102,7 @@ for (var i = 0; i < result.histogram.length; i++) {
 
 var graph = new Rickshaw.Graph( {
     element: document.querySelector("#chart"),
-    width: 480,
+    width: 600,
     height: 240,
     series: [ {
             data: entries, 
