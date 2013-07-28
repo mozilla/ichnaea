@@ -30,13 +30,13 @@
     <table id="leader_table" border="1">
         <thead>
             <tr>
-                <th>User token</th>
+                <th>User (token)</th>
                 <th>Contributed measurements</th>
             </tr>
         </thead>
         <tbody>
             <tr tal:repeat="row leaders">
-                <td>${row.token}</td>
+                <td>${row.nickname} (${row.token}&hellip;)</td>
                 <td>${row.num}</td>
             </tr>
         </tbody>

@@ -20,7 +20,7 @@ def stats_request(request):
     else:
         query = MEASURE_HISTOGRAM_MYSQL
     rows = session.execute(text(query))
-    result = {'histogram': [], 'leaders': []}
+    result = {'histogram': []}
     for day, num in rows.fetchall():
         if isinstance(day, datetime.date):
             day = day.strftime('%Y-%m-%d')

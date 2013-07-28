@@ -4,6 +4,7 @@ from pyramid.view import view_config
 from sqlalchemy import func
 
 from ichnaea.db import Measure
+from ichnaea.db import User
 
 
 def configure_content(config):
@@ -31,7 +32,13 @@ def stats_view(request):
     rows = session.query(Measure.token, func.count(Measure.id)).\
         filter(Measure.token != "").\
         group_by(Measure.token).all()
-    for token, num in sorted(rows, key=operator.itemgetter(1), reverse=True):
-        result['leaders'].append({'token': token[:8], 'num': num})
+    users = session.query(User).all()
+    user_map = {}
+    for user in users:
+        user_map[user.token] = user.nickname
 
+    for token, num in sorted(rows, key=operator.itemgetter(1), reverse=True):
+        nickname = user_map.get(token, 'anonymous')
+        result['leaders'].append(
+            {'token': token[:8], 'nickname': nickname, 'num': num})
     return result
