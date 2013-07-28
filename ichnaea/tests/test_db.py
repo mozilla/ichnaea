@@ -89,3 +89,32 @@ class TestMeasure(TestCase):
         self.assertEqual(result.lon, 23456789)
         self.assertEqual(result.cell, "[]")
         self.assertEqual(result.wifi, "[]")
+
+
+class TestUser(TestCase):
+
+    def _make_one(self):
+        from ichnaea.db import User
+        return User()
+
+    def _get_session(self):
+        from ichnaea.db import Database
+        return Database('sqlite://').session()
+
+    def test_constructor(self):
+        user = self._make_one()
+        self.assertTrue(user.id is None)
+
+    def test_fields(self):
+        user = self._make_one()
+        user.token = "898fccec2262417ca49d2814ac61e2c3"
+        user.nickname = "World Traveler"
+
+        session = self._get_session()
+        session.add(user)
+        session.commit()
+
+        result = session.query(user.__class__).first()
+        self.assertEqual(result.id, 1)
+        self.assertEqual(result.token, "898fccec2262417ca49d2814ac61e2c3")
+        self.assertEqual(result.nickname, "World Traveler")

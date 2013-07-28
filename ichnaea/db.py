@@ -91,6 +91,23 @@ class Measure(_Model):
 measure_table = Measure.__table__
 
 
+class User(_Model):
+    __tablename__ = 'user'
+    __table_args__ = (
+        Index('user_token_idx', 'token'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+        }
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    token = Column(String(36))
+    nickname = Column(String(128))
+
+user_table = User.__table__
+
+
 class Database(object):
 
     def __init__(self, sqluri):
@@ -109,6 +126,8 @@ class Database(object):
         wifi_table.create(checkfirst=True)
         measure_table.metadata.bind = self.engine
         measure_table.create(checkfirst=True)
+        user_table.metadata.bind = self.engine
+        user_table.create(checkfirst=True)
 
     def session(self):
         return self.session_factory()
