@@ -13,7 +13,7 @@ def submit_request(request):
     measures = []
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
     header_token = request.headers.get('X-Token', '')
-    if not (24 <= len(header_token) <= 40):
+    if not (24 <= len(header_token) <= 36):
         # doesn't look like it's a uuid
         header_token = ""
     for measure in request.validated['items']:
