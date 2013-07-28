@@ -261,11 +261,3 @@ stats = Service(name='stats', path='/v1/stats')
 @stats.get(renderer='json')
 def get_stats(request):
     return stats_request(request)
-
-
-_robots_response = Response(content_type='text/plain',
-                            body="User-agent: *\nDisallow: /\n")
-
-
-def robotstxt_view(context, request):
-    return _robots_response

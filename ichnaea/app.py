@@ -6,7 +6,6 @@ from pyramid.events import NewRequest
 from ichnaea import decimaljson
 from ichnaea.db import Database
 from ichnaea.content.views import configure_content
-from ichnaea.views import robotstxt_view
 
 logger = logging.getLogger('ichnaea')
 
@@ -35,9 +34,6 @@ def main(global_config, **settings):
 
     config.add_static_view(
         name='static', path='ichnaea:static', cache_max_age=3600)
-    config.add_route('robots', '/robots.txt')
-    config.add_view(robotstxt_view, route_name='robots', http_cache=86400)
-
     configure_content(config)
     config.scan('ichnaea.content.views')
 

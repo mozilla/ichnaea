@@ -1,5 +1,8 @@
 import operator
+import os
 
+from pyramid.response import FileResponse
+from pyramid.response import Response
 from pyramid.view import view_config
 from sqlalchemy import func
 
@@ -7,10 +10,20 @@ from ichnaea.db import Measure
 from ichnaea.db import User
 
 
+HERE = os.path.dirname(__file__)
+FAVICON_PATH = os.path.join(HERE, 'images', 'favicon.ico')
+
+
 def configure_content(config):
     config.add_route('homepage', '/')
     config.add_route('map', '/map')
     config.add_route('stats', '/stats')
+
+    config.add_route('favicon', '/favicon.ico')
+    config.add_view(favicon_view, route_name='favicon', http_cache=86400)
+
+    config.add_route('robots', '/robots.txt')
+    config.add_view(robotstxt_view, route_name='robots', http_cache=86400)
 
 
 @view_config(route_name='homepage', renderer='templates/homepage.pt')
@@ -42,3 +55,15 @@ def stats_view(request):
         result['leaders'].append(
             {'token': token[:8], 'nickname': nickname, 'num': num})
     return result
+
+
+def favicon_view(request):
+    return FileResponse(FAVICON_PATH, request=request)
+
+
+_robots_response = Response(content_type='text/plain',
+                            body="User-agent: *\nDisallow: /\n")
+
+
+def robotstxt_view(context, request):
+    return _robots_response
