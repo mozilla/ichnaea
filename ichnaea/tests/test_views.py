@@ -283,6 +283,35 @@ class TestMeasure(TestCase):
         self.assertEqual(result[0].token, uid)
         self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
 
+    def test_token_nickname_header_update(self):
+        app = _make_app()
+        uid = uuid4().hex
+        nickname = 'World Tr\xc3\xa4veler'
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
+            ]},
+            headers={'X-Token': uid, 'X-Nickname': nickname},
+            status=204)
+        session = app.app.registry.database.session()
+        result = session.query(User).all()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].token, uid)
+        self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
+        # second request updating nickname
+        nickname2 = "Tr\xc3\xa4veler's friend"
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
+            ]},
+            headers={'X-Token': uid, 'X-Nickname': nickname2},
+            status=204)
+        session = app.app.registry.database.session()
+        result = session.query(User).all()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].token, uid)
+        self.assertEqual(result[0].nickname, nickname2.decode('utf-8'))
+
     def test_error(self):
         app = _make_app()
         res = app.post_json(

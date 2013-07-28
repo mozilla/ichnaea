@@ -25,12 +25,11 @@ def submit_request(request):
             # automatically create user objects and update nickname
             if isinstance(header_nickname, str):
                 header_nickname = header_nickname.decode('utf-8', 'ignore')
-            rows = session.query(User.id, User.token).\
-                filter(User.token == header_token)
+            rows = session.query(User).filter(User.token == header_token)
             old = rows.first()
             if old:
-                # TODO update nickname
-                pass
+                # update nickname
+                old.nickname = header_nickname
             else:
                 user = User()
                 user.token = header_token
