@@ -242,4 +242,4 @@ heartbeat = Service(name='heartbeat', path='/__heartbeat__')
 
 @heartbeat.get(renderer='json')
 def get_heartbeat(request):
-    return {'status': 'OK', 'hostname': request.host}
+    return {'status': 'OK', 'hostname': request.server_name}
