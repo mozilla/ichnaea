@@ -40,7 +40,7 @@ def submit_request(request):
         try:
             measure['time'] = iso8601.parse_date(measure['time'])
         except (iso8601.ParseError, TypeError):
-            if measure['time']:
+            if measure['time']:  # pragma: no cover
                 # ignore debug log for empty values
                 logger.debug('submit_time_error' + repr(measure['time']))
             measure['time'] = utcnow

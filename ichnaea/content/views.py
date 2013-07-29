@@ -84,7 +84,7 @@ class ContentViews(Layout):
         session = self.request.database.session()
         if 'sqlite' in str(session.bind.engine.url):
             query = MEASURE_HISTOGRAM_SQLITE
-        else:
+        else:  # pragma: no cover
             query = MEASURE_HISTOGRAM_MYSQL
         rows = session.execute(text(query))
         result = {'histogram': []}

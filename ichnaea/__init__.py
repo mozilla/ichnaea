@@ -12,7 +12,7 @@ __all__ = ('logger', 'main')
 _APP = None
 
 
-def application(environ, start_response):
+def application(environ, start_response):  # pragma: no cover
     global _APP
     if _APP is None:
         config = os.environ.get('ICHNAEA_CFG', 'ichnaea.ini')
