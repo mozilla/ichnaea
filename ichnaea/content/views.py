@@ -1,3 +1,4 @@
+import datetime
 import operator
 import os
 
@@ -7,6 +8,7 @@ from pyramid.response import FileResponse
 from pyramid.response import Response
 from pyramid.view import view_config
 from sqlalchemy import func
+from sqlalchemy.sql.expression import text
 
 from ichnaea.db import Measure
 from ichnaea.db import User
@@ -14,6 +16,16 @@ from ichnaea.db import User
 
 HERE = os.path.dirname(__file__)
 FAVICON_PATH = os.path.join(HERE, 'static', 'favicon.ico')
+
+MEASURE_HISTOGRAM_MYSQL = """\
+select date(time) as day, count(id) as num from measure where
+date_sub(curdate(), interval 30 day) <= time and
+date(time) <= curdate() group by date(time)"""
+
+MEASURE_HISTOGRAM_SQLITE = """\
+select date(time) as day, count(id) as num from measure where
+date('now', '-30 days') <= date(time) and
+date(time) <= date('now') group by date(time)"""
 
 
 def configure_content(config):
@@ -51,6 +63,21 @@ class ContentViews(Layout):
     @view_config(renderer='templates/map.pt', name="map")
     def map_view(self):
         return {'page_title': 'Coverage Map'}
+
+    @view_config(renderer='json', name="stats.json")
+    def stats_request(self):
+        session = self.request.database.session()
+        if 'sqlite' in str(session.bind.engine.url):
+            query = MEASURE_HISTOGRAM_SQLITE
+        else:
+            query = MEASURE_HISTOGRAM_MYSQL
+        rows = session.execute(text(query))
+        result = {'histogram': []}
+        for day, num in rows.fetchall():
+            if isinstance(day, datetime.date):  # pragma: no cover
+                day = day.strftime('%Y-%m-%d')
+            result['histogram'].append({'day': day, 'num': num})
+        return result
 
     @view_config(renderer='templates/stats.pt', name="stats")
     def stats_view(self):

@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import uuid4
 
 from pyramid.testing import DummyRequest
@@ -92,6 +93,19 @@ class TestFunctionalContent(TestCase):
     def test_stats(self):
         app = _make_app()
         app.get('/stats', status=200)
+
+    def test_stats_json(self):
+        app = _make_app()
+        today = datetime.utcnow().date().strftime('%Y-%m-%d')
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0, "lon": 2.0, "time": today,
+                 "wifi": [{"key": "a"}]},
+            ]},
+            status=204)
+        result = app.get('/stats.json', status=200)
+        self.assertEqual(
+            result.json, {'histogram': [{'num': 1, 'day': today}]})
 
 
 class TestLayout(TestCase):

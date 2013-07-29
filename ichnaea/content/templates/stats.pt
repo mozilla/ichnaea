@@ -50,7 +50,7 @@
 
 var result = {};
 $.ajax({
-    url: '/v1/stats',
+    url: '/stats.json',
     dataType: "json",
     async: false,
     success: function(json) {
