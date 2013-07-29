@@ -1,4 +1,5 @@
 import logging
+import socket
 
 from cornice import Service
 from pyramid.httpexceptions import HTTPError, HTTPNoContent
@@ -10,6 +11,7 @@ from ichnaea.search import search_request
 from ichnaea.submit import submit_request
 
 logger = logging.getLogger('ichnaea')
+LOCAL_FQDN = socket.getfqdn()
 
 
 class _JSONError(HTTPError):
@@ -242,4 +244,4 @@ heartbeat = Service(name='heartbeat', path='/__heartbeat__')
 
 @heartbeat.get(renderer='json')
 def get_heartbeat(request):
-    return {'status': 'OK', 'hostname': request.server_name}
+    return {'status': 'OK', 'hostname': LOCAL_FQDN}
