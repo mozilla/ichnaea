@@ -14,7 +14,10 @@ from ichnaea.decimaljson import to_precise_int
 logger = logging.getLogger('ichnaea')
 
 
-def handle_nickname(nickname, token, session):
+def handle_token_nickname(token, nickname, session):
+    if not (24 <= len(token) <= 36):
+        # doesn't look like it's a uuid
+        token = ""
     if (3 <= len(nickname) <= 128):
         # automatically create user objects and update nickname
         if isinstance(nickname, str):
@@ -29,6 +32,7 @@ def handle_nickname(nickname, token, session):
             user.token = token
             user.nickname = nickname
             session.add(user)
+    return (token, nickname)
 
 
 def handle_time(measure, utcnow, token):
@@ -45,23 +49,20 @@ def handle_time(measure, utcnow, token):
             measure['time'] = utcnow
     if token:
         measure['token'] = token
+    return measure
 
 
 def submit_request(request):
     session = request.database.session()
+
+    token = request.headers.get('X-Token', '')
+    nickname = request.headers.get('X-Nickname', '')
+    token, nickname = handle_token_nickname(token, nickname, session)
+
     measures = []
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
-    header_token = request.headers.get('X-Token', '')
-    header_nickname = ''
-    if not (24 <= len(header_token) <= 36):
-        # doesn't look like it's a uuid
-        header_token = ""
-    else:
-        header_nickname = request.headers.get('X-Nickname', '')
-        handle_nickname(header_nickname, header_token, session)
-
     for measure in request.validated['items']:
-        handle_time(measure, utcnow, header_token)
+        measure = handle_time(measure, utcnow, token)
         measures.append(dumps(measure))
 
     insert_measures(measures, session)
