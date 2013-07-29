@@ -31,8 +31,10 @@ date(time) <= date('now') group by date(time)"""
 
 
 def configure_content(config):
-    config.add_view(favicon_view, name='favicon.ico', http_cache=86400)
-    config.add_view(robotstxt_view, name='robots.txt', http_cache=86400)
+    config.add_view(favicon_view, name='favicon.ico',
+                    http_cache=(86400, {'public': True}))
+    config.add_view(robotstxt_view, name='robots.txt',
+                    http_cache=(86400, {'public': True}))
 
     config.add_static_view(
         name='static', path='ichnaea.content:static', cache_max_age=3600)
