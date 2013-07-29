@@ -3,13 +3,13 @@
            metal:use-macro="view.base_template">
 
 <tal:slot metal:fill-slot="css">
-    <link rel="stylesheet" href="/static/mapbox.css" />
+    <link rel="stylesheet" href="/static/css/mapbox.css" />
 </tal:slot>
 
 <tal:slot metal:fill-slot="js">
-    <script src='/static/mapbox.js'></script>
-    <script src="/static/csv2geojson.js"></script>
-    <script src="/static/leaflet.markercluster.js"></script>
+    <script src='/static/js/mapbox.js'></script>
+    <script src="/static/js/csv2geojson.js"></script>
+    <script src="/static/js/leaflet.markercluster.js"></script>
 </tal:slot>
 
 <tal:slot metal:fill-slot="content">

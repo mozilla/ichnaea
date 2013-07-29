@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/static/css/base.css" />
     <tal:slot metal:define-slot="css"></tal:slot>
 
-    <script src='/static/jquery.min.js'></script>
+    <script src='/static/js/jquery.min.js'></script>
     <tal:slot metal:define-slot="js"></tal:slot>
 
     <tal:slot metal:define-slot="head"></tal:slot>
@@ -42,7 +42,8 @@
     <tal:macro metal:define-slot="footer">
     <footer id="colophon">
         <div class="footer-logo">
-            <img src="/static/images/mozilla-logo.png" alt="Mozilla" />
+            <img src="/static/images/mozilla-logo.png"
+                 alt="Mozilla" width="93" height="24" />
         </div>
         <div class="footer-license">
             This content is ©2012–2013 by Mozilla.
