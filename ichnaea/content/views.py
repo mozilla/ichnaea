@@ -5,6 +5,8 @@ import operator
 import os
 
 from pyramid.decorator import reify
+from pyramid.events import NewResponse
+from pyramid.events import subscriber
 from pyramid.renderers import get_renderer
 from pyramid.response import FileResponse
 from pyramid.response import Response
@@ -35,11 +37,16 @@ def configure_content(config):
                     http_cache=(86400, {'public': True}))
     config.add_view(robotstxt_view, name='robots.txt',
                     http_cache=(86400, {'public': True}))
-
     config.add_static_view(
         name='static', path='ichnaea.content:static', cache_max_age=3600)
-
     config.scan('ichnaea.content.views')
+
+
+@subscriber(NewResponse)
+def sts_header(event):
+    response = event.response
+    if response.content_type == 'text/html':
+        response.headers.add('Strict-Transport-Security', 'max-age=2592000')
 
 
 class Layout(object):

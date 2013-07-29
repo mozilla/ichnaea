@@ -80,7 +80,8 @@ class TestFunctionalContent(TestCase):
 
     def test_homepage(self):
         app = _make_app()
-        app.get('/', status=200)
+        result = app.get('/', status=200)
+        self.assertTrue('Strict-Transport-Security' in result.headers)
 
     def test_map(self):
         app = _make_app()
