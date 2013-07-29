@@ -14,6 +14,39 @@ from ichnaea.decimaljson import to_precise_int
 logger = logging.getLogger('ichnaea')
 
 
+def handle_nickname(nickname, token, session):
+    if (3 <= len(nickname) <= 128):
+        # automatically create user objects and update nickname
+        if isinstance(nickname, str):
+            nickname = nickname.decode('utf-8', 'ignore')
+        rows = session.query(User).filter(User.token == token)
+        old = rows.first()
+        if old:
+            # update nickname
+            old.nickname = nickname
+        else:
+            user = User()
+            user.token = token
+            user.nickname = nickname
+            session.add(user)
+
+
+def handle_time(measure, utcnow, token):
+    try:
+        measure['time'] = iso8601.parse_date(measure['time'])
+    except (iso8601.ParseError, TypeError):
+        if measure['time']:  # pragma: no cover
+            # ignore debug log for empty values
+            logger.debug('submit_time_error' + repr(measure['time']))
+        measure['time'] = utcnow
+    else:
+        # don't accept future time values
+        if measure['time'] > utcnow:
+            measure['time'] = utcnow
+    if token:
+        measure['token'] = token
+
+
 def submit_request(request):
     session = request.database.session()
     measures = []
@@ -25,35 +58,10 @@ def submit_request(request):
         header_token = ""
     else:
         header_nickname = request.headers.get('X-Nickname', '')
-        if (3 <= len(header_nickname) <= 128):
-            # automatically create user objects and update nickname
-            if isinstance(header_nickname, str):
-                header_nickname = header_nickname.decode('utf-8', 'ignore')
-            rows = session.query(User).filter(User.token == header_token)
-            old = rows.first()
-            if old:
-                # update nickname
-                old.nickname = header_nickname
-            else:
-                user = User()
-                user.token = header_token
-                user.nickname = header_nickname
-                session.add(user)
+        handle_nickname(header_nickname, header_token, session)
 
     for measure in request.validated['items']:
-        try:
-            measure['time'] = iso8601.parse_date(measure['time'])
-        except (iso8601.ParseError, TypeError):
-            if measure['time']:  # pragma: no cover
-                # ignore debug log for empty values
-                logger.debug('submit_time_error' + repr(measure['time']))
-            measure['time'] = utcnow
-        else:
-            # don't accept future time values
-            if measure['time'] > utcnow:
-                measure['time'] = utcnow
-        if header_token:
-            measure['token'] = header_token
+        handle_time(measure, utcnow, header_token)
         measures.append(dumps(measure))
 
     insert_measures(measures, session)
