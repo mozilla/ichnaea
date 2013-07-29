@@ -58,11 +58,11 @@ class ContentViews(Layout):
     def __init__(self, request):
         self.request = request
 
-    @view_config(renderer='templates/homepage.pt')
+    @view_config(renderer='templates/homepage.pt', http_cache=300)
     def homepage_view(self):
         return {'page_title': 'Overview'}
 
-    @view_config(renderer='string', name="map.csv")
+    @view_config(renderer='string', name="map.csv", http_cache=300)
     def map_csv(self):
         session = self.request.database.session()
         select = text("select distinct round(lat / 100000) as lat, "
@@ -75,11 +75,11 @@ class ContentViews(Layout):
             csvwriter.writerow((int(lat) / 100.0, int(lon) / 100.0))
         return rows.getvalue()
 
-    @view_config(renderer='templates/map.pt', name="map")
+    @view_config(renderer='templates/map.pt', name="map", http_cache=300)
     def map_view(self):
         return {'page_title': 'Coverage Map'}
 
-    @view_config(renderer='json', name="stats.json")
+    @view_config(renderer='json', name="stats.json", http_cache=300)
     def stats_json(self):
         session = self.request.database.session()
         if 'sqlite' in str(session.bind.engine.url):
@@ -94,7 +94,7 @@ class ContentViews(Layout):
             result['histogram'].append({'day': day, 'num': num})
         return result
 
-    @view_config(renderer='templates/stats.pt', name="stats")
+    @view_config(renderer='templates/stats.pt', name="stats", http_cache=300)
     def stats_view(self):
         session = self.request.database.session()
         result = {'leaders': [], 'page_title': 'Statistics'}
