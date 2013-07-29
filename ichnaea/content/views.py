@@ -26,7 +26,7 @@ def configure_content(config):
     config.scan('ichnaea.content.views')
 
 
-class Layouts(object):
+class Layout(object):
 
     @reify
     def base_template(self):
@@ -39,7 +39,7 @@ class Layouts(object):
         return renderer.implementation().macros
 
 
-class ContentViews(Layouts):
+class ContentViews(Layout):
 
     def __init__(self, request):
         self.request = request

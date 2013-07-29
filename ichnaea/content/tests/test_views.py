@@ -61,3 +61,27 @@ class TestFunctionalContentViews(TestCase):
     def test_stats(self):
         app = _make_app()
         app.get('/stats', status=200)
+
+
+class TestLayout(TestCase):
+
+    def setUp(self):
+        request = DummyRequest()
+        self.config = setUp(request=request)
+
+    def tearDown(self):
+        tearDown()
+
+    def _make_layout(self):
+        from ichnaea.content.views import Layout
+        return Layout()
+
+    def test_base_template(self):
+        from chameleon.zpt.template import Macro
+        layout = self._make_layout()
+        self.assertEqual(layout.base_template.__class__, Macro)
+
+    def test_base_macros(self):
+        from chameleon.zpt.template import Macros
+        layout = self._make_layout()
+        self.assertEqual(layout.base_macros.__class__, Macros)
