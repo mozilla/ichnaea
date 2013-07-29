@@ -17,15 +17,8 @@ FAVICON_PATH = os.path.join(HERE, 'static', 'favicon.ico')
 
 
 def configure_content(config):
-    config.add_route('homepage', '/')
-    config.add_route('map', '/map')
-    config.add_route('stats', '/stats')
-
-    config.add_route('favicon', '/favicon.ico')
-    config.add_view(favicon_view, route_name='favicon', http_cache=86400)
-
-    config.add_route('robots', '/robots.txt')
-    config.add_view(robotstxt_view, route_name='robots', http_cache=86400)
+    config.add_view(favicon_view, name='favicon.ico', http_cache=86400)
+    config.add_view(robotstxt_view, name='robots.txt', http_cache=86400)
 
     config.add_static_view(
         name='static', path='ichnaea.content:static', cache_max_age=3600)
@@ -51,15 +44,15 @@ class ContentViews(Layouts):
     def __init__(self, request):
         self.request = request
 
-    @view_config(route_name='homepage', renderer='templates/homepage.pt')
+    @view_config(renderer='templates/homepage.pt')
     def homepage_view(self):
         return {'page_title': 'Overview'}
 
-    @view_config(route_name='map', renderer='templates/map.pt')
+    @view_config(renderer='templates/map.pt', name="map")
     def map_view(self):
         return {'page_title': 'Coverage Map'}
 
-    @view_config(route_name='stats', renderer='templates/stats.pt')
+    @view_config(renderer='templates/stats.pt', name="stats")
     def stats_view(self):
         session = self.request.database.session()
         result = {'leaders': [], 'page_title': 'Statistics'}
