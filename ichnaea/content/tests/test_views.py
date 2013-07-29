@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from pyramid.testing import DummyRequest
 from pyramid.testing import setUp
 from pyramid.testing import tearDown
@@ -37,7 +39,7 @@ class TestContentViews(TestCase):
         result = inst.map_view()
         self.assertEqual(result['page_title'], 'Coverage Map')
 
-    def test_stats(self):
+    def test_stats_empty(self):
         app = _make_app()
         request = DummyRequest()
         request.database = app.app.registry.database
@@ -47,8 +49,33 @@ class TestContentViews(TestCase):
         self.assertEqual(result['total_measures'], 0)
         self.assertEqual(result['leaders'], [])
 
+    def test_stats(self):
+        app = _make_app()
+        uid = uuid4().hex
+        nickname = 'World Tr\xc3\xa4veler'
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
+                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
+            ]},
+            headers={'X-Token': uid, 'X-Nickname': nickname},
+            status=204)
+        request = DummyRequest()
+        request.database = app.app.registry.database
+        inst = self._make_view(request)
+        result = inst.stats_view()
+        self.assertEqual(result['page_title'], 'Statistics')
+        self.assertEqual(result['total_measures'], 2)
+        self.assertEqual(result['leaders'],
+                         [{'nickname': nickname.decode('utf-8'),
+                           'num': 2, 'token': uid[:8]}])
 
-class TestFunctionalContentViews(TestCase):
+
+class TestFunctionalContent(TestCase):
+
+    def test_favicon(self):
+        app = _make_app()
+        app.get('/favicon.ico', status=200)
 
     def test_homepage(self):
         app = _make_app()
@@ -57,6 +84,10 @@ class TestFunctionalContentViews(TestCase):
     def test_map(self):
         app = _make_app()
         app.get('/map', status=200)
+
+    def test_robots_txt(self):
+        app = _make_app()
+        app.get('/robots.txt', status=200)
 
     def test_stats(self):
         app = _make_app()

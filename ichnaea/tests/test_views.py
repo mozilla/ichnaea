@@ -346,12 +346,3 @@ class TestHeartbeat(TestCase):
         res = app.get('/__heartbeat__', status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "OK"}')
-
-
-class TestRobots(TestCase):
-
-    def test_view(self):
-        app = _make_app()
-        res = app.get('/robots.txt', status=200)
-        self.assertEqual(res.content_type, 'text/plain')
-        self.assertEqual(res.body, 'User-agent: *\nDisallow: /\n')
