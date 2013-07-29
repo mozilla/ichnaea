@@ -1,6 +1,7 @@
 import operator
 import os
 
+from pyramid.renderers import get_renderer
 from pyramid.response import FileResponse
 from pyramid.response import Response
 from pyramid.view import view_config
@@ -31,20 +32,26 @@ def configure_content(config):
     config.scan('ichnaea.content.views')
 
 
+def get_base_macros():
+    base_macros = get_renderer('templates/base_macros.pt').implementation()
+    return base_macros
+
+
 @view_config(route_name='homepage', renderer='templates/homepage.pt')
 def homepage_view(request):
-    return {}
+    return {'base_macros': get_base_macros()}
 
 
 @view_config(route_name='map', renderer='templates/map.pt')
 def map_view(request):
-    return {}
+    return {'base_macros': get_base_macros()}
 
 
 @view_config(route_name='stats', renderer='templates/stats.pt')
 def stats_view(request):
     session = request.database.session()
-    result = {'leaders': []}
+    base_macros = get_base_macros()
+    result = {'leaders': [], 'base_macros': base_macros}
     result['total_measures'] = session.query(Measure).count()
 
     rows = session.query(Measure.token, func.count(Measure.id)).\

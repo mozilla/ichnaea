@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal">
+<head>
+    <meta charset="UTF-8" />
+</head>
+<body>
+
+<tal:macro metal:define-macro="header">
+<div id="wrapper">
+    <header id="masthead">
+        <nav id="nav-main" role="navigation">
+            <ul id="nav-main-menu">
+                <li class="first"><a href="/">Home</a></li>
+                <li><a href="/stats">Statistics</a></li>
+                <li class="last"><a href="/map">Map</a></li>
+            </ul>
+        </nav>
+
+        <h2><a href="/">Mozilla Location Service</a></h2>
+    </header>
+</div>
+</tal:macro>
+
+<tal:macro metal:define-macro="footer">
+<footer id="colophon">
+    <div class="footer-logo">
+        <img src="/static/images/mozilla-logo.png" alt="Mozilla" />
+    </div>
+    <div class="footer-license">
+        This content is ©2012–2013 by Mozilla.
+    </div>
+
+    <ul class="footer-nav">
+        <li><a href="https://wiki.mozilla.org/Services/Location">
+            Project overview</a>
+        </li>
+        <li><a href="https://github.com/mozilla/ichnaea/">
+            Source Code</a>
+        </li>
+    </ul>
+</footer>
+</tal:macro>
+
+<div metal:define-macro="head">
+    <h1>
+        Hello <span metal:define-slot="name">Fred</span>!
+    </h1>
+</div>
+
+</body>
+ </html>
