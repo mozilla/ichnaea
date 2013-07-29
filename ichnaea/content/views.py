@@ -1,6 +1,7 @@
 import operator
 import os
 
+from pyramid.decorator import reify
 from pyramid.renderers import get_renderer
 from pyramid.response import FileResponse
 from pyramid.response import Response
@@ -32,41 +33,51 @@ def configure_content(config):
     config.scan('ichnaea.content.views')
 
 
-def get_base_macros():
-    base_macros = get_renderer('templates/base_macros.pt').implementation()
-    return base_macros
+class Layouts(object):
+
+    @reify
+    def base_template(self):
+        renderer = get_renderer("templates/base.pt")
+        return renderer.implementation().macros['layout']
+
+    @reify
+    def base_macros(self):
+        renderer = get_renderer("templates/base_macros.pt")
+        return renderer.implementation().macros
 
 
-@view_config(route_name='homepage', renderer='templates/homepage.pt')
-def homepage_view(request):
-    return {'base_macros': get_base_macros()}
+class ContentViews(Layouts):
 
+    def __init__(self, request):
+        self.request = request
 
-@view_config(route_name='map', renderer='templates/map.pt')
-def map_view(request):
-    return {'base_macros': get_base_macros()}
+    @view_config(route_name='homepage', renderer='templates/homepage.pt')
+    def homepage_view(self):
+        return {'page_title': 'Overview'}
 
+    @view_config(route_name='map', renderer='templates/map.pt')
+    def map_view(self):
+        return {'page_title': 'Coverage Map'}
 
-@view_config(route_name='stats', renderer='templates/stats.pt')
-def stats_view(request):
-    session = request.database.session()
-    base_macros = get_base_macros()
-    result = {'leaders': [], 'base_macros': base_macros}
-    result['total_measures'] = session.query(Measure).count()
+    @view_config(route_name='stats', renderer='templates/stats.pt')
+    def stats_view(self):
+        session = self.request.database.session()
+        result = {'leaders': [], 'page_title': 'Statistics'}
+        result['total_measures'] = session.query(Measure).count()
 
-    rows = session.query(Measure.token, func.count(Measure.id)).\
-        filter(Measure.token != "").\
-        group_by(Measure.token).all()
-    users = session.query(User).all()
-    user_map = {}
-    for user in users:
-        user_map[user.token] = user.nickname
+        rows = session.query(Measure.token, func.count(Measure.id)).\
+            filter(Measure.token != "").\
+            group_by(Measure.token).all()
+        users = session.query(User).all()
+        user_map = {}
+        for user in users:
+            user_map[user.token] = user.nickname
 
-    for token, num in sorted(rows, key=operator.itemgetter(1), reverse=True):
-        nickname = user_map.get(token, 'anonymous')
-        result['leaders'].append(
-            {'token': token[:8], 'nickname': nickname, 'num': num})
-    return result
+        for token, num in sorted(rows, key=operator.itemgetter(1), reverse=True):
+            nickname = user_map.get(token, 'anonymous')
+            result['leaders'].append(
+                {'token': token[:8], 'nickname': nickname, 'num': num})
+        return result
 
 
 def favicon_view(request):

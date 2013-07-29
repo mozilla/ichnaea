@@ -1,26 +1,18 @@
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:tal="http://xml.zope.org/namespaces/tal"
-      xmlns:metal="http://xml.zope.org/namespaces/metal">
-<head>
-  <meta charset="UTF-8" />
-  <title>Mozilla Location Service - Statistics</title>
+<tal:macro xmlns:tal="http://xml.zope.org/namespaces/tal"
+           xmlns:metal="http://xml.zope.org/namespaces/metal"
+           metal:use-macro="view.base_template">
 
-  <link rel="stylesheet" href="/static/css/base.css" />
-  <link rel="stylesheet" href="/static/rickshaw.min.css" />
+<tal:slot metal:fill-slot="css">
+    <link rel="stylesheet" href="/static/rickshaw.min.css" />
+</tal:slot>
 
-  <script src='/static/jquery.min.js'></script>
-  <script src='/static/d3.min.js'></script>
-  <script src='/static/d3.layout.min.js'></script>
-  <script src='/static/rickshaw.min.js'></script>
-</head>
-<body>
-<div id="outer-wrapper">
+<tal:slot metal:fill-slot="js">
+    <script src='/static/d3.min.js'></script>
+    <script src='/static/d3.layout.min.js'></script>
+    <script src='/static/rickshaw.min.js'></script>
+</tal:slot>
 
-<div metal:use-macro="base_macros.macros['header']" />
-
-<h1 id="main-feature">Statistics</h1>
-
+<tal:slot metal:fill-slot="content">
 <section id="main-content">
     <p>Overall statistics and leaderboard.</p>
     <h2>Measurements</h2>
@@ -51,11 +43,9 @@
         </table>
     </div>
 </section>
+</tal:slot>
 
-<div metal:use-macro="base_macros.macros['footer']" />
-
-</div>
-
+<tal:slot metal:fill-slot="js_bottom">
 <script type='text/javascript'>
 
 var result = {};
@@ -108,5 +98,6 @@ var y_axis = new Rickshaw.Graph.Axis.Y( {
 graph.render();
 
 </script>
-</body>
-</html>
+</tal:slot>
+
+</tal:macro>

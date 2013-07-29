@@ -1,20 +1,8 @@
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:tal="http://xml.zope.org/namespaces/tal"
-      xmlns:metal="http://xml.zope.org/namespaces/metal">
-<head>
-  <meta charset="UTF-8" />
-  <title>Mozilla Location Service</title>
+<tal:macro xmlns:tal="http://xml.zope.org/namespaces/tal"
+           xmlns:metal="http://xml.zope.org/namespaces/metal"
+           metal:use-macro="view.base_template">
 
-  <link rel="stylesheet" href="/static/css/base.css" />
-</head>
-<body>
-<div id="outer-wrapper">
-
-<div metal:use-macro="base_macros.macros['header']" />
-
-<h1 id="main-feature">Overview</h1>
-
+<tal:slot metal:fill-slot="content">
 <section id="main-content">
     <p>Welcome to the Mozilla Location Service.</p>
     <p>
@@ -26,9 +14,6 @@
         <li><a href="/map">Coverage Map</a></li>
     </ul>
 </section>
+</tal:slot>
 
-<div metal:use-macro="base_macros.macros['footer']" />
-
-</div>
-</body>
-</html>
+</tal:macro>

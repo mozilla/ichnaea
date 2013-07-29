@@ -1,0 +1,65 @@
+<tal:template metal:define-macro="layout"
+><!DOCTYPE html>
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal">
+<head>
+    <meta charset="UTF-8" />
+    <title>Mozilla Location Service - ${page_title}</title>
+
+    <link rel="stylesheet" href="/static/css/base.css" />
+    <tal:slot metal:define-slot="css"></tal:slot>
+
+    <script src='/static/jquery.min.js'></script>
+    <tal:slot metal:define-slot="js"></tal:slot>
+
+    <tal:slot metal:define-slot="head"></tal:slot>
+</head>
+<body>
+<div id="outer-wrapper">
+    <tal:macro metal:define-slot="header">
+    <div id="wrapper">
+        <header id="masthead">
+            <nav id="nav-main" role="navigation">
+                <ul id="nav-main-menu">
+                    <li class="first"><a href="/">Home</a></li>
+                    <li><a href="/stats">Statistics</a></li>
+                    <li class="last"><a href="/map">Map</a></li>
+                </ul>
+            </nav>
+
+            <h2><a href="/">Mozilla Location Service</a></h2>
+        </header>
+    </div>
+    </tal:macro>
+
+    <tal:slot metal:define-slot="heading">
+    <h1 id="main-feature">${page_title}</h1>
+    </tal:slot>
+
+    <tal:slot metal:define-slot="content">
+    </tal:slot>
+
+    <tal:macro metal:define-slot="footer">
+    <footer id="colophon">
+        <div class="footer-logo">
+            <img src="/static/images/mozilla-logo.png" alt="Mozilla" />
+        </div>
+        <div class="footer-license">
+            This content is ©2012–2013 by Mozilla.
+        </div>
+
+        <ul class="footer-nav">
+            <li><a href="https://wiki.mozilla.org/Services/Location">
+                Project overview</a>
+            </li>
+            <li><a href="https://github.com/mozilla/ichnaea/">
+                Source Code</a>
+            </li>
+        </ul>
+    </footer>
+    </tal:macro>
+</div>
+<tal:slot metal:define-slot="js_bottom"></tal:slot>
+</body>
+</html>
+</tal:template>

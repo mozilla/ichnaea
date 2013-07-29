@@ -1,27 +1,18 @@
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:tal="http://xml.zope.org/namespaces/tal"
-      xmlns:metal="http://xml.zope.org/namespaces/metal">
-<head>
-  <meta charset="UTF-8" />
-  <title>Mozilla Location Service - Map</title>
+<tal:macro xmlns:tal="http://xml.zope.org/namespaces/tal"
+           xmlns:metal="http://xml.zope.org/namespaces/metal"
+           metal:use-macro="view.base_template">
 
-  <link rel="stylesheet" href="/static/css/base.css" />
-  <link rel="stylesheet" href="/static/mapbox.css" />
+<tal:slot metal:fill-slot="css">
+    <link rel="stylesheet" href="/static/mapbox.css" />
+</tal:slot>
 
-  <script src='/static/jquery.min.js'></script>
-  <script src='/static/mapbox.js'></script>
-  <script src="/static/csv2geojson.js"></script>
-  <script src="/static/leaflet.markercluster.js"></script>
-</head>
-<body>
+<tal:slot metal:fill-slot="js">
+    <script src='/static/mapbox.js'></script>
+    <script src="/static/csv2geojson.js"></script>
+    <script src="/static/leaflet.markercluster.js"></script>
+</tal:slot>
 
-<div id="outer-wrapper">
-
-<div metal:use-macro="base_macros.macros['header']" />
-
-<h1 id="main-feature">Coverage Map</h1>
-
+<tal:slot metal:fill-slot="content">
 <section id="main-content">
     <p>
         A map showing all covered areas. A single marker shows that we
@@ -30,11 +21,9 @@
     </p>
     <div id='map'></div>
 </section>
+</tal:slot>
 
-<div metal:use-macro="base_macros.macros['footer']" />
-
-</div>
-
+<tal:slot metal:fill-slot="js_bottom">
 <script type='text/javascript'>
 var map = L.mapbox.map('map', 'hannosch.map-j01ew28b').setView([0, 0], 2);
 var markers = new L.MarkerClusterGroup();
@@ -53,5 +42,6 @@ $.ajax({
     }
 });
 </script>
-</body>
-</html>
+</tal:slot>
+
+</tal:macro>
