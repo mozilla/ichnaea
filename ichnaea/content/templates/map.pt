@@ -28,7 +28,7 @@
 var map = L.mapbox.map('map', 'hannosch.map-j01ew28b').setView([0, 0], 2);
 var markers = new L.MarkerClusterGroup();
 $.ajax({
-    url: '/v1/map_stats',
+    url: '/map.csv',
     dataType: 'text',
     success: function csvLoad(csv) {
         geoJsonLayer = L.geoJson(csv2geojson.csv2geojson(csv), {

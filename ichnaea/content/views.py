@@ -1,3 +1,5 @@
+import csv
+from cStringIO import StringIO
 import datetime
 import operator
 import os
@@ -60,12 +62,25 @@ class ContentViews(Layout):
     def homepage_view(self):
         return {'page_title': 'Overview'}
 
+    @view_config(renderer='string', name="map.csv")
+    def map_csv(self):
+        session = self.request.database.session()
+        select = text("select distinct round(lat / 100000) as lat, "
+                      "round(lon / 100000) as lon from measure order by lat, lon")
+        result = session.execute(select)
+        rows = StringIO()
+        csvwriter = csv.writer(rows)
+        csvwriter.writerow(('lat', 'lon'))
+        for lat, lon in result.fetchall():
+            csvwriter.writerow((int(lat) / 100.0, int(lon) / 100.0))
+        return rows.getvalue()
+
     @view_config(renderer='templates/map.pt', name="map")
     def map_view(self):
         return {'page_title': 'Coverage Map'}
 
     @view_config(renderer='json', name="stats.json")
-    def stats_request(self):
+    def stats_json(self):
         session = self.request.database.session()
         if 'sqlite' in str(session.bind.engine.url):
             query = MEASURE_HISTOGRAM_SQLITE

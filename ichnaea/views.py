@@ -5,7 +5,6 @@ from pyramid.httpexceptions import HTTPError, HTTPNoContent
 from pyramid.response import Response
 
 from ichnaea.decimaljson import dumps
-from ichnaea.map_stats import map_stats_request
 from ichnaea.schema import SearchSchema, SubmitSchema
 from ichnaea.search import search_request
 from ichnaea.submit import submit_request
@@ -244,11 +243,3 @@ heartbeat = Service(name='heartbeat', path='/__heartbeat__')
 @heartbeat.get(renderer='json')
 def get_heartbeat(request):
     return {'status': 'OK'}
-
-
-map_stats = Service(name='map_stats', path='/v1/map_stats')
-
-
-@map_stats.get(renderer='string')
-def get_map_stats(request):
-    return map_stats_request(request)
