@@ -45,6 +45,20 @@ class Cell(_Model):
 cell_table = Cell.__table__
 
 
+class CellMeasure(_Model):
+    __tablename__ = 'cell_measure'
+    __table_args__ = {
+        'mysql_engine': 'InnoDB',
+        'mysql_charset': 'utf8',
+        'mysql_row_format': 'compressed',
+        'mysql_key_block_size': '4',
+    }
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+cell_measure_table = CellMeasure.__table__
+
+
 class Wifi(_Model):
     __tablename__ = 'wifi'
     __table_args__ = {
@@ -59,6 +73,20 @@ class Wifi(_Model):
     range = Column(Integer)
 
 wifi_table = Wifi.__table__
+
+
+class WifiMeasure(_Model):
+    __tablename__ = 'wifi_measure'
+    __table_args__ = {
+        'mysql_engine': 'InnoDB',
+        'mysql_charset': 'utf8',
+        'mysql_row_format': 'compressed',
+        'mysql_key_block_size': '4',
+    }
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+wifi_measure_table = WifiMeasure.__table__
 
 
 class Measure(_Model):
@@ -132,16 +160,11 @@ class Database(object):
             bind=self.engine, autocommit=False, autoflush=False)
 
         # bind and create tables
-        cell_table.metadata.bind = self.engine
-        cell_table.create(checkfirst=True)
-        wifi_table.metadata.bind = self.engine
-        wifi_table.create(checkfirst=True)
-        measure_table.metadata.bind = self.engine
-        measure_table.create(checkfirst=True)
-        user_table.metadata.bind = self.engine
-        user_table.create(checkfirst=True)
-        score_table.metadata.bind = self.engine
-        score_table.create(checkfirst=True)
+        for table in (cell_table, cell_measure_table,
+                      wifi_table, wifi_measure_table,
+                      measure_table, user_table, score_table):
+            table.metadata.bind = self.engine
+            table.create(checkfirst=True)
 
     def session(self):
         return self.session_factory()

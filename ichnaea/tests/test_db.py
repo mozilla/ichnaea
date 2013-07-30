@@ -58,6 +58,89 @@ class TestCell(TestCase):
         self.assertEqual(result.cid, 234567)
 
 
+class TestCellMeasure(TestCase):
+
+    def _make_one(self):
+        from ichnaea.db import CellMeasure
+        return CellMeasure()
+
+    def _get_session(self):
+        from ichnaea.db import Database
+        return Database('sqlite://').session()
+
+    def test_constructor(self):
+        cell = self._make_one()
+        self.assertTrue(cell.id is None)
+
+    def test_fields(self):
+        cell = self._make_one()
+
+        session = self._get_session()
+        session.add(cell)
+        session.commit()
+
+        result = session.query(cell.__class__).first()
+        self.assertEqual(result.id, 1)
+
+
+class TestWifi(TestCase):
+
+    def _make_one(self):
+        from ichnaea.db import Wifi
+        return Wifi()
+
+    def _get_session(self):
+        from ichnaea.db import Database
+        return Database('sqlite://').session()
+
+    def test_constructor(self):
+        wifi = self._make_one()
+        self.assertTrue(wifi.key is None)
+
+    def test_fields(self):
+        wifi = self._make_one()
+        key = "3680873e9b83738eb72946d19e971e023e51fd01"
+        wifi.key = key
+        wifi.lat = 12345678
+        wifi.lon = 23456789
+        wifi.range = 200
+
+        session = self._get_session()
+        session.add(wifi)
+        session.commit()
+
+        result = session.query(wifi.__class__).first()
+        self.assertEqual(result.key, key)
+        self.assertEqual(result.lat, 12345678)
+        self.assertEqual(result.lon, 23456789)
+        self.assertEqual(result.range, 200)
+
+
+class TestWifiMeasure(TestCase):
+
+    def _make_one(self):
+        from ichnaea.db import WifiMeasure
+        return WifiMeasure()
+
+    def _get_session(self):
+        from ichnaea.db import Database
+        return Database('sqlite://').session()
+
+    def test_constructor(self):
+        wifi = self._make_one()
+        self.assertTrue(wifi.id is None)
+
+    def test_fields(self):
+        wifi = self._make_one()
+
+        session = self._get_session()
+        session.add(wifi)
+        session.commit()
+
+        result = session.query(wifi.__class__).first()
+        self.assertEqual(result.id, 1)
+
+
 class TestMeasure(TestCase):
 
     def _make_one(self):
