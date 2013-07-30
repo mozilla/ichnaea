@@ -74,6 +74,16 @@ class TestCellMeasure(TestCase):
 
     def test_fields(self):
         cell = self._make_one()
+        cell.lat = 12345678
+        cell.lon = 23456789
+        cell.radio = 0
+        cell.mcc = 100
+        cell.mnc = 5
+        cell.lac = 12345
+        cell.cid = 234567
+        cell.asu = 26
+        cell.signal = -61
+        cell.ta = 10
 
         session = self._get_session()
         session.add(cell)
@@ -81,6 +91,16 @@ class TestCellMeasure(TestCase):
 
         result = session.query(cell.__class__).first()
         self.assertEqual(result.id, 1)
+        self.assertEqual(result.lat, 12345678)
+        self.assertEqual(result.lon, 23456789)
+        self.assertEqual(result.radio, 0)
+        self.assertEqual(result.mcc, 100)
+        self.assertEqual(result.mnc, 5)
+        self.assertEqual(result.lac, 12345)
+        self.assertEqual(result.cid, 234567)
+        self.assertEqual(result.asu, 26)
+        self.assertEqual(result.signal, -61)
+        self.assertEqual(result.ta, 10)
 
 
 class TestWifi(TestCase):

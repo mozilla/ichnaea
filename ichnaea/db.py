@@ -47,14 +47,36 @@ cell_table = Cell.__table__
 
 class CellMeasure(_Model):
     __tablename__ = 'cell_measure'
-    __table_args__ = {
-        'mysql_engine': 'InnoDB',
-        'mysql_charset': 'utf8',
-        'mysql_row_format': 'compressed',
-        'mysql_key_block_size': '4',
-    }
+    __table_args__ = (
+        Index('cell_measure_lat_idx', 'lat'),
+        Index('cell_measure_lon_idx', 'lon'),
+        Index('cell_measure_key_idx', 'radio', 'mcc', 'mnc', 'lac', 'cid'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+            'mysql_row_format': 'compressed',
+            'mysql_key_block_size': '4',
+        }
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    # lat/lon * decimaljson.FACTOR
+    lat = Column(Integer)
+    lon = Column(Integer)
+    time = Column(DateTime)
+    accuracy = Column(Integer)
+    altitude = Column(Integer)
+    altitude_accuracy = Column(Integer)
+    # mapped via RADIO_TYPE
+    radio = Column(SmallInteger)
+    mcc = Column(SmallInteger)
+    mnc = Column(Integer)
+    lac = Column(Integer)
+    cid = Column(Integer)
+    psc = Column(Integer)
+    asu = Column(SmallInteger)
+    signal = Column(SmallInteger)
+    ta = Column(SmallInteger)
 
 cell_measure_table = CellMeasure.__table__
 
