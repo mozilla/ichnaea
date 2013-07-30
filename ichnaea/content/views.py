@@ -1,7 +1,6 @@
 import csv
 from cStringIO import StringIO
 import datetime
-import operator
 import os
 
 from pyramid.decorator import reify
@@ -11,10 +10,10 @@ from pyramid.renderers import get_renderer
 from pyramid.response import FileResponse
 from pyramid.response import Response
 from pyramid.view import view_config
-from sqlalchemy import func
 from sqlalchemy.sql.expression import text
 
 from ichnaea.db import Measure
+from ichnaea.db import Score
 from ichnaea.db import User
 
 
@@ -109,18 +108,16 @@ class ContentViews(Layout):
         result = {'leaders': [], 'page_title': 'Statistics'}
         result['total_measures'] = session.query(Measure).count()
 
-        rows = session.query(Measure.token, func.count(Measure.id)).\
-            filter(Measure.token != "").\
-            group_by(Measure.token).all()
-        users = session.query(User).all()
-        user_map = {}
-        for user in users:
-            user_map[user.token] = user.nickname
+        score_rows = session.query(Score).order_by(Score.value.desc()).all()
+        user_rows = session.query(User).all()
+        users = {}
+        for user in user_rows:
+            users[user.id] = (user.token, user.nickname)
 
-        for token, num in sorted(rows, key=operator.itemgetter(1), reverse=True):
-            nickname = user_map.get(token, 'anonymous')
+        for score in score_rows:
+            token, nickname = users.get(score.id, ('', 'anonymous'))
             result['leaders'].append(
-                {'token': token[:8], 'nickname': nickname, 'num': num})
+                {'token': token[:8], 'nickname': nickname, 'num': score.value})
         return result
 
 
