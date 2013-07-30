@@ -16,6 +16,7 @@ RADIO_TYPE = {
 RADIO_TYPE_KEYS = list(RADIO_TYPE.keys())
 
 # TODO add signal to list of reserved words
+# reported upstream at http://www.sqlalchemy.org/trac/ticket/2791
 from sqlalchemy.dialects.mysql import base
 base.RESERVED_WORDS.add('signal')
 del base
