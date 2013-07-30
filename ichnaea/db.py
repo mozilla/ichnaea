@@ -64,7 +64,6 @@ wifi_table = Wifi.__table__
 class Measure(_Model):
     __tablename__ = 'measure'
     __table_args__ = (
-        Index('measure_token_idx', 'token', 'id'),
         Index('measure_time_idx', 'time', 'id'),
         {
             'mysql_engine': 'InnoDB',
@@ -79,7 +78,6 @@ class Measure(_Model):
     lat = Column(Integer)
     lon = Column(Integer)
     time = Column(DateTime)
-    token = Column(String(36))
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)

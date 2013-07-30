@@ -20,7 +20,8 @@ def handle_token_nickname(token, nickname, session):
     if not (24 <= len(token) <= 36):
         # doesn't look like it's a uuid
         token = ""
-    if (3 <= len(nickname) <= 128):
+        nickname = ""
+    elif (3 <= len(nickname) <= 128):
         # automatically create user objects and update nickname
         if isinstance(nickname, str):
             nickname = nickname.decode('utf-8', 'ignore')
@@ -56,7 +57,7 @@ def handle_score(userid, measures, session):
     return points
 
 
-def handle_time(measure, utcnow, token):
+def handle_time(measure, utcnow):
     try:
         measure['time'] = iso8601.parse_date(measure['time'])
     except (iso8601.ParseError, TypeError):
@@ -68,8 +69,6 @@ def handle_time(measure, utcnow, token):
         # don't accept future time values
         if measure['time'] > utcnow:
             measure['time'] = utcnow
-    if token:
-        measure['token'] = token
     return measure
 
 
@@ -83,10 +82,11 @@ def submit_request(request):
     measures = []
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
     for measure in request.validated['items']:
-        measure = handle_time(measure, utcnow, token)
+        measure = handle_time(measure, utcnow)
         measures.append(dumps(measure))
 
-    handle_score(userid, measures, session)
+    if userid is not None:
+        handle_score(userid, measures, session)
     insert_measures(measures, session)
     session.commit()
 
@@ -118,7 +118,6 @@ def insert_measures(measures, session):
         if isinstance(time, basestring):
             time = parse_date(time)
         measure.time = time
-        measure.token = data['token']
         measure.lat = to_precise_int(data['lat'])
         measure.lon = to_precise_int(data['lon'])
         measure.accuracy = data['accuracy']
