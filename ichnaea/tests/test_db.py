@@ -91,6 +91,35 @@ class TestMeasure(TestCase):
         self.assertEqual(result.wifi, "[]")
 
 
+class TestScore(TestCase):
+
+    def _make_one(self):
+        from ichnaea.db import Score
+        return Score()
+
+    def _get_session(self):
+        from ichnaea.db import Database
+        return Database('sqlite://').session()
+
+    def test_constructor(self):
+        score = self._make_one()
+        self.assertTrue(score.id is None)
+
+    def test_fields(self):
+        score = self._make_one()
+        score.userid = 3
+        score.value = 15
+
+        session = self._get_session()
+        session.add(score)
+        session.commit()
+
+        result = session.query(score.__class__).first()
+        self.assertEqual(result.id, 1)
+        self.assertEqual(result.userid, 3)
+        self.assertEqual(result.value, 15)
+
+
 class TestUser(TestCase):
 
     def _make_one(self):

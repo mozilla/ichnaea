@@ -91,6 +91,20 @@ class Measure(_Model):
 measure_table = Measure.__table__
 
 
+class Score(_Model):
+    __tablename__ = 'score'
+    __table_args__ = {
+        'mysql_engine': 'InnoDB',
+        'mysql_charset': 'utf8',
+    }
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    userid = Column(Integer, index=True, unique=True)
+    value = Column(Integer)
+
+score_table = Score.__table__
+
+
 class User(_Model):
     __tablename__ = 'user'
     __table_args__ = (
@@ -128,6 +142,8 @@ class Database(object):
         measure_table.create(checkfirst=True)
         user_table.metadata.bind = self.engine
         user_table.create(checkfirst=True)
+        score_table.metadata.bind = self.engine
+        score_table.create(checkfirst=True)
 
     def session(self):
         return self.session_factory()
