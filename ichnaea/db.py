@@ -77,14 +77,29 @@ wifi_table = Wifi.__table__
 
 class WifiMeasure(_Model):
     __tablename__ = 'wifi_measure'
-    __table_args__ = {
-        'mysql_engine': 'InnoDB',
-        'mysql_charset': 'utf8',
-        'mysql_row_format': 'compressed',
-        'mysql_key_block_size': '4',
-    }
+    __table_args__ = (
+        Index('wifi_measure_lat_idx', 'lat'),
+        Index('wifi_measure_lon_idx', 'lon'),
+        Index('wifi_measure_key_idx', 'key'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+            'mysql_row_format': 'compressed',
+            'mysql_key_block_size': '4',
+        }
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    # lat/lon * decimaljson.FACTOR
+    lat = Column(Integer)
+    lon = Column(Integer)
+    time = Column(DateTime)
+    accuracy = Column(Integer)
+    altitude = Column(Integer)
+    altitude_accuracy = Column(Integer)
+    key = Column(String(40))
+    channel = Column(SmallInteger)
+    signal = Column(SmallInteger)
 
 wifi_measure_table = WifiMeasure.__table__
 

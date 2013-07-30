@@ -132,6 +132,12 @@ class TestWifiMeasure(TestCase):
 
     def test_fields(self):
         wifi = self._make_one()
+        key = "3680873e9b83738eb72946d19e971e023e51fd01"
+        wifi.lat = 12345678
+        wifi.lon = 23456789
+        wifi.key = key
+        wifi.channel = 2412
+        wifi.signal = -45
 
         session = self._get_session()
         session.add(wifi)
@@ -139,6 +145,11 @@ class TestWifiMeasure(TestCase):
 
         result = session.query(wifi.__class__).first()
         self.assertEqual(result.id, 1)
+        self.assertEqual(result.lat, 12345678)
+        self.assertEqual(result.lon, 23456789)
+        self.assertEqual(result.key, key)
+        self.assertEqual(result.channel, 2412)
+        self.assertEqual(result.signal, -45)
 
 
 class TestMeasure(TestCase):
