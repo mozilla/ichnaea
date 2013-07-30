@@ -4,7 +4,7 @@ from unittest2 import TestCase
 from webtest import TestApp
 
 from ichnaea import main
-from ichnaea.db import Cell, Measure, User
+from ichnaea.db import Cell, Measure, Score, User
 from ichnaea.decimaljson import loads
 
 
@@ -282,6 +282,9 @@ class TestMeasure(TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].token, uid)
         self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
+        result = session.query(Score).all()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].value, 2)
 
     def test_token_nickname_header_update(self):
         app = _make_app()
@@ -290,6 +293,7 @@ class TestMeasure(TestCase):
         app.post_json(
             '/v1/submit', {"items": [
                 {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
+                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
             ]},
             headers={'X-Token': uid, 'X-Nickname': nickname},
             status=204)
@@ -311,6 +315,9 @@ class TestMeasure(TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].token, uid)
         self.assertEqual(result[0].nickname, nickname2.decode('utf-8'))
+        result = session.query(Score).all()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].value, 3)
 
     def test_error(self):
         app = _make_app()

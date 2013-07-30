@@ -4,8 +4,9 @@ import logging
 from colander import iso8601
 from colander.iso8601 import parse_date
 
-from ichnaea.db import User
 from ichnaea.db import Measure
+from ichnaea.db import Score
+from ichnaea.db import User
 from ichnaea.db import RADIO_TYPE
 from ichnaea.decimaljson import dumps
 from ichnaea.decimaljson import loads
@@ -15,6 +16,7 @@ logger = logging.getLogger('ichnaea')
 
 
 def handle_token_nickname(token, nickname, session):
+    userid = None
     if not (24 <= len(token) <= 36):
         # doesn't look like it's a uuid
         token = ""
@@ -27,12 +29,31 @@ def handle_token_nickname(token, nickname, session):
         if old:
             # update nickname
             old.nickname = nickname
+            userid = old.id
         else:
             user = User()
             user.token = token
             user.nickname = nickname
             session.add(user)
-    return (token, nickname)
+            session.flush()
+            userid = user.id
+    return (userid, token, nickname)
+
+
+def handle_score(userid, measures, session):
+    points = len(measures)
+    # TODO use select for update to lock the row
+    rows = session.query(Score).filter(Score.userid == userid)
+    old = rows.first()
+    if old:
+        # update score
+        old.value = old.value + points
+    else:
+        score = Score()
+        score.userid = userid
+        score.value = points
+        session.add(score)
+    return points
 
 
 def handle_time(measure, utcnow, token):
@@ -57,7 +78,7 @@ def submit_request(request):
 
     token = request.headers.get('X-Token', '')
     nickname = request.headers.get('X-Nickname', '')
-    token, nickname = handle_token_nickname(token, nickname, session)
+    userid, token, nickname = handle_token_nickname(token, nickname, session)
 
     measures = []
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
@@ -65,6 +86,7 @@ def submit_request(request):
         measure = handle_time(measure, utcnow, token)
         measures.append(dumps(measure))
 
+    handle_score(userid, measures, session)
     insert_measures(measures, session)
     session.commit()
 
