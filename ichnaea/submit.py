@@ -4,10 +4,12 @@ import logging
 from colander import iso8601
 from colander.iso8601 import parse_date
 
+from ichnaea.db import CellMeasure
 from ichnaea.db import Measure
+from ichnaea.db import RADIO_TYPE
 from ichnaea.db import Score
 from ichnaea.db import User
-from ichnaea.db import RADIO_TYPE
+from ichnaea.db import WifiMeasure
 from ichnaea.decimaljson import dumps
 from ichnaea.decimaljson import loads
 from ichnaea.decimaljson import to_precise_int
@@ -91,10 +93,34 @@ def submit_request(request):
     session.commit()
 
 
-def process_wifi(values):
+def process_cell(cells, measure, session):
+    result = []
+    for entry in cells:
+        cell = CellMeasure()
+        cell.lat = measure.lat
+        cell.lon = measure.lon
+        cell.time = measure.time
+        cell.accuracy = measure.accuracy
+        cell.altitude = measure.altitude
+        cell.altitude_accuracy = measure.altitude_accuracy
+        cell.radio = measure.radio
+        cell.mcc = entry['mcc']
+        cell.mnc = entry['mnc']
+        cell.lac = entry['lac']
+        cell.cid = entry['cid']
+        cell.psc = entry['psc']
+        cell.asu = entry['asu']
+        cell.signal = entry['signal']
+        cell.ta = entry['ta']
+        session.add(cell)
+        result.append(entry)
+    return result
+
+
+def process_wifi(wifis, measure, session):
     # convert frequency into channel numbers
     result = []
-    for entry in values:
+    for entry in wifis:
         # always remove frequency
         freq = entry.pop('frequency')
         # if no explicit channel was given, calculate
@@ -105,6 +131,17 @@ def process_wifi(values):
             elif 5169 < freq < 5826:
                 # 5 GHz band
                 entry['channel'] = (freq - 5000) // 5
+        wifi = WifiMeasure()
+        wifi.lat = measure.lat
+        wifi.lon = measure.lon
+        wifi.time = measure.time
+        wifi.accuracy = measure.accuracy
+        wifi.altitude = measure.altitude
+        wifi.altitude_accuracy = measure.altitude_accuracy
+        wifi.key = entry['key']
+        wifi.channel = entry['channel']
+        wifi.signal = entry['signal']
+        session.add(wifi)
         result.append(entry)
     return result
 
@@ -125,7 +162,7 @@ def insert_measures(measures, session):
         measure.altitude_accuracy = data['altitude_accuracy']
         if data.get('cell'):
             measure.radio = RADIO_TYPE.get(data['radio'], 0)
-            measure.cell = dumps(data['cell'])
+            measure.cell = dumps(process_cell(data['cell'], measure, session))
         if data.get('wifi'):
-            measure.wifi = dumps(process_wifi(data['wifi']))
+            measure.wifi = dumps(process_wifi(data['wifi'], measure, session))
         session.add(measure)

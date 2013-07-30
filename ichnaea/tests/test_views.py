@@ -4,7 +4,12 @@ from unittest2 import TestCase
 from webtest import TestApp
 
 from ichnaea import main
-from ichnaea.db import Cell, Measure, Score, User
+from ichnaea.db import Cell
+from ichnaea.db import CellMeasure
+from ichnaea.db import Measure
+from ichnaea.db import Score
+from ichnaea.db import User
+from ichnaea.db import WifiMeasure
 from ichnaea.decimaljson import loads
 
 
@@ -80,7 +85,7 @@ class TestSearch(TestCase):
         self.assertTrue('errors' in res.json)
 
 
-class TestMeasure(TestCase):
+class TestSubmit(TestCase):
 
     def test_ok_cell(self):
         app = _make_app()
@@ -116,6 +121,20 @@ class TestMeasure(TestCase):
         self.assertDictEqual(wanted[0], cell_data[0])
         self.assertTrue(item.wifi is None)
 
+        result = session.query(CellMeasure).all()
+        self.assertEqual(len(result), 1)
+        item = result[0]
+        self.assertEqual(item.lat, 123456781)
+        self.assertEqual(item.lon, 234567892)
+        self.assertEqual(item.accuracy, 10)
+        self.assertEqual(item.altitude, 123)
+        self.assertEqual(item.altitude_accuracy, 7)
+        self.assertEqual(item.radio, 0)
+        self.assertEqual(item.mcc, 123)
+        self.assertEqual(item.mnc, 1)
+        self.assertEqual(item.lac, 2)
+        self.assertEqual(item.cid, 1234)
+
     def test_ok_wifi(self):
         app = _make_app()
         wifi_data = [{"key": "ab12"}, {"key": "cd34"}]
@@ -138,6 +157,18 @@ class TestMeasure(TestCase):
         self.assertTrue('"key": "ab12"' in item.wifi)
         self.assertTrue('"key": "cd34"' in item.wifi)
         self.assertTrue(item.cell is None)
+
+        result = session.query(WifiMeasure).all()
+        self.assertEqual(len(result), 2)
+        item = result[0]
+        self.assertEqual(item.lat, 123456781)
+        self.assertEqual(item.lon, 234567892)
+        self.assertEqual(item.accuracy, 17)
+        self.assertEqual(item.altitude, 0)
+        self.assertEqual(item.altitude_accuracy, 0)
+        self.assertTrue(item.key in ("ab12", "cd34"))
+        self.assertEqual(item.channel, 0)
+        self.assertEqual(item.signal, 0)
 
     def test_ok_wifi_frequency(self):
         app = _make_app()
