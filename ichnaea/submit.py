@@ -59,7 +59,7 @@ def handle_score(userid, measures, session):
     return points
 
 
-def handle_time(measure, utcnow):
+def handle_time(measure, utcnow, utcmin):
     try:
         measure['time'] = iso8601.parse_date(measure['time'])
     except (iso8601.ParseError, TypeError):
@@ -68,8 +68,9 @@ def handle_time(measure, utcnow):
             logger.debug('submit_time_error' + repr(measure['time']))
         measure['time'] = utcnow
     else:
-        # don't accept future time values
-        if measure['time'] > utcnow:
+        # don't accept future time values or
+        # time values more than 60 days in the past
+        if measure['time'] > utcnow or measure['time'] < utcmin:
             measure['time'] = utcnow
     return measure
 
@@ -83,8 +84,9 @@ def submit_request(request):
 
     measures = []
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
+    utcmin = utcnow - datetime.timedelta(60)
     for measure in request.validated['items']:
-        measure = handle_time(measure, utcnow)
+        measure = handle_time(measure, utcnow, utcmin)
         measures.append(dumps(measure))
 
     if userid is not None:

@@ -1,4 +1,5 @@
 from datetime import datetime
+from datetime import timedelta
 from uuid import uuid4
 from unittest2 import TestCase
 from webtest import TestApp
@@ -10,6 +11,7 @@ from ichnaea.db import Measure
 from ichnaea.db import Score
 from ichnaea.db import User
 from ichnaea.db import WifiMeasure
+from ichnaea.decimaljson import encode_datetime
 from ichnaea.decimaljson import loads
 
 
@@ -217,7 +219,27 @@ class TestSubmit(TestCase):
 
     def test_time(self):
         app = _make_app()
-        time = "2012-03-15T11:12:13.456Z"
+        # test two weeks ago and "now"
+        time = datetime.utcnow() - timedelta(14)
+        tstr = encode_datetime(time)
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}], "time": tstr},
+                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
+            ]},
+            status=204)
+        session = app.app.registry.database.session()
+        result = session.query(Measure).all()
+        self.assertEqual(len(result), 2)
+        for item in result:
+            if '"key": "a"' in item.wifi:
+                self.assertEqual(item.time, time)
+            else:
+                self.assertEqual(item.time.date(), datetime.utcnow().date())
+
+    def test_time_future(self):
+        app = _make_app()
+        time = "2070-01-01T11:12:13.456Z"
         app.post_json(
             '/v1/submit', {"items": [
                 {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}], "time": time},
@@ -227,17 +249,11 @@ class TestSubmit(TestCase):
         session = app.app.registry.database.session()
         result = session.query(Measure).all()
         self.assertEqual(len(result), 2)
-        for item in result:
-            if '"key": "a"' in item.wifi:
-                self.assertEqual(
-                    item.time, datetime(2012, 3, 15, 11, 12, 13, 456000))
-            else:
-                self.assertEqual(
-                    item.time.date(), datetime.utcnow().date())
+        self.assertEqual(result[0].time, result[1].time)
 
-    def test_time_future(self):
+    def test_time_past(self):
         app = _make_app()
-        time = "2070-01-01T11:12:13.456Z"
+        time = "2011-01-01T11:12:13.456Z"
         app.post_json(
             '/v1/submit', {"items": [
                 {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}], "time": time},
