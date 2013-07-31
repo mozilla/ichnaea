@@ -120,11 +120,10 @@ def process_cell(cells, measure, session):
 
 
 def process_wifi(wifis, measure, session):
-    # convert frequency into channel numbers
     result = []
     for entry in wifis:
-        # always remove frequency
-        freq = entry.pop('frequency')
+        # convert frequency into channel numbers and remove frequency
+        freq = entry.pop('frequency', 0)
         # if no explicit channel was given, calculate
         if freq and not entry['channel']:
             if 2411 < freq < 2473:
