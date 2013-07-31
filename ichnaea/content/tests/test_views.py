@@ -47,7 +47,7 @@ class TestContentViews(TestCase):
         inst = self._make_view(request)
         result = inst.stats_view()
         self.assertEqual(result['page_title'], 'Statistics')
-        self.assertEqual(result['total_measures'], 0)
+        self.assertTrue('metrics' in result)
         self.assertEqual(result['leaders'], [])
 
     def test_stats(self):
@@ -73,14 +73,16 @@ class TestContentViews(TestCase):
         inst = self._make_view(request)
         result = inst.stats_view()
         self.assertEqual(result['page_title'], 'Statistics')
-        self.assertEqual(result['cell_measures'], 6)
-        self.assertEqual(result['cell_unique'], 3)
-        self.assertEqual(result['total_measures'], 3)
-        self.assertEqual(result['wifi_measures'], 3)
-        self.assertEqual(result['wifi_unique'], 2)
         self.assertEqual(result['leaders'],
                          [{'nickname': nickname.decode('utf-8'),
                            'num': 3, 'token': uid[:8]}])
+        self.assertEqual(
+            result['metrics'],
+            [{'name': 'Locations', 'value': 3},
+             {'name': 'Cells', 'value': 6},
+             {'name': 'Unique Cells', 'value': 3},
+             {'name': 'Wifi APs', 'value': 3},
+             {'name': 'Unique Wifi APs', 'value': 2}])
 
 
 class TestFunctionalContent(TestCase):

@@ -16,18 +16,31 @@
 <section id="main-content">
     <p>Overall statistics and leaderboard.</p>
     <h2>Measurements</h2>
-    <p>Total measurements:
-        <span id="total_measurements">${total_measures}</span>
+    <p>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr tal:repeat="row metrics">
+                    <td>${row.name}</td>
+                    <td>${row.value}</td>
+                </tr>
+            </tbody>
+        </table>
     </p>
-    <h3>New measurements in the last 30 days</h3>
+    <h3>New locations in the last 30 days</h3>
     <div id="chart_container">
             <div id="y_axis"></div>
             <div id="chart"></div>
             <div id="x_axis"></div>
     </div>
     <h2>Leaders</h2>
-    <div id="leader_container">
-        <table id="leader_table" class="table">
+    <p>
+        <table class="table">
             <thead>
                 <tr>
                     <th>User (token)</th>
@@ -41,7 +54,7 @@
                 </tr>
             </tbody>
         </table>
-    </div>
+    </p>
 </section>
 </tal:slot>
 

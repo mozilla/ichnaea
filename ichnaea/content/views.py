@@ -110,20 +110,22 @@ class ContentViews(Layout):
     @view_config(renderer='templates/stats.pt', name="stats", http_cache=300)
     def stats_view(self):
         session = self.request.database.session()
-        result = {'leaders': [], 'page_title': 'Statistics'}
-        result['cell_measures'] = session.query(
-            func.count(CellMeasure.id)).first()[0]
-        result['cell_unique'] = session.query(
+        result = {'leaders': [], 'metrics': [], 'page_title': 'Statistics'}
+        metrics = result['metrics']
+        value = session.query(func.count(Measure.id)).first()[0]
+        metrics.append({'name': 'Locations', 'value': value})
+        value = session.query(func.count(CellMeasure.id)).first()[0]
+        metrics.append({'name': 'Cells', 'value': value})
+        value = session.query(
             CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
             CellMeasure.lac, CellMeasure.cid).\
             group_by(CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
                      CellMeasure.lac, CellMeasure.cid).count()
-        result['total_measures'] = session.query(
-            func.count(Measure.id)).first()[0]
-        result['wifi_measures'] = session.query(
-            func.count(WifiMeasure.id)).first()[0]
-        result['wifi_unique'] = session.query(
-            func.count(distinct(WifiMeasure.key))).first()[0]
+        metrics.append({'name': 'Unique Cells', 'value': value})
+        value = session.query(func.count(WifiMeasure.id)).first()[0]
+        metrics.append({'name': 'Wifi APs', 'value': value})
+        value = session.query(func.count(distinct(WifiMeasure.key))).first()[0]
+        metrics.append({'name': 'Unique Wifi APs', 'value': value})
 
         score_rows = session.query(Score).order_by(Score.value.desc()).all()
         user_rows = session.query(User).all()
