@@ -10,11 +10,15 @@ from pyramid.renderers import get_renderer
 from pyramid.response import FileResponse
 from pyramid.response import Response
 from pyramid.view import view_config
+from sqlalchemy import distinct
+from sqlalchemy import func
 from sqlalchemy.sql.expression import text
 
+from ichnaea.db import CellMeasure
 from ichnaea.db import Measure
 from ichnaea.db import Score
 from ichnaea.db import User
+from ichnaea.db import WifiMeasure
 
 
 HERE = os.path.dirname(__file__)
@@ -106,7 +110,19 @@ class ContentViews(Layout):
     def stats_view(self):
         session = self.request.database.session()
         result = {'leaders': [], 'page_title': 'Statistics'}
-        result['total_measures'] = session.query(Measure).count()
+        result['cell_measures'] = session.query(
+            func.count(CellMeasure.id)).first()[0]
+        result['cell_unique'] = session.query(
+            CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
+            CellMeasure.lac, CellMeasure.cid).\
+            group_by(CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
+                     CellMeasure.lac, CellMeasure.cid).count()
+        result['total_measures'] = session.query(
+            func.count(Measure.id)).first()[0]
+        result['wifi_measures'] = session.query(
+            func.count(WifiMeasure.id)).first()[0]
+        result['wifi_unique'] = session.query(
+            func.count(distinct(WifiMeasure.key))).first()[0]
 
         score_rows = session.query(Score).order_by(Score.value.desc()).all()
         user_rows = session.query(User).all()

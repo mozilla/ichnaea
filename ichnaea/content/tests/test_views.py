@@ -54,10 +54,17 @@ class TestContentViews(TestCase):
         app = _make_app()
         uid = uuid4().hex
         nickname = 'World Tr\xc3\xa4veler'
+        cell1 = {"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}
+        cell2 = {"mcc": 123, "mnc": 1, "lac": 3, "cid": 456}
+        cell3 = {"mcc": 123, "mnc": 1, "lac": 4, "cid": 456}
         app.post_json(
             '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
-                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
+                {"lat": 1.0, "lon": 2.0,
+                 "wifi": [{"key": "a"}], "cell": [cell1, cell2]},
+                {"lat": 2.0, "lon": 3.0,
+                 "wifi": [{"key": "b"}], "cell": [cell2, cell3]},
+                {"lat": 2.0, "lon": 3.0,
+                 "wifi": [{"key": "b"}], "cell": [cell3, cell3]},
             ]},
             headers={'X-Token': uid, 'X-Nickname': nickname},
             status=204)
@@ -66,10 +73,14 @@ class TestContentViews(TestCase):
         inst = self._make_view(request)
         result = inst.stats_view()
         self.assertEqual(result['page_title'], 'Statistics')
-        self.assertEqual(result['total_measures'], 2)
+        self.assertEqual(result['cell_measures'], 6)
+        self.assertEqual(result['cell_unique'], 3)
+        self.assertEqual(result['total_measures'], 3)
+        self.assertEqual(result['wifi_measures'], 3)
+        self.assertEqual(result['wifi_unique'], 2)
         self.assertEqual(result['leaders'],
                          [{'nickname': nickname.decode('utf-8'),
-                           'num': 2, 'token': uid[:8]}])
+                           'num': 3, 'token': uid[:8]}])
 
 
 class TestFunctionalContent(TestCase):
