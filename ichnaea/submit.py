@@ -11,7 +11,6 @@ from ichnaea.db import Score
 from ichnaea.db import User
 from ichnaea.db import WifiMeasure
 from ichnaea.decimaljson import dumps
-from ichnaea.decimaljson import loads
 from ichnaea.decimaljson import to_precise_int
 
 logger = logging.getLogger('ichnaea')
@@ -43,8 +42,7 @@ def handle_token_nickname(token, nickname, session):
     return (userid, token, nickname)
 
 
-def handle_score(userid, measures, session):
-    points = len(measures)
+def handle_score(userid, points, session):
     # TODO use select for update to lock the row
     rows = session.query(Score).filter(Score.userid == userid)
     old = rows.first()
@@ -82,16 +80,18 @@ def submit_request(request):
     nickname = request.headers.get('X-Nickname', '')
     userid, token, nickname = handle_token_nickname(token, nickname, session)
 
-    measures = []
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
     utcmin = utcnow - datetime.timedelta(60)
+
+    points = 0
     for measure in request.validated['items']:
         measure = handle_time(measure, utcnow, utcmin)
-        measures.append(dumps(measure))
+        process_measure(measure, session)
+        points += 1
 
     if userid is not None:
-        handle_score(userid, measures, session)
-    insert_measures(measures, session)
+        handle_score(userid, points, session)
+
     session.commit()
 
 
@@ -147,23 +147,20 @@ def process_wifi(wifis, measure, session):
     return result
 
 
-def insert_measures(measures, session):
-    for data in measures:
-        if isinstance(data, basestring):
-            data = loads(data)
-        measure = Measure()
-        time = data['time']
-        if isinstance(time, basestring):
-            time = parse_date(time)
-        measure.time = time
-        measure.lat = to_precise_int(data['lat'])
-        measure.lon = to_precise_int(data['lon'])
-        measure.accuracy = data['accuracy']
-        measure.altitude = data['altitude']
-        measure.altitude_accuracy = data['altitude_accuracy']
-        if data.get('cell'):
-            measure.radio = RADIO_TYPE.get(data['radio'], 0)
-            measure.cell = dumps(process_cell(data['cell'], measure, session))
-        if data.get('wifi'):
-            measure.wifi = dumps(process_wifi(data['wifi'], measure, session))
-        session.add(measure)
+def process_measure(data, session):
+    measure = Measure()
+    time = data['time']
+    if isinstance(time, basestring):
+        time = parse_date(time)
+    measure.time = time
+    measure.lat = to_precise_int(data['lat'])
+    measure.lon = to_precise_int(data['lon'])
+    measure.accuracy = data['accuracy']
+    measure.altitude = data['altitude']
+    measure.altitude_accuracy = data['altitude_accuracy']
+    if data.get('cell'):
+        measure.radio = RADIO_TYPE.get(data['radio'], 0)
+        measure.cell = dumps(process_cell(data['cell'], measure, session))
+    if data.get('wifi'):
+        measure.wifi = dumps(process_wifi(data['wifi'], measure, session))
+    session.add(measure)
