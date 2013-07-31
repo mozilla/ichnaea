@@ -78,7 +78,8 @@ class ContentViews(Layout):
     def map_csv(self):
         session = self.request.database.session()
         select = text("select distinct round(lat / 100000) as lat, "
-                      "round(lon / 100000) as lon from measure order by lat, lon")
+                      "round(lon / 100000) as lon "
+                      "from measure order by lat, lon")
         result = session.execute(select)
         rows = StringIO()
         csvwriter = csv.writer(rows)
