@@ -1,9 +1,12 @@
+import os
 from unittest2 import TestCase
 
 from webtest import TestApp
 
 from ichnaea import main
 from ichnaea.db import Database
+
+TRAVIS = bool(os.environ.get('TRAVIS', 'false') == 'true')
 
 
 def _make_db():
