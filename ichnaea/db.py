@@ -193,8 +193,13 @@ user_table = User.__table__
 
 class Database(object):
 
-    def __init__(self, sqluri, unix_socket=None):
-        options = dict(pool_recycle=3600, pool_size=10, pool_timeout=10)
+    def __init__(self, sqluri, unix_socket=None, create=True, echo=False):
+        options = {
+            'pool_recycle': 3600,
+            'pool_size': 10,
+            'pool_timeout': 10,
+            'echo': echo,
+        }
         if sqluri.startswith('sqlite'):
             del options['pool_size']
             del options['pool_timeout']
@@ -209,7 +214,8 @@ class Database(object):
                       wifi_table, wifi_measure_table,
                       measure_table, user_table, score_table):
             table.metadata.bind = self.engine
-            table.create(checkfirst=True)
+            if create:
+                table.create(checkfirst=True)
 
     def session(self):
         return self.session_factory()
