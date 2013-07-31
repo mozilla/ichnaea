@@ -42,7 +42,7 @@
                 <thead>
                     <tr>
                         <th>User (token)</th>
-                        <th>Contributed measurements</th>
+                        <th>Points</th>
                     </tr>
                 </thead>
                 <tbody>
