@@ -5,14 +5,8 @@ from pyramid.testing import DummyRequest
 from pyramid.testing import setUp
 from pyramid.testing import tearDown
 from unittest2 import TestCase
-from webtest import TestApp
 
-from ichnaea import main
-
-
-def _make_app():
-    wsgiapp = main({}, database='sqlite://')
-    return TestApp(wsgiapp)
+from ichnaea.tests.base import AppTestCase
 
 
 class TestContentViews(TestCase):
@@ -40,8 +34,67 @@ class TestContentViews(TestCase):
         result = inst.map_view()
         self.assertEqual(result['page_title'], 'Coverage Map')
 
+
+class TestFunctionalContent(AppTestCase):
+
+    def test_favicon(self):
+        self.app.get('/favicon.ico', status=200)
+
+    def test_homepage(self):
+        result = self.app.get('/', status=200)
+        self.assertTrue('Strict-Transport-Security' in result.headers)
+
+    def test_map(self):
+        self.app.get('/map', status=200)
+
+    def test_map_csv(self):
+        app = self.app
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
+                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
+            ]},
+            status=204)
+        result = app.get('/map.csv', status=200)
+        self.assertEqual(result.content_type, 'text/plain')
+        text = result.text.replace('\r', '').strip('\n')
+        text = text.split('\n')
+        self.assertEqual(text, ['lat,lon', '1.0,2.0', '2.0,3.0'])
+
+    def test_robots_txt(self):
+        self.app.get('/robots.txt', status=200)
+
+    def test_stats_json(self):
+        app = self.app
+        today = datetime.utcnow().date().strftime('%Y-%m-%d')
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0, "lon": 2.0, "time": today,
+                 "wifi": [{"key": "a"}]},
+            ]},
+            status=204)
+        result = app.get('/stats.json', status=200)
+        self.assertEqual(
+            result.json, {'histogram': [{'num': 1, 'day': today}]})
+
+
+class TestStats(AppTestCase):
+
+    def setUp(self):
+        AppTestCase.setUp(self)
+        request = DummyRequest()
+        self.config = setUp(request=request)
+
+    def tearDown(self):
+        tearDown()
+        AppTestCase.tearDown(self)
+
+    def _make_view(self, request):
+        from ichnaea.content.views import ContentViews
+        return ContentViews(request)
+
     def test_stats_empty(self):
-        app = _make_app()
+        app = self.app
         request = DummyRequest()
         request.database = app.app.registry.database
         inst = self._make_view(request)
@@ -51,7 +104,8 @@ class TestContentViews(TestCase):
         self.assertEqual(result['leaders'], [])
 
     def test_stats(self):
-        app = _make_app()
+        app = self.app
+        app.get('/stats', status=200)
         uid = uuid4().hex
         nickname = 'World Tr\xc3\xa4veler'
         cell1 = {"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}
@@ -83,57 +137,6 @@ class TestContentViews(TestCase):
              {'name': 'Unique Cells', 'value': 3},
              {'name': 'Wifi APs', 'value': 3},
              {'name': 'Unique Wifi APs', 'value': 2}])
-
-
-class TestFunctionalContent(TestCase):
-
-    def test_favicon(self):
-        app = _make_app()
-        app.get('/favicon.ico', status=200)
-
-    def test_homepage(self):
-        app = _make_app()
-        result = app.get('/', status=200)
-        self.assertTrue('Strict-Transport-Security' in result.headers)
-
-    def test_map(self):
-        app = _make_app()
-        app.get('/map', status=200)
-
-    def test_map_csv(self):
-        app = _make_app()
-        app.post_json(
-            '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
-                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
-            ]},
-            status=204)
-        result = app.get('/map.csv', status=200)
-        self.assertEqual(result.content_type, 'text/plain')
-        text = result.text.replace('\r', '').strip('\n')
-        text = text.split('\n')
-        self.assertEqual(text, ['lat,lon', '1.0,2.0', '2.0,3.0'])
-
-    def test_robots_txt(self):
-        app = _make_app()
-        app.get('/robots.txt', status=200)
-
-    def test_stats(self):
-        app = _make_app()
-        app.get('/stats', status=200)
-
-    def test_stats_json(self):
-        app = _make_app()
-        today = datetime.utcnow().date().strftime('%Y-%m-%d')
-        app.post_json(
-            '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0, "time": today,
-                 "wifi": [{"key": "a"}]},
-            ]},
-            status=204)
-        result = app.get('/stats.json', status=200)
-        self.assertEqual(
-            result.json, {'histogram': [{'num': 1, 'day': today}]})
 
 
 class TestLayout(TestCase):

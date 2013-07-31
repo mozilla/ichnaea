@@ -1,39 +1,32 @@
-from unittest import TestCase
+from ichnaea.tests.base import DBTestCase
 
 
-class TestDatabase(TestCase):
+class TestDatabase(DBTestCase):
 
     def _make_one(self):
         from ichnaea.db import Database
         return Database('sqlite://')
 
     def test_constructor(self):
-        db = self._make_one()
-        self.assertEqual(db.engine.name, 'sqlite')
+        self.assertEqual(self.db.engine.name, 'sqlite')
 
     def test_session(self):
-        db = self._make_one()
-        session = db.session()
-        self.assertTrue(session.bind is db.engine)
+        session = self.db.session()
+        self.assertTrue(session.bind is self.db.engine)
 
     def test_table_creation(self):
-        db = self._make_one()
-        session = db.session()
+        session = self.db.session()
         result = session.execute('select * from cell;')
         self.assertTrue(result.first() is None)
         result = session.execute('select * from measure;')
         self.assertTrue(result.first() is None)
 
 
-class TestCell(TestCase):
+class TestCell(DBTestCase):
 
     def _make_one(self):
         from ichnaea.db import Cell
         return Cell()
-
-    def _get_session(self):
-        from ichnaea.db import Database
-        return Database('sqlite://').session()
 
     def test_constructor(self):
         cell = self._make_one()
@@ -48,7 +41,7 @@ class TestCell(TestCase):
         cell.lac = 12345
         cell.cid = 234567
 
-        session = self._get_session()
+        session = self.db.session()
         session.add(cell)
         session.commit()
 
@@ -58,15 +51,11 @@ class TestCell(TestCase):
         self.assertEqual(result.cid, 234567)
 
 
-class TestCellMeasure(TestCase):
+class TestCellMeasure(DBTestCase):
 
     def _make_one(self):
         from ichnaea.db import CellMeasure
         return CellMeasure()
-
-    def _get_session(self):
-        from ichnaea.db import Database
-        return Database('sqlite://').session()
 
     def test_constructor(self):
         cell = self._make_one()
@@ -85,7 +74,7 @@ class TestCellMeasure(TestCase):
         cell.signal = -61
         cell.ta = 10
 
-        session = self._get_session()
+        session = self.db.session()
         session.add(cell)
         session.commit()
 
@@ -103,15 +92,11 @@ class TestCellMeasure(TestCase):
         self.assertEqual(result.ta, 10)
 
 
-class TestWifi(TestCase):
+class TestWifi(DBTestCase):
 
     def _make_one(self):
         from ichnaea.db import Wifi
         return Wifi()
-
-    def _get_session(self):
-        from ichnaea.db import Database
-        return Database('sqlite://').session()
 
     def test_constructor(self):
         wifi = self._make_one()
@@ -125,7 +110,7 @@ class TestWifi(TestCase):
         wifi.lon = 23456789
         wifi.range = 200
 
-        session = self._get_session()
+        session = self.db.session()
         session.add(wifi)
         session.commit()
 
@@ -136,15 +121,11 @@ class TestWifi(TestCase):
         self.assertEqual(result.range, 200)
 
 
-class TestWifiMeasure(TestCase):
+class TestWifiMeasure(DBTestCase):
 
     def _make_one(self):
         from ichnaea.db import WifiMeasure
         return WifiMeasure()
-
-    def _get_session(self):
-        from ichnaea.db import Database
-        return Database('sqlite://').session()
 
     def test_constructor(self):
         wifi = self._make_one()
@@ -159,7 +140,7 @@ class TestWifiMeasure(TestCase):
         wifi.channel = 2412
         wifi.signal = -45
 
-        session = self._get_session()
+        session = self.db.session()
         session.add(wifi)
         session.commit()
 
@@ -172,15 +153,11 @@ class TestWifiMeasure(TestCase):
         self.assertEqual(result.signal, -45)
 
 
-class TestMeasure(TestCase):
+class TestMeasure(DBTestCase):
 
     def _make_one(self):
         from ichnaea.db import Measure
         return Measure()
-
-    def _get_session(self):
-        from ichnaea.db import Database
-        return Database('sqlite://').session()
 
     def test_constructor(self):
         measure = self._make_one()
@@ -193,7 +170,7 @@ class TestMeasure(TestCase):
         measure.cell = "[]"
         measure.wifi = "[]"
 
-        session = self._get_session()
+        session = self.db.session()
         session.add(measure)
         session.commit()
 
@@ -205,15 +182,11 @@ class TestMeasure(TestCase):
         self.assertEqual(result.wifi, "[]")
 
 
-class TestScore(TestCase):
+class TestScore(DBTestCase):
 
     def _make_one(self):
         from ichnaea.db import Score
         return Score()
-
-    def _get_session(self):
-        from ichnaea.db import Database
-        return Database('sqlite://').session()
 
     def test_constructor(self):
         score = self._make_one()
@@ -224,7 +197,7 @@ class TestScore(TestCase):
         score.userid = 3
         score.value = 15
 
-        session = self._get_session()
+        session = self.db.session()
         session.add(score)
         session.commit()
 
@@ -234,15 +207,11 @@ class TestScore(TestCase):
         self.assertEqual(result.value, 15)
 
 
-class TestUser(TestCase):
+class TestUser(DBTestCase):
 
     def _make_one(self):
         from ichnaea.db import User
         return User()
-
-    def _get_session(self):
-        from ichnaea.db import Database
-        return Database('sqlite://').session()
 
     def test_constructor(self):
         user = self._make_one()
@@ -253,7 +222,7 @@ class TestUser(TestCase):
         user.token = "898fccec2262417ca49d2814ac61e2c3"
         user.nickname = "World Traveler"
 
-        session = self._get_session()
+        session = self.db.session()
         session.add(user)
         session.commit()
 

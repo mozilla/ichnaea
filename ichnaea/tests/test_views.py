@@ -1,10 +1,7 @@
 from datetime import datetime
 from datetime import timedelta
 from uuid import uuid4
-from unittest2 import TestCase
-from webtest import TestApp
 
-from ichnaea import main
 from ichnaea.db import Cell
 from ichnaea.db import CellMeasure
 from ichnaea.db import Measure
@@ -13,17 +10,13 @@ from ichnaea.db import User
 from ichnaea.db import WifiMeasure
 from ichnaea.decimaljson import encode_datetime
 from ichnaea.decimaljson import loads
+from ichnaea.tests.base import AppTestCase
 
 
-def _make_app():
-    wsgiapp = main({}, database='sqlite://')
-    return TestApp(wsgiapp)
-
-
-class TestSearch(TestCase):
+class TestSearch(AppTestCase):
 
     def test_ok(self):
-        app = _make_app()
+        app = self.app
         session = app.app.registry.database.session()
         cell = Cell()
         cell.lat = 123456781
@@ -46,7 +39,7 @@ class TestSearch(TestCase):
                                    '"lon": 23.4567892, "accuracy": 35000}')
 
     def test_not_found(self):
-        app = _make_app()
+        app = self.app
         res = app.post_json('/v1/search',
                             {"cell": [{"mcc": 1, "mnc": 2,
                                        "lac": 3, "cid": 4}]},
@@ -55,7 +48,7 @@ class TestSearch(TestCase):
         self.assertEqual(res.body, '{"status": "not_found"}')
 
     def test_wifi_not_found(self):
-        app = _make_app()
+        app = self.app
         res = app.post_json('/v1/search', {"wifi": [
                             {"key": "abcd"}, {"key": "cdef"}]},
                             status=200)
@@ -63,34 +56,34 @@ class TestSearch(TestCase):
         self.assertEqual(res.body, '{"status": "not_found"}')
 
     def test_error(self):
-        app = _make_app()
+        app = self.app
         res = app.post_json('/v1/search', {"cell": []}, status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
         self.assertFalse('status' in res.json)
 
     def test_error_unknown_key(self):
-        app = _make_app()
+        app = self.app
         res = app.post_json('/v1/search', {"foo": 0}, status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
 
     def test_error_no_mapping(self):
-        app = _make_app()
+        app = self.app
         res = app.post_json('/v1/search', [1], status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
 
     def test_no_json(self):
-        app = _make_app()
+        app = self.app
         res = app.post('/v1/search', "\xae", status=400)
         self.assertTrue('errors' in res.json)
 
 
-class TestSubmit(TestCase):
+class TestSubmit(AppTestCase):
 
     def test_ok_cell(self):
-        app = _make_app()
+        app = self.app
         cell_data = [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3456781,
@@ -138,7 +131,7 @@ class TestSubmit(TestCase):
         self.assertEqual(item.cid, 1234)
 
     def test_ok_wifi(self):
-        app = _make_app()
+        app = self.app
         wifi_data = [{"key": "ab12"}, {"key": "cd34"}]
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3456781,
@@ -173,7 +166,7 @@ class TestSubmit(TestCase):
         self.assertEqual(item.signal, 0)
 
     def test_ok_wifi_frequency(self):
-        app = _make_app()
+        app = self.app
         wifi_data = [
             {"key": "99"},
             {"key": "aa", "frequency": 2427},
@@ -206,7 +199,7 @@ class TestSubmit(TestCase):
         self.assertEqual(measure_wifi['ff']['channel'], 9)
 
     def test_batches(self):
-        app = _make_app()
+        app = self.app
         wifi_data = [{"key": "aa"}, {"key": "bb"}]
         items = [{"lat": 12.34, "lon": 23.45 + i, "wifi": wifi_data}
                  for i in range(10)]
@@ -218,7 +211,7 @@ class TestSubmit(TestCase):
         res = app.post_json('/v1/submit', {"items": items}, status=400)
 
     def test_time(self):
-        app = _make_app()
+        app = self.app
         # test two weeks ago and "now"
         time = datetime.utcnow() - timedelta(14)
         tstr = encode_datetime(time)
@@ -238,7 +231,7 @@ class TestSubmit(TestCase):
                 self.assertEqual(item.time.date(), datetime.utcnow().date())
 
     def test_time_future(self):
-        app = _make_app()
+        app = self.app
         time = "2070-01-01T11:12:13.456Z"
         app.post_json(
             '/v1/submit', {"items": [
@@ -252,7 +245,7 @@ class TestSubmit(TestCase):
         self.assertEqual(result[0].time, result[1].time)
 
     def test_time_past(self):
-        app = _make_app()
+        app = self.app
         time = "2011-01-01T11:12:13.456Z"
         app.post_json(
             '/v1/submit', {"items": [
@@ -266,7 +259,7 @@ class TestSubmit(TestCase):
         self.assertEqual(result[0].time, result[1].time)
 
     def test_token_nickname_header(self):
-        app = _make_app()
+        app = self.app
         uid = uuid4().hex
         nickname = 'World Tr\xc3\xa4veler'
         app.post_json(
@@ -286,7 +279,7 @@ class TestSubmit(TestCase):
         self.assertEqual(result[0].value, 2)
 
     def test_token_nickname_header_error(self):
-        app = _make_app()
+        app = self.app
         app.post_json(
             '/v1/submit', {"items": [
                 {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
@@ -300,7 +293,7 @@ class TestSubmit(TestCase):
         self.assertEqual(len(result), 0)
 
     def test_token_nickname_header_update(self):
-        app = _make_app()
+        app = self.app
         uid = uuid4().hex
         nickname = 'World Tr\xc3\xa4veler'
         app.post_json(
@@ -333,7 +326,7 @@ class TestSubmit(TestCase):
         self.assertEqual(result[0].value, 3)
 
     def test_error(self):
-        app = _make_app()
+        app = self.app
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3, "lon": 23.4, "cell": []}]},
             status=400)
@@ -342,27 +335,27 @@ class TestSubmit(TestCase):
         self.assertFalse('status' in res.json)
 
     def test_error_unknown_key(self):
-        app = _make_app()
+        app = self.app
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3, "lon": 23.4, "foo": 1}]},
             status=400)
         self.assertTrue('errors' in res.json)
 
     def test_error_no_mapping(self):
-        app = _make_app()
+        app = self.app
         res = app.post_json('/v1/submit', [1], status=400)
         self.assertTrue('errors' in res.json)
 
     def test_no_json(self):
-        app = _make_app()
+        app = self.app
         res = app.post('/v1/submit', "\xae", status=400)
         self.assertTrue('errors' in res.json)
 
 
-class TestHeartbeat(TestCase):
+class TestHeartbeat(AppTestCase):
 
     def test_ok(self):
-        app = _make_app()
+        app = self.app
         res = app.get('/__heartbeat__', status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json['status'], "OK")
