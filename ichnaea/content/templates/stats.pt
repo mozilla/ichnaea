@@ -15,46 +15,53 @@
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
     <p>Overall statistics and leaderboard.</p>
+
+    <div class="half-width" style="float:left">
     <h2>Measurements</h2>
-    <p>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Metric</th>
-                    <th>Value</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr tal:repeat="row metrics">
-                    <td>${row.name}</td>
-                    <td>${row.value}</td>
-                </tr>
-            </tbody>
-        </table>
-    </p>
-    <h3>New locations in the last 30 days</h3>
-    <div id="chart_container">
-            <div id="y_axis"></div>
-            <div id="chart"></div>
-            <div id="x_axis"></div>
+        <p>
+            <table class="table half">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr tal:repeat="row metrics">
+                        <td>${row.name}</td>
+                        <td>${row.value}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </p>
     </div>
-    <h2>Leaders</h2>
-    <p>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>User (token)</th>
-                    <th>Contributed measurements</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr tal:repeat="row leaders">
-                    <td>${row.nickname} (${row.token}&hellip;)</td>
-                    <td>${row.num}</td>
-                </tr>
-            </tbody>
-        </table>
-    </p>
+    <div class="half-width" style="float:right">
+        <h2>Leaders</h2>
+        <p>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>User (token)</th>
+                        <th>Contributed measurements</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr tal:repeat="row leaders">
+                        <td>${row.nickname} (${row.token}&hellip;)</td>
+                        <td>${row.num}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </p>
+    </div>
+    <div style="clear:both">
+        <h3>New locations in the last 30 days</h3>
+        <div id="chart_container">
+                <div id="y_axis"></div>
+                <div id="chart"></div>
+                <div id="x_axis"></div>
+        </div>
+    </div>
 </section>
 </tal:slot>
 

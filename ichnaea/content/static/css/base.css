@@ -188,6 +188,11 @@ li {
     font-weight: normal;
 }
 
+.half-width {
+    width: 400px;
+    margin: 0 20px;
+}
+
 #masthead,
 #main-feature,
 #main-content,
