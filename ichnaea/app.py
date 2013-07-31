@@ -34,7 +34,8 @@ def main(global_config, **settings):
 
     configure_content(config)
 
-    config.registry.database = Database(settings['database'])
+    config.registry.database = Database(
+        settings['database'], settings.get('unix_socket'))
     config.add_subscriber(attach_database, NewRequest)
 
     # replace json renderer with decimal json variant

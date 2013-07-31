@@ -12,7 +12,8 @@ def _make_db():
 
 def _make_app():
     sqluri = 'sqlite://'
-    wsgiapp = main({}, database=sqluri)
+    unix_socket = None
+    wsgiapp = main({}, database=sqluri, unix_socket=unix_socket)
     return TestApp(wsgiapp)
 
 

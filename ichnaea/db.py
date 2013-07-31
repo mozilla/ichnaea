@@ -193,11 +193,13 @@ user_table = User.__table__
 
 class Database(object):
 
-    def __init__(self, sqluri):
+    def __init__(self, sqluri, unix_socket=None):
         options = dict(pool_recycle=3600, pool_size=10, pool_timeout=10)
         if sqluri.startswith('sqlite'):
             del options['pool_size']
             del options['pool_timeout']
+        if unix_socket:
+            options['connect_args'] = {'unix_socket': unix_socket}
         self.engine = create_engine(sqluri, **options)
         self.session_factory = sessionmaker(
             bind=self.engine, autocommit=False, autoflush=False)
