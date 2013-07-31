@@ -8,4 +8,5 @@ notifications:
     - hschlichting@mozilla.com
 
 script:
+    - make build
     - make test

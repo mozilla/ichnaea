@@ -23,12 +23,11 @@ build: $(PYTHON)
 clean:
 	rm -rf $(BUILD_DIRS)
 
-test: build
+test:
 	$(BIN)/nosetests -s -d -v --with-coverage --cover-package ichnaea ichnaea
 
 bin/sphinx-build:
 	bin/pip install Sphinx
-
 
 docs:  bin/sphinx-build
 	cd docs; make html
