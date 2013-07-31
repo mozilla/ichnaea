@@ -77,7 +77,8 @@ def process_measure(data):
     session_objects = []
     measure = Measure()
     time = data['time']
-    if isinstance(time, basestring):
+    if isinstance(time, basestring):  # pragma: no cover
+        # TODO sqlite special case
         time = parse_date(time)
     measure.time = time
     measure.lat = to_precise_int(data['lat'])

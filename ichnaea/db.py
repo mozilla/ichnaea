@@ -198,7 +198,7 @@ class Database(object):
         if sqluri.startswith('sqlite'):
             del options['pool_size']
             del options['pool_timeout']
-        if unix_socket:
+        if unix_socket:  # pragma: no cover
             options['connect_args'] = {'unix_socket': unix_socket}
         self.engine = create_engine(sqluri, **options)
         self.session_factory = sessionmaker(
