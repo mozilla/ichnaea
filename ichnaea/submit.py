@@ -73,7 +73,8 @@ def process_time(measure, utcnow, utcmin):
     return measure
 
 
-def process_measure(data, session):
+def process_measure(data):
+    session_objects = []
     measure = Measure()
     time = data['time']
     if isinstance(time, basestring):
@@ -86,15 +87,22 @@ def process_measure(data, session):
     measure.altitude_accuracy = data['altitude_accuracy']
     if data.get('cell'):
         measure.radio = RADIO_TYPE.get(data['radio'], 0)
-        measure.cell = dumps(process_cell(data['cell'], measure, session))
+        cells, cell_data = process_cell(data['cell'], measure)
+        measure.cell = dumps(cell_data)
+        session_objects.extend(cells)
     if data.get('wifi'):
-        measure.wifi = dumps(process_wifi(data['wifi'], measure, session))
-    session.add(measure)
+        wifis, wifi_data = process_wifi(data['wifi'], measure)
+        measure.wifi = dumps(wifi_data)
+        session_objects.extend(wifis)
+
+    session_objects.append(measure)
+    return session_objects
 
 
-def process_cell(cells, measure, session):
+def process_cell(entries, measure):
     result = []
-    for entry in cells:
+    cells = []
+    for entry in entries:
         cell = CellMeasure()
         cell.lat = measure.lat
         cell.lon = measure.lon
@@ -111,14 +119,15 @@ def process_cell(cells, measure, session):
         cell.asu = entry['asu']
         cell.signal = entry['signal']
         cell.ta = entry['ta']
-        session.add(cell)
+        cells.append(cell)
         result.append(entry)
-    return result
+    return (cells, result)
 
 
-def process_wifi(wifis, measure, session):
+def process_wifi(entries, measure):
+    wifis = []
     result = []
-    for entry in wifis:
+    for entry in entries:
         # convert frequency into channel numbers and remove frequency
         freq = entry.pop('frequency', 0)
         # if no explicit channel was given, calculate
@@ -139,13 +148,14 @@ def process_wifi(wifis, measure, session):
         wifi.key = entry['key']
         wifi.channel = entry['channel']
         wifi.signal = entry['signal']
-        session.add(wifi)
+        wifis.append(wifi)
         result.append(entry)
-    return result
+    return (wifis, result)
 
 
 def submit_request(request):
     session = request.database.session()
+    session_objects = []
 
     token = request.headers.get('X-Token', '')
     nickname = request.headers.get('X-Nickname', '')
@@ -157,10 +167,11 @@ def submit_request(request):
     points = 0
     for measure in request.validated['items']:
         measure = process_time(measure, utcnow, utcmin)
-        process_measure(measure, session)
+        session_objects.extend(process_measure(measure))
         points += 1
 
     if userid is not None:
         process_score(userid, points, session)
 
+    session.add_all(session_objects)
     session.commit()
