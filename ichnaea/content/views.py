@@ -127,7 +127,8 @@ class ContentViews(Layout):
         value = session.query(func.count(distinct(WifiMeasure.key))).first()[0]
         metrics.append({'name': 'Unique Wifi APs', 'value': value})
 
-        score_rows = session.query(Score).order_by(Score.value.desc()).all()
+        score_rows = session.query(
+            Score).order_by(Score.value.desc()).limit(10).all()
         user_rows = session.query(User).all()
         users = {}
         for user in user_rows:
