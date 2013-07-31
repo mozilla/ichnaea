@@ -16,7 +16,7 @@ from ichnaea.decimaljson import to_precise_int
 logger = logging.getLogger('ichnaea')
 
 
-def handle_token_nickname(token, nickname, session):
+def process_user(token, nickname, session):
     userid = None
     if not (24 <= len(token) <= 36):
         # doesn't look like it's a uuid
@@ -42,7 +42,7 @@ def handle_token_nickname(token, nickname, session):
     return (userid, token, nickname)
 
 
-def handle_score(userid, points, session):
+def process_score(userid, points, session):
     # TODO use select for update to lock the row
     rows = session.query(Score).filter(Score.userid == userid)
     old = rows.first()
@@ -57,7 +57,7 @@ def handle_score(userid, points, session):
     return points
 
 
-def handle_time(measure, utcnow, utcmin):
+def process_time(measure, utcnow, utcmin):
     try:
         measure['time'] = iso8601.parse_date(measure['time'])
     except (iso8601.ParseError, TypeError):
@@ -73,26 +73,23 @@ def handle_time(measure, utcnow, utcmin):
     return measure
 
 
-def submit_request(request):
-    session = request.database.session()
-
-    token = request.headers.get('X-Token', '')
-    nickname = request.headers.get('X-Nickname', '')
-    userid, token, nickname = handle_token_nickname(token, nickname, session)
-
-    utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
-    utcmin = utcnow - datetime.timedelta(60)
-
-    points = 0
-    for measure in request.validated['items']:
-        measure = handle_time(measure, utcnow, utcmin)
-        process_measure(measure, session)
-        points += 1
-
-    if userid is not None:
-        handle_score(userid, points, session)
-
-    session.commit()
+def process_measure(data, session):
+    measure = Measure()
+    time = data['time']
+    if isinstance(time, basestring):
+        time = parse_date(time)
+    measure.time = time
+    measure.lat = to_precise_int(data['lat'])
+    measure.lon = to_precise_int(data['lon'])
+    measure.accuracy = data['accuracy']
+    measure.altitude = data['altitude']
+    measure.altitude_accuracy = data['altitude_accuracy']
+    if data.get('cell'):
+        measure.radio = RADIO_TYPE.get(data['radio'], 0)
+        measure.cell = dumps(process_cell(data['cell'], measure, session))
+    if data.get('wifi'):
+        measure.wifi = dumps(process_wifi(data['wifi'], measure, session))
+    session.add(measure)
 
 
 def process_cell(cells, measure, session):
@@ -147,20 +144,23 @@ def process_wifi(wifis, measure, session):
     return result
 
 
-def process_measure(data, session):
-    measure = Measure()
-    time = data['time']
-    if isinstance(time, basestring):
-        time = parse_date(time)
-    measure.time = time
-    measure.lat = to_precise_int(data['lat'])
-    measure.lon = to_precise_int(data['lon'])
-    measure.accuracy = data['accuracy']
-    measure.altitude = data['altitude']
-    measure.altitude_accuracy = data['altitude_accuracy']
-    if data.get('cell'):
-        measure.radio = RADIO_TYPE.get(data['radio'], 0)
-        measure.cell = dumps(process_cell(data['cell'], measure, session))
-    if data.get('wifi'):
-        measure.wifi = dumps(process_wifi(data['wifi'], measure, session))
-    session.add(measure)
+def submit_request(request):
+    session = request.database.session()
+
+    token = request.headers.get('X-Token', '')
+    nickname = request.headers.get('X-Nickname', '')
+    userid, token, nickname = process_user(token, nickname, session)
+
+    utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
+    utcmin = utcnow - datetime.timedelta(60)
+
+    points = 0
+    for measure in request.validated['items']:
+        measure = process_time(measure, utcnow, utcmin)
+        process_measure(measure, session)
+        points += 1
+
+    if userid is not None:
+        process_score(userid, points, session)
+
+    session.commit()
