@@ -155,7 +155,7 @@ def process_wifi(entries, measure):
 
 
 def submit_request(request):
-    session = request.database.session()
+    session = request.db_session
     session_objects = []
 
     token = request.headers.get('X-Token', '')

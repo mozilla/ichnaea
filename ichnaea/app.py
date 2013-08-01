@@ -1,7 +1,6 @@
 import logging
 
 from pyramid.config import Configurator
-from pyramid.events import NewRequest
 
 from ichnaea import decimaljson
 from ichnaea.db import Database
@@ -10,9 +9,13 @@ from ichnaea.content.views import configure_content
 logger = logging.getLogger('ichnaea')
 
 
-def attach_database(event):
-    request = event.request
-    event.request.database = request.registry.database
+def db_session(request):
+    session = request.registry.database.session()
+
+    def cleanup(request):
+        session.close()
+    request.add_finished_callback(cleanup)
+    return session
 
 
 def main(global_config, **settings):
@@ -36,7 +39,7 @@ def main(global_config, **settings):
 
     config.registry.database = Database(
         settings['database'], settings.get('unix_socket'))
-    config.add_subscriber(attach_database, NewRequest)
+    config.add_request_method(db_session, reify=True)
 
     # replace json renderer with decimal json variant
     config.add_renderer('json', decimaljson.Renderer())

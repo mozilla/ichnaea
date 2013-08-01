@@ -76,7 +76,7 @@ class ContentViews(Layout):
 
     @view_config(renderer='string', name="map.csv", http_cache=300)
     def map_csv(self):
-        session = self.request.database.session()
+        session = self.request.db_session
         select = text("select distinct round(lat / 100000) as lat, "
                       "round(lon / 100000) as lon "
                       "from measure order by lat, lon")
@@ -94,7 +94,7 @@ class ContentViews(Layout):
 
     @view_config(renderer='json', name="stats.json", http_cache=300)
     def stats_json(self):
-        session = self.request.database.session()
+        session = self.request.db_session
         if 'sqlite' in str(session.bind.engine.url):
             query = MEASURE_HISTOGRAM_SQLITE
         else:  # pragma: no cover
@@ -109,7 +109,7 @@ class ContentViews(Layout):
 
     @view_config(renderer='templates/stats.pt', name="stats", http_cache=300)
     def stats_view(self):
-        session = self.request.database.session()
+        session = self.request.db_session
         result = {'leaders': [], 'metrics': [], 'page_title': 'Statistics'}
         metrics = result['metrics']
         value = session.query(func.count(Measure.id)).first()[0]
