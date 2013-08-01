@@ -297,15 +297,9 @@ class TestSubmit(AppTestCase):
         uid = uuid4().hex
         nickname = 'World Tr\xc3\xa4veler'
         session = self.db_session
-        user = User()
-        user.id = 1
-        user.token = uid
-        user.nickname = nickname.decode('utf-8')
+        user = User(id=1, token=uid, nickname=nickname.decode('utf-8'))
         session.add(user)
-        score = Score()
-        score.id = 1
-        score.userid = 1
-        score.value = 2
+        score = Score(id=1, userid=1, value=2)
         session.add(score)
         session.commit()
         # request updating nickname

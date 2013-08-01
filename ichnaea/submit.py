@@ -33,9 +33,7 @@ def process_user(token, nickname, session):
             old.nickname = nickname
             userid = old.id
         else:
-            user = User()
-            user.token = token
-            user.nickname = nickname
+            user = User(token=token, nickname=nickname)
             session.add(user)
             session.flush()
             userid = user.id
@@ -50,9 +48,7 @@ def process_score(userid, points, session):
         # update score
         old.value = old.value + points
     else:
-        score = Score()
-        score.userid = userid
-        score.value = points
+        score = Score(userid=userid, value=points)
         session.add(score)
     return points
 
@@ -104,22 +100,14 @@ def process_cell(entries, measure):
     result = []
     cells = []
     for entry in entries:
-        cell = CellMeasure()
-        cell.lat = measure.lat
-        cell.lon = measure.lon
-        cell.time = measure.time
-        cell.accuracy = measure.accuracy
-        cell.altitude = measure.altitude
-        cell.altitude_accuracy = measure.altitude_accuracy
-        cell.radio = measure.radio
-        cell.mcc = entry['mcc']
-        cell.mnc = entry['mnc']
-        cell.lac = entry['lac']
-        cell.cid = entry['cid']
-        cell.psc = entry['psc']
-        cell.asu = entry['asu']
-        cell.signal = entry['signal']
-        cell.ta = entry['ta']
+        cell = CellMeasure(
+            lat=measure.lat, lon=measure.lon, time=measure.time,
+            accuracy=measure.accuracy, altitude=measure.altitude,
+            altitude_accuracy=measure.altitude_accuracy, radio=measure.radio,
+            mcc=entry['mcc'], mnc=entry['mnc'], lac=entry['lac'],
+            cid=entry['cid'], psc=entry['psc'], asu=entry['asu'],
+            signal=entry['signal'], ta=entry['ta'],
+        )
         cells.append(cell)
         result.append(entry)
     return (cells, result)
@@ -139,16 +127,12 @@ def process_wifi(entries, measure):
             elif 5169 < freq < 5826:
                 # 5 GHz band
                 entry['channel'] = (freq - 5000) // 5
-        wifi = WifiMeasure()
-        wifi.lat = measure.lat
-        wifi.lon = measure.lon
-        wifi.time = measure.time
-        wifi.accuracy = measure.accuracy
-        wifi.altitude = measure.altitude
-        wifi.altitude_accuracy = measure.altitude_accuracy
-        wifi.key = entry['key']
-        wifi.channel = entry['channel']
-        wifi.signal = entry['signal']
+        wifi = WifiMeasure(
+            lat=measure.lat, lon=measure.lon, time=measure.time,
+            accuracy=measure.accuracy, altitude=measure.altitude,
+            altitude_accuracy=measure.altitude_accuracy,
+            key=entry['key'], channel=entry['channel'], signal=entry['signal'],
+        )
         wifis.append(wifi)
         result.append(entry)
     return (wifis, result)

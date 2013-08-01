@@ -19,23 +19,17 @@ class TestDatabase(DBTestCase):
 
 class TestCell(DBTestCase):
 
-    def _make_one(self):
+    def _make_one(self, **kw):
         from ichnaea.db import Cell
-        return Cell()
+        return Cell(**kw)
 
     def test_constructor(self):
         cell = self._make_one()
         self.assertTrue(cell.id is None)
 
     def test_fields(self):
-        cell = self._make_one()
-        cell.lat = 12345678
-        cell.lon = 23456789
-        cell.mcc = 100
-        cell.mnc = 5
-        cell.lac = 12345
-        cell.cid = 234567
-
+        cell = self._make_one(
+            lat=12345678, lon=23456789, mcc=100, mnc=5, lac=12345, cid=234567)
         session = self.db_session
         session.add(cell)
         session.commit()
@@ -48,27 +42,18 @@ class TestCell(DBTestCase):
 
 class TestCellMeasure(DBTestCase):
 
-    def _make_one(self):
+    def _make_one(self, **kw):
         from ichnaea.db import CellMeasure
-        return CellMeasure()
+        return CellMeasure(**kw)
 
     def test_constructor(self):
         cell = self._make_one()
         self.assertTrue(cell.id is None)
 
     def test_fields(self):
-        cell = self._make_one()
-        cell.lat = 12345678
-        cell.lon = 23456789
-        cell.radio = 0
-        cell.mcc = 100
-        cell.mnc = 5
-        cell.lac = 12345
-        cell.cid = 234567
-        cell.asu = 26
-        cell.signal = -61
-        cell.ta = 10
-
+        cell = self._make_one(lat=12345678, lon=23456789, radio=0, mcc=100,
+                              mnc=5, lac=12345, cid=234567, asu=26,
+                              signal=-61, ta=10)
         session = self.db_session
         session.add(cell)
         session.commit()
@@ -89,22 +74,17 @@ class TestCellMeasure(DBTestCase):
 
 class TestWifi(DBTestCase):
 
-    def _make_one(self):
+    def _make_one(self, **kw):
         from ichnaea.db import Wifi
-        return Wifi()
+        return Wifi(**kw)
 
     def test_constructor(self):
         wifi = self._make_one()
         self.assertTrue(wifi.key is None)
 
     def test_fields(self):
-        wifi = self._make_one()
         key = "3680873e9b83738eb72946d19e971e023e51fd01"
-        wifi.key = key
-        wifi.lat = 12345678
-        wifi.lon = 23456789
-        wifi.range = 200
-
+        wifi = self._make_one(key=key, lat=12345678, lon=23456789, range=200)
         session = self.db_session
         session.add(wifi)
         session.commit()
@@ -118,23 +98,18 @@ class TestWifi(DBTestCase):
 
 class TestWifiMeasure(DBTestCase):
 
-    def _make_one(self):
+    def _make_one(self, **kw):
         from ichnaea.db import WifiMeasure
-        return WifiMeasure()
+        return WifiMeasure(**kw)
 
     def test_constructor(self):
         wifi = self._make_one()
         self.assertTrue(wifi.id is None)
 
     def test_fields(self):
-        wifi = self._make_one()
         key = "3680873e9b83738eb72946d19e971e023e51fd01"
-        wifi.lat = 12345678
-        wifi.lon = 23456789
-        wifi.key = key
-        wifi.channel = 2412
-        wifi.signal = -45
-
+        wifi = self._make_one(
+            lat=12345678, lon=23456789, key=key, channel=2412, signal=-45)
         session = self.db_session
         session.add(wifi)
         session.commit()
@@ -150,21 +125,17 @@ class TestWifiMeasure(DBTestCase):
 
 class TestMeasure(DBTestCase):
 
-    def _make_one(self):
+    def _make_one(self, **kw):
         from ichnaea.db import Measure
-        return Measure()
+        return Measure(**kw)
 
     def test_constructor(self):
         measure = self._make_one()
         self.assertTrue(measure.id is None)
 
     def test_fields(self):
-        measure = self._make_one()
-        measure.lat = 12345678
-        measure.lon = 23456789
-        measure.cell = "[]"
-        measure.wifi = "[]"
-
+        measure = self._make_one(
+            lat=12345678, lon=23456789, cell="[]", wifi="[]")
         session = self.db_session
         session.add(measure)
         session.commit()
@@ -179,19 +150,16 @@ class TestMeasure(DBTestCase):
 
 class TestScore(DBTestCase):
 
-    def _make_one(self):
+    def _make_one(self, **kw):
         from ichnaea.db import Score
-        return Score()
+        return Score(**kw)
 
     def test_constructor(self):
         score = self._make_one()
         self.assertTrue(score.id is None)
 
     def test_fields(self):
-        score = self._make_one()
-        score.userid = 3
-        score.value = 15
-
+        score = self._make_one(userid=3, value=15)
         session = self.db_session
         session.add(score)
         session.commit()
@@ -204,24 +172,22 @@ class TestScore(DBTestCase):
 
 class TestUser(DBTestCase):
 
-    def _make_one(self):
+    def _make_one(self, **kw):
         from ichnaea.db import User
-        return User()
+        return User(**kw)
 
     def test_constructor(self):
         user = self._make_one()
         self.assertTrue(user.id is None)
 
     def test_fields(self):
-        user = self._make_one()
-        user.token = "898fccec2262417ca49d2814ac61e2c3"
-        user.nickname = "World Traveler"
-
+        token = "898fccec2262417ca49d2814ac61e2c3"
+        user = self._make_one(token=token, nickname="World Traveler")
         session = self.db_session
         session.add(user)
         session.commit()
 
         result = session.query(user.__class__).first()
         self.assertEqual(result.id, 1)
-        self.assertEqual(result.token, "898fccec2262417ca49d2814ac61e2c3")
+        self.assertEqual(result.token, token)
         self.assertEqual(result.nickname, "World Traveler")
