@@ -3,10 +3,6 @@ from ichnaea.tests.base import DBTestCase
 
 class TestDatabase(DBTestCase):
 
-    def _make_one(self):
-        from ichnaea.db import Database
-        return Database('sqlite://')
-
     def test_constructor(self):
         self.assertEqual(self.db.engine.name, 'sqlite')
 

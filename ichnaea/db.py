@@ -211,7 +211,8 @@ class Database(object):
 
         # bind and create tables
         _Model.metadata.bind = self.engine
-        _Model.metadata.create_all()
+        if create:
+            _Model.metadata.create_all()
 
     def session(self):
         return self.session_factory()
