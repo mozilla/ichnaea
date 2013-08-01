@@ -39,9 +39,12 @@ class AppTestCase(TestCase, DBIsolation):
     def setUp(self):
         self.app = _make_app()
         self.db = self.app.app.registry.database
+        self.db_session = self.db.session()
 
     def tearDown(self):
+        self.db_session.close()
         self.cleanup(self.db)
+        del self.db_session
         del self.db
         del self.app
 
@@ -50,7 +53,10 @@ class DBTestCase(TestCase, DBIsolation):
 
     def setUp(self):
         self.db = _make_db()
+        self.db_session = self.db.session()
 
     def tearDown(self):
+        self.db_session.close()
         self.cleanup(self.db)
+        del self.db_session
         del self.db

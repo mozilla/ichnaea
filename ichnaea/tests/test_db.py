@@ -7,11 +7,10 @@ class TestDatabase(DBTestCase):
         self.assertEqual(self.db.engine.name, 'sqlite')
 
     def test_session(self):
-        session = self.db.session()
-        self.assertTrue(session.bind is self.db.engine)
+        self.assertTrue(self.db_session.bind is self.db.engine)
 
     def test_table_creation(self):
-        session = self.db.session()
+        session = self.db_session
         result = session.execute('select * from cell;')
         self.assertTrue(result.first() is None)
         result = session.execute('select * from measure;')
@@ -37,7 +36,7 @@ class TestCell(DBTestCase):
         cell.lac = 12345
         cell.cid = 234567
 
-        session = self.db.session()
+        session = self.db_session
         session.add(cell)
         session.commit()
 
@@ -70,7 +69,7 @@ class TestCellMeasure(DBTestCase):
         cell.signal = -61
         cell.ta = 10
 
-        session = self.db.session()
+        session = self.db_session
         session.add(cell)
         session.commit()
 
@@ -106,7 +105,7 @@ class TestWifi(DBTestCase):
         wifi.lon = 23456789
         wifi.range = 200
 
-        session = self.db.session()
+        session = self.db_session
         session.add(wifi)
         session.commit()
 
@@ -136,7 +135,7 @@ class TestWifiMeasure(DBTestCase):
         wifi.channel = 2412
         wifi.signal = -45
 
-        session = self.db.session()
+        session = self.db_session
         session.add(wifi)
         session.commit()
 
@@ -166,7 +165,7 @@ class TestMeasure(DBTestCase):
         measure.cell = "[]"
         measure.wifi = "[]"
 
-        session = self.db.session()
+        session = self.db_session
         session.add(measure)
         session.commit()
 
@@ -193,7 +192,7 @@ class TestScore(DBTestCase):
         score.userid = 3
         score.value = 15
 
-        session = self.db.session()
+        session = self.db_session
         session.add(score)
         session.commit()
 
@@ -218,7 +217,7 @@ class TestUser(DBTestCase):
         user.token = "898fccec2262417ca49d2814ac61e2c3"
         user.nickname = "World Traveler"
 
-        session = self.db.session()
+        session = self.db_session
         session.add(user)
         session.commit()
 

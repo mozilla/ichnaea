@@ -94,9 +94,8 @@ class TestStats(AppTestCase):
         return ContentViews(request)
 
     def test_stats_empty(self):
-        app = self.app
         request = DummyRequest()
-        request.db_session = app.app.registry.database.session()
+        request.db_session = self.db_session
         inst = self._make_view(request)
         result = inst.stats_view()
         self.assertEqual(result['page_title'], 'Statistics')
@@ -123,7 +122,7 @@ class TestStats(AppTestCase):
             headers={'X-Token': uid, 'X-Nickname': nickname},
             status=204)
         request = DummyRequest()
-        request.db_session = app.app.registry.database.session()
+        request.db_session = self.db_session
         inst = self._make_view(request)
         result = inst.stats_view()
         self.assertEqual(result['page_title'], 'Statistics')

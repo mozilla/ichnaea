@@ -17,7 +17,7 @@ class TestSearch(AppTestCase):
 
     def test_ok(self):
         app = self.app
-        session = app.app.registry.database.session()
+        session = self.db_session
         cell = Cell()
         cell.lat = 123456781
         cell.lon = 234567892
@@ -95,7 +95,7 @@ class TestSubmit(AppTestCase):
                                       "cell": cell_data}]},
             status=204)
         self.assertEqual(res.body, '')
-        session = app.app.registry.database.session()
+        session = self.db_session
         result = session.query(Measure).all()
         self.assertEqual(len(result), 1)
         item = result[0]
@@ -140,7 +140,7 @@ class TestSubmit(AppTestCase):
                                       "wifi": wifi_data}]},
             status=204)
         self.assertEqual(res.body, '')
-        session = app.app.registry.database.session()
+        session = self.db_session
         result = session.query(Measure).all()
         self.assertEqual(len(result), 1)
         item = result[0]
@@ -182,7 +182,7 @@ class TestSubmit(AppTestCase):
                                       "wifi": wifi_data}]},
             status=204)
         self.assertEqual(res.body, '')
-        session = app.app.registry.database.session()
+        session = self.db_session
         result = session.query(Measure).all()
         self.assertEqual(len(result), 1)
         item = result[0]
@@ -221,7 +221,7 @@ class TestSubmit(AppTestCase):
                 {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
             ]},
             status=204)
-        session = app.app.registry.database.session()
+        session = self.db_session
         result = session.query(Measure).all()
         self.assertEqual(len(result), 2)
         for item in result:
@@ -239,7 +239,7 @@ class TestSubmit(AppTestCase):
                 {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
             ]},
             status=204)
-        session = app.app.registry.database.session()
+        session = self.db_session
         result = session.query(Measure).all()
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0].time, result[1].time)
@@ -253,7 +253,7 @@ class TestSubmit(AppTestCase):
                 {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
             ]},
             status=204)
-        session = app.app.registry.database.session()
+        session = self.db_session
         result = session.query(Measure).all()
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0].time, result[1].time)
@@ -269,7 +269,7 @@ class TestSubmit(AppTestCase):
             ]},
             headers={'X-Token': uid, 'X-Nickname': nickname},
             status=204)
-        session = app.app.registry.database.session()
+        session = self.db_session
         result = session.query(User).all()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].token, uid)
@@ -286,7 +286,7 @@ class TestSubmit(AppTestCase):
             ]},
             headers={'X-Token': "123.45", 'X-Nickname': "abcd"},
             status=204)
-        session = app.app.registry.database.session()
+        session = self.db_session
         result = session.query(User).all()
         self.assertEqual(len(result), 0)
         result = session.query(Score).all()
