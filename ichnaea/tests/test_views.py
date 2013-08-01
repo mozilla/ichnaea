@@ -296,19 +296,19 @@ class TestSubmit(AppTestCase):
         app = self.app
         uid = uuid4().hex
         nickname = 'World Tr\xc3\xa4veler'
-        app.post_json(
-            '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
-                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
-            ]},
-            headers={'X-Token': uid, 'X-Nickname': nickname},
-            status=204)
-        session = app.app.registry.database.session()
-        result = session.query(User).all()
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].token, uid)
-        self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
-        # second request updating nickname
+        session = self.db_session
+        user = User()
+        user.id = 1
+        user.token = uid
+        user.nickname = nickname.decode('utf-8')
+        session.add(user)
+        score = Score()
+        score.id = 1
+        score.userid = 1
+        score.value = 2
+        session.add(score)
+        session.commit()
+        # request updating nickname
         nickname2 = "Tr\xc3\xa4veler's friend"
         app.post_json(
             '/v1/submit', {"items": [
@@ -316,11 +316,10 @@ class TestSubmit(AppTestCase):
             ]},
             headers={'X-Token': uid, 'X-Nickname': nickname2},
             status=204)
-        session = app.app.registry.database.session()
         result = session.query(User).all()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].token, uid)
-        self.assertEqual(result[0].nickname, nickname2.decode('utf-8'))
+        self.assertEqual(result[0].nickname.encode('utf-8'), nickname2)
         result = session.query(Score).all()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].value, 3)
