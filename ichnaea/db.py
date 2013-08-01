@@ -210,12 +210,8 @@ class Database(object):
             bind=self.engine, autocommit=False, autoflush=False)
 
         # bind and create tables
-        for table in (cell_table, cell_measure_table,
-                      wifi_table, wifi_measure_table,
-                      measure_table, user_table, score_table):
-            table.metadata.bind = self.engine
-            if create:
-                table.create(checkfirst=True)
+        _Model.metadata.bind = self.engine
+        _Model.metadata.create_all()
 
     def session(self):
         return self.session_factory()
