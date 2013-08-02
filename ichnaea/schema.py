@@ -6,6 +6,8 @@ from ichnaea.db import RADIO_TYPE_KEYS
 
 
 class CellSchema(MappingSchema):
+    radio = SchemaNode(String(), location="body", type='str',
+                       validator=OneOf(RADIO_TYPE_KEYS), missing='')
     mcc = SchemaNode(Integer(), location="body", type='int', missing=0)
     mnc = SchemaNode(Integer(), location="body", type='int', missing=0)
     lac = SchemaNode(Integer(), location="body", type='int', missing=0)

@@ -21,7 +21,7 @@ class TestSearch(AppTestCase):
         cell = Cell()
         cell.lat = 123456781
         cell.lon = 234567892
-        cell.radio = 0
+        cell.radio = 2
         cell.mcc = 123
         cell.mnc = 1
         cell.lac = 2
@@ -30,7 +30,7 @@ class TestSearch(AppTestCase):
         session.commit()
 
         res = app.post_json('/v1/search',
-                            {"radio": "gsm",
+                            {"radio": "umts",
                              "cell": [{"mcc": 123, "mnc": 1,
                                        "lac": 2, "cid": 1234}]},
                             status=200)
@@ -84,7 +84,8 @@ class TestSubmit(AppTestCase):
 
     def test_ok_cell(self):
         app = self.app
-        cell_data = [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
+        cell_data = [
+            {"radio": "umts", "mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3456781,
                                       "lon": 23.4567892,
@@ -124,7 +125,7 @@ class TestSubmit(AppTestCase):
         self.assertEqual(item.accuracy, 10)
         self.assertEqual(item.altitude, 123)
         self.assertEqual(item.altitude_accuracy, 7)
-        self.assertEqual(item.radio, 0)
+        self.assertEqual(item.radio, 2)
         self.assertEqual(item.mcc, 123)
         self.assertEqual(item.mnc, 1)
         self.assertEqual(item.lac, 2)

@@ -22,6 +22,7 @@ Example:
     "radio": "gsm",
     "cell": [
         {
+            "radio": "gsm",
             "mcc": 123,
             "mnc": 123,
             "lac": 12345,
@@ -63,9 +64,10 @@ Example:
 
 .. code-block:: javascript
 
-    "radio": "umts",
+    "radio": "gsm",
     "cell": [
         {
+            "radio": "umts",
             "mcc": 123,
             "mnc": 123,
             "lac": 12345,
@@ -114,6 +116,7 @@ Example:
     "radio": "cdma",
     "cell": [
         {
+            "radio": "cdma",
             "mcc": 123,
             "mnc": 12345,
             "lac": 12345,
@@ -153,9 +156,10 @@ Example:
 
 .. code-block:: javascript
 
-    "radio": "lte",
+    "radio": "gsm",
     "cell": [
         {
+            "radio": "lte",
             "mcc": 123,
             "mnc": 123,
             "lac": 12345,

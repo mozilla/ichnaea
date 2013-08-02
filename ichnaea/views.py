@@ -74,6 +74,7 @@ def search_post(request):
             "radio": "gsm",
             "cell": [
                 {
+                    "radio": "umts",
                     "mcc": 123,
                     "mnc": 123,
                     "lac": 12345,
@@ -96,7 +97,11 @@ def search_post(request):
     category an entry has to be provided. Empty categories can be omitted
     entirely.
 
-    The radio entry must be one of "gsm", "cdma", "umts" or "lte".
+    The top-level radio type must be one of "gsm", "cdma" or be omitted (for
+    example for tablets or laptops without a cell radio).
+
+    The cell specific radio entry must be one of "gsm", "cdma", "umts" or
+    "lte".
 
     See :ref:`cell_records` for a detailed explanation of the cell record
     fields for the different network standards.
@@ -190,6 +195,7 @@ def submit_post(request):
             "radio": "gsm",
             "cell": [
                 {
+                    "radio": "umts",
                     "mcc": 123,
                     "mnc": 123,
                     "lac": 12345,

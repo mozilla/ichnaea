@@ -3,8 +3,10 @@ from ichnaea.decimaljson import quantize
 
 
 def search_cell(session, data):
-    radio = RADIO_TYPE.get(data['radio'], 0)
+    radio = RADIO_TYPE.get(data['radio'], -1)
     cell = data['cell'][0]
+    if cell['radio']:
+        radio = RADIO_TYPE.get(cell['radio'], -1)
     mcc = cell['mcc']
     mnc = cell['mnc']
     lac = cell['lac']

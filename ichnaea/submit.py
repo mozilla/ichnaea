@@ -82,8 +82,8 @@ def process_measure(data):
     measure.accuracy = data['accuracy']
     measure.altitude = data['altitude']
     measure.altitude_accuracy = data['altitude_accuracy']
+    measure.radio = RADIO_TYPE.get(data['radio'], -1)
     if data.get('cell'):
-        measure.radio = RADIO_TYPE.get(data['radio'], 0)
         cells, cell_data = process_cell(data['cell'], measure)
         measure.cell = dumps(cell_data)
         session_objects.extend(cells)
@@ -103,11 +103,16 @@ def process_cell(entries, measure):
         cell = CellMeasure(
             lat=measure.lat, lon=measure.lon, time=measure.time,
             accuracy=measure.accuracy, altitude=measure.altitude,
-            altitude_accuracy=measure.altitude_accuracy, radio=measure.radio,
+            altitude_accuracy=measure.altitude_accuracy,
             mcc=entry['mcc'], mnc=entry['mnc'], lac=entry['lac'],
             cid=entry['cid'], psc=entry['psc'], asu=entry['asu'],
             signal=entry['signal'], ta=entry['ta'],
         )
+        # use more specific cell type or fall back to less precise measure
+        if entry['radio']:
+            cell.radio = RADIO_TYPE.get(entry['radio'], -1)
+        else:
+            cell.radio = measure.radio
         cells.append(cell)
         result.append(entry)
     return (cells, result)

@@ -8,6 +8,7 @@ _Model = declarative_base()
 
 
 RADIO_TYPE = {
+    '': -1,
     'gsm': 0,
     'cdma': 1,
     'umts': 2,
