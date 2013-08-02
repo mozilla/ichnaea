@@ -1,6 +1,7 @@
 import csv
 from cStringIO import StringIO
 import datetime
+from operator import itemgetter
 import os
 
 from pyramid.decorator import reify
@@ -101,10 +102,15 @@ class ContentViews(Layout):
             query = MEASURE_HISTOGRAM_MYSQL
         rows = session.execute(text(query))
         result = {'histogram': []}
-        for day, num in rows.fetchall():
+        reverse_rows = sorted(rows.fetchall(), key=itemgetter(0), reverse=True)
+        total = session.query(func.count(Measure.id)).first()[0]
+        # reverse sort data by day, then count down from total
+        for day, num in reverse_rows:
             if isinstance(day, datetime.date):  # pragma: no cover
                 day = day.strftime('%Y-%m-%d')
-            result['histogram'].append({'day': day, 'num': num})
+            result['histogram'].append({'day': day, 'num': total})
+            total -= num
+        result['histogram'].reverse()
         return result
 
     @view_config(renderer='templates/stats.pt', name="stats", http_cache=300)

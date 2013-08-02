@@ -55,7 +55,7 @@
         </p>
     </div>
     <div style="clear:both">
-        <h3>New locations in the last 30 days</h3>
+        <h3>Total locations in the last 30 days</h3>
         <div id="chart_container">
                 <div id="y_axis"></div>
                 <div id="chart"></div>

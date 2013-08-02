@@ -1,4 +1,5 @@
 from datetime import datetime
+from datetime import timedelta
 from uuid import uuid4
 
 from pyramid.testing import DummyRequest
@@ -66,16 +67,37 @@ class TestFunctionalContent(AppTestCase):
 
     def test_stats_json(self):
         app = self.app
-        today = datetime.utcnow().date().strftime('%Y-%m-%d')
+        today = datetime.utcnow().date()
+        yesterday = (today - timedelta(1)).strftime('%Y-%m-%d')
+        two_days = (today - timedelta(2)).strftime('%Y-%m-%d')
+        long_ago = (today - timedelta(40)).strftime('%Y-%m-%d')
+        today = today.strftime('%Y-%m-%d')
         app.post_json(
             '/v1/submit', {"items": [
                 {"lat": 1.0, "lon": 2.0, "time": today,
+                 "wifi": [{"key": "a"}]},
+                {"lat": 1.0, "lon": 2.0, "time": today,
+                 "wifi": [{"key": "a"}]},
+                {"lat": 1.0, "lon": 2.0, "time": yesterday,
+                 "wifi": [{"key": "a"}]},
+                {"lat": 1.0, "lon": 2.0, "time": two_days,
+                 "wifi": [{"key": "a"}]},
+                {"lat": 1.0, "lon": 2.0, "time": two_days,
+                 "wifi": [{"key": "a"}]},
+                {"lat": 1.0, "lon": 2.0, "time": two_days,
+                 "wifi": [{"key": "a"}]},
+                {"lat": 1.0, "lon": 2.0, "time": long_ago,
                  "wifi": [{"key": "a"}]},
             ]},
             status=204)
         result = app.get('/stats.json', status=200)
         self.assertEqual(
-            result.json, {'histogram': [{'num': 1, 'day': today}]})
+            result.json, {'histogram': [
+                {'num': 4, 'day': two_days},
+                {'num': 5, 'day': yesterday},
+                {'num': 7, 'day': today},
+            ]}
+        )
 
 
 class TestStats(AppTestCase):
