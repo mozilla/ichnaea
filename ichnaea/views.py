@@ -74,10 +74,10 @@ def search_post(request):
             "radio": "gsm",
             "cell": [
                 {
-                    "mcc": 724,
-                    "mnc": 5,
-                    "lac": 31421,
-                    "cid": 60420242,
+                    "mcc": 123,
+                    "mnc": 123,
+                    "lac": 12345,
+                    "cid": 12345,
                     "signal": -61,
                     "asu": 26
                 }
@@ -190,10 +190,10 @@ def submit_post(request):
             "radio": "gsm",
             "cell": [
                 {
-                    "mcc": 724,
-                    "mnc": 5,
-                    "lac": 31421,
-                    "cid": 60420242,
+                    "mcc": 123,
+                    "mnc": 123,
+                    "lac": 12345,
+                    "cid": 12345,
                     "signal": -60
                 }
             ],
