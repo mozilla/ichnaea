@@ -205,7 +205,7 @@ class Database(object):
             # READ COMMITTED
             'isolation_level': isolation_level,
         }
-        options['connect_args'] = {'charset': 'utf-8'}
+        options['connect_args'] = {'charset': 'utf8'}
         if unix_socket:  # pragma: no cover
             options['connect_args'] = {'unix_socket': unix_socket}
         self.engine = create_engine(sqluri, **options)
