@@ -40,8 +40,8 @@ def process_user(token, nickname, session):
 
 
 def process_score(userid, points, session):
-    # TODO use select for update to lock the row
-    rows = session.query(Score).filter(Score.userid == userid)
+    rows = session.query(Score).filter(Score.userid == userid).\
+        limit(1).with_lockmode('update')
     old = rows.first()
     if old:
         # update score
