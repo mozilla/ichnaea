@@ -208,6 +208,7 @@ class Database(object):
         options['connect_args'] = {'charset': 'utf8'}
         if unix_socket:  # pragma: no cover
             options['connect_args'] = {'unix_socket': unix_socket}
+        options['execution_options'] = {'autocommit': False}
         self.engine = create_engine(sqluri, **options)
         self.session_factory = sessionmaker(
             bind=self.engine, autocommit=False, autoflush=False)
@@ -215,7 +216,10 @@ class Database(object):
         # bind and create tables
         _Model.metadata.bind = self.engine
         if create:
-            _Model.metadata.create_all()
+            with self.engine.connect() as conn:
+                trans = conn.begin()
+                _Model.metadata.create_all()
+                trans.commit()
 
     def session(self):
         return self.session_factory()

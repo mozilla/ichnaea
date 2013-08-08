@@ -24,10 +24,10 @@ class DBIsolation(object):
 
     def cleanup(self, db):
         engine = db.engine
-        conn = engine.connect()
-        trans = conn.begin()
-        _Model.metadata.drop_all(engine)
-        trans.commit()
+        with engine.connect() as conn:
+            trans = conn.begin()
+            _Model.metadata.drop_all(engine)
+            trans.commit()
 
 
 class AppTestCase(TestCase, DBIsolation):
