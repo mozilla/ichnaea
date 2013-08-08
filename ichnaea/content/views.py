@@ -25,16 +25,6 @@ from ichnaea.db import WifiMeasure
 HERE = os.path.dirname(__file__)
 FAVICON_PATH = os.path.join(HERE, 'static', 'favicon.ico')
 
-MEASURE_HISTOGRAM_MYSQL = """\
-select date(time) as day, count(id) as num from measure where
-date_sub(curdate(), interval 30 day) <= time and
-date(time) <= curdate() group by date(time)"""
-
-MEASURE_HISTOGRAM_SQLITE = """\
-select date(time) as day, count(id) as num from measure where
-date('now', '-30 days') <= date(time) and
-date(time) <= date('now') group by date(time)"""
-
 
 def configure_content(config):
     config.add_view(favicon_view, name='favicon.ico',
@@ -96,11 +86,10 @@ class ContentViews(Layout):
     @view_config(renderer='json', name="stats.json", http_cache=300)
     def stats_json(self):
         session = self.request.db_session
-        if 'sqlite' in str(session.bind.engine.url):
-            query = MEASURE_HISTOGRAM_SQLITE
-        else:  # pragma: no cover
-            query = MEASURE_HISTOGRAM_MYSQL
-        rows = session.execute(text(query))
+        query = text("select date(time) as day, count(id) as num from measure "
+                     "where date_sub(curdate(), interval 30 day) <= time and "
+                     "date(time) <= curdate() group by date(time)")
+        rows = session.execute(query)
         result = {'histogram': []}
         reverse_rows = sorted(rows.fetchall(), key=itemgetter(0), reverse=True)
         total = session.query(func.count(Measure.id)).first()[0]

@@ -2,7 +2,6 @@ import datetime
 import logging
 
 from colander import iso8601
-from colander.iso8601 import parse_date
 
 from ichnaea.db import CellMeasure
 from ichnaea.db import Measure
@@ -73,9 +72,6 @@ def process_measure(data):
     session_objects = []
     measure = Measure()
     time = data['time']
-    if isinstance(time, basestring):  # pragma: no cover
-        # TODO sqlite special case
-        time = parse_date(time)
     measure.time = time
     measure.lat = to_precise_int(data['lat'])
     measure.lon = to_precise_int(data['lon'])

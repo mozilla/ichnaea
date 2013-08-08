@@ -205,9 +205,6 @@ class Database(object):
             # READ COMMITTED
             'isolation_level': isolation_level,
         }
-        if sqluri.startswith('sqlite'):
-            del options['pool_size']
-            del options['pool_timeout']
         options['connect_args'] = {'charset': 'utf-8'}
         if unix_socket:  # pragma: no cover
             options['connect_args'] = {'unix_socket': unix_socket}
