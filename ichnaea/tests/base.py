@@ -7,10 +7,8 @@ from ichnaea import main
 from ichnaea.db import _Model
 from ichnaea.db import Database
 
-TRAVIS = bool(os.environ.get('TRAVIS', 'false') == 'true')
-
-SQLURI = 'sqlite://'
-UNIX_SOCKET = None
+SQLURI = os.environ['SQLURI']
+UNIX_SOCKET = os.environ['UNIX_SOCKET']
 
 
 def _make_db(create=True, echo=False):

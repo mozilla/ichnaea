@@ -4,7 +4,7 @@ from ichnaea.tests.base import DBTestCase
 class TestDatabase(DBTestCase):
 
     def test_constructor(self):
-        self.assertEqual(self.db.engine.name, 'sqlite')
+        self.assertEqual(self.db.engine.name, 'mysql')
 
     def test_session(self):
         self.assertTrue(self.db_session.bind is self.db.engine)
