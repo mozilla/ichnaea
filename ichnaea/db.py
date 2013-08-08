@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy import Column, Index
 from sqlalchemy import DateTime, Integer, LargeBinary, SmallInteger, String
+from sqlalchemy import Unicode
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -187,7 +188,7 @@ class User(_Model):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     token = Column(String(36))
-    nickname = Column(String(128))
+    nickname = Column(Unicode(128))
 
 user_table = User.__table__
 
@@ -204,6 +205,7 @@ class Database(object):
         if sqluri.startswith('sqlite'):
             del options['pool_size']
             del options['pool_timeout']
+        options['connect_args'] = {'charset': 'utf-8'}
         if unix_socket:  # pragma: no cover
             options['connect_args'] = {'unix_socket': unix_socket}
         self.engine = create_engine(sqluri, **options)

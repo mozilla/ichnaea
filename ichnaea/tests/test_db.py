@@ -182,7 +182,7 @@ class TestUser(DBTestCase):
 
     def test_fields(self):
         token = "898fccec2262417ca49d2814ac61e2c3"
-        user = self._make_one(token=token, nickname="World Traveler")
+        user = self._make_one(token=token, nickname=u"World Traveler")
         session = self.db_session
         session.add(user)
         session.commit()
@@ -190,4 +190,4 @@ class TestUser(DBTestCase):
         result = session.query(user.__class__).first()
         self.assertEqual(result.id, 1)
         self.assertEqual(result.token, token)
-        self.assertEqual(result.nickname, "World Traveler")
+        self.assertEqual(result.nickname, u"World Traveler")
