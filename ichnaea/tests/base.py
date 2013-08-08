@@ -9,18 +9,16 @@ from ichnaea.db import Database
 
 TRAVIS = bool(os.environ.get('TRAVIS', 'false') == 'true')
 
+SQLURI = 'sqlite://'
+UNIX_SOCKET = None
 
 
 def _make_db(create=True, echo=False):
-    sqluri = 'sqlite://'
-    unix_socket = None
-    return Database(sqluri, unix_socket=unix_socket, create=create, echo=echo)
+    return Database(SQLURI, unix_socket=UNIX_SOCKET, create=create, echo=echo)
 
 
 def _make_app():
-    sqluri = 'sqlite://'
-    unix_socket = None
-    wsgiapp = main({}, database=sqluri, unix_socket=unix_socket)
+    wsgiapp = main({}, database=SQLURI, unix_socket=UNIX_SOCKET)
     return TestApp(wsgiapp)
 
 
