@@ -214,7 +214,7 @@ class TestSubmit(AppTestCase):
     def test_time(self):
         app = self.app
         # test two weeks ago and "now"
-        time = datetime.utcnow() - timedelta(14)
+        time = (datetime.utcnow() - timedelta(14)).replace(microsecond=0)
         tstr = encode_datetime(time)
         app.post_json(
             '/v1/submit', {"items": [
