@@ -195,12 +195,15 @@ user_table = User.__table__
 
 class Database(object):
 
-    def __init__(self, sqluri, unix_socket=None, create=True, echo=False):
+    def __init__(self, sqluri, unix_socket=None, create=True, echo=False,
+                 isolation_level='REPEATABLE READ'):
         options = {
             'pool_recycle': 3600,
             'pool_size': 10,
             'pool_timeout': 10,
             'echo': echo,
+            # READ COMMITTED
+            'isolation_level': isolation_level,
         }
         if sqluri.startswith('sqlite'):
             del options['pool_size']
