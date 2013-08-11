@@ -69,9 +69,10 @@ class ContentViews(Layout):
     @view_config(renderer='string', name="map.csv", http_cache=300)
     def map_csv(self):
         session = self.request.db_session
-        select = text("select round(lat / 100000) as lat1, "
-                      "round(lon / 100000) as lon1, count(*) as num "
-                      "from measure group by lat1, lon1 order by lat1, lon1")
+        select = text("select round(lat / 10000) as lat1, "
+                      "round(lon / 10000) as lon1, count(*) as num "
+                      "from measure group by lat1, lon1 having num > 10 "
+                      "order by lat1, lon1")
         result = session.execute(select)
         rows = StringIO()
         csvwriter = csv.writer(rows)
@@ -79,10 +80,7 @@ class ContentViews(Layout):
         for lat, lon, num in result.fetchall():
             # use a logarithmic scale to give lesser used regions a chance
             num = int(math.ceil(math.log10(num)))
-            if num < 1:
-                # filter out areas with almost no data
-                continue
-            csvwriter.writerow((int(lat) / 100.0, int(lon) / 100.0, num))
+            csvwriter.writerow((int(lat) / 1000.0, int(lon) / 1000.0, num))
         return rows.getvalue()
 
     @view_config(renderer='templates/map.pt', name="map", http_cache=300)

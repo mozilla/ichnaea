@@ -19,8 +19,8 @@
 <section id="main-content">
     <p>
         A map showing all covered areas. Each data point shows the center
-        of a roughly one square kilometer area, in which we have at least
-        one measurement.
+        of a roughly 100 meter by 100 meter area, in which we have at least
+        10 measurements.
     </p>
     <div id='map'></div>
 </section>

@@ -54,13 +54,13 @@ class TestFunctionalContent(AppTestCase):
         wifi2 = [{"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]}]
         wifi3 = [{"lat": 3.0, "lon": 4.0, "wifi": [{"key": "c"}]}]
         app.post_json(
-            '/v1/submit', {"items": wifi1 * 51 + wifi2 * 9 + wifi3},
+            '/v1/submit', {"items": wifi1 * 101 + wifi2 * 11 + wifi3},
             status=204)
         result = app.get('/map.csv', status=200)
         self.assertEqual(result.content_type, 'text/plain')
         text = result.text.replace('\r', '').strip('\n')
         text = text.split('\n')
-        self.assertEqual(text, ['lat,lon,value', '1.0,2.0,2', '2.0,3.0,1'])
+        self.assertEqual(text, ['lat,lon,value', '1.0,2.0,3', '2.0,3.0,2'])
 
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)
