@@ -68,15 +68,15 @@ class ContentViews(Layout):
     @view_config(renderer='string', name="map.csv", http_cache=300)
     def map_csv(self):
         session = self.request.db_session
-        select = text("select distinct round(lat / 100000) as lat, "
-                      "round(lon / 100000) as lon "
-                      "from measure order by lat, lon")
+        select = text("select round(lat / 100000) as lat1, "
+                      "round(lon / 100000) as lon1, count(*) as num "
+                      "from measure group by lat1, lon1 order by lat1, lon1")
         result = session.execute(select)
         rows = StringIO()
         csvwriter = csv.writer(rows)
-        csvwriter.writerow(('lat', 'lon'))
-        for lat, lon in result.fetchall():
-            csvwriter.writerow((int(lat) / 100.0, int(lon) / 100.0))
+        csvwriter.writerow(('lat', 'lon', 'value'))
+        for lat, lon, num in result.fetchall():
+            csvwriter.writerow((int(lat) / 100.0, int(lon) / 100.0, num))
         return rows.getvalue()
 
     @view_config(renderer='templates/map.pt', name="map", http_cache=300)

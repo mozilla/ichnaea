@@ -53,6 +53,7 @@ class TestFunctionalContent(AppTestCase):
         app.post_json(
             '/v1/submit', {"items": [
                 {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
+                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
                 {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
             ]},
             status=204)
@@ -60,7 +61,7 @@ class TestFunctionalContent(AppTestCase):
         self.assertEqual(result.content_type, 'text/plain')
         text = result.text.replace('\r', '').strip('\n')
         text = text.split('\n')
-        self.assertEqual(text, ['lat,lon', '1.0,2.0', '2.0,3.0'])
+        self.assertEqual(text, ['lat,lon,value', '1.0,2.0,2', '2.0,3.0,1'])
 
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)

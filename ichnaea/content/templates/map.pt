@@ -3,21 +3,24 @@
            metal:use-macro="view.base_template">
 
 <tal:slot metal:fill-slot="css">
-    <link rel="stylesheet" href="/static/css/mapbox.css" />
+    <link rel="stylesheet" href="/static/css/mapbox.min.css" />
 </tal:slot>
 
 <tal:slot metal:fill-slot="js">
-    <script src='/static/js/mapbox.js'></script>
-    <script src="/static/js/csv2geojson.js"></script>
-    <script src="/static/js/leaflet.markercluster.js"></script>
+    <script src="/static/js/leaflet.min.js"></script>
+    <script src='/static/js/mapbox.min.js'></script>
+    <script src="/static/js/heatmap.min.js"></script>
+    <script src="/static/js/heatmap.leaflet.min.js"></script>
+    <script src="/static/js/csv2geojson.min.js"></script>
+    <script src="/static/js/quadtree.min.js"></script>
 </tal:slot>
 
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
     <p>
-        A map showing all covered areas. A single marker shows that we
-        have at least one measurement somewhere in a 1km radius around
-        the marker.
+        A map showing all covered areas. Each data point shows the center
+        of a roughly one square kilometer area, in which we have at least
+        one measurement.
     </p>
     <div id='map'></div>
 </section>
@@ -26,21 +29,29 @@
 <tal:slot metal:fill-slot="js_bottom">
 <script type='text/javascript'>
 var map = L.mapbox.map('map', 'hannosch.map-j01ew28b').setView([0, 0], 2);
-var markers = new L.MarkerClusterGroup();
+var heatmapLayer = L.TileLayer.heatMap({
+    radius: {value: 20, absolute: false},
+    opacity: 0.8,
+    zIndex: 2,
+    gradient: {
+        0.45: "rgb(0,0,255)",
+        0.55: "rgb(0,255,255)",
+        0.65: "rgb(0,255,0)",
+        0.95: "yellow",
+        1.0: "rgb(255,0,0)"
+    }
+});
 $.ajax({
     url: '/map.csv',
     dataType: 'text',
     success: function csvLoad(csv) {
-        geoJsonLayer = L.geoJson(csv2geojson.csv2geojson(csv), {
-            onEachFeature: function (feature, layer) {
-                layer.bindPopup(feature.properties.address);
-            }
-        });
-        markers.addLayer(geoJsonLayer);
-        map.addLayer(markers);
-        map.fitBounds(markers.getBounds());
+        data = csv2geojson.csv(csv, "lat", "lon");
+        heatmapLayer.setData(data);
+        heatmapLayer.addTo(map);
+        map.fitBounds(heatmapLayer._bounds);
     }
 });
+
 </script>
 </tal:slot>
 
