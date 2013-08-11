@@ -71,8 +71,7 @@ def process_time(measure, utcnow, utcmin):
 def process_measure(data):
     session_objects = []
     measure = Measure()
-    time = data['time']
-    measure.time = time
+    measure.time = data['time']
     measure.lat = to_precise_int(data['lat'])
     measure.lon = to_precise_int(data['lon'])
     measure.accuracy = data['accuracy']
