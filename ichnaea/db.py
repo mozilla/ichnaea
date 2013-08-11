@@ -1,7 +1,16 @@
 from sqlalchemy import create_engine
-from sqlalchemy import Column, Index
-from sqlalchemy import DateTime, Integer, LargeBinary, SmallInteger, String
-from sqlalchemy import Unicode
+from sqlalchemy import (
+    BigInteger,
+    Column,
+    Date,
+    DateTime,
+    Index,
+    Integer,
+    LargeBinary,
+    SmallInteger,
+    String,
+    Unicode,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -16,6 +25,12 @@ RADIO_TYPE = {
     'lte': 3,
 }
 RADIO_TYPE_KEYS = list(RADIO_TYPE.keys())
+
+STAT_TYPE = {
+    '': -1,
+    'location': 0,
+}
+STAT_TYPE_INVERSE = dict((v, k) for k, v in STAT_TYPE.items())
 
 # TODO add signal to list of reserved words
 # reported upstream at http://www.sqlalchemy.org/trac/ticket/2791
@@ -174,6 +189,34 @@ class Score(_Model):
     value = Column(Integer)
 
 score_table = Score.__table__
+
+
+class Stat(_Model):
+    __tablename__ = 'stat'
+    __table_args__ = (
+        Index('stat_key_time_idx', 'key', 'time'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+        }
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    # mapped via STAT_TYPE
+    key = Column(SmallInteger, index=True)
+    time = Column(Date)
+    value = Column(BigInteger)
+
+    @property
+    def name(self):
+        return STAT_TYPE_INVERSE.get(self.key, '')
+
+    @name.setter
+    def name(self, value):
+        self.key = STAT_TYPE[value]
+
+
+stat_table = Stat.__table__
 
 
 class User(_Model):

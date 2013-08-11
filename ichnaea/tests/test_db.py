@@ -1,3 +1,5 @@
+import datetime
+
 from ichnaea.tests.base import DBTestCase
 
 
@@ -168,6 +170,42 @@ class TestScore(DBTestCase):
         self.assertEqual(result.id, 1)
         self.assertEqual(result.userid, 3)
         self.assertEqual(result.value, 15)
+
+
+class TestStat(DBTestCase):
+
+    def _make_one(self, **kw):
+        from ichnaea.db import Stat
+        return Stat(**kw)
+
+    def test_constructor(self):
+        stat = self._make_one()
+        self.assertTrue(stat.id is None)
+
+    def test_fields(self):
+        utcday = datetime.datetime.utcnow().date()
+        stat = self._make_one(key=0, time=utcday, value=13)
+        session = self.db_session
+        session.add(stat)
+        session.commit()
+
+        result = session.query(stat.__class__).first()
+        self.assertEqual(result.key, 0)
+        self.assertEqual(result.time, utcday)
+        self.assertEqual(result.value, 13)
+
+    def test_property(self):
+        stat = self._make_one(key=0, value=13)
+        session = self.db_session
+        session.add(stat)
+        session.commit()
+
+        result = session.query(stat.__class__).first()
+        self.assertEqual(result.key, 0)
+        self.assertEqual(result.name, 'location')
+
+        result.name = ''
+        self.assertEqual(result.key, -1)
 
 
 class TestUser(DBTestCase):
