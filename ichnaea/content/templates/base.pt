@@ -7,9 +7,11 @@
     <title>Mozilla Location Service - ${page_title}</title>
 
     <link rel="stylesheet" href="/static/css/base.css" />
+    <link href="//mozorg.cdn.mozilla.net/media/css/tabzilla-min.css" rel="stylesheet" />
     <tal:slot metal:define-slot="css"></tal:slot>
 
     <script src='/static/js/jquery.min.js'></script>
+    <script src="//mozorg.cdn.mozilla.net/tabzilla/tabzilla.js"></script>
     <tal:slot metal:define-slot="js"></tal:slot>
 
     <tal:slot metal:define-slot="head"></tal:slot>
@@ -19,6 +21,7 @@
     <tal:macro metal:define-slot="header">
     <div id="wrapper">
         <header id="masthead">
+            <a href="https://www.mozilla.org/" id="tabzilla">mozilla</a>
             <nav id="nav-main" role="navigation">
                 <ul id="nav-main-menu">
                     <li class="first"><a href="/">Home</a></li>
