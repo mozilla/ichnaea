@@ -1,6 +1,7 @@
 import csv
 from cStringIO import StringIO
 import datetime
+import math
 from operator import itemgetter
 import os
 
@@ -76,6 +77,11 @@ class ContentViews(Layout):
         csvwriter = csv.writer(rows)
         csvwriter.writerow(('lat', 'lon', 'value'))
         for lat, lon, num in result.fetchall():
+            # use a logarithmic scale to give lesser used regions a chance
+            num = int(math.ceil(math.log10(num)))
+            if num < 1:
+                # filter out areas with almost no data
+                continue
             csvwriter.writerow((int(lat) / 100.0, int(lon) / 100.0, num))
         return rows.getvalue()
 

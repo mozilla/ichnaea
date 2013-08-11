@@ -50,12 +50,11 @@ class TestFunctionalContent(AppTestCase):
 
     def test_map_csv(self):
         app = self.app
+        wifi1 = [{"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]}]
+        wifi2 = [{"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]}]
+        wifi3 = [{"lat": 3.0, "lon": 4.0, "wifi": [{"key": "c"}]}]
         app.post_json(
-            '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
-                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
-                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
-            ]},
+            '/v1/submit', {"items": wifi1 * 51 + wifi2 * 9 + wifi3},
             status=204)
         result = app.get('/map.csv', status=200)
         self.assertEqual(result.content_type, 'text/plain')
