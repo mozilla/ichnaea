@@ -1,8 +1,6 @@
 import csv
 from cStringIO import StringIO
-import datetime
 import math
-from operator import itemgetter
 import os
 
 from pyramid.decorator import reify
@@ -21,6 +19,7 @@ from ichnaea.db import Measure
 from ichnaea.db import Score
 from ichnaea.db import User
 from ichnaea.db import WifiMeasure
+from ichnaea.content.stats import histogram
 
 
 HERE = os.path.dirname(__file__)
@@ -89,22 +88,7 @@ class ContentViews(Layout):
 
     @view_config(renderer='json', name="stats.json", http_cache=300)
     def stats_json(self):
-        session = self.request.db_session
-        query = text("select date(time) as day, count(id) as num from measure "
-                     "where date_sub(curdate(), interval 30 day) <= time and "
-                     "date(time) <= curdate() group by date(time)")
-        rows = session.execute(query)
-        result = {'histogram': []}
-        reverse_rows = sorted(rows.fetchall(), key=itemgetter(0), reverse=True)
-        total = session.query(func.count(Measure.id)).first()[0]
-        # reverse sort data by day, then count down from total
-        for day, num in reverse_rows:
-            if isinstance(day, datetime.date):  # pragma: no cover
-                day = day.strftime('%Y-%m-%d')
-            result['histogram'].append({'day': day, 'num': total})
-            total -= num
-        result['histogram'].reverse()
-        return result
+        return {'histogram': histogram(self.request.db_session)}
 
     @view_config(renderer='templates/stats.pt', name="stats", http_cache=300)
     def stats_view(self):
