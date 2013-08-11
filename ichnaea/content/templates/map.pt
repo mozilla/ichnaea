@@ -28,11 +28,14 @@
 
 <tal:slot metal:fill-slot="js_bottom">
 <script type='text/javascript'>
-var map = L.mapbox.map('map', 'hannosch.map-j01ew28b').setView([0, 0], 2);
+var map = L.mapbox.map('map', 'hannosch.map-j01ew28b', {
+    maxZoom: 14
+}).setView([0, 0], 2);
 var heatmapLayer = L.TileLayer.heatMap({
     radius: {value: 20, absolute: false},
     opacity: 0.8,
     zIndex: 2,
+    maxZoom: 14,
     gradient: {
         0.45: "rgb(0,0,255)",
         0.55: "rgb(0,255,255)",
