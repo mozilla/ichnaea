@@ -9,7 +9,7 @@ class TestDatabase(DBTestCase):
         self.assertEqual(self.db.engine.name, 'mysql')
 
     def test_session(self):
-        self.assertTrue(self.db_session.bind is self.db.engine)
+        self.assertTrue(self.db_session.bind.engine is self.db.engine)
 
     def test_table_creation(self):
         session = self.db_session
