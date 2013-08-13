@@ -254,6 +254,9 @@ def db_tween_factory(handler, registry):
         session = getattr(request, '_db_session', None)
         if session is not None:
             # only deal with requests with a session
+            if response.status.startswith(('4', '5')):  # pragma: no cover
+                # never commit on error
+                session.rollback()
             session.close()
         return response
 
