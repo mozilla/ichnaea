@@ -88,7 +88,8 @@ class ContentViews(Layout):
 
     @view_config(renderer='json', name="stats.json", http_cache=300)
     def stats_json(self):
-        return {'histogram': histogram(self.request.db_session)}
+        session = self.request.db_session
+        return {'histogram': histogram(session)}
 
     @view_config(renderer='templates/stats.pt', name="stats", http_cache=300)
     def stats_view(self):
