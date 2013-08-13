@@ -1,21 +1,14 @@
 import logging
 
 from pyramid.config import Configurator
+from pyramid.tweens import EXCVIEW
 
 from ichnaea import decimaljson
 from ichnaea.db import Database
+from ichnaea.db import db_session
 from ichnaea.content.views import configure_content
 
 logger = logging.getLogger('ichnaea')
-
-
-def db_session(request):
-    session = request.registry.database.session()
-
-    def cleanup(request):
-        session.close()
-    request.add_finished_callback(cleanup)
-    return session
 
 
 def main(global_config, **settings):
@@ -39,7 +32,8 @@ def main(global_config, **settings):
 
     config.registry.database = Database(
         settings['database'], settings.get('unix_socket'))
-    config.add_request_method(db_session, reify=True)
+    config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)
+    config.add_request_method(db_session, property=True)
 
     # replace json renderer with decimal json variant
     config.add_renderer('json', decimaljson.Renderer())

@@ -236,6 +236,30 @@ class User(_Model):
 user_table = User.__table__
 
 
+# request.db_session and db_tween_factory are inspired by pyramid_tm
+# to provide lazy session creation, session closure and automatic
+# rollback in case of errors
+
+def db_session(request):
+    session = getattr(request, '_db_session', None)
+    if session is None:
+        request._db_session = session = request.registry.database.session()
+    return session
+
+
+def db_tween_factory(handler, registry):
+
+    def db_tween(request):
+        response = handler(request)
+        session = getattr(request, '_db_session', None)
+        if session is not None:
+            # only deal with requests with a session
+            session.close()
+        return response
+
+    return db_tween
+
+
 class Database(object):
 
     def __init__(self, sqluri, unix_socket=None, create=True, echo=False,
