@@ -45,6 +45,9 @@ class TestFunctionalContent(AppTestCase):
         result = self.app.get('/', status=200)
         self.assertTrue('Strict-Transport-Security' in result.headers)
 
+    def test_not_found(self):
+        self.app.get('/nobody-is-home', status=404)
+
     def test_map(self):
         self.app.get('/map', status=200)
 
