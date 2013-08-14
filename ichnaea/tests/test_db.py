@@ -5,14 +5,18 @@ from ichnaea.tests.base import DBTestCase
 
 class TestDatabase(DBTestCase):
 
-    def test_constructor(self):
+    def test_constructors(self):
         self.assertEqual(self.db_master.engine.name, 'mysql')
+        self.assertEqual(self.db_slave.engine.name, 'mysql')
 
-    def test_session(self):
-        self.assertTrue(self.db_session.bind.engine is self.db_master.engine)
+    def test_sessions(self):
+        self.assertTrue(
+            self.db_master_session.bind.engine is self.db_master.engine)
+        self.assertTrue(
+            self.db_slave_session.bind.engine is self.db_slave.engine)
 
     def test_table_creation(self):
-        session = self.db_session
+        session = self.db_master_session
         result = session.execute('select * from cell;')
         self.assertTrue(result.first() is None)
         result = session.execute('select * from measure;')
@@ -32,7 +36,7 @@ class TestCell(DBTestCase):
     def test_fields(self):
         cell = self._make_one(
             lat=12345678, lon=23456789, mcc=100, mnc=5, lac=12345, cid=234567)
-        session = self.db_session
+        session = self.db_master_session
         session.add(cell)
         session.commit()
 
@@ -56,7 +60,7 @@ class TestCellMeasure(DBTestCase):
         cell = self._make_one(lat=12345678, lon=23456789, radio=0, mcc=100,
                               mnc=5, lac=12345, cid=234567, asu=26,
                               signal=-61, ta=10)
-        session = self.db_session
+        session = self.db_master_session
         session.add(cell)
         session.commit()
 
@@ -86,7 +90,7 @@ class TestWifi(DBTestCase):
     def test_fields(self):
         key = "3680873e9b83738eb72946d19e971e023e51fd01"
         wifi = self._make_one(key=key, lat=12345678, lon=23456789, range=200)
-        session = self.db_session
+        session = self.db_master_session
         session.add(wifi)
         session.commit()
 
@@ -111,7 +115,7 @@ class TestWifiMeasure(DBTestCase):
         key = "3680873e9b83738eb72946d19e971e023e51fd01"
         wifi = self._make_one(
             lat=12345678, lon=23456789, key=key, channel=2412, signal=-45)
-        session = self.db_session
+        session = self.db_master_session
         session.add(wifi)
         session.commit()
 
@@ -136,7 +140,7 @@ class TestMeasure(DBTestCase):
     def test_fields(self):
         measure = self._make_one(
             lat=12345678, lon=23456789, cell="[]", wifi="[]")
-        session = self.db_session
+        session = self.db_master_session
         session.add(measure)
         session.commit()
 
@@ -159,7 +163,7 @@ class TestScore(DBTestCase):
 
     def test_fields(self):
         score = self._make_one(userid=3, value=15)
-        session = self.db_session
+        session = self.db_master_session
         session.add(score)
         session.commit()
 
@@ -181,7 +185,7 @@ class TestStat(DBTestCase):
     def test_fields(self):
         utcday = datetime.datetime.utcnow().date()
         stat = self._make_one(key=0, time=utcday, value=13)
-        session = self.db_session
+        session = self.db_master_session
         session.add(stat)
         session.commit()
 
@@ -192,7 +196,7 @@ class TestStat(DBTestCase):
 
     def test_property(self):
         stat = self._make_one(key=0, value=13)
-        session = self.db_session
+        session = self.db_master_session
         session.add(stat)
         session.commit()
 
@@ -217,7 +221,7 @@ class TestUser(DBTestCase):
     def test_fields(self):
         token = "898fccec2262417ca49d2814ac61e2c3"
         user = self._make_one(token=token, nickname=u"World Traveler")
-        session = self.db_session
+        session = self.db_master_session
         session.add(user)
         session.commit()
 

@@ -67,7 +67,7 @@ class ContentViews(Layout):
 
     @view_config(renderer='string', name="map.csv", http_cache=300)
     def map_csv(self):
-        session = self.request.db_session
+        session = self.request.db_slave_session
         select = text("select round(lat / 10000) as lat1, "
                       "round(lon / 10000) as lon1, count(*) as num "
                       "from measure group by lat1, lon1 having num > 10 "
@@ -88,12 +88,12 @@ class ContentViews(Layout):
 
     @view_config(renderer='json', name="stats.json", http_cache=300)
     def stats_json(self):
-        session = self.request.db_session
+        session = self.request.db_slave_session
         return {'histogram': histogram(session)}
 
     @view_config(renderer='templates/stats.pt', name="stats", http_cache=300)
     def stats_view(self):
-        session = self.request.db_session
+        session = self.request.db_slave_session
         result = {'leaders': [], 'metrics': [], 'page_title': 'Statistics'}
         metrics = result['metrics']
         value = session.query(func.count(Measure.id)).first()[0]

@@ -11,18 +11,12 @@ SQLURI = os.environ['SQLURI']
 SQLSOCKET = os.environ['SQLSOCKET']
 
 
-def _make_db(create=True, echo=False):
-    return Database(SQLURI, socket=SQLSOCKET, create=create, echo=echo)
+def _make_db(create=True):
+    return Database(SQLURI, socket=SQLSOCKET, create=create)
 
 
-def _make_app():
-    settings = {
-        'db_master': SQLURI,
-        'db_master_socket': SQLSOCKET,
-        'db_slave': SQLURI,
-        'db_slave_socket': SQLSOCKET,
-    }
-    wsgiapp = main({}, **settings)
+def _make_app(_db_master=None, _db_slave=None, **settings):
+    wsgiapp = main({}, _db_master=_db_master, _db_slave=_db_slave, **settings)
     return TestApp(wsgiapp)
 
 
@@ -31,16 +25,20 @@ class DBIsolation(object):
     # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
 
     def setup_session(self):
-        conn = self.db_master.engine.connect()
-        self.trans = conn.begin()
-        self.db_master.session_factory.configure(bind=conn)
-        self.db_session = self.db_master.session()
+        master_conn = self.db_master.engine.connect()
+        self.master_trans = master_conn.begin()
+        self.db_master.session_factory.configure(bind=master_conn)
+        self.db_master_session = self.db_master.session()
+        slave_conn = self.db_slave.engine.connect()
+        self.slave_trans = slave_conn.begin()
+        self.db_slave.session_factory.configure(bind=slave_conn)
+        self.db_slave_session = self.db_slave.session()
 
     def teardown_session(self):
-        self.trans.rollback()
-        self.db_session.close()
-        del self.trans
-        del self.db_session
+        self.slave_trans.rollback()
+        self.db_slave_session.close()
+        self.master_trans.rollback()
+        self.db_master_session.close()
 
     def cleanup(self, engine):
         with engine.connect() as conn:
@@ -51,25 +49,28 @@ class DBIsolation(object):
 
 class AppTestCase(TestCase, DBIsolation):
 
+    @classmethod
+    def setUpClass(cls):
+        cls.db_master = _make_db()
+        cls.db_slave = _make_db(create=False)
+        cls.app = _make_app(_db_master=cls.db_master, _db_slave=cls.db_slave)
+
     def setUp(self):
-        self.app = _make_app()
-        self.db_master = self.app.app.registry.db_master
-        self.db_slave = self.app.app.registry.db_slave
         self.setup_session()
 
     def tearDown(self):
         self.teardown_session()
-        del self.db_slave
-        del self.db_master
-        del self.app
 
 
 class DBTestCase(TestCase, DBIsolation):
 
+    @classmethod
+    def setUpClass(cls):
+        cls.db_master = _make_db()
+        cls.db_slave = _make_db(create=False)
+
     def setUp(self):
-        self.db_master = _make_db()
         self.setup_session()
 
     def tearDown(self):
         self.teardown_session()
-        del self.db_master

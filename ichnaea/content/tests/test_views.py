@@ -54,7 +54,7 @@ class TestFunctionalContent(AppTestCase):
 
     def test_map_csv(self):
         app = self.app
-        session = self.db_session
+        session = self.db_slave_session
         wifi = '[{"key": "a"}]'
         measures = [Measure(lat=30000000, lon=40000000, wifi=wifi)]
         for i in range(101):
@@ -79,7 +79,7 @@ class TestFunctionalContent(AppTestCase):
         two_days = (today - timedelta(2)).strftime('%Y-%m-%d')
         long_ago = (today - timedelta(40)).strftime('%Y-%m-%d')
         today = today.strftime('%Y-%m-%d')
-        session = self.db_session
+        session = self.db_slave_session
         wifi = '[{"key": "a"}]'
         measures = [
             Measure(lat=10000000, lon=20000000, time=today, wifi=wifi),
@@ -119,7 +119,7 @@ class TestStats(AppTestCase):
 
     def test_stats_empty(self):
         request = DummyRequest()
-        request.db_session = self.db_session
+        request.db_slave_session = self.db_slave_session
         inst = self._make_view(request)
         result = inst.stats_view()
         self.assertEqual(result['page_title'], 'Statistics')
@@ -146,7 +146,7 @@ class TestStats(AppTestCase):
             headers={'X-Token': uid, 'X-Nickname': nickname},
             status=204)
         request = DummyRequest()
-        request.db_session = self.db_session
+        request.db_slave_session = self.db_master_session
         inst = self._make_view(request)
         result = inst.stats_view()
         self.assertEqual(result['page_title'], 'Statistics')

@@ -236,14 +236,23 @@ class User(_Model):
 user_table = User.__table__
 
 
-# request.db_session and db_tween_factory are inspired by pyramid_tm
+# the request db_sessions and db_tween_factory are inspired by pyramid_tm
 # to provide lazy session creation, session closure and automatic
 # rollback in case of errors
 
-def db_session(request):
-    session = getattr(request, '_db_session', None)
+def db_master_session(request):
+    session = getattr(request, '_db_master_session', None)
     if session is None:
-        request._db_session = session = request.registry.db_master.session()
+        db = request.registry.db_master
+        request._db_master_session = session = db.session()
+    return session
+
+
+def db_slave_session(request):
+    session = getattr(request, '_db_slave_session', None)
+    if session is None:
+        db = request.registry.db_slave
+        request._db_slave_session = session = db.session()
     return session
 
 
@@ -251,13 +260,20 @@ def db_tween_factory(handler, registry):
 
     def db_tween(request):
         response = handler(request)
-        session = getattr(request, '_db_session', None)
-        if session is not None:
+        master_session = getattr(request, '_db_master_session', None)
+        if master_session is not None:
             # only deal with requests with a session
             if response.status.startswith(('4', '5')):  # pragma: no cover
                 # never commit on error
-                session.rollback()
-            session.close()
+                master_session.rollback()
+            master_session.close()
+        slave_session = getattr(request, '_db_slave_session', None)
+        if slave_session is not None:
+            # always rollback/close the `read-only` slave sessions
+            try:
+                slave_session.rollback()
+            finally:
+                slave_session.close()
         return response
 
     return db_tween
