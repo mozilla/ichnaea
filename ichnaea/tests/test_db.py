@@ -6,10 +6,10 @@ from ichnaea.tests.base import DBTestCase
 class TestDatabase(DBTestCase):
 
     def test_constructor(self):
-        self.assertEqual(self.db.engine.name, 'mysql')
+        self.assertEqual(self.db_master.engine.name, 'mysql')
 
     def test_session(self):
-        self.assertTrue(self.db_session.bind.engine is self.db.engine)
+        self.assertTrue(self.db_session.bind.engine is self.db_master.engine)
 
     def test_table_creation(self):
         session = self.db_session

@@ -30,8 +30,16 @@ def main(global_config, **settings):
 
     configure_content(config)
 
-    config.registry.database = Database(
-        settings['database'], settings.get('unix_socket'))
+    # configure databases
+    config.registry.db_master = Database(
+        settings['db_master'],
+        settings.get('db_master_socket'),
+    )
+    config.registry.db_slave = Database(
+        settings['db_slave'],
+        settings.get('db_slave_socket'),
+        create=False,
+    )
     config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)
     config.add_request_method(db_session, property=True)
 

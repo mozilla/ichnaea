@@ -243,7 +243,7 @@ user_table = User.__table__
 def db_session(request):
     session = getattr(request, '_db_session', None)
     if session is None:
-        request._db_session = session = request.registry.database.session()
+        request._db_session = session = request.registry.db_master.session()
     return session
 
 

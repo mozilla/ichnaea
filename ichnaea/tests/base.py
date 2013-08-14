@@ -16,7 +16,13 @@ def _make_db(create=True, echo=False):
 
 
 def _make_app():
-    wsgiapp = main({}, database=SQLURI, socket=SQLSOCKET)
+    settings = {
+        'db_master': SQLURI,
+        'db_master_socket': SQLSOCKET,
+        'db_slave': SQLURI,
+        'db_slave_socket': SQLSOCKET,
+    }
+    wsgiapp = main({}, **settings)
     return TestApp(wsgiapp)
 
 
@@ -25,10 +31,10 @@ class DBIsolation(object):
     # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
 
     def setup_session(self):
-        conn = self.db.engine.connect()
+        conn = self.db_master.engine.connect()
         self.trans = conn.begin()
-        self.db.session_factory.configure(bind=conn)
-        self.db_session = self.db.session()
+        self.db_master.session_factory.configure(bind=conn)
+        self.db_session = self.db_master.session()
 
     def teardown_session(self):
         self.trans.rollback()
@@ -47,21 +53,23 @@ class AppTestCase(TestCase, DBIsolation):
 
     def setUp(self):
         self.app = _make_app()
-        self.db = self.app.app.registry.database
+        self.db_master = self.app.app.registry.db_master
+        self.db_slave = self.app.app.registry.db_slave
         self.setup_session()
 
     def tearDown(self):
         self.teardown_session()
-        del self.db
+        del self.db_slave
+        del self.db_master
         del self.app
 
 
 class DBTestCase(TestCase, DBIsolation):
 
     def setUp(self):
-        self.db = _make_db()
+        self.db_master = _make_db()
         self.setup_session()
 
     def tearDown(self):
         self.teardown_session()
-        del self.db
+        del self.db_master
