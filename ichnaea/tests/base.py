@@ -8,15 +8,15 @@ from ichnaea.db import _Model
 from ichnaea.db import Database
 
 SQLURI = os.environ['SQLURI']
-UNIX_SOCKET = os.environ['UNIX_SOCKET']
+SQLSOCKET = os.environ['SQLSOCKET']
 
 
 def _make_db(create=True, echo=False):
-    return Database(SQLURI, unix_socket=UNIX_SOCKET, create=create, echo=echo)
+    return Database(SQLURI, socket=SQLSOCKET, create=create, echo=echo)
 
 
 def _make_app():
-    wsgiapp = main({}, database=SQLURI, unix_socket=UNIX_SOCKET)
+    wsgiapp = main({}, database=SQLURI, socket=SQLSOCKET)
     return TestApp(wsgiapp)
 
 

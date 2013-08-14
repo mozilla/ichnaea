@@ -265,7 +265,7 @@ def db_tween_factory(handler, registry):
 
 class Database(object):
 
-    def __init__(self, sqluri, unix_socket=None, create=True, echo=False,
+    def __init__(self, uri, socket=None, create=True, echo=False,
                  isolation_level='REPEATABLE READ'):
         options = {
             'pool_recycle': 3600,
@@ -276,10 +276,10 @@ class Database(object):
             'isolation_level': isolation_level,
         }
         options['connect_args'] = {'charset': 'utf8'}
-        if unix_socket:  # pragma: no cover
-            options['connect_args'] = {'unix_socket': unix_socket}
+        if socket:  # pragma: no cover
+            options['connect_args'] = {'unix_socket': socket}
         options['execution_options'] = {'autocommit': False}
-        self.engine = create_engine(sqluri, **options)
+        self.engine = create_engine(uri, **options)
         self.session_factory = sessionmaker(
             bind=self.engine, autocommit=False, autoflush=False)
 

@@ -13,12 +13,12 @@ ifeq ($(TRAVIS), true)
 	MYSQL_USER ?= travis
 	MYSQL_PWD ?=
 	SQLURI ?= mysql+pymysql://$(MYSQL_USER)@localhost/$(MYSQL_TEST_DB)
-	UNIX_SOCKET ?=
+	SQLSOCKET ?=
 else
 	MYSQL_USER ?= root
 	MYSQL_PWD ?= mysql
 	SQLURI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@localhost/$(MYSQL_TEST_DB)
-	UNIX_SOCKET ?= /opt/local/var/run/mysql56/mysqld.sock
+	SQLSOCKET ?= /opt/local/var/run/mysql56/mysqld.sock
 endif
 
 .PHONY: all test docs mysql
@@ -50,7 +50,7 @@ clean:
 	rm -rf $(BUILD_DIRS)
 
 test: mysql
-	SQLURI=$(SQLURI) UNIX_SOCKET=$(UNIX_SOCKET) \
+	SQLURI=$(SQLURI) SQLSOCKET=$(SQLSOCKET) \
 	$(BIN)/nosetests -s -d -v --with-coverage --cover-package ichnaea ichnaea
 
 bin/sphinx-build:
