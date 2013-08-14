@@ -7,6 +7,7 @@ from pyramid.testing import setUp
 from pyramid.testing import tearDown
 from unittest2 import TestCase
 
+from ichnaea.db import Measure
 from ichnaea.tests.base import AppTestCase
 
 
@@ -53,12 +54,15 @@ class TestFunctionalContent(AppTestCase):
 
     def test_map_csv(self):
         app = self.app
-        wifi1 = [{"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]}]
-        wifi2 = [{"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]}]
-        wifi3 = [{"lat": 3.0, "lon": 4.0, "wifi": [{"key": "c"}]}]
-        app.post_json(
-            '/v1/submit', {"items": wifi1 * 101 + wifi2 * 11 + wifi3},
-            status=204)
+        session = self.db_session
+        wifi = '[{"key": "a"}]'
+        measures = [Measure(lat=30000000, lon=40000000, wifi=wifi)]
+        for i in range(101):
+            measures.append(Measure(lat=10000000, lon=20000000, wifi=wifi))
+        for i in range(11):
+            measures.append(Measure(lat=20000000, lon=30000000, wifi=wifi))
+        session.add_all(measures)
+        session.commit()
         result = app.get('/map.csv', status=200)
         self.assertEqual(result.content_type, 'text/plain')
         text = result.text.replace('\r', '').strip('\n')
@@ -75,24 +79,19 @@ class TestFunctionalContent(AppTestCase):
         two_days = (today - timedelta(2)).strftime('%Y-%m-%d')
         long_ago = (today - timedelta(40)).strftime('%Y-%m-%d')
         today = today.strftime('%Y-%m-%d')
-        app.post_json(
-            '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0, "time": today,
-                 "wifi": [{"key": "a"}]},
-                {"lat": 1.0, "lon": 2.0, "time": today,
-                 "wifi": [{"key": "a"}]},
-                {"lat": 1.0, "lon": 2.0, "time": yesterday,
-                 "wifi": [{"key": "a"}]},
-                {"lat": 1.0, "lon": 2.0, "time": two_days,
-                 "wifi": [{"key": "a"}]},
-                {"lat": 1.0, "lon": 2.0, "time": two_days,
-                 "wifi": [{"key": "a"}]},
-                {"lat": 1.0, "lon": 2.0, "time": two_days,
-                 "wifi": [{"key": "a"}]},
-                {"lat": 1.0, "lon": 2.0, "time": long_ago,
-                 "wifi": [{"key": "a"}]},
-            ]},
-            status=204)
+        session = self.db_session
+        wifi = '[{"key": "a"}]'
+        measures = [
+            Measure(lat=10000000, lon=20000000, time=today, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, time=today, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, time=yesterday, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, time=two_days, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, time=two_days, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, time=two_days, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, time=long_ago, wifi=wifi),
+        ]
+        session.add_all(measures)
+        session.commit()
         result = app.get('/stats.json', status=200)
         self.assertEqual(
             result.json, {'histogram': [
