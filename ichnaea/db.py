@@ -188,17 +188,14 @@ measure_table = Measure.__table__
 
 class Score(_Model):
     __tablename__ = 'score'
-    __table_args__ = (
-        Index('score_userid_idx', 'userid'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
-    )
+    __table_args__ = {
+        'mysql_engine': 'InnoDB',
+        'mysql_charset': 'utf8',
+    }
 
     id = Column(Integer(unsigned=True),
                 primary_key=True, autoincrement=True)
-    userid = Column(Integer(unsigned=True), unique=True)
+    userid = Column(Integer(unsigned=True), index=True, unique=True)
     value = Column(Integer)
 
 score_table = Score.__table__
@@ -217,7 +214,7 @@ class Stat(_Model):
     id = Column(Integer(unsigned=True),
                 primary_key=True, autoincrement=True)
     # mapped via STAT_TYPE
-    key = Column(SmallInteger, index=True)
+    key = Column(SmallInteger)
     time = Column(Date)
     value = Column(Integer(unsigned=True))
 
