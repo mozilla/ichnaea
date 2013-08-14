@@ -30,8 +30,8 @@ class TestSearch(AppTestCase):
         session.commit()
 
         res = app.post_json('/v1/search',
-                            {"radio": "umts",
-                             "cell": [{"mcc": 123, "mnc": 1,
+                            {"radio": "gsm",
+                             "cell": [{"radio": "umts", "mcc": 123, "mnc": 1,
                                        "lac": 2, "cid": 1234}]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
