@@ -283,12 +283,11 @@ class Database(object):
         self.session_factory = sessionmaker(
             bind=self.engine, autocommit=False, autoflush=False)
 
-        # bind and create tables
-        _Model.metadata.bind = self.engine
+        # create tables
         if create:
             with self.engine.connect() as conn:
                 trans = conn.begin()
-                _Model.metadata.create_all()
+                _Model.metadata.create_all(self.engine)
                 trans.commit()
 
     def session(self):
