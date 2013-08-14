@@ -1,16 +1,16 @@
 from sqlalchemy import create_engine
 from sqlalchemy import (
-    BigInteger,
     Column,
     Date,
     DateTime,
     Index,
-    Integer,
     LargeBinary,
     SmallInteger,
     String,
     Unicode,
 )
+from sqlalchemy.dialects.mysql import INTEGER as Integer
+from sqlalchemy.dialects.mysql import BIGINT as BigInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -49,7 +49,8 @@ class Cell(_Model):
         }
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(BigInteger(unsigned=True),
+                primary_key=True, autoincrement=True)
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
@@ -82,7 +83,8 @@ class CellMeasure(_Model):
         }
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(BigInteger(unsigned=True),
+                primary_key=True, autoincrement=True)
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
@@ -106,12 +108,17 @@ cell_measure_table = CellMeasure.__table__
 
 class Wifi(_Model):
     __tablename__ = 'wifi'
-    __table_args__ = {
-        'mysql_engine': 'InnoDB',
-        'mysql_charset': 'utf8',
-    }
+    __table_args__ = (
+        Index('wifi_key_idx', 'key'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+        }
+    )
 
-    key = Column(String(40), primary_key=True)
+    id = Column(BigInteger(unsigned=True),
+                primary_key=True, autoincrement=True)
+    key = Column(String(40))
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
@@ -134,7 +141,8 @@ class WifiMeasure(_Model):
         }
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(BigInteger(unsigned=True),
+                primary_key=True, autoincrement=True)
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
@@ -161,7 +169,8 @@ class Measure(_Model):
         }
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(BigInteger(unsigned=True),
+                primary_key=True, autoincrement=True)
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
@@ -179,13 +188,17 @@ measure_table = Measure.__table__
 
 class Score(_Model):
     __tablename__ = 'score'
-    __table_args__ = {
-        'mysql_engine': 'InnoDB',
-        'mysql_charset': 'utf8',
-    }
+    __table_args__ = (
+        Index('score_userid_idx', 'userid'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+        }
+    )
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    userid = Column(Integer, index=True, unique=True)
+    id = Column(Integer(unsigned=True),
+                primary_key=True, autoincrement=True)
+    userid = Column(Integer(unsigned=True), unique=True)
     value = Column(Integer)
 
 score_table = Score.__table__
@@ -201,11 +214,12 @@ class Stat(_Model):
         }
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer(unsigned=True),
+                primary_key=True, autoincrement=True)
     # mapped via STAT_TYPE
     key = Column(SmallInteger, index=True)
     time = Column(Date)
-    value = Column(BigInteger)
+    value = Column(Integer(unsigned=True))
 
     @property
     def name(self):
@@ -229,7 +243,8 @@ class User(_Model):
         }
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer(unsigned=True),
+                primary_key=True, autoincrement=True)
     token = Column(String(36))
     nickname = Column(Unicode(128))
 
