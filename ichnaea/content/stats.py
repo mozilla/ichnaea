@@ -8,6 +8,8 @@ from sqlalchemy import func
 from sqlalchemy.sql.expression import text
 
 from ichnaea.db import Measure
+from ichnaea.db import Score
+from ichnaea.db import User
 
 
 def histogram(session):
@@ -25,6 +27,25 @@ def histogram(session):
         result.append({'day': day, 'num': total})
         total -= num
     result.reverse()
+    return result
+
+
+def leaders(session):
+    result = []
+    score_rows = session.query(
+        Score.userid, Score.value).order_by(Score.value.desc()).limit(10).all()
+    userids = [s[0] for s in score_rows]
+    if not userids:
+        return []
+    user_rows = session.query(User).filter(User.id.in_(userids)).all()
+    users = {}
+    for user in user_rows:
+        users[user.id] = (user.token, user.nickname)
+
+    for userid, value in score_rows:
+        token, nickname = users.get(userid, ('', 'anonymous'))
+        result.append(
+            {'token': token[:8], 'nickname': nickname, 'num': value})
     return result
 
 

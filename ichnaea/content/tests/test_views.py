@@ -104,20 +104,10 @@ class TestStats(AppTestCase):
         from ichnaea.content.views import ContentViews
         return ContentViews(request)
 
-    def test_stats_empty(self):
-        request = DummyRequest()
-        request.db_slave_session = self.db_slave_session
-        inst = self._make_view(request)
-        result = inst.stats_view()
-        self.assertEqual(result['page_title'], 'Statistics')
-        self.assertTrue('metrics' in result)
-        self.assertEqual(result['leaders'], [])
-
     def test_stats(self):
         app = self.app
         app.get('/stats', status=200)
         uid = uuid4().hex
-        nickname = 'World Tr\xc3\xa4veler'
         cell1 = {"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}
         cell2 = {"mcc": 123, "mnc": 1, "lac": 3, "cid": 456}
         cell3 = {"mcc": 123, "mnc": 1, "lac": 4, "cid": 456}
@@ -130,7 +120,7 @@ class TestStats(AppTestCase):
                 {"lat": 2.0, "lon": 3.0,
                  "wifi": [{"key": "b"}], "cell": [cell3, cell3]},
             ]},
-            headers={'X-Token': uid, 'X-Nickname': nickname},
+            headers={'X-Token': uid, 'X-Nickname': 'nick'},
             status=204)
         request = DummyRequest()
         request.db_slave_session = self.db_master_session
@@ -138,8 +128,7 @@ class TestStats(AppTestCase):
         result = inst.stats_view()
         self.assertEqual(result['page_title'], 'Statistics')
         self.assertEqual(result['leaders'],
-                         [{'nickname': nickname.decode('utf-8'),
-                           'num': 3, 'token': uid[:8]}])
+                         [{'nickname': 'nick', 'num': 3, 'token': uid[:8]}])
         self.assertEqual(
             result['metrics'],
             [{'name': 'Locations', 'value': 3},

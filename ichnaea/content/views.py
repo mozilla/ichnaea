@@ -12,10 +12,9 @@ from sqlalchemy import func
 
 from ichnaea.db import CellMeasure
 from ichnaea.db import Measure
-from ichnaea.db import Score
-from ichnaea.db import User
 from ichnaea.db import WifiMeasure
 from ichnaea.content.stats import histogram
+from ichnaea.content.stats import leaders
 from ichnaea.content.stats import map_csv
 
 
@@ -96,17 +95,7 @@ class ContentViews(Layout):
         value = session.query(func.count(distinct(WifiMeasure.key))).first()[0]
         metrics.append({'name': 'Unique Wifi APs', 'value': value})
 
-        score_rows = session.query(
-            Score).order_by(Score.value.desc()).limit(10).all()
-        user_rows = session.query(User).all()
-        users = {}
-        for user in user_rows:
-            users[user.id] = (user.token, user.nickname)
-
-        for score in score_rows:
-            token, nickname = users.get(score.id, ('', 'anonymous'))
-            result['leaders'].append(
-                {'token': token[:8], 'nickname': nickname, 'num': score.value})
+        result['leaders'] = leaders(session)
         return result
 
 

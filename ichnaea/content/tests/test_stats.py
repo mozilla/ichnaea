@@ -1,7 +1,10 @@
 from datetime import datetime
 from datetime import timedelta
+from uuid import uuid4
 
 from ichnaea.db import Measure
+from ichnaea.db import Score
+from ichnaea.db import User
 from ichnaea.tests.base import DBTestCase
 
 
@@ -49,3 +52,27 @@ class TestStats(DBTestCase):
         text = result.replace('\r', '').strip('\n')
         text = text.split('\n')
         self.assertEqual(text, ['lat,lon,value', '1.0,2.0,3', '2.0,3.0,2'])
+
+    def test_leaders(self):
+        from ichnaea.content.stats import leaders
+        session = self.db_master_session
+        test_data = []
+        for i in range(20):
+            test_data.append((uuid4().hex, 7))
+        highest = uuid4().hex
+        test_data.append((highest, 10))
+        lowest = uuid4().hex
+        test_data.append((lowest, 5))
+        for uid, value in test_data:
+            user = User(token=uid, nickname=u'nick')
+            session.add(user)
+            session.flush()
+            score = Score(userid=user.id, value=value)
+            session.add(score)
+        session.commit()
+        # check the result
+        result = leaders(session)
+        self.assertEqual(len(result), 10)
+        self.assertEqual(result[0]['token'], highest[:8])
+        self.assertEqual(result[0]['num'], 10)
+        self.assertTrue(lowest not in [r['token'] for r in result])
