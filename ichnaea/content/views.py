@@ -7,15 +7,13 @@ from pyramid.renderers import get_renderer
 from pyramid.response import FileResponse
 from pyramid.response import Response
 from pyramid.view import view_config
-from sqlalchemy import distinct
-from sqlalchemy import func
 
-from ichnaea.db import CellMeasure
-from ichnaea.db import Measure
-from ichnaea.db import WifiMeasure
-from ichnaea.content.stats import histogram
-from ichnaea.content.stats import leaders
-from ichnaea.content.stats import map_csv
+from ichnaea.content.stats import (
+    global_stats,
+    histogram,
+    leaders,
+    map_csv,
+)
 
 
 HERE = os.path.dirname(__file__)
@@ -79,22 +77,7 @@ class ContentViews(Layout):
     def stats_view(self):
         session = self.request.db_slave_session
         result = {'leaders': [], 'metrics': [], 'page_title': 'Statistics'}
-        metrics = result['metrics']
-        value = session.query(func.count(Measure.id)).first()[0]
-        metrics.append({'name': 'Locations', 'value': value})
-        value = session.query(func.count(CellMeasure.id)).first()[0]
-        metrics.append({'name': 'Cells', 'value': value})
-        value = session.query(
-            CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
-            CellMeasure.lac, CellMeasure.cid).\
-            group_by(CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
-                     CellMeasure.lac, CellMeasure.cid).count()
-        metrics.append({'name': 'Unique Cells', 'value': value})
-        value = session.query(func.count(WifiMeasure.id)).first()[0]
-        metrics.append({'name': 'Wifi APs', 'value': value})
-        value = session.query(func.count(distinct(WifiMeasure.key))).first()[0]
-        metrics.append({'name': 'Unique Wifi APs', 'value': value})
-
+        result['metrics'] = global_stats(session)
         result['leaders'] = leaders(session)
         return result
 

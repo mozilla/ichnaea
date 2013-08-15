@@ -1,12 +1,15 @@
 from datetime import datetime
-from uuid import uuid4
 
 from pyramid.testing import DummyRequest
 from pyramid.testing import setUp
 from pyramid.testing import tearDown
 from unittest2 import TestCase
 
-from ichnaea.db import Measure
+from ichnaea.db import (
+    CellMeasure,
+    Measure,
+    WifiMeasure,
+)
 from ichnaea.tests.base import AppTestCase
 
 
@@ -105,36 +108,27 @@ class TestStats(AppTestCase):
         return ContentViews(request)
 
     def test_stats(self):
-        app = self.app
-        app.get('/stats', status=200)
-        uid = uuid4().hex
-        cell1 = {"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}
-        cell2 = {"mcc": 123, "mnc": 1, "lac": 3, "cid": 456}
-        cell3 = {"mcc": 123, "mnc": 1, "lac": 4, "cid": 456}
-        app.post_json(
-            '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0,
-                 "wifi": [{"key": "a"}], "cell": [cell1, cell2]},
-                {"lat": 2.0, "lon": 3.0,
-                 "wifi": [{"key": "b"}], "cell": [cell2, cell3]},
-                {"lat": 2.0, "lon": 3.0,
-                 "wifi": [{"key": "b"}], "cell": [cell3, cell3]},
-            ]},
-            headers={'X-Token': uid, 'X-Nickname': 'nick'},
-            status=204)
+        session = self.db_slave_session
+        session.add(Measure(lat=10000000, lon=20000000))
+        session.add(Measure(lat=20000000, lon=30000000))
+        session.add(Measure(lat=30000000, lon=40000000))
+        session.add(CellMeasure(lat=10000000, lon=20000000, mcc=1))
+        session.add(CellMeasure(lat=10000000, lon=20000000, mcc=1))
+        session.add(WifiMeasure(lat=10000000, lon=20000000, key='a'))
+        session.add(WifiMeasure(lat=10000000, lon=20000000, key='b'))
+        session.commit()
         request = DummyRequest()
-        request.db_slave_session = self.db_master_session
+        request.db_slave_session = self.db_slave_session
         inst = self._make_view(request)
         result = inst.stats_view()
         self.assertEqual(result['page_title'], 'Statistics')
-        self.assertEqual(result['leaders'],
-                         [{'nickname': 'nick', 'num': 3, 'token': uid[:8]}])
+        self.assertEqual(result['leaders'], [])
         self.assertEqual(
             result['metrics'],
             [{'name': 'Locations', 'value': 3},
-             {'name': 'Cells', 'value': 6},
-             {'name': 'Unique Cells', 'value': 3},
-             {'name': 'Wifi APs', 'value': 3},
+             {'name': 'Cells', 'value': 2},
+             {'name': 'Unique Cells', 'value': 1},
+             {'name': 'Wifi APs', 'value': 2},
              {'name': 'Unique Wifi APs', 'value': 2}])
 
 
