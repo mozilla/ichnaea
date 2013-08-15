@@ -1,5 +1,4 @@
 from datetime import datetime
-from datetime import timedelta
 from uuid import uuid4
 
 from pyramid.testing import DummyRequest
@@ -56,9 +55,7 @@ class TestFunctionalContent(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifi = '[{"key": "a"}]'
-        measures = [Measure(lat=30000000, lon=40000000, wifi=wifi)]
-        for i in range(101):
-            measures.append(Measure(lat=10000000, lon=20000000, wifi=wifi))
+        measures = []
         for i in range(11):
             measures.append(Measure(lat=20000000, lon=30000000, wifi=wifi))
         session.add_all(measures)
@@ -67,7 +64,7 @@ class TestFunctionalContent(AppTestCase):
         self.assertEqual(result.content_type, 'text/plain')
         text = result.text.replace('\r', '').strip('\n')
         text = text.split('\n')
-        self.assertEqual(text, ['lat,lon,value', '1.0,2.0,3', '2.0,3.0,2'])
+        self.assertEqual(text, ['lat,lon,value', '2.0,3.0,2'])
 
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)
@@ -75,29 +72,19 @@ class TestFunctionalContent(AppTestCase):
     def test_stats_json(self):
         app = self.app
         today = datetime.utcnow().date()
-        yesterday = (today - timedelta(1)).strftime('%Y-%m-%d')
-        two_days = (today - timedelta(2)).strftime('%Y-%m-%d')
-        long_ago = (today - timedelta(40)).strftime('%Y-%m-%d')
         today = today.strftime('%Y-%m-%d')
         session = self.db_slave_session
         wifi = '[{"key": "a"}]'
         measures = [
             Measure(lat=10000000, lon=20000000, time=today, wifi=wifi),
             Measure(lat=10000000, lon=20000000, time=today, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, time=yesterday, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, time=two_days, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, time=two_days, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, time=two_days, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, time=long_ago, wifi=wifi),
         ]
         session.add_all(measures)
         session.commit()
         result = app.get('/stats.json', status=200)
         self.assertEqual(
             result.json, {'histogram': [
-                {'num': 4, 'day': two_days},
-                {'num': 5, 'day': yesterday},
-                {'num': 7, 'day': today},
+                {'num': 2, 'day': today},
             ]}
         )
 
