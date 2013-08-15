@@ -157,7 +157,6 @@ def submit_request(request):
 
     if userid is not None:
         process_score(userid, points, session)
-        logger.debug('submit_batch %s: %s' % (userid, points))
 
     session.add_all(session_objects)
     session.commit()
