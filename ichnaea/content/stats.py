@@ -1,4 +1,7 @@
+import csv
+from cStringIO import StringIO
 import datetime
+import math
 from operator import itemgetter
 
 from sqlalchemy import func
@@ -23,3 +26,19 @@ def histogram(session):
         total -= num
     result.reverse()
     return result
+
+
+def map_csv(session):
+    select = text("select round(lat / 10000) as lat1, "
+                  "round(lon / 10000) as lon1, count(*) as num "
+                  "from measure group by lat1, lon1 having num > 10 "
+                  "order by lat1, lon1")
+    result = session.execute(select)
+    rows = StringIO()
+    csvwriter = csv.writer(rows)
+    csvwriter.writerow(('lat', 'lon', 'value'))
+    for lat, lon, num in result.fetchall():
+        # use a logarithmic scale to give lesser used regions a chance
+        num = int(math.ceil(math.log10(num)))
+        csvwriter.writerow((int(lat) / 1000.0, int(lon) / 1000.0, num))
+    return rows.getvalue()

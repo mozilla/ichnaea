@@ -1,6 +1,3 @@
-import csv
-from cStringIO import StringIO
-import math
 import os
 
 from pyramid.decorator import reify
@@ -12,7 +9,6 @@ from pyramid.response import Response
 from pyramid.view import view_config
 from sqlalchemy import distinct
 from sqlalchemy import func
-from sqlalchemy.sql.expression import text
 
 from ichnaea.db import CellMeasure
 from ichnaea.db import Measure
@@ -20,6 +16,7 @@ from ichnaea.db import Score
 from ichnaea.db import User
 from ichnaea.db import WifiMeasure
 from ichnaea.content.stats import histogram
+from ichnaea.content.stats import map_csv
 
 
 HERE = os.path.dirname(__file__)
@@ -68,19 +65,7 @@ class ContentViews(Layout):
     @view_config(renderer='string', name="map.csv", http_cache=300)
     def map_csv(self):
         session = self.request.db_slave_session
-        select = text("select round(lat / 10000) as lat1, "
-                      "round(lon / 10000) as lon1, count(*) as num "
-                      "from measure group by lat1, lon1 having num > 10 "
-                      "order by lat1, lon1")
-        result = session.execute(select)
-        rows = StringIO()
-        csvwriter = csv.writer(rows)
-        csvwriter.writerow(('lat', 'lon', 'value'))
-        for lat, lon, num in result.fetchall():
-            # use a logarithmic scale to give lesser used regions a chance
-            num = int(math.ceil(math.log10(num)))
-            csvwriter.writerow((int(lat) / 1000.0, int(lon) / 1000.0, num))
-        return rows.getvalue()
+        return map_csv(session)
 
     @view_config(renderer='templates/map.pt', name="map", http_cache=300)
     def map_view(self):
