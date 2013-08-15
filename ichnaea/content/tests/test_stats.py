@@ -34,13 +34,8 @@ class TestStats(DBTestCase):
         session.add(WifiMeasure(lat=m2, lon=m3, key='b'))
         session.commit()
         result = global_stats(session)
-        self.assertEqual(
-            result,
-            [{'name': 'Locations', 'value': 3},
-             {'name': 'Cells', 'value': 6},
-             {'name': 'Unique Cells', 'value': 3},
-             {'name': 'Wifi APs', 'value': 3},
-             {'name': 'Unique Wifi APs', 'value': 2}])
+        self.assertDictEqual(result, {'location': 3, 'cell': 6,
+                             'unique-cell': 3, 'wifi': 3, 'unique-wifi': 2})
 
     def test_histogram(self):
         from ichnaea.content.stats import histogram

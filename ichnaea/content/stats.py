@@ -16,21 +16,17 @@ from ichnaea.db import WifiMeasure
 
 
 def global_stats(session):
-    result = []
-    value = session.query(func.count(Measure.id)).first()[0]
-    result.append({'name': 'Locations', 'value': value})
-    value = session.query(func.count(CellMeasure.id)).first()[0]
-    result.append({'name': 'Cells', 'value': value})
-    value = session.query(
+    result = {}
+    result['location'] = session.query(func.count(Measure.id)).first()[0]
+    result['cell'] = session.query(func.count(CellMeasure.id)).first()[0]
+    result['unique-cell'] = session.query(
         CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
         CellMeasure.lac, CellMeasure.cid).\
         group_by(CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
                  CellMeasure.lac, CellMeasure.cid).count()
-    result.append({'name': 'Unique Cells', 'value': value})
-    value = session.query(func.count(WifiMeasure.id)).first()[0]
-    result.append({'name': 'Wifi APs', 'value': value})
-    value = session.query(func.count(distinct(WifiMeasure.key))).first()[0]
-    result.append({'name': 'Unique Wifi APs', 'value': value})
+    result['wifi'] = session.query(func.count(WifiMeasure.id)).first()[0]
+    result['unique-wifi'] = session.query(
+        func.count(distinct(WifiMeasure.key))).first()[0]
     return result
 
 

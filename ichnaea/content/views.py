@@ -77,7 +77,16 @@ class ContentViews(Layout):
     def stats_view(self):
         session = self.request.db_slave_session
         result = {'leaders': [], 'metrics': [], 'page_title': 'Statistics'}
-        result['metrics'] = global_stats(session)
+        metrics = global_stats(session)
+        metric_names = [
+            ('location', 'Locations'),
+            ('cell', 'Cells'),
+            ('unique-cell', 'Unique Cells'),
+            ('wifi', 'Wifi APs'),
+            ('unique-wifi', 'Unique Wifi APs'),
+        ]
+        for mid, name in metric_names:
+            result['metrics'].append({'name': name, 'value': metrics[mid]})
         result['leaders'] = leaders(session)
         return result
 
