@@ -72,6 +72,9 @@ class TestFunctionalContent(AppTestCase):
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)
 
+    def test_stats(self):
+        self.app.get('/stats', status=200)
+
     def test_stats_json(self):
         app = self.app
         today = datetime.utcnow().date()
