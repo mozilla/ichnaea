@@ -7,6 +7,7 @@ __version__ = '0.1'
 here = os.path.abspath(os.path.dirname(__file__))
 
 requires = [
+    'celery',
     'colander',
     'configparser',
     'cornice',
