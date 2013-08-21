@@ -1,11 +1,10 @@
-from __future__ import absolute_import
 from datetime import timedelta
 
 from celery import Celery
 from celery.schedules import crontab
 
 
-celery = Celery('ichnaea.celery')
+celery = Celery('ichnaea.worker')
 
 celery.conf.update(
     # testing
@@ -63,6 +62,3 @@ celery.conf.update(
         },
     },
 )
-
-if __name__ == '__main__':
-    celery.start()

@@ -1,4 +1,4 @@
-from ichnaea.celery import celery
+from ichnaea.worker import celery
 
 
 @celery.task(acks_late=False, ignore_result=True)
