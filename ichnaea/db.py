@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 from sqlalchemy import create_engine
 from sqlalchemy import (
     Column,
@@ -266,6 +268,17 @@ def db_slave_session(request):
         db = request.registry.db_slave
         request._db_slave_session = session = db.session()
     return session
+
+
+@contextmanager
+def db_worker_session(database):
+    try:
+        session = database.session()
+        yield session
+    except Exception:
+        session.rollback()
+    finally:
+        session.close()
 
 
 def db_tween_factory(handler, registry):

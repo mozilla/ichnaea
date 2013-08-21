@@ -1,26 +1,48 @@
 import os
-from datetime import timedelta
+# from datetime import timedelta
 
 from celery import Celery
-from celery.schedules import crontab
+from celery.signals import worker_init
+# from celery.schedules import crontab
 
 from ichnaea import config
+from ichnaea.db import Database
+
 
 CELERY_IMPORTS = ['ichnaea.tasks']
 CELERYBEAT_SCHEDULE = {
-    'add-every-day': {
-        'task': 'ichnaea.tasks.add',
-        'schedule': crontab(hour=0, minute=17),
-        'args': (16, 16),
-    },
-    'add-often': {
-        'task': 'ichnaea.tasks.add',
-        'schedule': timedelta(seconds=5),
-        'args': (6, 9),
-    },
+    # 'add-every-day': {
+    #     'task': 'ichnaea.tasks.add_measure',
+    #     'schedule': crontab(hour=0, minute=17),
+    #     'args': (16, 16),
+    # },
+    # 'add-often': {
+    #     'task': 'ichnaea.tasks.add_measure',
+    #     'schedule': timedelta(seconds=5),
+    #     'args': (6, 9),
+    # },
 }
 
 celery = Celery('ichnaea.worker')
+
+
+def attach_database(app, _db_master=None):
+    # called manually during tests
+    settings = config().get_map('ichnaea')
+    if _db_master is None:  # pragma: no cover
+        db_master = Database(
+            settings['db_master'],
+            socket=settings.get('db_master_socket'),
+        )
+    else:
+        db_master = _db_master
+    app.db_master = db_master
+
+
+@worker_init.connect
+def init_worker(signal, sender):  # pragma: no cover
+    # called automatically when `celery worker` is started
+    attach_database(sender.app)
 
 
 def configure(celery=celery):

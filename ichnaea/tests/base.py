@@ -6,6 +6,8 @@ from webtest import TestApp
 from ichnaea import main
 from ichnaea.db import _Model
 from ichnaea.db import Database
+from ichnaea.worker import attach_database
+from ichnaea.worker import celery
 
 SQLURI = os.environ['SQLURI']
 SQLSOCKET = os.environ['SQLSOCKET']
@@ -74,3 +76,20 @@ class DBTestCase(TestCase, DBIsolation):
 
     def tearDown(self):
         self.teardown_session()
+
+
+class CeleryTestCase(DBTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super(CeleryTestCase, cls).setUpClass()
+        cls._old_db = getattr(celery, 'db_master', None)
+        attach_database(celery, cls.db_master)
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls._old_db is not None:
+            setattr(celery, 'db_master', cls._old_db)
+        else:
+            delattr(celery, 'db_master')
+        super(CeleryTestCase, cls).tearDownClass()
