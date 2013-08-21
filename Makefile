@@ -50,7 +50,7 @@ clean:
 	rm -rf $(BUILD_DIRS)
 
 test: mysql
-	SQLURI=$(SQLURI) SQLSOCKET=$(SQLSOCKET) \
+	SQLURI=$(SQLURI) SQLSOCKET=$(SQLSOCKET) CELERY_ALWAYS_EAGER=true \
 	$(BIN)/nosetests -s -d -v --with-coverage --cover-package ichnaea ichnaea
 
 bin/sphinx-build:

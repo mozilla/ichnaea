@@ -27,12 +27,9 @@ def configure(celery=celery):
     conf = config()
     if conf.has_section('celery'):
         section = conf.get_map('celery')
-    else:
+    else:  # pragma: no cover
         section = {}
 
-    # testing fallbacks
-    sqluri = os.environ.get('SQLURI', '')
-    sqlsocket = os.environ.get('SQLSOCKET', '')
     database_options = {
         "pool_recycle": 3600,
         "pool_size": 10,
@@ -40,27 +37,45 @@ def configure(celery=celery):
         "isolation_level": "READ COMMITTED",
     }
 
-    broker_url = section.get('broker_url', sqluri)
+    # testing overrides
+    sqluri = os.environ.get('SQLURI', '')
+    sqlsocket = os.environ.get('SQLSOCKET', '')
+
+    if sqluri:
+        broker_url = sqluri
+        result_url = sqluri
+    else:  # pragma: no cover
+        broker_url = section['broker_url']
+        result_url = section['result_url']
+
     broker_url = 'sqla+' + broker_url
-    broker_socket = section.get('broker_socket', sqlsocket)
+
+    if sqlsocket:
+        broker_socket = sqlsocket
+        result_socket = sqluri
+    else:  # pragma: no cover
+        broker_socket = section['broker_socket']
+        result_socket = section['result_socket']
+
     broker_connect_args = {"charset": "utf8"}
     if broker_socket:
         broker_connect_args['unix_socket'] = broker_socket
     broker_options = database_options.copy()
     broker_options['connect_args'] = broker_connect_args
 
-    result_url = section.get('result_url', sqluri)
-    result_socket = section.get('result_socket', sqlsocket)
     result_connect_args = {"charset": "utf8"}
     if result_socket:
         result_connect_args['unix_socket'] = result_socket
     result_options = database_options.copy()
     result_options['connect_args'] = result_connect_args
 
+    # testing setting
+    always_eager = bool(os.environ.get('CELERY_ALWAYS_EAGER', False))
+
     celery.conf.update(
         # testing
-        # CELERY_ALWAYS_EAGER=True,
-        # CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
+        CELERY_ALWAYS_EAGER=always_eager,
+        CELERY_EAGER_PROPAGATES_EXCEPTIONS=always_eager,
         # broker
         BROKER_URL=broker_url,
         BROKER_TRANSPORT_OPTIONS=broker_options,
