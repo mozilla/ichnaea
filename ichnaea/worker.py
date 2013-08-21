@@ -42,6 +42,8 @@ def attach_database(app, _db_master=None):
 @worker_init.connect
 def init_worker(signal, sender):  # pragma: no cover
     # called automatically when `celery worker` is started
+    # TODO: unfortunately this is the controlling worker instance
+    # and not each individual worker sub-process :(
     attach_database(sender.app)
 
 

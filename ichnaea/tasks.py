@@ -8,14 +8,9 @@ from ichnaea.worker import celery
 class DatabaseTask(Task):
     abstract = True
 
-    @classmethod
-    def on_bound(cls, app):
-        super(DatabaseTask, cls).on_bound(app)
-        cls.db_master = app.db_master
-
     def db_session(self):
         # returns a context manager
-        return db_worker_session(self.db_master)
+        return db_worker_session(self.app.db_master)
 
 
 @celery.task(base=DatabaseTask, acks_late=False, ignore_result=True)
