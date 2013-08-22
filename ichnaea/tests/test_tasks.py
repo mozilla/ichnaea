@@ -1,13 +1,33 @@
 from sqlalchemy.orm.exc import FlushError
 
 from ichnaea.db import Measure
+from ichnaea.tasks import DatabaseTask
 from ichnaea.tests.base import CeleryTestCase
+from ichnaea.worker import celery
+
+
+@celery.task(base=DatabaseTask)
+def add_measure(lat=0, lon=0, fail_counter=None):
+    try:
+        if fail_counter:
+            fail_counter[0] += 1
+        with add_measure.db_session() as session:
+            measure = Measure(lat=lat, lon=lon)
+            session.add(measure)
+            if fail_counter:
+                session.flush()
+                measure2 = Measure(lat=0, lon=0)
+                # provoke error via duplicate id
+                measure2.id = measure.id
+                session.add(measure2)
+            session.commit()
+    except Exception as exc:
+        raise add_measure.retry(exc=exc)
 
 
 class TestTasks(CeleryTestCase):
 
     def test_add_measure(self):
-        from ichnaea.tasks import add_measure
         result = add_measure.delay(lat=12345678, lon=23456789)
         self.assertTrue(result.get() is None)
         self.assertTrue(result.successful())
@@ -18,7 +38,6 @@ class TestTasks(CeleryTestCase):
         self.assertEqual(result.lon, 23456789)
 
     def test_add_measure_fail(self):
-        from ichnaea.tasks import add_measure
         counter = [0]
         self.assertRaises(
             FlushError, add_measure.delay, fail_counter=counter)
