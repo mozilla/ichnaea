@@ -7,6 +7,8 @@ from ichnaea.worker import celery
 
 class DatabaseTask(Task):
     abstract = True
+    acks_late = True
+    ignore_result = False
     max_retries = 3
 
     def db_session(self):
@@ -14,7 +16,7 @@ class DatabaseTask(Task):
         return db_worker_session(self.app.db_master)
 
 
-@celery.task(base=DatabaseTask, acks_late=False, ignore_result=True)
+@celery.task(base=DatabaseTask)
 def add_measure(lat=0, lon=0, fail_counter=None):
     try:
         if fail_counter:
