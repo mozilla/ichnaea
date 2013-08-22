@@ -277,6 +277,7 @@ def db_worker_session(database):
         yield session
     except Exception:
         session.rollback()
+        raise
     finally:
         session.close()
 

@@ -7,6 +7,7 @@ from ichnaea.worker import celery
 
 class DatabaseTask(Task):
     abstract = True
+    max_retries = 3
 
     def db_session(self):
         # returns a context manager
@@ -14,8 +15,19 @@ class DatabaseTask(Task):
 
 
 @celery.task(base=DatabaseTask, acks_late=False, ignore_result=True)
-def add_measure(lat=0, lon=0):
-    with add_measure.db_session() as session:
-        measure = Measure(lat=lat, lon=lon)
-        session.add(measure)
-        session.commit()
+def add_measure(lat=0, lon=0, fail_counter=None):
+    try:
+        if fail_counter:
+            fail_counter[0] += 1
+        with add_measure.db_session() as session:
+            measure = Measure(lat=lat, lon=lon)
+            session.add(measure)
+            if fail_counter:
+                session.flush()
+                measure2 = Measure(lat=0, lon=0)
+                # provoke error via duplicate id
+                measure2.id = measure.id
+                session.add(measure2)
+            session.commit()
+    except Exception as exc:
+        raise add_measure.retry(exc=exc)
