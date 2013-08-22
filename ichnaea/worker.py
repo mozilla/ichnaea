@@ -2,7 +2,8 @@ import os
 # from datetime import timedelta
 
 from celery import Celery
-from celery.signals import worker_init
+from celery.app import app_or_default
+from celery.signals import worker_process_init
 # from celery.schedules import crontab
 
 from ichnaea import config
@@ -39,12 +40,12 @@ def attach_database(app, _db_master=None):
     app.db_master = db_master
 
 
-@worker_init.connect
-def init_worker(signal, sender):  # pragma: no cover
+@worker_process_init.connect
+def init_worker_process(signal, sender, **kw):  # pragma: no cover
     # called automatically when `celery worker` is started
-    # TODO: unfortunately this is the controlling worker instance
-    # and not each individual worker sub-process :(
-    attach_database(sender.app)
+    # get the app in the current worker process
+    app = app_or_default()
+    attach_database(app)
 
 
 def configure(celery=celery):
