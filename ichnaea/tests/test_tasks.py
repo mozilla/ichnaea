@@ -26,7 +26,7 @@ def add_measure(lat=0, lon=0, fail_counter=None, fails=10):
         raise add_measure.retry(exc=exc)
 
 
-class TestTasks(CeleryTestCase):
+class TestTaskDatabaseIntegration(CeleryTestCase):
 
     def test_add_measure(self):
         result = add_measure.delay(lat=12345678, lon=23456789)

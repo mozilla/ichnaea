@@ -49,6 +49,21 @@ class DBIsolation(object):
             trans.commit()
 
 
+class CeleryIsolation(object):
+
+    @classmethod
+    def attach_database(cls):
+        cls._old_db = getattr(celery, 'db_master', None)
+        attach_database(celery, cls.db_master)
+
+    @classmethod
+    def detach_database(cls):
+        if cls._old_db is not None:
+            setattr(celery, 'db_master', cls._old_db)
+        else:
+            delattr(celery, 'db_master')
+
+
 class AppTestCase(TestCase, DBIsolation):
 
     @classmethod
@@ -78,18 +93,27 @@ class DBTestCase(TestCase, DBIsolation):
         self.teardown_session()
 
 
-class CeleryTestCase(DBTestCase):
+class CeleryTestCase(DBTestCase, CeleryIsolation):
 
     @classmethod
     def setUpClass(cls):
         super(CeleryTestCase, cls).setUpClass()
-        cls._old_db = getattr(celery, 'db_master', None)
-        attach_database(celery, cls.db_master)
+        super(CeleryTestCase, cls).attach_database()
 
     @classmethod
     def tearDownClass(cls):
-        if cls._old_db is not None:
-            setattr(celery, 'db_master', cls._old_db)
-        else:
-            delattr(celery, 'db_master')
+        super(CeleryTestCase, cls).detach_database()
         super(CeleryTestCase, cls).tearDownClass()
+
+
+class CeleryAppTestCase(AppTestCase, CeleryIsolation):
+
+    @classmethod
+    def setUpClass(cls):
+        super(CeleryAppTestCase, cls).setUpClass()
+        super(CeleryAppTestCase, cls).attach_database()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(CeleryAppTestCase, cls).detach_database()
+        super(CeleryAppTestCase, cls).tearDownClass()
