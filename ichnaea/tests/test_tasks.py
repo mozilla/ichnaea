@@ -1,6 +1,12 @@
+from datetime import datetime
+from datetime import timedelta
+
 from sqlalchemy.orm.exc import FlushError
 
-from ichnaea.db import Measure
+from ichnaea.db import (
+    Measure,
+    Stat,
+)
 from ichnaea.tasks import DatabaseTask
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.worker import celery
@@ -57,3 +63,38 @@ class TestTaskDatabaseIntegration(CeleryTestCase):
         session = self.db_master_session
         result = session.query(Measure).count()
         self.assertEqual(result, 1)
+
+
+class TestStats(CeleryTestCase):
+
+    def test_histogram(self):
+        from ichnaea.tasks import histogram
+        session = self.db_master_session
+        today = datetime.utcnow().date()
+        yesterday = (today - timedelta(1))
+        two_days = (today - timedelta(2))
+        long_ago = (today - timedelta(40))
+        wifi = '[{"key": "a"}]'
+        measures = [
+            Measure(lat=10000000, lon=20000000, time=today, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, time=today, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, time=yesterday, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, time=two_days, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, time=two_days, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, time=two_days, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, time=long_ago, wifi=wifi),
+        ]
+        session.add_all(measures)
+        session.commit()
+
+        result = histogram.delay()
+        result.get()
+
+        stats = session.query(Stat).order_by(Stat.time).all()
+        self.assertEqual(len(stats), 3)
+        self.assertEqual(stats[0].time, two_days)
+        self.assertEqual(stats[1].time, yesterday)
+        self.assertEqual(stats[2].time, today)
+        self.assertEqual(stats[0].value, 3)
+        self.assertEqual(stats[1].value, 1)
+        self.assertEqual(stats[2].value, 2)
