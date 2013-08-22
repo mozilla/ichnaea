@@ -9,8 +9,8 @@ from ichnaea.db import Database
 from ichnaea.worker import attach_database
 from ichnaea.worker import celery
 
-SQLURI = os.environ['SQLURI']
-SQLSOCKET = os.environ['SQLSOCKET']
+SQLURI = os.environ.get('SQLURI')
+SQLSOCKET = os.environ.get('SQLSOCKET')
 
 
 def _make_db(create=True):

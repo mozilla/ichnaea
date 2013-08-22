@@ -7,7 +7,7 @@ from ichnaea.worker import celery
 
 
 @celery.task(base=DatabaseTask)
-def add_measure(lat=0, lon=0, fail_counter=None):
+def add_measure(lat=0, lon=0, fail_counter=None, fails=10):
     try:
         if fail_counter:
             fail_counter[0] += 1
@@ -19,7 +19,8 @@ def add_measure(lat=0, lon=0, fail_counter=None):
                 measure2 = Measure(lat=0, lon=0)
                 # provoke error via duplicate id
                 measure2.id = measure.id
-                session.add(measure2)
+                if fail_counter[0] < fails:
+                    session.add(measure2)
             session.commit()
     except Exception as exc:
         raise add_measure.retry(exc=exc)
@@ -46,3 +47,13 @@ class TestTasks(CeleryTestCase):
         session = self.db_master_session
         result = session.query(Measure).count()
         self.assertEqual(result, 0)
+
+    def test_add_measure_retry(self):
+        counter = [0]
+        result = add_measure.delay(fail_counter=counter, fails=1)
+        self.assertTrue(result.get() is None)
+        self.assertEqual(counter[0], 1)
+
+        session = self.db_master_session
+        result = session.query(Measure).count()
+        self.assertEqual(result, 1)
