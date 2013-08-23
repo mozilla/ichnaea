@@ -41,13 +41,13 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>User (token)</th>
+                        <th>User</th>
                         <th>Points</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr tal:repeat="row leaders">
-                        <td>${row.nickname} (${row.token}&hellip;)</td>
+                        <td>${row.nickname}</td>
                         <td>${row.num}</td>
                     </tr>
                 </tbody>
