@@ -83,8 +83,8 @@ def configure(celery=celery):
         broker_socket = sqlsocket
         result_socket = sqluri
     else:  # pragma: no cover
-        broker_socket = section['broker_socket']
-        result_socket = section['result_socket']
+        broker_socket = section.get('broker_socket')
+        result_socket = section.get('result_socket')
 
     broker_connect_args = {"charset": "utf8"}
     if broker_socket:
