@@ -9,6 +9,7 @@ from ichnaea.db import (
     User,
     WifiMeasure,
 )
+from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.base import DBTestCase
 
 
@@ -36,33 +37,6 @@ class TestStats(DBTestCase):
         result = global_stats(session)
         self.assertDictEqual(result, {'location': 3, 'cell': 6,
                              'unique-cell': 3, 'wifi': 3, 'unique-wifi': 2})
-
-    def test_histogram(self):
-        from ichnaea.content.stats import histogram
-        session = self.db_master_session
-        today = datetime.utcnow().date()
-        yesterday = (today - timedelta(1)).strftime('%Y-%m-%d')
-        two_days = (today - timedelta(2)).strftime('%Y-%m-%d')
-        long_ago = (today - timedelta(40)).strftime('%Y-%m-%d')
-        today = today.strftime('%Y-%m-%d')
-        wifi = '[{"key": "a"}]'
-        measures = [
-            Measure(lat=10000000, lon=20000000, created=today, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=today, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=yesterday, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=two_days, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=two_days, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=two_days, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=long_ago, wifi=wifi),
-        ]
-        session.add_all(measures)
-        session.commit()
-        result = histogram(session)
-        self.assertEqual(result, [
-            {'num': 4, 'day': two_days},
-            {'num': 5, 'day': yesterday},
-            {'num': 7, 'day': today},
-        ])
 
     def test_map_csv(self):
         from ichnaea.content.stats import map_csv
@@ -103,3 +77,38 @@ class TestStats(DBTestCase):
         self.assertEqual(result[0]['token'], highest[:8])
         self.assertEqual(result[0]['num'], 10)
         self.assertTrue(lowest not in [r['token'] for r in result])
+
+
+class TestAsyncStats(CeleryTestCase):
+
+    def test_histogram(self):
+        from ichnaea.content.stats import histogram
+        from ichnaea import tasks
+        session = self.db_master_session
+        today = datetime.utcnow().date()
+        yesterday = (today - timedelta(1)).strftime('%Y-%m-%d')
+        two_days = (today - timedelta(2)).strftime('%Y-%m-%d')
+        long_ago = (today - timedelta(40)).strftime('%Y-%m-%d')
+        today = today.strftime('%Y-%m-%d')
+        wifi = '[{"key": "a"}]'
+        measures = [
+            Measure(lat=10000000, lon=20000000, created=today, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, created=today, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, created=yesterday, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, created=two_days, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, created=two_days, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, created=two_days, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, created=long_ago, wifi=wifi),
+        ]
+        session.add_all(measures)
+        session.commit()
+
+        result = tasks.histogram.delay(start=60)
+        added = result.get()
+        self.assertEqual(added, 4)
+
+        result = histogram(session)
+        self.assertEqual(result, [
+            {'num': 4, 'day': two_days},
+            {'num': 5, 'day': yesterday},
+        ])

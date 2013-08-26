@@ -1,4 +1,5 @@
 from datetime import datetime
+from datetime import timedelta
 
 from pyramid.testing import DummyRequest
 from pyramid.testing import setUp
@@ -9,6 +10,7 @@ from ichnaea.db import (
     CellMeasure,
     Measure,
     WifiMeasure,
+    Stat,
 )
 from ichnaea.tests.base import AppTestCase
 
@@ -78,19 +80,17 @@ class TestFunctionalContent(AppTestCase):
     def test_stats_json(self):
         app = self.app
         today = datetime.utcnow().date()
-        today = today.strftime('%Y-%m-%d')
+        yesterday = today - timedelta(1)
+        yesterday = yesterday.strftime('%Y-%m-%d')
         session = self.db_slave_session
-        wifi = '[{"key": "a"}]'
-        measures = [
-            Measure(lat=10000000, lon=20000000, time=today, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, time=today, wifi=wifi),
-        ]
-        session.add_all(measures)
+        stat = Stat(time=yesterday, value=2)
+        stat.name = 'location'
+        session.add(stat)
         session.commit()
         result = app.get('/stats.json', status=200)
         self.assertEqual(
             result.json, {'histogram': [
-                {'num': 2, 'day': today},
+                {'num': 2, 'day': yesterday},
             ]}
         )
 

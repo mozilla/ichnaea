@@ -1,18 +1,22 @@
 import csv
 from cStringIO import StringIO
 import datetime
+from datetime import timedelta
 import math
-from operator import itemgetter
 
 from sqlalchemy import distinct
 from sqlalchemy import func
 from sqlalchemy.sql.expression import text
 
-from ichnaea.db import CellMeasure
-from ichnaea.db import Measure
-from ichnaea.db import Score
-from ichnaea.db import User
-from ichnaea.db import WifiMeasure
+from ichnaea.db import (
+    CellMeasure,
+    Measure,
+    Score,
+    Stat,
+    STAT_TYPE,
+    User,
+    WifiMeasure,
+)
 
 
 def global_stats(session):
@@ -31,15 +35,27 @@ def global_stats(session):
 
 
 def histogram(session):
-    query = text("select date(created) as day, count(*) as num from measure "
-                 "where date_sub(curdate(), interval 30 day) <= created and "
-                 "date(created) <= curdate() group by date(created)")
-    rows = session.execute(query)
+    today = datetime.datetime.utcnow().date()
+    thirty_days = today - timedelta(days=30)
+    stat_key = STAT_TYPE['location']
+    rows = session.query(Stat.time, Stat.value).filter(
+        Stat.key == stat_key).filter(
+        Stat.time >= thirty_days).filter(
+        Stat.time < today).order_by(
+        Stat.time.desc()
+    )
     result = []
-    reverse_rows = sorted(rows.fetchall(), key=itemgetter(0), reverse=True)
-    total = session.query(func.count(Measure.id)).first()[0]
+    total = session.query(func.sum(Stat.value)).filter(
+        Stat.key == stat_key).filter(
+        Stat.time < today
+    )
+    total = total.first()[0]
+    if total is None:
+        total = 0
+    else:
+        total = int(total)
     # reverse sort data by day, then count down from total
-    for day, num in reverse_rows:
+    for day, num in rows.all():
         if isinstance(day, datetime.date):  # pragma: no cover
             day = day.strftime('%Y-%m-%d')
         result.append({'day': day, 'num': total})
