@@ -29,9 +29,9 @@ class TestSubmit(AppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        result = session.query(Measure).all()
-        self.assertEqual(len(result), 1)
-        item = result[0]
+        measure_result = session.query(Measure).all()
+        self.assertEqual(len(measure_result), 1)
+        item = measure_result[0]
         self.assertEqual(item.lat, 123456781)
         self.assertEqual(item.lon, 234567892)
         self.assertEqual(item.accuracy, 10)
@@ -49,9 +49,11 @@ class TestSubmit(AppTestCase):
         self.assertDictEqual(wanted[0], cell_data[0])
         self.assertTrue(item.wifi is None)
 
-        result = session.query(CellMeasure).all()
-        self.assertEqual(len(result), 1)
-        item = result[0]
+        cell_result = session.query(CellMeasure).all()
+        self.assertEqual(len(cell_result), 1)
+        item = cell_result[0]
+        self.assertEqual(item.measure_id, measure_result[0].id)
+        self.assertEqual(item.created, measure_result[0].created)
         self.assertEqual(item.lat, 123456781)
         self.assertEqual(item.lon, 234567892)
         self.assertEqual(item.accuracy, 10)
@@ -74,9 +76,9 @@ class TestSubmit(AppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        result = session.query(Measure).all()
-        self.assertEqual(len(result), 1)
-        item = result[0]
+        measure_result = session.query(Measure).all()
+        self.assertEqual(len(measure_result), 1)
+        item = measure_result[0]
         self.assertEqual(item.lat, 123456781)
         self.assertEqual(item.lon, 234567892)
         self.assertEqual(item.accuracy, 17)
@@ -86,9 +88,11 @@ class TestSubmit(AppTestCase):
         self.assertTrue('"key": "cd34"' in item.wifi)
         self.assertTrue(item.cell is None)
 
-        result = session.query(WifiMeasure).all()
-        self.assertEqual(len(result), 2)
-        item = result[0]
+        wifi_result = session.query(WifiMeasure).all()
+        self.assertEqual(len(wifi_result), 2)
+        item = wifi_result[0]
+        self.assertEqual(item.measure_id, measure_result[0].id)
+        self.assertEqual(item.created, measure_result[0].created)
         self.assertEqual(item.lat, 123456781)
         self.assertEqual(item.lon, 234567892)
         self.assertEqual(item.accuracy, 17)
@@ -97,6 +101,11 @@ class TestSubmit(AppTestCase):
         self.assertTrue(item.key in ("ab12", "cd34"))
         self.assertEqual(item.channel, 0)
         self.assertEqual(item.signal, 0)
+        item = wifi_result[1]
+        self.assertEqual(item.measure_id, measure_result[0].id)
+        self.assertEqual(item.created, measure_result[0].created)
+        self.assertEqual(item.lat, 123456781)
+        self.assertEqual(item.lon, 234567892)
 
     def test_ok_wifi_frequency(self):
         app = self.app

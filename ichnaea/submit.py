@@ -68,9 +68,10 @@ def process_time(measure, utcnow, utcmin):
     return measure
 
 
-def process_measure(data):
+def process_measure(data, utcnow, session):
     session_objects = []
     measure = Measure()
+    measure.created = utcnow
     measure.time = data['time']
     measure.lat = to_precise_int(data['lat'])
     measure.lon = to_precise_int(data['lon'])
@@ -78,6 +79,9 @@ def process_measure(data):
     measure.altitude = data['altitude']
     measure.altitude_accuracy = data['altitude_accuracy']
     measure.radio = RADIO_TYPE.get(data['radio'], -1)
+    # get measure.id set
+    session.add(measure)
+    session.flush()
     if data.get('cell'):
         cells, cell_data = process_cell(data['cell'], measure)
         measure.cell = dumps(cell_data)
@@ -87,7 +91,6 @@ def process_measure(data):
         measure.wifi = dumps(wifi_data)
         session_objects.extend(wifis)
 
-    session_objects.append(measure)
     return session_objects
 
 
@@ -96,6 +99,7 @@ def process_cell(entries, measure):
     cells = []
     for entry in entries:
         cell = CellMeasure(
+            measure_id=measure.id, created=measure.created,
             lat=measure.lat, lon=measure.lon, time=measure.time,
             accuracy=measure.accuracy, altitude=measure.altitude,
             altitude_accuracy=measure.altitude_accuracy,
@@ -128,6 +132,7 @@ def process_wifi(entries, measure):
                 # 5 GHz band
                 entry['channel'] = (freq - 5000) // 5
         wifi = WifiMeasure(
+            measure_id=measure.id, created=measure.created,
             lat=measure.lat, lon=measure.lon, time=measure.time,
             accuracy=measure.accuracy, altitude=measure.altitude,
             altitude_accuracy=measure.altitude_accuracy,
@@ -152,7 +157,7 @@ def submit_request(request):
     points = 0
     for measure in request.validated['items']:
         measure = process_time(measure, utcnow, utcmin)
-        session_objects.extend(process_measure(measure))
+        session_objects.extend(process_measure(measure, utcnow, session))
         points += 1
 
     if userid is not None:
