@@ -88,7 +88,8 @@ class TestStats(CeleryTestCase):
         session.commit()
 
         result = histogram.delay()
-        result.get()
+        added = result.get()
+        self.assertEqual(added, 3)
 
         stats = session.query(Stat).order_by(Stat.time).all()
         self.assertEqual(len(stats), 3)
@@ -98,3 +99,7 @@ class TestStats(CeleryTestCase):
         self.assertEqual(stats[0].value, 3)
         self.assertEqual(stats[1].value, 1)
         self.assertEqual(stats[2].value, 2)
+
+        result = histogram.delay()
+        added = result.get()
+        self.assertEqual(added, 0)

@@ -1,6 +1,7 @@
 from operator import itemgetter
 
 from celery import Task
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.expression import text
 
 from ichnaea.db import (
@@ -36,5 +37,9 @@ def histogram():
                 stats.append(stat)
             session.add_all(stats)
             session.commit()
+            return len(stats)
+    except IntegrityError as exc:
+        # TODO log error
+        return 0
     except Exception as exc:
         raise histogram.retry(exc=exc)
