@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import datetime
 
 from sqlalchemy import create_engine
 from sqlalchemy import (
@@ -88,6 +89,7 @@ class CellMeasure(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
     measure_id = Column(BigInteger(unsigned=True))
+    created = Column(DateTime)
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
@@ -109,6 +111,8 @@ class CellMeasure(_Model):
     def __init__(self, *args, **kw):
         if 'measure_id' not in kw:
             kw['measure_id'] = 0
+        if 'created' not in kw:
+            kw['created'] = datetime.datetime.utcnow()
         super(CellMeasure, self).__init__(*args, **kw)
 
 cell_measure_table = CellMeasure.__table__
@@ -152,6 +156,7 @@ class WifiMeasure(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
     measure_id = Column(BigInteger(unsigned=True))
+    created = Column(DateTime)
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
@@ -166,6 +171,8 @@ class WifiMeasure(_Model):
     def __init__(self, *args, **kw):
         if 'measure_id' not in kw:
             kw['measure_id'] = 0
+        if 'created' not in kw:
+            kw['created'] = datetime.datetime.utcnow()
         super(WifiMeasure, self).__init__(*args, **kw)
 
 wifi_measure_table = WifiMeasure.__table__
@@ -185,6 +192,7 @@ class Measure(_Model):
 
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
+    created = Column(DateTime)
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
@@ -196,6 +204,11 @@ class Measure(_Model):
     # json blobs
     cell = Column(LargeBinary)
     wifi = Column(LargeBinary)
+
+    def __init__(self, *args, **kw):
+        if 'created' not in kw:
+            kw['created'] = datetime.datetime.utcnow()
+        super(Measure, self).__init__(*args, **kw)
 
 measure_table = Measure.__table__
 

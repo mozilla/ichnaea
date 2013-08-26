@@ -65,6 +65,8 @@ class TestCellMeasure(DBTestCase):
         session.commit()
 
         result = session.query(cell.__class__).first()
+        self.assertEqual(result.measure_id, 0)
+        self.assertTrue(isinstance(result.created, datetime.datetime))
         self.assertEqual(result.lat, 12345678)
         self.assertEqual(result.lon, 23456789)
         self.assertEqual(result.radio, 0)
@@ -120,6 +122,8 @@ class TestWifiMeasure(DBTestCase):
         session.commit()
 
         result = session.query(wifi.__class__).first()
+        self.assertEqual(result.measure_id, 0)
+        self.assertTrue(isinstance(result.created, datetime.datetime))
         self.assertEqual(result.lat, 12345678)
         self.assertEqual(result.lon, 23456789)
         self.assertEqual(result.key, key)
@@ -145,6 +149,7 @@ class TestMeasure(DBTestCase):
         session.commit()
 
         result = session.query(measure.__class__).first()
+        self.assertTrue(isinstance(result.created, datetime.datetime))
         self.assertEqual(result.lat, 12345678)
         self.assertEqual(result.lon, 23456789)
         self.assertEqual(result.cell, "[]")
