@@ -4,8 +4,11 @@ from datetime import timedelta
 from sqlalchemy.orm.exc import FlushError
 
 from ichnaea.db import (
+    CellMeasure,
     Measure,
     Stat,
+    STAT_TYPE,
+    WifiMeasure,
 )
 from ichnaea.tasks import DatabaseTask
 from ichnaea.tests.base import CeleryTestCase
@@ -93,6 +96,7 @@ class TestStats(CeleryTestCase):
 
         stats = session.query(Stat).order_by(Stat.time).all()
         self.assertEqual(len(stats), 3)
+        self.assertEqual(stats[0].key, STAT_TYPE['location'])
         self.assertEqual(stats[0].time, two_days)
         self.assertEqual(stats[1].time, yesterday)
         self.assertEqual(stats[2].time, today)
@@ -112,5 +116,101 @@ class TestStats(CeleryTestCase):
 
         # test duplicate execution
         result = histogram.delay()
+        added = result.get()
+        self.assertEqual(added, 0)
+
+    def test_cell_histogram(self):
+        from ichnaea.tasks import cell_histogram
+        session = self.db_master_session
+        today = datetime.utcnow().date()
+        yesterday = (today - timedelta(1))
+        two_days = (today - timedelta(2))
+        long_ago = (today - timedelta(40))
+        measures = [
+            CellMeasure(lat=10000000, lon=20000000, created=today),
+            CellMeasure(lat=10000000, lon=20000000, created=today),
+            CellMeasure(lat=10000000, lon=20000000, created=yesterday),
+            CellMeasure(lat=10000000, lon=20000000, created=two_days),
+            CellMeasure(lat=10000000, lon=20000000, created=two_days),
+            CellMeasure(lat=10000000, lon=20000000, created=two_days),
+            CellMeasure(lat=10000000, lon=20000000, created=long_ago),
+        ]
+        session.add_all(measures)
+        session.commit()
+
+        result = cell_histogram.delay(start=30, end=0)
+        added = result.get()
+        self.assertEqual(added, 3)
+
+        stats = session.query(Stat).order_by(Stat.time).all()
+        self.assertEqual(len(stats), 3)
+        self.assertEqual(stats[0].key, STAT_TYPE['cell'])
+        self.assertEqual(stats[0].time, two_days)
+        self.assertEqual(stats[1].time, yesterday)
+        self.assertEqual(stats[2].time, today)
+        self.assertEqual(stats[0].value, 3)
+        self.assertEqual(stats[1].value, 1)
+        self.assertEqual(stats[2].value, 2)
+
+        # test older time range
+        result = cell_histogram.delay(start=60, end=30)
+        added = result.get()
+        self.assertEqual(added, 1)
+
+        stats = session.query(Stat).order_by(Stat.time).all()
+        self.assertEqual(len(stats), 4)
+        self.assertEqual(stats[0].time, long_ago)
+        self.assertEqual(stats[0].value, 1)
+
+        # test duplicate execution
+        result = cell_histogram.delay()
+        added = result.get()
+        self.assertEqual(added, 0)
+
+    def test_wifi_histogram(self):
+        from ichnaea.tasks import wifi_histogram
+        session = self.db_master_session
+        today = datetime.utcnow().date()
+        yesterday = (today - timedelta(1))
+        two_days = (today - timedelta(2))
+        long_ago = (today - timedelta(40))
+        measures = [
+            WifiMeasure(lat=10000000, lon=20000000, created=today),
+            WifiMeasure(lat=10000000, lon=20000000, created=today),
+            WifiMeasure(lat=10000000, lon=20000000, created=yesterday),
+            WifiMeasure(lat=10000000, lon=20000000, created=two_days),
+            WifiMeasure(lat=10000000, lon=20000000, created=two_days),
+            WifiMeasure(lat=10000000, lon=20000000, created=two_days),
+            WifiMeasure(lat=10000000, lon=20000000, created=long_ago),
+        ]
+        session.add_all(measures)
+        session.commit()
+
+        result = wifi_histogram.delay(start=30, end=0)
+        added = result.get()
+        self.assertEqual(added, 3)
+
+        stats = session.query(Stat).order_by(Stat.time).all()
+        self.assertEqual(len(stats), 3)
+        self.assertEqual(stats[0].key, STAT_TYPE['wifi'])
+        self.assertEqual(stats[0].time, two_days)
+        self.assertEqual(stats[1].time, yesterday)
+        self.assertEqual(stats[2].time, today)
+        self.assertEqual(stats[0].value, 3)
+        self.assertEqual(stats[1].value, 1)
+        self.assertEqual(stats[2].value, 2)
+
+        # test older time range
+        result = wifi_histogram.delay(start=60, end=30)
+        added = result.get()
+        self.assertEqual(added, 1)
+
+        stats = session.query(Stat).order_by(Stat.time).all()
+        self.assertEqual(len(stats), 4)
+        self.assertEqual(stats[0].time, long_ago)
+        self.assertEqual(stats[0].value, 1)
+
+        # test duplicate execution
+        result = wifi_histogram.delay()
         added = result.get()
         self.assertEqual(added, 0)

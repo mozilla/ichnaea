@@ -43,5 +43,55 @@ def histogram(start=1, end=1):
     except IntegrityError as exc:
         # TODO log error
         return 0
-    except Exception as exc:
+    except Exception as exc:  # pragma: no cover
         raise histogram.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask)
+def cell_histogram(start=1, end=1):
+    query = text("select date(created) as day, count(*) as num "
+                 "from cell_measure where "
+                 "date(created) >= date_sub(curdate(), interval %s day) and "
+                 "date(created) <= date_sub(curdate(), interval %s day) "
+                 "group by date(created)" % (int(start), int(end)))
+    try:
+        with cell_histogram.db_session() as session:
+            rows = session.execute(query).fetchall()
+            stats = []
+            for row in sorted(rows, key=itemgetter(0)):
+                stat = Stat(time=row[0], value=row[1])
+                stat.name = 'cell'
+                stats.append(stat)
+            session.add_all(stats)
+            session.commit()
+            return len(stats)
+    except IntegrityError as exc:
+        # TODO log error
+        return 0
+    except Exception as exc:  # pragma: no cover
+        raise cell_histogram.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask)
+def wifi_histogram(start=1, end=1):
+    query = text("select date(created) as day, count(*) as num "
+                 "from wifi_measure where "
+                 "date(created) >= date_sub(curdate(), interval %s day) and "
+                 "date(created) <= date_sub(curdate(), interval %s day) "
+                 "group by date(created)" % (int(start), int(end)))
+    try:
+        with wifi_histogram.db_session() as session:
+            rows = session.execute(query).fetchall()
+            stats = []
+            for row in sorted(rows, key=itemgetter(0)):
+                stat = Stat(time=row[0], value=row[1])
+                stat.name = 'wifi'
+                stats.append(stat)
+            session.add_all(stats)
+            session.commit()
+            return len(stats)
+    except IntegrityError as exc:
+        # TODO log error
+        return 0
+    except Exception as exc:  # pragma: no cover
+        raise wifi_histogram.retry(exc=exc)
