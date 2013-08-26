@@ -33,6 +33,10 @@ RADIO_TYPE_KEYS = list(RADIO_TYPE.keys())
 STAT_TYPE = {
     '': -1,
     'location': 0,
+    'cell': 1,
+    'unique_cell': 2,
+    'wifi': 3,
+    'unique_wifi': 4,
 }
 STAT_TYPE_INVERSE = dict((v, k) for k, v in STAT_TYPE.items())
 
