@@ -2,11 +2,14 @@ from datetime import datetime
 from datetime import timedelta
 from uuid import uuid4
 
-from ichnaea.db import CellMeasure
-from ichnaea.db import Measure
-from ichnaea.db import Score
-from ichnaea.db import User
-from ichnaea.db import WifiMeasure
+from ichnaea.db import (
+    CellMeasure,
+    Measure,
+    RADIO_TYPE,
+    Score,
+    User,
+    WifiMeasure,
+)
 from ichnaea.decimaljson import encode_datetime
 from ichnaea.decimaljson import loads
 from ichnaea.tests.base import AppTestCase
@@ -37,6 +40,7 @@ class TestSubmit(AppTestCase):
         self.assertEqual(item.accuracy, 10)
         self.assertEqual(item.altitude, 123)
         self.assertEqual(item.altitude_accuracy, 7)
+        self.assertEqual(item.radio, RADIO_TYPE['gsm'])
         # colander schema adds default value
         cell_data[0]['psc'] = 0
         cell_data[0]['asu'] = 0
@@ -59,11 +63,35 @@ class TestSubmit(AppTestCase):
         self.assertEqual(item.accuracy, 10)
         self.assertEqual(item.altitude, 123)
         self.assertEqual(item.altitude_accuracy, 7)
-        self.assertEqual(item.radio, 2)
+        self.assertEqual(item.radio, RADIO_TYPE['umts'])
         self.assertEqual(item.mcc, 123)
         self.assertEqual(item.mnc, 1)
         self.assertEqual(item.lac, 2)
         self.assertEqual(item.cid, 1234)
+
+    def test_ok_cell_radio(self):
+        app = self.app
+        cell_data = [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
+        res = app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.3456781,
+                                      "lon": 23.4567892,
+                                      "radio": "gsm",
+                                      "cell": cell_data}]},
+            status=204)
+        self.assertEqual(res.body, '')
+        session = self.db_master_session
+        measure_result = session.query(Measure).all()
+        self.assertEqual(len(measure_result), 1)
+        item = measure_result[0]
+        self.assertEqual(item.lat, 123456781)
+        self.assertEqual(item.lon, 234567892)
+        self.assertEqual(item.radio, RADIO_TYPE['gsm'])
+
+        cell_result = session.query(CellMeasure).all()
+        self.assertEqual(len(cell_result), 1)
+        item = cell_result[0]
+        self.assertEqual(item.measure_id, measure_result[0].id)
+        self.assertEqual(item.radio, RADIO_TYPE['gsm'])
 
     def test_ok_wifi(self):
         app = self.app
