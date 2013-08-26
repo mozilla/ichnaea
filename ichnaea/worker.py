@@ -4,7 +4,7 @@ import os
 from celery import Celery
 from celery.app import app_or_default
 from celery.signals import worker_process_init
-# from celery.schedules import crontab
+from celery.schedules import crontab
 
 from ichnaea import config
 from ichnaea.db import Database
@@ -16,11 +16,11 @@ if 'CELERY_ALWAYS_EAGER' in os.environ:
     CELERY_IMPORTS.append('ichnaea.tests.test_tasks')
 
 CELERYBEAT_SCHEDULE = {
-    # 'add-every-day': {
-    #     'task': 'ichnaea.tasks.add_measure',
-    #     'schedule': crontab(hour=0, minute=17),
-    #     'args': (16, 16),
-    # },
+    'histogram-yesterday': {
+        'task': 'ichnaea.tasks.histogram',
+        'schedule': crontab(hour=0, minute=17),
+        'args': (1, 1),
+    },
     # 'add-often': {
     #     'task': 'ichnaea.tasks.add_measure',
     #     'schedule': timedelta(seconds=5),
