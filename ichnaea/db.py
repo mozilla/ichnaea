@@ -87,6 +87,7 @@ class CellMeasure(_Model):
 
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
+    measure_id = Column(BigInteger(unsigned=True))
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
@@ -104,6 +105,11 @@ class CellMeasure(_Model):
     asu = Column(SmallInteger)
     signal = Column(SmallInteger)
     ta = Column(SmallInteger)
+
+    def __init__(self, *args, **kw):
+        if 'measure_id' not in kw:
+            kw['measure_id'] = 0
+        super(CellMeasure, self).__init__(*args, **kw)
 
 cell_measure_table = CellMeasure.__table__
 
@@ -145,6 +151,7 @@ class WifiMeasure(_Model):
 
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
+    measure_id = Column(BigInteger(unsigned=True))
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
@@ -155,6 +162,11 @@ class WifiMeasure(_Model):
     key = Column(String(40))
     channel = Column(SmallInteger)
     signal = Column(SmallInteger)
+
+    def __init__(self, *args, **kw):
+        if 'measure_id' not in kw:
+            kw['measure_id'] = 0
+        super(WifiMeasure, self).__init__(*args, **kw)
 
 wifi_measure_table = WifiMeasure.__table__
 
