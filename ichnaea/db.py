@@ -181,7 +181,7 @@ wifi_measure_table = WifiMeasure.__table__
 class Measure(_Model):
     __tablename__ = 'measure'
     __table_args__ = (
-        Index('measure_time_created', 'created'),
+        Index('measure_created_idx', 'created'),
         {
             'mysql_engine': 'InnoDB',
             'mysql_charset': 'utf8',
