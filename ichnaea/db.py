@@ -80,6 +80,7 @@ cell_table = Cell.__table__
 class CellMeasure(_Model):
     __tablename__ = 'cell_measure'
     __table_args__ = (
+        Index('cell_measure_created_idx', 'created'),
         Index('cell_measure_lat_idx', 'lat'),
         Index('cell_measure_lon_idx', 'lon'),
         Index('cell_measure_key_idx', 'radio', 'mcc', 'mnc', 'lac', 'cid'),
@@ -147,6 +148,7 @@ wifi_table = Wifi.__table__
 class WifiMeasure(_Model):
     __tablename__ = 'wifi_measure'
     __table_args__ = (
+        Index('wifi_measure_created_idx', 'created'),
         Index('wifi_measure_lat_idx', 'lat'),
         Index('wifi_measure_lon_idx', 'lon'),
         Index('wifi_measure_key_idx', 'key'),
