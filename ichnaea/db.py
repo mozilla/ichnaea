@@ -11,6 +11,7 @@ from sqlalchemy import (
     SmallInteger,
     String,
     Unicode,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.mysql import INTEGER as Integer
 from sqlalchemy.dialects.mysql import BIGINT as BigInteger
@@ -231,7 +232,7 @@ score_table = Score.__table__
 class Stat(_Model):
     __tablename__ = 'stat'
     __table_args__ = (
-        Index('stat_key_time_idx', 'key', 'time'),
+        UniqueConstraint('key', 'time', name='stat_key_time_unique'),
         {
             'mysql_engine': 'InnoDB',
             'mysql_charset': 'utf8',
