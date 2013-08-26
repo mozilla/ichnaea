@@ -114,7 +114,7 @@ class TestStats(CeleryAppTestCase):
         return ContentViews(request)
 
     def test_stats(self):
-        from ichnaea.tasks import histogram
+        from ichnaea import tasks
         session = self.db_master_session
         session.add(Measure(lat=10000000, lon=20000000))
         session.add(Measure(lat=20000000, lon=30000000))
@@ -124,8 +124,14 @@ class TestStats(CeleryAppTestCase):
         session.add(WifiMeasure(lat=10000000, lon=20000000, key='a'))
         session.add(WifiMeasure(lat=10000000, lon=20000000, key='b'))
         session.commit()
-        task = histogram.delay(start=0, end=0)
+        # run daily stats tasks
+        task = tasks.histogram.delay(start=0, end=0)
         self.assertEqual(task.get(), 1)
+        task = tasks.cell_histogram.delay(start=0, end=0)
+        self.assertEqual(task.get(), 1)
+        task = tasks.wifi_histogram.delay(start=0, end=0)
+        self.assertEqual(task.get(), 1)
+        # check result
         request = DummyRequest()
         request.db_slave_session = self.db_master_session
         inst = self._make_view(request)
