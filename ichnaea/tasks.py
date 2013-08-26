@@ -23,10 +23,12 @@ class DatabaseTask(Task):
 
 
 @celery.task(base=DatabaseTask)
-def histogram():
-    query = text("select date(created) as day, count(*) as num from measure "
-                 "where date_sub(curdate(), interval 30 day) <= created and "
-                 "date(created) <= curdate() group by date(created)")
+def histogram(start=30, end=0):
+    query = text("select date(created) as day, count(*) as num "
+                 "from measure where "
+                 "date(created) >= date_sub(curdate(), interval %s day) and "
+                 "date(created) <= date_sub(curdate(), interval %s day) "
+                 "group by date(created)" % (int(start), int(end)))
     try:
         with histogram.db_session() as session:
             rows = session.execute(query).fetchall()
