@@ -108,7 +108,7 @@ class TestAsyncStats(CeleryTestCase):
         session.add_all(measures)
         session.commit()
 
-        result = tasks.histogram.delay(start=60)
+        result = tasks.histogram.delay(start=60, end=0)
         added = result.get()
         self.assertEqual(added, 4)
 

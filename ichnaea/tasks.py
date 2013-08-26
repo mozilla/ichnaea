@@ -23,7 +23,7 @@ class DatabaseTask(Task):
 
 
 @celery.task(base=DatabaseTask)
-def histogram(start=30, end=0):
+def histogram(start=1, end=1):
     query = text("select date(created) as day, count(*) as num "
                  "from measure where "
                  "date(created) >= date_sub(curdate(), interval %s day) and "
