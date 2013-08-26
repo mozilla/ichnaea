@@ -31,9 +31,9 @@ def global_stats(session):
 
 
 def histogram(session):
-    query = text("select date(time) as day, count(*) as num from measure "
-                 "where date_sub(curdate(), interval 30 day) <= time and "
-                 "date(time) <= curdate() group by date(time)")
+    query = text("select date(created) as day, count(*) as num from measure "
+                 "where date_sub(curdate(), interval 30 day) <= created and "
+                 "date(created) <= curdate() group by date(created)")
     rows = session.execute(query)
     result = []
     reverse_rows = sorted(rows.fetchall(), key=itemgetter(0), reverse=True)

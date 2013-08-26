@@ -47,13 +47,13 @@ class TestStats(DBTestCase):
         today = today.strftime('%Y-%m-%d')
         wifi = '[{"key": "a"}]'
         measures = [
-            Measure(lat=10000000, lon=20000000, time=today, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, time=today, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, time=yesterday, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, time=two_days, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, time=two_days, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, time=two_days, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, time=long_ago, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, created=today, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, created=today, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, created=yesterday, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, created=two_days, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, created=two_days, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, created=two_days, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, created=long_ago, wifi=wifi),
         ]
         session.add_all(measures)
         session.commit()
