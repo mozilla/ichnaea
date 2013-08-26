@@ -12,7 +12,10 @@ from ichnaea.db import (
     WifiMeasure,
     Stat,
 )
-from ichnaea.tests.base import AppTestCase
+from ichnaea.tests.base import (
+    AppTestCase,
+    CeleryAppTestCase,
+)
 
 
 class TestContentViews(TestCase):
@@ -95,23 +98,24 @@ class TestFunctionalContent(AppTestCase):
         )
 
 
-class TestStats(AppTestCase):
+class TestStats(CeleryAppTestCase):
 
     def setUp(self):
-        AppTestCase.setUp(self)
+        CeleryAppTestCase.setUp(self)
         request = DummyRequest()
         self.config = setUp(request=request)
 
     def tearDown(self):
         tearDown()
-        AppTestCase.tearDown(self)
+        CeleryAppTestCase.tearDown(self)
 
     def _make_view(self, request):
         from ichnaea.content.views import ContentViews
         return ContentViews(request)
 
     def test_stats(self):
-        session = self.db_slave_session
+        from ichnaea.tasks import histogram
+        session = self.db_master_session
         session.add(Measure(lat=10000000, lon=20000000))
         session.add(Measure(lat=20000000, lon=30000000))
         session.add(Measure(lat=30000000, lon=40000000))
@@ -120,8 +124,10 @@ class TestStats(AppTestCase):
         session.add(WifiMeasure(lat=10000000, lon=20000000, key='a'))
         session.add(WifiMeasure(lat=10000000, lon=20000000, key='b'))
         session.commit()
+        task = histogram.delay(start=0, end=0)
+        self.assertEqual(task.get(), 1)
         request = DummyRequest()
-        request.db_slave_session = self.db_slave_session
+        request.db_slave_session = self.db_master_session
         inst = self._make_view(request)
         result = inst.stats_view()
         self.assertEqual(result['page_title'], 'Statistics')

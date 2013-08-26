@@ -15,29 +15,6 @@ from ichnaea.tests.base import DBTestCase
 
 class TestStats(DBTestCase):
 
-    def test_global_stats(self):
-        from ichnaea.content.stats import global_stats
-        session = self.db_master_session
-        m1 = 10000000
-        m2 = 20000000
-        m3 = 30000000
-        session.add(Measure(lat=m1, lon=m2))
-        session.add(Measure(lat=m2, lon=m3))
-        session.add(Measure(lat=m2, lon=m3))
-        session.add(CellMeasure(lat=m1, lon=m2, mcc=1, mnc=1, lac=2, cid=8))
-        session.add(CellMeasure(lat=m1, lon=m2, mcc=1, mnc=1, lac=3, cid=9))
-        session.add(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=3, cid=9))
-        session.add(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=4, cid=9))
-        session.add(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=4, cid=9))
-        session.add(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=4, cid=9))
-        session.add(WifiMeasure(lat=m1, lon=m2, key='a'))
-        session.add(WifiMeasure(lat=m2, lon=m3, key='b'))
-        session.add(WifiMeasure(lat=m2, lon=m3, key='b'))
-        session.commit()
-        result = global_stats(session)
-        self.assertDictEqual(result, {'location': 3, 'cell': 6,
-                             'unique-cell': 3, 'wifi': 3, 'unique-wifi': 2})
-
     def test_map_csv(self):
         from ichnaea.content.stats import map_csv
         session = self.db_master_session
@@ -80,6 +57,34 @@ class TestStats(DBTestCase):
 
 
 class TestAsyncStats(CeleryTestCase):
+
+    def test_global_stats(self):
+        from ichnaea.content.stats import global_stats
+        from ichnaea import tasks
+        session = self.db_master_session
+        m1 = 10000000
+        m2 = 20000000
+        m3 = 30000000
+        session.add(Measure(lat=m1, lon=m2))
+        session.add(Measure(lat=m2, lon=m3))
+        session.add(Measure(lat=m2, lon=m3))
+        session.add(CellMeasure(lat=m1, lon=m2, mcc=1, mnc=1, lac=2, cid=8))
+        session.add(CellMeasure(lat=m1, lon=m2, mcc=1, mnc=1, lac=3, cid=9))
+        session.add(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=3, cid=9))
+        session.add(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=4, cid=9))
+        session.add(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=4, cid=9))
+        session.add(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=4, cid=9))
+        session.add(WifiMeasure(lat=m1, lon=m2, key='a'))
+        session.add(WifiMeasure(lat=m2, lon=m3, key='b'))
+        session.add(WifiMeasure(lat=m2, lon=m3, key='b'))
+        session.commit()
+
+        result = tasks.histogram.delay(start=0, end=0)
+        self.assertEqual(result.get(), 1)
+
+        result = global_stats(session)
+        self.assertDictEqual(result, {'location': 3, 'cell': 6,
+                             'unique-cell': 3, 'wifi': 3, 'unique-wifi': 2})
 
     def test_histogram(self):
         from ichnaea.content.stats import histogram

@@ -10,7 +10,6 @@ from sqlalchemy.sql.expression import text
 
 from ichnaea.db import (
     CellMeasure,
-    Measure,
     Score,
     Stat,
     STAT_TYPE,
@@ -21,7 +20,13 @@ from ichnaea.db import (
 
 def global_stats(session):
     result = {}
-    result['location'] = session.query(func.count(Measure.id)).first()[0]
+    locations = session.query(func.sum(Stat.value)).filter(
+        Stat.key == STAT_TYPE['location']).first()[0]
+    if locations is None:
+        locations = 0
+    else:
+        locations = int(locations)
+    result['location'] = locations
     result['cell'] = session.query(func.count(CellMeasure.id)).first()[0]
     result['unique-cell'] = session.query(
         CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
