@@ -1,11 +1,16 @@
+from datetime import datetime
+from datetime import timedelta
 from operator import itemgetter
 
 from celery import Task
+from sqlalchemy import distinct
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.expression import text
 
 from ichnaea.db import (
     db_worker_session,
+    WifiMeasure,
     Stat,
 )
 from ichnaea.worker import celery
@@ -95,3 +100,25 @@ def wifi_histogram(start=1, end=1):
         return 0
     except Exception as exc:  # pragma: no cover
         raise wifi_histogram.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask)
+def unique_wifi_histogram(ago=1):
+    today = datetime.utcnow().date()
+    day = today - timedelta(days=ago)
+    day_plus_one = day + timedelta(days=1)
+    try:
+        with unique_wifi_histogram.db_session() as session:
+            query = session.query(func.count(distinct(WifiMeasure.key)))
+            query = query.filter(WifiMeasure.created < day_plus_one)
+            value = query.first()[0]
+            stat = Stat(time=day, value=int(value))
+            stat.name = 'unique_wifi'
+            session.add(stat)
+            session.commit()
+            return 1
+    except IntegrityError as exc:
+        # TODO log error
+        return 0
+    except Exception as exc:  # pragma: no cover
+        raise unique_wifi_histogram.retry(exc=exc)

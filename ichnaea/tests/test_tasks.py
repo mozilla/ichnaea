@@ -1,5 +1,6 @@
 from datetime import datetime
 from datetime import timedelta
+from hashlib import sha1
 
 from sqlalchemy.orm.exc import FlushError
 
@@ -214,3 +215,55 @@ class TestStats(CeleryTestCase):
         result = wifi_histogram.delay()
         added = result.get()
         self.assertEqual(added, 0)
+
+    def test_unique_wifi_histogram(self):
+        from ichnaea.tasks import unique_wifi_histogram
+        session = self.db_master_session
+        today = datetime.utcnow().date()
+        yesterday = (today - timedelta(1))
+        two_days = (today - timedelta(2))
+        long_ago = (today - timedelta(40))
+        k1 = sha1('1').hexdigest()
+        k2 = sha1('2').hexdigest()
+        k3 = sha1('3').hexdigest()
+        measures = [
+            WifiMeasure(lat=10000000, lon=20000000, created=long_ago, key=k1),
+            WifiMeasure(lat=10000000, lon=20000000, created=two_days, key=k1),
+            WifiMeasure(lat=10000000, lon=20000000, created=two_days, key=k2),
+            WifiMeasure(lat=10000000, lon=20000000, created=two_days, key=k1),
+            WifiMeasure(lat=10000000, lon=20000000, created=yesterday, key=k3),
+            WifiMeasure(lat=10000000, lon=20000000, created=today, key=k2),
+            WifiMeasure(lat=10000000, lon=20000000, created=today, key=k3),
+        ]
+        session.add_all(measures)
+        session.commit()
+
+        result = unique_wifi_histogram.delay(ago=40)
+        added = result.get()
+        self.assertEqual(added, 1)
+
+        stats = session.query(Stat).order_by(Stat.time).all()
+        self.assertEqual(len(stats), 1)
+        self.assertEqual(stats[0].key, STAT_TYPE['unique_wifi'])
+        self.assertEqual(stats[0].time, long_ago)
+        self.assertEqual(stats[0].value, 1)
+
+        # fill up newer dates
+        unique_wifi_histogram.delay(ago=2).get()
+        unique_wifi_histogram.delay(ago=1).get()
+        unique_wifi_histogram.delay(ago=0).get()
+
+        stats = session.query(Stat).order_by(Stat.time).all()
+        self.assertEqual(len(stats), 4)
+        self.assertEqual(stats[0].time, long_ago)
+        self.assertEqual(stats[0].value, 1)
+        self.assertEqual(stats[1].time, two_days)
+        self.assertEqual(stats[1].value, 2)
+        self.assertEqual(stats[2].time, yesterday)
+        self.assertEqual(stats[2].value, 3)
+        self.assertEqual(stats[3].time, today)
+        self.assertEqual(stats[3].value, 3)
+
+        # test duplicate execution
+        result = unique_wifi_histogram.delay()
+        self.assertEqual(result.get(), 0)
