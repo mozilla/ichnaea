@@ -34,10 +34,10 @@ def global_stats(session):
     return result
 
 
-def histogram(session):
+def histogram(session, name):
     today = datetime.datetime.utcnow().date()
     thirty_days = today - timedelta(days=30)
-    stat_key = STAT_TYPE['location']
+    stat_key = STAT_TYPE[name]
     rows = session.query(Stat.time, Stat.value).filter(
         Stat.key == stat_key).filter(
         Stat.time >= thirty_days).filter(

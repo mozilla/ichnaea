@@ -78,7 +78,7 @@ class TestFunctionalContent(AppTestCase):
     def test_stats(self):
         self.app.get('/stats', status=200)
 
-    def test_stats_json(self):
+    def test_stats_location_json(self):
         app = self.app
         today = datetime.utcnow().date()
         yesterday = today - timedelta(1)
@@ -88,7 +88,41 @@ class TestFunctionalContent(AppTestCase):
         stat.name = 'location'
         session.add(stat)
         session.commit()
-        result = app.get('/stats.json', status=200)
+        result = app.get('/stats_location.json', status=200)
+        self.assertEqual(
+            result.json, {'histogram': [
+                {'num': 2, 'day': yesterday},
+            ]}
+        )
+
+    def test_stats_unique_cell_json(self):
+        app = self.app
+        today = datetime.utcnow().date()
+        yesterday = today - timedelta(1)
+        yesterday = yesterday.strftime('%Y-%m-%d')
+        session = self.db_slave_session
+        stat = Stat(time=yesterday, value=2)
+        stat.name = 'unique_cell'
+        session.add(stat)
+        session.commit()
+        result = app.get('/stats_unique_cell.json', status=200)
+        self.assertEqual(
+            result.json, {'histogram': [
+                {'num': 2, 'day': yesterday},
+            ]}
+        )
+
+    def test_stats_unique_wifi_json(self):
+        app = self.app
+        today = datetime.utcnow().date()
+        yesterday = today - timedelta(1)
+        yesterday = yesterday.strftime('%Y-%m-%d')
+        session = self.db_slave_session
+        stat = Stat(time=yesterday, value=2)
+        stat.name = 'unique_wifi'
+        session.add(stat)
+        session.commit()
+        result = app.get('/stats_unique_wifi.json', status=200)
         self.assertEqual(
             result.json, {'histogram': [
                 {'num': 2, 'day': yesterday},

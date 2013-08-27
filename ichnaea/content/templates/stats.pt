@@ -55,11 +55,27 @@
         </p>
     </div>
     <div style="clear:both">
-        <h3>Total locations in the last 30 days</h3>
-        <div id="chart_container">
-                <div id="y_axis"></div>
-                <div id="chart"></div>
-                <div id="x_axis"></div>
+        <h3>Locations in the last 30 days</h3>
+        <div id="location_chart" class="chart_container">
+                <div class="chart_y_axis"></div>
+                <div class="chart"></div>
+                <div class="chart_x_axis"></div>
+        </div>
+    </div>
+    <div style="clear:both">
+        <h3>Unique cells in the last 30 days</h3>
+        <div id="unique_cell_chart" class="chart_container">
+                <div class="chart_y_axis"></div>
+                <div class="chart"></div>
+                <div class="chart_x_axis"></div>
+        </div>
+    </div>
+    <div style="clear:both">
+        <h3>Unique WiFi access points in the last 30 days</h3>
+        <div id="unique_wifi_chart" class="chart_container">
+                <div class="chart_y_axis"></div>
+                <div class="chart"></div>
+                <div class="chart_x_axis"></div>
         </div>
     </div>
 </section>
@@ -68,54 +84,60 @@
 <tal:slot metal:fill-slot="js_bottom">
 <script type='text/javascript'>
 
-var result = {};
-$.ajax({
-    url: '/stats.json',
-    dataType: "json",
-    async: false,
-    success: function(json) {
-        result = json;
-    }
-});
+function make_graph(url, graph_id) {
+    var result = {};
+    $.ajax({
+        url: url,
+        dataType: "json",
+        async: false,
+        success: function(json) {
+            result = json;
+        }
+    });
 
-var entries = [];
-for (var i = 0; i < result.histogram.length; i++) {
-    item = result.histogram[i];
-    entries.push({x: Date.parse(item.day), y: item.num});
+    var entries = [];
+    for (var i = 0; i < result.histogram.length; i++) {
+        item = result.histogram[i];
+        entries.push({x: Date.parse(item.day), y: item.num});
+    };
+
+    var graph = new Rickshaw.Graph( {
+        element: document.querySelector(graph_id + " .chart"),
+        width: 600,
+        height: 240,
+        series: [ {
+                data: entries, 
+                color: 'steelblue'
+        } ]
+    } );
+
+    var format_date = function(n) {
+        var d = new Date(0);
+        d.setUTCMilliseconds(n);
+        return d.toLocaleDateString();
+    };
+
+    var x_axis = new Rickshaw.Graph.Axis.X( {
+        graph: graph,
+        orientation: 'bottom',
+        element: document.querySelector(graph_id + " .chart_x_axis"),
+        pixelsPerTick: 100,
+        tickFormat: format_date,
+    } );
+
+    var y_axis = new Rickshaw.Graph.Axis.Y( {
+        graph: graph,
+        orientation: 'left',
+        tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
+        element: document.querySelector(graph_id + " .chart_y_axis"),
+    } );
+
+    graph.render();
 };
 
-var graph = new Rickshaw.Graph( {
-    element: document.querySelector("#chart"),
-    width: 600,
-    height: 240,
-    series: [ {
-            data: entries, 
-            color: 'steelblue'
-    } ]
-} );
-
-var format_date = function(n) {
-    var d = new Date(0);
-    d.setUTCMilliseconds(n);
-    return d.toLocaleDateString();
-};
-
-var x_axis = new Rickshaw.Graph.Axis.X( {
-    graph: graph,
-    orientation: 'bottom',
-    element: document.getElementById('x_axis'),
-    pixelsPerTick: 100,
-    tickFormat: format_date,
-} );
-
-var y_axis = new Rickshaw.Graph.Axis.Y( {
-    graph: graph,
-    orientation: 'left',
-    tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
-    element: document.getElementById('y_axis'),
-} );
-
-graph.render();
+make_graph('/stats_location.json', '#location_chart');
+make_graph('/stats_unique_cell.json', '#unique_cell_chart');
+make_graph('/stats_unique_wifi.json', '#unique_wifi_chart');
 
 </script>
 </tal:slot>

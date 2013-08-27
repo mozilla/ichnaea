@@ -68,10 +68,22 @@ class ContentViews(Layout):
     def map_view(self):
         return {'page_title': 'Coverage Map'}
 
-    @view_config(renderer='json', name="stats.json", http_cache=300)
-    def stats_json(self):
+    @view_config(renderer='json', name="stats_location.json", http_cache=300)
+    def stats_location_json(self):
         session = self.request.db_slave_session
-        return {'histogram': histogram(session)}
+        return {'histogram': histogram(session, 'location')}
+
+    @view_config(
+        renderer='json', name="stats_unique_cell.json", http_cache=300)
+    def stats_unique_cell_json(self):
+        session = self.request.db_slave_session
+        return {'histogram': histogram(session, 'unique_cell')}
+
+    @view_config(
+        renderer='json', name="stats_unique_wifi.json", http_cache=300)
+    def stats_unique_wifi_json(self):
+        session = self.request.db_slave_session
+        return {'histogram': histogram(session, 'unique_wifi')}
 
     @view_config(renderer='templates/stats.pt', name="stats", http_cache=300)
     def stats_view(self):

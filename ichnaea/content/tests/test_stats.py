@@ -50,11 +50,23 @@ class TestStats(DBTestCase):
             stat.name = 'location'
         session.add_all(stats)
         session.commit()
-        result = histogram(session)
+        result = histogram(session, 'location')
         self.assertEqual(result, [
             {'num': 3, 'day': two_days},
             {'num': 7, 'day': one_day},
         ])
+
+    def test_histogram_different_stat_name(self):
+        from ichnaea.content.stats import histogram
+        session = self.db_master_session
+        day = datetime.utcnow().date() - timedelta(1)
+        day = day.strftime('%Y-%m-%d')
+        stat = Stat(time=day, value=9)
+        stat.name = 'unique_cell'
+        session.add(stat)
+        session.commit()
+        result = histogram(session, 'unique_cell')
+        self.assertEqual(result, [{'num': 9, 'day': day}])
 
     def test_map_csv(self):
         from ichnaea.content.stats import map_csv
