@@ -19,27 +19,27 @@ CELERYBEAT_SCHEDULE = {
     'histogram-yesterday': {
         'task': 'ichnaea.tasks.histogram',
         'schedule': crontab(hour=0, minute=5),
-        'args': (1),
+        'args': (1, ),
     },
     'histogram-cell-yesterday': {
         'task': 'ichnaea.tasks.cell_histogram',
         'schedule': crontab(hour=0, minute=9),
-        'args': (1),
+        'args': (1, ),
     },
     'histogram-wifi-yesterday': {
         'task': 'ichnaea.tasks.wifi_histogram',
         'schedule': crontab(hour=0, minute=13),
-        'args': (1),
+        'args': (1, ),
     },
     'histogram-unique-cell-yesterday': {
         'task': 'ichnaea.tasks.unique_cell_histogram',
         'schedule': crontab(hour=0, minute=17),
-        'args': (1),
+        'args': (1, ),
     },
     'histogram-unique-wifi-yesterday': {
         'task': 'ichnaea.tasks.unique_wifi_histogram',
         'schedule': crontab(hour=0, minute=21),
-        'args': (1),
+        'args': (1, ),
     },
     # 'add-often': {
     #     'task': 'ichnaea.tasks.add_measure',
