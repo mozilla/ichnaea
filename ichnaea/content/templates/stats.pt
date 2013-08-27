@@ -130,8 +130,9 @@ function make_graph(url, graph_id) {
     var y_axis = new Rickshaw.Graph.Axis.Y( {
         graph: graph,
         orientation: 'left',
-        tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
         element: document.querySelector(graph_id + " .chart_y_axis"),
+        pixelsPerTick: 72,
+        tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
     } );
 
     graph.render();
