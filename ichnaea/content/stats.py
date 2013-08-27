@@ -17,7 +17,7 @@ from ichnaea.db import (
 
 def global_stats(session):
     # get and sum up stats
-    stat_keys = (STAT_TYPE['cell'], STAT_TYPE['wifi'])
+    stat_keys = (STAT_TYPE['wifi'], )
     rows = session.query(Stat.key, func.sum(Stat.value)).filter(
         Stat.key.in_(stat_keys)).group_by(Stat.key)
 
@@ -27,7 +27,6 @@ def global_stats(session):
             stats[row[0]] = int(row[1])
 
     result = {}
-    result['cell'] = stats.get(STAT_TYPE['cell'], 0)
     result['wifi'] = stats.get(STAT_TYPE['wifi'], 0)
 
     # get max / newest total unique stats
@@ -35,6 +34,7 @@ def global_stats(session):
     yesterday = today - timedelta(1)
     stat_keys = (
         STAT_TYPE['location'],
+        STAT_TYPE['cell'],
         STAT_TYPE['unique_cell'],
         STAT_TYPE['unique_wifi'],
     )
@@ -46,6 +46,7 @@ def global_stats(session):
             stats[row[0]] = int(row[1])
 
     result['location'] = stats.get(STAT_TYPE['location'], 0)
+    result['cell'] = stats.get(STAT_TYPE['cell'], 0)
     result['unique-cell'] = stats.get(STAT_TYPE['unique_cell'], 0)
     result['unique-wifi'] = stats.get(STAT_TYPE['unique_wifi'], 0)
     return result

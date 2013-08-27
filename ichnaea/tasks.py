@@ -52,23 +52,20 @@ def histogram(ago=1):
 
 
 @celery.task(base=DatabaseTask)
-def cell_histogram(start=1, end=1):
-    query = text("select date(created) as day, count(*) as num "
-                 "from cell_measure where "
-                 "date(created) >= date_sub(curdate(), interval %s day) and "
-                 "date(created) <= date_sub(curdate(), interval %s day) "
-                 "group by date(created)" % (int(start), int(end)))
+def cell_histogram(ago=1):
+    today = datetime.utcnow().date()
+    day = today - timedelta(days=ago)
+    day_plus_one = day + timedelta(days=1)
     try:
         with cell_histogram.db_session() as session:
-            rows = session.execute(query).fetchall()
-            stats = []
-            for row in sorted(rows, key=itemgetter(0)):
-                stat = Stat(time=row[0], value=row[1])
-                stat.name = 'cell'
-                stats.append(stat)
-            session.add_all(stats)
+            query = session.query(func.count(CellMeasure.id))
+            query = query.filter(CellMeasure.created < day_plus_one)
+            value = query.first()[0]
+            stat = Stat(time=day, value=int(value))
+            stat.name = 'cell'
+            session.add(stat)
             session.commit()
-            return len(stats)
+            return 1
     except IntegrityError as exc:
         # TODO log error
         return 0
