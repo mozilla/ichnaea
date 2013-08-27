@@ -20,8 +20,7 @@ class TestStats(DBTestCase):
         day = datetime.utcnow().date() - timedelta(1)
         day2 = day - timedelta(1)
         stats = [
-            Stat(key=STAT_TYPE['location'], time=day, value=1),
-            Stat(key=STAT_TYPE['location'], time=day2, value=2),
+            Stat(key=STAT_TYPE['location'], time=day, value=3),
             Stat(key=STAT_TYPE['cell'], time=day, value=4),
             Stat(key=STAT_TYPE['cell'], time=day2, value=2),
             Stat(key=STAT_TYPE['wifi'], time=day, value=3),

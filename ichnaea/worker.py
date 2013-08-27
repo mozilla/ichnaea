@@ -19,7 +19,7 @@ CELERYBEAT_SCHEDULE = {
     'histogram-yesterday': {
         'task': 'ichnaea.tasks.histogram',
         'schedule': crontab(hour=0, minute=5),
-        'args': (1, 1),
+        'args': (1),
     },
     'histogram-cell-yesterday': {
         'task': 'ichnaea.tasks.cell_histogram',
