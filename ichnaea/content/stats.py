@@ -18,13 +18,8 @@ from ichnaea.db import (
 def global_stats(session):
     today = datetime.datetime.utcnow().date()
     yesterday = today - timedelta(1)
-    stat_keys = (
-        STAT_TYPE['location'],
-        STAT_TYPE['cell'],
-        STAT_TYPE['wifi'],
-        STAT_TYPE['unique_cell'],
-        STAT_TYPE['unique_wifi'],
-    )
+    names = ('location', 'cell', 'wifi', 'unique_cell', 'unique_wifi')
+    stat_keys = [STAT_TYPE[name] for name in names]
     rows = session.query(Stat.key, Stat.value).filter(
         Stat.key.in_(stat_keys)).filter(
         Stat.time == yesterday).group_by(Stat.key)
@@ -35,11 +30,8 @@ def global_stats(session):
             stats[row[0]] = int(row[1])
 
     result = {}
-    result['location'] = stats.get(STAT_TYPE['location'], 0)
-    result['cell'] = stats.get(STAT_TYPE['cell'], 0)
-    result['wifi'] = stats.get(STAT_TYPE['wifi'], 0)
-    result['unique_cell'] = stats.get(STAT_TYPE['unique_cell'], 0)
-    result['unique_wifi'] = stats.get(STAT_TYPE['unique_wifi'], 0)
+    for name in names:
+        result[name] = stats.get(STAT_TYPE[name], 0)
     return result
 
 
