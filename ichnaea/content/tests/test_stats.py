@@ -3,17 +3,62 @@ from datetime import timedelta
 from uuid import uuid4
 
 from ichnaea.db import (
-    CellMeasure,
     Measure,
     Score,
     User,
-    WifiMeasure,
+    Stat,
+    STAT_TYPE,
 )
-from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.base import DBTestCase
 
 
 class TestStats(DBTestCase):
+
+    def test_global_stats(self):
+        from ichnaea.content.stats import global_stats
+        session = self.db_master_session
+        day = datetime.utcnow().date() - timedelta(1)
+        day2 = day - timedelta(1)
+        stats = [
+            Stat(key=STAT_TYPE['location'], time=day, value=1),
+            Stat(key=STAT_TYPE['location'], time=day2, value=2),
+            Stat(key=STAT_TYPE['cell'], time=day, value=4),
+            Stat(key=STAT_TYPE['cell'], time=day2, value=2),
+            Stat(key=STAT_TYPE['wifi'], time=day, value=3),
+            Stat(key=STAT_TYPE['wifi'], time=day2, value=0),
+            Stat(key=STAT_TYPE['unique_cell'], time=day, value=3),
+            Stat(key=STAT_TYPE['unique_wifi'], time=day, value=2),
+        ]
+        session.add_all(stats)
+        session.commit()
+
+        result = global_stats(session)
+        self.assertDictEqual(result, {'location': 3, 'cell': 6,
+                             'unique-cell': 3, 'wifi': 3, 'unique-wifi': 2})
+
+    def test_histogram(self):
+        from ichnaea.content.stats import histogram
+        session = self.db_master_session
+        today = datetime.utcnow().date()
+        one_day = (today - timedelta(1)).strftime('%Y-%m-%d')
+        two_days = (today - timedelta(2)).strftime('%Y-%m-%d')
+        long_ago = (today - timedelta(40)).strftime('%Y-%m-%d')
+        today = today.strftime('%Y-%m-%d')
+        stats = [
+            Stat(time=long_ago, value=1),
+            Stat(time=two_days, value=3),
+            Stat(time=one_day, value=4),
+            Stat(time=today, value=2),
+        ]
+        for stat in stats:
+            stat.name = 'location'
+        session.add_all(stats)
+        session.commit()
+        result = histogram(session)
+        self.assertEqual(result, [
+            {'num': 4, 'day': two_days},
+            {'num': 8, 'day': one_day},
+        ])
 
     def test_map_csv(self):
         from ichnaea.content.stats import map_csv
@@ -54,83 +99,3 @@ class TestStats(DBTestCase):
         self.assertEqual(result[0]['token'], highest[:8])
         self.assertEqual(result[0]['num'], 10)
         self.assertTrue(lowest not in [r['token'] for r in result])
-
-
-class TestAsyncStats(CeleryTestCase):
-
-    def test_global_stats(self):
-        from ichnaea.content.stats import global_stats
-        from ichnaea import tasks
-        session = self.db_master_session
-        m1 = 10000000
-        m2 = 20000000
-        m3 = 30000000
-        day = datetime.utcnow().date() - timedelta(1)
-        stats = []
-        stats.append(Measure(lat=m1, lon=m2))
-        stats.append(Measure(lat=m2, lon=m3))
-        stats.append(Measure(lat=m2, lon=m3))
-        stats.append(CellMeasure(lat=m1, lon=m2, mcc=1, mnc=1, lac=2, cid=8))
-        stats.append(CellMeasure(lat=m1, lon=m2, mcc=1, mnc=1, lac=3, cid=9))
-        stats.append(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=3, cid=9))
-        stats.append(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=4, cid=9))
-        stats.append(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=4, cid=9))
-        stats.append(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=4, cid=9))
-        stats.append(WifiMeasure(lat=m1, lon=m2, key='a'))
-        stats.append(WifiMeasure(lat=m2, lon=m3, key='b'))
-        stats.append(WifiMeasure(lat=m2, lon=m3, key='b'))
-        for stat in stats:
-            stat.created = day
-        session.add_all(stats)
-        session.commit()
-
-        result = tasks.histogram.delay(start=1, end=1)
-        self.assertEqual(result.get(), 1)
-
-        result = tasks.cell_histogram.delay(start=1, end=1)
-        self.assertEqual(result.get(), 1)
-
-        result = tasks.wifi_histogram.delay(start=1, end=1)
-        self.assertEqual(result.get(), 1)
-
-        result = tasks.unique_cell_histogram.delay(ago=1)
-        self.assertEqual(result.get(), 1)
-
-        result = tasks.unique_wifi_histogram.delay(ago=1)
-        self.assertEqual(result.get(), 1)
-
-        result = global_stats(session)
-        self.assertDictEqual(result, {'location': 3, 'cell': 6,
-                             'unique-cell': 3, 'wifi': 3, 'unique-wifi': 2})
-
-    def test_histogram(self):
-        from ichnaea.content.stats import histogram
-        from ichnaea import tasks
-        session = self.db_master_session
-        today = datetime.utcnow().date()
-        yesterday = (today - timedelta(1)).strftime('%Y-%m-%d')
-        two_days = (today - timedelta(2)).strftime('%Y-%m-%d')
-        long_ago = (today - timedelta(40)).strftime('%Y-%m-%d')
-        today = today.strftime('%Y-%m-%d')
-        wifi = '[{"key": "a"}]'
-        measures = [
-            Measure(lat=10000000, lon=20000000, created=today, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=today, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=yesterday, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=two_days, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=two_days, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=two_days, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=long_ago, wifi=wifi),
-        ]
-        session.add_all(measures)
-        session.commit()
-
-        result = tasks.histogram.delay(start=60, end=0)
-        added = result.get()
-        self.assertEqual(added, 4)
-
-        result = histogram(session)
-        self.assertEqual(result, [
-            {'num': 4, 'day': two_days},
-            {'num': 5, 'day': yesterday},
-        ])

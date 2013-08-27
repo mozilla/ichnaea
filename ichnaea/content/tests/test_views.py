@@ -7,14 +7,12 @@ from pyramid.testing import tearDown
 from unittest2 import TestCase
 
 from ichnaea.db import (
-    CellMeasure,
     Measure,
-    WifiMeasure,
     Stat,
+    STAT_TYPE,
 )
 from ichnaea.tests.base import (
     AppTestCase,
-    CeleryAppTestCase,
 )
 
 
@@ -98,50 +96,33 @@ class TestFunctionalContent(AppTestCase):
         )
 
 
-class TestStats(CeleryAppTestCase):
+class TestStats(AppTestCase):
 
     def setUp(self):
-        CeleryAppTestCase.setUp(self)
+        AppTestCase.setUp(self)
         request = DummyRequest()
         self.config = setUp(request=request)
 
     def tearDown(self):
         tearDown()
-        CeleryAppTestCase.tearDown(self)
+        AppTestCase.tearDown(self)
 
     def _make_view(self, request):
         from ichnaea.content.views import ContentViews
         return ContentViews(request)
 
     def test_stats(self):
-        from ichnaea import tasks
-        m1 = 10000000
-        m2 = 20000000
-        m3 = 30000000
-        m4 = 40000000
         day = datetime.utcnow().date() - timedelta(1)
-
         session = self.db_master_session
-        session.add(Measure(lat=m1, lon=m2, created=day))
-        session.add(Measure(lat=m2, lon=m3, created=day))
-        session.add(Measure(lat=m3, lon=m4, created=day))
-        session.add(CellMeasure(lat=m1, lon=m2, created=day, mcc=1))
-        session.add(CellMeasure(lat=m1, lon=m2, created=day, mcc=1))
-        session.add(WifiMeasure(lat=m1, lon=m2, created=day, key='a'))
-        session.add(WifiMeasure(lat=m1, lon=m2, created=day, key='b'))
+        stats = [
+            Stat(key=STAT_TYPE['location'], time=day, value=3),
+            Stat(key=STAT_TYPE['cell'], time=day, value=2),
+            Stat(key=STAT_TYPE['wifi'], time=day, value=2),
+            Stat(key=STAT_TYPE['unique_cell'], time=day, value=1),
+            Stat(key=STAT_TYPE['unique_wifi'], time=day, value=2),
+        ]
+        session.add_all(stats)
         session.commit()
-        # run daily stats tasks
-        task = tasks.histogram.delay(start=1, end=1)
-        self.assertEqual(task.get(), 1)
-        task = tasks.cell_histogram.delay(start=1, end=1)
-        self.assertEqual(task.get(), 1)
-        task = tasks.wifi_histogram.delay(start=1, end=1)
-        self.assertEqual(task.get(), 1)
-        task = tasks.unique_cell_histogram.delay(ago=1)
-        self.assertEqual(task.get(), 1)
-        task = tasks.unique_wifi_histogram.delay(ago=1)
-        self.assertEqual(task.get(), 1)
-        # check result
         request = DummyRequest()
         request.db_slave_session = self.db_master_session
         inst = self._make_view(request)
