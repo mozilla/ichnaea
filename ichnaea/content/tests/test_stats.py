@@ -43,8 +43,8 @@ class TestStats(DBTestCase):
         stats = [
             Stat(time=long_ago, value=1),
             Stat(time=two_days, value=3),
-            Stat(time=one_day, value=4),
-            Stat(time=today, value=2),
+            Stat(time=one_day, value=7),
+            Stat(time=today, value=9),
         ]
         for stat in stats:
             stat.name = 'location'
@@ -52,8 +52,8 @@ class TestStats(DBTestCase):
         session.commit()
         result = histogram(session)
         self.assertEqual(result, [
-            {'num': 4, 'day': two_days},
-            {'num': 8, 'day': one_day},
+            {'num': 3, 'day': two_days},
+            {'num': 7, 'day': one_day},
         ])
 
     def test_map_csv(self):

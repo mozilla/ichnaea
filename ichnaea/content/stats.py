@@ -4,7 +4,6 @@ import datetime
 from datetime import timedelta
 import math
 
-from sqlalchemy import func
 from sqlalchemy.sql.expression import text
 
 from ichnaea.db import (
@@ -43,25 +42,13 @@ def histogram(session):
         Stat.key == stat_key).filter(
         Stat.time >= thirty_days).filter(
         Stat.time < today).order_by(
-        Stat.time.desc()
+        Stat.time
     )
     result = []
-    total = session.query(func.sum(Stat.value)).filter(
-        Stat.key == stat_key).filter(
-        Stat.time < today
-    )
-    total = total.first()[0]
-    if total is None:
-        total = 0
-    else:
-        total = int(total)
-    # reverse sort data by day, then count down from total
     for day, num in rows.all():
         if isinstance(day, datetime.date):  # pragma: no cover
             day = day.strftime('%Y-%m-%d')
-        result.append({'day': day, 'num': total})
-        total -= num
-    result.reverse()
+        result.append({'day': day, 'num': num})
     return result
 
 
