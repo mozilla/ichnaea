@@ -168,6 +168,54 @@ class TestStats(CeleryTestCase):
         added = result.get()
         self.assertEqual(added, 0)
 
+    def test_unique_cell_histogram(self):
+        from ichnaea.tasks import unique_cell_histogram
+        session = self.db_master_session
+        today = datetime.utcnow().date()
+        one_day = (today - timedelta(1))
+        two_days = (today - timedelta(2))
+        long_ago = (today - timedelta(40))
+        measures = [
+            CellMeasure(created=long_ago, radio=0, mcc=1, mnc=2, lac=3, cid=4),
+            CellMeasure(created=two_days, radio=2, mcc=1, mnc=2, lac=3, cid=4),
+            CellMeasure(created=two_days, radio=0, mcc=1, mnc=2, lac=3, cid=4),
+            CellMeasure(created=two_days, radio=0, mcc=2, mnc=2, lac=3, cid=4),
+            CellMeasure(created=one_day, radio=0, mcc=2, mnc=2, lac=3, cid=5),
+            CellMeasure(created=today, radio=0, mcc=1, mnc=3, lac=3, cid=4),
+            CellMeasure(created=today, radio=0, mcc=1, mnc=2, lac=4, cid=4),
+        ]
+        session.add_all(measures)
+        session.commit()
+
+        result = unique_cell_histogram.delay(ago=40)
+        self.assertEqual(result.get(), 1)
+
+        stats = session.query(Stat).order_by(Stat.time).all()
+        self.assertEqual(len(stats), 1)
+        self.assertEqual(stats[0].key, STAT_TYPE['unique_cell'])
+        self.assertEqual(stats[0].time, long_ago)
+        self.assertEqual(stats[0].value, 1)
+
+        # fill up newer dates
+        unique_cell_histogram.delay(ago=2).get()
+        unique_cell_histogram.delay(ago=1).get()
+        unique_cell_histogram.delay(ago=0).get()
+
+        stats = session.query(Stat).order_by(Stat.time).all()
+        self.assertEqual(len(stats), 4)
+        self.assertEqual(stats[0].time, long_ago)
+        self.assertEqual(stats[0].value, 1)
+        self.assertEqual(stats[1].time, two_days)
+        self.assertEqual(stats[1].value, 3)
+        self.assertEqual(stats[2].time, one_day)
+        self.assertEqual(stats[2].value, 4)
+        self.assertEqual(stats[3].time, today)
+        self.assertEqual(stats[3].value, 6)
+
+        # test duplicate execution
+        result = unique_cell_histogram.delay()
+        self.assertEqual(result.get(), 0)
+
     def test_wifi_histogram(self):
         from ichnaea.tasks import wifi_histogram
         session = self.db_master_session

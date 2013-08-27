@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.expression import text
 
 from ichnaea.db import (
+    CellMeasure,
     db_worker_session,
     WifiMeasure,
     Stat,
@@ -100,6 +101,32 @@ def wifi_histogram(start=1, end=1):
         return 0
     except Exception as exc:  # pragma: no cover
         raise wifi_histogram.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask)
+def unique_cell_histogram(ago=1):
+    today = datetime.utcnow().date()
+    day = today - timedelta(days=ago)
+    day_plus_one = day + timedelta(days=1)
+    try:
+        with unique_cell_histogram.db_session() as session:
+            query = session.query(
+                CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
+                CellMeasure.lac, CellMeasure.cid).\
+                group_by(CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
+                         CellMeasure.lac, CellMeasure.cid)
+            query = query.filter(CellMeasure.created < day_plus_one)
+            value = query.count()
+            stat = Stat(time=day, value=int(value))
+            stat.name = 'unique_cell'
+            session.add(stat)
+            session.commit()
+            return 1
+    except IntegrityError as exc:
+        # TODO log error
+        return 0
+    except Exception as exc:  # pragma: no cover
+        raise unique_cell_histogram.retry(exc=exc)
 
 
 @celery.task(base=DatabaseTask)
