@@ -19,6 +19,7 @@
     <div class="half-width" style="float:left">
     <h2>Measurements</h2>
         <p>
+            Data is updated daily shortly after midnight in UTC.<br />
             <table class="table half">
                 <thead>
                     <tr>
@@ -38,6 +39,7 @@
     <div class="half-width" style="float:right">
         <h2>Leaders (Top 10)</h2>
         <p>
+            Data is updated in near-realtime.<br />
             <table class="table">
                 <thead>
                     <tr>
@@ -103,8 +105,8 @@ function make_graph(url, graph_id) {
 
     var graph = new Rickshaw.Graph( {
         element: document.querySelector(graph_id + " .chart"),
-        width: 600,
-        height: 240,
+        width: 720,
+        height: 144,
         series: [ {
                 data: entries, 
                 color: 'steelblue'
