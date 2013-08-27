@@ -81,9 +81,9 @@ class ContentViews(Layout):
         metric_names = [
             ('location', 'Locations'),
             ('cell', 'Cells'),
-            ('unique-cell', 'Unique Cells'),
+            ('unique_cell', 'Unique Cells'),
             ('wifi', 'Wifi APs'),
-            ('unique-wifi', 'Unique Wifi APs'),
+            ('unique_wifi', 'Unique Wifi APs'),
         ]
         for mid, name in metric_names:
             result['metrics'].append({'name': name, 'value': metrics[mid]})

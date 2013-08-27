@@ -38,8 +38,8 @@ def global_stats(session):
     result['location'] = stats.get(STAT_TYPE['location'], 0)
     result['cell'] = stats.get(STAT_TYPE['cell'], 0)
     result['wifi'] = stats.get(STAT_TYPE['wifi'], 0)
-    result['unique-cell'] = stats.get(STAT_TYPE['unique_cell'], 0)
-    result['unique-wifi'] = stats.get(STAT_TYPE['unique_wifi'], 0)
+    result['unique_cell'] = stats.get(STAT_TYPE['unique_cell'], 0)
+    result['unique_wifi'] = stats.get(STAT_TYPE['unique_wifi'], 0)
     return result
 
 

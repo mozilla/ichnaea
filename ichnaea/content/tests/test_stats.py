@@ -30,7 +30,7 @@ class TestStats(DBTestCase):
 
         result = global_stats(session)
         self.assertDictEqual(result, {'location': 3, 'cell': 6,
-                             'unique-cell': 3, 'wifi': 3, 'unique-wifi': 2})
+                             'unique_cell': 3, 'wifi': 3, 'unique_wifi': 2})
 
     def test_histogram(self):
         from ichnaea.content.stats import histogram
