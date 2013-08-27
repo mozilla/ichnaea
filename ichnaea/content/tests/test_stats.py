@@ -18,12 +18,10 @@ class TestStats(DBTestCase):
         from ichnaea.content.stats import global_stats
         session = self.db_master_session
         day = datetime.utcnow().date() - timedelta(1)
-        day2 = day - timedelta(1)
         stats = [
             Stat(key=STAT_TYPE['location'], time=day, value=3),
             Stat(key=STAT_TYPE['cell'], time=day, value=6),
             Stat(key=STAT_TYPE['wifi'], time=day, value=3),
-            Stat(key=STAT_TYPE['wifi'], time=day2, value=0),
             Stat(key=STAT_TYPE['unique_cell'], time=day, value=3),
             Stat(key=STAT_TYPE['unique_wifi'], time=day, value=2),
         ]

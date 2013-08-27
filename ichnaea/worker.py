@@ -29,7 +29,7 @@ CELERYBEAT_SCHEDULE = {
     'histogram-wifi-yesterday': {
         'task': 'ichnaea.tasks.wifi_histogram',
         'schedule': crontab(hour=0, minute=13),
-        'args': (1, 1),
+        'args': (1),
     },
     'histogram-unique-cell-yesterday': {
         'task': 'ichnaea.tasks.unique_cell_histogram',

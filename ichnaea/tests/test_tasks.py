@@ -232,34 +232,33 @@ class TestStats(CeleryTestCase):
         session.add_all(measures)
         session.commit()
 
-        result = wifi_histogram.delay(start=30, end=0)
-        added = result.get()
-        self.assertEqual(added, 3)
+        wifi_histogram.delay(ago=40).get()
 
         stats = session.query(Stat).order_by(Stat.time).all()
-        self.assertEqual(len(stats), 3)
+        self.assertEqual(len(stats), 1)
         self.assertEqual(stats[0].key, STAT_TYPE['wifi'])
-        self.assertEqual(stats[0].time, two_days)
-        self.assertEqual(stats[1].time, yesterday)
-        self.assertEqual(stats[2].time, today)
-        self.assertEqual(stats[0].value, 3)
-        self.assertEqual(stats[1].value, 1)
-        self.assertEqual(stats[2].value, 2)
+        self.assertEqual(stats[0].time, long_ago)
+        self.assertEqual(stats[0].value, 1)
 
-        # test older time range
-        result = wifi_histogram.delay(start=60, end=30)
-        added = result.get()
-        self.assertEqual(added, 1)
+        # fill in newer dates
+        wifi_histogram.delay(ago=2).get()
+        wifi_histogram.delay(ago=1).get()
+        wifi_histogram.delay(ago=0).get()
 
         stats = session.query(Stat).order_by(Stat.time).all()
         self.assertEqual(len(stats), 4)
         self.assertEqual(stats[0].time, long_ago)
         self.assertEqual(stats[0].value, 1)
+        self.assertEqual(stats[1].time, two_days)
+        self.assertEqual(stats[1].value, 4)
+        self.assertEqual(stats[2].time, yesterday)
+        self.assertEqual(stats[2].value, 5)
+        self.assertEqual(stats[3].time, today)
+        self.assertEqual(stats[3].value, 7)
 
         # test duplicate execution
-        result = wifi_histogram.delay()
-        added = result.get()
-        self.assertEqual(added, 0)
+        result = wifi_histogram.delay(ago=1)
+        self.assertEqual(result.get(), 0)
 
     def test_unique_wifi_histogram(self):
         from ichnaea.tasks import unique_wifi_histogram

@@ -1,12 +1,10 @@
 from datetime import datetime
 from datetime import timedelta
-from operator import itemgetter
 
 from celery import Task
 from sqlalchemy import distinct
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.sql.expression import text
 
 from ichnaea.db import (
     CellMeasure,
@@ -74,23 +72,20 @@ def cell_histogram(ago=1):
 
 
 @celery.task(base=DatabaseTask)
-def wifi_histogram(start=1, end=1):
-    query = text("select date(created) as day, count(*) as num "
-                 "from wifi_measure where "
-                 "date(created) >= date_sub(curdate(), interval %s day) and "
-                 "date(created) <= date_sub(curdate(), interval %s day) "
-                 "group by date(created)" % (int(start), int(end)))
+def wifi_histogram(ago=1):
+    today = datetime.utcnow().date()
+    day = today - timedelta(days=ago)
+    day_plus_one = day + timedelta(days=1)
     try:
         with wifi_histogram.db_session() as session:
-            rows = session.execute(query).fetchall()
-            stats = []
-            for row in sorted(rows, key=itemgetter(0)):
-                stat = Stat(time=row[0], value=row[1])
-                stat.name = 'wifi'
-                stats.append(stat)
-            session.add_all(stats)
+            query = session.query(func.count(WifiMeasure.id))
+            query = query.filter(WifiMeasure.created < day_plus_one)
+            value = query.first()[0]
+            stat = Stat(time=day, value=int(value))
+            stat.name = 'wifi'
+            session.add(stat)
             session.commit()
-            return len(stats)
+            return 1
     except IntegrityError as exc:
         # TODO log error
         return 0
