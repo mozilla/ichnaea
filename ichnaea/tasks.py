@@ -27,19 +27,32 @@ class DatabaseTask(Task):
         return db_worker_session(self.app.db_master)
 
 
-@celery.task(base=DatabaseTask)
-def histogram(ago=1):
+def histogram_days(ago):
     today = datetime.utcnow().date()
     day = today - timedelta(days=ago)
-    day_plus_one = day + timedelta(days=1)
+    max_day = day + timedelta(days=1)
+    return day, max_day
+
+
+def histogram_query(session, model, max_day):
+    query = session.query(func.count(model.id))
+    query = query.filter(model.created < max_day)
+    return query.first()[0]
+
+
+def make_stat(name, time, value):
+    stat = Stat(time=time, value=int(value))
+    stat.name = name
+    return stat
+
+
+@celery.task(base=DatabaseTask)
+def histogram(ago=1):
+    day, max_day = histogram_days(ago)
     try:
         with histogram.db_session() as session:
-            query = session.query(func.count(Measure.id))
-            query = query.filter(Measure.created < day_plus_one)
-            value = query.first()[0]
-            stat = Stat(time=day, value=int(value))
-            stat.name = 'location'
-            session.add(stat)
+            value = histogram_query(session, Measure, max_day)
+            session.add(make_stat('location', day, value))
             session.commit()
             return 1
     except IntegrityError as exc:
@@ -51,17 +64,11 @@ def histogram(ago=1):
 
 @celery.task(base=DatabaseTask)
 def cell_histogram(ago=1):
-    today = datetime.utcnow().date()
-    day = today - timedelta(days=ago)
-    day_plus_one = day + timedelta(days=1)
+    day, max_day = histogram_days(ago)
     try:
         with cell_histogram.db_session() as session:
-            query = session.query(func.count(CellMeasure.id))
-            query = query.filter(CellMeasure.created < day_plus_one)
-            value = query.first()[0]
-            stat = Stat(time=day, value=int(value))
-            stat.name = 'cell'
-            session.add(stat)
+            value = histogram_query(session, CellMeasure, max_day)
+            session.add(make_stat('cell', day, value))
             session.commit()
             return 1
     except IntegrityError as exc:
@@ -73,17 +80,11 @@ def cell_histogram(ago=1):
 
 @celery.task(base=DatabaseTask)
 def wifi_histogram(ago=1):
-    today = datetime.utcnow().date()
-    day = today - timedelta(days=ago)
-    day_plus_one = day + timedelta(days=1)
+    day, max_day = histogram_days(ago)
     try:
         with wifi_histogram.db_session() as session:
-            query = session.query(func.count(WifiMeasure.id))
-            query = query.filter(WifiMeasure.created < day_plus_one)
-            value = query.first()[0]
-            stat = Stat(time=day, value=int(value))
-            stat.name = 'wifi'
-            session.add(stat)
+            value = histogram_query(session, WifiMeasure, max_day)
+            session.add(make_stat('wifi', day, value))
             session.commit()
             return 1
     except IntegrityError as exc:
@@ -95,9 +96,7 @@ def wifi_histogram(ago=1):
 
 @celery.task(base=DatabaseTask)
 def unique_cell_histogram(ago=1):
-    today = datetime.utcnow().date()
-    day = today - timedelta(days=ago)
-    day_plus_one = day + timedelta(days=1)
+    day, max_day = histogram_days(ago)
     try:
         with unique_cell_histogram.db_session() as session:
             query = session.query(
@@ -105,11 +104,9 @@ def unique_cell_histogram(ago=1):
                 CellMeasure.lac, CellMeasure.cid).\
                 group_by(CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
                          CellMeasure.lac, CellMeasure.cid)
-            query = query.filter(CellMeasure.created < day_plus_one)
+            query = query.filter(CellMeasure.created < max_day)
             value = query.count()
-            stat = Stat(time=day, value=int(value))
-            stat.name = 'unique_cell'
-            session.add(stat)
+            session.add(make_stat('unique_cell', day, value))
             session.commit()
             return 1
     except IntegrityError as exc:
@@ -121,17 +118,13 @@ def unique_cell_histogram(ago=1):
 
 @celery.task(base=DatabaseTask)
 def unique_wifi_histogram(ago=1):
-    today = datetime.utcnow().date()
-    day = today - timedelta(days=ago)
-    day_plus_one = day + timedelta(days=1)
+    day, max_day = histogram_days(ago)
     try:
         with unique_wifi_histogram.db_session() as session:
             query = session.query(func.count(distinct(WifiMeasure.key)))
-            query = query.filter(WifiMeasure.created < day_plus_one)
+            query = query.filter(WifiMeasure.created < max_day)
             value = query.first()[0]
-            stat = Stat(time=day, value=int(value))
-            stat.name = 'unique_wifi'
-            session.add(stat)
+            session.add(make_stat('unique_wifi', day, value))
             session.commit()
             return 1
     except IntegrityError as exc:
