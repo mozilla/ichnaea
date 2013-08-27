@@ -4,7 +4,6 @@ import datetime
 from datetime import timedelta
 import math
 
-from sqlalchemy import distinct
 from sqlalchemy import func
 from sqlalchemy.sql.expression import text
 
@@ -14,11 +13,11 @@ from ichnaea.db import (
     Stat,
     STAT_TYPE,
     User,
-    WifiMeasure,
 )
 
 
 def global_stats(session):
+    # get and sum up stats
     stat_keys = (STAT_TYPE['location'], STAT_TYPE['cell'], STAT_TYPE['wifi'])
     rows = session.query(Stat.key, func.sum(Stat.value)).filter(
         Stat.key.in_(stat_keys)).group_by(Stat.key)
@@ -33,13 +32,20 @@ def global_stats(session):
     result['cell'] = stats.get(STAT_TYPE['cell'], 0)
     result['wifi'] = stats.get(STAT_TYPE['wifi'], 0)
 
+    # get max / newest total unique stats
+    stat_keys = (STAT_TYPE['unique_wifi'], )
+    rows = session.query(Stat.key, func.max(Stat.value)).filter(
+        Stat.key.in_(stat_keys)).group_by(Stat.key)
+    for row in rows.all():
+        if row[1]:
+            stats[row[0]] = int(row[1])
+    result['unique-wifi'] = stats.get(STAT_TYPE['unique_wifi'], 0)
+
     result['unique-cell'] = session.query(
         CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
         CellMeasure.lac, CellMeasure.cid).\
         group_by(CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
                  CellMeasure.lac, CellMeasure.cid).count()
-    result['unique-wifi'] = session.query(
-        func.count(distinct(WifiMeasure.key))).first()[0]
     return result
 
 

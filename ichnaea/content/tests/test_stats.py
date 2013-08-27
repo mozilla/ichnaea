@@ -88,6 +88,9 @@ class TestAsyncStats(CeleryTestCase):
         result = tasks.wifi_histogram.delay(start=0, end=0)
         self.assertEqual(result.get(), 1)
 
+        result = tasks.unique_wifi_histogram.delay(ago=0)
+        self.assertEqual(result.get(), 1)
+
         result = global_stats(session)
         self.assertDictEqual(result, {'location': 3, 'cell': 6,
                              'unique-cell': 3, 'wifi': 3, 'unique-wifi': 2})

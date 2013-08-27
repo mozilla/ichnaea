@@ -131,6 +131,8 @@ class TestStats(CeleryAppTestCase):
         self.assertEqual(task.get(), 1)
         task = tasks.wifi_histogram.delay(start=0, end=0)
         self.assertEqual(task.get(), 1)
+        task = tasks.unique_wifi_histogram.delay(ago=0)
+        self.assertEqual(task.get(), 1)
         # check result
         request = DummyRequest()
         request.db_slave_session = self.db_master_session
