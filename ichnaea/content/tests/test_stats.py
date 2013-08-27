@@ -65,33 +65,38 @@ class TestAsyncStats(CeleryTestCase):
         m1 = 10000000
         m2 = 20000000
         m3 = 30000000
-        session.add(Measure(lat=m1, lon=m2))
-        session.add(Measure(lat=m2, lon=m3))
-        session.add(Measure(lat=m2, lon=m3))
-        session.add(CellMeasure(lat=m1, lon=m2, mcc=1, mnc=1, lac=2, cid=8))
-        session.add(CellMeasure(lat=m1, lon=m2, mcc=1, mnc=1, lac=3, cid=9))
-        session.add(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=3, cid=9))
-        session.add(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=4, cid=9))
-        session.add(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=4, cid=9))
-        session.add(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=4, cid=9))
-        session.add(WifiMeasure(lat=m1, lon=m2, key='a'))
-        session.add(WifiMeasure(lat=m2, lon=m3, key='b'))
-        session.add(WifiMeasure(lat=m2, lon=m3, key='b'))
+        day = datetime.utcnow().date() - timedelta(1)
+        stats = []
+        stats.append(Measure(lat=m1, lon=m2))
+        stats.append(Measure(lat=m2, lon=m3))
+        stats.append(Measure(lat=m2, lon=m3))
+        stats.append(CellMeasure(lat=m1, lon=m2, mcc=1, mnc=1, lac=2, cid=8))
+        stats.append(CellMeasure(lat=m1, lon=m2, mcc=1, mnc=1, lac=3, cid=9))
+        stats.append(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=3, cid=9))
+        stats.append(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=4, cid=9))
+        stats.append(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=4, cid=9))
+        stats.append(CellMeasure(lat=m2, lon=m3, mcc=1, mnc=1, lac=4, cid=9))
+        stats.append(WifiMeasure(lat=m1, lon=m2, key='a'))
+        stats.append(WifiMeasure(lat=m2, lon=m3, key='b'))
+        stats.append(WifiMeasure(lat=m2, lon=m3, key='b'))
+        for stat in stats:
+            stat.created = day
+        session.add_all(stats)
         session.commit()
 
-        result = tasks.histogram.delay(start=0, end=0)
+        result = tasks.histogram.delay(start=1, end=1)
         self.assertEqual(result.get(), 1)
 
-        result = tasks.cell_histogram.delay(start=0, end=0)
+        result = tasks.cell_histogram.delay(start=1, end=1)
         self.assertEqual(result.get(), 1)
 
-        result = tasks.wifi_histogram.delay(start=0, end=0)
+        result = tasks.wifi_histogram.delay(start=1, end=1)
         self.assertEqual(result.get(), 1)
 
-        result = tasks.unique_cell_histogram.delay(ago=0)
+        result = tasks.unique_cell_histogram.delay(ago=1)
         self.assertEqual(result.get(), 1)
 
-        result = tasks.unique_wifi_histogram.delay(ago=0)
+        result = tasks.unique_wifi_histogram.delay(ago=1)
         self.assertEqual(result.get(), 1)
 
         result = global_stats(session)
