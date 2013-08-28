@@ -59,7 +59,7 @@ class ContentViews(Layout):
     def homepage_view(self):
         return {'page_title': 'Overview'}
 
-    @view_config(renderer='string', name="map.csv", http_cache=300)
+    @view_config(renderer='string', name="map.csv", http_cache=86400)
     def map_csv(self):
         session = self.request.db_slave_session
         return map_csv(session)
@@ -68,19 +68,19 @@ class ContentViews(Layout):
     def map_view(self):
         return {'page_title': 'Coverage Map'}
 
-    @view_config(renderer='json', name="stats_location.json", http_cache=300)
+    @view_config(renderer='json', name="stats_location.json", http_cache=86400)
     def stats_location_json(self):
         session = self.request.db_slave_session
         return {'histogram': histogram(session, 'location')}
 
     @view_config(
-        renderer='json', name="stats_unique_cell.json", http_cache=300)
+        renderer='json', name="stats_unique_cell.json", http_cache=86400)
     def stats_unique_cell_json(self):
         session = self.request.db_slave_session
         return {'histogram': histogram(session, 'unique_cell')}
 
     @view_config(
-        renderer='json', name="stats_unique_wifi.json", http_cache=300)
+        renderer='json', name="stats_unique_wifi.json", http_cache=86400)
     def stats_unique_wifi_json(self):
         session = self.request.db_slave_session
         return {'histogram': histogram(session, 'unique_wifi')}
