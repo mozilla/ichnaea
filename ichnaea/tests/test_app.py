@@ -1,18 +1,13 @@
-from unittest2 import TestCase
-
 from ichnaea.tests.base import (
     _make_app,
     _make_db,
-    DBIsolation,
+    DBTestCase,
     SQLURI,
     SQLSOCKET,
 )
 
 
-class TestApp(TestCase, DBIsolation):
-
-    def tearDown(self):
-        self.teardown_session()
+class TestApp(DBTestCase):
 
     def test_db_hooks(self):
         settings = {

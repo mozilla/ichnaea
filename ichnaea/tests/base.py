@@ -39,13 +39,28 @@ class DBIsolation(object):
     def teardown_session(self):
         self.slave_trans.rollback()
         self.db_slave_session.close()
+        del self.db_slave_session
+        self.slave_trans.close()
+        self.db_slave.session_factory.configure(bind=None)
+        del self.slave_trans
         self.master_trans.rollback()
         self.db_master_session.close()
+        del self.db_master_session
+        self.master_trans.close()
+        self.db_master.session_factory.configure(bind=None)
+        del self.master_trans
 
     @classmethod
-    def teardown_pool(cls):
+    def setup_engine(cls):
+        cls.db_master = _make_db()
+        cls.db_slave = _make_db(create=False)
+
+    @classmethod
+    def teardown_engine(cls):
         cls.db_master.engine.pool.dispose()
+        del cls.db_master
         cls.db_slave.engine.pool.dispose()
+        del cls.db_slave
 
     def cleanup(self, engine):
         with engine.connect() as conn:
@@ -58,28 +73,24 @@ class CeleryIsolation(object):
 
     @classmethod
     def attach_database(cls):
-        cls._old_db = getattr(celery, 'db_master', None)
         attach_database(celery, cls.db_master)
 
     @classmethod
     def detach_database(cls):
-        if cls._old_db is not None:
-            setattr(celery, 'db_master', cls._old_db)
-        else:
-            delattr(celery, 'db_master')
+        del celery.db_master
 
 
 class AppTestCase(TestCase, DBIsolation):
 
     @classmethod
     def setUpClass(cls):
-        cls.db_master = _make_db()
-        cls.db_slave = _make_db(create=False)
+        super(AppTestCase, cls).setup_engine()
         cls.app = _make_app(_db_master=cls.db_master, _db_slave=cls.db_slave)
 
     @classmethod
     def tearDownClass(cls):
-        super(AppTestCase, cls).teardown_pool()
+        del cls.app
+        super(AppTestCase, cls).teardown_engine()
 
     def setUp(self):
         self.setup_session()
@@ -92,12 +103,11 @@ class DBTestCase(TestCase, DBIsolation):
 
     @classmethod
     def setUpClass(cls):
-        cls.db_master = _make_db()
-        cls.db_slave = _make_db(create=False)
+        super(DBTestCase, cls).setup_engine()
 
     @classmethod
     def tearDownClass(cls):
-        super(DBTestCase, cls).teardown_pool()
+        super(DBTestCase, cls).teardown_engine()
 
     def setUp(self):
         self.setup_session()
