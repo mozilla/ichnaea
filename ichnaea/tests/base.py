@@ -42,6 +42,11 @@ class DBIsolation(object):
         self.master_trans.rollback()
         self.db_master_session.close()
 
+    @classmethod
+    def teardown_pool(cls):
+        cls.db_master.engine.pool.dispose()
+        cls.db_slave.engine.pool.dispose()
+
     def cleanup(self, engine):
         with engine.connect() as conn:
             trans = conn.begin()
@@ -72,6 +77,10 @@ class AppTestCase(TestCase, DBIsolation):
         cls.db_slave = _make_db(create=False)
         cls.app = _make_app(_db_master=cls.db_master, _db_slave=cls.db_slave)
 
+    @classmethod
+    def tearDownClass(cls):
+        super(AppTestCase, cls).teardown_pool()
+
     def setUp(self):
         self.setup_session()
 
@@ -85,6 +94,10 @@ class DBTestCase(TestCase, DBIsolation):
     def setUpClass(cls):
         cls.db_master = _make_db()
         cls.db_slave = _make_db(create=False)
+
+    @classmethod
+    def tearDownClass(cls):
+        super(DBTestCase, cls).teardown_pool()
 
     def setUp(self):
         self.setup_session()
