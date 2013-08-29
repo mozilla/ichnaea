@@ -7,8 +7,10 @@ from ichnaea.tests.base import (
     SQLSOCKET,
 )
 
-
-LINE = '9;2;1.23456;-2.3;1;2;3;4;0;0;2013-04-20 02:59:43;2013-04-20 02:59:43;1'
+LINE = (
+    "1376952704\td5ee506df32b8d71d78f37133eaaaf137385847e\t"
+    "37.871930\t-122.273156\t-16\t11\tdc:45:17:75:8f:80\tATT560"
+)
 
 
 class TestLoadFile(DBTestCase):
@@ -40,9 +42,9 @@ class TestLoadFile(DBTestCase):
     def test_corrupt_lines(self):
         func, tmpfile = self._make_one()
         os.write(tmpfile[0], LINE + '\n')
-        os.write(tmpfile[0], '3;\\N\n')
-        os.write(tmpfile[0], '4;\\N;abc\n')
-        os.write(tmpfile[0], '5;\\N;1.0;2.1;abc\n')
+        os.write(tmpfile[0], '3\t\\N\n')
+        os.write(tmpfile[0], '4\t\\N\tabc\n')
+        os.write(tmpfile[0], '5\t\\N\t1.0\t2.1\tabc\n')
         counter = func(self.db_master_session, tmpfile[1])
         self.assertEqual(counter, 1)
 

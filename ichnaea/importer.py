@@ -1,12 +1,13 @@
 import argparse
 import csv
+import datetime
 import sys
 
+from colander import iso8601
 from konfig import Config
-from sqlalchemy import func
 
-from ichnaea.db import Database, Cell
-from ichnaea.decimaljson import to_precise_int
+from ichnaea.db import Database
+from ichnaea.submit import process_measure
 
 
 def _int(value):
@@ -17,57 +18,63 @@ def _int(value):
 
 
 def load_file(session, source_file, batch_size=10000):
-    result = session.query(func.max(Cell.id)).first()
-    max_id = result[0]
-    cell_insert = Cell.__table__.insert()
+    utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
 
     with open(source_file, 'r') as fd:
-        reader = csv.reader(fd, delimiter=';')
-        cells = []
+        reader = csv.reader(fd, delimiter='\t')
+        session_objects = []
         counter = 0
 
         for fields in reader:
-            id_ = int(fields[0])
-            # skip already processed items - we rely on the data file
-            # to have consistent ids between exports
-            if id_ <= max_id:  # pragma: no cover
-                continue
             try:
-                radio = 0
-                mcc = _int(fields[4])
-                if mcc > 1000:  # pragma: no cover
+                time = int(fields[0])
+                # todo convert from unixtime to utc
+                key = str(fields[1])
+                if len(key) != 40:  # pragma: no cover
+                    print "too short key: %s" % key
                     continue
-                mnc = _int(fields[5])
-                if radio == 0 and mnc > 1000:  # pragma: no cover
+                lat = fields[2]
+                lon = fields[3]
+                signal = int(fields[4])
+                if signal > 0 or signal < -140:
+                    signal = -140
+                channel = int(fields[5])
+                if channel < 0:
+                    channel = 0
+                ssid = str(fields[6])
+                if ssid == '00:00:00:00:00:00':
                     continue
-                elif radio == 1 and mnc > 32767:  # pragma: no cover
-                    continue
-                cell = dict(
-                    id=id_,
-                    # TODO figure out if we have cdma networks
-                    radio=radio,
-                    lat=to_precise_int(fields[2]),
-                    lon=to_precise_int(fields[3]),
-                    mcc=mcc,
-                    mnc=mnc,
-                    lac=_int(fields[6]),
-                    cid=_int(fields[7]),
-                    range=_int(fields[8]),
+                wifi = dict(
+                    key=key,
+                    channel=channel,
+                    signal=signal,
+                )
+                data = dict(
+                    lat=lat,
+                    lon=lon,
+                    time=time,
+                    accuracy=0,
+                    altitude=0,
+                    altitude_accuracy=0,
+                    radio='',
+                    cell=(),
+                    wifi=[wifi],
                 )
             except (ValueError, IndexError):
                 continue
-            cells.append(cell)
+            session_objects.extend(process_measure(data, utcnow, session))
 
             # flush every 1000 new records
             counter += 1
             if counter % batch_size == 0:
-                session.execute(cell_insert, cells)
+                session.add_all(session_objects)
                 session.flush()
                 print('Added %s records.' % counter)
-                cells = []
+                session_objects = []
 
     # add the rest
-    session.execute(cell_insert, cells)
+    session.add_all(session_objects)
+    session.flush()
     return counter
 
 
