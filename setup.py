@@ -63,6 +63,6 @@ setup(
     extras_require={'test': test_requires},
     entry_points="""\
     [console_scripts]
-    ichnaea_import = ichnaea.importer:console_entry
+    location_import = ichnaea.importer:console_entry
     """,
 )

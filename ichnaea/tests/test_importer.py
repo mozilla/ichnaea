@@ -1,7 +1,12 @@
 import os
 from tempfile import mkstemp
 
-from ichnaea.tests.base import DBTestCase
+from ichnaea.tests.base import (
+    DBTestCase,
+    SQLURI,
+    SQLSOCKET,
+)
+
 
 LINE = '9;2;1.23456;-2.3;1;2;3;4;0;0;2013-04-20 02:59:43;2013-04-20 02:59:43;1'
 
@@ -42,19 +47,18 @@ class TestLoadFile(DBTestCase):
         self.assertEqual(counter, 1)
 
 
-# class TestMain(DBTestCase):
+class TestMain(DBTestCase):
 
-#     def _make_one(self):
-#         from ichnaea.importer import main
-#         config = mkstemp()
-#         data = mkstemp()
-#         return config, data, main
+    def _make_one(self):
+        from ichnaea.importer import main
+        config = mkstemp()
+        data = mkstemp()
+        return config, data, main
 
-#     def test_main(self):
-#         config, data, func = self._make_one()
-#         os.write(config[0], '[ichnaea]\n')
-#         os.write(config[0], 'celldb=sqlite://\n')
-#         os.write(config[0], 'measuredb=sqlite://\n')
-#         os.write(data[0], LINE)
-#         counter = func(['main', config[1], data[1]])
-#         self.assertEqual(counter, 1)
+    def test_main(self):
+        config, data, func = self._make_one()
+        os.write(config[0], '[ichnaea]\n')
+        os.write(config[0], 'db_master=%s\n' % SQLURI)
+        os.write(config[0], 'db_master_socket=%s\n' % SQLSOCKET)
+        counter = func(['main', '--dry-run', config[1], data[1]])
+        self.assertEqual(counter, 0)

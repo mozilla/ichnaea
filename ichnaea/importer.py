@@ -21,32 +21,6 @@ def load_file(session, source_file, batch_size=10000):
     max_id = result[0]
     cell_insert = Cell.__table__.insert()
 
-    if not max_id:
-        # insert test data for @nsm
-        session.execute(cell_insert, [{
-            "id": 1,
-            "lat": 191757100,
-            "lon": 729645000,
-            "radio": 0,
-            "mcc": 405,
-            "mnc": 15,
-            "lac": 15821,
-            "cid": 2663101,
-            "range": 0
-        }])
-        # insert test data for @kanru
-        session.execute(cell_insert, [{
-            "id": 2,
-            "lat": 250324090,
-            "lon": 1215673029,
-            "radio": 0,
-            "mcc": 466,
-            "mnc": 92,
-            "lac": 10293,
-            "cid": 19233895,
-            "range": 0
-        }])
-
     with open(source_file, 'r') as fd:
         reader = csv.reader(fd, delimiter=';')
         cells = []
@@ -84,33 +58,41 @@ def load_file(session, source_file, batch_size=10000):
                 continue
             cells.append(cell)
 
-            # commit every 1000 new records
+            # flush every 1000 new records
             counter += 1
             if counter % batch_size == 0:
                 session.execute(cell_insert, cells)
-                session.commit()
+                session.flush()
                 print('Added %s records.' % counter)
                 cells = []
 
-        # commit the rest
-        session.execute(cell_insert, cells)
-        print('Added %s records.' % counter)
-        session.commit()
-    # return for tests
+    # add the rest
+    session.execute(cell_insert, cells)
     return counter
 
 
 def main(argv):
     parser = argparse.ArgumentParser(
-        prog=argv[0], description='Ichaneae Importer')
+        prog=argv[0], description='Location Importer')
 
+    parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('config', help="config file")
     parser.add_argument('source', help="source file")
     args = parser.parse_args(argv[1:])
     settings = Config(args.config).get_map('ichnaea')
-    db = Database(settings['db_master'])
+    db = Database(
+        settings['db_master'],
+        socket=settings.get('db_master_socket'),
+        create=False,
+    )
     session = db.session()
-    return load_file(session, args.source)
+    added = load_file(session, args.source)
+    print('Added %s records.' % added)
+    if args.dry_run:
+        session.rollback()
+    else:  # pragma: no cover
+        session.commit()
+    return added
 
 
 def console_entry():  # pragma: no cover
