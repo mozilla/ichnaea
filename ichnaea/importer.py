@@ -19,6 +19,7 @@ def _int(value):
 
 def load_file(session, source_file, batch_size=10000):
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
+    utcmin = utcnow - datetime.timedelta(120)
 
     with open(source_file, 'r') as fd:
         reader = csv.reader(fd, delimiter='\t')
@@ -28,7 +29,12 @@ def load_file(session, source_file, batch_size=10000):
         for fields in reader:
             try:
                 time = int(fields[0])
-                # todo convert from unixtime to utc
+                if time == 0:
+                    # unknown time gets an old date
+                    time = utcmin
+                else:
+                    # convert from unixtime to utc
+                    time = datetime.datetime.utcfromtimestamp(time)
                 key = str(fields[1])
                 if len(key) != 40:  # pragma: no cover
                     print "too short key: %s" % key
