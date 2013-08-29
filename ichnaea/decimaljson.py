@@ -36,6 +36,8 @@ def quantize(value):
 
 
 def to_precise_int(value):
+    if isinstance(value, str):
+        value = Decimal(value)
     return int(value * FACTOR)
 
 

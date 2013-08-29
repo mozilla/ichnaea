@@ -61,4 +61,8 @@ setup(
     tests_require=test_requires,
     test_suite="ichnaea",
     extras_require={'test': test_requires},
+    entry_points="""\
+    [console_scripts]
+    ichnaea_import = ichnaea.importer:console_entry
+    """,
 )
