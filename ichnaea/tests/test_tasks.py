@@ -9,6 +9,7 @@ from ichnaea.db import (
     Measure,
     Stat,
     STAT_TYPE,
+    WifiBlacklist,
     WifiMeasure,
 )
 from ichnaea.decimaljson import encode_datetime
@@ -349,3 +350,21 @@ class TestInsert(CeleryTestCase):
         entries[0]['id'] = measures[0].id
         result = insert_wifi_measure.delay(measure, entries)
         self.assertEqual(result.get(), 0)
+
+    def test_wifi_blacklist(self):
+        from ichnaea.tasks import insert_wifi_measure
+        session = self.db_master_session
+        bad_key = sha1('1').hexdigest()
+        good_key = sha1('2').hexdigest()
+        black = WifiBlacklist(key=bad_key)
+        session.add(black)
+        session.flush()
+        measure = dict(id=0, lat=10000000, lon=20000000)
+        entries = [{"key": good_key}, {"key": good_key}, {"key": bad_key}]
+
+        result = insert_wifi_measure.delay(measure, entries)
+        self.assertEqual(result.get(), 2)
+
+        measures = session.query(WifiMeasure).all()
+        self.assertEqual(len(measures), 2)
+        self.assertEqual(set([m.key for m in measures]), set([good_key]))

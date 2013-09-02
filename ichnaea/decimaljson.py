@@ -23,7 +23,7 @@ def encode_datetime(obj):
 def decode_datetime(obj):
     try:
         return iso8601.parse_date(obj)
-    except (iso8601.ParseError, TypeError):  # pragma: no cover
+    except (iso8601.ParseError, TypeError):
         return datetime.utcnow().replace(tzinfo=iso8601.UTC)
 
 

@@ -10,6 +10,7 @@ from ichnaea.db import (
     CellMeasure,
     db_worker_session,
     Measure,
+    WifiBlacklist,
     WifiMeasure,
     Stat,
 )
@@ -139,35 +140,43 @@ def unique_wifi_histogram(ago=1):
 def insert_wifi_measure(measure_data, entries):
     wifis = []
     result = []
-    for entry in entries:
-        # convert frequency into channel numbers and remove frequency
-        freq = entry.pop('frequency', 0)
-        # if no explicit channel was given, calculate
-        if freq and not entry['channel']:
-            if 2411 < freq < 2473:
-                # 2.4 GHz band
-                entry['channel'] = (freq - 2407) // 5
-            elif 5169 < freq < 5826:
-                # 5 GHz band
-                entry['channel'] = (freq - 5000) // 5
-        wifi = WifiMeasure(
-            measure_id=measure_data['id'],
-            created=decode_datetime(measure_data['created']),
-            lat=measure_data['lat'],
-            lon=measure_data['lon'],
-            time=decode_datetime(measure_data['time']),
-            accuracy=measure_data['accuracy'],
-            altitude=measure_data['altitude'],
-            altitude_accuracy=measure_data['altitude_accuracy'],
-            id=entry.get('id', None),
-            key=entry['key'],
-            channel=entry['channel'],
-            signal=entry['signal'],
-        )
-        wifis.append(wifi)
-        result.append(entry)
+    wifi_keys = set([e['key'] for e in entries])
     try:
         with insert_wifi_measure.db_session() as session:
+            blacked = session.query(WifiBlacklist.key).filter(
+                WifiBlacklist.key.in_(wifi_keys)).all()
+            blacked = set([b[0] for b in blacked])
+            for entry in entries:
+                # skip blacklisted wifi AP's
+                if entry['key'] in blacked:
+                    continue
+                # convert frequency into channel numbers and remove frequency
+                freq = entry.pop('frequency', 0)
+                # if no explicit channel was given, calculate
+                if freq and not entry['channel']:
+                    if 2411 < freq < 2473:
+                        # 2.4 GHz band
+                        entry['channel'] = (freq - 2407) // 5
+                    elif 5169 < freq < 5826:
+                        # 5 GHz band
+                        entry['channel'] = (freq - 5000) // 5
+                wifi = WifiMeasure(
+                    measure_id=measure_data['id'],
+                    created=decode_datetime(measure_data.get('created', '')),
+                    lat=measure_data['lat'],
+                    lon=measure_data['lon'],
+                    time=decode_datetime(measure_data.get('time', '')),
+                    accuracy=measure_data.get('accuracy', 0),
+                    altitude=measure_data.get('altitude', 0),
+                    altitude_accuracy=measure_data.get('altitude_accuracy', 0),
+                    id=entry.get('id', None),
+                    key=entry['key'],
+                    channel=entry.get('channel', 0),
+                    signal=entry.get('signal', 0),
+                )
+                wifis.append(wifi)
+                result.append(entry)
+
             session.add_all(wifis)
             session.commit()
         return len(wifis)
