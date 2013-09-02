@@ -145,6 +145,26 @@ class Wifi(_Model):
 wifi_table = Wifi.__table__
 
 
+class WifiBlacklist(_Model):
+    __tablename__ = 'wifi_blacklist'
+    __table_args__ = (
+        UniqueConstraint('key', name='wifi_blacklist_key_unique'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+        }
+    )
+    id = Column(BigInteger(unsigned=True),
+                primary_key=True, autoincrement=True)
+    created = Column(DateTime)
+    key = Column(String(40))
+
+    def __init__(self, *args, **kw):
+        if 'created' not in kw:
+            kw['created'] = datetime.datetime.utcnow()
+        super(WifiBlacklist, self).__init__(*args, **kw)
+
+
 class WifiMeasure(_Model):
     __tablename__ = 'wifi_measure'
     __table_args__ = (

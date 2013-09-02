@@ -1,5 +1,7 @@
 import datetime
 
+from sqlalchemy.exc import IntegrityError
+
 from ichnaea.tests.base import DBTestCase
 
 
@@ -101,6 +103,40 @@ class TestWifi(DBTestCase):
         self.assertEqual(result.lat, 12345678)
         self.assertEqual(result.lon, 23456789)
         self.assertEqual(result.range, 200)
+
+
+class TestWifiBlacklist(DBTestCase):
+
+    def _make_one(self, **kw):
+        from ichnaea.db import WifiBlacklist
+        return WifiBlacklist(**kw)
+
+    def test_constructor(self):
+        wifi = self._make_one()
+        self.assertTrue(wifi.key is None)
+        self.assertTrue(wifi.created is not None)
+
+    def test_fields(self):
+        key = "3680873e9b83738eb72946d19e971e023e51fd01"
+        wifi = self._make_one(key=key)
+        session = self.db_master_session
+        session.add(wifi)
+        session.commit()
+
+        result = session.query(wifi.__class__).first()
+        self.assertEqual(result.key, key)
+        self.assertTrue(isinstance(result.created, datetime.datetime))
+
+    def test_unique_key(self):
+        key = "3680873e9b83738eb72946d19e971e023e51fd01"
+        wifi1 = self._make_one(key=key)
+        session = self.db_master_session
+        session.add(wifi1)
+        session.commit()
+
+        wifi2 = self._make_one(key=key)
+        session.add(wifi2)
+        self.assertRaises(IntegrityError, session.commit)
 
 
 class TestWifiMeasure(DBTestCase):
