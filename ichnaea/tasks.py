@@ -136,7 +136,7 @@ def unique_wifi_histogram(ago=1):
         raise unique_wifi_histogram.retry(exc=exc)
 
 
-@celery.task(base=DatabaseTask)
+@celery.task(base=DatabaseTask, ignore_result=True)
 def new_unique_wifis(ago=1, offset=0):
     # TODO: this doesn't take into account wifi AP's which have
     # permanently moved after a certain date
@@ -150,7 +150,7 @@ def new_unique_wifis(ago=1, offset=0):
             query = session.query(distinct(WifiMeasure.key)).filter(
                 WifiMeasure.created < max_day).filter(
                 WifiMeasure.created >= day).order_by(
-                WifiMeasure.id).limit(1000).offset(offset)
+                WifiMeasure.id).limit(10000).offset(offset)
             new_wifis = [w[0] for w in query.all()]
             if not new_wifis:  # pragma: no cover
                 # nothing to be done
