@@ -136,6 +136,61 @@ def unique_wifi_histogram(ago=1):
         raise unique_wifi_histogram.retry(exc=exc)
 
 
+@celery.task(base=DatabaseTask)
+def new_unique_wifis(ago=1, offset=0):
+    # TODO: this doesn't take into account wifi AP's which have
+    # permanently moved after a certain date
+
+    # maximum difference of two decimal places, ~1km at equator
+    # or 500m at 67 degrees north
+    max_difference = 100000
+    day, max_day = histogram_days(ago)
+    try:
+        with new_unique_wifis.db_session() as session:
+            query = session.query(distinct(WifiMeasure.key)).filter(
+                WifiMeasure.created < max_day).filter(
+                WifiMeasure.created >= day).order_by(
+                WifiMeasure.id).limit(1000).offset(offset)
+            new_wifis = [w[0] for w in query.all()]
+            if not new_wifis:  # pragma: no cover
+                # nothing to be done
+                return []
+            # check min/max lat/lon
+            query = session.query(
+                WifiMeasure.key, func.max(WifiMeasure.lat),
+                func.min(WifiMeasure.lat), func.max(WifiMeasure.lon),
+                func.min(WifiMeasure.lon)).filter(
+                WifiMeasure.key.in_(new_wifis)).group_by(WifiMeasure.key)
+            results = query.all()
+            moving_keys = set()
+            for result in results:
+                wifi_key, max_lat, min_lat, max_lon, min_lon = result
+                diff_lat = abs(max_lat - min_lat)
+                diff_lon = abs(max_lon - min_lon)
+                if diff_lat >= max_difference or diff_lon >= max_difference:
+                    moving_keys.add(wifi_key)
+            if moving_keys:
+                utcnow = datetime.utcnow()
+                query = session.query(WifiBlacklist.key).filter(
+                    WifiBlacklist.key.in_(moving_keys))
+                already_blocked = set([a[0] for a in query.all()])
+                moving_keys = moving_keys - already_blocked
+                if not moving_keys:
+                    return []
+                for key in moving_keys:
+                    # TODO: on duplicate key ignore
+                    # TODO: remove rows from wifi_measure for newly
+                    #       blocked entries
+                    session.add(WifiBlacklist(key=key, created=utcnow))
+                session.commit()
+            return moving_keys
+    except IntegrityError as exc:  # pragma: no cover
+        # TODO log error
+        return []
+    except Exception as exc:  # pragma: no cover
+        raise new_unique_wifis.retry(exc=exc)
+
+
 @celery.task(base=DatabaseTask, ignore_result=True)
 def insert_wifi_measure(measure_data, entries):
     wifis = []

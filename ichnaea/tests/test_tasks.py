@@ -368,3 +368,42 @@ class TestInsert(CeleryTestCase):
         measures = session.query(WifiMeasure).all()
         self.assertEqual(len(measures), 2)
         self.assertEqual(set([m.key for m in measures]), set([good_key]))
+
+
+class TestBlacklist(CeleryTestCase):
+
+    def test_new_unique_wifis(self):
+        from ichnaea.tasks import new_unique_wifis
+        session = self.db_master_session
+        k1 = sha1('1').hexdigest()
+        k2 = sha1('2').hexdigest()
+        k3 = sha1('3').hexdigest()
+        k4 = sha1('4').hexdigest()
+        k5 = sha1('5').hexdigest()
+        measures = [
+            WifiMeasure(lat=10010000, lon=10010000, key=k1),
+            WifiMeasure(lat=10020000, lon=10050000, key=k1),
+            WifiMeasure(lat=10030000, lon=10090000, key=k1),
+            WifiMeasure(lat=20100000, lon=20000000, key=k2),
+            WifiMeasure(lat=20200000, lon=20000000, key=k2),
+            WifiMeasure(lat=30000000, lon=30000000, key=k3),
+            WifiMeasure(lat=-30000000, lon=30000000, key=k3),
+            WifiMeasure(lat=-41000000, lon=40000000, key=k4),
+            WifiMeasure(lat=-41100000, lon=40000000, key=k4),
+            WifiMeasure(lat=50000000, lon=50000000, key=k5),
+            WifiMeasure(lat=51000000, lon=50000000, key=k5),
+        ]
+        session.add_all(measures)
+        session.add(WifiBlacklist(key=k5))
+        session.commit()
+
+        result = new_unique_wifis.delay(ago=0)
+        self.assertEqual(sorted(result.get()), sorted([k2, k3, k4]))
+
+        measures = session.query(WifiBlacklist).all()
+        self.assertEqual(len(measures), 4)
+        self.assertEqual(set([m.key for m in measures]), set([k2, k3, k4, k5]))
+
+        # test duplicate call
+        result = new_unique_wifis.delay(ago=0)
+        self.assertEqual(result.get(), [])
