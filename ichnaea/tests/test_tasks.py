@@ -407,3 +407,29 @@ class TestBlacklist(CeleryTestCase):
         # test duplicate call
         result = new_unique_wifis.delay(ago=0)
         self.assertEqual(result.get(), [])
+
+    def test_new_unique_wifis_batch(self):
+        from ichnaea.tasks import new_unique_wifis_batch
+        session = self.db_master_session
+        measures = []
+        m1 = 10000000
+        for i in range(11):
+            measures.append(
+                WifiMeasure(lat=m1, lon=m1, key=sha1(str(i)).hexdigest()))
+        session.add_all(measures)
+        session.flush()
+
+        result = new_unique_wifis_batch.delay(ago=0, batch=20)
+        self.assertEqual(result.get(), 1)
+
+        result = new_unique_wifis_batch.delay(ago=0, batch=11)
+        self.assertEqual(result.get(), 1)
+
+        result = new_unique_wifis_batch.delay(ago=0, batch=10)
+        self.assertEqual(result.get(), 2)
+
+        result = new_unique_wifis_batch.delay(ago=0, batch=2)
+        self.assertEqual(result.get(), 6)
+
+        result = new_unique_wifis_batch.delay(ago=1, batch=2)
+        self.assertEqual(result.get(), 0)

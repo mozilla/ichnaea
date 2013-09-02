@@ -41,6 +41,11 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(hour=0, minute=4),
         'args': (1, ),
     },
+    'new-unique-wifi-batch-yesterday': {
+        'task': 'ichnaea.tasks.new_unique_wifis_batch',
+        'schedule': crontab(hour=0, minute=5),
+        'args': (1, ),
+    },
     # 'add-often': {
     #     'task': 'ichnaea.tasks.add_measure',
     #     'schedule': timedelta(seconds=5),

@@ -137,7 +137,33 @@ def unique_wifi_histogram(ago=1):
 
 
 @celery.task(base=DatabaseTask, ignore_result=True)
-def new_unique_wifis(ago=1, offset=0):
+def new_unique_wifis_batch(ago=1, batch=1000):
+    day, max_day = histogram_days(ago)
+    try:
+        with new_unique_wifis_batch.db_session() as session:
+            query = session.query(
+                func.count(distinct(WifiMeasure.key))).filter(
+                WifiMeasure.created < max_day).filter(
+                WifiMeasure.created >= day)
+            result = query.first()[0]
+            if result == 0:
+                return 0
+            offset = 0
+            batches = []
+            while offset < result:
+                batches.append(offset)
+                new_unique_wifis.delay(ago=ago, offset=offset, batch=batch)
+                offset += batch
+            return len(batches)
+    except IntegrityError as exc:  # pragma: no cover
+        # TODO log error
+        return 0
+    except Exception as exc:  # pragma: no cover
+        raise new_unique_wifis_batch.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, ignore_result=True)
+def new_unique_wifis(ago=1, offset=0, batch=1000):
     # TODO: this doesn't take into account wifi AP's which have
     # permanently moved after a certain date
 
@@ -150,7 +176,7 @@ def new_unique_wifis(ago=1, offset=0):
             query = session.query(distinct(WifiMeasure.key)).filter(
                 WifiMeasure.created < max_day).filter(
                 WifiMeasure.created >= day).order_by(
-                WifiMeasure.id).limit(10000).offset(offset)
+                WifiMeasure.id).limit(batch).offset(offset)
             new_wifis = [w[0] for w in query.all()]
             if not new_wifis:  # pragma: no cover
                 # nothing to be done
