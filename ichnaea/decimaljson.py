@@ -3,6 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from decimal import localcontext
 
+from colander import iso8601
 import simplejson as json
 
 FACTOR = Decimal(10000000)
@@ -17,6 +18,13 @@ def encode_datetime(obj):
     elif isinstance(obj, date):
         return obj.strftime('%Y-%m-%d')
     raise TypeError(repr(obj) + " is not JSON serializable")
+
+
+def decode_datetime(obj):
+    try:
+        return iso8601.parse_date(obj)
+    except (iso8601.ParseError, TypeError):  # pragma: no cover
+        return datetime.utcnow().replace(tzinfo=iso8601.UTC)
 
 
 def dumps(value):
