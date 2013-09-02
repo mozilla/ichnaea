@@ -404,6 +404,10 @@ class TestBlacklist(CeleryTestCase):
         self.assertEqual(len(measures), 4)
         self.assertEqual(set([m.key for m in measures]), set([k2, k3, k4, k5]))
 
+        measures = session.query(WifiMeasure).all()
+        self.assertEqual(len(measures), 5)
+        self.assertEqual(set([m.key for m in measures]), set([k1, k5]))
+
         # test duplicate call
         result = new_unique_wifis.delay(ago=0)
         self.assertEqual(result.get(), [])
