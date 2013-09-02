@@ -266,3 +266,21 @@ def insert_wifi_measure(measure_data, entries):
         return 0
     except Exception as exc:  # pragma: no cover
         raise insert_wifi_measure.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, ignore_result=True)
+def remove_wifi_measure(wifi_keys):
+    wifi_keys = set(wifi_keys)
+    try:
+        result = 0
+        with remove_wifi_measure.db_session() as session:
+            query = session.query(WifiMeasure).filter(
+                WifiMeasure.key.in_(wifi_keys))
+            result = query.delete(synchronize_session=False)
+            session.commit()
+        return result
+    except IntegrityError as exc:  # pragma: no cover
+        # TODO log error
+        return 0
+    except Exception as exc:  # pragma: no cover
+        raise remove_wifi_measure.retry(exc=exc)
