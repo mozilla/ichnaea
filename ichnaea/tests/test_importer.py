@@ -2,7 +2,7 @@ import os
 from tempfile import mkstemp
 
 from ichnaea.tests.base import (
-    DBTestCase,
+    CeleryTestCase,
     SQLURI,
     SQLSOCKET,
 )
@@ -13,7 +13,7 @@ LINE = (
 )
 
 
-class TestLoadFile(DBTestCase):
+class TestLoadFile(CeleryTestCase):
 
     def _make_one(self):
         from ichnaea.importer import load_file
@@ -49,7 +49,7 @@ class TestLoadFile(DBTestCase):
         self.assertEqual(counter, 1)
 
 
-class TestMain(DBTestCase):
+class TestMain(CeleryTestCase):
 
     def _make_one(self):
         from ichnaea.importer import main

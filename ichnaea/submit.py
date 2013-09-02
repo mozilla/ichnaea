@@ -3,14 +3,20 @@ import logging
 
 from colander import iso8601
 
-from ichnaea.db import CellMeasure
-from ichnaea.db import Measure
-from ichnaea.db import RADIO_TYPE
-from ichnaea.db import Score
-from ichnaea.db import User
-from ichnaea.db import WifiMeasure
-from ichnaea.decimaljson import dumps
-from ichnaea.decimaljson import to_precise_int
+from ichnaea.db import (
+    CellMeasure,
+    Measure,
+    RADIO_TYPE,
+    Score,
+    User,
+)
+from ichnaea.decimaljson import (
+    dumps,
+    encode_datetime,
+    to_precise_int,
+)
+from ichnaea.tasks import insert_wifi_measure
+
 
 logger = logging.getLogger('ichnaea')
 
@@ -87,10 +93,8 @@ def process_measure(data, utcnow, session):
         measure.cell = dumps(cell_data)
         session_objects.extend(cells)
     if data.get('wifi'):
-        wifis, wifi_data = process_wifi(data['wifi'], measure)
-        measure.wifi = dumps(wifi_data)
-        session_objects.extend(wifis)
-
+        process_wifi(data['wifi'], measure)
+        measure.wifi = dumps(data['wifi'])
     return session_objects
 
 
@@ -118,29 +122,13 @@ def process_cell(entries, measure):
 
 
 def process_wifi(entries, measure):
-    wifis = []
-    result = []
-    for entry in entries:
-        # convert frequency into channel numbers and remove frequency
-        freq = entry.pop('frequency', 0)
-        # if no explicit channel was given, calculate
-        if freq and not entry['channel']:
-            if 2411 < freq < 2473:
-                # 2.4 GHz band
-                entry['channel'] = (freq - 2407) // 5
-            elif 5169 < freq < 5826:
-                # 5 GHz band
-                entry['channel'] = (freq - 5000) // 5
-        wifi = WifiMeasure(
-            measure_id=measure.id, created=measure.created,
-            lat=measure.lat, lon=measure.lon, time=measure.time,
-            accuracy=measure.accuracy, altitude=measure.altitude,
-            altitude_accuracy=measure.altitude_accuracy,
-            key=entry['key'], channel=entry['channel'], signal=entry['signal'],
-        )
-        wifis.append(wifi)
-        result.append(entry)
-    return (wifis, result)
+    measure_data = dict(
+        id=measure.id, created=encode_datetime(measure.created),
+        lat=measure.lat, lon=measure.lon, time=encode_datetime(measure.time),
+        accuracy=measure.accuracy, altitude=measure.altitude,
+        altitude_accuracy=measure.altitude_accuracy,
+    )
+    insert_wifi_measure.delay(measure_data, entries)
 
 
 def submit_request(request):

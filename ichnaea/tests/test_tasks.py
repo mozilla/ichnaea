@@ -11,6 +11,7 @@ from ichnaea.db import (
     STAT_TYPE,
     WifiMeasure,
 )
+from ichnaea.decimaljson import encode_datetime
 from ichnaea.tasks import DatabaseTask
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.worker import celery
@@ -310,4 +311,41 @@ class TestStats(CeleryTestCase):
 
         # test duplicate execution
         result = unique_wifi_histogram.delay()
+        self.assertEqual(result.get(), 0)
+
+
+class TestInsert(CeleryTestCase):
+
+    def test_wifi(self):
+        from ichnaea.tasks import insert_wifi_measure
+        session = self.db_master_session
+        utcnow = datetime.utcnow()
+        measure = dict(
+            id=0, created=encode_datetime(utcnow), lat=10000000, lon=20000000,
+            time=encode_datetime(utcnow), accuracy=0, altitude=0,
+            altitude_accuracy=0,
+        )
+        entries = [
+            {"key": "ab12", "channel": 11, "signal": -80},
+            {"key": "cd34", "channel": 3, "signal": -90},
+        ]
+        result = insert_wifi_measure.delay(measure, entries)
+        self.assertEqual(result.get(), 2)
+
+        measures = session.query(WifiMeasure).all()
+        self.assertEqual(len(measures), 2)
+        self.assertEqual(set([m.key for m in measures]), set(["ab12", "cd34"]))
+        self.assertEqual(set([m.channel for m in measures]), set([3, 11]))
+        self.assertEqual(set([m.signal for m in measures]), set([-80, -90]))
+
+        # test duplicate execution
+        result = insert_wifi_measure.delay(measure, entries)
+        self.assertEqual(result.get(), 2)
+        # TODO this task isn't idempotent yet
+        measures = session.query(WifiMeasure).all()
+        self.assertEqual(len(measures), 4)
+
+        # test error case
+        entries[0]['id'] = measures[0].id
+        result = insert_wifi_measure.delay(measure, entries)
         self.assertEqual(result.get(), 0)

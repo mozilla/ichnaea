@@ -12,10 +12,10 @@ from ichnaea.db import (
 )
 from ichnaea.decimaljson import encode_datetime
 from ichnaea.decimaljson import loads
-from ichnaea.tests.base import AppTestCase
+from ichnaea.tests.base import CeleryAppTestCase
 
 
-class TestSubmit(AppTestCase):
+class TestSubmit(CeleryAppTestCase):
 
     def test_ok_cell(self):
         app = self.app

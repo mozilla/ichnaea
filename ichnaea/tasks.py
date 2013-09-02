@@ -13,6 +13,7 @@ from ichnaea.db import (
     WifiMeasure,
     Stat,
 )
+from ichnaea.decimaljson import decode_datetime
 from ichnaea.worker import celery
 
 
@@ -132,3 +133,46 @@ def unique_wifi_histogram(ago=1):
         return 0
     except Exception as exc:  # pragma: no cover
         raise unique_wifi_histogram.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, ignore_result=True)
+def insert_wifi_measure(measure_data, entries):
+    wifis = []
+    result = []
+    for entry in entries:
+        # convert frequency into channel numbers and remove frequency
+        freq = entry.pop('frequency', 0)
+        # if no explicit channel was given, calculate
+        if freq and not entry['channel']:
+            if 2411 < freq < 2473:
+                # 2.4 GHz band
+                entry['channel'] = (freq - 2407) // 5
+            elif 5169 < freq < 5826:
+                # 5 GHz band
+                entry['channel'] = (freq - 5000) // 5
+        wifi = WifiMeasure(
+            measure_id=measure_data['id'],
+            created=decode_datetime(measure_data['created']),
+            lat=measure_data['lat'],
+            lon=measure_data['lon'],
+            time=decode_datetime(measure_data['time']),
+            accuracy=measure_data['accuracy'],
+            altitude=measure_data['altitude'],
+            altitude_accuracy=measure_data['altitude_accuracy'],
+            id=entry.get('id', None),
+            key=entry['key'],
+            channel=entry['channel'],
+            signal=entry['signal'],
+        )
+        wifis.append(wifi)
+        result.append(entry)
+    try:
+        with insert_wifi_measure.db_session() as session:
+            session.add_all(wifis)
+            session.commit()
+        return len(wifis)
+    except IntegrityError as exc:
+        # TODO log error
+        return 0
+    except Exception as exc:  # pragma: no cover
+        raise insert_wifi_measure.retry(exc=exc)
