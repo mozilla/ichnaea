@@ -372,8 +372,8 @@ class TestInsert(CeleryTestCase):
 
 class TestBlacklist(CeleryTestCase):
 
-    def test_new_unique_wifis(self):
-        from ichnaea.tasks import new_unique_wifis
+    def test_blacklist_moving_wifis(self):
+        from ichnaea.tasks import blacklist_moving_wifis
         session = self.db_master_session
         k1 = sha1('1').hexdigest()
         k2 = sha1('2').hexdigest()
@@ -397,7 +397,7 @@ class TestBlacklist(CeleryTestCase):
         session.add(WifiBlacklist(key=k5))
         session.commit()
 
-        result = new_unique_wifis.delay(ago=0)
+        result = blacklist_moving_wifis.delay(ago=0)
         self.assertEqual(sorted(result.get()), sorted([k2, k3, k4]))
 
         measures = session.query(WifiBlacklist).all()
@@ -409,11 +409,11 @@ class TestBlacklist(CeleryTestCase):
         self.assertEqual(set([m.key for m in measures]), set([k1, k5]))
 
         # test duplicate call
-        result = new_unique_wifis.delay(ago=0)
+        result = blacklist_moving_wifis.delay(ago=0)
         self.assertEqual(result.get(), [])
 
-    def test_new_unique_wifis_batch(self):
-        from ichnaea.tasks import new_unique_wifis_batch
+    def test_schedule_new_moving_wifi_analysis(self):
+        from ichnaea.tasks import schedule_new_moving_wifi_analysis
         session = self.db_master_session
         measures = []
         m1 = 10000000
@@ -423,19 +423,19 @@ class TestBlacklist(CeleryTestCase):
         session.add_all(measures)
         session.flush()
 
-        result = new_unique_wifis_batch.delay(ago=0, batch=20)
+        result = schedule_new_moving_wifi_analysis.delay(ago=0, batch=20)
         self.assertEqual(result.get(), 1)
 
-        result = new_unique_wifis_batch.delay(ago=0, batch=11)
+        result = schedule_new_moving_wifi_analysis.delay(ago=0, batch=11)
         self.assertEqual(result.get(), 1)
 
-        result = new_unique_wifis_batch.delay(ago=0, batch=10)
+        result = schedule_new_moving_wifi_analysis.delay(ago=0, batch=10)
         self.assertEqual(result.get(), 2)
 
-        result = new_unique_wifis_batch.delay(ago=0, batch=2)
+        result = schedule_new_moving_wifi_analysis.delay(ago=0, batch=2)
         self.assertEqual(result.get(), 6)
 
-        result = new_unique_wifis_batch.delay(ago=1, batch=2)
+        result = schedule_new_moving_wifi_analysis.delay(ago=1, batch=2)
         self.assertEqual(result.get(), 0)
 
     def test_remove_wifi_measure(self):
