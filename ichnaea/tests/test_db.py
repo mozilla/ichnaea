@@ -34,10 +34,14 @@ class TestCell(DBTestCase):
     def test_constructor(self):
         cell = self._make_one()
         self.assertTrue(cell.id is None)
+        self.assertEqual(cell.new_measures, 0)
+        self.assertEqual(cell.total_measures, 0)
 
     def test_fields(self):
         cell = self._make_one(
-            lat=12345678, lon=23456789, mcc=100, mnc=5, lac=12345, cid=234567)
+            lat=12345678, lon=23456789, mcc=100, mnc=5, lac=12345, cid=234567,
+            new_measures=2, total_measures=15,
+        )
         session = self.db_master_session
         session.add(cell)
         session.commit()
@@ -46,6 +50,8 @@ class TestCell(DBTestCase):
         self.assertEqual(result.lat, 12345678)
         self.assertEqual(result.mcc, 100)
         self.assertEqual(result.cid, 234567)
+        self.assertEqual(result.new_measures, 2)
+        self.assertEqual(result.total_measures, 15)
 
 
 class TestCellMeasure(DBTestCase):
@@ -90,10 +96,15 @@ class TestWifi(DBTestCase):
     def test_constructor(self):
         wifi = self._make_one()
         self.assertTrue(wifi.key is None)
+        self.assertEqual(wifi.new_measures, 0)
+        self.assertEqual(wifi.total_measures, 0)
 
     def test_fields(self):
         key = "3680873e9b83738eb72946d19e971e023e51fd01"
-        wifi = self._make_one(key=key, lat=12345678, lon=23456789, range=200)
+        wifi = self._make_one(
+            key=key, lat=12345678, lon=23456789, range=200,
+            new_measures=2, total_measures=15,
+        )
         session = self.db_master_session
         session.add(wifi)
         session.commit()
@@ -103,6 +114,8 @@ class TestWifi(DBTestCase):
         self.assertEqual(result.lat, 12345678)
         self.assertEqual(result.lon, 23456789)
         self.assertEqual(result.range, 200)
+        self.assertEqual(result.new_measures, 2)
+        self.assertEqual(result.total_measures, 15)
 
 
 class TestWifiBlacklist(DBTestCase):

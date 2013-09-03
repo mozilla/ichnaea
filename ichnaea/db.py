@@ -51,6 +51,7 @@ class Cell(_Model):
     __tablename__ = 'cell'
     __table_args__ = (
         Index('cell_idx', 'radio', 'mcc', 'mnc', 'lac', 'cid'),
+        Index('cell_new_measures_idx', 'new_measures'),
         {
             'mysql_engine': 'InnoDB',
             'mysql_charset': 'utf8',
@@ -73,6 +74,15 @@ class Cell(_Model):
     cid = Column(Integer)
     psc = Column(Integer)
     range = Column(Integer)
+    new_measures = Column(Integer(unsigned=True))
+    total_measures = Column(Integer(unsigned=True))
+
+    def __init__(self, *args, **kw):
+        if 'new_measures' not in kw:
+            kw['new_measures'] = 0
+        if 'total_measures' not in kw:
+            kw['total_measures'] = 0
+        super(Cell, self).__init__(*args, **kw)
 
 cell_table = Cell.__table__
 
@@ -128,6 +138,7 @@ class Wifi(_Model):
     __tablename__ = 'wifi'
     __table_args__ = (
         Index('wifi_key_idx', 'key'),
+        Index('wifi_new_measures_idx', 'new_measures'),
         {
             'mysql_engine': 'InnoDB',
             'mysql_charset': 'utf8',
@@ -141,6 +152,15 @@ class Wifi(_Model):
     lat = Column(Integer)
     lon = Column(Integer)
     range = Column(Integer)
+    new_measures = Column(Integer(unsigned=True))
+    total_measures = Column(Integer(unsigned=True))
+
+    def __init__(self, *args, **kw):
+        if 'new_measures' not in kw:
+            kw['new_measures'] = 0
+        if 'total_measures' not in kw:
+            kw['total_measures'] = 0
+        super(Wifi, self).__init__(*args, **kw)
 
 wifi_table = Wifi.__table__
 
