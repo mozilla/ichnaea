@@ -267,8 +267,9 @@ def insert_wifi_measure(measure_data, entries):
                     wifi.new_measures = columns['new_measures'] + 1
                     wifi.total_measures = columns['total_measures'] + 1
                 else:
-                    session.add(Wifi(
-                        key=wifi_key, new_measures=1, total_measures=1))
+                    wifis[wifi_key] = wifi = Wifi(
+                        key=wifi_key, new_measures=1, total_measures=1)
+                    session.add(wifi)
 
             session.add_all(wifi_measures)
             session.commit()
