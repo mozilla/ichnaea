@@ -208,7 +208,7 @@ def blacklist_moving_wifis(ago=1, offset=0, batch=1000):
                 for key in moving_keys:
                     # TODO: on duplicate key ignore
                     session.add(WifiBlacklist(key=key, created=utcnow))
-                remove_wifi_measure.delay(list(moving_keys))
+                remove_wifi.delay(list(moving_keys))
                 session.commit()
             return moving_keys
     except IntegrityError as exc:  # pragma: no cover
@@ -281,18 +281,20 @@ def insert_wifi_measure(measure_data, entries):
 
 
 @celery.task(base=DatabaseTask, ignore_result=True)
-def remove_wifi_measure(wifi_keys):
+def remove_wifi(wifi_keys):
     wifi_keys = set(wifi_keys)
     try:
-        result = 0
-        with remove_wifi_measure.db_session() as session:
+        with remove_wifi.db_session() as session:
+            query = session.query(Wifi).filter(
+                Wifi.key.in_(wifi_keys))
+            wifis = query.delete(synchronize_session=False)
             query = session.query(WifiMeasure).filter(
                 WifiMeasure.key.in_(wifi_keys))
-            result = query.delete(synchronize_session=False)
+            measures = query.delete(synchronize_session=False)
             session.commit()
-        return result
+        return (wifis, measures)
     except IntegrityError as exc:  # pragma: no cover
         # TODO log error
         return 0
     except Exception as exc:  # pragma: no cover
-        raise remove_wifi_measure.retry(exc=exc)
+        raise remove_wifi.retry(exc=exc)

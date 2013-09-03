@@ -450,22 +450,25 @@ class TestBlacklist(CeleryTestCase):
         result = schedule_new_moving_wifi_analysis.delay(ago=1, batch=2)
         self.assertEqual(result.get(), 0)
 
-    def test_remove_wifi_measure(self):
-        from ichnaea.tasks import remove_wifi_measure
+    def test_remove_wifi(self):
+        from ichnaea.tasks import remove_wifi
         session = self.db_master_session
         measures = []
         wifi_keys = [sha1(str(i)).hexdigest() for i in range(5)]
         m1 = 10000000
+        m2 = 10000000
         for key in wifi_keys:
+            measures.append(Wifi(key=key))
             measures.append(WifiMeasure(lat=m1, lon=m1, key=key))
+            measures.append(WifiMeasure(lat=m2, lon=m2, key=key))
         session.add_all(measures)
         session.flush()
 
-        result = remove_wifi_measure.delay(wifi_keys[:2])
-        self.assertEqual(result.get(), 2)
+        result = remove_wifi.delay(wifi_keys[:2])
+        self.assertEqual(result.get(), (2, 4))
 
-        result = remove_wifi_measure.delay(wifi_keys)
-        self.assertEqual(result.get(), 3)
+        result = remove_wifi.delay(wifi_keys)
+        self.assertEqual(result.get(), (3, 6))
 
-        result = remove_wifi_measure.delay(wifi_keys)
-        self.assertEqual(result.get(), 0)
+        result = remove_wifi.delay(wifi_keys)
+        self.assertEqual(result.get(), (0, 0))
