@@ -137,7 +137,7 @@ cell_measure_table = CellMeasure.__table__
 class Wifi(_Model):
     __tablename__ = 'wifi'
     __table_args__ = (
-        Index('wifi_key_idx', 'key'),
+        UniqueConstraint('key', name='wifi_key_unique'),
         Index('wifi_new_measures_idx', 'new_measures'),
         {
             'mysql_engine': 'InnoDB',
