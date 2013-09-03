@@ -9,6 +9,7 @@ from ichnaea.db import (
     Measure,
     Stat,
     STAT_TYPE,
+    Wifi,
     WifiBlacklist,
     WifiMeasure,
 )
@@ -321,6 +322,10 @@ class TestInsert(CeleryTestCase):
         from ichnaea.tasks import insert_wifi_measure
         session = self.db_master_session
         utcnow = datetime.utcnow()
+
+        session.add(Wifi(key="ab12"))
+        session.flush()
+
         measure = dict(
             id=0, created=encode_datetime(utcnow), lat=10000000, lon=20000000,
             time=encode_datetime(utcnow), accuracy=0, altitude=0,
@@ -338,6 +343,13 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([m.key for m in measures]), set(["ab12", "cd34"]))
         self.assertEqual(set([m.channel for m in measures]), set([3, 11]))
         self.assertEqual(set([m.signal for m in measures]), set([-80, -90]))
+
+        wifis = session.query(Wifi).all()
+        self.assertEqual(len(wifis), 2)
+        self.assertEqual(set([w.key for w in wifis]), set(["ab12", "cd34"]))
+        for wifi in wifis:
+            self.assertEqual(wifi.new_measures, 1)
+            self.assertEqual(wifi.total_measures, 1)
 
         # test duplicate execution
         result = insert_wifi_measure.delay(measure, entries)

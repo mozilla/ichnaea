@@ -10,6 +10,7 @@ from ichnaea.db import (
     CellMeasure,
     db_worker_session,
     Measure,
+    Wifi,
     WifiBlacklist,
     WifiMeasure,
     Stat,
@@ -226,9 +227,13 @@ def insert_wifi_measure(measure_data, entries):
             blacked = session.query(WifiBlacklist.key).filter(
                 WifiBlacklist.key.in_(wifi_keys)).all()
             blacked = set([b[0] for b in blacked])
+            wifis = session.query(Wifi.key, Wifi).filter(
+                Wifi.key.in_(wifi_keys))
+            wifis = dict(wifis.all())
             for entry in entries:
+                wifi_key = entry['key']
                 # skip blacklisted wifi AP's
-                if entry['key'] in blacked:
+                if wifi_key in blacked:
                     continue
                 # convert frequency into channel numbers and remove frequency
                 freq = entry.pop('frequency', 0)
@@ -250,11 +255,20 @@ def insert_wifi_measure(measure_data, entries):
                     altitude=measure_data.get('altitude', 0),
                     altitude_accuracy=measure_data.get('altitude_accuracy', 0),
                     id=entry.get('id', None),
-                    key=entry['key'],
+                    key=wifi_key,
                     channel=entry.get('channel', 0),
                     signal=entry.get('signal', 0),
                 )
                 wifi_measures.append(wifi_measure)
+                # update new/total measure counts
+                if wifi_key in wifis:
+                    wifi = wifis[wifi_key]
+                    columns = wifi.__table__.columns
+                    wifi.new_measures = columns['new_measures'] + 1
+                    wifi.total_measures = columns['total_measures'] + 1
+                else:
+                    session.add(Wifi(
+                        key=wifi_key, new_measures=1, total_measures=1))
 
             session.add_all(wifi_measures)
             session.commit()
