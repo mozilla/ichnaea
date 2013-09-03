@@ -208,7 +208,7 @@ def blacklist_moving_wifis(ago=1, offset=0, batch=1000):
                 for key in moving_keys:
                     # TODO: on duplicate key ignore
                     session.add(WifiBlacklist(key=key, created=utcnow))
-                remove_wifi_measure.delay(moving_keys)
+                remove_wifi_measure.delay(list(moving_keys))
                 session.commit()
             return moving_keys
     except IntegrityError as exc:  # pragma: no cover
