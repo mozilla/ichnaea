@@ -219,8 +219,7 @@ def blacklist_moving_wifis(ago=1, offset=0, batch=1000):
 
 @celery.task(base=DatabaseTask, ignore_result=True)
 def insert_wifi_measure(measure_data, entries):
-    wifis = []
-    result = []
+    wifi_measures = []
     wifi_keys = set([e['key'] for e in entries])
     try:
         with insert_wifi_measure.db_session() as session:
@@ -241,7 +240,7 @@ def insert_wifi_measure(measure_data, entries):
                     elif 5169 < freq < 5826:
                         # 5 GHz band
                         entry['channel'] = (freq - 5000) // 5
-                wifi = WifiMeasure(
+                wifi_measure = WifiMeasure(
                     measure_id=measure_data['id'],
                     created=decode_datetime(measure_data.get('created', '')),
                     lat=measure_data['lat'],
@@ -255,12 +254,11 @@ def insert_wifi_measure(measure_data, entries):
                     channel=entry.get('channel', 0),
                     signal=entry.get('signal', 0),
                 )
-                wifis.append(wifi)
-                result.append(entry)
+                wifi_measures.append(wifi_measure)
 
-            session.add_all(wifis)
+            session.add_all(wifi_measures)
             session.commit()
-        return len(wifis)
+        return len(wifi_measures)
     except IntegrityError as exc:
         # TODO log error
         return 0
