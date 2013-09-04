@@ -263,9 +263,8 @@ def insert_wifi_measure(measure_data, entries):
                 # update new/total measure counts
                 if wifi_key in wifis:
                     wifi = wifis[wifi_key]
-                    columns = wifi.__table__.columns
-                    wifi.new_measures = columns['new_measures'] + 1
-                    wifi.total_measures = columns['total_measures'] + 1
+                    wifi.new_measures = Wifi.new_measures + 1
+                    wifi.total_measures = Wifi.total_measures + 1
                 else:
                     wifis[wifi_key] = wifi = Wifi(
                         key=wifi_key, new_measures=1, total_measures=1)

@@ -51,7 +51,7 @@ def process_score(userid, points, session):
     old = rows.first()
     if old:
         # update score
-        old.value = old.value + points
+        old.value = Score.value + points
     else:
         score = Score(userid=userid, value=points)
         session.add(score)
