@@ -55,7 +55,7 @@ def histogram(session, name):
 def leaders(session):
     result = []
     score_rows = session.query(
-        Score.userid, Score.value).order_by(Score.value.desc()).limit(10).all()
+        Score.userid, Score.value).order_by(Score.value.desc()).all()
     userids = [s[0] for s in score_rows]
     if not userids:
         return []

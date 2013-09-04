@@ -103,7 +103,7 @@ class TestStats(DBTestCase):
         session.commit()
         # check the result
         result = leaders(session)
-        self.assertEqual(len(result), 10)
+        self.assertEqual(len(result), 22)
         self.assertEqual(result[0]['token'], highest[:8])
         self.assertEqual(result[0]['num'], 10)
-        self.assertTrue(lowest not in [r['token'] for r in result])
+        self.assertTrue(lowest[:8] in [r['token'] for r in result])
