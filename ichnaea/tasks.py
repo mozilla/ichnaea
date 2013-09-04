@@ -319,6 +319,9 @@ def wifi_location_update(min_new=10, max_new=100, batch=10):
             for wifi_key, wifi in wifis.items():
                 measures = wifi_measures[wifi_key]
                 length = len(measures)
+                if length != wifi.new_measures:
+                    # bail out, we didn't get all measures
+                    continue
                 new_lat = sum([w.lat for w in measures]) // length
                 new_lon = sum([w.lon for w in measures]) // length
                 if not (wifi.lat or wifi.lon):
