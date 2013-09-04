@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime
 from datetime import timedelta
 
@@ -298,3 +299,44 @@ def remove_wifi(wifi_keys):
         return 0
     except Exception as exc:  # pragma: no cover
         raise remove_wifi.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, ignore_result=True)
+def wifi_location_update(min_new=10, max_new=100, batch=10):
+    try:
+        wifis = {}
+        with wifi_location_update.db_session() as session:
+            query = session.query(Wifi.key, Wifi).filter(
+                Wifi.new_measures >= min_new).filter(
+                Wifi.new_measures < max_new).limit(batch)
+            wifis = dict(query.all())
+            # TODO: This gets all measures and not just the X newest
+            query = session.query(WifiMeasure).filter(
+                WifiMeasure.key.in_(wifis.keys()))
+            wifi_measures = defaultdict(list)
+            for measure in query.all():
+                wifi_measures[measure.key].append(measure)
+            for wifi_key, wifi in wifis.items():
+                measures = wifi_measures[wifi_key]
+                length = len(measures)
+                new_lat = sum([w.lat for w in measures]) // length
+                new_lon = sum([w.lon for w in measures]) // length
+                if not (wifi.lat or wifi.lon):
+                    wifi.lat = new_lat
+                    wifi.lon = new_lon
+                else:
+                    # pre-existing location data
+                    total = wifi.total_measures
+                    old_length = total - wifi.new_measures
+                    wifi.lat = ((wifi.lat * old_length) +
+                                (new_lat * length)) // total
+                    wifi.lon = ((wifi.lon * old_length) +
+                                (new_lon * length)) // total
+                wifi.new_measures = Wifi.new_measures - length
+            session.commit()
+        return len(wifis)
+    except IntegrityError as exc:  # pragma: no cover
+        # TODO log error
+        return 0
+    except Exception as exc:  # pragma: no cover
+        raise wifi_location_update.retry(exc=exc)

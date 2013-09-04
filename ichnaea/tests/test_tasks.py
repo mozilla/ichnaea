@@ -472,3 +472,38 @@ class TestBlacklist(CeleryTestCase):
 
         result = remove_wifi.delay(wifi_keys)
         self.assertEqual(result.get(), (0, 0))
+
+
+class TestWifiLocationUpdate(CeleryTestCase):
+
+    def test_wifi_location_update(self):
+        from ichnaea.tasks import wifi_location_update
+        session = self.db_master_session
+        k1 = sha1('1').hexdigest()
+        k2 = sha1('2').hexdigest()
+        data = [
+            Wifi(key=k1, new_measures=3, total_measures=3),
+            WifiMeasure(lat=10000000, lon=10000000, key=k1),
+            WifiMeasure(lat=10020000, lon=10030000, key=k1),
+            WifiMeasure(lat=10040000, lon=10060000, key=k1),
+            Wifi(key=k2, lat=20000000, lon=20000000,
+                 new_measures=2, total_measures=4),
+            WifiMeasure(lat=20020000, lon=20040000, key=k2),
+            WifiMeasure(lat=20020000, lon=20040000, key=k2),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        result = wifi_location_update.delay(min_new=1)
+        self.assertEqual(result.get(), 2)
+
+        wifis = dict(session.query(Wifi.key, Wifi).all())
+        self.assertEqual(set(wifis.keys()), set([k1, k2]))
+
+        self.assertEqual(wifis[k1].lat, 10020000)
+        self.assertEqual(wifis[k1].lon, 10030000)
+        self.assertEqual(wifis[k1].new_measures, 0)
+
+        self.assertEqual(wifis[k2].lat, 20010000)
+        self.assertEqual(wifis[k2].lon, 20020000)
+        self.assertEqual(wifis[k2].new_measures, 0)
