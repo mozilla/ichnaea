@@ -307,7 +307,7 @@ stat_table = Stat.__table__
 class User(_Model):
     __tablename__ = 'user'
     __table_args__ = (
-        Index('user_token_idx', 'token'),
+        UniqueConstraint('nickname', name='user_nickname_unique'),
         {
             'mysql_engine': 'InnoDB',
             'mysql_charset': 'utf8',
@@ -316,7 +316,6 @@ class User(_Model):
 
     id = Column(Integer(unsigned=True),
                 primary_key=True, autoincrement=True)
-    token = Column(String(36))
     nickname = Column(Unicode(128))
 
 user_table = User.__table__

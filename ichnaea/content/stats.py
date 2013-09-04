@@ -62,12 +62,12 @@ def leaders(session):
     user_rows = session.query(User).filter(User.id.in_(userids)).all()
     users = {}
     for user in user_rows:
-        users[user.id] = (user.token, user.nickname)
+        users[user.id] = user.nickname
 
     for userid, value in score_rows:
-        token, nickname = users.get(userid, ('', 'anonymous'))
+        nickname = users.get(userid, 'anonymous')
         result.append(
-            {'token': token[:8], 'nickname': nickname, 'num': value})
+            {'nickname': nickname, 'num': value})
     return result
 
 

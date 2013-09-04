@@ -21,28 +21,19 @@ from ichnaea.tasks import insert_wifi_measure
 logger = logging.getLogger('ichnaea')
 
 
-def process_user(token, nickname, session):
+def process_user(nickname, session):
     userid = None
-    if not (24 <= len(token) <= 36):
-        # doesn't look like it's a uuid
-        token = ""
-        nickname = ""
-    elif (3 <= len(nickname) <= 128):
+    if (3 <= len(nickname) <= 128):
         # automatically create user objects and update nickname
         if isinstance(nickname, str):
             nickname = nickname.decode('utf-8', 'ignore')
-        rows = session.query(User).filter(User.token == token)
-        old = rows.first()
-        if old:
-            # update nickname
-            old.nickname = nickname
-            userid = old.id
-        else:
-            user = User(token=token, nickname=nickname)
+        rows = session.query(User).filter(User.nickname == nickname)
+        if not rows.first():
+            user = User(nickname=nickname)
             session.add(user)
             session.flush()
             userid = user.id
-    return (userid, token, nickname)
+    return (userid, nickname)
 
 
 def process_score(userid, points, session):
@@ -135,9 +126,8 @@ def submit_request(request):
     session = request.db_master_session
     session_objects = []
 
-    token = request.headers.get('X-Token', '')
     nickname = request.headers.get('X-Nickname', '')
-    userid, token, nickname = process_user(token, nickname, session)
+    userid, nickname = process_user(nickname, session)
 
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
     utcmin = utcnow - datetime.timedelta(60)

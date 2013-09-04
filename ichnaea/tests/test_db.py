@@ -273,12 +273,10 @@ class TestUser(DBTestCase):
         self.assertTrue(user.id is None)
 
     def test_fields(self):
-        token = "898fccec2262417ca49d2814ac61e2c3"
-        user = self._make_one(token=token, nickname=u"World Traveler")
+        user = self._make_one(nickname=u"World Traveler")
         session = self.db_master_session
         session.add(user)
         session.commit()
 
         result = session.query(user.__class__).first()
-        self.assertEqual(result.token, token)
         self.assertEqual(result.nickname, u"World Traveler")

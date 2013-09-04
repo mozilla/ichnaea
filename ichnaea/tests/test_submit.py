@@ -1,6 +1,5 @@
 from datetime import datetime
 from datetime import timedelta
-from uuid import uuid4
 
 from ichnaea.db import (
     CellMeasure,
@@ -228,65 +227,37 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0].time, result[1].time)
 
-    def test_token_nickname_header(self):
+    def test_nickname_header(self):
         app = self.app
-        uid = uuid4().hex
         nickname = 'World Tr\xc3\xa4veler'
         app.post_json(
             '/v1/submit', {"items": [
                 {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
                 {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
             ]},
-            headers={'X-Token': uid, 'X-Nickname': nickname},
+            headers={'X-Nickname': nickname},
             status=204)
         session = self.db_master_session
         result = session.query(User).all()
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].token, uid)
         self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
         result = session.query(Score).all()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].value, 2)
 
-    def test_token_nickname_header_error(self):
+    def test_nickname_header_error(self):
         app = self.app
         app.post_json(
             '/v1/submit', {"items": [
                 {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
             ]},
-            headers={'X-Token': "123.45", 'X-Nickname': "abcd"},
+            headers={'X-Nickname': "ab"},
             status=204)
         session = self.db_master_session
         result = session.query(User).all()
         self.assertEqual(len(result), 0)
         result = session.query(Score).all()
         self.assertEqual(len(result), 0)
-
-    def test_token_nickname_header_update(self):
-        app = self.app
-        uid = uuid4().hex
-        nickname = 'World Tr\xc3\xa4veler'
-        session = self.db_master_session
-        user = User(id=1, token=uid, nickname=nickname.decode('utf-8'))
-        session.add(user)
-        score = Score(id=1, userid=1, value=2)
-        session.add(score)
-        session.commit()
-        # request updating nickname
-        nickname2 = "Tr\xc3\xa4veler's friend"
-        app.post_json(
-            '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
-            ]},
-            headers={'X-Token': uid, 'X-Nickname': nickname2},
-            status=204)
-        result = session.query(User).all()
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].token, uid)
-        self.assertEqual(result[0].nickname.encode('utf-8'), nickname2)
-        result = session.query(Score).all()
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].value, 3)
 
     def test_error(self):
         app = self.app

@@ -1,6 +1,5 @@
 from datetime import datetime
 from datetime import timedelta
-from uuid import uuid4
 
 from ichnaea.db import (
     Measure,
@@ -89,13 +88,13 @@ class TestStats(DBTestCase):
         session = self.db_master_session
         test_data = []
         for i in range(20):
-            test_data.append((uuid4().hex, 7))
-        highest = uuid4().hex
+            test_data.append((u'nick-%s' % i, 7))
+        highest = u'nick-high'
         test_data.append((highest, 10))
-        lowest = uuid4().hex
+        lowest = u'nick-low'
         test_data.append((lowest, 5))
-        for uid, value in test_data:
-            user = User(token=uid, nickname=u'nick')
+        for nick, value in test_data:
+            user = User(nickname=nick)
             session.add(user)
             session.flush()
             score = Score(userid=user.id, value=value)
@@ -104,6 +103,6 @@ class TestStats(DBTestCase):
         # check the result
         result = leaders(session)
         self.assertEqual(len(result), 22)
-        self.assertEqual(result[0]['token'], highest[:8])
+        self.assertEqual(result[0]['nickname'], highest)
         self.assertEqual(result[0]['num'], 10)
-        self.assertTrue(lowest[:8] in [r['token'] for r in result])
+        self.assertTrue(lowest in [r['nickname'] for r in result])
