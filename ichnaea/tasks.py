@@ -222,7 +222,7 @@ def blacklist_moving_wifis(ago=1, offset=0, batch=1000):
 @celery.task(base=DatabaseTask, ignore_result=True)
 def insert_wifi_measure(measure_data, entries):
     wifi_measures = []
-    wifi_keys = set([e['key'] for e in entries])
+    wifi_keys = set([e['key'].upper() for e in entries])
     try:
         with insert_wifi_measure.db_session() as session:
             blacked = session.query(WifiBlacklist.key).filter(
@@ -232,7 +232,7 @@ def insert_wifi_measure(measure_data, entries):
                 Wifi.key.in_(wifi_keys))
             wifis = dict(wifis.all())
             for entry in entries:
-                wifi_key = entry['key']
+                wifi_key = entry['key'].upper()
                 # skip blacklisted wifi AP's
                 if wifi_key in blacked:
                     continue

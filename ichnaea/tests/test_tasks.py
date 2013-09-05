@@ -270,9 +270,9 @@ class TestStats(CeleryTestCase):
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(40))
-        k1 = sha1('1').hexdigest()
-        k2 = sha1('2').hexdigest()
-        k3 = sha1('3').hexdigest()
+        k1 = sha1('1').hexdigest().upper()
+        k2 = sha1('2').hexdigest().upper()
+        k3 = sha1('3').hexdigest().upper()
         measures = [
             WifiMeasure(lat=10000000, lon=20000000, created=long_ago, key=k1),
             WifiMeasure(lat=10000000, lon=20000000, created=two_days, key=k1),
@@ -323,7 +323,7 @@ class TestInsert(CeleryTestCase):
         session = self.db_master_session
         utcnow = datetime.utcnow()
 
-        session.add(Wifi(key="ab12"))
+        session.add(Wifi(key="AB12"))
         session.flush()
 
         measure = dict(
@@ -332,21 +332,21 @@ class TestInsert(CeleryTestCase):
             altitude_accuracy=0,
         )
         entries = [
-            {"key": "ab12", "channel": 11, "signal": -80},
-            {"key": "cd34", "channel": 3, "signal": -90},
+            {"key": "AB12", "channel": 11, "signal": -80},
+            {"key": "CD34", "channel": 3, "signal": -90},
         ]
         result = insert_wifi_measure.delay(measure, entries)
         self.assertEqual(result.get(), 2)
 
         measures = session.query(WifiMeasure).all()
         self.assertEqual(len(measures), 2)
-        self.assertEqual(set([m.key for m in measures]), set(["ab12", "cd34"]))
+        self.assertEqual(set([m.key for m in measures]), set(["AB12", "CD34"]))
         self.assertEqual(set([m.channel for m in measures]), set([3, 11]))
         self.assertEqual(set([m.signal for m in measures]), set([-80, -90]))
 
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 2)
-        self.assertEqual(set([w.key for w in wifis]), set(["ab12", "cd34"]))
+        self.assertEqual(set([w.key for w in wifis]), set(["AB12", "CD34"]))
         for wifi in wifis:
             self.assertEqual(wifi.new_measures, 1)
             self.assertEqual(wifi.total_measures, 1)
@@ -366,8 +366,8 @@ class TestInsert(CeleryTestCase):
     def test_wifi_blacklist(self):
         from ichnaea.tasks import insert_wifi_measure
         session = self.db_master_session
-        bad_key = sha1('1').hexdigest()
-        good_key = sha1('2').hexdigest()
+        bad_key = sha1('1').hexdigest().upper()
+        good_key = sha1('2').hexdigest().upper()
         black = WifiBlacklist(key=bad_key)
         session.add(black)
         session.flush()
@@ -387,11 +387,11 @@ class TestBlacklist(CeleryTestCase):
     def test_blacklist_moving_wifis(self):
         from ichnaea.tasks import blacklist_moving_wifis
         session = self.db_master_session
-        k1 = sha1('1').hexdigest()
-        k2 = sha1('2').hexdigest()
-        k3 = sha1('3').hexdigest()
-        k4 = sha1('4').hexdigest()
-        k5 = sha1('5').hexdigest()
+        k1 = sha1('1').hexdigest().upper()
+        k2 = sha1('2').hexdigest().upper()
+        k3 = sha1('3').hexdigest().upper()
+        k4 = sha1('4').hexdigest().upper()
+        k5 = sha1('5').hexdigest().upper()
         measures = [
             WifiMeasure(lat=10010000, lon=10010000, key=k1),
             WifiMeasure(lat=10020000, lon=10050000, key=k1),
@@ -454,7 +454,7 @@ class TestBlacklist(CeleryTestCase):
         from ichnaea.tasks import remove_wifi
         session = self.db_master_session
         measures = []
-        wifi_keys = [sha1(str(i)).hexdigest() for i in range(5)]
+        wifi_keys = [sha1(str(i)).hexdigest().upper() for i in range(5)]
         m1 = 10000000
         m2 = 10000000
         for key in wifi_keys:
@@ -479,8 +479,8 @@ class TestWifiLocationUpdate(CeleryTestCase):
     def test_wifi_location_update(self):
         from ichnaea.tasks import wifi_location_update
         session = self.db_master_session
-        k1 = sha1('1').hexdigest()
-        k2 = sha1('2').hexdigest()
+        k1 = sha1('1').hexdigest().upper()
+        k2 = sha1('2').hexdigest().upper()
         data = [
             Wifi(key=k1, new_measures=3, total_measures=3),
             WifiMeasure(lat=10000000, lon=10000000, key=k1),

@@ -94,7 +94,7 @@ class TestSubmit(CeleryAppTestCase):
 
     def test_ok_wifi(self):
         app = self.app
-        wifi_data = [{"key": "ab12"}, {"key": "cd34"}]
+        wifi_data = [{"key": "AB12"}, {"key": "cd34"}]
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3456781,
                                       "lon": 23.4567892,
@@ -111,7 +111,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.accuracy, 17)
         self.assertEqual(item.altitude, 0)
         self.assertEqual(item.altitude_accuracy, 0)
-        self.assertTrue('"key": "ab12"' in item.wifi)
+        self.assertTrue('"key": "AB12"' in item.wifi)
         self.assertTrue('"key": "cd34"' in item.wifi)
         self.assertTrue(item.cell is None)
 
@@ -125,7 +125,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.accuracy, 17)
         self.assertEqual(item.altitude, 0)
         self.assertEqual(item.altitude_accuracy, 0)
-        self.assertTrue(item.key in ("ab12", "cd34"))
+        self.assertTrue(item.key in ("AB12", "CD34"))
         self.assertEqual(item.channel, 0)
         self.assertEqual(item.signal, 0)
         item = wifi_result[1]
