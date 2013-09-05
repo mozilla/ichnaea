@@ -28,11 +28,14 @@ def process_user(nickname, session):
         if isinstance(nickname, str):
             nickname = nickname.decode('utf-8', 'ignore')
         rows = session.query(User).filter(User.nickname == nickname)
-        if not rows.first():
+        old = rows.first()
+        if not old:
             user = User(nickname=nickname)
             session.add(user)
             session.flush()
             userid = user.id
+        else:
+            userid = old.id
     return (userid, nickname)
 
 

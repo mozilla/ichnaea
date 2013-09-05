@@ -259,6 +259,28 @@ class TestSubmit(CeleryAppTestCase):
         result = session.query(Score).all()
         self.assertEqual(len(result), 0)
 
+    def test_nickname_header_update(self):
+        app = self.app
+        nickname = 'World Tr\xc3\xa4veler'
+        session = self.db_master_session
+        user = User(nickname=nickname.decode('utf-8'))
+        session.add(user)
+        session.flush()
+        session.add(Score(userid=user.id, value=7))
+        session.commit()
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "A"}]},
+            ]},
+            headers={'X-Nickname': nickname},
+            status=204)
+        result = session.query(User).all()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
+        result = session.query(Score).all()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].value, 8)
+
     def test_error(self):
         app = self.app
         res = app.post_json(
