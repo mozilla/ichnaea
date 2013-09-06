@@ -1,5 +1,5 @@
 import os
-# from datetime import timedelta
+from datetime import timedelta
 
 from celery import Celery
 from celery.app import app_or_default
@@ -46,11 +46,11 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(hour=0, minute=5),
         'args': (1, ),
     },
-    # 'add-often': {
-    #     'task': 'ichnaea.tasks.add_measure',
-    #     'schedule': timedelta(seconds=5),
-    #     'args': (6, 9),
-    # },
+    'continuous-wifi-location-update': {
+        'task': 'ichnaea.tasks.wifi_location_update',
+        'schedule': timedelta(seconds=60),
+        'args': (5, 10000, 100),
+    },
 }
 
 celery = Celery('ichnaea.worker')
