@@ -1,4 +1,8 @@
-from ichnaea.db import Cell, RADIO_TYPE
+from ichnaea.db import (
+    Cell,
+    RADIO_TYPE,
+    Wifi,
+)
 from ichnaea.decimaljson import quantize
 
 
@@ -32,15 +36,36 @@ def search_cell(session, data):
     }
 
 
+def search_wifi(session, data):
+    wifi_data = data['wifi']
+    wifi_keys = set([w['key'].upper() for w in wifi_data])
+    sql_null = None  # avoid pep8 warning
+    query = session.query(Wifi.lat, Wifi.lon).filter(
+        Wifi.key.in_(wifi_keys)).filter(
+        Wifi.lat != sql_null).filter(
+        Wifi.lon != sql_null)
+    wifis = query.all()
+    if len(wifis) < 2:
+        return None
+    length = len(wifis)
+    avg_lat = sum([w[0] for w in wifis]) / length
+    avg_lon = sum([w[1] for w in wifis]) / length
+    return {
+        'lat': quantize(avg_lat),
+        'lon': quantize(avg_lon),
+        'accuracy': 500,
+    }
+
+
 def search_request(request):
     data = request.validated
-    if not data['cell']:
-        # we don't have any wifi entries yet
-        return {'status': 'not_found'}
-
     session = request.db_slave_session
-    result = search_cell(session, data)
 
+    result = None
+    if data['wifi']:
+        result = search_wifi(session, data)
+    else:
+        result = search_cell(session, data)
     if result is None:
         return {'status': 'not_found'}
 

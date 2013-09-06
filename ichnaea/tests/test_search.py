@@ -1,10 +1,13 @@
-from ichnaea.db import Cell
+from ichnaea.db import (
+    Cell,
+    Wifi,
+)
 from ichnaea.tests.base import AppTestCase
 
 
 class TestSearch(AppTestCase):
 
-    def test_ok(self):
+    def test_ok_cell(self):
         app = self.app
         session = self.db_slave_session
         cell = Cell()
@@ -26,6 +29,42 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "ok", "lat": 12.3456781, '
                                    '"lon": 23.4567892, "accuracy": 35000}')
+
+    def test_ok_wifi(self):
+        app = self.app
+        session = self.db_slave_session
+        wifis = [
+            Wifi(key="A1", lat=10000000, lon=10000000),
+            Wifi(key="B2", lat=10020000, lon=10040000),
+            Wifi(key="C3", lat=None, lon=None),
+        ]
+        session.add_all(wifis)
+        session.commit()
+        res = app.post_json('/v1/search',
+                            {"wifi": [
+                                {"key": "A1"}, {"key": "B2"}, {"key": "C3"},
+                            ]},
+                            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.body, '{"status": "ok", "lat": 1.0010000, '
+                                   '"lon": 1.0020000, "accuracy": 500}')
+
+    def test_wifi_too_few_matches(self):
+        app = self.app
+        session = self.db_slave_session
+        wifis = [
+            Wifi(key="A1", lat=10000000, lon=10000000),
+            Wifi(key="B2", lat=None, lon=None),
+        ]
+        session.add_all(wifis)
+        session.commit()
+        res = app.post_json('/v1/search',
+                            {"wifi": [
+                                {"key": "A1"}, {"key": "B2"}, {"key": "C3"},
+                            ]},
+                            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.body, '{"status": "not_found"}')
 
     def test_not_found(self):
         app = self.app
