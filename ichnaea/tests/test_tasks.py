@@ -478,6 +478,8 @@ class TestWifiLocationUpdate(CeleryTestCase):
 
     def test_wifi_location_update(self):
         from ichnaea.tasks import wifi_location_update
+        now = datetime.utcnow()
+        before = now - timedelta(days=1)
         session = self.db_master_session
         k1 = sha1('1').hexdigest().upper()
         k2 = sha1('2').hexdigest().upper()
@@ -488,8 +490,12 @@ class TestWifiLocationUpdate(CeleryTestCase):
             WifiMeasure(lat=10040000, lon=10060000, key=k1),
             Wifi(key=k2, lat=20000000, lon=20000000,
                  new_measures=2, total_measures=4),
-            WifiMeasure(lat=20020000, lon=20040000, key=k2),
-            WifiMeasure(lat=20020000, lon=20040000, key=k2),
+            # the lat/lon is bogus and mismatches the line above on purpose
+            # to make sure old measures are skipped
+            WifiMeasure(lat=-10000000, lon=-10000000, key=k2, created=before),
+            WifiMeasure(lat=-10000000, lon=-10000000, key=k2, created=before),
+            WifiMeasure(lat=20020000, lon=20040000, key=k2, created=now),
+            WifiMeasure(lat=20020000, lon=20040000, key=k2, created=now),
         ]
         session.add_all(data)
         session.commit()
