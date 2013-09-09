@@ -1,3 +1,4 @@
+import datetime
 import os
 
 from pyramid.decorator import reify
@@ -18,6 +19,8 @@ from ichnaea.content.stats import (
 
 HERE = os.path.dirname(__file__)
 FAVICON_PATH = os.path.join(HERE, 'static', 'favicon.ico')
+# cache year lookup, needs server restart after new year :)
+THIS_YEAR = unicode(datetime.datetime.utcnow().year)
 
 
 def configure_content(config):
@@ -48,6 +51,10 @@ class Layout(object):
     def base_macros(self):
         renderer = get_renderer("templates/base_macros.pt")
         return renderer.implementation().macros
+
+    @property
+    def this_year(self):
+        return THIS_YEAR
 
 
 class ContentViews(Layout):

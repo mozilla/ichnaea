@@ -50,7 +50,7 @@
                  alt="Mozilla" width="93" height="24" />
         </div>
         <div class="footer-license">
-            This content is ©2012–2013 by Mozilla.
+            This content is ©2012–${view.this_year} by Mozilla.
         </div>
 
         <ul class="footer-nav">
