@@ -1,0 +1,45 @@
+<tal:macro xmlns:tal="http://xml.zope.org/namespaces/tal"
+           xmlns:metal="http://xml.zope.org/namespaces/metal"
+           metal:use-macro="view.base_template">
+
+<tal:slot metal:fill-slot="content">
+<section id="main-content">
+    <p>Data is updated in near-realtime.</p>
+
+    <div class="half-width" style="float:left">
+        <table class="table half">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr tal:repeat="row leaders1">
+                    <td>${row.nickname}</td>
+                    <td>${row.num}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="half-width" style="float:right"
+         tal:condition="leaders2">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr tal:repeat="row leaders2">
+                    <td>${row.nickname}</td>
+                    <td>${row.num}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+</tal:slot>
+
+</tal:macro>

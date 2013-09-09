@@ -59,6 +59,20 @@ class ContentViews(Layout):
     def homepage_view(self):
         return {'page_title': 'Overview'}
 
+    @view_config(renderer='templates/leaders.pt',
+                 name="leaders", http_cache=300)
+    def leaders_view(self):
+        session = self.request.db_slave_session
+        result = leaders(session)
+        half = len(result) // 2 + len(result) % 2
+        leaders1 = result[:half]
+        leaders2 = result[half:]
+        return {
+            'page_title': 'Leaderboard',
+            'leaders1': leaders1,
+            'leaders2': leaders2,
+        }
+
     @view_config(renderer='string', name="map.csv", http_cache=86400)
     def map_csv(self):
         session = self.request.db_slave_session
@@ -85,7 +99,7 @@ class ContentViews(Layout):
         session = self.request.db_slave_session
         return {'histogram': histogram(session, 'unique_wifi')}
 
-    @view_config(renderer='templates/stats.pt', name="stats", http_cache=300)
+    @view_config(renderer='templates/stats.pt', name="stats", http_cache=86400)
     def stats_view(self):
         session = self.request.db_slave_session
         result = {'leaders': [], 'metrics': [], 'page_title': 'Statistics'}
@@ -99,7 +113,6 @@ class ContentViews(Layout):
         ]
         for mid, name in metric_names:
             result['metrics'].append({'name': name, 'value': metrics[mid]})
-        result['leaders'] = leaders(session)
         return result
 
 

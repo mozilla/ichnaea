@@ -14,47 +14,27 @@
 
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
-    <p>Overall statistics and leaderboard.</p>
+    <p>
+        This page shows global statistics.
+        Data is updated daily shortly after midnight in UTC.
+    </p>
 
-    <div class="half-width" style="float:left">
+    <div style="clear:both">
     <h2>Measurements</h2>
-        <p>
-            Data is updated daily shortly after midnight in UTC.<br />
-            <table class="table half">
-                <thead>
-                    <tr>
-                        <th>Metric</th>
-                        <th>Value</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr tal:repeat="row metrics">
-                        <td>${row.name}</td>
-                        <td>${row.value}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </p>
-    </div>
-    <div class="half-width" style="float:right">
-        <h2>Leaders</h2>
-        <p>
-            Data is updated in near-realtime.<br />
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>User</th>
-                        <th>Points</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr tal:repeat="row leaders">
-                        <td>${row.nickname}</td>
-                        <td>${row.num}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </p>
+    <table class="table half">
+        <thead>
+            <tr>
+                <th>Metric</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr tal:repeat="row metrics">
+                <td>${row.name}</td>
+                <td>${row.value}</td>
+            </tr>
+        </tbody>
+    </table>
     </div>
     <div style="clear:both">
         <h3>Locations in the last 30 days</h3>

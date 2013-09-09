@@ -8,8 +8,10 @@ from unittest2 import TestCase
 
 from ichnaea.db import (
     Measure,
+    Score,
     Stat,
     STAT_TYPE,
+    User,
 )
 from ichnaea.tests.base import (
     AppTestCase,
@@ -50,6 +52,9 @@ class TestFunctionalContent(AppTestCase):
     def test_homepage(self):
         result = self.app.get('/', status=200)
         self.assertTrue('Strict-Transport-Security' in result.headers)
+
+    def test_leaders(self):
+        self.app.get('/leaders', status=200)
 
     def test_not_found(self):
         self.app.get('/nobody-is-home', status=404)
@@ -130,7 +135,7 @@ class TestFunctionalContent(AppTestCase):
         )
 
 
-class TestStats(AppTestCase):
+class TestFunctionalContentViews(AppTestCase):
 
     def setUp(self):
         AppTestCase.setUp(self)
@@ -144,6 +149,26 @@ class TestStats(AppTestCase):
     def _make_view(self, request):
         from ichnaea.content.views import ContentViews
         return ContentViews(request)
+
+    def test_leaders(self):
+        session = self.db_master_session
+        for i in range(3):
+            user = User(nickname=unicode(i))
+            session.add(user)
+            session.flush()
+            score = Score(userid=user.id, value=i)
+            session.add(score)
+        session.commit()
+        request = DummyRequest()
+        request.db_slave_session = self.db_master_session
+        inst = self._make_view(request)
+        result = inst.leaders_view()
+        self.assertEqual(
+            result['leaders1'],
+            [{'nickname': u'2', 'num': 2L}, {'nickname': u'1', 'num': 1L}])
+        self.assertEqual(
+            result['leaders2'],
+            [{'nickname': u'0', 'num': 0L}])
 
     def test_stats(self):
         day = datetime.utcnow().date() - timedelta(1)
@@ -162,7 +187,6 @@ class TestStats(AppTestCase):
         inst = self._make_view(request)
         result = inst.stats_view()
         self.assertEqual(result['page_title'], 'Statistics')
-        self.assertEqual(result['leaders'], [])
         self.assertEqual(
             result['metrics'],
             [{'name': 'Locations', 'value': 3},
