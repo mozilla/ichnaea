@@ -22,7 +22,7 @@ def load_file(session, source_file, batch_size=10000):
     utcmin = utcnow - datetime.timedelta(120)
 
     with open(source_file, 'r') as fd:
-        reader = csv.reader(fd, delimiter='\t')
+        reader = csv.reader(fd, delimiter='\t', quotechar=None)
         session_objects = []
         counter = 0
 
