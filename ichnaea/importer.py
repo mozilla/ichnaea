@@ -79,6 +79,8 @@ def main(argv):
         prog=argv[0], description='Location Importer')
 
     parser.add_argument('--dry-run', action='store_true')
+    # TODO rely on ICHNAEA_CFG / ichnaea.config, as the worker is relying
+    # on it anyways
     parser.add_argument('config', help="config file")
     parser.add_argument('source', help="source file")
     args = parser.parse_args(argv[1:])
