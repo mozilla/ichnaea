@@ -40,6 +40,10 @@ STAT_TYPE = {
 }
 STAT_TYPE_INVERSE = dict((v, k) for k, v in STAT_TYPE.items())
 
+
+def normalize_wifi_key(key):
+    return key.replace(":", "").replace("-", "").lower()
+
 # TODO add signal to list of reserved words
 # reported upstream at http://www.sqlalchemy.org/trac/ticket/2791
 from sqlalchemy.dialects.mysql import base

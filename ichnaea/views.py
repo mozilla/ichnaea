@@ -111,19 +111,8 @@ def search_post(request):
     submitted to the server. Wifi's with a hidden SSID should not be submitted
     to the server either.
 
-    The `key` is a SHA1 hash of the concatenated BSSID and SSID of the wifi
-    network. So for example for a bssid of `01:23:45:67:89:ab` and a
-    ssid of `network name`, the result should be:
-    `3680873e9b83738eb72946d19e971e023e51fd01`. In Python this would be coded
-    as:
-
-    .. code-block:: python
-
-        import hashlib
-
-        bssid = '01:23:45:67:89:ab'.encode('utf-8')
-        ssid = 'network name'.encode('utf-8')
-        key = hashlib.sha1(bssid + ssid).hexdigest()
+    The `key` is a the BSSID or MAC address of the wifi network. So for example
+    a valid key would look similar to `01:23:45:67:89:ab`.
 
     A successful result will be:
 

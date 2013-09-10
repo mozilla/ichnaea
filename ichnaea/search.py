@@ -1,5 +1,6 @@
 from ichnaea.db import (
     Cell,
+    normalize_wifi_key,
     RADIO_TYPE,
     Wifi,
 )
@@ -38,7 +39,7 @@ def search_cell(session, data):
 
 def search_wifi(session, data):
     wifi_data = data['wifi']
-    wifi_keys = set([w['key'].upper() for w in wifi_data])
+    wifi_keys = set([normalize_wifi_key(w['key']) for w in wifi_data])
     sql_null = None  # avoid pep8 warning
     query = session.query(Wifi.lat, Wifi.lon).filter(
         Wifi.key.in_(wifi_keys)).filter(
