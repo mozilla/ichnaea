@@ -58,5 +58,5 @@ class GeoLocateSchema(MappingSchema):
     radioType = SchemaNode(String(), location="body", type='str',
                            validator=OneOf(RADIO_TYPE_KEYS), missing='')
     carrier = SchemaNode(String(), location="body", missing='')
-    cellTowers = CellTowersSchema()
-    wifiAccessPoints = WifiAccessPointsSchema()
+    cellTowers = CellTowersSchema(missing=())
+    wifiAccessPoints = WifiAccessPointsSchema(missing=())

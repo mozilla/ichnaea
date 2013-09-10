@@ -34,8 +34,8 @@ geolocate = Service(
 def geolocate_post(request):
     return {
         "location": {
-            "lat": 37.789,
-            "lng": -122.389,
+            "lat": 71.076061,
+            "lng": -8.115463,
         },
-        "accuracy": 500.0,
+        "accuracy": 1000.0,
     }
