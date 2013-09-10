@@ -16,6 +16,7 @@ def main(global_config, _db_master=None, _db_slave=None, **settings):
     config = Configurator(settings=settings)
     config.include("cornice")
     config.scan("ichnaea.views")
+    config.scan("ichnaea.geolocate.views")
     settings = config.registry.settings
 
     # logging
