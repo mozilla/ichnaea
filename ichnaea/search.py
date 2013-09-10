@@ -10,7 +10,7 @@ from ichnaea.decimaljson import quantize
 def search_cell(session, data):
     radio = RADIO_TYPE.get(data['radio'], -1)
     cell = data['cell'][0]
-    if cell['radio']:
+    if cell.get('radio'):
         radio = RADIO_TYPE.get(cell['radio'], -1)
     mcc = cell['mcc']
     mnc = cell['mnc']
@@ -40,6 +40,8 @@ def search_cell(session, data):
 def search_wifi(session, data):
     wifi_data = data['wifi']
     wifi_keys = set([normalize_wifi_key(w['key']) for w in wifi_data])
+    if not wifi_keys:
+        return None
     sql_null = None  # avoid pep8 warning
     query = session.query(Wifi.lat, Wifi.lon).filter(
         Wifi.key.in_(wifi_keys)).filter(

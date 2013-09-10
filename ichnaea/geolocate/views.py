@@ -3,6 +3,7 @@ import logging
 from cornice import Service
 
 from ichnaea.geolocate.schema import GeoLocateSchema
+from ichnaea.search import search_cell, search_wifi
 from ichnaea.views import (
     error_handler,
     MSG_ONE_OF,
@@ -21,6 +22,32 @@ def geolocate_validator(request):
         request.errors.add('body', 'body', MSG_ONE_OF)
 
 
+def search_cell_tower(session, data):
+    mapped = {
+        'radio': data['radioType'],
+        'cell': [],
+    }
+    for cell in data['cellTowers']:
+        mapped['cell'].append({
+            'mcc': cell['mobileCountryCode'],
+            'mnc': cell['mobileNetworkCode'],
+            'lac': cell['locationAreaCode'],
+            'cid': cell['cellId'],
+        })
+    return search_cell(session, mapped)
+
+
+def search_wifi_ap(session, data):
+    mapped = {
+        'wifi': [],
+    }
+    for wifi in data['wifiAccessPoints']:
+        mapped['wifi'].append({
+            'key': wifi['macAddress'],
+        })
+    return search_wifi(session, mapped)
+
+
 geolocate = Service(
     name='geolocate',
     path='/v1/geolocate',
@@ -32,10 +59,21 @@ geolocate = Service(
                 schema=GeoLocateSchema, error_handler=error_handler,
                 validators=geolocate_validator)
 def geolocate_post(request):
+    data = request.validated
+    session = request.db_slave_session
+
+    result = None
+    if data['wifiAccessPoints']:
+        result = search_wifi_ap(session, data)
+    else:
+        result = search_cell_tower(session, data)
+    if result is None:
+        return {'status': 'not_found'}
+
     return {
         "location": {
-            "lat": 71.076061,
-            "lng": -8.115463,
+            "lat": result['lat'],
+            "lng": result['lon'],
         },
-        "accuracy": 1000.0,
+        "accuracy": float(result['accuracy']),
     }
