@@ -54,3 +54,23 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"location": {"lat": 1.0010000, '
                                    '"lng": 1.0020000}, "accuracy": 500.0}')
+
+    def test_wifi_not_found(self):
+        app = self.app
+        res = app.post_json(
+            '/v1/geolocate', {
+                "wifiAccessPoints": [
+                    {"macAddress": "abcd"}, {"macAddress": "cdef"},
+                ]},
+            status=404)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(
+            res.json, {"error": {
+                "errors": [{
+                    "domain": "geolocation", "reason": "notFound",
+                    "message": "Not found",
+                }],
+                "code": 404,
+                "message": "Not found"
+            }}
+        )

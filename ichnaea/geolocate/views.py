@@ -1,7 +1,9 @@
 import logging
 
 from cornice import Service
+from pyramid.httpexceptions import HTTPNotFound
 
+from ichnaea.decimaljson import dumps
 from ichnaea.geolocate.schema import GeoLocateSchema
 from ichnaea.search import search_cell, search_wifi
 from ichnaea.views import (
@@ -10,6 +12,18 @@ from ichnaea.views import (
 )
 
 logger = logging.getLogger('ichnaea')
+NOT_FOUND = {
+    "error": {
+        "errors": [{
+            "domain": "geolocation",
+            "reason": "notFound",
+            "message": "Not found",
+        }],
+        "code": 404,
+        "message": "Not found",
+    }
+}
+NOT_FOUND = dumps(NOT_FOUND)
 
 
 def geolocate_validator(request):
@@ -68,7 +82,10 @@ def geolocate_post(request):
     else:
         result = search_cell_tower(session, data)
     if result is None:
-        return {'status': 'not_found'}
+        result = HTTPNotFound()
+        result.content_type = 'application/json'
+        result.body = NOT_FOUND
+        return result
 
     return {
         "location": {
