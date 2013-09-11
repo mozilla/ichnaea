@@ -302,6 +302,23 @@ class TestSubmit(CeleryAppTestCase):
         res = app.post_json('/v1/submit', [1], status=400)
         self.assertTrue('errors' in res.json)
 
+    def test_error_too_long_wifi_key(self):
+        app = self.app
+        wifi_data = [{"key": "ab:12:34:56:78:90"}, {"key": "cd:34" * 10}]
+        app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.3456781,
+                                      "lon": 23.4567892,
+                                      "wifi": wifi_data}]},
+            status=204)
+        session = self.db_master_session
+        measure_result = session.query(Measure).all()
+        self.assertEqual(len(measure_result), 1)
+        item = measure_result[0]
+        self.assertEqual(item.lat, 123456781)
+        self.assertEqual(item.lon, 234567892)
+        self.assertTrue(item.cell is None)
+        self.assertTrue(item.wifi is None)
+
     def test_no_json(self):
         app = self.app
         res = app.post('/v1/submit', "\xae", status=400)

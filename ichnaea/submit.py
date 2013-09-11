@@ -87,8 +87,15 @@ def process_measure(data, utcnow, session):
         measure.cell = dumps(cell_data)
         session_objects.extend(cells)
     if data.get('wifi'):
-        process_wifi(data['wifi'], measure)
-        measure.wifi = dumps(data['wifi'])
+        # filter out old-style sha1 hashes
+        too_long_keys = False
+        for w in data['wifi']:
+            if len(w['key']) > 17:
+                too_long_keys = True
+                break
+        if not too_long_keys:
+            process_wifi(data['wifi'], measure)
+            measure.wifi = dumps(data['wifi'])
     return session_objects
 
 
