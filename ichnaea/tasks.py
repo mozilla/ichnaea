@@ -312,6 +312,8 @@ def wifi_location_update(min_new=10, max_new=100, batch=10):
                 Wifi.new_measures >= min_new).filter(
                 Wifi.new_measures < max_new).limit(batch)
             wifis = dict(query.all())
+            if not wifis:
+                return 0
             # TODO: This gets all measures and not just the X newest
             query = session.query(WifiMeasure).filter(
                 WifiMeasure.key.in_(wifis.keys()))
