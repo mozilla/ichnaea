@@ -100,7 +100,7 @@ class TestWifi(DBTestCase):
         self.assertEqual(wifi.total_measures, 0)
 
     def test_fields(self):
-        key = "3680873e9b83738eb72946d19e971e023e51fd01"
+        key = "3680873e9b83"
         wifi = self._make_one(
             key=key, lat=12345678, lon=23456789, range=200,
             new_measures=2, total_measures=15,
@@ -130,7 +130,7 @@ class TestWifiBlacklist(DBTestCase):
         self.assertTrue(wifi.created is not None)
 
     def test_fields(self):
-        key = "3680873e9b83738eb72946d19e971e023e51fd01"
+        key = "3680873e9b83"
         wifi = self._make_one(key=key)
         session = self.db_master_session
         session.add(wifi)
@@ -141,7 +141,7 @@ class TestWifiBlacklist(DBTestCase):
         self.assertTrue(isinstance(result.created, datetime.datetime))
 
     def test_unique_key(self):
-        key = "3680873e9b83738eb72946d19e971e023e51fd01"
+        key = "3680873e9b83"
         wifi1 = self._make_one(key=key)
         session = self.db_master_session
         session.add(wifi1)
@@ -163,7 +163,7 @@ class TestWifiMeasure(DBTestCase):
         self.assertTrue(wifi.id is None)
 
     def test_fields(self):
-        key = "3680873e9b83738eb72946d19e971e023e51fd01"
+        key = "3680873e9b83"
         wifi = self._make_one(
             lat=12345678, lon=23456789, key=key, channel=2412, signal=-45)
         session = self.db_master_session

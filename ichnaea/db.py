@@ -153,7 +153,7 @@ class Wifi(_Model):
 
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
-    key = Column(String(40))
+    key = Column(String(12))
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
@@ -183,7 +183,7 @@ class WifiBlacklist(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
     created = Column(DateTime)
-    key = Column(String(40))
+    key = Column(String(12))
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
@@ -217,7 +217,7 @@ class WifiMeasure(_Model):
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)
-    key = Column(String(40))
+    key = Column(String(12))
     channel = Column(SmallInteger)
     signal = Column(SmallInteger)
 
