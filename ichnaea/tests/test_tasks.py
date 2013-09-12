@@ -6,7 +6,6 @@ from sqlalchemy.orm.exc import FlushError
 from ichnaea.db import (
     CellMeasure,
     Measure,
-    normalize_wifi_key,
     Stat,
     STAT_TYPE,
     Wifi,
@@ -270,9 +269,9 @@ class TestStats(CeleryTestCase):
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(40))
-        k1 = normalize_wifi_key("ab:12:34:56:78:90")
-        k2 = normalize_wifi_key("cd:12:34:56:78:90")
-        k3 = normalize_wifi_key("ef:12:34:56:78:90")
+        k1 = "ab1234567890"
+        k2 = "cd1234567890"
+        k3 = "ef1234567890"
         measures = [
             WifiMeasure(lat=10000000, lon=20000000, created=long_ago, key=k1),
             WifiMeasure(lat=10000000, lon=20000000, created=two_days, key=k1),
@@ -366,8 +365,8 @@ class TestInsert(CeleryTestCase):
     def test_wifi_blacklist(self):
         from ichnaea.tasks import insert_wifi_measure
         session = self.db_master_session
-        bad_key = normalize_wifi_key("ab:12:34:56:78:90")
-        good_key = normalize_wifi_key("cd:12:34:56:78:90")
+        bad_key = "ab1234567890"
+        good_key = "cd1234567890"
         black = WifiBlacklist(key=bad_key)
         session.add(black)
         session.flush()
@@ -387,11 +386,11 @@ class TestBlacklist(CeleryTestCase):
     def test_blacklist_moving_wifis(self):
         from ichnaea.tasks import blacklist_moving_wifis
         session = self.db_master_session
-        k1 = normalize_wifi_key("ab:12:34:56:78:90")
-        k2 = normalize_wifi_key("cd:12:34:56:78:90")
-        k3 = normalize_wifi_key("ef:12:34:56:78:90")
-        k4 = normalize_wifi_key("b0:12:34:56:78:90")
-        k5 = normalize_wifi_key("d2:12:34:56:78:90")
+        k1 = "ab1234567890"
+        k2 = "cd1234567890"
+        k3 = "ef1234567890"
+        k4 = "b01234567890"
+        k5 = "d21234567890"
         measures = [
             WifiMeasure(lat=10010000, lon=10010000, key=k1),
             WifiMeasure(lat=10020000, lon=10050000, key=k1),
@@ -431,8 +430,7 @@ class TestBlacklist(CeleryTestCase):
         m1 = 10000000
         for i in range(11):
             measures.append(
-                WifiMeasure(lat=m1, lon=m1,
-                            key=normalize_wifi_key("a%s:12:34:56:78:90" % i)))
+                WifiMeasure(lat=m1, lon=m1, key="a%s1234567890" % i))
         session.add_all(measures)
         session.flush()
 
@@ -455,8 +453,7 @@ class TestBlacklist(CeleryTestCase):
         from ichnaea.tasks import remove_wifi
         session = self.db_master_session
         measures = []
-        wifi_keys = [
-            normalize_wifi_key("a%s:12:34:56:78:90" % i) for i in range(5)]
+        wifi_keys = ["a%s1234567890" % i for i in range(5)]
         m1 = 10000000
         m2 = 10000000
         for key in wifi_keys:
@@ -483,8 +480,8 @@ class TestWifiLocationUpdate(CeleryTestCase):
         now = datetime.utcnow()
         before = now - timedelta(days=1)
         session = self.db_master_session
-        k1 = normalize_wifi_key("ab:12:34:56:78:90")
-        k2 = normalize_wifi_key("cd:12:34:56:78:90")
+        k1 = "ab1234567890"
+        k2 = "cd1234567890"
         data = [
             Wifi(key=k1, new_measures=3, total_measures=3),
             WifiMeasure(lat=10000000, lon=10000000, key=k1),
