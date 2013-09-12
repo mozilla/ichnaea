@@ -154,4 +154,6 @@ def configure(celery=celery):
         CELERYBEAT_SCHEDULE=CELERYBEAT_SCHEDULE,
     )
 
-configure(celery)
+if os.environ.get('READTHEDOCS', None) is None:
+    # don't configure worker on rtfd.org
+    configure(celery)
