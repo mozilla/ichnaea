@@ -10,7 +10,7 @@ from ichnaea.db import (
     Database,
     normalize_wifi_key,
 )
-from ichnaea.service.submit.submit import process_measure
+from ichnaea.service.submit.views import process_measure
 
 
 def load_file(session, source_file, batch_size=10000):

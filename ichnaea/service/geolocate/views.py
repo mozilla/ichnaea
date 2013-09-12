@@ -5,10 +5,13 @@ from pyramid.httpexceptions import HTTPNotFound
 
 from ichnaea.decimaljson import dumps
 from ichnaea.service.geolocate.schema import GeoLocateSchema
-from ichnaea.service.search.search import search_cell, search_wifi
-from ichnaea.service.search.views import (
+from ichnaea.service.error import (
     error_handler,
     MSG_ONE_OF,
+)
+from ichnaea.service.search.views import (
+    search_cell,
+    search_wifi,
 )
 
 logger = logging.getLogger('ichnaea')
