@@ -15,8 +15,8 @@ And run the server:
 
    bin/circusd circus.ini
 
-This command will launch 2 Python workers.
-From there you can access the service on port 7001.
+This command will launch 2 web server processes, one celery beat daemon and
+two celery worker processes. You can access the web service on port 7001.
 
 You can also run the service as a daemon:
 

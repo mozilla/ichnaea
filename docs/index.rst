@@ -26,12 +26,12 @@ API
 ===
 
 .. services::
-   :modules: ichnaea.views
+   :modules: ichnaea.service.search.views
    :service: search
 
 
 .. services::
-   :modules: ichnaea.views
+   :modules: ichnaea.service.submit.views
    :service: submit
 
 
@@ -53,34 +53,11 @@ Development
 All source code is available on `github under ichnaea
 <https://github.com/mozilla/ichnaea>`_.
 
-Bugs should be reported in the `Mozilla Services :: Location component of
-Bugzilla <https://bugzilla.mozilla.org/describecomponents.cgi?product=Mozilla%20Services&component=Location>`_.
-
 The developers of ``ichnaea`` can frequently be found on the Mozilla IRC
 network in the #geo channel.
-
-
-Extra data sources
-==================
-
-**opencellid.enaikoon.de**
-
-- http://opencellid.enaikoon.de:8080/gpsSuiteCellIDServer/exportFiles/basestations.tar.gz
-- http://opencellid.enaikoon.de:8080/gpsSuiteCellIDServer/exportFiles/measurements.tar.gz
-
-**dump.opencellid.org**
-
-- http://dump.opencellid.org/cells.txt.gz
-- http://dump.opencellid.org/measures.txt.gz
 
 
 License
 =======
 
 The ``mozilla-ichnaea`` source code is offered under the Apache License 2.0.
-
-The initial data is taken from `opencellid.org <http://opencellid.org/>`_
-kindly offered under the `Creative Common Attribution-Share Alike 3.0 Unported
-<http://creativecommons.org/licenses/by-sa/3.0/>`_ license. In addition data
-is taken from the opencellid server hosted by
-`enaikoon.de <http://www.enaikoon.de>`_ under the same license.
