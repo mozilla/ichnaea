@@ -29,11 +29,9 @@ def main(global_config, _db_master=None, _db_slave=None, **settings):
 
     from ichnaea.content.views import configure_content
     from ichnaea.service import configure_service
-    from ichnaea.views import configure_v1
 
     configure_content(config)
     configure_service(config)
-    configure_v1(config)
 
     # configure databases incl. test override hooks
     if _db_master is None:

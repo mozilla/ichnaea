@@ -4,9 +4,9 @@ from cornice import Service
 from pyramid.httpexceptions import HTTPNotFound
 
 from ichnaea.decimaljson import dumps
-from ichnaea.search import search_cell, search_wifi
 from ichnaea.service.geolocate.schema import GeoLocateSchema
-from ichnaea.views import (
+from ichnaea.service.search.search import search_cell, search_wifi
+from ichnaea.service.search.views import (
     error_handler,
     MSG_ONE_OF,
 )
