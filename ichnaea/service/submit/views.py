@@ -17,11 +17,11 @@ from ichnaea.decimaljson import (
     encode_datetime,
     to_precise_int,
 )
-from ichnaea.schema import SubmitSchema
 from ichnaea.service.error import (
     error_handler,
     MSG_ONE_OF,
 )
+from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.tasks import insert_wifi_measure
 
 

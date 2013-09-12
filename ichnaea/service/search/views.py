@@ -7,11 +7,11 @@ from ichnaea.db import (
     Wifi,
 )
 from ichnaea.decimaljson import quantize
-from ichnaea.schema import SearchSchema
 from ichnaea.service.error import (
     error_handler,
     MSG_ONE_OF,
 )
+from ichnaea.service.search.schema import SearchSchema
 
 
 def configure_search(config):
