@@ -6,6 +6,7 @@ from colander import iso8601
 from ichnaea.db import (
     CellMeasure,
     Measure,
+    normalize_wifi_key,
     RADIO_TYPE,
     Score,
     User,
@@ -90,7 +91,8 @@ def process_measure(data, utcnow, session):
         # filter out old-style sha1 hashes
         too_long_keys = False
         for w in data['wifi']:
-            if len(w['key']) > 17:
+            w['key'] = key = normalize_wifi_key(w['key'])
+            if len(key) > 12:
                 too_long_keys = True
                 break
         if not too_long_keys:

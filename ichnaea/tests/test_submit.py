@@ -111,8 +111,8 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.accuracy, 17)
         self.assertEqual(item.altitude, 0)
         self.assertEqual(item.altitude_accuracy, 0)
-        self.assertTrue('"key": "AB12"' in item.wifi)
-        self.assertTrue('"key": "cd:34"' in item.wifi)
+        self.assertTrue('"key": "ab12"' in item.wifi)
+        self.assertTrue('"key": "cd34"' in item.wifi)
         self.assertTrue(item.cell is None)
 
         wifi_result = session.query(WifiMeasure).all()
