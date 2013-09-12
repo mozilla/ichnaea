@@ -7,7 +7,9 @@ from ichnaea import decimaljson
 from ichnaea.db import Database
 from ichnaea.db import db_master_session
 from ichnaea.db import db_slave_session
+
 from ichnaea.content.views import configure_content
+from ichnaea.service.heartbeat import configure_heartbeat
 
 logger = logging.getLogger('ichnaea')
 
@@ -31,6 +33,7 @@ def main(global_config, _db_master=None, _db_slave=None, **settings):
     waitress_log.addHandler(sh)
 
     configure_content(config)
+    configure_heartbeat(config)
 
     # configure databases incl. test override hooks
     if _db_master is None:
