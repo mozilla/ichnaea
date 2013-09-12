@@ -6,7 +6,7 @@ LOCAL_FQDN = socket.getfqdn()
 
 
 def configure_heartbeat(config):
-    config.scan('ichnaea.service.heartbeat')
+    config.scan('ichnaea.service.heartbeat.views')
 
 
 @view_config(renderer='json', name="__heartbeat__")

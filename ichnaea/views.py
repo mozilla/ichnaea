@@ -12,7 +12,7 @@ from ichnaea.submit import submit_request
 logger = logging.getLogger('ichnaea')
 
 
-def configure_service(config):
+def configure_v1(config):
     config.scan('ichnaea.views')
 
 
