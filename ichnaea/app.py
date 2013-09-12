@@ -8,17 +8,12 @@ from ichnaea.db import Database
 from ichnaea.db import db_master_session
 from ichnaea.db import db_slave_session
 
-from ichnaea.content.views import configure_content
-from ichnaea.service.heartbeat import configure_heartbeat
-
 logger = logging.getLogger('ichnaea')
 
 
 def main(global_config, _db_master=None, _db_slave=None, **settings):
     config = Configurator(settings=settings)
     config.include("cornice")
-    config.scan("ichnaea.views")
-    config.scan("ichnaea.geolocate.views")
     settings = config.registry.settings
 
     # logging
@@ -32,8 +27,15 @@ def main(global_config, _db_master=None, _db_slave=None, **settings):
     waitress_log = logging.getLogger('waitress')
     waitress_log.addHandler(sh)
 
+    from ichnaea.content.views import configure_content
+    from ichnaea.geolocate.views import configure_geolocate
+    from ichnaea.service.heartbeat import configure_heartbeat
+    from ichnaea.views import configure_service
+
     configure_content(config)
+    configure_geolocate(config)
     configure_heartbeat(config)
+    configure_service(config)
 
     # configure databases incl. test override hooks
     if _db_master is None:

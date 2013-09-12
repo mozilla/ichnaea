@@ -26,6 +26,10 @@ NOT_FOUND = {
 NOT_FOUND = dumps(NOT_FOUND)
 
 
+def configure_geolocate(config):
+    config.scan('ichnaea.geolocate.views')
+
+
 def geolocate_validator(request):
     if len(request.errors):
         return

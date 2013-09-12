@@ -12,6 +12,10 @@ from ichnaea.submit import submit_request
 logger = logging.getLogger('ichnaea')
 
 
+def configure_service(config):
+    config.scan('ichnaea.views')
+
+
 class _JSONError(HTTPError):
     def __init__(self, errors, status=400):
         body = {'errors': errors}
