@@ -28,7 +28,7 @@ def main(global_config, _db_master=None, _db_slave=None, **settings):
     waitress_log.addHandler(sh)
 
     from ichnaea.content.views import configure_content
-    from ichnaea.geolocate.views import configure_geolocate
+    from ichnaea.service.geolocate.views import configure_geolocate
     from ichnaea.service.heartbeat import configure_heartbeat
     from ichnaea.views import configure_service
 

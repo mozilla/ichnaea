@@ -4,8 +4,8 @@ from cornice import Service
 from pyramid.httpexceptions import HTTPNotFound
 
 from ichnaea.decimaljson import dumps
-from ichnaea.geolocate.schema import GeoLocateSchema
 from ichnaea.search import search_cell, search_wifi
+from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.views import (
     error_handler,
     MSG_ONE_OF,
@@ -27,7 +27,7 @@ NOT_FOUND = dumps(NOT_FOUND)
 
 
 def configure_geolocate(config):
-    config.scan('ichnaea.geolocate.views')
+    config.scan('ichnaea.service.geolocate.views')
 
 
 def geolocate_validator(request):
