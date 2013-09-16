@@ -20,7 +20,7 @@
     <p>
         A map showing all covered areas. Each data point shows the center
         of a roughly 100 meter by 100 meter area, in which we have at least
-        3 measurements.
+        2 measurements.
     </p>
     <div id='map'></div>
 </section>
