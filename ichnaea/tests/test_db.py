@@ -262,6 +262,31 @@ class TestStat(DBTestCase):
         self.assertEqual(result.key, -1)
 
 
+class TestMapStat(DBTestCase):
+
+    def _make_one(self, **kw):
+        from ichnaea.db import MapStat
+        return MapStat(**kw)
+
+    def test_constructor(self):
+        stat = self._make_one()
+        self.assertTrue(stat.lat is None)
+        self.assertTrue(stat.lon is None)
+        self.assertEqual(stat.key, 0)
+
+    def test_fields(self):
+        stat = self._make_one(lat=12345, lon=-23456, value=13)
+        session = self.db_master_session
+        session.add(stat)
+        session.commit()
+
+        result = session.query(stat.__class__).first()
+        self.assertEqual(result.lat, 12345)
+        self.assertEqual(result.lon, -23456)
+        self.assertEqual(result.key, 0)
+        self.assertEqual(result.value, 13)
+
+
 class TestUser(DBTestCase):
 
     def _make_one(self, **kw):

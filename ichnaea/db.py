@@ -40,6 +40,11 @@ STAT_TYPE = {
 }
 STAT_TYPE_INVERSE = dict((v, k) for k, v in STAT_TYPE.items())
 
+MAPSTAT_TYPE = {
+    'location': 0,
+}
+MAPSTAT_TYPE_INVERSE = dict((v, k) for k, v in MAPSTAT_TYPE.items())
+
 
 def normalize_wifi_key(key):
     if ":" in key or "-" in key or "." in key:
@@ -308,6 +313,27 @@ class Stat(_Model):
 
 
 stat_table = Stat.__table__
+
+
+class MapStat(_Model):
+    __tablename__ = 'mapstat'
+    __table_args__ = {
+        'mysql_engine': 'InnoDB',
+        'mysql_charset': 'utf8',
+    }
+    # lat/lon * 1000, so 12.345 is stored as 12345
+    lat = Column(Integer, primary_key=True, autoincrement=False)
+    lon = Column(Integer, primary_key=True, autoincrement=False)
+    # mapped via MAPSTAT_TYPE
+    key = Column(SmallInteger)
+    value = Column(Integer(unsigned=True))
+
+    def __init__(self, *args, **kw):
+        if 'key' not in kw:
+            kw['key'] = MAPSTAT_TYPE['location']
+        super(MapStat, self).__init__(*args, **kw)
+
+mapstat_table = MapStat.__table__
 
 
 class User(_Model):
