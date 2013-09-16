@@ -74,7 +74,7 @@ def leaders(session):
 def map_csv(session):
     select = text("select round(lat / 10000) as lat1, "
                   "round(lon / 10000) as lon1, count(*) as num "
-                  "from measure group by lat1, lon1 having num > 10 "
+                  "from measure group by lat1, lon1 having num > 2 "
                   "order by lat1, lon1")
     result = session.execute(select)
     rows = StringIO()
