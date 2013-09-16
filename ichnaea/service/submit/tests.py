@@ -8,6 +8,7 @@ from pyramid.testing import DummyRequest
 
 from ichnaea.db import (
     CellMeasure,
+    MapStat,
     Measure,
     RADIO_TYPE,
     Score,
@@ -244,6 +245,29 @@ class TestSubmit(CeleryAppTestCase):
         result = session.query(Measure).all()
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0].time, result[1].time)
+
+    def test_mapstat(self):
+        app = self.app
+        session = self.db_master_session
+        session.add_all([
+            MapStat(lat=1000, lon=2000, value=13),
+            MapStat(lat=2000, lon=3000, value=3),
+        ])
+        session.flush()
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
+                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
+                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "c"}]},
+                {"lat": -2.0, "lon": 3.0, "wifi": [{"key": "c"}]},
+            ]},
+            status=204)
+        result = session.query(MapStat).all()
+        self.assertEqual(len(result), 3)
+        self.assertEqual(
+            sorted([(int(r.lat), int(r.lon), int(r.value)) for r in result]),
+            [(-2000, 3000, 1), (1000, 2000, 14), (2000, 3000, 5)]
+        )
 
     def test_nickname_header(self):
         app = self.app

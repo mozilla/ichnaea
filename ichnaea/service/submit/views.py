@@ -1,3 +1,4 @@
+from collections import defaultdict
 import datetime
 
 from colander import iso8601
@@ -6,6 +7,8 @@ from pyramid.httpexceptions import HTTPNoContent
 
 from ichnaea.db import (
     CellMeasure,
+    MapStat,
+    MAPSTAT_TYPE,
     Measure,
     normalize_wifi_key,
     RADIO_TYPE,
@@ -30,7 +33,27 @@ def configure_submit(config):
 
 
 def process_mapstat(measures, session):
-    pass
+    tiles = defaultdict(int)
+    # aggregate to 100x100m tiles
+    for measure in measures:
+        tiles[(measure.lat / 10000, measure.lon / 10000)] += 1
+    # TODO: on duplicate key update
+    lats = set([k[0] for k in tiles.keys()])
+    lons = set([k[1] for k in tiles.keys()])
+    result = session.query(MapStat).filter(
+        MapStat.key == MAPSTAT_TYPE['location']).filter(
+        MapStat.lat.in_(lats)).filter(
+        MapStat.lon.in_(lons)).all()
+    prior = {}
+    for r in result:
+        prior[(r.lat, r.lon)] = r
+    for (lat, lon), value in tiles.items():
+        stat = MapStat(lat=lat, lon=lon, value=value)
+        old = prior.get((lat, lon), None)
+        if old:
+            old.value = MapStat.value + value
+        else:
+            session.add(stat)
 
 
 def process_user(nickname, session):
