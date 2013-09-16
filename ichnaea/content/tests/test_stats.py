@@ -2,7 +2,7 @@ from datetime import datetime
 from datetime import timedelta
 
 from ichnaea.db import (
-    Measure,
+    MapStat,
     Score,
     User,
     Stat,
@@ -70,13 +70,12 @@ class TestStats(DBTestCase):
     def test_map_csv(self):
         from ichnaea.content.stats import map_csv
         session = self.db_master_session
-        wifi = '[{"key": "a"}]'
-        measures = [Measure(lat=30000000, lon=40000000, wifi=wifi)]
-        for i in range(101):
-            measures.append(Measure(lat=10000000, lon=20000000, wifi=wifi))
-        for i in range(11):
-            measures.append(Measure(lat=20000000, lon=30000000, wifi=wifi))
-        session.add_all(measures)
+        stats = [
+            MapStat(lat=1000, lon=2000, value=101),
+            MapStat(lat=2000, lon=3000, value=11),
+            MapStat(lat=3000, lon=4000, value=1),
+        ]
+        session.add_all(stats)
         session.commit()
         result = map_csv(session)
         text = result.replace('\r', '').strip('\n')

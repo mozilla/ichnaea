@@ -7,7 +7,7 @@ from pyramid.testing import tearDown
 from unittest2 import TestCase
 
 from ichnaea.db import (
-    Measure,
+    MapStat,
     Score,
     Stat,
     STAT_TYPE,
@@ -65,12 +65,8 @@ class TestFunctionalContent(AppTestCase):
     def test_map_csv(self):
         app = self.app
         session = self.db_slave_session
-        wifi = '[{"key": "a"}]'
-        measures = []
-        for i in range(11):
-            measures.append(Measure(lat=20000000, lon=30000000, wifi=wifi))
-        session.add_all(measures)
-        session.commit()
+        session.add(MapStat(lat=2000, lon=3000, value=11))
+        session.flush()
         result = app.get('/map.csv', status=200)
         self.assertEqual(result.content_type, 'text/plain')
         text = result.text.replace('\r', '').strip('\n')

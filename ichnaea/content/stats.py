@@ -4,9 +4,8 @@ import datetime
 from datetime import timedelta
 import math
 
-from sqlalchemy.sql.expression import text
-
 from ichnaea.db import (
+    MapStat,
     Score,
     Stat,
     STAT_TYPE,
@@ -72,16 +71,13 @@ def leaders(session):
 
 
 def map_csv(session):
-    select = text("select round(lat / 10000) as lat1, "
-                  "round(lon / 10000) as lon1, count(*) as num "
-                  "from measure group by lat1, lon1 having num > 2 "
-                  "order by lat1, lon1")
-    result = session.execute(select)
+    result = session.query(MapStat.lat, MapStat.lon, MapStat.value).filter(
+        MapStat.value >= 2).order_by(MapStat.lat, MapStat.lon).all()
     rows = StringIO()
     csvwriter = csv.writer(rows)
     csvwriter.writerow(('lat', 'lon', 'value'))
-    for lat, lon, num in result.fetchall():
+    for lat, lon, value in result:
         # use a logarithmic scale to give lesser used regions a chance
-        num = int(math.ceil(math.log10(num)))
-        csvwriter.writerow((int(lat) / 1000.0, int(lon) / 1000.0, num))
+        value = int(math.ceil(math.log10(value)))
+        csvwriter.writerow((int(lat) / 1000.0, int(lon) / 1000.0, value))
     return rows.getvalue()
