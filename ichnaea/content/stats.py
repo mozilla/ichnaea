@@ -2,7 +2,12 @@ import csv
 from cStringIO import StringIO
 import datetime
 from datetime import timedelta
-import math
+from math import (
+    ceil,
+    log10,
+)
+
+from sqlalchemy import select
 
 from ichnaea.db import (
     MapStat,
@@ -71,13 +76,14 @@ def leaders(session):
 
 
 def map_csv(session):
-    result = session.query(MapStat.lat, MapStat.lon, MapStat.value).filter(
-        MapStat.value >= 2).order_by(MapStat.lat, MapStat.lon).all()
+    result = session.execute(select(
+        columns=(MapStat.lat, MapStat.lon, MapStat.value),
+        whereclause=MapStat.value >= 2)).fetchall()
     rows = StringIO()
     csvwriter = csv.writer(rows)
     csvwriter.writerow(('lat', 'lon', 'value'))
     for lat, lon, value in result:
         # use a logarithmic scale to give lesser used regions a chance
-        value = int(math.ceil(math.log10(value)))
-        csvwriter.writerow((int(lat) / 1000.0, int(lon) / 1000.0, value))
+        value = int(ceil(log10(value)))
+        csvwriter.writerow((lat / 1000.0, lon / 1000.0, value))
     return rows.getvalue()
