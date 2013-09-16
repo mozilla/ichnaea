@@ -58,7 +58,8 @@ def load_file(session, source_file, batch_size=10000):
                 )
             except (ValueError, IndexError):
                 continue
-            session_objects.extend(process_measure(data, utcnow, session))
+            _, new_objects = process_measure(data, utcnow, session)
+            session_objects.extend(new_objects)
 
             # flush every 1000 new records
             counter += 1

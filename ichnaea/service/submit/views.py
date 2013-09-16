@@ -29,6 +29,10 @@ def configure_submit(config):
     config.scan('ichnaea.service.submit.views')
 
 
+def process_mapstat(measures, session):
+    pass
+
+
 def process_user(nickname, session):
     userid = None
     if (3 <= len(nickname) <= 128):
@@ -105,7 +109,7 @@ def process_measure(data, utcnow, session):
         if not too_long_keys:
             process_wifi(data['wifi'], measure)
             measure.wifi = dumps(data['wifi'])
-    return session_objects
+    return (measure, session_objects)
 
 
 def process_cell(entries, measure):
@@ -152,13 +156,18 @@ def submit_request(request):
     utcmin = utcnow - datetime.timedelta(60)
 
     points = 0
-    for measure in request.validated['items']:
-        measure = process_time(measure, utcnow, utcmin)
-        session_objects.extend(process_measure(measure, utcnow, session))
+    measures = []
+    for item in request.validated['items']:
+        item = process_time(item, utcnow, utcmin)
+        measure, new_objects = process_measure(item, utcnow, session)
+        measures.append(measure)
+        session_objects.extend(new_objects)
         points += 1
 
     if userid is not None:
         process_score(userid, points, session)
+    if measures:
+        process_mapstat(measures, session)
 
     session.add_all(session_objects)
     session.commit()
