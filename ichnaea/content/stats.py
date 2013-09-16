@@ -2,12 +2,9 @@ import csv
 from cStringIO import StringIO
 import datetime
 from datetime import timedelta
-from math import (
-    ceil,
-    log10,
-)
 
-from sqlalchemy import select
+from sqlalchemy import select, func
+from sqlalchemy.dialects.mysql import INTEGER as Integer
 
 from ichnaea.db import (
     MapStat,
@@ -76,14 +73,15 @@ def leaders(session):
 
 
 def map_csv(session):
-    result = session.execute(select(
-        columns=(MapStat.lat, MapStat.lon, MapStat.value),
-        whereclause=MapStat.value >= 2)).fetchall()
+    # use a logarithmic scale to give lesser used regions a chance
+    query = select(
+        columns=(MapStat.lat, MapStat.lon,
+                 func.cast(func.ceil(func.log10(MapStat.value)), Integer)),
+        whereclause=MapStat.value >= 2)
+    result = session.execute(query).fetchall()
     rows = StringIO()
     csvwriter = csv.writer(rows)
     csvwriter.writerow(('lat', 'lon', 'value'))
     for lat, lon, value in result:
-        # use a logarithmic scale to give lesser used regions a chance
-        value = int(ceil(log10(value)))
         csvwriter.writerow((lat / 1000.0, lon / 1000.0, value))
     return rows.getvalue()
