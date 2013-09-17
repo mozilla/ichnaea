@@ -25,7 +25,7 @@ from ichnaea.service.error import (
     MSG_ONE_OF,
 )
 from ichnaea.service.submit.schema import SubmitSchema
-from ichnaea.tasks import insert_wifi_measure
+from ichnaea.service.submit.tasks import insert_wifi_measure
 
 
 def configure_submit(config):

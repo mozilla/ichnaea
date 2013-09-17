@@ -10,7 +10,10 @@ from ichnaea import config
 from ichnaea.db import Database
 
 
-CELERY_IMPORTS = ['ichnaea.tasks']
+CELERY_IMPORTS = [
+    'ichnaea.tasks',
+    'ichnaea.service.submit.tasks',
+]
 # add test-only tasks
 if 'CELERY_ALWAYS_EAGER' in os.environ:
     CELERY_IMPORTS.append('ichnaea.tests.test_tasks')
