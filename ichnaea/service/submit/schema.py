@@ -2,7 +2,7 @@ from colander import MappingSchema, SchemaNode, SequenceSchema
 from colander import Decimal, Integer, String, OneOf
 
 from ichnaea.decimaljson import EXPONENT_STR
-from ichnaea.db import RADIO_TYPE_KEYS
+from ichnaea.models import RADIO_TYPE_KEYS
 
 
 class CellSchema(MappingSchema):

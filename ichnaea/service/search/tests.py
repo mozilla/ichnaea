@@ -4,7 +4,7 @@ from cornice.pyramidhook import wrap_request
 from cornice.schemas import CorniceSchema, validate_colander_schema
 from pyramid.testing import DummyRequest
 
-from ichnaea.db import (
+from ichnaea.models import (
     Cell,
     Wifi,
 )

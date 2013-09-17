@@ -1,6 +1,6 @@
 from cornice import Service
 
-from ichnaea.db import (
+from ichnaea.models import (
     Cell,
     normalize_wifi_key,
     RADIO_TYPE,

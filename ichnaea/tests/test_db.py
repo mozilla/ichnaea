@@ -28,7 +28,7 @@ class TestDatabase(DBTestCase):
 class TestCell(DBTestCase):
 
     def _make_one(self, **kw):
-        from ichnaea.db import Cell
+        from ichnaea.models import Cell
         return Cell(**kw)
 
     def test_constructor(self):
@@ -57,7 +57,7 @@ class TestCell(DBTestCase):
 class TestCellMeasure(DBTestCase):
 
     def _make_one(self, **kw):
-        from ichnaea.db import CellMeasure
+        from ichnaea.models import CellMeasure
         return CellMeasure(**kw)
 
     def test_constructor(self):
@@ -90,7 +90,7 @@ class TestCellMeasure(DBTestCase):
 class TestWifi(DBTestCase):
 
     def _make_one(self, **kw):
-        from ichnaea.db import Wifi
+        from ichnaea.models import Wifi
         return Wifi(**kw)
 
     def test_constructor(self):
@@ -121,7 +121,7 @@ class TestWifi(DBTestCase):
 class TestWifiBlacklist(DBTestCase):
 
     def _make_one(self, **kw):
-        from ichnaea.db import WifiBlacklist
+        from ichnaea.models import WifiBlacklist
         return WifiBlacklist(**kw)
 
     def test_constructor(self):
@@ -155,7 +155,7 @@ class TestWifiBlacklist(DBTestCase):
 class TestWifiMeasure(DBTestCase):
 
     def _make_one(self, **kw):
-        from ichnaea.db import WifiMeasure
+        from ichnaea.models import WifiMeasure
         return WifiMeasure(**kw)
 
     def test_constructor(self):
@@ -183,7 +183,7 @@ class TestWifiMeasure(DBTestCase):
 class TestMeasure(DBTestCase):
 
     def _make_one(self, **kw):
-        from ichnaea.db import Measure
+        from ichnaea.models import Measure
         return Measure(**kw)
 
     def test_constructor(self):
@@ -208,7 +208,7 @@ class TestMeasure(DBTestCase):
 class TestScore(DBTestCase):
 
     def _make_one(self, **kw):
-        from ichnaea.db import Score
+        from ichnaea.models import Score
         return Score(**kw)
 
     def test_constructor(self):
@@ -229,7 +229,7 @@ class TestScore(DBTestCase):
 class TestStat(DBTestCase):
 
     def _make_one(self, **kw):
-        from ichnaea.db import Stat
+        from ichnaea.models import Stat
         return Stat(**kw)
 
     def test_constructor(self):
@@ -265,7 +265,7 @@ class TestStat(DBTestCase):
 class TestMapStat(DBTestCase):
 
     def _make_one(self, **kw):
-        from ichnaea.db import MapStat
+        from ichnaea.models import MapStat
         return MapStat(**kw)
 
     def test_constructor(self):
@@ -290,7 +290,7 @@ class TestMapStat(DBTestCase):
 class TestUser(DBTestCase):
 
     def _make_one(self, **kw):
-        from ichnaea.db import User
+        from ichnaea.models import User
         return User(**kw)
 
     def test_constructor(self):

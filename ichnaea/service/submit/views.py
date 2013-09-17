@@ -5,7 +5,7 @@ from colander import iso8601
 from cornice import Service
 from pyramid.httpexceptions import HTTPNoContent
 
-from ichnaea.db import (
+from ichnaea.models import (
     CellMeasure,
     MapStat,
     MAPSTAT_TYPE,

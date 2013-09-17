@@ -1,4 +1,4 @@
-from ichnaea.db import (
+from ichnaea.models import (
     Cell,
     Wifi,
 )

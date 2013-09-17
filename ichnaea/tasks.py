@@ -8,8 +8,8 @@ from sqlalchemy import distinct
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
-from ichnaea.db import (
-    db_worker_session,
+from ichnaea.db import db_worker_session
+from ichnaea.models import (
     Wifi,
     WifiBlacklist,
     WifiMeasure,

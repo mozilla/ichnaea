@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from ichnaea.db import (
+from ichnaea.models import (
     Wifi,
     WifiBlacklist,
     WifiMeasure,

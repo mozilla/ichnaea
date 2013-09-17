@@ -1,7 +1,7 @@
 from colander import MappingSchema, SchemaNode, SequenceSchema
 from colander import Integer, String, OneOf
 
-from ichnaea.db import RADIO_TYPE_KEYS
+from ichnaea.models import RADIO_TYPE_KEYS
 
 
 class CellSchema(MappingSchema):

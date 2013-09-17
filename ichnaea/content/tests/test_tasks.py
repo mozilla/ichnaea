@@ -1,7 +1,7 @@
 from datetime import datetime
 from datetime import timedelta
 
-from ichnaea.db import (
+from ichnaea.models import (
     CellMeasure,
     Measure,
     Stat,

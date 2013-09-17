@@ -6,10 +6,8 @@ import sys
 from colander import iso8601
 from konfig import Config
 
-from ichnaea.db import (
-    Database,
-    normalize_wifi_key,
-)
+from ichnaea.db import Database
+from ichnaea.models import normalize_wifi_key
 from ichnaea.service.submit.views import process_measure
 
 

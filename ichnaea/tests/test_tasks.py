@@ -3,7 +3,7 @@ from datetime import timedelta
 
 from sqlalchemy.orm.exc import FlushError
 
-from ichnaea.db import (
+from ichnaea.models import (
     Measure,
     Wifi,
     WifiBlacklist,

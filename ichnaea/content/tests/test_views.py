@@ -6,7 +6,7 @@ from pyramid.testing import setUp
 from pyramid.testing import tearDown
 from unittest2 import TestCase
 
-from ichnaea.db import (
+from ichnaea.models import (
     MapStat,
     Score,
     Stat,

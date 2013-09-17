@@ -5,7 +5,7 @@ from sqlalchemy import distinct
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
-from ichnaea.db import (
+from ichnaea.models import (
     CellMeasure,
     Measure,
     WifiMeasure,
