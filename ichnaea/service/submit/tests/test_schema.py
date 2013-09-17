@@ -18,7 +18,7 @@ class TestRequest(DummyRequest):
         wrap_request(Event(self))
 
 
-class TestSchema(TestCase):
+class TestMeasureSchema(TestCase):
 
     def _make_schema(self):
         from ichnaea.service.submit.schema import MeasureSchema
@@ -41,3 +41,30 @@ class TestSchema(TestCase):
             '{"lat": 12.3456781, "lon": 23.4567892, "wifi": [{}]}')
         validate_colander_schema(schema, request)
         self.assertTrue(request.errors)
+
+
+class TestSubmitSchema(TestCase):
+
+    def _make_schema(self):
+        from ichnaea.service.submit.schema import SubmitSchema
+        return CorniceSchema.from_colander(SubmitSchema)
+
+    def _make_request(self, body):
+        request = TestRequest()
+        request.body = body
+        return request
+
+    def test_empty(self):
+        schema = self._make_schema()
+        request = self._make_request('{}')
+        validate_colander_schema(schema, request)
+        self.assertTrue(request.errors)
+
+    def test_minimal(self):
+        schema = self._make_schema()
+        request = self._make_request(
+            '{"items": [{"lat": 12.3456781, "lon": 23.4567892}]}')
+        validate_colander_schema(schema, request)
+        self.assertFalse(request.errors)
+        self.assertTrue('items' in request.validated)
+        self.assertEqual(len(request.validated['items']), 1)
