@@ -12,6 +12,7 @@ from ichnaea.db import Database
 
 CELERY_IMPORTS = [
     'ichnaea.tasks',
+    'ichnaea.content.tasks',
     'ichnaea.service.submit.tasks',
 ]
 # add test-only tasks
@@ -20,27 +21,27 @@ if 'CELERY_ALWAYS_EAGER' in os.environ:
 
 CELERYBEAT_SCHEDULE = {
     'histogram-yesterday': {
-        'task': 'ichnaea.tasks.histogram',
+        'task': 'ichnaea.content.tasks.histogram',
         'schedule': crontab(hour=0, minute=3),
         'args': (1, ),
     },
     'histogram-cell-yesterday': {
-        'task': 'ichnaea.tasks.cell_histogram',
+        'task': 'ichnaea.content.tasks.cell_histogram',
         'schedule': crontab(hour=0, minute=3),
         'args': (1, ),
     },
     'histogram-wifi-yesterday': {
-        'task': 'ichnaea.tasks.wifi_histogram',
+        'task': 'ichnaea.content.tasks.wifi_histogram',
         'schedule': crontab(hour=0, minute=3),
         'args': (1, ),
     },
     'histogram-unique-cell-yesterday': {
-        'task': 'ichnaea.tasks.unique_cell_histogram',
+        'task': 'ichnaea.content.tasks.unique_cell_histogram',
         'schedule': crontab(hour=0, minute=4),
         'args': (1, ),
     },
     'histogram-unique-wifi-yesterday': {
-        'task': 'ichnaea.tasks.unique_wifi_histogram',
+        'task': 'ichnaea.content.tasks.unique_wifi_histogram',
         'schedule': crontab(hour=0, minute=4),
         'args': (1, ),
     },
