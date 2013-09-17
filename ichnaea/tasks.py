@@ -6,6 +6,7 @@ from operator import attrgetter
 from celery import Task
 from sqlalchemy import distinct
 from sqlalchemy import func
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from ichnaea.db import db_worker_session
@@ -33,6 +34,18 @@ def daily_task_days(ago):
     day = today - timedelta(days=ago)
     max_day = day + timedelta(days=1)
     return day, max_day
+
+
+@celery.task(base=DatabaseTask, ignore_result=False)  # pragma: no cover
+def cleanup_kombu_message_table(ago=2):
+    day, max_day = daily_task_days(ago)
+    stmt = text(
+        'delete from kombu_message where '
+        'timestamp < "%s" limit 20000;' % day.isoformat()
+    )
+    with cleanup_kombu_message_table.db_session() as session:
+        session.execute(stmt)
+        session.commit()
 
 
 @celery.task(base=DatabaseTask, ignore_result=True)

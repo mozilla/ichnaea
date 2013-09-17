@@ -20,6 +20,11 @@ if 'CELERY_ALWAYS_EAGER' in os.environ:
     CELERY_IMPORTS.append('ichnaea.tests.test_tasks')
 
 CELERYBEAT_SCHEDULE = {
+    'cleanup-kombu-message-table': {
+        'task': 'ichnaea.tasks.cleanup_kombu_message_table',
+        'schedule': timedelta(seconds=3600),
+        'args': (2, ),
+    },
     'histogram-yesterday': {
         'task': 'ichnaea.content.tasks.histogram',
         'schedule': crontab(hour=0, minute=3),
