@@ -86,7 +86,8 @@ def configure(celery=celery):
     if conf.has_section('celery'):
         section = conf.get_map('celery')
     else:  # pragma: no cover
-        section = {}
+        # happens while building docs locally and on rtfd.org
+        return
 
     database_options = {
         "pool_recycle": 3600,
@@ -158,6 +159,4 @@ def configure(celery=celery):
         CELERYBEAT_SCHEDULE=CELERYBEAT_SCHEDULE,
     )
 
-if os.environ.get('READTHEDOCS', None) is None:
-    # don't configure worker on rtfd.org
-    configure(celery)
+configure(celery)
