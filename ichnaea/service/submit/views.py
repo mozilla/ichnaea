@@ -168,34 +168,6 @@ def process_wifi(entries, measure):
     insert_wifi_measure.delay(measure_data, entries)
 
 
-def submit_request(request):
-    session = request.db_master_session
-    session_objects = []
-
-    nickname = request.headers.get('X-Nickname', '')
-    userid, nickname = process_user(nickname, session)
-
-    utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
-    utcmin = utcnow - datetime.timedelta(60)
-
-    points = 0
-    measures = []
-    for item in request.validated['items']:
-        item = process_time(item, utcnow, utcmin)
-        measure, new_objects = process_measure(item, utcnow, session)
-        measures.append(measure)
-        session_objects.extend(new_objects)
-        points += 1
-
-    if userid is not None:
-        process_score(userid, points, session)
-    if measures:
-        process_mapstat(measures, session)
-
-    session.add_all(session_objects)
-    session.commit()
-
-
 def check_cell_or_wifi(data, request):
     cell = data.get('cell', ())
     wifi = data.get('wifi', ())
@@ -223,5 +195,29 @@ submit = Service(
              schema=SubmitSchema, error_handler=error_handler,
              validators=submit_validator)
 def submit_post(request):
-    submit_request(request)
+    session = request.db_master_session
+    session_objects = []
+
+    nickname = request.headers.get('X-Nickname', '')
+    userid, nickname = process_user(nickname, session)
+
+    utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
+    utcmin = utcnow - datetime.timedelta(60)
+
+    points = 0
+    measures = []
+    for item in request.validated['items']:
+        item = process_time(item, utcnow, utcmin)
+        measure, new_objects = process_measure(item, utcnow, session)
+        measures.append(measure)
+        session_objects.extend(new_objects)
+        points += 1
+
+    if userid is not None:
+        process_score(userid, points, session)
+    if measures:
+        process_mapstat(measures, session)
+
+    session.add_all(session_objects)
+    session.commit()
     return HTTPNoContent()

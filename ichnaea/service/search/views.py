@@ -71,26 +71,6 @@ def search_wifi(session, data):
     }
 
 
-def search_request(request):
-    data = request.validated
-    session = request.db_slave_session
-
-    result = None
-    if data['wifi']:
-        result = search_wifi(session, data)
-    else:
-        result = search_cell(session, data)
-    if result is None:
-        return {'status': 'not_found'}
-
-    return {
-        'status': 'ok',
-        'lat': result['lat'],
-        'lon': result['lon'],
-        'accuracy': result['accuracy'],
-    }
-
-
 def check_cell_or_wifi(data, request):
     cell = data.get('cell', ())
     wifi = data.get('wifi', ())
@@ -115,11 +95,20 @@ search = Service(
              schema=SearchSchema, error_handler=error_handler,
              validators=search_validator)
 def search_post(request):
-    return search_request(request)
+    data = request.validated
+    session = request.db_slave_session
 
+    result = None
+    if data['wifi']:
+        result = search_wifi(session, data)
+    else:
+        result = search_cell(session, data)
+    if result is None:
+        return {'status': 'not_found'}
 
-submit = Service(
-    name='submit',
-    path='/v1/submit',
-    description="Submit a measurement result for a location.",
-)
+    return {
+        'status': 'ok',
+        'lat': result['lat'],
+        'lon': result['lon'],
+        'accuracy': result['accuracy'],
+    }
