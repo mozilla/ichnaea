@@ -6,7 +6,7 @@ from datetime import timedelta
 from sqlalchemy import select, func
 from sqlalchemy.dialects.mysql import INTEGER as Integer
 
-from ichnaea.models import (
+from ichnaea.content.models import (
     MapStat,
     Score,
     Stat,

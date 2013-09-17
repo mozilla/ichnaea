@@ -1,7 +1,7 @@
 from datetime import datetime
 from datetime import timedelta
 
-from ichnaea.models import (
+from ichnaea.content.models import (
     MapStat,
     Score,
     User,

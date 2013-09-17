@@ -5,15 +5,17 @@ from colander import iso8601
 from cornice import Service
 from pyramid.httpexceptions import HTTPNoContent
 
-from ichnaea.models import (
-    CellMeasure,
+from ichnaea.content.models import (
     MapStat,
     MAPSTAT_TYPE,
+    Score,
+    User,
+)
+from ichnaea.models import (
+    CellMeasure,
     Measure,
     normalize_wifi_key,
     RADIO_TYPE,
-    Score,
-    User,
 )
 from ichnaea.decimaljson import (
     dumps,

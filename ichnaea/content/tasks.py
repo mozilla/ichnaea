@@ -5,11 +5,11 @@ from sqlalchemy import distinct
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
+from ichnaea.content.models import Stat
 from ichnaea.models import (
     CellMeasure,
     Measure,
     WifiMeasure,
-    Stat,
 )
 from ichnaea.tasks import DatabaseTask
 from ichnaea.worker import celery

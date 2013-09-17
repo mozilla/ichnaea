@@ -1,11 +1,13 @@
 from datetime import datetime
 from datetime import timedelta
 
+from ichnaea.content.models import (
+    Stat,
+    STAT_TYPE,
+)
 from ichnaea.models import (
     CellMeasure,
     Measure,
-    Stat,
-    STAT_TYPE,
     WifiMeasure,
 )
 from ichnaea.tests.base import CeleryTestCase

@@ -1,13 +1,15 @@
 from datetime import datetime
 from datetime import timedelta
 
-from ichnaea.models import (
-    CellMeasure,
+from ichnaea.content.models import (
     MapStat,
-    Measure,
-    RADIO_TYPE,
     Score,
     User,
+)
+from ichnaea.models import (
+    CellMeasure,
+    Measure,
+    RADIO_TYPE,
     WifiMeasure,
 )
 from ichnaea.decimaljson import encode_datetime
