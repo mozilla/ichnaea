@@ -1,6 +1,3 @@
-from datetime import datetime
-from datetime import timedelta
-
 from sqlalchemy import distinct
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
@@ -11,15 +8,11 @@ from ichnaea.models import (
     Measure,
     WifiMeasure,
 )
-from ichnaea.tasks import DatabaseTask
+from ichnaea.tasks import (
+    DatabaseTask,
+    daily_task_days,
+)
 from ichnaea.worker import celery
-
-
-def histogram_days(ago):
-    today = datetime.utcnow().date()
-    day = today - timedelta(days=ago)
-    max_day = day + timedelta(days=1)
-    return day, max_day
 
 
 def histogram_query(session, model, max_day):
@@ -36,7 +29,7 @@ def make_stat(name, time, value):
 
 @celery.task(base=DatabaseTask)
 def histogram(ago=1):
-    day, max_day = histogram_days(ago)
+    day, max_day = daily_task_days(ago)
     try:
         with histogram.db_session() as session:
             value = histogram_query(session, Measure, max_day)
@@ -52,7 +45,7 @@ def histogram(ago=1):
 
 @celery.task(base=DatabaseTask)
 def cell_histogram(ago=1):
-    day, max_day = histogram_days(ago)
+    day, max_day = daily_task_days(ago)
     try:
         with cell_histogram.db_session() as session:
             value = histogram_query(session, CellMeasure, max_day)
@@ -68,7 +61,7 @@ def cell_histogram(ago=1):
 
 @celery.task(base=DatabaseTask)
 def wifi_histogram(ago=1):
-    day, max_day = histogram_days(ago)
+    day, max_day = daily_task_days(ago)
     try:
         with wifi_histogram.db_session() as session:
             value = histogram_query(session, WifiMeasure, max_day)
@@ -84,7 +77,7 @@ def wifi_histogram(ago=1):
 
 @celery.task(base=DatabaseTask)
 def unique_cell_histogram(ago=1):
-    day, max_day = histogram_days(ago)
+    day, max_day = daily_task_days(ago)
     try:
         with unique_cell_histogram.db_session() as session:
             query = session.query(
@@ -106,7 +99,7 @@ def unique_cell_histogram(ago=1):
 
 @celery.task(base=DatabaseTask)
 def unique_wifi_histogram(ago=1):
-    day, max_day = histogram_days(ago)
+    day, max_day = daily_task_days(ago)
     try:
         with unique_wifi_histogram.db_session() as session:
             query = session.query(func.count(distinct(WifiMeasure.key)))

@@ -28,7 +28,7 @@ class DatabaseTask(Task):
         return db_worker_session(self.app.db_master)
 
 
-def histogram_days(ago):
+def daily_task_days(ago):
     today = datetime.utcnow().date()
     day = today - timedelta(days=ago)
     max_day = day + timedelta(days=1)
@@ -37,7 +37,7 @@ def histogram_days(ago):
 
 @celery.task(base=DatabaseTask, ignore_result=True)
 def schedule_new_moving_wifi_analysis(ago=1, batch=1000):
-    day, max_day = histogram_days(ago)
+    day, max_day = daily_task_days(ago)
     try:
         with schedule_new_moving_wifi_analysis.db_session() as session:
             query = session.query(
@@ -70,7 +70,7 @@ def blacklist_moving_wifis(ago=1, offset=0, batch=1000):
     # maximum difference of two decimal places, ~1km at equator
     # or 500m at 67 degrees north
     max_difference = 100000
-    day, max_day = histogram_days(ago)
+    day, max_day = daily_task_days(ago)
     try:
         with blacklist_moving_wifis.db_session() as session:
             query = session.query(distinct(WifiMeasure.key)).filter(
