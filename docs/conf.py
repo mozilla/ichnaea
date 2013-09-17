@@ -10,37 +10,7 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
-
-import sys, os
-
-
-class Mock(object):
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def __call__(self, *args, **kwargs):
-        return Mock()
-
-    @classmethod
-    def __getattr__(self, name):
-        if name in ('__file__', '__path__'):
-            return '/dev/null'
-        elif name[0] == name[0].upper():
-            return type(name, (), {})
-
-        return Mock()
-
-
-# add mocked imports here
-MOCK_MODULES = []
-
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-
-if on_rtd:
-    for mod_name in MOCK_MODULES:
-        sys.modules[mod_name] = Mock()
-
-
+#
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -53,13 +23,8 @@ if on_rtd:
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-import cornice
 
-sys.path.insert(0, os.path.abspath(cornice.__file__))
 extensions = [
-    'cornice.ext.sphinxext',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.viewcode',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

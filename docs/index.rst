@@ -22,18 +22,6 @@ About the name
 
 In Greek mythology, Ichnaea (Iknaia) means "the tracker".
 
-API
-===
-
-.. services::
-   :modules: ichnaea.service.search.views
-   :service: search
-
-
-.. services::
-   :modules: ichnaea.service.submit.views
-   :service: submit
-
 
 Table of contents
 =================
@@ -41,6 +29,8 @@ Table of contents
 .. toctree::
    :maxdepth: 2
 
+   api/search
+   api/submit
    cell
    calculation
    deploy
@@ -53,8 +43,8 @@ Development
 All source code is available on `github under ichnaea
 <https://github.com/mozilla/ichnaea>`_.
 
-The developers of ``ichnaea`` can frequently be found on the Mozilla IRC
-network in the #geo channel.
+The developers of ``ichnaea`` can frequently be found on the `Mozilla IRC
+network <https://wiki.mozilla.org/IRC>`_ in the #geo channel.
 
 
 License
