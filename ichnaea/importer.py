@@ -30,14 +30,14 @@ def load_file(session, source_file, batch_size=10000):
                     # convert from unixtime to utc
                     time = datetime.datetime.utcfromtimestamp(time)
 
-                key = normalize_wifi_key(str(fields[6]))
+                key = normalize_wifi_key(str(fields[5]))
                 if key == '000000000000':  # pragma: no cover
                     continue
 
-                lat = fields[2]
-                lon = fields[3]
-                signal = int(fields[4])
-                channel = int(fields[5])
+                lat = fields[1]
+                lon = fields[2]
+                signal = int(fields[3])
+                channel = int(fields[4])
                 wifi = dict(
                     key=key,
                     channel=channel,
