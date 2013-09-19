@@ -31,6 +31,7 @@ Table of contents
 
    api/search
    api/submit
+   api/geolocate
    cell
    calculation
    deploy
