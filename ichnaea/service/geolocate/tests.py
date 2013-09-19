@@ -67,10 +67,39 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(
             res.json, {"error": {
                 "errors": [{
-                    "domain": "geolocation", "reason": "notFound",
+                    "domain": "geolocation",
+                    "reason": "notFound",
                     "message": "Not found",
                 }],
                 "code": 404,
                 "message": "Not found"
             }}
         )
+
+    def test_parse_error(self):
+        app = self.app
+        res = app.post_json(
+            '/v1/geolocate', {
+                "wifiAccessPoints": [
+                    {"nomac": 1},
+                ]},
+            status=400)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(
+            res.json, {"error": {
+                "errors": [{
+                    "domain": "global",
+                    "reason": "parseError",
+                    "message": "Parse Error",
+                }],
+                "code": 400,
+                "message": "Parse Error"
+            }}
+        )
+
+    def test_no_data(self):
+        app = self.app
+        res = app.post_json(
+            '/v1/geolocate', {"wifiAccessPoints": []},
+            status=400)
+        self.assertEqual(res.content_type, 'application/json')

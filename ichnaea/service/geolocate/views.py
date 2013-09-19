@@ -1,12 +1,13 @@
 import logging
 
 from cornice import Service
+from pyramid.httpexceptions import HTTPError
 from pyramid.httpexceptions import HTTPNotFound
+from pyramid.response import Response
 
 from ichnaea.decimaljson import dumps
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.error import (
-    error_handler,
     MSG_ONE_OF,
 )
 from ichnaea.service.search.views import (
@@ -27,6 +28,31 @@ NOT_FOUND = {
     }
 }
 NOT_FOUND = dumps(NOT_FOUND)
+
+PARSE_ERROR = {
+    "error": {
+        "errors": [{
+            "domain": "global",
+            "reason": "parseError",
+            "message": "Parse Error",
+        }],
+        "code": 400,
+        "message": "Parse Error"
+    }
+}
+PARSE_ERROR = dumps(PARSE_ERROR)
+
+
+class _JSONError(HTTPError):
+    def __init__(self, errors, status=400):
+        Response.__init__(self, PARSE_ERROR)
+        self.status = status
+        self.content_type = 'application/json'
+
+
+def error_handler(errors):
+    logger.debug('error_handler' + repr(errors))
+    return _JSONError(errors, errors.status)
 
 
 def configure_geolocate(config):
