@@ -6,8 +6,16 @@
 <section id="main-content">
     <p>Welcome to the Mozilla Location Service.</p>
     <p>
-        The project is still in its early stages, so please excuse
-        the lack of content and visual polish.
+        The Mozilla Location Service is a new experimental pilot project to
+        provide geo-location lookups based on publicly observable cell tower
+        and wifi access point information. It is currently in its early stages,
+        but already provides a basic service experience in select locations.
+    </p>
+    <p>
+        If you want to contribute to the data gathering, please
+        <a href="https://github.com/dougt/MozStumbler/releases">
+            install our stumbler application
+        </a>.
     </p>
     <ul>
         <li><a href="/leaders">Leaderboard</a></li>
