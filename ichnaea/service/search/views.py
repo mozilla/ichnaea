@@ -54,6 +54,9 @@ def search_wifi(session, data):
     if not any(wifi_keys):
         # no valid normalized keys
         return None
+    if len(wifi_keys) < 2:
+        # we didn't even get two keys, bail out
+        return None
     sql_null = None  # avoid pep8 warning
     query = session.query(Wifi.lat, Wifi.lon).filter(
         Wifi.key.in_(wifi_keys)).filter(
@@ -61,6 +64,7 @@ def search_wifi(session, data):
         Wifi.lon != sql_null)
     wifis = query.all()
     if len(wifis) < 2:
+        # we got fewer than two actual matches
         return None
     length = len(wifis)
     avg_lat = sum([w[0] for w in wifis]) / length
