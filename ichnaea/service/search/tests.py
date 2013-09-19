@@ -121,6 +121,13 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
 
+    def test_no_valid_keys(self):
+        app = self.app
+        res = app.post_json('/v1/search', {"wifi": [
+                            {"key": ":"}, {"key": ".-"}]},
+                            status=200)
+        self.assertEqual(res.body, '{"status": "not_found"}')
+
     def test_no_json(self):
         app = self.app
         res = app.post('/v1/search', "\xae", status=400)
