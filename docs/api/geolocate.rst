@@ -17,7 +17,7 @@ API <https://developers.google.com/maps/documentation/business/geolocation/>`_
 endpoint.
 
 You can point your Firefox Desktop browser at this service by changing the
-`geo.wifi.url` setting in `about:config` to::
+`geo.wifi.uri` setting in `about:config` to::
 
     https://location.services.mozilla.com/v1/geolocate
 
