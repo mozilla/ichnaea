@@ -148,12 +148,18 @@ class TestFunctionalContentViews(AppTestCase):
 
     def test_leaders(self):
         session = self.db_master_session
+        today = datetime.utcnow().date()
+        yesterday = today - timedelta(days=1)
         for i in range(3):
             user = User(nickname=unicode(i))
             session.add(user)
             session.flush()
-            score = Score(userid=user.id, value=i)
-            session.add(score)
+            score1 = Score(userid=user.id, time=today, value=i)
+            score1.name = 'location'
+            session.add(score1)
+            score2 = Score(userid=user.id, time=yesterday, value=i + 1)
+            score2.name = 'location'
+            session.add(score2)
         session.commit()
         request = DummyRequest()
         request.db_slave_session = self.db_master_session
@@ -161,10 +167,10 @@ class TestFunctionalContentViews(AppTestCase):
         result = inst.leaders_view()
         self.assertEqual(
             result['leaders1'],
-            [{'nickname': u'2', 'num': 2L}, {'nickname': u'1', 'num': 1L}])
+            [{'nickname': u'2', 'num': 5}, {'nickname': u'1', 'num': 3}])
         self.assertEqual(
             result['leaders2'],
-            [{'nickname': u'0', 'num': 0L}])
+            [{'nickname': u'0', 'num': 1}])
 
     def test_stats(self):
         day = datetime.utcnow().date() - timedelta(1)

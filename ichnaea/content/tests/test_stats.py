@@ -97,6 +97,7 @@ class TestStats(DBTestCase):
             session.add(user)
             session.flush()
             score = Score(userid=user.id, value=value)
+            score.name = 'location'
             session.add(score)
         session.commit()
         # check the result

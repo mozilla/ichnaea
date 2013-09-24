@@ -269,6 +269,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
         result = session.query(Score).all()
         self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'location')
         self.assertEqual(result[0].value, 2)
 
     def test_nickname_header_error(self):
@@ -288,11 +289,14 @@ class TestSubmit(CeleryAppTestCase):
     def test_nickname_header_update(self):
         app = self.app
         nickname = 'World Tr\xc3\xa4veler'
+        utcday = datetime.utcnow().date()
         session = self.db_master_session
         user = User(nickname=nickname.decode('utf-8'))
         session.add(user)
         session.flush()
-        session.add(Score(userid=user.id, value=7))
+        score = Score(userid=user.id, value=7)
+        score.name = 'location'
+        session.add(score)
         session.commit()
         app.post_json(
             '/v1/submit', {"items": [
@@ -305,6 +309,8 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
         result = session.query(Score).all()
         self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, 'location')
+        self.assertEqual(result[0].time, utcday)
         self.assertEqual(result[0].value, 8)
 
     def test_error(self):

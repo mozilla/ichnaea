@@ -2,6 +2,7 @@ import csv
 from cStringIO import StringIO
 import datetime
 from datetime import timedelta
+from operator import itemgetter
 
 from sqlalchemy import select, func
 from sqlalchemy.dialects.mysql import INTEGER as Integer
@@ -9,6 +10,7 @@ from sqlalchemy.dialects.mysql import INTEGER as Integer
 from ichnaea.content.models import (
     MapStat,
     Score,
+    SCORE_TYPE,
     Stat,
     STAT_TYPE,
     User,
@@ -56,7 +58,11 @@ def histogram(session, name):
 def leaders(session):
     result = []
     score_rows = session.query(
-        Score.userid, Score.value).order_by(Score.value.desc()).all()
+        Score.userid, func.sum(Score.value)).filter(
+        Score.key == SCORE_TYPE['location']).group_by(
+        Score.userid, Score.key).all()
+    # sort descending by value
+    score_rows.sort(key=itemgetter(1), reverse=True)
     userids = [s[0] for s in score_rows]
     if not userids:
         return []
@@ -68,7 +74,7 @@ def leaders(session):
     for userid, value in score_rows:
         nickname = users.get(userid, 'anonymous')
         result.append(
-            {'nickname': nickname, 'num': value})
+            {'nickname': nickname, 'num': int(value)})
     return result
 
 

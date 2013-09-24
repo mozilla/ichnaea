@@ -9,6 +9,7 @@ from ichnaea.content.models import (
     MapStat,
     MAPSTAT_TYPE,
     Score,
+    SCORE_TYPE,
     User,
 )
 from ichnaea.models import (
@@ -79,14 +80,18 @@ def process_user(nickname, session):
 
 
 def process_score(userid, points, session):
-    rows = session.query(Score).filter(Score.userid == userid).\
-        limit(1).with_lockmode('update')
+    utcday = datetime.datetime.utcnow().date()
+    key = SCORE_TYPE['location']
+    rows = session.query(Score).filter(
+        Score.userid == userid).filter(
+        Score.key == key).filter(
+        Score.time == utcday).limit(1).with_lockmode('update')
     old = rows.first()
     if old:
         # update score
         old.value = Score.value + points
     else:
-        score = Score(userid=userid, value=points)
+        score = Score(userid=userid, key=key, time=utcday, value=points)
         session.add(score)
     return points
 
