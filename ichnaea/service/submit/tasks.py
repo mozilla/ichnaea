@@ -40,12 +40,13 @@ def update_cell_measure_count(measure, session):
         return
 
     # do we already know about these cells?
-    query = session.query(Cell)
-    query = query.filter(Cell.radio == measure.radio)
-    query = query.filter(Cell.mcc == measure.mcc)
-    query = query.filter(Cell.mnc == measure.mnc)
-    query = query.filter(Cell.lac == measure.lac)
-    query = query.filter(Cell.cid == measure.cid)
+    query = session.query(Cell).filter(
+        Cell.radio == measure.radio).filter(
+        Cell.mcc == measure.mcc).filter(
+        Cell.mnc == measure.mnc).filter(
+        Cell.lac == measure.lac).filter(
+        Cell.cid == measure.cid
+    )
     cell = query.first()
     if cell:
         cell.new_measures = Cell.new_measures + 1
