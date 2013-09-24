@@ -19,23 +19,22 @@ def configure_search(config):
 
 
 def search_cell(session, data):
+    sql_null = None  # avoid pep8 warning
     radio = RADIO_TYPE.get(data['radio'], -1)
+    # TODO consider more than the first cell entry
     cell = data['cell'][0]
     if cell.get('radio'):
         radio = RADIO_TYPE.get(cell['radio'], -1)
-    mcc = cell['mcc']
-    mnc = cell['mnc']
-    lac = cell['lac']
-    cid = cell['cid']
 
-    query = session.query(Cell)
-    query = query.filter(Cell.radio == radio)
-    query = query.filter(Cell.mcc == mcc)
-    query = query.filter(Cell.mnc == mnc)
-    query = query.filter(Cell.cid == cid)
-
-    if lac >= 0:
-        query = query.filter(Cell.lac == lac)
+    query = session.query(Cell).filter(
+        Cell.radio == radio).filter(
+        Cell.mcc == cell['mcc']).filter(
+        Cell.mnc == cell['mnc']).filter(
+        Cell.lac == cell['lac']).filter(
+        Cell.cid == cell['cid']).filter(
+        Cell.lat != sql_null).filter(
+        Cell.lon != sql_null
+    )
 
     result = query.first()
     if result is None:
