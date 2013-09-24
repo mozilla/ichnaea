@@ -4,8 +4,8 @@ import datetime
 import sys
 
 from colander import iso8601
-from konfig import Config
 
+from ichnaea import config
 from ichnaea.db import Database
 from ichnaea.models import normalize_wifi_key
 from ichnaea.service.submit.views import process_measure
@@ -69,29 +69,27 @@ def load_file(session, source_file, batch_size=10000):
     return counter
 
 
-def main(argv):
+def main(argv, _db_master=None):
     parser = argparse.ArgumentParser(
         prog=argv[0], description='Location Importer')
 
-    parser.add_argument('--dry-run', action='store_true')
-    # TODO rely on ICHNAEA_CFG / ichnaea.config, as the worker is relying
-    # on it anyways
-    parser.add_argument('config', help="config file")
     parser.add_argument('source', help="source file")
     args = parser.parse_args(argv[1:])
-    settings = Config(args.config).get_map('ichnaea')
-    db = Database(
-        settings['db_master'],
-        socket=settings.get('db_master_socket'),
-        create=False,
-    )
+    settings = config().get_map('ichnaea')
+
+    # configure databases incl. test override hooks
+    if _db_master is None:
+        db = Database(
+            settings['db_master'],
+            socket=settings.get('db_master_socket'),
+            create=False,
+        )
+    else:
+        db = _db_master
     session = db.session()
     added = load_file(session, args.source)
     print('Added %s records.' % added)
-    if args.dry_run:
-        session.rollback()
-    else:  # pragma: no cover
-        session.commit()
+    session.commit()
     return added
 
 

@@ -1,11 +1,7 @@
 import os
 from tempfile import mkstemp
 
-from ichnaea.tests.base import (
-    CeleryTestCase,
-    SQLURI,
-    SQLSOCKET,
-)
+from ichnaea.tests.base import CeleryTestCase
 
 LINE = (
     "1376952704\t37.871930\t-122.273156\t-16\t11\tdc:45:17:75:8f:80\tATT560"
@@ -52,14 +48,10 @@ class TestMain(CeleryTestCase):
 
     def _make_one(self):
         from ichnaea.importer import main
-        config = mkstemp()
         data = mkstemp()
-        return config, data, main
+        return data, main
 
     def test_main(self):
-        config, data, func = self._make_one()
-        os.write(config[0], '[ichnaea]\n')
-        os.write(config[0], 'db_master=%s\n' % SQLURI)
-        os.write(config[0], 'db_master_socket=%s\n' % SQLSOCKET)
-        counter = func(['main', '--dry-run', config[1], data[1]])
+        data, func = self._make_one()
+        counter = func(['main', data[1]], _db_master=self.db_master)
         self.assertEqual(counter, 0)
