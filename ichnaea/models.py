@@ -56,7 +56,6 @@ class Cell(_Model):
     mnc = Column(Integer)
     lac = Column(Integer)
     cid = Column(Integer)
-    psc = Column(Integer)
     range = Column(Integer)
     new_measures = Column(Integer(unsigned=True))
     total_measures = Column(Integer(unsigned=True))
