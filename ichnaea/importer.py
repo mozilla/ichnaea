@@ -17,7 +17,6 @@ def load_file(session, source_file, batch_size=10000):
 
     with open(source_file, 'r') as fd:
         reader = csv.reader(fd, delimiter='\t', quotechar=None)
-        session_objects = []
         counter = 0
 
         for fields in reader:
@@ -56,19 +55,16 @@ def load_file(session, source_file, batch_size=10000):
                 )
             except (ValueError, IndexError):
                 continue
-            _, new_objects = process_measure(data, utcnow, session)
-            session_objects.extend(new_objects)
+            # side effect, schedules async tasks
+            process_measure(data, utcnow, session)
 
             # flush every 1000 new records
             counter += 1
             if counter % batch_size == 0:
-                session.add_all(session_objects)
                 session.flush()
                 print('Added %s records.' % counter)
-                session_objects = []
 
     # add the rest
-    session.add_all(session_objects)
     session.flush()
     return counter
 

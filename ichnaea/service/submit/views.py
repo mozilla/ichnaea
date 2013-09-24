@@ -108,7 +108,6 @@ def process_time(measure, utcnow, utcmin):
 
 
 def process_measure(data, utcnow, session):
-    session_objects = []
     measure = Measure()
     measure.created = utcnow
     measure.time = data['time']
@@ -142,7 +141,7 @@ def process_measure(data, utcnow, session):
         if not too_long_keys:
             insert_wifi_measure.delay(measure_data, data['wifi'])
             measure.wifi = dumps(data['wifi'])
-    return (measure, session_objects)
+    return measure
 
 
 def check_cell_or_wifi(data, request):
@@ -185,9 +184,8 @@ def submit_post(request):
     measures = []
     for item in request.validated['items']:
         item = process_time(item, utcnow, utcmin)
-        measure, new_objects = process_measure(item, utcnow, session)
+        measure = process_measure(item, utcnow, session)
         measures.append(measure)
-        session_objects.extend(new_objects)
         points += 1
 
     if userid is not None:
