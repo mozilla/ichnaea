@@ -21,28 +21,33 @@ def configure_search(config):
 def search_cell(session, data):
     sql_null = None  # avoid pep8 warning
     radio = RADIO_TYPE.get(data['radio'], -1)
-    # TODO consider more than the first cell entry
-    cell = data['cell'][0]
-    if cell.get('radio'):
-        radio = RADIO_TYPE.get(cell['radio'], -1)
+    cells = []
+    for cell in data['cell']:
+        if cell.get('radio'):
+            radio = RADIO_TYPE.get(cell['radio'], -1)
 
-    query = session.query(Cell.lat, Cell.lon).filter(
-        Cell.radio == radio).filter(
-        Cell.mcc == cell['mcc']).filter(
-        Cell.mnc == cell['mnc']).filter(
-        Cell.lac == cell['lac']).filter(
-        Cell.cid == cell['cid']).filter(
-        Cell.lat != sql_null).filter(
-        Cell.lon != sql_null
-    )
+        query = session.query(Cell.lat, Cell.lon).filter(
+            Cell.radio == radio).filter(
+            Cell.mcc == cell['mcc']).filter(
+            Cell.mnc == cell['mnc']).filter(
+            Cell.lac == cell['lac']).filter(
+            Cell.cid == cell['cid']).filter(
+            Cell.lat != sql_null).filter(
+            Cell.lon != sql_null
+        )
+        result = query.first()
+        if result is not None:
+            cells.append(result)
 
-    result = query.first()
-    if result is None:
+    if not cells:
         return
 
+    length = len(cells)
+    avg_lat = sum([c[0] for c in cells]) / length
+    avg_lon = sum([c[1] for c in cells]) / length
     return {
-        'lat': quantize(result[0]),
-        'lon': quantize(result[1]),
+        'lat': quantize(avg_lat),
+        'lon': quantize(avg_lon),
         'accuracy': 35000,
     }
 

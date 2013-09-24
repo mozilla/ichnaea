@@ -29,25 +29,24 @@ class TestSearch(AppTestCase):
     def test_ok_cell(self):
         app = self.app
         session = self.db_slave_session
-        cell = Cell()
-        cell.lat = 123456781
-        cell.lon = 234567892
-        cell.radio = 2
-        cell.mcc = 123
-        cell.mnc = 1
-        cell.lac = 2
-        cell.cid = 1234
-        session.add(cell)
+        key = dict(mcc=1, mnc=2, lac=3)
+        data = [
+            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
+            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
+        ]
+        session.add_all(data)
         session.commit()
 
-        res = app.post_json('/v1/search',
-                            {"radio": "gsm",
-                             "cell": [{"radio": "umts", "mcc": 123, "mnc": 1,
-                                       "lac": 2, "cid": 1234}]},
-                            status=200)
+        res = app.post_json(
+            '/v1/search',
+            {"radio": "gsm", "cell": [
+                dict(radio="umts", cid=4, **key),
+                dict(radio="umts", cid=5, **key),
+            ]},
+            status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"status": "ok", "lat": 12.3456781, '
-                                   '"lon": 23.4567892, "accuracy": 35000}')
+        self.assertEqual(res.body, '{"status": "ok", "lat": 1.0010000, '
+                                   '"lon": 1.0020000, "accuracy": 35000}')
 
     def test_ok_wifi(self):
         app = self.app
