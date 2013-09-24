@@ -163,7 +163,8 @@ def cell_location_update(min_new=10, max_new=100, batch=10):
             if not cells:
                 return 0
             for cell in cells:
-                query = session.query(CellMeasure).filter(
+                query = session.query(
+                    CellMeasure.lat, CellMeasure.lon).filter(
                     CellMeasure.radio == cell.radio).filter(
                     CellMeasure.mcc == cell.mcc).filter(
                     CellMeasure.mnc == cell.mnc).filter(
@@ -175,8 +176,8 @@ def cell_location_update(min_new=10, max_new=100, batch=10):
                     cell.new_measures)
                 measures = query.all()
                 length = len(measures)
-                new_lat = sum([w.lat for w in measures]) // length
-                new_lon = sum([w.lon for w in measures]) // length
+                new_lat = sum([w[0] for w in measures]) // length
+                new_lon = sum([w[1] for w in measures]) // length
                 if not (cell.lat or cell.lon):
                     cell.lat = new_lat
                     cell.lon = new_lon
