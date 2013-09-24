@@ -4,6 +4,8 @@ from datetime import timedelta
 from sqlalchemy.orm.exc import FlushError
 
 from ichnaea.models import (
+    Cell,
+    CellMeasure,
     Measure,
     Wifi,
     WifiBlacklist,
@@ -157,6 +159,47 @@ class TestBlacklist(CeleryTestCase):
 
         result = remove_wifi.delay(wifi_keys)
         self.assertEqual(result.get(), (0, 0))
+
+
+class TestCellLocationUpdate(CeleryTestCase):
+
+    def test_cell_location_update(self):
+        from ichnaea.tasks import cell_location_update
+        now = datetime.utcnow()
+        before = now - timedelta(days=1)
+        session = self.db_master_session
+        k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
+        k2 = dict(radio=1, mcc=1, mnc=2, lac=6, cid=8)
+        data = [
+            Cell(new_measures=3, total_measures=3, **k1),
+            CellMeasure(lat=10000000, lon=10000000, **k1),
+            CellMeasure(lat=10020000, lon=10030000, **k1),
+            CellMeasure(lat=10040000, lon=10060000, **k1),
+            Cell(lat=20000000, lon=20000000,
+                 new_measures=2, total_measures=4, **k2),
+            # the lat/lon is bogus and mismatches the line above on purpose
+            # to make sure old measures are skipped
+            CellMeasure(lat=-10000000, lon=-10000000, created=before, **k2),
+            CellMeasure(lat=-10000000, lon=-10000000, created=before, **k2),
+            CellMeasure(lat=20020000, lon=20040000, **k2),
+            CellMeasure(lat=20020000, lon=20040000, **k2),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        result = cell_location_update.delay(min_new=1)
+        self.assertEqual(result.get(), 2)
+
+        cells = session.query(Cell).all()
+        self.assertEqual(len(cells), 2)
+        self.assertEqual([c.new_measures for c in cells], [0, 0])
+        for cell in cells:
+            if cell.cid == 4:
+                self.assertEqual(cell.lat, 10020000)
+                self.assertEqual(cell.lon, 10030000)
+            elif cell.cid == 8:
+                self.assertEqual(cell.lat, 20010000)
+                self.assertEqual(cell.lon, 20020000)
 
 
 class TestWifiLocationUpdate(CeleryTestCase):

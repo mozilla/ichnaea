@@ -11,6 +11,8 @@ from sqlalchemy.exc import IntegrityError
 
 from ichnaea.db import db_worker_session
 from ichnaea.models import (
+    Cell,
+    CellMeasure,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
@@ -147,6 +149,53 @@ def remove_wifi(wifi_keys):
         return 0
     except Exception as exc:  # pragma: no cover
         raise remove_wifi.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, ignore_result=True)
+def cell_location_update(min_new=10, max_new=100, batch=10):
+    try:
+        cells = []
+        with cell_location_update.db_session() as session:
+            query = session.query(Cell).filter(
+                Cell.new_measures >= min_new).filter(
+                Cell.new_measures < max_new).limit(batch)
+            cells = query.all()
+            if not cells:
+                return 0
+            for cell in cells:
+                query = session.query(CellMeasure).filter(
+                    CellMeasure.radio == cell.radio).filter(
+                    CellMeasure.mcc == cell.mcc).filter(
+                    CellMeasure.mnc == cell.mnc).filter(
+                    CellMeasure.lac == cell.lac).filter(
+                    CellMeasure.cid == cell.cid)
+                # only take the last X new_measures
+                query = query.order_by(
+                    CellMeasure.created.desc()).limit(
+                    cell.new_measures)
+                measures = query.all()
+                length = len(measures)
+                new_lat = sum([w.lat for w in measures]) // length
+                new_lon = sum([w.lon for w in measures]) // length
+                if not (cell.lat or cell.lon):
+                    cell.lat = new_lat
+                    cell.lon = new_lon
+                else:
+                    # pre-existing location data
+                    total = cell.total_measures
+                    old_length = total - cell.new_measures
+                    cell.lat = ((cell.lat * old_length) +
+                                (new_lat * length)) // total
+                    cell.lon = ((cell.lon * old_length) +
+                                (new_lon * length)) // total
+                cell.new_measures = Cell.new_measures - length
+            session.commit()
+        return len(cells)
+    except IntegrityError as exc:  # pragma: no cover
+        # TODO log error
+        return 0
+    except Exception as exc:  # pragma: no cover
+        raise cell_location_update.retry(exc=exc)
 
 
 @celery.task(base=DatabaseTask, ignore_result=True)
