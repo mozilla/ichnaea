@@ -1,3 +1,5 @@
+import datetime
+
 from sqlalchemy import (
     Column,
     Date,
@@ -8,6 +10,11 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import INTEGER as Integer
 
 from ichnaea.db import _Model
+
+SCORE_TYPE = {
+    'location': 0,
+}
+SCORE_TYPE_INVERSE = dict((v, k) for k, v in SCORE_TYPE.items())
 
 STAT_TYPE = {
     '': -1,
@@ -48,15 +55,35 @@ mapstat_table = MapStat.__table__
 
 class Score(_Model):
     __tablename__ = 'score'
-    __table_args__ = {
-        'mysql_engine': 'InnoDB',
-        'mysql_charset': 'utf8',
-    }
+    __table_args__ = (
+        UniqueConstraint('userid', 'key', 'time',
+                         name='score_userid_key_time_unique'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+        }
+    )
 
     id = Column(Integer(unsigned=True),
                 primary_key=True, autoincrement=True)
-    userid = Column(Integer(unsigned=True), index=True, unique=True)
+    userid = Column(Integer(unsigned=True), index=True)
+    # mapped via SCORE_TYPE
+    key = Column(SmallInteger)
+    time = Column(Date)
     value = Column(Integer)
+
+    def __init__(self, *args, **kw):
+        if 'time' not in kw:
+            kw['time'] = datetime.datetime.utcnow().date()
+        super(Score, self).__init__(*args, **kw)
+
+    @property
+    def name(self):
+        return SCORE_TYPE_INVERSE.get(self.key, '')
+
+    @name.setter
+    def name(self, value):
+        self.key = SCORE_TYPE[value]
 
 score_table = Score.__table__
 

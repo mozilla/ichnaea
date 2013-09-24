@@ -10,18 +10,34 @@ class TestScore(DBTestCase):
         return Score(**kw)
 
     def test_constructor(self):
+        utcday = datetime.datetime.utcnow().date()
         score = self._make_one()
         self.assertTrue(score.id is None)
+        self.assertEqual(score.time, utcday)
 
     def test_fields(self):
-        score = self._make_one(userid=3, value=15)
+        utcday = datetime.datetime.utcnow().date()
+        score = self._make_one(userid=3, time=utcday, value=15)
+        score.key = 'location'
         session = self.db_master_session
         session.add(score)
         session.commit()
 
         result = session.query(score.__class__).first()
+        self.assertEqual(result.name, 'location')
         self.assertEqual(result.userid, 3)
+        self.assertEqual(result.time, utcday)
         self.assertEqual(result.value, 15)
+
+    def test_property(self):
+        score = self._make_one(key=0, value=13)
+        session = self.db_master_session
+        session.add(score)
+        session.commit()
+
+        result = session.query(score.__class__).first()
+        self.assertEqual(result.key, 0)
+        self.assertEqual(result.name, 'location')
 
 
 class TestStat(DBTestCase):
