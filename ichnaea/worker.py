@@ -55,9 +55,14 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(hour=0, minute=5),
         'args': (1, ),
     },
+    'continuous-cell-location-update': {
+        'task': 'ichnaea.tasks.cell_location_update',
+        'schedule': timedelta(seconds=299),  # 13*23
+        'args': (5, 10000, 100),
+    },
     'continuous-wifi-location-update': {
         'task': 'ichnaea.tasks.wifi_location_update',
-        'schedule': timedelta(seconds=300),
+        'schedule': timedelta(seconds=323),  # 17*19
         'args': (5, 10000, 100),
     },
 }
