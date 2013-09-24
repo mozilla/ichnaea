@@ -26,7 +26,7 @@ def search_cell(session, data):
     if cell.get('radio'):
         radio = RADIO_TYPE.get(cell['radio'], -1)
 
-    query = session.query(Cell).filter(
+    query = session.query(Cell.lat, Cell.lon).filter(
         Cell.radio == radio).filter(
         Cell.mcc == cell['mcc']).filter(
         Cell.mnc == cell['mnc']).filter(
@@ -41,8 +41,8 @@ def search_cell(session, data):
         return
 
     return {
-        'lat': quantize(result.lat),
-        'lon': quantize(result.lon),
+        'lat': quantize(result[0]),
+        'lon': quantize(result[1]),
         'accuracy': 35000,
     }
 
