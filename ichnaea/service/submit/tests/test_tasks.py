@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from ichnaea.models import (
+    CellMeasure,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
@@ -10,6 +11,37 @@ from ichnaea.tests.base import CeleryTestCase
 
 
 class TestInsert(CeleryTestCase):
+
+    def test_cell(self):
+        from ichnaea.service.submit.tasks import insert_cell_measure
+        session = self.db_master_session
+        utcnow = datetime.utcnow()
+
+        measure = dict(
+            id=0, created=encode_datetime(utcnow), lat=10000000, lon=20000000,
+            time=encode_datetime(utcnow), accuracy=0, altitude=0,
+            altitude_accuracy=0, radio=-1,
+        )
+        entries = [
+            {"mcc": 1, "mnc": 2, "signal": -100},
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
+        ]
+        result = insert_cell_measure.delay(measure, entries)
+        self.assertEqual(result.get(), 2)
+
+        measures = session.query(CellMeasure).all()
+        self.assertEqual(len(measures), 2)
+        self.assertEqual([(m.mcc, m.mnc) for m in measures], [(1, 2), (1, 2)])
+        self.assertEqual(set([m.asu for m in measures]), set([0, 8]))
+        self.assertEqual(set([m.psc for m in measures]), set([0, 5]))
+        self.assertEqual(set([m.signal for m in measures]), set([0, -100]))
+
+        # test duplicate execution
+        result = insert_cell_measure.delay(measure, entries)
+        self.assertEqual(result.get(), 2)
+        # TODO this task isn't idempotent yet
+        measures = session.query(CellMeasure).all()
+        self.assertEqual(len(measures), 4)
 
     def test_wifi(self):
         from ichnaea.service.submit.tasks import insert_wifi_measure
@@ -22,7 +54,7 @@ class TestInsert(CeleryTestCase):
         measure = dict(
             id=0, created=encode_datetime(utcnow), lat=10000000, lon=20000000,
             time=encode_datetime(utcnow), accuracy=0, altitude=0,
-            altitude_accuracy=0,
+            altitude_accuracy=0, radio=-1,
         )
         entries = [
             {"key": "ab12", "channel": 11, "signal": -80},

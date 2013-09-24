@@ -1,6 +1,8 @@
 from sqlalchemy.exc import IntegrityError
 
 from ichnaea.models import (
+    CellMeasure,
+    RADIO_TYPE,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
@@ -8,6 +10,51 @@ from ichnaea.models import (
 from ichnaea.decimaljson import decode_datetime
 from ichnaea.tasks import DatabaseTask
 from ichnaea.worker import celery
+
+
+def create_cell_measure(measure_data, entry):
+    return CellMeasure(
+        measure_id=measure_data['id'],
+        created=decode_datetime(measure_data.get('created', '')),
+        lat=measure_data['lat'],
+        lon=measure_data['lon'],
+        time=decode_datetime(measure_data.get('time', '')),
+        accuracy=measure_data.get('accuracy', 0),
+        altitude=measure_data.get('altitude', 0),
+        altitude_accuracy=measure_data.get('altitude_accuracy', 0),
+        mcc=entry['mcc'],
+        mnc=entry['mnc'],
+        lac=entry.get('lac', 0),
+        cid=entry.get('cid', 0),
+        psc=entry.get('psc', 0),
+        asu=entry.get('asu', 0),
+        signal=entry.get('signal', 0),
+        ta=entry.get('ta', 0),
+    )
+
+
+@celery.task(base=DatabaseTask, ignore_result=True)
+def insert_cell_measure(measure_data, entries):
+    cell_measures = []
+    try:
+        with insert_cell_measure.db_session() as session:
+            for entry in entries:
+                cell = create_cell_measure(measure_data, entry)
+                # use more specific cell type or
+                # fall back to less precise measure
+                if entry.get('radio'):
+                    cell.radio = RADIO_TYPE.get(entry['radio'], -1)
+                else:
+                    cell.radio = measure_data['radio']
+                cell_measures.append(cell)
+            session.add_all(cell_measures)
+            session.commit()
+        return len(cell_measures)
+    except IntegrityError as exc:  # pragma: no cover
+        # TODO log error
+        return 0
+    except Exception as exc:  # pragma: no cover
+        raise insert_cell_measure.retry(exc=exc)
 
 
 def convert_frequency(entry):

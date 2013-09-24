@@ -12,7 +12,6 @@ from ichnaea.content.models import (
     User,
 )
 from ichnaea.models import (
-    CellMeasure,
     Measure,
     normalize_wifi_key,
     RADIO_TYPE,
@@ -27,7 +26,10 @@ from ichnaea.service.error import (
     MSG_ONE_OF,
 )
 from ichnaea.service.submit.schema import SubmitSchema
-from ichnaea.service.submit.tasks import insert_wifi_measure
+from ichnaea.service.submit.tasks import (
+    insert_cell_measure,
+    insert_wifi_measure,
+)
 
 
 def configure_submit(config):
@@ -119,10 +121,16 @@ def process_measure(data, utcnow, session):
     # get measure.id set
     session.add(measure)
     session.flush()
+    measure_data = dict(
+        id=measure.id, created=encode_datetime(measure.created),
+        lat=measure.lat, lon=measure.lon, time=encode_datetime(measure.time),
+        accuracy=measure.accuracy, altitude=measure.altitude,
+        altitude_accuracy=measure.altitude_accuracy,
+        radio=measure.radio,
+    )
     if data.get('cell'):
-        cells, cell_data = process_cell(data['cell'], measure)
-        measure.cell = dumps(cell_data)
-        session_objects.extend(cells)
+        insert_cell_measure.delay(measure_data, data['cell'])
+        measure.cell = dumps(data['cell'])
     if data.get('wifi'):
         # filter out old-style sha1 hashes
         too_long_keys = False
@@ -132,42 +140,9 @@ def process_measure(data, utcnow, session):
                 too_long_keys = True
                 break
         if not too_long_keys:
-            process_wifi(data['wifi'], measure)
+            insert_wifi_measure.delay(measure_data, data['wifi'])
             measure.wifi = dumps(data['wifi'])
     return (measure, session_objects)
-
-
-def process_cell(entries, measure):
-    result = []
-    cells = []
-    for entry in entries:
-        cell = CellMeasure(
-            measure_id=measure.id, created=measure.created,
-            lat=measure.lat, lon=measure.lon, time=measure.time,
-            accuracy=measure.accuracy, altitude=measure.altitude,
-            altitude_accuracy=measure.altitude_accuracy,
-            mcc=entry['mcc'], mnc=entry['mnc'], lac=entry['lac'],
-            cid=entry['cid'], psc=entry['psc'], asu=entry['asu'],
-            signal=entry['signal'], ta=entry['ta'],
-        )
-        # use more specific cell type or fall back to less precise measure
-        if entry['radio']:
-            cell.radio = RADIO_TYPE.get(entry['radio'], -1)
-        else:
-            cell.radio = measure.radio
-        cells.append(cell)
-        result.append(entry)
-    return (cells, result)
-
-
-def process_wifi(entries, measure):
-    measure_data = dict(
-        id=measure.id, created=encode_datetime(measure.created),
-        lat=measure.lat, lon=measure.lon, time=encode_datetime(measure.time),
-        accuracy=measure.accuracy, altitude=measure.altitude,
-        altitude_accuracy=measure.altitude_accuracy,
-    )
-    insert_wifi_measure.delay(measure_data, entries)
 
 
 def check_cell_or_wifi(data, request):
