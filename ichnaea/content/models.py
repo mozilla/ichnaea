@@ -13,6 +13,7 @@ from ichnaea.db import _Model
 
 SCORE_TYPE = {
     'location': 0,
+    'new_location': 1,
 }
 SCORE_TYPE_INVERSE = dict((v, k) for k, v in SCORE_TYPE.items())
 

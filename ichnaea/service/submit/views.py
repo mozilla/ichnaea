@@ -37,7 +37,7 @@ def configure_submit(config):
     config.scan('ichnaea.service.submit.views')
 
 
-def process_mapstat(measures, session):
+def process_mapstat(measures, session, userid=None):
     tiles = defaultdict(int)
     # aggregate to 100x100m tiles
     for measure in measures:
@@ -52,13 +52,20 @@ def process_mapstat(measures, session):
     prior = {}
     for r in result:
         prior[(r.lat, r.lon)] = r
+    tile_count = 0
     for (lat, lon), value in tiles.items():
         stat = MapStat(lat=lat, lon=lon, value=value)
         old = prior.get((lat, lon), None)
         if old:
+            if old.value < 2:
+                # give points for the first two tile hits
+                tile_count += 1
             old.value = MapStat.value + value
         else:
+            tile_count += 1
             session.add(stat)
+    if userid is not None and tile_count > 0:
+        process_score(userid, tile_count, session, key='new_location')
 
 
 def process_user(nickname, session):
@@ -79,9 +86,9 @@ def process_user(nickname, session):
     return (userid, nickname)
 
 
-def process_score(userid, points, session):
+def process_score(userid, points, session, key='location'):
     utcday = datetime.datetime.utcnow().date()
-    key = SCORE_TYPE['location']
+    key = SCORE_TYPE[key]
     rows = session.query(Score).filter(
         Score.userid == userid).filter(
         Score.key == key).filter(
@@ -196,7 +203,7 @@ def submit_post(request):
     if userid is not None:
         process_score(userid, points, session)
     if measures:
-        process_mapstat(measures, session)
+        process_mapstat(measures, session, userid=userid)
 
     session.add_all(session_objects)
     session.commit()

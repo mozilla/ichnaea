@@ -268,9 +268,14 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
         result = session.query(Score).all()
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].name, 'location')
-        self.assertEqual(result[0].value, 2)
+        self.assertEqual(len(result), 2)
+        self.assertEqual(
+            set([r.name for r in result]), set(['location', 'new_location']))
+        for r in result:
+            if r.name == 'location':
+                self.assertEqual(r.value, 2)
+            elif r.name == 'new_location':
+                self.assertEqual(r.value, 2)
 
     def test_nickname_header_error(self):
         app = self.app
@@ -308,10 +313,16 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
         result = session.query(Score).all()
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].name, 'location')
-        self.assertEqual(result[0].time, utcday)
-        self.assertEqual(result[0].value, 8)
+        self.assertEqual(len(result), 2)
+        self.assertEqual(
+            set([r.name for r in result]), set(['location', 'new_location']))
+        for r in result:
+            if r.name == 'location':
+                self.assertEqual(r.value, 8)
+                self.assertEqual(r.time, utcday)
+            elif r.name == 'new_location':
+                self.assertEqual(r.value, 1)
+                self.assertEqual(r.time, utcday)
 
     def test_error(self):
         app = self.app
