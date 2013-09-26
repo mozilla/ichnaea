@@ -8,8 +8,6 @@ from pyramid.httpexceptions import HTTPNoContent
 from ichnaea.content.models import (
     MapStat,
     MAPSTAT_TYPE,
-    Score,
-    SCORE_TYPE,
     User,
 )
 from ichnaea.models import (
@@ -31,6 +29,7 @@ from ichnaea.service.submit.tasks import (
     insert_cell_measure,
     insert_wifi_measure,
 )
+from ichnaea.service.submit.utils import process_score
 
 
 def configure_submit(config):
@@ -86,23 +85,6 @@ def process_user(nickname, session):
     return (userid, nickname)
 
 
-def process_score(userid, points, session, key='location'):
-    utcday = datetime.datetime.utcnow().date()
-    key = SCORE_TYPE[key]
-    rows = session.query(Score).filter(
-        Score.userid == userid).filter(
-        Score.key == key).filter(
-        Score.time == utcday).limit(1).with_lockmode('update')
-    old = rows.first()
-    if old:
-        # update score
-        old.value = Score.value + points
-    else:
-        score = Score(userid=userid, key=key, time=utcday, value=points)
-        session.add(score)
-    return points
-
-
 def process_time(measure, utcnow, utcmin):
     try:
         measure['time'] = iso8601.parse_date(measure['time'])
@@ -119,7 +101,7 @@ def process_time(measure, utcnow, utcmin):
     return measure
 
 
-def process_measure(data, utcnow, session):
+def process_measure(data, utcnow, session, userid=None):
     measure = Measure()
     measure.created = utcnow
     measure.time = data['time']
@@ -140,7 +122,7 @@ def process_measure(data, utcnow, session):
         radio=measure.radio,
     )
     if data.get('cell'):
-        insert_cell_measure.delay(measure_data, data['cell'])
+        insert_cell_measure.delay(measure_data, data['cell'], userid=userid)
         measure.cell = dumps(data['cell'])
     if data.get('wifi'):
         # filter out old-style sha1 hashes
@@ -151,7 +133,8 @@ def process_measure(data, utcnow, session):
                 too_long_keys = True
                 break
         if not too_long_keys:
-            insert_wifi_measure.delay(measure_data, data['wifi'])
+            insert_wifi_measure.delay(
+                measure_data, data['wifi'], userid=userid)
             measure.wifi = dumps(data['wifi'])
     return measure
 
@@ -196,7 +179,7 @@ def submit_post(request):
     measures = []
     for item in request.validated['items']:
         item = process_time(item, utcnow, utcmin)
-        measure = process_measure(item, utcnow, session)
+        measure = process_measure(item, utcnow, session, userid=userid)
         measures.append(measure)
         points += 1
 

@@ -1,5 +1,9 @@
 from datetime import datetime
 
+from ichnaea.content.models import (
+    Score,
+    SCORE_TYPE,
+)
 from ichnaea.models import (
     Cell,
     CellMeasure,
@@ -20,6 +24,7 @@ class TestInsert(CeleryTestCase):
 
         session.add(Cell(radio=0, mcc=1, mnc=2, lac=3, cid=4,
                          new_measures=2, total_measures=5))
+        session.add(Score(userid=1, key=SCORE_TYPE['new_cell'], value=7))
         session.flush()
 
         measure = dict(
@@ -32,7 +37,7 @@ class TestInsert(CeleryTestCase):
             {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
             {"mcc": 1, "mnc": 2, "lac": 3, "cid": 7},
         ]
-        result = insert_cell_measure.delay(measure, entries)
+        result = insert_cell_measure.delay(measure, entries, userid=1)
         self.assertEqual(result.get(), 3)
 
         measures = session.query(CellMeasure).all()
@@ -52,8 +57,13 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([c.new_measures for c in cells]), set([1, 3]))
         self.assertEqual(set([c.total_measures for c in cells]), set([1, 6]))
 
+        scores = session.query(Score).all()
+        self.assertEqual(len(scores), 1)
+        self.assertEqual(scores[0].key, SCORE_TYPE['new_cell'])
+        self.assertEqual(scores[0].value, 8)
+
         # test duplicate execution
-        result = insert_cell_measure.delay(measure, entries)
+        result = insert_cell_measure.delay(measure, entries, userid=1)
         self.assertEqual(result.get(), 3)
         # TODO this task isn't idempotent yet
         measures = session.query(CellMeasure).all()
@@ -65,6 +75,7 @@ class TestInsert(CeleryTestCase):
         utcnow = datetime.utcnow()
 
         session.add(Wifi(key="ab12"))
+        session.add(Score(userid=1, key=SCORE_TYPE['new_wifi'], value=7))
         session.flush()
 
         measure = dict(
@@ -76,7 +87,7 @@ class TestInsert(CeleryTestCase):
             {"key": "ab12", "channel": 11, "signal": -80},
             {"key": "cd34", "channel": 3, "signal": -90},
         ]
-        result = insert_wifi_measure.delay(measure, entries)
+        result = insert_wifi_measure.delay(measure, entries, userid=1)
         self.assertEqual(result.get(), 2)
 
         measures = session.query(WifiMeasure).all()
@@ -92,8 +103,13 @@ class TestInsert(CeleryTestCase):
             self.assertEqual(wifi.new_measures, 1)
             self.assertEqual(wifi.total_measures, 1)
 
+        scores = session.query(Score).all()
+        self.assertEqual(len(scores), 1)
+        self.assertEqual(scores[0].key, SCORE_TYPE['new_wifi'])
+        self.assertEqual(scores[0].value, 9)
+
         # test duplicate execution
-        result = insert_wifi_measure.delay(measure, entries)
+        result = insert_wifi_measure.delay(measure, entries, userid=1)
         self.assertEqual(result.get(), 2)
         # TODO this task isn't idempotent yet
         measures = session.query(WifiMeasure).all()

@@ -12,6 +12,8 @@ from ichnaea.decimaljson import decode_datetime
 from ichnaea.tasks import DatabaseTask
 from ichnaea.worker import celery
 
+from ichnaea.service.submit.utils import process_score
+
 
 def create_cell_measure(measure_data, entry):
     return CellMeasure(
@@ -34,7 +36,7 @@ def create_cell_measure(measure_data, entry):
     )
 
 
-def update_cell_measure_count(measure, session):
+def update_cell_measure_count(measure, session, userid=None):
     if (measure.radio == -1 or measure.lac == 0 or measure.cid == 0):
         # only update data for complete records
         return
@@ -48,18 +50,26 @@ def update_cell_measure_count(measure, session):
         Cell.cid == measure.cid
     )
     cell = query.first()
+    new_cell = 0
     if cell:
+        if cell.total_measures < 5:
+            # count cells as new until they show up in the search
+            new_cell += 1
         cell.new_measures = Cell.new_measures + 1
         cell.total_measures = Cell.total_measures + 1
     else:
         cell = Cell(radio=measure.radio, mcc=measure.mcc, mnc=measure.mnc,
                     lac=measure.lac, cid=measure.cid,
                     new_measures=1, total_measures=1)
+        new_cell += 1
         session.add(cell)
+    if userid is not None and new_cell > 0:
+        # update user score
+        process_score(userid, new_cell, session, key='new_cell')
 
 
 @celery.task(base=DatabaseTask, ignore_result=True)
-def insert_cell_measure(measure_data, entries):
+def insert_cell_measure(measure_data, entries, userid=None):
     cell_measures = []
     try:
         with insert_cell_measure.db_session() as session:
@@ -71,7 +81,7 @@ def insert_cell_measure(measure_data, entries):
                     cell.radio = RADIO_TYPE.get(entry['radio'], -1)
                 else:
                     cell.radio = measure_data['radio']
-                update_cell_measure_count(cell, session)
+                update_cell_measure_count(cell, session, userid=userid)
                 cell_measures.append(cell)
             session.add_all(cell_measures)
             session.commit()
@@ -95,16 +105,24 @@ def convert_frequency(entry):
             entry['channel'] = (freq - 5000) // 5
 
 
-def update_wifi_measure_count(wifi_key, wifis, session):
+def update_wifi_measure_count(wifi_key, wifis, session, userid=None):
     # side-effect, modifies wifis
+    new_wifi = 0
     if wifi_key in wifis:
         wifi = wifis[wifi_key]
+        if wifi.total_measures < 5:
+            # count wifis as new until they show up in the search
+            new_wifi += 1
         wifi.new_measures = Wifi.new_measures + 1
         wifi.total_measures = Wifi.total_measures + 1
     else:
         wifis[wifi_key] = wifi = Wifi(
             key=wifi_key, new_measures=1, total_measures=1)
+        new_wifi += 1
         session.add(wifi)
+    if userid is not None and new_wifi > 0:
+        # update user score
+        process_score(userid, new_wifi, session, key='new_wifi')
 
 
 def create_wifi_measure(measure_data, entry):
@@ -125,7 +143,7 @@ def create_wifi_measure(measure_data, entry):
 
 
 @celery.task(base=DatabaseTask, ignore_result=True)
-def insert_wifi_measure(measure_data, entries):
+def insert_wifi_measure(measure_data, entries, userid=None):
     wifi_measures = []
     wifi_keys = set([e['key'] for e in entries])
     try:
@@ -147,7 +165,8 @@ def insert_wifi_measure(measure_data, entries):
                 convert_frequency(entry)
                 wifi_measures.append(create_wifi_measure(measure_data, entry))
                 # update new/total measure counts
-                update_wifi_measure_count(wifi_key, wifis, session)
+                update_wifi_measure_count(
+                    wifi_key, wifis, session, userid=userid)
 
             session.add_all(wifi_measures)
             session.commit()

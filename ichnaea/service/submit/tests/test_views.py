@@ -4,6 +4,7 @@ from datetime import timedelta
 from ichnaea.content.models import (
     MapStat,
     Score,
+    SCORE_TYPE,
     User,
 )
 from ichnaea.models import (
@@ -268,13 +269,15 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
         result = session.query(Score).all()
-        self.assertEqual(len(result), 2)
-        self.assertEqual(
-            set([r.name for r in result]), set(['location', 'new_location']))
+        self.assertEqual(len(result), 3)
+        self.assertEqual(set([r.name for r in result]),
+                         set(['location', 'new_location', 'new_wifi']))
         for r in result:
             if r.name == 'location':
                 self.assertEqual(r.value, 2)
             elif r.name == 'new_location':
+                self.assertEqual(r.value, 2)
+            elif r.name == 'new_wifi':
                 self.assertEqual(r.value, 2)
 
     def test_nickname_header_error(self):
@@ -299,9 +302,8 @@ class TestSubmit(CeleryAppTestCase):
         user = User(nickname=nickname.decode('utf-8'))
         session.add(user)
         session.flush()
-        score = Score(userid=user.id, value=7)
-        score.name = 'location'
-        session.add(score)
+        session.add(Score(userid=user.id, key=SCORE_TYPE['location'], value=7))
+        session.add(Score(userid=user.id, key=SCORE_TYPE['new_wifi'], value=3))
         session.commit()
         app.post_json(
             '/v1/submit', {"items": [
@@ -313,15 +315,18 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
         result = session.query(Score).all()
-        self.assertEqual(len(result), 2)
-        self.assertEqual(
-            set([r.name for r in result]), set(['location', 'new_location']))
+        self.assertEqual(len(result), 3)
+        self.assertEqual(set([r.name for r in result]),
+                         set(['location', 'new_location', 'new_wifi']))
         for r in result:
             if r.name == 'location':
                 self.assertEqual(r.value, 8)
                 self.assertEqual(r.time, utcday)
             elif r.name == 'new_location':
                 self.assertEqual(r.value, 1)
+                self.assertEqual(r.time, utcday)
+            elif r.name == 'new_wifi':
+                self.assertEqual(r.value, 4)
                 self.assertEqual(r.time, utcday)
 
     def test_error(self):
