@@ -19,7 +19,7 @@
     <ul>
         <li><a href="/leaders">Leaderboard</a></li>
         <li><a href="/stats">Statistics</a></li>
-        <li><a href="/map">Coverage Map</a></li>
+        <li><a href="/map_world">Coverage Map</a></li>
     </ul>
 </section>
 </tal:slot>
