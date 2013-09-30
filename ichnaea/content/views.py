@@ -89,6 +89,11 @@ class ContentViews(Layout):
     def map_view(self):
         return {'page_title': 'Coverage Map'}
 
+    @view_config(renderer='templates/map_world.pt', name="map_world",
+                 http_cache=300)
+    def map_world_view(self):
+        return {'page_title': 'Coverage Map'}
+
     @view_config(renderer='json', name="stats_location.json", http_cache=86400)
     def stats_location_json(self):
         session = self.request.db_slave_session

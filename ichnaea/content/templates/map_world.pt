@@ -1,0 +1,51 @@
+<tal:macro xmlns:tal="http://xml.zope.org/namespaces/tal"
+           xmlns:metal="http://xml.zope.org/namespaces/metal"
+           metal:use-macro="view.base_template">
+
+<tal:slot metal:fill-slot="css">
+    <link rel="stylesheet" href="/static/css/mapbox.min.css" />
+</tal:slot>
+
+<tal:slot metal:fill-slot="js">
+    <script src="/static/js/leaflet.min.js"></script>
+    <script src='/static/js/mapbox.min.js'></script>
+    <script src="/static/js/leaflet.markercluster.min.js"></script>
+    <script src="/static/js/csv2geojson.min.js"></script>
+</tal:slot>
+
+<tal:slot metal:fill-slot="content">
+<section id="main-content">
+    <p>
+        A map showing all covered areas. Each marker shows the center
+        of a roughly 100 meter by 100 meter area, in which we have at least
+        2 measurements.
+    </p>
+    <div id='map'></div>
+</section>
+</tal:slot>
+
+<tal:slot metal:fill-slot="js_bottom">
+<script type='text/javascript'>
+var map = L.mapbox.map('map', 'hannosch.map-j01ew28b', {
+    maxZoom: 14
+}).setView([0, 0], 2);
+var markers = new L.MarkerClusterGroup({
+    spiderfyOnMaxZoom: false,
+    removeOutsideVisibleBounds: true,
+    maxClusterRadius: 60,
+});
+
+$.ajax({
+    url: '/map.csv',
+    dataType: 'text',
+    success: function csvLoad(csv) {
+        geoJsonLayer = L.geoJson(csv2geojson.csv2geojson(csv));
+        markers.addLayer(geoJsonLayer);
+        map.addLayer(markers);
+    }
+});
+
+</script>
+</tal:slot>
+
+</tal:macro>
