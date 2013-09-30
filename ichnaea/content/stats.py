@@ -104,5 +104,5 @@ def map_world_csv(session):
     csvwriter = csv.writer(rows)
     csvwriter.writerow(('lat', 'lon', 'value'))
     for lat, lon, value in result.fetchall():
-        csvwriter.writerow((int(lat), int(lon), int(value)))
+        csvwriter.writerow((lat / 10.0, lon / 10.0, int(value)))
     return rows.getvalue()
