@@ -6,6 +6,7 @@ from operator import itemgetter
 
 from sqlalchemy import select, func
 from sqlalchemy.dialects.mysql import INTEGER as Integer
+from sqlalchemy.sql.expression import text
 
 from ichnaea.content.models import (
     MapStat,
@@ -90,4 +91,18 @@ def map_csv(session):
     csvwriter.writerow(('lat', 'lon', 'value'))
     for lat, lon, value in result:
         csvwriter.writerow((lat / 1000.0, lon / 1000.0, value))
+    return rows.getvalue()
+
+
+def map_world_csv(session):
+    select = text("select round(lat / 100) as lat1, "
+                  "round(lon / 100) as lon1, count(*) as value "
+                  "from mapstat group by lat1, lon1 "
+                  "order by lat1, lon1")
+    result = session.execute(select)
+    rows = StringIO()
+    csvwriter = csv.writer(rows)
+    csvwriter.writerow(('lat', 'lon', 'value'))
+    for lat, lon, value in result.fetchall():
+        csvwriter.writerow((int(lat), int(lon), int(value)))
     return rows.getvalue()

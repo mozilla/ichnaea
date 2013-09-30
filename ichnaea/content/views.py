@@ -14,6 +14,7 @@ from ichnaea.content.stats import (
     histogram,
     leaders,
     map_csv,
+    map_world_csv,
 )
 
 
@@ -88,6 +89,11 @@ class ContentViews(Layout):
     @view_config(renderer='templates/map.pt', name="map", http_cache=300)
     def map_view(self):
         return {'page_title': 'Coverage Map'}
+
+    @view_config(renderer='string', name="map_world.csv", http_cache=86400)
+    def map_world_csv(self):
+        session = self.request.db_slave_session
+        return map_world_csv(session)
 
     @view_config(renderer='templates/map_world.pt', name="map_world",
                  http_cache=300)

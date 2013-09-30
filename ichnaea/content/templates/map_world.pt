@@ -27,7 +27,7 @@
 <tal:slot metal:fill-slot="js_bottom">
 <script type='text/javascript'>
 var map = L.mapbox.map('map', 'hannosch.map-j01ew28b', {
-    maxZoom: 14
+    maxZoom: 10
 }).setView([0, 0], 2);
 var markers = new L.MarkerClusterGroup({
     spiderfyOnMaxZoom: false,
@@ -36,7 +36,7 @@ var markers = new L.MarkerClusterGroup({
 });
 
 $.ajax({
-    url: '/map.csv',
+    url: '/map_world.csv',
     dataType: 'text',
     success: function csvLoad(csv) {
         geoJsonLayer = L.geoJson(csv2geojson.csv2geojson(csv));
