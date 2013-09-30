@@ -17,7 +17,7 @@
 <section id="main-content">
     <p>
         A map showing all covered areas. Each marker shows the center
-        of a roughly 100 meter by 100 meter area, in which we have at least
+        of a roughly 1km by 1km area, in which we have at least
         2 measurements.
     </p>
     <div id='map'></div>
@@ -27,12 +27,12 @@
 <tal:slot metal:fill-slot="js_bottom">
 <script type='text/javascript'>
 var map = L.mapbox.map('map', 'hannosch.map-j01ew28b', {
-    maxZoom: 10
-}).setView([0, 0], 2);
+    maxZoom: 8
+}).setView([0, -5], 2);
 var markers = new L.MarkerClusterGroup({
     spiderfyOnMaxZoom: false,
     removeOutsideVisibleBounds: true,
-    maxClusterRadius: 60,
+    maxClusterRadius: 50,
 });
 
 $.ajax({
