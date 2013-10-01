@@ -68,14 +68,11 @@
         </div>
 
         <ul class="footer-nav">
+            <li><a href="https://wiki.mozilla.org/Services/Location">
+                Project overview</a>
+            </li>
             <li><a href="https://wiki.mozilla.org/Services/Location#Meetings">
                 Contact Us</a>
-            </li>
-            <li><a href="https://www.mozilla.org/en-US/privacy-policy.html">
-                Privacy Policy</a>
-            </li>
-            <li><a href="https://www.mozilla.org/en-US/about/legal.html">
-                Legal Notices</a>
             </li>
             <li><a href="https://www.mozilla.org/en-US/legal/fraud-report/index.html">
                 Report Trademark Abuse</a>
@@ -83,9 +80,6 @@
         </ul>
 
         <ul class="footer-nav">
-            <li><a href="https://wiki.mozilla.org/Services/Location">
-                Project overview</a>
-            </li>
             <li><a href="https://github.com/mozilla/ichnaea/">
                 Source Code</a>
             </li>
