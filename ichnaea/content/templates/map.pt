@@ -30,7 +30,7 @@
 <script type='text/javascript'>
 var map = L.mapbox.map('map', 'hannosch.map-j01ew28b', {
     maxZoom: 14
-}).setView([0, 0], 2);
+}).setView([0, -5], 2);
 var heatmapLayer = L.TileLayer.heatMap({
     radius: {value: 12, absolute: false},
     opacity: 0.8,
@@ -51,7 +51,6 @@ $.ajax({
         data = csv2geojson.csv(csv, "lat", "lon");
         heatmapLayer.setData(data);
         heatmapLayer.addTo(map);
-        map.fitBounds(heatmapLayer._bounds);
     }
 });
 
