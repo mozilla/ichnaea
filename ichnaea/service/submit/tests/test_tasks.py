@@ -35,16 +35,18 @@ class TestInsert(CeleryTestCase):
         entries = [
             {"mcc": 1, "mnc": 2, "signal": -100},
             {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "asu": 8},
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "asu": 15},
             {"mcc": 1, "mnc": 2, "lac": 3, "cid": 7},
         ]
         result = insert_cell_measure.delay(measure, entries, userid=1)
-        self.assertEqual(result.get(), 3)
+        self.assertEqual(result.get(), 5)
 
         measures = session.query(CellMeasure).all()
-        self.assertEqual(len(measures), 3)
+        self.assertEqual(len(measures), 5)
         self.assertEqual(set([m.mcc for m in measures]), set([1]))
         self.assertEqual(set([m.mnc for m in measures]), set([2]))
-        self.assertEqual(set([m.asu for m in measures]), set([0, 8]))
+        self.assertEqual(set([m.asu for m in measures]), set([0, 8, 15]))
         self.assertEqual(set([m.psc for m in measures]), set([0, 5]))
         self.assertEqual(set([m.signal for m in measures]), set([0, -100]))
 
@@ -54,20 +56,20 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([c.mnc for c in cells]), set([2]))
         self.assertEqual(set([c.lac for c in cells]), set([3]))
         self.assertEqual(set([c.cid for c in cells]), set([4, 7]))
-        self.assertEqual(set([c.new_measures for c in cells]), set([1, 3]))
-        self.assertEqual(set([c.total_measures for c in cells]), set([1, 6]))
+        self.assertEqual(set([c.new_measures for c in cells]), set([1, 5]))
+        self.assertEqual(set([c.total_measures for c in cells]), set([1, 8]))
 
         scores = session.query(Score).all()
         self.assertEqual(len(scores), 1)
         self.assertEqual(scores[0].key, SCORE_TYPE['new_cell'])
-        self.assertEqual(scores[0].value, 8)
+        self.assertEqual(scores[0].value, 10)
 
         # test duplicate execution
         result = insert_cell_measure.delay(measure, entries, userid=1)
-        self.assertEqual(result.get(), 3)
+        self.assertEqual(result.get(), 5)
         # TODO this task isn't idempotent yet
         measures = session.query(CellMeasure).all()
-        self.assertEqual(len(measures), 6)
+        self.assertEqual(len(measures), 10)
 
     def test_wifi(self):
         from ichnaea.service.submit.tasks import insert_wifi_measure
@@ -85,13 +87,15 @@ class TestInsert(CeleryTestCase):
         )
         entries = [
             {"key": "ab12", "channel": 11, "signal": -80},
+            {"key": "ab12", "channel": 3, "signal": -90},
+            {"key": "ab12", "channel": 3, "signal": -80},
             {"key": "cd34", "channel": 3, "signal": -90},
         ]
         result = insert_wifi_measure.delay(measure, entries, userid=1)
-        self.assertEqual(result.get(), 2)
+        self.assertEqual(result.get(), 4)
 
         measures = session.query(WifiMeasure).all()
-        self.assertEqual(len(measures), 2)
+        self.assertEqual(len(measures), 4)
         self.assertEqual(set([m.key for m in measures]), set(["ab12", "cd34"]))
         self.assertEqual(set([m.channel for m in measures]), set([3, 11]))
         self.assertEqual(set([m.signal for m in measures]), set([-80, -90]))
@@ -99,9 +103,8 @@ class TestInsert(CeleryTestCase):
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 2)
         self.assertEqual(set([w.key for w in wifis]), set(["ab12", "cd34"]))
-        for wifi in wifis:
-            self.assertEqual(wifi.new_measures, 1)
-            self.assertEqual(wifi.total_measures, 1)
+        self.assertEqual(set([w.new_measures for w in wifis]), set([1, 3]))
+        self.assertEqual(set([w.total_measures for w in wifis]), set([1, 3]))
 
         scores = session.query(Score).all()
         self.assertEqual(len(scores), 1)
@@ -110,10 +113,10 @@ class TestInsert(CeleryTestCase):
 
         # test duplicate execution
         result = insert_wifi_measure.delay(measure, entries, userid=1)
-        self.assertEqual(result.get(), 2)
+        self.assertEqual(result.get(), 4)
         # TODO this task isn't idempotent yet
         measures = session.query(WifiMeasure).all()
-        self.assertEqual(len(measures), 4)
+        self.assertEqual(len(measures), 8)
 
         # test error case
         entries[0]['id'] = measures[0].id

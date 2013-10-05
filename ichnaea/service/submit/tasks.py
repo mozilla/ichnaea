@@ -52,11 +52,22 @@ def update_cell_measure_count(measure, session, userid=None):
     cell = query.first()
     new_cell = 0
     if cell:
-        if cell.total_measures < 5:
-            # count cells as new until they show up in the search
-            new_cell += 1
-        cell.new_measures = Cell.new_measures + 1
-        cell.total_measures = Cell.total_measures + 1
+        if isinstance(cell.new_measures, (int, long)):
+            cell.new_measures = Cell.new_measures + 1
+        else:
+            # already a sql expression
+            cell.new_measures += 1
+        if isinstance(cell.total_measures, (int, long)):
+            if cell.total_measures < 5:
+                # count cells as new until they show up in the search
+                new_cell += 1
+            cell.total_measures = Cell.total_measures + 1
+        else:
+            # already a sql expression
+            cell.total_measures += 1
+            if cell.total_measures.right.value < 5:
+                # count cells as new until they show up in the search
+                new_cell += 1
     else:
         cell = Cell(radio=measure.radio, mcc=measure.mcc, mnc=measure.mnc,
                     lac=measure.lac, cid=measure.cid,
@@ -110,11 +121,19 @@ def update_wifi_measure_count(wifi_key, wifis, session, userid=None):
     new_wifi = 0
     if wifi_key in wifis:
         wifi = wifis[wifi_key]
-        if wifi.total_measures < 5:
-            # count wifis as new until they show up in the search
-            new_wifi += 1
-        wifi.new_measures = Wifi.new_measures + 1
-        wifi.total_measures = Wifi.total_measures + 1
+        if isinstance(wifi.new_measures, (int, long)):
+            wifi.new_measures = Wifi.new_measures + 1
+        else:
+            # already a sql expression
+            wifi.new_measures += 1
+        if isinstance(wifi.total_measures, (int, long)):
+            if wifi.total_measures < 5:
+                # count wifis as new until they show up in the search
+                new_wifi += 1
+            wifi.total_measures = Wifi.total_measures + 1
+        else:
+            # already a sql expression
+            wifi.total_measures += 1
     else:
         wifis[wifi_key] = wifi = Wifi(
             key=wifi_key, new_measures=1, total_measures=1)
