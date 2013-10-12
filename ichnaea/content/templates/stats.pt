@@ -66,6 +66,61 @@
 <tal:slot metal:fill-slot="js_bottom">
 <script type='text/javascript'>
 
+var XHover = Rickshaw.Class.create(Rickshaw.Graph.HoverDetail, {
+
+    formatter: function(series, x, y, formattedX, formattedY, d) {
+        return formattedX + ':&nbsp;' + formattedY;
+    },
+
+    render: function(args) {
+
+        var graph = this.graph;
+        var points = args.points;
+        var point = points.filter( function(p) { return p.active } ).shift();
+
+        if (point.value.y === null) return;
+
+        var formattedXValue = point.formattedXValue;
+        var formattedYValue = point.formattedYValue;
+
+        this.element.innerHTML = '';
+        this.element.style.left = graph.x(point.value.x) + 'px';
+
+        var item = document.createElement('div');
+        item.className = 'item';
+
+        // invert the scale if this series displays using a scale
+        var series = point.series;
+        var actualY = series.scale ? series.scale.invert(point.value.y) : point.value.y;
+
+        item.innerHTML = this.formatter(
+            series, point.value.x, actualY, formattedXValue, formattedYValue, point);
+        item.style.top = this.graph.y(point.value.y0 + point.value.y) + 'px';
+
+        this.element.appendChild(item);
+
+        var dot = document.createElement('div');
+
+        dot.className = 'dot';
+        dot.style.top = item.style.top;
+        dot.style.borderColor = series.color;
+
+        this.element.appendChild(dot);
+
+        if (point.active) {
+            item.className = 'item active';
+            dot.className = 'dot active';
+        }
+
+        this.show();
+
+        if (typeof this.onRender == 'function') {
+            this.onRender(args);
+        }
+    },
+
+});
+
 function make_graph(url, graph_id) {
     var result = {};
     $.ajax({
@@ -87,6 +142,7 @@ function make_graph(url, graph_id) {
         element: document.querySelector(graph_id + " .chart"),
         width: 720,
         height: 144,
+        renderer: 'area',
         series: [ {
                 data: entries, 
                 color: 'steelblue'
@@ -113,6 +169,12 @@ function make_graph(url, graph_id) {
         element: document.querySelector(graph_id + " .chart_y_axis"),
         pixelsPerTick: 72,
         tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
+    } );
+
+    var hoverDetail = new XHover( {
+        graph: graph,
+        xFormatter: format_date,
+        yFormatter: function(y) { return y },
     } );
 
     graph.render();
