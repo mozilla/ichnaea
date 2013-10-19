@@ -138,8 +138,16 @@ def favicon_view(request):
     return FileResponse(FAVICON_PATH, request=request)
 
 
-_robots_response = Response(content_type='text/plain',
-                            body="User-agent: *\nDisallow: /\n")
+_robots_response = Response(
+    content_type='text/plain',
+    body="User-agent: *\n"
+         "Disallow: /leaders\n"
+         "Disallow: /map\n"
+         "Disallow: /map_world\n"
+         "Disallow: /static/\n"
+         "Disallow: /stats\n"
+         "Disallow: /v1/\n"
+)
 
 
 def robotstxt_view(context, request):
