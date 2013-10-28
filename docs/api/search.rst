@@ -34,7 +34,11 @@ with a JSON body:
                 "channel": 11,
                 "frequency": 2412,
                 "signal": -50
+            },
+            {
+                "key": "01:23:45:67:cd:ef",
             }
+
         ]
     }
 
@@ -58,6 +62,10 @@ to the server either.
 
 The `key` is a the BSSID or MAC address of the wifi network. So for example
 a valid key would look similar to `01:23:45:67:89:ab`.
+
+For wifi lookups you need to provide at least two wifi keys of nearby wifis.
+This is a industry standard that is meant to prevent you from looking up the
+position of a single wifi over time.
 
 A successful result will be:
 
