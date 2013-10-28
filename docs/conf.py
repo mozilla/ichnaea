@@ -92,7 +92,7 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #html_theme = 'default'
-html_theme_path = ['_themes']
+html_theme_path = ['_themes/mozilla/mozilla_sphinx_theme']
 html_theme = 'mozilla'
 
 
