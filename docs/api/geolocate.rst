@@ -10,7 +10,7 @@ nearby cell towers or wifi base stations. This is an alternative to our own
 
 Do a POST request against the URL::
 
-    /v1/geolocate
+    https://location.services.mozilla.com/v1/geolocate
 
 This implements the same interface as the `Google Maps Geolocation
 API <https://developers.google.com/maps/documentation/business/geolocation/>`_

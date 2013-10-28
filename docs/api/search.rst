@@ -9,7 +9,7 @@ nearby cell towers or wifi base stations.
 
 An example POST request against URL::
 
-    /v1/search
+    https://location.services.mozilla.com/v1/search
 
 with a JSON body:
 
@@ -30,7 +30,7 @@ with a JSON body:
         ],
         "wifi": [
             {
-                "key": "3680873e9b83738eb72946d19e971e023e51fd01",
+                "key": "01:23:45:67:89:ab",
                 "channel": 11,
                 "frequency": 2412,
                 "signal": -50

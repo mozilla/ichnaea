@@ -8,7 +8,7 @@ Submit data about nearby cell towers and wifi base stations.
 
 An example POST request against URL::
 
-    /v1/submit
+    https://location.services.mozilla.com/v1/submit
 
 with a JSON body:
 
@@ -35,7 +35,7 @@ with a JSON body:
         ],
         "wifi": [
             {
-                "key": "3680873e9b83738eb72946d19e971e023e51fd01",
+                "key": "01:23:45:67:89:ab",
                 "channel": 11,
                 "frequency": 2412,
                 "signal": -50
