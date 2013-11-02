@@ -27,7 +27,7 @@
 <tal:slot metal:fill-slot="js_bottom">
 <script type='text/javascript'>
 var map = L.mapbox.map('map', 'hannosch.map-j01ew28b', {
-    maxZoom: 8
+    maxZoom: 12
 }).setView([0, -5], 2);
 var markers = new L.MarkerClusterGroup({
     spiderfyOnMaxZoom: false,
