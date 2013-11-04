@@ -20,7 +20,15 @@
     <p>
         A map showing all covered areas. Each data point shows the center
         of a roughly 100 meter by 100 meter area, in which we have at least
-        2 measurements.
+        20 measurements.
+    </p>
+    <p>
+        The way this map is built no longer scales to the amount of data we
+        have, so the high restriction of 20 measurements was put into place.
+        If you have ideas on how to improve it, please follow up on
+        <a href="https://github.com/mozilla/ichnaea/issues/33">
+            the github issue
+        </a>.
     </p>
     <div id='map'></div>
 </section>

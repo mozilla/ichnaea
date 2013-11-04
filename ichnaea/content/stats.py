@@ -84,7 +84,7 @@ def map_csv(session):
     query = select(
         columns=(MapStat.lat, MapStat.lon,
                  func.cast(func.ceil(func.log10(MapStat.value)), Integer)),
-        whereclause=MapStat.value >= 2)
+        whereclause=MapStat.value >= 20)
     result = session.execute(query).fetchall()
     rows = StringIO()
     csvwriter = csv.writer(rows)

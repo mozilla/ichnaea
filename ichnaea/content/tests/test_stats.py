@@ -71,8 +71,8 @@ class TestStats(DBTestCase):
         from ichnaea.content.stats import map_csv
         session = self.db_master_session
         stats = [
-            MapStat(lat=1000, lon=2000, value=101),
-            MapStat(lat=2000, lon=3000, value=11),
+            MapStat(lat=1000, lon=2000, value=151),
+            MapStat(lat=2000, lon=3000, value=21),
             MapStat(lat=3000, lon=4000, value=1),
         ]
         session.add_all(stats)
