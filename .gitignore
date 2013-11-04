@@ -4,7 +4,9 @@
 *.py[co]
 *.egg-info
 *.log
+*.log.*
 *.pid
+celerybeat-schedule
 coverage.xml
 data
 nosetests.xml
