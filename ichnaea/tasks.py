@@ -39,11 +39,15 @@ def daily_task_days(ago):
 
 
 @celery.task(base=DatabaseTask, ignore_result=False)  # pragma: no cover
-def cleanup_kombu_message_table(ago=1):
-    day, max_day = daily_task_days(ago)
+def cleanup_kombu_message_table(ago=0):
+    now = datetime.utcnow()
+    now = now.replace(second=0, microsecond=0)
+    now -= timedelta(days=ago)
+    # by default retain the last three hours of tasks
+    now -= timedelta(hours=3)
     stmt = text(
         'delete from kombu_message where visible = 0 and '
-        'timestamp < "%s" limit 20000;' % day.isoformat()
+        'timestamp < "%s" limit 50000;' % now.isoformat()
     )
     with cleanup_kombu_message_table.db_session() as session:
         session.execute(stmt)

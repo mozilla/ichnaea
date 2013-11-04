@@ -23,7 +23,7 @@ CELERYBEAT_SCHEDULE = {
     'cleanup-kombu-message-table': {
         'task': 'ichnaea.tasks.cleanup_kombu_message_table',
         'schedule': timedelta(seconds=1800),
-        'args': (1, ),
+        'args': (0, ),
     },
     'histogram-yesterday': {
         'task': 'ichnaea.content.tasks.histogram',
@@ -58,12 +58,12 @@ CELERYBEAT_SCHEDULE = {
     'continuous-cell-location-update': {
         'task': 'ichnaea.tasks.cell_location_update',
         'schedule': timedelta(seconds=299),  # 13*23
-        'args': (1, 10000, 100),
+        'args': (10, 10000, 1000),
     },
     'continuous-wifi-location-update': {
         'task': 'ichnaea.tasks.wifi_location_update',
         'schedule': timedelta(seconds=323),  # 17*19
-        'args': (1, 10000, 100),
+        'args': (10, 10000, 1000),
     },
 }
 
