@@ -6,12 +6,6 @@ from sqlalchemy.orm import sessionmaker
 
 _Model = declarative_base()
 
-# TODO add signal to list of reserved words
-# reported upstream at http://www.sqlalchemy.org/trac/ticket/2791
-from sqlalchemy.dialects.mysql import base
-base.RESERVED_WORDS.add('signal')
-del base
-
 
 # the request db_sessions and db_tween_factory are inspired by pyramid_tm
 # to provide lazy session creation, session closure and automatic
