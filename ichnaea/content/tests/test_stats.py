@@ -105,7 +105,8 @@ class TestStats(DBTestCase):
         test_data = []
         for i in range(20):
             test_data.append((u'nick-%s' % i, 7))
-        highest = u'nick-high'
+        highest = u'nick-high-too-long_'
+        highest += (128 - len(highest)) * u'x'
         test_data.append((highest, 10))
         lowest = u'nick-low'
         test_data.append((lowest, 5))
@@ -120,6 +121,6 @@ class TestStats(DBTestCase):
         # check the result
         result = leaders(session)
         self.assertEqual(len(result), 22)
-        self.assertEqual(result[0]['nickname'], highest)
+        self.assertEqual(result[0]['nickname'], highest[:30] + u'...')
         self.assertEqual(result[0]['num'], 10)
         self.assertTrue(lowest in [r['nickname'] for r in result])
