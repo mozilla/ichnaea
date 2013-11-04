@@ -28,7 +28,7 @@
 <script type='text/javascript'>
 var map = L.mapbox.map('map', 'hannosch.map-j01ew28b', {
     maxZoom: 8
-}).setView([0, -5], 2);
+}).setView([0, 10], 2);
 var markers = new L.MarkerClusterGroup({
     spiderfyOnMaxZoom: false,
     removeOutsideVisibleBounds: true,

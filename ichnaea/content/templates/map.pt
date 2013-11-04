@@ -38,7 +38,7 @@
 <script type='text/javascript'>
 var map = L.mapbox.map('map', 'hannosch.map-j01ew28b', {
     maxZoom: 14
-}).setView([0, -5], 2);
+}).setView([0, 10], 2);
 var heatmapLayer = L.TileLayer.heatMap({
     radius: {value: 12, absolute: false},
     opacity: 0.8,
