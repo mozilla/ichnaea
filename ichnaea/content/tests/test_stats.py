@@ -82,6 +82,23 @@ class TestStats(DBTestCase):
         text = text.split('\n')
         self.assertEqual(text, ['lat,lon,value', '1.0,2.0,3', '2.0,3.0,2'])
 
+    def test_map_world_csv(self):
+        from ichnaea.content.stats import map_world_csv
+        session = self.db_master_session
+        stats = [
+            MapStat(lat=1000, lon=2000, value=101),
+            MapStat(lat=1001, lon=2000, value=2),
+            MapStat(lat=2000, lon=3000, value=11),
+            MapStat(lat=3000, lon=4000, value=1),
+        ]
+        session.add_all(stats)
+        session.commit()
+        result = map_world_csv(session)
+        text = result.replace('\r', '').strip('\n')
+        text = text.split('\n')
+        self.assertEqual(
+            text, ['lat,lon,value', '1.0,2.0,2', '2.0,3.0,1', '3.0,4.0,1'])
+
     def test_leaders(self):
         from ichnaea.content.stats import leaders
         session = self.db_master_session
