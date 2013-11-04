@@ -22,8 +22,8 @@ if 'CELERY_ALWAYS_EAGER' in os.environ:
 CELERYBEAT_SCHEDULE = {
     'cleanup-kombu-message-table': {
         'task': 'ichnaea.tasks.cleanup_kombu_message_table',
-        'schedule': timedelta(seconds=3600),
-        'args': (2, ),
+        'schedule': timedelta(seconds=1800),
+        'args': (1, ),
     },
     'histogram-yesterday': {
         'task': 'ichnaea.content.tasks.histogram',
