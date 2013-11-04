@@ -41,7 +41,6 @@ def process_mapstat(measures, session, userid=None):
     # aggregate to 100x100m tiles
     for measure in measures:
         tiles[(measure.lat / 10000, measure.lon / 10000)] += 1
-    # TODO: on duplicate key update
     lats = set([k[0] for k in tiles.keys()])
     lons = set([k[1] for k in tiles.keys()])
     result = session.query(MapStat).filter(
@@ -53,16 +52,15 @@ def process_mapstat(measures, session, userid=None):
         prior[(r.lat, r.lon)] = r
     tile_count = 0
     for (lat, lon), value in tiles.items():
-        stat = MapStat(lat=lat, lon=lon, value=value)
         old = prior.get((lat, lon), None)
         if old:
-            if old.value < 2:
-                # give points for the first two tile hits
-                tile_count += 1
             old.value = MapStat.value + value
         else:
             tile_count += 1
-            session.add(stat)
+            stmt = MapStat.__table__.insert(
+                on_duplicate='value = value + %s' % int(value)).values(
+                lat=lat, lon=lon, value=value)
+            session.execute(stmt)
     if userid is not None and tile_count > 0:
         process_score(userid, tile_count, session, key='new_location')
 

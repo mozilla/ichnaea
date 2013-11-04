@@ -1,10 +1,20 @@
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql.expression import Insert
 from sqlalchemy.orm import sessionmaker
 
 _Model = declarative_base()
+
+
+@compiles(Insert)
+def on_duplicate(insert, compiler, **kw):
+    s = compiler.visit_insert(insert, **kw)
+    if 'on_duplicate' in insert.kwargs:
+        return s + " ON DUPLICATE KEY UPDATE " + insert.kwargs['on_duplicate']
+    return s
 
 
 # the request db_sessions and db_tween_factory are inspired by pyramid_tm
