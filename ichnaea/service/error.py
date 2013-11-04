@@ -17,7 +17,13 @@ class _JSONError(HTTPError):
 
 
 def error_handler(errors):
-    logger.debug('error_handler' + repr(errors))
+    # filter out the rather common MSG_ONE_OF errors
+    log_errors = []
+    for error in errors:
+        if error.get('description', '') != MSG_ONE_OF:
+            log_errors.append(error)
+    if log_errors:
+        logger.debug('error_handler' + repr(log_errors))
     return _JSONError(errors, errors.status)
 
 
