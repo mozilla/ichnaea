@@ -7,11 +7,15 @@ from ichnaea.content.models import (
 from ichnaea.models import (
     Cell,
     CellMeasure,
+    Measure,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
 )
-from ichnaea.decimaljson import encode_datetime
+from ichnaea.decimaljson import (
+    dumps,
+    encode_datetime,
+)
 from ichnaea.tests.base import CeleryTestCase
 
 
@@ -70,6 +74,31 @@ class TestInsert(CeleryTestCase):
         # TODO this task isn't idempotent yet
         measures = session.query(CellMeasure).all()
         self.assertEqual(len(measures), 10)
+
+    def test_reprocess_cell(self):
+        from ichnaea.service.submit.tasks import reprocess_cell_measure
+        session = self.db_master_session
+        utcnow = datetime.utcnow()
+
+        measure_data = dict(
+            created=encode_datetime(utcnow), lat=10000000, lon=20000000,
+            time=encode_datetime(utcnow), accuracy=0, altitude=0,
+            altitude_accuracy=0, radio=0,
+        )
+        entries = [
+            {"mcc": 1, "mnc": 2, "signal": -100},
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "asu": 8},
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "asu": 15},
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 7},
+        ]
+        measure_data['cell'] = dumps(entries)
+        measure = Measure(**measure_data)
+        session.add(measure)
+        session.flush()
+
+        result = reprocess_cell_measure.delay([measure.id], userid=1)
+        self.assertEqual(result.get(), 1)
 
     def test_wifi(self):
         from ichnaea.service.submit.tasks import insert_wifi_measure

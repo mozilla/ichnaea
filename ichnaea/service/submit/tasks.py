@@ -3,12 +3,17 @@ from sqlalchemy.exc import IntegrityError
 from ichnaea.models import (
     Cell,
     CellMeasure,
+    Measure,
     RADIO_TYPE,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
 )
-from ichnaea.decimaljson import decode_datetime
+from ichnaea.decimaljson import (
+    decode_datetime,
+    encode_datetime,
+    loads,
+)
 from ichnaea.tasks import DatabaseTask
 from ichnaea.worker import celery
 
@@ -77,6 +82,32 @@ def update_cell_measure_count(measure, session, userid=None):
     if userid is not None and new_cell > 0:
         # update user score
         process_score(userid, new_cell, session, key='new_cell')
+
+
+@celery.task(base=DatabaseTask, ignore_result=True)
+def reprocess_cell_measure(measure_ids, userid=None):
+    measures = []
+    try:
+        with reprocess_cell_measure.db_session() as session:
+            measures = session.query(Measure).filter(
+                Measure.id.in_(measure_ids)).all()
+            for measure in measures:
+                measure_data = dict(
+                    id=measure.id, created=encode_datetime(measure.created),
+                    lat=measure.lat, lon=measure.lon,
+                    time=encode_datetime(measure.time),
+                    accuracy=measure.accuracy, altitude=measure.altitude,
+                    altitude_accuracy=measure.altitude_accuracy,
+                    radio=measure.radio,
+                )
+                insert_cell_measure.delay(
+                    measure_data, loads(measure.cell), userid=userid)
+        return len(measures)
+    except IntegrityError as exc:  # pragma: no cover
+        # TODO log error
+        return 0
+    except Exception as exc:  # pragma: no cover
+        raise reprocess_cell_measure.retry(exc=exc)
 
 
 @celery.task(base=DatabaseTask, ignore_result=True)
