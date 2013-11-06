@@ -79,16 +79,23 @@ class TestInsert(CeleryTestCase):
         from ichnaea.service.submit.tasks import schedule_cell_cleanup
         session = self.db_master_session
 
-        measure = Measure(lat=10000000, lon=10000000, radio=0)
+        measure_data = dict(lat=10000000, lon=10000000, radio=0)
         entries = [
             {"mcc": 1, "mnc": 2, "signal": -50},
             {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4},
         ]
-        measure.cell = dumps(entries)
+        measure_data['cell'] = dumps(entries)
+        measure = Measure(**measure_data)
         session.add(measure)
+        measure_data['lat'] = 20000000
+        measure_data['lon'] = 20000000
+        measure2 = Measure(**measure_data)
+        session.add(measure2)
         session.flush()
 
-        schedule_cell_cleanup.delay(measure.id - 1, measure.id + 1, 0, 1)
+        result = schedule_cell_cleanup.delay(
+            measure.id - 1, measure2.id + 1, 0, 1)
+        self.assertEqual(result.get(), 2)
 
     def test_reprocess_cell(self):
         from ichnaea.service.submit.tasks import reprocess_cell_measure

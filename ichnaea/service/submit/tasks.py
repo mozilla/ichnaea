@@ -95,8 +95,11 @@ def schedule_cell_cleanup(lower, upper, cell_lower, cell_upper):
                     "cell_measure where id > %s and id < %s)" % (
                         lower, upper, cell_lower, cell_upper))
         ids = session.execute(stmt).fetchall()
+        ids = [int(i[0]) for i in ids]
         if ids:
-            reprocess_cell_measure.delay([int(i[0]) for i in ids])
+            reprocess_cell_measure.delay(ids)
+        return len(ids)
+    return 0
 
 
 @celery.task(base=DatabaseTask, ignore_result=True)
