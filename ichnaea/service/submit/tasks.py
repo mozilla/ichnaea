@@ -1,3 +1,4 @@
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from ichnaea.models import (
@@ -84,6 +85,18 @@ def update_cell_measure_count(measure, session, userid=None):
     if userid is not None and new_cell > 0:
         # update user score
         process_score(userid, new_cell, session, key='new_cell')
+
+
+@celery.task(base=DatabaseTask, ignore_result=True)
+def schedule_cell_cleanup(lower, upper, cell_lower, cell_upper):
+    with schedule_cell_cleanup.db_session() as session:
+        stmt = text("select id from measure where id > %s and id < %s and "
+                    "cell is not null and id not in (select measure_id from "
+                    "cell_measure where id > %s and id < %s)" % (
+                        lower, upper, cell_lower, cell_upper))
+        ids = session.execute(stmt).fetchall()
+        if ids:
+            reprocess_cell_measure.delay([int(i[0]) for i in ids])
 
 
 @celery.task(base=DatabaseTask, ignore_result=True)
