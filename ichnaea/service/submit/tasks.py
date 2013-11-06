@@ -19,6 +19,8 @@ from ichnaea.worker import celery
 
 from ichnaea.service.submit.utils import process_score
 
+sql_null = None  # avoid pep8 warning
+
 
 def create_cell_measure(measure_data, entry):
     return CellMeasure(
@@ -90,7 +92,8 @@ def reprocess_cell_measure(measure_ids, userid=None):
     try:
         with reprocess_cell_measure.db_session() as session:
             measures = session.query(Measure).filter(
-                Measure.id.in_(measure_ids)).all()
+                Measure.id.in_(measure_ids)).filter(
+                Measure.cell != sql_null).all()
             for measure in measures:
                 measure_data = dict(
                     id=measure.id, created=encode_datetime(measure.created),
@@ -190,6 +193,33 @@ def create_wifi_measure(measure_data, entry):
         channel=entry.get('channel', 0),
         signal=entry.get('signal', 0),
     )
+
+
+@celery.task(base=DatabaseTask, ignore_result=True)
+def reprocess_wifi_measure(measure_ids, userid=None):
+    measures = []
+    try:
+        with reprocess_wifi_measure.db_session() as session:
+            measures = session.query(Measure).filter(
+                Measure.id.in_(measure_ids)).filter(
+                Measure.wifi != sql_null).all()
+            for measure in measures:
+                measure_data = dict(
+                    id=measure.id, created=encode_datetime(measure.created),
+                    lat=measure.lat, lon=measure.lon,
+                    time=encode_datetime(measure.time),
+                    accuracy=measure.accuracy, altitude=measure.altitude,
+                    altitude_accuracy=measure.altitude_accuracy,
+                    radio=measure.radio,
+                )
+                insert_wifi_measure.delay(
+                    measure_data, loads(measure.wifi), userid=userid)
+        return len(measures)
+    except IntegrityError as exc:  # pragma: no cover
+        # TODO log error
+        return 0
+    except Exception as exc:  # pragma: no cover
+        raise reprocess_wifi_measure.retry(exc=exc)
 
 
 @celery.task(base=DatabaseTask, ignore_result=True)
