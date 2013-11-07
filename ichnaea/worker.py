@@ -160,6 +160,7 @@ def configure(celery=celery):
         CELERYD_FORCE_EXECV=True,
         # optimization
         CELERY_DISABLE_RATE_LIMITS=True,
+        CELERY_MESSAGE_COMPRESSION='gzip',
         # security
         CELERY_ACCEPT_CONTENT=['json'],
         CELERY_RESULT_SERIALIZER='json',
