@@ -60,10 +60,20 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(seconds=299),  # 13*23
         'args': (10, 10000, 1000),
     },
+    'continuous-cell-location-update-2': {
+        'task': 'ichnaea.tasks.cell_location_update',
+        'schedule': timedelta(seconds=319),  # 11*29
+        'args': (2, 10, 5000),
+    },
     'continuous-wifi-location-update': {
         'task': 'ichnaea.tasks.wifi_location_update',
         'schedule': timedelta(seconds=323),  # 17*19
         'args': (10, 10000, 1000),
+    },
+    'continuous-wifi-location-update-2': {
+        'task': 'ichnaea.tasks.wifi_location_update',
+        'schedule': timedelta(seconds=329),  # 7*47
+        'args': (2, 10, 5000),
     },
 }
 
