@@ -182,10 +182,11 @@ class TestFunctionalContentViews(AppTestCase):
         result = inst.leaders_view()
         self.assertEqual(
             result['leaders1'],
-            [{'nickname': u'2', 'num': 5}, {'nickname': u'1', 'num': 3}])
+            [{'nickname': u'2', 'num': 5, 'pos': 1},
+             {'nickname': u'1', 'num': 3, 'pos': 2}])
         self.assertEqual(
             result['leaders2'],
-            [{'nickname': u'0', 'num': 1}])
+            [{'nickname': u'0', 'num': 1, 'pos': 3}])
 
     def test_stats(self):
         day = datetime.utcnow().date() - timedelta(1)

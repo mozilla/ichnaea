@@ -10,12 +10,14 @@
         <table class="table half">
             <thead>
                 <tr>
+                    <th>Rank</th>
                     <th>User</th>
                     <th>Points</th>
                 </tr>
             </thead>
             <tbody>
                 <tr tal:repeat="row leaders1">
+                    <td>${row.pos}</td>
                     <td>${row.nickname}</td>
                     <td>${row.num}</td>
                 </tr>

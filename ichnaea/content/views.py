@@ -71,7 +71,13 @@ class ContentViews(Layout):
                  name="leaders", http_cache=300)
     def leaders_view(self):
         session = self.request.db_slave_session
-        result = leaders(session)
+        result = list(enumerate(leaders(session)))
+        result = [
+            {
+                'pos': l[0] + 1,
+                'num': l[1]['num'],
+                'nickname': l[1]['nickname'],
+            } for l in result]
         half = len(result) // 2 + len(result) % 2
         leaders1 = result[:half]
         leaders2 = result[half:]
