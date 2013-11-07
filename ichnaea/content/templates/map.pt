@@ -36,7 +36,7 @@
 
 <tal:slot metal:fill-slot="js_bottom">
 <script type='text/javascript'>
-var map = L.mapbox.map('map', 'hannosch.map-j01ew28b', {
+var map = L.mapbox.map('map', 'mozilla-webprod.g7ilhcl5', {
     maxZoom: 14
 }).setView([0, 10], 2);
 var heatmapLayer = L.TileLayer.heatMap({
