@@ -93,8 +93,7 @@ class TestInsert(CeleryTestCase):
         session.add(measure2)
         session.flush()
 
-        result = schedule_cell_cleanup.delay(
-            measure.id - 1, measure2.id + 1, 0, 1)
+        result = schedule_cell_cleanup.delay(measure.id - 1, measure2.id + 1)
         self.assertEqual(result.get(), 2)
 
     def test_reprocess_cell(self):

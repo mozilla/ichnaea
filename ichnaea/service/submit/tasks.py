@@ -88,12 +88,14 @@ def update_cell_measure_count(measure, session, userid=None):
 
 
 @celery.task(base=DatabaseTask, ignore_result=True)
-def schedule_cell_cleanup(lower, upper, cell_lower, cell_upper, batch=100):
+def schedule_cell_cleanup(lower, upper, batch=100):
     with schedule_cell_cleanup.db_session() as session:
-        stmt = text("select id from measure where id > %s and id < %s and "
-                    "cell is not null and id not in (select measure_id from "
-                    "cell_measure where id > %s and id < %s)" % (
-                        lower, upper, cell_lower, cell_upper))
+        stmt = text("select measure.id from measure left join cell_measure "
+                    "on measure.id = cell_measure.measure_id where "
+                    "cell_measure.measure_id is null and "
+                    "measure.cell is not null and "
+                    "measure.id > %s and measure.id < %s" % (
+                        lower, upper))
         ids = session.execute(stmt).fetchall()
         ids = [int(i[0]) for i in ids]
         for i in range(0, len(ids), batch):
