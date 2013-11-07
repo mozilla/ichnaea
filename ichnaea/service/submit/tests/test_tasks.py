@@ -122,6 +122,11 @@ class TestInsert(CeleryTestCase):
         result = reprocess_cell_measure.delay([measure.id], userid=1)
         self.assertEqual(result.get(), 1)
 
+        measures = session.query(CellMeasure).all()
+        self.assertEqual(len(measures), 5)
+        cells = session.query(Cell).all()
+        self.assertEqual(len(cells), 4)
+
     def test_wifi(self):
         from ichnaea.service.submit.tasks import insert_wifi_measure
         session = self.db_master_session
