@@ -129,22 +129,29 @@ def reprocess_cell_measure(measure_ids, userid=None):
         raise reprocess_cell_measure.retry(exc=exc)
 
 
+def process_cell_measure(session, measure_data, entries, userid=None):
+    cell_measures = []
+    for entry in entries:
+        cell = create_cell_measure(measure_data, entry)
+        # use more specific cell type or
+        # fall back to less precise measure
+        if entry.get('radio'):
+            cell.radio = RADIO_TYPE.get(entry['radio'], -1)
+        else:
+            cell.radio = measure_data['radio']
+        update_cell_measure_count(cell, session, userid=userid)
+        cell_measures.append(cell)
+    session.add_all(cell_measures)
+    return cell_measures
+
+
 @celery.task(base=DatabaseTask, ignore_result=True)
 def insert_cell_measure(measure_data, entries, userid=None):
-    cell_measures = []
     try:
+        cell_measures = []
         with insert_cell_measure.db_session() as session:
-            for entry in entries:
-                cell = create_cell_measure(measure_data, entry)
-                # use more specific cell type or
-                # fall back to less precise measure
-                if entry.get('radio'):
-                    cell.radio = RADIO_TYPE.get(entry['radio'], -1)
-                else:
-                    cell.radio = measure_data['radio']
-                update_cell_measure_count(cell, session, userid=userid)
-                cell_measures.append(cell)
-            session.add_all(cell_measures)
+            cell_measures = process_cell_measure(
+                session, measure_data, entries, userid=userid)
             session.commit()
         return len(cell_measures)
     except IntegrityError as exc:  # pragma: no cover
