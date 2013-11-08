@@ -35,6 +35,7 @@ class Cell(_Model):
     __tablename__ = 'cell'
     __table_args__ = (
         Index('cell_idx', 'radio', 'mcc', 'mnc', 'lac', 'cid'),
+        Index('cell_created_idx', 'created'),
         Index('cell_new_measures_idx', 'new_measures'),
         {
             'mysql_engine': 'InnoDB',
@@ -44,6 +45,7 @@ class Cell(_Model):
 
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
+    created = Column(DateTime)
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
@@ -61,6 +63,8 @@ class Cell(_Model):
     total_measures = Column(Integer(unsigned=True))
 
     def __init__(self, *args, **kw):
+        if 'created' not in kw:
+            kw['created'] = datetime.datetime.utcnow()
         if 'new_measures' not in kw:
             kw['new_measures'] = 0
         if 'total_measures' not in kw:
@@ -122,6 +126,7 @@ class Wifi(_Model):
     __tablename__ = 'wifi'
     __table_args__ = (
         UniqueConstraint('key', name='wifi_key_unique'),
+        Index('wifi_created_idx', 'created'),
         Index('wifi_new_measures_idx', 'new_measures'),
         {
             'mysql_engine': 'InnoDB',
@@ -131,6 +136,7 @@ class Wifi(_Model):
 
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
+    created = Column(DateTime)
     key = Column(String(12))
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
@@ -140,6 +146,8 @@ class Wifi(_Model):
     total_measures = Column(Integer(unsigned=True))
 
     def __init__(self, *args, **kw):
+        if 'created' not in kw:
+            kw['created'] = datetime.datetime.utcnow()
         if 'new_measures' not in kw:
             kw['new_measures'] = 0
         if 'total_measures' not in kw:
