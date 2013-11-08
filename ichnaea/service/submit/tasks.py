@@ -256,33 +256,39 @@ def reprocess_wifi_measure(measure_ids, userid=None):
         raise reprocess_wifi_measure.retry(exc=exc)
 
 
+def process_wifi_measure(session, measure_data, entries, userid=None):
+    wifi_measures = []
+    wifi_keys = set([e['key'] for e in entries])
+    # did we get measures for blacklisted wifis?
+    blacked = session.query(WifiBlacklist.key).filter(
+        WifiBlacklist.key.in_(wifi_keys)).all()
+    blacked = set([b[0] for b in blacked])
+    # do we already know about these wifis?
+    wifis = session.query(Wifi.key, Wifi).filter(
+        Wifi.key.in_(wifi_keys))
+    wifis = dict(wifis.all())
+    for entry in entries:
+        wifi_key = entry['key']
+        # skip blacklisted wifi AP's
+        if wifi_key in blacked:
+            continue
+        # convert frequency into channel numbers and remove frequency
+        convert_frequency(entry)
+        wifi_measures.append(create_wifi_measure(measure_data, entry))
+        # update new/total measure counts
+        update_wifi_measure_count(
+            wifi_key, wifis, session, userid=userid)
+    session.add_all(wifi_measures)
+    return wifi_measures
+
+
 @celery.task(base=DatabaseTask, ignore_result=True)
 def insert_wifi_measure(measure_data, entries, userid=None):
     wifi_measures = []
-    wifi_keys = set([e['key'] for e in entries])
     try:
         with insert_wifi_measure.db_session() as session:
-            # did we get measures for blacklisted wifis?
-            blacked = session.query(WifiBlacklist.key).filter(
-                WifiBlacklist.key.in_(wifi_keys)).all()
-            blacked = set([b[0] for b in blacked])
-            # do we already know about these wifis?
-            wifis = session.query(Wifi.key, Wifi).filter(
-                Wifi.key.in_(wifi_keys))
-            wifis = dict(wifis.all())
-            for entry in entries:
-                wifi_key = entry['key']
-                # skip blacklisted wifi AP's
-                if wifi_key in blacked:
-                    continue
-                # convert frequency into channel numbers and remove frequency
-                convert_frequency(entry)
-                wifi_measures.append(create_wifi_measure(measure_data, entry))
-                # update new/total measure counts
-                update_wifi_measure_count(
-                    wifi_key, wifis, session, userid=userid)
-
-            session.add_all(wifi_measures)
+            wifi_measures = process_wifi_measure(
+                session, measure_data, entries, userid=userid)
             session.commit()
         return len(wifi_measures)
     except IntegrityError as exc:
