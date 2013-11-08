@@ -12,8 +12,7 @@ GSM
 ===
 
 If the network is either GSM or any high-data-rate variant of it, the radio
-field should be specified as `gsm`. This includes `GSM`, `EDGE`, `GPRS`, `HSPA`,
-`HSDPA`, `HSPA+` and `HSUPA`.
+field should be specified as `gsm`. This includes `GSM`, `EDGE` and `GPRS`.
 
 Example:
 
@@ -59,6 +58,10 @@ ta
 
 UMTS
 ====
+
+If the network is either UMTS or any high-data-rate variant of it, the radio
+field should be specified as `umts`. This includes `UMTS`, `HSPA`, `HSDPA`,
+`HSPA+` and `HSUPA`.
 
 Example:
 
