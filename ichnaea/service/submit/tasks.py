@@ -230,6 +230,24 @@ def create_wifi_measure(measure_data, entry):
 
 
 @celery.task(base=DatabaseTask, ignore_result=True)
+def schedule_wifi_cleanup(lower, upper, batch=100):
+    with schedule_wifi_cleanup.db_session() as session:
+        stmt = text("select measure.id from measure left join wifi_measure "
+                    "on measure.id = wifi_measure.measure_id where "
+                    "wifi_measure.measure_id is null and "
+                    "measure.wifi is not null and "
+                    "measure.id > %s and measure.id < %s" % (
+                        lower, upper))
+        ids = session.execute(stmt).fetchall()
+        ids = [int(i[0]) for i in ids]
+        for i in range(0, len(ids), batch):
+            # split list into batch sized chunks
+            reprocess_wifi_measure.delay(ids[i:i + batch])
+        return len(ids)
+    return 0
+
+
+@celery.task(base=DatabaseTask, ignore_result=True)
 def reprocess_wifi_measure(measure_ids, userid=None):
     measures = []
     try:

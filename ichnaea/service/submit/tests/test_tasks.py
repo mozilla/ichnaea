@@ -178,6 +178,29 @@ class TestInsert(CeleryTestCase):
         result = insert_wifi_measure.delay(measure, entries)
         self.assertEqual(result.get(), 0)
 
+    def test_schedule_wifi_cleanup(self):
+        from ichnaea.service.submit.tasks import schedule_wifi_cleanup
+        session = self.db_master_session
+
+        measure_data = dict(lat=10000000, lon=10000000, radio=0)
+        entries = [
+            {"key": "ab12", "channel": 11, "signal": -80},
+            {"key": "ab12", "channel": 3, "signal": -90},
+            {"key": "ab12", "channel": 3, "signal": -80},
+            {"key": "cd34", "channel": 3, "signal": -90},
+        ]
+        measure_data['wifi'] = dumps(entries)
+        measure = Measure(**measure_data)
+        session.add(measure)
+        measure_data['lat'] = 20000000
+        measure_data['lon'] = 20000000
+        measure2 = Measure(**measure_data)
+        session.add(measure2)
+        session.flush()
+
+        result = schedule_wifi_cleanup.delay(measure.id - 1, measure2.id + 1)
+        self.assertEqual(result.get(), 2)
+
     def test_reprocess_wifi(self):
         from ichnaea.service.submit.tasks import reprocess_wifi_measure
         session = self.db_master_session
