@@ -185,6 +185,9 @@ def update_wifi_measure_count(wifi_key, wifis, session, userid=None):
         wifi = wifis[wifi_key]
         if isinstance(wifi.new_measures, (int, long)):
             wifi.new_measures = Wifi.new_measures + 1
+        elif wifi.new_measures is None:
+            # TODO this shouldn't happen, but it does :(
+            wifi.new_measures = 1
         else:
             # already a sql expression
             wifi.new_measures += 1
@@ -193,6 +196,9 @@ def update_wifi_measure_count(wifi_key, wifis, session, userid=None):
                 # count wifis as new until they show up in the search
                 new_wifi += 1
             wifi.total_measures = Wifi.total_measures + 1
+        elif wifi.total_measures is None:
+            # TODO this shouldn't happen, but it does :(
+            wifi.total_measures = 1
         else:
             # already a sql expression
             wifi.total_measures += 1
