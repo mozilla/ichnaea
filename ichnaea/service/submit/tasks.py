@@ -246,8 +246,10 @@ def reprocess_wifi_measure(measure_ids, userid=None):
                     altitude_accuracy=measure.altitude_accuracy,
                     radio=measure.radio,
                 )
-                insert_wifi_measure.delay(
-                    measure_data, loads(measure.wifi), userid=userid)
+                # adds data to this session
+                process_wifi_measure(
+                    session, measure_data, loads(measure.wifi), userid=userid)
+            session.commit()
         return len(measures)
     except IntegrityError as exc:  # pragma: no cover
         # TODO log error

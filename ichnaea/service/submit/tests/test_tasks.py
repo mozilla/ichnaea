@@ -202,6 +202,11 @@ class TestInsert(CeleryTestCase):
         result = reprocess_wifi_measure.delay([measure.id], userid=1)
         self.assertEqual(result.get(), 1)
 
+        measures = session.query(WifiMeasure).all()
+        self.assertEqual(len(measures), 4)
+        wifis = session.query(Wifi).all()
+        self.assertEqual(len(wifis), 2)
+
     def test_wifi_blacklist(self):
         from ichnaea.service.submit.tasks import insert_wifi_measure
         session = self.db_master_session
