@@ -27,7 +27,8 @@
 <tal:slot metal:fill-slot="js_bottom">
 <script type='text/javascript'>
 var map = L.mapbox.map('map', 'mozilla-webprod.g7ilhcl5', {
-    maxZoom: 8
+    maxZoom: 8,
+    tileLayer: { detectRetina: true }
 }).setView([0, 10], 2);
 var markers = new L.MarkerClusterGroup({
     spiderfyOnMaxZoom: false,
