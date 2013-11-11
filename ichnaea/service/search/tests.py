@@ -116,6 +116,32 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "not_found"}')
 
+    def test_wifi_not_found_cell_fallback(self):
+        app = self.app
+        session = self.db_slave_session
+        key = dict(mcc=1, mnc=2, lac=3)
+        data = [
+            Wifi(key="abcd", lat=30000000, lon=30000000),
+            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
+            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        res = app.post_json(
+            '/v1/search',
+            {"radio": "gsm", "cell": [
+                dict(radio="umts", cid=4, **key),
+                dict(radio="umts", cid=5, **key),
+            ], "wifi": [
+                {"key": "abcd"},
+                {"key": "cdef"},
+            ]},
+            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.body, '{"status": "ok", "lat": 1.0010000, '
+                                   '"lon": 1.0020000, "accuracy": 35000}')
+
     def test_error(self):
         app = self.app
         res = app.post_json('/v1/search', {"cell": []}, status=400)
