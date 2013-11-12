@@ -269,9 +269,8 @@ def process_wifi_measure(session, measure_data, entries, userid=None):
         WifiBlacklist.key.in_(wifi_keys)).all()
     blacked = set([b[0] for b in blacked])
     # do we already know about these wifis?
-    wifis = session.query(Wifi.key, Wifi).filter(
-        Wifi.key.in_(wifi_keys))
-    wifis = dict(wifis.all())
+    wifis = session.query(Wifi.key).filter(Wifi.key.in_(wifi_keys))
+    wifis = dict([(w[0], True) for w in wifis.all()])
     for entry in entries:
         wifi_key = entry['key']
         # skip blacklisted wifi AP's
