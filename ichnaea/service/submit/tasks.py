@@ -68,16 +68,10 @@ def update_cell_measure_count(measure, session, userid=None):
             # already a sql expression
             cell.new_measures += 1
         if isinstance(cell.total_measures, (int, long)):
-            if cell.total_measures < 5:
-                # count cells as new until they show up in the search
-                new_cell += 1
             cell.total_measures = Cell.total_measures + 1
         else:
             # already a sql expression
             cell.total_measures += 1
-            if cell.total_measures.right.value < 5:
-                # count cells as new until they show up in the search
-                new_cell += 1
     else:
         cell = Cell(radio=measure.radio, mcc=measure.mcc, mnc=measure.mnc,
                     lac=measure.lac, cid=measure.cid,
