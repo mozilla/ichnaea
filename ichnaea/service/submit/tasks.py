@@ -181,34 +181,17 @@ def convert_frequency(entry):
 
 
 def update_wifi_measure_count(wifi_key, wifis, session, userid=None):
-    # side-effect, modifies wifis
     new_wifi = 0
-    if wifi_key in wifis:
-        wifi = wifis[wifi_key]
-        if isinstance(wifi.new_measures, (int, long)):
-            wifi.new_measures = Wifi.new_measures + 1
-        elif wifi.new_measures is None:
-            # TODO this shouldn't happen, but it does :(
-            wifi.new_measures = 1
-        else:
-            # already a sql expression
-            wifi.new_measures += 1
-        if isinstance(wifi.total_measures, (int, long)):
-            if wifi.total_measures < 5:
-                # count wifis as new until they show up in the search
-                new_wifi += 1
-            wifi.total_measures = Wifi.total_measures + 1
-        elif wifi.total_measures is None:
-            # TODO this shouldn't happen, but it does :(
-            wifi.total_measures = 1
-        else:
-            # already a sql expression
-            wifi.total_measures += 1
-    else:
-        wifis[wifi_key] = wifi = Wifi(
-            key=wifi_key, new_measures=1, total_measures=1)
+    if wifi_key not in wifis:
         new_wifi += 1
-        session.add(wifi)
+        wifis[wifi_key] = True
+
+    stmt = Wifi.__table__.insert(
+        on_duplicate='new_measures = new_measures + 1, '
+                     'total_measures = total_measures + 1').values(
+        key=wifi_key, new_measures=1, total_measures=1)
+    session.execute(stmt)
+
     if userid is not None and new_wifi > 0:
         # update user score
         process_score(userid, new_wifi, session, key='new_wifi')
