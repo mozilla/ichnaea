@@ -1,3 +1,5 @@
+import datetime
+
 from celery.utils.log import get_task_logger
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -183,7 +185,8 @@ def update_wifi_measure_count(wifi_key, wifis, session, userid=None):
     stmt = Wifi.__table__.insert(
         on_duplicate='new_measures = new_measures + 1, '
                      'total_measures = total_measures + 1').values(
-        key=wifi_key, new_measures=1, total_measures=1)
+        key=wifi_key, created=datetime.datetime.utcnow(),
+        new_measures=1, total_measures=1)
     session.execute(stmt)
 
     if userid is not None and new_wifi > 0:
