@@ -38,8 +38,8 @@ def daily_task_days(ago):
     return day, max_day
 
 
-@celery.task(base=DatabaseTask)  # pragma: no cover
-def cleanup_kombu_message_table(ago=0):
+@celery.task(base=DatabaseTask, bind=True)  # pragma: no cover
+def cleanup_kombu_message_table(self, ago=0):
     now = datetime.utcnow()
     now = now.replace(second=0, microsecond=0)
     now -= timedelta(days=ago)
@@ -49,16 +49,16 @@ def cleanup_kombu_message_table(ago=0):
         'delete from kombu_message where visible = 0 and '
         'timestamp < "%s" limit 50000;' % now.isoformat()
     )
-    with cleanup_kombu_message_table.db_session() as session:
+    with self.db_session() as session:
         session.execute(stmt)
         session.commit()
 
 
-@celery.task(base=DatabaseTask)
-def schedule_new_moving_wifi_analysis(ago=1, batch=1000):
+@celery.task(base=DatabaseTask, bind=True)
+def schedule_new_moving_wifi_analysis(self, ago=1, batch=1000):
     day, max_day = daily_task_days(ago)
     try:
-        with schedule_new_moving_wifi_analysis.db_session() as session:
+        with self.db_session() as session:
             query = session.query(
                 func.count(distinct(WifiMeasure.key))).filter(
                 WifiMeasure.created < max_day).filter(
@@ -78,11 +78,11 @@ def schedule_new_moving_wifi_analysis(ago=1, batch=1000):
         # TODO log error
         return 0
     except Exception as exc:  # pragma: no cover
-        raise schedule_new_moving_wifi_analysis.retry(exc=exc)
+        raise self.retry(exc=exc)
 
 
-@celery.task(base=DatabaseTask)
-def blacklist_moving_wifis(ago=1, offset=0, batch=1000):
+@celery.task(base=DatabaseTask, bind=True)
+def blacklist_moving_wifis(self, ago=1, offset=0, batch=1000):
     # TODO: this doesn't take into account wifi AP's which have
     # permanently moved after a certain date
 
@@ -91,7 +91,7 @@ def blacklist_moving_wifis(ago=1, offset=0, batch=1000):
     max_difference = 100000
     day, max_day = daily_task_days(ago)
     try:
-        with blacklist_moving_wifis.db_session() as session:
+        with self.db_session() as session:
             query = session.query(distinct(WifiMeasure.key)).filter(
                 WifiMeasure.created < max_day).filter(
                 WifiMeasure.created >= day).order_by(
@@ -132,14 +132,14 @@ def blacklist_moving_wifis(ago=1, offset=0, batch=1000):
         # TODO log error
         return []
     except Exception as exc:  # pragma: no cover
-        raise blacklist_moving_wifis.retry(exc=exc)
+        raise self.retry(exc=exc)
 
 
-@celery.task(base=DatabaseTask)
-def remove_wifi(wifi_keys):
+@celery.task(base=DatabaseTask, bind=True)
+def remove_wifi(self, wifi_keys):
     wifi_keys = set(wifi_keys)
     try:
-        with remove_wifi.db_session() as session:
+        with self.db_session() as session:
             query = session.query(Wifi).filter(
                 Wifi.key.in_(wifi_keys))
             wifis = query.delete(synchronize_session=False)
@@ -152,14 +152,14 @@ def remove_wifi(wifi_keys):
         # TODO log error
         return 0
     except Exception as exc:  # pragma: no cover
-        raise remove_wifi.retry(exc=exc)
+        raise self.retry(exc=exc)
 
 
-@celery.task(base=DatabaseTask)
-def cell_location_update(min_new=10, max_new=100, batch=10):
+@celery.task(base=DatabaseTask, bind=True)
+def cell_location_update(self, min_new=10, max_new=100, batch=10):
     try:
         cells = []
-        with cell_location_update.db_session() as session:
+        with self.db_session() as session:
             query = session.query(Cell).filter(
                 Cell.new_measures >= min_new).filter(
                 Cell.new_measures < max_new).limit(batch)
@@ -200,14 +200,14 @@ def cell_location_update(min_new=10, max_new=100, batch=10):
         # TODO log error
         return 0
     except Exception as exc:  # pragma: no cover
-        raise cell_location_update.retry(exc=exc)
+        raise self.retry(exc=exc)
 
 
-@celery.task(base=DatabaseTask)
-def wifi_location_update(min_new=10, max_new=100, batch=10):
+@celery.task(base=DatabaseTask, bind=True)
+def wifi_location_update(self, min_new=10, max_new=100, batch=10):
     try:
         wifis = {}
-        with wifi_location_update.db_session() as session:
+        with self.db_session() as session:
             query = session.query(Wifi.key, Wifi).filter(
                 Wifi.new_measures >= min_new).filter(
                 Wifi.new_measures < max_new).limit(batch)
@@ -247,4 +247,4 @@ def wifi_location_update(min_new=10, max_new=100, batch=10):
         # TODO log error
         return 0
     except Exception as exc:  # pragma: no cover
-        raise wifi_location_update.retry(exc=exc)
+        raise self.retry(exc=exc)

@@ -27,11 +27,11 @@ def make_stat(name, time, value):
     return stat
 
 
-@celery.task(base=DatabaseTask)
-def histogram(ago=1):
+@celery.task(base=DatabaseTask, bind=True)
+def histogram(self, ago=1):
     day, max_day = daily_task_days(ago)
     try:
-        with histogram.db_session() as session:
+        with self.db_session() as session:
             value = histogram_query(session, Measure, max_day)
             session.add(make_stat('location', day, value))
             session.commit()
@@ -40,14 +40,14 @@ def histogram(ago=1):
         # TODO log error
         return 0
     except Exception as exc:  # pragma: no cover
-        raise histogram.retry(exc=exc)
+        raise self.retry(exc=exc)
 
 
-@celery.task(base=DatabaseTask)
-def cell_histogram(ago=1):
+@celery.task(base=DatabaseTask, bind=True)
+def cell_histogram(self, ago=1):
     day, max_day = daily_task_days(ago)
     try:
-        with cell_histogram.db_session() as session:
+        with self.db_session() as session:
             value = histogram_query(session, CellMeasure, max_day)
             session.add(make_stat('cell', day, value))
             session.commit()
@@ -56,14 +56,14 @@ def cell_histogram(ago=1):
         # TODO log error
         return 0
     except Exception as exc:  # pragma: no cover
-        raise cell_histogram.retry(exc=exc)
+        raise self.retry(exc=exc)
 
 
-@celery.task(base=DatabaseTask)
-def wifi_histogram(ago=1):
+@celery.task(base=DatabaseTask, bind=True)
+def wifi_histogram(self, ago=1):
     day, max_day = daily_task_days(ago)
     try:
-        with wifi_histogram.db_session() as session:
+        with self.db_session() as session:
             value = histogram_query(session, WifiMeasure, max_day)
             session.add(make_stat('wifi', day, value))
             session.commit()
@@ -72,14 +72,14 @@ def wifi_histogram(ago=1):
         # TODO log error
         return 0
     except Exception as exc:  # pragma: no cover
-        raise wifi_histogram.retry(exc=exc)
+        raise self.retry(exc=exc)
 
 
-@celery.task(base=DatabaseTask)
-def unique_cell_histogram(ago=1):
+@celery.task(base=DatabaseTask, bind=True)
+def unique_cell_histogram(self, ago=1):
     day, max_day = daily_task_days(ago)
     try:
-        with unique_cell_histogram.db_session() as session:
+        with self.db_session() as session:
             query = session.query(
                 CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
                 CellMeasure.lac, CellMeasure.cid).\
@@ -94,14 +94,14 @@ def unique_cell_histogram(ago=1):
         # TODO log error
         return 0
     except Exception as exc:  # pragma: no cover
-        raise unique_cell_histogram.retry(exc=exc)
+        raise self.retry(exc=exc)
 
 
-@celery.task(base=DatabaseTask)
-def unique_wifi_histogram(ago=1):
+@celery.task(base=DatabaseTask, bind=True)
+def unique_wifi_histogram(self, ago=1):
     day, max_day = daily_task_days(ago)
     try:
-        with unique_wifi_histogram.db_session() as session:
+        with self.db_session() as session:
             query = session.query(func.count(distinct(WifiMeasure.key)))
             query = query.filter(WifiMeasure.created < max_day)
             value = query.first()[0]
@@ -112,4 +112,4 @@ def unique_wifi_histogram(ago=1):
         # TODO log error
         return 0
     except Exception as exc:  # pragma: no cover
-        raise unique_wifi_histogram.retry(exc=exc)
+        raise self.retry(exc=exc)

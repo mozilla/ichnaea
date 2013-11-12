@@ -87,9 +87,9 @@ def update_cell_measure_count(measure, session, userid=None):
         process_score(userid, new_cell, session, key='new_cell')
 
 
-@celery.task(base=DatabaseTask)
-def schedule_cell_cleanup(lower, upper, batch=100):
-    with schedule_cell_cleanup.db_session() as session:
+@celery.task(base=DatabaseTask, bind=True)
+def schedule_cell_cleanup(self, lower, upper, batch=100):
+    with self.db_session() as session:
         stmt = text("select measure.id from measure left join cell_measure "
                     "on measure.id = cell_measure.measure_id where "
                     "cell_measure.measure_id is null and "
@@ -105,11 +105,11 @@ def schedule_cell_cleanup(lower, upper, batch=100):
     return 0
 
 
-@celery.task(base=DatabaseTask)
-def reprocess_cell_measure(measure_ids, userid=None):
+@celery.task(base=DatabaseTask, bind=True)
+def reprocess_cell_measure(self, measure_ids, userid=None):
     measures = []
     try:
-        with reprocess_cell_measure.db_session() as session:
+        with self.db_session() as session:
             measures = session.query(Measure).filter(
                 Measure.id.in_(measure_ids)).filter(
                 Measure.cell != sql_null).all()
@@ -131,7 +131,7 @@ def reprocess_cell_measure(measure_ids, userid=None):
         # TODO log error
         return 0
     except Exception as exc:  # pragma: no cover
-        raise reprocess_cell_measure.retry(exc=exc)
+        raise self.retry(exc=exc)
 
 
 def process_cell_measure(session, measure_data, entries, userid=None):
@@ -150,11 +150,11 @@ def process_cell_measure(session, measure_data, entries, userid=None):
     return cell_measures
 
 
-@celery.task(base=DatabaseTask)
-def insert_cell_measure(measure_data, entries, userid=None):
+@celery.task(base=DatabaseTask, bind=True)
+def insert_cell_measure(self, measure_data, entries, userid=None):
     try:
         cell_measures = []
-        with insert_cell_measure.db_session() as session:
+        with self.db_session() as session:
             cell_measures = process_cell_measure(
                 session, measure_data, entries, userid=userid)
             session.commit()
@@ -163,7 +163,7 @@ def insert_cell_measure(measure_data, entries, userid=None):
         # TODO log error
         return 0
     except Exception as exc:  # pragma: no cover
-        raise insert_cell_measure.retry(exc=exc)
+        raise self.retry(exc=exc)
 
 
 def convert_frequency(entry):
@@ -229,9 +229,9 @@ def create_wifi_measure(measure_data, entry):
     )
 
 
-@celery.task(base=DatabaseTask)
-def schedule_wifi_cleanup(lower, upper, batch=100):
-    with schedule_wifi_cleanup.db_session() as session:
+@celery.task(base=DatabaseTask, bind=True)
+def schedule_wifi_cleanup(self, lower, upper, batch=100):
+    with self.db_session() as session:
         stmt = text("select measure.id from measure left join wifi_measure "
                     "on measure.id = wifi_measure.measure_id where "
                     "wifi_measure.measure_id is null and "
@@ -247,11 +247,11 @@ def schedule_wifi_cleanup(lower, upper, batch=100):
     return 0
 
 
-@celery.task(base=DatabaseTask)
-def reprocess_wifi_measure(measure_ids, userid=None):
+@celery.task(base=DatabaseTask, bind=True)
+def reprocess_wifi_measure(self, measure_ids, userid=None):
     measures = []
     try:
-        with reprocess_wifi_measure.db_session() as session:
+        with self.db_session() as session:
             measures = session.query(Measure).filter(
                 Measure.id.in_(measure_ids)).filter(
                 Measure.wifi != sql_null).all()
@@ -273,7 +273,7 @@ def reprocess_wifi_measure(measure_ids, userid=None):
         # TODO log error
         return 0
     except Exception as exc:  # pragma: no cover
-        raise reprocess_wifi_measure.retry(exc=exc)
+        raise self.retry(exc=exc)
 
 
 def process_wifi_measure(session, measure_data, entries, userid=None):
@@ -302,11 +302,11 @@ def process_wifi_measure(session, measure_data, entries, userid=None):
     return wifi_measures
 
 
-@celery.task(base=DatabaseTask)
-def insert_wifi_measure(measure_data, entries, userid=None):
+@celery.task(base=DatabaseTask, bind=True)
+def insert_wifi_measure(self, measure_data, entries, userid=None):
     wifi_measures = []
     try:
-        with insert_wifi_measure.db_session() as session:
+        with self.db_session() as session:
             wifi_measures = process_wifi_measure(
                 session, measure_data, entries, userid=userid)
             session.commit()
@@ -315,4 +315,4 @@ def insert_wifi_measure(measure_data, entries, userid=None):
         # TODO log error
         return 0
     except Exception as exc:  # pragma: no cover
-        raise insert_wifi_measure.retry(exc=exc)
+        raise self.retry(exc=exc)
