@@ -23,7 +23,7 @@ from ichnaea.worker import celery
 class DatabaseTask(Task):
     abstract = True
     acks_late = True
-    ignore_result = False
+    ignore_result = True
     max_retries = 3
 
     def db_session(self):
@@ -38,7 +38,7 @@ def daily_task_days(ago):
     return day, max_day
 
 
-@celery.task(base=DatabaseTask, ignore_result=False)  # pragma: no cover
+@celery.task(base=DatabaseTask)  # pragma: no cover
 def cleanup_kombu_message_table(ago=0):
     now = datetime.utcnow()
     now = now.replace(second=0, microsecond=0)
@@ -54,7 +54,7 @@ def cleanup_kombu_message_table(ago=0):
         session.commit()
 
 
-@celery.task(base=DatabaseTask, ignore_result=True)
+@celery.task(base=DatabaseTask)
 def schedule_new_moving_wifi_analysis(ago=1, batch=1000):
     day, max_day = daily_task_days(ago)
     try:
@@ -81,7 +81,7 @@ def schedule_new_moving_wifi_analysis(ago=1, batch=1000):
         raise schedule_new_moving_wifi_analysis.retry(exc=exc)
 
 
-@celery.task(base=DatabaseTask, ignore_result=True)
+@celery.task(base=DatabaseTask)
 def blacklist_moving_wifis(ago=1, offset=0, batch=1000):
     # TODO: this doesn't take into account wifi AP's which have
     # permanently moved after a certain date
@@ -135,7 +135,7 @@ def blacklist_moving_wifis(ago=1, offset=0, batch=1000):
         raise blacklist_moving_wifis.retry(exc=exc)
 
 
-@celery.task(base=DatabaseTask, ignore_result=True)
+@celery.task(base=DatabaseTask)
 def remove_wifi(wifi_keys):
     wifi_keys = set(wifi_keys)
     try:
@@ -155,7 +155,7 @@ def remove_wifi(wifi_keys):
         raise remove_wifi.retry(exc=exc)
 
 
-@celery.task(base=DatabaseTask, ignore_result=True)
+@celery.task(base=DatabaseTask)
 def cell_location_update(min_new=10, max_new=100, batch=10):
     try:
         cells = []
@@ -203,7 +203,7 @@ def cell_location_update(min_new=10, max_new=100, batch=10):
         raise cell_location_update.retry(exc=exc)
 
 
-@celery.task(base=DatabaseTask, ignore_result=True)
+@celery.task(base=DatabaseTask)
 def wifi_location_update(min_new=10, max_new=100, batch=10):
     try:
         wifis = {}

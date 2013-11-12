@@ -87,7 +87,7 @@ def update_cell_measure_count(measure, session, userid=None):
         process_score(userid, new_cell, session, key='new_cell')
 
 
-@celery.task(base=DatabaseTask, ignore_result=True)
+@celery.task(base=DatabaseTask)
 def schedule_cell_cleanup(lower, upper, batch=100):
     with schedule_cell_cleanup.db_session() as session:
         stmt = text("select measure.id from measure left join cell_measure "
@@ -105,7 +105,7 @@ def schedule_cell_cleanup(lower, upper, batch=100):
     return 0
 
 
-@celery.task(base=DatabaseTask, ignore_result=True)
+@celery.task(base=DatabaseTask)
 def reprocess_cell_measure(measure_ids, userid=None):
     measures = []
     try:
@@ -150,7 +150,7 @@ def process_cell_measure(session, measure_data, entries, userid=None):
     return cell_measures
 
 
-@celery.task(base=DatabaseTask, ignore_result=True)
+@celery.task(base=DatabaseTask)
 def insert_cell_measure(measure_data, entries, userid=None):
     try:
         cell_measures = []
@@ -229,7 +229,7 @@ def create_wifi_measure(measure_data, entry):
     )
 
 
-@celery.task(base=DatabaseTask, ignore_result=True)
+@celery.task(base=DatabaseTask)
 def schedule_wifi_cleanup(lower, upper, batch=100):
     with schedule_wifi_cleanup.db_session() as session:
         stmt = text("select measure.id from measure left join wifi_measure "
@@ -247,7 +247,7 @@ def schedule_wifi_cleanup(lower, upper, batch=100):
     return 0
 
 
-@celery.task(base=DatabaseTask, ignore_result=True)
+@celery.task(base=DatabaseTask)
 def reprocess_wifi_measure(measure_ids, userid=None):
     measures = []
     try:
@@ -302,7 +302,7 @@ def process_wifi_measure(session, measure_data, entries, userid=None):
     return wifi_measures
 
 
-@celery.task(base=DatabaseTask, ignore_result=True)
+@celery.task(base=DatabaseTask)
 def insert_wifi_measure(measure_data, entries, userid=None):
     wifi_measures = []
     try:
