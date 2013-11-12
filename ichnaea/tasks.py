@@ -4,6 +4,7 @@ from datetime import timedelta
 from operator import attrgetter
 
 from celery import Task
+from celery.utils.log import get_task_logger
 from sqlalchemy import distinct
 from sqlalchemy import func
 from sqlalchemy import text
@@ -18,6 +19,8 @@ from ichnaea.models import (
     WifiMeasure,
 )
 from ichnaea.worker import celery
+
+logger = get_task_logger(__name__)
 
 
 class DatabaseTask(Task):
@@ -75,7 +78,7 @@ def schedule_new_moving_wifi_analysis(self, ago=1, batch=1000):
                 offset += batch
             return len(batches)
     except IntegrityError as exc:  # pragma: no cover
-        # TODO log error
+        logger.exception('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -129,7 +132,7 @@ def blacklist_moving_wifis(self, ago=1, offset=0, batch=1000):
                 session.commit()
             return moving_keys
     except IntegrityError as exc:  # pragma: no cover
-        # TODO log error
+        logger.exception('error')
         return []
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -149,7 +152,7 @@ def remove_wifi(self, wifi_keys):
             session.commit()
         return (wifis, measures)
     except IntegrityError as exc:  # pragma: no cover
-        # TODO log error
+        logger.exception('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -197,7 +200,7 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
             session.commit()
         return len(cells)
     except IntegrityError as exc:  # pragma: no cover
-        # TODO log error
+        logger.exception('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -244,7 +247,7 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
             session.commit()
         return len(wifis)
     except IntegrityError as exc:  # pragma: no cover
-        # TODO log error
+        logger.exception('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)

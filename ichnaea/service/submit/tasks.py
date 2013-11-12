@@ -1,3 +1,4 @@
+from celery.utils.log import get_task_logger
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
@@ -20,6 +21,7 @@ from ichnaea.worker import celery
 
 from ichnaea.service.submit.utils import process_score
 
+logger = get_task_logger(__name__)
 sql_null = None  # avoid pep8 warning
 
 
@@ -128,7 +130,7 @@ def reprocess_cell_measure(self, measure_ids, userid=None):
             session.commit()
         return len(measures)
     except IntegrityError as exc:  # pragma: no cover
-        # TODO log error
+        logger.exception('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -160,7 +162,7 @@ def insert_cell_measure(self, measure_data, entries, userid=None):
             session.commit()
         return len(cell_measures)
     except IntegrityError as exc:  # pragma: no cover
-        # TODO log error
+        logger.exception('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -270,7 +272,7 @@ def reprocess_wifi_measure(self, measure_ids, userid=None):
             session.commit()
         return len(measures)
     except IntegrityError as exc:  # pragma: no cover
-        # TODO log error
+        logger.exception('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -312,7 +314,7 @@ def insert_wifi_measure(self, measure_data, entries, userid=None):
             session.commit()
         return len(wifi_measures)
     except IntegrityError as exc:
-        # TODO log error
+        logger.exception('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
