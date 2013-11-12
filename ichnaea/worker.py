@@ -15,9 +15,6 @@ CELERY_IMPORTS = [
     'ichnaea.content.tasks',
     'ichnaea.service.submit.tasks',
 ]
-# add test-only tasks
-if 'CELERY_ALWAYS_EAGER' in os.environ:
-    CELERY_IMPORTS.append('ichnaea.tests.test_tasks')
 
 CELERYBEAT_SCHEDULE = {
     'cleanup-kombu-message-table': {
