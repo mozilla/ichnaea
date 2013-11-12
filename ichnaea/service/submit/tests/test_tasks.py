@@ -107,7 +107,7 @@ class TestInsert(CeleryTestCase):
             altitude_accuracy=0, radio=0,
         )
         entries = [
-            {"mcc": 1, "mnc": 2, "signal": -100},
+            {"mcc": 1, "mnc": 2, "lac": -1, "cid": -1, "signal": -100},
             {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
             {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "asu": 8},
             {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "asu": 15},
@@ -124,7 +124,7 @@ class TestInsert(CeleryTestCase):
         measures = session.query(CellMeasure).all()
         self.assertEqual(len(measures), 5)
         cells = session.query(Cell).all()
-        self.assertEqual(len(cells), 4)
+        self.assertEqual(len(cells), 3)
 
     def test_wifi(self):
         from ichnaea.service.submit.tasks import insert_wifi_measure

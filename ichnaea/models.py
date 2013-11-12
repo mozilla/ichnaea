@@ -34,7 +34,8 @@ def normalize_wifi_key(key):
 class Cell(_Model):
     __tablename__ = 'cell'
     __table_args__ = (
-        Index('cell_idx', 'radio', 'mcc', 'mnc', 'lac', 'cid'),
+        UniqueConstraint(
+            'radio', 'mcc', 'mnc', 'lac', 'cid', name='cell_idx_unique'),
         Index('cell_created_idx', 'created'),
         Index('cell_new_measures_idx', 'new_measures'),
         {
@@ -65,6 +66,10 @@ class Cell(_Model):
     def __init__(self, *args, **kw):
         if 'created' not in kw:
             kw['created'] = datetime.datetime.utcnow()
+        if 'lac' not in kw:
+            kw['lac'] = -1
+        if 'cid' not in kw:
+            kw['cid'] = -1
         if 'new_measures' not in kw:
             kw['new_measures'] = 0
         if 'total_measures' not in kw:
