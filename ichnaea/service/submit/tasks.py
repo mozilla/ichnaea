@@ -63,23 +63,17 @@ def update_cell_measure_count(measure, session, userid=None):
     )
     cell = query.first()
     new_cell = 0
-    if cell:
-        if isinstance(cell.new_measures, (int, long)):
-            cell.new_measures = Cell.new_measures + 1
-        else:
-            # already a sql expression
-            cell.new_measures += 1
-        if isinstance(cell.total_measures, (int, long)):
-            cell.total_measures = Cell.total_measures + 1
-        else:
-            # already a sql expression
-            cell.total_measures += 1
-    else:
-        cell = Cell(radio=measure.radio, mcc=measure.mcc, mnc=measure.mnc,
-                    lac=measure.lac, cid=measure.cid,
-                    new_measures=1, total_measures=1)
+    if cell is None:
         new_cell += 1
-        session.add(cell)
+
+    stmt = Cell.__table__.insert(
+        on_duplicate='new_measures = new_measures + 1, '
+                     'total_measures = total_measures + 1').values(
+        created=datetime.datetime.utcnow(), radio=measure.radio,
+        mcc=measure.mcc, mnc=measure.mnc, lac=measure.lac, cid=measure.cid,
+        new_measures=1, total_measures=1)
+    session.execute(stmt)
+
     if userid is not None and new_cell > 0:
         # update user score
         process_score(userid, new_cell, session, key='new_cell')
