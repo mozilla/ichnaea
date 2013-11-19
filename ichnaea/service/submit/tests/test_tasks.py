@@ -24,7 +24,7 @@ class TestInsert(CeleryTestCase):
     def test_cell(self):
         from ichnaea.service.submit.tasks import insert_cell_measure
         session = self.db_master_session
-        utcnow = datetime.utcnow()
+        utcnow = datetime.utcnow().replace(microsecond=0)
 
         session.add(Cell(radio=0, mcc=1, mnc=2, lac=3, cid=4,
                          new_measures=2, total_measures=5))
@@ -99,7 +99,7 @@ class TestInsert(CeleryTestCase):
     def test_reprocess_cell(self):
         from ichnaea.service.submit.tasks import reprocess_cell_measure
         session = self.db_master_session
-        utcnow = datetime.utcnow()
+        utcnow = datetime.utcnow().replace(microsecond=0)
 
         measure_data = dict(
             created=encode_datetime(utcnow), lat=10000000, lon=20000000,
@@ -129,7 +129,7 @@ class TestInsert(CeleryTestCase):
     def test_wifi(self):
         from ichnaea.service.submit.tasks import insert_wifi_measure
         session = self.db_master_session
-        utcnow = datetime.utcnow()
+        utcnow = datetime.utcnow().replace(microsecond=0)
 
         session.add(Wifi(key="ab12"))
         session.add(Score(userid=1, key=SCORE_TYPE['new_wifi'], value=7))
@@ -204,7 +204,7 @@ class TestInsert(CeleryTestCase):
     def test_reprocess_wifi(self):
         from ichnaea.service.submit.tasks import reprocess_wifi_measure
         session = self.db_master_session
-        utcnow = datetime.utcnow()
+        utcnow = datetime.utcnow().replace(microsecond=0)
 
         measure_data = dict(
             created=encode_datetime(utcnow), lat=10000000, lon=20000000,
