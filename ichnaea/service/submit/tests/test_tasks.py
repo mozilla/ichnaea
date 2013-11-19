@@ -1,4 +1,7 @@
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+)
 
 from ichnaea.content.models import (
     Score,
@@ -24,7 +27,7 @@ class TestInsert(CeleryTestCase):
     def test_cell(self):
         from ichnaea.service.submit.tasks import insert_cell_measure
         session = self.db_master_session
-        utcnow = datetime.utcnow().replace(microsecond=0)
+        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
         session.add(Cell(radio=0, mcc=1, mnc=2, lac=3, cid=4,
                          new_measures=2, total_measures=5))
@@ -32,8 +35,8 @@ class TestInsert(CeleryTestCase):
         session.flush()
 
         measure = dict(
-            id=0, created=encode_datetime(utcnow), lat=10000000, lon=20000000,
-            time=encode_datetime(utcnow), accuracy=0, altitude=0,
+            id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
+            time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=0,
         )
         entries = [
@@ -99,11 +102,11 @@ class TestInsert(CeleryTestCase):
     def test_reprocess_cell(self):
         from ichnaea.service.submit.tasks import reprocess_cell_measure
         session = self.db_master_session
-        utcnow = datetime.utcnow().replace(microsecond=0)
+        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
         measure_data = dict(
-            created=encode_datetime(utcnow), lat=10000000, lon=20000000,
-            time=encode_datetime(utcnow), accuracy=0, altitude=0,
+            created=encode_datetime(time), lat=10000000, lon=20000000,
+            time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=0,
         )
         entries = [
@@ -129,15 +132,15 @@ class TestInsert(CeleryTestCase):
     def test_wifi(self):
         from ichnaea.service.submit.tasks import insert_wifi_measure
         session = self.db_master_session
-        utcnow = datetime.utcnow().replace(microsecond=0)
+        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
         session.add(Wifi(key="ab12"))
         session.add(Score(userid=1, key=SCORE_TYPE['new_wifi'], value=7))
         session.flush()
 
         measure = dict(
-            id=0, created=encode_datetime(utcnow), lat=10000000, lon=20000000,
-            time=encode_datetime(utcnow), accuracy=0, altitude=0,
+            id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
+            time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=-1,
         )
         entries = [
@@ -204,11 +207,11 @@ class TestInsert(CeleryTestCase):
     def test_reprocess_wifi(self):
         from ichnaea.service.submit.tasks import reprocess_wifi_measure
         session = self.db_master_session
-        utcnow = datetime.utcnow().replace(microsecond=0)
+        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
         measure_data = dict(
-            created=encode_datetime(utcnow), lat=10000000, lon=20000000,
-            time=encode_datetime(utcnow), accuracy=0, altitude=0,
+            created=encode_datetime(time), lat=10000000, lon=20000000,
+            time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=0,
         )
         entries = [
@@ -230,7 +233,7 @@ class TestInsert(CeleryTestCase):
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 2)
         # re-processed entries gain the original creation date
-        self.assertEqual(set([w.created for w in wifis]), set([utcnow]))
+        self.assertEqual(set([w.created for w in wifis]), set([time]))
 
     def test_wifi_blacklist(self):
         from ichnaea.service.submit.tasks import insert_wifi_measure
