@@ -1,5 +1,3 @@
-import datetime
-
 from celery.utils.log import get_task_logger
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
