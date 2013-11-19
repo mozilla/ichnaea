@@ -34,7 +34,19 @@ def global_stats(session):
 
     result = {}
     for name in names:
-        result[name] = stats.get(STAT_TYPE[name], 0)
+        stat_key = STAT_TYPE[name]
+        try:
+            result[name] = stats[stat_key]
+        except KeyError:
+            # no stats entry available, maybe closely after midnight
+            # and task hasn't run yet, take latest value
+            row = session.query(Stat.value).filter(
+                Stat.key == stat_key).order_by(
+                Stat.time.desc()).limit(1).first()
+            if row is not None:
+                result[name] = row[0]
+            else:
+                result[name] = 0
     return result
 
 
