@@ -249,8 +249,13 @@ class TestInsert(CeleryTestCase):
         entries = [{"key": good_key}, {"key": good_key}, {"key": bad_key}]
 
         result = insert_wifi_measure.delay(measure, entries)
-        self.assertEqual(result.get(), 2)
+        self.assertEqual(result.get(), 3)
 
         measures = session.query(WifiMeasure).all()
-        self.assertEqual(len(measures), 2)
-        self.assertEqual(set([m.key for m in measures]), set([good_key]))
+        self.assertEqual(len(measures), 3)
+        self.assertEqual(
+            set([m.key for m in measures]), set([bad_key, good_key]))
+
+        wifis = session.query(Wifi).all()
+        self.assertEqual(len(wifis), 1)
+        self.assertEqual(set([w.key for w in wifis]), set([good_key]))

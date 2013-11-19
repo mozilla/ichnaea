@@ -39,15 +39,16 @@ class TestBlacklist(CeleryTestCase):
         session.commit()
 
         result = blacklist_moving_wifis.delay(ago=0)
-        self.assertEqual(sorted(result.get()), sorted([k2, k3, k4]))
+        self.assertEqual(set(result.get()), set([k2, k3, k4]))
 
-        measures = session.query(WifiBlacklist).all()
-        self.assertEqual(len(measures), 4)
-        self.assertEqual(set([m.key for m in measures]), set([k2, k3, k4, k5]))
+        black = session.query(WifiBlacklist).all()
+        self.assertEqual(len(black), 4)
+        self.assertEqual(set([b.key for b in black]), set([k2, k3, k4, k5]))
 
         measures = session.query(WifiMeasure).all()
-        self.assertEqual(len(measures), 5)
-        self.assertEqual(set([m.key for m in measures]), set([k1, k5]))
+        self.assertEqual(len(measures), 11)
+        self.assertEqual(
+            set([m.key for m in measures]), set([k1, k2, k3, k4, k5]))
 
         # test duplicate call
         result = blacklist_moving_wifis.delay(ago=0)
@@ -94,13 +95,19 @@ class TestBlacklist(CeleryTestCase):
         session.flush()
 
         result = remove_wifi.delay(wifi_keys[:2])
-        self.assertEqual(result.get(), (2, 4))
+        self.assertEqual(result.get(), 2)
+
+        wifis = session.query(Wifi).all()
+        self.assertEqual(len(wifis), 3)
 
         result = remove_wifi.delay(wifi_keys)
-        self.assertEqual(result.get(), (3, 6))
+        self.assertEqual(result.get(), 3)
 
         result = remove_wifi.delay(wifi_keys)
-        self.assertEqual(result.get(), (0, 0))
+        self.assertEqual(result.get(), 0)
+
+        wifis = session.query(Wifi).all()
+        self.assertEqual(len(wifis), 0)
 
 
 class TestCellLocationUpdate(CeleryTestCase):

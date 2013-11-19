@@ -146,11 +146,8 @@ def remove_wifi(self, wifi_keys):
             query = session.query(Wifi).filter(
                 Wifi.key.in_(wifi_keys))
             wifis = query.delete(synchronize_session=False)
-            query = session.query(WifiMeasure).filter(
-                WifiMeasure.key.in_(wifi_keys))
-            measures = query.delete(synchronize_session=False)
             session.commit()
-        return (wifis, measures)
+        return wifis
     except IntegrityError as exc:  # pragma: no cover
         logger.exception('error')
         return 0

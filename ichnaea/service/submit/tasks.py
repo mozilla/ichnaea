@@ -265,15 +265,14 @@ def process_wifi_measure(session, measure_data, entries, userid=None):
     created = decode_datetime(measure_data.get('created', ''))
     for entry in entries:
         wifi_key = entry['key']
-        # skip blacklisted wifi AP's
-        if wifi_key in blacked:
-            continue
         # convert frequency into channel numbers and remove frequency
         convert_frequency(entry)
         wifi_measures.append(create_wifi_measure(measure_data, created, entry))
         # update new/total measure counts
-        update_wifi_measure_count(
-            wifi_key, wifis, created, session, userid=userid)
+        if wifi_key not in blacked:
+            # skip blacklisted wifi AP's
+            update_wifi_measure_count(
+                wifi_key, wifis, created, session, userid=userid)
     session.add_all(wifi_measures)
     return wifi_measures
 
