@@ -6,8 +6,10 @@ from ichnaea.content.models import (
     STAT_TYPE,
 )
 from ichnaea.models import (
+    Cell,
     CellMeasure,
     Measure,
+    Wifi,
     WifiMeasure,
 )
 from ichnaea.tests.base import CeleryTestCase
@@ -116,16 +118,15 @@ class TestStats(CeleryTestCase):
         one_day = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(40))
-        measures = [
-            CellMeasure(created=long_ago, radio=0, mcc=1, mnc=2, lac=3, cid=4),
-            CellMeasure(created=two_days, radio=2, mcc=1, mnc=2, lac=3, cid=4),
-            CellMeasure(created=two_days, radio=0, mcc=1, mnc=2, lac=3, cid=4),
-            CellMeasure(created=two_days, radio=0, mcc=2, mnc=2, lac=3, cid=4),
-            CellMeasure(created=one_day, radio=0, mcc=2, mnc=2, lac=3, cid=5),
-            CellMeasure(created=today, radio=0, mcc=1, mnc=3, lac=3, cid=4),
-            CellMeasure(created=today, radio=0, mcc=1, mnc=2, lac=4, cid=4),
+        cells = [
+            Cell(created=long_ago, radio=0, mcc=1, mnc=2, lac=3, cid=4),
+            Cell(created=two_days, radio=2, mcc=1, mnc=2, lac=3, cid=4),
+            Cell(created=two_days, radio=2, mcc=1, mnc=2, lac=3, cid=5),
+            Cell(created=one_day, radio=0, mcc=2, mnc=2, lac=3, cid=5),
+            Cell(created=today, radio=0, mcc=1, mnc=3, lac=3, cid=4),
+            Cell(created=today, radio=0, mcc=1, mnc=2, lac=4, cid=4),
         ]
-        session.add_all(measures)
+        session.add_all(cells)
         session.commit()
 
         result = unique_cell_histogram.delay(ago=40)
@@ -212,18 +213,18 @@ class TestStats(CeleryTestCase):
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(40))
         k1 = "ab1234567890"
-        k2 = "cd1234567890"
-        k3 = "ef1234567890"
-        measures = [
-            WifiMeasure(lat=10000000, lon=20000000, created=long_ago, key=k1),
-            WifiMeasure(lat=10000000, lon=20000000, created=two_days, key=k1),
-            WifiMeasure(lat=10000000, lon=20000000, created=two_days, key=k2),
-            WifiMeasure(lat=10000000, lon=20000000, created=two_days, key=k1),
-            WifiMeasure(lat=10000000, lon=20000000, created=yesterday, key=k3),
-            WifiMeasure(lat=10000000, lon=20000000, created=today, key=k2),
-            WifiMeasure(lat=10000000, lon=20000000, created=today, key=k3),
+        k2 = "bc1234567890"
+        k3 = "cd1234567890"
+        k4 = "de1234567890"
+        k5 = "ef1234567890"
+        wifis = [
+            Wifi(created=long_ago, key=k1),
+            Wifi(created=two_days, key=k2),
+            Wifi(created=yesterday, key=k3),
+            Wifi(created=yesterday, key=k4),
+            Wifi(created=today, key=k5),
         ]
-        session.add_all(measures)
+        session.add_all(wifis)
         session.commit()
 
         result = unique_wifi_histogram.delay(ago=40)
@@ -248,9 +249,9 @@ class TestStats(CeleryTestCase):
         self.assertEqual(stats[1].time, two_days)
         self.assertEqual(stats[1].value, 2)
         self.assertEqual(stats[2].time, yesterday)
-        self.assertEqual(stats[2].value, 3)
+        self.assertEqual(stats[2].value, 4)
         self.assertEqual(stats[3].time, today)
-        self.assertEqual(stats[3].value, 3)
+        self.assertEqual(stats[3].value, 5)
 
         # test duplicate execution
         result = unique_wifi_histogram.delay()

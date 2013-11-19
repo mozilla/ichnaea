@@ -1,12 +1,13 @@
 from celery.utils.log import get_task_logger
-from sqlalchemy import distinct
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from ichnaea.content.models import Stat
 from ichnaea.models import (
+    Cell,
     CellMeasure,
     Measure,
+    Wifi,
     WifiMeasure,
 )
 from ichnaea.tasks import (
@@ -83,13 +84,7 @@ def unique_cell_histogram(self, ago=1):
     day, max_day = daily_task_days(ago)
     try:
         with self.db_session() as session:
-            query = session.query(
-                CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
-                CellMeasure.lac, CellMeasure.cid).\
-                group_by(CellMeasure.radio, CellMeasure.mcc, CellMeasure.mnc,
-                         CellMeasure.lac, CellMeasure.cid)
-            query = query.filter(CellMeasure.created < max_day)
-            value = query.count()
+            value = histogram_query(session, Cell, max_day)
             session.add(make_stat('unique_cell', day, value))
             session.commit()
             return 1
@@ -105,9 +100,7 @@ def unique_wifi_histogram(self, ago=1):
     day, max_day = daily_task_days(ago)
     try:
         with self.db_session() as session:
-            query = session.query(func.count(distinct(WifiMeasure.key)))
-            query = query.filter(WifiMeasure.created < max_day)
-            value = query.first()[0]
+            value = histogram_query(session, Wifi, max_day)
             session.add(make_stat('unique_wifi', day, value))
             session.commit()
             return 1
