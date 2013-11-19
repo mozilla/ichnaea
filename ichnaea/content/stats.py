@@ -109,8 +109,8 @@ def map_csv(session):
 
 
 def map_world_csv(session):
-    select = text("select round(lat / 20) as lat1, "
-                  "round(lon / 20) as lon1, count(*) as value "
+    select = text("select round(lat / 50) as lat1, "
+                  "round(lon / 50) as lon1, count(*) as value "
                   "from mapstat group by lat1, lon1 "
                   "order by lat1, lon1")
     result = session.execute(select)
@@ -118,5 +118,5 @@ def map_world_csv(session):
     csvwriter = csv.writer(rows)
     csvwriter.writerow(('lat', 'lon', 'value'))
     for lat, lon, value in result.fetchall():
-        csvwriter.writerow((int(lat) / 50.0, int(lon) / 50.0, int(value)))
+        csvwriter.writerow((int(lat) / 20.0, int(lon) / 20.0, int(value)))
     return rows.getvalue()

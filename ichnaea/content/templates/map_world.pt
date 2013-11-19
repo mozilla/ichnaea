@@ -17,7 +17,7 @@
 <section id="main-content">
     <p>
         A map showing all covered areas. Each marker shows the center
-        of a roughly 2km by 2km area, in which we have at least
+        of a roughly 5km by 5km area, in which we have at least
         one measurement.
     </p>
     <div id='map'></div>
