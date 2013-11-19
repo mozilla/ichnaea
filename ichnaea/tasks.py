@@ -89,9 +89,9 @@ def blacklist_moving_wifis(self, ago=1, offset=0, batch=1000):
     # TODO: this doesn't take into account wifi AP's which have
     # permanently moved after a certain date
 
-    # maximum difference of two decimal places, ~1km at equator
-    # or 500m at 67 degrees north
-    max_difference = 100000
+    # maximum difference of two decimal places, ~5km at equator
+    # or ~2km at 67 degrees north
+    max_difference = 500000
     day, max_day = daily_task_days(ago)
     try:
         with self.db_session() as session:

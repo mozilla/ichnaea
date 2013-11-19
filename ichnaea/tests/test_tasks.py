@@ -26,11 +26,11 @@ class TestBlacklist(CeleryTestCase):
             WifiMeasure(lat=10020000, lon=10050000, key=k1),
             WifiMeasure(lat=10030000, lon=10090000, key=k1),
             WifiMeasure(lat=20100000, lon=20000000, key=k2),
-            WifiMeasure(lat=20200000, lon=20000000, key=k2),
+            WifiMeasure(lat=20700000, lon=20000000, key=k2),
             WifiMeasure(lat=30000000, lon=30000000, key=k3),
             WifiMeasure(lat=-30000000, lon=30000000, key=k3),
             WifiMeasure(lat=-41000000, lon=40000000, key=k4),
-            WifiMeasure(lat=-41100000, lon=40000000, key=k4),
+            WifiMeasure(lat=-41600000, lon=40000000, key=k4),
             WifiMeasure(lat=50000000, lon=50000000, key=k5),
             WifiMeasure(lat=51000000, lon=50000000, key=k5),
         ]
