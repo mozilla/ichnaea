@@ -54,15 +54,11 @@
     </div>
     <div style="clear:both">
         <h3>Unique WiFi access points in the last 30 days</h3>
-        <p>
-            This graph is currently not available, while we catch up on
-            data processing.
-        </p>
-        <!-- <div id="unique_wifi_chart" class="chart_container">
+        <div id="unique_wifi_chart" class="chart_container">
                 <div class="chart_y_axis"></div>
                 <div class="chart"></div>
                 <div class="chart_x_axis"></div>
-        </div> -->
+        </div>
     </div>
 </section>
 </tal:slot>
@@ -186,7 +182,7 @@ function make_graph(url, graph_id) {
 
 make_graph('/stats_location.json', '#location_chart');
 make_graph('/stats_unique_cell.json', '#unique_cell_chart');
-// make_graph('/stats_unique_wifi.json', '#unique_wifi_chart');
+make_graph('/stats_unique_wifi.json', '#unique_wifi_chart');
 
 </script>
 </tal:slot>
