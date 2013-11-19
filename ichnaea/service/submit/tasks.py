@@ -170,7 +170,7 @@ def convert_frequency(entry):
             entry['channel'] = (freq - 5000) // 5
 
 
-def update_wifi_measure_count(wifi_key, wifis, session, userid=None):
+def update_wifi_measure_count(wifi_key, wifis, created, session, userid=None):
     new_wifi = 0
     if wifi_key not in wifis:
         new_wifi += 1
@@ -179,7 +179,7 @@ def update_wifi_measure_count(wifi_key, wifis, session, userid=None):
     stmt = Wifi.__table__.insert(
         on_duplicate='new_measures = new_measures + 1, '
                      'total_measures = total_measures + 1').values(
-        key=wifi_key, created=datetime.datetime.utcnow(),
+        key=wifi_key, created=created,
         new_measures=1, total_measures=1)
     session.execute(stmt)
 
@@ -188,10 +188,10 @@ def update_wifi_measure_count(wifi_key, wifis, session, userid=None):
         process_score(userid, new_wifi, session, key='new_wifi')
 
 
-def create_wifi_measure(measure_data, entry):
+def create_wifi_measure(measure_data, created, entry):
     return WifiMeasure(
         measure_id=measure_data['id'],
-        created=decode_datetime(measure_data.get('created', '')),
+        created=created,
         lat=measure_data['lat'],
         lon=measure_data['lon'],
         time=decode_datetime(measure_data.get('time', '')),
@@ -262,6 +262,7 @@ def process_wifi_measure(session, measure_data, entries, userid=None):
     # do we already know about these wifis?
     wifis = session.query(Wifi.key).filter(Wifi.key.in_(wifi_keys))
     wifis = dict([(w[0], True) for w in wifis.all()])
+    created = decode_datetime(measure_data.get('created', ''))
     for entry in entries:
         wifi_key = entry['key']
         # skip blacklisted wifi AP's
@@ -269,10 +270,10 @@ def process_wifi_measure(session, measure_data, entries, userid=None):
             continue
         # convert frequency into channel numbers and remove frequency
         convert_frequency(entry)
-        wifi_measures.append(create_wifi_measure(measure_data, entry))
+        wifi_measures.append(create_wifi_measure(measure_data, created, entry))
         # update new/total measure counts
         update_wifi_measure_count(
-            wifi_key, wifis, session, userid=userid)
+            wifi_key, wifis, created, session, userid=userid)
     session.add_all(wifi_measures)
     return wifi_measures
 

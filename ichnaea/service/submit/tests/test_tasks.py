@@ -229,6 +229,8 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(len(measures), 4)
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 2)
+        # re-processed entries gain the original creation date
+        self.assertEqual(set([w.created for w in wifis]), set([utcnow]))
 
     def test_wifi_blacklist(self):
         from ichnaea.service.submit.tasks import insert_wifi_measure
