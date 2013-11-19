@@ -93,6 +93,8 @@ def blacklist_moving_wifis(self, ago=1, offset=0, batch=1000):
     # or ~2km at 67 degrees north
     max_difference = 500000
     day, max_day = daily_task_days(ago)
+    # only look at the past 30 days for movement
+    max_past_days = day - timedelta(days=30)
     try:
         with self.db_session() as session:
             query = session.query(distinct(WifiMeasure.key)).filter(
@@ -108,7 +110,8 @@ def blacklist_moving_wifis(self, ago=1, offset=0, batch=1000):
                 WifiMeasure.key, func.max(WifiMeasure.lat),
                 func.min(WifiMeasure.lat), func.max(WifiMeasure.lon),
                 func.min(WifiMeasure.lon)).filter(
-                WifiMeasure.key.in_(new_wifis)).group_by(WifiMeasure.key)
+                WifiMeasure.key.in_(new_wifis)).filter(
+                WifiMeasure.created > max_past_days).group_by(WifiMeasure.key)
             results = query.all()
             moving_keys = set()
             for result in results:
