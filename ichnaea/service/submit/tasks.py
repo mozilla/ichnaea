@@ -69,7 +69,7 @@ def update_cell_measure_count(measure, session, userid=None):
     stmt = Cell.__table__.insert(
         on_duplicate='new_measures = new_measures + 1, '
                      'total_measures = total_measures + 1').values(
-        created=datetime.datetime.utcnow(), radio=measure.radio,
+        created=measure.created, radio=measure.radio,
         mcc=measure.mcc, mnc=measure.mnc, lac=measure.lac, cid=measure.cid,
         new_measures=1, total_measures=1)
     session.execute(stmt)

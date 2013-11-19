@@ -128,6 +128,8 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(len(measures), 5)
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 3)
+        # re-processed entries gain the original creation date
+        self.assertEqual(set([c.created for c in cells]), set([time]))
 
     def test_wifi(self):
         from ichnaea.service.submit.tasks import insert_wifi_measure
