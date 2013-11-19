@@ -2,68 +2,16 @@
            xmlns:metal="http://xml.zope.org/namespaces/metal"
            metal:use-macro="view.base_template">
 
-<tal:slot metal:fill-slot="css">
-    <link rel="stylesheet" href="/static/css/mapbox.min.css" />
-</tal:slot>
-
-<tal:slot metal:fill-slot="js">
-    <script src="/static/js/leaflet.min.js"></script>
-    <script src='/static/js/mapbox.min.js'></script>
-    <script src="/static/js/heatmap.min.js"></script>
-    <script src="/static/js/heatmap.leaflet.min.js"></script>
-    <script src="/static/js/csv2geojson.min.js"></script>
-    <script src="/static/js/quadtree.min.js"></script>
-</tal:slot>
-
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
     <p>
-        A map showing all covered areas. Each data point shows the center
-        of a roughly 100 meter by 100 meter area, in which we have at least
-        20 measurements.
-    </p>
-    <p>
-        The way this map is built no longer scales to the amount of data we
-        have, so the high restriction of 20 measurements was put into place.
-        If you have ideas on how to improve it, please follow up on
+        The way this map was built no longer scales to the amount of data we
+        have. If you have ideas on how to improve it, please follow up on
         <a href="https://github.com/mozilla/ichnaea/issues/33">
             the github issue
         </a>.
     </p>
-    <div id='map'></div>
 </section>
-</tal:slot>
-
-<tal:slot metal:fill-slot="js_bottom">
-<script type='text/javascript'>
-var map = L.mapbox.map('map', 'mozilla-webprod.g7ilhcl5', {
-    maxZoom: 14,
-    tileLayer: { detectRetina: true }
-}).setView([0, 10], 2);
-var heatmapLayer = L.TileLayer.heatMap({
-    radius: {value: 12, absolute: false},
-    opacity: 0.8,
-    zIndex: 2,
-    maxZoom: 14,
-    gradient: {
-        0.45: "rgb(0,0,255)",
-        0.55: "rgb(0,255,255)",
-        0.65: "rgb(0,255,0)",
-        0.95: "yellow",
-        1.0: "rgb(255,128,128)",
-    }
-});
-$.ajax({
-    url: '/map.csv',
-    dataType: 'text',
-    success: function csvLoad(csv) {
-        data = csv2geojson.csv(csv, "lat", "lon");
-        heatmapLayer.setData(data);
-        heatmapLayer.addTo(map);
-    }
-});
-
-</script>
 </tal:slot>
 
 </tal:macro>
