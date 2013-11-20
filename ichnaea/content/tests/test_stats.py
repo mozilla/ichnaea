@@ -86,21 +86,6 @@ class TestStats(DBTestCase):
         result = histogram(session, 'unique_cell')
         self.assertEqual(result, [{'num': 9, 'day': day}])
 
-    def test_map_csv(self):
-        from ichnaea.content.stats import map_csv
-        session = self.db_master_session
-        stats = [
-            MapStat(lat=1000, lon=2000, value=151),
-            MapStat(lat=2000, lon=3000, value=21),
-            MapStat(lat=3000, lon=4000, value=1),
-        ]
-        session.add_all(stats)
-        session.commit()
-        result = map_csv(session)
-        text = result.replace('\r', '').strip('\n')
-        text = text.split('\n')
-        self.assertEqual(text, ['lat,lon,value', '1.0,2.0,3', '2.0,3.0,2'])
-
     def test_map_world_csv(self):
         from ichnaea.content.stats import map_world_csv
         session = self.db_master_session

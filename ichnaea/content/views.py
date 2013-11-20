@@ -13,7 +13,6 @@ from ichnaea.content.stats import (
     global_stats,
     histogram,
     leaders,
-    map_csv,
     map_world_csv,
 )
 
@@ -86,11 +85,6 @@ class ContentViews(Layout):
             'leaders1': leaders1,
             'leaders2': leaders2,
         }
-
-    @view_config(renderer='string', name="map.csv", http_cache=86400)
-    def map_csv(self):
-        session = self.request.db_slave_session
-        return map_csv(session)
 
     @view_config(renderer='templates/map.pt', name="map", http_cache=300)
     def map_view(self):

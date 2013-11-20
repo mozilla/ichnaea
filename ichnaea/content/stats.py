@@ -4,12 +4,10 @@ import datetime
 from datetime import timedelta
 from operator import itemgetter
 
-from sqlalchemy import select, func
-from sqlalchemy.dialects.mysql import INTEGER as Integer
+from sqlalchemy import func
 from sqlalchemy.sql.expression import text
 
 from ichnaea.content.models import (
-    MapStat,
     Score,
     SCORE_TYPE,
     Stat,
@@ -91,21 +89,6 @@ def leaders(session):
         result.append(
             {'nickname': nickname, 'num': int(value)})
     return result
-
-
-def map_csv(session):
-    # use a logarithmic scale to give lesser used regions a chance
-    query = select(
-        columns=(MapStat.lat, MapStat.lon,
-                 func.cast(func.ceil(func.log10(MapStat.value)), Integer)),
-        whereclause=MapStat.value >= 20)
-    result = session.execute(query).fetchall()
-    rows = StringIO()
-    csvwriter = csv.writer(rows)
-    csvwriter.writerow(('lat', 'lon', 'value'))
-    for lat, lon, value in result:
-        csvwriter.writerow((lat / 1000.0, lon / 1000.0, value))
-    return rows.getvalue()
 
 
 def map_world_csv(session):

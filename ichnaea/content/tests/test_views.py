@@ -62,17 +62,6 @@ class TestFunctionalContent(AppTestCase):
     def test_map(self):
         self.app.get('/map', status=200)
 
-    def test_map_csv(self):
-        app = self.app
-        session = self.db_slave_session
-        session.add(MapStat(lat=2000, lon=3000, value=21))
-        session.flush()
-        result = app.get('/map.csv', status=200)
-        self.assertEqual(result.content_type, 'text/plain')
-        text = result.text.replace('\r', '').strip('\n')
-        text = text.split('\n')
-        self.assertEqual(text, ['lat,lon,value', '2.0,3.0,2'])
-
     def test_map_world(self):
         self.app.get('/map_world', status=200)
 
