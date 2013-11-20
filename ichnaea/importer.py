@@ -8,7 +8,11 @@ from colander import iso8601
 from ichnaea import config
 from ichnaea.db import Database
 from ichnaea.models import normalize_wifi_key
-from ichnaea.service.submit.views import process_measure
+from ichnaea.service.submit.views import (
+    process_score,
+    process_mapstat,
+    process_measure,
+)
 
 
 def load_file(session, source_file, batch_size=10000, userid=None):
@@ -19,6 +23,7 @@ def load_file(session, source_file, batch_size=10000, userid=None):
         reader = csv.reader(fd, delimiter='\t', quotechar=None)
         counter = 0
 
+        measures = []
         for fields in reader:
             try:
                 time = int(fields[0])
@@ -56,13 +61,19 @@ def load_file(session, source_file, batch_size=10000, userid=None):
             except (ValueError, IndexError):
                 continue
             # side effect, schedules async tasks
-            process_measure(data, utcnow, session, userid=userid)
+            measure = process_measure(data, utcnow, session, userid=userid)
+            measures.append(measure)
 
             # flush every 1000 new records
             counter += 1
             if counter % batch_size == 0:
+                process_mapstat(measures, session, userid=userid)
                 session.flush()
+                measures = []
                 print('Added %s records.' % counter)
+
+    if userid is not None:
+        process_score(userid, counter, session)
 
     # add the rest
     session.flush()

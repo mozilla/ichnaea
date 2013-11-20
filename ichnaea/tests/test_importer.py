@@ -1,6 +1,12 @@
 import os
 from tempfile import mkstemp
 
+from ichnaea.content.models import (
+    MapStat,
+    Score,
+    SCORE_TYPE_INVERSE,
+    User,
+)
 from ichnaea.tests.base import CeleryTestCase
 
 LINE = (
@@ -33,6 +39,27 @@ class TestLoadFile(CeleryTestCase):
         os.write(tmpfile[0], '\n2' + LINE)
         counter = func(self.db_master_session, tmpfile[1], batch_size=2)
         self.assertEqual(counter, 3)
+
+    def test_userid(self):
+        func, tmpfile = self._make_one()
+        session = self.db_master_session
+        user = User(nickname='test')
+        session.add(user)
+        session.flush()
+        userid = user.id
+        os.write(tmpfile[0], LINE)
+        os.write(tmpfile[0], '\n1' + LINE)
+        os.write(tmpfile[0], '\n2' + LINE)
+        counter = func(session, tmpfile[1], batch_size=2, userid=userid)
+        self.assertEqual(counter, 3)
+        # test user scores and mapstat
+        scores = session.query(Score).filter(Score.userid == userid).all()
+        scores = dict([(SCORE_TYPE_INVERSE[s.key], s.value) for s in scores])
+        self.assertEqual(
+            scores, {'new_location': 1, 'new_wifi': 1, 'location': 3})
+        mapstats = session.query(MapStat).all()
+        mapstats = [(m.lat, m.lon, m.value) for m in mapstats]
+        self.assertEqual(mapstats, [(37871, -122274, 2)])
 
     def test_corrupt_lines(self):
         func, tmpfile = self._make_one()
