@@ -94,7 +94,7 @@ def main(argv, _db_master=None):
     else:
         db = _db_master
     session = db.session()
-    added = load_file(session, args.source, userid)
+    added = load_file(session, args.source, userid=userid)
     print('Added %s records.' % added)
     session.commit()
     return added
