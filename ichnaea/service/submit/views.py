@@ -59,7 +59,7 @@ def process_mapstat(measures, session, userid=None):
             tile_count += 1
             stmt = MapStat.__table__.insert(
                 on_duplicate='value = value + %s' % int(value)).values(
-                lat=lat, lon=lon, value=value)
+                lat=lat, lon=lon, key=MAPSTAT_TYPE['location'], value=value)
             session.execute(stmt)
     if userid is not None and tile_count > 0:
         process_score(userid, tile_count, session, key='new_location')
