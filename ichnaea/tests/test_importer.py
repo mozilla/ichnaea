@@ -55,3 +55,9 @@ class TestMain(CeleryTestCase):
         data, func = self._make_one()
         counter = func(['main', data[1]], _db_master=self.db_master)
         self.assertEqual(counter, 0)
+
+    def test_main_userid(self):
+        data, func = self._make_one()
+        counter = func(['main', data[1], '--userid=1'],
+                       _db_master=self.db_master)
+        self.assertEqual(counter, 0)

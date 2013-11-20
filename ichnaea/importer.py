@@ -11,7 +11,7 @@ from ichnaea.models import normalize_wifi_key
 from ichnaea.service.submit.views import process_measure
 
 
-def load_file(session, source_file, batch_size=10000):
+def load_file(session, source_file, batch_size=10000, userid=None):
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
     utcmin = utcnow - datetime.timedelta(120)
 
@@ -56,7 +56,7 @@ def load_file(session, source_file, batch_size=10000):
             except (ValueError, IndexError):
                 continue
             # side effect, schedules async tasks
-            process_measure(data, utcnow, session)
+            process_measure(data, utcnow, session, userid=userid)
 
             # flush every 1000 new records
             counter += 1
@@ -73,8 +73,15 @@ def main(argv, _db_master=None):
     parser = argparse.ArgumentParser(
         prog=argv[0], description='Location Importer')
 
-    parser.add_argument('source', help="source file")
+    parser.add_argument('source', help="The source file.")
+    parser.add_argument('--userid', default=None,
+                        help='Internal userid for attribution.')
+
     args = parser.parse_args(argv[1:])
+    userid = None
+    if args.userid is not None:
+        userid = int(args.userid)
+
     settings = config().get_map('ichnaea')
 
     # configure databases incl. test override hooks
@@ -87,7 +94,7 @@ def main(argv, _db_master=None):
     else:
         db = _db_master
     session = db.session()
-    added = load_file(session, args.source)
+    added = load_file(session, args.source, userid)
     print('Added %s records.' % added)
     session.commit()
     return added
