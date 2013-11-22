@@ -126,6 +126,7 @@ def reprocess_cell_measure(self, measure_ids, userid=None):
 
 def process_cell_measure(session, measure_data, entries, userid=None):
     cell_measures = []
+    # TODO group by unique cell
     for entry in entries:
         cell = create_cell_measure(measure_data, entry)
         # use more specific cell type or
@@ -261,6 +262,7 @@ def process_wifi_measure(session, measure_data, entries, userid=None):
     wifis = session.query(Wifi.key).filter(Wifi.key.in_(wifi_keys))
     wifis = dict([(w[0], True) for w in wifis.all()])
     created = decode_datetime(measure_data.get('created', ''))
+    # TODO group by unique cell
     for entry in entries:
         wifi_key = entry['key']
         # convert frequency into channel numbers and remove frequency
