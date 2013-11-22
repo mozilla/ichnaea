@@ -8,12 +8,16 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 requires = [
     'celery',
+    'Chameleon',
+    'circus',
     'colander',
     'configparser',
     'cornice',
-    'PyMySQL',
+    'gunicorn',
+    'heka-py',
     'konfig',
-    'circus',
+    'PyMySQL',
+    'SQLAlchemy',
 ]
 
 if sys.version_info < (2, 7):
