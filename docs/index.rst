@@ -6,7 +6,7 @@ Mozilla Ichnaea
 from other sources of data (cellphone towers, wifi networks, etc.).
 
 More information about the specific instance hosted by Mozilla can be found
-at https://wiki.mozilla.org/Services/Location
+at https://wiki.mozilla.org/CloudServices/Location
 
 We currently provide two API:
 

@@ -7,8 +7,8 @@ from other sources of data (cellphone towers, wifi networks, etc.).
 
 See `the full docs`_ for more information.
 
-Please use http://bugzilla.mozilla.org to report issues, using the
-Services::Location component.
+Please use `our github tracker <https://github.com/mozilla/ichnaea/issues>`_
+to report issues.
 
 
 License
@@ -21,9 +21,9 @@ Current Development CI Status
 =============================
 
 .. image:: https://travis-ci.org/mozilla/ichnaea.png?branch=master
-   :width: 82px
-   :height: 13px
+   :width: 77px
+   :height: 19px
    :alt: Travis CI build report
    :target: https://travis-ci.org/mozilla/ichnaea
 
-.. _the full docs: http://mozilla-ichnaea.rtfd.org/
+.. _the full docs: https://mozilla-ichnaea.readthedocs.org/
