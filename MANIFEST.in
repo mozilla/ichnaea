@@ -1,5 +1,7 @@
+include Makefile
 include *.ini
 include *.rst
-exclude private.ini
+exclude private-*.ini
 
-recursive-include ichnaea *.py
+recursive-include ichnaea *
+recursive-exclude ichnaea *.pyc *.pyo .DS_Store

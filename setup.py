@@ -36,7 +36,7 @@ with open(os.path.join(here, 'CHANGES.rst')) as f:
 setup(
     name='ichnaea',
     version=__version__,
-    description='Mozilla Ichnaea',
+    description='Mozilla Location Service - Ichnaea',
     long_description=README + '\n\n' + CHANGES,
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
@@ -49,8 +49,8 @@ setup(
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: WSGI :: Application"
     ],
-    keywords="web services",
-    author='Mozilla Services',
+    keywords="web services geo location",
+    author='Mozilla Cloud Services',
     author_email='services-dev@mozilla.org',
     url='https://github.com/mozilla/ichnaea',
     license="Apache 2.0",
