@@ -133,6 +133,7 @@ function make_graph(url, graph_id) {
     });
 
     var entries = [];
+    var item;
     for (var i = 0; i < result.histogram.length; i++) {
         item = result.histogram[i];
         entries.push({x: Date.parse(item.day), y: item.num});
