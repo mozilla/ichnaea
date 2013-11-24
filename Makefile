@@ -6,7 +6,7 @@ INSTALL = $(BIN)/pip install --no-deps
 VTENV_OPTS ?= --distribute
 TRAVIS ?= false
 
-BUILD_DIRS = bin build include lib lib64 man share
+BUILD_DIRS = bin build dist include lib lib64 man node_modules share
 
 MYSQL_TEST_DB = test_location
 ifeq ($(TRAVIS), true)
@@ -33,10 +33,13 @@ else
 		"create database $(MYSQL_TEST_DB)" || echo
 endif
 
+node_modules:
+	npm install $(HERE)
+
 $(PYTHON):
 	virtualenv $(VTENV_OPTS) .
 
-build: $(PYTHON)
+build: $(PYTHON) node_modules
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/test.txt
 	$(PYTHON) setup.py develop

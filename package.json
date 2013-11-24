@@ -1,0 +1,13 @@
+{
+  "name": "ichnaea",
+  "version": "0.1.0",
+  "author": "Mozilla Cloud Services <services-dev@mozilla.org>",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:mozilla/ichnaea.git"
+  },
+  "license": "Apache 2.0",
+  "dependencies": {
+    "uglify-js": ">2.4.0"
+  }
+}

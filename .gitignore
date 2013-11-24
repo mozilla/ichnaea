@@ -9,6 +9,7 @@
 celerybeat-schedule
 coverage.xml
 data
+node_modules
 nosetests.xml
 private-circus.ini
 private-ichnaea.ini
