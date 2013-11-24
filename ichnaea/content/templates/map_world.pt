@@ -3,14 +3,13 @@
            metal:use-macro="view.base_template">
 
 <tal:slot metal:fill-slot="css">
-    <link rel="stylesheet" href="/static/css/mapbox.min.css" />
+    <link rel="stylesheet" href="/static/css/mapbox-1.5.0.min.css" />
 </tal:slot>
 
 <tal:slot metal:fill-slot="js">
-    <script src="/static/js/leaflet.min.js"></script>
-    <script src='/static/js/mapbox.min.js'></script>
-    <script src="/static/js/leaflet.markercluster.min.js"></script>
-    <script src="/static/js/csv2geojson.min.js"></script>
+    <script src='/static/js/mapbox-1.5.0.min.js'></script>
+    <script src="/static/js/leaflet.markercluster-0.3.0-20131113.js"></script>
+    <script src="/static/js/csv2geojson-3.6.0.js"></script>
 </tal:slot>
 
 <tal:slot metal:fill-slot="content">
@@ -36,13 +35,17 @@ var markers = new L.MarkerClusterGroup({
     maxClusterRadius: 50,
 });
 
+var geoJson;
+var geoJsonLayer;
 $.ajax({
     url: '/map_world.csv',
     dataType: 'text',
     success: function csvLoad(csv) {
-        geoJsonLayer = L.geoJson(csv2geojson.csv2geojson(csv));
-        markers.addLayer(geoJsonLayer);
-        map.addLayer(markers);
+        geoJson = csv2geojson.csv2geojson(csv, function(err, data) {
+            geoJsonLayer = L.geoJson(data);
+            markers.addLayer(geoJsonLayer);
+            map.addLayer(markers);
+        });
     }
 });
 
