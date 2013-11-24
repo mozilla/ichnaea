@@ -48,6 +48,9 @@ endif
 
 clean:
 	rm -rf $(BUILD_DIRS)
+	rm -f $(HERE)/.coverage
+	rm -f $(HERE)/*.log
+	rm -rf $(HERE)/ichnaea.egg-info
 
 test: mysql
 	SQLURI=$(SQLURI) SQLSOCKET=$(SQLSOCKET) CELERY_ALWAYS_EAGER=true \
