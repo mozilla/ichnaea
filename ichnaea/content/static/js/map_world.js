@@ -12,8 +12,8 @@ $(document).ready(function() {
     $.ajax({
         url: '/map_world.csv',
         dataType: 'text',
-        success: function csvLoad(csv) {
-            var geoJson = csv2geojson.csv2geojson(csv, function(err, data) {
+        success: function(csv) {
+            csv2geojson.csv2geojson(csv, function(err, data) {
                 markers.addLayer(L.geoJson(data));
                 map.addLayer(markers);
             });

@@ -21,7 +21,7 @@ else
 	SQLSOCKET ?= /opt/local/var/run/mysql56/mysqld.sock
 endif
 
-.PHONY: all test docs mysql
+.PHONY: all js test docs mysql
 
 all: build
 
@@ -48,6 +48,14 @@ ifneq ($(TRAVIS), true)
 		"create database location" || echo
 endif
 
+js:
+	$(HERE)/node_modules/.bin/uglifyjs \
+	$(HERE)/ichnaea/content/static/js/mapbox-1.5.0.min.js \
+	$(HERE)/ichnaea/content/static/js/map_world.js \
+	$(HERE)/ichnaea/content/static/js/leaflet.markercluster-0.3.0-20131113.js \
+	$(HERE)/ichnaea/content/static/js/csv2geojson-3.6.0.js \
+	-o $(HERE)/ichnaea/content/static/js/map_world-combined.js \
+	-m -c --stats
 
 clean:
 	rm -rf $(BUILD_DIRS)

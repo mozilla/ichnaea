@@ -7,10 +7,7 @@
 </tal:slot>
 
 <tal:slot metal:fill-slot="js">
-    <script src='/static/js/mapbox-1.5.0.min.js'></script>
-    <script src="/static/js/leaflet.markercluster-0.3.0-20131113.js"></script>
-    <script src="/static/js/csv2geojson-3.6.0.js"></script>
-    <script src="/static/js/map_world.js"></script>
+    <script src="/static/js/map_world-combined.js"></script>
 </tal:slot>
 
 <tal:slot metal:fill-slot="content">
