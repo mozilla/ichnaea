@@ -56,6 +56,10 @@ js:
 	$(HERE)/ichnaea/content/static/js/csv2geojson-3.6.0.js \
 	-o $(HERE)/ichnaea/content/static/js/map_world-combined.js \
 	-m -c --stats
+	$(HERE)/node_modules/.bin/uglifyjs \
+	$(HERE)/ichnaea/content/static/js/jquery-1.9.1.js \
+	-o $(HERE)/ichnaea/content/static/js/base-combined.js \
+	-m -c --stats
 
 clean:
 	rm -rf $(BUILD_DIRS)

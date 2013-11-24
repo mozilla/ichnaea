@@ -10,7 +10,7 @@
     <link href="//mozorg.cdn.mozilla.net/media/css/tabzilla-min.css" rel="stylesheet" />
     <tal:slot metal:define-slot="css"></tal:slot>
 
-    <script src='/static/js/jquery.min.js'></script>
+    <script src='/static/js/base-combined.js'></script>
     <script src="//mozorg.cdn.mozilla.net/tabzilla/tabzilla.js"></script>
     <script type="text/javascript">
     var _gaq = _gaq || [];
