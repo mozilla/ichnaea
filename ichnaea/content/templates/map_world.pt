@@ -10,6 +10,7 @@
     <script src='/static/js/mapbox-1.5.0.min.js'></script>
     <script src="/static/js/leaflet.markercluster-0.3.0-20131113.js"></script>
     <script src="/static/js/csv2geojson-3.6.0.js"></script>
+    <script src="/static/js/map_world.js"></script>
 </tal:slot>
 
 <tal:slot metal:fill-slot="content">
@@ -21,35 +22,6 @@
     </p>
     <div id='map'></div>
 </section>
-</tal:slot>
-
-<tal:slot metal:fill-slot="js_bottom">
-<script type='text/javascript'>
-var map = L.mapbox.map('map', 'mozilla-webprod.g7ilhcl5', {
-    maxZoom: 8,
-    tileLayer: { detectRetina: true }
-}).setView([0, 10], 2);
-var markers = new L.MarkerClusterGroup({
-    spiderfyOnMaxZoom: false,
-    removeOutsideVisibleBounds: true,
-    maxClusterRadius: 50,
-});
-
-var geoJson;
-var geoJsonLayer;
-$.ajax({
-    url: '/map_world.csv',
-    dataType: 'text',
-    success: function csvLoad(csv) {
-        geoJson = csv2geojson.csv2geojson(csv, function(err, data) {
-            geoJsonLayer = L.geoJson(data);
-            markers.addLayer(geoJsonLayer);
-            map.addLayer(markers);
-        });
-    }
-});
-
-</script>
 </tal:slot>
 
 </tal:macro>
