@@ -67,7 +67,7 @@ class TestBlacklist(CeleryTestCase):
         m1 = 10000000
         for i in range(11):
             measures.append(
-                WifiMeasure(lat=m1, lon=m1, key="a%s1234567890" % i))
+                WifiMeasure(lat=m1, lon=m1, key="a%02d234567890" % i))
         session.add_all(measures)
         session.flush()
 

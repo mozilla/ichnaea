@@ -18,7 +18,7 @@ class TestScore(DBTestCase):
     def test_fields(self):
         utcday = datetime.datetime.utcnow().date()
         score = self._make_one(userid=3, time=utcday, value=15)
-        score.key = 'location'
+        score.name = 'location'
         session = self.db_master_session
         session.add(score)
         session.commit()
