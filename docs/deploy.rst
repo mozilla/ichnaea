@@ -1,5 +1,24 @@
+======================
 Installing / Deploying
 ======================
+
+MySQL / RDS
+===========
+
+The application is written and tested against MySQL 5.6.x or Amazon RDS of the
+same version. The default configuration works for the most part. There are
+just three changes you need to do. For example via the my.cnf:
+
+.. code-block:: ini
+
+    [mysqld]
+    innodb_file_format=Barracuda
+    innodb_strict_mode=on
+    sql-mode="STRICT_TRANS_TABLES"
+
+
+Code
+====
 
 Run the following commands to download the database and the server:
 
