@@ -164,6 +164,10 @@ submit = Service(
              schema=SubmitSchema, error_handler=error_handler,
              validators=submit_validator)
 def submit_post(request):
+        return _submit_post(request)
+
+
+def _submit_post(request):
     session = request.db_master_session
     session_objects = []
 
@@ -180,6 +184,9 @@ def submit_post(request):
         measure = process_measure(item, utcnow, session, userid=userid)
         measures.append(measure)
         points += 1
+
+    request.registry.heka_client.incr("items.uploaded",
+                                      count=len(request.validated['items']))
 
     if userid is not None:
         process_score(userid, points, session)

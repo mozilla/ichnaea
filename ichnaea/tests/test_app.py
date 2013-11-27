@@ -6,6 +6,8 @@ from ichnaea.tests.base import (
     SQLSOCKET,
 )
 
+from heka.holder import get_client
+
 
 class TestApp(DBTestCase):
 
@@ -15,6 +17,7 @@ class TestApp(DBTestCase):
             'db_master_socket': SQLSOCKET,
             'db_slave': SQLURI,
             'db_slave_socket': SQLSOCKET,
+            '_heka_client': get_client('ichnaea'),
         }
         app = _make_app(**settings)
         self.db_master = app.app.registry.db_master
@@ -26,5 +29,7 @@ class TestApp(DBTestCase):
         self.db_master = _make_db()
         self.db_slave = _make_db(create=False)
         self.setup_session()
-        app = _make_app(_db_master=self.db_master, _db_slave=self.db_slave)
+        app = _make_app(_db_master=self.db_master,
+                        _db_slave=self.db_slave,
+                        _heka_client=get_client('ichnaea'))
         app.get('/stats_location.json', status=200)

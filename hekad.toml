@@ -1,0 +1,13 @@
+[UdpInput]
+address = "0.0.0.0:5565"
+parser_type = "message.proto"
+decoder = "ProtobufDecoder"
+
+[LogOutput]
+message_matcher = "TRUE"
+payload_only = false
+
+[SentryOutput]
+max_udp_sockets = 100
+max_sentry_bytes = 100000
+message_matcher = "Type == 'sentry'"

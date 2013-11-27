@@ -8,8 +8,9 @@ from ichnaea.models import (
     Cell,
     Wifi,
 )
-from ichnaea.tests.base import AppTestCase
+from ichnaea.tests.base import AppTestCase, find_msg
 
+from heka.holder import get_client
 
 class Event(object):
 
@@ -25,6 +26,11 @@ class TestRequest(DummyRequest):
 
 
 class TestSearch(AppTestCase):
+
+    def setUp(self):
+        AppTestCase.setUp(self)
+        self.heka_client = get_client('ichnaea')
+        self.heka_client.stream.msgs.clear()
 
     def test_ok_cell(self):
         app = self.app
@@ -48,6 +54,11 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.body, '{"status": "ok", "lat": 1.0010000, '
                                    '"lon": 1.0020000, "accuracy": 35000}')
 
+        msgs = self.heka_client.stream.msgs
+        self.assertEquals(1, len(find_msg(msgs, 'counter', 'http.request')))
+        self.assertEquals(1, len(find_msg(msgs, 'timer', 'http.request')))
+        self.assertEquals(2, len(msgs))
+
     def test_ok_wifi(self):
         app = self.app
         session = self.db_slave_session
@@ -66,6 +77,11 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "ok", "lat": 1.0010000, '
                                    '"lon": 1.0020000, "accuracy": 500}')
+
+        msgs = self.heka_client.stream.msgs
+        self.assertEquals(1, len(find_msg(msgs, 'counter', 'http.request')))
+        self.assertEquals(1, len(find_msg(msgs, 'timer', 'http.request')))
+        self.assertEquals(2, len(msgs))
 
     def test_wifi_too_few_candidates(self):
         app = self.app
