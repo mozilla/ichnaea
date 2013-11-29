@@ -39,7 +39,7 @@ node_modules:
 $(PYTHON):
 	virtualenv $(VTENV_OPTS) .
 
-build: $(PYTHON) node_modules
+build: $(PYTHON)
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/test.txt
 	$(PYTHON) setup.py develop
@@ -48,7 +48,7 @@ ifneq ($(TRAVIS), true)
 		"create database location" || echo
 endif
 
-js:
+js: node_modules
 	$(HERE)/node_modules/.bin/uglifyjs \
 	$(HERE)/ichnaea/content/static/js/mapbox-1.5.0.min.js \
 	$(HERE)/ichnaea/content/static/js/map_world.js \
