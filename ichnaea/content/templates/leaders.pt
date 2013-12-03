@@ -6,7 +6,7 @@
 <section id="main-content">
     <p>Data is updated in near-realtime.</p>
 
-    <div class="half-width" style="float:left">
+    <div class="half-left">
         <table class="table half">
             <thead>
                 <tr>
@@ -24,8 +24,7 @@
             </tbody>
         </table>
     </div>
-    <div class="half-width" style="float:right"
-         tal:condition="leaders2">
+    <div class="half-right" tal:condition="leaders2">
         <table class="table">
             <thead>
                 <tr>

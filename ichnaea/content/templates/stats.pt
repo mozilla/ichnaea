@@ -17,7 +17,7 @@
         Data is updated daily shortly after midnight in UTC.
     </p>
 
-    <div style="clear:both">
+    <div class="separator">
     <h2>Measurements</h2>
     <table class="table half">
         <thead>
@@ -34,7 +34,7 @@
         </tbody>
     </table>
     </div>
-    <div style="clear:both">
+    <div class="separator">
         <h3>Locations in the last 30 days</h3>
         <div id="location_chart" class="chart_container">
                 <div class="chart_y_axis"></div>
@@ -42,7 +42,7 @@
                 <div class="chart_x_axis"></div>
         </div>
     </div>
-    <div style="clear:both">
+    <div class="separator">
         <h3>Unique cells in the last 30 days</h3>
         <div id="unique_cell_chart" class="chart_container">
                 <div class="chart_y_axis"></div>
@@ -50,7 +50,7 @@
                 <div class="chart_x_axis"></div>
         </div>
     </div>
-    <div style="clear:both">
+    <div class="separator">
         <h3>Unique WiFi access points in the last 30 days</h3>
         <div id="unique_wifi_chart" class="chart_container">
                 <div class="chart_y_axis"></div>

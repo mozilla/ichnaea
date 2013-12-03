@@ -38,7 +38,7 @@ default-src 'self' *.tiles.mapbox.com;
 font-src 'self' *.cdn.mozilla.net;
 img-src 'self' *.cdn.mozilla.net *.google-analytics.com *.tiles.mapbox.com data:;
 script-src 'self' 'unsafe-eval' *.cdn.mozilla.net *.google-analytics.com;
-style-src 'self' 'unsafe-inline' *.cdn.mozilla.net;
+style-src 'self' *.cdn.mozilla.net;
 """
 CSP_POLICY = CSP_POLICY.replace("\n", ' ').strip()
 

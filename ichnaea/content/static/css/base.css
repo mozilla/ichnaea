@@ -100,7 +100,11 @@ body {
 }
 
 #wrapper {
-    padding-bottom: 40px;;
+    padding-bottom: 40px;
+}
+
+.separator {
+    clear: both;
 }
 
 a {
@@ -189,9 +193,15 @@ li {
     font-weight: normal;
 }
 
-.half-width {
+.half-left, .half-right {
     width: 400px;
     margin: 0 20px;
+}
+.half-left {
+    float: left;
+}
+.half-right {
+    float: right;
 }
 
 #masthead,
