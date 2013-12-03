@@ -33,11 +33,22 @@ def configure_content(config):
     config.scan('ichnaea.content.views')
 
 
+CSP_POLICY = """\
+default-src 'self' *.tiles.mapbox.com;
+font-src 'self' *.cdn.mozilla.net;
+img-src 'self' *.cdn.mozilla.net *.google-analytics.com *.tiles.mapbox.com data:;
+script-src 'self' 'unsafe-eval' *.cdn.mozilla.net *.google-analytics.com;
+style-src 'self' 'unsafe-inline' *.cdn.mozilla.net;
+"""
+CSP_POLICY = CSP_POLICY.replace("\n", ' ').strip()
+
+
 @subscriber(NewResponse)
-def sts_header(event):
+def security_headers(event):
     response = event.response
     if response.content_type == 'text/html':
-        response.headers.add('Strict-Transport-Security', 'max-age=2592000')
+        response.headers.add("Strict-Transport-Security", "max-age=2592000")
+        response.headers.add("Content-Security-Policy", CSP_POLICY)
 
 
 class Layout(object):
