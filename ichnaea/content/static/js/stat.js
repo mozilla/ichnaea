@@ -75,7 +75,7 @@ function make_graph(url, graph_id) {
     var graph = new Rickshaw.Graph( {
         element: document.querySelector(graph_id + " .chart"),
         width: 720,
-        height: 144,
+        height: 120,
         renderer: 'area',
         series: [ {
                 data: entries,

@@ -3,14 +3,11 @@
            metal:use-macro="view.base_template">
 
 <tal:slot metal:fill-slot="css">
-    <link rel="stylesheet" href="/static/css/rickshaw.min.css" />
+    <link rel="stylesheet" href="/static/css/rickshaw-1.4.5.min.css" />
 </tal:slot>
 
 <tal:slot metal:fill-slot="js">
-    <script src='/static/js/d3.min.js'></script>
-    <script src='/static/js/d3.layout.min.js'></script>
-    <script src='/static/js/rickshaw.min.js'></script>
-    <script src='/static/js/stat.js'></script>
+    <script src='/static/js/stat-combined.js'></script>
 </tal:slot>
 
 <tal:slot metal:fill-slot="content">
