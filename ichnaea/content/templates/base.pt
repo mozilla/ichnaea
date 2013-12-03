@@ -79,7 +79,6 @@
     </footer>
     </tal:macro>
 </div>
-<tal:slot metal:define-slot="js_bottom"></tal:slot>
 </body>
 </html>
 </tal:template>
