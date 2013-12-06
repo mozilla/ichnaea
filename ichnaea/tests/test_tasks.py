@@ -8,10 +8,17 @@ from ichnaea.models import (
     WifiBlacklist,
     WifiMeasure,
 )
-from ichnaea.tests.base import CeleryTestCase
+from ichnaea.tests.base import CeleryTestCase, find_msg
+
+from heka.holder import get_client
 
 
 class TestBlacklist(CeleryTestCase):
+
+    def setUp(self):
+        CeleryTestCase.setUp(self)
+        self.heka_client = get_client('ichnaea')
+        self.heka_client.stream.msgs.clear()
 
     def test_blacklist_moving_wifis(self):
         from ichnaea.tasks import blacklist_moving_wifis
@@ -59,6 +66,14 @@ class TestBlacklist(CeleryTestCase):
         # test duplicate call
         result = blacklist_moving_wifis.delay(ago=0)
         self.assertEqual(result.get(), [])
+
+        msgs = self.heka_client.stream.msgs
+        self.assertEqual(3, len(msgs))
+        # We made duplicate calls
+        self.assertEqual(2, len(find_msg(msgs, 'timer', 'task.blacklist_moving_wifis')))
+
+        # One of those would've scheduled a remove_wifi task
+        self.assertEqual(1, len(find_msg(msgs, 'timer', 'task.remove_wifi')))
 
     def test_schedule_new_moving_wifi_analysis(self):
         from ichnaea.tasks import schedule_new_moving_wifi_analysis

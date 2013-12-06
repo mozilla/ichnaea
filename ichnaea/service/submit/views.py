@@ -181,6 +181,9 @@ def submit_post(request):
         measures.append(measure)
         points += 1
 
+    request.registry.heka_client.incr("items.uploaded",
+                                      count=len(request.validated['items']))
+
     if userid is not None:
         process_score(userid, points, session)
     if measures:

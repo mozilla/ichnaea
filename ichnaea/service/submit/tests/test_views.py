@@ -15,10 +15,17 @@ from ichnaea.models import (
 )
 from ichnaea.decimaljson import encode_datetime
 from ichnaea.decimaljson import loads
-from ichnaea.tests.base import CeleryAppTestCase
+from ichnaea.tests.base import CeleryAppTestCase, find_msg
+
+from heka.holder import get_client
 
 
 class TestSubmit(CeleryAppTestCase):
+
+    def setUp(self):
+        CeleryAppTestCase.setUp(self)
+        self.heka_client = get_client('ichnaea')
+        self.heka_client.stream.msgs.clear()
 
     def test_ok_cell(self):
         app = self.app
@@ -371,3 +378,34 @@ class TestSubmit(CeleryAppTestCase):
         app = self.app
         res = app.post('/v1/submit', "\xae", status=400)
         self.assertTrue('errors' in res.json)
+
+    def test_heka_logging(self):
+
+        app = self.app
+        cell_data = [
+            {"radio": "umts", "mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
+        res = app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.3456781,
+                                      "lon": 23.4567892,
+                                      "accuracy": 10,
+                                      "altitude": 123,
+                                      "altitude_accuracy": 7,
+                                      "radio": "gsm",
+                                      "cell": cell_data}]},
+            status=204)
+        self.assertEqual(res.body, '')
+
+        """
+        We should be capturing 4 metrics:
+        1) counter for URL request
+        2) counter for items.uploaded
+        3) timer to respond
+        4) timer for "insert_cell_measure"
+        """
+
+        msgs = self.heka_client.stream.msgs
+        self.assertEqual(4, len(msgs))
+        self.assertEqual(1, len(find_msg(msgs, 'counter', 'http.request')))
+        self.assertEqual(1, len(find_msg(msgs, 'counter', 'items.uploaded')))
+        self.assertEqual(1, len(find_msg(msgs, 'timer', 'http.request')))
+        self.assertEqual(1, len(find_msg(msgs, 'timer', 'task.insert_cell_measure')))

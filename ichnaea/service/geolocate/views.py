@@ -1,9 +1,8 @@
-import logging
-
 from cornice import Service
 from pyramid.httpexceptions import HTTPError
 from pyramid.httpexceptions import HTTPNotFound
 from pyramid.response import Response
+
 
 from ichnaea.decimaljson import dumps
 from ichnaea.service.geolocate.schema import GeoLocateSchema
@@ -15,7 +14,9 @@ from ichnaea.service.search.views import (
     search_wifi,
 )
 
-logger = logging.getLogger('ichnaea')
+from heka.holder import get_client
+
+
 NOT_FOUND = {
     "error": {
         "errors": [{
@@ -57,7 +58,7 @@ def error_handler(errors):
         if error.get('description', '') != MSG_ONE_OF:
             log_errors.append(error)
     if log_errors:
-        logger.debug('error_handler' + repr(log_errors))
+        get_client('ichnaea').debug('error_handler' + repr(log_errors))
     return _JSONError(errors, errors.status)
 
 

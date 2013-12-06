@@ -1,5 +1,3 @@
-import logging
-
 from pyramid.config import Configurator
 from pyramid.tweens import EXCVIEW
 
@@ -8,27 +6,15 @@ from ichnaea.db import Database
 from ichnaea.db import db_master_session
 from ichnaea.db import db_slave_session
 
-logger = logging.getLogger('ichnaea')
-
 
 def main(global_config, _db_master=None, _db_slave=None, **settings):
     config = Configurator(settings=settings)
     config.include("cornice")
     settings = config.registry.settings
 
-    # logging
-    global logger
-    logger.setLevel(logging.DEBUG)
-    sh = logging.StreamHandler()
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    sh.setFormatter(formatter)
-    logger.addHandler(sh)
-    waitress_log = logging.getLogger('waitress')
-    waitress_log.addHandler(sh)
-
     from ichnaea.content.views import configure_content
     from ichnaea.service import configure_service
+    from ichnaea.heka_logging import configure_heka
 
     configure_content(config)
     configure_service(config)
@@ -49,7 +35,11 @@ def main(global_config, _db_master=None, _db_slave=None, **settings):
         )
     else:
         config.registry.db_slave = _db_slave
+
+    config.registry.heka_client = configure_heka(config.registry.settings)
+
     config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)
+    config.add_tween('ichnaea.heka_logging.heka_tween_factory', under=EXCVIEW)
     config.add_request_method(db_master_session, property=True)
     config.add_request_method(db_slave_session, property=True)
 

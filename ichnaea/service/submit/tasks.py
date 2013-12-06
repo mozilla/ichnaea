@@ -20,6 +20,7 @@ from ichnaea.tasks import DatabaseTask
 from ichnaea.worker import celery
 
 from ichnaea.service.submit.utils import process_score
+from heka.holder import get_client
 
 logger = get_task_logger(__name__)
 sql_null = None  # avoid pep8 warning
@@ -79,49 +80,51 @@ def update_cell_measure_count(measure, session, userid=None):
 
 @celery.task(base=DatabaseTask, bind=True)
 def schedule_cell_cleanup(self, lower, upper, batch=100):
-    with self.db_session() as session:
-        stmt = text("select measure.id from measure left join cell_measure "
-                    "on measure.id = cell_measure.measure_id where "
-                    "cell_measure.measure_id is null and "
-                    "measure.cell is not null and "
-                    "measure.id > %s and measure.id < %s" % (
-                        lower, upper))
-        ids = session.execute(stmt).fetchall()
-        ids = [int(i[0]) for i in ids]
-        for i in range(0, len(ids), batch):
-            # split list into batch sized chunks
-            reprocess_cell_measure.delay(ids[i:i + batch])
-        return len(ids)
-    return 0
+    with get_client('ichnaea').timer("task.schedule_cell_cleanup"):
+        with self.db_session() as session:
+            stmt = text("select measure.id from measure left join cell_measure "
+                        "on measure.id = cell_measure.measure_id where "
+                        "cell_measure.measure_id is null and "
+                        "measure.cell is not null and "
+                        "measure.id > %s and measure.id < %s" % (
+                            lower, upper))
+            ids = session.execute(stmt).fetchall()
+            ids = [int(i[0]) for i in ids]
+            for i in range(0, len(ids), batch):
+                # split list into batch sized chunks
+                reprocess_cell_measure.delay(ids[i:i + batch])
+            return len(ids)
+        return 0
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def reprocess_cell_measure(self, measure_ids, userid=None):
-    measures = []
-    try:
-        with self.db_session() as session:
-            measures = session.query(Measure).filter(
-                Measure.id.in_(measure_ids)).filter(
-                Measure.cell != sql_null).all()
-            for measure in measures:
-                measure_data = dict(
-                    id=measure.id, created=encode_datetime(measure.created),
-                    lat=measure.lat, lon=measure.lon,
-                    time=encode_datetime(measure.time),
-                    accuracy=measure.accuracy, altitude=measure.altitude,
-                    altitude_accuracy=measure.altitude_accuracy,
-                    radio=measure.radio,
-                )
-                # adds data to this session
-                process_cell_measure(
-                    session, measure_data, loads(measure.cell), userid=userid)
-            session.commit()
-        return len(measures)
-    except IntegrityError as exc:  # pragma: no cover
-        logger.exception('error')
-        return 0
-    except Exception as exc:  # pragma: no cover
-        raise self.retry(exc=exc)
+    with get_client('ichnaea').timer("task.reprocess_cell_measure"):
+        measures = []
+        try:
+            with self.db_session() as session:
+                measures = session.query(Measure).filter(
+                    Measure.id.in_(measure_ids)).filter(
+                    Measure.cell != sql_null).all()
+                for measure in measures:
+                    measure_data = dict(
+                        id=measure.id, created=encode_datetime(measure.created),
+                        lat=measure.lat, lon=measure.lon,
+                        time=encode_datetime(measure.time),
+                        accuracy=measure.accuracy, altitude=measure.altitude,
+                        altitude_accuracy=measure.altitude_accuracy,
+                        radio=measure.radio,
+                    )
+                    # adds data to this session
+                    process_cell_measure(
+                        session, measure_data, loads(measure.cell), userid=userid)
+                session.commit()
+            return len(measures)
+        except IntegrityError as exc:  # pragma: no cover
+            logger.exception('error')
+            return 0
+        except Exception as exc:  # pragma: no cover
+            raise self.retry(exc=exc)
 
 
 def process_cell_measure(session, measure_data, entries, userid=None):
@@ -143,18 +146,19 @@ def process_cell_measure(session, measure_data, entries, userid=None):
 
 @celery.task(base=DatabaseTask, bind=True)
 def insert_cell_measure(self, measure_data, entries, userid=None):
-    try:
-        cell_measures = []
-        with self.db_session() as session:
-            cell_measures = process_cell_measure(
-                session, measure_data, entries, userid=userid)
-            session.commit()
-        return len(cell_measures)
-    except IntegrityError as exc:  # pragma: no cover
-        logger.exception('error')
-        return 0
-    except Exception as exc:  # pragma: no cover
-        raise self.retry(exc=exc)
+    with get_client('ichnaea').timer("task.insert_cell_measure"):
+        try:
+            cell_measures = []
+            with self.db_session() as session:
+                cell_measures = process_cell_measure(
+                    session, measure_data, entries, userid=userid)
+                session.commit()
+            return len(cell_measures)
+        except IntegrityError as exc:  # pragma: no cover
+            logger.exception('error')
+            return 0
+        except Exception as exc:  # pragma: no cover
+            raise self.retry(exc=exc)
 
 
 def convert_frequency(entry):
@@ -206,49 +210,51 @@ def create_wifi_measure(measure_data, created, entry):
 
 @celery.task(base=DatabaseTask, bind=True)
 def schedule_wifi_cleanup(self, lower, upper, batch=100):
-    with self.db_session() as session:
-        stmt = text("select measure.id from measure left join wifi_measure "
-                    "on measure.id = wifi_measure.measure_id where "
-                    "wifi_measure.measure_id is null and "
-                    "measure.wifi is not null and "
-                    "measure.id > %s and measure.id < %s" % (
-                        lower, upper))
-        ids = session.execute(stmt).fetchall()
-        ids = [int(i[0]) for i in ids]
-        for i in range(0, len(ids), batch):
-            # split list into batch sized chunks
-            reprocess_wifi_measure.delay(ids[i:i + batch])
-        return len(ids)
-    return 0
+    with get_client('ichnaea').timer("task.schedule_wifi_cleanup"):
+        with self.db_session() as session:
+            stmt = text("select measure.id from measure left join wifi_measure "
+                        "on measure.id = wifi_measure.measure_id where "
+                        "wifi_measure.measure_id is null and "
+                        "measure.wifi is not null and "
+                        "measure.id > %s and measure.id < %s" % (
+                            lower, upper))
+            ids = session.execute(stmt).fetchall()
+            ids = [int(i[0]) for i in ids]
+            for i in range(0, len(ids), batch):
+                # split list into batch sized chunks
+                reprocess_wifi_measure.delay(ids[i:i + batch])
+            return len(ids)
+        return 0
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def reprocess_wifi_measure(self, measure_ids, userid=None):
-    measures = []
-    try:
-        with self.db_session() as session:
-            measures = session.query(Measure).filter(
-                Measure.id.in_(measure_ids)).filter(
-                Measure.wifi != sql_null).all()
-            for measure in measures:
-                measure_data = dict(
-                    id=measure.id, created=encode_datetime(measure.created),
-                    lat=measure.lat, lon=measure.lon,
-                    time=encode_datetime(measure.time),
-                    accuracy=measure.accuracy, altitude=measure.altitude,
-                    altitude_accuracy=measure.altitude_accuracy,
-                    radio=measure.radio,
-                )
-                # adds data to this session
-                process_wifi_measure(
-                    session, measure_data, loads(measure.wifi), userid=userid)
-            session.commit()
-        return len(measures)
-    except IntegrityError as exc:  # pragma: no cover
-        logger.exception('error')
-        return 0
-    except Exception as exc:  # pragma: no cover
-        raise self.retry(exc=exc)
+    with get_client('ichnaea').timer("task.reprocess_wifi_measure"):
+        measures = []
+        try:
+            with self.db_session() as session:
+                measures = session.query(Measure).filter(
+                    Measure.id.in_(measure_ids)).filter(
+                    Measure.wifi != sql_null).all()
+                for measure in measures:
+                    measure_data = dict(
+                        id=measure.id, created=encode_datetime(measure.created),
+                        lat=measure.lat, lon=measure.lon,
+                        time=encode_datetime(measure.time),
+                        accuracy=measure.accuracy, altitude=measure.altitude,
+                        altitude_accuracy=measure.altitude_accuracy,
+                        radio=measure.radio,
+                    )
+                    # adds data to this session
+                    process_wifi_measure(
+                        session, measure_data, loads(measure.wifi), userid=userid)
+                session.commit()
+            return len(measures)
+        except IntegrityError as exc:  # pragma: no cover
+            logger.exception('error')
+            return 0
+        except Exception as exc:  # pragma: no cover
+            raise self.retry(exc=exc)
 
 
 def process_wifi_measure(session, measure_data, entries, userid=None):
@@ -279,15 +285,16 @@ def process_wifi_measure(session, measure_data, entries, userid=None):
 
 @celery.task(base=DatabaseTask, bind=True)
 def insert_wifi_measure(self, measure_data, entries, userid=None):
-    wifi_measures = []
-    try:
-        with self.db_session() as session:
-            wifi_measures = process_wifi_measure(
-                session, measure_data, entries, userid=userid)
-            session.commit()
-        return len(wifi_measures)
-    except IntegrityError as exc:
-        logger.exception('error')
-        return 0
-    except Exception as exc:  # pragma: no cover
-        raise self.retry(exc=exc)
+    with get_client('ichnaea').timer("task.insert_wifi_measure"):
+        wifi_measures = []
+        try:
+            with self.db_session() as session:
+                wifi_measures = process_wifi_measure(
+                    session, measure_data, entries, userid=userid)
+                session.commit()
+            return len(wifi_measures)
+        except IntegrityError as exc:
+            logger.exception('error')
+            return 0
+        except Exception as exc:  # pragma: no cover
+            raise self.retry(exc=exc)

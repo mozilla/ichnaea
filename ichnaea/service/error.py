@@ -1,11 +1,9 @@
-import logging
-
 from pyramid.httpexceptions import HTTPError
 from pyramid.response import Response
 
 from ichnaea.decimaljson import dumps
 
-logger = logging.getLogger('ichnaea')
+from heka.holder import get_client
 
 
 class _JSONError(HTTPError):
@@ -23,7 +21,7 @@ def error_handler(errors):
         if error.get('description', '') != MSG_ONE_OF:
             log_errors.append(error)
     if log_errors:
-        logger.debug('error_handler' + repr(log_errors))
+        get_client('ichnaea').debug('error_handler' + repr(log_errors))
     return _JSONError(errors, errors.status)
 
 
