@@ -139,24 +139,40 @@ class TestWifiLocationUpdate(CeleryTestCase):
         k4 = "de1234567890"
         k5 = "ef1234567890"
         k6 = "fa1234567890"
-        measures = [
+        keys = set([k1, k2, k3, k4, k5, k6])
+        data = [
+            # a wifi with an entry but no prior position
+            Wifi(key=k1, new_measures=3, total_measures=0),
             WifiMeasure(lat=10010000, lon=10010000, key=k1),
             WifiMeasure(lat=10020000, lon=10050000, key=k1),
             WifiMeasure(lat=10030000, lon=10090000, key=k1),
+            # a wifi wifi a prior known position
+            Wifi(lat=20000000, lon=20000000, key=k2,
+                 new_measures=2, total_measures=1),
             WifiMeasure(lat=20100000, lon=20000000, key=k2),
             WifiMeasure(lat=20700000, lon=20000000, key=k2),
+            # a wifi with a very different prior position
+            Wifi(lat=10000000, lon=10000000, key=k3,
+                 new_measures=2, total_measures=1),
             WifiMeasure(lat=30000000, lon=30000000, key=k3),
             WifiMeasure(lat=-30000000, lon=30000000, key=k3),
+            # another wifi wifi a prior known position (and negative lat)
+            Wifi(lat=-40000000, lon=40000000, key=k4,
+                 new_measures=2, total_measures=1),
             WifiMeasure(lat=-41000000, lon=40000000, key=k4),
             WifiMeasure(lat=-41600000, lon=40000000, key=k4),
+            # an already blacklisted wifi
+            WifiBlacklist(key=k5),
             WifiMeasure(lat=50000000, lon=50000000, key=k5),
             WifiMeasure(lat=51000000, lon=50000000, key=k5),
+            # a wifi with some old different records
+            Wifi(lat=69000000, lon=69000000, key=k6,
+                 new_measures=3, total_measures=1),
             WifiMeasure(lat=69000000, lon=69000000, key=k6, created=long_ago),
             WifiMeasure(lat=60000000, lon=60000000, key=k6),
             WifiMeasure(lat=60010000, lon=60000000, key=k6),
         ]
-        session.add_all(measures)
-        session.add(WifiBlacklist(key=k5))
+        session.add_all(data)
         session.commit()
 
         result = blacklist_moving_wifis.delay(ago=0)
@@ -168,8 +184,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
 
         measures = session.query(WifiMeasure).all()
         self.assertEqual(len(measures), 14)
-        self.assertEqual(
-            set([m.key for m in measures]), set([k1, k2, k3, k4, k5, k6]))
+        self.assertEqual(set([m.key for m in measures]), keys)
 
         # test duplicate call
         result = blacklist_moving_wifis.delay(ago=0)
