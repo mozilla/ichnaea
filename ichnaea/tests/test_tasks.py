@@ -115,7 +115,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         session.commit()
 
         result = wifi_location_update.delay(min_new=1)
-        self.assertEqual(result.get(), 2)
+        self.assertEqual(result.get(), (2, 0))
 
         wifis = dict(session.query(Wifi.key, Wifi).all())
         self.assertEqual(set(wifis.keys()), set([k1, k2]))
@@ -129,7 +129,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.assertEqual(wifis[k2].new_measures, 0)
 
     def test_blacklist_moving_wifis(self):
-        from ichnaea.tasks import blacklist_moving_wifis
+        from ichnaea.tasks import wifi_location_update
         now = datetime.utcnow()
         long_ago = now - timedelta(days=40)
         session = self.db_master_session
@@ -165,9 +165,10 @@ class TestWifiLocationUpdate(CeleryTestCase):
             WifiBlacklist(key=k5),
             WifiMeasure(lat=50000000, lon=50000000, key=k5),
             WifiMeasure(lat=51000000, lon=50000000, key=k5),
-            # a wifi with some old different records
-            Wifi(lat=69000000, lon=69000000, key=k6,
-                 new_measures=3, total_measures=1),
+            # a wifi with an old different record we ignore, position
+            # estimate has been updated since
+            Wifi(lat=60000000, lon=60000000, key=k6,
+                 new_measures=2, total_measures=1),
             WifiMeasure(lat=69000000, lon=69000000, key=k6, created=long_ago),
             WifiMeasure(lat=60000000, lon=60000000, key=k6),
             WifiMeasure(lat=60010000, lon=60000000, key=k6),
@@ -175,11 +176,10 @@ class TestWifiLocationUpdate(CeleryTestCase):
         session.add_all(data)
         session.commit()
 
-        result = blacklist_moving_wifis.delay(ago=0)
-        self.assertEqual(set(result.get()), set([k2, k3, k4]))
+        result = wifi_location_update.delay(min_new=1)
+        self.assertEqual(result.get(), (5, 3))
 
         black = session.query(WifiBlacklist).all()
-        self.assertEqual(len(black), 4)
         self.assertEqual(set([b.key for b in black]), set([k2, k3, k4, k5]))
 
         measures = session.query(WifiMeasure).all()
@@ -187,8 +187,8 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.assertEqual(set([m.key for m in measures]), keys)
 
         # test duplicate call
-        result = blacklist_moving_wifis.delay(ago=0)
-        self.assertEqual(result.get(), [])
+        result = wifi_location_update.delay(min_new=1)
+        self.assertEqual(result.get(), 0)
 
         msgs = self.heka_client.stream.msgs
         self.assertEqual(3, len(msgs))
