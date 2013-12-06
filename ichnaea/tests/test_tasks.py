@@ -15,10 +15,118 @@ from heka.holder import get_client
 
 class TestBlacklist(CeleryTestCase):
 
+    def test_schedule_new_moving_wifi_analysis(self):
+        from ichnaea.tasks import schedule_new_moving_wifi_analysis
+        session = self.db_master_session
+        measures = []
+        m1 = 10000000
+        for i in range(11):
+            measures.append(
+                WifiMeasure(lat=m1, lon=m1, key="a%02d234567890" % i))
+        session.add_all(measures)
+        session.flush()
+
+        result = schedule_new_moving_wifi_analysis.delay(ago=0, batch=20)
+        self.assertEqual(result.get(), 1)
+
+        result = schedule_new_moving_wifi_analysis.delay(ago=0, batch=11)
+        self.assertEqual(result.get(), 1)
+
+        result = schedule_new_moving_wifi_analysis.delay(ago=0, batch=10)
+        self.assertEqual(result.get(), 2)
+
+        result = schedule_new_moving_wifi_analysis.delay(ago=0, batch=2)
+        self.assertEqual(result.get(), 6)
+
+        result = schedule_new_moving_wifi_analysis.delay(ago=1, batch=2)
+        self.assertEqual(result.get(), 0)
+
+
+class TestCellLocationUpdate(CeleryTestCase):
+
+    def test_cell_location_update(self):
+        from ichnaea.tasks import cell_location_update
+        now = datetime.utcnow()
+        before = now - timedelta(days=1)
+        session = self.db_master_session
+        k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
+        k2 = dict(radio=1, mcc=1, mnc=2, lac=6, cid=8)
+        data = [
+            Cell(new_measures=3, total_measures=3, **k1),
+            CellMeasure(lat=10000000, lon=10000000, **k1),
+            CellMeasure(lat=10020000, lon=10030000, **k1),
+            CellMeasure(lat=10040000, lon=10060000, **k1),
+            Cell(lat=20000000, lon=20000000,
+                 new_measures=2, total_measures=4, **k2),
+            # the lat/lon is bogus and mismatches the line above on purpose
+            # to make sure old measures are skipped
+            CellMeasure(lat=-10000000, lon=-10000000, created=before, **k2),
+            CellMeasure(lat=-10000000, lon=-10000000, created=before, **k2),
+            CellMeasure(lat=20020000, lon=20040000, **k2),
+            CellMeasure(lat=20020000, lon=20040000, **k2),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        result = cell_location_update.delay(min_new=1)
+        self.assertEqual(result.get(), 2)
+
+        cells = session.query(Cell).all()
+        self.assertEqual(len(cells), 2)
+        self.assertEqual([c.new_measures for c in cells], [0, 0])
+        for cell in cells:
+            if cell.cid == 4:
+                self.assertEqual(cell.lat, 10020000)
+                self.assertEqual(cell.lon, 10030000)
+            elif cell.cid == 8:
+                self.assertEqual(cell.lat, 20010000)
+                self.assertEqual(cell.lon, 20020000)
+
+
+class TestWifiLocationUpdate(CeleryTestCase):
+
     def setUp(self):
         CeleryTestCase.setUp(self)
         self.heka_client = get_client('ichnaea')
         self.heka_client.stream.msgs.clear()
+
+    def test_wifi_location_update(self):
+        from ichnaea.tasks import wifi_location_update
+        now = datetime.utcnow()
+        before = now - timedelta(days=1)
+        session = self.db_master_session
+        k1 = "ab1234567890"
+        k2 = "cd1234567890"
+        data = [
+            Wifi(key=k1, new_measures=3, total_measures=3),
+            WifiMeasure(lat=10000000, lon=10000000, key=k1),
+            WifiMeasure(lat=10020000, lon=10030000, key=k1),
+            WifiMeasure(lat=10040000, lon=10060000, key=k1),
+            Wifi(key=k2, lat=20000000, lon=20000000,
+                 new_measures=2, total_measures=4),
+            # the lat/lon is bogus and mismatches the line above on purpose
+            # to make sure old measures are skipped
+            WifiMeasure(lat=-10000000, lon=-10000000, key=k2, created=before),
+            WifiMeasure(lat=-10000000, lon=-10000000, key=k2, created=before),
+            WifiMeasure(lat=20020000, lon=20040000, key=k2, created=now),
+            WifiMeasure(lat=20020000, lon=20040000, key=k2, created=now),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        result = wifi_location_update.delay(min_new=1)
+        self.assertEqual(result.get(), 2)
+
+        wifis = dict(session.query(Wifi.key, Wifi).all())
+        self.assertEqual(set(wifis.keys()), set([k1, k2]))
+
+        self.assertEqual(wifis[k1].lat, 10020000)
+        self.assertEqual(wifis[k1].lon, 10030000)
+        self.assertEqual(wifis[k1].new_measures, 0)
+
+        self.assertEqual(wifis[k2].lat, 20010000)
+        self.assertEqual(wifis[k2].lon, 20020000)
+        self.assertEqual(wifis[k2].new_measures, 0)
 
     def test_blacklist_moving_wifis(self):
         from ichnaea.tasks import blacklist_moving_wifis
@@ -77,32 +185,6 @@ class TestBlacklist(CeleryTestCase):
         taskname = 'task.remove_wifi'
         self.assertEqual(1, len(find_msg(msgs, 'timer', taskname)))
 
-    def test_schedule_new_moving_wifi_analysis(self):
-        from ichnaea.tasks import schedule_new_moving_wifi_analysis
-        session = self.db_master_session
-        measures = []
-        m1 = 10000000
-        for i in range(11):
-            measures.append(
-                WifiMeasure(lat=m1, lon=m1, key="a%02d234567890" % i))
-        session.add_all(measures)
-        session.flush()
-
-        result = schedule_new_moving_wifi_analysis.delay(ago=0, batch=20)
-        self.assertEqual(result.get(), 1)
-
-        result = schedule_new_moving_wifi_analysis.delay(ago=0, batch=11)
-        self.assertEqual(result.get(), 1)
-
-        result = schedule_new_moving_wifi_analysis.delay(ago=0, batch=10)
-        self.assertEqual(result.get(), 2)
-
-        result = schedule_new_moving_wifi_analysis.delay(ago=0, batch=2)
-        self.assertEqual(result.get(), 6)
-
-        result = schedule_new_moving_wifi_analysis.delay(ago=1, batch=2)
-        self.assertEqual(result.get(), 0)
-
     def test_remove_wifi(self):
         from ichnaea.tasks import remove_wifi
         session = self.db_master_session
@@ -131,85 +213,3 @@ class TestBlacklist(CeleryTestCase):
 
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 0)
-
-
-class TestCellLocationUpdate(CeleryTestCase):
-
-    def test_cell_location_update(self):
-        from ichnaea.tasks import cell_location_update
-        now = datetime.utcnow()
-        before = now - timedelta(days=1)
-        session = self.db_master_session
-        k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
-        k2 = dict(radio=1, mcc=1, mnc=2, lac=6, cid=8)
-        data = [
-            Cell(new_measures=3, total_measures=3, **k1),
-            CellMeasure(lat=10000000, lon=10000000, **k1),
-            CellMeasure(lat=10020000, lon=10030000, **k1),
-            CellMeasure(lat=10040000, lon=10060000, **k1),
-            Cell(lat=20000000, lon=20000000,
-                 new_measures=2, total_measures=4, **k2),
-            # the lat/lon is bogus and mismatches the line above on purpose
-            # to make sure old measures are skipped
-            CellMeasure(lat=-10000000, lon=-10000000, created=before, **k2),
-            CellMeasure(lat=-10000000, lon=-10000000, created=before, **k2),
-            CellMeasure(lat=20020000, lon=20040000, **k2),
-            CellMeasure(lat=20020000, lon=20040000, **k2),
-        ]
-        session.add_all(data)
-        session.commit()
-
-        result = cell_location_update.delay(min_new=1)
-        self.assertEqual(result.get(), 2)
-
-        cells = session.query(Cell).all()
-        self.assertEqual(len(cells), 2)
-        self.assertEqual([c.new_measures for c in cells], [0, 0])
-        for cell in cells:
-            if cell.cid == 4:
-                self.assertEqual(cell.lat, 10020000)
-                self.assertEqual(cell.lon, 10030000)
-            elif cell.cid == 8:
-                self.assertEqual(cell.lat, 20010000)
-                self.assertEqual(cell.lon, 20020000)
-
-
-class TestWifiLocationUpdate(CeleryTestCase):
-
-    def test_wifi_location_update(self):
-        from ichnaea.tasks import wifi_location_update
-        now = datetime.utcnow()
-        before = now - timedelta(days=1)
-        session = self.db_master_session
-        k1 = "ab1234567890"
-        k2 = "cd1234567890"
-        data = [
-            Wifi(key=k1, new_measures=3, total_measures=3),
-            WifiMeasure(lat=10000000, lon=10000000, key=k1),
-            WifiMeasure(lat=10020000, lon=10030000, key=k1),
-            WifiMeasure(lat=10040000, lon=10060000, key=k1),
-            Wifi(key=k2, lat=20000000, lon=20000000,
-                 new_measures=2, total_measures=4),
-            # the lat/lon is bogus and mismatches the line above on purpose
-            # to make sure old measures are skipped
-            WifiMeasure(lat=-10000000, lon=-10000000, key=k2, created=before),
-            WifiMeasure(lat=-10000000, lon=-10000000, key=k2, created=before),
-            WifiMeasure(lat=20020000, lon=20040000, key=k2, created=now),
-            WifiMeasure(lat=20020000, lon=20040000, key=k2, created=now),
-        ]
-        session.add_all(data)
-        session.commit()
-
-        result = wifi_location_update.delay(min_new=1)
-        self.assertEqual(result.get(), 2)
-
-        wifis = dict(session.query(Wifi.key, Wifi).all())
-        self.assertEqual(set(wifis.keys()), set([k1, k2]))
-
-        self.assertEqual(wifis[k1].lat, 10020000)
-        self.assertEqual(wifis[k1].lon, 10030000)
-        self.assertEqual(wifis[k1].new_measures, 0)
-
-        self.assertEqual(wifis[k2].lat, 20010000)
-        self.assertEqual(wifis[k2].lon, 20020000)
-        self.assertEqual(wifis[k2].new_measures, 0)
