@@ -164,10 +164,6 @@ submit = Service(
              schema=SubmitSchema, error_handler=error_handler,
              validators=submit_validator)
 def submit_post(request):
-        return _submit_post(request)
-
-
-def _submit_post(request):
     session = request.db_master_session
     session_objects = []
 

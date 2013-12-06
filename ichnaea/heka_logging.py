@@ -19,9 +19,6 @@ def configure_heka(registry_settings={}):
 
 def heka_tween_factory(handler, registry):
 
-    if '_heka_client' in registry.settings:
-        registry.heka_client = registry.settings['_heka_client']
-
     def heka_tween(request):
 
         with registry.heka_client.timer('http.request', fields={'url': request.url}):
