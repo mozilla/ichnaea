@@ -21,11 +21,12 @@ def heka_tween_factory(handler, registry):
 
     def heka_tween(request):
 
-        with registry.heka_client.timer('http.request', fields={'url': request.url}):
+        with registry.heka_client.timer('http.request',
+                                        fields={'url_path': request.path}):
             response = handler(request)
         registry.heka_client.incr('http.request',
-                                  fields={'status': response.status_code,
-                                          'url_path': request.url})
+                                  fields={'status': str(response.status_code),
+                                          'url_path': request.path})
         return response
 
     return heka_tween
