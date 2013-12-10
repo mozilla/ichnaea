@@ -3,6 +3,46 @@ address = "0.0.0.0:5565"
 parser_type = "message.proto"
 decoder = "ProtobufDecoder"
 
+[GeneralCounterFilter]
+type="StatFilter"
+stat_accum_input = "StatAccumulator"
+message_matcher = 'Type == "counter" && Fields[name] != "http.request"'
+
+[GeneralCounterFilter.Metric.hits]
+type = "Counter"
+name = "stats.%name%"
+value = "%Payload%"
+
+[RequestCountFilter]
+type="StatFilter"
+stat_accum_input = "StatAccumulator"
+message_matcher = 'Type == "counter" && Fields[name] == "http.request"'
+
+[RequestCountFilter.Metric.hits]
+type = "Counter"
+name = "stats.http.request.%url_path%.%status%"
+value = "%Payload%"
+
+[RequestTimingFilter]
+type="StatFilter"
+stat_accum_input = "StatAccumulator"
+message_matcher = 'Type == "timer" && Fields[name] == "http.request"'
+
+[RequestTimingFilter.Metric.timing]
+type = "Timer"
+name = "stats.http.request.%url_path%"
+value = "%Payload%"
+
+[StatAccumulator]
+type="StatAccumInput"
+emit_in_payload = true
+ticker_interval = 5
+
+[CarbonOutput]
+message_matcher = "Type == 'heka.statmetric'"
+
+# You can comment this block out if you don't want hekad to spew log
+# messages to stdout
 [LogOutput]
 message_matcher = "TRUE"
 payload_only = false
