@@ -41,13 +41,6 @@ ticker_interval = 5
 [CarbonOutput]
 message_matcher = "Type == 'heka.statmetric'"
 
-#[WhisperCounterOutput]
-#type = "WhisperOutput"
-#base_path = "whisper"
-#message_matcher = "Type == 'heka.statmetric'"
-#folder_perm = "775"
-
-
 # You can comment this block out if you don't want hekad to spew log
 # messages to stdout
 [LogOutput]
