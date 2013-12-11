@@ -32,6 +32,8 @@ def search_cell(session, data):
             Cell.mnc == cell['mnc']).filter(
             Cell.lac == cell['lac']).filter(
             Cell.cid == cell['cid']).filter(
+            Cell.lac != -1).filter(
+            Cell.cid != -1).filter(
             Cell.lat != sql_null).filter(
             Cell.lon != sql_null
         )
