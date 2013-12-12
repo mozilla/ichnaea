@@ -1,3 +1,10 @@
+from StringIO import StringIO
+
+from heka.config import client_from_text_config
+from heka.holder import get_client
+
+from ichnaea import config
+
 
 def configure_heka(registry_settings={}):
     # If a test client is defined just use that instead of whatever is
@@ -5,14 +12,15 @@ def configure_heka(registry_settings={}):
     if '_heka_client' in registry_settings:
         return registry_settings['_heka_client']
 
-    from ichnaea import config
-    import os
-    from heka.config import client_from_text_config
-    from heka.holder import get_client
+    # deal with konfig's include/extends syntax and construct a merged
+    # file-like object from all the files
+    merged_stream = StringIO()
+    konfig = config()
+    konfig.write(merged_stream)
+    merged_stream.seek(0)
 
-    ichnaea_ini = os.path.abspath(config().filename)
     client = get_client('ichnaea')
-    client = client_from_text_config(open(ichnaea_ini).read(), 'heka', client)
+    client = client_from_text_config(merged_stream.read(), 'heka', client)
 
     return client
 
