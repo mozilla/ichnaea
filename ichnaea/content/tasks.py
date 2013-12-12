@@ -1,4 +1,5 @@
 from celery.utils.log import get_task_logger
+from heka.holder import get_client
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
@@ -33,79 +34,84 @@ def make_stat(name, time, value):
 
 @celery.task(base=DatabaseTask, bind=True)
 def histogram(self, ago=1):
-    day, max_day = daily_task_days(ago)
-    try:
-        with self.db_session() as session:
-            value = histogram_query(session, Measure, max_day)
-            session.add(make_stat('location', day, value))
-            session.commit()
-            return 1
-    except IntegrityError as exc:
-        logger.exception('error')
-        return 0
-    except Exception as exc:  # pragma: no cover
-        raise self.retry(exc=exc)
+    with get_client('ichnaea').timer("task.content.histogram"):
+        day, max_day = daily_task_days(ago)
+        try:
+            with self.db_session() as session:
+                value = histogram_query(session, Measure, max_day)
+                session.add(make_stat('location', day, value))
+                session.commit()
+                return 1
+        except IntegrityError as exc:
+            logger.exception('error')
+            return 0
+        except Exception as exc:  # pragma: no cover
+            raise self.retry(exc=exc)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def cell_histogram(self, ago=1):
-    day, max_day = daily_task_days(ago)
-    try:
-        with self.db_session() as session:
-            value = histogram_query(session, CellMeasure, max_day)
-            session.add(make_stat('cell', day, value))
-            session.commit()
-            return 1
-    except IntegrityError as exc:
-        logger.exception('error')
-        return 0
-    except Exception as exc:  # pragma: no cover
-        raise self.retry(exc=exc)
+    with get_client('ichnaea').timer("task.content.cell_histogram"):
+        day, max_day = daily_task_days(ago)
+        try:
+            with self.db_session() as session:
+                value = histogram_query(session, CellMeasure, max_day)
+                session.add(make_stat('cell', day, value))
+                session.commit()
+                return 1
+        except IntegrityError as exc:
+            logger.exception('error')
+            return 0
+        except Exception as exc:  # pragma: no cover
+            raise self.retry(exc=exc)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def wifi_histogram(self, ago=1):
-    day, max_day = daily_task_days(ago)
-    try:
-        with self.db_session() as session:
-            value = histogram_query(session, WifiMeasure, max_day)
-            session.add(make_stat('wifi', day, value))
-            session.commit()
-            return 1
-    except IntegrityError as exc:
-        logger.exception('error')
-        return 0
-    except Exception as exc:  # pragma: no cover
-        raise self.retry(exc=exc)
+    with get_client('ichnaea').timer("task.content.wifi_histogram"):
+        day, max_day = daily_task_days(ago)
+        try:
+            with self.db_session() as session:
+                value = histogram_query(session, WifiMeasure, max_day)
+                session.add(make_stat('wifi', day, value))
+                session.commit()
+                return 1
+        except IntegrityError as exc:
+            logger.exception('error')
+            return 0
+        except Exception as exc:  # pragma: no cover
+            raise self.retry(exc=exc)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def unique_cell_histogram(self, ago=1):
-    day, max_day = daily_task_days(ago)
-    try:
-        with self.db_session() as session:
-            value = histogram_query(session, Cell, max_day)
-            session.add(make_stat('unique_cell', day, value))
-            session.commit()
-            return 1
-    except IntegrityError as exc:
-        logger.exception('error')
-        return 0
-    except Exception as exc:  # pragma: no cover
-        raise self.retry(exc=exc)
+    with get_client('ichnaea').timer("task.content.unique_cell_histogram"):
+        day, max_day = daily_task_days(ago)
+        try:
+            with self.db_session() as session:
+                value = histogram_query(session, Cell, max_day)
+                session.add(make_stat('unique_cell', day, value))
+                session.commit()
+                return 1
+        except IntegrityError as exc:
+            logger.exception('error')
+            return 0
+        except Exception as exc:  # pragma: no cover
+            raise self.retry(exc=exc)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def unique_wifi_histogram(self, ago=1):
-    day, max_day = daily_task_days(ago)
-    try:
-        with self.db_session() as session:
-            value = histogram_query(session, Wifi, max_day)
-            session.add(make_stat('unique_wifi', day, value))
-            session.commit()
-            return 1
-    except IntegrityError as exc:
-        logger.exception('error')
-        return 0
-    except Exception as exc:  # pragma: no cover
-        raise self.retry(exc=exc)
+    with get_client('ichnaea').timer("task.content.unique_wifi_histogram"):
+        day, max_day = daily_task_days(ago)
+        try:
+            with self.db_session() as session:
+                value = histogram_query(session, Wifi, max_day)
+                session.add(make_stat('unique_wifi', day, value))
+                session.commit()
+                return 1
+        except IntegrityError as exc:
+            logger.exception('error')
+            return 0
+        except Exception as exc:  # pragma: no cover
+            raise self.retry(exc=exc)
