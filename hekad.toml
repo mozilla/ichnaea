@@ -13,6 +13,16 @@ type = "Counter"
 name = "stats.%name%"
 value = "%Payload%"
 
+[GeneralTimingFilter]
+type="StatFilter"
+stat_accum_input = "StatAccumulator"
+message_matcher = 'Type == "timer" && Fields[name] != "http.request"'
+
+[GeneralTimingFilter.Metric.timing]
+type = "Timer"
+name = "stats.%name%"
+value = "%Payload%"
+
 [RequestCountFilter]
 type="StatFilter"
 stat_accum_input = "StatAccumulator"
