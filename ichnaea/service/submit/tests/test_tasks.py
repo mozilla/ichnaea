@@ -81,8 +81,12 @@ class TestInsert(CeleryTestCase):
     def test_schedule_cell_cleanup(self):
         from ichnaea.service.submit.tasks import schedule_cell_cleanup
         session = self.db_master_session
+        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
-        measure_data = dict(lat=10000000, lon=10000000, radio=0)
+        measure_data = dict(
+            created=encode_datetime(time), lat=10000000, lon=10000000,
+            time=encode_datetime(time), radio=0,
+        )
         entries = [
             {"mcc": 1, "mnc": 2, "signal": -50},
             {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4},
@@ -186,8 +190,12 @@ class TestInsert(CeleryTestCase):
     def test_schedule_wifi_cleanup(self):
         from ichnaea.service.submit.tasks import schedule_wifi_cleanup
         session = self.db_master_session
+        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
-        measure_data = dict(lat=10000000, lon=10000000, radio=0)
+        measure_data = dict(
+            created=encode_datetime(time), lat=10000000, lon=10000000,
+            time=encode_datetime(time), radio=0,
+        )
         entries = [
             {"key": "ab12", "channel": 11, "signal": -80},
             {"key": "ab12", "channel": 3, "signal": -90},

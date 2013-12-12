@@ -70,10 +70,12 @@ class TestBlacklist(CeleryTestCase):
         msgs = self.heka_client.stream.msgs
         self.assertEqual(3, len(msgs))
         # We made duplicate calls
-        self.assertEqual(2, len(find_msg(msgs, 'timer', 'task.blacklist_moving_wifis')))
+        taskname = 'task.blacklist_moving_wifis'
+        self.assertEqual(2, len(find_msg(msgs, 'timer', taskname)))
 
         # One of those would've scheduled a remove_wifi task
-        self.assertEqual(1, len(find_msg(msgs, 'timer', 'task.remove_wifi')))
+        taskname = 'task.remove_wifi'
+        self.assertEqual(1, len(find_msg(msgs, 'timer', taskname)))
 
     def test_schedule_new_moving_wifi_analysis(self):
         from ichnaea.tasks import schedule_new_moving_wifi_analysis
