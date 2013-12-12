@@ -380,7 +380,6 @@ class TestSubmit(CeleryAppTestCase):
         self.assertTrue('errors' in res.json)
 
     def test_heka_logging(self):
-
         app = self.app
         cell_data = [
             {"radio": "umts", "mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
@@ -408,4 +407,5 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(1, len(find_msg(msgs, 'counter', 'http.request')))
         self.assertEqual(1, len(find_msg(msgs, 'counter', 'items.uploaded')))
         self.assertEqual(1, len(find_msg(msgs, 'timer', 'http.request')))
-        self.assertEqual(1, len(find_msg(msgs, 'timer', 'task.insert_cell_measure')))
+        taskname = 'task.service.submit.insert_cell_measure'
+        self.assertEqual(1, len(find_msg(msgs, 'timer', taskname)))
