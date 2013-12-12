@@ -8,6 +8,7 @@ from celery.schedules import crontab
 
 from ichnaea import config
 from ichnaea.db import Database
+from ichnaea.heka_logging import configure_heka
 
 
 CELERY_IMPORTS = [
@@ -96,6 +97,7 @@ def init_worker_process(signal, sender, **kw):  # pragma: no cover
     # get the app in the current worker process
     app = app_or_default()
     attach_database(app)
+    configure_heka()
 
 
 def configure(celery=celery):
