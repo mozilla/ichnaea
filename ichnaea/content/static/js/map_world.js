@@ -9,6 +9,11 @@ $(document).ready(function() {
         maxClusterRadius: 50
     });
 
+    // add open street map attribution for base tiles
+    map.infoControl.addInfo(
+        '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    );
+
     $.ajax({
         url: '/map_world.csv',
         dataType: 'text',
