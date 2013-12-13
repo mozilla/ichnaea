@@ -193,7 +193,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         msgs = self.heka_client.stream.msgs
         self.assertEqual(3, len(msgs))
         # We made duplicate calls
-        taskname = 'task.blacklist_moving_wifis'
+        taskname = 'task.wifi_location_update'
         self.assertEqual(2, len(find_msg(msgs, 'timer', taskname)))
 
         # One of those would've scheduled a remove_wifi task
