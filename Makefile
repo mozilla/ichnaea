@@ -50,7 +50,7 @@ endif
 
 js: node_modules
 	$(HERE)/node_modules/.bin/uglifyjs \
-	$(HERE)/ichnaea/content/static/js/mapbox-1.5.0.min.js \
+	$(HERE)/ichnaea/content/static/js/mapbox-1.5.2.min.js \
 	$(HERE)/ichnaea/content/static/js/map_world.js \
 	$(HERE)/ichnaea/content/static/js/leaflet.markercluster-0.3.0-20131113.js \
 	$(HERE)/ichnaea/content/static/js/csv2geojson-3.6.0.js \
