@@ -133,24 +133,6 @@ def convert_frequency(entry):
             entry['channel'] = (freq - 5000) // 5
 
 
-def update_wifi_measure_count(wifi_key, count, wifis, created, session, userid=None):
-    new_wifi = 0
-    if wifi_key not in wifis:
-        new_wifi += 1
-
-    stmt = Wifi.__table__.insert(
-        on_duplicate='new_measures = new_measures + %s, '
-                     'total_measures = total_measures + %s' % (count, count)
-    ).values(
-        key=wifi_key, created=created,
-        new_measures=count, total_measures=count)
-    session.execute(stmt)
-
-    if userid is not None and new_wifi > 0:
-        # update user score
-        process_score(userid, new_wifi, session, key='new_wifi')
-
-
 def create_wifi_measure(measure_data, created, entry):
     return WifiMeasure(
         measure_id=measure_data['id'],
@@ -172,11 +154,14 @@ def process_wifi_measure(session, measure_data, entries, userid=None):
     wifi_measures = []
     wifi_count = defaultdict(int)
     wifi_keys = set([e['key'] for e in entries])
+    created = decode_datetime(measure_data.get('created', ''))
+
     # did we get measures for blacklisted wifis?
     blacked = session.query(WifiBlacklist.key).filter(
         WifiBlacklist.key.in_(wifi_keys)).all()
     blacked = set([b[0] for b in blacked])
-    created = decode_datetime(measure_data.get('created', ''))
+
+    # process entries
     for entry in entries:
         wifi_key = entry['key']
         # convert frequency into channel numbers and remove frequency
@@ -185,17 +170,31 @@ def process_wifi_measure(session, measure_data, entries, userid=None):
         if wifi_key not in blacked:
             # skip blacklisted wifi AP's
             wifi_count[wifi_key] += 1
-    # do we already know about these wifis?
-    white_keys = wifi_keys - blacked
-    if white_keys:
-        wifis = session.query(Wifi.key).filter(Wifi.key.in_(white_keys))
-        wifis = dict([(w[0], True) for w in wifis.all()])
-    else:
-        wifis = {}
-    for wifi_key, count in wifi_count.items():
-        # update new/total measure counts
-        update_wifi_measure_count(
-            wifi_key, count, wifis, created, session, userid=userid)
+
+    # update user score
+    if userid is not None:
+        # do we already know about any wifis?
+        white_keys = wifi_keys - blacked
+        if white_keys:
+            wifis = session.query(Wifi.key).filter(Wifi.key.in_(white_keys))
+            wifis = dict([(w[0], True) for w in wifis.all()])
+        else:
+            wifis = {}
+        # subtract known wifis from all unique wifis
+        new_wifis = len(wifi_count) - len(wifis)
+        if new_wifis > 0:
+            process_score(userid, new_wifis, session, key='new_wifi')
+
+    # update new/total measure counts
+    for wifi_key, num in wifi_count.items():
+        stmt = Wifi.__table__.insert(
+            on_duplicate='new_measures = new_measures + %s, '
+                         'total_measures = total_measures + %s' % (num, num)
+        ).values(
+            key=wifi_key, created=created,
+            new_measures=num, total_measures=num)
+        session.execute(stmt)
+
     session.add_all(wifi_measures)
     return wifi_measures
 
