@@ -68,8 +68,8 @@ class TestFunctionalContent(AppTestCase):
     def test_map_world_csv(self):
         app = self.app
         session = self.db_slave_session
-        session.add(MapStat(lat=2000, lon=3000, value=2))
-        session.add(MapStat(lat=2001, lon=3000, value=7))
+        session.add(MapStat(lat=20000, lon=30000, value=2))
+        session.add(MapStat(lat=20001, lon=30000, value=7))
         session.flush()
         result = app.get('/map_world.csv', status=200)
         self.assertEqual(result.content_type, 'text/plain')

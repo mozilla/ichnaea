@@ -41,7 +41,7 @@ class MapStat(_Model):
         'mysql_engine': 'InnoDB',
         'mysql_charset': 'utf8',
     }
-    # lat/lon * 1000, so 12.345 is stored as 12345
+    # lat/lon * 10000, so 12.3456 is stored as 123456
     lat = Column(Integer, primary_key=True, autoincrement=False)
     lon = Column(Integer, primary_key=True, autoincrement=False)
     # mapped via MAPSTAT_TYPE

@@ -38,9 +38,9 @@ def configure_submit(config):
 
 def process_mapstat(measures, session, userid=None):
     tiles = defaultdict(int)
-    # aggregate to 100x100m tiles
+    # aggregate to 10x10m tiles
     for measure in measures:
-        tiles[(measure.lat / 10000, measure.lon / 10000)] += 1
+        tiles[(measure.lat / 1000, measure.lon / 1000)] += 1
     lats = set([k[0] for k in tiles.keys()])
     lons = set([k[1] for k in tiles.keys()])
     result = session.query(MapStat).filter(

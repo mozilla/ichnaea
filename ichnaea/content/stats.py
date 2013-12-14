@@ -92,8 +92,8 @@ def leaders(session):
 
 
 def map_world_csv(session):
-    select = text("select round(lat / 50) as lat1, "
-                  "round(lon / 50) as lon1, count(*) as value "
+    select = text("select round(lat / 500) as lat1, "
+                  "round(lon / 500) as lon1, count(*) as value "
                   "from mapstat group by lat1, lon1 "
                   "order by lat1, lon1")
     result = session.execute(select)

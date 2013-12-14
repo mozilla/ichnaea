@@ -90,10 +90,10 @@ class TestStats(DBTestCase):
         from ichnaea.content.stats import map_world_csv
         session = self.db_master_session
         stats = [
-            MapStat(lat=1000, lon=2000, value=101),
-            MapStat(lat=1001, lon=2000, value=2),
-            MapStat(lat=2000, lon=3000, value=11),
-            MapStat(lat=3000, lon=4000, value=1),
+            MapStat(lat=10000, lon=20000, value=101),
+            MapStat(lat=10001, lon=20000, value=2),
+            MapStat(lat=20000, lon=30000, value=11),
+            MapStat(lat=30000, lon=40000, value=1),
         ]
         session.add_all(stats)
         session.commit()

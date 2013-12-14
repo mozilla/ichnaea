@@ -242,8 +242,8 @@ class TestSubmit(CeleryAppTestCase):
         app = self.app
         session = self.db_master_session
         session.add_all([
-            MapStat(lat=1000, lon=2000, value=13),
-            MapStat(lat=2000, lon=3000, value=3),
+            MapStat(lat=10000, lon=20000, value=13),
+            MapStat(lat=20000, lon=30000, value=3),
         ])
         session.flush()
         app.post_json(
@@ -258,7 +258,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(result), 3)
         self.assertEqual(
             sorted([(int(r.lat), int(r.lon), int(r.value)) for r in result]),
-            [(-2000, 3000, 1), (1000, 2000, 14), (2000, 3000, 5)]
+            [(-20000, 30000, 1), (10000, 20000, 14), (20000, 30000, 5)]
         )
 
     def test_nickname_header(self):
