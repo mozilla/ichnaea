@@ -24,6 +24,7 @@ def _make_app(_db_master=None, _db_slave=None, **settings):
     wsgiapp = main({}, _db_master=_db_master, _db_slave=_db_slave, **settings)
     return TestApp(wsgiapp)
 
+
 def find_msg(msgs, msg_type, field_name):
     shortlist = [m for m in msgs if m.type == msg_type and
                 [f for f in m.fields if f.name == 'name' and
@@ -34,6 +35,7 @@ def find_msg(msgs, msg_type, field_name):
 def use_hekatest(heka_client):
     heka_client.stream = DebugCaptureStream()
     heka_client.encoder = NullEncoder(None)
+
 
 class DBIsolation(object):
     # Inspired by a blog post:

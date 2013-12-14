@@ -1,12 +1,8 @@
-from collections import defaultdict
 from datetime import datetime
 from datetime import timedelta
-from operator import attrgetter
 
 from celery import Task
 from celery.utils.log import get_task_logger
-from sqlalchemy import distinct
-from sqlalchemy import func
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 

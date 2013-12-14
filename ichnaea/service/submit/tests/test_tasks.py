@@ -10,13 +10,11 @@ from ichnaea.content.models import (
 from ichnaea.models import (
     Cell,
     CellMeasure,
-    Measure,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
 )
 from ichnaea.decimaljson import (
-    dumps,
     encode_datetime,
 )
 from ichnaea.tests.base import CeleryTestCase

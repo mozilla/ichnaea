@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from cornice.pyramidhook import wrap_request
 from cornice.schemas import CorniceSchema, validate_colander_schema
+from heka.holder import get_client
 from pyramid.testing import DummyRequest
 
 from ichnaea.models import (
@@ -10,7 +11,6 @@ from ichnaea.models import (
 )
 from ichnaea.tests.base import AppTestCase, find_msg
 
-from heka.holder import get_client
 
 class Event(object):
 

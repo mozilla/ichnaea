@@ -1,11 +1,9 @@
 from celery.utils.log import get_task_logger
-from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from ichnaea.models import (
     Cell,
     CellMeasure,
-    Measure,
     RADIO_TYPE,
     Wifi,
     WifiBlacklist,
@@ -13,8 +11,6 @@ from ichnaea.models import (
 )
 from ichnaea.decimaljson import (
     decode_datetime,
-    encode_datetime,
-    loads,
 )
 from ichnaea.tasks import DatabaseTask
 from ichnaea.worker import celery
