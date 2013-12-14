@@ -1,3 +1,8 @@
+from collections import (
+    defaultdict,
+    namedtuple,
+)
+
 from celery.utils.log import get_task_logger
 from sqlalchemy.exc import IntegrityError
 
@@ -19,6 +24,8 @@ from ichnaea.service.submit.utils import process_score
 
 logger = get_task_logger(__name__)
 sql_null = None  # avoid pep8 warning
+
+CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 
 
 def create_cell_measure(measure_data, entry):
@@ -42,30 +49,31 @@ def create_cell_measure(measure_data, entry):
     )
 
 
-def update_cell_measure_count(measure, session, userid=None):
-    if (measure.radio == -1 or measure.lac == 0 or measure.cid == 0):
+def update_cell_measure_count(cell_key, count, created, session, userid=None):
+    if (cell_key.radio == -1 or cell_key.lac == 0 or cell_key.cid == 0):
         # only update data for complete records
         return
 
-    # do we already know about these cells?
+    # do we already know about this cell?
     query = session.query(Cell).filter(
-        Cell.radio == measure.radio).filter(
-        Cell.mcc == measure.mcc).filter(
-        Cell.mnc == measure.mnc).filter(
-        Cell.lac == measure.lac).filter(
-        Cell.cid == measure.cid
+        Cell.radio == cell_key.radio).filter(
+        Cell.mcc == cell_key.mcc).filter(
+        Cell.mnc == cell_key.mnc).filter(
+        Cell.lac == cell_key.lac).filter(
+        Cell.cid == cell_key.cid
     )
     cell = query.first()
     new_cell = 0
     if cell is None:
-        new_cell += 1
+        new_cell = 1
 
     stmt = Cell.__table__.insert(
-        on_duplicate='new_measures = new_measures + 1, '
-                     'total_measures = total_measures + 1').values(
-        created=measure.created, radio=measure.radio,
-        mcc=measure.mcc, mnc=measure.mnc, lac=measure.lac, cid=measure.cid,
-        new_measures=1, total_measures=1)
+        on_duplicate='new_measures = new_measures + %s, '
+                     'total_measures = total_measures + %s' % (count, count)
+    ).values(
+        created=created, radio=cell_key.radio,
+        mcc=cell_key.mcc, mnc=cell_key.mnc, lac=cell_key.lac, cid=cell_key.cid,
+        new_measures=count, total_measures=count)
     session.execute(stmt)
 
     if userid is not None and new_cell > 0:
@@ -74,8 +82,8 @@ def update_cell_measure_count(measure, session, userid=None):
 
 
 def process_cell_measure(session, measure_data, entries, userid=None):
+    cell_count = defaultdict(int)
     cell_measures = []
-    # TODO group by unique cell
     for entry in entries:
         cell_measure = create_cell_measure(measure_data, entry)
         # use more specific cell type or
@@ -84,8 +92,14 @@ def process_cell_measure(session, measure_data, entries, userid=None):
             cell_measure.radio = RADIO_TYPE.get(entry['radio'], -1)
         else:
             cell_measure.radio = measure_data['radio']
-        update_cell_measure_count(cell_measure, session, userid=userid)
         cell_measures.append(cell_measure)
+        # group per unique cell
+        cell_count[CellKey(cell_measure.radio, cell_measure.mcc,
+                           cell_measure.mnc, cell_measure.lac,
+                           cell_measure.cid)] += 1
+    for cell_key, count in cell_count.items():
+        update_cell_measure_count(cell_key, count, measure_data['created'],
+                                  session, userid=userid)
     session.add_all(cell_measures)
     return cell_measures
 
