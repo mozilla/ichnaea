@@ -49,10 +49,10 @@ def create_cell_measure(measure_data, entry):
     )
 
 
-def update_cell_measure_count(cell_key, count, created, session, userid=None):
+def update_cell_measure_count(cell_key, count, created, session):
     if (cell_key.radio == -1 or cell_key.lac == 0 or cell_key.cid == 0):
         # only update data for complete records
-        return
+        return 0
 
     # do we already know about this cell?
     query = session.query(Cell).filter(
@@ -75,16 +75,15 @@ def update_cell_measure_count(cell_key, count, created, session, userid=None):
         mcc=cell_key.mcc, mnc=cell_key.mnc, lac=cell_key.lac, cid=cell_key.cid,
         new_measures=count, total_measures=count)
     session.execute(stmt)
-
-    if userid is not None and new_cell > 0:
-        # update user score
-        process_score(userid, new_cell, session, key='new_cell')
+    return new_cell
 
 
 def process_cell_measure(session, measure_data, entries, userid=None):
     cell_count = defaultdict(int)
     cell_measures = []
     created = decode_datetime(measure_data.get('created', ''))
+
+    # process entries
     for entry in entries:
         cell_measure = create_cell_measure(measure_data, entry)
         # use more specific cell type or
@@ -98,9 +97,17 @@ def process_cell_measure(session, measure_data, entries, userid=None):
         cell_count[CellKey(cell_measure.radio, cell_measure.mcc,
                            cell_measure.mnc, cell_measure.lac,
                            cell_measure.cid)] += 1
+
+    # update new/total measure counts
+    new_cells = 0
     for cell_key, count in cell_count.items():
-        update_cell_measure_count(cell_key, count, created,
-                                  session, userid=userid)
+        new_cells += update_cell_measure_count(
+            cell_key, count, created, session)
+
+    # update user score
+    if userid is not None and new_cells > 0:
+        process_score(userid, new_cells, session, key='new_cell')
+
     session.add_all(cell_measures)
     return cell_measures
 
