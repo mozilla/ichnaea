@@ -84,8 +84,6 @@ class CellMeasure(_Model):
     __table_args__ = (
         Index('cell_measure_measure_id_idx', 'measure_id'),
         Index('cell_measure_created_idx', 'created'),
-        Index('cell_measure_lat_idx', 'lat'),
-        Index('cell_measure_lon_idx', 'lon'),
         Index('cell_measure_key_idx', 'radio', 'mcc', 'mnc', 'lac', 'cid'),
         {
             'mysql_engine': 'InnoDB',
