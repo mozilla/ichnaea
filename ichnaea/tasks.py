@@ -146,8 +146,11 @@ def mark_moving_wifis(session, moving_keys):
     if not moving_keys:
         return
     for key in moving_keys:
-        # TODO: on duplicate key ignore
-        session.add(WifiBlacklist(key=key, created=utcnow))
+        # on duplicate key, do a no-op change
+        stmt = WifiBlacklist.__table__.insert(
+            on_duplicate='created=created').values(
+            key=key, created=utcnow)
+        session.execute(stmt)
     remove_wifi.delay(list(moving_keys))
 
 
