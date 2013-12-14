@@ -77,53 +77,6 @@ def update_cell_measure_count(measure, session, userid=None):
         process_score(userid, new_cell, session, key='new_cell')
 
 
-@celery.task(base=DatabaseTask, bind=True)
-def schedule_cell_cleanup(self, lower, upper, batch=100):
-    with self.db_session() as session:
-        stmt = text("select measure.id from measure left join cell_measure "
-                    "on measure.id = cell_measure.measure_id where "
-                    "cell_measure.measure_id is null and "
-                    "measure.cell is not null and "
-                    "measure.id > %s and measure.id < %s" % (
-                        lower, upper))
-        ids = session.execute(stmt).fetchall()
-        ids = [int(i[0]) for i in ids]
-        for i in range(0, len(ids), batch):
-            # split list into batch sized chunks
-            reprocess_cell_measure.delay(ids[i:i + batch])
-        return len(ids)
-    return 0
-
-
-@celery.task(base=DatabaseTask, bind=True)
-def reprocess_cell_measure(self, measure_ids, userid=None):
-    measures = []
-    try:
-        with self.db_session() as session:
-            measures = session.query(Measure).filter(
-                Measure.id.in_(measure_ids)).filter(
-                Measure.cell != sql_null).all()
-            for measure in measures:
-                measure_data = dict(
-                    id=measure.id, created=encode_datetime(measure.created),
-                    lat=measure.lat, lon=measure.lon,
-                    time=encode_datetime(measure.time),
-                    accuracy=measure.accuracy, altitude=measure.altitude,
-                    altitude_accuracy=measure.altitude_accuracy,
-                    radio=measure.radio,
-                )
-                # adds data to this session
-                process_cell_measure(
-                    session, measure_data, loads(measure.cell), userid=userid)
-            session.commit()
-        return len(measures)
-    except IntegrityError as exc:  # pragma: no cover
-        logger.exception('error')
-        return 0
-    except Exception as exc:  # pragma: no cover
-        raise self.retry(exc=exc)
-
-
 def process_cell_measure(session, measure_data, entries, userid=None):
     cell_measures = []
     # TODO group by unique cell
@@ -202,53 +155,6 @@ def create_wifi_measure(measure_data, created, entry):
         channel=entry.get('channel', 0),
         signal=entry.get('signal', 0),
     )
-
-
-@celery.task(base=DatabaseTask, bind=True)
-def schedule_wifi_cleanup(self, lower, upper, batch=100):
-    with self.db_session() as session:
-        stmt = text("select measure.id from measure left join wifi_measure "
-                    "on measure.id = wifi_measure.measure_id where "
-                    "wifi_measure.measure_id is null and "
-                    "measure.wifi is not null and "
-                    "measure.id > %s and measure.id < %s" % (
-                        lower, upper))
-        ids = session.execute(stmt).fetchall()
-        ids = [int(i[0]) for i in ids]
-        for i in range(0, len(ids), batch):
-            # split list into batch sized chunks
-            reprocess_wifi_measure.delay(ids[i:i + batch])
-        return len(ids)
-    return 0
-
-
-@celery.task(base=DatabaseTask, bind=True)
-def reprocess_wifi_measure(self, measure_ids, userid=None):
-    measures = []
-    try:
-        with self.db_session() as session:
-            measures = session.query(Measure).filter(
-                Measure.id.in_(measure_ids)).filter(
-                Measure.wifi != sql_null).all()
-            for measure in measures:
-                measure_data = dict(
-                    id=measure.id, created=encode_datetime(measure.created),
-                    lat=measure.lat, lon=measure.lon,
-                    time=encode_datetime(measure.time),
-                    accuracy=measure.accuracy, altitude=measure.altitude,
-                    altitude_accuracy=measure.altitude_accuracy,
-                    radio=measure.radio,
-                )
-                # adds data to this session
-                process_wifi_measure(
-                    session, measure_data, loads(measure.wifi), userid=userid)
-            session.commit()
-        return len(measures)
-    except IntegrityError as exc:  # pragma: no cover
-        logger.exception('error')
-        return 0
-    except Exception as exc:  # pragma: no cover
-        raise self.retry(exc=exc)
 
 
 def process_wifi_measure(session, measure_data, entries, userid=None):
