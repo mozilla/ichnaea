@@ -77,15 +77,15 @@ def process_cell_measure(session, measure_data, entries, userid=None):
     cell_measures = []
     # TODO group by unique cell
     for entry in entries:
-        cell = create_cell_measure(measure_data, entry)
+        cell_measure = create_cell_measure(measure_data, entry)
         # use more specific cell type or
         # fall back to less precise measure
         if entry.get('radio'):
-            cell.radio = RADIO_TYPE.get(entry['radio'], -1)
+            cell_measure.radio = RADIO_TYPE.get(entry['radio'], -1)
         else:
-            cell.radio = measure_data['radio']
-        update_cell_measure_count(cell, session, userid=userid)
-        cell_measures.append(cell)
+            cell_measure.radio = measure_data['radio']
+        update_cell_measure_count(cell_measure, session, userid=userid)
+        cell_measures.append(cell_measure)
     session.add_all(cell_measures)
     return cell_measures
 
