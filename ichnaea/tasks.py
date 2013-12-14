@@ -172,19 +172,13 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
             wifis = dict(query.all())
             if not wifis:
                 return 0
-            # TODO: This gets all measures and not just the X newest
-            query = session.query(WifiMeasure).filter(
-                WifiMeasure.key.in_(wifis.keys()))
-            wifi_measures = defaultdict(list)
-            for measure in query.all():
-                wifi_measures[measure.key].append(measure)
             moving_keys = set()
             for wifi_key, wifi in wifis.items():
-                measures = wifi_measures[wifi_key]
                 # only take the last X new_measures
-                measures = sorted(
-                    measures, key=attrgetter('created'), reverse=True)
-                measures = measures[:wifi.new_measures]
+                measures = session.query(WifiMeasure).filter(
+                    WifiMeasure.key == wifi_key).order_by(
+                    WifiMeasure.created.desc()).limit(
+                    wifi.new_measures).all()
                 length = len(measures)
                 latitudes = [w.lat for w in measures]
                 longitudes = [w.lon for w in measures]
