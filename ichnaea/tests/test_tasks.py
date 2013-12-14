@@ -13,35 +13,6 @@ from ichnaea.tests.base import CeleryTestCase, find_msg
 from heka.holder import get_client
 
 
-class TestBlacklist(CeleryTestCase):
-
-    def test_schedule_new_moving_wifi_analysis(self):
-        from ichnaea.tasks import schedule_new_moving_wifi_analysis
-        session = self.db_master_session
-        measures = []
-        m1 = 10000000
-        for i in range(11):
-            measures.append(
-                WifiMeasure(lat=m1, lon=m1, key="a%02d234567890" % i))
-        session.add_all(measures)
-        session.flush()
-
-        result = schedule_new_moving_wifi_analysis.delay(ago=0, batch=20)
-        self.assertEqual(result.get(), 1)
-
-        result = schedule_new_moving_wifi_analysis.delay(ago=0, batch=11)
-        self.assertEqual(result.get(), 1)
-
-        result = schedule_new_moving_wifi_analysis.delay(ago=0, batch=10)
-        self.assertEqual(result.get(), 2)
-
-        result = schedule_new_moving_wifi_analysis.delay(ago=0, batch=2)
-        self.assertEqual(result.get(), 6)
-
-        result = schedule_new_moving_wifi_analysis.delay(ago=1, batch=2)
-        self.assertEqual(result.get(), 0)
-
-
 class TestCellLocationUpdate(CeleryTestCase):
 
     def test_cell_location_update(self):

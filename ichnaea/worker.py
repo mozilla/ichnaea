@@ -48,11 +48,6 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(hour=0, minute=4),
         'args': (1, ),
     },
-    'schedule-new-moving-wifi-analysis-yesterday': {
-        'task': 'ichnaea.tasks.schedule_new_moving_wifi_analysis',
-        'schedule': crontab(hour=0, minute=5),
-        'args': (1, ),
-    },
     'continuous-cell-location-update': {
         'task': 'ichnaea.tasks.cell_location_update',
         'schedule': timedelta(seconds=299),  # 13*23
