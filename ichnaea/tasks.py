@@ -225,8 +225,28 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
         raise self.retry(exc=exc)
 
 
+def mark_moving_wifis(session, moving_keys):
+    utcnow = datetime.utcnow()
+    query = session.query(WifiBlacklist.key).filter(
+        WifiBlacklist.key.in_(moving_keys))
+    already_blocked = set([a[0] for a in query.all()])
+    moving_keys = moving_keys - already_blocked
+    if not moving_keys:
+        return
+    for key in moving_keys:
+        # TODO: on duplicate key ignore
+        session.add(WifiBlacklist(key=key, created=utcnow))
+    remove_wifi.delay(list(moving_keys))
+
+
 @celery.task(base=DatabaseTask, bind=True)
 def wifi_location_update(self, min_new=10, max_new=100, batch=10):
+    # TODO: this doesn't take into account wifi AP's which have
+    # permanently moved after a certain date
+
+    # maximum difference of two decimal places, ~5km at equator
+    # or ~2km at 67 degrees north
+    MAX_DIFF = 500000
     try:
         wifis = {}
         with self.db_session() as session:
@@ -242,6 +262,7 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
             wifi_measures = defaultdict(list)
             for measure in query.all():
                 wifi_measures[measure.key].append(measure)
+            moving_keys = set()
             for wifi_key, wifi in wifis.items():
                 measures = wifi_measures[wifi_key]
                 # only take the last X new_measures
@@ -249,13 +270,25 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
                     measures, key=attrgetter('created'), reverse=True)
                 measures = measures[:wifi.new_measures]
                 length = len(measures)
-                new_lat = sum([w.lat for w in measures]) // length
-                new_lon = sum([w.lon for w in measures]) // length
+                latitudes = [w.lat for w in measures]
+                longitudes = [w.lon for w in measures]
+                new_lat = sum(latitudes) // length
+                new_lon = sum(longitudes) // length
                 if not (wifi.lat or wifi.lon):
+                    # no prior position
                     wifi.lat = new_lat
                     wifi.lon = new_lon
                 else:
-                    # pre-existing location data
+                    # pre-existing location data, check for moving wifi
+                    # add old lat/lon to the candidate list
+                    latitudes.append(wifi.lat)
+                    longitudes.append(wifi.lon)
+                    lat_diff = abs(max(latitudes) - min(latitudes))
+                    lon_diff = abs(max(longitudes) - min(longitudes))
+                    if lat_diff >= MAX_DIFF or lon_diff >= MAX_DIFF:
+                        # add to moving list, skip further updates
+                        moving_keys.add(wifi_key)
+                        continue
                     total = wifi.total_measures
                     old_length = total - wifi.new_measures
                     wifi.lat = ((wifi.lat * old_length) +
@@ -263,8 +296,11 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
                     wifi.lon = ((wifi.lon * old_length) +
                                 (new_lon * length)) // total
                 wifi.new_measures = Wifi.new_measures - length
+            if moving_keys:
+                # some wifi's found to be moving too much
+                mark_moving_wifis(session, moving_keys)
             session.commit()
-        return len(wifis)
+        return (len(wifis), len(moving_keys))
     except IntegrityError as exc:  # pragma: no cover
         logger.exception('error')
         return 0
