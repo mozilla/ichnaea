@@ -84,6 +84,7 @@ def update_cell_measure_count(cell_key, count, created, session, userid=None):
 def process_cell_measure(session, measure_data, entries, userid=None):
     cell_count = defaultdict(int)
     cell_measures = []
+    created = decode_datetime(measure_data.get('created', ''))
     for entry in entries:
         cell_measure = create_cell_measure(measure_data, entry)
         # use more specific cell type or
@@ -98,7 +99,7 @@ def process_cell_measure(session, measure_data, entries, userid=None):
                            cell_measure.mnc, cell_measure.lac,
                            cell_measure.cid)] += 1
     for cell_key, count in cell_count.items():
-        update_cell_measure_count(cell_key, count, measure_data['created'],
+        update_cell_measure_count(cell_key, count, created,
                                   session, userid=userid)
     session.add_all(cell_measures)
     return cell_measures
@@ -132,17 +133,17 @@ def convert_frequency(entry):
             entry['channel'] = (freq - 5000) // 5
 
 
-def update_wifi_measure_count(wifi_key, wifis, created, session, userid=None):
+def update_wifi_measure_count(wifi_key, count, wifis, created, session, userid=None):
     new_wifi = 0
     if wifi_key not in wifis:
         new_wifi += 1
-        wifis[wifi_key] = True
 
     stmt = Wifi.__table__.insert(
-        on_duplicate='new_measures = new_measures + 1, '
-                     'total_measures = total_measures + 1').values(
+        on_duplicate='new_measures = new_measures + %s, '
+                     'total_measures = total_measures + %s' % (count, count)
+    ).values(
         key=wifi_key, created=created,
-        new_measures=1, total_measures=1)
+        new_measures=count, total_measures=count)
     session.execute(stmt)
 
     if userid is not None and new_wifi > 0:
@@ -169,26 +170,32 @@ def create_wifi_measure(measure_data, created, entry):
 
 def process_wifi_measure(session, measure_data, entries, userid=None):
     wifi_measures = []
+    wifi_count = defaultdict(int)
     wifi_keys = set([e['key'] for e in entries])
     # did we get measures for blacklisted wifis?
     blacked = session.query(WifiBlacklist.key).filter(
         WifiBlacklist.key.in_(wifi_keys)).all()
     blacked = set([b[0] for b in blacked])
-    # do we already know about these wifis?
-    wifis = session.query(Wifi.key).filter(Wifi.key.in_(wifi_keys))
-    wifis = dict([(w[0], True) for w in wifis.all()])
     created = decode_datetime(measure_data.get('created', ''))
-    # TODO group by unique cell
     for entry in entries:
         wifi_key = entry['key']
         # convert frequency into channel numbers and remove frequency
         convert_frequency(entry)
         wifi_measures.append(create_wifi_measure(measure_data, created, entry))
-        # update new/total measure counts
         if wifi_key not in blacked:
             # skip blacklisted wifi AP's
-            update_wifi_measure_count(
-                wifi_key, wifis, created, session, userid=userid)
+            wifi_count[wifi_key] += 1
+    # do we already know about these wifis?
+    white_keys = wifi_keys - blacked
+    if white_keys:
+        wifis = session.query(Wifi.key).filter(Wifi.key.in_(white_keys))
+        wifis = dict([(w[0], True) for w in wifis.all()])
+    else:
+        wifis = {}
+    for wifi_key, count in wifi_count.items():
+        # update new/total measure counts
+        update_wifi_measure_count(
+            wifi_key, count, wifis, created, session, userid=userid)
     session.add_all(wifi_measures)
     return wifi_measures
 
