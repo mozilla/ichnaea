@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from ichnaea.content.models import (
     MapStat,
+    MAPSTAT_TYPE,
     Score,
     User,
     Stat,
@@ -89,11 +90,14 @@ class TestStats(DBTestCase):
     def test_map_world_csv(self):
         from ichnaea.content.stats import map_world_csv
         session = self.db_master_session
+        key_10m = MAPSTAT_TYPE['location']
+        key_10km = MAPSTAT_TYPE['location_10km']
         stats = [
-            MapStat(lat=10000, lon=20000, value=101),
-            MapStat(lat=10001, lon=20000, value=2),
-            MapStat(lat=20000, lon=30000, value=11),
-            MapStat(lat=30000, lon=40000, value=1),
+            MapStat(lat=10000, lon=20000, key=key_10m, value=101),
+            MapStat(lat=10001, lon=20000, key=key_10m, value=2),
+            MapStat(lat=10, lon=20, key=key_10km, value=7),
+            MapStat(lat=20, lon=30, key=key_10km, value=11),
+            MapStat(lat=30, lon=40, key=key_10km, value=1),
         ]
         session.add_all(stats)
         session.commit()

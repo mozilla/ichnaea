@@ -8,6 +8,7 @@ from sqlalchemy import func
 from sqlalchemy.sql.expression import text
 
 from ichnaea.content.models import (
+    MAPSTAT_TYPE,
     Score,
     SCORE_TYPE,
     Stat,
@@ -92,8 +93,8 @@ def leaders(session):
 
 
 def map_world_csv(session):
-    select = text("select distinct round(lat / 1000) as lat1, "
-                  "round(lon / 1000) as lon1 from mapstat")
+    select = text("select lat, lon from mapstat where "
+                  "`key` = %s" % MAPSTAT_TYPE['location_10km'])
     result = session.execute(select)
     rows = StringIO()
     csvwriter = csv.writer(rows)
