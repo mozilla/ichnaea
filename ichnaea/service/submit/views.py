@@ -4,6 +4,7 @@ import datetime
 from colander import iso8601
 from cornice import Service
 from pyramid.httpexceptions import HTTPNoContent
+from sqlalchemy.sql.expression import tuple_
 
 from ichnaea.content.models import (
     MapStat,
@@ -41,12 +42,10 @@ def process_mapstat(measures, session, userid=None):
     # aggregate to 10x10m tiles
     for measure in measures:
         tiles[(measure.lat / 1000, measure.lon / 1000)] += 1
-    lats = set([k[0] for k in tiles.keys()])
-    lons = set([k[1] for k in tiles.keys()])
     result = session.query(MapStat).filter(
         MapStat.key == MAPSTAT_TYPE['location']).filter(
-        MapStat.lat.in_(lats)).filter(
-        MapStat.lon.in_(lons)).all()
+        tuple_(MapStat.lat, MapStat.lon).in_(tuple(tiles))
+    ).all()
     prior = {}
     for r in result:
         prior[(r.lat, r.lon)] = r
