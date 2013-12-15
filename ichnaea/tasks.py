@@ -174,13 +174,14 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
             moving_keys = set()
             for wifi_key, wifi in wifis.items():
                 # only take the last X new_measures
-                measures = session.query(WifiMeasure).filter(
+                measures = session.query(
+                    WifiMeasure.lat, WifiMeasure.lon).filter(
                     WifiMeasure.key == wifi_key).order_by(
                     WifiMeasure.created.desc()).limit(
                     wifi.new_measures).all()
                 length = len(measures)
-                latitudes = [w.lat for w in measures]
-                longitudes = [w.lon for w in measures]
+                latitudes = [w[0] for w in measures]
+                longitudes = [w[1] for w in measures]
                 new_lat = sum(latitudes) // length
                 new_lon = sum(longitudes) // length
                 if not (wifi.lat or wifi.lon):
