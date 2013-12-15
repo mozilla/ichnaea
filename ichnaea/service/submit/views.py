@@ -42,7 +42,7 @@ def process_mapstat(measures, session, userid=None):
     # aggregate to 10x10m tiles
     for measure in measures:
         tiles[(measure.lat / 1000, measure.lon / 1000)] += 1
-    query = session.query(MapStat).filter(
+    query = session.query(MapStat.lat, MapStat.lon).filter(
         MapStat.key == MAPSTAT_TYPE['location'])
     # dynamically construct a (lat, lon) in (list of tuples) filter
     # as MySQL isn't able to use indexes on such in queries
@@ -53,18 +53,22 @@ def process_mapstat(measures, session, userid=None):
     result = query.all()
     prior = {}
     for r in result:
-        prior[(r.lat, r.lon)] = r
+        prior[(r[0], r[1])] = True
     tile_count = 0
     for (lat, lon), value in tiles.items():
-        old = prior.get((lat, lon), None)
+        old = prior.get((lat, lon), False)
         if old:
-            old.value = MapStat.value + value
+            stmt = MapStat.__table__.update().where(
+                MapStat.lat == lat).where(
+                MapStat.lon == lon).where(
+                MapStat.key == MAPSTAT_TYPE['location']).values(
+                value=MapStat.value + value)
         else:
             tile_count += 1
             stmt = MapStat.__table__.insert(
                 on_duplicate='value = value + %s' % int(value)).values(
                 lat=lat, lon=lon, key=MAPSTAT_TYPE['location'], value=value)
-            session.execute(stmt)
+        session.execute(stmt)
     if userid is not None and tile_count > 0:
         process_score(userid, tile_count, session, key='new_location')
 
