@@ -4,7 +4,7 @@ import datetime
 from colander import iso8601
 from cornice import Service
 from pyramid.httpexceptions import HTTPNoContent
-from sqlalchemy.sql.expression import tuple_
+from sqlalchemy.sql import and_, or_
 
 from ichnaea.content.models import (
     MapStat,
@@ -42,10 +42,15 @@ def process_mapstat(measures, session, userid=None):
     # aggregate to 10x10m tiles
     for measure in measures:
         tiles[(measure.lat / 1000, measure.lon / 1000)] += 1
-    result = session.query(MapStat).filter(
-        MapStat.key == MAPSTAT_TYPE['location']).filter(
-        tuple_(MapStat.lat, MapStat.lon).in_(tuple(tiles))
-    ).all()
+    query = session.query(MapStat).filter(
+        MapStat.key == MAPSTAT_TYPE['location'])
+    # dynamically construct a (lat, lon) in (list of tuples) filter
+    # as MySQL isn't able to use indexes on such in queries
+    lat_lon = []
+    for (lat, lon) in tiles.keys():
+        lat_lon.append(and_((MapStat.lat == lat), (MapStat.lon == lon)))
+    query = query.filter(or_(*lat_lon))
+    result = query.all()
     prior = {}
     for r in result:
         prior[(r.lat, r.lon)] = r
