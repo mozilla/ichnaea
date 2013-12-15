@@ -101,7 +101,7 @@ class TestStats(DBTestCase):
         text = result.replace('\r', '').strip('\n')
         text = text.split('\n')
         self.assertEqual(
-            text, ['lat,lon,value', '1.0,2.0,2', '2.0,3.0,1', '3.0,4.0,1'])
+            text, ['lat,lon', '1.0,2.0', '2.0,3.0', '3.0,4.0'])
 
     def test_leaders(self):
         from ichnaea.content.stats import leaders

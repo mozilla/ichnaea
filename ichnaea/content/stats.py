@@ -92,14 +92,12 @@ def leaders(session):
 
 
 def map_world_csv(session):
-    select = text("select round(lat / 500) as lat1, "
-                  "round(lon / 500) as lon1, count(*) as value "
-                  "from mapstat group by lat1, lon1 "
-                  "order by lat1, lon1")
+    select = text("select distinct round(lat / 1000) as lat1, "
+                  "round(lon / 1000) as lon1 from mapstat")
     result = session.execute(select)
     rows = StringIO()
     csvwriter = csv.writer(rows)
-    csvwriter.writerow(('lat', 'lon', 'value'))
-    for lat, lon, value in result.fetchall():
-        csvwriter.writerow((int(lat) / 20.0, int(lon) / 20.0, int(value)))
+    csvwriter.writerow(('lat', 'lon'))
+    for lat, lon in result.fetchall():
+        csvwriter.writerow((int(lat) / 10.0, int(lon) / 10.0))
     return rows.getvalue()

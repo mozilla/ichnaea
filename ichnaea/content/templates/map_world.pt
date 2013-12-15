@@ -14,8 +14,14 @@
 <section id="main-content">
     <p>
         A map showing all covered areas. Each marker shows the center
-        of a roughly 5km by 5km area, in which we have at least
+        of a roughly 10km by 10km area, in which we have at least
         one measurement.
+    </p>
+    <p>
+        On higher view levels these covered areas are clustered. The
+        clustered numbers only aggregate covered areas. They don't
+        relate to the number of observations, cell towers or WiFi
+        access points in any way.
     </p>
     <div id='map'></div>
 </section>

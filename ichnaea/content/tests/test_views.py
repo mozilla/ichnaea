@@ -75,7 +75,7 @@ class TestFunctionalContent(AppTestCase):
         self.assertEqual(result.content_type, 'text/plain')
         text = result.text.replace('\r', '').strip('\n')
         text = text.split('\n')
-        self.assertEqual(text, ['lat,lon,value', '2.0,3.0,2'])
+        self.assertEqual(text, ['lat,lon', '2.0,3.0'])
 
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)
