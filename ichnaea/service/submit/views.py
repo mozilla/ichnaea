@@ -37,13 +37,13 @@ def configure_submit(config):
     config.scan('ichnaea.service.submit.views')
 
 
-def process_mapstat(measures, session, userid=None):
+def process_mapstat_keyed(factor, stat_key, measures, session):
     tiles = defaultdict(int)
-    # aggregate to 10x10m tiles
+    # aggregate to tiles, according to factor
     for measure in measures:
-        tiles[(measure.lat / 1000, measure.lon / 1000)] += 1
+        tiles[(measure.lat / factor, measure.lon / factor)] += 1
     query = session.query(MapStat.lat, MapStat.lon).filter(
-        MapStat.key == MAPSTAT_TYPE['location'])
+        MapStat.key == stat_key)
     # dynamically construct a (lat, lon) in (list of tuples) filter
     # as MySQL isn't able to use indexes on such in queries
     lat_lon = []
@@ -61,16 +61,26 @@ def process_mapstat(measures, session, userid=None):
             stmt = MapStat.__table__.update().where(
                 MapStat.lat == lat).where(
                 MapStat.lon == lon).where(
-                MapStat.key == MAPSTAT_TYPE['location']).values(
+                MapStat.key == stat_key).values(
                 value=MapStat.value + value)
         else:
             tile_count += 1
             stmt = MapStat.__table__.insert(
                 on_duplicate='value = value + %s' % int(value)).values(
-                lat=lat, lon=lon, key=MAPSTAT_TYPE['location'], value=value)
+                lat=lat, lon=lon, key=stat_key, value=value)
         session.execute(stmt)
+    return tile_count
+
+
+def process_mapstat(measures, session, userid=None):
+    # 10x10 meter tiles
+    tile_count = process_mapstat_keyed(
+        1000, MAPSTAT_TYPE['location'], measures, session)
     if userid is not None and tile_count > 0:
         process_score(userid, tile_count, session, key='new_location')
+    # 10x10 km tiles
+    process_mapstat_keyed(
+        1000000, MAPSTAT_TYPE['location_10km'], measures, session)
 
 
 def process_user(nickname, session):

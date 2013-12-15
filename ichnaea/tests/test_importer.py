@@ -3,6 +3,7 @@ from tempfile import mkstemp
 
 from ichnaea.content.models import (
     MapStat,
+    MAPSTAT_TYPE,
     Score,
     SCORE_TYPE_INVERSE,
     User,
@@ -57,7 +58,8 @@ class TestLoadFile(CeleryTestCase):
         scores = dict([(SCORE_TYPE_INVERSE[s.key], s.value) for s in scores])
         self.assertEqual(
             scores, {'new_location': 1, 'new_wifi': 1, 'location': 3})
-        mapstats = session.query(MapStat).all()
+        mapstats = session.query(MapStat).filter(
+            MapStat.key == MAPSTAT_TYPE['location']).all()
         mapstats = [(m.lat, m.lon, m.value) for m in mapstats]
         self.assertEqual(mapstats, [(378719, -1222732, 2)])
 
