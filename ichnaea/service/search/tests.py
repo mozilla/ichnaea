@@ -7,9 +7,14 @@ from pyramid.testing import DummyRequest
 
 from ichnaea.models import (
     Cell,
+    CellMeasure,
     Wifi,
 )
+
+from ichnaea.backfill.tasks import do_backfill
 from ichnaea.tests.base import AppTestCase, find_msg
+from ichnaea.tests.base import CeleryTestCase
+from sqlalchemy import text
 
 
 class Event(object):
@@ -221,3 +226,52 @@ class TestSearchSchema(TestCase):
             '{"cell": [{"mcc": "a", "mnc": 2, "lac": 3, "cid": 4}]}')
         validate_colander_schema(schema, request)
         self.assertTrue(request.errors)
+
+
+class TestBackfill(CeleryTestCase):
+
+    def setUp(self):
+        CeleryTestCase.setUp(self)
+        self.heka_client = get_client('ichnaea')
+
+    def test_do_backfill(self):
+        session = self.db_master_session
+
+        mcc, mnc, psc = 310, 410, 38
+
+        data = [CellMeasure(lat=378304721, lon=-1222828703, radio=-1,
+                            lac=56955, cid=5286246, mcc=310, mnc=410, psc=38,
+                            accuracy=20),
+                CellMeasure(lat=378304342, lon=-1222830492, radio=-1,
+                            lac=56955, cid=5286246, mcc=310, mnc=410, psc=38,
+                            accuracy=20),
+                CellMeasure(lat=375521993, lon=-1220519020, radio=-1,
+                            lac=56955, cid=3910178, mcc=310, mnc=410, psc=38,
+                            accuracy=20),
+                CellMeasure(lat=375520181, lon=-1220521922, radio=-1,
+                            lac=56955, cid=3910178, mcc=310, mnc=410, psc=38,
+                            accuracy=20),
+                CellMeasure(lat=378409920, lon=-1222633528, radio=2,
+                            lac=56955, cid=5286661, mcc=310, mnc=410, psc=38,
+                            accuracy=20),
+                CellMeasure(lat=378392480, lon=-1222648891, radio=-1,
+                            lac=56955, cid=5286661, mcc=310, mnc=410, psc=38,
+                            accuracy=20)]
+        session.add_all(data)
+
+        # add two towers with missing LAC and CID values
+        session.add_all([CellMeasure(lat=378409925, lon=-1222633523, radio=2,
+                                     lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
+                                     accuracy=20),
+                         CellMeasure(lat=378409900, lon=-1222633000, radio=2,
+                                     lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
+                                     accuracy=20)])
+
+        session.commit()
+        stmt = text("""select count(*) from cell_measure""")
+        rset = session.execute(stmt)
+        row = rset.first()
+        row_count = row[0]
+        self.assertEquals(row_count, 8)
+
+        self.assertEquals(do_backfill.delay().get(), 2)

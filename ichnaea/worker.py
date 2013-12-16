@@ -14,6 +14,7 @@ from ichnaea.heka_logging import configure_heka
 CELERY_IMPORTS = [
     'ichnaea.tasks',
     'ichnaea.content.tasks',
+    'ichnaea.backfill.tasks',
     'ichnaea.service.submit.tasks',
 ]
 

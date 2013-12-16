@@ -250,3 +250,17 @@ class Measure(_Model):
         super(Measure, self).__init__(*args, **kw)
 
 measure_table = Measure.__table__
+
+
+class CellBackfill(_Model):
+    __tablename__ = 'cell_backfill'
+    __table_args__ = (
+        Index('cell_idx', 'mcc', 'mnc', 'psc'),
+        )
+
+    id = Column(BigInteger(unsigned=True),
+                primary_key=True, autoincrement=True)
+    mcc = Column(SmallInteger)
+    mnc = Column(Integer)
+    psc = Column(Integer)
+
