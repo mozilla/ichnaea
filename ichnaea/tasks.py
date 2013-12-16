@@ -4,6 +4,7 @@ from datetime import timedelta
 from celery import Task
 from celery.utils.log import get_task_logger
 from sqlalchemy import text
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 
 from ichnaea.db import db_worker_session
@@ -91,6 +92,7 @@ def remove_wifi(self, wifi_keys):
 
 @celery.task(base=DatabaseTask, bind=True)
 def cell_location_update(self, min_new=10, max_new=100, batch=10):
+
     try:
         cells = []
         with self.db_session() as session:
@@ -107,7 +109,9 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
                     CellMeasure.mcc == cell.mcc).filter(
                     CellMeasure.mnc == cell.mnc).filter(
                     CellMeasure.lac == cell.lac).filter(
-                    CellMeasure.cid == cell.cid)
+                    CellMeasure.cid == cell.cid).filter(
+                    or_(CellMeasure.lac != -1,
+                        CellMeasure.cid != -1))
                 # only take the last X new_measures
                 query = query.order_by(
                     CellMeasure.created.desc()).limit(
