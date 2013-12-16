@@ -10,7 +10,7 @@ $(document).ready(function() {
     );
 
     // add tile layer
-    L.tileLayer('//tiles/{z}/{x}/{y}.png', {
+    L.tileLayer('/tiles/{z}/{x}/{y}.png', {
         opacity: 0.8
     }).addTo(map);
 
