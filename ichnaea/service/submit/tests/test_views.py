@@ -53,8 +53,8 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.altitude_accuracy, 7)
         self.assertEqual(item.radio, RADIO_TYPE['gsm'])
         # colander schema adds default value
-        cell_data[0]['psc'] = 0
-        cell_data[0]['asu'] = 0
+        cell_data[0]['psc'] = -1
+        cell_data[0]['asu'] = -1
         cell_data[0]['signal'] = 0
         cell_data[0]['ta'] = 0
 

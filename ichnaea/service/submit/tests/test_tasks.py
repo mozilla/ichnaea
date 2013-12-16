@@ -27,7 +27,7 @@ class TestInsert(CeleryTestCase):
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
-        session.add(Cell(radio=0, mcc=1, mnc=2, lac=3, cid=4,
+        session.add(Cell(radio=0, mcc=1, mnc=2, lac=3, cid=4, psc=5,
                          new_measures=2, total_measures=5))
         session.add(Score(userid=1, key=SCORE_TYPE['new_cell'], value=7))
         session.flush()
@@ -40,9 +40,9 @@ class TestInsert(CeleryTestCase):
         entries = [
             {"mcc": 1, "mnc": 2, "signal": -100},
             {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "asu": 8},
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "asu": 15},
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 7},
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 15},
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 7, "psc": 5},
         ]
         result = insert_cell_measure.delay(measure, entries, userid=1)
         self.assertEqual(result.get(), 5)
@@ -51,9 +51,9 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(len(measures), 5)
         self.assertEqual(set([m.mcc for m in measures]), set([1]))
         self.assertEqual(set([m.mnc for m in measures]), set([2]))
-        self.assertEqual(set([m.asu for m in measures]), set([0, 8, 15]))
-        self.assertEqual(set([m.psc for m in measures]), set([0, 5]))
-        self.assertEqual(set([m.signal for m in measures]), set([0, -100]))
+        self.assertEqual(set([m.asu for m in measures]), set([-1, 8, 15]))
+        self.assertEqual(set([m.psc for m in measures]), set([-1, 5]))
+        self.assertEqual(set([m.signal for m in measures]), set([-1, -100]))
 
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 2)
@@ -61,12 +61,14 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([c.mnc for c in cells]), set([2]))
         self.assertEqual(set([c.lac for c in cells]), set([3]))
         self.assertEqual(set([c.cid for c in cells]), set([4, 7]))
+        self.assertEqual(set([c.psc for c in cells]), set([5]))
         self.assertEqual(set([c.new_measures for c in cells]), set([1, 5]))
         self.assertEqual(set([c.total_measures for c in cells]), set([1, 8]))
 
         scores = session.query(Score).all()
         self.assertEqual(len(scores), 1)
         self.assertEqual(scores[0].key, SCORE_TYPE['new_cell'])
+
         self.assertEqual(scores[0].value, 8)
 
         # test duplicate execution

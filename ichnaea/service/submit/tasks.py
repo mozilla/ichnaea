@@ -25,7 +25,7 @@ from ichnaea.service.submit.utils import process_score
 logger = get_task_logger(__name__)
 sql_null = None  # avoid pep8 warning
 
-CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
+CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
 
 
 def create_cell_measure(measure_data, entry):
@@ -40,18 +40,18 @@ def create_cell_measure(measure_data, entry):
         altitude_accuracy=measure_data.get('altitude_accuracy', 0),
         mcc=entry['mcc'],
         mnc=entry['mnc'],
-        lac=entry.get('lac', 0),
-        cid=entry.get('cid', 0),
-        psc=entry.get('psc', 0),
-        asu=entry.get('asu', 0),
-        signal=entry.get('signal', 0),
-        ta=entry.get('ta', 0),
+        lac=entry.get('lac', -1),
+        cid=entry.get('cid', -1),
+        psc=entry.get('psc', -1),
+        asu=entry.get('asu', -1),
+        signal=entry.get('signal', -1),
+        ta=entry.get('ta',-1),
     )
 
 
 def update_cell_measure_count(cell_key, count, created, session):
-    if (cell_key.radio == -1 or cell_key.lac == 0 or cell_key.cid == 0):
-        # only update data for complete records
+    # only update data for complete record
+    if (cell_key.radio == -1 or cell_key.lac == -1 or cell_key.cid == -1 or cell_key.psc == -1):  # NOQA
         return 0
 
     # do we already know about this cell?
@@ -60,8 +60,10 @@ def update_cell_measure_count(cell_key, count, created, session):
         Cell.mcc == cell_key.mcc).filter(
         Cell.mnc == cell_key.mnc).filter(
         Cell.lac == cell_key.lac).filter(
-        Cell.cid == cell_key.cid
+        Cell.cid == cell_key.cid).filter(
+        Cell.psc == cell_key.psc
     )
+
     cell = query.first()
     new_cell = 0
     if cell is None:
@@ -73,7 +75,7 @@ def update_cell_measure_count(cell_key, count, created, session):
     ).values(
         created=created, radio=cell_key.radio,
         mcc=cell_key.mcc, mnc=cell_key.mnc, lac=cell_key.lac, cid=cell_key.cid,
-        new_measures=count, total_measures=count)
+        psc=cell_key.psc, new_measures=count, total_measures=count)
     session.execute(stmt)
     return new_cell
 
@@ -96,7 +98,7 @@ def process_cell_measure(session, measure_data, entries, userid=None):
         # group per unique cell
         cell_count[CellKey(cell_measure.radio, cell_measure.mcc,
                            cell_measure.mnc, cell_measure.lac,
-                           cell_measure.cid)] += 1
+                           cell_measure.cid, cell_measure.psc)] += 1
 
     # update new/total measure counts
     new_cells = 0
