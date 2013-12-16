@@ -2,15 +2,24 @@
            xmlns:metal="http://xml.zope.org/namespaces/metal"
            metal:use-macro="view.base_template">
 
+<tal:slot metal:fill-slot="css">
+    <link rel="stylesheet" href="/static/css/mapbox-1.5.2.min.css" />
+</tal:slot>
+
+<tal:slot metal:fill-slot="js">
+    <script src="/static/js/mapbox-1.5.2.min.js"></script>
+    <script src="/static/js/map.js"></script>
+</tal:slot>
+
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
     <p>
-        The way this map was built no longer scales to the amount of data we
-        have. If you have ideas on how to improve it, please follow up on
-        <a href="https://github.com/mozilla/ichnaea/issues/33">
-            the github issue
-        </a>.
+        This map shows areas in which we have data.
     </p>
+    <p>
+        The map is currently updated manually and a work in progress.
+    </p>
+    <div id='map'></div>
 </section>
 </tal:slot>
 
