@@ -15,6 +15,7 @@ just three changes you need to do. For example via the my.cnf:
     innodb_file_format=Barracuda
     innodb_strict_mode=on
     sql-mode="STRICT_TRANS_TABLES"
+    innodb_file_per_table=1
 
 
 Code
