@@ -5,6 +5,9 @@ import math
 from heka.holder import get_client
 from celery import group
 
+EARTH_RADIUS = 6371  # radius of earth in km
+NEAREST_DISTANCE = 1000 # Distance in meters between towers with no
+                        # LAC/CID and towers with known LAC/CId
 
 @celery.task(base=DatabaseTask, bind=True)
 def do_backfill(self):
@@ -53,10 +56,7 @@ def do_backfill(self):
         job = group([update_tower.s(row['mcc'], row['mnc'], row['psc']) for row in rproxy])
         result = job.apply_async()
         tower_updates = result.join()
-        result = sum(tower_updates)
-
-        session.execute(text("delete from cell_backfill"))
-        return result
+        return sum(tower_updates)
 
     return -1
 
@@ -131,12 +131,9 @@ def compute_matching_towers(session, mcc, mnc, psc, accuracy=35):
     return [dict(r) for r in row_proxy]
 
 
-EARTH_RADIUS = 6371  # radius of earth in km
-
-
 def distance(lat1, lon1, lat2, lon2):
     """
-    Compute the distance between a pair of lat/longs in km using
+    Compute the distance between a pair of lat/longs in meters using
     haversine
     """
     dLat = math.radians(lat2-lat1)
@@ -169,7 +166,8 @@ def _nearest_tower(missing_lat, missing_lon, centroids):
         dist = distance(lat1, lon1, lat2, lon2)
         if min_dist is None or min_dist['dist'] > dist:
             min_dist = {'dist': dist, 'pt': pt}
-    return min_dist
+    if min_dist['dist'] <= NEAREST_DISTANCE:
+        return min_dist
 
 
 def compute_missing_towers(session, mcc, mnc, psc):
