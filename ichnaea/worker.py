@@ -69,6 +69,10 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(seconds=329),  # 7*47
         'args': (2, 10, 5000),
     },
+    'backfill-celltower-info': {
+        'task': 'ichnaea.backfill.tasks.do_backfill',
+        'schedule': crontab(hour=0, minute=15),
+    }
 }
 
 celery = Celery('ichnaea.worker')

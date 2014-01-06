@@ -53,7 +53,10 @@ def do_backfill(self):
         job = group([update_tower.s(row['mcc'], row['mnc'], row['psc']) for row in rproxy])
         result = job.apply_async()
         tower_updates = result.join()
-        return sum(tower_updates)
+        result = sum(tower_updates)
+
+        session.execute(text("delete from cell_backfill"))
+        return result
 
     return -1
 
