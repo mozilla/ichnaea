@@ -57,6 +57,11 @@ js: node_modules
 	-o $(HERE)/ichnaea/content/static/js/map_world-combined.js \
 	-m -c --stats
 	$(HERE)/node_modules/.bin/uglifyjs \
+	$(HERE)/ichnaea/content/static/js/mapbox-1.5.2.min.js \
+	$(HERE)/ichnaea/content/static/js/map.js \
+	-o $(HERE)/ichnaea/content/static/js/map-combined.js \
+	-m -c --stats
+	$(HERE)/node_modules/.bin/uglifyjs \
 	$(HERE)/ichnaea/content/static/js/d3-3.3.11.min.js \
 	$(HERE)/ichnaea/content/static/js/rickshaw-1.4.5.min.js \
 	$(HERE)/ichnaea/content/static/js/stat.js \

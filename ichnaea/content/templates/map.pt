@@ -7,17 +7,14 @@
 </tal:slot>
 
 <tal:slot metal:fill-slot="js">
-    <script src="/static/js/mapbox-1.5.2.min.js"></script>
-    <script src="/static/js/map.js"></script>
+    <script src="/static/js/map-combined.js"></script>
 </tal:slot>
 
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
     <p>
         This map shows areas in which we have data.
-    </p>
-    <p>
-        The map is currently updated manually and a work in progress.
+        The map is currently updated manually.
     </p>
     <div id='map'></div>
 </section>
