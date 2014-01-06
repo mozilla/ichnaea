@@ -170,7 +170,7 @@ def configure(celery=celery):
         CELERY_RESULT_SERIALIZER='json',
         CELERY_TASK_SERIALIZER='json',
         # schedule
-        CELERYBEAT_LOG_LEVEL="INFO",
+        CELERYBEAT_LOG_LEVEL="WARNING",
         CELERYBEAT_SCHEDULE=CELERYBEAT_SCHEDULE,
     )
 
