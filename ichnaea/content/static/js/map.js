@@ -1,6 +1,6 @@
 $(document).ready(function() {
     var map = L.mapbox.map('map', 'mozilla-webprod.g7ilhcl5', {
-        maxZoom: 13,
+        maxZoom: 15,
         tileLayer: { detectRetina: true }
     }).setView([0, 10], 2);
 
