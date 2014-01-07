@@ -22,6 +22,7 @@ def do_backfill(self):
         * compute matching towers
 
     """
+    result = -1
     log = get_client('ichnaea')
     with self.db_session() as session:
         stmt = text("""select count(*) from cell_backfill""")
@@ -32,37 +33,43 @@ def do_backfill(self):
             log.info("cell_backfill still populated, aborting backfill")
             return
 
-        stmt = text("""insert into `cell_backfill` (mcc, mnc, psc)
-                select
-                    mcc, mnc, psc
-                from
-                    cell_measure
-                where
-                    mcc != 0 and
-                    mnc != 0 and
-                    (lac = -1 or
-                    cid = -1 or
-                    psc = -1)
-                group by
-                    mcc, mnc, psc
-                """)
-        session.execute(stmt)
-        session.commit()
+        try:
+            result = spinup_backfill_workers(session)
+        finally:
+            session.execute(text("delete from cell_backfill"))
 
-        stmt = text("""
-        select
-            *
-        from
-            cell_backfill
-        """)
-        rproxy = list(session.execute(stmt))
+    return result
 
-        job = group([update_tower.s(row['mcc'], row['mnc'], row['psc']) for row in rproxy])
-        result = job.apply_async()
-        tower_updates = result.join()
-        return sum(tower_updates)
+def spinup_backfill_workers(session):
+    stmt = text("""insert into `cell_backfill` (mcc, mnc, psc)
+            select
+                mcc, mnc, psc
+            from
+                cell_measure
+            where
+                mcc != 0 and
+                mnc != 0 and
+                (lac = -1 or
+                cid = -1 or
+                psc = -1)
+            group by
+                mcc, mnc, psc
+            """)
+    session.execute(stmt)
+    session.commit()
 
-    return -1
+    stmt = text("""
+    select
+        *
+    from
+        cell_backfill
+    """)
+    rproxy = list(session.execute(stmt))
+
+    job = group([update_tower.s(row['mcc'], row['mnc'], row['psc']) for row in rproxy])
+    result = job.apply_async()
+    tower_updates = result.join()
+    return sum(tower_updates)
 
 
 @celery.task(base=DatabaseTask, bind=True)

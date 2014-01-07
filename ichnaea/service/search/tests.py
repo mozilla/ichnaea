@@ -275,3 +275,10 @@ class TestBackfill(CeleryTestCase):
         self.assertEquals(row_count, 8)
 
         self.assertEquals(do_backfill.delay().get(), 2)
+
+        # Make sure we've cleaned up properly
+        stmt = text("""select count(*) from cell_backfill""")
+        rset = session.execute(stmt)
+        row = rset.first()
+        row_count = row[0]
+        self.assertEquals(row_count, 0)
