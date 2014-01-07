@@ -11,7 +11,7 @@ class CellSchema(MappingSchema):
     mnc = SchemaNode(Integer(), location="body", type='int', missing=0)
     lac = SchemaNode(Integer(), location="body", type='int', missing=0)
     cid = SchemaNode(Integer(), location="body", type='int', missing=0)
-    psc = SchemaNode(Integer(), location="body", type='int', missing=0)
+    psc = SchemaNode(Integer(), location="body", type='int', missing=-1)
     asu = SchemaNode(Integer(), location="body", type='int', missing=0)
     signal = SchemaNode(Integer(), location="body", type='int', missing=0)
     ta = SchemaNode(Integer(), location="body", type='int', missing=0)

@@ -52,7 +52,7 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([m.mcc for m in measures]), set([1]))
         self.assertEqual(set([m.mnc for m in measures]), set([2]))
         self.assertEqual(set([m.asu for m in measures]), set([0, 8, 15]))
-        self.assertEqual(set([m.psc for m in measures]), set([0, 5]))
+        self.assertEqual(set([m.psc for m in measures]), set([-1, 5]))
         self.assertEqual(set([m.signal for m in measures]), set([0, -100]))
 
         cells = session.query(Cell).all()

@@ -42,7 +42,7 @@ def create_cell_measure(measure_data, entry):
         mnc=entry['mnc'],
         lac=entry.get('lac', 0),
         cid=entry.get('cid', 0),
-        psc=entry.get('psc', 0),
+        psc=entry.get('psc', -1),
         asu=entry.get('asu', 0),
         signal=entry.get('signal', 0),
         ta=entry.get('ta', 0),
