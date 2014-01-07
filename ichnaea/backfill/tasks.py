@@ -38,10 +38,13 @@ def do_backfill(self):
                 from
                     cell_measure
                 where
-                    lac = -1 or
+                    mcc != 0 and
+                    mnc != 0 and
+                    (lac = -1 or
                     cid = -1 or
-                    psc = -1
-                group by mcc, mnc, psc
+                    psc = -1)
+                group by
+                    mcc, mnc, psc
                 """)
         session.execute(stmt)
         session.commit()
@@ -51,9 +54,6 @@ def do_backfill(self):
             *
         from
             cell_backfill
-        where
-            mcc != 0 and
-            mnc != 0
         """)
         rproxy = list(session.execute(stmt))
 
