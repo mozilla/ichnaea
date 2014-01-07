@@ -2,6 +2,7 @@ import os
 from konfig import Config
 
 from ichnaea.app import main  # NOQA
+from heka.holder import get_client
 
 __all__ = ('main',)
 _APP = None

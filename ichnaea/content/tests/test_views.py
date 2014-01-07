@@ -6,6 +6,8 @@ from pyramid.testing import setUp
 from pyramid.testing import tearDown
 from unittest2 import TestCase
 
+from heka.holder import get_client
+
 from ichnaea.content.models import (
     MapStat,
     Score,
@@ -46,6 +48,11 @@ class TestContentViews(TestCase):
 
 class TestFunctionalContent(AppTestCase):
 
+    def setUp(self):
+        AppTestCase.setUp(self)
+        self.heka_client = get_client('ichnaea')
+        self.heka_client.stream.msgs.clear()
+
     def test_favicon(self):
         self.app.get('/favicon.ico', status=200)
 
@@ -58,6 +65,11 @@ class TestFunctionalContent(AppTestCase):
 
     def test_not_found(self):
         self.app.get('/nobody-is-home', status=404)
+        msgs = self.heka_client.stream.msgs
+
+        # We should have caught at least one error here
+        sentry_msgs = [m for m in msgs if m.type == 'sentry']
+        assert len(sentry_msgs) > 0
 
     def test_map(self):
         self.app.get('/map', status=200)

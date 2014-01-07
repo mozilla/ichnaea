@@ -22,7 +22,11 @@ def heka_tween_factory(handler, registry):
     def heka_tween(request):
 
         with registry.heka_client.timer('http.request', fields={'url': request.url}):
-            response = handler(request)
+            try:
+                response = handler(request)
+            except:
+                registry.heka_client.raven("Unhandled error occured")
+                raise
         registry.heka_client.incr('http.request',
                                   fields={'status': response.status_code,
                                           'url_path': request.url})
