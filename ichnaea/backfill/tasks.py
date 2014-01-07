@@ -32,11 +32,15 @@ def do_backfill(self):
             log.info("cell_backfill still populated, aborting backfill")
             return
 
-        stmt = text("""insert into `cell_backfill` (id, mcc, mnc, psc)
+        stmt = text("""insert into `cell_backfill` (mcc, mnc, psc)
                 select
-                id, mcc, mnc, psc
-                from cell_measure
-                where lac = -1 or cid = -1
+                    mcc, mnc, psc
+                from
+                    cell_measure
+                where
+                    lac = -1 or
+                    cid = -1 or
+                    psc = -1
                 group by mcc, mnc, psc
                 """)
         session.execute(stmt)
