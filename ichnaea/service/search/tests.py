@@ -237,8 +237,8 @@ class TestBackfill(CeleryTestCase):
     def test_do_backfill(self):
         session = self.db_master_session
 
-        mcc, mnc, psc = 310, 410, 38
-
+        # These are our reference towers that will be used to match
+        # similiar towers
         data = [CellMeasure(lat=378304721, lon=-1222828703, radio=-1,
                             lac=56955, cid=5286246, mcc=310, mnc=410, psc=38,
                             accuracy=20),
@@ -257,34 +257,30 @@ class TestBackfill(CeleryTestCase):
                 CellMeasure(lat=378392480, lon=-1222648891, radio=-1,
                             lac=56955, cid=5286661, mcc=310, mnc=410, psc=38,
                             accuracy=20)]
+
         session.add_all(data)
 
-        # add two towers with missing LAC and CID values
+        # add a tower with missing LAC and CID values
+        # that is within the minimum distance to be updated
         session.add_all([CellMeasure(lat=378409925, lon=-1222633523, radio=2,
                                      lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
-                                     accuracy=20),
-                         CellMeasure(lat=378409900, lon=-1222633000, radio=2,
-                                     lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
                                      accuracy=20)])
 
-        session.commit()
-
-
-        do_backfill.delay()
-        # check that all towers were updated
-        rset = session.execute(text("select count(*) from cell_measure where lac = -1 and cid = -1"))
-        rset = list(rset)
-        self.assertEquals(rset[0][0], 0)
-
-        # add a tower with missing LAC and CID values that is too far
+        # Add a single tower that should be skipped as it's too far
         # away
-        session.add_all([CellMeasure(lat=398409925, lon=-222633523, radio=2,
+        LAT_TOO_FAR = 398409925
+        LON_TOO_FAR = -222633525
+        session.add_all([CellMeasure(lat=LAT_TOO_FAR, lon=LON_TOO_FAR, radio=2,
                                      lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
                                      accuracy=20)])
+
         session.commit()
+
 
         do_backfill.delay()
         # check that there is a single tower that is not updated
-        rset = session.execute(text("select count(*) from cell_measure where lac = -1 and cid = -1"))
+        rset = session.execute(text("select * from cell_measure where lac = -1 and cid = -1"))
         rset = list(rset)
-        self.assertEquals(rset[0][0], 1)
+        self.assertEquals(len(rset), 1)
+        self.assertEquals(rset[0]['lat'], LAT_TOO_FAR)
+        self.assertEquals(rset[0]['lon'], LON_TOO_FAR)
