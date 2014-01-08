@@ -241,18 +241,18 @@ class TestBackfill(CeleryTestCase):
         # similiar towers
         data = [
                 # These are measurements for tower A
-                CellMeasure(lat=378304721, lon=-1222828703, radio=-1,
+                CellMeasure(lat=378304721, lon=-1222828703, radio=2,
                             lac=56955, cid=5286246, mcc=310, mnc=410, psc=38,
                             accuracy=20),
-                CellMeasure(lat=378392480, lon=-1222648891, radio=-1,
+                CellMeasure(lat=378392480, lon=-1222648891, radio=2,
                             lac=56955, cid=5286246, mcc=310, mnc=410, psc=38,
                             accuracy=20),
 
                 # These are measurements for tower B
-                CellMeasure(lat=20, lon=-10, radio=-1,
+                CellMeasure(lat=20, lon=-10, radio=3,
                             lac=20, cid=31, mcc=310, mnc=410, psc=38,
                             accuracy=20),
-                CellMeasure(lat=40, lon=-30, radio=-1,
+                CellMeasure(lat=40, lon=-30, radio=3,
                             lac=20, cid=31, mcc=310, mnc=410, psc=38,
                             accuracy=20),
                 ]
@@ -269,7 +269,7 @@ class TestBackfill(CeleryTestCase):
                                      accuracy=20)])
 
         # This is tower D and should map back to tower b
-        session.add_all([CellMeasure(lat=30, lon=-20, radio=2,
+        session.add_all([CellMeasure(lat=30, lon=-20, radio=3,
                                      lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
                                      accuracy=20)])
 
@@ -279,19 +279,17 @@ class TestBackfill(CeleryTestCase):
         # check that tower C was mapped correctly
         rset = session.execute(text("select * from cell_measure where radio = 2 and lac = 56955 and cid = 5286246"))
         rset = list(rset)
-        row = rset[0]
-        self.assertEquals(len(rset), 1)
-        self.assertEquals(row['lat'], 378409925)
-        self.assertEquals(row['lon'], -1222633523)
+        self.assertEquals(len(rset), 3)
+        lat_longs = [(row['lat'], row['lon']) for row in rset]
+        assert (378409925, -1222633523) in lat_longs
 
         # check that tower D was mapped correctly
-        rset = session.execute(text("select * from cell_measure where radio = 2 and lac = 20 and cid = 31"))
+        rset = session.execute(text("select * from cell_measure where radio = 3 and lac = 20 and cid = 31"))
         rset = list(rset)
-        row = rset[0]
-        self.assertEquals(len(rset), 1)
-        self.assertEquals(row['lat'], 30)
-        self.assertEquals(row['lon'], -20)
+        self.assertEquals(len(rset), 3)
+        lat_longs = [(row['lat'], row['lon']) for row in rset]
+        assert (30, -20) in lat_longs
 
-        # TODO: we shouldn't map towers the known towers have
+        # TODO: we shouldn't map towers when the known towers have
         # different radios than our incomplete tower records
 
