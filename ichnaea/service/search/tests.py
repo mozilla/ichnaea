@@ -268,17 +268,23 @@ class TestBackfill(CeleryTestCase):
                                      accuracy=20)])
 
         session.commit()
-        stmt = text("""select count(*) from cell_measure""")
-        rset = session.execute(stmt)
-        row = rset.first()
-        row_count = row[0]
-        self.assertEquals(row_count, 8)
 
-        self.assertEquals(do_backfill.delay().get(), 2)
 
-        # Make sure we've cleaned up properly
-        stmt = text("""select count(*) from cell_backfill""")
-        rset = session.execute(stmt)
-        row = rset.first()
-        row_count = row[0]
-        self.assertEquals(row_count, 0)
+        do_backfill.delay()
+        # check that all towers were updated
+        rset = session.execute(text("select count(*) from cell_measure where lac = -1 and cid = -1"))
+        rset = list(rset)
+        self.assertEquals(rset[0][0], 0)
+
+        # add a tower with missing LAC and CID values that is too far
+        # away
+        session.add_all([CellMeasure(lat=398409925, lon=-222633523, radio=2,
+                                     lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
+                                     accuracy=20)])
+        session.commit()
+
+        do_backfill.delay()
+        # check that there is a single tower that is not updated
+        rset = session.execute(text("select count(*) from cell_measure where lac = -1 and cid = -1"))
+        rset = list(rset)
+        self.assertEquals(rset[0][0], 1)

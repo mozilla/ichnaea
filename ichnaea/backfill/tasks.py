@@ -3,11 +3,11 @@ from ichnaea.tasks import DatabaseTask
 from ichnaea.worker import celery
 import math
 from heka.holder import get_client
-from celery import group
 
 EARTH_RADIUS = 6371  # radius of earth in km
-NEAREST_DISTANCE = 1000 # Distance in meters between towers with no
-                        # LAC/CID and towers with known LAC/CId
+NEAREST_DISTANCE = 1000  # Distance in meters between towers with no
+                         # LAC/CID and towers with known LAC/CId
+
 
 @celery.task(base=DatabaseTask, bind=True)
 def do_backfill(self):
@@ -40,8 +40,9 @@ def do_backfill(self):
 
     return result
 
+
 def spinup_backfill_workers(session):
-    stmt = text("""insert into `cell_backfill` (mcc, mnc, psc)
+    stmt = text("""
             select
                 mcc, mnc, psc
             from
@@ -55,21 +56,9 @@ def spinup_backfill_workers(session):
             group by
                 mcc, mnc, psc
             """)
-    session.execute(stmt)
-    session.commit()
 
-    stmt = text("""
-    select
-        *
-    from
-        cell_backfill
-    """)
-    rproxy = list(session.execute(stmt))
-
-    job = group([update_tower.s(row['mcc'], row['mnc'], row['psc']) for row in rproxy])
-    result = job.apply_async()
-    tower_updates = result.join()
-    return sum(tower_updates)
+    for row in session.execute(stmt):
+        update_tower.delay(row['mcc'], row['mnc'], row['psc'])
 
 
 @celery.task(base=DatabaseTask, bind=True)
