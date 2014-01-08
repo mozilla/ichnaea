@@ -239,48 +239,59 @@ class TestBackfill(CeleryTestCase):
 
         # These are our reference towers that will be used to match
         # similiar towers
-        data = [CellMeasure(lat=378304721, lon=-1222828703, radio=-1,
+        data = [
+                # These are measurements for tower A
+                CellMeasure(lat=378304721, lon=-1222828703, radio=-1,
                             lac=56955, cid=5286246, mcc=310, mnc=410, psc=38,
-                            accuracy=20),
-                CellMeasure(lat=378304342, lon=-1222830492, radio=-1,
-                            lac=56955, cid=5286246, mcc=310, mnc=410, psc=38,
-                            accuracy=20),
-                CellMeasure(lat=375521993, lon=-1220519020, radio=-1,
-                            lac=56955, cid=3910178, mcc=310, mnc=410, psc=38,
-                            accuracy=20),
-                CellMeasure(lat=375520181, lon=-1220521922, radio=-1,
-                            lac=56955, cid=3910178, mcc=310, mnc=410, psc=38,
-                            accuracy=20),
-                CellMeasure(lat=378409920, lon=-1222633528, radio=2,
-                            lac=56955, cid=5286661, mcc=310, mnc=410, psc=38,
                             accuracy=20),
                 CellMeasure(lat=378392480, lon=-1222648891, radio=-1,
-                            lac=56955, cid=5286661, mcc=310, mnc=410, psc=38,
-                            accuracy=20)]
+                            lac=56955, cid=5286246, mcc=310, mnc=410, psc=38,
+                            accuracy=20),
+
+                # These are measurements for tower B
+                CellMeasure(lat=20, lon=-10, radio=-1,
+                            lac=20, cid=31, mcc=310, mnc=410, psc=38,
+                            accuracy=20),
+                CellMeasure(lat=40, lon=-30, radio=-1,
+                            lac=20, cid=31, mcc=310, mnc=410, psc=38,
+                            accuracy=20),
+                ]
 
         session.add_all(data)
 
-        # add a tower with missing LAC and CID values
-        # that is within the minimum distance to be updated
+        # Add a single tower with missing LAC and CID values
+        # Note that the radio=2 is ok to match back to radio=-1
+        # records
+
+        # This is tower C and should map back to tower A
         session.add_all([CellMeasure(lat=378409925, lon=-1222633523, radio=2,
                                      lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
                                      accuracy=20)])
 
-        # Add a single tower that should be skipped as it's too far
-        # away
-        LAT_TOO_FAR = 398409925
-        LON_TOO_FAR = -222633525
-        session.add_all([CellMeasure(lat=LAT_TOO_FAR, lon=LON_TOO_FAR, radio=2,
+        # This is tower D and should map back to tower b
+        session.add_all([CellMeasure(lat=30, lon=-20, radio=2,
                                      lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
                                      accuracy=20)])
 
         session.commit()
-
-
         do_backfill.delay()
-        # check that there is a single tower that is not updated
-        rset = session.execute(text("select * from cell_measure where lac = -1 and cid = -1"))
+
+        # check that tower C was mapped correctly
+        rset = session.execute(text("select * from cell_measure where radio = 2 and lac = 56955 and cid = 5286246"))
         rset = list(rset)
+        row = rset[0]
         self.assertEquals(len(rset), 1)
-        self.assertEquals(rset[0]['lat'], LAT_TOO_FAR)
-        self.assertEquals(rset[0]['lon'], LON_TOO_FAR)
+        self.assertEquals(row['lat'], 378409925)
+        self.assertEquals(row['lon'], -1222633523)
+
+        # check that tower D was mapped correctly
+        rset = session.execute(text("select * from cell_measure where radio = 2 and lac = 20 and cid = 31"))
+        rset = list(rset)
+        row = rset[0]
+        self.assertEquals(len(rset), 1)
+        self.assertEquals(row['lat'], 30)
+        self.assertEquals(row['lon'], -20)
+
+        # TODO: we shouldn't map towers the known towers have
+        # different radios than our incomplete tower records
+
