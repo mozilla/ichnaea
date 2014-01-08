@@ -1,9 +1,9 @@
 $(document).ready(function() {
     var map = L.mapbox.map('map', 'mozilla-webprod.map-05ad0a21', {
-        minZoom: 2,
+        minZoom: 1,
         maxZoom: 15,
         tileLayer: { detectRetina: true }
-    }).setView([0, 10], 2);
+    }).setView([15, 10], 2);
 
     // add open street map attribution for base tiles
     map.infoControl.addInfo(
