@@ -25,14 +25,6 @@ def do_backfill(self):
     result = -1
     log = get_client('ichnaea')
     with self.db_session() as session:
-        stmt = text("""select count(*) from cell_backfill""")
-        rset = session.execute(stmt)
-        row = rset.first()
-        row_count = row[0]
-        if row_count:
-            log.info("cell_backfill still populated, aborting backfill")
-            return
-
         try:
             result = spinup_backfill_workers(session)
         finally:
