@@ -36,7 +36,7 @@ def do_backfill(self):
 def spinup_backfill_workers(session):
     stmt = text("""
             select
-                mcc, mnc, psc
+                mcc, mnc, psc, radio
             from
                 cell_measure
             where
@@ -44,23 +44,23 @@ def spinup_backfill_workers(session):
                 (lac = -1 or cid = -1) and
                 (psc != -1)
             group by
-                mcc, mnc, psc
+                mcc, mnc, psc, radio
             """)
 
     for row in session.execute(stmt):
-        update_tower.delay(row['mcc'], row['mnc'], row['psc'])
+        update_tower.delay(row['mcc'], row['mnc'], row['psc'], row['radio'])
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def update_tower(self, mcc, mnc, psc):
+def update_tower(self, mcc, mnc, psc, radio):
     rows_updated = 0
     with self.db_session() as session:
-        centroids = compute_matching_towers(session, mcc, mnc, psc)
+        centroids = compute_matching_towers(session, mcc, mnc, psc, radio)
 
         if centroids == []:
             return
 
-        tower_proxy = compute_missing_towers(session, mcc, mnc, psc)
+        tower_proxy = compute_missing_towers(session, mcc, mnc, psc, radio)
         for missing_tower in tower_proxy:
             matching_tower = _nearest_tower(missing_tower['lat'],
                                             missing_tower['lon'],
@@ -83,7 +83,7 @@ def update_tower(self, mcc, mnc, psc):
     return rows_updated
 
 
-def compute_matching_towers(session, mcc, mnc, psc, accuracy=35):
+def compute_matching_towers(session, mcc, mnc, psc, radio, accuracy=35):
     """
     Finds the closest matching tower based on mcc, mnc, psc, and
     lat/long.  If no tower can be found to match within 1km, then we
@@ -108,14 +108,19 @@ def compute_matching_towers(session, mcc, mnc, psc, accuracy=35):
         mcc = %(mcc)d and
         mnc = %(mnc)d and
         psc = %(psc)d and
+        radio = %(radio)d and
         accuracy <= %(accuracy)d and
         lac != -1 and
         cid != -1
-    group by mcc, mnc, lac, cid
+    group by 
+        mcc, mnc, lac, cid
     order by created desc
     ) as data
-    """ % {'mcc': mcc, 'mnc': mnc, 'psc': psc,
-           'accuracy': accuracy}
+    """ % {'mcc': mcc,
+           'mnc': mnc,
+           'psc': psc,
+           'accuracy': accuracy,
+           'radio': radio}
     )
     row_proxy = session.execute(stmt)
     return [dict(r) for r in row_proxy]
@@ -160,7 +165,7 @@ def _nearest_tower(missing_lat, missing_lon, centroids):
         return min_dist
 
 
-def compute_missing_towers(session, mcc, mnc, psc):
+def compute_missing_towers(session, mcc, mnc, psc, radio):
     stmt = text("""
     select
         id,
@@ -172,7 +177,11 @@ def compute_missing_towers(session, mcc, mnc, psc):
         mcc = %(mcc)d and
         mnc = %(mnc)d and
         psc = %(psc)d and
+        radio = %(radio)d and
         (lac = -1 or
         cid = -1)
-    """ % {'mcc': mcc, 'mnc': mnc, 'psc': psc})
+    """ % {'mcc': mcc,
+           'mnc': mnc,
+           'psc': psc,
+           'radio': radio,})
     return session.execute(stmt)

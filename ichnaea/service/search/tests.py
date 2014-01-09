@@ -259,10 +259,6 @@ class TestBackfill(CeleryTestCase):
 
         session.add_all(data)
 
-        # Add a single tower with missing LAC and CID values
-        # Note that the radio=2 is ok to match back to radio=-1
-        # records
-
         # This is tower C and should map back to tower A
         session.add_all([CellMeasure(lat=378409925, lon=-1222633523, radio=2,
                                      lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
@@ -270,6 +266,12 @@ class TestBackfill(CeleryTestCase):
 
         # This is tower D and should map back to tower b
         session.add_all([CellMeasure(lat=30, lon=-20, radio=3,
+                                     lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
+                                     accuracy=20)])
+
+        # This is tower E and should not map back to anything as the
+        # radio doesn't match up
+        session.add_all([CellMeasure(lat=30, lon=-20, radio=0,
                                      lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
                                      accuracy=20)])
 
@@ -290,6 +292,9 @@ class TestBackfill(CeleryTestCase):
         lat_longs = [(row['lat'], row['lon']) for row in rset]
         assert (30, -20) in lat_longs
 
-        # TODO: we shouldn't map towers when the known towers have
+        # we shouldn't map towers when the known towers have
         # different radios than our incomplete tower records
+        rset = session.execute(text("select count(*) from cell_measure where radio = 0 and lac = - 1 and cid = -1"))
+        rset = list(rset)
+        self.assertEquals(len(rset), 1)
 
