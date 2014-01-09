@@ -48,11 +48,9 @@ def spinup_backfill_workers(session):
             from
                 cell_measure
             where
-                mcc != 0 and
-                mnc != 0 and
-                (lac = -1 or
-                cid = -1 or
-                psc = -1)
+                (mcc != -1 and mnc != -1) and
+                (lac = -1 or cid = -1) and
+                (psc != -1)
             group by
                 mcc, mnc, psc
             """)
