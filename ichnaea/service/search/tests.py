@@ -275,6 +275,12 @@ class TestBackfill(CeleryTestCase):
                                      lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
                                      accuracy=20)])
 
+        # This is tower F and should not map back to anything as it's
+        # too far away.
+        session.add_all([CellMeasure(lat=998409925, lon=998409925, radio=3,
+                                     lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
+                                     accuracy=20)])
+
         session.commit()
         do_backfill.delay()
 
@@ -292,9 +298,13 @@ class TestBackfill(CeleryTestCase):
         lat_longs = [(row['lat'], row['lon']) for row in rset]
         assert (30, -20) in lat_longs
 
-        # we shouldn't map towers when the known towers have
+        # we shouldn't map tower E when the known towers have
         # different radios than our incomplete tower records
         rset = session.execute(text("select count(*) from cell_measure where radio = 0 and lac = - 1 and cid = -1"))
         rset = list(rset)
         self.assertEquals(len(rset), 1)
 
+        # Tower F shouldn't map to any known tower as it's too far away
+        rset = session.execute(text("select count(*) from cell_measure where radio = 3 and lat = 98409925 and lon = 98409925 and lac = -1 and cid = -1"))
+        rset = list(rset)
+        self.assertEquals(len(rset), 1)
