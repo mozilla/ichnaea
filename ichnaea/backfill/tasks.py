@@ -5,7 +5,7 @@ import math
 from heka.holder import get_client
 
 EARTH_RADIUS = 6371  # radius of earth in km
-NEAREST_DISTANCE = 1000  # Distance in meters between towers with no
+NEAREST_DISTANCE = 10.0  # Distance in kilometers between towers with no
                          # LAC/CID and towers with known LAC/CId
 
 
@@ -23,7 +23,6 @@ def do_backfill(self):
 
     """
     result = -1
-    log = get_client('ichnaea')
     with self.db_session() as session:
         try:
             result = spinup_backfill_workers(session)
@@ -129,7 +128,7 @@ def compute_matching_towers(session, mcc, mnc, psc, radio, accuracy=35):
 def distance(lat1, lon1, lat2, lon2):
     """
     Compute the distance between a pair of lat/longs in meters using
-    haversine
+    haversine.  The output distance is in kilometers.
     """
     dLat = math.radians(lat2-lat1)
     dLon = math.radians(lon2-lon1)
@@ -151,13 +150,14 @@ def _nearest_tower(missing_lat, missing_lon, centroids):
     We just need the closest tower, so we can approximate
     using the haversine formula
     """
-    lat1 = missing_lat / 10000000
-    lon1 = missing_lon / 10000000
+    FLOAT_CONST = 10000000.0
+    lat1 = missing_lat / FLOAT_CONST
+    lon1 = missing_lon / FLOAT_CONST
 
     min_dist = None
     for pt in centroids:
-        lat2 = pt['lat'] / 10000000
-        lon2 = pt['lon'] / 10000000
+        lat2 = float(pt['lat']) / FLOAT_CONST
+        lon2 = float(pt['lon']) / FLOAT_CONST
         dist = distance(lat1, lon1, lat2, lon2)
         if min_dist is None or min_dist['dist'] > dist:
             min_dist = {'dist': dist, 'pt': pt}

@@ -244,7 +244,7 @@ class TestBackfill(CeleryTestCase):
                 CellMeasure(lat=378304721, lon=-1222828703, radio=2,
                             lac=56955, cid=5286246, mcc=310, mnc=410, psc=38,
                             accuracy=20),
-                CellMeasure(lat=378392480, lon=-1222648891, radio=2,
+                CellMeasure(lat=378392480, lon=-1222828703, radio=2,
                             lac=56955, cid=5286246, mcc=310, mnc=410, psc=38,
                             accuracy=20),
 
@@ -260,7 +260,9 @@ class TestBackfill(CeleryTestCase):
         session.add_all(data)
 
         # This is tower C and should map back to tower A
-        session.add_all([CellMeasure(lat=378409925, lon=-1222633523, radio=2,
+        towerC_lat = 378348600
+        towerC_lon = -1222828703
+        session.add_all([CellMeasure(lat=towerC_lat, lon=towerC_lon, radio=2,
                                      lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
                                      accuracy=20)])
 
@@ -289,7 +291,7 @@ class TestBackfill(CeleryTestCase):
         rset = list(rset)
         self.assertEquals(len(rset), 3)
         lat_longs = [(row['lat'], row['lon']) for row in rset]
-        assert (378409925, -1222633523) in lat_longs
+        assert (towerC_lat, towerC_lon) in lat_longs
 
         # check that tower D was mapped correctly
         rset = session.execute(text("select * from cell_measure where radio = 3 and lac = 20 and cid = 31"))
