@@ -58,6 +58,7 @@ js: node_modules
 	-m -c --stats
 	$(HERE)/node_modules/.bin/uglifyjs \
 	$(HERE)/ichnaea/content/static/js/mapbox-1.5.2.min.js \
+	$(HERE)/ichnaea/content/static/js/leaflet-hash-20140111.js \
 	$(HERE)/ichnaea/content/static/js/map.js \
 	-o $(HERE)/ichnaea/content/static/js/map-combined.js \
 	-m -c --stats

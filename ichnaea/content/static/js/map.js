@@ -3,7 +3,9 @@ $(document).ready(function() {
         minZoom: 1,
         maxZoom: 15,
         tileLayer: { detectRetina: true }
-    }).setView([15, 10], 2);
+    }).setView([15.0, 10.0], 2);
+
+    var hash = new L.Hash(map);
 
     // add open street map attribution for base tiles
     map.infoControl.addInfo(
