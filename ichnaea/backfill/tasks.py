@@ -1,10 +1,8 @@
 from sqlalchemy import text
 from ichnaea.tasks import DatabaseTask
 from ichnaea.worker import celery
-import math
-from heka.holder import get_client
+from ichnaea.geocalc import distance
 
-EARTH_RADIUS = 6371  # radius of earth in km
 NEAREST_DISTANCE = 10.0  # Distance in kilometers between towers with no
                          # LAC/CID and towers with known LAC/CId
 
@@ -111,7 +109,7 @@ def compute_matching_towers(session, mcc, mnc, psc, radio, accuracy=35):
         accuracy <= %(accuracy)d and
         lac != -1 and
         cid != -1
-    group by 
+    group by
         mcc, mnc, lac, cid
     order by created desc
     ) as data
@@ -123,26 +121,6 @@ def compute_matching_towers(session, mcc, mnc, psc, radio, accuracy=35):
     )
     row_proxy = session.execute(stmt)
     return [dict(r) for r in row_proxy]
-
-
-def distance(lat1, lon1, lat2, lon2):
-    """
-    Compute the distance between a pair of lat/longs in meters using
-    haversine.  The output distance is in kilometers.
-    """
-    dLat = math.radians(lat2-lat1)
-    dLon = math.radians(lon2-lon1)
-    lat1 = math.radians(lat1)
-    lat2 = math.radians(lat2)
-
-    a = math.sin(dLat/2.0) * math.sin(dLat/2.0) + \
-        math.sin(dLon/2.0) * \
-        math.sin(dLon/2.0) * \
-        math.cos(lat1) * \
-        math.cos(lat2)
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1.0-a))
-    d = EARTH_RADIUS * c
-    return d
 
 
 def _nearest_tower(missing_lat, missing_lon, centroids):
@@ -183,5 +161,5 @@ def compute_missing_towers(session, mcc, mnc, psc, radio):
     """ % {'mcc': mcc,
            'mnc': mnc,
            'psc': psc,
-           'radio': radio,})
+           'radio': radio})
     return session.execute(stmt)
