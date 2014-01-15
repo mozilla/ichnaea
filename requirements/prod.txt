@@ -15,7 +15,7 @@ colander==1.0b1
 configparser==3.3.0r2
 cornice==0.14
 docopt==0.6.1
-gunicorn==0.14.6
+gunicorn==18.0
 heka-py==0.30.3
 heka-py-raven[protocol_v3]==0.7
 raven==3.4.1
