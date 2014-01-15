@@ -90,7 +90,9 @@ def remove_wifi(self, wifi_keys):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def cell_location_update(self, min_new=10, max_new=100, batch=10):
+def cell_location_update(self,
+                         min_new=10, max_new=100,
+                         batch=10, cell_measure_ids=[]):
     try:
         cells = []
         with self.db_session() as session:
@@ -101,18 +103,27 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
             if not cells:
                 return 0
             for cell in cells:
-                query = session.query(
-                    CellMeasure.lat, CellMeasure.lon).filter(
-                    CellMeasure.radio == cell.radio).filter(
-                    CellMeasure.mcc == cell.mcc).filter(
-                    CellMeasure.mnc == cell.mnc).filter(
-                    CellMeasure.lac == cell.lac).filter(
-                    CellMeasure.cid == cell.cid)
-                # only take the last X new_measures
-                query = query.order_by(
-                    CellMeasure.created.desc()).limit(
-                    cell.new_measures)
+
+                # TODO: refactor this out
+                if not cell_measure_ids:
+                    query = session.query(
+                        CellMeasure.lat, CellMeasure.lon).filter(
+                        CellMeasure.radio == cell.radio).filter(
+                        CellMeasure.mcc == cell.mcc).filter(
+                        CellMeasure.mnc == cell.mnc).filter(
+                        CellMeasure.lac == cell.lac).filter(
+                        CellMeasure.cid == cell.cid)
+                    # only take the last X new_measures
+                    query = query.order_by(
+                        CellMeasure.created.desc()).limit(
+                        cell.new_measures)
+                else:
+                    query = session.query(
+                            CellMeasure.lat, CellMeasure.lon).filter(
+                            CellMeasure.id.in_(cell_measure_ids))
+
                 measures = query.all()
+
                 length = len(measures)
                 new_lat = sum([w[0] for w in measures]) // length
                 new_lon = sum([w[1] for w in measures]) // length

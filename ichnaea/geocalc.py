@@ -1,8 +1,8 @@
+# encoding: utf8
 import math
 
-EARTH_RADIUS = 6371 # radius of earth in km
+EARTH_RADIUS = 6371  # radius of earth in km
 
-class 
 
 def distance(lat1, lon1, lat2, lon2):
     """
@@ -22,7 +22,7 @@ def distance(lat1, lon1, lat2, lon2):
     varying between about 6,378km (equatorial) and 6,357km (polar),
     and local radius of curvature varying from 6,336km (equatorial
     meridian) to 6,399km (polar). 6,371 km is the generally accepted
-    value for the Earth’s mean radius. This means that errors from
+    value for the Earth's mean radius. This means that errors from
     assuming spherical geometry might be up to 0.55% crossing the
     equator, though generally below 0.3%, depending on latitude and
     direction of travel. An accuracy of better than 3m in 1km is
@@ -44,4 +44,3 @@ def distance(lat1, lon1, lat2, lon2):
     c = 2 * math.asin(min(1, math.sqrt(a)))
     d = EARTH_RADIUS * c
     return d
-
