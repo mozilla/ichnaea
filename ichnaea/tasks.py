@@ -90,9 +90,63 @@ def remove_wifi(self, wifi_keys):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def cell_location_update(self,
-                         min_new=10, max_new=100,
-                         batch=10, cell_measure_ids=[]):
+def backfill_cell_location_update(self, new_cell_measures):
+    try:
+        cells = []
+        with self.db_session() as session:
+            for tower_tuple in new_cell_measures.keys():
+                radio, mcc, mnc, lac, cid = tower_tuple
+                query = session.query(Cell).filter(
+                    Cell.radio == radio).filter(
+                    Cell.mcc == mcc).filter(
+                    Cell.mnc == mnc).filter(
+                    Cell.lac == lac).filter(
+                    Cell.cid == cid)
+
+                cells = query.all()
+
+                if not cells:
+                    continue
+
+                for cell in cells:
+                    cellmeasure_ids = new_cell_measures[tower_tuple]
+
+                    query = None
+                    for id in cellmeasure_ids:
+                        sub_query = session.query(CellMeasure.lat, CellMeasure.lon).filter(
+                                                  CellMeasure.id == id)
+                        if query is None:
+                            query = sub_query
+                        else:
+                            query = sub_query
+                    measures = query.all()
+
+                    length = len(measures)
+                    new_lat = sum([w[0] for w in measures]) // length
+                    new_lon = sum([w[1] for w in measures]) // length
+                    if not (cell.lat or cell.lon):
+                        cell.lat = new_lat
+                        cell.lon = new_lon
+                    else:
+                        # pre-existing location data
+                        total = cell.total_measures
+                        old_length = total - cell.new_measures
+                        cell.lat = ((cell.lat * old_length) +
+                                    (new_lat * length)) // total
+                        cell.lon = ((cell.lon * old_length) +
+                                    (new_lon * length)) // total
+                    cell.new_measures = Cell.new_measures - length
+            session.commit()
+        return len(cells)
+    except IntegrityError as exc:  # pragma: no cover
+        logger.exception('error')
+        return 0
+    except Exception as exc:  # pragma: no cover
+        raise self.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def cell_location_update(self, min_new=10, max_new=100, batch=10):
     try:
         cells = []
         with self.db_session() as session:
@@ -100,27 +154,22 @@ def cell_location_update(self,
                 Cell.new_measures >= min_new).filter(
                 Cell.new_measures < max_new).limit(batch)
             cells = query.all()
+
             if not cells:
                 return 0
-            for cell in cells:
 
-                # TODO: refactor this out
-                if not cell_measure_ids:
-                    query = session.query(
-                        CellMeasure.lat, CellMeasure.lon).filter(
-                        CellMeasure.radio == cell.radio).filter(
-                        CellMeasure.mcc == cell.mcc).filter(
-                        CellMeasure.mnc == cell.mnc).filter(
-                        CellMeasure.lac == cell.lac).filter(
-                        CellMeasure.cid == cell.cid)
-                    # only take the last X new_measures
-                    query = query.order_by(
-                        CellMeasure.created.desc()).limit(
-                        cell.new_measures)
-                else:
-                    query = session.query(
-                            CellMeasure.lat, CellMeasure.lon).filter(
-                            CellMeasure.id.in_(cell_measure_ids))
+            for cell in cells:
+                query = session.query(
+                    CellMeasure.lat, CellMeasure.lon).filter(
+                    CellMeasure.radio == cell.radio).filter(
+                    CellMeasure.mcc == cell.mcc).filter(
+                    CellMeasure.mnc == cell.mnc).filter(
+                    CellMeasure.lac == cell.lac).filter(
+                    CellMeasure.cid == cell.cid)
+                # only take the last X new_measures
+                query = query.order_by(
+                    CellMeasure.created.desc()).limit(
+                    cell.new_measures)
 
                 measures = query.all()
 

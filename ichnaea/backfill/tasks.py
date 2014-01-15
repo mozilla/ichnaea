@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from ichnaea.tasks import DatabaseTask
+from ichnaea.tasks import DatabaseTask, backfill_cell_location_update
 from ichnaea.worker import celery
 from ichnaea.geocalc import distance
 
@@ -58,11 +58,17 @@ def update_tower(self, mcc, mnc, psc, radio):
             return
 
         tower_proxy = compute_missing_towers(session, mcc, mnc, psc, radio)
+
+        new_cell_measures = {}
         for missing_tower in tower_proxy:
             matching_tower = _nearest_tower(missing_tower['lat'],
                                             missing_tower['lon'],
                                             centroids)
             if matching_tower:
+                lac = matching_tower['pt']['lac']
+                cid = matching_tower['pt']['cid']
+                tower_tuple = (radio, mcc, mnc, lac, cid)
+
                 stmt = text("""
                 update
                     cell_measure
@@ -72,11 +78,22 @@ def update_tower(self, mcc, mnc, psc, radio):
                 where
                   id = %(id)d
                 """ % {'id': missing_tower['id'],
-                       'lac': matching_tower['pt']['lac'],
-                       'cid': matching_tower['pt']['cid']})
+                       'lac': lac,
+                       'cid': cid})
+
+                if tower_tuple not in new_cell_measures:
+                    new_cell_measures[tower_tuple] = set()
+
+                new_cell_measures[tower_tuple].add(missing_tower['id'])
+
                 result_proxy = session.execute(stmt)
                 rows_updated += result_proxy.rowcount
         session.commit()
+
+        # Update the cell tower locations with the newly backfilled
+        # measurements now
+        backfill_cell_location_update.delay(new_cell_measures)
+
     return rows_updated
 
 
