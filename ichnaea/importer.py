@@ -73,8 +73,9 @@ def load_file(session, source_file, batch_size=10000, userid=None):
                 print('Added %s records.' % counter)
 
     # process the remaining measures
-    process_mapstat(measures, session, userid=userid)
-    print('Added %s records.' % len(measures))
+    if measures:
+        process_mapstat(measures, session, userid=userid)
+        print('Added %s records.' % len(measures))
 
     if userid is not None:
         process_score(userid, counter, session)
