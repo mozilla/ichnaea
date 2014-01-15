@@ -85,7 +85,7 @@ def process_mapstat(measures, session, userid=None):
 
 def process_user(nickname, session):
     userid = None
-    if (3 <= len(nickname) <= 128):
+    if (2 <= len(nickname) <= 128):
         # automatically create user objects and update nickname
         if isinstance(nickname, str):
             nickname = nickname.decode('utf-8', 'ignore')

@@ -324,7 +324,7 @@ class TestSubmit(CeleryAppTestCase):
             '/v1/submit', {"items": [
                 {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
             ]},
-            headers={'X-Nickname': "ab"},
+            headers={'X-Nickname': "a"},
             status=204)
         session = self.db_master_session
         result = session.query(User).all()
