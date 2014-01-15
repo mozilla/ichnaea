@@ -15,7 +15,7 @@ from ichnaea.service.submit.views import (
 )
 
 
-def load_file(session, source_file, batch_size=10000, userid=None):
+def load_file(session, source_file, batch_size=1000, userid=None):
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
     utcmin = utcnow - datetime.timedelta(120)
 
