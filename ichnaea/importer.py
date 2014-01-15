@@ -21,8 +21,8 @@ def load_file(session, source_file, batch_size=10000, userid=None):
 
     with open(source_file, 'r') as fd:
         reader = csv.reader(fd, delimiter='\t', quotechar=None)
-        counter = 0
 
+        counter = 0
         measures = []
         for fields in reader:
             try:
@@ -63,19 +63,22 @@ def load_file(session, source_file, batch_size=10000, userid=None):
             # side effect, schedules async tasks
             measure = process_measure(data, utcnow, session, userid=userid)
             measures.append(measure)
-
-            # flush every 1000 new records
             counter += 1
+
+            # flush every batch_size records
             if counter % batch_size == 0:
                 process_mapstat(measures, session, userid=userid)
                 session.flush()
                 measures = []
                 print('Added %s records.' % counter)
 
+    # process the remaining measures
+    process_mapstat(measures, session, userid=userid)
+    print('Added %s records.' % len(measures))
+
     if userid is not None:
         process_score(userid, counter, session)
 
-    # add the rest
     session.flush()
     return counter
 
@@ -106,7 +109,7 @@ def main(argv, _db_master=None):
         db = _db_master
     session = db.session()
     added = load_file(session, args.source, userid=userid)
-    print('Added %s records.' % added)
+    print('Added a total of %s records.' % added)
     session.commit()
     return added
 
