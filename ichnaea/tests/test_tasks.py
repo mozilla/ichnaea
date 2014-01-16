@@ -55,14 +55,13 @@ class TestCellLocationUpdate(CeleryTestCase):
 
     def test_backfill_cell_location_update(self):
         from ichnaea.tasks import backfill_cell_location_update
-        now = datetime.utcnow()
-        before = now - timedelta(days=1)
         session = self.db_master_session
         k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
         data = [
-            Cell(new_measures=3, total_measures=3, **k1),
+            Cell(lat=10010000, lon=10010000, new_measures=0,
+                 total_measures=1, **k1),
             CellMeasure(lat=10000000, lon=10000000, **k1),
-            CellMeasure(lat=10020000, lon=10030000, **k1),
+            CellMeasure(lat=10050000, lon=10080000, **k1),
         ]
         session.add_all(data)
         session.commit()
@@ -70,6 +69,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         query = session.query(CellMeasure.id)
         cm_ids = [x[0] for x in query.all()]
 
+        # TODO: refactor this to be constants in the method
         new_measures = {(1, 1, 2, 3, 4): cm_ids}
 
         result = backfill_cell_location_update.delay(new_measures)
@@ -80,6 +80,8 @@ class TestCellLocationUpdate(CeleryTestCase):
         cell = cells[0]
         self.assertEqual(cell.lat, 10020000)
         self.assertEqual(cell.lon, 10030000)
+        self.assertEqual(cell.total_measures, 3)
+
 
 class TestWifiLocationUpdate(CeleryTestCase):
 

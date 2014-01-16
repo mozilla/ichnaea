@@ -118,7 +118,7 @@ def backfill_cell_location_update(self, new_cell_measures):
                         if query is None:
                             query = sub_query
                         else:
-                            query = sub_query
+                            query = query.union(sub_query)
                     measures = query.all()
 
                     length = len(measures)
@@ -129,13 +129,14 @@ def backfill_cell_location_update(self, new_cell_measures):
                         cell.lon = new_lon
                     else:
                         # pre-existing location data
-                        total = cell.total_measures
-                        old_length = total - cell.new_measures
-                        cell.lat = ((cell.lat * old_length) +
-                                    (new_lat * length)) // total
-                        cell.lon = ((cell.lon * old_length) +
-                                    (new_lon * length)) // total
-                    cell.new_measures = Cell.new_measures - length
+                        old_measures = cell.total_measures
+                        total_measures = cell.total_measures + length
+
+                        cell.lat = ((cell.lat * old_measures) +
+                                    (new_lat * length)) // total_measures
+                        cell.lon = ((cell.lon * old_measures) +
+                                    (new_lon * length)) // total_measures
+                        cell.total_measures = total_measures
             session.commit()
         return len(cells)
     except IntegrityError as exc:  # pragma: no cover
