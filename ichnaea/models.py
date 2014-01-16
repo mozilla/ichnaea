@@ -62,6 +62,7 @@ class Cell(_Model):
     range = Column(Integer)
     new_measures = Column(Integer(unsigned=True))
     total_measures = Column(Integer(unsigned=True))
+    psc = Column(Integer)
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
