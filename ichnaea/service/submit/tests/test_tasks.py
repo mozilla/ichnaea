@@ -67,6 +67,8 @@ class TestInsert(CeleryTestCase):
         scores = session.query(Score).all()
         self.assertEqual(len(scores), 1)
         self.assertEqual(scores[0].key, SCORE_TYPE['new_cell'])
+
+        # TODO: this is showing up as 10 for some reason
         self.assertEqual(scores[0].value, 8)
 
         # test duplicate execution

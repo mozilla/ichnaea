@@ -25,7 +25,7 @@ from ichnaea.service.submit.utils import process_score
 logger = get_task_logger(__name__)
 sql_null = None  # avoid pep8 warning
 
-CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
+CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
 
 
 def create_cell_measure(measure_data, entry):
@@ -60,8 +60,10 @@ def update_cell_measure_count(cell_key, count, created, session):
         Cell.mcc == cell_key.mcc).filter(
         Cell.mnc == cell_key.mnc).filter(
         Cell.lac == cell_key.lac).filter(
-        Cell.cid == cell_key.cid
+        Cell.cid == cell_key.cid).filter(
+        Cell.psc == cell_key.psc
     )
+
     cell = query.first()
     new_cell = 0
     if cell is None:
@@ -73,7 +75,7 @@ def update_cell_measure_count(cell_key, count, created, session):
     ).values(
         created=created, radio=cell_key.radio,
         mcc=cell_key.mcc, mnc=cell_key.mnc, lac=cell_key.lac, cid=cell_key.cid,
-        new_measures=count, total_measures=count)
+        psc=cell_key.psc, new_measures=count, total_measures=count)
     session.execute(stmt)
     return new_cell
 
@@ -96,7 +98,7 @@ def process_cell_measure(session, measure_data, entries, userid=None):
         # group per unique cell
         cell_count[CellKey(cell_measure.radio, cell_measure.mcc,
                            cell_measure.mnc, cell_measure.lac,
-                           cell_measure.cid)] += 1
+                           cell_measure.cid, cell_measure.psc)] += 1
 
     # update new/total measure counts
     new_cells = 0
