@@ -20,32 +20,21 @@ def do_backfill(self):
         * compute matching towers
 
     """
-    result = -1
     with self.db_session() as session:
-        try:
-            result = spinup_backfill_workers(session)
-        finally:
-            session.execute(text("delete from cell_backfill"))
-
-    return result
-
-
-def spinup_backfill_workers(session):
-    stmt = text("""
-            select
-                mcc, mnc, psc, radio
-            from
-                cell_measure
-            where
-                (mcc != -1 and mnc != -1) and
-                (lac = -1 or cid = -1) and
-                (psc != -1)
-            group by
-                mcc, mnc, psc, radio
-            """)
-
-    for row in session.execute(stmt):
-        update_tower.delay(row['mcc'], row['mnc'], row['psc'], row['radio'])
+        stmt = text("""
+                select
+                    mcc, mnc, psc, radio
+                from
+                    cell_measure
+                where
+                    (mcc != -1 and mnc != -1) and
+                    (lac = -1 or cid = -1) and
+                    (psc != -1)
+                group by
+                    mcc, mnc, psc, radio
+                """)
+        for row in session.execute(stmt):
+            update_tower.delay(row['mcc'], row['mnc'], row['psc'], row['radio'])
 
 
 @celery.task(base=DatabaseTask, bind=True)
