@@ -240,8 +240,6 @@ class TestBackfill(CeleryTestCase):
         # These are our reference towers that will be used to match
         # similiar towers
 
-        # TODO:  these need to be converted into actual Cell records
-        # instead of CellMeasure records
         data = [
                 # These are measurements for tower A
                 Cell(lat=378348600, lon=-1222828703, radio=2,
