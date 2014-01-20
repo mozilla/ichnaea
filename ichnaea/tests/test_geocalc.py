@@ -16,7 +16,9 @@ def test_simple_distance():
 def test_antipodal():
     """
     Antipodal points (opposite sides of the planet) have a round off
-    error with the standard haversine calculation.
+    error with the standard haversine calculation which is extremely
+    old and assumes we are using fixed precision math instead of IEEE
+    floats.
     """
     lat1 = 90.0
     lon1 = 0.0
@@ -24,5 +26,4 @@ def test_antipodal():
     lon2 = 0
     delta = distance(lat1, lon1, lat2, lon2)
     sdelta = "%0.4f" % delta
-    # TODO: add haversine error check here
     assert sdelta == '20015.0868'
