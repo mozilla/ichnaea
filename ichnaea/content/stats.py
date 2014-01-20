@@ -1,14 +1,10 @@
-import csv
-from cStringIO import StringIO
 import datetime
 from datetime import timedelta
 from operator import itemgetter
 
 from sqlalchemy import func
-from sqlalchemy.sql.expression import text
 
 from ichnaea.content.models import (
-    MAPSTAT_TYPE,
     Score,
     SCORE_TYPE,
     Stat,
@@ -90,15 +86,3 @@ def leaders(session):
         result.append(
             {'nickname': nickname, 'num': int(value)})
     return result
-
-
-def map_world_csv(session):
-    select = text("select lat, lon from mapstat where "
-                  "`key` = %s" % MAPSTAT_TYPE['location_10km'])
-    result = session.execute(select)
-    rows = StringIO()
-    csvwriter = csv.writer(rows)
-    csvwriter.writerow(('lat', 'lon'))
-    for lat, lon in result.fetchall():
-        csvwriter.writerow((int(lat) / 10.0, int(lon) / 10.0))
-    return rows.getvalue()

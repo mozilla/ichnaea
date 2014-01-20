@@ -101,11 +101,11 @@ class CellMeasure(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
     measure_id = Column(BigInteger(unsigned=True))
-    created = Column(DateTime)
+    created = Column(DateTime)  # the insert time of the record into the DB
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
-    time = Column(DateTime)
+    time = Column(DateTime)  # the time of observation of this data
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)
@@ -201,11 +201,11 @@ class WifiMeasure(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
     measure_id = Column(BigInteger(unsigned=True))
-    created = Column(DateTime)
+    created = Column(DateTime)  # the insert time of the record into the DB
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
-    time = Column(DateTime)
+    time = Column(DateTime)  # the time of observation of this data
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)
@@ -237,11 +237,11 @@ class Measure(_Model):
 
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
-    created = Column(DateTime)
+    created = Column(DateTime)  # the insert time of the record into the DB
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
-    time = Column(DateTime)
+    time = Column(DateTime)  # the time of observation of this data
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)

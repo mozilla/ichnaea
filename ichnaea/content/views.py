@@ -13,7 +13,6 @@ from ichnaea.content.stats import (
     global_stats,
     histogram,
     leaders,
-    map_world_csv,
 )
 
 
@@ -101,16 +100,6 @@ class ContentViews(Layout):
     def map_view(self):
         return {'page_title': 'Coverage Map'}
 
-    @view_config(renderer='string', name="map_world.csv", http_cache=86400)
-    def map_world_csv(self):
-        session = self.request.db_slave_session
-        return map_world_csv(session)
-
-    @view_config(renderer='templates/map_world.pt', name="map_world",
-                 http_cache=300)
-    def map_world_view(self):
-        return {'page_title': 'Coverage Map'}
-
     @view_config(renderer='json', name="stats_location.json", http_cache=86400)
     def stats_location_json(self):
         session = self.request.db_slave_session
@@ -154,7 +143,6 @@ _robots_response = Response(
     body="User-agent: *\n"
          "Disallow: /leaders\n"
          "Disallow: /map\n"
-         "Disallow: /map_world\n"
          "Disallow: /static/\n"
          "Disallow: /stats\n"
          "Disallow: /v1/\n"

@@ -78,14 +78,11 @@ def process_mapstat(measures, session, userid=None):
         1000, MAPSTAT_TYPE['location'], measures, session)
     if userid is not None and tile_count > 0:
         process_score(userid, tile_count, session, key='new_location')
-    # 10x10 km tiles
-    process_mapstat_keyed(
-        1000000, MAPSTAT_TYPE['location_10km'], measures, session)
 
 
 def process_user(nickname, session):
     userid = None
-    if (3 <= len(nickname) <= 128):
+    if (2 <= len(nickname) <= 128):
         # automatically create user objects and update nickname
         if isinstance(nickname, str):
             nickname = nickname.decode('utf-8', 'ignore')

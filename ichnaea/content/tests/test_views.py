@@ -7,8 +7,6 @@ from pyramid.testing import tearDown
 from unittest2 import TestCase
 
 from ichnaea.content.models import (
-    MapStat,
-    MAPSTAT_TYPE,
     Score,
     Stat,
     STAT_TYPE,
@@ -62,22 +60,6 @@ class TestFunctionalContent(AppTestCase):
 
     def test_map(self):
         self.app.get('/map', status=200)
-
-    def test_map_world(self):
-        self.app.get('/map_world', status=200)
-
-    def test_map_world_csv(self):
-        app = self.app
-        session = self.db_slave_session
-        key_10km = MAPSTAT_TYPE['location_10km']
-        session.add(MapStat(lat=20, lon=30, key=key_10km, value=2))
-        session.add(MapStat(lat=21, lon=30, key=key_10km, value=7))
-        session.flush()
-        result = app.get('/map_world.csv', status=200)
-        self.assertEqual(result.content_type, 'text/plain')
-        text = result.text.replace('\r', '').strip('\n')
-        text = text.split('\n')
-        self.assertEqual(text, ['lat,lon', '2.0,3.0', '2.1,3.0'])
 
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)

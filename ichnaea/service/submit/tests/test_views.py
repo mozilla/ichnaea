@@ -243,16 +243,11 @@ class TestSubmit(CeleryAppTestCase):
         app = self.app
         session = self.db_master_session
         key_10m = MAPSTAT_TYPE['location']
-        key_10km = MAPSTAT_TYPE['location_10km']
         session.add_all([
             MapStat(lat=10000, lon=20000, key=key_10m, value=13),
             MapStat(lat=10000, lon=30000, key=key_10m, value=1),
             MapStat(lat=20000, lon=30000, key=key_10m, value=3),
             MapStat(lat=20000, lon=40000, key=key_10m, value=1),
-            MapStat(lat=10, lon=20, key=key_10km, value=13),
-            MapStat(lat=10, lon=30, key=key_10km, value=1),
-            MapStat(lat=20, lon=30, key=key_10km, value=3),
-            MapStat(lat=20, lon=40, key=key_10km, value=1),
         ])
         session.flush()
         app.post_json(
@@ -275,20 +270,6 @@ class TestSubmit(CeleryAppTestCase):
                 (10000, 30000, 1),
                 (20000, 30000, 5),
                 (20000, 40000, 1),
-            ]
-        )
-        # check coarse grained stats
-        result = session.query(MapStat).filter(
-            MapStat.key == MAPSTAT_TYPE['location_10km']).all()
-        self.assertEqual(len(result), 5)
-        self.assertEqual(
-            sorted([(int(r.lat), int(r.lon), int(r.value)) for r in result]),
-            [
-                (-20, 30, 1),
-                (10, 20, 14),
-                (10, 30, 1),
-                (20, 30, 5),
-                (20, 40, 1),
             ]
         )
 
@@ -324,7 +305,7 @@ class TestSubmit(CeleryAppTestCase):
             '/v1/submit', {"items": [
                 {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
             ]},
-            headers={'X-Nickname': "ab"},
+            headers={'X-Nickname': "a"},
             status=204)
         session = self.db_master_session
         result = session.query(User).all()

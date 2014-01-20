@@ -32,7 +32,6 @@ STAT_TYPE_INVERSE = dict((v, k) for k, v in STAT_TYPE.items())
 
 MAPSTAT_TYPE = {
     'location': 0,
-    'location_10km': 1,
 }
 MAPSTAT_TYPE_INVERSE = dict((v, k) for k, v in MAPSTAT_TYPE.items())
 

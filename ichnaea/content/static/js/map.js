@@ -1,8 +1,11 @@
 $(document).ready(function() {
-    var map = L.mapbox.map('map', 'mozilla-webprod.g7ilhcl5', {
+    var map = L.mapbox.map('map', 'mozilla-webprod.map-05ad0a21', {
+        minZoom: 1,
         maxZoom: 15,
         tileLayer: { detectRetina: true }
-    }).setView([0, 10], 2);
+    }).setView([15.0, 10.0], 2);
+
+    var hash = new L.Hash(map);
 
     // add open street map attribution for base tiles
     map.infoControl.addInfo(
@@ -11,7 +14,12 @@ $(document).ready(function() {
 
     // add tile layer
     L.tileLayer('/tiles/{z}/{x}/{y}.png', {
-        opacity: 0.8
+        detectRetina: true
+    }).addTo(map);
+
+    // add tile layer
+    L.mapbox.tileLayer('mozilla-webprod.map-5e1cee8a', {
+        detectRetina: true
     }).addTo(map);
 
 });

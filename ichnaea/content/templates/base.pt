@@ -27,7 +27,7 @@
                     <li class="first"><a href="/">Home</a></li>
                     <li><a href="/leaders">Leaderboard</a></li>
                     <li><a href="/stats">Statistics</a></li>
-                    <li class="last"><a href="/map_world">Map</a></li>
+                    <li class="last"><a href="/map">Map</a></li>
                 </ul>
             </nav>
 

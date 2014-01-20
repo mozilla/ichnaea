@@ -61,7 +61,7 @@ class TestLoadFile(CeleryTestCase):
         mapstats = session.query(MapStat).filter(
             MapStat.key == MAPSTAT_TYPE['location']).all()
         mapstats = [(m.lat, m.lon, m.value) for m in mapstats]
-        self.assertEqual(mapstats, [(378719, -1222732, 2)])
+        self.assertEqual(mapstats, [(378719, -1222732, 3)])
 
     def test_corrupt_lines(self):
         func, tmpfile = self._make_one()
