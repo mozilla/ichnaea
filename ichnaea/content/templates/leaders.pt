@@ -25,7 +25,7 @@
         </table>
     </div>
     <div class="half-right" tal:condition="leaders2">
-        <table class="table">
+        <table class="table half">
             <thead>
                 <tr>
                     <th>Rank</th>

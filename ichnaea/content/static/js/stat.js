@@ -55,6 +55,20 @@ var XHover = Rickshaw.Class.create(Rickshaw.Graph.HoverDetail, {
 });
 
 function make_graph(url, graph_id) {
+    var graphWidth = 720;
+    var graphHeight = 120;
+    var graphXScale = 170;
+    var graphYScale = 50;
+
+    // adjust graph sizes to match responsive CSS rules
+    var screenWidth = screen.width;
+    if (screenWidth >= 760 && screenWidth < 1000) {
+        graphWidth = 520;
+        graphXScale = 160;
+    } else if (screenWidth < 760) {
+        graphWidth = 220;
+    }
+
     var result = {};
     $.ajax({
         url: url,
@@ -67,15 +81,22 @@ function make_graph(url, graph_id) {
 
     var entries = [];
     var item;
+    var item_day_array;
+    var item_day;
     for (var i = 0; i < result.histogram.length; i++) {
         item = result.histogram[i];
-        entries.push({x: Date.parse(item.day), y: item.num});
+        item_day_array = item.day.split('-');
+        item_day = Date.UTC(
+            parseInt(item_day_array[0], 10),
+            parseInt(item_day_array[1], 10),
+            parseInt(item_day_array[2], 10));
+        entries.push({x: item_day, y: item.num});
     }
 
     var graph = new Rickshaw.Graph( {
         element: document.querySelector(graph_id + " .chart"),
-        width: 720,
-        height: 120,
+        width: graphWidth,
+        height: graphHeight,
         renderer: 'area',
         series: [ {
                 data: entries,
@@ -83,17 +104,26 @@ function make_graph(url, graph_id) {
         } ]
     } );
 
+    function pad(number) {
+        if ( number < 10 ) {
+            return '0' + number;
+        }
+        return number;
+    }
+
     var format_date = function(n) {
         var d = new Date(0);
         d.setUTCMilliseconds(n);
-        return d.toLocaleDateString();
+        return d.getUTCFullYear() +
+            '-' + pad(d.getUTCMonth() + 1) +
+            '-' + pad(d.getUTCDate());
     };
 
     var x_axis = new Rickshaw.Graph.Axis.X( {
         graph: graph,
         orientation: 'bottom',
         element: document.querySelector(graph_id + " .chart_x_axis"),
-        pixelsPerTick: 100,
+        pixelsPerTick: graphXScale,
         tickFormat: format_date
     } );
 
@@ -101,7 +131,7 @@ function make_graph(url, graph_id) {
         graph: graph,
         orientation: 'left',
         element: document.querySelector(graph_id + " .chart_y_axis"),
-        pixelsPerTick: 72,
+        pixelsPerTick: graphYScale,
         tickFormat: Rickshaw.Fixtures.Number.formatKMBT
     } );
 

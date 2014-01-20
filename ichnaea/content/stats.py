@@ -81,8 +81,8 @@ def leaders(session):
 
     for userid, value in score_rows:
         nickname = users.get(userid, 'anonymous')
-        if len(nickname) > 30:
-            nickname = nickname[:30] + u'...'
+        if len(nickname) > 24:
+            nickname = nickname[:24] + u'...'
         result.append(
             {'nickname': nickname, 'num': int(value)})
     return result

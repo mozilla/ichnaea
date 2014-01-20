@@ -107,6 +107,6 @@ class TestStats(DBTestCase):
         # check the result
         result = leaders(session)
         self.assertEqual(len(result), 22)
-        self.assertEqual(result[0]['nickname'], highest[:30] + u'...')
+        self.assertEqual(result[0]['nickname'], highest[:24] + u'...')
         self.assertEqual(result[0]['num'], 10)
         self.assertTrue(lowest in [r['nickname'] for r in result])
