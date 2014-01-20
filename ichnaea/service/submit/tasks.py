@@ -40,18 +40,18 @@ def create_cell_measure(measure_data, entry):
         altitude_accuracy=measure_data.get('altitude_accuracy', 0),
         mcc=entry['mcc'],
         mnc=entry['mnc'],
-        lac=entry.get('lac', 0),
-        cid=entry.get('cid', 0),
-        psc=entry.get('psc', 0),
-        asu=entry.get('asu', 0),
-        signal=entry.get('signal', 0),
-        ta=entry.get('ta', 0),
+        lac=entry.get('lac', -1),
+        cid=entry.get('cid', -1),
+        psc=entry.get('psc', -1),
+        asu=entry.get('asu', -1),
+        signal=entry.get('signal', -1),
+        ta=entry.get('ta',-1),
     )
 
 
 def update_cell_measure_count(cell_key, count, created, session):
-    if (cell_key.radio == -1 or cell_key.lac == 0 or cell_key.cid == 0):
-        # only update data for complete records
+    # only update data for complete record
+    if (cell_key.radio == -1 or cell_key.lac == -1 or cell_key.cid == -1 or cell_key.psc == -1):  # NOQA
         return 0
 
     # do we already know about this cell?
