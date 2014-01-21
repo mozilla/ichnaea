@@ -23,7 +23,7 @@ from heka.holder import get_client
 
 class DatabaseTask(Task):
     abstract = True
-    acks_late = True
+    acks_late = False
     ignore_result = True
     max_retries = 3
 

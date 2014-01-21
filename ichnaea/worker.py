@@ -175,13 +175,10 @@ def configure(celery=celery):
         BROKER_TRANSPORT_OPTIONS=broker_options,
         # tasks
         CELERY_IMPORTS=CELERY_IMPORTS,
-        # default to idempotent tasks
-        CELERY_ACKS_LATE=True,
         # forward compatibility
         CELERYD_FORCE_EXECV=True,
-        # decrease risk of loosing tasks with redis
-        CELERYD_PREFETCH_MULTIPLIER=1,
         # optimization
+        CELERYD_PREFETCH_MULTIPLIER=8,
         CELERY_DISABLE_RATE_LIMITS=True,
         CELERY_MESSAGE_COMPRESSION='gzip',
         # security
