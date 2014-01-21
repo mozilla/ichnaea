@@ -17,12 +17,15 @@ CELERY_IMPORTS = [
     'ichnaea.service.submit.tasks',
 ]
 
-CELERYBEAT_SCHEDULE = {
+CELERY_BROKER_DB_CLEANUP = {
     'cleanup-kombu-message-table': {
         'task': 'ichnaea.tasks.cleanup_kombu_message_table',
         'schedule': timedelta(seconds=900),
         'args': (0, ),
-    },
+    }
+}
+
+CELERYBEAT_SCHEDULE = {
     'histogram-yesterday': {
         'task': 'ichnaea.content.tasks.histogram',
         'schedule': crontab(hour=0, minute=3),
@@ -121,7 +124,8 @@ def configure(celery=celery):
         broker_url = section['broker_url']
         result_url = section['result_url']
 
-    broker_url = 'sqla+' + broker_url
+    if 'pymysql' in broker_url:
+        broker_url = 'sqla+' + broker_url
 
     if sqlsocket:
         broker_socket = sqlsocket
@@ -130,11 +134,18 @@ def configure(celery=celery):
         broker_socket = section.get('broker_socket')
         result_socket = section.get('result_socket')
 
-    broker_connect_args = {"charset": "utf8"}
-    if broker_socket:
-        broker_connect_args['unix_socket'] = broker_socket
-    broker_options = database_options.copy()
-    broker_options['connect_args'] = broker_connect_args
+    if 'pymysql' in broker_url:
+        broker_connect_args = {"charset": "utf8"}
+        if broker_socket:
+            broker_connect_args['unix_socket'] = broker_socket
+        broker_options = database_options.copy()
+        broker_options['connect_args'] = broker_connect_args
+        # add kombu_message cleanup task
+        CELERYBEAT_SCHEDULE.update(CELERY_BROKER_DB_CLEANUP)
+    elif 'redis' in broker_url:
+        broker_options = {}
+        broker_options['fanout_prefix'] = True
+        broker_options['visibility_timeout'] = 3600
 
     result_connect_args = {"charset": "utf8"}
     if result_socket:
@@ -162,6 +173,8 @@ def configure(celery=celery):
         CELERY_ACKS_LATE=True,
         # forward compatibility
         CELERYD_FORCE_EXECV=True,
+        # decrease risk of loosing tasks with redis
+        CELERYD_PREFETCH_MULTIPLIER=1,
         # optimization
         CELERY_DISABLE_RATE_LIMITS=True,
         CELERY_MESSAGE_COMPRESSION='gzip',
