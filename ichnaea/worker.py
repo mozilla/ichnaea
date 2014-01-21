@@ -147,11 +147,21 @@ def configure(celery=celery):
         broker_options['fanout_prefix'] = True
         broker_options['visibility_timeout'] = 3600
 
-    result_connect_args = {"charset": "utf8"}
-    if result_socket:
-        result_connect_args['unix_socket'] = result_socket
-    result_options = database_options.copy()
-    result_options['connect_args'] = result_connect_args
+    if 'pymysql' in result_url:
+        result_connect_args = {"charset": "utf8"}
+        if result_socket:
+            result_connect_args['unix_socket'] = result_socket
+        result_options = database_options.copy()
+        result_options['connect_args'] = result_connect_args
+        celery.conf.update(
+            CELERY_RESULT_BACKEND='database',
+            CELERY_RESULT_DBURI=result_url,
+            CELERY_RESULT_ENGINE_OPTIONS=result_options,
+        )
+    elif 'redis' in result_url:
+        celery.conf.update(
+            CELERY_RESULT_BACKEND=result_url,
+        )
 
     # testing setting
     always_eager = bool(os.environ.get('CELERY_ALWAYS_EAGER', False))
@@ -163,10 +173,6 @@ def configure(celery=celery):
         # broker
         BROKER_URL=broker_url,
         BROKER_TRANSPORT_OPTIONS=broker_options,
-        # results
-        CELERY_RESULT_BACKEND='database',
-        CELERY_RESULT_DBURI=result_url,
-        CELERY_RESULT_ENGINE_OPTIONS=result_options,
         # tasks
         CELERY_IMPORTS=CELERY_IMPORTS,
         # default to idempotent tasks
