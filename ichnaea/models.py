@@ -64,10 +64,10 @@ class Cell(_Model):
     mnc = Column(Integer)
     lac = Column(Integer)
     cid = Column(Integer)
+    psc = Column(Integer)
     range = Column(Integer)
     new_measures = Column(Integer(unsigned=True))
     total_measures = Column(Integer(unsigned=True))
-    psc = Column(Integer)
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
