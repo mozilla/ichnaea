@@ -37,10 +37,10 @@ class TestGeolocate(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="a1", lat=10000000, lon=10000000),
-            Wifi(key="b2", lat=10010000, lon=10020000),
-            Wifi(key="c3", lat=10020000, lon=10040000),
-            Wifi(key="d4", lat=None, lon=None),
+            Wifi(key="a1", lat=10000000, lon=10000000, total_measures=9),
+            Wifi(key="b2", lat=10010000, lon=10020000, total_measures=9),
+            Wifi(key="c3", lat=10020000, lon=10040000, total_measures=9),
+            Wifi(key="d4", lat=None, lon=None, total_measures=9),
         ]
         session.add_all(wifis)
         session.commit()
