@@ -10,20 +10,13 @@ NEAREST_DISTANCE = 10.0  # Distance in kilometers between towers with no
 @celery.task(base=DatabaseTask, bind=True)
 def do_backfill(self):
     """
-    * Find all tower (mcc, mnc, psc) 3-tuples that are missing lac,
-    cid and fill them into the cell_backfill table
-
-    *. For each tower that matches mcc, mnc, psc and has (lac or
-    cid=-1, iterate
-
-        * initialize a cache of matching towers for (mcc, mnc, psc)
-        * compute matching towers
-
+    Find all tower (mcc, mnc, psc) 3-tuples that are missing lac,
+    cid and spin up celery tasks to update cell towers.
     """
     with self.db_session() as session:
         stmt = text("""
                 select
-                    mcc, mnc, psc, radio
+                    radio, mcc, mnc, psc
                 from
                     cell_measure
                 where
@@ -31,22 +24,23 @@ def do_backfill(self):
                     (lac = -1 or cid = -1) and
                     (psc != -1)
                 group by
-                    mcc, mnc, psc, radio
+                    radio, mcc, mnc, psc
                 """)
         for row in session.execute(stmt):
-            update_tower.delay(row['mcc'], row['mnc'], row['psc'], row['radio'])
+            update_tower.delay(row['radio'], row['mcc'],
+                               row['mnc'], row['psc'])
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def update_tower(self, mcc, mnc, psc, radio):
+def update_tower(self, radio, mcc, mnc, psc):
     rows_updated = 0
     with self.db_session() as session:
-        centroids = compute_matching_towers(session, mcc, mnc, psc, radio)
+        centroids = compute_matching_towers(session, radio, mcc, mnc, psc)
 
         if centroids == []:
             return
 
-        tower_proxy = compute_missing_towers(session, mcc, mnc, psc, radio)
+        tower_proxy = compute_missing_towers(session, radio, mcc, mnc, psc)
 
         new_cell_measures = {}
         for missing_tower in tower_proxy:
@@ -86,7 +80,7 @@ def update_tower(self, mcc, mnc, psc, radio):
     return rows_updated
 
 
-def compute_matching_towers(session, mcc, mnc, psc, radio):
+def compute_matching_towers(session, radio, mcc, mnc, psc):
     """
     Finds the closest matching tower based on mcc, mnc, psc, and
     lat/long.  If no tower can be found to match within 1km, then we
@@ -100,16 +94,17 @@ def compute_matching_towers(session, mcc, mnc, psc, radio):
     from
         cell
     where
+        radio = %(radio)d and
         mcc = %(mcc)d and
         mnc = %(mnc)d and
         psc = %(psc)d and
-        radio = %(radio)d and
         lac != -1 and
         cid != -1
-    """ % {'mcc': mcc,
+    """ % {'radio': radio,
+           'mcc': mcc,
            'mnc': mnc,
            'psc': psc,
-           'radio': radio}
+           }
     )
     row_proxy = session.execute(stmt)
     return [dict(r) for r in row_proxy]
@@ -135,7 +130,7 @@ def _nearest_tower(missing_lat, missing_lon, centroids):
         return min_dist
 
 
-def compute_missing_towers(session, mcc, mnc, psc, radio):
+def compute_missing_towers(session, radio, mcc, mnc, psc):
     stmt = text("""
     select
         id,
@@ -144,14 +139,14 @@ def compute_missing_towers(session, mcc, mnc, psc, radio):
     from
         cell_measure
     where
+        radio = %(radio)d and
         mcc = %(mcc)d and
         mnc = %(mnc)d and
         psc = %(psc)d and
-        radio = %(radio)d and
         (lac = -1 or
         cid = -1)
-    """ % {'mcc': mcc,
+    """ % {'radio': radio,
+           'mcc': mcc,
            'mnc': mnc,
-           'psc': psc,
-           'radio': radio})
+           'psc': psc})
     return session.execute(stmt)
