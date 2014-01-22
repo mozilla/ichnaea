@@ -1,3 +1,4 @@
+from collections import defaultdict
 from sqlalchemy import text
 from ichnaea.tasks import DatabaseTask, backfill_cell_location_update
 from ichnaea.worker import celery
@@ -42,7 +43,7 @@ def update_tower(self, radio, mcc, mnc, psc):
 
         tower_proxy = compute_missing_towers(session, radio, mcc, mnc, psc)
 
-        new_cell_measures = {}
+        new_cell_measures = defaultdict(set)
         for missing_tower in tower_proxy:
             matching_tower = _nearest_tower(missing_tower['lat'],
                                             missing_tower['lon'],
@@ -63,9 +64,6 @@ def update_tower(self, radio, mcc, mnc, psc):
                 """ % {'id': missing_tower['id'],
                        'lac': lac,
                        'cid': cid})
-
-                if tower_tuple not in new_cell_measures:
-                    new_cell_measures[tower_tuple] = set()
 
                 new_cell_measures[tower_tuple].add(missing_tower['id'])
 
