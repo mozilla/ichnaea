@@ -64,14 +64,16 @@ class TestSearch(AppTestCase):
         session = self.db_slave_session
         wifis = [
             Wifi(key="A1", lat=10000000, lon=10000000),
-            Wifi(key="B2", lat=10020000, lon=10040000),
-            Wifi(key="C3", lat=None, lon=None),
+            Wifi(key="B2", lat=10010000, lon=10020000),
+            Wifi(key="C3", lat=10020000, lon=10040000),
+            Wifi(key="D4", lat=None, lon=None),
         ]
         session.add_all(wifis)
         session.commit()
         res = app.post_json('/v1/search',
                             {"wifi": [
-                                {"key": "A1"}, {"key": "B2"}, {"key": "C3"},
+                                {"key": "A1"}, {"key": "B2"},
+                                {"key": "C3"}, {"key": "D4"},
                             ]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
@@ -88,12 +90,13 @@ class TestSearch(AppTestCase):
         session = self.db_slave_session
         wifis = [
             Wifi(key="A1", lat=10000000, lon=10000000),
+            Wifi(key="B2", lat=10010000, lon=10020000),
         ]
         session.add_all(wifis)
         session.commit()
         res = app.post_json('/v1/search',
                             {"wifi": [
-                                {"key": "A1"},
+                                {"key": "A1"}, {"key": "B2"},
                             ]},
                             status=200)
         self.assertEqual(res.body, '{"status": "not_found"}')
@@ -103,7 +106,8 @@ class TestSearch(AppTestCase):
         session = self.db_slave_session
         wifis = [
             Wifi(key="A1", lat=10000000, lon=10000000),
-            Wifi(key="B2", lat=None, lon=None),
+            Wifi(key="B2", lat=10010000, lon=10020000),
+            Wifi(key="C3", lat=None, lon=None),
         ]
         session.add_all(wifis)
         session.commit()
@@ -120,14 +124,16 @@ class TestSearch(AppTestCase):
         session = self.db_slave_session
         wifis = [
             Wifi(key="A1", lat=10000000, lon=10000000),
-            Wifi(key="B2", lat=10020000, lon=10040000),
-            Wifi(key="C3", lat=20000000, lon=20000000),
+            Wifi(key="B2", lat=10010000, lon=10020000),
+            Wifi(key="C3", lat=10020000, lon=10040000),
+            Wifi(key="D4", lat=20000000, lon=20000000),
         ]
         session.add_all(wifis)
         session.commit()
         res = app.post_json('/v1/search',
                             {"wifi": [
-                                {"key": "A1"}, {"key": "B2"}, {"key": "C3"},
+                                {"key": "A1"}, {"key": "B2"},
+                                {"key": "C3"}, {"key": "D4"},
                             ]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')

@@ -38,8 +38,9 @@ class TestGeolocate(AppTestCase):
         session = self.db_slave_session
         wifis = [
             Wifi(key="a1", lat=10000000, lon=10000000),
-            Wifi(key="b2", lat=10020000, lon=10040000),
-            Wifi(key="c3", lat=None, lon=None),
+            Wifi(key="b2", lat=10010000, lon=10020000),
+            Wifi(key="c3", lat=10020000, lon=10040000),
+            Wifi(key="d4", lat=None, lon=None),
         ]
         session.add_all(wifis)
         session.commit()
@@ -49,6 +50,7 @@ class TestGeolocate(AppTestCase):
                     {"macAddress": "a1"},
                     {"macAddress": "b2"},
                     {"macAddress": "c3"},
+                    {"macAddress": "d4"},
                 ]},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
