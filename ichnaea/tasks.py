@@ -94,7 +94,7 @@ def backfill_cell_location_update(self, new_cell_measures):
     try:
         cells = []
         with self.db_session() as session:
-            for tower_tuple in new_cell_measures.keys():
+            for tower_tuple, cell_measure_ids in new_cell_measures.items():
                 radio, mcc, mnc, lac, cid = tower_tuple
                 query = session.query(Cell).filter(
                     Cell.radio == radio).filter(
@@ -106,20 +106,19 @@ def backfill_cell_location_update(self, new_cell_measures):
                 cells = query.all()
 
                 if not cells:
+                    # This case shouldn't actually occur.  The
+                    # backfill_cell_location_update is only called
+                    # when CellMeasure records are matched against
+                    # known Cell records.
                     continue
 
                 for cell in cells:
-                    cellmeasure_ids = new_cell_measures[tower_tuple]
-
                     query = None
-                    for id in cellmeasure_ids:
-                        sub_query = session.query(CellMeasure.lat, CellMeasure.lon).filter(
-                                                  CellMeasure.id == id)
-                        if query is None:
-                            query = sub_query
-                        else:
-                            query = query.union(sub_query)
-                    measures = query.all()
+
+                    measures = session.query(CellMeasure.lat,    # NOQA
+                                    CellMeasure.lon).filter(
+                                    CellMeasure.id.in_(
+                                        cell_measure_ids)).all()
 
                     length = len(measures)
                     new_lat = sum([w[0] for w in measures]) // length

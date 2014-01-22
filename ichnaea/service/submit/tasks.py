@@ -45,7 +45,7 @@ def create_cell_measure(measure_data, entry):
         psc=entry.get('psc', -1),
         asu=entry.get('asu', -1),
         signal=entry.get('signal', -1),
-        ta=entry.get('ta',-1),
+        ta=entry.get('ta', -1),
     )
 
 
