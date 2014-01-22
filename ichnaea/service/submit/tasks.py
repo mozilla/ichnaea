@@ -51,7 +51,7 @@ def create_cell_measure(measure_data, entry):
 
 def update_cell_measure_count(cell_key, count, created, session):
     # only update data for complete record
-    if (cell_key.radio == -1 or cell_key.lac == -1 or cell_key.cid == -1 or cell_key.psc == -1):  # NOQA
+    if (cell_key.radio == -1 or cell_key.lac == -1 or cell_key.cid == -1):  # NOQA
         return 0
 
     # do we already know about this cell?
