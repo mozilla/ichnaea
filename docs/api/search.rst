@@ -9,9 +9,11 @@ nearby cell towers or wifi base stations.
 
 An example POST request against URL::
 
-    https://location.services.mozilla.com/v1/search
+    https://location.services.mozilla.com/v1/search?key=<API_KEY>
 
-with a JSON body:
+The API_KEY can currently be any byte string, for example a uuid.
+
+The JSON body should be:
 
 .. code-block:: javascript
 

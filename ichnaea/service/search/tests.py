@@ -44,7 +44,7 @@ class TestSearch(AppTestCase):
         session.commit()
 
         res = app.post_json(
-            '/v1/search',
+            '/v1/search?key=test',
             {"radio": "gsm", "cell": [
                 dict(radio="umts", cid=4, **key),
                 dict(radio="umts", cid=5, **key),
@@ -70,7 +70,7 @@ class TestSearch(AppTestCase):
         ]
         session.add_all(wifis)
         session.commit()
-        res = app.post_json('/v1/search',
+        res = app.post_json('/v1/search?key=test',
                             {"wifi": [
                                 {"key": "A1"}, {"key": "B2"},
                                 {"key": "C3"}, {"key": "D4"},
@@ -94,7 +94,7 @@ class TestSearch(AppTestCase):
         ]
         session.add_all(wifis)
         session.commit()
-        res = app.post_json('/v1/search',
+        res = app.post_json('/v1/search?key=test',
                             {"wifi": [
                                 {"key": "A1"}, {"key": "B2"},
                             ]},
@@ -111,7 +111,7 @@ class TestSearch(AppTestCase):
         ]
         session.add_all(wifis)
         session.commit()
-        res = app.post_json('/v1/search',
+        res = app.post_json('/v1/search?key=test',
                             {"wifi": [
                                 {"key": "A1"}, {"key": "B2"}, {"key": "C3"},
                             ]},
@@ -129,7 +129,7 @@ class TestSearch(AppTestCase):
         ]
         session.add_all(wifis)
         session.commit()
-        res = app.post_json('/v1/search',
+        res = app.post_json('/v1/search?key=test',
                             {"wifi": [
                                 {"key": "A1"}, {"key": "B2"}, {"key": "C3"},
                             ]},
@@ -148,7 +148,7 @@ class TestSearch(AppTestCase):
         ]
         session.add_all(wifis)
         session.commit()
-        res = app.post_json('/v1/search',
+        res = app.post_json('/v1/search?key=test',
                             {"wifi": [
                                 {"key": "A1"}, {"key": "B2"},
                                 {"key": "C3"}, {"key": "D4"},
@@ -159,7 +159,7 @@ class TestSearch(AppTestCase):
 
     def test_not_found(self):
         app = self.app
-        res = app.post_json('/v1/search',
+        res = app.post_json('/v1/search?key=test',
                             {"cell": [{"mcc": 1, "mnc": 2,
                                        "lac": 3, "cid": 4}]},
                             status=200)
@@ -168,7 +168,7 @@ class TestSearch(AppTestCase):
 
     def test_wifi_not_found(self):
         app = self.app
-        res = app.post_json('/v1/search', {"wifi": [
+        res = app.post_json('/v1/search?key=test', {"wifi": [
                             {"key": "abcd"}, {"key": "cdef"}]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
@@ -187,7 +187,7 @@ class TestSearch(AppTestCase):
         session.commit()
 
         res = app.post_json(
-            '/v1/search',
+            '/v1/search?key=test',
             {"radio": "gsm", "cell": [
                 dict(radio="umts", cid=4, **key),
                 dict(radio="umts", cid=5, **key),
@@ -202,34 +202,52 @@ class TestSearch(AppTestCase):
 
     def test_error(self):
         app = self.app
-        res = app.post_json('/v1/search', {"cell": []}, status=400)
+        res = app.post_json('/v1/search?key=test', {"cell": []}, status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
         self.assertFalse('status' in res.json)
 
     def test_error_unknown_key(self):
         app = self.app
-        res = app.post_json('/v1/search', {"foo": 0}, status=400)
+        res = app.post_json('/v1/search?key=test', {"foo": 0}, status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
 
     def test_error_no_mapping(self):
         app = self.app
-        res = app.post_json('/v1/search', [1], status=400)
+        res = app.post_json('/v1/search?key=test', [1], status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
 
     def test_no_valid_keys(self):
         app = self.app
-        res = app.post_json('/v1/search', {"wifi": [
+        res = app.post_json('/v1/search?key=test', {"wifi": [
                             {"key": ":"}, {"key": ".-"}]},
                             status=200)
         self.assertEqual(res.body, '{"status": "not_found"}')
 
     def test_no_json(self):
         app = self.app
-        res = app.post('/v1/search', "\xae", status=400)
+        res = app.post('/v1/search?key=test', "\xae", status=400)
         self.assertTrue('errors' in res.json)
+
+    def test_no_api_key(self):
+        app = self.app
+        session = self.db_slave_session
+        wifis = [
+            Wifi(key="A1", lat=10000000, lon=10000000, total_measures=9),
+            Wifi(key="B2", lat=10010000, lon=10020000, total_measures=9),
+            Wifi(key="C3", lat=10020000, lon=10040000, total_measures=9),
+        ]
+        session.add_all(wifis)
+        session.commit()
+        res = app.post_json('/v1/search',
+                            {"wifi": [
+                                {"key": "A1"}, {"key": "B2"},
+                                {"key": "C3"}, {"key": "D4"},
+                            ]},
+                            status=200)
+        self.assertEqual(res.body, '{"status": "not_found"}')
 
 
 class TestSearchSchema(TestCase):

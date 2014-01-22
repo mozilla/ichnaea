@@ -120,13 +120,16 @@ search = Service(
 def search_post(request):
     data = request.validated
     session = request.db_slave_session
-
     result = None
-    if data['wifi']:
-        result = search_wifi(session, data)
-    if result is None:
-        # no wifi result found, fall back to cell
-        result = search_cell(session, data)
+
+    api_key = request.GET.get('key', None)
+    if api_key is not None:
+        if data['wifi']:
+            result = search_wifi(session, data)
+        if result is None:
+            # no wifi result found, fall back to cell
+            result = search_cell(session, data)
+
     if result is None:
         return {'status': 'not_found'}
 
