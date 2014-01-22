@@ -115,6 +115,24 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "not_found"}')
 
+    def test_wifi_not_closeby(self):
+        app = self.app
+        session = self.db_slave_session
+        wifis = [
+            Wifi(key="A1", lat=10000000, lon=10000000),
+            Wifi(key="B2", lat=10020000, lon=10040000),
+            Wifi(key="C3", lat=20000000, lon=20000000),
+        ]
+        session.add_all(wifis)
+        session.commit()
+        res = app.post_json('/v1/search',
+                            {"wifi": [
+                                {"key": "A1"}, {"key": "B2"}, {"key": "C3"},
+                            ]},
+                            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.body, '{"status": "not_found"}')
+
     def test_not_found(self):
         app = self.app
         res = app.post_json('/v1/search',

@@ -13,6 +13,10 @@ from ichnaea.service.error import (
 )
 from ichnaea.service.search.schema import SearchSchema
 
+# maximum difference of two decimal places, ~1km at equator
+# or 500m at 67 degrees north
+MAX_DIFF = 100000
+
 
 def configure_search(config):
     config.scan('ichnaea.service.search.views')
@@ -73,6 +77,16 @@ def search_wifi(session, data):
     length = len(wifis)
     avg_lat = sum([w[0] for w in wifis]) / length
     avg_lon = sum([w[1] for w in wifis]) / length
+
+    # check to make sure all wifi AP's are close by
+    # we might later relax this to allow some outliers
+    latitudes = [w[0] for w in wifis]
+    longitudes = [w[1] for w in wifis]
+    lat_diff = abs(max(latitudes) - min(latitudes))
+    lon_diff = abs(max(longitudes) - min(longitudes))
+    if lat_diff >= MAX_DIFF or lon_diff >= MAX_DIFF:
+        return None
+
     return {
         'lat': quantize(avg_lat),
         'lon': quantize(avg_lon),
