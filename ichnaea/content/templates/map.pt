@@ -14,7 +14,7 @@
 <section id="main-content">
     <p>
         This map shows areas in which we have data.
-        The map is currently updated manually.
+        The map is updated once a day.
     </p>
     <div id='map'></div>
 </section>
