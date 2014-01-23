@@ -12,6 +12,12 @@ $(document).ready(function() {
         '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     );
 
+    // add scale
+    L.control.scale({
+        'updateWhenIdle': true,
+        'imperial': false
+    }).addTo(map);
+
     // add tile layer
     L.tileLayer('/tiles/{z}/{x}/{y}.png', {
         detectRetina: true
