@@ -17,18 +17,21 @@ class TestStats(DBTestCase):
         session = self.db_master_session
         day = datetime.utcnow().date() - timedelta(1)
         stats = [
-            Stat(key=STAT_TYPE['location'], time=day, value=3),
-            Stat(key=STAT_TYPE['cell'], time=day, value=6),
-            Stat(key=STAT_TYPE['wifi'], time=day, value=3),
-            Stat(key=STAT_TYPE['unique_cell'], time=day, value=3),
-            Stat(key=STAT_TYPE['unique_wifi'], time=day, value=2),
+            Stat(key=STAT_TYPE['location'], time=day, value=35412000),
+            Stat(key=STAT_TYPE['cell'], time=day, value=6100000),
+            Stat(key=STAT_TYPE['wifi'], time=day, value=3212000),
+            Stat(key=STAT_TYPE['unique_cell'], time=day, value=3289900),
+            Stat(key=STAT_TYPE['unique_wifi'], time=day, value=2009000),
         ]
         session.add_all(stats)
         session.commit()
 
         result = global_stats(session)
-        self.assertDictEqual(result, {'location': 3, 'cell': 6,
-                             'unique_cell': 3, 'wifi': 3, 'unique_wifi': 2})
+        self.assertDictEqual(
+            result, {
+                'location': '35.41', 'cell': '6.10', 'unique_cell': '3.28',
+                'wifi': '3.21', 'unique_wifi': '2.00'
+            })
 
     def test_global_stats_missing_today(self):
         from ichnaea.content.stats import global_stats
@@ -36,18 +39,21 @@ class TestStats(DBTestCase):
         day = datetime.utcnow().date() - timedelta(1)
         yesterday = day - timedelta(days=1)
         stats = [
-            Stat(key=STAT_TYPE['location'], time=yesterday, value=2),
-            Stat(key=STAT_TYPE['location'], time=day, value=3),
-            Stat(key=STAT_TYPE['cell'], time=day, value=6),
-            Stat(key=STAT_TYPE['wifi'], time=day, value=3),
-            Stat(key=STAT_TYPE['unique_cell'], time=yesterday, value=3),
+            Stat(key=STAT_TYPE['location'], time=yesterday, value=2000000),
+            Stat(key=STAT_TYPE['location'], time=day, value=3000000),
+            Stat(key=STAT_TYPE['cell'], time=day, value=6000000),
+            Stat(key=STAT_TYPE['wifi'], time=day, value=3000000),
+            Stat(key=STAT_TYPE['unique_cell'], time=yesterday, value=3000000),
         ]
         session.add_all(stats)
         session.commit()
 
         result = global_stats(session)
-        self.assertDictEqual(result, {'location': 3, 'cell': 6,
-                             'unique_cell': 3, 'wifi': 3, 'unique_wifi': 0})
+        self.assertDictEqual(
+            result, {
+                'location': '3.00', 'cell': '6.00', 'unique_cell': '3.00',
+                'wifi': '3.00', 'unique_wifi': '0.00'
+            })
 
     def test_histogram(self):
         from ichnaea.content.stats import histogram

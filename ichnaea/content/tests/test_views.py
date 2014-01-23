@@ -165,11 +165,11 @@ class TestFunctionalContentViews(AppTestCase):
         day = datetime.utcnow().date() - timedelta(1)
         session = self.db_master_session
         stats = [
-            Stat(key=STAT_TYPE['location'], time=day, value=3),
-            Stat(key=STAT_TYPE['cell'], time=day, value=2),
-            Stat(key=STAT_TYPE['wifi'], time=day, value=2),
-            Stat(key=STAT_TYPE['unique_cell'], time=day, value=1),
-            Stat(key=STAT_TYPE['unique_wifi'], time=day, value=2),
+            Stat(key=STAT_TYPE['location'], time=day, value=3000000),
+            Stat(key=STAT_TYPE['cell'], time=day, value=2000000),
+            Stat(key=STAT_TYPE['wifi'], time=day, value=2000000),
+            Stat(key=STAT_TYPE['unique_cell'], time=day, value=1000000),
+            Stat(key=STAT_TYPE['unique_wifi'], time=day, value=2000000),
         ]
         session.add_all(stats)
         session.commit()
@@ -180,11 +180,11 @@ class TestFunctionalContentViews(AppTestCase):
         self.assertEqual(result['page_title'], 'Statistics')
         self.assertEqual(
             result['metrics'],
-            [{'name': 'Locations', 'value': 3},
-             {'name': 'Cells', 'value': 2},
-             {'name': 'Unique Cells', 'value': 1},
-             {'name': 'Wifi APs', 'value': 2},
-             {'name': 'Unique Wifi APs', 'value': 2}])
+            [{'name': 'Locations', 'value': '3.00'},
+             {'name': 'Cells', 'value': '2.00'},
+             {'name': 'Unique Cells', 'value': '1.00'},
+             {'name': 'Wifi APs', 'value': '2.00'},
+             {'name': 'Unique Wifi APs', 'value': '2.00'}])
 
 
 class TestLayout(TestCase):

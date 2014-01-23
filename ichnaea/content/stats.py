@@ -42,6 +42,11 @@ def global_stats(session):
                 result[name] = row[0]
             else:
                 result[name] = 0
+
+    for k, v in result.items():
+        # show as millions
+        result[k] = "%.2f" % ((v // 10000) / 100.0)
+
     return result
 
 
