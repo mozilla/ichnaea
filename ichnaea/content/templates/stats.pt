@@ -23,13 +23,13 @@
         <thead>
             <tr>
                 <th>Metric</th>
-                <th>Value (in millions)</th>
+                <th class="text-right">Value (in millions)</th>
             </tr>
         </thead>
         <tbody>
             <tr tal:repeat="row metrics">
                 <td>${row.name}</td>
-                <td>${row.value}</td>
+                <td class="text-right">${row.value}</td>
             </tr>
         </tbody>
     </table>

@@ -204,6 +204,9 @@ img {
     font-family: 'Open Sans Light', 'Droid Arabic Naskh', sans-serif;
     font-weight: normal;
 }
+.table th.text-right, .table td.text-right {
+    text-align: right;
+}
 
 .half-left,
 .half-right {
