@@ -88,7 +88,7 @@ function make_graph(url, graph_id) {
         item_day_array = item.day.split('-');
         item_day = Date.UTC(
             parseInt(item_day_array[0], 10),
-            parseInt(item_day_array[1], 10),
+            parseInt(item_day_array[1], 10) - 1,
             parseInt(item_day_array[2], 10));
         entries.push({x: item_day, y: item.num});
     }
