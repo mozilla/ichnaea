@@ -63,10 +63,10 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=10000000, lon=10000000, total_measures=9),
-            Wifi(key="B2", lat=10010000, lon=10020000, total_measures=9),
-            Wifi(key="C3", lat=10020000, lon=10040000, total_measures=9),
-            Wifi(key="D4", lat=None, lon=None, total_measures=9),
+            Wifi(key="A1", lat=10000000, lon=10000000),
+            Wifi(key="B2", lat=10010000, lon=10020000),
+            Wifi(key="C3", lat=10020000, lon=10040000),
+            Wifi(key="D4", lat=None, lon=None),
         ]
         session.add_all(wifis)
         session.commit()
@@ -89,8 +89,8 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=10000000, lon=10000000, total_measures=9),
-            Wifi(key="B2", lat=10010000, lon=10020000, total_measures=9),
+            Wifi(key="A1", lat=10000000, lon=10000000),
+            Wifi(key="B2", lat=10010000, lon=10020000),
         ]
         session.add_all(wifis)
         session.commit()
@@ -105,27 +105,9 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=10000000, lon=10000000, total_measures=9),
-            Wifi(key="B2", lat=10010000, lon=10020000, total_measures=9),
-            Wifi(key="C3", lat=None, lon=None, total_measures=9),
-        ]
-        session.add_all(wifis)
-        session.commit()
-        res = app.post_json('/v1/search?key=test',
-                            {"wifi": [
-                                {"key": "A1"}, {"key": "B2"}, {"key": "C3"},
-                            ]},
-                            status=200)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"status": "not_found"}')
-
-    def test_wifi_too_few_measures(self):
-        app = self.app
-        session = self.db_slave_session
-        wifis = [
-            Wifi(key="A1", lat=10000000, lon=10000000, total_measures=9),
-            Wifi(key="B2", lat=10010000, lon=10020000, total_measures=9),
-            Wifi(key="C3", lat=10020000, lon=10040000, total_measures=2),
+            Wifi(key="A1", lat=10000000, lon=10000000),
+            Wifi(key="B2", lat=10010000, lon=10020000),
+            Wifi(key="C3", lat=None, lon=None),
         ]
         session.add_all(wifis)
         session.commit()
@@ -141,10 +123,10 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=10000000, lon=10000000, total_measures=9),
-            Wifi(key="B2", lat=10010000, lon=10020000, total_measures=9),
-            Wifi(key="C3", lat=10020000, lon=10040000, total_measures=9),
-            Wifi(key="D4", lat=20000000, lon=20000000, total_measures=9),
+            Wifi(key="A1", lat=10000000, lon=10000000),
+            Wifi(key="B2", lat=10010000, lon=10020000),
+            Wifi(key="C3", lat=10020000, lon=10040000),
+            Wifi(key="D4", lat=20000000, lon=20000000),
         ]
         session.add_all(wifis)
         session.commit()
@@ -179,7 +161,7 @@ class TestSearch(AppTestCase):
         session = self.db_slave_session
         key = dict(mcc=1, mnc=2, lac=3)
         data = [
-            Wifi(key="abcd", lat=30000000, lon=30000000, total_measures=9),
+            Wifi(key="abcd", lat=30000000, lon=30000000),
             Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
             Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
         ]

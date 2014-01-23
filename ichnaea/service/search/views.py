@@ -69,7 +69,7 @@ def search_wifi(session, data):
     query = session.query(Wifi.lat, Wifi.lon).filter(
         Wifi.key.in_(wifi_keys)).filter(
         Wifi.lat != sql_null).filter(
-        Wifi.lon != sql_null).filter(Wifi.total_measures >= 5)
+        Wifi.lon != sql_null)
     wifis = query.all()
     if len(wifis) < 3:
         # we got fewer than three actual matches
