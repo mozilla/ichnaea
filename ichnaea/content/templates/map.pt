@@ -13,8 +13,12 @@
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
     <p>
-        This map shows areas in which we have data.
-        The map is updated once a day.
+        This map shows areas in which users have collected data samples.
+        The map is updated once a day, after midnight in UTC.
+    </p>
+    <p>
+        The map shows general areas in which we have data samples.
+        It does not show the locations of cell towers or WiFi access points.
     </p>
     <div id='map'></div>
 </section>

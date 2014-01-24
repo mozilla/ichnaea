@@ -98,7 +98,7 @@ class ContentViews(Layout):
 
     @view_config(renderer='templates/map.pt', name="map", http_cache=300)
     def map_view(self):
-        return {'page_title': 'Coverage Map'}
+        return {'page_title': 'Map'}
 
     @view_config(renderer='json', name="stats_location.json", http_cache=3600)
     def stats_location_json(self):

@@ -40,7 +40,7 @@ class TestContentViews(TestCase):
         request = DummyRequest()
         inst = self._make_view(request)
         result = inst.map_view()
-        self.assertEqual(result['page_title'], 'Coverage Map')
+        self.assertEqual(result['page_title'], 'Map')
 
 
 class TestFunctionalContent(AppTestCase):
