@@ -1,7 +1,14 @@
 $(document).ready(function() {
+    // the retina version uses zoom level + 1 image tiles
+    // and we only generated tiles down to zoom level 16
+    var maxZoom = 16;
+    if (L.Browser.retina) {
+        maxZoom = 15;
+    }
+
     var map = L.mapbox.map('map', 'mozilla-webprod.map-05ad0a21', {
         minZoom: 1,
-        maxZoom: 15,
+        maxZoom: maxZoom,
         tileLayer: { detectRetina: true }
     }).setView([15.0, 10.0], 2);
 
