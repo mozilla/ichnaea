@@ -46,7 +46,7 @@ CSP_POLICY = CSP_POLICY.replace("\n", ' ').strip()
 def security_headers(event):
     response = event.response
     if response.content_type == 'text/html':
-        response.headers.add("Strict-Transport-Security", "max-age=2592000")
+        response.headers.add("Strict-Transport-Security", "max-age=31536000")
         response.headers.add("Content-Security-Policy", CSP_POLICY)
 
 
