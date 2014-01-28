@@ -22,7 +22,8 @@ $(document).ready(function() {
     // add scale
     L.control.scale({
         'updateWhenIdle': true,
-        'imperial': false
+        'imperial': false,
+        'maxWidth': 200
     }).addTo(map);
 
     // add tile layer
