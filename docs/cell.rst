@@ -8,6 +8,11 @@ As part of the public API, cell records can be sent to identify nearby cells.
 
 Depending on the radio network type, the records contain different information.
 
+The classification of radio types is based on the `Android TelephonyManager
+constants <http://developer.android.com/reference/android/telephony/TelephonyManager.html>`_.
+A similar classification exists for Firefox OS devices with the
+`MozMobileConnectionInfo API <https://developer.mozilla.org/en-US/docs/Web/API/MozMobileConnectionInfo.type>`_.
+
 GSM
 ===
 
@@ -110,7 +115,8 @@ CDMA
 ====
 
 If the network is either CDMA or one of the EVDO variants, the radio
-field should be specified as `cdma`. This includes `CDMA`, `EVDO` and `eHRPD`.
+field should be specified as `cdma`. This includes `1xRTT`, `CDMA`, `IS95A`,
+`IS95B`, `EVDO` and `eHRPD`.
 
 Example:
 
