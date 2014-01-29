@@ -26,9 +26,20 @@ Run the following commands to download the database and the server:
 
    git clone https://github.com/mozilla/ichnaea
    cd ichnaea
-   make
 
-And run the server:
+Specify the database connection string and run make:
+
+.. code-block:: bash
+
+    SQLURI=mysql+pymysql://root:mysql@localhost/location make
+
+Adjust the circus.ini and ichnaea.ini files with your database connection
+strings. You can use the same database for the master and slave connections.
+
+For the celery broker and result backend you can either use MySQL for low
+volume or use Redis via a connection string like `redis://127.0.0.1/0`.
+
+Now you can run the server:
 
 .. code-block:: bash
 
@@ -50,9 +61,15 @@ And interact with it using circusctl. Have a look at `the Circus documentation
 Logging
 =======
 
-Logging events are processed by hekad.  A basic hekad.toml
-configuration is included for local development, that will route
-messages to carbon and display in graphite.
+Logging events are processed by hekad. A basic hekad.toml
+configuration is included for local development. It will route
+messages to carbon and display in graphite. The carbon output is optional,
+for other outputs have a look at
+`the hekad documentation <http://hekad.readthedocs.org/>`_.
+
+You can optionally disable the logging to stdout with hekad by
+commenting out the [LogOutput] section of the hekad.toml file.
+
 
 Installing Graphite
 ===================
@@ -102,6 +119,3 @@ Startup hekad 0.4.2 with ::
 
 Your ichnaea metrics should now show up when you point your browser to
 http://localhost:8080/
-
-You can optionally disable the logging to stdout with hekad by
-commenting out the [LogOutput] section of the hekad.toml file.
