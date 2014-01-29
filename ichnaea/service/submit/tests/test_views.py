@@ -211,6 +211,26 @@ class TestSubmit(CeleryAppTestCase):
             else:
                 self.assertEqual(item.time.date(), datetime.utcnow().date())
 
+    def test_time_short_format(self):
+        app = self.app
+        # a string like "2014-01-15"
+        time = datetime.utcnow().date()
+        tstr = time.isoformat()
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}], "time": tstr},
+            ]},
+            status=204)
+        session = self.db_master_session
+        result = session.query(Measure).all()
+        self.assertEqual(len(result), 1)
+        result_time = result[0].time
+        self.assertEqual(result_time.date(), time)
+        self.assertEqual(result_time.hour, 0)
+        self.assertEqual(result_time.minute, 0)
+        self.assertEqual(result_time.second, 0)
+        self.assertEqual(result_time.microsecond, 0)
+
     def test_time_future(self):
         app = self.app
         time = "2070-01-01T11:12:13.456Z"
