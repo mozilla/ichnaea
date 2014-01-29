@@ -56,6 +56,9 @@ class TestSearch(AppTestCase):
             {"radio": "gsm", "cell": [
                 dict(radio="umts", cid=4, **key),
                 dict(radio="umts", cid=5, **key),
+
+                dict(radio="umts", cid=5, mcc=1, mnc=2, lac=-1),
+                dict(radio="umts", cid=-1, mcc=1, mnc=2, lac=3),
             ]},
             status=200)
         self.assertEqual(res.content_type, 'application/json')

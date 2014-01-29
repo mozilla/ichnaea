@@ -29,6 +29,11 @@ CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 
 
 def create_cell_measure(measure_data, entry):
+    if 'lac' not in entry or entry['lac'] >= 2147483647:
+        entry['lac'] = -1
+    if 'cid' not in entry or entry['cid'] >= 2147483647:
+        entry['cid'] = -1
+
     return CellMeasure(
         measure_id=measure_data['id'],
         created=decode_datetime(measure_data.get('created', '')),
@@ -40,8 +45,8 @@ def create_cell_measure(measure_data, entry):
         altitude_accuracy=measure_data.get('altitude_accuracy', 0),
         mcc=entry['mcc'],
         mnc=entry['mnc'],
-        lac=entry.get('lac', 0),
-        cid=entry.get('cid', 0),
+        lac=entry['lac'],
+        cid=entry['cid'],
         psc=entry.get('psc', 0),
         asu=entry.get('asu', 0),
         signal=entry.get('signal', 0),
@@ -50,7 +55,7 @@ def create_cell_measure(measure_data, entry):
 
 
 def update_cell_measure_count(cell_key, count, created, session):
-    if (cell_key.radio == -1 or cell_key.lac == 0 or cell_key.cid == 0):
+    if (cell_key.radio == -1 or cell_key.lac == -1 or cell_key.cid == -1):
         # only update data for complete records
         return 0
 
