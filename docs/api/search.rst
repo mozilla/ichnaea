@@ -38,10 +38,10 @@ The JSON body should be:
                 "signal": -50
             },
             {
-                "key": "01:23:45:67:ab:cd",
+                "key": "01:23:45:67:ab:cd"
             },
             {
-                "key": "01:23:45:67:cd:ef",
+                "key": "01:23:45:67:cd:ef"
             }
         ]
     }
