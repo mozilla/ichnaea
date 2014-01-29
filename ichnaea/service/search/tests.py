@@ -32,6 +32,36 @@ class TestSearch(AppTestCase):
         self.heka_client = get_client('ichnaea')
         self.heka_client.stream.msgs.clear()
 
+    def test_cell_ignore_invalid_lac_cid(self):
+        app = self.app
+        session = self.db_slave_session
+        key = dict(mcc=1, mnc=2, lac=3)
+        data = [
+            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
+            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
+        ]
+
+        ignored_key = dict(mcc=1, mnc=2, lac=-1, cid=-1)
+        ignored_data = [
+            Cell(lat=10000000, lon=10000000, radio=2, **ignored_key),
+            Cell(lat=10020000, lon=10040000, radio=3, **ignored_key),
+        ]
+
+        data.extend(ignored_data)
+        session.add_all(data)
+        session.commit()
+
+        res = app.post_json(
+            '/v1/search',
+            {"radio": "gsm", "cell": [
+                dict(radio="umts", cid=4, **key),
+                dict(radio="umts", cid=5, **key),
+            ]},
+            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.body, '{"status": "ok", "lat": 1.0010000, '
+                                   '"lon": 1.0020000, "accuracy": 35000}')
+
     def test_ok_cell(self):
         app = self.app
         session = self.db_slave_session
