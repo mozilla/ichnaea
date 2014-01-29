@@ -115,8 +115,8 @@ CDMA
 ====
 
 If the network is either CDMA or one of the EVDO variants, the radio
-field should be specified as `cdma`. This includes `1xRTT`, `CDMA`, `IS95A`,
-`IS95B`, `EVDO` and `eHRPD`.
+field should be specified as `cdma`. This includes `1xRTT`, `CDMA`, `eHRPD`,
+`EVDO_0`, `EVDO_A`, `EVDO_B`, `IS95A` and `IS95B`.
 
 Example:
 
