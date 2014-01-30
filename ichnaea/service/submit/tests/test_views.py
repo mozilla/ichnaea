@@ -195,6 +195,7 @@ class TestSubmit(CeleryAppTestCase):
         app = self.app
         # test two weeks ago and "now"
         time = (datetime.utcnow() - timedelta(14)).replace(microsecond=0)
+        tday = time.replace(hour=0, minute=0, second=0)
         tstr = encode_datetime(time)
         app.post_json(
             '/v1/submit', {"items": [
@@ -205,11 +206,16 @@ class TestSubmit(CeleryAppTestCase):
         session = self.db_master_session
         result = session.query(Measure).all()
         self.assertEqual(len(result), 2)
+        today = datetime.utcnow().date()
         for item in result:
+            self.assertEqual(item.created.date(), today)
+            self.assertEqual(item.created.hour, 0)
+            self.assertEqual(item.created.minute, 0)
+            self.assertEqual(item.created.second, 0)
             if '"key": "a"' in item.wifi:
-                self.assertEqual(item.time, time)
+                self.assertEqual(item.time, tday)
             else:
-                self.assertEqual(item.time.date(), datetime.utcnow().date())
+                self.assertEqual(item.time.date(), today)
 
     def test_time_short_format(self):
         app = self.app
