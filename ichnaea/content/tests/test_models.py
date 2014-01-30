@@ -100,6 +100,19 @@ class TestMapStat(DBTestCase):
         self.assertEqual(result.key, 0)
         self.assertEqual(result.value, 13)
 
+    def test_0_clash(self):
+        session = self.db_master_session
+        stats = [
+            self._make_one(lat=12345, lon=-23456, value=13),
+            self._make_one(lat=0, lon=0, key=0, value=3),
+            self._make_one(lat=0, lon=0, key=1, value=5),
+        ]
+        session.add_all(stats)
+        session.commit()
+
+        results = session.query(stats[0].__class__).all()
+        self.assertEqual(len(results), 3)
+
 
 class TestUser(DBTestCase):
 

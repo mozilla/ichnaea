@@ -23,7 +23,7 @@ class TestStats(CeleryTestCase):
         today = datetime.utcnow().date()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
-        long_ago = (today - timedelta(40))
+        long_ago = (today - timedelta(3))
         wifi = '[{"key": "a"}]'
         measures = [
             Measure(lat=10000000, lon=20000000, created=today, wifi=wifi),
@@ -37,7 +37,7 @@ class TestStats(CeleryTestCase):
         session.add_all(measures)
         session.commit()
 
-        histogram.delay(ago=40).get()
+        histogram.delay(ago=3).get()
         stats = session.query(Stat).order_by(Stat.time).all()
         self.assertEqual(len(stats), 1)
         self.assertEqual(stats[0].key, STAT_TYPE['location'])
@@ -70,7 +70,7 @@ class TestStats(CeleryTestCase):
         today = datetime.utcnow().date()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
-        long_ago = (today - timedelta(40))
+        long_ago = (today - timedelta(3))
         measures = [
             CellMeasure(lat=10000000, lon=20000000, created=today),
             CellMeasure(lat=10000000, lon=20000000, created=today),
@@ -83,7 +83,7 @@ class TestStats(CeleryTestCase):
         session.add_all(measures)
         session.commit()
 
-        cell_histogram.delay(ago=40).get()
+        cell_histogram.delay(ago=3).get()
 
         stats = session.query(Stat).order_by(Stat.time).all()
         self.assertEqual(len(stats), 1)
@@ -117,7 +117,7 @@ class TestStats(CeleryTestCase):
         today = datetime.utcnow().date()
         one_day = (today - timedelta(1))
         two_days = (today - timedelta(2))
-        long_ago = (today - timedelta(40))
+        long_ago = (today - timedelta(3))
         cells = [
             Cell(created=long_ago, radio=0, mcc=1, mnc=2, lac=3, cid=4),
             Cell(created=two_days, radio=2, mcc=1, mnc=2, lac=3, cid=4),
@@ -129,7 +129,7 @@ class TestStats(CeleryTestCase):
         session.add_all(cells)
         session.commit()
 
-        result = unique_cell_histogram.delay(ago=40)
+        result = unique_cell_histogram.delay(ago=3)
         self.assertEqual(result.get(), 1)
 
         stats = session.query(Stat).order_by(Stat.time).all()
@@ -164,7 +164,7 @@ class TestStats(CeleryTestCase):
         today = datetime.utcnow().date()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
-        long_ago = (today - timedelta(40))
+        long_ago = (today - timedelta(3))
         measures = [
             WifiMeasure(lat=10000000, lon=20000000, created=today),
             WifiMeasure(lat=10000000, lon=20000000, created=today),
@@ -177,7 +177,7 @@ class TestStats(CeleryTestCase):
         session.add_all(measures)
         session.commit()
 
-        wifi_histogram.delay(ago=40).get()
+        wifi_histogram.delay(ago=3).get()
 
         stats = session.query(Stat).order_by(Stat.time).all()
         self.assertEqual(len(stats), 1)
@@ -211,7 +211,7 @@ class TestStats(CeleryTestCase):
         today = datetime.utcnow().date()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
-        long_ago = (today - timedelta(40))
+        long_ago = (today - timedelta(3))
         k1 = "ab1234567890"
         k2 = "bc1234567890"
         k3 = "cd1234567890"
@@ -227,7 +227,7 @@ class TestStats(CeleryTestCase):
         session.add_all(wifis)
         session.commit()
 
-        result = unique_wifi_histogram.delay(ago=40)
+        result = unique_wifi_histogram.delay(ago=3)
         added = result.get()
         self.assertEqual(added, 1)
 

@@ -10,13 +10,11 @@ from ichnaea.content.models import (
 from ichnaea.models import (
     Cell,
     CellMeasure,
-    Measure,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
 )
 from ichnaea.decimaljson import (
-    dumps,
     encode_datetime,
 )
 from ichnaea.tests.base import CeleryTestCase
@@ -54,7 +52,7 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([m.mcc for m in measures]), set([1]))
         self.assertEqual(set([m.mnc for m in measures]), set([2]))
         self.assertEqual(set([m.asu for m in measures]), set([0, 8, 15]))
-        self.assertEqual(set([m.psc for m in measures]), set([0, 5]))
+        self.assertEqual(set([m.psc for m in measures]), set([-1, 5]))
         self.assertEqual(set([m.signal for m in measures]), set([0, -100]))
 
         cells = session.query(Cell).all()
@@ -77,59 +75,6 @@ class TestInsert(CeleryTestCase):
         # TODO this task isn't idempotent yet
         measures = session.query(CellMeasure).all()
         self.assertEqual(len(measures), 10)
-
-    def test_schedule_cell_cleanup(self):
-        from ichnaea.service.submit.tasks import schedule_cell_cleanup
-        session = self.db_master_session
-
-        measure_data = dict(lat=10000000, lon=10000000, radio=0)
-        entries = [
-            {"mcc": 1, "mnc": 2, "signal": -50},
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4},
-        ]
-        measure_data['cell'] = dumps(entries)
-        measure = Measure(**measure_data)
-        session.add(measure)
-        measure_data['lat'] = 20000000
-        measure_data['lon'] = 20000000
-        measure2 = Measure(**measure_data)
-        session.add(measure2)
-        session.flush()
-
-        result = schedule_cell_cleanup.delay(measure.id - 1, measure2.id + 1)
-        self.assertEqual(result.get(), 2)
-
-    def test_reprocess_cell(self):
-        from ichnaea.service.submit.tasks import reprocess_cell_measure
-        session = self.db_master_session
-        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
-
-        measure_data = dict(
-            created=encode_datetime(time), lat=10000000, lon=20000000,
-            time=encode_datetime(time), accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=0,
-        )
-        entries = [
-            {"mcc": 1, "mnc": 2, "lac": -1, "cid": -1, "signal": -100},
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "asu": 8},
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "asu": 15},
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 7},
-        ]
-        measure_data['cell'] = dumps(entries)
-        measure = Measure(**measure_data)
-        session.add(measure)
-        session.flush()
-
-        result = reprocess_cell_measure.delay([measure.id], userid=1)
-        self.assertEqual(result.get(), 1)
-
-        measures = session.query(CellMeasure).all()
-        self.assertEqual(len(measures), 5)
-        cells = session.query(Cell).all()
-        self.assertEqual(len(cells), 3)
-        # re-processed entries gain the original creation date
-        self.assertEqual(set([c.created for c in cells]), set([time]))
 
     def test_wifi(self):
         from ichnaea.service.submit.tasks import insert_wifi_measure
@@ -182,60 +127,6 @@ class TestInsert(CeleryTestCase):
         entries[0]['id'] = measures[0].id
         result = insert_wifi_measure.delay(measure, entries)
         self.assertEqual(result.get(), 0)
-
-    def test_schedule_wifi_cleanup(self):
-        from ichnaea.service.submit.tasks import schedule_wifi_cleanup
-        session = self.db_master_session
-
-        measure_data = dict(lat=10000000, lon=10000000, radio=0)
-        entries = [
-            {"key": "ab12", "channel": 11, "signal": -80},
-            {"key": "ab12", "channel": 3, "signal": -90},
-            {"key": "ab12", "channel": 3, "signal": -80},
-            {"key": "cd34", "channel": 3, "signal": -90},
-        ]
-        measure_data['wifi'] = dumps(entries)
-        measure = Measure(**measure_data)
-        session.add(measure)
-        measure_data['lat'] = 20000000
-        measure_data['lon'] = 20000000
-        measure2 = Measure(**measure_data)
-        session.add(measure2)
-        session.flush()
-
-        result = schedule_wifi_cleanup.delay(measure.id - 1, measure2.id + 1)
-        self.assertEqual(result.get(), 2)
-
-    def test_reprocess_wifi(self):
-        from ichnaea.service.submit.tasks import reprocess_wifi_measure
-        session = self.db_master_session
-        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
-
-        measure_data = dict(
-            created=encode_datetime(time), lat=10000000, lon=20000000,
-            time=encode_datetime(time), accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=0,
-        )
-        entries = [
-            {"key": "ab12", "channel": 11, "signal": -80},
-            {"key": "ab12", "channel": 3, "signal": -90},
-            {"key": "ab12", "channel": 3, "signal": -80},
-            {"key": "cd34", "channel": 3, "signal": -90},
-        ]
-        measure_data['wifi'] = dumps(entries)
-        measure = Measure(**measure_data)
-        session.add(measure)
-        session.flush()
-
-        result = reprocess_wifi_measure.delay([measure.id], userid=1)
-        self.assertEqual(result.get(), 1)
-
-        measures = session.query(WifiMeasure).all()
-        self.assertEqual(len(measures), 4)
-        wifis = session.query(Wifi).all()
-        self.assertEqual(len(wifis), 2)
-        # re-processed entries gain the original creation date
-        self.assertEqual(set([w.created for w in wifis]), set([time]))
 
     def test_wifi_blacklist(self):
         from ichnaea.service.submit.tasks import insert_wifi_measure

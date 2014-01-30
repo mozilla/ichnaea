@@ -1,11 +1,8 @@
-import csv
-from cStringIO import StringIO
 import datetime
 from datetime import timedelta
 from operator import itemgetter
 
 from sqlalchemy import func
-from sqlalchemy.sql.expression import text
 
 from ichnaea.content.models import (
     Score,
@@ -45,6 +42,11 @@ def global_stats(session):
                 result[name] = row[0]
             else:
                 result[name] = 0
+
+    for k, v in result.items():
+        # show as millions
+        result[k] = "%.2f" % ((v // 10000) / 100.0)
+
     return result
 
 
@@ -84,22 +86,8 @@ def leaders(session):
 
     for userid, value in score_rows:
         nickname = users.get(userid, 'anonymous')
-        if len(nickname) > 30:
-            nickname = nickname[:30] + u'...'
+        if len(nickname) > 24:
+            nickname = nickname[:24] + u'...'
         result.append(
             {'nickname': nickname, 'num': int(value)})
     return result
-
-
-def map_world_csv(session):
-    select = text("select round(lat / 50) as lat1, "
-                  "round(lon / 50) as lon1, count(*) as value "
-                  "from mapstat group by lat1, lon1 "
-                  "order by lat1, lon1")
-    result = session.execute(select)
-    rows = StringIO()
-    csvwriter = csv.writer(rows)
-    csvwriter.writerow(('lat', 'lon', 'value'))
-    for lat, lon, value in result.fetchall():
-        csvwriter.writerow((int(lat) / 20.0, int(lon) / 20.0, int(value)))
-    return rows.getvalue()

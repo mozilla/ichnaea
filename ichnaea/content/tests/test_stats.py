@@ -2,7 +2,6 @@ from datetime import datetime
 from datetime import timedelta
 
 from ichnaea.content.models import (
-    MapStat,
     Score,
     User,
     Stat,
@@ -18,18 +17,21 @@ class TestStats(DBTestCase):
         session = self.db_master_session
         day = datetime.utcnow().date() - timedelta(1)
         stats = [
-            Stat(key=STAT_TYPE['location'], time=day, value=3),
-            Stat(key=STAT_TYPE['cell'], time=day, value=6),
-            Stat(key=STAT_TYPE['wifi'], time=day, value=3),
-            Stat(key=STAT_TYPE['unique_cell'], time=day, value=3),
-            Stat(key=STAT_TYPE['unique_wifi'], time=day, value=2),
+            Stat(key=STAT_TYPE['location'], time=day, value=35412000),
+            Stat(key=STAT_TYPE['cell'], time=day, value=6100000),
+            Stat(key=STAT_TYPE['wifi'], time=day, value=3212000),
+            Stat(key=STAT_TYPE['unique_cell'], time=day, value=3289900),
+            Stat(key=STAT_TYPE['unique_wifi'], time=day, value=2009000),
         ]
         session.add_all(stats)
         session.commit()
 
         result = global_stats(session)
-        self.assertDictEqual(result, {'location': 3, 'cell': 6,
-                             'unique_cell': 3, 'wifi': 3, 'unique_wifi': 2})
+        self.assertDictEqual(
+            result, {
+                'location': '35.41', 'cell': '6.10', 'unique_cell': '3.28',
+                'wifi': '3.21', 'unique_wifi': '2.00'
+            })
 
     def test_global_stats_missing_today(self):
         from ichnaea.content.stats import global_stats
@@ -37,18 +39,21 @@ class TestStats(DBTestCase):
         day = datetime.utcnow().date() - timedelta(1)
         yesterday = day - timedelta(days=1)
         stats = [
-            Stat(key=STAT_TYPE['location'], time=yesterday, value=2),
-            Stat(key=STAT_TYPE['location'], time=day, value=3),
-            Stat(key=STAT_TYPE['cell'], time=day, value=6),
-            Stat(key=STAT_TYPE['wifi'], time=day, value=3),
-            Stat(key=STAT_TYPE['unique_cell'], time=yesterday, value=3),
+            Stat(key=STAT_TYPE['location'], time=yesterday, value=2000000),
+            Stat(key=STAT_TYPE['location'], time=day, value=3000000),
+            Stat(key=STAT_TYPE['cell'], time=day, value=6000000),
+            Stat(key=STAT_TYPE['wifi'], time=day, value=3000000),
+            Stat(key=STAT_TYPE['unique_cell'], time=yesterday, value=3000000),
         ]
         session.add_all(stats)
         session.commit()
 
         result = global_stats(session)
-        self.assertDictEqual(result, {'location': 3, 'cell': 6,
-                             'unique_cell': 3, 'wifi': 3, 'unique_wifi': 0})
+        self.assertDictEqual(
+            result, {
+                'location': '3.00', 'cell': '6.00', 'unique_cell': '3.00',
+                'wifi': '3.00', 'unique_wifi': '0.00'
+            })
 
     def test_histogram(self):
         from ichnaea.content.stats import histogram
@@ -86,23 +91,6 @@ class TestStats(DBTestCase):
         result = histogram(session, 'unique_cell')
         self.assertEqual(result, [{'num': 9, 'day': day}])
 
-    def test_map_world_csv(self):
-        from ichnaea.content.stats import map_world_csv
-        session = self.db_master_session
-        stats = [
-            MapStat(lat=1000, lon=2000, value=101),
-            MapStat(lat=1001, lon=2000, value=2),
-            MapStat(lat=2000, lon=3000, value=11),
-            MapStat(lat=3000, lon=4000, value=1),
-        ]
-        session.add_all(stats)
-        session.commit()
-        result = map_world_csv(session)
-        text = result.replace('\r', '').strip('\n')
-        text = text.split('\n')
-        self.assertEqual(
-            text, ['lat,lon,value', '1.0,2.0,2', '2.0,3.0,1', '3.0,4.0,1'])
-
     def test_leaders(self):
         from ichnaea.content.stats import leaders
         session = self.db_master_session
@@ -125,6 +113,6 @@ class TestStats(DBTestCase):
         # check the result
         result = leaders(session)
         self.assertEqual(len(result), 22)
-        self.assertEqual(result[0]['nickname'], highest[:30] + u'...')
+        self.assertEqual(result[0]['nickname'], highest[:24] + u'...')
         self.assertEqual(result[0]['num'], 10)
         self.assertTrue(lowest in [r['nickname'] for r in result])

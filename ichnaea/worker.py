@@ -8,6 +8,7 @@ from celery.schedules import crontab
 
 from ichnaea import config
 from ichnaea.db import Database
+from ichnaea.heka_logging import configure_heka
 
 
 CELERY_IMPORTS = [
@@ -16,12 +17,15 @@ CELERY_IMPORTS = [
     'ichnaea.service.submit.tasks',
 ]
 
-CELERYBEAT_SCHEDULE = {
+CELERY_BROKER_DB_CLEANUP = {
     'cleanup-kombu-message-table': {
         'task': 'ichnaea.tasks.cleanup_kombu_message_table',
         'schedule': timedelta(seconds=900),
         'args': (0, ),
-    },
+    }
+}
+
+CELERYBEAT_SCHEDULE = {
     'histogram-yesterday': {
         'task': 'ichnaea.content.tasks.histogram',
         'schedule': crontab(hour=0, minute=3),
@@ -45,11 +49,6 @@ CELERYBEAT_SCHEDULE = {
     'histogram-unique-wifi-yesterday': {
         'task': 'ichnaea.content.tasks.unique_wifi_histogram',
         'schedule': crontab(hour=0, minute=4),
-        'args': (1, ),
-    },
-    'schedule-new-moving-wifi-analysis-yesterday': {
-        'task': 'ichnaea.tasks.schedule_new_moving_wifi_analysis',
-        'schedule': crontab(hour=0, minute=5),
         'args': (1, ),
     },
     'continuous-cell-location-update': {
@@ -96,6 +95,7 @@ def init_worker_process(signal, sender, **kw):  # pragma: no cover
     # get the app in the current worker process
     app = app_or_default()
     attach_database(app)
+    configure_heka()
 
 
 def configure(celery=celery):
@@ -124,7 +124,8 @@ def configure(celery=celery):
         broker_url = section['broker_url']
         result_url = section['result_url']
 
-    broker_url = 'sqla+' + broker_url
+    if 'pymysql' in broker_url:
+        broker_url = 'sqla+' + broker_url
 
     if sqlsocket:
         broker_socket = sqlsocket
@@ -133,17 +134,34 @@ def configure(celery=celery):
         broker_socket = section.get('broker_socket')
         result_socket = section.get('result_socket')
 
-    broker_connect_args = {"charset": "utf8"}
-    if broker_socket:
-        broker_connect_args['unix_socket'] = broker_socket
-    broker_options = database_options.copy()
-    broker_options['connect_args'] = broker_connect_args
+    if 'pymysql' in broker_url:
+        broker_connect_args = {"charset": "utf8"}
+        if broker_socket:
+            broker_connect_args['unix_socket'] = broker_socket
+        broker_options = database_options.copy()
+        broker_options['connect_args'] = broker_connect_args
+        # add kombu_message cleanup task
+        CELERYBEAT_SCHEDULE.update(CELERY_BROKER_DB_CLEANUP)
+    elif 'redis' in broker_url:
+        broker_options = {}
+        broker_options['fanout_prefix'] = True
+        broker_options['visibility_timeout'] = 3600
 
-    result_connect_args = {"charset": "utf8"}
-    if result_socket:
-        result_connect_args['unix_socket'] = result_socket
-    result_options = database_options.copy()
-    result_options['connect_args'] = result_connect_args
+    if 'pymysql' in result_url:
+        result_connect_args = {"charset": "utf8"}
+        if result_socket:
+            result_connect_args['unix_socket'] = result_socket
+        result_options = database_options.copy()
+        result_options['connect_args'] = result_connect_args
+        celery.conf.update(
+            CELERY_RESULT_BACKEND='database',
+            CELERY_RESULT_DBURI=result_url,
+            CELERY_RESULT_ENGINE_OPTIONS=result_options,
+        )
+    elif 'redis' in result_url:
+        celery.conf.update(
+            CELERY_RESULT_BACKEND=result_url,
+        )
 
     # testing setting
     always_eager = bool(os.environ.get('CELERY_ALWAYS_EAGER', False))
@@ -155,17 +173,12 @@ def configure(celery=celery):
         # broker
         BROKER_URL=broker_url,
         BROKER_TRANSPORT_OPTIONS=broker_options,
-        # results
-        CELERY_RESULT_BACKEND='database',
-        CELERY_RESULT_DBURI=result_url,
-        CELERY_RESULT_ENGINE_OPTIONS=result_options,
         # tasks
         CELERY_IMPORTS=CELERY_IMPORTS,
-        # default to idempotent tasks
-        CELERY_ACKS_LATE=True,
         # forward compatibility
         CELERYD_FORCE_EXECV=True,
         # optimization
+        CELERYD_PREFETCH_MULTIPLIER=8,
         CELERY_DISABLE_RATE_LIMITS=True,
         CELERY_MESSAGE_COMPRESSION='gzip',
         # security
@@ -173,7 +186,7 @@ def configure(celery=celery):
         CELERY_RESULT_SERIALIZER='json',
         CELERY_TASK_SERIALIZER='json',
         # schedule
-        CELERYBEAT_LOG_LEVEL="INFO",
+        CELERYBEAT_LOG_LEVEL="WARNING",
         CELERYBEAT_SCHEDULE=CELERYBEAT_SCHEDULE,
     )
 

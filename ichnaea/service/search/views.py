@@ -13,6 +13,10 @@ from ichnaea.service.error import (
 )
 from ichnaea.service.search.schema import SearchSchema
 
+# maximum difference of two decimal places, ~1km at equator
+# or 500m at 67 degrees north
+MAX_DIFF = 100000
+
 
 def configure_search(config):
     config.scan('ichnaea.service.search.views')
@@ -58,8 +62,8 @@ def search_wifi(session, data):
     if not any(wifi_keys):
         # no valid normalized keys
         return None
-    if len(wifi_keys) < 2:
-        # we didn't even get two keys, bail out
+    if len(wifi_keys) < 3:
+        # we didn't even get three keys, bail out
         return None
     sql_null = None  # avoid pep8 warning
     query = session.query(Wifi.lat, Wifi.lon).filter(
@@ -67,12 +71,22 @@ def search_wifi(session, data):
         Wifi.lat != sql_null).filter(
         Wifi.lon != sql_null)
     wifis = query.all()
-    if len(wifis) < 2:
-        # we got fewer than two actual matches
+    if len(wifis) < 3:
+        # we got fewer than three actual matches
         return None
     length = len(wifis)
     avg_lat = sum([w[0] for w in wifis]) / length
     avg_lon = sum([w[1] for w in wifis]) / length
+
+    # check to make sure all wifi AP's are close by
+    # we might later relax this to allow some outliers
+    latitudes = [w[0] for w in wifis]
+    longitudes = [w[1] for w in wifis]
+    lat_diff = abs(max(latitudes) - min(latitudes))
+    lon_diff = abs(max(longitudes) - min(longitudes))
+    if lat_diff >= MAX_DIFF or lon_diff >= MAX_DIFF:
+        return None
+
     return {
         'lat': quantize(avg_lat),
         'lon': quantize(avg_lon),
@@ -106,13 +120,16 @@ search = Service(
 def search_post(request):
     data = request.validated
     session = request.db_slave_session
-
     result = None
-    if data['wifi']:
-        result = search_wifi(session, data)
-    if result is None:
-        # no wifi result found, fall back to cell
-        result = search_cell(session, data)
+
+    api_key = request.GET.get('key', None)
+    if api_key is not None:
+        if data['wifi']:
+            result = search_wifi(session, data)
+        if result is None:
+            # no wifi result found, fall back to cell
+            result = search_cell(session, data)
+
     if result is None:
         return {'status': 'not_found'}
 

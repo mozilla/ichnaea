@@ -13,7 +13,6 @@ from ichnaea.content.stats import (
     global_stats,
     histogram,
     leaders,
-    map_world_csv,
 )
 
 
@@ -47,7 +46,7 @@ CSP_POLICY = CSP_POLICY.replace("\n", ' ').strip()
 def security_headers(event):
     response = event.response
     if response.content_type == 'text/html':
-        response.headers.add("Strict-Transport-Security", "max-age=2592000")
+        response.headers.add("Strict-Transport-Security", "max-age=31536000")
         response.headers.add("Content-Security-Policy", CSP_POLICY)
 
 
@@ -77,6 +76,10 @@ class ContentViews(Layout):
     def homepage_view(self):
         return {'page_title': 'Overview'}
 
+    @view_config(renderer='templates/privacy.pt', name="privacy", http_cache=300)
+    def privacy_view(self):
+        return {'page_title': 'Privacy Policy'}
+
     @view_config(renderer='templates/leaders.pt',
                  name="leaders", http_cache=300)
     def leaders_view(self):
@@ -99,36 +102,26 @@ class ContentViews(Layout):
 
     @view_config(renderer='templates/map.pt', name="map", http_cache=300)
     def map_view(self):
-        return {'page_title': 'Coverage Map'}
+        return {'page_title': 'Map'}
 
-    @view_config(renderer='string', name="map_world.csv", http_cache=86400)
-    def map_world_csv(self):
-        session = self.request.db_slave_session
-        return map_world_csv(session)
-
-    @view_config(renderer='templates/map_world.pt', name="map_world",
-                 http_cache=300)
-    def map_world_view(self):
-        return {'page_title': 'Coverage Map'}
-
-    @view_config(renderer='json', name="stats_location.json", http_cache=86400)
+    @view_config(renderer='json', name="stats_location.json", http_cache=3600)
     def stats_location_json(self):
         session = self.request.db_slave_session
         return {'histogram': histogram(session, 'location')}
 
     @view_config(
-        renderer='json', name="stats_unique_cell.json", http_cache=86400)
+        renderer='json', name="stats_unique_cell.json", http_cache=3600)
     def stats_unique_cell_json(self):
         session = self.request.db_slave_session
         return {'histogram': histogram(session, 'unique_cell')}
 
     @view_config(
-        renderer='json', name="stats_unique_wifi.json", http_cache=86400)
+        renderer='json', name="stats_unique_wifi.json", http_cache=3600)
     def stats_unique_wifi_json(self):
         session = self.request.db_slave_session
         return {'histogram': histogram(session, 'unique_wifi')}
 
-    @view_config(renderer='templates/stats.pt', name="stats", http_cache=86400)
+    @view_config(renderer='templates/stats.pt', name="stats", http_cache=3600)
     def stats_view(self):
         session = self.request.db_slave_session
         result = {'leaders': [], 'metrics': [], 'page_title': 'Statistics'}
@@ -153,10 +146,7 @@ _robots_response = Response(
     content_type='text/plain',
     body="User-agent: *\n"
          "Disallow: /leaders\n"
-         "Disallow: /map\n"
-         "Disallow: /map_world\n"
          "Disallow: /static/\n"
-         "Disallow: /stats\n"
          "Disallow: /v1/\n"
 )
 

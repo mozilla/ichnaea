@@ -4,6 +4,7 @@ import datetime
 from colander import iso8601
 from cornice import Service
 from pyramid.httpexceptions import HTTPNoContent
+from sqlalchemy.sql import and_, or_
 
 from ichnaea.content.models import (
     MapStat,
@@ -36,38 +37,55 @@ def configure_submit(config):
     config.scan('ichnaea.service.submit.views')
 
 
-def process_mapstat(measures, session, userid=None):
+def process_mapstat_keyed(factor, stat_key, measures, session):
     tiles = defaultdict(int)
-    # aggregate to 100x100m tiles
+    # aggregate to tiles, according to factor
     for measure in measures:
-        tiles[(measure.lat / 10000, measure.lon / 10000)] += 1
-    lats = set([k[0] for k in tiles.keys()])
-    lons = set([k[1] for k in tiles.keys()])
-    result = session.query(MapStat).filter(
-        MapStat.key == MAPSTAT_TYPE['location']).filter(
-        MapStat.lat.in_(lats)).filter(
-        MapStat.lon.in_(lons)).all()
+        tiles[(measure.lat / factor, measure.lon / factor)] += 1
+    query = session.query(MapStat.lat, MapStat.lon).filter(
+        MapStat.key == stat_key)
+    # dynamically construct a (lat, lon) in (list of tuples) filter
+    # as MySQL isn't able to use indexes on such in queries
+    lat_lon = []
+    for (lat, lon) in tiles.keys():
+        lat_lon.append(and_((MapStat.lat == lat), (MapStat.lon == lon)))
+    query = query.filter(or_(*lat_lon))
+    result = query.all()
     prior = {}
     for r in result:
-        prior[(r.lat, r.lon)] = r
+        prior[(r[0], r[1])] = True
     tile_count = 0
     for (lat, lon), value in tiles.items():
-        old = prior.get((lat, lon), None)
+        old = prior.get((lat, lon), False)
         if old:
-            old.value = MapStat.value + value
+            stmt = MapStat.__table__.update().where(
+                MapStat.lat == lat).where(
+                MapStat.lon == lon).where(
+                MapStat.key == stat_key).values(
+                value=MapStat.value + value)
         else:
             tile_count += 1
             stmt = MapStat.__table__.insert(
                 on_duplicate='value = value + %s' % int(value)).values(
-                lat=lat, lon=lon, key=MAPSTAT_TYPE['location'], value=value)
-            session.execute(stmt)
+                lat=lat, lon=lon, key=stat_key, value=value)
+        session.execute(stmt)
+    return tile_count
+
+
+def process_mapstat(measures, session, userid=None):
+    # 10x10 meter tiles
+    tile_count = process_mapstat_keyed(
+        1000, MAPSTAT_TYPE['location'], measures, session)
     if userid is not None and tile_count > 0:
         process_score(userid, tile_count, session, key='new_location')
+    # 100x100 m tiles
+    process_mapstat_keyed(
+        10000, MAPSTAT_TYPE['location_100m'], measures, session)
 
 
 def process_user(nickname, session):
     userid = None
-    if (3 <= len(nickname) <= 128):
+    if (2 <= len(nickname) <= 128):
         # automatically create user objects and update nickname
         if isinstance(nickname, str):
             nickname = nickname.decode('utf-8', 'ignore')

@@ -22,7 +22,7 @@ class TestGeolocate(AppTestCase):
         session.commit()
 
         res = app.post_json(
-            '/v1/geolocate', {
+            '/v1/geolocate?key=test', {
                 "radioType": "gsm",
                 "cellTowers": [
                     {"mobileCountryCode": 123, "mobileNetworkCode": 1,
@@ -38,17 +38,19 @@ class TestGeolocate(AppTestCase):
         session = self.db_slave_session
         wifis = [
             Wifi(key="a1", lat=10000000, lon=10000000),
-            Wifi(key="b2", lat=10020000, lon=10040000),
-            Wifi(key="c3", lat=None, lon=None),
+            Wifi(key="b2", lat=10010000, lon=10020000),
+            Wifi(key="c3", lat=10020000, lon=10040000),
+            Wifi(key="d4", lat=None, lon=None),
         ]
         session.add_all(wifis)
         session.commit()
         res = app.post_json(
-            '/v1/geolocate', {
+            '/v1/geolocate?key=test', {
                 "wifiAccessPoints": [
                     {"macAddress": "a1"},
                     {"macAddress": "b2"},
                     {"macAddress": "c3"},
+                    {"macAddress": "d4"},
                 ]},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
@@ -58,7 +60,7 @@ class TestGeolocate(AppTestCase):
     def test_wifi_not_found(self):
         app = self.app
         res = app.post_json(
-            '/v1/geolocate', {
+            '/v1/geolocate?key=test', {
                 "wifiAccessPoints": [
                     {"macAddress": "abcd"}, {"macAddress": "cdef"},
                 ]},
@@ -79,7 +81,7 @@ class TestGeolocate(AppTestCase):
     def test_parse_error(self):
         app = self.app
         res = app.post_json(
-            '/v1/geolocate', {
+            '/v1/geolocate?key=test', {
                 "wifiAccessPoints": [
                     {"nomac": 1},
                 ]},
@@ -100,6 +102,26 @@ class TestGeolocate(AppTestCase):
     def test_no_data(self):
         app = self.app
         res = app.post_json(
-            '/v1/geolocate', {"wifiAccessPoints": []},
+            '/v1/geolocate?key=test', {"wifiAccessPoints": []},
             status=400)
+        self.assertEqual(res.content_type, 'application/json')
+
+    def test_no_api_key(self):
+        app = self.app
+        session = self.db_slave_session
+        wifis = [
+            Wifi(key="a1", lat=10000000, lon=10000000, total_measures=9),
+            Wifi(key="b2", lat=10010000, lon=10020000, total_measures=9),
+            Wifi(key="c3", lat=10020000, lon=10040000, total_measures=9),
+        ]
+        session.add_all(wifis)
+        session.commit()
+        res = app.post_json(
+            '/v1/geolocate', {
+                "wifiAccessPoints": [
+                    {"macAddress": "a1"},
+                    {"macAddress": "b2"},
+                    {"macAddress": "c3"},
+                ]},
+            status=404)
         self.assertEqual(res.content_type, 'application/json')

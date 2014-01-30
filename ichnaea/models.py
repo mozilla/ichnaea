@@ -82,10 +82,7 @@ cell_table = Cell.__table__
 class CellMeasure(_Model):
     __tablename__ = 'cell_measure'
     __table_args__ = (
-        Index('cell_measure_measure_id_idx', 'measure_id'),
         Index('cell_measure_created_idx', 'created'),
-        Index('cell_measure_lat_idx', 'lat'),
-        Index('cell_measure_lon_idx', 'lon'),
         Index('cell_measure_key_idx', 'radio', 'mcc', 'mnc', 'lac', 'cid'),
         {
             'mysql_engine': 'InnoDB',
@@ -98,11 +95,11 @@ class CellMeasure(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
     measure_id = Column(BigInteger(unsigned=True))
-    created = Column(DateTime)
+    created = Column(DateTime)  # the insert time of the record into the DB
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
-    time = Column(DateTime)
+    time = Column(DateTime)  # the time of observation of this data
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)
@@ -185,10 +182,7 @@ class WifiBlacklist(_Model):
 class WifiMeasure(_Model):
     __tablename__ = 'wifi_measure'
     __table_args__ = (
-        Index('wifi_measure_measure_id_idx', 'measure_id'),
         Index('wifi_measure_created_idx', 'created'),
-        Index('wifi_measure_lat_idx', 'lat'),
-        Index('wifi_measure_lon_idx', 'lon'),
         Index('wifi_measure_key_idx', 'key'),
         {
             'mysql_engine': 'InnoDB',
@@ -201,11 +195,11 @@ class WifiMeasure(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
     measure_id = Column(BigInteger(unsigned=True))
-    created = Column(DateTime)
+    created = Column(DateTime)  # the insert time of the record into the DB
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
-    time = Column(DateTime)
+    time = Column(DateTime)  # the time of observation of this data
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)
@@ -237,11 +231,11 @@ class Measure(_Model):
 
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
-    created = Column(DateTime)
+    created = Column(DateTime)  # the insert time of the record into the DB
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
-    time = Column(DateTime)
+    time = Column(DateTime)  # the time of observation of this data
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)

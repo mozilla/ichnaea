@@ -9,9 +9,11 @@ nearby cell towers or wifi base stations.
 
 An example POST request against URL::
 
-    https://location.services.mozilla.com/v1/search
+    https://location.services.mozilla.com/v1/search?key=<API_KEY>
 
-with a JSON body:
+The API_KEY can currently be any byte string, for example a uuid.
+
+The JSON body should be:
 
 .. code-block:: javascript
 
@@ -36,9 +38,11 @@ with a JSON body:
                 "signal": -50
             },
             {
-                "key": "01:23:45:67:cd:ef",
+                "key": "01:23:45:67:ab:cd"
+            },
+            {
+                "key": "01:23:45:67:cd:ef"
             }
-
         ]
     }
 
@@ -63,7 +67,7 @@ to the server either.
 The `key` is a the BSSID or MAC address of the wifi network. So for example
 a valid key would look similar to `01:23:45:67:89:ab`.
 
-For wifi lookups you need to provide at least two wifi keys of nearby wifis.
+For wifi lookups you need to provide at least three wifi keys of nearby wifis.
 This is a industry standard that is meant to prevent you from looking up the
 position of a single wifi over time.
 

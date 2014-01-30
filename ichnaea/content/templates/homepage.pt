@@ -5,22 +5,80 @@
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
     <p>Welcome to the Mozilla Location Service.</p>
+
     <p>
-        The Mozilla Location Service is a new experimental pilot project to
-        provide geo-location lookups based on publicly observable cell tower
-        and wifi access point information. It is currently in its early stages,
-        but already provides a basic service experience in select locations.
+        The Mozilla Location Service is a research project to
+        investigate crowdsourced mapping of wireless networks (WiFi access
+        points, cell towers, etc.) around the world. Mobile devices and
+        desktop computers commonly use this information to figure out
+        their location when GPS satellites are not accessible.
     </p>
+
     <p>
-        If you want to contribute to the data gathering, please
-        <a href="https://github.com/dougt/MozStumbler/releases">
-            install our stumbler application</a>.
+        There are few high-quality sources for this kind of geolocation
+        data currently open to the public. The Mozilla Location Service
+        aims to address this issue by aiming to provide an open service
+        to provide location data. 
     </p>
-    <ul>
-        <li><a href="/leaders">Leaderboard</a></li>
-        <li><a href="/stats">Statistics</a></li>
-        <li><a href="/map_world">Coverage Map</a></li>
-    </ul>
+
+    <h3>How can I get involved?</h3>
+
+    <p>
+        You can download our “MozStumbler” client application and start
+        mapping the wireless networks in your neighborhood. MozStumbler
+        is an Android app that collects information about wireless networks
+        near you and reports this information to Mozilla. As you walk or
+        drive around town, MozStumbler listens for nearby wireless networks
+        to periodically broadcast their network ID.
+    </p>
+
+    <p>
+        You can
+        <a href="https://github.com/mozilla/MozStumbler/releases">
+            install the latest build of MozStumbler</a>.
+    </p>
+
+    <p>
+        Just for fun, you can optionally enter a nickname to track the
+        number of networks you have contributed and compare your progress
+        to other users on <a href="/leaders">our leaderboard</a>.
+    </p>
+
+    <h3>What kind of data does MozStumbler send?</h3>
+
+    <p>
+        MozStumbler records your device's GPS location and a list of the
+        wireless network and cell IDs seen at that location and sends that
+        information to Mozilla’s servers. We use this data in accordance
+        with <a href="/privacy">our Privacy Policy</a>.
+    </p>
+
+    <p>
+        If you enter an optional nickname to track the number of networks
+        you have contributed, MozStumbler will also send that nickname to
+        Mozilla. While this nickname gets uploaded to our servers, we don't
+        associate the nickname with the raw positioning data that MozStumbler
+        uploads.
+    </p>
+
+    <h3>How do I prevent my wireless access point from being collected?</h3>
+
+    <p>
+        MozStumbler does not collect information about WiFi access points
+        whose SSID is hidden or ends with the string "_nomap". If you would
+        like to prevent your WiFi access point from being reported to Mozilla,
+        you can rename your SSID to append "_nomap" to the name
+        (e.g., SSID "MyWirelessNetwork" becomes "MyWirelessNetwork_nomap")
+        or configure your SSID to be hidden.
+    </p>
+
+    <p>
+        MozStumbler also attempts to avoid reporting personal mobile devices.
+        MozStumbler filters out some MAC addresses with vendor prefixes of
+        mobile device manufacturers (e.g. Apple) and SSIDs that are commonly
+        used by mobile devices (e.g., "iPhone" or "MiFi"").
+    </p>
+
 </section>
 </tal:slot>
 

@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from ichnaea.content.models import (
     MapStat,
+    MAPSTAT_TYPE,
     Score,
     SCORE_TYPE,
     User,
@@ -52,7 +53,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.altitude_accuracy, 7)
         self.assertEqual(item.radio, RADIO_TYPE['gsm'])
         # colander schema adds default value
-        cell_data[0]['psc'] = 0
+        cell_data[0]['psc'] = -1
         cell_data[0]['asu'] = 0
         cell_data[0]['signal'] = 0
         cell_data[0]['ta'] = 0
@@ -210,6 +211,26 @@ class TestSubmit(CeleryAppTestCase):
             else:
                 self.assertEqual(item.time.date(), datetime.utcnow().date())
 
+    def test_time_short_format(self):
+        app = self.app
+        # a string like "2014-01-15"
+        time = datetime.utcnow().date()
+        tstr = time.isoformat()
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}], "time": tstr},
+            ]},
+            status=204)
+        session = self.db_master_session
+        result = session.query(Measure).all()
+        self.assertEqual(len(result), 1)
+        result_time = result[0].time
+        self.assertEqual(result_time.date(), time)
+        self.assertEqual(result_time.hour, 0)
+        self.assertEqual(result_time.minute, 0)
+        self.assertEqual(result_time.second, 0)
+        self.assertEqual(result_time.microsecond, 0)
+
     def test_time_future(self):
         app = self.app
         time = "2070-01-01T11:12:13.456Z"
@@ -241,9 +262,17 @@ class TestSubmit(CeleryAppTestCase):
     def test_mapstat(self):
         app = self.app
         session = self.db_master_session
+        key_10m = MAPSTAT_TYPE['location']
+        key_100m = MAPSTAT_TYPE['location_100m']
         session.add_all([
-            MapStat(lat=1000, lon=2000, value=13),
-            MapStat(lat=2000, lon=3000, value=3),
+            MapStat(lat=10000, lon=20000, key=key_10m, value=13),
+            MapStat(lat=10000, lon=30000, key=key_10m, value=1),
+            MapStat(lat=20000, lon=30000, key=key_10m, value=3),
+            MapStat(lat=20000, lon=40000, key=key_10m, value=1),
+            MapStat(lat=1000, lon=2000, key=key_100m, value=7),
+            MapStat(lat=1000, lon=3000, key=key_100m, value=2),
+            MapStat(lat=2000, lon=3000, key=key_100m, value=5),
+            MapStat(lat=2000, lon=4000, key=key_100m, value=9),
         ])
         session.flush()
         app.post_json(
@@ -254,12 +283,35 @@ class TestSubmit(CeleryAppTestCase):
                 {"lat": -2.0, "lon": 3.0, "wifi": [{"key": "c"}]},
             ]},
             status=204)
-        result = session.query(MapStat).all()
-        self.assertEqual(len(result), 3)
+        # check fine grained stats
+        result = session.query(MapStat).filter(
+            MapStat.key == MAPSTAT_TYPE['location']).all()
+        self.assertEqual(len(result), 5)
         self.assertEqual(
             sorted([(int(r.lat), int(r.lon), int(r.value)) for r in result]),
-            [(-2000, 3000, 1), (1000, 2000, 14), (2000, 3000, 5)]
+            [
+                (-20000, 30000, 1),
+                (10000, 20000, 14),
+                (10000, 30000, 1),
+                (20000, 30000, 5),
+                (20000, 40000, 1),
+            ]
         )
+        # check coarse grained stats
+        result = session.query(MapStat).filter(
+            MapStat.key == MAPSTAT_TYPE['location_100m']).all()
+        self.assertEqual(len(result), 5)
+        self.assertEqual(
+            sorted([(int(r.lat), int(r.lon), int(r.value)) for r in result]),
+            [
+                (-2000, 3000, 1),
+                (1000, 2000, 8),
+                (1000, 3000, 2),
+                (2000, 3000, 7),
+                (2000, 4000, 9),
+            ]
+        )
+
 
     def test_nickname_header(self):
         app = self.app
@@ -293,7 +345,7 @@ class TestSubmit(CeleryAppTestCase):
             '/v1/submit', {"items": [
                 {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
             ]},
-            headers={'X-Nickname': "ab"},
+            headers={'X-Nickname': "a"},
             status=204)
         session = self.db_master_session
         result = session.query(User).all()
@@ -380,7 +432,6 @@ class TestSubmit(CeleryAppTestCase):
         self.assertTrue('errors' in res.json)
 
     def test_heka_logging(self):
-
         app = self.app
         cell_data = [
             {"radio": "umts", "mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
@@ -408,4 +459,5 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(1, len(find_msg(msgs, 'counter', 'http.request')))
         self.assertEqual(1, len(find_msg(msgs, 'counter', 'items.uploaded')))
         self.assertEqual(1, len(find_msg(msgs, 'timer', 'http.request')))
-        self.assertEqual(1, len(find_msg(msgs, 'timer', 'task.insert_cell_measure')))
+        taskname = 'task.service.submit.insert_cell_measure'
+        self.assertEqual(1, len(find_msg(msgs, 'timer', taskname)))

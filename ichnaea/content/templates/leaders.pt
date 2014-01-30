@@ -12,32 +12,32 @@
                 <tr>
                     <th>Rank</th>
                     <th>User</th>
-                    <th>Points</th>
+                    <th class="text-right">Points</th>
                 </tr>
             </thead>
             <tbody>
                 <tr tal:repeat="row leaders1">
                     <td>${row.pos}.</td>
                     <td>${row.nickname}</td>
-                    <td>${row.num}</td>
+                    <td class="text-right">${row.num}</td>
                 </tr>
             </tbody>
         </table>
     </div>
     <div class="half-right" tal:condition="leaders2">
-        <table class="table">
+        <table class="table half">
             <thead>
                 <tr>
                     <th>Rank</th>
                     <th>User</th>
-                    <th>Points</th>
+                    <th class="text-right">Points</th>
                 </tr>
             </thead>
             <tbody>
                 <tr tal:repeat="row leaders2">
                     <td>${row.pos}.</td>
                     <td>${row.nickname}</td>
-                    <td>${row.num}</td>
+                    <td class="text-right">${row.num}</td>
                 </tr>
             </tbody>
         </table>

@@ -50,11 +50,10 @@ endif
 
 js: node_modules
 	$(HERE)/node_modules/.bin/uglifyjs \
-	$(HERE)/ichnaea/content/static/js/mapbox-1.5.0.min.js \
-	$(HERE)/ichnaea/content/static/js/map_world.js \
-	$(HERE)/ichnaea/content/static/js/leaflet.markercluster-0.3.0-20131113.js \
-	$(HERE)/ichnaea/content/static/js/csv2geojson-3.6.0.js \
-	-o $(HERE)/ichnaea/content/static/js/map_world-combined.js \
+	$(HERE)/ichnaea/content/static/js/mapbox-1.5.2.min.js \
+	$(HERE)/ichnaea/content/static/js/leaflet-hash-20140111.js \
+	$(HERE)/ichnaea/content/static/js/map.js \
+	-o $(HERE)/ichnaea/content/static/js/map-combined.js \
 	-m -c --stats
 	$(HERE)/node_modules/.bin/uglifyjs \
 	$(HERE)/ichnaea/content/static/js/d3-3.3.11.min.js \

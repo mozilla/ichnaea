@@ -86,8 +86,8 @@ html { background: #fff; }
 
 body {
     font-size: 14px;
-    line-height: 20px;
-    font-family: 'Open Sans', sans-serif;
+    line-height: 1.5;
+    font-family: 'Open Sans', 'Droid Arabic Naskh', sans-serif;
     color: #333;
     background: #fff;
 }
@@ -95,12 +95,14 @@ body {
 #outer-wrapper {
     position: relative;
     border-top: 2px solid #fff;
-    min-width: 992px;
     background: #f9f9f9 url(/static/images/bg-stone.png) 0 0 repeat-x;
 }
 
 #wrapper {
-    padding-bottom: 40px;
+    padding-bottom: 20px;
+    width: 1000px;
+    margin: 0 auto;
+    position: relative;
 }
 
 .separator {
@@ -118,7 +120,7 @@ a:hover, a:focus, a:active {
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'Open Sans Light', sans-serif;
+    font-family: 'Open Sans Light', 'Droid Arabic Naskh', sans-serif;
     font-weight: normal;
     display: block;
     margin: 0 0 12px 0;
@@ -160,17 +162,27 @@ ul,
 ol,
 dl,
 hgroup {
-    margin: 0 0 24px 0;
+    margin: 0 0 20px 0;
 }
 
 li {
-    margin-left: 24px;
+    margin-left: 20px;
+}
+
+pre,
+code {
+    color: #666;
+    font-size: 14px;
+}
+
+img {
+    max-width: 100%;
+    -ms-interpolation-mode: bicubic;
 }
 
 .table {
     border-collapse: collapse;
     border-spacing: 0;
-    margin-bottom: 10px;
 }
 
 .table caption {
@@ -189,11 +201,15 @@ li {
     border-top: 0;
     padding-top: 0;
     font-size: 16px;
-    font-family: 'Open Sans Light', sans-serif;
+    font-family: 'Open Sans Light', 'Droid Arabic Naskh', sans-serif;
     font-weight: normal;
 }
+.table th.text-right, .table td.text-right {
+    text-align: right;
+}
 
-.half-left, .half-right {
+.half-left,
+.half-right {
     width: 400px;
     margin: 0 20px;
 }
@@ -210,15 +226,15 @@ li {
 #colophon {
     display: block;
     margin: 0 auto;
-    padding-left: 48px;
-    padding-right: 48px;
+    padding-left: 20px;
+    padding-right: 20px;
     position: relative;
-    width: 896px;
-    
+    width: 960px;
 }
 
-#main-feature {
-    padding-bottom: 10px;
+#main-feature,
+#main-content {
+    padding-bottom: 20px;
 }
 
 
@@ -232,7 +248,6 @@ li {
 
 #masthead h2 {
     padding: 30px 0 20px 0;
-    margin: 0;
 }
 
 #masthead nav {
@@ -240,9 +255,12 @@ li {
     margin-right: 16px;
     text-transform: uppercase;
     font-size: 13px;
-    font-family: 'Open Sans', sans-serif;
+    font-family: 'Open Sans', 'Droid Arabic Naskh', sans-serif;
 }
 
+#masthead nav ul {
+    margin-bottom: 0;
+}
 #masthead nav li {
     display: inline-block;
     list-style-type: none;
@@ -255,6 +273,12 @@ li {
     font-weight: normal;
 }
 
+#masthead nav li .current {
+    background-position: 50% 0;
+    background-repeat: no-repeat;
+    background-image: url(/static/images/menu-current.png);
+}
+
 #masthead nav li a,
 #masthead nav li a:link,
 #masthead nav li a:visited {
@@ -263,48 +287,68 @@ li {
 
 #colophon {
     color: #666;
-    padding: 48px 0;
-    font-size: 12px;
-    line-height: 18px;
+    padding: 40px 0;
+    font-size: .875em;
+    line-height: 1.285;
+    background: #fff;
+    width: 100%;
+    margin: 1em 0 0;
 }
 
-#colophon a, #colophon a:link, #colophon a:visited {
+#colophon .row {
+    width: 960px;
+    margin: 0 auto;
+}
+
+#colophon .footer-logo {
+    float: left;
+    width: 140px;
+    margin: 0 10px;
+}
+
+#colophon .footer-license {
+    float: left;
+    width: 220px;
+    margin: 0 10px;
+}
+
+#colophon .footer-nav {
+    float: left;
+    width: 140px;
+    margin: 0 10px;
+    font-family: 'Open Sans', 'Droid Arabic Naskh', sans-serif;
+}
+
+#colophon .footer-nav li {
+    list-style-type: none;
+    margin: 0 0 2px 0;
+}
+
+#colophon a,
+#colophon a:link,
+#colophon a:visited {
     color: rgb(0,150,221);
+}
+
+#colophon a:hover,
+#colophon a:focus,
+#colophon a:active {
+    color: #0073aa;
 }
 
 #colophon p {
     margin-bottom: 10px;
 }
 
-#colophon .footer-logo {
-    float: left;
-    width: 220px;
-    margin: 0 20px;
-}
-
-#colophon .footer-license {
-    float: left;
-    width: 220px;
-    margin: 0 20px;
-}
-
-.footer-nav {
-    float: left;
-    width: 140px;
-    margin: 0 20px;
-    font-family: 'Open Sans', sans-serif;
-}
-
-.footer-nav li {
-    list-style-type: none;
-    margin: 0 0 2px 0;
-}
-
 /* Stats, Charts */
 
 .chart_container {
-        position: relative;
-        font-family: Arial, Helvetica, sans-serif;
+    position: relative;
+    font-family: Arial, Helvetica, sans-serif;
+    width: 800px;
+}
+.rickshaw_graph {
+    width: 760px;
 }
 .chart {
     position: relative;
@@ -325,50 +369,166 @@ li {
 
 /* Map */
 
-.marker-cluster-small {
-    background-color: rgba(181, 226, 140, 0.6);
-}
-.marker-cluster-small div {
-    background-color: rgba(110, 204, 57, 0.6);
-}
-.marker-cluster-medium {
-    background-color: rgba(241, 211, 87, 0.6);
-}
-.marker-cluster-medium div {
-    background-color: rgba(240, 194, 12, 0.6);
-}
-.marker-cluster-large {
-    background-color: rgba(253, 156, 115, 0.6);
-}
-.marker-cluster-large div {
-    background-color: rgba(241, 128, 23, 0.6);
-}
-.marker-cluster {
-    background-clip: padding-box;
-    border-radius: 20px;
-}
-.marker-cluster div {
-    width: 30px;
-    height: 30px;
-    margin-left: 5px;
-    margin-top: 5px;
-
-    text-align: center;
-    border-radius: 15px;
-    font: 12px "Helvetica Neue", Arial, Helvetica, sans-serif;
-}
-.marker-cluster span {
-    line-height: 30px;
-}
-.leaflet-cluster-anim .leaflet-marker-icon, .leaflet-cluster-anim .leaflet-marker-shadow {
-    -webkit-transition: -webkit-transform 0.2s ease-out, opacity 0.2s ease-in;
-    -moz-transition: -moz-transform 0.2s ease-out, opacity 0.2s ease-in;
-    -o-transition: -o-transform 0.2s ease-out, opacity 0.2s ease-in;
-    transition: transform 0.2s ease-out, opacity 0.2s ease-in;
-}
 #map {
     top: 0;
     bottom: 0;
     width: 970px;
     height: 600px;
+}
+
+/* Mobile Layout: 320px */
+
+@media only screen and (max-width: 760px) {
+    #wrapper {
+        width: 320px;
+        padding-bottom: 5px;
+    }
+
+    #masthead,
+    #main-feature,
+    #main-content,
+    #colophon {
+        width: auto;
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-bottom: 20px;
+    }
+    .row {
+        margin-left: auto;
+    }
+    #masthead h2 {
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+    #masthead nav {
+        float: none;
+        padding-top: 10px;
+        margin-left: 10px;
+    }
+    #masthead nav ul li {
+        display: block;
+    }
+    #masthead nav ul li a {
+        display: block;
+        padding: 0;
+    }
+    #masthead nav ul li .current {
+        background-image: none;
+    }
+    h1 {
+        font-size: 32px;
+        letter-spacing: -1px;
+    }
+    h2,
+    .billboard h2 {
+        font-size: 28px;
+        letter-spacing: -0.5px;
+    }
+    h3 {
+        font-size: 24px;
+        letter-spacing: -0.25px;
+    }
+    h4 {
+        font-size: 16px;
+    }
+    h5 {
+        font-size: 14px;
+    }
+    #colophon .row {
+        width: 300px;
+    }
+    #colophon .footer-logo,
+    #colophon .footer-license,
+    #colophon .footer-nav {
+        width: auto;
+        float: none;
+        margin-bottom: 20px;
+    }
+    .table th, .table td {
+        padding: 5px 5px 5px 0;
+    }
+    .half-left, .half-right {
+        width: 300px;
+        margin: 0;
+    }
+    .half-right {
+        margin-top: 10px;
+        float: left;
+    }
+    .chart_container {
+        width: 260px;
+    }
+    .rickshaw_graph {
+        width: 220px;
+    }
+    #map {
+        width: 300px;
+        height: 300px;
+    }
+}
+
+/* Wide Mobile Layout: 480px */
+
+@media only screen and (min-width: 480px) and (max-width: 760px) {
+    #wrapper {
+        width: 440px;
+    }
+    #masthead,
+    #main-feature,
+    #main-content {
+        width: auto;
+    }
+    #colophon .row {
+        width: 420px;
+    }
+    #map {
+        width: 420px;
+        height: 300px;
+    }
+}
+
+/* Tablet Layout: 760px */
+
+@media only screen and (min-width: 760px) and (max-width: 1000px) {
+    #wrapper {
+        width: 760px;
+    }
+    #masthead,
+    #main-feature,
+    #main-content {
+        width: 720px;
+    }
+    #colophon .row {
+        width: 720px;
+    }
+    #colophon .footer-logo,
+    #colophon .footer-license {
+        float: left;
+        width: 180px;
+        margin: 0 10px;
+    }
+    #colophon .footer-nav {
+        float: left;
+        width: 140px;
+        margin: 0 10px;
+    }
+    #colophon .footer-logo {
+        float: none;
+        margin-bottom: 20px;
+    }
+    .half-left,
+    .half-right {
+        width: 340px;
+        margin: 0 10px;
+    }
+    .chart_container {
+        width: 600px;
+    }
+    .rickshaw_graph {
+        width: 560px;
+    }
+    #map {
+        width: 720px;
+        height: 360px;
+    }
 }

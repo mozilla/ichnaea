@@ -115,12 +115,15 @@ geolocate = Service(
 def geolocate_post(request):
     data = request.validated
     session = request.db_slave_session
-
     result = None
-    if data['wifiAccessPoints']:
-        result = search_wifi_ap(session, data)
-    else:
-        result = search_cell_tower(session, data)
+
+    api_key = request.GET.get('key', None)
+    if api_key is not None:
+        if data['wifiAccessPoints']:
+            result = search_wifi_ap(session, data)
+        else:
+            result = search_cell_tower(session, data)
+
     if result is None:
         result = HTTPNotFound()
         result.content_type = 'application/json'

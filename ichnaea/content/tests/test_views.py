@@ -9,7 +9,6 @@ from unittest2 import TestCase
 from heka.holder import get_client
 
 from ichnaea.content.models import (
-    MapStat,
     Score,
     Stat,
     STAT_TYPE,
@@ -43,7 +42,7 @@ class TestContentViews(TestCase):
         request = DummyRequest()
         inst = self._make_view(request)
         result = inst.map_view()
-        self.assertEqual(result['page_title'], 'Coverage Map')
+        self.assertEqual(result['page_title'], 'Map')
 
 
 class TestFunctionalContent(AppTestCase):
@@ -53,15 +52,19 @@ class TestFunctionalContent(AppTestCase):
         self.heka_client = get_client('ichnaea')
         self.heka_client.stream.msgs.clear()
 
+    def test_content_pages(self):
+        self.app.get('/', status=200)
+        self.app.get('/leaders', status=200)
+        self.app.get('/map', status=200)
+        self.app.get('/privacy', status=200)
+        self.app.get('/stats', status=200)
+
     def test_favicon(self):
         self.app.get('/favicon.ico', status=200)
 
-    def test_homepage(self):
+    def test_hsts_header(self):
         result = self.app.get('/', status=200)
         self.assertTrue('Strict-Transport-Security' in result.headers)
-
-    def test_leaders(self):
-        self.app.get('/leaders', status=200)
 
     def test_not_found(self):
         self.app.get('/nobody-is-home', status=404)
@@ -71,29 +74,12 @@ class TestFunctionalContent(AppTestCase):
         sentry_msgs = [m for m in msgs if m.type == 'sentry']
         assert len(sentry_msgs) > 0
 
-    def test_map(self):
-        self.app.get('/map', status=200)
-
-    def test_map_world(self):
-        self.app.get('/map_world', status=200)
-
-    def test_map_world_csv(self):
-        app = self.app
-        session = self.db_slave_session
-        session.add(MapStat(lat=2000, lon=3000, value=2))
-        session.add(MapStat(lat=2001, lon=3000, value=7))
-        session.flush()
-        result = app.get('/map_world.csv', status=200)
-        self.assertEqual(result.content_type, 'text/plain')
-        text = result.text.replace('\r', '').strip('\n')
-        text = text.split('\n')
-        self.assertEqual(text, ['lat,lon,value', '2.0,3.0,2'])
+        # We should have caught at least one error here
+        sentry_msgs = [m for m in msgs if m.type == 'sentry']
+        self.assertTrue(len(sentry_msgs) > 0)
 
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)
-
-    def test_stats(self):
-        self.app.get('/stats', status=200)
 
     def test_stats_location_json(self):
         app = self.app
@@ -193,11 +179,11 @@ class TestFunctionalContentViews(AppTestCase):
         day = datetime.utcnow().date() - timedelta(1)
         session = self.db_master_session
         stats = [
-            Stat(key=STAT_TYPE['location'], time=day, value=3),
-            Stat(key=STAT_TYPE['cell'], time=day, value=2),
-            Stat(key=STAT_TYPE['wifi'], time=day, value=2),
-            Stat(key=STAT_TYPE['unique_cell'], time=day, value=1),
-            Stat(key=STAT_TYPE['unique_wifi'], time=day, value=2),
+            Stat(key=STAT_TYPE['location'], time=day, value=3000000),
+            Stat(key=STAT_TYPE['cell'], time=day, value=2000000),
+            Stat(key=STAT_TYPE['wifi'], time=day, value=2000000),
+            Stat(key=STAT_TYPE['unique_cell'], time=day, value=1000000),
+            Stat(key=STAT_TYPE['unique_wifi'], time=day, value=2000000),
         ]
         session.add_all(stats)
         session.commit()
@@ -208,11 +194,11 @@ class TestFunctionalContentViews(AppTestCase):
         self.assertEqual(result['page_title'], 'Statistics')
         self.assertEqual(
             result['metrics'],
-            [{'name': 'Locations', 'value': 3},
-             {'name': 'Cells', 'value': 2},
-             {'name': 'Unique Cells', 'value': 1},
-             {'name': 'Wifi APs', 'value': 2},
-             {'name': 'Unique Wifi APs', 'value': 2}])
+            [{'name': 'Locations', 'value': '3.00'},
+             {'name': 'Cells', 'value': '2.00'},
+             {'name': 'Unique Cells', 'value': '1.00'},
+             {'name': 'Wifi APs', 'value': '2.00'},
+             {'name': 'Unique Wifi APs', 'value': '2.00'}])
 
 
 class TestLayout(TestCase):
