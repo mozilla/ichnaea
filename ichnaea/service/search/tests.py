@@ -57,7 +57,8 @@ class TestSearch(AppTestCase):
         msgs = self.heka_client.stream.msgs
         self.assertEquals(1, len(find_msg(msgs, 'counter', 'http.request')))
         self.assertEquals(1, len(find_msg(msgs, 'timer', 'http.request')))
-        self.assertEquals(2, len(msgs))
+        self.assertEquals(1, len(find_msg(msgs, 'counter', 'search.api_key.test')))
+        self.assertEquals(3, len(msgs))
 
     def test_ok_wifi(self):
         app = self.app
@@ -83,7 +84,8 @@ class TestSearch(AppTestCase):
         msgs = self.heka_client.stream.msgs
         self.assertEquals(1, len(find_msg(msgs, 'counter', 'http.request')))
         self.assertEquals(1, len(find_msg(msgs, 'timer', 'http.request')))
-        self.assertEquals(2, len(msgs))
+        self.assertEquals(1, len(find_msg(msgs, 'counter', 'search.api_key.test')))
+        self.assertEquals(3, len(msgs))
 
     def test_wifi_too_few_candidates(self):
         app = self.app
