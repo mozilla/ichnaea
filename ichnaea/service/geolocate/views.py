@@ -19,8 +19,8 @@ from heka.holder import get_client
 NO_API_KEY = {
     "error": {
         "errors": [{
-            "domain": "geolocation",
-            "reason": "no apikey",
+            "domain": "usageLimits",
+            "reason": "keyInvalid",
             "message": "No API key was found",
         }],
         "code": 400,
