@@ -1,6 +1,6 @@
 from cornice import Service
 from pyramid.httpexceptions import HTTPError
-from pyramid.httpexceptions import HTTPNotFound
+from pyramid.httpexceptions import HTTPNotFound, HTTPBadRequest
 from pyramid.response import Response
 
 
@@ -16,6 +16,18 @@ from ichnaea.service.search.views import (
 
 from heka.holder import get_client
 
+NO_API_KEY = {
+    "error": {
+        "errors": [{
+            "domain": "geolocation",
+            "reason": "no apikey",
+            "message": "No API key was found",
+        }],
+        "code": 400,
+        "message": "No API key",
+    }
+}
+NO_API_KEY = dumps(NO_API_KEY)
 
 NOT_FOUND = {
     "error": {
@@ -123,6 +135,11 @@ def geolocate_post(request):
             result = search_wifi_ap(session, data)
         else:
             result = search_cell_tower(session, data)
+    else:
+        result = HTTPBadRequest()
+        result.content_type = 'application/json'
+        result.body = NO_API_KEY
+        return result
 
     if result is None:
         result = HTTPNotFound()

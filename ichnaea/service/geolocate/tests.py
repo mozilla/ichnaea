@@ -3,6 +3,7 @@ from ichnaea.models import (
     Wifi,
 )
 from ichnaea.tests.base import AppTestCase
+import json
 
 
 class TestGeolocate(AppTestCase):
@@ -123,5 +124,8 @@ class TestGeolocate(AppTestCase):
                     {"macAddress": "b2"},
                     {"macAddress": "c3"},
                 ]},
-            status=404)
+            status=400)
+
+        json_err = json.loads(res.body)
+        self.assertEqual(u'No API key', json_err['error']['message'])
         self.assertEqual(res.content_type, 'application/json')
