@@ -1,5 +1,7 @@
 from cornice import Service
 
+from heka.holder import get_client
+
 from ichnaea.models import (
     Cell,
     normalize_wifi_key,
@@ -120,6 +122,7 @@ search = Service(
 def search_post(request):
     data = request.validated
     session = request.db_slave_session
+    heka_client = get_client('ichnaea')
     result = None
 
     api_key = request.GET.get('key', None)
@@ -132,6 +135,8 @@ def search_post(request):
 
     if result is None:
         return {'status': 'not_found'}
+
+    heka_client.incr('search.api_key.%s' % api_key)
 
     return {
         'status': 'ok',
