@@ -28,10 +28,13 @@ def configure_heka(registry_settings={}):
 def heka_tween_factory(handler, registry):
 
     def heka_tween(request):
-
         with registry.heka_client.timer('http.request',
-                                        fields={'url_path': request.path}):
-            response = handler(request)
+                                        fields={'url': request.url}):
+            try:
+                response = handler(request)
+            except Exception:
+                registry.heka_client.raven("Unhandled error occured")
+                raise
         registry.heka_client.incr('http.request',
                                   fields={'status': str(response.status_code),
                                           'url_path': request.path})
