@@ -76,6 +76,10 @@ class ContentViews(Layout):
     def homepage_view(self):
         return {'page_title': 'Overview'}
 
+    @view_config(renderer='templates/privacy.pt', name="privacy", http_cache=300)
+    def privacy_view(self):
+        return {'page_title': 'Privacy Policy'}
+
     @view_config(renderer='templates/leaders.pt',
                  name="leaders", http_cache=300)
     def leaders_view(self):
@@ -142,9 +146,7 @@ _robots_response = Response(
     content_type='text/plain',
     body="User-agent: *\n"
          "Disallow: /leaders\n"
-         "Disallow: /map\n"
          "Disallow: /static/\n"
-         "Disallow: /stats\n"
          "Disallow: /v1/\n"
 )
 

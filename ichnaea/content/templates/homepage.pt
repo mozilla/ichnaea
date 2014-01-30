@@ -16,11 +16,6 @@
         <a href="https://github.com/mozilla/MozStumbler/releases">
             install our stumbler application</a>.
     </p>
-    <ul>
-        <li><a href="/leaders">Leaderboard</a></li>
-        <li><a href="/stats">Statistics</a></li>
-        <li><a href="/map">Map</a></li>
-    </ul>
 </section>
 </tal:slot>
 

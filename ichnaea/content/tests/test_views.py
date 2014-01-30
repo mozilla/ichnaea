@@ -45,27 +45,25 @@ class TestContentViews(TestCase):
 
 class TestFunctionalContent(AppTestCase):
 
+    def test_content_pages(self):
+        self.app.get('/', status=200)
+        self.app.get('/leaders', status=200)
+        self.app.get('/map', status=200)
+        self.app.get('/privacy', status=200)
+        self.app.get('/stats', status=200)
+
     def test_favicon(self):
         self.app.get('/favicon.ico', status=200)
 
-    def test_homepage(self):
+    def test_hsts_header(self):
         result = self.app.get('/', status=200)
         self.assertTrue('Strict-Transport-Security' in result.headers)
-
-    def test_leaders(self):
-        self.app.get('/leaders', status=200)
 
     def test_not_found(self):
         self.app.get('/nobody-is-home', status=404)
 
-    def test_map(self):
-        self.app.get('/map', status=200)
-
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)
-
-    def test_stats(self):
-        self.app.get('/stats', status=200)
 
     def test_stats_location_json(self):
         app = self.app

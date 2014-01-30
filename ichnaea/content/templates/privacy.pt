@@ -1,0 +1,13 @@
+<tal:macro xmlns:tal="http://xml.zope.org/namespaces/tal"
+           xmlns:metal="http://xml.zope.org/namespaces/metal"
+           metal:use-macro="view.base_template">
+
+<tal:slot metal:fill-slot="content">
+<section id="main-content">
+    <p>
+        Privacy...
+    </p>
+</section>
+</tal:slot>
+
+</tal:macro>
