@@ -5,14 +5,14 @@ from ichnaea.worker import celery
 from ichnaea.geocalc import distance
 
 NEAREST_DISTANCE = 1.0  # Distance in kilometers between towers with no
-                        # LAC/CID and towers with known LAC/CId
+                        # LAC/CID and towers with known LAC/CID
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def do_backfill(self):
     """
-    Find all tower (mcc, mnc, psc) 3-tuples that are missing lac,
-    cid and spin up celery tasks to update cell towers.
+    Find all cell (mcc, mnc, psc) 3-tuples that are missing lac,
+    cid and spin up celery tasks to update cells.
     """
     with self.db_session() as session:
         stmt = text("""
@@ -80,8 +80,8 @@ def update_tower(self, radio, mcc, mnc, psc):
 
 def compute_matching_towers(session, radio, mcc, mnc, psc):
     """
-    Finds the closest matching tower based on mcc, mnc, psc, and
-    lat/long.  If no tower can be found to match within 1km, then we
+    Finds the closest matching cell based on mcc, mnc, psc and
+    lat/long. If no cell can be found to match within 1km, then we
     return None.
     """
     stmt = text("""
@@ -110,8 +110,8 @@ def compute_matching_towers(session, radio, mcc, mnc, psc):
 
 def _nearest_tower(missing_lat, missing_lon, centroids):
     """
-    We just need the closest tower, so we can approximate
-    using the haversine formula
+    We just need the closest cell, so we can approximate
+    using the haversine formula.
     """
     FLOAT_CONST = 10000000.0
     lat1 = missing_lat / FLOAT_CONST

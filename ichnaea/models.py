@@ -47,14 +47,16 @@ class Cell(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
     created = Column(DateTime)
+
     # lat/lon * decimaljson.FACTOR
+    lat = Column(Integer)
     max_lat = Column(Integer)
     min_lat = Column(Integer)
-    lat = Column(Integer)
 
+    lon = Column(Integer)
     max_lon = Column(Integer)
     min_lon = Column(Integer)
-    lon = Column(Integer)
+
     # mapped via RADIO_TYPE
     radio = Column(SmallInteger)
     # int in the range 0-1000

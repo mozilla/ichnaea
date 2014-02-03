@@ -106,7 +106,7 @@ def backfill_cell_location_update(self, new_cell_measures):
                 cells = query.all()
 
                 if not cells:
-                    # This case shouldn't actually occur.  The
+                    # This case shouldn't actually occur. The
                     # backfill_cell_location_update is only called
                     # when CellMeasure records are matched against
                     # known Cell records.
@@ -115,10 +115,9 @@ def backfill_cell_location_update(self, new_cell_measures):
                 for cell in cells:
                     query = None
 
-                    measures = session.query(CellMeasure.lat,    # NOQA
-                                    CellMeasure.lon).filter(
-                                    CellMeasure.id.in_(
-                                        cell_measure_ids)).all()
+                    measures = session.query(  # NOQA
+                        CellMeasure.lat, CellMeasure.lon).filter(
+                        CellMeasure.id.in_(cell_measure_ids)).all()
 
                     length = len(measures)
                     new_lat = sum([w[0] for w in measures]) // length
