@@ -184,6 +184,7 @@ class WifiMeasure(_Model):
     __table_args__ = (
         Index('wifi_measure_created_idx', 'created'),
         Index('wifi_measure_key_idx', 'key'),
+        Index('wifi_measure_key_created_idx', 'key', 'created'),
         {
             'mysql_engine': 'InnoDB',
             'mysql_charset': 'utf8',
