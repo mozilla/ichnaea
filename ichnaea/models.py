@@ -148,9 +148,16 @@ class Wifi(_Model):
                 primary_key=True, autoincrement=True)
     created = Column(DateTime)
     key = Column(String(12))
+
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
+    max_lat = Column(Integer)
+    min_lat = Column(Integer)
+
     lon = Column(Integer)
+    max_lon = Column(Integer)
+    min_lon = Column(Integer)
+
     range = Column(Integer)
     new_measures = Column(Integer(unsigned=True))
     total_measures = Column(Integer(unsigned=True))
