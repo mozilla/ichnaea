@@ -17,6 +17,20 @@ just three changes you need to do. For example via the my.cnf:
     sql-mode="STRICT_TRANS_TABLES"
 
 
+Heka configuration
+==================
+
+The default configuration in ichnaea.ini assumes that you are running
+a hekad instance listening on for UDP messages on port 5565.  This is
+a pretty standard heka configuration, so if you have any problems, you
+should consult the heka documentation to verify that messages are
+being captured properly by hekad.
+
+To get heka to log exceptions to Sentry, you will need to obtain the
+DSN for your Sentry instance.  Edit ichnaea.ini in the
+`heka_plugin_raven` section with your actual DSN and exceptions should
+start appearing in Sentry.
+
 Code
 ====
 

@@ -102,9 +102,8 @@ class AppTestCase(TestCase, DBIsolation):
         super(AppTestCase, cls).setup_engine()
 
         # Clobber the stream with a debug version
-        from heka.holder import get_client
-        heka_client = get_client('ichnaea')
-
+        from ichnaea.heka_logging import configure_heka
+        heka_client = configure_heka()
         use_hekatest(heka_client)
 
         cls.app = _make_app(_db_master=cls.db_master,
