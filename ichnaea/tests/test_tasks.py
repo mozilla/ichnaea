@@ -22,11 +22,16 @@ class TestCellLocationUpdate(CeleryTestCase):
         session = self.db_master_session
         k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
         k2 = dict(radio=1, mcc=1, mnc=2, lac=6, cid=8)
+        k3 = dict(radio=1, mcc=1, mnc=2, lac=-1, cid=-1)
         data = [
-            Cell(new_measures=3, total_measures=3, **k1),
+            Cell(new_measures=3, total_measures=5, **k1),
             CellMeasure(lat=10000000, lon=10000000, **k1),
             CellMeasure(lat=10020000, lon=10030000, **k1),
             CellMeasure(lat=10040000, lon=10060000, **k1),
+            # The lac, cid are invalid and should be skipped
+            CellMeasure(lat=15000000, lon=15000000, **k3),
+            CellMeasure(lat=15020000, lon=15030000, **k3),
+
             Cell(lat=20000000, lon=20000000,
                  new_measures=2, total_measures=4, **k2),
             # the lat/lon is bogus and mismatches the line above on purpose
@@ -35,6 +40,7 @@ class TestCellLocationUpdate(CeleryTestCase):
             CellMeasure(lat=-10000000, lon=-10000000, created=before, **k2),
             CellMeasure(lat=20020000, lon=20040000, **k2),
             CellMeasure(lat=20020000, lon=20040000, **k2),
+
         ]
         session.add_all(data)
         session.commit()

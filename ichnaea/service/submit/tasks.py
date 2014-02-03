@@ -29,6 +29,13 @@ CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
 
 
 def create_cell_measure(measure_data, entry):
+    # some phones send maxint32 to signal "unknown"
+    # convert to -1 as our canonical expression of "unknown"
+    if 'lac' not in entry or entry['lac'] >= 2147483647:
+        entry['lac'] = -1
+    if 'cid' not in entry or entry['cid'] >= 2147483647:
+        entry['cid'] = -1
+
     return CellMeasure(
         measure_id=measure_data['id'],
         created=decode_datetime(measure_data.get('created', '')),
@@ -38,14 +45,14 @@ def create_cell_measure(measure_data, entry):
         accuracy=measure_data.get('accuracy', 0),
         altitude=measure_data.get('altitude', 0),
         altitude_accuracy=measure_data.get('altitude_accuracy', 0),
-        mcc=entry['mcc'],
-        mnc=entry['mnc'],
+        mcc=entry.get('mcc', -1),
+        mnc=entry.get('mnc', -1),
         lac=entry.get('lac', -1),
         cid=entry.get('cid', -1),
         psc=entry.get('psc', -1),
         asu=entry.get('asu', -1),
-        signal=entry.get('signal', -1),
-        ta=entry.get('ta', -1),
+        signal=entry.get('signal', 0),
+        ta=entry.get('ta', 0),
     )
 
 

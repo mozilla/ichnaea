@@ -146,6 +146,7 @@ def backfill_cell_location_update(self, new_cell_measures):
 
 @celery.task(base=DatabaseTask, bind=True)
 def cell_location_update(self, min_new=10, max_new=100, batch=10):
+
     try:
         cells = []
         with self.db_session() as session:
@@ -158,6 +159,10 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
                 return 0
 
             for cell in cells:
+                # skip cells with a missing lac/cid
+                if cell.lac == -1 or cell.cid == -1:
+                    continue
+
                 query = session.query(
                     CellMeasure.lat, CellMeasure.lon).filter(
                     CellMeasure.radio == cell.radio).filter(

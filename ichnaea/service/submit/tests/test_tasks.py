@@ -53,7 +53,7 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([m.mnc for m in measures]), set([2]))
         self.assertEqual(set([m.asu for m in measures]), set([-1, 8, 15]))
         self.assertEqual(set([m.psc for m in measures]), set([-1, 5]))
-        self.assertEqual(set([m.signal for m in measures]), set([-1, -100]))
+        self.assertEqual(set([m.signal for m in measures]), set([0, -100]))
 
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 2)
@@ -76,6 +76,41 @@ class TestInsert(CeleryTestCase):
         # TODO this task isn't idempotent yet
         measures = session.query(CellMeasure).all()
         self.assertEqual(len(measures), 10)
+
+    def test_insert_invalid_lac(self):
+        from ichnaea.service.submit.tasks import insert_cell_measure
+        session = self.db_master_session
+        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
+
+        session.add(Cell(radio=0, mcc=1, mnc=2, lac=3, cid=4,
+                         new_measures=2, total_measures=5))
+        session.add(Score(userid=1, key=SCORE_TYPE['new_cell'], value=7))
+        session.flush()
+
+        measure = dict(
+            id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
+            time=encode_datetime(time), accuracy=0, altitude=0,
+            altitude_accuracy=0, radio=0,
+        )
+        entries = [
+            {"mcc": 1, "mnc": 2, "lac": 3147483647, "cid": 2147483647,
+             "psc": 5, "asu": 8},
+            {"mcc": 1, "mnc": 2, "lac": -1, "cid": -1,
+             "psc": 5, "asu": 8},
+        ]
+        result = insert_cell_measure.delay(measure, entries, userid=1)
+        self.assertEqual(result.get(), 2)
+
+        measures = session.query(CellMeasure).all()
+        self.assertEqual(len(measures), 2)
+        self.assertEqual(set([m.lac for m in measures]), set([-1]))
+        self.assertEqual(set([m.cid for m in measures]), set([-1]))
+
+        # Nothing should change in the initially created Cell record
+        cells = session.query(Cell).all()
+        self.assertEqual(len(cells), 1)
+        self.assertEqual(set([c.new_measures for c in cells]), set([2]))
+        self.assertEqual(set([c.total_measures for c in cells]), set([5]))
 
     def test_wifi(self):
         from ichnaea.service.submit.tasks import insert_wifi_measure

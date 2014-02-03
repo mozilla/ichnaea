@@ -315,7 +315,6 @@ class TestSubmit(CeleryAppTestCase):
             ]
         )
 
-
     def test_nickname_header(self):
         app = self.app
         nickname = 'World Tr\xc3\xa4veler'
