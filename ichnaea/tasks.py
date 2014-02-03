@@ -90,6 +90,62 @@ def remove_wifi(self, wifi_keys):
 
 
 @celery.task(base=DatabaseTask, bind=True)
+def backfill_cell_location_update(self, new_cell_measures):
+    try:
+        cells = []
+        with self.db_session() as session:
+            for tower_tuple, cell_measure_ids in new_cell_measures.items():
+                radio, mcc, mnc, lac, cid = tower_tuple
+                query = session.query(Cell).filter(
+                    Cell.radio == radio).filter(
+                    Cell.mcc == mcc).filter(
+                    Cell.mnc == mnc).filter(
+                    Cell.lac == lac).filter(
+                    Cell.cid == cid)
+
+                cells = query.all()
+
+                if not cells:
+                    # This case shouldn't actually occur.  The
+                    # backfill_cell_location_update is only called
+                    # when CellMeasure records are matched against
+                    # known Cell records.
+                    continue
+
+                for cell in cells:
+                    query = None
+
+                    measures = session.query(CellMeasure.lat,    # NOQA
+                                    CellMeasure.lon).filter(
+                                    CellMeasure.id.in_(
+                                        cell_measure_ids)).all()
+
+                    length = len(measures)
+                    new_lat = sum([w[0] for w in measures]) // length
+                    new_lon = sum([w[1] for w in measures]) // length
+                    if not (cell.lat or cell.lon):
+                        cell.lat = new_lat
+                        cell.lon = new_lon
+                    else:
+                        # pre-existing location data
+                        old_measures = cell.total_measures
+                        total_measures = cell.total_measures + length
+
+                        cell.lat = ((cell.lat * old_measures) +
+                                    (new_lat * length)) // total_measures
+                        cell.lon = ((cell.lon * old_measures) +
+                                    (new_lon * length)) // total_measures
+                        cell.total_measures = total_measures
+            session.commit()
+        return len(cells)
+    except IntegrityError as exc:  # pragma: no cover
+        logger.exception('error')
+        return 0
+    except Exception as exc:  # pragma: no cover
+        raise self.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, bind=True)
 def cell_location_update(self, min_new=10, max_new=100, batch=10):
     try:
         cells = []
@@ -98,8 +154,10 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
                 Cell.new_measures >= min_new).filter(
                 Cell.new_measures < max_new).limit(batch)
             cells = query.all()
+
             if not cells:
                 return 0
+
             for cell in cells:
                 query = session.query(
                     CellMeasure.lat, CellMeasure.lon).filter(
@@ -112,7 +170,9 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
                 query = query.order_by(
                     CellMeasure.created.desc()).limit(
                     cell.new_measures)
+
                 measures = query.all()
+
                 length = len(measures)
                 new_lat = sum([w[0] for w in measures]) // length
                 new_lon = sum([w[1] for w in measures]) // length

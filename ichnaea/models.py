@@ -48,7 +48,12 @@ class Cell(_Model):
                 primary_key=True, autoincrement=True)
     created = Column(DateTime)
     # lat/lon * decimaljson.FACTOR
+    max_lat = Column(Integer)
+    min_lat = Column(Integer)
     lat = Column(Integer)
+
+    max_lon = Column(Integer)
+    min_lon = Column(Integer)
     lon = Column(Integer)
     # mapped via RADIO_TYPE
     radio = Column(SmallInteger)
@@ -59,6 +64,7 @@ class Cell(_Model):
     mnc = Column(Integer)
     lac = Column(Integer)
     cid = Column(Integer)
+    psc = Column(Integer)
     range = Column(Integer)
     new_measures = Column(Integer(unsigned=True))
     total_measures = Column(Integer(unsigned=True))
