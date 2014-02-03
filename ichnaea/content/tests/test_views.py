@@ -72,10 +72,6 @@ class TestFunctionalContent(AppTestCase):
 
         # We should have caught at least one error here
         sentry_msgs = [m for m in msgs if m.type == 'sentry']
-        assert len(sentry_msgs) > 0
-
-        # We should have caught at least one error here
-        sentry_msgs = [m for m in msgs if m.type == 'sentry']
         self.assertTrue(len(sentry_msgs) > 0)
 
     def test_robots_txt(self):

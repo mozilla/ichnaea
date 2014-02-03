@@ -21,7 +21,7 @@ Heka configuration
 ==================
 
 The default configuration in ichnaea.ini assumes that you are running
-a hekad instance listening on for UDP messages on port 5565.  This is
+a hekad instance listening for UDP messages on port 5565.  This is
 a pretty standard heka configuration, so if you have any problems, you
 should consult the heka documentation to verify that messages are
 being captured properly by hekad.
