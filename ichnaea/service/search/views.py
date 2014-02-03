@@ -27,8 +27,9 @@ def search_cell(session, data):
     radio = RADIO_TYPE.get(data['radio'], -1)
     cells = []
     for cell in data['cell']:
-        if cell['lac'] == -1 or cell['cid'] == -1:
-            # Skip over invalid LAC and CID values
+        if cell['mcc'] < 1 or cell['mnc'] < 0 or \
+           cell['lac'] < 0 or cell['cid'] < 0:
+            # Skip over invalid values
             continue
 
         if cell.get('radio'):

@@ -29,6 +29,11 @@ CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
 
 
 def create_cell_measure(measure_data, entry):
+    # convert below-valid-range numbers to -1
+    if 'mcc' not in entry or entry['mcc'] < 1:
+        entry['mcc'] = -1
+    if 'mnc' not in entry or entry['mnc'] < 0:
+        entry['mnc'] = -1
     # some phones send maxint32 to signal "unknown"
     # convert to -1 as our canonical expression of "unknown"
     if 'lac' not in entry or entry['lac'] >= 2147483647:
@@ -58,7 +63,8 @@ def create_cell_measure(measure_data, entry):
 
 def update_cell_measure_count(cell_key, count, created, session):
     # only update data for complete record
-    if (cell_key.radio == -1 or cell_key.lac == -1 or cell_key.cid == -1):  # NOQA
+    if cell_key.radio < 0 or cell_key.mcc < 1 or cell_key.mnc < 0 or \
+       cell_key.lac < 0 or cell_key.cid < 0:  # NOQA
         return 0
 
     # do we already know about this cell?
