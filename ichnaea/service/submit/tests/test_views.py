@@ -209,9 +209,6 @@ class TestSubmit(CeleryAppTestCase):
         today = datetime.utcnow().date()
         for item in result:
             self.assertEqual(item.created.date(), today)
-            self.assertEqual(item.created.hour, 0)
-            self.assertEqual(item.created.minute, 0)
-            self.assertEqual(item.created.second, 0)
             if '"key": "a"' in item.wifi:
                 self.assertEqual(item.time, tday)
             else:

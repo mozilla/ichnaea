@@ -119,9 +119,9 @@ def process_time(measure, utcnow, utcmin):
     return measure
 
 
-def process_measure(data, utcday, session, userid=None):
+def process_measure(data, utcnow, session, userid=None):
     measure = Measure()
-    measure.created = utcday
+    measure.created = utcnow
     measure.time = data['time']
     measure.lat = to_precise_int(data['lat'])
     measure.lon = to_precise_int(data['lon'])
@@ -191,14 +191,13 @@ def submit_post(request):
     userid, nickname = process_user(nickname, session)
 
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
-    utcday = utcnow.date()
     utcmin = utcnow - datetime.timedelta(60)
 
     points = 0
     measures = []
     for item in request.validated['items']:
         item = process_time(item, utcnow, utcmin)
-        measure = process_measure(item, utcday, session, userid=userid)
+        measure = process_measure(item, utcnow, session, userid=userid)
         measures.append(measure)
         points += 1
 
