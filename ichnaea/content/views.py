@@ -127,11 +127,11 @@ class ContentViews(Layout):
         result = {'leaders': [], 'metrics': [], 'page_title': 'Statistics'}
         metrics = global_stats(session)
         metric_names = [
-            ('location', 'Locations'),
-            ('cell', 'Cells'),
             ('unique_cell', 'Unique Cells'),
-            ('wifi', 'Wifi APs'),
-            ('unique_wifi', 'Unique Wifi APs'),
+            ('cell', 'Cell Observations'),
+            ('unique_wifi', 'Unique Wifi Networks'),
+            ('wifi', 'Wifi Observations'),
+            ('location', 'Locations'),
         ]
         for mid, name in metric_names:
             result['metrics'].append({'name': name, 'value': metrics[mid]})

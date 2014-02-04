@@ -189,12 +189,13 @@ class TestFunctionalContentViews(AppTestCase):
         result = inst.stats_view()
         self.assertEqual(result['page_title'], 'Statistics')
         self.assertEqual(
-            result['metrics'],
-            [{'name': 'Locations', 'value': '3.00'},
-             {'name': 'Cells', 'value': '2.00'},
-             {'name': 'Unique Cells', 'value': '1.00'},
-             {'name': 'Wifi APs', 'value': '2.00'},
-             {'name': 'Unique Wifi APs', 'value': '2.00'}])
+            result['metrics'], [
+                {'name': 'Unique Cells', 'value': '1.00'},
+                {'name': 'Cell Observations', 'value': '2.00'},
+                {'name': 'Unique Wifi Networks', 'value': '2.00'},
+                {'name': 'Wifi Observations', 'value': '2.00'},
+                {'name': 'Locations', 'value': '3.00'},
+            ])
 
 
 class TestLayout(TestCase):
