@@ -112,6 +112,30 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([c.new_measures for c in cells]), set([2]))
         self.assertEqual(set([c.total_measures for c in cells]), set([5]))
 
+    def test_cell_out_of_range_values(self):
+        from ichnaea.service.submit.tasks import insert_cell_measure
+        session = self.db_master_session
+        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
+
+        measure = dict(
+            id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
+            time=encode_datetime(time), accuracy=0, altitude=0,
+            altitude_accuracy=0, radio=0, mcc=1, mnc=2, lac=3, cid=4,
+        )
+        entries = [
+            {"asu": 8, "signal": -70, "ta": 32},
+            {"asu": -10, "signal": -300, "ta": -10},
+            {"asu": 256, "signal": 16, "ta": 128},
+        ]
+        result = insert_cell_measure.delay(measure, entries)
+        self.assertEqual(result.get(), 3)
+
+        measures = session.query(CellMeasure).all()
+        self.assertEqual(len(measures), 3)
+        self.assertEqual(set([m.asu for m in measures]), set([-1, 8]))
+        self.assertEqual(set([m.signal for m in measures]), set([0, -70]))
+        self.assertEqual(set([m.ta for m in measures]), set([0, 32]))
+
     def test_wifi(self):
         from ichnaea.service.submit.tasks import insert_wifi_measure
         session = self.db_master_session

@@ -40,6 +40,13 @@ def create_cell_measure(measure_data, entry):
         entry['lac'] = -1
     if 'cid' not in entry or entry['cid'] >= 2147483647:
         entry['cid'] = -1
+    # make sure fields stay within reasonable bounds
+    if 'asu' in entry and (entry['asu'] < 0 or entry['asu'] > 100):
+        entry['asu'] = -1
+    if 'signal' in entry and (entry['signal'] < -200 or entry['signal'] > -1):
+        entry['signal'] = 0
+    if 'ta' in entry and (entry['ta'] < 0 or entry['ta'] > 100):
+        entry['ta'] = 0
 
     return CellMeasure(
         measure_id=measure_data['id'],
