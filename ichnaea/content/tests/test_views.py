@@ -175,7 +175,6 @@ class TestFunctionalContentViews(AppTestCase):
         day = datetime.utcnow().date() - timedelta(1)
         session = self.db_master_session
         stats = [
-            Stat(key=STAT_TYPE['location'], time=day, value=3000000),
             Stat(key=STAT_TYPE['cell'], time=day, value=2000000),
             Stat(key=STAT_TYPE['wifi'], time=day, value=2000000),
             Stat(key=STAT_TYPE['unique_cell'], time=day, value=1000000),
@@ -194,7 +193,6 @@ class TestFunctionalContentViews(AppTestCase):
                 {'name': 'Cell Observations', 'value': '2.00'},
                 {'name': 'Unique Wifi Networks', 'value': '2.00'},
                 {'name': 'Wifi Observations', 'value': '2.00'},
-                {'name': 'Locations', 'value': '3.00'},
             ])
 
 

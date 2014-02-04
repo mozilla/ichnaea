@@ -131,7 +131,6 @@ class ContentViews(Layout):
             ('cell', 'Cell Observations'),
             ('unique_wifi', 'Unique Wifi Networks'),
             ('wifi', 'Wifi Observations'),
-            ('location', 'Locations'),
         ]
         for mid, name in metric_names:
             result['metrics'].append({'name': name, 'value': metrics[mid]})

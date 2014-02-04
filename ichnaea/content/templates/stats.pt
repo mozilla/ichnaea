@@ -48,14 +48,6 @@
                 <div class="chart_x_axis"></div>
         </div>
     </div>
-    <div class="separator">
-        <h3>Locations</h3>
-        <div id="location_chart" class="chart_container">
-                <div class="chart_y_axis"></div>
-                <div class="chart"></div>
-                <div class="chart_x_axis"></div>
-        </div>
-    </div>
 </section>
 </tal:slot>
 

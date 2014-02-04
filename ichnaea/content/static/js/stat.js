@@ -147,7 +147,6 @@ function make_graph(url, graph_id) {
 }
 
 $(document).ready(function() {
-    make_graph('/stats_location.json', '#location_chart');
     make_graph('/stats_unique_cell.json', '#unique_cell_chart');
     make_graph('/stats_unique_wifi.json', '#unique_wifi_chart');
 });
