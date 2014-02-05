@@ -90,34 +90,33 @@ def remove_wifi(self, wifi_keys):
 
 
 def calculate_new_cell_position(cell, measures, backfill=True):
+    # if backfill is true, we work on older measures for which
+    # the new/total counters where never updated
     length = len(measures)
     new_lat = sum([w[0] for w in measures]) // length
     new_lon = sum([w[1] for w in measures]) // length
+
+    if backfill:
+        new_total = cell.total_measures + length
+        old_length = cell.total_measures
+        # update total to account for new measures
+        # new counter never got updated to include the measures
+        cell.total_measures = new_total
+    else:
+        new_total = cell.total_measures
+        old_length = new_total - cell.new_measures
+        # decrease new counter, total is already correct
+        cell.new_measures = Cell.new_measures - length
+
     if not (cell.lat or cell.lon):
         cell.lat = new_lat
         cell.lon = new_lon
     else:
-        if backfill:
-            # pre-existing location data
-            old_measures = cell.total_measures
-            total_measures = cell.total_measures + length
-
-            cell.lat = ((cell.lat * old_measures) +
-                        (new_lat * length)) // total_measures
-            cell.lon = ((cell.lon * old_measures) +
-                        (new_lon * length)) // total_measures
-            cell.total_measures = total_measures
-        else:
-            # pre-existing location data
-            total = cell.total_measures
-            old_length = total - cell.new_measures
-            cell.lat = ((cell.lat * old_length) +
-                        (new_lat * length)) // total
-            cell.lon = ((cell.lon * old_length) +
-                        (new_lon * length)) // total
-
-    if not backfill:
-        cell.new_measures = Cell.new_measures - length
+        # pre-existing location data
+        cell.lat = ((cell.lat * old_length) +
+                    (new_lat * length)) // new_total
+        cell.lon = ((cell.lon * old_length) +
+                    (new_lon * length)) // new_total
 
 
 @celery.task(base=DatabaseTask, bind=True)
@@ -148,7 +147,7 @@ def backfill_cell_location_update(self, new_cell_measures):
                         CellMeasure.lat, CellMeasure.lon).filter(
                         CellMeasure.id.in_(cell_measure_ids)).all()
 
-                    calculate_new_cell_position(cell, measures, True)
+                    calculate_new_cell_position(cell, measures, backfill=True)
 
             session.commit()
         return len(cells)
@@ -191,7 +190,7 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
                     cell.new_measures)
                 measures = query.all()
 
-                calculate_new_cell_position(cell, measures, False)
+                calculate_new_cell_position(cell, measures, backfill=False)
 
             session.commit()
         return len(cells)
