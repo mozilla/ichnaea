@@ -18,14 +18,6 @@ CELERY_IMPORTS = [
     'ichnaea.service.submit.tasks',
 ]
 
-CELERY_BROKER_DB_CLEANUP = {
-    'cleanup-kombu-message-table': {
-        'task': 'ichnaea.tasks.cleanup_kombu_message_table',
-        'schedule': timedelta(seconds=900),
-        'args': (0, ),
-    }
-}
-
 CELERYBEAT_SCHEDULE = {
     'histogram-yesterday': {
         'task': 'ichnaea.content.tasks.histogram',
@@ -150,8 +142,6 @@ def configure(celery=celery):
             broker_connect_args['unix_socket'] = broker_socket
         broker_options = database_options.copy()
         broker_options['connect_args'] = broker_connect_args
-        # add kombu_message cleanup task
-        CELERYBEAT_SCHEDULE.update(CELERY_BROKER_DB_CLEANUP)
     elif 'redis' in broker_url:
         broker_options = {}
         broker_options['fanout_prefix'] = True

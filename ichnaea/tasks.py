@@ -3,7 +3,6 @@ from datetime import timedelta
 
 from celery import Task
 from celery.utils.log import get_task_logger
-from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from ichnaea.db import db_worker_session
@@ -54,22 +53,6 @@ def daily_task_days(ago):
     day = today - timedelta(days=ago)
     max_day = day + timedelta(days=1)
     return day, max_day
-
-
-@celery.task(base=DatabaseTask, bind=True)  # pragma: no cover
-def cleanup_kombu_message_table(self, ago=0):
-    now = datetime.utcnow()
-    now = now.replace(second=0, microsecond=0)
-    now -= timedelta(days=ago)
-    # by default retain the last 15 minutes of processed tasks
-    now -= timedelta(minutes=15)
-    stmt = text(
-        'delete from kombu_message where visible = 0 and '
-        'timestamp < "%s" limit 50000;' % now.isoformat()
-    )
-    with self.db_session() as session:
-        session.execute(stmt)
-        session.commit()
 
 
 @celery.task(base=DatabaseTask, bind=True)
