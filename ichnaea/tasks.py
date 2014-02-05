@@ -89,6 +89,37 @@ def remove_wifi(self, wifi_keys):
         raise self.retry(exc=exc)
 
 
+def calculate_new_cell_position(cell, measures, backfill=True):
+    length = len(measures)
+    new_lat = sum([w[0] for w in measures]) // length
+    new_lon = sum([w[1] for w in measures]) // length
+    if not (cell.lat or cell.lon):
+        cell.lat = new_lat
+        cell.lon = new_lon
+    else:
+        if backfill:
+            # pre-existing location data
+            old_measures = cell.total_measures
+            total_measures = cell.total_measures + length
+
+            cell.lat = ((cell.lat * old_measures) +
+                        (new_lat * length)) // total_measures
+            cell.lon = ((cell.lon * old_measures) +
+                        (new_lon * length)) // total_measures
+            cell.total_measures = total_measures
+        else:
+            # pre-existing location data
+            total = cell.total_measures
+            old_length = total - cell.new_measures
+            cell.lat = ((cell.lat * old_length) +
+                        (new_lat * length)) // total
+            cell.lon = ((cell.lon * old_length) +
+                        (new_lon * length)) // total
+
+    if not backfill:
+        cell.new_measures = Cell.new_measures - length
+
+
 @celery.task(base=DatabaseTask, bind=True)
 def backfill_cell_location_update(self, new_cell_measures):
     try:
@@ -113,28 +144,12 @@ def backfill_cell_location_update(self, new_cell_measures):
                     continue
 
                 for cell in cells:
-                    query = None
-
                     measures = session.query(  # NOQA
                         CellMeasure.lat, CellMeasure.lon).filter(
                         CellMeasure.id.in_(cell_measure_ids)).all()
 
-                    length = len(measures)
-                    new_lat = sum([w[0] for w in measures]) // length
-                    new_lon = sum([w[1] for w in measures]) // length
-                    if not (cell.lat or cell.lon):
-                        cell.lat = new_lat
-                        cell.lon = new_lon
-                    else:
-                        # pre-existing location data
-                        old_measures = cell.total_measures
-                        total_measures = cell.total_measures + length
+                    calculate_new_cell_position(cell, measures, True)
 
-                        cell.lat = ((cell.lat * old_measures) +
-                                    (new_lat * length)) // total_measures
-                        cell.lon = ((cell.lon * old_measures) +
-                                    (new_lon * length)) // total_measures
-                        cell.total_measures = total_measures
             session.commit()
         return len(cells)
     except IntegrityError as exc:  # pragma: no cover
@@ -174,24 +189,10 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
                 query = query.order_by(
                     CellMeasure.created.desc()).limit(
                     cell.new_measures)
-
                 measures = query.all()
 
-                length = len(measures)
-                new_lat = sum([w[0] for w in measures]) // length
-                new_lon = sum([w[1] for w in measures]) // length
-                if not (cell.lat or cell.lon):
-                    cell.lat = new_lat
-                    cell.lon = new_lon
-                else:
-                    # pre-existing location data
-                    total = cell.total_measures
-                    old_length = total - cell.new_measures
-                    cell.lat = ((cell.lat * old_length) +
-                                (new_lat * length)) // total
-                    cell.lon = ((cell.lon * old_length) +
-                                (new_lon * length)) // total
-                cell.new_measures = Cell.new_measures - length
+                calculate_new_cell_position(cell, measures, False)
+
             session.commit()
         return len(cells)
     except IntegrityError as exc:  # pragma: no cover
