@@ -134,6 +134,45 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.assertEqual(wifis[k2].lon, 20020000)
         self.assertEqual(wifis[k2].new_measures, 0)
 
+    def test_wifi_max_min_update(self):
+        from ichnaea.tasks import wifi_location_update
+        session = self.db_master_session
+        k1 = "ab1234567890"
+        k2 = "cd1234567890"
+        data = [
+            Wifi(key=k1, new_measures=2, total_measures=2),
+            WifiMeasure(lat=10000000, lon=10000000, key=k1),
+            WifiMeasure(lat=10020000, lon=10040000, key=k1),
+            Wifi(key=k2, lat=20000000, lon=-20000000,
+                 max_lat=20010000, min_lat=19990000,
+                 max_lon=-19990000, min_lon=-20010000,
+                 new_measures=2, total_measures=4),
+            WifiMeasure(lat=20020000, lon=-20040000, key=k2),
+            WifiMeasure(lat=19980000, lon=-19960000, key=k2),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        result = wifi_location_update.delay(min_new=1)
+        self.assertEqual(result.get(), (2, 0))
+
+        wifis = dict(session.query(Wifi.key, Wifi).all())
+        self.assertEqual(set(wifis.keys()), set([k1, k2]))
+
+        self.assertEqual(wifis[k1].lat, 10010000)
+        self.assertEqual(wifis[k1].max_lat, 10020000)
+        self.assertEqual(wifis[k1].min_lat, 10000000)
+        self.assertEqual(wifis[k1].lon, 10020000)
+        self.assertEqual(wifis[k1].max_lon, 10040000)
+        self.assertEqual(wifis[k1].min_lon, 10000000)
+
+        self.assertEqual(wifis[k2].lat, 20000000)
+        self.assertEqual(wifis[k2].max_lat, 20020000)
+        self.assertEqual(wifis[k2].min_lat, 19980000)
+        self.assertEqual(wifis[k2].lon, -20000000)
+        self.assertEqual(wifis[k2].max_lon, -19960000)
+        self.assertEqual(wifis[k2].min_lon, -20040000)
+
     def test_blacklist_moving_wifis(self):
         from ichnaea.tasks import wifi_location_update
         now = datetime.utcnow()

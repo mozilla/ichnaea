@@ -252,6 +252,22 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
                                 (new_lat * length)) // total
                     wifi.lon = ((wifi.lon * old_length) +
                                 (new_lon * length)) // total
+
+                # update max/min lat/lon columns
+                extremes = {
+                    'max_lat': (max, latitudes),
+                    'min_lat': (min, latitudes),
+                    'max_lon': (max, longitudes),
+                    'min_lon': (min, longitudes),
+                }
+                for name, (func, values) in extremes.items():
+                    new = func(values)
+                    old = getattr(wifi, name, None)
+                    if old is not None:
+                        setattr(wifi, name, func(old, new))
+                    else:
+                        setattr(wifi, name, new)
+
                 wifi.new_measures = Wifi.new_measures - length
             if moving_keys:
                 # some wifi's found to be moving too much
