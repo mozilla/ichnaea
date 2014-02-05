@@ -93,8 +93,10 @@ def calculate_new_cell_position(cell, measures, backfill=True):
     # if backfill is true, we work on older measures for which
     # the new/total counters where never updated
     length = len(measures)
-    new_lat = sum([w[0] for w in measures]) // length
-    new_lon = sum([w[1] for w in measures]) // length
+    latitudes = [w[0] for w in measures]
+    longitudes = [w[1] for w in measures]
+    new_lat = sum(latitudes) // length
+    new_lon = sum(longitudes) // length
 
     if backfill:
         new_total = cell.total_measures + length
@@ -117,6 +119,9 @@ def calculate_new_cell_position(cell, measures, backfill=True):
                     (new_lat * length)) // new_total
         cell.lon = ((cell.lon * old_length) +
                     (new_lon * length)) // new_total
+
+    # update max/min lat/lon columns
+    update_extreme_values(cell, latitudes, longitudes)
 
 
 @celery.task(base=DatabaseTask, bind=True)

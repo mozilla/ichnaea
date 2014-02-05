@@ -88,6 +88,35 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(cell.lon, 10030000)
         self.assertEqual(cell.total_measures, 3)
 
+    def test_cell_max_min_update(self):
+        from ichnaea.tasks import cell_location_update
+        session = self.db_master_session
+
+        k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
+        data = [
+            Cell(lat=10010000, lon=-10010000,
+                 max_lat=10020000, min_lat=10000000,
+                 max_lon=-10000000, min_lon=-10020000,
+                 new_measures=2, total_measures=4, **k1),
+            CellMeasure(lat=10010000, lon=-10030000, **k1),
+            CellMeasure(lat=10050000, lon=-10070000, **k1),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        result = cell_location_update.delay(min_new=1)
+        self.assertEqual(result.get(), 1)
+
+        cells = session.query(Cell).all()
+        self.assertEqual(len(cells), 1)
+        cell = cells[0]
+        self.assertEqual(cell.lat, 10020000)
+        self.assertEqual(cell.max_lat, 10050000)
+        self.assertEqual(cell.min_lat, 10000000)
+        self.assertEqual(cell.lon, -10030000)
+        self.assertEqual(cell.max_lon, -10000000)
+        self.assertEqual(cell.min_lon, -10070000)
+
 
 class TestWifiLocationUpdate(CeleryTestCase):
 
