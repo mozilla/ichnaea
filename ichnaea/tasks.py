@@ -72,6 +72,23 @@ def remove_wifi(self, wifi_keys):
         raise self.retry(exc=exc)
 
 
+def update_extreme_values(model, latitudes, longitudes):
+    # update max/min lat/lon columns
+    extremes = {
+        'max_lat': (max, latitudes),
+        'min_lat': (min, latitudes),
+        'max_lon': (max, longitudes),
+        'min_lon': (min, longitudes),
+    }
+    for name, (func, values) in extremes.items():
+        new = func(values)
+        old = getattr(model, name, None)
+        if old is not None:
+            setattr(model, name, func(old, new))
+        else:
+            setattr(model, name, new)
+
+
 def calculate_new_cell_position(cell, measures, backfill=True):
     # if backfill is true, we work on older measures for which
     # the new/total counters where never updated
@@ -253,22 +270,11 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
                     wifi.lon = ((wifi.lon * old_length) +
                                 (new_lon * length)) // total
 
-                # update max/min lat/lon columns
-                extremes = {
-                    'max_lat': (max, latitudes),
-                    'min_lat': (min, latitudes),
-                    'max_lon': (max, longitudes),
-                    'min_lon': (min, longitudes),
-                }
-                for name, (func, values) in extremes.items():
-                    new = func(values)
-                    old = getattr(wifi, name, None)
-                    if old is not None:
-                        setattr(wifi, name, func(old, new))
-                    else:
-                        setattr(wifi, name, new)
-
+                # decrease new value to mark as done
                 wifi.new_measures = Wifi.new_measures - length
+                # update max/min lat/lon columns
+                update_extreme_values(wifi, latitudes, longitudes)
+
             if moving_keys:
                 # some wifi's found to be moving too much
                 mark_moving_wifis(session, moving_keys)
