@@ -24,15 +24,14 @@ class TestStats(CeleryTestCase):
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
-        wifi = '[{"key": "a"}]'
         measures = [
-            Measure(lat=10000000, lon=20000000, created=today, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=today, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=yesterday, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=two_days, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=two_days, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=two_days, wifi=wifi),
-            Measure(lat=10000000, lon=20000000, created=long_ago, wifi=wifi),
+            Measure(lat=10000000, lon=20000000, created=today),
+            Measure(lat=10000000, lon=20000000, created=today),
+            Measure(lat=10000000, lon=20000000, created=yesterday),
+            Measure(lat=10000000, lon=20000000, created=two_days),
+            Measure(lat=10000000, lon=20000000, created=two_days),
+            Measure(lat=10000000, lon=20000000, created=two_days),
+            Measure(lat=10000000, lon=20000000, created=long_ago),
         ]
         session.add_all(measures)
         session.commit()

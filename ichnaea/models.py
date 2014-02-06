@@ -256,9 +256,6 @@ class Measure(_Model):
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)
     radio = Column(SmallInteger)  # mapped via RADIO_TYPE
-    # json blobs
-    cell = Column(LargeBinary)
-    wifi = Column(LargeBinary)
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:

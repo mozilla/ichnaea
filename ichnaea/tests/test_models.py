@@ -171,8 +171,7 @@ class TestMeasure(DBTestCase):
         self.assertTrue(measure.id is None)
 
     def test_fields(self):
-        measure = self._make_one(
-            lat=12345678, lon=23456789, cell="[]", wifi="[]")
+        measure = self._make_one(lat=12345678, lon=23456789)
         session = self.db_master_session
         session.add(measure)
         session.commit()
@@ -181,5 +180,3 @@ class TestMeasure(DBTestCase):
         self.assertTrue(isinstance(result.created, datetime.datetime))
         self.assertEqual(result.lat, 12345678)
         self.assertEqual(result.lon, 23456789)
-        self.assertEqual(result.cell, "[]")
-        self.assertEqual(result.wifi, "[]")

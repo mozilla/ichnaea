@@ -146,7 +146,6 @@ def process_measure(data, utcnow, session, userid=None):
     )
     if data.get('cell'):
         insert_cell_measure.delay(measure_data, data['cell'], userid=userid)
-        measure.cell = dumps(data['cell'])
     if data.get('wifi'):
         # filter out old-style sha1 hashes
         too_long_keys = False
@@ -158,7 +157,6 @@ def process_measure(data, utcnow, session, userid=None):
         if not too_long_keys:
             insert_wifi_measure.delay(
                 measure_data, data['wifi'], userid=userid)
-            measure.wifi = dumps(data['wifi'])
     return measure
 
 

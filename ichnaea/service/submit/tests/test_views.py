@@ -52,17 +52,6 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.altitude, 123)
         self.assertEqual(item.altitude_accuracy, 7)
         self.assertEqual(item.radio, RADIO_TYPE['gsm'])
-        # colander schema adds default value
-        cell_data[0]['psc'] = -1
-        cell_data[0]['asu'] = -1
-        cell_data[0]['signal'] = 0
-        cell_data[0]['ta'] = 0
-
-        wanted = loads(item.cell)
-        self.assertTrue(len(wanted), 1)
-        self.assertTrue(len(cell_data), 1)
-        self.assertDictEqual(wanted[0], cell_data[0])
-        self.assertTrue(item.wifi is None)
 
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 1)
@@ -123,9 +112,6 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.accuracy, 17)
         self.assertEqual(item.altitude, 0)
         self.assertEqual(item.altitude_accuracy, 0)
-        self.assertTrue('"key": "ab12"' in item.wifi)
-        self.assertTrue('"key": "cd34"' in item.wifi)
-        self.assertTrue(item.cell is None)
 
         wifi_result = session.query(WifiMeasure).all()
         self.assertEqual(len(wifi_result), 2)
@@ -164,20 +150,18 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        result = session.query(Measure).all()
-        self.assertEqual(len(result), 1)
-        item = result[0]
-        measure_wifi = loads(item.wifi)
-        measure_wifi = dict([(m['key'], m) for m in measure_wifi])
-        for k, v in measure_wifi.items():
-            self.assertFalse('frequency' in v)
-        self.assertEqual(measure_wifi['99']['channel'], 0)
-        self.assertEqual(measure_wifi['aa']['channel'], 4)
-        self.assertEqual(measure_wifi['bb']['channel'], 7)
-        self.assertEqual(measure_wifi['cc']['channel'], 40)
-        self.assertEqual(measure_wifi['dd']['channel'], 140)
-        self.assertEqual(measure_wifi['ee']['channel'], 0)
-        self.assertEqual(measure_wifi['ff']['channel'], 9)
+
+        result = session.query(WifiMeasure).all()
+        self.assertEqual(len(result), 7)
+
+        wifis = dict([(w.key, w.channel) for w in result])
+        self.assertEqual(wifis['99'], 0)
+        self.assertEqual(wifis['aa'], 4)
+        self.assertEqual(wifis['bb'], 7)
+        self.assertEqual(wifis['cc'], 40)
+        self.assertEqual(wifis['dd'], 140)
+        self.assertEqual(wifis['ee'], 0)
+        self.assertEqual(wifis['ff'], 9)
 
     def test_batches(self):
         app = self.app
@@ -204,15 +188,17 @@ class TestSubmit(CeleryAppTestCase):
             ]},
             status=204)
         session = self.db_master_session
-        result = session.query(Measure).all()
+        result = session.query(WifiMeasure).all()
         self.assertEqual(len(result), 2)
+
+        wifis = dict([(w.key, (w.created, w.time)) for w in result])
         today = datetime.utcnow().date()
-        for item in result:
-            self.assertEqual(item.created.date(), today)
-            if '"key": "a"' in item.wifi:
-                self.assertEqual(item.time, tday)
-            else:
-                self.assertEqual(item.time.date(), today)
+
+        self.assertEqual(wifis['a'][0].date(), today)
+        self.assertEqual(wifis['a'][1], tday)
+
+        self.assertEqual(wifis['b'][0].date(), today)
+        self.assertEqual(wifis['b'][1].date(), today)
 
     def test_time_short_format(self):
         app = self.app
@@ -425,8 +411,6 @@ class TestSubmit(CeleryAppTestCase):
         item = measure_result[0]
         self.assertEqual(item.lat, 123456781)
         self.assertEqual(item.lon, 234567892)
-        self.assertTrue(item.cell is None)
-        self.assertTrue(item.wifi is None)
 
     def test_no_json(self):
         app = self.app
