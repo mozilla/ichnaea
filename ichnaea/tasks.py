@@ -156,7 +156,9 @@ def backfill_cell_location_update(self, new_cell_measures):
                         CellMeasure.lat, CellMeasure.lon).filter(
                         CellMeasure.id.in_(cell_measure_ids)).all()
 
-                    calculate_new_cell_position(cell, measures, backfill=True)
+                    if measures:
+                        calculate_new_cell_position(
+                            cell, measures, backfill=True)
 
             session.commit()
         return len(cells)
@@ -199,7 +201,8 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
                     cell.new_measures)
                 measures = query.all()
 
-                calculate_new_cell_position(cell, measures, backfill=False)
+                if measures:
+                    calculate_new_cell_position(cell, measures, backfill=False)
 
             session.commit()
         return len(cells)
