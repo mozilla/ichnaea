@@ -157,43 +157,42 @@ def process_measure(data, utcnow, session, userid=None):
     return measure
 
 
+def process_measures(items, session, userid=None):
+    utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
+    utcmin = utcnow - datetime.timedelta(60)
+
+    positions = []
+    for item in items:
+        item = process_time(item, utcnow, utcmin)
+        process_measure(item, utcnow, session, userid=userid)
+        positions.append({
+            'lat': to_precise_int(item['lat']),
+            'lon': to_precise_int(item['lon']),
+        })
+
+    if userid is not None:
+        process_score(userid, len(items), session)
+    if positions:
+        process_mapstat(positions, session, userid=userid)
+
+
 @celery.task(base=DatabaseTask, bind=True)
 def insert_measures(self, items=None, nickname=''):
     if not items:  # pragma: no cover
         return 0
     # TODO manually decode payload from our custom json
     items = loads(items)
-
-    points = 0
-    measures = []
-
-    utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
-    utcmin = utcnow - datetime.timedelta(60)
+    length = len(items)
 
     try:
         with self.db_session() as session:
             userid, nickname = process_user(nickname, session)
 
-            positions = []
-            for item in items:
-                item = process_time(item, utcnow, utcmin)
-                measure = process_measure(item, utcnow, session, userid=userid)
-                measures.append(measure)
-                positions.append({
-                    'lat': to_precise_int(item['lat']),
-                    'lon': to_precise_int(item['lon']),
-                })
-                points += 1
-
-            self.heka_client.incr("items.uploaded", count=len(measures))
-
-            if userid is not None:
-                process_score(userid, points, session)
-            if measures:
-                process_mapstat(positions, session, userid=userid)
+            process_measures(items, session, userid=userid)
+            self.heka_client.incr("items.uploaded", count=length)
 
             session.commit()
-        return len(measures)
+        return length
     except IntegrityError as exc:  # pragma: no cover
         logger.exception('error')
         return 0

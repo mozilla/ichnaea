@@ -7,16 +7,11 @@ from colander import iso8601
 
 from ichnaea import config
 from ichnaea.db import Database
-from ichnaea.decimaljson import to_precise_int
 from ichnaea.models import normalize_wifi_key
-from ichnaea.service.submit.tasks import (
-    process_mapstat,
-    process_measure,
-)
-from ichnaea.service.submit.utils import process_score
+from ichnaea.service.submit.tasks import process_measures
 
 
-def load_file(session, source_file, batch_size=1000, userid=None):
+def load_file(session, source_file, batch_size=100, userid=None):
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
     utcmin = utcnow - datetime.timedelta(120)
 
@@ -24,8 +19,7 @@ def load_file(session, source_file, batch_size=1000, userid=None):
         reader = csv.reader(fd, delimiter='\t', quotechar=None)
 
         counter = 0
-        measures = []
-        positions = []
+        items = []
         for fields in reader:
             try:
                 time = int(fields[0])
@@ -62,30 +56,20 @@ def load_file(session, source_file, batch_size=1000, userid=None):
                 )
             except (ValueError, IndexError):
                 continue
-            # side effect, schedules async tasks
-            measure = process_measure(data, utcnow, session, userid=userid)
-            measures.append(measure)
-            positions.append({
-                'lat': to_precise_int(lat),
-                'lon': to_precise_int(lon),
-            })
+
+            items.append(data)
             counter += 1
 
             # flush every batch_size records
             if counter % batch_size == 0:
-                process_mapstat(positions, session, userid=userid)
+                process_measures(items, session, userid=userid)
+                items = []
                 session.flush()
-                measures = []
-                positions = []
                 print('Added %s records.' % counter)
 
-    # process the remaining measures
-    if positions:
-        process_mapstat(positions, session, userid=userid)
-        print('Added %s records.' % len(positions))
-
-    if userid is not None:
-        process_score(userid, counter, session)
+    # process the remaining items
+    process_measures(items, session, userid=userid)
+    print('Added %s records.' % counter)
 
     session.flush()
     return counter
