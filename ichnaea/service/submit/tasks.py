@@ -123,13 +123,8 @@ def process_time(measure, utcnow, utcmin):
     return measure
 
 
-def process_measure(data, utcnow, session, userid=None):
-    measure = Measure()
-    measure.created = utcnow
+def process_measure(measure, data, session, userid=None):
     measure.radio = RADIO_TYPE.get(data['radio'], -1)
-    # get measure.id set
-    session.add(measure)
-    session.flush()
     measure_data = dict(
         id=measure.id,
         created=encode_datetime(measure.created),
@@ -161,10 +156,21 @@ def process_measures(items, session, userid=None):
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
     utcmin = utcnow - datetime.timedelta(60)
 
+    # get enough auto-increment ids assigned
+    measures = []
+    for i in range(len(items)):
+        measure = Measure(created=utcnow)
+        measure.created = utcnow
+        measures.append(measure)
+        session.add(measure)
+    # TODO switch unique measure id to a uuid, so we don't have to do
+    # get these from a savepoint here
+    session.flush()
+
     positions = []
-    for item in items:
+    for i, item in enumerate(items):
         item = process_time(item, utcnow, utcmin)
-        process_measure(item, utcnow, session, userid=userid)
+        process_measure(measures[i], item, session, userid=userid)
         positions.append({
             'lat': to_precise_int(item['lat']),
             'lon': to_precise_int(item['lon']),
