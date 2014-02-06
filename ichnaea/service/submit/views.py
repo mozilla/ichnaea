@@ -41,10 +41,14 @@ submit = Service(
              schema=SubmitSchema, error_handler=error_handler,
              validators=submit_validator)
 def submit_post(request):
-    # TODO manually convert items to json with support for decimal/datetime
-    items = dumps(request.validated['items'])
-    insert_measures.delay(
-        items=items,
-        nickname=request.headers.get('X-Nickname', ''),
-    )
+    items = request.validated['items']
+    nickname = request.headers.get('X-Nickname', '')
+    # batch incoming data into multiple tasks, in case someone
+    # manages to submit us a huge single request
+    for i in range(0, len(items), 100):
+        insert_measures.delay(
+            # TODO convert items to json with support for decimal/datetime
+            items=dumps(items[i:i + 100]),
+            nickname=nickname,
+        )
     return HTTPNoContent()
