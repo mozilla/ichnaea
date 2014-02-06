@@ -166,7 +166,6 @@ def insert_measures(self, items=None, nickname=''):
 
     points = 0
     measures = []
-    session_objects = []
 
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
     utcmin = utcnow - datetime.timedelta(60)
@@ -193,7 +192,6 @@ def insert_measures(self, items=None, nickname=''):
             if measures:
                 process_mapstat(positions, session, userid=userid)
 
-            session.add_all(session_objects)
             session.commit()
         return len(measures)
     except IntegrityError as exc:  # pragma: no cover
