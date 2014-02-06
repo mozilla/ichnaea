@@ -4,7 +4,6 @@ from sqlalchemy import (
     Column,
     DateTime,
     Index,
-    LargeBinary,
     SmallInteger,
     String,
     UniqueConstraint,
@@ -251,10 +250,6 @@ class Measure(_Model):
     # lat/lon * decimaljson.FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
-    time = Column(DateTime)  # the time of observation of this data
-    accuracy = Column(Integer)
-    altitude = Column(Integer)
-    altitude_accuracy = Column(Integer)
     radio = Column(SmallInteger)  # mapped via RADIO_TYPE
 
     def __init__(self, *args, **kw):

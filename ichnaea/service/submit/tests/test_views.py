@@ -15,7 +15,6 @@ from ichnaea.models import (
     WifiMeasure,
 )
 from ichnaea.decimaljson import encode_datetime
-from ichnaea.decimaljson import loads
 from ichnaea.tests.base import CeleryAppTestCase, find_msg
 
 from heka.holder import get_client
@@ -46,11 +45,6 @@ class TestSubmit(CeleryAppTestCase):
         measure_result = session.query(Measure).all()
         self.assertEqual(len(measure_result), 1)
         item = measure_result[0]
-        self.assertEqual(item.lat, 123456781)
-        self.assertEqual(item.lon, 234567892)
-        self.assertEqual(item.accuracy, 10)
-        self.assertEqual(item.altitude, 123)
-        self.assertEqual(item.altitude_accuracy, 7)
         self.assertEqual(item.radio, RADIO_TYPE['gsm'])
 
         cell_result = session.query(CellMeasure).all()
@@ -83,8 +77,6 @@ class TestSubmit(CeleryAppTestCase):
         measure_result = session.query(Measure).all()
         self.assertEqual(len(measure_result), 1)
         item = measure_result[0]
-        self.assertEqual(item.lat, 123456781)
-        self.assertEqual(item.lon, 234567892)
         self.assertEqual(item.radio, RADIO_TYPE['gsm'])
 
         cell_result = session.query(CellMeasure).all()
@@ -107,11 +99,6 @@ class TestSubmit(CeleryAppTestCase):
         measure_result = session.query(Measure).all()
         self.assertEqual(len(measure_result), 1)
         item = measure_result[0]
-        self.assertEqual(item.lat, 123456781)
-        self.assertEqual(item.lon, 234567892)
-        self.assertEqual(item.accuracy, 17)
-        self.assertEqual(item.altitude, 0)
-        self.assertEqual(item.altitude_accuracy, 0)
 
         wifi_result = session.query(WifiMeasure).all()
         self.assertEqual(len(wifi_result), 2)
@@ -211,7 +198,7 @@ class TestSubmit(CeleryAppTestCase):
             ]},
             status=204)
         session = self.db_master_session
-        result = session.query(Measure).all()
+        result = session.query(WifiMeasure).all()
         self.assertEqual(len(result), 1)
         result_time = result[0].time
         self.assertEqual(result_time.date(), time)
@@ -226,13 +213,12 @@ class TestSubmit(CeleryAppTestCase):
         app.post_json(
             '/v1/submit', {"items": [
                 {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}], "time": time},
-                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
             ]},
             status=204)
         session = self.db_master_session
-        result = session.query(Measure).all()
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0].time, result[1].time)
+        result = session.query(WifiMeasure).all()
+        self.assertEqual(len(result), 1)
+        self.assertNotEqual(result[0].time.year, 2070)
 
     def test_time_past(self):
         app = self.app
@@ -240,13 +226,12 @@ class TestSubmit(CeleryAppTestCase):
         app.post_json(
             '/v1/submit', {"items": [
                 {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}], "time": time},
-                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
             ]},
             status=204)
         session = self.db_master_session
-        result = session.query(Measure).all()
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0].time, result[1].time)
+        result = session.query(WifiMeasure).all()
+        self.assertEqual(len(result), 1)
+        self.assertNotEqual(result[0].time, 2011)
 
     def test_mapstat(self):
         app = self.app
@@ -406,11 +391,9 @@ class TestSubmit(CeleryAppTestCase):
                                       "wifi": wifi_data}]},
             status=204)
         session = self.db_master_session
-        measure_result = session.query(Measure).all()
-        self.assertEqual(len(measure_result), 1)
-        item = measure_result[0]
-        self.assertEqual(item.lat, 123456781)
-        self.assertEqual(item.lon, 234567892)
+        result = session.query(WifiMeasure).all()
+        # if any of the keys is too long, the entire batch gets rejected
+        self.assertEqual(len(result), 0)
 
     def test_no_json(self):
         app = self.app

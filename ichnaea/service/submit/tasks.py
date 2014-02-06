@@ -25,7 +25,6 @@ from ichnaea.models import (
     WifiMeasure,
 )
 from ichnaea.decimaljson import (
-    dumps,
     loads,
     decode_datetime,
     encode_datetime,
@@ -127,21 +126,21 @@ def process_time(measure, utcnow, utcmin):
 def process_measure(data, utcnow, session, userid=None):
     measure = Measure()
     measure.created = utcnow
-    measure.time = data['time']
     measure.lat = to_precise_int(data['lat'])
     measure.lon = to_precise_int(data['lon'])
-    measure.accuracy = data['accuracy']
-    measure.altitude = data['altitude']
-    measure.altitude_accuracy = data['altitude_accuracy']
     measure.radio = RADIO_TYPE.get(data['radio'], -1)
     # get measure.id set
     session.add(measure)
     session.flush()
     measure_data = dict(
-        id=measure.id, created=encode_datetime(measure.created),
-        lat=measure.lat, lon=measure.lon, time=encode_datetime(measure.time),
-        accuracy=measure.accuracy, altitude=measure.altitude,
-        altitude_accuracy=measure.altitude_accuracy,
+        id=measure.id,
+        created=encode_datetime(measure.created),
+        lat=measure.lat,
+        lon=measure.lon,
+        time=encode_datetime(data['time']),
+        accuracy=data['accuracy'],
+        altitude=data['altitude'],
+        altitude_accuracy=data['altitude_accuracy'],
         radio=measure.radio,
     )
     if data.get('cell'):

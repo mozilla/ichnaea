@@ -171,12 +171,11 @@ class TestMeasure(DBTestCase):
         self.assertTrue(measure.id is None)
 
     def test_fields(self):
-        measure = self._make_one(lat=12345678, lon=23456789)
+        measure = self._make_one(radio=1)
         session = self.db_master_session
         session.add(measure)
         session.commit()
 
         result = session.query(measure.__class__).first()
         self.assertTrue(isinstance(result.created, datetime.datetime))
-        self.assertEqual(result.lat, 12345678)
-        self.assertEqual(result.lon, 23456789)
+        self.assertEqual(result.radio, 1)
