@@ -8,11 +8,11 @@ from colander import iso8601
 from ichnaea import config
 from ichnaea.db import Database
 from ichnaea.models import normalize_wifi_key
-from ichnaea.service.submit.views import (
-    process_score,
+from ichnaea.service.submit.tasks import (
     process_mapstat,
     process_measure,
 )
+from ichnaea.service.submit.utils import process_score
 
 
 def load_file(session, source_file, batch_size=1000, userid=None):

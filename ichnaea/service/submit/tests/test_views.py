@@ -454,12 +454,15 @@ class TestSubmit(CeleryAppTestCase):
         2) counter for items.uploaded
         3) timer to respond
         4) timer for "insert_cell_measure"
+        5) timer for "insert_measures"
         """
 
         msgs = self.heka_client.stream.msgs
-        self.assertEqual(4, len(msgs))
+        self.assertEqual(5, len(msgs))
         self.assertEqual(1, len(find_msg(msgs, 'counter', 'http.request')))
         self.assertEqual(1, len(find_msg(msgs, 'counter', 'items.uploaded')))
         self.assertEqual(1, len(find_msg(msgs, 'timer', 'http.request')))
         taskname = 'task.service.submit.insert_cell_measure'
+        self.assertEqual(1, len(find_msg(msgs, 'timer', taskname)))
+        taskname = 'task.service.submit.insert_measures'
         self.assertEqual(1, len(find_msg(msgs, 'timer', taskname)))

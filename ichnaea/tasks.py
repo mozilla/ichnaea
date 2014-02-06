@@ -39,13 +39,17 @@ class DatabaseTask(Task):
         return short
 
     def __call__(self, *args, **kw):
-        with get_client('ichnaea').timer("task." + self.shortname):
+        with self.heka_client.timer("task." + self.shortname):
             result = super(DatabaseTask, self).__call__(*args, **kw)
         return result
 
     def db_session(self):
         # returns a context manager
         return db_worker_session(self.app.db_master)
+
+    @property
+    def heka_client(self):
+        return get_client('ichnaea')
 
 
 def daily_task_days(ago):
