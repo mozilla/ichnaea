@@ -247,9 +247,6 @@ class Measure(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
     created = Column(DateTime)  # the insert time of the record into the DB
-    # lat/lon * decimaljson.FACTOR
-    lat = Column(Integer)
-    lon = Column(Integer)
     radio = Column(SmallInteger)  # mapped via RADIO_TYPE
 
     def __init__(self, *args, **kw):

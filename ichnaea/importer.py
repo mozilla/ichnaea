@@ -7,6 +7,7 @@ from colander import iso8601
 
 from ichnaea import config
 from ichnaea.db import Database
+from ichnaea.decimaljson import to_precise_int
 from ichnaea.models import normalize_wifi_key
 from ichnaea.service.submit.tasks import (
     process_mapstat,
@@ -24,6 +25,7 @@ def load_file(session, source_file, batch_size=1000, userid=None):
 
         counter = 0
         measures = []
+        positions = []
         for fields in reader:
             try:
                 time = int(fields[0])
@@ -63,19 +65,24 @@ def load_file(session, source_file, batch_size=1000, userid=None):
             # side effect, schedules async tasks
             measure = process_measure(data, utcnow, session, userid=userid)
             measures.append(measure)
+            positions.append({
+                'lat': to_precise_int(lat),
+                'lon': to_precise_int(lon),
+            })
             counter += 1
 
             # flush every batch_size records
             if counter % batch_size == 0:
-                process_mapstat(measures, session, userid=userid)
+                process_mapstat(positions, session, userid=userid)
                 session.flush()
                 measures = []
+                positions = []
                 print('Added %s records.' % counter)
 
     # process the remaining measures
-    if measures:
-        process_mapstat(measures, session, userid=userid)
-        print('Added %s records.' % len(measures))
+    if positions:
+        process_mapstat(positions, session, userid=userid)
+        print('Added %s records.' % len(positions))
 
     if userid is not None:
         process_score(userid, counter, session)

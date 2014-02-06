@@ -41,11 +41,11 @@ sql_null = None  # avoid pep8 warning
 CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
 
 
-def process_mapstat_keyed(factor, stat_key, measures, session):
+def process_mapstat_keyed(factor, stat_key, positions, session):
     tiles = defaultdict(int)
     # aggregate to tiles, according to factor
-    for measure in measures:
-        tiles[(measure.lat / factor, measure.lon / factor)] += 1
+    for position in positions:
+        tiles[(position['lat'] / factor, position['lon'] / factor)] += 1
     query = session.query(MapStat.lat, MapStat.lon).filter(
         MapStat.key == stat_key)
     # dynamically construct a (lat, lon) in (list of tuples) filter
@@ -76,15 +76,15 @@ def process_mapstat_keyed(factor, stat_key, measures, session):
     return tile_count
 
 
-def process_mapstat(measures, session, userid=None):
+def process_mapstat(positions, session, userid=None):
     # 10x10 meter tiles
     tile_count = process_mapstat_keyed(
-        1000, MAPSTAT_TYPE['location'], measures, session)
+        1000, MAPSTAT_TYPE['location'], positions, session)
     if userid is not None and tile_count > 0:
         process_score(userid, tile_count, session, key='new_location')
     # 100x100 m tiles
     process_mapstat_keyed(
-        10000, MAPSTAT_TYPE['location_100m'], measures, session)
+        10000, MAPSTAT_TYPE['location_100m'], positions, session)
 
 
 def process_user(nickname, session):
@@ -126,8 +126,6 @@ def process_time(measure, utcnow, utcmin):
 def process_measure(data, utcnow, session, userid=None):
     measure = Measure()
     measure.created = utcnow
-    measure.lat = to_precise_int(data['lat'])
-    measure.lon = to_precise_int(data['lon'])
     measure.radio = RADIO_TYPE.get(data['radio'], -1)
     # get measure.id set
     session.add(measure)
@@ -135,8 +133,8 @@ def process_measure(data, utcnow, session, userid=None):
     measure_data = dict(
         id=measure.id,
         created=encode_datetime(measure.created),
-        lat=measure.lat,
-        lon=measure.lon,
+        lat=to_precise_int(data['lat']),
+        lon=to_precise_int(data['lon']),
         time=encode_datetime(data['time']),
         accuracy=data['accuracy'],
         altitude=data['altitude'],
@@ -177,10 +175,15 @@ def insert_measures(self, items=None, nickname=''):
         with self.db_session() as session:
             userid, nickname = process_user(nickname, session)
 
+            positions = []
             for item in items:
                 item = process_time(item, utcnow, utcmin)
                 measure = process_measure(item, utcnow, session, userid=userid)
                 measures.append(measure)
+                positions.append({
+                    'lat': to_precise_int(item['lat']),
+                    'lon': to_precise_int(item['lon']),
+                })
                 points += 1
 
             self.heka_client.incr("items.uploaded", count=len(measures))
@@ -188,7 +191,7 @@ def insert_measures(self, items=None, nickname=''):
             if userid is not None:
                 process_score(userid, points, session)
             if measures:
-                process_mapstat(measures, session, userid=userid)
+                process_mapstat(positions, session, userid=userid)
 
             session.add_all(session_objects)
             session.commit()

@@ -25,13 +25,13 @@ class TestStats(CeleryTestCase):
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
         measures = [
-            Measure(lat=10000000, lon=20000000, created=today),
-            Measure(lat=10000000, lon=20000000, created=today),
-            Measure(lat=10000000, lon=20000000, created=yesterday),
-            Measure(lat=10000000, lon=20000000, created=two_days),
-            Measure(lat=10000000, lon=20000000, created=two_days),
-            Measure(lat=10000000, lon=20000000, created=two_days),
-            Measure(lat=10000000, lon=20000000, created=long_ago),
+            Measure(created=today),
+            Measure(created=today),
+            Measure(created=yesterday),
+            Measure(created=two_days),
+            Measure(created=two_days),
+            Measure(created=two_days),
+            Measure(created=long_ago),
         ]
         session.add_all(measures)
         session.commit()
