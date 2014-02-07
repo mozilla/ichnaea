@@ -239,8 +239,6 @@ class Measure(_Model):
         {
             'mysql_engine': 'InnoDB',
             'mysql_charset': 'utf8',
-            'mysql_row_format': 'compressed',
-            'mysql_key_block_size': '4',
         }
     )
 
