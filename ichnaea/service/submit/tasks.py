@@ -91,8 +91,6 @@ def process_user(nickname, session):
     userid = None
     if (2 <= len(nickname) <= 128):
         # automatically create user objects and update nickname
-        if isinstance(nickname, str):
-            nickname = nickname.decode('utf-8', 'ignore')
         rows = session.query(User).filter(User.nickname == nickname)
         old = rows.first()
         if not old:

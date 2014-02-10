@@ -41,7 +41,7 @@ def submit_view(request):
     )
 
     items = data['items']
-    nickname = request.headers.get('X-Nickname', '')
+    nickname = request.headers.get('X-Nickname', '').decode('utf-8', 'ignore')
     # batch incoming data into multiple tasks, in case someone
     # manages to submit us a huge single request
     for i in range(0, len(items), 100):
