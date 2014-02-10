@@ -1,15 +1,15 @@
-from cornice import Service
-
 from ichnaea.models import (
     Cell,
     normalize_wifi_key,
     RADIO_TYPE,
     Wifi,
 )
-from ichnaea.decimaljson import quantize
+from ichnaea.decimaljson import (
+    quantize,
+)
 from ichnaea.service.error import (
-    error_handler,
     MSG_ONE_OF,
+    preprocess_request,
 )
 from ichnaea.service.search.schema import SearchSchema
 
@@ -19,7 +19,8 @@ MAX_DIFF = 100000
 
 
 def configure_search(config):
-    config.scan('ichnaea.service.search.views')
+    config.add_route('v1_search', '/v1/search')
+    config.add_view(search_view, route_name='v1_search', renderer='json')
 
 
 def search_cell(session, data):
@@ -99,41 +100,37 @@ def search_wifi(session, data):
     }
 
 
-def check_cell_or_wifi(data, request):
+def check_cell_or_wifi(data, errors):
+    if errors:
+        # don't add this error if something else was already wrong
+        return
+
     cell = data.get('cell', ())
     wifi = data.get('wifi', ())
     if not any(wifi) and not any(cell):
-        request.errors.add('body', 'body', MSG_ONE_OF)
+        errors.append(dict(name='body', description=MSG_ONE_OF))
 
 
-def search_validator(request):
-    if len(request.errors):
-        return
-    check_cell_or_wifi(request.validated, request)
+def search_view(request):
+    data, errors = preprocess_request(
+        request,
+        schema=SearchSchema(),
+        extra_checks=(check_cell_or_wifi, ),
+    )
 
+    api_key = request.GET.get('key', None)
+    if api_key is None:
+        # TODO: change into a better error response
+        return {'status': 'not_found'}
 
-search = Service(
-    name='search',
-    path='/v1/search',
-    description="Search for your current location.",
-)
-
-
-@search.post(renderer='json', accept="application/json",
-             schema=SearchSchema, error_handler=error_handler,
-             validators=search_validator)
-def search_post(request):
-    data = request.validated
     session = request.db_slave_session
     result = None
 
-    api_key = request.GET.get('key', None)
-    if api_key is not None:
-        if data['wifi']:
-            result = search_wifi(session, data)
-        if result is None:
-            # no wifi result found, fall back to cell
-            result = search_cell(session, data)
+    if data['wifi']:
+        result = search_wifi(session, data)
+    if result is None:
+        # no wifi result found, fall back to cell
+        result = search_cell(session, data)
 
     if result is None:
         return {'status': 'not_found'}

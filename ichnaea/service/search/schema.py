@@ -5,16 +5,16 @@ from ichnaea.models import RADIO_TYPE_KEYS
 
 
 class CellSchema(MappingSchema):
-    radio = SchemaNode(String(), location="body", type='str',
+    radio = SchemaNode(String(), type='str',
                        validator=OneOf(RADIO_TYPE_KEYS), missing='')
-    mcc = SchemaNode(Integer(), location="body", type='int', missing=-1)
-    mnc = SchemaNode(Integer(), location="body", type='int', missing=-1)
-    lac = SchemaNode(Integer(), location="body", type='int', missing=-1)
-    cid = SchemaNode(Integer(), location="body", type='int', missing=-1)
-    psc = SchemaNode(Integer(), location="body", type='int', missing=-1)
-    asu = SchemaNode(Integer(), location="body", type='int', missing=-1)
-    signal = SchemaNode(Integer(), location="body", type='int', missing=0)
-    ta = SchemaNode(Integer(), location="body", type='int', missing=0)
+    mcc = SchemaNode(Integer(), type='int', missing=-1)
+    mnc = SchemaNode(Integer(), type='int', missing=-1)
+    lac = SchemaNode(Integer(), type='int', missing=-1)
+    cid = SchemaNode(Integer(), type='int', missing=-1)
+    psc = SchemaNode(Integer(), type='int', missing=-1)
+    asu = SchemaNode(Integer(), type='int', missing=-1)
+    signal = SchemaNode(Integer(), type='int', missing=0)
+    ta = SchemaNode(Integer(), type='int', missing=0)
 
 
 class CellsSchema(SequenceSchema):
@@ -22,10 +22,10 @@ class CellsSchema(SequenceSchema):
 
 
 class WifiSchema(MappingSchema):
-    key = SchemaNode(String(), location="body", type='str')
-    frequency = SchemaNode(Integer(), location="body", type='int', missing=0)
-    channel = SchemaNode(Integer(), location="body", type='int', missing=0)
-    signal = SchemaNode(Integer(), location="body", type='int', missing=0)
+    key = SchemaNode(String(), type='str')
+    frequency = SchemaNode(Integer(), type='int', missing=0)
+    channel = SchemaNode(Integer(), type='int', missing=0)
+    signal = SchemaNode(Integer(), type='int', missing=0)
 
 
 class WifisSchema(SequenceSchema):
@@ -33,7 +33,7 @@ class WifisSchema(SequenceSchema):
 
 
 class SearchSchema(MappingSchema):
-    radio = SchemaNode(String(), location="body", type='str',
+    radio = SchemaNode(String(), type='str',
                        validator=OneOf(RADIO_TYPE_KEYS), missing='')
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())
