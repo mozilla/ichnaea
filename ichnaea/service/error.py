@@ -29,7 +29,7 @@ def error_handler(errors):
     return _JSONError(errors, errors.status)
 
 
-def preprocess_request(request, schema, extra_checks=()):
+def preprocess_request(request, schema, extra_checks=(), response=_JSONError):
     body = {}
     errors = []
     validated = {}
@@ -66,7 +66,7 @@ def preprocess_request(request, schema, extra_checks=()):
 
     if errors:
         request.registry.heka_client.debug('error_handler' + repr(errors))
-        raise _JSONError(errors)
+        raise response(errors)
 
     return (validated, errors)
 

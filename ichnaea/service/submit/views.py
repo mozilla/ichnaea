@@ -1,9 +1,8 @@
-from cornice import Service
 from pyramid.httpexceptions import HTTPNoContent
 
 from ichnaea.decimaljson import dumps
 from ichnaea.service.error import (
-    error_handler,
+    preprocess_request,
     MSG_ONE_OF,
 )
 from ichnaea.service.submit.schema import SubmitSchema
@@ -11,37 +10,37 @@ from ichnaea.service.submit.tasks import insert_measures
 
 
 def configure_submit(config):
-    config.scan('ichnaea.service.submit.views')
+    config.add_route('v1_submit', '/v1/submit')
+    config.add_view(submit_view, route_name='v1_submit', renderer='json')
 
 
-def check_cell_or_wifi(data, request):
+def check_cell_or_wifi(data, errors):
     cell = data.get('cell', ())
     wifi = data.get('wifi', ())
     if not any(wifi) and not any(cell):
-        request.errors.add('body', 'body', MSG_ONE_OF)
+        errors.append(dict(name='body', description=MSG_ONE_OF))
+        return False
+    return True
 
 
-def submit_validator(request):
-    if len(request.errors):
+def submit_validator(data, errors):
+    if errors:
+        # don't add this error if something else was already wrong
         return
-    for item in request.validated['items']:
-        if not check_cell_or_wifi(item, request):
+    for item in data.get('items', ()):
+        if not check_cell_or_wifi(item, errors):
             # quit on first Error
             return
 
 
-submit = Service(
-    name='submit',
-    path='/v1/submit',
-    description="Submit a measurement result for a location.",
-)
+def submit_view(request):
+    data, errors = preprocess_request(
+        request,
+        schema=SubmitSchema(),
+        extra_checks=(submit_validator, ),
+    )
 
-
-@submit.post(renderer='json', accept="application/json",
-             schema=SubmitSchema, error_handler=error_handler,
-             validators=submit_validator)
-def submit_post(request):
-    items = request.validated['items']
+    items = data['items']
     nickname = request.headers.get('X-Nickname', '')
     # batch incoming data into multiple tasks, in case someone
     # manages to submit us a huge single request

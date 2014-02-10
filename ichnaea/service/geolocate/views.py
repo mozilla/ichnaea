@@ -1,4 +1,3 @@
-from cornice import Service
 from pyramid.httpexceptions import HTTPError
 from pyramid.httpexceptions import HTTPNotFound, HTTPBadRequest
 from pyramid.response import Response
@@ -8,13 +7,12 @@ from ichnaea.decimaljson import dumps
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.error import (
     MSG_ONE_OF,
+    preprocess_request,
 )
 from ichnaea.service.search.views import (
     search_cell,
     search_wifi,
 )
-
-from heka.holder import get_client
 
 NO_API_KEY = {
     "error": {
@@ -63,29 +61,19 @@ class _JSONError(HTTPError):
         self.content_type = 'application/json'
 
 
-def error_handler(errors):
-    # filter out the rather common MSG_ONE_OF errors
-    log_errors = []
-    for error in errors:
-        if error.get('description', '') != MSG_ONE_OF:
-            log_errors.append(error)
-    if log_errors:
-        get_client('ichnaea').debug('error_handler' + repr(log_errors))
-    return _JSONError(errors, errors.status)
-
-
 def configure_geolocate(config):
-    config.scan('ichnaea.service.geolocate.views')
+    config.add_route('v1_geolocate', '/v1/geolocate')
+    config.add_view(geolocate_view, route_name='v1_geolocate', renderer='json')
 
 
-def geolocate_validator(request):
-    if len(request.errors):
+def geolocate_validator(data, errors):
+    if errors:
+        # don't add this error if something else was already wrong
         return
-    data = request.validated
     cell = data.get('cellTowers', ())
     wifi = data.get('wifiAccessPoints', ())
     if not any(wifi) and not any(cell):
-        request.errors.add('body', 'body', MSG_ONE_OF)
+        errors.append(dict(name='body', description=MSG_ONE_OF))
 
 
 def search_cell_tower(session, data):
@@ -114,18 +102,14 @@ def search_wifi_ap(session, data):
     return search_wifi(session, mapped)
 
 
-geolocate = Service(
-    name='geolocate',
-    path='/v1/geolocate',
-    description="Geolocate yourself.",
-)
+def geolocate_view(request):
+    data, errors = preprocess_request(
+        request,
+        schema=GeoLocateSchema(),
+        extra_checks=(geolocate_validator, ),
+        response=_JSONError,
+    )
 
-
-@geolocate.post(renderer='json', accept="application/json",
-                schema=GeoLocateSchema, error_handler=error_handler,
-                validators=geolocate_validator)
-def geolocate_post(request):
-    data = request.validated
     session = request.db_slave_session
     result = None
 
