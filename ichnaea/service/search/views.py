@@ -112,16 +112,16 @@ def check_cell_or_wifi(data, errors):
 
 
 def search_view(request):
+    api_key = request.GET.get('key', None)
+    if api_key is None:
+        # TODO: change into a better error response
+        return {'status': 'not_found'}
+
     data, errors = preprocess_request(
         request,
         schema=SearchSchema(),
         extra_checks=(check_cell_or_wifi, ),
     )
-
-    api_key = request.GET.get('key', None)
-    if api_key is None:
-        # TODO: change into a better error response
-        return {'status': 'not_found'}
 
     session = request.db_slave_session
     result = None
