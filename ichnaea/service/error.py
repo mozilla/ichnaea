@@ -7,7 +7,7 @@ from ichnaea.decimaljson import (
     loads,
 )
 
-from heka.holder import get_client
+MSG_ONE_OF = 'You need to provide a mapping with least one cell or wifi entry.'
 
 
 class _JSONError(HTTPError):
@@ -16,17 +16,6 @@ class _JSONError(HTTPError):
         Response.__init__(self, dumps(body))
         self.status = status
         self.content_type = 'application/json'
-
-
-def error_handler(errors):
-    # filter out the rather common MSG_ONE_OF errors
-    log_errors = []
-    for error in errors:
-        if error.get('description', '') != MSG_ONE_OF:
-            log_errors.append(error)
-    if log_errors:
-        get_client('ichnaea').debug('error_handler' + repr(log_errors))
-    return _JSONError(errors, errors.status)
 
 
 def preprocess_request(request, schema, extra_checks=(), response=_JSONError):
@@ -70,6 +59,3 @@ def preprocess_request(request, schema, extra_checks=(), response=_JSONError):
         raise response(errors)
 
     return (validated, errors)
-
-
-MSG_ONE_OF = 'You need to provide a mapping with least one cell or wifi entry.'
