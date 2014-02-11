@@ -20,7 +20,7 @@ def global_stats(session):
     stat_keys = [STAT_TYPE[name] for name in names]
     rows = session.query(Stat.key, Stat.value).filter(
         Stat.key.in_(stat_keys)).filter(
-        Stat.time == yesterday).group_by(Stat.key)
+        Stat.time == yesterday)
 
     stats = {}
     for row in rows.all():
