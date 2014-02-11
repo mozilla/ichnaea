@@ -5,6 +5,8 @@ from heka.holder import get_client
 
 from ichnaea import config
 
+RAVEN_ERROR = 'Unhandled error occured'
+
 
 def configure_heka(registry_settings={}):
     # If a test client is defined just use that instead of whatever is
@@ -33,7 +35,7 @@ def heka_tween_factory(handler, registry):
             try:
                 response = handler(request)
             except Exception:
-                registry.heka_client.raven("Unhandled error occured")
+                registry.heka_client.raven(RAVEN_ERROR)
                 raise
         registry.heka_client.incr('http.request',
                                   fields={'status': str(response.status_code),

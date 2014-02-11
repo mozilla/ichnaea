@@ -1,5 +1,7 @@
 from heka.holder import get_client
+from sqlalchemy import text
 
+from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.models import (
     Cell,
     Wifi,
@@ -242,3 +244,31 @@ class TestSearch(AppTestCase):
                             ]},
                             status=200)
         self.assertEqual(res.body, '{"status": "not_found"}')
+
+
+class TestSearchErrors(AppTestCase):
+    # this is a standalone class to ensure DB isolation for dropping tables
+
+    def setUp(self):
+        AppTestCase.setUp(self)
+        self.heka_client = get_client('ichnaea')
+        self.heka_client.stream.msgs.clear()
+
+    def test_database_error(self):
+        app = self.app
+        session = self.db_slave_session
+        stmt = text("drop table wifi;")
+        session.execute(stmt)
+
+        try:
+            app.post_json('/v1/search?key=test',
+                          {"wifi": [
+                              {"key": "A1"}, {"key": "B2"},
+                              {"key": "C3"}, {"key": "D4"},
+                          ]})
+        except Exception:
+            pass
+
+        msgs = self.heka_client.stream.msgs
+        self.assertEquals(
+            1, len(find_msg(msgs, 'sentry', RAVEN_ERROR, field_name='msg')))
