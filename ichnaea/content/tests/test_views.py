@@ -6,17 +6,14 @@ from pyramid.testing import setUp
 from pyramid.testing import tearDown
 from unittest2 import TestCase
 
-from heka.holder import get_client
-
 from ichnaea.content.models import (
     Score,
     Stat,
     STAT_TYPE,
     User,
 )
-from ichnaea.tests.base import (
-    AppTestCase,
-)
+from ichnaea.heka_logging import RAVEN_ERROR
+from ichnaea.tests.base import AppTestCase
 
 
 class TestContentViews(TestCase):
@@ -47,11 +44,6 @@ class TestContentViews(TestCase):
 
 class TestFunctionalContent(AppTestCase):
 
-    def setUp(self):
-        AppTestCase.setUp(self)
-        self.heka_client = get_client('ichnaea')
-        self.heka_client.stream.msgs.clear()
-
     def test_content_pages(self):
         self.app.get('/', status=200)
         self.app.get('/leaders', status=200)
@@ -68,11 +60,11 @@ class TestFunctionalContent(AppTestCase):
 
     def test_not_found(self):
         self.app.get('/nobody-is-home', status=404)
-        msgs = self.heka_client.stream.msgs
 
         # We should have caught at least one error here
-        sentry_msgs = [m for m in msgs if m.type == 'sentry']
-        self.assertTrue(len(sentry_msgs) > 0)
+        find_msg = self.find_heka_messages
+        self.assertEquals(
+            len(find_msg('sentry', RAVEN_ERROR, field_name='msg')), 1)
 
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)

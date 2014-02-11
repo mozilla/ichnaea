@@ -15,17 +15,10 @@ from ichnaea.models import (
     WifiMeasure,
 )
 from ichnaea.decimaljson import encode_datetime
-from ichnaea.tests.base import CeleryAppTestCase, find_msg
-
-from heka.holder import get_client
+from ichnaea.tests.base import CeleryAppTestCase
 
 
 class TestSubmit(CeleryAppTestCase):
-
-    def setUp(self):
-        CeleryAppTestCase.setUp(self)
-        self.heka_client = get_client('ichnaea')
-        self.heka_client.stream.msgs.clear()
 
     def test_ok_cell(self):
         app = self.app
@@ -424,12 +417,11 @@ class TestSubmit(CeleryAppTestCase):
         5) timer for "insert_measures"
         """
 
-        msgs = self.heka_client.stream.msgs
-        self.assertEqual(5, len(msgs))
-        self.assertEqual(1, len(find_msg(msgs, 'counter', 'http.request')))
-        self.assertEqual(1, len(find_msg(msgs, 'counter', 'items.uploaded')))
-        self.assertEqual(1, len(find_msg(msgs, 'timer', 'http.request')))
+        find_msg = self.find_heka_messages
+        self.assertEqual(1, len(find_msg('counter', 'http.request')))
+        self.assertEqual(1, len(find_msg('counter', 'items.uploaded')))
+        self.assertEqual(1, len(find_msg('timer', 'http.request')))
         taskname = 'task.service.submit.insert_cell_measure'
-        self.assertEqual(1, len(find_msg(msgs, 'timer', taskname)))
+        self.assertEqual(1, len(find_msg('timer', taskname)))
         taskname = 'task.service.submit.insert_measures'
-        self.assertEqual(1, len(find_msg(msgs, 'timer', taskname)))
+        self.assertEqual(1, len(find_msg('timer', taskname)))

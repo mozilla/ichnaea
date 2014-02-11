@@ -1,16 +1,16 @@
 import os
 
+from heka.encoders import NullEncoder
+from heka.streams import DebugCaptureStream
 from unittest2 import TestCase
 from webtest import TestApp
 
 from ichnaea import main
 from ichnaea.db import _Model
 from ichnaea.db import Database
+from ichnaea.heka_logging import configure_heka
 from ichnaea.worker import attach_database
 from ichnaea.worker import celery
-
-from heka.streams import DebugCaptureStream
-from heka.encoders import NullEncoder
 
 SQLURI = os.environ.get('SQLURI')
 SQLSOCKET = os.environ.get('SQLSOCKET')
@@ -26,15 +26,9 @@ def _make_app(_db_master=None, _db_slave=None, **settings):
 
 
 def find_msg(msgs, msg_type, field_value, field_name='name'):
-    shortlist = [m for m in msgs if m.type == msg_type and
-                [f for f in m.fields if f.name == field_name and
-                 f.value_string == [field_value]]]
-    return shortlist
-
-
-def use_hekatest(heka_client):
-    heka_client.stream = DebugCaptureStream()
-    heka_client.encoder = NullEncoder(None)
+    return [m for m in msgs if m.type == msg_type and
+           [f for f in m.fields if f.name == field_name and
+            f.value_string == [field_value]]]
 
 
 class DBIsolation(object):
@@ -95,50 +89,67 @@ class CeleryIsolation(object):
         del celery.db_master
 
 
-class AppTestCase(TestCase, DBIsolation):
+class HekaIsolation(object):
+
+    @classmethod
+    def setup_heka(cls):
+        # Clobber the stream with a debug version
+        cls.heka_client = configure_heka()
+        cls.heka_client.stream = DebugCaptureStream()
+        cls.heka_client.encoder = NullEncoder(None)
+
+    @classmethod
+    def teardown_heka(cls):
+        del cls.heka_client
+
+    def clear_heka_messages(self):
+        self.heka_client.stream.msgs.clear()
+
+    def find_heka_messages(self, *args, **kw):
+        msgs = self.heka_client.stream.msgs
+        return find_msg(msgs, *args, **kw)
+
+
+class AppTestCase(TestCase, DBIsolation, HekaIsolation):
 
     @classmethod
     def setUpClass(cls):
         super(AppTestCase, cls).setup_engine()
-
-        # Clobber the stream with a debug version
-        from ichnaea.heka_logging import configure_heka
-        heka_client = configure_heka()
-        use_hekatest(heka_client)
+        super(AppTestCase, cls).setup_heka()
 
         cls.app = _make_app(_db_master=cls.db_master,
                             _db_slave=cls.db_slave,
-                            _heka_client=heka_client)
+                            _heka_client=cls.heka_client)
 
     @classmethod
     def tearDownClass(cls):
         del cls.app
         super(AppTestCase, cls).teardown_engine()
+        super(AppTestCase, cls).teardown_heka()
 
     def setUp(self):
         self.setup_session()
+        self.clear_heka_messages()
 
     def tearDown(self):
         self.teardown_session()
 
 
-class DBTestCase(TestCase, DBIsolation):
+class DBTestCase(TestCase, DBIsolation, HekaIsolation):
 
     @classmethod
     def setUpClass(cls):
         super(DBTestCase, cls).setup_engine()
-
-        # Clobber the stream with a debug version
-        from heka.holder import get_client
-        heka_client = get_client('ichnaea')
-        use_hekatest(heka_client)
+        super(DBTestCase, cls).setup_heka()
 
     @classmethod
     def tearDownClass(cls):
         super(DBTestCase, cls).teardown_engine()
+        super(DBTestCase, cls).teardown_heka()
 
     def setUp(self):
         self.setup_session()
+        self.clear_heka_messages()
 
     def tearDown(self):
         self.teardown_session()

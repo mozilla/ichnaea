@@ -8,9 +8,7 @@ from ichnaea.models import (
     WifiBlacklist,
     WifiMeasure,
 )
-from ichnaea.tests.base import CeleryTestCase, find_msg
-
-from heka.holder import get_client
+from ichnaea.tests.base import CeleryTestCase
 
 
 class TestCellLocationUpdate(CeleryTestCase):
@@ -119,11 +117,6 @@ class TestCellLocationUpdate(CeleryTestCase):
 
 
 class TestWifiLocationUpdate(CeleryTestCase):
-
-    def setUp(self):
-        CeleryTestCase.setUp(self)
-        self.heka_client = get_client('ichnaea')
-        self.heka_client.stream.msgs.clear()
 
     def test_wifi_location_update(self):
         from ichnaea.tasks import wifi_location_update
@@ -266,13 +259,15 @@ class TestWifiLocationUpdate(CeleryTestCase):
 
         msgs = self.heka_client.stream.msgs
         self.assertEqual(3, len(msgs))
+
         # We made duplicate calls
+        find_msg = self.find_heka_messages
         taskname = 'task.wifi_location_update'
-        self.assertEqual(2, len(find_msg(msgs, 'timer', taskname)))
+        self.assertEqual(2, len(find_msg('timer', taskname)))
 
         # One of those would've scheduled a remove_wifi task
         taskname = 'task.remove_wifi'
-        self.assertEqual(1, len(find_msg(msgs, 'timer', taskname)))
+        self.assertEqual(1, len(find_msg('timer', taskname)))
 
     def test_remove_wifi(self):
         from ichnaea.tasks import remove_wifi
