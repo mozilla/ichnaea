@@ -9,7 +9,6 @@ from ichnaea.db import db_slave_session
 
 def main(global_config, _db_master=None, _db_slave=None, **settings):
     config = Configurator(settings=settings)
-    config.include("cornice")
     settings = config.registry.settings
 
     from ichnaea.content.views import configure_content

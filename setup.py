@@ -12,7 +12,6 @@ requires = [
     'circus',
     'colander',
     'configparser',
-    'cornice',
     'gunicorn',
     'heka-py',
     'konfig',
