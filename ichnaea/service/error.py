@@ -64,7 +64,8 @@ def preprocess_request(request, schema, extra_checks=(), response=_JSONError):
     for func in extra_checks:
         func(validated, errors)
 
-    if errors:
+    if errors and response is not None:
+        # the response / None check is used in schema tests
         request.registry.heka_client.debug('error_handler' + repr(errors))
         raise response(errors)
 

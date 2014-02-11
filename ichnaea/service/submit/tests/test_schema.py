@@ -1,70 +1,57 @@
 from unittest import TestCase
 
-from cornice.pyramidhook import wrap_request
-from cornice.schemas import CorniceSchema, validate_colander_schema
 from pyramid.testing import DummyRequest
 
-
-class Event(object):
-
-    def __init__(self, request):
-        self.request = request
-
-
-class TestRequest(DummyRequest):
-
-    def __init__(self, *args, **kw):
-        super(TestRequest, self).__init__(*args, **kw)
-        wrap_request(Event(self))
+from ichnaea.service.error import preprocess_request
 
 
 class TestMeasureSchema(TestCase):
 
     def _make_schema(self):
         from ichnaea.service.submit.schema import MeasureSchema
-        return CorniceSchema.from_colander(MeasureSchema)
+        return MeasureSchema()
 
     def _make_request(self, body):
-        request = TestRequest()
+        request = DummyRequest()
         request.body = body
         return request
 
     def test_empty(self):
         schema = self._make_schema()
         request = self._make_request('{}')
-        validate_colander_schema(schema, request)
-        self.assertTrue(request.errors)
+        data, errors = preprocess_request(request, schema, response=None)
+        self.assertTrue(errors)
 
     def test_empty_wifi_entry(self):
         schema = self._make_schema()
         request = self._make_request(
             '{"lat": 12.3456781, "lon": 23.4567892, "wifi": [{}]}')
-        validate_colander_schema(schema, request)
-        self.assertTrue(request.errors)
+        data, errors = preprocess_request(request, schema, response=None)
+        self.assertTrue(errors)
 
 
 class TestSubmitSchema(TestCase):
 
     def _make_schema(self):
         from ichnaea.service.submit.schema import SubmitSchema
-        return CorniceSchema.from_colander(SubmitSchema)
+        return SubmitSchema()
 
     def _make_request(self, body):
-        request = TestRequest()
+        request = DummyRequest()
         request.body = body
         return request
 
     def test_empty(self):
         schema = self._make_schema()
         request = self._make_request('{}')
-        validate_colander_schema(schema, request)
-        self.assertTrue(request.errors)
+        data, errors = preprocess_request(request, schema, response=None)
+        self.assertTrue(errors)
 
     def test_minimal(self):
         schema = self._make_schema()
         request = self._make_request(
             '{"items": [{"lat": 12.3456781, "lon": 23.4567892}]}')
-        validate_colander_schema(schema, request)
-        self.assertFalse(request.errors)
-        self.assertTrue('items' in request.validated)
-        self.assertEqual(len(request.validated['items']), 1)
+        data, errors = preprocess_request(request, schema, response=None)
+        self.assertFalse(errors)
+        self.assertTrue('items' in data)
+        self.assertEqual(len(data['items']), 1)
