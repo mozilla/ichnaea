@@ -104,11 +104,6 @@ class ContentViews(Layout):
     def map_view(self):
         return {'page_title': 'Map'}
 
-    @view_config(renderer='json', name="stats_location.json", http_cache=3600)
-    def stats_location_json(self):
-        session = self.request.db_slave_session
-        return {'histogram': histogram(session, 'location')}
-
     @view_config(
         renderer='json', name="stats_unique_cell.json", http_cache=3600)
     def stats_unique_cell_json(self):

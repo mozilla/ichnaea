@@ -52,25 +52,25 @@ class TestStat(DBTestCase):
 
     def test_fields(self):
         utcday = datetime.datetime.utcnow().date()
-        stat = self._make_one(key=0, time=utcday, value=13)
+        stat = self._make_one(key=1, time=utcday, value=13)
         session = self.db_master_session
         session.add(stat)
         session.commit()
 
         result = session.query(stat.__class__).first()
-        self.assertEqual(result.key, 0)
+        self.assertEqual(result.key, 1)
         self.assertEqual(result.time, utcday)
         self.assertEqual(result.value, 13)
 
     def test_property(self):
-        stat = self._make_one(key=0, value=13)
+        stat = self._make_one(key=1, value=13)
         session = self.db_master_session
         session.add(stat)
         session.commit()
 
         result = session.query(stat.__class__).first()
-        self.assertEqual(result.key, 0)
-        self.assertEqual(result.name, 'location')
+        self.assertEqual(result.key, 1)
+        self.assertEqual(result.name, 'cell')
 
         result.name = ''
         self.assertEqual(result.key, -1)

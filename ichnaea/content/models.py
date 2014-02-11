@@ -22,7 +22,7 @@ SCORE_TYPE_INVERSE = dict((v, k) for k, v in SCORE_TYPE.items())
 
 STAT_TYPE = {
     '': -1,
-    'location': 0,
+    # 0 was location
     'cell': 1,
     'unique_cell': 2,
     'wifi': 3,

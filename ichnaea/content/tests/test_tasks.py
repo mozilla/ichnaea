@@ -8,7 +8,6 @@ from ichnaea.content.models import (
 from ichnaea.models import (
     Cell,
     CellMeasure,
-    Measure,
     Wifi,
     WifiMeasure,
 )
@@ -16,52 +15,6 @@ from ichnaea.tests.base import CeleryTestCase
 
 
 class TestStats(CeleryTestCase):
-
-    def test_histogram(self):
-        from ichnaea.content.tasks import histogram
-        session = self.db_master_session
-        today = datetime.utcnow().date()
-        yesterday = (today - timedelta(1))
-        two_days = (today - timedelta(2))
-        long_ago = (today - timedelta(3))
-        measures = [
-            Measure(created=today),
-            Measure(created=today),
-            Measure(created=yesterday),
-            Measure(created=two_days),
-            Measure(created=two_days),
-            Measure(created=two_days),
-            Measure(created=long_ago),
-        ]
-        session.add_all(measures)
-        session.commit()
-
-        histogram.delay(ago=3).get()
-        stats = session.query(Stat).order_by(Stat.time).all()
-        self.assertEqual(len(stats), 1)
-        self.assertEqual(stats[0].key, STAT_TYPE['location'])
-        self.assertEqual(stats[0].time, long_ago)
-        self.assertEqual(stats[0].value, 1)
-
-        # fill up newer dates
-        histogram.delay(ago=2).get()
-        histogram.delay(ago=1).get()
-        histogram.delay(ago=0).get()
-
-        stats = session.query(Stat).order_by(Stat.time).all()
-        self.assertEqual(len(stats), 4)
-        self.assertEqual(stats[0].time, long_ago)
-        self.assertEqual(stats[0].value, 1)
-        self.assertEqual(stats[1].time, two_days)
-        self.assertEqual(stats[1].value, 4)
-        self.assertEqual(stats[2].time, yesterday)
-        self.assertEqual(stats[2].value, 5)
-        self.assertEqual(stats[3].time, today)
-        self.assertEqual(stats[3].value, 7)
-
-        # test duplicate execution
-        result = histogram.delay(ago=1)
-        self.assertEqual(result.get(), 0)
 
     def test_cell_histogram(self):
         from ichnaea.content.tasks import cell_histogram

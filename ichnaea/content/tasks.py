@@ -11,7 +11,6 @@ from ichnaea.content.models import (
 from ichnaea.models import (
     Cell,
     CellMeasure,
-    Measure,
     Wifi,
     WifiMeasure,
 )
@@ -43,22 +42,6 @@ def add_stat(session, name, day, value):
         before = int(result[0])
     stat = Stat(key=stat_key, time=day, value=before + int(value))
     session.add(stat)
-
-
-@celery.task(base=DatabaseTask, bind=True)
-def histogram(self, ago=1):
-    day, max_day = daily_task_days(ago)
-    try:
-        with self.db_session() as session:
-            value = histogram_query(session, Measure, day, max_day)
-            add_stat(session, 'location', day, value)
-            session.commit()
-            return 1
-    except IntegrityError as exc:
-        logger.exception('error')
-        return 0
-    except Exception as exc:  # pragma: no cover
-        raise self.retry(exc=exc)
 
 
 @celery.task(base=DatabaseTask, bind=True)

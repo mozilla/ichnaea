@@ -68,10 +68,10 @@ class TestStats(DBTestCase):
             Stat(time=today, value=9),
         ]
         for stat in stats:
-            stat.name = 'location'
+            stat.name = 'cell'
         session.add_all(stats)
         session.commit()
-        result = histogram(session, 'location')
+        result = histogram(session, 'cell')
         self.assertEqual(result, [
             {'num': 3, 'day': two_days},
             {'num': 7, 'day': one_day},

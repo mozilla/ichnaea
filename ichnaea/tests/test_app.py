@@ -23,7 +23,7 @@ class TestApp(DBTestCase):
         self.db_master = app.app.registry.db_master
         self.db_slave = app.app.registry.db_slave
         self.setup_session()
-        app.get('/stats_location.json', status=200)
+        app.get('/stats_unique_cell.json', status=200)
 
     def test_db_config(self):
         self.db_master = _make_db()
@@ -32,4 +32,4 @@ class TestApp(DBTestCase):
         app = _make_app(_db_master=self.db_master,
                         _db_slave=self.db_slave,
                         _heka_client=get_client('ichnaea'))
-        app.get('/stats_location.json', status=200)
+        app.get('/stats_unique_cell.json', status=200)

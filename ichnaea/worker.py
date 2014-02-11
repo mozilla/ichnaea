@@ -19,11 +19,6 @@ CELERY_IMPORTS = [
 ]
 
 CELERYBEAT_SCHEDULE = {
-    'histogram-yesterday': {
-        'task': 'ichnaea.content.tasks.histogram',
-        'schedule': crontab(hour=0, minute=3),
-        'args': (1, ),
-    },
     'histogram-cell-yesterday': {
         'task': 'ichnaea.content.tasks.cell_histogram',
         'schedule': crontab(hour=0, minute=3),
