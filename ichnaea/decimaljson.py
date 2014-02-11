@@ -33,10 +33,10 @@ def dumps(value):
         return json.dumps(value, use_decimal=True, default=encode_datetime)
 
 
-def loads(value):
+def loads(value, encoding="utf-8"):
     with localcontext() as ctx:
         ctx.prec = PRECISION
-        return json.loads(value, use_decimal=True)
+        return json.loads(value, use_decimal=True, encoding=encoding)
 
 
 def quantize(value):

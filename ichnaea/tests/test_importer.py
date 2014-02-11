@@ -44,7 +44,7 @@ class TestLoadFile(CeleryTestCase):
     def test_userid(self):
         func, tmpfile = self._make_one()
         session = self.db_master_session
-        user = User(nickname='test')
+        user = User(nickname='test'.decode('ascii'))
         session.add(user)
         session.flush()
         userid = user.id

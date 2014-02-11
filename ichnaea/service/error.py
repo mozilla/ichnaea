@@ -36,7 +36,7 @@ def preprocess_request(request, schema, extra_checks=(), response=_JSONError):
 
     if request.body:
         try:
-            body = loads(request.body)
+            body = loads(request.body, encoding=request.charset)
         except ValueError as e:
             errors.append(dict(name=None, description=e.message))
 
