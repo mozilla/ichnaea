@@ -34,7 +34,12 @@ class TestSearch(AppTestCase):
 
         find_msg = self.find_heka_messages
         self.assertEquals(1, len(find_msg('counter', 'http.request')))
-        self.assertEquals(1, len(find_msg('timer', 'http.request')))
+        timer_msgs = find_msg('timer', 'http.request')
+
+        self.assertEquals(1, len(timer_msgs))
+        msg = timer_msgs[0]
+        f = [f for f in msg.fields if f.name == 'url_path'][0]
+        self.assertEquals(f.value_string, ['/v1/search'])
 
     def test_ok_wifi(self):
         app = self.app
@@ -59,7 +64,12 @@ class TestSearch(AppTestCase):
 
         find_msg = self.find_heka_messages
         self.assertEquals(1, len(find_msg('counter', 'http.request')))
-        self.assertEquals(1, len(find_msg('timer', 'http.request')))
+        timer_msgs = find_msg('timer', 'http.request')
+
+        self.assertEquals(1, len(timer_msgs))
+        msg = timer_msgs[0]
+        f = [f for f in msg.fields if f.name == 'url_path'][0]
+        self.assertEquals(f.value_string, ['/v1/search'])
 
     def test_wifi_too_few_candidates(self):
         app = self.app

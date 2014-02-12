@@ -31,7 +31,7 @@ def heka_tween_factory(handler, registry):
 
     def heka_tween(request):
         with registry.heka_client.timer('http.request',
-                                        fields={'url': request.url}):
+                                        fields={'url_path': request.path}):
             try:
                 response = handler(request)
             except Exception:
