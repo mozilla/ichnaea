@@ -67,8 +67,7 @@ def remove_wifi(self, wifi_keys):
             session.commit()
         return wifis
     except IntegrityError as exc:  # pragma: no cover
-        heka_client = get_client('ichnaea')
-        heka_client.raven('error')
+        self.heka_client.raven('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -161,8 +160,7 @@ def backfill_cell_location_update(self, new_cell_measures):
             session.commit()
         return len(cells)
     except IntegrityError as exc:  # pragma: no cover
-        heka_client = get_client('ichnaea')
-        heka_client.raven('error')
+        self.heka_client.raven('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -206,8 +204,7 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
             session.commit()
         return len(cells)
     except IntegrityError as exc:  # pragma: no cover
-        heka_client = get_client('ichnaea')
-        heka_client.raven('error')
+        self.heka_client.raven('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -293,8 +290,7 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
             session.commit()
         return (len(wifis), len(moving_keys))
     except IntegrityError as exc:  # pragma: no cover
-        heka_client = get_client('ichnaea')
-        heka_client.raven('error')
+        self.heka_client.raven('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
