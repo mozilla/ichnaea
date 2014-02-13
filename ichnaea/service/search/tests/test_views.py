@@ -170,6 +170,10 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.body, '{"status": "ok", "lat": 1.0010000, '
                                    '"lon": 1.0020000, "accuracy": 35000}')
 
+    def test_cell_ignore_incomplete_records(self):
+        msg = "ignore cells records that are too incomplete to be helpful"
+        raise NotImplementedError(msg)
+
     def test_cell_ignore_invalid_lac_cid(self):
         app = self.app
         session = self.db_slave_session

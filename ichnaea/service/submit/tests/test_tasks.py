@@ -122,6 +122,10 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([c.new_measures for c in cells]), set([2]))
         self.assertEqual(set([c.total_measures for c in cells]), set([5]))
 
+    def test_cell_record_too_incomplete(self):
+        msg = "ignore submitted records if they're too incomplete"
+        raise NotImplementedError(msg)
+
     def test_cell_out_of_range_values(self):
         from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
