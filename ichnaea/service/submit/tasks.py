@@ -8,8 +8,6 @@ from colander import iso8601
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import and_, or_
 
-from heka.holder import get_client
-
 from ichnaea.content.models import (
     MapStat,
     MAPSTAT_TYPE,
@@ -198,8 +196,7 @@ def insert_measures(self, items=None, nickname=''):
             session.commit()
         return length
     except IntegrityError as exc:  # pragma: no cover
-        heka_client = get_client('ichnaea')
-        heka_client.raven('error')
+        self.heka_client.raven('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -321,8 +318,7 @@ def insert_cell_measure(self, measure_data, entries, userid=None):
             session.commit()
         return len(cell_measures)
     except IntegrityError as exc:  # pragma: no cover
-        heka_client = get_client('ichnaea')
-        heka_client.raven('error')
+        self.heka_client.raven('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -416,8 +412,7 @@ def insert_wifi_measure(self, measure_data, entries, userid=None):
             session.commit()
         return len(wifi_measures)
     except IntegrityError as exc:
-        heka_client = get_client('ichnaea')
-        heka_client.raven('error')
+        self.heka_client.raven('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
