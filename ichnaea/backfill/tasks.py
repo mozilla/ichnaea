@@ -57,13 +57,11 @@ def update_tower(self, radio, mcc, mnc, psc):
                 update
                     cell_measure
                 set
-                    lac = %(lac)d,
-                    cid = %(cid)d
+                    lac = :lac,
+                    cid = :cid
                 where
-                  id = %(id)d
-                """ % {'id': missing_tower['id'],
-                       'lac': lac,
-                       'cid': cid})
+                  id = :id
+                """).bindparams(lac=lac, cid=cid, id=missing_tower['id'])
 
                 new_cell_measures[tower_tuple].add(missing_tower['id'])
 
@@ -86,24 +84,17 @@ def compute_matching_towers(session, radio, mcc, mnc, psc):
     """
     stmt = text("""
     select
-        lat,
-        lon,
-        mcc, mnc, lac, cid, psc
+        lat, lon, mcc, mnc, lac, cid, psc
     from
         cell
     where
-        radio = %(radio)d and
-        mcc = %(mcc)d and
-        mnc = %(mnc)d and
-        psc = %(psc)d and
+        radio = :radio and
+        mcc = :mcc and
+        mnc = :mnc and
+        psc = :psc and
         lac != -1 and
         cid != -1
-    """ % {'radio': radio,
-           'mcc': mcc,
-           'mnc': mnc,
-           'psc': psc,
-           }
-    )
+    """).bindparams(radio=radio, mcc=mcc, mnc=mnc, psc=psc)
     row_proxy = session.execute(stmt)
     return [dict(r) for r in row_proxy]
 
@@ -131,20 +122,15 @@ def _nearest_tower(missing_lat, missing_lon, centroids):
 def compute_missing_towers(session, radio, mcc, mnc, psc):
     stmt = text("""
     select
-        id,
-        lat,
-        lon
+        id, lat, lon
     from
         cell_measure
     where
-        radio = %(radio)d and
-        mcc = %(mcc)d and
-        mnc = %(mnc)d and
-        psc = %(psc)d and
+        radio = :radio and
+        mcc = :mcc and
+        mnc = :mnc and
+        psc = :psc and
         (lac = -1 or
         cid = -1)
-    """ % {'radio': radio,
-           'mcc': mcc,
-           'mnc': mnc,
-           'psc': psc})
+    """).bindparams(radio=radio, mcc=mcc, mnc=mnc, psc=psc)
     return session.execute(stmt)
