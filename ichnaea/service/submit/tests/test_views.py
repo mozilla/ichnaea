@@ -388,6 +388,16 @@ class TestSubmit(CeleryAppTestCase):
         # if any of the keys is too long, the entire batch gets rejected
         self.assertEqual(len(result), 0)
 
+    def test_many_errors(self):
+        app = self.app
+        cell = [{'radio': '0', 'mcc': 1, 'mnc': 2} for i in range(100)]
+        res = app.post_json(
+            '/v1/submit', {"items": [{"lat": 1.0, "lon": 2.0, "cell": cell}]},
+            status=400)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertTrue('errors' in res.json)
+        self.assertTrue(len(res.json['errors']) < 10)
+
     def test_no_json(self):
         app = self.app
         res = app.post('/v1/submit', "\xae", status=400)

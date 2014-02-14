@@ -29,7 +29,12 @@ def preprocess_request(request, schema, extra_checks=(), response=_JSONError):
         except ValueError as e:
             errors.append(dict(name=None, description=e.message))
 
-    # schema validation
+    if errors and response is not None:
+        # the response / None check is used in schema tests
+        # if we couldn't decode the JSON body, just return
+        raise response(errors)
+
+    # schema validation, but report at most one error at a time
     schema = schema.bind(request=body)
     for attr in schema.children:
         name = attr.name
@@ -43,10 +48,13 @@ def preprocess_request(request, schema, extra_checks=(), response=_JSONError):
             err_dict = e.asdict()
             try:
                 errors.append(dict(name=name, description=err_dict[name]))
+                break
             except KeyError:
                 for k, v in err_dict.items():
                     if k.startswith(name):
                         errors.append(dict(name=k, description=v))
+                        break
+                break
         else:
             validated[name] = deserialized
 
