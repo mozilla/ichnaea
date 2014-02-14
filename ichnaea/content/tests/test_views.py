@@ -176,6 +176,7 @@ class TestLayout(TestCase):
     def setUp(self):
         request = DummyRequest()
         self.config = setUp(request=request)
+        self.config.include('pyramid_chameleon')
 
     def tearDown(self):
         tearDown()
