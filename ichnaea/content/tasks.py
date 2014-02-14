@@ -1,6 +1,5 @@
 from datetime import timedelta
 
-from celery.utils.log import get_task_logger
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
@@ -19,8 +18,6 @@ from ichnaea.tasks import (
     daily_task_days,
 )
 from ichnaea.worker import celery
-
-logger = get_task_logger(__name__)
 
 
 def histogram_query(session, model, min_day, max_day):
@@ -54,7 +51,7 @@ def cell_histogram(self, ago=1):
             session.commit()
             return 1
     except IntegrityError as exc:
-        logger.exception('error')
+        self.heka_client.raven('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -70,7 +67,7 @@ def wifi_histogram(self, ago=1):
             session.commit()
             return 1
     except IntegrityError as exc:
-        logger.exception('error')
+        self.heka_client.raven('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -86,7 +83,7 @@ def unique_cell_histogram(self, ago=1):
             session.commit()
             return 1
     except IntegrityError as exc:
-        logger.exception('error')
+        self.heka_client.raven('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -102,7 +99,7 @@ def unique_wifi_histogram(self, ago=1):
             session.commit()
             return 1
     except IntegrityError as exc:
-        logger.exception('error')
+        self.heka_client.raven('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)

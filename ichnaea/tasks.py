@@ -2,8 +2,9 @@ from datetime import datetime
 from datetime import timedelta
 
 from celery import Task
-from celery.utils.log import get_task_logger
 from sqlalchemy.exc import IntegrityError
+
+from heka.holder import get_client
 
 from ichnaea.db import db_worker_session
 from ichnaea.models import (
@@ -14,10 +15,6 @@ from ichnaea.models import (
     WifiMeasure,
 )
 from ichnaea.worker import celery
-
-logger = get_task_logger(__name__)
-
-from heka.holder import get_client
 
 
 class DatabaseTask(Task):
@@ -70,7 +67,7 @@ def remove_wifi(self, wifi_keys):
             session.commit()
         return wifis
     except IntegrityError as exc:  # pragma: no cover
-        logger.exception('error')
+        self.heka_client.raven('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -163,7 +160,7 @@ def backfill_cell_location_update(self, new_cell_measures):
             session.commit()
         return len(cells)
     except IntegrityError as exc:  # pragma: no cover
-        logger.exception('error')
+        self.heka_client.raven('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -207,7 +204,7 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
             session.commit()
         return len(cells)
     except IntegrityError as exc:  # pragma: no cover
-        logger.exception('error')
+        self.heka_client.raven('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
@@ -293,7 +290,7 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
             session.commit()
         return (len(wifis), len(moving_keys))
     except IntegrityError as exc:  # pragma: no cover
-        logger.exception('error')
+        self.heka_client.raven('error')
         return 0
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
