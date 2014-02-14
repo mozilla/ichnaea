@@ -14,7 +14,7 @@ with a JSON body:
 
 .. code-block:: javascript
 
-    {'items': [
+    {"items": [
        {
         "lat": -22.7539192,
         "lon": -43.4371081,
