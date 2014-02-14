@@ -3,10 +3,13 @@ from datetime import (
     timedelta,
 )
 
+from sqlalchemy import text
+
 from ichnaea.content.models import (
     Score,
     SCORE_TYPE,
 )
+from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.models import (
     Cell,
     CellMeasure,
@@ -210,3 +213,33 @@ class TestInsert(CeleryTestCase):
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 1)
         self.assertEqual(set([w.key for w in wifis]), set([good_key]))
+
+
+class TestSubmitErrors(CeleryTestCase):
+    # this is a standalone class to ensure DB isolation for dropping tables
+
+    def test_database_error(self):
+        from ichnaea.service.submit.tasks import insert_wifi_measure
+        session = self.db_master_session
+
+        stmt = text("drop table wifi;")
+        session.execute(stmt)
+
+        measure = dict(
+            lat=10000000, lon=20000000,
+        )
+        entries = [
+            {"key": "ab12", "channel": 11, "signal": -80},
+            {"key": "ab12", "channel": 3, "signal": -90},
+            {"key": "ab12", "channel": 3, "signal": -80},
+            {"key": "cd34", "channel": 3, "signal": -90},
+        ]
+
+        try:
+            insert_wifi_measure.delay(measure, entries)
+        except Exception:
+            pass
+
+        find_msg = self.find_heka_messages
+        self.assertEquals(
+            len(find_msg('sentry', RAVEN_ERROR, field_name='msg')), 1)

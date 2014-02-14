@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from heka.holder import get_client
 
 from ichnaea.db import db_worker_session
+from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.models import (
     Cell,
     CellMeasure,
@@ -37,7 +38,11 @@ class DatabaseTask(Task):
 
     def __call__(self, *args, **kw):
         with self.heka_client.timer("task." + self.shortname):
-            result = super(DatabaseTask, self).__call__(*args, **kw)
+            try:
+                result = super(DatabaseTask, self).__call__(*args, **kw)
+            except Exception:
+                self.heka_client.raven(RAVEN_ERROR)
+                raise
         return result
 
     def db_session(self):
