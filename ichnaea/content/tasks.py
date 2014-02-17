@@ -37,8 +37,12 @@ def add_stat(session, name, day, value):
     before = 0
     if result is not None:
         before = int(result[0])
-    stat = Stat(key=stat_key, time=day, value=before + int(value))
-    session.add(stat)
+
+    # on duplicate key, do a no-op change
+    stmt = Stat.__table__.insert(
+        on_duplicate='time=time').values(
+        key=stat_key, time=day, value=before + int(value))
+    session.execute(stmt)
 
 
 @celery.task(base=DatabaseTask, bind=True)
