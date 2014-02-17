@@ -6,11 +6,12 @@ from ichnaea.decimaljson import (
     dumps,
     loads,
 )
+from ichnaea.exceptions import BaseJSONError
 
 MSG_ONE_OF = 'You need to provide a mapping with least one cell or wifi entry.'
 
 
-class _JSONError(HTTPError):
+class JSONError(HTTPError, BaseJSONError):
     def __init__(self, errors, status=400):
         body = {'errors': errors}
         Response.__init__(self, dumps(body))
@@ -18,7 +19,7 @@ class _JSONError(HTTPError):
         self.content_type = 'application/json'
 
 
-def preprocess_request(request, schema, extra_checks=(), response=_JSONError):
+def preprocess_request(request, schema, extra_checks=(), response=JSONError):
     body = {}
     errors = []
     validated = {}

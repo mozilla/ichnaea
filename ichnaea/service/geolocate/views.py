@@ -4,6 +4,7 @@ from pyramid.response import Response
 
 
 from ichnaea.decimaljson import dumps
+from ichnaea.exceptions import BaseJSONError
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.error import (
     MSG_ONE_OF,
@@ -54,7 +55,7 @@ PARSE_ERROR = {
 PARSE_ERROR = dumps(PARSE_ERROR)
 
 
-class _JSONError(HTTPError):
+class JSONError(HTTPError, BaseJSONError):
     def __init__(self, errors, status=400):
         Response.__init__(self, PARSE_ERROR)
         self.status = status
@@ -107,7 +108,7 @@ def geolocate_view(request):
         request,
         schema=GeoLocateSchema(),
         extra_checks=(geolocate_validator, ),
-        response=_JSONError,
+        response=JSONError,
     )
 
     session = request.db_slave_session
