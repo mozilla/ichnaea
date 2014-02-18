@@ -187,9 +187,25 @@ def process_measures(items, session, userid=None):
         })
 
     if cell_measures:
-        insert_cell_measures.delay(cell_measures, userid=userid)
+        # group by and create task per cell key
+        cells = defaultdict(list)
+        for measure in cell_measures:
+            cell_key = CellKey(measure['radio'], measure['mcc'],
+                               measure['mnc'], measure['lac'],
+                               measure['cid'], measure['psc'])
+            cells[cell_key].append(measure)
+
+        for values in cells.values():
+            insert_cell_measures.delay(values, userid=userid)
+
     if wifi_measures:
-        insert_wifi_measures.delay(wifi_measures, userid=userid)
+        # group by and create task per wifi key
+        wifis = defaultdict(list)
+        for measure in wifi_measures:
+            wifis[measure['key']].append(measure)
+
+        for values in wifis.values():
+            insert_wifi_measures.delay(values, userid=userid)
 
     if userid is not None:
         process_score(userid, len(items), session)
