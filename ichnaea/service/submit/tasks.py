@@ -123,7 +123,6 @@ def process_measure(measure, data, session, userid=None):
     measure.radio = RADIO_TYPE.get(data['radio'], -1)
     measure_data = dict(
         id=measure.id,
-        created=encode_datetime(measure.created),
         lat=to_precise_int(data['lat']),
         lon=to_precise_int(data['lon']),
         time=encode_datetime(data['time']),
@@ -170,8 +169,7 @@ def process_measures(items, session, userid=None):
     # get enough auto-increment ids assigned
     measures = []
     for i in range(len(items)):
-        measure = Measure(created=utcnow)
-        measure.created = utcnow
+        measure = Measure()
         measures.append(measure)
         session.add(measure)
     # TODO switch unique measure id to a uuid, so we don't have to do

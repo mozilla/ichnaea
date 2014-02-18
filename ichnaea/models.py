@@ -247,9 +247,4 @@ class Measure(_Model):
     created = Column(DateTime)  # the insert time of the record into the DB
     radio = Column(SmallInteger)  # mapped via RADIO_TYPE
 
-    def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = datetime.datetime.utcnow()
-        super(Measure, self).__init__(*args, **kw)
-
 measure_table = Measure.__table__

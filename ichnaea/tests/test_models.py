@@ -177,5 +177,4 @@ class TestMeasure(DBTestCase):
         session.commit()
 
         result = session.query(measure.__class__).first()
-        self.assertTrue(isinstance(result.created, datetime.datetime))
         self.assertEqual(result.radio, 1)

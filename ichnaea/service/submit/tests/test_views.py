@@ -22,6 +22,8 @@ class TestSubmit(CeleryAppTestCase):
 
     def test_ok_cell(self):
         app = self.app
+        today = datetime.utcnow().date()
+
         cell_data = [
             {"radio": "umts", "mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
         res = app.post_json(
@@ -44,7 +46,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
         self.assertEqual(item.measure_id, measure_result[0].id)
-        self.assertEqual(item.created, measure_result[0].created)
+        self.assertEqual(item.created.date(), today)
         self.assertEqual(item.lat, 123456781)
         self.assertEqual(item.lon, 234567892)
         self.assertEqual(item.accuracy, 10)
@@ -80,6 +82,7 @@ class TestSubmit(CeleryAppTestCase):
 
     def test_ok_wifi(self):
         app = self.app
+        today = datetime.utcnow().date()
         wifi_data = [{"key": "AB12"}, {"key": "cd:34"}]
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3456781,
@@ -97,7 +100,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(wifi_result), 2)
         item = wifi_result[0]
         self.assertEqual(item.measure_id, measure_result[0].id)
-        self.assertEqual(item.created, measure_result[0].created)
+        self.assertEqual(item.created.date(), today)
         self.assertEqual(item.lat, 123456781)
         self.assertEqual(item.lon, 234567892)
         self.assertEqual(item.accuracy, 17)
@@ -108,7 +111,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.signal, 0)
         item = wifi_result[1]
         self.assertEqual(item.measure_id, measure_result[0].id)
-        self.assertEqual(item.created, measure_result[0].created)
+        self.assertEqual(item.created.date(), today)
         self.assertEqual(item.lat, 123456781)
         self.assertEqual(item.lon, 234567892)
 
