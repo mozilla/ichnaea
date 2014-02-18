@@ -27,7 +27,7 @@ from ichnaea.tests.base import CeleryTestCase
 class TestInsert(CeleryTestCase):
 
     def test_cell(self):
-        from ichnaea.service.submit.tasks import insert_cell_measure
+        from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
@@ -48,7 +48,10 @@ class TestInsert(CeleryTestCase):
             {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 15},
             {"mcc": 1, "mnc": 2, "lac": 3, "cid": 7, "psc": 5},
         ]
-        result = insert_cell_measure.delay(measure, entries, userid=1)
+        for e in entries:
+            e.update(measure)
+
+        result = insert_cell_measures.delay(entries, userid=1)
         self.assertEqual(result.get(), 5)
 
         measures = session.query(CellMeasure).all()
@@ -75,14 +78,14 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(scores[0].value, 8)
 
         # test duplicate execution
-        result = insert_cell_measure.delay(measure, entries, userid=1)
+        result = insert_cell_measures.delay(entries, userid=1)
         self.assertEqual(result.get(), 5)
         # TODO this task isn't idempotent yet
         measures = session.query(CellMeasure).all()
         self.assertEqual(len(measures), 10)
 
     def test_insert_invalid_lac(self):
-        from ichnaea.service.submit.tasks import insert_cell_measure
+        from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
@@ -102,7 +105,10 @@ class TestInsert(CeleryTestCase):
             {"mcc": 1, "mnc": 2, "lac": -1, "cid": -1,
              "psc": 5, "asu": 8},
         ]
-        result = insert_cell_measure.delay(measure, entries, userid=1)
+        for e in entries:
+            e.update(measure)
+
+        result = insert_cell_measures.delay(entries, userid=1)
         self.assertEqual(result.get(), 2)
 
         measures = session.query(CellMeasure).all()
@@ -117,7 +123,7 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([c.total_measures for c in cells]), set([5]))
 
     def test_cell_out_of_range_values(self):
-        from ichnaea.service.submit.tasks import insert_cell_measure
+        from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
@@ -131,7 +137,10 @@ class TestInsert(CeleryTestCase):
             {"asu": -10, "signal": -300, "ta": -10},
             {"asu": 256, "signal": 16, "ta": 128},
         ]
-        result = insert_cell_measure.delay(measure, entries)
+        for e in entries:
+            e.update(measure)
+
+        result = insert_cell_measures.delay(entries)
         self.assertEqual(result.get(), 3)
 
         measures = session.query(CellMeasure).all()

@@ -431,7 +431,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(1, len(find_msg('counter', 'http.request')))
         self.assertEqual(1, len(find_msg('counter', 'items.uploaded')))
         self.assertEqual(1, len(find_msg('timer', 'http.request')))
-        taskname = 'task.service.submit.insert_cell_measure'
+        taskname = 'task.service.submit.insert_cell_measures'
         self.assertEqual(1, len(find_msg('timer', taskname)))
         taskname = 'task.service.submit.insert_measures'
         self.assertEqual(1, len(find_msg('timer', taskname)))

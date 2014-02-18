@@ -133,7 +133,20 @@ def process_measure(measure, data, session, userid=None):
         radio=measure.radio,
     )
     if data.get('cell'):
-        insert_cell_measure.delay(measure_data, data['cell'], userid=userid)
+        # flatten measure / cell data into a single dict
+        entries = []
+        for c in data['cell']:
+            entry = measure_data.copy()
+            # use more specific cell type or
+            # fall back to less precise measure
+            if 'radio' in c:
+                if c['radio'] == '':
+                    del c['radio']
+                else:
+                    c['radio'] = RADIO_TYPE.get(c['radio'], -1)
+            entry.update(c)
+            entries.append(entry)
+        insert_cell_measures.delay(entries, userid=userid)
     if data.get('wifi'):
         # filter out old-style sha1 hashes
         too_long_keys = False
@@ -204,7 +217,7 @@ def insert_measures(self, items=None, nickname=''):
         raise self.retry(exc=exc)
 
 
-def create_cell_measure(measure_data, entry):
+def create_cell_measure(utcnow, entry):
     # convert below-valid-range numbers to -1
     if 'mcc' not in entry or entry['mcc'] < 1:
         entry['mcc'] = -1
@@ -225,14 +238,15 @@ def create_cell_measure(measure_data, entry):
         entry['ta'] = 0
 
     return CellMeasure(
-        measure_id=measure_data['id'],
-        created=decode_datetime(measure_data.get('created', '')),
-        lat=measure_data['lat'],
-        lon=measure_data['lon'],
-        time=decode_datetime(measure_data.get('time', '')),
-        accuracy=measure_data.get('accuracy', 0),
-        altitude=measure_data.get('altitude', 0),
-        altitude_accuracy=measure_data.get('altitude_accuracy', 0),
+        measure_id=entry.get('id'),
+        created=utcnow,
+        lat=entry['lat'],
+        lon=entry['lon'],
+        time=decode_datetime(entry.get('time', '')),
+        accuracy=entry.get('accuracy', 0),
+        altitude=entry.get('altitude', 0),
+        altitude_accuracy=entry.get('altitude_accuracy', 0),
+        radio=entry.get('radio', -1),
         mcc=entry.get('mcc', -1),
         mnc=entry.get('mnc', -1),
         lac=entry.get('lac', -1),
@@ -244,7 +258,7 @@ def create_cell_measure(measure_data, entry):
     )
 
 
-def update_cell_measure_count(cell_key, count, created, session):
+def update_cell_measure_count(cell_key, count, utcnow, session):
     # only update data for complete record
     if cell_key.radio < 0 or cell_key.mcc < 1 or cell_key.mnc < 0 or \
        cell_key.lac < 0 or cell_key.cid < 0:  # NOQA
@@ -269,27 +283,21 @@ def update_cell_measure_count(cell_key, count, created, session):
         on_duplicate='new_measures = new_measures + %s, '
                      'total_measures = total_measures + %s' % (count, count)
     ).values(
-        created=created, radio=cell_key.radio,
+        created=utcnow, radio=cell_key.radio,
         mcc=cell_key.mcc, mnc=cell_key.mnc, lac=cell_key.lac, cid=cell_key.cid,
         psc=cell_key.psc, new_measures=count, total_measures=count)
     session.execute(stmt)
     return new_cell
 
 
-def process_cell_measure(session, measure_data, entries, userid=None):
+def process_cell_measures(session, entries, userid=None):
     cell_count = defaultdict(int)
     cell_measures = []
-    created = decode_datetime(measure_data.get('created', ''))
+    utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
 
     # process entries
     for entry in entries:
-        cell_measure = create_cell_measure(measure_data, entry)
-        # use more specific cell type or
-        # fall back to less precise measure
-        if entry.get('radio'):
-            cell_measure.radio = RADIO_TYPE.get(entry['radio'], -1)
-        else:
-            cell_measure.radio = measure_data['radio']
+        cell_measure = create_cell_measure(utcnow, entry)
         cell_measures.append(cell_measure)
         # group per unique cell
         cell_count[CellKey(cell_measure.radio, cell_measure.mcc,
@@ -300,7 +308,7 @@ def process_cell_measure(session, measure_data, entries, userid=None):
     new_cells = 0
     for cell_key, count in cell_count.items():
         new_cells += update_cell_measure_count(
-            cell_key, count, created, session)
+            cell_key, count, utcnow, session)
 
     # update user score
     if userid is not None and new_cells > 0:
@@ -311,12 +319,12 @@ def process_cell_measure(session, measure_data, entries, userid=None):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def insert_cell_measure(self, measure_data, entries, userid=None):
+def insert_cell_measures(self, entries, userid=None):
     try:
         cell_measures = []
         with self.db_session() as session:
-            cell_measures = process_cell_measure(
-                session, measure_data, entries, userid=userid)
+            cell_measures = process_cell_measures(
+                session, entries, userid=userid)
             session.commit()
         return len(cell_measures)
     except IntegrityError as exc:  # pragma: no cover
@@ -413,7 +421,7 @@ def insert_wifi_measures(self, entries, userid=None):
                 session, entries, userid=userid)
             session.commit()
         return len(wifi_measures)
-    except IntegrityError as exc:
+    except IntegrityError as exc:  # pragma: no cover
         self.heka_client.raven('error')
         return 0
     except Exception as exc:  # pragma: no cover
