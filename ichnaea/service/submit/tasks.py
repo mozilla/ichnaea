@@ -119,9 +119,9 @@ def process_time(measure, utcnow, utcmin):
     return measure
 
 
-def process_measure(measure, data, session, userid=None):
+def process_measure(measure_id, data, session, userid=None):
     measure_data = dict(
-        id=measure.id,
+        measure_id=measure_id,
         lat=to_precise_int(data['lat']),
         lon=to_precise_int(data['lon']),
         time=encode_datetime(data['time']),
@@ -154,7 +154,6 @@ def process_measure(measure, data, session, userid=None):
             for w in data['wifi']:
                 w.update(measure_data)
             insert_wifi_measures.delay(data['wifi'], userid=userid)
-    return measure
 
 
 def process_measures(items, session, userid=None):
@@ -174,7 +173,7 @@ def process_measures(items, session, userid=None):
     positions = []
     for i, item in enumerate(items):
         item = process_time(item, utcnow, utcmin)
-        process_measure(measures[i], item, session, userid=userid)
+        process_measure(measures[i].id, item, session, userid=userid)
         positions.append({
             'lat': to_precise_int(item['lat']),
             'lon': to_precise_int(item['lon']),
@@ -231,7 +230,7 @@ def create_cell_measure(utcnow, entry):
         entry['ta'] = 0
 
     return CellMeasure(
-        measure_id=entry.get('id'),
+        measure_id=entry.get('measure_id'),
         created=utcnow,
         lat=entry['lat'],
         lon=entry['lon'],
@@ -341,7 +340,7 @@ def convert_frequency(entry):
 
 def create_wifi_measure(utcnow, entry):
     return WifiMeasure(
-        measure_id=entry.get('id'),
+        measure_id=entry.get('measure_id'),
         created=utcnow,
         lat=entry['lat'],
         lon=entry['lon'],
