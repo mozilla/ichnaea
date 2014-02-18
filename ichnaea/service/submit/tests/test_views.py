@@ -39,8 +39,6 @@ class TestSubmit(CeleryAppTestCase):
         session = self.db_master_session
         measure_result = session.query(Measure).all()
         self.assertEqual(len(measure_result), 1)
-        item = measure_result[0]
-        self.assertEqual(item.radio, RADIO_TYPE['gsm'])
 
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 1)
@@ -71,8 +69,6 @@ class TestSubmit(CeleryAppTestCase):
         session = self.db_master_session
         measure_result = session.query(Measure).all()
         self.assertEqual(len(measure_result), 1)
-        item = measure_result[0]
-        self.assertEqual(item.radio, RADIO_TYPE['gsm'])
 
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 1)

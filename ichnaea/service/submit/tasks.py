@@ -120,7 +120,6 @@ def process_time(measure, utcnow, utcmin):
 
 
 def process_measure(measure, data, session, userid=None):
-    measure.radio = RADIO_TYPE.get(data['radio'], -1)
     measure_data = dict(
         id=measure.id,
         lat=to_precise_int(data['lat']),
@@ -129,23 +128,19 @@ def process_measure(measure, data, session, userid=None):
         accuracy=data['accuracy'],
         altitude=data['altitude'],
         altitude_accuracy=data['altitude_accuracy'],
-        radio=measure.radio,
     )
+    measure_radio = RADIO_TYPE.get(data['radio'], -1)
     if data.get('cell'):
         # flatten measure / cell data into a single dict
-        entries = []
         for c in data['cell']:
-            entry = measure_data.copy()
+            c.update(measure_data)
             # use more specific cell type or
             # fall back to less precise measure
-            if 'radio' in c:
-                if c['radio'] == '':
-                    del c['radio']
-                else:
-                    c['radio'] = RADIO_TYPE.get(c['radio'], -1)
-            entry.update(c)
-            entries.append(entry)
-        insert_cell_measures.delay(entries, userid=userid)
+            if c['radio'] != '':
+                c['radio'] = RADIO_TYPE.get(c['radio'], -1)
+            else:
+                c['radio'] = measure_radio
+        insert_cell_measures.delay(data['cell'], userid=userid)
     if data.get('wifi'):
         # filter out old-style sha1 hashes
         too_long_keys = False
