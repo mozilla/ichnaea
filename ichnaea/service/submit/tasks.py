@@ -143,8 +143,10 @@ def process_measure(measure, data, session, userid=None):
                 too_long_keys = True
                 break
         if not too_long_keys:
-            insert_wifi_measure.delay(
-                measure_data, data['wifi'], userid=userid)
+            # flatten measure / wifi data into a single dict
+            for w in data['wifi']:
+                w.update(measure_data)
+            insert_wifi_measures.delay(data['wifi'], userid=userid)
     return measure
 
 
@@ -336,28 +338,28 @@ def convert_frequency(entry):
             entry['channel'] = (freq - 5000) // 5
 
 
-def create_wifi_measure(measure_data, created, entry):
+def create_wifi_measure(utcnow, entry):
     return WifiMeasure(
-        measure_id=measure_data['id'],
-        created=created,
-        lat=measure_data['lat'],
-        lon=measure_data['lon'],
-        time=decode_datetime(measure_data.get('time', '')),
-        accuracy=measure_data.get('accuracy', 0),
-        altitude=measure_data.get('altitude', 0),
-        altitude_accuracy=measure_data.get('altitude_accuracy', 0),
-        id=entry.get('id', None),
+        measure_id=entry.get('id'),
+        created=utcnow,
+        lat=entry['lat'],
+        lon=entry['lon'],
+        time=decode_datetime(entry.get('time', '')),
+        accuracy=entry.get('accuracy', 0),
+        altitude=entry.get('altitude', 0),
+        altitude_accuracy=entry.get('altitude_accuracy', 0),
         key=entry['key'],
         channel=entry.get('channel', 0),
         signal=entry.get('signal', 0),
     )
 
 
-def process_wifi_measure(session, measure_data, entries, userid=None):
+def process_wifi_measures(session, entries, userid=None):
     wifi_measures = []
     wifi_count = defaultdict(int)
     wifi_keys = set([e['key'] for e in entries])
-    created = decode_datetime(measure_data.get('created', ''))
+
+    utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
 
     # did we get measures for blacklisted wifis?
     blacked = session.query(WifiBlacklist.key).filter(
@@ -369,7 +371,7 @@ def process_wifi_measure(session, measure_data, entries, userid=None):
         wifi_key = entry['key']
         # convert frequency into channel numbers and remove frequency
         convert_frequency(entry)
-        wifi_measures.append(create_wifi_measure(measure_data, created, entry))
+        wifi_measures.append(create_wifi_measure(utcnow, entry))
         if wifi_key not in blacked:
             # skip blacklisted wifi AP's
             wifi_count[wifi_key] += 1
@@ -394,7 +396,7 @@ def process_wifi_measure(session, measure_data, entries, userid=None):
             on_duplicate='new_measures = new_measures + %s, '
                          'total_measures = total_measures + %s' % (num, num)
         ).values(
-            key=wifi_key, created=created,
+            key=wifi_key, created=utcnow,
             new_measures=num, total_measures=num)
         session.execute(stmt)
 
@@ -403,12 +405,12 @@ def process_wifi_measure(session, measure_data, entries, userid=None):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def insert_wifi_measure(self, measure_data, entries, userid=None):
+def insert_wifi_measures(self, entries, userid=None):
     wifi_measures = []
     try:
         with self.db_session() as session:
-            wifi_measures = process_wifi_measure(
-                session, measure_data, entries, userid=userid)
+            wifi_measures = process_wifi_measures(
+                session, entries, userid=userid)
             session.commit()
         return len(wifi_measures)
     except IntegrityError as exc:

@@ -3,6 +3,7 @@ from datetime import (
     timedelta,
 )
 
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy import text
 
 from ichnaea.content.models import (
@@ -140,7 +141,7 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([m.ta for m in measures]), set([0, 32]))
 
     def test_wifi(self):
-        from ichnaea.service.submit.tasks import insert_wifi_measure
+        from ichnaea.service.submit.tasks import insert_wifi_measures
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
@@ -159,7 +160,9 @@ class TestInsert(CeleryTestCase):
             {"key": "ab12", "channel": 3, "signal": -80},
             {"key": "cd34", "channel": 3, "signal": -90},
         ]
-        result = insert_wifi_measure.delay(measure, entries, userid=1)
+        for e in entries:
+            e.update(measure)
+        result = insert_wifi_measures.delay(entries, userid=1)
         self.assertEqual(result.get(), 4)
 
         measures = session.query(WifiMeasure).all()
@@ -180,19 +183,14 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(scores[0].value, 8)
 
         # test duplicate execution
-        result = insert_wifi_measure.delay(measure, entries, userid=1)
+        result = insert_wifi_measures.delay(entries, userid=1)
         self.assertEqual(result.get(), 4)
         # TODO this task isn't idempotent yet
         measures = session.query(WifiMeasure).all()
         self.assertEqual(len(measures), 8)
 
-        # test error case
-        entries[0]['id'] = measures[0].id
-        result = insert_wifi_measure.delay(measure, entries)
-        self.assertEqual(result.get(), 0)
-
     def test_wifi_blacklist(self):
-        from ichnaea.service.submit.tasks import insert_wifi_measure
+        from ichnaea.service.submit.tasks import insert_wifi_measures
         session = self.db_master_session
         bad_key = "ab1234567890"
         good_key = "cd1234567890"
@@ -201,8 +199,10 @@ class TestInsert(CeleryTestCase):
         session.flush()
         measure = dict(id=0, lat=10000000, lon=20000000)
         entries = [{"key": good_key}, {"key": good_key}, {"key": bad_key}]
+        for e in entries:
+            e.update(measure)
 
-        result = insert_wifi_measure.delay(measure, entries)
+        result = insert_wifi_measures.delay(entries)
         self.assertEqual(result.get(), 3)
 
         measures = session.query(WifiMeasure).all()
@@ -219,26 +219,25 @@ class TestSubmitErrors(CeleryTestCase):
     # this is a standalone class to ensure DB isolation for dropping tables
 
     def test_database_error(self):
-        from ichnaea.service.submit.tasks import insert_wifi_measure
+        from ichnaea.service.submit.tasks import insert_wifi_measures
         session = self.db_master_session
 
         stmt = text("drop table wifi;")
         session.execute(stmt)
 
-        measure = dict(
-            lat=10000000, lon=20000000,
-        )
         entries = [
-            {"key": "ab12", "channel": 11, "signal": -80},
-            {"key": "ab12", "channel": 3, "signal": -90},
-            {"key": "ab12", "channel": 3, "signal": -80},
-            {"key": "cd34", "channel": 3, "signal": -90},
+            {"lat": 10000000, "lon": 20000000, "key": "ab12", "channel": 11},
+            {"lat": 10000000, "lon": 20000000, "key": "ab12", "channel": 3},
+            {"lat": 10000000, "lon": 20000000, "key": "ab12", "channel": 3},
+            {"lat": 10000000, "lon": 20000000, "key": "cd34", "channel": 3},
         ]
 
         try:
-            insert_wifi_measure.delay(measure, entries)
-        except Exception:
+            insert_wifi_measures.delay(entries)
+        except ProgrammingError:
             pass
+        except Exception as exc:
+            self.fail("Unexpected exception caught: %s" % repr(exc))
 
         find_msg = self.find_heka_messages
         self.assertEquals(
