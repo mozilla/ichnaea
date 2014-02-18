@@ -119,7 +119,9 @@ def process_time(measure, utcnow, utcmin):
     return measure
 
 
-def process_measure(measure_id, data, session, userid=None):
+def process_measure(measure_id, data, session):
+    cell_measures = []
+    wifi_measures = []
     measure_data = dict(
         measure_id=measure_id,
         lat=to_precise_int(data['lat']),
@@ -140,7 +142,7 @@ def process_measure(measure_id, data, session, userid=None):
                 c['radio'] = RADIO_TYPE.get(c['radio'], -1)
             else:
                 c['radio'] = measure_radio
-        insert_cell_measures.delay(data['cell'], userid=userid)
+        cell_measures = data['cell']
     if data.get('wifi'):
         # filter out old-style sha1 hashes
         too_long_keys = False
@@ -153,7 +155,8 @@ def process_measure(measure_id, data, session, userid=None):
             # flatten measure / wifi data into a single dict
             for w in data['wifi']:
                 w.update(measure_data)
-            insert_wifi_measures.delay(data['wifi'], userid=userid)
+            wifi_measures = data['wifi']
+    return (cell_measures, wifi_measures)
 
 
 def process_measures(items, session, userid=None):
@@ -171,13 +174,22 @@ def process_measures(items, session, userid=None):
     session.flush()
 
     positions = []
+    cell_measures = []
+    wifi_measures = []
     for i, item in enumerate(items):
         item = process_time(item, utcnow, utcmin)
-        process_measure(measures[i].id, item, session, userid=userid)
+        cell, wifi = process_measure(measures[i].id, item, session)
+        cell_measures.extend(cell)
+        wifi_measures.extend(wifi)
         positions.append({
             'lat': to_precise_int(item['lat']),
             'lon': to_precise_int(item['lon']),
         })
+
+    if cell_measures:
+        insert_cell_measures.delay(cell_measures, userid=userid)
+    if wifi_measures:
+        insert_wifi_measures.delay(wifi_measures, userid=userid)
 
     if userid is not None:
         process_score(userid, len(items), session)
