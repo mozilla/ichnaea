@@ -171,10 +171,10 @@ class TestMeasure(DBTestCase):
         self.assertTrue(measure.id is None)
 
     def test_fields(self):
-        measure = self._make_one(radio=1)
+        measure = self._make_one()
         session = self.db_master_session
         session.add(measure)
         session.commit()
 
         result = session.query(measure.__class__).first()
-        self.assertEqual(result.radio, 1)
+        self.assertFalse(result.id is None)

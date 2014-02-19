@@ -241,7 +241,5 @@ class Measure(_Model):
 
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
-    created = Column(DateTime)  # the insert time of the record into the DB
-    radio = Column(SmallInteger)  # mapped via RADIO_TYPE
 
 measure_table = Measure.__table__
