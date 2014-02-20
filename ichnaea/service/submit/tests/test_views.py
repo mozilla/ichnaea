@@ -1,6 +1,8 @@
 from datetime import datetime
 from datetime import timedelta
 
+from webob.response import gzip_app_iter
+
 from ichnaea.content.models import (
     MapStat,
     MAPSTAT_TYPE,
@@ -14,7 +16,10 @@ from ichnaea.models import (
     RADIO_TYPE,
     WifiMeasure,
 )
-from ichnaea.decimaljson import encode_datetime
+from ichnaea.decimaljson import (
+    dumps,
+    encode_datetime,
+)
 from ichnaea.tests.base import CeleryAppTestCase
 
 
@@ -401,6 +406,17 @@ class TestSubmit(CeleryAppTestCase):
         app = self.app
         res = app.post('/v1/submit', "\xae", status=400)
         self.assertTrue('errors' in res.json)
+
+    def test_gzip(self):
+        app = self.app
+        data = {"items": [{"lat": 1.0, "lon": 2.0, "wifi": [{"key": "aa"}]}]}
+        body = ''.join(gzip_app_iter(dumps(data)))
+        headers = {
+            'Content-Encoding': 'gzip',
+        }
+        res = app.post('/v1/submit?key=test', body, headers=headers,
+                       content_type='application/json', status=204)
+        self.assertEqual(res.body, '')
 
     def test_heka_logging(self):
         app = self.app

@@ -1,3 +1,5 @@
+import zlib
+
 from colander import Invalid
 from pyramid.httpexceptions import HTTPError
 from pyramid.response import Response
@@ -8,6 +10,8 @@ from ichnaea.decimaljson import (
 )
 from ichnaea.exceptions import BaseJSONError
 
+MSG_EMPTY = 'No JSON body was provided.'
+MSG_GZIP = 'Error decompressing gzip data stream.'
 MSG_ONE_OF = 'You need to provide a mapping with least one cell or wifi entry.'
 
 
@@ -24,11 +28,22 @@ def preprocess_request(request, schema, extra_checks=(), response=JSONError):
     errors = []
     validated = {}
 
-    if request.body:
-        try:
-            body = loads(request.body, encoding=request.charset)
-        except ValueError as e:
-            errors.append(dict(name=None, description=e.message))
+    body = request.body
+    if body:
+        if request.headers.get('Content-Encoding') == 'gzip':
+            # handle gzip request bodies
+            try:
+                body = zlib.decompress(body, 16 + zlib.MAX_WBITS)
+            except zlib.error:
+                errors.append(dict(name=None, description=MSG_GZIP))
+
+        if not errors:
+            try:
+                body = loads(body, encoding=request.charset)
+            except ValueError as e:
+                errors.append(dict(name=None, description=e.message))
+    else:
+        errors.append(dict(name=None, description=MSG_EMPTY))
 
     if errors and response is not None:
         # the response / None check is used in schema tests

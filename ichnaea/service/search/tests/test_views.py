@@ -1,5 +1,7 @@
 from sqlalchemy import text
+from webob.response import gzip_app_iter
 
+from ichnaea.decimaljson import dumps
 from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.models import (
     Cell,
@@ -228,6 +230,18 @@ class TestSearch(AppTestCase):
         app = self.app
         res = app.post('/v1/search?key=test', "\xae", status=400)
         self.assertTrue('errors' in res.json)
+
+    def test_gzip(self):
+        app = self.app
+        data = {"cell": [{"mcc": 1, "mnc": 2, "lac": 3, "cid": 4}]}
+        body = ''.join(gzip_app_iter(dumps(data)))
+        headers = {
+            'Content-Encoding': 'gzip',
+        }
+        res = app.post('/v1/search?key=test', body, headers=headers,
+                       content_type='application/json', status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.body, '{"status": "not_found"}')
 
     def test_no_api_key(self):
         app = self.app
