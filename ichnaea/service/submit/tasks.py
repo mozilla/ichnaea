@@ -217,7 +217,6 @@ def process_measures(items, session, userid=None):
 def insert_measures(self, items=None, nickname=''):
     if not items:  # pragma: no cover
         return 0
-
     items = loads(items)
     length = len(items)
 
