@@ -1,4 +1,7 @@
-from pyramid.httpexceptions import HTTPNoContent
+from pyramid.httpexceptions import (
+    HTTPNoContent,
+    HTTPBadRequest,
+)
 
 from ichnaea.decimaljson import dumps
 from ichnaea.service.error import (
@@ -7,7 +10,7 @@ from ichnaea.service.error import (
 )
 from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.service.submit.tasks import insert_measures
-
+import zlib
 
 def configure_submit(config):
     config.add_route('v1_submit', '/v1/submit')
@@ -34,6 +37,14 @@ def submit_validator(data, errors):
 
 
 def submit_view(request):
+    compressed = request.headers.get('Content-Encoding', u'')
+    if isinstance(compressed, str):
+        compressed = compressed.decode('utf-8', 'ignore')
+    if compressed == "gzip":
+        try:
+            request.body = zlib.decompress((request.body),16+zlib.MAX_WBITS)
+        except:
+            return HTTPBadRequest()        
     data, errors = preprocess_request(
         request,
         schema=SubmitSchema(),
