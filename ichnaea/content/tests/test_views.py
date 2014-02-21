@@ -66,6 +66,10 @@ class TestFunctionalContent(AppTestCase):
         self.assertEquals(
             len(find_msg('sentry', RAVEN_ERROR, field_name='msg')), 1)
 
+        # No counters for URLs that are invalid
+        self.assertEquals(
+            len(find_msg('counter', 'http.request')), 0)
+
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)
 

@@ -30,6 +30,11 @@ class TestSearch(AppTestCase):
                 dict(radio="umts", cid=5, **key),
             ]},
             status=200)
+
+        find_msg = self.find_heka_messages
+        self.assertEquals(
+            len(find_msg('counter', 'http.request')), 1)
+
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "ok", "lat": 1.0010000, '
                                    '"lon": 1.0020000, "accuracy": 35000}')

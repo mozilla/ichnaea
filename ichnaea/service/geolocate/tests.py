@@ -30,6 +30,11 @@ class TestGeolocate(AppTestCase):
                      "locationAreaCode": 2, "cellId": 1234},
                 ]},
             status=200)
+
+        find_msg = self.find_heka_messages
+        self.assertEquals(
+            len(find_msg('counter', 'http.request')), 1)
+
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"location": {"lat": 12.3456781, '
                                    '"lng": 23.4567892}, "accuracy": 35000.0}')
