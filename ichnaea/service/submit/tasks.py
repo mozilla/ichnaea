@@ -217,7 +217,6 @@ def process_measures(items, session, userid=None):
 def insert_measures(self, items=None, nickname=''):
     if not items:  # pragma: no cover
         return 0
-    # TODO manually decode payload from our custom json
     items = loads(items)
     length = len(items)
 
@@ -317,6 +316,15 @@ def process_cell_measures(session, entries, userid=None):
 
     # process entries
     for entry in entries:
+        if (entry.get('mcc', None) and entry.get('mnc', None)) is None:
+            # Must have MCC and MNC
+            continue
+
+        if (entry.get('lac', None) and entry.get('cid', None)) is None and \
+           (entry.get('psc', None)) is None:
+            # Must have LAC+CID or PSC
+            continue
+
         cell_measure = create_cell_measure(utcnow, entry)
         cell_measures.append(cell_measure)
         # group per unique cell

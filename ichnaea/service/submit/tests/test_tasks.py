@@ -42,7 +42,10 @@ class TestInsert(CeleryTestCase):
             altitude_accuracy=0, radio=0,
         )
         entries = [
+            # Note that this first entry will be skipped as it does
+            # not include (lac, cid) or (psc)
             {"mcc": 1, "mnc": 2, "signal": -100},
+
             {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
             {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
             {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 15},
@@ -52,15 +55,15 @@ class TestInsert(CeleryTestCase):
             e.update(measure)
 
         result = insert_cell_measures.delay(entries, userid=1)
-        self.assertEqual(result.get(), 5)
 
+        self.assertEqual(result.get(), 4)
         measures = session.query(CellMeasure).all()
-        self.assertEqual(len(measures), 5)
+        self.assertEqual(len(measures), 4)
         self.assertEqual(set([m.mcc for m in measures]), set([1]))
         self.assertEqual(set([m.mnc for m in measures]), set([2]))
         self.assertEqual(set([m.asu for m in measures]), set([-1, 8, 15]))
-        self.assertEqual(set([m.psc for m in measures]), set([-1, 5]))
-        self.assertEqual(set([m.signal for m in measures]), set([0, -100]))
+        self.assertEqual(set([m.psc for m in measures]), set([5]))
+        self.assertEqual(set([m.signal for m in measures]), set([0]))
 
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 2)
@@ -79,10 +82,10 @@ class TestInsert(CeleryTestCase):
 
         # test duplicate execution
         result = insert_cell_measures.delay(entries, userid=1)
-        self.assertEqual(result.get(), 5)
+        self.assertEqual(result.get(), 4)
         # TODO this task isn't idempotent yet
         measures = session.query(CellMeasure).all()
-        self.assertEqual(len(measures), 10)
+        self.assertEqual(len(measures), 8)
 
     def test_insert_invalid_lac(self):
         from ichnaea.service.submit.tasks import insert_cell_measures
@@ -222,6 +225,62 @@ class TestInsert(CeleryTestCase):
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 1)
         self.assertEqual(set([w.key for w in wifis]), set([good_key]))
+
+    def test_ignore_unhelpful_incomplete_cells(self):
+        '''
+        Cell records must have MNC, MCC and at least one of (LAC, CID) or PSC
+        values filled in.
+        '''
+        from ichnaea.service.submit.tasks import insert_cell_measures
+        session = self.db_master_session
+        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
+
+        measure = dict(
+            id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
+            time=encode_datetime(time), accuracy=0, altitude=0,
+            altitude_accuracy=0, radio=0,
+        )
+        entries = [
+            # Note that this first entry will be skipped as it does
+            # not include (lac, cid) or (psc)
+            {},  # No MNC, MCC
+
+            # This record is valid
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
+
+            # This record is missing cid
+            {"mcc": 1, "mnc": 2, "lac": 3, "asu": 8},
+
+            # This record is missing lac
+            {"mcc": 1, "mnc": 2, "cid": 3, "asu": 8},
+
+            # This record is missing lac, cid and psc
+            {"mcc": 1, "mnc": 2, "asu": 8},
+        ]
+
+        for e in entries:
+            e.update(measure)
+        result = insert_cell_measures.delay(entries, userid=1)
+
+        self.assertEqual(result.get(), 1)
+        measures = session.query(CellMeasure).all()
+        self.assertEqual(len(measures), 1)
+        cells = session.query(Cell).all()
+        self.assertEqual(len(cells), 1)
+
+        entries = [
+            # This record is valid
+            {"mcc": 1, "mnc": 2, "psc": 5, "asu": 8},
+        ]
+        for e in entries:
+            e.update(measure)
+        result = insert_cell_measures.delay(entries, userid=1)
+
+        self.assertEqual(result.get(), 1)
+        measures = session.query(CellMeasure).all()
+        self.assertEqual(len(measures), 2)
+        cells = session.query(Cell).all()
+        self.assertEqual(len(cells), 1)
 
 
 class TestSubmitErrors(CeleryTestCase):
