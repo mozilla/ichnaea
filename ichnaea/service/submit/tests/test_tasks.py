@@ -227,10 +227,8 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([w.key for w in wifis]), set([good_key]))
 
     def test_ignore_unhelpful_incomplete_cells(self):
-        '''
-        Cell records must have MNC, MCC and at least one of (LAC, CID) or PSC
-        values filled in.
-        '''
+        # Cell records must have MNC, MCC and at least one of (LAC, CID) or PSC
+        # values filled in.
         from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
@@ -241,44 +239,67 @@ class TestInsert(CeleryTestCase):
             altitude_accuracy=0, radio=0,
         )
         entries = [
-            # Note that this first entry will be skipped as it does
-            # not include (lac, cid) or (psc)
-            {},  # No MNC, MCC
+            # These records are valid
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4},
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5},
 
-            # This record is valid
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
+            # This record is missing everything
+            {},
 
-            # This record is missing cid
-            {"mcc": 1, "mnc": 2, "lac": 3, "asu": 8},
+            # These records fail the mcc check
+            {"mnc": 2, "lac": 3, "cid": 4},
+            {"mcc": 0, "mnc": 2, "lac": 3, "cid": 4},
+            {"mcc": -1, "mnc": 2, "lac": 3, "cid": 4},
+            {"mcc": -2, "mnc": 2, "lac": 3, "cid": 4},
+            {"mcc": 2000, "mnc": 2, "lac": 3, "cid": 4},
 
-            # This record is missing lac
-            {"mcc": 1, "mnc": 2, "cid": 3, "asu": 8},
+            # These records fail the mnc check
+            {"mcc": 1, "lac": 3, "cid": 4},
+            {"mcc": 1, "mnc": -1, "lac": 3, "cid": 4},
+            {"mcc": 1, "mnc": -2, "lac": 3, "cid": 4},
+            {"mcc": 1, "mnc": 33000, "lac": 3, "cid": 4},
 
-            # This record is missing lac, cid and psc
-            {"mcc": 1, "mnc": 2, "asu": 8},
+            # These records fail the lac check
+            {"mcc": 1, "mnc": 2, "cid": 4},
+            {"mcc": 1, "mnc": 2, "lac": -1, "cid": 4},
+            {"mcc": 1, "mnc": 2, "lac": -2, "cid": 4},
+            {"mcc": 1, "mnc": 2, "lac": 65536, "cid": 4},
+
+            # These records fail the cid check
+            {"mcc": 1, "mnc": 2, "lac": 3},
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": -1},
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": -2},
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 2 ** 28},
+
+            # These records fail the (lac or cid) and psc check
+            {"mcc": 1, "mnc": 2},
+            {"mcc": 1, "mnc": 2, "lac": 3},
+            {"mcc": 1, "mnc": 2, "cid": 4},
         ]
 
         for e in entries:
             e.update(measure)
         result = insert_cell_measures.delay(entries, userid=1)
 
-        self.assertEqual(result.get(), 1)
+        self.assertEqual(result.get(), 2)
         measures = session.query(CellMeasure).all()
-        self.assertEqual(len(measures), 1)
+        self.assertEqual(len(measures), 2)
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 1)
 
         entries = [
-            # This record is valid
-            {"mcc": 1, "mnc": 2, "psc": 5, "asu": 8},
+            # These records are valid
+            {"mcc": 1, "mnc": 2, "psc": 5},
+            {"mcc": 1, "mnc": 2, "lac": 3, "psc": 5},
+            {"mcc": 1, "mnc": 2, "cid": 4, "psc": 5},
         ]
         for e in entries:
             e.update(measure)
         result = insert_cell_measures.delay(entries, userid=1)
 
-        self.assertEqual(result.get(), 1)
+        self.assertEqual(result.get(), 3)
         measures = session.query(CellMeasure).all()
-        self.assertEqual(len(measures), 2)
+        self.assertEqual(len(measures), 5)
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 1)
 

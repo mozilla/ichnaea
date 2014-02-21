@@ -237,23 +237,31 @@ def insert_measures(self, items=None, nickname=''):
 
 
 def create_cell_measure(utcnow, entry):
-    # convert below-valid-range numbers to -1
-    if 'mcc' not in entry or entry['mcc'] < 1:
-        entry['mcc'] = -1
-    if 'mnc' not in entry or entry['mnc'] < 0:
-        entry['mnc'] = -1
+    # skip records with missing or invalid mcc or mnc
+    if 'mcc' not in entry or entry['mcc'] < 1 or entry['mcc'] > 999:
+        return
+    if 'mnc' not in entry or entry['mnc'] < 0 or entry['mnc'] > 32767:
+        return
+
     # some phones send maxint32 to signal "unknown"
-    # convert to -1 as our canonical expression of "unknown"
-    if 'lac' not in entry or entry['lac'] >= 2147483647:
+    # ignore anything above the maximum valid values
+    if 'lac' not in entry or entry['lac'] < 0 or entry['lac'] > 65535:
         entry['lac'] = -1
-    if 'cid' not in entry or entry['cid'] >= 2147483647:
+    if 'cid' not in entry or entry['cid'] < 0 or entry['cid'] > 268435455:
         entry['cid'] = -1
+    if 'psc' not in entry or entry['psc'] < 0 or entry['psc'] > 512:
+        entry['psc'] = -1
+
+    # Must have LAC+CID or PSC
+    if (entry['lac'] == -1 or entry['cid'] == -1) and entry['psc'] == -1:
+        return
+
     # make sure fields stay within reasonable bounds
-    if 'asu' in entry and (entry['asu'] < 0 or entry['asu'] > 100):
+    if 'asu' not in entry or entry['asu'] < 0 or entry['asu'] > 100:
         entry['asu'] = -1
-    if 'signal' in entry and (entry['signal'] < -200 or entry['signal'] > -1):
+    if 'signal' not in entry or entry['signal'] < -200 or entry['signal'] > -1:
         entry['signal'] = 0
-    if 'ta' in entry and (entry['ta'] < 0 or entry['ta'] > 100):
+    if 'ta' not in entry or entry['ta'] < 0 or entry['ta'] > 100:
         entry['ta'] = 0
 
     return CellMeasure(
@@ -316,16 +324,9 @@ def process_cell_measures(session, entries, userid=None):
 
     # process entries
     for entry in entries:
-        if (entry.get('mcc', None) and entry.get('mnc', None)) is None:
-            # Must have MCC and MNC
-            continue
-
-        if (entry.get('lac', None) and entry.get('cid', None)) is None and \
-           (entry.get('psc', None)) is None:
-            # Must have LAC+CID or PSC
-            continue
-
         cell_measure = create_cell_measure(utcnow, entry)
+        if not cell_measure:
+            continue
         cell_measures.append(cell_measure)
         # group per unique cell
         cell_count[CellKey(cell_measure.radio, cell_measure.mcc,
