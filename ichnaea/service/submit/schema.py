@@ -1,3 +1,5 @@
+import colander
+
 from colander import MappingSchema, SchemaNode, SequenceSchema
 from colander import Decimal, Integer, String, OneOf
 
@@ -23,7 +25,8 @@ class CellsSchema(SequenceSchema):
 
 
 class WifiSchema(MappingSchema):
-    key = SchemaNode(String(), location="body", type='str')
+    key = SchemaNode(String(), location="body", type='str',
+                     validator=colander.Length(12))
     frequency = SchemaNode(Integer(), location="body", type='int', missing=0)
     channel = SchemaNode(Integer(), location="body", type='int', missing=0)
     signal = SchemaNode(Integer(), location="body", type='int', missing=0)

@@ -84,7 +84,7 @@ class TestSubmit(CeleryAppTestCase):
     def test_ok_wifi(self):
         app = self.app
         today = datetime.utcnow().date()
-        wifi_data = [{"key": "AB12"}, {"key": "cd:34"}]
+        wifi_data = [{"key": "AB12AB12AB12"}, {"key": "cd:34:cd:34:cd:34"}]
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3456781,
                                       "lon": 23.4567892,
@@ -107,7 +107,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.accuracy, 17)
         self.assertEqual(item.altitude, 0)
         self.assertEqual(item.altitude_accuracy, 0)
-        self.assertTrue(item.key in ("ab12", "cd34"))
+        self.assertTrue(item.key in ("ab12ab12ab12", "cd34cd34cd34"))
         self.assertEqual(item.channel, 0)
         self.assertEqual(item.signal, 0)
         item = wifi_result[1]
@@ -119,13 +119,13 @@ class TestSubmit(CeleryAppTestCase):
     def test_ok_wifi_frequency(self):
         app = self.app
         wifi_data = [
-            {"key": "99"},
-            {"key": "aa", "frequency": 2427},
-            {"key": "bb", "channel": 7},
-            {"key": "cc", "frequency": 5200},
-            {"key": "dd", "frequency": 5700},
-            {"key": "ee", "frequency": 3100},
-            {"key": "ff", "frequency": 2412, "channel": 9},
+            {"key": "999999999999"},
+            {"key": "aaaaaaaaaaaa", "frequency": 2427},
+            {"key": "bbbbbbbbbbbb", "channel": 7},
+            {"key": "cccccccccccc", "frequency": 5200},
+            {"key": "dddddddddddd", "frequency": 5700},
+            {"key": "eeeeeeeeeeee", "frequency": 3100},
+            {"key": "ffffffffffff", "frequency": 2412, "channel": 9},
         ]
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.345678,
@@ -139,17 +139,17 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(result), 7)
 
         wifis = dict([(w.key, w.channel) for w in result])
-        self.assertEqual(wifis['99'], 0)
-        self.assertEqual(wifis['aa'], 4)
-        self.assertEqual(wifis['bb'], 7)
-        self.assertEqual(wifis['cc'], 40)
-        self.assertEqual(wifis['dd'], 140)
-        self.assertEqual(wifis['ee'], 0)
-        self.assertEqual(wifis['ff'], 9)
+        self.assertEqual(wifis['999999999999'], 0)
+        self.assertEqual(wifis['aaaaaaaaaaaa'], 4)
+        self.assertEqual(wifis['bbbbbbbbbbbb'], 7)
+        self.assertEqual(wifis['cccccccccccc'], 40)
+        self.assertEqual(wifis['dddddddddddd'], 140)
+        self.assertEqual(wifis['eeeeeeeeeeee'], 0)
+        self.assertEqual(wifis['ffffffffffff'], 9)
 
     def test_batches(self):
         app = self.app
-        wifi_data = [{"key": "aa"}, {"key": "bb"}]
+        wifi_data = [{"key": "aaaaaaaaaaaa"}, {"key": "bbbbbbbbbbbb"}]
         items = [{"lat": 12.34, "lon": 23.45 + i, "wifi": wifi_data}
                  for i in range(10)]
         res = app.post_json('/v1/submit', {"items": items}, status=204)
@@ -167,8 +167,13 @@ class TestSubmit(CeleryAppTestCase):
         tstr = encode_datetime(time)
         app.post_json(
             '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}], "time": tstr},
-                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
+                {"lat": 1.0,
+                 "lon": 2.0,
+                 "wifi": [{"key": "aaaaaaaaaaaa"}],
+                 "time": tstr},
+                {"lat": 2.0,
+                 "lon": 3.0,
+                 "wifi": [{"key": "bbbbbbbbbbbb"}]},
             ]},
             status=204)
         session = self.db_master_session
@@ -178,11 +183,11 @@ class TestSubmit(CeleryAppTestCase):
         wifis = dict([(w.key, (w.created, w.time)) for w in result])
         today = datetime.utcnow().date()
 
-        self.assertEqual(wifis['a'][0].date(), today)
-        self.assertEqual(wifis['a'][1], tday)
+        self.assertEqual(wifis['aaaaaaaaaaaa'][0].date(), today)
+        self.assertEqual(wifis['aaaaaaaaaaaa'][1], tday)
 
-        self.assertEqual(wifis['b'][0].date(), today)
-        self.assertEqual(wifis['b'][1].date(), today)
+        self.assertEqual(wifis['bbbbbbbbbbbb'][0].date(), today)
+        self.assertEqual(wifis['bbbbbbbbbbbb'][1].date(), today)
 
     def test_time_short_format(self):
         app = self.app
@@ -191,7 +196,9 @@ class TestSubmit(CeleryAppTestCase):
         tstr = time.isoformat()
         app.post_json(
             '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}], "time": tstr},
+                {"lat": 1.0,
+                 "lon": 2.0,
+                 "wifi": [{"key": "aaaaaaaaaaaa"}], "time": tstr},
             ]},
             status=204)
         session = self.db_master_session
@@ -209,7 +216,10 @@ class TestSubmit(CeleryAppTestCase):
         time = "2070-01-01T11:12:13.456Z"
         app.post_json(
             '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}], "time": time},
+                {"lat": 1.0,
+                 "lon": 2.0,
+                 "wifi": [{"key": "aaaaaaaaaaaa"}],
+                 "time": time},
             ]},
             status=204)
         session = self.db_master_session
@@ -222,7 +232,9 @@ class TestSubmit(CeleryAppTestCase):
         time = "2011-01-01T11:12:13.456Z"
         app.post_json(
             '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}], "time": time},
+                {"lat": 1.0,
+                 "lon": 2.0,
+                 "wifi": [{"key": "aaaaaaaaaaaa"}], "time": time},
             ]},
             status=204)
         session = self.db_master_session
@@ -248,10 +260,18 @@ class TestSubmit(CeleryAppTestCase):
         session.flush()
         app.post_json(
             '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
-                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
-                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "c"}]},
-                {"lat": -2.0, "lon": 3.0, "wifi": [{"key": "c"}]},
+                {"lat": 1.0,
+                 "lon": 2.0,
+                 "wifi": [{"key": "aaaaaaaaaaaa"}]},
+                {"lat": 2.0,
+                 "lon": 3.0,
+                 "wifi": [{"key": "bbbbbbbbbbbb"}]},
+                {"lat": 2.0,
+                 "lon": 3.0,
+                 "wifi": [{"key": "cccccccccccc"}]},
+                {"lat": -2.0,
+                 "lon": 3.0,
+                 "wifi": [{"key": "cccccccccccc"}]},
             ]},
             status=204)
         # check fine grained stats
@@ -288,8 +308,12 @@ class TestSubmit(CeleryAppTestCase):
         nickname = 'World Tr\xc3\xa4veler'
         app.post_json(
             '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
-                {"lat": 2.0, "lon": 3.0, "wifi": [{"key": "b"}]},
+                {"lat": 1.0,
+                 "lon": 2.0,
+                 "wifi": [{"key": "aaaaaaaaaaaa"}]},
+                {"lat": 2.0,
+                 "lon": 3.0,
+                 "wifi": [{"key": "bbbbbbbbbbbb"}]},
             ]},
             headers={'X-Nickname': nickname},
             status=204)
@@ -313,7 +337,9 @@ class TestSubmit(CeleryAppTestCase):
         app = self.app
         app.post_json(
             '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "a"}]},
+                {"lat": 1.0,
+                 "lon": 2.0,
+                 "wifi": [{"key": "aaaaaaaaaaaa"}]},
             ]},
             headers={'X-Nickname': "a"},
             status=204)
@@ -336,7 +362,9 @@ class TestSubmit(CeleryAppTestCase):
         session.commit()
         app.post_json(
             '/v1/submit', {"items": [
-                {"lat": 1.0, "lon": 2.0, "wifi": [{"key": "A"}]},
+                {"lat": 1.0,
+                 "lon": 2.0,
+                 "wifi": [{"key": "AAAAAAAAAAAA"}]},
             ]},
             headers={'X-Nickname': nickname},
             status=204)
@@ -409,7 +437,9 @@ class TestSubmit(CeleryAppTestCase):
 
     def test_gzip(self):
         app = self.app
-        data = {"items": [{"lat": 1.0, "lon": 2.0, "wifi": [{"key": "aa"}]}]}
+        data = {"items": [{"lat": 1.0,
+                           "lon": 2.0,
+                           "wifi": [{"key": "aaaaaaaaaaaa"}]}]}
         body = ''.join(gzip_app_iter(dumps(data)))
         headers = {
             'Content-Encoding': 'gzip',
