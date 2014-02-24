@@ -1,4 +1,5 @@
 import datetime
+import re
 
 from sqlalchemy import (
     Column,
@@ -22,6 +23,13 @@ RADIO_TYPE = {
     'lte': 3,
 }
 RADIO_TYPE_KEYS = list(RADIO_TYPE.keys())
+
+invalid_wifi_regex = re.compile("(?!(0{12}|f{12}))")
+valid_wifi_regex = re.compile("([0-9a-fA-F]{12})")
+
+
+def valid_wifi_pattern(key):
+    return invalid_wifi_regex.match(key) and valid_wifi_regex.match(key) and len(key) == 12
 
 
 def normalize_wifi_key(key):

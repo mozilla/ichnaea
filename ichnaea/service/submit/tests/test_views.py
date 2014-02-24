@@ -125,7 +125,7 @@ class TestSubmit(CeleryAppTestCase):
             {"key": "cccccccccccc", "frequency": 5200},
             {"key": "dddddddddddd", "frequency": 5700},
             {"key": "eeeeeeeeeeee", "frequency": 3100},
-            {"key": "ffffffffffff", "frequency": 2412, "channel": 9},
+            {"key": "fffffffffffa", "frequency": 2412, "channel": 9},
         ]
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.345678,
@@ -145,7 +145,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(wifis['cccccccccccc'], 40)
         self.assertEqual(wifis['dddddddddddd'], 140)
         self.assertEqual(wifis['eeeeeeeeeeee'], 0)
-        self.assertEqual(wifis['ffffffffffff'], 9)
+        self.assertEqual(wifis['fffffffffffa'], 9)
 
     def test_batches(self):
         app = self.app
@@ -407,6 +407,19 @@ class TestSubmit(CeleryAppTestCase):
         res = app.post_json('/v1/submit', [1], status=400)
         self.assertTrue('errors' in res.json)
 
+    def test_error_too_short_wifi_key(self):
+        app = self.app
+        wifi_data = [{"key": "ab:12:34:56:78:90"}, {"key": "cd:34"}]
+        app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.3456781,
+                                      "lon": 23.4567892,
+                                      "wifi": wifi_data}]},
+            status=204)
+        session = self.db_master_session
+        result = session.query(WifiMeasure).all()
+        # if any of the keys is too short, the entire batch gets rejected
+        self.assertEqual(len(result), 0)
+
     def test_error_too_long_wifi_key(self):
         app = self.app
         wifi_data = [{"key": "ab:12:34:56:78:90"}, {"key": "cd:34" * 10}]
@@ -480,3 +493,44 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(1, len(find_msg('timer', taskname)))
         taskname = 'task.service.submit.insert_measures'
         self.assertEqual(1, len(find_msg('timer', taskname)))
+
+    def test_bad_wifi_keys(self):
+        app = self.app
+        wifi_data = [{"key": "FFFFFFFFFFFF"}]
+        app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.3456781,
+                                      "lon": 23.4567892,
+                                      "accuracy": 17,
+                                      "wifi": wifi_data}]},
+            status=204)
+
+        session = self.db_master_session
+        result = session.query(WifiMeasure).all()
+        # if any of the keys are invalid
+        self.assertEqual(len(result), 0)
+
+        wifi_data = [{"key": "00:00:00:00:00:00"}]
+        app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.3456781,
+                                      "lon": 23.4567892,
+                                      "accuracy": 17,
+                                      "wifi": wifi_data}]},
+            status=204)
+
+        session = self.db_master_session
+        result = session.query(WifiMeasure).all()
+        # if any of the keys are invalid
+        self.assertEqual(len(result), 0)
+
+        wifi_data = [{"key": "00:00:00:00:00:0a"}]
+        app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.3456781,
+                                      "lon": 23.4567892,
+                                      "accuracy": 17,
+                                      "wifi": wifi_data}]},
+            status=204)
+
+        session = self.db_master_session
+        result = session.query(WifiMeasure).all()
+        # if any of the keys are invalid
+        self.assertEqual(len(result), 1)
