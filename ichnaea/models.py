@@ -29,7 +29,14 @@ valid_wifi_regex = re.compile("([0-9a-fA-F]{12})")
 
 
 def valid_wifi_pattern(key):
-    return invalid_wifi_regex.match(key) and valid_wifi_regex.match(key) and len(key) == 12
+    valid_key = invalid_wifi_regex.match(key) and \
+        valid_wifi_regex.match(key) and len(key) == 12
+
+    if valid_key:
+        sig_byte = key[:2]
+        if not int(bin(int(sig_byte, 16))[2:].zfill(8)[-2]):
+            # This is a globally administered wifi key
+            return True
 
 
 def normalize_wifi_key(key):
