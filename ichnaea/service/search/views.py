@@ -1,3 +1,5 @@
+from heka.holder import get_client
+
 from ichnaea.models import (
     Cell,
     normalize_wifi_key,
@@ -124,6 +126,7 @@ def search_view(request):
     )
 
     session = request.db_slave_session
+    heka_client = get_client('ichnaea')
     result = None
 
     if data['wifi']:
@@ -134,6 +137,8 @@ def search_view(request):
 
     if result is None:
         return {'status': 'not_found'}
+
+    heka_client.incr('search.api_key.%s' % api_key)
 
     return {
         'status': 'ok',
