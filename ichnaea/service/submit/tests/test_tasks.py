@@ -6,6 +6,9 @@ from datetime import (
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy import text
 
+from ichnaea.models import (
+    RADIO_TYPE,
+)
 from ichnaea.content.models import (
     Score,
     SCORE_TYPE,
@@ -31,15 +34,16 @@ class TestInsert(CeleryTestCase):
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
-        session.add(Cell(radio=0, mcc=1, mnc=2, lac=3, cid=4, psc=5,
-                         new_measures=2, total_measures=5))
+        session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=1, mnc=2, lac=3,
+                         cid=4, psc=5, new_measures=2,
+                         total_measures=5))
         session.add(Score(userid=1, key=SCORE_TYPE['new_cell'], value=7))
         session.flush()
 
         measure = dict(
             id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
             time=encode_datetime(time), accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=0,
+            altitude_accuracy=0, radio=RADIO_TYPE['gsm'],
         )
         entries = [
             # Note that this first entry will be skipped as it does
@@ -92,7 +96,7 @@ class TestInsert(CeleryTestCase):
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
-        session.add(Cell(radio=0, mcc=1, mnc=2, lac=3, cid=4,
+        session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=1, mnc=2, lac=3, cid=4,
                          new_measures=2, total_measures=5))
         session.add(Score(userid=1, key=SCORE_TYPE['new_cell'], value=7))
         session.flush()
@@ -100,8 +104,7 @@ class TestInsert(CeleryTestCase):
         measure = dict(
             id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
             time=encode_datetime(time), accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=0,
-        )
+            altitude_accuracy=0, radio=RADIO_TYPE['gsm'])
         entries = [
             {"mcc": 1, "mnc": 2, "lac": 3147483647, "cid": 2147483647,
              "psc": 5, "asu": 8},
@@ -133,8 +136,8 @@ class TestInsert(CeleryTestCase):
         measure = dict(
             id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
             time=encode_datetime(time), accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=0, mcc=1, mnc=2, lac=3, cid=4,
-        )
+            altitude_accuracy=0, radio=RADIO_TYPE['gsm'], mcc=1,
+            mnc=2, lac=3, cid=4)
         entries = [
             {"asu": 8, "signal": -70, "ta": 32},
             {"asu": -10, "signal": -300, "ta": -10},
@@ -226,6 +229,39 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(len(wifis), 1)
         self.assertEqual(set([w.key for w in wifis]), set([good_key]))
 
+    def test_ignore_unhelpful_incomplete_cdma_cells(self):
+        # Cell records must have MNC, MCC and at least one of (LAC, CID) or PSC
+        # values filled in.
+        from ichnaea.service.submit.tasks import insert_cell_measures
+        session = self.db_master_session
+        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
+
+        measure = dict(
+            id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
+            time=encode_datetime(time), accuracy=0, altitude=0,
+            altitude_accuracy=0, radio=RADIO_TYPE['cdma'],
+        )
+        entries = [
+            # This records is valid
+            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4},
+
+            # This record should fail as it's missing CID
+            {"mcc": 1, "mnc": 2, "lac": 3},
+
+            # This fails for missing lac
+            {"mcc": 1, "mnc": 2, "cid": 4},
+        ]
+
+        for e in entries:
+            e.update(measure)
+        result = insert_cell_measures.delay(entries, userid=1)
+
+        self.assertEqual(result.get(), 1)
+        measures = session.query(CellMeasure).all()
+        self.assertEqual(len(measures), 1)
+        cells = session.query(Cell).all()
+        self.assertEqual(len(cells), 1)
+
     def test_ignore_unhelpful_incomplete_cells(self):
         # Cell records must have MNC, MCC and at least one of (LAC, CID) or PSC
         # values filled in.
@@ -236,7 +272,7 @@ class TestInsert(CeleryTestCase):
         measure = dict(
             id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
             time=encode_datetime(time), accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=0,
+            altitude_accuracy=0, radio=RADIO_TYPE['gsm'],
         )
         entries = [
             # These records are valid

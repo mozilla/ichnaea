@@ -243,6 +243,12 @@ def create_cell_measure(utcnow, entry):
     if 'mnc' not in entry or entry['mnc'] < 0 or entry['mnc'] > 32767:
         return
 
+    # Skip CDMA towers missing lac or cid (no psc on CDMA exists to
+    # backfill using inference)
+    if entry.get('radio', -1) == 1 and \
+       (entry.get('lac', -1) < 0 or entry.get('cid', -1) < 0):
+        return
+
     # some phones send maxint32 to signal "unknown"
     # ignore anything above the maximum valid values
     if 'lac' not in entry or entry['lac'] < 0 or entry['lac'] > 65535:
