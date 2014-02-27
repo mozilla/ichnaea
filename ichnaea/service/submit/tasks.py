@@ -115,7 +115,7 @@ def process_time(measure, utcnow, utcmin):
         if measure['time'] > utcnow or measure['time'] < utcmin:
             measure['time'] = utcnow
     # cut down the time to a daily resolution
-    measure['time'] = measure['time'].date()
+    measure['time'] = measure['time'].date().replace(day=1)
     return measure
 
 
@@ -264,12 +264,15 @@ def create_cell_measure(utcnow, entry):
     if 'ta' not in entry or entry['ta'] < 0 or entry['ta'] > 100:
         entry['ta'] = 0
 
+    time = decode_datetime(entry.get('time', ''))
+    time = time.replace(day=1, hour=0, minute=0, second=0)
+    utcnow = utcnow.replace(day=1, hour=0, minute=0, second=0)
     return CellMeasure(
         measure_id=entry.get('measure_id'),
         created=utcnow,
         lat=entry['lat'],
         lon=entry['lon'],
-        time=decode_datetime(entry.get('time', '')),
+        time=time,
         accuracy=entry.get('accuracy', 0),
         altitude=entry.get('altitude', 0),
         altitude_accuracy=entry.get('altitude_accuracy', 0),
@@ -396,7 +399,9 @@ def process_wifi_measures(session, entries, userid=None):
     wifi_count = defaultdict(int)
     wifi_keys = set([e['key'] for e in entries])
 
-    utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
+    utcnow = datetime.datetime.utcnow()
+    utcnow = utcnow.replace(day=1, hour=0,
+                            minute=0, tzinfo=iso8601.UTC)
 
     # did we get measures for blacklisted wifis?
     blacked = session.query(WifiBlacklist.key).filter(

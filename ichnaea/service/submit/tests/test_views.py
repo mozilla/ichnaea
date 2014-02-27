@@ -28,6 +28,10 @@ class TestSubmit(CeleryAppTestCase):
     def test_ok_cell(self):
         app = self.app
         today = datetime.utcnow().date()
+        expected_today = today.replace(day=1)
+        expected_dt = datetime(expected_today.year,
+                               expected_today.month,
+                               expected_today.day)
 
         cell_data = [
             {"radio": "umts", "mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
@@ -49,7 +53,8 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
         self.assertEqual(item.measure_id, measure_result[0].id)
-        self.assertEqual(item.created.date(), today)
+        self.assertEqual(item.created.date(), expected_today)
+        self.assertEqual(item.time, expected_dt)
         self.assertEqual(item.lat, 123456781)
         self.assertEqual(item.lon, 234567892)
         self.assertEqual(item.accuracy, 10)
@@ -84,6 +89,10 @@ class TestSubmit(CeleryAppTestCase):
     def test_ok_wifi(self):
         app = self.app
         today = datetime.utcnow().date()
+        expected_today = today.replace(day=1)
+        expected_dt = datetime(expected_today.year,
+                               expected_today.month,
+                               expected_today.day)
         wifi_data = [{"key": "AB12"}, {"key": "cd:34"}]
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3456781,
@@ -101,7 +110,8 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(wifi_result), 2)
         item = wifi_result[0]
         self.assertEqual(item.measure_id, measure_result[0].id)
-        self.assertEqual(item.created.date(), today)
+        self.assertEqual(item.created.date(), expected_today)
+        self.assertEqual(item.time, expected_dt)
         self.assertEqual(item.lat, 123456781)
         self.assertEqual(item.lon, 234567892)
         self.assertEqual(item.accuracy, 17)
@@ -112,7 +122,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.signal, 0)
         item = wifi_result[1]
         self.assertEqual(item.measure_id, measure_result[0].id)
-        self.assertEqual(item.created.date(), today)
+        self.assertEqual(item.created.date(), expected_today)
         self.assertEqual(item.lat, 123456781)
         self.assertEqual(item.lon, 234567892)
 
@@ -163,7 +173,6 @@ class TestSubmit(CeleryAppTestCase):
         app = self.app
         # test two weeks ago and "now"
         time = (datetime.utcnow() - timedelta(14)).replace(microsecond=0)
-        tday = time.replace(hour=0, minute=0, second=0)
         tstr = encode_datetime(time)
         app.post_json(
             '/v1/submit', {"items": [
@@ -178,16 +187,20 @@ class TestSubmit(CeleryAppTestCase):
         wifis = dict([(w.key, (w.created, w.time)) for w in result])
         today = datetime.utcnow().date()
 
-        self.assertEqual(wifis['a'][0].date(), today)
-        self.assertEqual(wifis['a'][1], tday)
+        expected_tday = time.replace(day=1, hour=0, minute=0, second=0)
+        expected_today = today.replace(day=1)
 
-        self.assertEqual(wifis['b'][0].date(), today)
-        self.assertEqual(wifis['b'][1].date(), today)
+        self.assertEqual(wifis['a'][0].date(), expected_today)
+        self.assertEqual(wifis['a'][1], expected_tday)
+
+        self.assertEqual(wifis['b'][0].date(), expected_today)
+        self.assertEqual(wifis['b'][1].date(), expected_today)
 
     def test_time_short_format(self):
         app = self.app
         # a string like "2014-01-15"
         time = datetime.utcnow().date()
+        expected_time = time.replace(day=1)
         tstr = time.isoformat()
         app.post_json(
             '/v1/submit', {"items": [
@@ -198,7 +211,7 @@ class TestSubmit(CeleryAppTestCase):
         result = session.query(WifiMeasure).all()
         self.assertEqual(len(result), 1)
         result_time = result[0].time
-        self.assertEqual(result_time.date(), time)
+        self.assertEqual(result_time.date(), expected_time)
         self.assertEqual(result_time.hour, 0)
         self.assertEqual(result_time.minute, 0)
         self.assertEqual(result_time.second, 0)
