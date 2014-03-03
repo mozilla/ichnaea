@@ -18,6 +18,7 @@ from ichnaea.models import (
     CellMeasure,
     Measure,
     normalize_wifi_key,
+    valid_wifi_pattern,
     RADIO_TYPE,
     Wifi,
     WifiBlacklist,
@@ -145,13 +146,14 @@ def process_measure(measure_id, data, session):
         cell_measures = data['cell']
     if data.get('wifi'):
         # filter out old-style sha1 hashes
-        too_long_keys = False
+        invalid_wifi_key = False
         for w in data['wifi']:
             w['key'] = key = normalize_wifi_key(w['key'])
-            if len(key) > 12:
-                too_long_keys = True
+            if not valid_wifi_pattern(key):
+                invalid_wifi_key = True
                 break
-        if not too_long_keys:
+
+        if not invalid_wifi_key:
             # flatten measure / wifi data into a single dict
             for w in data['wifi']:
                 w.update(measure_data)

@@ -1,3 +1,5 @@
+import colander
+
 from colander import MappingSchema, SchemaNode, SequenceSchema
 from colander import Decimal, Integer, String, OneOf
 
