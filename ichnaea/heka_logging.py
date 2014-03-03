@@ -6,6 +6,7 @@ from heka.holder import get_client
 from ichnaea import config
 from ichnaea.exceptions import BaseJSONError
 
+
 RAVEN_ERROR = 'Unhandled error occured'
 
 
@@ -30,6 +31,8 @@ def configure_heka(registry_settings={}):
 
 def heka_tween_factory(handler, registry):
 
+    VALID_4xx_URLS = ['/v1/submit', '/v1/search', '/v1/geolocate']
+
     def heka_tween(request):
         with registry.heka_client.timer('http.request',
                                         fields={'url_path': request.path}):
@@ -41,9 +44,13 @@ def heka_tween_factory(handler, registry):
             except Exception:
                 registry.heka_client.raven(RAVEN_ERROR)
                 raise
-        registry.heka_client.incr('http.request',
-                                  fields={'status': str(response.status_code),
-                                          'url_path': request.path})
+
+        resp_prefix = str(response.status_code)[0]
+        if (resp_prefix == '4' and request.path in VALID_4xx_URLS) or \
+           (resp_prefix != '4'):
+            registry.heka_client.incr('http.request',
+                 fields={'status': str(response.status_code),
+                   'url_path': request.path})
         return response
 
     return heka_tween

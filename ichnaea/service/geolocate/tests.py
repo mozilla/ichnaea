@@ -32,6 +32,8 @@ class TestGeolocate(AppTestCase):
             status=200)
 
         find_msg = self.find_heka_messages
+        self.assertEquals(
+            len(find_msg('counter', 'http.request')), 1)
         self.assertEqual(1, len(find_msg('counter', 'geolocate.api_key.test')))
 
         self.assertEqual(res.content_type, 'application/json')

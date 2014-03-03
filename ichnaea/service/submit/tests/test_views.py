@@ -41,6 +41,11 @@ class TestSubmit(CeleryAppTestCase):
                                       "cell": cell_data}]},
             status=204)
         self.assertEqual(res.body, '')
+
+        find_msg = self.find_heka_messages
+        self.assertEquals(
+            len(find_msg('counter', 'http.request')), 1)
+
         session = self.db_master_session
         measure_result = session.query(Measure).all()
         self.assertEqual(len(measure_result), 1)
