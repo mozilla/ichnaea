@@ -230,8 +230,7 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([w.key for w in wifis]), set([good_key]))
 
     def test_ignore_unhelpful_incomplete_cdma_cells(self):
-        # Cell records must have MNC, MCC and at least one of (LAC, CID) or PSC
-        # values filled in.
+        # CDMA cell records must have MNC, MCC, LAC and CID filled in
         from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
@@ -250,6 +249,9 @@ class TestInsert(CeleryTestCase):
 
             # This fails for missing lac
             {"mcc": 1, "mnc": 2, "cid": 4},
+
+            # Adding a psc doesn't change things
+            {"mcc": 1, "mnc": 2, "psc": 5},
         ]
 
         for e in entries:
