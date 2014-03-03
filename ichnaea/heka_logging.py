@@ -48,9 +48,10 @@ def heka_tween_factory(handler, registry):
         resp_prefix = str(response.status_code)[0]
         if (resp_prefix == '4' and request.path in VALID_4xx_URLS) or \
            (resp_prefix != '4'):
-            registry.heka_client.incr('http.request',
-                 fields={'status': str(response.status_code),
-                   'url_path': request.path})
+            registry.heka_client.incr(
+                'http.request',
+                fields={'status': str(response.status_code),
+                        'url_path': request.path})
         return response
 
     return heka_tween

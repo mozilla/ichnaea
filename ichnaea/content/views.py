@@ -76,7 +76,8 @@ class ContentViews(Layout):
     def homepage_view(self):
         return {'page_title': 'Overview'}
 
-    @view_config(renderer='templates/privacy.pt', name="privacy", http_cache=300)
+    @view_config(renderer='templates/privacy.pt',
+                 name="privacy", http_cache=300)
     def privacy_view(self):
         return {'page_title': 'Privacy Policy'}
 
