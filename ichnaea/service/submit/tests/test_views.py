@@ -32,19 +32,20 @@ class TestSubmit(CeleryAppTestCase):
         cell_data = [
             {"radio": "umts", "mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
         res = app.post_json(
-            '/v1/submit', {"items": [{"lat": 12.3456781,
-                                      "lon": 23.4567892,
-                                      "accuracy": 10,
-                                      "altitude": 123,
-                                      "altitude_accuracy": 7,
-                                      "radio": "gsm",
-                                      "cell": cell_data}]},
+            '/v1/submit?key=test',
+            {"items": [{"lat": 12.3456781,
+                        "lon": 23.4567892,
+                        "accuracy": 10,
+                        "altitude": 123,
+                        "altitude_accuracy": 7,
+                        "radio": "gsm",
+                        "cell": cell_data}]},
             status=204)
         self.assertEqual(res.body, '')
 
         find_msg = self.find_heka_messages
-        self.assertEquals(
-            len(find_msg('counter', 'http.request')), 1)
+        self.assertEqual(1, len(find_msg('counter', 'http.request')))
+        self.assertEqual(1, len(find_msg('counter', 'submit.api_key.test')))
 
         session = self.db_master_session
         measure_result = session.query(Measure).all()
@@ -407,6 +408,16 @@ class TestSubmit(CeleryAppTestCase):
             status=400)
         self.assertTrue('errors' in res.json)
 
+    def test_error_no_api_key(self):
+        app = self.app
+        res = app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.3, "lon": 23.4}]},
+            status=400)
+        self.assertTrue('errors' in res.json)
+
+        find_msg = self.find_heka_messages
+        self.assertEqual(1, len(find_msg('counter', 'submit.no_api_key')))
+
     def test_error_no_mapping(self):
         app = self.app
         res = app.post_json('/v1/submit', [1], status=400)
@@ -471,13 +482,14 @@ class TestSubmit(CeleryAppTestCase):
         cell_data = [
             {"radio": "umts", "mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
         res = app.post_json(
-            '/v1/submit', {"items": [{"lat": 12.3456781,
-                                      "lon": 23.4567892,
-                                      "accuracy": 10,
-                                      "altitude": 123,
-                                      "altitude_accuracy": 7,
-                                      "radio": "gsm",
-                                      "cell": cell_data}]},
+            '/v1/submit?key=test',
+            {"items": [{"lat": 12.3456781,
+                        "lon": 23.4567892,
+                        "accuracy": 10,
+                        "altitude": 123,
+                        "altitude_accuracy": 7,
+                        "radio": "gsm",
+                        "cell": cell_data}]},
             status=204)
         self.assertEqual(res.body, '')
 
@@ -493,6 +505,7 @@ class TestSubmit(CeleryAppTestCase):
         find_msg = self.find_heka_messages
         self.assertEqual(1, len(find_msg('counter', 'http.request')))
         self.assertEqual(1, len(find_msg('counter', 'items.uploaded')))
+        self.assertEqual(1, len(find_msg('counter', 'submit.api_key.test')))
         self.assertEqual(1, len(find_msg('timer', 'http.request')))
         taskname = 'task.service.submit.insert_cell_measures'
         self.assertEqual(1, len(find_msg('timer', taskname)))

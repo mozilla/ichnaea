@@ -1,3 +1,4 @@
+from heka.holder import get_client
 from pyramid.httpexceptions import HTTPNoContent
 
 from ichnaea.decimaljson import dumps
@@ -34,6 +35,15 @@ def submit_validator(data, errors):
 
 
 def submit_view(request):
+    api_key = request.GET.get('key', None)
+    heka_client = get_client('ichnaea')
+
+    if api_key is None:
+        # we don't require API keys for submit yet
+        heka_client.incr('submit.no_api_key')
+    else:
+        heka_client.incr('submit.api_key.%s' % api_key.replace('.', '__'))
+
     data, errors = preprocess_request(
         request,
         schema=SubmitSchema(),
