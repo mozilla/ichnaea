@@ -58,6 +58,10 @@ class TestFunctionalContent(AppTestCase):
         result = self.app.get('/', status=200)
         self.assertTrue('Strict-Transport-Security' in result.headers)
 
+    def test_frame_options_header(self):
+        result = self.app.get('/', status=200)
+        self.assertTrue('X-Frame-Options' in result.headers)
+
     def test_not_found(self):
         self.app.get('/nobody-is-home', status=404)
 
