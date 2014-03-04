@@ -93,7 +93,7 @@ class TestGeolocate(AppTestCase):
     def test_parse_error(self):
         app = self.app
         res = app.post_json(
-            '/v1/geolocate?key=test', {
+            '/v1/geolocate?key=test.test', {
                 "wifiAccessPoints": [
                     {"nomac": 1},
                 ]},
@@ -112,7 +112,8 @@ class TestGeolocate(AppTestCase):
         )
 
         find_msg = self.find_heka_messages
-        self.assertEqual(1, len(find_msg('counter', 'geolocate.api_key.test')))
+        expected_key = 'geolocate.api_key.test__test'
+        self.assertEqual(1, len(find_msg('counter', expected_key)))
 
     def test_no_data(self):
         app = self.app

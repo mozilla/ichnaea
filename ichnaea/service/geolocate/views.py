@@ -113,7 +113,7 @@ def geolocate_view(request):
         return result
 
     heka_client = get_client('ichnaea')
-    heka_client.incr('geolocate.api_key.%s' % api_key)
+    heka_client.incr('geolocate.api_key.%s' % api_key.replace('.', '__'))
 
     data, errors = preprocess_request(
         request,

@@ -245,11 +245,12 @@ class TestSearch(AppTestCase):
 
     def test_no_json(self):
         app = self.app
-        res = app.post('/v1/search?key=test', "\xae", status=400)
+        res = app.post('/v1/search?key=test.test', "\xae", status=400)
         self.assertTrue('errors' in res.json)
 
         find_msg = self.find_heka_messages
-        self.assertEqual(1, len(find_msg('counter', 'search.api_key.test')))
+        expected_key = 'search.api_key.test__test'
+        self.assertEqual(1, len(find_msg('counter', expected_key)))
 
     def test_gzip(self):
         app = self.app
