@@ -105,6 +105,16 @@ def search_wifi_ap(session, data):
 
 
 def geolocate_view(request):
+    api_key = request.GET.get('key', None)
+    if api_key is None:
+        result = HTTPBadRequest()
+        result.content_type = 'application/json'
+        result.body = NO_API_KEY
+        return result
+
+    heka_client = get_client('ichnaea')
+    heka_client.incr('geolocate.api_key.%s' % api_key)
+
     data, errors = preprocess_request(
         request,
         schema=GeoLocateSchema(),
@@ -115,19 +125,10 @@ def geolocate_view(request):
     session = request.db_slave_session
     result = None
 
-    api_key = request.GET.get('key', None)
-    if api_key is not None:
-        heka_client = get_client('ichnaea')
-        heka_client.incr('geolocate.api_key.%s' % api_key)
-        if data['wifiAccessPoints']:
-            result = search_wifi_ap(session, data)
-        else:
-            result = search_cell_tower(session, data)
+    if data['wifiAccessPoints']:
+        result = search_wifi_ap(session, data)
     else:
-        result = HTTPBadRequest()
-        result.content_type = 'application/json'
-        result.body = NO_API_KEY
-        return result
+        result = search_cell_tower(session, data)
 
     if result is None:
         result = HTTPNotFound()

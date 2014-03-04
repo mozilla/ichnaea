@@ -119,6 +119,9 @@ def search_view(request):
         # TODO: change into a better error response
         return {'status': 'not_found'}
 
+    heka_client = get_client('ichnaea')
+    heka_client.incr('search.api_key.%s' % api_key)
+
     data, errors = preprocess_request(
         request,
         schema=SearchSchema(),
@@ -126,7 +129,6 @@ def search_view(request):
     )
 
     session = request.db_slave_session
-    heka_client = get_client('ichnaea')
     result = None
 
     if data['wifi']:
@@ -137,8 +139,6 @@ def search_view(request):
 
     if result is None:
         return {'status': 'not_found'}
-
-    heka_client.incr('search.api_key.%s' % api_key)
 
     return {
         'status': 'ok',

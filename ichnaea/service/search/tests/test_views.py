@@ -39,7 +39,6 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.body, '{"status": "ok", "lat": 1.0010000, '
                                    '"lon": 1.0020000, "accuracy": 35000}')
 
-        find_msg = self.find_heka_messages
         self.assertEquals(1, len(find_msg('counter', 'http.request')))
         timer_msgs = find_msg('timer', 'http.request')
 
@@ -148,6 +147,9 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "not_found"}')
 
+        find_msg = self.find_heka_messages
+        self.assertEquals(1, len(find_msg('counter', 'search.api_key.test')))
+
     def test_wifi_not_found(self):
         app = self.app
         res = app.post_json('/v1/search?key=test', {"wifi": [
@@ -155,6 +157,9 @@ class TestSearch(AppTestCase):
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.body, '{"status": "not_found"}')
+
+        find_msg = self.find_heka_messages
+        self.assertEquals(1, len(find_msg('counter', 'search.api_key.test')))
 
     def test_wifi_not_found_cell_fallback(self):
         app = self.app
@@ -242,6 +247,9 @@ class TestSearch(AppTestCase):
         app = self.app
         res = app.post('/v1/search?key=test', "\xae", status=400)
         self.assertTrue('errors' in res.json)
+
+        find_msg = self.find_heka_messages
+        self.assertEqual(1, len(find_msg('counter', 'search.api_key.test')))
 
     def test_gzip(self):
         app = self.app

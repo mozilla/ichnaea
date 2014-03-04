@@ -87,6 +87,9 @@ class TestGeolocate(AppTestCase):
             }}
         )
 
+        find_msg = self.find_heka_messages
+        self.assertEqual(1, len(find_msg('counter', 'geolocate.api_key.test')))
+
     def test_parse_error(self):
         app = self.app
         res = app.post_json(
@@ -107,6 +110,9 @@ class TestGeolocate(AppTestCase):
                 "message": "Parse Error"
             }}
         )
+
+        find_msg = self.find_heka_messages
+        self.assertEqual(1, len(find_msg('counter', 'geolocate.api_key.test')))
 
     def test_no_data(self):
         app = self.app
