@@ -106,13 +106,16 @@ def search_wifi_ap(session, data):
 
 def geolocate_view(request):
     api_key = request.GET.get('key', None)
+    heka_client = get_client('ichnaea')
+
     if api_key is None:
+        heka_client.incr('geolocate.no_api_key')
+
         result = HTTPBadRequest()
         result.content_type = 'application/json'
         result.body = NO_API_KEY
         return result
 
-    heka_client = get_client('ichnaea')
     heka_client.incr('geolocate.api_key.%s' % api_key.replace('.', '__'))
 
     data, errors = preprocess_request(

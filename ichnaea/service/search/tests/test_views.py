@@ -282,6 +282,9 @@ class TestSearch(AppTestCase):
                             status=200)
         self.assertEqual(res.body, '{"status": "not_found"}')
 
+        find_msg = self.find_heka_messages
+        self.assertEqual(1, len(find_msg('counter', 'search.no_api_key')))
+
 
 class TestSearchErrors(AppTestCase):
     # this is a standalone class to ensure DB isolation for dropping tables

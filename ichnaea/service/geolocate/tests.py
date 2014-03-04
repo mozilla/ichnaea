@@ -144,3 +144,6 @@ class TestGeolocate(AppTestCase):
         json_err = json.loads(res.body)
         self.assertEqual(u'No API key', json_err['error']['message'])
         self.assertEqual(res.content_type, 'application/json')
+
+        find_msg = self.find_heka_messages
+        self.assertEqual(1, len(find_msg('counter', 'geolocate.no_api_key')))

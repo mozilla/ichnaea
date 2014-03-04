@@ -115,11 +115,13 @@ def check_cell_or_wifi(data, errors):
 
 def search_view(request):
     api_key = request.GET.get('key', None)
+    heka_client = get_client('ichnaea')
+
     if api_key is None:
         # TODO: change into a better error response
+        heka_client.incr('search.no_api_key')
         return {'status': 'not_found'}
 
-    heka_client = get_client('ichnaea')
     heka_client.incr('search.api_key.%s' % api_key.replace('.', '__'))
 
     data, errors = preprocess_request(
