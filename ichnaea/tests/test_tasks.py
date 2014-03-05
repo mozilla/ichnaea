@@ -297,3 +297,129 @@ class TestWifiLocationUpdate(CeleryTestCase):
 
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 0)
+
+    def check_trim_excessive_data(self, unique_model, measure_model,
+                                  trim_func, kname, delstat):
+        """
+        Synthesize many measurements and repeatedly run trim function
+        with a few smaller and smaller sizes, confirming that correct
+        measurements are discarded at each step and counters adjusted.
+        """
+        session = self.db_master_session
+        measures = []
+        backdate=datetime.utcnow() - timedelta(days=10)
+        keys = ["0000%d" % i for i in range(5)]
+        measures_per_key = 100
+        m1 = 10000000
+        m2 = 20000000
+        session.query(unique_model).delete()
+        session.query(measure_model).delete()
+        session.flush()
+        for k in keys:
+            kargs = {kname: k}
+            measures.append(unique_model(lat=(m1+m2)/2, lon=(m1+m2)/2,
+                                         total_measures=measures_per_key * 2,
+                                         **kargs))
+            kargs['time'] = backdate
+            for i in range(measures_per_key):
+                measures.append(measure_model(lat=m1 + i, lon=m1 + i, **kargs))
+                measures.append(measure_model(lat=m2 + i, lon=m2 + i, **kargs))
+        session.add_all(measures)
+        session.flush()
+
+        measures = session.query(measure_model).count()
+        self.assertEqual(measures, measures_per_key * 2 * len(keys))
+
+
+        def trim_and_check(keep):
+            from ichnaea.content.models import Stat, STAT_TYPE
+            from ichnaea.content.tasks import get_curr_stat
+
+            # trim model to 'keep' measures per key
+            result = trim_func.delay(keep)
+            result.get()
+
+            # check that exactly the rows expected were kept
+            measures = session.query(measure_model).all()
+            self.assertEqual(len(measures), len(keys) * keep)
+            for k in keys:
+                for i in range(measures_per_key - keep/2, measures_per_key):
+                    self.assertTrue(any(m.lat == m1+i and \
+                                        m.lat == m1+i and \
+                                        int(getattr(m,kname)) == int(k) \
+                                        for m in measures))
+                    self.assertTrue(any(m.lat == m2+i and \
+                                        m.lat == m2+i and \
+                                        int(getattr(m,kname)) == int(k) \
+                                        for m in measures))
+
+            # check that the deletion stat was updated
+            self.assertEqual(get_curr_stat(session, delstat),
+                             len(keys) * (2 * measures_per_key - keep))
+
+        trim_and_check(12)
+        trim_and_check(10)
+        trim_and_check(8)
+
+    def check_no_trim_young_data(self, unique_model, measure_model,
+                                 trim_func, kname, delstat):
+        """
+        Check that a trim function run against young data leaves it alone.
+        """
+        from ichnaea.content.models import Stat, STAT_TYPE
+        from ichnaea.content.tasks import get_curr_stat
+
+        session = self.db_master_session
+        measures = []
+        keys = ["0000%d" % i for i in range(5)]
+        measures_per_key = 100
+        m1 = 10000000
+        m2 = 20000000
+        session.query(unique_model).delete()
+        session.query(measure_model).delete()
+        session.flush()
+        for k in keys:
+            kargs = {kname: k}
+            measures.append(unique_model(lat=(m1+m2)/2, lon=(m1+m2)/2,
+                                         total_measures=measures_per_key * 2,
+                                         **kargs))
+            for i in range(measures_per_key):
+                measures.append(measure_model(lat=m1 + i, lon=m1 + i, **kargs))
+                measures.append(measure_model(lat=m2 + i, lon=m2 + i, **kargs))
+        session.add_all(measures)
+        session.flush()
+
+        measures = session.query(measure_model).count()
+        self.assertEqual(measures, measures_per_key * 2 * len(keys))
+
+        dels = get_curr_stat(session, delstat)
+
+        result = trim_func.delay(10)
+        result.get()
+
+        # check that all data was preserved
+        measures = session.query(measure_model).count()
+        self.assertEqual(measures, measures_per_key * 2 * len(keys))
+
+        # check that the deletion stat is unchanged
+        self.assertEqual(get_curr_stat(session, delstat), dels)
+
+    def test_cell_trim_excessive_data(self):
+        from ichnaea.tasks import cell_trim_excessive_data
+        self.check_trim_excessive_data(Cell, CellMeasure, cell_trim_excessive_data,
+                                       'cid', 'deleted_cell')
+
+    def test_cell_no_trim_young_data(self):
+        from ichnaea.tasks import cell_trim_excessive_data
+        self.check_no_trim_young_data(Cell, CellMeasure, cell_trim_excessive_data,
+                                      'cid', 'deleted_cell')
+
+    def test_wifi_trim_excessive_data(self):
+        from ichnaea.tasks import wifi_trim_excessive_data
+        self.check_trim_excessive_data(Wifi, WifiMeasure, wifi_trim_excessive_data,
+                                       'key', 'deleted_wifi')
+
+    def test_wifi_no_trim_young_data(self):
+        from ichnaea.tasks import wifi_trim_excessive_data
+        self.check_no_trim_young_data(Wifi, WifiMeasure, wifi_trim_excessive_data,
+                                      'key', 'deleted_wifi')
