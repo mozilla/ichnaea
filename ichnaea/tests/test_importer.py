@@ -1,5 +1,10 @@
 import os
+from datetime import datetime
 from tempfile import mkstemp
+
+from ichnaea.models import (
+    WifiMeasure,
+)
 
 from ichnaea.content.models import (
     MapStat,
@@ -29,9 +34,26 @@ class TestLoadFile(CeleryTestCase):
 
     def test_one_line(self):
         func, tmpfile = self._make_one()
+        session = self.db_master_session
+        today = datetime.utcnow().date()
+
         os.write(tmpfile[0], LINE)
         counter = func(self.db_master_session, tmpfile[1])
         self.assertEqual(counter, 1)
+
+        measures = session.query(WifiMeasure).all()
+        self.assertEqual(len(measures), 1)
+        measure = measures[0]
+        self.assertEqual(measure.lat, 378719300)
+        self.assertEqual(measure.lon, -1222731560)
+        self.assertEqual(measure.key, 'dc4517758f80')
+        self.assertEqual(measure.channel, 11)
+        self.assertEqual(measure.signal, -16)
+        self.assertEqual(measure.accuracy, 0)
+        self.assertEqual(measure.altitude, 0)
+        self.assertEqual(measure.altitude_accuracy, 0)
+        self.assertEqual(measure.created.date(), today)
+        self.assertEqual(measure.time.date(), today)
 
     def test_batch(self):
         func, tmpfile = self._make_one()
