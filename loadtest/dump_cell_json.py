@@ -1,4 +1,5 @@
 import json
+from collections import OrderedDict
 from sqlalchemy import create_engine
 
 engine = create_engine('mysql+pymysql://root:mysql@localhost/location')
@@ -19,19 +20,46 @@ for k, v in RADIO_TYPE.items():
 for k in keys:
     del RADIO_TYPE[k]
 
-for row in result:
-    cell_data = [{"radio": RADIO_TYPE[row['radio']],
-                  "mcc": row['mcc'],
-                  "mnc": row['mnc'],
-                  "lac": row['lac'],
-                  "cid": row['cid']}]
+# Build up a set of data based on the unique key per tower,
+# then append a list of all lat/long pairs that were observed for that
+# tower
 
-    items = {"items": [{"lat": row['lat'],
-             "lon": row['lon'],
-             "accuracy": row['accuracy'],
-             "altitude": row['altitude'],
-             "altitude_accuracy": row['altitude_accuracy'],
-             "radio": RADIO_TYPE[row['radio']],
-             "cell": cell_data}]}
-    jdata = json.dumps(items)
-    print jdata
+all_towers = {}
+key_to_dict = {}
+
+for row in result:
+    if row['psc'] != '-1':
+        odict = OrderedDict()
+        for k in [u'cid', u'lac', u'mcc', u'mnc', u'psc', u'radio']:
+            v = row[k]
+            odict[k] = v
+
+        location = (row['lat'], row['lon'])
+
+        key = tuple(odict.values())
+        key_to_dict[key] = odict
+        all_towers.setdefault(key, [])
+        if len(all_towers[key]) < 10:
+            all_towers[key].append(location)
+
+#pprint(all_towers)
+
+
+for key in all_towers:
+    odict = key_to_dict[key]
+    cell_data = [{"radio": RADIO_TYPE[odict['radio']],
+                  "mcc": odict['mcc'],
+                  "mnc": odict['mnc'],
+                  "lac": odict['lac'],
+                  "cid": odict['cid']}]
+    items = {"items": []}
+    for (lat, lon) in all_towers[key]:
+        data = {"lat": lat,
+                "lon": lon,
+                "accuracy": 1,
+                "altitude": 1,
+                "altitude_accuracy": 1,
+                "radio": RADIO_TYPE[odict['radio']],
+                "cell": cell_data}
+        items['items'].append(data)
+    print json.dumps(items)
