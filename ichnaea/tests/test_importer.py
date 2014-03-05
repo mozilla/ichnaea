@@ -15,9 +15,8 @@ from ichnaea.content.models import (
 )
 from ichnaea.tests.base import CeleryTestCase
 
-LINE = (
-    "1376952704\t37.871930\t-122.273156\t-16\t11\tdc:45:17:75:8f:80\tATT560"
-)
+LINE = ("1376952704\tdc:45:17:75:8f:80\t37.871930\t-122.273156\t"
+        "5\t500\t0\t11\t-16\tATT560")
 
 
 class TestLoadFile(CeleryTestCase):
@@ -49,8 +48,8 @@ class TestLoadFile(CeleryTestCase):
         self.assertEqual(measure.key, 'dc4517758f80')
         self.assertEqual(measure.channel, 11)
         self.assertEqual(measure.signal, -16)
-        self.assertEqual(measure.accuracy, 0)
-        self.assertEqual(measure.altitude, 0)
+        self.assertEqual(measure.accuracy, 5)
+        self.assertEqual(measure.altitude, 500)
         self.assertEqual(measure.altitude_accuracy, 0)
         self.assertEqual(measure.created.date(), today)
         self.assertEqual(measure.time.date(), today)
