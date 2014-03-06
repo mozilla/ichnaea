@@ -25,6 +25,7 @@ def random_ap():
     return {"key": key,
             "channel": random.randint(0, 12),
             "frequency": random.randint(0, 5000),
+            "channel": random.randint(1, 12),
             "signal": random.randint(0, -50)}
 
 def generate_wifi_aps():
