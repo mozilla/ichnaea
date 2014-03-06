@@ -512,7 +512,7 @@ class TestSubmit(CeleryAppTestCase):
         taskname = 'task.service.submit.insert_measures'
         self.assertEqual(1, len(find_msg('timer', taskname)))
 
-    def test_bad_wifi_keys(self):
+    def test_unusual_wifi_keys(self):
         app = self.app
         # we ban f{12}
         wifi_data = [{"key": "FFFFFFFFFFFF"}]
@@ -540,8 +540,8 @@ class TestSubmit(CeleryAppTestCase):
         result = session.query(WifiMeasure).all()
         self.assertEqual(len(result), 0)
 
-        # we ban any locally administered wifi key based on the U/L
-        # bit https://en.wikipedia.org/wiki/MAC_address
+        # we considered but do not ban locally administered wifi keys
+        # based on the U/L bit https://en.wikipedia.org/wiki/MAC_address
         wifi_data = [{"key": "0a:00:00:00:00:00"}]
         app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3456781,
@@ -552,4 +552,4 @@ class TestSubmit(CeleryAppTestCase):
 
         session = self.db_master_session
         result = session.query(WifiMeasure).all()
-        self.assertEqual(len(result), 0)
+        self.assertEqual(len(result), 1)
