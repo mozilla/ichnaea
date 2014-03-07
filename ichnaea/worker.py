@@ -66,15 +66,15 @@ CELERYBEAT_SCHEDULE = {
     'continuous-cell-trim-excessive-data': {
         'task': 'ichnaea.tasks.cell_trim_excessive_data',
         'schedule': timedelta(seconds=21589),  # about 6 hours
-        'args': (10000),
+        'args': (10000, ),
         'options': {'expires': 21407},
     },
     'continuous-wifi-trim-excessive-data': {
         'task': 'ichnaea.tasks.wifi_trim_excessive_data',
         'schedule': timedelta(seconds=21577),  # about 6 hours
-        'args': (10000),
+        'args': (10000, ),
         'options': {'expires': 21407},
-    }
+    },
 
     # TODO: start scheduling this once we handled the backlog
     # 'backfill-celltower-info': {
