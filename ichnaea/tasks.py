@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from celery import Task
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
 
 from heka.holder import get_client
 
@@ -297,5 +298,120 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
     except IntegrityError as exc:  # pragma: no cover
         self.heka_client.raven('error')
         return 0
+    except Exception as exc:  # pragma: no cover
+        raise self.retry(exc=exc)
+
+
+def trim_excessive_data(session, unique_model, measure_model,
+                        join_measure, delstat, max_measures,
+                        min_age_days, batch):
+    """
+    Delete measurements of type `measure_model` when, for any given
+    key-field `kname`, there are more than `max_measures` measurements.
+    Avoid deleting any measurements at all younger than `min_age_days`,
+    and only delete measurements from at most `batch` keys per call.
+    Increment the deleted-measurements stat named `delstat` and decrement
+    the `total_measurements` field of the associated `unique_model`, as
+    side effects.
+    """
+    from ichnaea.content.tasks import incr_stat;
+
+    # generally: only work with rows that are older than a
+    # date threshold, so that we are definitely not interfering
+    # with periodic recent-stat calculations on incoming new data
+    utcnow = datetime.utcnow()
+    age_threshold = utcnow - timedelta(days=min_age_days)
+    age_cond = measure_model.time < age_threshold
+
+    # initial (fast) query to pull out those uniques that have
+    # total_measures larger than max_measures; will refine this
+    # set of keys subsequently by date-window.
+    query = session.query(unique_model).filter(
+        unique_model.total_measures > max_measures).limit(batch)
+    uniques = query.all()
+    counts = []
+
+    # secondarily, refine set of candidate keys by explicitly
+    # counting measurements on each key, within the expiration
+    # date-window.
+    for u in uniques:
+
+        query = session.query(func.count(measure_model.id)).filter(
+            *join_measure(u)).filter(
+            age_cond)
+
+        c = query.first()
+        assert c is not None
+        n = int(c[0])
+        if n > max_measures:
+            counts.append((u,n))
+
+    if len(counts) == 0:
+        return 0
+
+
+    # finally, for each definitely over-measured key, find a
+    # cutoff row and trim measurements to it
+    for (u, count) in counts:
+
+        # determine the oldest measure (smallest (date,id) pair) to
+        # keep for each key
+        start = count - max_measures
+        (smallest_date_to_keep, smallest_id_to_keep) = session.query(
+            measure_model.time, measure_model.id).filter(
+            *join_measure(u)).filter(
+            age_cond).order_by(
+            measure_model.time, measure_model.id).slice(start,count).first()
+
+        # delete measures with (date,id) less than that, so long as they're
+        # older than the date window.
+        n = session.query(
+            measure_model).filter(
+            *join_measure(u)).filter(
+            age_cond).filter(
+            measure_model.time <= smallest_date_to_keep).filter(
+            measure_model.id < smallest_id_to_keep).delete()
+
+        # decrement model.total_measures; increment stats[delstat]
+        assert u.total_measures >= 0
+        u.total_measures -= n
+        incr_stat(session, delstat, n);
+
+    session.commit()
+    return n
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def wifi_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
+    try:
+        with self.db_session() as session:
+            trim_excessive_data(session=session,
+                                unique_model=Wifi,
+                                measure_model=WifiMeasure,
+                                join_measure=lambda u: (WifiMeasure.key == u.key,),
+                                delstat='deleted_wifi',
+                                max_measures=max_measures,
+                                min_age_days=min_age_days,
+                                batch=batch)
+    except Exception as exc:  # pragma: no cover
+        raise self.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def cell_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
+    try:
+        with self.db_session() as session:
+            trim_excessive_data(session=session,
+                                unique_model=Cell,
+                                measure_model=CellMeasure,
+                                join_measure=lambda u: (CellMeasure.radio == u.radio,
+                                                        CellMeasure.mcc == u.mcc,
+                                                        CellMeasure.mnc == u.mnc,
+                                                        CellMeasure.lac == u.lac,
+                                                        CellMeasure.cid == u.cid),
+                                delstat='deleted_cell',
+                                max_measures=max_measures,
+                                min_age_days=min_age_days,
+                                batch=batch)
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)

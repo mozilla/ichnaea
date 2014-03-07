@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
@@ -44,6 +44,31 @@ def add_stat(session, name, day, value):
         key=stat_key, time=day, value=before + int(value))
     session.execute(stmt)
 
+def incr_stat(session, name, incr, date=None):
+    if date is None:
+        date = datetime.utcnow().date()
+    stat_key = STAT_TYPE[name]
+    cumulative = get_curr_stat(session, name) + incr
+
+    # on duplicate key, update existing
+    stmt = Stat.__table__.insert(
+        on_duplicate='value=%s' % cumulative).values(
+            key=stat_key, time=date, value=cumulative)
+    session.execute(stmt)
+
+def get_curr_stat(session, name, date=None):
+    if date is None:
+        date = datetime.utcnow().date()
+    stat_key = STAT_TYPE[name]
+    query = session.query(Stat.value).filter(
+        Stat.key == stat_key).filter(
+        Stat.time <= date).order_by(
+        Stat.time.desc())
+    result = query.first()
+    if result is not None:
+        return int(result[0])
+    else:
+        return 0
 
 @celery.task(base=DatabaseTask, bind=True)
 def cell_histogram(self, ago=1):
