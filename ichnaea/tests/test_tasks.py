@@ -299,7 +299,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.assertEqual(len(wifis), 0)
 
     def check_trim_excessive_data(self, unique_model, measure_model,
-                                  trim_func, kname, delstat):
+                                  trim_func, kinit, kcmp, delstat):
         """
         Synthesize many measurements and repeatedly run trim function
         with a few smaller and smaller sizes, confirming that correct
@@ -308,7 +308,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         session = self.db_master_session
         measures = []
         backdate=datetime.utcnow() - timedelta(days=10)
-        keys = ["0000%d" % i for i in range(5)]
+        keys = range(5)
         measures_per_key = 100
         m1 = 10000000
         m2 = 20000000
@@ -316,7 +316,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         session.query(measure_model).delete()
         session.flush()
         for k in keys:
-            kargs = {kname: k}
+            kargs = kinit(k)
             measures.append(unique_model(lat=(m1+m2)/2, lon=(m1+m2)/2,
                                          total_measures=measures_per_key * 2,
                                          **kargs))
@@ -346,11 +346,11 @@ class TestWifiLocationUpdate(CeleryTestCase):
                 for i in range(measures_per_key - keep/2, measures_per_key):
                     self.assertTrue(any(m.lat == m1+i and \
                                         m.lat == m1+i and \
-                                        int(getattr(m,kname)) == int(k) \
+                                        kcmp(m, k) \
                                         for m in measures))
                     self.assertTrue(any(m.lat == m2+i and \
                                         m.lat == m2+i and \
-                                        int(getattr(m,kname)) == int(k) \
+                                        kcmp(m, k) \
                                         for m in measures))
 
             # check that the deletion stat was updated
@@ -362,7 +362,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         trim_and_check(8)
 
     def check_no_trim_young_data(self, unique_model, measure_model,
-                                 trim_func, kname, delstat):
+                                 trim_func, kinit, delstat):
         """
         Check that a trim function run against young data leaves it alone.
         """
@@ -371,7 +371,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
 
         session = self.db_master_session
         measures = []
-        keys = ["0000%d" % i for i in range(5)]
+        keys = range(5)
         measures_per_key = 100
         m1 = 10000000
         m2 = 20000000
@@ -379,7 +379,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         session.query(measure_model).delete()
         session.flush()
         for k in keys:
-            kargs = {kname: k}
+            kargs = kinit(k)
             measures.append(unique_model(lat=(m1+m2)/2, lon=(m1+m2)/2,
                                          total_measures=measures_per_key * 2,
                                          **kargs))
@@ -406,20 +406,46 @@ class TestWifiLocationUpdate(CeleryTestCase):
 
     def test_cell_trim_excessive_data(self):
         from ichnaea.tasks import cell_trim_excessive_data
-        self.check_trim_excessive_data(Cell, CellMeasure, cell_trim_excessive_data,
-                                       'cid', 'deleted_cell')
+        self.check_trim_excessive_data(unique_model=Cell,
+                                       measure_model=CellMeasure,
+                                       trim_func=cell_trim_excessive_data,
+                                       kinit=lambda k: { 'radio': k,
+                                                         'mcc': k,
+                                                         'mnc': k,
+                                                         'lac': k,
+                                                         'cid': k, },
+                                       kcmp=lambda m, k: (m.radio == k and
+                                                          m.mcc == k and
+                                                          m.mnc == k and
+                                                          m.lac == k and
+                                                          m.cid == k),
+                                       delstat='deleted_cell')
 
     def test_cell_no_trim_young_data(self):
         from ichnaea.tasks import cell_trim_excessive_data
-        self.check_no_trim_young_data(Cell, CellMeasure, cell_trim_excessive_data,
-                                      'cid', 'deleted_cell')
+        self.check_no_trim_young_data(unique_model=Cell,
+                                      measure_model=CellMeasure,
+                                      trim_func=cell_trim_excessive_data,
+                                      kinit=lambda k: { 'radio': k,
+                                                        'mcc': k,
+                                                        'mnc': k,
+                                                        'lac': k,
+                                                        'cid': k, },
+                                      delstat='deleted_cell')
 
     def test_wifi_trim_excessive_data(self):
         from ichnaea.tasks import wifi_trim_excessive_data
-        self.check_trim_excessive_data(Wifi, WifiMeasure, wifi_trim_excessive_data,
-                                       'key', 'deleted_wifi')
+        self.check_trim_excessive_data(unique_model=Wifi,
+                                       measure_model=WifiMeasure,
+                                       trim_func=wifi_trim_excessive_data,
+                                       kinit=lambda k: {'key': str(k)},
+                                       kcmp=lambda m, k: m.key == str(k),
+                                       delstat='deleted_wifi')
 
     def test_wifi_no_trim_young_data(self):
         from ichnaea.tasks import wifi_trim_excessive_data
-        self.check_no_trim_young_data(Wifi, WifiMeasure, wifi_trim_excessive_data,
-                                      'key', 'deleted_wifi')
+        self.check_no_trim_young_data(unique_model=Wifi,
+                                       measure_model=WifiMeasure,
+                                       trim_func=wifi_trim_excessive_data,
+                                       kinit=lambda k: {'key': str(k)},
+                                       delstat='deleted_wifi')
