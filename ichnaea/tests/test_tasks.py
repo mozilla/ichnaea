@@ -307,7 +307,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         """
         session = self.db_master_session
         measures = []
-        backdate=datetime.utcnow() - timedelta(days=10)
+        backdate = datetime.utcnow() - timedelta(days=10)
         keys = range(5)
         measures_per_key = 100
         m1 = 10000000
@@ -317,7 +317,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         session.flush()
         for k in keys:
             kargs = kinit(k)
-            measures.append(unique_model(lat=(m1+m2)/2, lon=(m1+m2)/2,
+            measures.append(unique_model(lat=(m1 + m2) / 2, lon=(m1 + m2) / 2,
                                          total_measures=measures_per_key * 2,
                                          **kargs))
             kargs['time'] = backdate
@@ -330,9 +330,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         measures = session.query(measure_model).count()
         self.assertEqual(measures, measures_per_key * 2 * len(keys))
 
-
         def trim_and_check(keep):
-            from ichnaea.content.models import Stat, STAT_TYPE
             from ichnaea.content.tasks import get_curr_stat
 
             # trim model to 'keep' measures per key
@@ -343,14 +341,14 @@ class TestWifiLocationUpdate(CeleryTestCase):
             measures = session.query(measure_model).all()
             self.assertEqual(len(measures), len(keys) * keep)
             for k in keys:
-                for i in range(measures_per_key - keep/2, measures_per_key):
-                    self.assertTrue(any(m.lat == m1+i and \
-                                        m.lat == m1+i and \
-                                        kcmp(m, k) \
+                for i in range(measures_per_key - keep / 2, measures_per_key):
+                    self.assertTrue(any(m.lat == m1 + i and
+                                        m.lat == m1 + i and
+                                        kcmp(m, k)
                                         for m in measures))
-                    self.assertTrue(any(m.lat == m2+i and \
-                                        m.lat == m2+i and \
-                                        kcmp(m, k) \
+                    self.assertTrue(any(m.lat == m2 + i and
+                                        m.lat == m2 + i and
+                                        kcmp(m, k)
                                         for m in measures))
 
             # check that the deletion stat was updated
@@ -366,7 +364,6 @@ class TestWifiLocationUpdate(CeleryTestCase):
         """
         Check that a trim function run against young data leaves it alone.
         """
-        from ichnaea.content.models import Stat, STAT_TYPE
         from ichnaea.content.tasks import get_curr_stat
 
         session = self.db_master_session
@@ -380,7 +377,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         session.flush()
         for k in keys:
             kargs = kinit(k)
-            measures.append(unique_model(lat=(m1+m2)/2, lon=(m1+m2)/2,
+            measures.append(unique_model(lat=(m1 + m2) / 2, lon=(m1 + m2) / 2,
                                          total_measures=measures_per_key * 2,
                                          **kargs))
             for i in range(measures_per_key):
@@ -409,11 +406,11 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.check_trim_excessive_data(unique_model=Cell,
                                        measure_model=CellMeasure,
                                        trim_func=cell_trim_excessive_data,
-                                       kinit=lambda k: { 'radio': k,
-                                                         'mcc': k,
-                                                         'mnc': k,
-                                                         'lac': k,
-                                                         'cid': k, },
+                                       kinit=lambda k: {'radio': k,
+                                                        'mcc': k,
+                                                        'mnc': k,
+                                                        'lac': k,
+                                                        'cid': k, },
                                        kcmp=lambda m, k: (m.radio == k and
                                                           m.mcc == k and
                                                           m.mnc == k and
@@ -426,11 +423,11 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.check_no_trim_young_data(unique_model=Cell,
                                       measure_model=CellMeasure,
                                       trim_func=cell_trim_excessive_data,
-                                      kinit=lambda k: { 'radio': k,
-                                                        'mcc': k,
-                                                        'mnc': k,
-                                                        'lac': k,
-                                                        'cid': k, },
+                                      kinit=lambda k: {'radio': k,
+                                                       'mcc': k,
+                                                       'mnc': k,
+                                                       'lac': k,
+                                                       'cid': k, },
                                       delstat='deleted_cell')
 
     def test_wifi_trim_excessive_data(self):
@@ -445,7 +442,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
     def test_wifi_no_trim_young_data(self):
         from ichnaea.tasks import wifi_trim_excessive_data
         self.check_no_trim_young_data(unique_model=Wifi,
-                                       measure_model=WifiMeasure,
-                                       trim_func=wifi_trim_excessive_data,
-                                       kinit=lambda k: {'key': str(k)},
-                                       delstat='deleted_wifi')
+                                      measure_model=WifiMeasure,
+                                      trim_func=wifi_trim_excessive_data,
+                                      kinit=lambda k: {'key': str(k)},
+                                      delstat='deleted_wifi')

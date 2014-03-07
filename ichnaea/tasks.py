@@ -87,11 +87,11 @@ def update_extreme_values(model, latitudes, longitudes):
         'max_lon': (max, longitudes),
         'min_lon': (min, longitudes),
     }
-    for name, (func, values) in extremes.items():
-        new = func(values)
+    for name, (function, values) in extremes.items():
+        new = function(values)
         old = getattr(model, name, None)
         if old is not None:
-            setattr(model, name, func(old, new))
+            setattr(model, name, function(old, new))
         else:
             setattr(model, name, new)
 
@@ -314,7 +314,7 @@ def trim_excessive_data(session, unique_model, measure_model,
     the `total_measurements` field of the associated `unique_model`, as
     side effects.
     """
-    from ichnaea.content.tasks import incr_stat;
+    from ichnaea.content.tasks import incr_stat
 
     # generally: only work with rows that are older than a
     # date threshold, so that we are definitely not interfering
@@ -344,11 +344,10 @@ def trim_excessive_data(session, unique_model, measure_model,
         assert c is not None
         n = int(c[0])
         if n > max_measures:
-            counts.append((u,n))
+            counts.append((u, n))
 
     if len(counts) == 0:
         return 0
-
 
     # finally, for each definitely over-measured key, find a
     # cutoff row and trim measurements to it
@@ -361,7 +360,7 @@ def trim_excessive_data(session, unique_model, measure_model,
             measure_model.time, measure_model.id).filter(
             *join_measure(u)).filter(
             age_cond).order_by(
-            measure_model.time, measure_model.id).slice(start,count).first()
+            measure_model.time, measure_model.id).slice(start, count).first()
 
         # delete measures with (date,id) less than that, so long as they're
         # older than the date window.
@@ -375,7 +374,7 @@ def trim_excessive_data(session, unique_model, measure_model,
         # decrement model.total_measures; increment stats[delstat]
         assert u.total_measures >= 0
         u.total_measures -= n
-        incr_stat(session, delstat, n);
+        incr_stat(session, delstat, n)
 
     session.commit()
     return n
@@ -385,10 +384,12 @@ def trim_excessive_data(session, unique_model, measure_model,
 def wifi_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
     try:
         with self.db_session() as session:
+            join_measure = lambda u: (WifiMeasure.key == u.key, )
+
             trim_excessive_data(session=session,
                                 unique_model=Wifi,
                                 measure_model=WifiMeasure,
-                                join_measure=lambda u: (WifiMeasure.key == u.key,),
+                                join_measure=join_measure,
                                 delstat='deleted_wifi',
                                 max_measures=max_measures,
                                 min_age_days=min_age_days,
@@ -401,14 +402,18 @@ def wifi_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
 def cell_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
     try:
         with self.db_session() as session:
+            join_measure = lambda u: (
+                CellMeasure.radio == u.radio,
+                CellMeasure.mcc == u.mcc,
+                CellMeasure.mnc == u.mnc,
+                CellMeasure.lac == u.lac,
+                CellMeasure.cid == u.cid,
+            )
+
             trim_excessive_data(session=session,
                                 unique_model=Cell,
                                 measure_model=CellMeasure,
-                                join_measure=lambda u: (CellMeasure.radio == u.radio,
-                                                        CellMeasure.mcc == u.mcc,
-                                                        CellMeasure.mnc == u.mnc,
-                                                        CellMeasure.lac == u.lac,
-                                                        CellMeasure.cid == u.cid),
+                                join_measure=join_measure,
                                 delstat='deleted_cell',
                                 max_measures=max_measures,
                                 min_age_days=min_age_days,

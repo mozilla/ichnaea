@@ -44,6 +44,7 @@ def add_stat(session, name, day, value):
         key=stat_key, time=day, value=before + int(value))
     session.execute(stmt)
 
+
 def incr_stat(session, name, incr, date=None):
     if date is None:
         date = datetime.utcnow().date()
@@ -53,8 +54,9 @@ def incr_stat(session, name, incr, date=None):
     # on duplicate key, update existing
     stmt = Stat.__table__.insert(
         on_duplicate='value=%s' % cumulative).values(
-            key=stat_key, time=date, value=cumulative)
+        key=stat_key, time=date, value=cumulative)
     session.execute(stmt)
+
 
 def get_curr_stat(session, name, date=None):
     if date is None:
@@ -69,6 +71,7 @@ def get_curr_stat(session, name, date=None):
         return int(result[0])
     else:
         return 0
+
 
 @celery.task(base=DatabaseTask, bind=True)
 def cell_histogram(self, ago=1):

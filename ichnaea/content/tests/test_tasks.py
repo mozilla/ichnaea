@@ -219,7 +219,7 @@ class TestStats(CeleryTestCase):
 
         for stat in ['deleted_cell', 'deleted_wifi']:
             p = 0
-            for i in range(1,10):
+            for i in range(1, 10):
                 p += i
                 incr_stat(session, stat, i, two_days)
                 self.assertEqual(get_curr_stat(session, stat, two_days), p)
@@ -227,7 +227,7 @@ class TestStats(CeleryTestCase):
                 self.assertEqual(get_curr_stat(session, stat, today), p)
                 self.assertEqual(get_curr_stat(session, stat), p)
             q = p
-            for i in range(1,10):
+            for i in range(1, 10):
                 q += i
                 incr_stat(session, stat, i, yesterday)
                 self.assertEqual(get_curr_stat(session, stat, two_days), p)
@@ -235,7 +235,7 @@ class TestStats(CeleryTestCase):
                 self.assertEqual(get_curr_stat(session, stat, today), q)
                 self.assertEqual(get_curr_stat(session, stat), q)
             r = q
-            for i in range(1,10):
+            for i in range(1, 10):
                 r += i
                 incr_stat(session, stat, i, today)
                 self.assertEqual(get_curr_stat(session, stat, two_days), p)
