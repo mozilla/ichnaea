@@ -44,7 +44,9 @@ def add_stat(session, name, day, value):
         key=stat_key, time=day, value=before + int(value))
     session.execute(stmt)
 
-def incr_stat(session, name, incr, date=datetime.utcnow().date()):
+def incr_stat(session, name, incr, date=None):
+    if date is None:
+        date = datetime.utcnow().date()
     stat_key = STAT_TYPE[name]
     cumulative = get_curr_stat(session, name) + incr
 
@@ -54,7 +56,9 @@ def incr_stat(session, name, incr, date=datetime.utcnow().date()):
             key=stat_key, time=date, value=cumulative)
     session.execute(stmt)
 
-def get_curr_stat(session, name, date=datetime.utcnow().date()):
+def get_curr_stat(session, name, date=None):
+    if date is None:
+        date = datetime.utcnow().date()
     stat_key = STAT_TYPE[name]
     query = session.query(Stat.value).filter(
         Stat.key == stat_key).filter(
