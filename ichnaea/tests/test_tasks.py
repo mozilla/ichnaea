@@ -308,8 +308,8 @@ class TestWifiLocationUpdate(CeleryTestCase):
         session = self.db_master_session
         measures = []
         backdate = datetime.utcnow() - timedelta(days=10)
-        keys = range(5)
-        measures_per_key = 100
+        keys = range(3)
+        measures_per_key = 8
         m1 = 10000000
         m2 = 20000000
         session.query(unique_model).delete()
@@ -355,9 +355,9 @@ class TestWifiLocationUpdate(CeleryTestCase):
             self.assertEqual(get_curr_stat(session, delstat),
                              len(keys) * (2 * measures_per_key - keep))
 
-        trim_and_check(12)
-        trim_and_check(10)
-        trim_and_check(8)
+        trim_and_check(6)
+        trim_and_check(4)
+        trim_and_check(2)
 
     def check_no_trim_young_data(self, unique_model, measure_model,
                                  trim_func, kinit, delstat):
@@ -368,8 +368,8 @@ class TestWifiLocationUpdate(CeleryTestCase):
 
         session = self.db_master_session
         measures = []
-        keys = range(5)
-        measures_per_key = 100
+        keys = range(3)
+        measures_per_key = 4
         m1 = 10000000
         m2 = 20000000
         session.query(unique_model).delete()
@@ -391,7 +391,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
 
         dels = get_curr_stat(session, delstat)
 
-        result = trim_func.delay(10)
+        result = trim_func.delay(2)
         result.get()
 
         # check that all data was preserved
