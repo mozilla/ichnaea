@@ -52,6 +52,7 @@ class Cell(_Model):
             'radio', 'mcc', 'mnc', 'lac', 'cid', name='cell_idx_unique'),
         Index('cell_created_idx', 'created'),
         Index('cell_new_measures_idx', 'new_measures'),
+        Index('cell_total_measures_idx', 'total_measures'),
         {
             'mysql_engine': 'InnoDB',
             'mysql_charset': 'utf8',
@@ -152,6 +153,7 @@ class Wifi(_Model):
         UniqueConstraint('key', name='wifi_key_unique'),
         Index('wifi_created_idx', 'created'),
         Index('wifi_new_measures_idx', 'new_measures'),
+        Index('wifi_total_measures_idx', 'total_measures'),
         {
             'mysql_engine': 'InnoDB',
             'mysql_charset': 'utf8',
