@@ -16,8 +16,8 @@ SQLURI = os.environ.get('SQLURI')
 SQLSOCKET = os.environ.get('SQLSOCKET')
 
 
-def _make_db(create=True):
-    return Database(SQLURI, socket=SQLSOCKET, create=create)
+def _make_db(uri=SQLURI, socket=SQLSOCKET, create=True):
+    return Database(uri, socket=socket, create=create)
 
 
 def _make_app(_db_master=None, _db_slave=None, **settings):
