@@ -53,7 +53,7 @@ def incr_stat(session, name, incr, date=None):
 
     # on duplicate key, update existing
     stmt = Stat.__table__.insert(
-        on_duplicate='value=%s' % cumulative).values(
+        on_duplicate='value=value + %s' % incr).values(
         key=stat_key, time=date, value=cumulative)
     session.execute(stmt)
 
