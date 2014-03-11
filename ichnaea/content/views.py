@@ -10,6 +10,7 @@ from pyramid.response import Response
 from pyramid.view import view_config
 
 from ichnaea.content.stats import (
+    countries,
     global_stats,
     histogram,
     leaders,
@@ -29,6 +30,10 @@ def configure_content(config):
                     http_cache=(86400, {'public': True}))
     config.add_static_view(
         name='static', path='ichnaea.content:static', cache_max_age=3600)
+
+    config.add_route('stats_countries', '/stats/countries')
+    config.add_route('stats', '/stats')
+
     config.scan('ichnaea.content.views')
 
 
@@ -118,7 +123,8 @@ class ContentViews(Layout):
         session = self.request.db_slave_session
         return {'histogram': histogram(session, 'unique_wifi')}
 
-    @view_config(renderer='templates/stats.pt', name="stats", http_cache=3600)
+    @view_config(renderer='templates/stats.pt',
+                 route_name="stats", http_cache=3600)
     def stats_view(self):
         session = self.request.db_slave_session
         result = {'leaders': [], 'metrics': [], 'page_title': 'Statistics'}
@@ -131,6 +137,14 @@ class ContentViews(Layout):
         ]
         for mid, name in metric_names:
             result['metrics'].append({'name': name, 'value': metrics[mid]})
+        return result
+
+    @view_config(renderer='templates/stats_countries.pt',
+                 route_name="stats_countries", http_cache=3600)
+    def stats_countries_view(self):
+        session = self.request.db_slave_session
+        result = {'page_title': 'Cell Statistics'}
+        result['metrics'] = countries(session)
         return result
 
 

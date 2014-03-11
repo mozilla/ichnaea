@@ -16,6 +16,11 @@
         This page shows global statistics.
         Data is updated daily shortly after midnight in UTC.
     </p>
+    <p>
+        More <a href="/stats/countries">detailed statistics on cell
+        networks</a> are also available.
+    </p>
+
     <div class="separator">
     <table class="table half">
         <thead>

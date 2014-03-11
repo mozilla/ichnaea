@@ -1,0 +1,41 @@
+<tal:macro xmlns:tal="http://xml.zope.org/namespaces/tal"
+           xmlns:metal="http://xml.zope.org/namespaces/metal"
+           metal:use-macro="view.base_template">
+
+<tal:slot metal:fill-slot="content">
+<section id="main-content">
+    <p>
+        This page shows statistics about cell networks. The values represent
+        the total number of cells for a cell standard across operators and
+        location areas. Each cell tower can serve multiple logical cells, so
+        the numbers are only loosely correlated with the number of physical
+        cell towers. Data is updated near real time.
+    </p>
+    <div class="separator">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Country</th>
+                <th class="text-right">GSM</th>
+                <th class="text-right">CDMA</th>
+                <th class="text-right">UMTS</th>
+                <th class="text-right">LTE</th>
+                <th class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr tal:repeat="row metrics">
+                <td>${row.name}</td>
+                <td class="text-right">${row.gsm}</td>
+                <td class="text-right">${row.cdma}</td>
+                <td class="text-right">${row.umts}</td>
+                <td class="text-right">${row.lte}</td>
+                <td class="text-right">${row.total}</td>
+            </tr>
+        </tbody>
+    </table>
+    </div>
+</section>
+</tal:slot>
+
+</tal:macro>

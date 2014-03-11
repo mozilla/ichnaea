@@ -1,6 +1,11 @@
 from datetime import datetime
 from datetime import timedelta
 
+from ichnaea.models import (
+    Cell,
+    RADIO_TYPE,
+)
+
 from ichnaea.content.models import (
     Score,
     User,
@@ -114,3 +119,40 @@ class TestStats(DBTestCase):
         self.assertEqual(result[0]['nickname'], highest[:24] + u'...')
         self.assertEqual(result[0]['num'], 10)
         self.assertTrue(lowest in [r['nickname'] for r in result])
+
+    def test_countries(self):
+        from ichnaea.content.stats import countries
+        session = self.db_master_session
+        test_data = [
+            Cell(radio=RADIO_TYPE[''], mcc=208, mnc=1),
+            Cell(radio=RADIO_TYPE['gsm'], mcc=1, mnc=1),
+            Cell(radio=RADIO_TYPE['gsm'], mcc=310, mnc=1),
+            Cell(radio=RADIO_TYPE['gsm'], mcc=310, mnc=2),
+            Cell(radio=RADIO_TYPE['gsm'], mcc=311, mnc=1),
+            Cell(radio=RADIO_TYPE['cdma'], mcc=310, mnc=1),
+            Cell(radio=RADIO_TYPE['umts'], mcc=262, mnc=1),
+            Cell(radio=RADIO_TYPE['lte'], mcc=262, mnc=1),
+        ]
+        session.add_all(test_data)
+        session.commit()
+
+        # check the result
+        result = countries(session)
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]['name'], 'Germany')
+        self.assertEqual(result[1]['name'], 'United States')
+
+        countries = {}
+        for r in result:
+            name = r['name']
+            countries[name] = r
+            del countries[name]['name']
+
+        self.assertEqual(
+            countries['United States'],
+            {'cdma': 1, 'gsm': 3, 'lte': 0, 'total': 4, 'umts': 0}
+        )
+        self.assertEqual(
+            countries['Germany'],
+            {'cdma': 0, 'gsm': 0, 'lte': 1, 'total': 2, 'umts': 1}
+        )

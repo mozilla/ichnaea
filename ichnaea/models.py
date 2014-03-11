@@ -23,6 +23,7 @@ RADIO_TYPE = {
     'lte': 3,
 }
 RADIO_TYPE_KEYS = list(RADIO_TYPE.keys())
+RADIO_TYPE_INVERSE = dict((v, k) for k, v in RADIO_TYPE.items())
 
 invalid_wifi_regex = re.compile("(?!(0{12}|f{12}))")
 valid_wifi_regex = re.compile("([0-9a-fA-F]{12})")
