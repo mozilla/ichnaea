@@ -122,7 +122,7 @@ def search_view(request):
         heka_client.incr('search.no_api_key')
         return {'status': 'not_found'}
 
-    heka_client.incr('search.api_key.%s' % api_key.replace('.', '__'))
+    heka_client.incr('search.api_key')
 
     data, errors = preprocess_request(
         request,

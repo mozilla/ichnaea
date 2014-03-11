@@ -47,7 +47,7 @@ class TestSearch(AppTestCase):
         f = [f for f in msg.fields if f.name == 'url_path'][0]
         self.assertEquals(f.value_string, ['/v1/search'])
 
-        self.assertEquals(1, len(find_msg('counter', 'search.api_key.test')))
+        self.assertEquals(1, len(find_msg('counter', 'search.api_key')))
         self.assertEquals(1, len(find_msg('counter', 'http.request')))
         self.assertEquals(3, len(self.heka_client.stream.msgs))
 
@@ -80,7 +80,7 @@ class TestSearch(AppTestCase):
         msg = timer_msgs[0]
         f = [f for f in msg.fields if f.name == 'url_path'][0]
         self.assertEquals(f.value_string, ['/v1/search'])
-        self.assertEquals(1, len(find_msg('counter', 'search.api_key.test')))
+        self.assertEquals(1, len(find_msg('counter', 'search.api_key')))
         self.assertEquals(1, len(find_msg('counter', 'http.request')))
         self.assertEquals(3, len(self.heka_client.stream.msgs))
 
@@ -148,7 +148,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.body, '{"status": "not_found"}')
 
         find_msg = self.find_heka_messages
-        self.assertEquals(1, len(find_msg('counter', 'search.api_key.test')))
+        self.assertEquals(1, len(find_msg('counter', 'search.api_key')))
 
     def test_wifi_not_found(self):
         app = self.app
@@ -159,7 +159,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.body, '{"status": "not_found"}')
 
         find_msg = self.find_heka_messages
-        self.assertEquals(1, len(find_msg('counter', 'search.api_key.test')))
+        self.assertEquals(1, len(find_msg('counter', 'search.api_key')))
 
     def test_wifi_not_found_cell_fallback(self):
         app = self.app
@@ -249,8 +249,7 @@ class TestSearch(AppTestCase):
         self.assertTrue('errors' in res.json)
 
         find_msg = self.find_heka_messages
-        expected_key = 'search.api_key.test__test'
-        self.assertEqual(1, len(find_msg('counter', expected_key)))
+        self.assertEqual(1, len(find_msg('counter', 'search.api_key')))
 
     def test_gzip(self):
         app = self.app
