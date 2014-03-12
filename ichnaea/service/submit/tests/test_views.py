@@ -28,6 +28,10 @@ class TestSubmit(CeleryAppTestCase):
     def test_ok_cell(self):
         app = self.app
         today = datetime.utcnow().date()
+        month_rounded_today = today.replace(day=1)
+        month_rounded_dt = datetime(month_rounded_today.year,
+                                    month_rounded_today.month,
+                                    month_rounded_today.day)
 
         cell_data = [
             {"radio": "umts", "mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
@@ -56,6 +60,7 @@ class TestSubmit(CeleryAppTestCase):
         item = cell_result[0]
         self.assertEqual(item.measure_id, measure_result[0].id)
         self.assertEqual(item.created.date(), today)
+        self.assertEqual(item.time, month_rounded_dt)
         self.assertEqual(item.lat, 123456781)
         self.assertEqual(item.lon, 234567892)
         self.assertEqual(item.accuracy, 10)
@@ -91,6 +96,10 @@ class TestSubmit(CeleryAppTestCase):
         app = self.app
         today = datetime.utcnow().date()
         wifi_data = [{"key": "0012AB12AB12"}, {"key": "00:34:cd:34:cd:34"}]
+        month_rounded_today = today.replace(day=1)
+        month_rounded_dt = datetime(month_rounded_today.year,
+                                    month_rounded_today.month,
+                                    month_rounded_today.day)
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3456781,
                                       "lon": 23.4567892,
@@ -108,6 +117,7 @@ class TestSubmit(CeleryAppTestCase):
         item = wifi_result[0]
         self.assertEqual(item.measure_id, measure_result[0].id)
         self.assertEqual(item.created.date(), today)
+        self.assertEqual(item.time, month_rounded_dt)
         self.assertEqual(item.lat, 123456781)
         self.assertEqual(item.lon, 234567892)
         self.assertEqual(item.accuracy, 17)
@@ -189,16 +199,20 @@ class TestSubmit(CeleryAppTestCase):
         wifis = dict([(w.key, (w.created, w.time)) for w in result])
         today = datetime.utcnow().date()
 
+        month_rounded_tday = time.replace(day=1, hour=0, minute=0, second=0)
+        month_rounded_today = today.replace(day=1)
+
         self.assertEqual(wifis['00aaaaaaaaaa'][0].date(), today)
-        self.assertEqual(wifis['00aaaaaaaaaa'][1], tday)
+        self.assertEqual(wifis['00aaaaaaaaaa'][1], month_rounded_tday)
 
         self.assertEqual(wifis['00bbbbbbbbbb'][0].date(), today)
-        self.assertEqual(wifis['00bbbbbbbbbb'][1].date(), today)
+        self.assertEqual(wifis['00bbbbbbbbbb'][1].date(), month_rounded_today)
 
     def test_time_short_format(self):
         app = self.app
         # a string like "2014-01-15"
         time = datetime.utcnow().date()
+        month_rounded_time = time.replace(day=1)
         tstr = time.isoformat()
         app.post_json(
             '/v1/submit', {"items": [
@@ -211,7 +225,7 @@ class TestSubmit(CeleryAppTestCase):
         result = session.query(WifiMeasure).all()
         self.assertEqual(len(result), 1)
         result_time = result[0].time
-        self.assertEqual(result_time.date(), time)
+        self.assertEqual(result_time.date(), month_rounded_time)
         self.assertEqual(result_time.hour, 0)
         self.assertEqual(result_time.minute, 0)
         self.assertEqual(result_time.second, 0)

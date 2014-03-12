@@ -52,7 +52,7 @@ class TestLoadFile(CeleryTestCase):
         self.assertEqual(measure.altitude, 500)
         self.assertEqual(measure.altitude_accuracy, 0)
         self.assertEqual(measure.created.date(), today)
-        self.assertEqual(measure.time.date(), today)
+        self.assertEqual(measure.time.date(), today.replace(day=1))
 
     def test_batch(self):
         func, tmpfile = self._make_one()
