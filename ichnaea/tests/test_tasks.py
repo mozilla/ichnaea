@@ -320,6 +320,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
             measures.append(unique_model(lat=(m1 + m2) / 2, lon=(m1 + m2) / 2,
                                          total_measures=measures_per_key * 2,
                                          **kargs))
+            kargs['created'] = backdate
             kargs['time'] = backdate
             for i in range(measures_per_key):
                 measures.append(measure_model(lat=m1 + i, lon=m1 + i, **kargs))

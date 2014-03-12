@@ -321,7 +321,7 @@ def trim_excessive_data(session, unique_model, measure_model,
     # with periodic recent-stat calculations on incoming new data
     utcnow = datetime.utcnow()
     age_threshold = utcnow - timedelta(days=min_age_days)
-    age_cond = measure_model.time < age_threshold
+    age_cond = measure_model.created < age_threshold
 
     # initial (fast) query to pull out those uniques that have
     # total_measures larger than max_measures; will refine this

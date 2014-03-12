@@ -115,8 +115,8 @@ def process_time(measure, utcnow, utcmin):
         # time values more than 60 days in the past
         if measure['time'] > utcnow or measure['time'] < utcmin:
             measure['time'] = utcnow
-    # cut down the time to a daily resolution
-    measure['time'] = measure['time'].date()
+    # cut down the time to a monthly resolution
+    measure['time'] = measure['time'].date().replace(day=1)
     return measure
 
 
