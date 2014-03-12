@@ -389,11 +389,11 @@ def process_cell_measures(session, entries, userid=None,
         cell_count[cell_key] += 1
 
     if dropped_malformed != 0 and heka_client is not None:
-        heka_client.incr("items.dropped.cell.ingress.malformed",
+        heka_client.incr("items.dropped.cell_ingress_malformed",
                          count=dropped_malformed)
 
     if dropped_overflow != 0 and heka_client is not None:
-        heka_client.incr("items.dropped.cell.ingress.overflow",
+        heka_client.incr("items.dropped.cell_ingress_overflow",
                          count=dropped_overflow)
 
     # update new/total measure counts
@@ -503,7 +503,7 @@ def process_wifi_measures(session, entries, userid=None,
             wifi_count[wifi_key] += 1
 
     if dropped_overflow != 0 and heka_client is not None:
-        heka_client.incr("items.dropped.wifi.ingress.overflow",
+        heka_client.incr("items.dropped.wifi_ingress_overflow",
                          count=dropped_overflow)
 
     # update user score
