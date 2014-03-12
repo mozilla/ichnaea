@@ -161,7 +161,7 @@ def process_measure(measure_id, data, session):
     return (cell_measures, wifi_measures)
 
 
-def process_measures(items, session, userid=None):
+def process_measures(items, session, userid=None, heka_client=None):
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
     utcmin = utcnow - datetime.timedelta(60)
 
@@ -190,6 +190,9 @@ def process_measures(items, session, userid=None):
 
     if cell_measures:
         # group by and create task per cell key
+        if heka_client is not None:
+            heka_client.incr("items.uploaded.cell_measures",
+                             len(cell_measures))
         cells = defaultdict(list)
         for measure in cell_measures:
             cell_key = CellKey(measure['radio'], measure['mcc'],
@@ -202,6 +205,9 @@ def process_measures(items, session, userid=None):
 
     if wifi_measures:
         # group by and create task per wifi key
+        if heka_client is not None:
+            heka_client.incr("items.uploaded.wifi_measures",
+                             len(wifi_measures))
         wifis = defaultdict(list)
         for measure in wifi_measures:
             wifis[measure['key']].append(measure)
@@ -227,7 +233,7 @@ def insert_measures(self, items=None, nickname=''):
             userid, nickname = process_user(nickname, session)
 
             process_measures(items, session, userid=userid)
-            self.heka_client.incr("items.uploaded", count=length)
+            self.heka_client.incr("items.uploaded.batches", count=length)
 
             session.commit()
         return length
@@ -406,6 +412,9 @@ def process_cell_measures(session, entries, userid=None,
     if userid is not None and new_cells > 0:
         process_score(userid, new_cells, session, key='new_cell')
 
+    if heka_client is not None:
+        heka_client.incr("items.inserted.cell_measures",
+                         count=len(cell_measures))
     session.add_all(cell_measures)
     return cell_measures
 
@@ -530,6 +539,9 @@ def process_wifi_measures(session, entries, userid=None,
             new_measures=num, total_measures=num)
         session.execute(stmt)
 
+    if heka_client is not None:
+        heka_client.incr("items.inserted.wifi_measures",
+                         count=len(wifi_measures))
     session.add_all(wifi_measures)
     return wifi_measures
 
