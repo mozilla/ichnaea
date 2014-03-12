@@ -74,7 +74,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         cm_ids = [x[0] for x in query.all()]
 
         # TODO: refactor this to be constants in the method
-        new_measures = {(1, 1, 2, 3, 4): cm_ids}
+        new_measures = [((1, 1, 2, 3, 4), cm_ids)]
 
         result = backfill_cell_location_update.delay(new_measures)
         self.assertEqual(result.get(), 1)

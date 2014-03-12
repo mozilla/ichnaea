@@ -69,9 +69,14 @@ def update_tower(self, radio, mcc, mnc, psc):
                 rows_updated += result_proxy.rowcount
         session.commit()
 
+        # convert new_cell_measures to a JSON friendly representation
+        task_arguments = []
+        for k, v in new_cell_measures.items():
+            task_arguments.append((k, list(v)))
+
         # Update the cell tower locations with the newly backfilled
         # measurements now
-        backfill_cell_location_update.delay(new_cell_measures)
+        backfill_cell_location_update.delay(task_arguments)
 
     return rows_updated
 

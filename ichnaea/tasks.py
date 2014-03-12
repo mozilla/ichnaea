@@ -160,6 +160,7 @@ def calculate_new_cell_position(cell, measures, backfill=True):
 def backfill_cell_location_update(self, new_cell_measures):
     try:
         cells = []
+        new_cell_measures = dict(new_cell_measures)
         with self.db_session() as session:
             for tower_tuple, cell_measure_ids in new_cell_measures.items():
                 radio, mcc, mnc, lac, cid = tower_tuple
