@@ -229,6 +229,65 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(len(wifis), 1)
         self.assertEqual(set([w.key for w in wifis]), set([good_key]))
 
+    def test_wifi_overflow(self):
+        from ichnaea.service.submit.tasks import insert_wifi_measures
+        session = self.db_master_session
+        key = "ab1234567890"
+
+        measures = [dict(id=0,
+                         key=key,
+                         lat=10000000+i,
+                         lon=20000000+i) for i in range(3)]
+
+        result = insert_wifi_measures.delay(measures)
+        self.assertEqual(result.get(), 3)
+
+        result = insert_wifi_measures.delay(measures, max_measures_per_ap=3)
+        self.assertEqual(result.get(), 0)
+
+        result = insert_wifi_measures.delay(measures, max_measures_per_ap=10)
+        self.assertEqual(result.get(), 3)
+
+        result = insert_wifi_measures.delay(measures, max_measures_per_ap=3)
+        self.assertEqual(result.get(), 0)
+
+        measures = session.query(WifiMeasure).all()
+        self.assertEqual(len(measures), 6)
+
+        wifis = session.query(Wifi).all()
+        self.assertEqual(len(wifis), 1)
+        self.assertEqual(wifis[0].total_measures, 6)
+
+    def test_cell_overflow(self):
+        from ichnaea.service.submit.tasks import insert_cell_measures
+        session = self.db_master_session
+
+        measures = [dict(mcc=1, mnc=2, lac=3, cid=4, psc=5,
+                         radio=RADIO_TYPE['gsm'],
+                         id=0,
+                         lat=10000000+i,
+                         lon=20000000+i) for i in range(3)]
+
+        result = insert_cell_measures.delay(measures)
+        self.assertEqual(result.get(), 3)
+
+        result = insert_cell_measures.delay(measures, max_measures_per_cell=3)
+        self.assertEqual(result.get(), 0)
+
+        result = insert_cell_measures.delay(measures, max_measures_per_cell=10)
+        self.assertEqual(result.get(), 3)
+
+        result = insert_cell_measures.delay(measures, max_measures_per_cell=3)
+        self.assertEqual(result.get(), 0)
+
+        measures = session.query(CellMeasure).all()
+        self.assertEqual(len(measures), 6)
+
+        cells = session.query(Cell).all()
+        self.assertEqual(len(cells), 1)
+        self.assertEqual(cells[0].total_measures, 6)
+
+
     def test_ignore_unhelpful_incomplete_cdma_cells(self):
         # CDMA cell records must have MNC, MCC, LAC and CID filled in
         from ichnaea.service.submit.tasks import insert_cell_measures

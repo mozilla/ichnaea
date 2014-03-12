@@ -325,21 +325,76 @@ def update_cell_measure_count(cell_key, count, utcnow, session):
     return new_cell
 
 
-def process_cell_measures(session, entries, userid=None):
+def process_cell_measures(session, entries, userid=None,
+                          heka_client=None, max_measures_per_cell=11000):
     cell_count = defaultdict(int)
     cell_measures = []
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
 
+    dropped_malformed = 0
+    dropped_overflow = 0
+    space_available = {}
+
     # process entries
     for entry in entries:
+
         cell_measure = create_cell_measure(utcnow, entry)
         if not cell_measure:
+            dropped_malformed += 1
             continue
+
+        cell_key = CellKey(cell_measure.radio, cell_measure.mcc,
+                           cell_measure.mnc, cell_measure.lac,
+                           cell_measure.cid, cell_measure.psc)
+
+        # check if there's space for new measurement within per-cell maximum
+        # (note: old measures gradually expire, so this is an intake-rate limit)
+        if cell_key not in space_available:
+            query = session.query(Cell.total_measures).filter(
+                Cell.radio == cell_key.radio,
+                Cell.mcc == cell_key.mcc,
+                Cell.mnc == cell_key.mnc,
+                Cell.lac == cell_key.lac,
+                Cell.cid == cell_key.cid,
+                Cell.psc == cell_key.psc)
+            curr = query.first()
+            if curr is not None:
+                space_available[cell_key] = max_measures_per_cell - curr[0]
+            else:
+                space_available[cell_key] = max_measures_per_cell
+
+        if space_available[cell_key] > 0:
+            space_available[cell_key] -= 1
+        else:
+            dropped_overflow += 1
+            continue
+
+        # Possibly drop measure if we're receiving them too
+        # quickly for this cell.
+        query = session.query(Cell.total_measures).filter(
+            Cell.radio == cell_measure.radio,
+            Cell.mcc == cell_measure.mcc,
+            Cell.mnc == cell_measure.mnc,
+            Cell.lac == cell_measure.lac,
+            Cell.cid == cell_measure.cid,
+            Cell.psc == cell_measure.psc)
+        total_measures = query.first()
+        if total_measures is not None:
+            if total_measures[0] > max_measures_per_cell:
+                dropped_overflow += 1
+                continue
+
         cell_measures.append(cell_measure)
         # group per unique cell
-        cell_count[CellKey(cell_measure.radio, cell_measure.mcc,
-                           cell_measure.mnc, cell_measure.lac,
-                           cell_measure.cid, cell_measure.psc)] += 1
+        cell_count[cell_key] += 1
+
+    if dropped_malformed != 0 and heka_client is not None:
+        heka_client.incr("items.dropped.cell.ingress.malformed",
+                              count=dropped_malformed)
+
+    if dropped_overflow != 0 and heka_client is not None:
+        heka_client.incr("items.dropped.cell.ingress.overflow",
+                              count=dropped_overflow)
 
     # update new/total measure counts
     new_cells = 0
@@ -356,12 +411,16 @@ def process_cell_measures(session, entries, userid=None):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def insert_cell_measures(self, entries, userid=None):
+def insert_cell_measures(self, entries, userid=None,
+                         max_measures_per_cell=11000):
     try:
         cell_measures = []
         with self.db_session() as session:
             cell_measures = process_cell_measures(
-                session, entries, userid=userid)
+                session, entries,
+                userid=userid,
+                heka_client=self.heka_client,
+                max_measures_per_cell=max_measures_per_cell)
             session.commit()
         return len(cell_measures)
     except IntegrityError as exc:  # pragma: no cover
@@ -399,7 +458,8 @@ def create_wifi_measure(utcnow, entry):
     )
 
 
-def process_wifi_measures(session, entries, userid=None):
+def process_wifi_measures(session, entries, userid=None,
+                          heka_client=None, max_measures_per_ap=11000):
     wifi_measures = []
     wifi_count = defaultdict(int)
     wifi_keys = set([e['key'] for e in entries])
@@ -411,15 +471,40 @@ def process_wifi_measures(session, entries, userid=None):
         WifiBlacklist.key.in_(wifi_keys)).all()
     blacked = set([b[0] for b in blacked])
 
+    space_available = {}
+    dropped_overflow = 0
+
     # process entries
     for entry in entries:
         wifi_key = entry['key']
+
+        # check if there's space for new measurement within per-AP maximum
+        # (note: old measures gradually expire, so this is an intake-rate limit)
+        if wifi_key not in space_available:
+            query = session.query(Wifi.total_measures).filter(
+                Wifi.key == wifi_key)
+            curr = query.first()
+            if curr is not None:
+                space_available[wifi_key] = max_measures_per_ap - curr[0]
+            else:
+                space_available[wifi_key] = max_measures_per_ap
+
+        if space_available[wifi_key] > 0:
+            space_available[wifi_key] -= 1
+        else:
+            dropped_overflow += 1
+            continue
+
         # convert frequency into channel numbers and remove frequency
         convert_frequency(entry)
         wifi_measures.append(create_wifi_measure(utcnow, entry))
         if wifi_key not in blacked:
             # skip blacklisted wifi AP's
             wifi_count[wifi_key] += 1
+
+    if dropped_overflow != 0 and heka_client is not None:
+        heka_client.incr("items.dropped.wifi.ingress.overflow",
+                         count=dropped_overflow)
 
     # update user score
     if userid is not None:
@@ -450,12 +535,16 @@ def process_wifi_measures(session, entries, userid=None):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def insert_wifi_measures(self, entries, userid=None):
+def insert_wifi_measures(self, entries, userid=None,
+                         max_measures_per_ap=11000):
     wifi_measures = []
     try:
         with self.db_session() as session:
             wifi_measures = process_wifi_measures(
-                session, entries, userid=userid)
+                session, entries,
+                userid=userid,
+                heka_client=self.heka_client,
+                max_measures_per_ap=max_measures_per_ap)
             session.commit()
         return len(wifi_measures)
     except IntegrityError as exc:  # pragma: no cover
