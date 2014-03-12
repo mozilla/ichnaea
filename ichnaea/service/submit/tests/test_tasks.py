@@ -232,7 +232,7 @@ class TestInsert(CeleryTestCase):
     def test_wifi_overflow(self):
         from ichnaea.service.submit.tasks import insert_wifi_measures
         session = self.db_master_session
-        key = "ab1234567890"
+        key = "001234567890"
 
         measures = [dict(id=0,
                          key=key,
