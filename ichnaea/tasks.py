@@ -412,14 +412,15 @@ def wifi_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
         with self.db_session() as session:
             join_measure = lambda u: (WifiMeasure.key == u.key, )
 
-            trim_excessive_data(session=session,
-                                unique_model=Wifi,
-                                measure_model=WifiMeasure,
-                                join_measure=join_measure,
-                                delstat='deleted_wifi',
-                                max_measures=max_measures,
-                                min_age_days=min_age_days,
-                                batch=batch)
+            n = trim_excessive_data(session=session,
+                                    unique_model=Wifi,
+                                    measure_model=WifiMeasure,
+                                    join_measure=join_measure,
+                                    delstat='deleted_wifi',
+                                    max_measures=max_measures,
+                                    min_age_days=min_age_days,
+                                    batch=batch)
+            self.heka_client.incr("items.dropped.wifi_trim_excessive", n)
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
 
@@ -436,13 +437,14 @@ def cell_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
                 CellMeasure.cid == u.cid,
             )
 
-            trim_excessive_data(session=session,
-                                unique_model=Cell,
-                                measure_model=CellMeasure,
-                                join_measure=join_measure,
-                                delstat='deleted_cell',
-                                max_measures=max_measures,
-                                min_age_days=min_age_days,
-                                batch=batch)
+            n = trim_excessive_data(session=session,
+                                    unique_model=Cell,
+                                    measure_model=CellMeasure,
+                                    join_measure=join_measure,
+                                    delstat='deleted_cell',
+                                    max_measures=max_measures,
+                                    min_age_days=min_age_days,
+                                    batch=batch)
+            self.heka_client.incr("items.dropped.cell_trim_excessive", n)
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
