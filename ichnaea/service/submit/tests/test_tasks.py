@@ -236,8 +236,8 @@ class TestInsert(CeleryTestCase):
 
         measures = [dict(id=0,
                          key=key,
-                         lat=10000000+i,
-                         lon=20000000+i) for i in range(3)]
+                         lat=10000000 + i,
+                         lon=20000000 + i) for i in range(3)]
 
         result = insert_wifi_measures.delay(measures)
         self.assertEqual(result.get(), 3)
@@ -286,7 +286,6 @@ class TestInsert(CeleryTestCase):
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 1)
         self.assertEqual(cells[0].total_measures, 6)
-
 
     def test_ignore_unhelpful_incomplete_cdma_cells(self):
         # CDMA cell records must have MNC, MCC, LAC and CID filled in

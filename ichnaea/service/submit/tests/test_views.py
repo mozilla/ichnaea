@@ -179,7 +179,6 @@ class TestSubmit(CeleryAppTestCase):
         app = self.app
         # test two weeks ago and "now"
         time = (datetime.utcnow() - timedelta(14)).replace(microsecond=0)
-        tday = time.replace(hour=0, minute=0, second=0)
         tstr = encode_datetime(time)
         app.post_json(
             '/v1/submit', {"items": [

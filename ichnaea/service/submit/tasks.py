@@ -348,7 +348,7 @@ def process_cell_measures(session, entries, userid=None,
                            cell_measure.cid, cell_measure.psc)
 
         # check if there's space for new measurement within per-cell maximum
-        # (note: old measures gradually expire, so this is an intake-rate limit)
+        # note: old measures gradually expire, so this is an intake-rate limit
         if cell_key not in space_available:
             query = session.query(Cell.total_measures).filter(
                 Cell.radio == cell_key.radio,
@@ -390,11 +390,11 @@ def process_cell_measures(session, entries, userid=None,
 
     if dropped_malformed != 0 and heka_client is not None:
         heka_client.incr("items.dropped.cell.ingress.malformed",
-                              count=dropped_malformed)
+                         count=dropped_malformed)
 
     if dropped_overflow != 0 and heka_client is not None:
         heka_client.incr("items.dropped.cell.ingress.overflow",
-                              count=dropped_overflow)
+                         count=dropped_overflow)
 
     # update new/total measure counts
     new_cells = 0
@@ -479,7 +479,7 @@ def process_wifi_measures(session, entries, userid=None,
         wifi_key = entry['key']
 
         # check if there's space for new measurement within per-AP maximum
-        # (note: old measures gradually expire, so this is an intake-rate limit)
+        # note: old measures gradually expire, so this is an intake-rate limit
         if wifi_key not in space_available:
             query = session.query(Wifi.total_measures).filter(
                 Wifi.key == wifi_key)
