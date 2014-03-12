@@ -242,13 +242,13 @@ class TestInsert(CeleryTestCase):
         result = insert_wifi_measures.delay(measures)
         self.assertEqual(result.get(), 3)
 
-        result = insert_wifi_measures.delay(measures, max_measures_per_ap=3)
+        result = insert_wifi_measures.delay(measures, max_measures_per_wifi=3)
         self.assertEqual(result.get(), 0)
 
-        result = insert_wifi_measures.delay(measures, max_measures_per_ap=10)
+        result = insert_wifi_measures.delay(measures, max_measures_per_wifi=10)
         self.assertEqual(result.get(), 3)
 
-        result = insert_wifi_measures.delay(measures, max_measures_per_ap=3)
+        result = insert_wifi_measures.delay(measures, max_measures_per_wifi=3)
         self.assertEqual(result.get(), 0)
 
         measures = session.query(WifiMeasure).all()

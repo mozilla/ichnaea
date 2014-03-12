@@ -459,7 +459,7 @@ def create_wifi_measure(utcnow, entry):
 
 
 def process_wifi_measures(session, entries, userid=None,
-                          heka_client=None, max_measures_per_ap=11000):
+                          heka_client=None, max_measures_per_wifi=11000):
     wifi_measures = []
     wifi_count = defaultdict(int)
     wifi_keys = set([e['key'] for e in entries])
@@ -485,9 +485,9 @@ def process_wifi_measures(session, entries, userid=None,
                 Wifi.key == wifi_key)
             curr = query.first()
             if curr is not None:
-                space_available[wifi_key] = max_measures_per_ap - curr[0]
+                space_available[wifi_key] = max_measures_per_wifi - curr[0]
             else:
-                space_available[wifi_key] = max_measures_per_ap
+                space_available[wifi_key] = max_measures_per_wifi
 
         if space_available[wifi_key] > 0:
             space_available[wifi_key] -= 1
@@ -536,7 +536,7 @@ def process_wifi_measures(session, entries, userid=None,
 
 @celery.task(base=DatabaseTask, bind=True)
 def insert_wifi_measures(self, entries, userid=None,
-                         max_measures_per_ap=11000):
+                         max_measures_per_wifi=11000):
     wifi_measures = []
     try:
         with self.db_session() as session:
@@ -544,7 +544,7 @@ def insert_wifi_measures(self, entries, userid=None,
                 session, entries,
                 userid=userid,
                 heka_client=self.heka_client,
-                max_measures_per_ap=max_measures_per_ap)
+                max_measures_per_wifi=max_measures_per_wifi)
             session.commit()
         return len(wifi_measures)
     except IntegrityError as exc:  # pragma: no cover
