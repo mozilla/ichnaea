@@ -2,6 +2,10 @@ from datetime import datetime
 from datetime import timedelta
 
 from celery import Task
+from kombu.serialization import (
+    dumps as kombu_dumps,
+    loads as kombu_loads,
+)
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 
@@ -45,6 +49,27 @@ class DatabaseTask(Task):
                 self.heka_client.raven(RAVEN_ERROR)
                 raise
         return result
+
+    def apply(self, *args, **kw):
+        # This method is only used when calling tasks directly and blocking
+        # on them. It's also used if always_eager is set, like in tests.
+        # Using this in real code should be rare, so the extra overhead of
+        # the check shouldn't matter.
+
+        if self.app.conf.CELERY_ALWAYS_EAGER:
+            # We do the extra check to make sure this was really used from
+            # inside tests
+
+            # We feed the task arguments through the de/serialization process
+            # to make sure the arguments can indeed be serialized.
+            # It's easy enough to put decimal, datetime, set or other
+            # non-serializable objects into the task arguments
+            task_args = isinstance(args, tuple) and args or tuple(args)
+            serializer = self.app.conf.CELERY_TASK_SERIALIZER
+            content_type, encoding, data = kombu_dumps(task_args, serializer)
+            kombu_loads(data, content_type, encoding)
+
+        return super(DatabaseTask, self).apply(*args, **kw)
 
     def db_session(self):
         # returns a context manager
