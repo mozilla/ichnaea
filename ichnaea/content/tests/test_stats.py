@@ -64,7 +64,7 @@ class TestStats(DBTestCase):
         today = datetime.utcnow().date()
         one_day = (today - timedelta(1)).strftime('%Y-%m-%d')
         two_days = (today - timedelta(2)).strftime('%Y-%m-%d')
-        long_ago = (today - timedelta(40)).strftime('%Y-%m-%d')
+        long_ago = (today - timedelta(25)).strftime('%Y-%m-%d')
         today = today.strftime('%Y-%m-%d')
         stats = [
             Stat(time=long_ago, value=1),
@@ -76,7 +76,7 @@ class TestStats(DBTestCase):
             stat.name = 'cell'
         session.add_all(stats)
         session.commit()
-        result = histogram(session, 'cell')
+        result = histogram(session, 'cell', days=20)
         self.assertEqual(result, [
             {'num': 3, 'day': two_days},
             {'num': 7, 'day': one_day},

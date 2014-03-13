@@ -57,13 +57,13 @@ def global_stats(session):
     return result
 
 
-def histogram(session, name):
+def histogram(session, name, days=60):
     today = datetime.datetime.utcnow().date()
-    thirty_days = today - timedelta(days=30)
+    start = today - timedelta(days=days)
     stat_key = STAT_TYPE[name]
     rows = session.query(Stat.time, Stat.value).filter(
         Stat.key == stat_key).filter(
-        Stat.time >= thirty_days).filter(
+        Stat.time >= start).filter(
         Stat.time < today).order_by(
         Stat.time
     )
