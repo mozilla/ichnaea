@@ -509,7 +509,7 @@ class TestSubmit(CeleryAppTestCase):
         """
         We should be capturing 4 metrics:
         1) counter for URL request
-        2) counter for items.uploaded
+        2) counter for items.uploaded.batches
         3) timer to respond
         4) timer for "insert_cell_measure"
         5) timer for "insert_measures"
@@ -517,7 +517,7 @@ class TestSubmit(CeleryAppTestCase):
 
         find_msg = self.find_heka_messages
         self.assertEqual(1, len(find_msg('counter', 'http.request')))
-        self.assertEqual(1, len(find_msg('counter', 'items.uploaded')))
+        self.assertEqual(1, len(find_msg('counter', 'items.uploaded.batches')))
         self.assertEqual(1, len(find_msg('counter', 'submit.api_key.test')))
         self.assertEqual(1, len(find_msg('timer', 'http.request')))
         taskname = 'task.service.submit.insert_cell_measures'
