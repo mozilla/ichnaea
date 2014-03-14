@@ -229,8 +229,8 @@ class TestSearch(AppTestCase):
             extra_environ={'HTTP_X_FORWARDED_FOR': '66.92.181.240'},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"status": "ok", "lat": 37.50790000000001, '
-                                   '"lon": -121.96000000000001, '
+        self.assertEqual(res.body, '{"status": "ok", "lat": 37.5079, '
+                                   '"lon": -121.96, '
                                    '"accuracy": 40000}')
 
     def test_error(self):

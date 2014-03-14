@@ -102,8 +102,8 @@ class TestGeolocate(AppTestCase):
             extra_environ={'HTTP_X_FORWARDED_FOR': '66.92.181.240'},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"location": {"lat": 37.50790000000001, '
-                                   '"lng": -121.96000000000001}, '
+        self.assertEqual(res.body, '{"location": {"lat": 37.5079, '
+                                   '"lng": -121.96}, '
                                    '"accuracy": 40000.0}')
 
     def test_parse_error(self):

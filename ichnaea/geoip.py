@@ -1,6 +1,8 @@
+import math
 import os.path
 import socket
 
+from ichnaea.decimaljson import PRECISION
 import pygeoip
 
 
@@ -45,6 +47,10 @@ class GeoIPWrapper(pygeoip.GeoIP):
         # pygeoip
         if r == {}:
             r = None
+
+        if r:
+            for i in ('latitude', 'longitude'):
+                r[i] = round(r[i], PRECISION)
 
         return r
 
