@@ -11,6 +11,11 @@ class TestGeoIPFallback(TestCase):
     def filename(self):
         return os.path.join(os.path.dirname(__file__), 'GeoIPCity.dat')
 
+    def _open_db(self, path=None):
+        if path is None:
+            path = self.filename
+        return geoip.configure_geoip(filename=path)
+
     def test_open_fail(self):
         # FIXME going to fail at this point due to GeoIPNull
         with self.assertRaises(geoip.GeoIPError):
@@ -26,25 +31,22 @@ class TestGeoIPFallback(TestCase):
         result = geoip.configure_geoip(filename=self.filename)
         self.assertIsInstance(result, geoip.GeoIPWrapper)
 
-    def _open_db(self, path=None):
-        if path is None:
-            path = self.filename
-        return geoip.configure_geoip(filename=path)
-
     def test_lookup_ok(self):
-        expected = {'area_code': 510,
-                    'city': u'Fremont',
-                    'continent': 'NA',
-                    'country_code': 'US',
-                    'country_code3': 'USA',
-                    'country_name': 'United States',
-                    'dma_code': 807,
-                    'latitude': 37.5079,
-                    'longitude': -121.96,
-                    'metro_code': 'San Francisco, CA',
-                    'postal_code': u'94538',
-                    'region_code': u'CA',
-                    'time_zone': 'America/Los_Angeles'}
+        expected = {
+            'area_code': 510,
+            'city': 'Fremont',
+            'continent': 'NA',
+            'country_code': 'US',
+            'country_code3': 'USA',
+            'country_name': 'United States',
+            'dma_code': 807,
+            'latitude': 37.5079,
+            'longitude': -121.96,
+            'metro_code': 'San Francisco, CA',
+            'postal_code': '94538',
+            'region_code': 'CA',
+            'time_zone': 'America/Los_Angeles',
+        }
 
         db = self._open_db()
         # Known good value in the wee sample DB we're using

@@ -219,7 +219,6 @@ class TestSearch(AppTestCase):
 
     def test_geoip_fallback(self):
         app = self.app
-
         res = app.post_json(
             '/v1/search?key=test',
             {"wifi": [
@@ -229,9 +228,9 @@ class TestSearch(AppTestCase):
             extra_environ={'HTTP_X_FORWARDED_FOR': '66.92.181.240'},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"status": "ok", "lat": 37.5079, '
-                                   '"lon": -121.96, '
-                                   '"accuracy": 40000}')
+        self.assertEqual(res.json, {"status": "ok",
+                                    "lat": 37.5079, "lon": -121.96,
+                                    "accuracy": 40000})
 
     def test_error(self):
         app = self.app

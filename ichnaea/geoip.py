@@ -1,16 +1,18 @@
-import math
-import os.path
 import socket
 
-from ichnaea.decimaljson import PRECISION
 import pygeoip
+
+from ichnaea.decimaljson import PRECISION
 
 
 class GeoIPError(Exception):
     pass
 
 
-def configure_geoip(registry_settings={}, filename=None):
+def configure_geoip(registry_settings=None, filename=None):
+    if registry_settings is None:
+        registry_settings = {}
+
     # Allow tests to override what's defined in settings
     if '_geoip_db' in registry_settings:
         return registry_settings['_geoip_db']
@@ -25,9 +27,9 @@ def configure_geoip(registry_settings={}, filename=None):
 
     try:
         db = GeoIPWrapper(filename)
-    except IOError, e:
-        raise GeoIPError("Failed to open GeoIP database \"%s\": %s" % (filename,
-                                                                       e))
+    except IOError as e:
+        raise GeoIPError("Failed to open GeoIP database '%s': %s" % (
+                         filename, e))
 
     return db
 
@@ -45,12 +47,11 @@ class GeoIPWrapper(pygeoip.GeoIP):
 
         # Translate "no data found" in the unlikely case that it's returned by
         # pygeoip
-        if r == {}:
-            r = None
+        if not r:
+            return None
 
-        if r:
-            for i in ('latitude', 'longitude'):
-                r[i] = round(r[i], PRECISION)
+        for i in ('latitude', 'longitude'):
+            r[i] = round(r[i], PRECISION)
 
         return r
 
