@@ -13,6 +13,7 @@ from ichnaea.service.error import (
 )
 from ichnaea.service.search.views import (
     search_cell,
+    search_geoip,
     search_wifi,
 )
 
@@ -132,6 +133,10 @@ def geolocate_view(request):
         result = search_wifi_ap(session, data)
     else:
         result = search_cell_tower(session, data)
+
+    if result is None and request.client_addr:
+        result = search_geoip(request.registry.geoip_db,
+                              request.client_addr)
 
     if result is None:
         result = HTTPNotFound()

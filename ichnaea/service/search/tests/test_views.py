@@ -217,6 +217,22 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.body, '{"status": "ok", "lat": 1.0010000, '
                                    '"lon": 1.0020000, "accuracy": 35000}')
 
+    def test_geoip_fallback(self):
+        app = self.app
+
+        res = app.post_json(
+            '/v1/search?key=test',
+            {"wifi": [
+                {"key": "Porky"}, {"key": "Piggy"},
+                {"key": "Davis"}, {"key": "McSnappy"},
+            ]},
+            extra_environ={'HTTP_X_FORWARDED_FOR': '66.92.181.240'},
+            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.body, '{"status": "ok", "lat": 37.50790000000001, '
+                                   '"lon": -121.96000000000001, '
+                                   '"accuracy": 40000}')
+
     def test_error(self):
         app = self.app
         res = app.post_json('/v1/search?key=test', {"cell": []}, status=400)
