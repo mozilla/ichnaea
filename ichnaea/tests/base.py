@@ -142,6 +142,7 @@ class AppTestCase(TestCase, DBIsolation, HekaIsolation, GeoIPIsolation):
         del cls.app
         super(AppTestCase, cls).teardown_engine()
         super(AppTestCase, cls).teardown_heka()
+        super(AppTestCase, cls).teardown_geoip()
 
     def setUp(self):
         self.setup_session()
@@ -195,7 +196,3 @@ class CeleryAppTestCase(AppTestCase, CeleryIsolation):
     def tearDownClass(cls):
         super(CeleryAppTestCase, cls).detach_database()
         super(CeleryAppTestCase, cls).tearDownClass()
-
-
-class GeoIPFallbackTestCase():
-    pass
