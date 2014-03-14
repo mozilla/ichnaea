@@ -5,6 +5,7 @@ from ichnaea import decimaljson
 from ichnaea.db import Database
 from ichnaea.db import db_master_session
 from ichnaea.db import db_slave_session
+from ichnaea.geoip import configure_geoip
 
 
 def main(global_config, _db_master=None, _db_slave=None, **settings):
@@ -38,6 +39,8 @@ def main(global_config, _db_master=None, _db_slave=None, **settings):
         )
     else:
         config.registry.db_slave = _db_slave
+
+    config.registry.geoip_db = configure_geoip(config.registry.settings)
 
     config.registry.heka_client = configure_heka(config.registry.settings)
 

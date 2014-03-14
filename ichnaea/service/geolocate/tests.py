@@ -90,6 +90,22 @@ class TestGeolocate(AppTestCase):
         find_msg = self.find_heka_messages
         self.assertEqual(1, len(find_msg('counter', 'geolocate.api_key.test')))
 
+    def test_geoip_fallback(self):
+        app = self.app
+
+        res = app.post_json(
+            '/v1/geolocate?key=test',
+            {"wifiAccessPoints": [
+                {"macAddress": "Porky"}, {"macAddress": "Piggy"},
+                {"macAddress": "Davis"}, {"macAddress": "McSnappy"},
+            ]},
+            extra_environ={'HTTP_X_FORWARDED_FOR': '66.92.181.240'},
+            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.body, '{"location": {"lat": 37.5079, '
+                                   '"lng": -121.96}, '
+                                   '"accuracy": 40000.0}')
+
     def test_parse_error(self):
         app = self.app
         res = app.post_json(

@@ -23,6 +23,7 @@ mobile-codes==0.2.1
 ordereddict==1.1
 protobuf==2.5.0
 psutil==1.2.1
+pygeoip==0.3.1
 pyramid==1.5b1
 pyramid_chameleon==0.1
 pytz==2013.9

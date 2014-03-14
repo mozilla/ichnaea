@@ -102,6 +102,19 @@ def search_wifi(session, data):
     }
 
 
+def search_geoip(geoip_db, client_addr):
+    r = geoip_db.geoip_lookup(client_addr)
+
+    if r is None:
+        return None
+
+    return {
+        'lat': r['latitude'],
+        'lon': r['longitude'],
+        'accuracy': 40 * 1000
+    }
+
+
 def check_cell_or_wifi(data, errors):
     if errors:
         # don't add this error if something else was already wrong
@@ -138,6 +151,10 @@ def search_view(request):
     if result is None:
         # no wifi result found, fall back to cell
         result = search_cell(session, data)
+    if result is None and request.client_addr:
+        # no cell or wifi, fall back again to geoip
+        result = search_geoip(request.registry.geoip_db,
+                              request.client_addr)
 
     if result is None:
         return {'status': 'not_found'}

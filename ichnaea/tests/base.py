@@ -1,4 +1,5 @@
 import os
+import os.path
 
 from heka.encoders import NullEncoder
 from heka.streams import DebugCaptureStream
@@ -8,6 +9,7 @@ from webtest import TestApp
 from ichnaea import main
 from ichnaea.db import _Model
 from ichnaea.db import Database
+from ichnaea.geoip import configure_geoip
 from ichnaea.heka_logging import configure_heka
 from ichnaea.worker import attach_database
 from ichnaea.worker import celery
@@ -110,22 +112,37 @@ class HekaIsolation(object):
         return find_msg(msgs, *args, **kw)
 
 
-class AppTestCase(TestCase, DBIsolation, HekaIsolation):
+class GeoIPIsolation(object):
+
+    @classmethod
+    def setup_geoip(cls):
+        filename = os.path.join(os.path.dirname(__file__), 'GeoIPCity.dat')
+        cls.geoip_db = configure_geoip(filename=filename)
+
+    @classmethod
+    def teardown_geoip(cls):
+        del cls.geoip_db
+
+
+class AppTestCase(TestCase, DBIsolation, HekaIsolation, GeoIPIsolation):
 
     @classmethod
     def setUpClass(cls):
         super(AppTestCase, cls).setup_engine()
         super(AppTestCase, cls).setup_heka()
+        super(AppTestCase, cls).setup_geoip()
 
         cls.app = _make_app(_db_master=cls.db_master,
                             _db_slave=cls.db_slave,
-                            _heka_client=cls.heka_client)
+                            _heka_client=cls.heka_client,
+                            _geoip_db=cls.geoip_db)
 
     @classmethod
     def tearDownClass(cls):
         del cls.app
         super(AppTestCase, cls).teardown_engine()
         super(AppTestCase, cls).teardown_heka()
+        super(AppTestCase, cls).teardown_geoip()
 
     def setUp(self):
         self.setup_session()
