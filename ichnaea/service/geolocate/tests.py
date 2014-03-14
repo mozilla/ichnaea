@@ -37,8 +37,9 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(1, len(find_msg('counter', 'geolocate.api_key.test')))
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"location": {"lat": 12.3456781, '
-                                   '"lng": 23.4567892}, "accuracy": 35000.0}')
+        self.assertEqual(res.json, {"location": {"lat": 12.3456781,
+                                                 "lng": 23.4567892},
+                                    "accuracy": 35000.0})
 
     def test_ok_wifi(self):
         app = self.app
@@ -63,8 +64,9 @@ class TestGeolocate(AppTestCase):
         find_msg = self.find_heka_messages
         self.assertEqual(1, len(find_msg('counter', 'geolocate.api_key.test')))
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"location": {"lat": 1.0010000, '
-                                   '"lng": 1.0020000}, "accuracy": 500.0}')
+        self.assertEqual(res.json, {"location": {"lat": 1.0010000,
+                                                 "lng": 1.0020000},
+                                    "accuracy": 500.0})
 
     def test_wifi_not_found(self):
         app = self.app

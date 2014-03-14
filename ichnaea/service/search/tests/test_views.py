@@ -36,8 +36,9 @@ class TestSearch(AppTestCase):
             len(find_msg('counter', 'http.request')), 1)
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"status": "ok", "lat": 1.0010000, '
-                                   '"lon": 1.0020000, "accuracy": 35000}')
+        self.assertEqual(res.json, {"status": "ok",
+                                    "lat": 1.0010000, "lon": 1.0020000,
+                                    "accuracy": 35000})
 
         self.assertEquals(1, len(find_msg('counter', 'http.request')))
         timer_msgs = find_msg('timer', 'http.request')
@@ -69,8 +70,9 @@ class TestSearch(AppTestCase):
                             ]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"status": "ok", "lat": 1.0010000, '
-                                   '"lon": 1.0020000, "accuracy": 500}')
+        self.assertEqual(res.json, {"status": "ok",
+                                    "lat": 1.0010000, "lon": 1.0020000,
+                                    "accuracy": 500})
 
         find_msg = self.find_heka_messages
         self.assertEquals(1, len(find_msg('counter', 'http.request')))
@@ -98,7 +100,7 @@ class TestSearch(AppTestCase):
                                 {"key": "A1"}, {"key": "B2"},
                             ]},
                             status=200)
-        self.assertEqual(res.body, '{"status": "not_found"}')
+        self.assertEqual(res.json, {"status": "not_found"})
 
     def test_wifi_too_few_matches(self):
         app = self.app
@@ -116,7 +118,7 @@ class TestSearch(AppTestCase):
                             ]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"status": "not_found"}')
+        self.assertEqual(res.json, {"status": "not_found"})
 
     def test_wifi_not_closeby(self):
         app = self.app
@@ -136,7 +138,7 @@ class TestSearch(AppTestCase):
                             ]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"status": "not_found"}')
+        self.assertEqual(res.json, {"status": "not_found"})
 
     def test_not_found(self):
         app = self.app
@@ -145,7 +147,7 @@ class TestSearch(AppTestCase):
                                        "lac": 3, "cid": 4}]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"status": "not_found"}')
+        self.assertEqual(res.json, {"status": "not_found"})
 
         find_msg = self.find_heka_messages
         self.assertEquals(1, len(find_msg('counter', 'search.api_key')))
@@ -156,7 +158,7 @@ class TestSearch(AppTestCase):
                             {"key": "abcd"}, {"key": "cdef"}]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"status": "not_found"}')
+        self.assertEqual(res.json, {"status": "not_found"})
 
         find_msg = self.find_heka_messages
         self.assertEquals(1, len(find_msg('counter', 'search.api_key')))
@@ -184,8 +186,9 @@ class TestSearch(AppTestCase):
             ]},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"status": "ok", "lat": 1.0010000, '
-                                   '"lon": 1.0020000, "accuracy": 35000}')
+        self.assertEqual(res.json, {"status": "ok",
+                                    "lat": 1.0010000, "lon": 1.0020000,
+                                    "accuracy": 35000})
 
     def test_cell_ignore_invalid_lac_cid(self):
         app = self.app
@@ -214,8 +217,9 @@ class TestSearch(AppTestCase):
             ]},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"status": "ok", "lat": 1.0010000, '
-                                   '"lon": 1.0020000, "accuracy": 35000}')
+        self.assertEqual(res.json, {"status": "ok",
+                                    "lat": 1.0010000, "lon": 1.0020000,
+                                    "accuracy": 35000})
 
     def test_geoip_fallback(self):
         app = self.app
@@ -256,7 +260,7 @@ class TestSearch(AppTestCase):
         res = app.post_json('/v1/search?key=test', {"wifi": [
                             {"key": ":"}, {"key": ".-"}]},
                             status=200)
-        self.assertEqual(res.body, '{"status": "not_found"}')
+        self.assertEqual(res.json, {"status": "not_found"})
 
     def test_no_json(self):
         app = self.app
@@ -276,7 +280,7 @@ class TestSearch(AppTestCase):
         res = app.post('/v1/search?key=test', body, headers=headers,
                        content_type='application/json', status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, '{"status": "not_found"}')
+        self.assertEqual(res.json, {"status": "not_found"})
 
     def test_no_api_key(self):
         app = self.app
@@ -294,7 +298,7 @@ class TestSearch(AppTestCase):
                                 {"key": "C3"}, {"key": "D4"},
                             ]},
                             status=200)
-        self.assertEqual(res.body, '{"status": "not_found"}')
+        self.assertEqual(res.json, {"status": "not_found"})
 
         find_msg = self.find_heka_messages
         self.assertEqual(1, len(find_msg('counter', 'search.no_api_key')))
