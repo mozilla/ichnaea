@@ -213,7 +213,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
             WifiMeasure(lat=10010000, lon=10010000, key=k1),
             WifiMeasure(lat=10020000, lon=10050000, key=k1),
             WifiMeasure(lat=10030000, lon=10090000, key=k1),
-            # a wifi wifi a prior known position
+            # a wifi with a prior known position
             Wifi(lat=20000000, lon=20000000, key=k2,
                  new_measures=2, total_measures=1),
             WifiMeasure(lat=20100000, lon=20000000, key=k2),
@@ -223,7 +223,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
                  new_measures=2, total_measures=1),
             WifiMeasure(lat=30000000, lon=30000000, key=k3),
             WifiMeasure(lat=-30000000, lon=30000000, key=k3),
-            # another wifi wifi a prior known position (and negative lat)
+            # another wifi with a prior known position (and negative lat)
             Wifi(lat=-40000000, lon=40000000, key=k4,
                  new_measures=2, total_measures=1),
             WifiMeasure(lat=-41000000, lon=40000000, key=k4),
