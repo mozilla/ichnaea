@@ -21,6 +21,33 @@ from ichnaea.models import (
     WifiMeasure,
 )
 from ichnaea.worker import celery
+from collections import namedtuple
+
+CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
+
+
+def to_cellkey(obj):
+    """
+    Construct a CellKey from any object with the requisite 5 named cell fields.
+    """
+    return CellKey(radio=obj.radio,
+                   mcc=obj.mcc,
+                   mnc=obj.mnc,
+                   lac=obj.lac,
+                   cid=obj.cid)
+
+
+def join_cellkey(model, k):
+    """
+    Return an sqlalchemy equality criterion for joining on the cell 5-tuple.
+    Should be spliced into a query filter call like so:
+    ``session.query(Cell).filter(*join_cellkey(Cell, k))``
+    """
+    return (model.radio == k.radio,
+            model.mcc == k.mcc,
+            model.mnc == k.mnc,
+            model.lac == k.lac,
+            model.cid == k.cid)
 
 
 class DatabaseTask(Task):
@@ -163,14 +190,8 @@ def backfill_cell_location_update(self, new_cell_measures):
         new_cell_measures = dict(new_cell_measures)
         with self.db_session() as session:
             for tower_tuple, cell_measure_ids in new_cell_measures.items():
-                radio, mcc, mnc, lac, cid = tower_tuple
                 query = session.query(Cell).filter(
-                    Cell.radio == radio).filter(
-                    Cell.mcc == mcc).filter(
-                    Cell.mnc == mnc).filter(
-                    Cell.lac == lac).filter(
-                    Cell.cid == cid)
-
+                    *join_cellkey(Cell, CellKey(*tower_tuple)))
                 cells = query.all()
 
                 if not cells:
@@ -219,11 +240,7 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
 
                 query = session.query(
                     CellMeasure.lat, CellMeasure.lon).filter(
-                    CellMeasure.radio == cell.radio).filter(
-                    CellMeasure.mcc == cell.mcc).filter(
-                    CellMeasure.mnc == cell.mnc).filter(
-                    CellMeasure.lac == cell.lac).filter(
-                    CellMeasure.cid == cell.cid)
+                    *join_cellkey(CellMeasure, cell))
                 # only take the last X new_measures
                 query = query.order_by(
                     CellMeasure.created.desc()).limit(
@@ -429,13 +446,7 @@ def wifi_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
 def cell_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
     try:
         with self.db_session() as session:
-            join_measure = lambda u: (
-                CellMeasure.radio == u.radio,
-                CellMeasure.mcc == u.mcc,
-                CellMeasure.mnc == u.mnc,
-                CellMeasure.lac == u.lac,
-                CellMeasure.cid == u.cid,
-            )
+            join_measure = lambda u: join_cellkey(CellMeasure, u)
 
             n = trim_excessive_data(session=session,
                                     unique_model=Cell,
