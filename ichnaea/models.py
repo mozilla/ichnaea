@@ -111,6 +111,31 @@ class Cell(_Model):
 cell_table = Cell.__table__
 
 
+class CellBlacklist(_Model):
+    __tablename__ = 'cell_blacklist'
+    __table_args__ = (
+        UniqueConstraint('radio', 'mcc', 'mnc', 'lac', 'cid',
+                         name='cell_blacklist_idx_unique'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+        }
+    )
+    id = Column(BigInteger(unsigned=True),
+                primary_key=True, autoincrement=True)
+    created = Column(DateTime)
+    radio = Column(SmallInteger)
+    mcc = Column(SmallInteger)
+    mnc = Column(Integer)
+    lac = Column(Integer)
+    cid = Column(Integer)
+
+    def __init__(self, *args, **kw):
+        if 'created' not in kw:
+            kw['created'] = datetime.datetime.utcnow()
+        super(CellBlacklist, self).__init__(*args, **kw)
+
+
 class CellMeasure(_Model):
     __tablename__ = 'cell_measure'
     __table_args__ = (
