@@ -3,12 +3,14 @@ from datetime import timedelta
 
 from ichnaea.models import (
     Cell,
+    CellBlacklist,
     CellMeasure,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
 )
 from ichnaea.tests.base import CeleryTestCase
+from ichnaea.tasks import CellKey, to_cellkey
 
 
 class TestCellLocationUpdate(CeleryTestCase):
@@ -44,7 +46,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         session.commit()
 
         result = cell_location_update.delay(min_new=1)
-        self.assertEqual(result.get(), 2)
+        self.assertEqual(result.get(), (2, 0))
 
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 2)
@@ -77,7 +79,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         new_measures = [((1, 1, 2, 3, 4), cm_ids)]
 
         result = backfill_cell_location_update.delay(new_measures)
-        self.assertEqual(result.get(), 1)
+        self.assertEqual(result.get(), (1, 0))
 
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 1)
@@ -103,7 +105,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         session.commit()
 
         result = cell_location_update.delay(min_new=1)
-        self.assertEqual(result.get(), 1)
+        self.assertEqual(result.get(), (1, 0))
 
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 1)
@@ -114,6 +116,85 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(cell.lon, -10030000)
         self.assertEqual(cell.max_lon, -10000000)
         self.assertEqual(cell.min_lon, -10070000)
+
+    def test_blacklist_moving_cells(self):
+        from ichnaea.tasks import cell_location_update
+        now = datetime.utcnow()
+        long_ago = now - timedelta(days=40)
+        session = self.db_master_session
+
+        k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
+        k2 = dict(radio=1, mcc=1, mnc=2, lac=6, cid=8)
+        k3 = dict(radio=1, mcc=1, mnc=2, lac=9, cid=12)
+        k4 = dict(radio=1, mcc=1, mnc=2, lac=12, cid=16)
+        k5 = dict(radio=1, mcc=1, mnc=2, lac=15, cid=20)
+        k6 = dict(radio=1, mcc=1, mnc=2, lac=18, cid=24)
+
+        keys = set([CellKey(**k) for k in [k1, k2, k3, k4, k5, k6]])
+
+        # keys k2, k3 and k4 are expected to be detected as moving
+        data = [
+            # a cell with an entry but no prior position
+            Cell(new_measures=3, total_measures=0, **k1),
+            CellMeasure(lat=10010000, lon=10010000, **k1),
+            CellMeasure(lat=10020000, lon=10050000, **k1),
+            CellMeasure(lat=10030000, lon=10090000, **k1),
+            # a cell with a prior known position
+            Cell(lat=20000000, lon=20000000,
+                 new_measures=2, total_measures=1, **k2),
+            CellMeasure(lat=20000000, lon=20000000, **k2),
+            CellMeasure(lat=40000000, lon=20000000, **k2),
+            # a cell with a very different prior position
+            Cell(lat=10000000, lon=10000000,
+                 new_measures=2, total_measures=1, **k3),
+            CellMeasure(lat=30000000, lon=30000000, **k3),
+            CellMeasure(lat=-30000000, lon=30000000, **k3),
+            # another cell with a prior known position (and negative lat)
+            Cell(lat=-40000000, lon=40000000,
+                 new_measures=2, total_measures=1, **k4),
+            CellMeasure(lat=-40000000, lon=40000000, **k4),
+            CellMeasure(lat=-60000000, lon=40000000, **k4),
+            # an already blacklisted cell
+            CellBlacklist(**k5),
+            CellMeasure(lat=50000000, lon=50000000, **k5),
+            CellMeasure(lat=80000000, lon=50000000, **k5),
+            # a cell with an old different record we ignore, position
+            # estimate has been updated since
+            Cell(lat=60000000, lon=60000000,
+                 new_measures=2, total_measures=1, **k6),
+            CellMeasure(lat=69000000, lon=69000000, created=long_ago, **k6),
+            CellMeasure(lat=60000000, lon=60000000, **k6),
+            CellMeasure(lat=60010000, lon=60000000, **k6),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        result = cell_location_update.delay(min_new=1)
+        self.assertEqual(result.get(), (5, 3))
+
+        black = session.query(CellBlacklist).all()
+        self.assertEqual(set([to_cellkey(b) for b in black]),
+                         set([CellKey(**k) for k in [k2, k3, k4, k5]]))
+
+        measures = session.query(CellMeasure).all()
+        self.assertEqual(len(measures), 14)
+        self.assertEqual(set([to_cellkey(m) for m in measures]), keys)
+
+        # test duplicate call
+        result = cell_location_update.delay(min_new=1)
+        self.assertEqual(result.get(), 0)
+
+        msgs = self.heka_client.stream.msgs
+        self.assertEqual(3, len(msgs))
+
+        # We made duplicate calls
+        find_msg = self.find_heka_messages
+        taskname = 'task.cell_location_update'
+        self.assertEqual(2, len(find_msg('timer', taskname)))
+
+        # One of those would've scheduled a remove_cell task
+        taskname = 'task.remove_cell'
+        self.assertEqual(1, len(find_msg('timer', taskname)))
 
 
 class TestWifiLocationUpdate(CeleryTestCase):
