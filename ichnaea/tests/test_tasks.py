@@ -206,7 +206,10 @@ class TestWifiLocationUpdate(CeleryTestCase):
         k4 = "de1234567890"
         k5 = "ef1234567890"
         k6 = "fa1234567890"
+
         keys = set([k1, k2, k3, k4, k5, k6])
+
+        # keys k2, k3 and k4 are expected to be detected as moving
         data = [
             # a wifi with an entry but no prior position
             Wifi(key=k1, new_measures=3, total_measures=0),
