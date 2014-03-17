@@ -1,9 +1,10 @@
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
 PYTHON = $(BIN)/python
+PIP = $(BIN)/pip
+INSTALL = $(PIP) install --no-deps
+NOSE = $(BIN)/nosetests
 
-INSTALL = $(BIN)/pip install --no-deps
-VTENV_OPTS ?= --distribute
 TRAVIS ?= false
 
 BUILD_DIRS = bin build dist include lib lib64 man node_modules share
@@ -14,6 +15,11 @@ ifeq ($(TRAVIS), true)
 	MYSQL_PWD ?=
 	SQLURI ?= mysql+pymysql://$(MYSQL_USER)@localhost/$(MYSQL_TEST_DB)
 	SQLSOCKET ?=
+
+	PYTHON = python
+	PIP = pip
+	INSTALL = $(PIP) install --no-deps
+	NOSE = nosetests
 else
 	MYSQL_USER ?= root
 	MYSQL_PWD ?= mysql
@@ -37,7 +43,7 @@ node_modules:
 	npm install $(HERE)
 
 $(PYTHON):
-	virtualenv $(VTENV_OPTS) .
+	virtualenv .
 
 build: $(PYTHON)
 	$(INSTALL) -r requirements/prod.txt
@@ -75,10 +81,10 @@ clean:
 
 test: mysql
 	SQLURI=$(SQLURI) SQLSOCKET=$(SQLSOCKET) CELERY_ALWAYS_EAGER=true \
-	$(BIN)/nosetests -s -d -v --with-coverage --cover-package ichnaea ichnaea
+	$(NOSE) -s -d -v --with-coverage --cover-package ichnaea ichnaea
 
 bin/sphinx-build:
-	bin/pip install Sphinx
+	$(INSTALL) Sphinx
 
 docs:  bin/sphinx-build
 	cd docs; make html
