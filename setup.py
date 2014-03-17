@@ -21,6 +21,7 @@ requires = [
 
 if sys.version_info < (2, 7):
     requires.append('argparse')
+    requires.append('unittest2')
 
 test_requires = requires + [
     'beautifulsoup4',

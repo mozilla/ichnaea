@@ -1,8 +1,8 @@
 import os.path
 import tempfile
-from unittest import TestCase
 
 import ichnaea.geoip as geoip
+from ichnaea.tests.base import TestCase
 
 
 class TestGeoIPFallback(TestCase):

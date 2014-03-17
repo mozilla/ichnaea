@@ -14,6 +14,13 @@ from ichnaea.heka_logging import configure_heka
 from ichnaea.worker import attach_database
 from ichnaea.worker import celery
 
+# make new unittest API's available under Python 2.6
+try:
+    from unittest2 import TestCase  # NOQA
+except ImportError:
+    from unittest import TestCase
+
+
 SQLURI = os.environ.get('SQLURI')
 SQLSOCKET = os.environ.get('SQLSOCKET')
 
