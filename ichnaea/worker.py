@@ -48,7 +48,7 @@ CELERYBEAT_SCHEDULE = {
     'continuous-cell-location-update-2': {
         'task': 'ichnaea.tasks.cell_location_update',
         'schedule': timedelta(seconds=319),  # 11*29
-        'args': (2, 10, 5000),
+        'args': (1, 10, 5000),
         'options': {'expires': 310},
     },
     'continuous-wifi-location-update': {
