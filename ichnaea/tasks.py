@@ -522,3 +522,30 @@ def cell_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
             self.heka_client.incr("items.dropped.cell_trim_excessive", n)
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def read_database_gauges(self):
+    try:
+        with self.db_session() as session:
+
+            def gauge(name, q):
+                v = q.all()
+                if v is None:
+                    v = 0
+                else:
+                    v = v[0]
+                self.heka_client.gauge(name, v)
+
+            def count_model(model):
+                return session.query(func.count(model))
+
+            gauge("gauges.models.Cell", count_model(Cell.id))
+            gauge("gauges.models.CellBlacklist", count_model(CellBlacklist.id))
+            gauge("gauges.models.CellMeasure", count_model(CellMeasure.id))
+            gauge("gauges.models.Wifi", count_model(Wifi.id))
+            gauge("gauges.models.WifiBlacklist", count_model(WifiBlacklist.id))
+            gauge("gauges.models.WifiMeasure", count_model(WifiMeasure.id))
+
+    except Exception as exc:  # pragma: no cover
+        raise self.retry(exc=exc)

@@ -2,10 +2,12 @@ from StringIO import StringIO
 
 from heka.config import client_from_text_config
 from heka.holder import get_client
+from heka.client import HekaClient
 
 from ichnaea import config
 from ichnaea.exceptions import BaseJSONError
 
+import random
 
 RAVEN_ERROR = 'Unhandled error occured'
 
@@ -55,3 +57,30 @@ def heka_tween_factory(handler, registry):
         return response
 
     return heka_tween
+
+
+# Temporarily monkey-patch heka.client.HekaClient until upstream releases
+# an updated version. See https://github.com/mozilla-services/heka-py/pull/20
+
+def gauge(self, name, value, logger=None, severity=None, fields=None,
+          rate=1.0):
+    """Sends an 'current gauge measurement' message.
+
+    :param name: String label for the gauge.
+    :param value: Number current absolute value of the gauge.
+    :param logger: String token identifying the message generator.
+    :param severity: Numerical code (0-7) for msg severity, per RFC
+                     5424.
+    :param fields: Arbitrary key/value pairs for add'l metadata.
+
+    """
+    if rate < 1 and random.random() >= rate:
+        return
+    payload = str(value)
+    fields = fields if fields is not None else dict()
+    fields['name'] = name
+    fields['rate'] = rate
+    self.heka('gauge', logger, severity, payload, fields)
+
+if not hasattr(HekaClient, 'gauge'):
+    HekaClient.gauge = gauge

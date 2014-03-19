@@ -547,3 +547,19 @@ class TestWifiLocationUpdate(CeleryTestCase):
                                       trim_func=wifi_trim_excessive_data,
                                       kinit=lambda k: {'key': str(k)},
                                       delstat='deleted_wifi')
+
+
+class TestMetrics(CeleryTestCase):
+
+    def test_read_database_gauges(self):
+        from ichnaea.tasks import read_database_gauges
+        read_database_gauges()
+        msgs = self.heka_client.stream.msgs
+        self.assertEqual(7, len(msgs))
+        i = 0
+        for msg in self.heka_client.stream.msgs:
+            if i < 6:
+                self.assertEqual(msg.type, 'gauge')
+            else:
+                self.assertEqual(msg.type, 'timer')
+            i += 1
