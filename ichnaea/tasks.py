@@ -36,11 +36,18 @@ def to_cellkey(obj):
     """
     Construct a CellKey from any object with the requisite 5 named cell fields.
     """
-    return CellKey(radio=obj.radio,
-                   mcc=obj.mcc,
-                   mnc=obj.mnc,
-                   lac=obj.lac,
-                   cid=obj.cid)
+    if isinstance(obj, dict):
+        return CellKey(radio=obj['radio'],
+                       mcc=obj['mcc'],
+                       mnc=obj['mnc'],
+                       lac=obj['lac'],
+                       cid=obj['cid'])
+    else:
+        return CellKey(radio=obj.radio,
+                       mcc=obj.mcc,
+                       mnc=obj.mnc,
+                       lac=obj.lac,
+                       cid=obj.cid)
 
 
 def join_cellkey(model, k):
@@ -143,7 +150,8 @@ def remove_cell(self, cell_keys):
     try:
         with self.db_session() as session:
             for k in cell_keys:
-                query = session.query(Cell).filter(*join_cellkey(Cell, k))
+                key = to_cellkey(k)
+                query = session.query(Cell).filter(*join_cellkey(Cell, key))
                 cells_removed += query.delete(synchronize_session=False)
             session.commit()
         return cells_removed
@@ -345,8 +353,8 @@ def mark_moving_cells(session, moving_cells):
             *join_cellkey(CellBlacklist, cell))
         b = query.first()
         if b is None:
-            key = to_cellkey(cell)
-            blacklist.add(CellBlacklist(**key._asdict()))
+            key = to_cellkey(cell)._asdict()
+            blacklist.add(CellBlacklist(**key))
             moving_keys.append(key)
 
     session.add_all(blacklist)
