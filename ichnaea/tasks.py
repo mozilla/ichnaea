@@ -338,17 +338,13 @@ def mark_moving_wifis(session, moving_wifis):
 
 
 def mark_moving_cells(session, moving_cells):
-    utcnow = datetime.utcnow()
     moving_keys = []
     blacklist = set()
     for cell in moving_cells:
         query = session.query(CellBlacklist).filter(
             *join_cellkey(CellBlacklist, cell))
         b = query.first()
-        if b is not None:
-            b = b[0]
-            b.created = utcnow
-        else:
+        if b is None:
             key = to_cellkey(cell)
             blacklist.add(CellBlacklist(**key._asdict()))
             moving_keys.append(key)
