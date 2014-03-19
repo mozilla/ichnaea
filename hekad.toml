@@ -13,6 +13,16 @@ type = "Counter"
 name = "stats.%name%"
 value = "%Payload%"
 
+[GeneralGaugeFilter]
+type="StatFilter"
+stat_accum_name = "StatAccumulator"
+message_matcher = 'Type == "gauge" && Fields[name] != "http.request"'
+
+[GeneralGaugeFilter.Metric.value]
+type = "Gauge"
+name = "stats.%name%"
+value = "%Payload%"
+
 [GeneralTimingFilter]
 type="StatFilter"
 stat_accum_input = "StatAccumulator"
