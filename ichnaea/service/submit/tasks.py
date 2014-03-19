@@ -31,7 +31,7 @@ from ichnaea.decimaljson import (
     to_precise_int,
 )
 from ichnaea.service.submit.utils import process_score
-from ichnaea.tasks import DatabaseTask
+from ichnaea.tasks import DatabaseTask, get_heka_client
 from ichnaea.worker import celery
 
 
@@ -161,7 +161,7 @@ def process_measure(measure_id, data, session):
     return (cell_measures, wifi_measures)
 
 
-def process_measures(items, session, userid=None, heka_client=None):
+def process_measures(items, session, userid=None):
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
     utcmin = utcnow - datetime.timedelta(60)
 
@@ -188,11 +188,12 @@ def process_measures(items, session, userid=None, heka_client=None):
             'lon': to_precise_int(item['lon']),
         })
 
+    heka_client = get_heka_client()
+
     if cell_measures:
         # group by and create task per cell key
-        if heka_client is not None:
-            heka_client.incr("items.uploaded.cell_measures",
-                             len(cell_measures))
+        heka_client.incr("items.uploaded.cell_measures",
+                         len(cell_measures))
         cells = defaultdict(list)
         for measure in cell_measures:
             cell_key = CellKey(measure['radio'], measure['mcc'],
@@ -205,9 +206,8 @@ def process_measures(items, session, userid=None, heka_client=None):
 
     if wifi_measures:
         # group by and create task per wifi key
-        if heka_client is not None:
-            heka_client.incr("items.uploaded.wifi_measures",
-                             len(wifi_measures))
+        heka_client.incr("items.uploaded.wifi_measures",
+                         len(wifi_measures))
         wifis = defaultdict(list)
         for measure in wifi_measures:
             wifis[measure['key']].append(measure)
@@ -332,7 +332,7 @@ def update_cell_measure_count(cell_key, count, utcnow, session):
 
 
 def process_cell_measures(session, entries, userid=None,
-                          heka_client=None, max_measures_per_cell=11000):
+                          max_measures_per_cell=11000):
     cell_count = defaultdict(int)
     cell_measures = []
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
@@ -394,11 +394,13 @@ def process_cell_measures(session, entries, userid=None,
         # group per unique cell
         cell_count[cell_key] += 1
 
-    if dropped_malformed != 0 and heka_client is not None:
+    heka_client = get_heka_client()
+
+    if dropped_malformed != 0:
         heka_client.incr("items.dropped.cell_ingress_malformed",
                          count=dropped_malformed)
 
-    if dropped_overflow != 0 and heka_client is not None:
+    if dropped_overflow != 0:
         heka_client.incr("items.dropped.cell_ingress_overflow",
                          count=dropped_overflow)
 
@@ -412,9 +414,8 @@ def process_cell_measures(session, entries, userid=None,
     if userid is not None and new_cells > 0:
         process_score(userid, new_cells, session, key='new_cell')
 
-    if heka_client is not None:
-        heka_client.incr("items.inserted.cell_measures",
-                         count=len(cell_measures))
+    heka_client.incr("items.inserted.cell_measures",
+                     count=len(cell_measures))
     session.add_all(cell_measures)
     return cell_measures
 
@@ -428,7 +429,6 @@ def insert_cell_measures(self, entries, userid=None,
             cell_measures = process_cell_measures(
                 session, entries,
                 userid=userid,
-                heka_client=self.heka_client,
                 max_measures_per_cell=max_measures_per_cell)
             session.commit()
         return len(cell_measures)
@@ -468,7 +468,7 @@ def create_wifi_measure(utcnow, entry):
 
 
 def process_wifi_measures(session, entries, userid=None,
-                          heka_client=None, max_measures_per_wifi=11000):
+                          max_measures_per_wifi=11000):
     wifi_measures = []
     wifi_count = defaultdict(int)
     wifi_keys = set([e['key'] for e in entries])
@@ -511,7 +511,9 @@ def process_wifi_measures(session, entries, userid=None,
             # skip blacklisted wifi AP's
             wifi_count[wifi_key] += 1
 
-    if dropped_overflow != 0 and heka_client is not None:
+    heka_client = get_heka_client()
+
+    if dropped_overflow != 0:
         heka_client.incr("items.dropped.wifi_ingress_overflow",
                          count=dropped_overflow)
 
@@ -539,9 +541,8 @@ def process_wifi_measures(session, entries, userid=None,
             new_measures=num, total_measures=num)
         session.execute(stmt)
 
-    if heka_client is not None:
-        heka_client.incr("items.inserted.wifi_measures",
-                         count=len(wifi_measures))
+    heka_client.incr("items.inserted.wifi_measures",
+                     count=len(wifi_measures))
     session.add_all(wifi_measures)
     return wifi_measures
 
@@ -555,7 +556,6 @@ def insert_wifi_measures(self, entries, userid=None,
             wifi_measures = process_wifi_measures(
                 session, entries,
                 userid=userid,
-                heka_client=self.heka_client,
                 max_measures_per_wifi=max_measures_per_wifi)
             session.commit()
         return len(wifi_measures)
