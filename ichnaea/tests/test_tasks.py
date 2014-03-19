@@ -191,7 +191,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(result.get(), 0)
 
         msgs = self.heka_client.stream.msgs
-        self.assertEqual(3, len(msgs))
+        self.assertEqual(4, len(msgs))
 
         # We made duplicate calls
         find_msg = self.find_heka_messages
@@ -358,7 +358,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.assertEqual(result.get(), 0)
 
         msgs = self.heka_client.stream.msgs
-        self.assertEqual(3, len(msgs))
+        self.assertEqual(4, len(msgs))
 
         # We made duplicate calls
         find_msg = self.find_heka_messages
