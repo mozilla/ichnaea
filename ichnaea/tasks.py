@@ -63,6 +63,10 @@ def join_cellkey(model, k):
             model.cid == k.cid)
 
 
+def get_heka_client():
+    return get_client('ichnaea')
+
+
 class DatabaseTask(Task):
     abstract = True
     acks_late = False
@@ -117,7 +121,7 @@ class DatabaseTask(Task):
 
     @property
     def heka_client(self):
-        return get_client('ichnaea')
+        return get_heka_client()
 
 
 def daily_task_days(ago):
