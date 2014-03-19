@@ -88,7 +88,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(cell.lon, 10030000)
         self.assertEqual(cell.total_measures, 3)
 
-    def test_cell_max_min_update(self):
+    def test_cell_max_min_range_update(self):
         from ichnaea.tasks import cell_location_update
         session = self.db_master_session
 
@@ -116,6 +116,11 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(cell.lon, -10030000)
         self.assertEqual(cell.max_lon, -10000000)
         self.assertEqual(cell.min_lon, -10070000)
+
+        # independent calculation: the cell bounding box is
+        # (1.000, -1.007) to (1.005, -1.000), and distance
+        # between those is 956.43m, int(round(dist/2.0)) is 478m
+        self.assertEqual(cell.range, 478)
 
     def test_blacklist_moving_cells(self):
         from ichnaea.tasks import cell_location_update
@@ -237,7 +242,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.assertEqual(wifis[k2].lon, 20020000)
         self.assertEqual(wifis[k2].new_measures, 0)
 
-    def test_wifi_max_min_update(self):
+    def test_wifi_max_min_range_update(self):
         from ichnaea.tasks import wifi_location_update
         session = self.db_master_session
         k1 = "ab1234567890"
@@ -275,6 +280,16 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.assertEqual(wifis[k2].lon, -20000000)
         self.assertEqual(wifis[k2].max_lon, -19960000)
         self.assertEqual(wifis[k2].min_lon, -20040000)
+
+        # independent calculation: the k1 bounding box is
+        # (1.000, 1.000) to (1.002, 1.004), and distance
+        # between those is 497.21m, int(round(dist/2.0)) is 249m
+        self.assertEqual(wifis[k1].range, 249)
+
+        # independent calculation: the k2 bounding box is
+        # (1.998, -2.004) to (2.002, -1.996), and distance
+        # between those is 994.07m, int(round(dist/2.0)) is 497m
+        self.assertEqual(wifis[k2].range, 497)
 
     def test_blacklist_moving_wifis(self):
         from ichnaea.tasks import wifi_location_update

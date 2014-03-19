@@ -154,23 +154,6 @@ def remove_cell(self, cell_keys):
         raise self.retry(exc=exc)
 
 
-def update_extreme_values(model, latitudes, longitudes):
-    # update max/min lat/lon columns
-    extremes = {
-        'max_lat': (max, latitudes),
-        'min_lat': (min, latitudes),
-        'max_lon': (max, longitudes),
-        'min_lon': (min, longitudes),
-    }
-    for name, (function, values) in extremes.items():
-        new = function(values)
-        old = getattr(model, name, None)
-        if old is not None:
-            setattr(model, name, function(old, new))
-        else:
-            setattr(model, name, new)
-
-
 def calculate_new_position(station, measures, moving_stations,
                            max_dist_km, backfill=True):
     # if backfill is true, we work on older measures for which
@@ -181,23 +164,37 @@ def calculate_new_position(station, measures, moving_stations,
     new_lat = sum(latitudes) // length
     new_lon = sum(longitudes) // length
 
-    if not (station.lat or station.lon):
-        station.lat = new_lat
-        station.lon = new_lon
-    else:
-        # check for "moving stations".
+    if station.lat and station.lon:
         latitudes.append(station.lat)
         longitudes.append(station.lon)
-        lat_min = min(latitudes)
-        lat_max = max(latitudes)
-        lon_min = min(longitudes)
-        lon_max = max(longitudes)
+        existing_station = True
+    else:
+        station.lat = new_lat
+        station.lon = new_lon
+        existing_station = False
 
-        # calculate sphere-distance from opposite corners of
-        # bounding box containing current location estimate
-        # and new measurements; if too big, station is moving
-        box_dist = distance(to_degrees(lat_min), to_degrees(lon_min),
-                            to_degrees(lat_max), to_degrees(lon_max))
+    # calculate extremes of measures, existing location estimate
+    # and existing extreme values
+    def extreme(vals, attr, function):
+        new = function(vals)
+        old = getattr(station, attr, None)
+        if old is not None:
+            return function(new, old)
+        else:
+            return new
+
+    min_lat = extreme(latitudes, 'min_lat', min)
+    min_lon = extreme(longitudes, 'min_lon', min)
+    max_lat = extreme(latitudes, 'max_lat', max)
+    max_lon = extreme(longitudes, 'max_lon', max)
+
+    # calculate sphere-distance from opposite corners of
+    # bounding box containing current location estimate
+    # and new measurements; if too big, station is moving
+    box_dist = distance(to_degrees(min_lat), to_degrees(min_lon),
+                        to_degrees(max_lat), to_degrees(max_lon))
+
+    if existing_station:
 
         if box_dist > max_dist_km:
             # add to moving list, return early without updating
@@ -224,7 +221,13 @@ def calculate_new_position(station, measures, moving_stations,
     station.new_measures = station.new_measures - length
 
     # update max/min lat/lon columns
-    update_extreme_values(station, latitudes, longitudes)
+    station.min_lat = min_lat
+    station.min_lon = min_lon
+    station.max_lat = max_lat
+    station.max_lon = max_lon
+
+    # give radio-range estimate, in meters, as half bounding box diagonal
+    station.range = int(round((box_dist * 1000.0) / 2.0))
 
 
 @celery.task(base=DatabaseTask, bind=True)
