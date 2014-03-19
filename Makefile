@@ -44,6 +44,7 @@ node_modules:
 
 $(PYTHON):
 	virtualenv .
+	bin/pip install -U pip
 
 build: $(PYTHON)
 	$(INSTALL) -r requirements/prod.txt
