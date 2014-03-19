@@ -346,6 +346,8 @@ def mark_moving_wifis(session, moving_wifis):
             on_duplicate='created=created').values(
             key=key, created=utcnow)
         session.execute(stmt)
+    get_heka_client().incr("items.blacklisted.wifi_moving",
+                           len(moving_keys))
     remove_wifi.delay(list(moving_keys))
 
 
@@ -361,6 +363,8 @@ def mark_moving_cells(session, moving_cells):
             blacklist.add(CellBlacklist(**key))
             moving_keys.append(key)
 
+    get_heka_client().incr("items.blacklisted.cell_moving",
+                           len(moving_keys))
     session.add_all(blacklist)
     remove_cell.delay(moving_keys)
 
