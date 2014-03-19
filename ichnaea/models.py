@@ -14,6 +14,12 @@ from sqlalchemy.dialects.mysql import BIGINT as BigInteger
 
 from ichnaea.db import _Model
 
+# Latitudes and longitudes are stored as degrees * 10**7,
+# or equivalently: as an integer count of 1E-7ths of a degree.
+# This is done so that we can treat them with integer types;
+# 1E-7 degrees =~ 1.1cm, so that is our spatial resolution.
+DEGREE_DECIMAL_PLACES = 7
+DEGREE_SCALE_FACTOR = 10 ** DEGREE_DECIMAL_PLACES
 
 RADIO_TYPE = {
     '': -1,
@@ -27,6 +33,14 @@ RADIO_TYPE_INVERSE = dict((v, k) for k, v in RADIO_TYPE.items())
 
 invalid_wifi_regex = re.compile("(?!(0{12}|f{12}))")
 valid_wifi_regex = re.compile("([0-9a-fA-F]{12})")
+
+
+def from_degrees(deg):
+    return int(deg * DEGREE_SCALE_FACTOR)
+
+
+def to_degrees(i):
+    return float(i) / DEGREE_SCALE_FACTOR
 
 
 def valid_wifi_pattern(key):
@@ -58,7 +72,7 @@ class Cell(_Model):
                 primary_key=True, autoincrement=True)
     created = Column(DateTime)
 
-    # lat/lon * decimaljson.FACTOR
+    # lat/lon * DEGREE_SCALE_FACTOR
     lat = Column(Integer)
     max_lat = Column(Integer)
     min_lat = Column(Integer)
@@ -97,6 +111,31 @@ class Cell(_Model):
 cell_table = Cell.__table__
 
 
+class CellBlacklist(_Model):
+    __tablename__ = 'cell_blacklist'
+    __table_args__ = (
+        UniqueConstraint('radio', 'mcc', 'mnc', 'lac', 'cid',
+                         name='cell_blacklist_idx_unique'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+        }
+    )
+    id = Column(BigInteger(unsigned=True),
+                primary_key=True, autoincrement=True)
+    created = Column(DateTime)
+    radio = Column(SmallInteger)
+    mcc = Column(SmallInteger)
+    mnc = Column(Integer)
+    lac = Column(Integer)
+    cid = Column(Integer)
+
+    def __init__(self, *args, **kw):
+        if 'created' not in kw:
+            kw['created'] = datetime.datetime.utcnow()
+        super(CellBlacklist, self).__init__(*args, **kw)
+
+
 class CellMeasure(_Model):
     __tablename__ = 'cell_measure'
     __table_args__ = (
@@ -114,7 +153,7 @@ class CellMeasure(_Model):
                 primary_key=True, autoincrement=True)
     measure_id = Column(BigInteger(unsigned=True))
     created = Column(DateTime)  # the insert time of the record into the DB
-    # lat/lon * decimaljson.FACTOR
+    # lat/lon * DEGREE_SCALE_FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
     time = Column(DateTime)  # the time of observation of this data
@@ -160,7 +199,7 @@ class Wifi(_Model):
     created = Column(DateTime)
     key = Column(String(12))
 
-    # lat/lon * decimaljson.FACTOR
+    # lat/lon * DEGREE_SCALE_FACTOR
     lat = Column(Integer)
     max_lat = Column(Integer)
     min_lat = Column(Integer)
@@ -223,7 +262,7 @@ class WifiMeasure(_Model):
                 primary_key=True, autoincrement=True)
     measure_id = Column(BigInteger(unsigned=True))
     created = Column(DateTime)  # the insert time of the record into the DB
-    # lat/lon * decimaljson.FACTOR
+    # lat/lon * DEGREE_SCALE_FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
     time = Column(DateTime)  # the time of observation of this data

@@ -2,14 +2,14 @@ from datetime import date
 from datetime import datetime
 from decimal import Decimal
 from decimal import localcontext
-
+from ichnaea.models import DEGREE_DECIMAL_PLACES
 from colander import iso8601
 import simplejson as json
 
-FACTOR = Decimal(10000000)
-EXPONENT_STR = '1.0000000'
+FACTOR = Decimal(10 ** DEGREE_DECIMAL_PLACES)
+EXPONENT_STR = '1.' + ('0' * DEGREE_DECIMAL_PLACES)
 EXPONENT = Decimal(EXPONENT_STR)
-PRECISION = 7
+PRECISION = DEGREE_DECIMAL_PLACES
 
 
 def encode_datetime(obj):
