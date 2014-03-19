@@ -86,6 +86,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         cell = cells[0]
         self.assertEqual(cell.lat, 10020000)
         self.assertEqual(cell.lon, 10030000)
+        self.assertEqual(cell.new_measures, 0)
         self.assertEqual(cell.total_measures, 3)
 
     def test_cell_max_min_range_update(self):

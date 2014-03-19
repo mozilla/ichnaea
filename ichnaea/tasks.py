@@ -217,8 +217,10 @@ def calculate_new_position(station, measures, moving_stations,
         station.lon = ((station.lon * old_length) +
                        (new_lon * length)) // new_total
 
-    # decrease new counter, total is already correct
-    station.new_measures = station.new_measures - length
+    if not backfill:
+        # decrease new counter, total is already correct
+        # in the backfill case new counter was never increased
+        station.new_measures = station.new_measures - length
 
     # update max/min lat/lon columns
     station.min_lat = min_lat

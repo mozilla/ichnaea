@@ -23,11 +23,13 @@ class TestBackfill(CeleryTestCase):
         data = [
             # These are measurements for tower A
             Cell(lat=378348600, lon=-1222828703, radio=2,
-                 lac=56955, cid=5286246, mcc=310, mnc=410, psc=38),
+                 lac=56955, cid=5286246, mcc=310, mnc=410, psc=38,
+                 new_measures=0, total_measures=1),
 
             # These are measurements for tower B
             Cell(lat=30, lon=-20, radio=3,
-                 lac=20, cid=31, mcc=310, mnc=410, psc=38),
+                 lac=20, cid=31, mcc=310, mnc=410, psc=38,
+                 new_measures=0, total_measures=1),
         ]
         session.add_all(data)
 
