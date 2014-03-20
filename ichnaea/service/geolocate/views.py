@@ -2,10 +2,9 @@ from pyramid.httpexceptions import HTTPError
 from pyramid.httpexceptions import HTTPNotFound, HTTPBadRequest
 from pyramid.response import Response
 
-from heka.holder import get_client
-
 from ichnaea.decimaljson import dumps
 from ichnaea.exceptions import BaseJSONError
+from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.error import (
     MSG_ONE_OF,
@@ -107,7 +106,7 @@ def search_wifi_ap(session, data):
 
 def geolocate_view(request):
     api_key = request.GET.get('key', None)
-    heka_client = get_client('ichnaea')
+    heka_client = get_heka_client()
 
     if api_key is None:
         heka_client.incr('geolocate.no_api_key')

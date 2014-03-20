@@ -1,5 +1,3 @@
-from heka.holder import get_client
-
 from ichnaea.models import (
     Cell,
     normalize_wifi_key,
@@ -13,6 +11,7 @@ from ichnaea.service.error import (
     MSG_ONE_OF,
     preprocess_request,
 )
+from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.search.schema import SearchSchema
 
 # maximum difference of two decimal places, ~1km at equator
@@ -128,7 +127,7 @@ def check_cell_or_wifi(data, errors):
 
 def search_view(request):
     api_key = request.GET.get('key', None)
-    heka_client = get_client('ichnaea')
+    heka_client = get_heka_client()
 
     if api_key is None:
         # TODO: change into a better error response

@@ -1,4 +1,3 @@
-from heka.holder import get_client
 from sqlalchemy import text
 
 from ichnaea.backfill.tasks import do_backfill
@@ -10,10 +9,6 @@ from ichnaea.tests.base import CeleryTestCase
 
 
 class TestBackfill(CeleryTestCase):
-
-    def setUp(self):
-        CeleryTestCase.setUp(self)
-        self.heka_client = get_client('ichnaea')
 
     def test_do_backfill(self):
         session = self.db_master_session

@@ -10,6 +10,10 @@ from ichnaea.exceptions import BaseJSONError
 RAVEN_ERROR = 'Unhandled error occured'
 
 
+def get_heka_client():
+    return get_client('ichnaea')
+
+
 def configure_heka(registry_settings={}):
     # If a test client is defined just use that instead of whatever is
     # defined in the configuration
@@ -23,7 +27,7 @@ def configure_heka(registry_settings={}):
     konfig.write(merged_stream)
     merged_stream.seek(0)
 
-    client = get_client('ichnaea')
+    client = get_heka_client()
     client = client_from_text_config(merged_stream.read(), 'heka', client)
 
     return client

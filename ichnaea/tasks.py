@@ -9,10 +9,11 @@ from kombu.serialization import (
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 
-from heka.holder import get_client
-
 from ichnaea.db import db_worker_session
-from ichnaea.heka_logging import RAVEN_ERROR
+from ichnaea.heka_logging import (
+    get_heka_client,
+    RAVEN_ERROR,
+)
 from ichnaea.models import (
     Cell,
     CellBlacklist,
@@ -61,10 +62,6 @@ def join_cellkey(model, k):
             model.mnc == k.mnc,
             model.lac == k.lac,
             model.cid == k.cid)
-
-
-def get_heka_client():
-    return get_client('ichnaea')
 
 
 class DatabaseTask(Task):
