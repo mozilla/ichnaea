@@ -563,3 +563,16 @@ class TestMetrics(CeleryTestCase):
             else:
                 self.assertEqual(msg.type, 'timer')
             i += 1
+
+    def test_read_psutil_gauges(self):
+        from ichnaea.tasks import read_psutil_gauges
+        read_psutil_gauges()
+        msgs = self.heka_client.stream.msgs
+        self.assertEqual(14, len(msgs))
+        i = 0
+        for msg in self.heka_client.stream.msgs:
+            if i < 13:
+                self.assertEqual(msg.type, 'gauge')
+            else:
+                self.assertEqual(msg.type, 'timer')
+            i += 1

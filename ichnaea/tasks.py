@@ -549,3 +549,36 @@ def read_database_gauges(self):
 
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def read_psutil_gauges(self):
+    import psutil
+    import platform
+
+    node = platform.node()
+
+    def gauge(name, v):
+        self.heka_client.gauge("gauges.system.%s.%s" % (node, name), v)
+
+    gauge("cpu_percent", psutil.cpu_percent())
+
+    vm = psutil.virtual_memory()
+    gauge("mem_used", vm.used)
+    gauge("mem_percent", vm.percent)
+
+    du = psutil.disk_usage('/')
+    gauge("disk_used", du.used)
+    gauge("disk_percent", du.percent)
+
+    nio = psutil.net_io_counters()
+    gauge("net_bytes_sent", nio.bytes_sent)
+    gauge("net_bytes_recv", nio.bytes_recv)
+    gauge("net_errin", nio.errin)
+    gauge("net_errout", nio.errout)
+
+    dio = psutil.disk_io_counters()
+    gauge("disk_read_bytes", dio.read_bytes)
+    gauge("disk_write_bytes", dio.write_bytes)
+    gauge("disk_read_time", dio.read_time)
+    gauge("disk_write_time", dio.write_time)
