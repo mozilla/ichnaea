@@ -7,7 +7,7 @@ from celery.signals import worker_process_init
 from celery.schedules import crontab
 
 from ichnaea import config
-from ichnaea.db import Database
+from ichnaea.db import Database, _Model
 from ichnaea.heka_logging import configure_heka
 
 
@@ -93,6 +93,7 @@ def attach_database(app, _db_master=None):
         db_master = Database(
             settings['db_master'],
             socket=settings.get('db_master_socket'),
+            model_class=_Model,
         )
     else:
         db_master = _db_master

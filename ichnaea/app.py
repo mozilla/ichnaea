@@ -2,7 +2,7 @@ from pyramid.config import Configurator
 from pyramid.tweens import EXCVIEW
 
 from ichnaea import decimaljson
-from ichnaea.db import Database
+from ichnaea.db import Database, _Model
 from ichnaea.db import db_master_session
 from ichnaea.db import db_slave_session
 from ichnaea.geoip import configure_geoip
@@ -28,6 +28,7 @@ def main(global_config, _db_master=None, _db_slave=None, **settings):
         config.registry.db_master = Database(
             settings['db_master'],
             socket=settings.get('db_master_socket'),
+            model_class=_Model,
         )
     else:
         config.registry.db_master = _db_master
@@ -35,6 +36,7 @@ def main(global_config, _db_master=None, _db_slave=None, **settings):
         config.registry.db_slave = Database(
             settings['db_slave'],
             socket=settings.get('db_slave_socket'),
+            model_class=_Model,
             create=False,
         )
     else:

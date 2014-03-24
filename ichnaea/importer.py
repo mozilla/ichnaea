@@ -6,7 +6,7 @@ import sys
 from colander import iso8601
 
 from ichnaea import config
-from ichnaea.db import Database
+from ichnaea.db import Database, _Model
 from ichnaea.models import (
     normalize_wifi_key,
     valid_wifi_pattern,
@@ -103,6 +103,7 @@ def main(argv, _db_master=None):
             settings['db_master'],
             socket=settings.get('db_master_socket'),
             create=False,
+            model_class=_Model,
         )
     else:
         db = _db_master
