@@ -29,8 +29,8 @@ def _make_db(uri=SQLURI, socket=SQLSOCKET, create=True):
     return Database(uri, socket=socket, create=create, model_class=_Model)
 
 
-def _make_app(_db_master=None, _db_slave=None, **settings):
-    wsgiapp = main({}, _db_master=_db_master, _db_slave=_db_slave, **settings)
+def _make_app(_archival_db=None, _volatile_db=None, **settings):
+    wsgiapp = main({}, _archival_db=_archival_db, _volatile_db=_volatile_db, **settings)
     return TestApp(wsgiapp)
 
 
@@ -45,40 +45,40 @@ class DBIsolation(object):
     # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
 
     def setup_session(self):
-        master_conn = self.db_master.engine.connect()
-        self.master_trans = master_conn.begin()
-        self.db_master.session_factory.configure(bind=master_conn)
-        self.db_master_session = self.db_master.session()
-        slave_conn = self.db_slave.engine.connect()
-        self.slave_trans = slave_conn.begin()
-        self.db_slave.session_factory.configure(bind=slave_conn)
-        self.db_slave_session = self.db_slave.session()
+        archival_conn = self.archival_db.engine.connect()
+        self.archival_trans = archival_conn.begin()
+        self.archival_db.session_factory.configure(bind=archival_conn)
+        self.archival_db_session = self.archival_db.session()
+        volatile_conn = self.volatile_db.engine.connect()
+        self.volatile_trans = volatile_conn.begin()
+        self.volatile_db.session_factory.configure(bind=volatile_conn)
+        self.volatile_db_session = self.volatile_db.session()
 
     def teardown_session(self):
-        self.slave_trans.rollback()
-        self.db_slave_session.close()
-        del self.db_slave_session
-        self.slave_trans.close()
-        self.db_slave.session_factory.configure(bind=None)
-        del self.slave_trans
-        self.master_trans.rollback()
-        self.db_master_session.close()
-        del self.db_master_session
-        self.master_trans.close()
-        self.db_master.session_factory.configure(bind=None)
-        del self.master_trans
+        self.volatile_trans.rollback()
+        self.volatile_db_session.close()
+        del self.volatile_db_session
+        self.volatile_trans.close()
+        self.volatile_db.session_factory.configure(bind=None)
+        del self.volatile_trans
+        self.archival_trans.rollback()
+        self.archival_db_session.close()
+        del self.archival_db_session
+        self.archival_trans.close()
+        self.archival_db.session_factory.configure(bind=None)
+        del self.archival_trans
 
     @classmethod
     def setup_engine(cls):
-        cls.db_master = _make_db()
-        cls.db_slave = _make_db(create=False)
+        cls.archival_db = _make_db()
+        cls.volatile_db = _make_db(create=False)
 
     @classmethod
     def teardown_engine(cls):
-        cls.db_master.engine.pool.dispose()
-        del cls.db_master
-        cls.db_slave.engine.pool.dispose()
-        del cls.db_slave
+        cls.archival_db.engine.pool.dispose()
+        del cls.archival_db
+        cls.volatile_db.engine.pool.dispose()
+        del cls.volatile_db
 
     def cleanup(self, engine):
         with engine.connect() as conn:
@@ -91,11 +91,11 @@ class CeleryIsolation(object):
 
     @classmethod
     def attach_database(cls):
-        attach_database(celery, cls.db_master)
+        attach_database(celery, cls.archival_db)
 
     @classmethod
     def detach_database(cls):
-        del celery.db_master
+        del celery.archival_db
 
 
 class HekaIsolation(object):
@@ -139,8 +139,8 @@ class AppTestCase(TestCase, DBIsolation, HekaIsolation, GeoIPIsolation):
         super(AppTestCase, cls).setup_heka()
         super(AppTestCase, cls).setup_geoip()
 
-        cls.app = _make_app(_db_master=cls.db_master,
-                            _db_slave=cls.db_slave,
+        cls.app = _make_app(_archival_db=cls.archival_db,
+                            _volatile_db=cls.volatile_db,
                             _heka_client=cls.heka_client,
                             _geoip_db=cls.geoip_db)
 

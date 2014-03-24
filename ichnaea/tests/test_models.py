@@ -22,7 +22,7 @@ class TestCell(DBTestCase):
             lat=12345678, lon=23456789, mcc=100, mnc=5, lac=12345, cid=234567,
             new_measures=2, total_measures=15,
         )
-        session = self.db_master_session
+        session = self.archival_db_session
         session.add(cell)
         session.commit()
 
@@ -48,7 +48,7 @@ class TestCellMeasure(DBTestCase):
         cell = self._make_one(lat=12345678, lon=23456789, radio=0, mcc=100,
                               mnc=5, lac=12345, cid=234567, asu=26,
                               signal=-61, ta=10)
-        session = self.db_master_session
+        session = self.archival_db_session
         session.add(cell)
         session.commit()
 
@@ -85,7 +85,7 @@ class TestWifi(DBTestCase):
             key=key, lat=12345678, lon=23456789, range=200,
             new_measures=2, total_measures=15,
         )
-        session = self.db_master_session
+        session = self.archival_db_session
         session.add(wifi)
         session.commit()
 
@@ -112,7 +112,7 @@ class TestWifiBlacklist(DBTestCase):
     def test_fields(self):
         key = "3680873e9b83"
         wifi = self._make_one(key=key)
-        session = self.db_master_session
+        session = self.archival_db_session
         session.add(wifi)
         session.commit()
 
@@ -123,7 +123,7 @@ class TestWifiBlacklist(DBTestCase):
     def test_unique_key(self):
         key = "3680873e9b83"
         wifi1 = self._make_one(key=key)
-        session = self.db_master_session
+        session = self.archival_db_session
         session.add(wifi1)
         session.commit()
 
@@ -146,7 +146,7 @@ class TestWifiMeasure(DBTestCase):
         key = "3680873e9b83"
         wifi = self._make_one(
             lat=12345678, lon=23456789, key=key, channel=2412, signal=-45)
-        session = self.db_master_session
+        session = self.archival_db_session
         session.add(wifi)
         session.commit()
 
@@ -172,7 +172,7 @@ class TestMeasure(DBTestCase):
 
     def test_fields(self):
         measure = self._make_one()
-        session = self.db_master_session
+        session = self.archival_db_session
         session.add(measure)
         session.commit()
 

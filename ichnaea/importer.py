@@ -82,7 +82,7 @@ def load_file(session, source_file, batch_size=100, userid=None):
     return counter
 
 
-def main(argv, _db_master=None):
+def main(argv, _archival_db=None):
     parser = argparse.ArgumentParser(
         prog=argv[0], description='Location Importer')
 
@@ -98,15 +98,15 @@ def main(argv, _db_master=None):
     settings = config().get_map('ichnaea')
 
     # configure databases incl. test override hooks
-    if _db_master is None:
+    if _archival_db is None:
         db = Database(
-            settings['db_master'],
-            socket=settings.get('db_master_socket'),
+            settings['archival_db_url'],
+            socket=settings.get('archival_db_socket'),
             create=False,
             model_class=_Model,
         )
     else:
-        db = _db_master
+        db = _archival_db
     session = db.session()
     added = load_file(session, args.source, userid=userid)
     print('Added a total of %s records.' % added)

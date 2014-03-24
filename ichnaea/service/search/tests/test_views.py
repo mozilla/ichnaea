@@ -14,7 +14,7 @@ class TestSearch(AppTestCase):
 
     def test_ok_cell(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.volatile_db_session
         key = dict(mcc=1, mnc=2, lac=3)
         data = [
             Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
@@ -54,7 +54,7 @@ class TestSearch(AppTestCase):
 
     def test_ok_wifi(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.volatile_db_session
         wifis = [
             Wifi(key="A1", lat=10000000, lon=10000000),
             Wifi(key="B2", lat=10010000, lon=10020000),
@@ -88,7 +88,7 @@ class TestSearch(AppTestCase):
 
     def test_wifi_too_few_candidates(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.volatile_db_session
         wifis = [
             Wifi(key="A1", lat=10000000, lon=10000000),
             Wifi(key="B2", lat=10010000, lon=10020000),
@@ -104,7 +104,7 @@ class TestSearch(AppTestCase):
 
     def test_wifi_too_few_matches(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.volatile_db_session
         wifis = [
             Wifi(key="A1", lat=10000000, lon=10000000),
             Wifi(key="B2", lat=10010000, lon=10020000),
@@ -122,7 +122,7 @@ class TestSearch(AppTestCase):
 
     def test_wifi_not_closeby(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.volatile_db_session
         wifis = [
             Wifi(key="A1", lat=10000000, lon=10000000),
             Wifi(key="B2", lat=10010000, lon=10020000),
@@ -165,7 +165,7 @@ class TestSearch(AppTestCase):
 
     def test_wifi_not_found_cell_fallback(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.volatile_db_session
         key = dict(mcc=1, mnc=2, lac=3)
         data = [
             Wifi(key="abcd", lat=30000000, lon=30000000),
@@ -192,7 +192,7 @@ class TestSearch(AppTestCase):
 
     def test_cell_ignore_invalid_lac_cid(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.volatile_db_session
 
         key = dict(mcc=1, mnc=2, lac=3)
         ignored_key = dict(mcc=1, mnc=2, lac=-1, cid=-1)
@@ -284,7 +284,7 @@ class TestSearch(AppTestCase):
 
     def test_no_api_key(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.volatile_db_session
         wifis = [
             Wifi(key="A1", lat=10000000, lon=10000000, total_measures=9),
             Wifi(key="B2", lat=10010000, lon=10020000, total_measures=9),
@@ -309,7 +309,7 @@ class TestSearchErrors(AppTestCase):
 
     def test_database_error(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.volatile_db_session
         stmt = text("drop table wifi;")
         session.execute(stmt)
 

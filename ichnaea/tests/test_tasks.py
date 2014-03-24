@@ -19,7 +19,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         from ichnaea.tasks import cell_location_update
         now = datetime.utcnow()
         before = now - timedelta(days=1)
-        session = self.db_master_session
+        session = self.archival_db_session
         k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
         k2 = dict(radio=1, mcc=1, mnc=2, lac=6, cid=8)
         k3 = dict(radio=1, mcc=1, mnc=2, lac=-1, cid=-1)
@@ -61,7 +61,7 @@ class TestCellLocationUpdate(CeleryTestCase):
 
     def test_backfill_cell_location_update(self):
         from ichnaea.tasks import backfill_cell_location_update
-        session = self.db_master_session
+        session = self.archival_db_session
         k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
         data = [
             Cell(lat=10010000, lon=10010000, new_measures=0,
@@ -91,7 +91,7 @@ class TestCellLocationUpdate(CeleryTestCase):
 
     def test_cell_max_min_range_update(self):
         from ichnaea.tasks import cell_location_update
-        session = self.db_master_session
+        session = self.archival_db_session
 
         k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
         data = [
@@ -127,7 +127,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         from ichnaea.tasks import cell_location_update
         now = datetime.utcnow()
         long_ago = now - timedelta(days=40)
-        session = self.db_master_session
+        session = self.archival_db_session
 
         k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
         k2 = dict(radio=1, mcc=1, mnc=2, lac=6, cid=8)
@@ -209,7 +209,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         from ichnaea.tasks import wifi_location_update
         now = datetime.utcnow()
         before = now - timedelta(days=1)
-        session = self.db_master_session
+        session = self.archival_db_session
         k1 = "ab1234567890"
         k2 = "cd1234567890"
         data = [
@@ -245,7 +245,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
 
     def test_wifi_max_min_range_update(self):
         from ichnaea.tasks import wifi_location_update
-        session = self.db_master_session
+        session = self.archival_db_session
         k1 = "ab1234567890"
         k2 = "cd1234567890"
         data = [
@@ -296,7 +296,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         from ichnaea.tasks import wifi_location_update
         now = datetime.utcnow()
         long_ago = now - timedelta(days=40)
-        session = self.db_master_session
+        session = self.archival_db_session
         k1 = "ab1234567890"
         k2 = "bc1234567890"
         k3 = "cd1234567890"
@@ -371,7 +371,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
 
     def test_remove_wifi(self):
         from ichnaea.tasks import remove_wifi
-        session = self.db_master_session
+        session = self.archival_db_session
         measures = []
         wifi_keys = ["a%s1234567890" % i for i in range(5)]
         m1 = 10000000
@@ -405,7 +405,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         with a few smaller and smaller sizes, confirming that correct
         measurements are discarded at each step and counters adjusted.
         """
-        session = self.db_master_session
+        session = self.archival_db_session
         measures = []
         backdate = datetime.utcnow() - timedelta(days=10)
         keys = range(3)
@@ -467,7 +467,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         """
         from ichnaea.content.tasks import get_curr_stat
 
-        session = self.db_master_session
+        session = self.archival_db_session
         measures = []
         keys = range(3)
         measures_per_key = 4

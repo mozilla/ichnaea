@@ -114,7 +114,7 @@ class DatabaseTask(Task):
 
     def db_session(self):
         # returns a context manager
-        return db_worker_session(self.app.db_master)
+        return db_worker_session(self.app.archival_db)
 
     @property
     def heka_client(self):

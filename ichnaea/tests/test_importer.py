@@ -28,16 +28,16 @@ class TestLoadFile(CeleryTestCase):
 
     def test_no_lines(self):
         func, tmpfile = self._make_one()
-        counter = func(self.db_master_session, tmpfile[1])
+        counter = func(self.archival_db_session, tmpfile[1])
         self.assertEqual(counter, 0)
 
     def test_one_line(self):
         func, tmpfile = self._make_one()
-        session = self.db_master_session
+        session = self.archival_db_session
         today = datetime.utcnow().date()
 
         os.write(tmpfile[0], LINE)
-        counter = func(self.db_master_session, tmpfile[1])
+        counter = func(self.archival_db_session, tmpfile[1])
         self.assertEqual(counter, 1)
 
         measures = session.query(WifiMeasure).all()
@@ -59,12 +59,12 @@ class TestLoadFile(CeleryTestCase):
         os.write(tmpfile[0], LINE)
         os.write(tmpfile[0], '\n1' + LINE)
         os.write(tmpfile[0], '\n2' + LINE)
-        counter = func(self.db_master_session, tmpfile[1], batch_size=2)
+        counter = func(self.archival_db_session, tmpfile[1], batch_size=2)
         self.assertEqual(counter, 3)
 
     def test_userid(self):
         func, tmpfile = self._make_one()
-        session = self.db_master_session
+        session = self.archival_db_session
         user = User(nickname='test'.decode('ascii'))
         session.add(user)
         session.flush()
@@ -90,7 +90,7 @@ class TestLoadFile(CeleryTestCase):
         os.write(tmpfile[0], '3\t\\N\n')
         os.write(tmpfile[0], '4\t\\N\tabc\n')
         os.write(tmpfile[0], '5\t\\N\t1.0\t2.1\tabc\n')
-        counter = func(self.db_master_session, tmpfile[1])
+        counter = func(self.archival_db_session, tmpfile[1])
         self.assertEqual(counter, 1)
 
 
@@ -103,11 +103,11 @@ class TestMain(CeleryTestCase):
 
     def test_main(self):
         data, func = self._make_one()
-        counter = func(['main', data[1]], _db_master=self.db_master)
+        counter = func(['main', data[1]], _archival_db=self.archival_db)
         self.assertEqual(counter, 0)
 
     def test_main_userid(self):
         data, func = self._make_one()
         counter = func(['main', data[1], '--userid=1'],
-                       _db_master=self.db_master)
+                       _archival_db=self.archival_db)
         self.assertEqual(counter, 0)

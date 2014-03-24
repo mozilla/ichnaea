@@ -31,7 +31,7 @@ class TestInsert(CeleryTestCase):
 
     def test_cell(self):
         from ichnaea.service.submit.tasks import insert_cell_measures
-        session = self.db_master_session
+        session = self.archival_db_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
         session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=1, mnc=2, lac=3,
@@ -93,7 +93,7 @@ class TestInsert(CeleryTestCase):
 
     def test_insert_invalid_lac(self):
         from ichnaea.service.submit.tasks import insert_cell_measures
-        session = self.db_master_session
+        session = self.archival_db_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
         session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=1, mnc=2, lac=3, cid=4,
@@ -130,7 +130,7 @@ class TestInsert(CeleryTestCase):
 
     def test_cell_out_of_range_values(self):
         from ichnaea.service.submit.tasks import insert_cell_measures
-        session = self.db_master_session
+        session = self.archival_db_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
         measure = dict(
@@ -157,7 +157,7 @@ class TestInsert(CeleryTestCase):
 
     def test_wifi(self):
         from ichnaea.service.submit.tasks import insert_wifi_measures
-        session = self.db_master_session
+        session = self.archival_db_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
         session.add(Wifi(key="ab12"))
@@ -206,7 +206,7 @@ class TestInsert(CeleryTestCase):
 
     def test_wifi_blacklist(self):
         from ichnaea.service.submit.tasks import insert_wifi_measures
-        session = self.db_master_session
+        session = self.archival_db_session
         bad_key = "ab1234567890"
         good_key = "cd1234567890"
         black = WifiBlacklist(key=bad_key)
@@ -231,7 +231,7 @@ class TestInsert(CeleryTestCase):
 
     def test_wifi_overflow(self):
         from ichnaea.service.submit.tasks import insert_wifi_measures
-        session = self.db_master_session
+        session = self.archival_db_session
         key = "001234567890"
 
         measures = [dict(id=0,
@@ -260,7 +260,7 @@ class TestInsert(CeleryTestCase):
 
     def test_cell_overflow(self):
         from ichnaea.service.submit.tasks import insert_cell_measures
-        session = self.db_master_session
+        session = self.archival_db_session
 
         measures = [dict(mcc=1, mnc=2, lac=3, cid=4, psc=5,
                          radio=RADIO_TYPE['gsm'],
@@ -290,7 +290,7 @@ class TestInsert(CeleryTestCase):
     def test_ignore_unhelpful_incomplete_cdma_cells(self):
         # CDMA cell records must have MNC, MCC, LAC and CID filled in
         from ichnaea.service.submit.tasks import insert_cell_measures
-        session = self.db_master_session
+        session = self.archival_db_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
         measure = dict(
@@ -326,7 +326,7 @@ class TestInsert(CeleryTestCase):
         # Cell records must have MNC, MCC and at least one of (LAC, CID) or PSC
         # values filled in.
         from ichnaea.service.submit.tasks import insert_cell_measures
-        session = self.db_master_session
+        session = self.archival_db_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
         measure = dict(
@@ -405,7 +405,7 @@ class TestSubmitErrors(CeleryTestCase):
 
     def test_database_error(self):
         from ichnaea.service.submit.tasks import insert_wifi_measures
-        session = self.db_master_session
+        session = self.archival_db_session
 
         stmt = text("drop table wifi;")
         session.execute(stmt)

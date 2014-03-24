@@ -86,18 +86,18 @@ CELERYBEAT_SCHEDULE = {
 celery = Celery('ichnaea.worker')
 
 
-def attach_database(app, _db_master=None):
+def attach_database(app, _archival_db=None):
     # called manually during tests
     settings = config().get_map('ichnaea')
-    if _db_master is None:  # pragma: no cover
-        db_master = Database(
-            settings['db_master'],
-            socket=settings.get('db_master_socket'),
+    if _archival_db is None:  # pragma: no cover
+        archival_db = Database(
+            settings['archival_db_url'],
+            socket=settings.get('archival_db_socket'),
             model_class=_Model,
         )
     else:
-        db_master = _db_master
-    app.db_master = db_master
+        archival_db = _archival_db
+    app.archival_db = archival_db
 
 
 @worker_process_init.connect

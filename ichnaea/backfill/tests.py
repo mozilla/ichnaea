@@ -11,7 +11,7 @@ from ichnaea.tests.base import CeleryTestCase
 class TestBackfill(CeleryTestCase):
 
     def test_do_backfill(self):
-        session = self.db_master_session
+        session = self.archival_db_session
 
         # These are our reference towers that will be used to match
         # similar towers

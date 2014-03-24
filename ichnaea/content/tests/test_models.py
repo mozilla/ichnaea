@@ -19,7 +19,7 @@ class TestScore(DBTestCase):
         utcday = datetime.datetime.utcnow().date()
         score = self._make_one(userid=3, time=utcday, value=15)
         score.name = 'location'
-        session = self.db_master_session
+        session = self.archival_db_session
         session.add(score)
         session.commit()
 
@@ -31,7 +31,7 @@ class TestScore(DBTestCase):
 
     def test_property(self):
         score = self._make_one(key=0, value=13)
-        session = self.db_master_session
+        session = self.archival_db_session
         session.add(score)
         session.commit()
 
@@ -53,7 +53,7 @@ class TestStat(DBTestCase):
     def test_fields(self):
         utcday = datetime.datetime.utcnow().date()
         stat = self._make_one(key=1, time=utcday, value=13)
-        session = self.db_master_session
+        session = self.archival_db_session
         session.add(stat)
         session.commit()
 
@@ -64,7 +64,7 @@ class TestStat(DBTestCase):
 
     def test_property(self):
         stat = self._make_one(key=1, value=13)
-        session = self.db_master_session
+        session = self.archival_db_session
         session.add(stat)
         session.commit()
 
@@ -90,7 +90,7 @@ class TestMapStat(DBTestCase):
 
     def test_fields(self):
         stat = self._make_one(lat=12345, lon=-23456, value=13)
-        session = self.db_master_session
+        session = self.archival_db_session
         session.add(stat)
         session.commit()
 
@@ -101,7 +101,7 @@ class TestMapStat(DBTestCase):
         self.assertEqual(result.value, 13)
 
     def test_0_clash(self):
-        session = self.db_master_session
+        session = self.archival_db_session
         stats = [
             self._make_one(lat=12345, lon=-23456, value=13),
             self._make_one(lat=0, lon=0, key=0, value=3),
@@ -126,7 +126,7 @@ class TestUser(DBTestCase):
 
     def test_fields(self):
         user = self._make_one(nickname=u"World Traveler")
-        session = self.db_master_session
+        session = self.archival_db_session
         session.add(user)
         session.commit()
 

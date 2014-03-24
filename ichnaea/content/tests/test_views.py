@@ -85,7 +85,7 @@ class TestFunctionalContent(AppTestCase):
         today = datetime.utcnow().date()
         yesterday = today - timedelta(1)
         yesterday = yesterday.strftime('%Y-%m-%d')
-        session = self.db_slave_session
+        session = self.volatile_db_session
         stat = Stat(time=yesterday, value=2)
         stat.name = 'unique_cell'
         session.add(stat)
@@ -102,7 +102,7 @@ class TestFunctionalContent(AppTestCase):
         today = datetime.utcnow().date()
         yesterday = today - timedelta(1)
         yesterday = yesterday.strftime('%Y-%m-%d')
-        session = self.db_slave_session
+        session = self.volatile_db_session
         stat = Stat(time=yesterday, value=2)
         stat.name = 'unique_wifi'
         session.add(stat)
@@ -131,7 +131,7 @@ class TestFunctionalContentViews(AppTestCase):
         return ContentViews(request)
 
     def test_leaders(self):
-        session = self.db_master_session
+        session = self.archival_db_session
         today = datetime.utcnow().date()
         yesterday = today - timedelta(days=1)
         for i in range(3):
@@ -146,7 +146,7 @@ class TestFunctionalContentViews(AppTestCase):
             session.add(score2)
         session.commit()
         request = DummyRequest()
-        request.db_slave_session = self.db_master_session
+        request.volatile_db_session = self.archival_db_session
         inst = self._make_view(request)
         result = inst.leaders_view()
         self.assertEqual(
@@ -159,7 +159,7 @@ class TestFunctionalContentViews(AppTestCase):
 
     def test_stats(self):
         day = datetime.utcnow().date() - timedelta(1)
-        session = self.db_master_session
+        session = self.archival_db_session
         stats = [
             Stat(key=STAT_TYPE['cell'], time=day, value=2000000),
             Stat(key=STAT_TYPE['wifi'], time=day, value=2000000),
@@ -169,7 +169,7 @@ class TestFunctionalContentViews(AppTestCase):
         session.add_all(stats)
         session.commit()
         request = DummyRequest()
-        request.db_slave_session = self.db_master_session
+        request.volatile_db_session = self.archival_db_session
         inst = self._make_view(request)
         result = inst.stats_view()
         self.assertEqual(result['page_title'], 'Statistics')

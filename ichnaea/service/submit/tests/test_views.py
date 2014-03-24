@@ -51,7 +51,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(1, len(find_msg('counter', 'http.request')))
         self.assertEqual(1, len(find_msg('counter', 'submit.api_key.test')))
 
-        session = self.db_master_session
+        session = self.archival_db_session
         measure_result = session.query(Measure).all()
         self.assertEqual(len(measure_result), 1)
 
@@ -82,7 +82,7 @@ class TestSubmit(CeleryAppTestCase):
                                       "cell": cell_data}]},
             status=204)
         self.assertEqual(res.body, '')
-        session = self.db_master_session
+        session = self.archival_db_session
         measure_result = session.query(Measure).all()
         self.assertEqual(len(measure_result), 1)
 
@@ -107,7 +107,7 @@ class TestSubmit(CeleryAppTestCase):
                                       "wifi": wifi_data}]},
             status=204)
         self.assertEqual(res.body, '')
-        session = self.db_master_session
+        session = self.archival_db_session
         measure_result = session.query(Measure).all()
         self.assertEqual(len(measure_result), 1)
         item = measure_result[0]
@@ -149,7 +149,7 @@ class TestSubmit(CeleryAppTestCase):
                                       "wifi": wifi_data}]},
             status=204)
         self.assertEqual(res.body, '')
-        session = self.db_master_session
+        session = self.archival_db_session
 
         result = session.query(WifiMeasure).all()
         self.assertEqual(len(result), 7)
@@ -191,7 +191,7 @@ class TestSubmit(CeleryAppTestCase):
                  "wifi": [{"key": "00bbbbbbbbbb"}]},
             ]},
             status=204)
-        session = self.db_master_session
+        session = self.archival_db_session
         result = session.query(WifiMeasure).all()
         self.assertEqual(len(result), 2)
 
@@ -220,7 +220,7 @@ class TestSubmit(CeleryAppTestCase):
                  "wifi": [{"key": "00aaaaaaaaaa"}], "time": tstr},
             ]},
             status=204)
-        session = self.db_master_session
+        session = self.archival_db_session
         result = session.query(WifiMeasure).all()
         self.assertEqual(len(result), 1)
         result_time = result[0].time
@@ -241,7 +241,7 @@ class TestSubmit(CeleryAppTestCase):
                  "time": time},
             ]},
             status=204)
-        session = self.db_master_session
+        session = self.archival_db_session
         result = session.query(WifiMeasure).all()
         self.assertEqual(len(result), 1)
         self.assertNotEqual(result[0].time.year, 2070)
@@ -256,14 +256,14 @@ class TestSubmit(CeleryAppTestCase):
                  "wifi": [{"key": "00aaaaaaaaaa"}], "time": time},
             ]},
             status=204)
-        session = self.db_master_session
+        session = self.archival_db_session
         result = session.query(WifiMeasure).all()
         self.assertEqual(len(result), 1)
         self.assertNotEqual(result[0].time, 2011)
 
     def test_mapstat(self):
         app = self.app
-        session = self.db_master_session
+        session = self.archival_db_session
         key_10m = MAPSTAT_TYPE['location']
         key_100m = MAPSTAT_TYPE['location_100m']
         session.add_all([
@@ -336,7 +336,7 @@ class TestSubmit(CeleryAppTestCase):
             ]},
             headers={'X-Nickname': nickname},
             status=204)
-        session = self.db_master_session
+        session = self.archival_db_session
         result = session.query(User).all()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
@@ -362,7 +362,7 @@ class TestSubmit(CeleryAppTestCase):
             ]},
             headers={'X-Nickname': "a"},
             status=204)
-        session = self.db_master_session
+        session = self.archival_db_session
         result = session.query(User).all()
         self.assertEqual(len(result), 0)
         result = session.query(Score).all()
@@ -372,7 +372,7 @@ class TestSubmit(CeleryAppTestCase):
         app = self.app
         nickname = 'World Tr\xc3\xa4veler'
         utcday = datetime.utcnow().date()
-        session = self.db_master_session
+        session = self.archival_db_session
         user = User(nickname=nickname.decode('utf-8'))
         session.add(user)
         session.flush()
@@ -444,7 +444,7 @@ class TestSubmit(CeleryAppTestCase):
                                       "lon": 23.4567892,
                                       "wifi": wifi_data}]},
             status=204)
-        session = self.db_master_session
+        session = self.archival_db_session
         result = session.query(WifiMeasure).all()
         # if any of the keys is too short, the entire batch gets rejected
         self.assertEqual(len(result), 0)
@@ -457,7 +457,7 @@ class TestSubmit(CeleryAppTestCase):
                                       "lon": 23.4567892,
                                       "wifi": wifi_data}]},
             status=204)
-        session = self.db_master_session
+        session = self.archival_db_session
         result = session.query(WifiMeasure).all()
         # if any of the keys is too long, the entire batch gets rejected
         self.assertEqual(len(result), 0)
@@ -536,7 +536,7 @@ class TestSubmit(CeleryAppTestCase):
                                       "wifi": wifi_data}]},
             status=204)
 
-        session = self.db_master_session
+        session = self.archival_db_session
         result = session.query(WifiMeasure).all()
         self.assertEqual(len(result), 0)
 
@@ -549,7 +549,7 @@ class TestSubmit(CeleryAppTestCase):
                                       "wifi": wifi_data}]},
             status=204)
 
-        session = self.db_master_session
+        session = self.archival_db_session
         result = session.query(WifiMeasure).all()
         self.assertEqual(len(result), 0)
 
@@ -563,6 +563,6 @@ class TestSubmit(CeleryAppTestCase):
                                       "wifi": wifi_data}]},
             status=204)
 
-        session = self.db_master_session
+        session = self.archival_db_session
         result = session.query(WifiMeasure).all()
         self.assertEqual(len(result), 1)

@@ -10,7 +10,7 @@ class TestGeolocate(AppTestCase):
 
     def test_ok_cell(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.volatile_db_session
         cell = Cell()
         cell.lat = 123456781
         cell.lon = 234567892
@@ -43,7 +43,7 @@ class TestGeolocate(AppTestCase):
 
     def test_ok_wifi(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.volatile_db_session
         wifis = [
             Wifi(key="a1", lat=10000000, lon=10000000),
             Wifi(key="b2", lat=10010000, lon=10020000),
@@ -142,7 +142,7 @@ class TestGeolocate(AppTestCase):
 
     def test_no_api_key(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.volatile_db_session
         wifis = [
             Wifi(key="a1", lat=10000000, lon=10000000, total_measures=9),
             Wifi(key="b2", lat=10010000, lon=10020000, total_measures=9),

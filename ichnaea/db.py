@@ -21,19 +21,19 @@ def on_duplicate(insert, compiler, **kw):
 # to provide lazy session creation, session closure and automatic
 # rollback in case of errors
 
-def db_master_session(request):
-    session = getattr(request, '_db_master_session', None)
+def archival_db_session(request):
+    session = getattr(request, '_archival_db_session', None)
     if session is None:
-        db = request.registry.db_master
-        request._db_master_session = session = db.session()
+        db = request.registry.archival_db
+        request._archival_db_session = session = db.session()
     return session
 
 
-def db_slave_session(request):
-    session = getattr(request, '_db_slave_session', None)
+def volatile_db_session(request):
+    session = getattr(request, '_volatile_db_session', None)
     if session is None:
-        db = request.registry.db_slave
-        request._db_slave_session = session = db.session()
+        db = request.registry.volatile_db
+        request._volatile_db_session = session = db.session()
     return session
 
 
@@ -53,20 +53,20 @@ def db_tween_factory(handler, registry):
 
     def db_tween(request):
         response = handler(request)
-        master_session = getattr(request, '_db_master_session', None)
-        if master_session is not None:
+        archival_session = getattr(request, '_archival_db_session', None)
+        if archival_session is not None:
             # only deal with requests with a session
             if response.status.startswith(('4', '5')):  # pragma: no cover
                 # never commit on error
-                master_session.rollback()
-            master_session.close()
-        slave_session = getattr(request, '_db_slave_session', None)
-        if slave_session is not None:
-            # always rollback/close the `read-only` slave sessions
+                archival_session.rollback()
+            archival_session.close()
+        volatile_session = getattr(request, '_volatile_db_session', None)
+        if volatile_session is not None:
+            # always rollback/close the `read-only` volatile sessions
             try:
-                slave_session.rollback()
+                volatile_session.rollback()
             finally:
-                slave_session.close()
+                volatile_session.close()
         return response
 
     return db_tween
