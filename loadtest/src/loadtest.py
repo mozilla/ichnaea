@@ -1,4 +1,10 @@
-from ichnaea.models import RADIO_TYPE
+RADIO_TYPE = {
+    '': -1,
+    'gsm': 0,
+    'cdma': 1,
+    'umts': 2,
+    'lte': 3,
+}
 from loads.case import TestCase
 import binascii
 import json
@@ -43,7 +49,6 @@ def random_cell():
                                'radio': radio}
 
 
-
 def generate_data():
     if not os.path.isfile(TOWER_FILE) or not os.path.isfile(AP_FILE):
         tower_data = {}
@@ -82,6 +87,7 @@ def generate_data():
 class TestIchnaea(TestCase):
     TOWER_DATA = None
     AP_DATA = None
+
     def setUp(self):
         if self.TOWER_DATA is None:
             self.TOWER_DATA, self.AP_DATA = generate_data()
