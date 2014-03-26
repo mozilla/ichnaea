@@ -6,10 +6,16 @@ import os
 import os.path
 import pickle
 import random
+from ConfigParser import SafeConfigParser
 
+cfg = SafeConfigParser()
+cfg.read(os.path.join('src', 'ichnaea.ini'))
+
+TOWER_FILE = os.path.join('src', 'tower.pickle')
+AP_FILE = os.path.join('src', 'ap.pickle')
+HOST = 'https://' + cfg.get('loadtest', 'WEBAPP_HOST')
 
 TESTING_AP_SUBSET = TESTING_CELL_SUBSET = 10000
-HOST = 'https://' + os.getenv('WEBAPP_HOST')
 
 
 def random_ap():
@@ -37,8 +43,6 @@ def random_cell():
                                'radio': radio}
 
 
-TOWER_FILE = os.path.join('src', 'tower.pickle')
-AP_FILE = os.path.join('src', 'ap.pickle')
 
 def generate_data():
     if not os.path.isfile(TOWER_FILE) or not os.path.isfile(AP_FILE):
@@ -76,123 +80,127 @@ def generate_data():
 
 
 class TestIchnaea(TestCase):
+    TOWER_DATA = None
+    AP_DATA = None
     def setUp(self):
-        self.TOWER_DATA, self.AP_DATA = generate_data()
+        if self.TOWER_DATA is None:
+            self.TOWER_DATA, self.AP_DATA = generate_data()
+            self.TOWER_DATA, self.AP_DATA = self.TOWER_DATA.items(), self.AP_DATA.items()
 
     def test_submit_cell_data(self):
         """
         This iterates over all generated cell data and submits it in
         batches
         """
-        for (lat, lon), all_cell_data in self.TOWER_DATA.items():
-            cells = []
-            for cell_data in all_cell_data:
-                cells.append({"radio": "umts",
-                              "mcc": cell_data['mcc'],
-                              "mnc": cell_data['mnc'],
-                              "lac": cell_data['lac'],
-                              "cid": cell_data['cid']})
+        (lat, lon), all_cell_data = random.choice(self.TOWER_DATA)
 
-            json_data = {"items": [{"lat": lat,
-                                    "lon": lon,
-                                    "accuracy": 10,
-                                    "altitude": 1,
-                                    "altitude_accuracy": 7,
-                                    "radio": "gsm",
-                                    "cell": cells}]}
-            blob = json.dumps(json_data)
-            res = self.session.post(HOST+'/v1/submit', blob)
-            self.assertEqual(res.status_code, 204)
+        cells = []
+        for cell_data in all_cell_data:
+            cells.append({"radio": "umts",
+                          "mcc": cell_data['mcc'],
+                          "mnc": cell_data['mnc'],
+                          "lac": cell_data['lac'],
+                          "cid": cell_data['cid']})
 
-    def test_submit_ap_data(self):
-        """
-        This iterates over all generated cell data and submits it in
-        batches
-        """
-        for (lat, lon), ap_data in self.AP_DATA.items():
-            jdata = {"items": [{"lat": lat,
-                                "lon": lon,
-                                "accuracy": 17,
-                                "wifi": ap_data}]}
-            blob = json.dumps(jdata)
-            res = self.session.post(HOST+'/v1/submit', blob)
-            self.assertEqual(res.status_code, 204)
-
-    def test_submit_mixed_data(self):
-        for (lat, lon), ap_data in self.AP_DATA.items():
-            cells = []
-            for cell_data in self.TOWER_DATA[(lat, lon)]:
-                cells.append({"radio": "umts",
-                              "mcc": cell_data['mcc'],
-                              "mnc": cell_data['mnc'],
-                              "lac": cell_data['lac'],
-                              "cid": cell_data['cid']})
-
-            jdata = {"items": [{"lat": lat,
+        json_data = {"items": [{"lat": lat,
                                 "lon": lon,
                                 "accuracy": 10,
                                 "altitude": 1,
                                 "altitude_accuracy": 7,
                                 "radio": "gsm",
                                 "cell": cells}]}
+        blob = json.dumps(json_data)
+        res = self.session.post(HOST+'/v1/submit', blob)
+        self.assertEqual(res.status_code, 204)
 
-            jdata['items'].append({"lat": lat,
-                                   "lon": lon,
-                                   "accuracy": 17,
-                                   "wifi": ap_data})
-            blob = json.dumps(jdata)
-            res = self.session.post(HOST+'/v1/submit', blob)
-            self.assertEqual(res.status_code, 204)
+    def test_submit_ap_data(self):
+        """
+        This iterates over all generated cell data and submits it in
+        batches
+        """
+        (lat, lon), ap_data = random.choice(self.AP_DATA)
+        jdata = {"items": [{"lat": lat,
+                            "lon": lon,
+                            "accuracy": 17,
+                            "wifi": ap_data}]}
+        blob = json.dumps(jdata)
+        res = self.session.post(HOST+'/v1/submit', blob)
+        self.assertEqual(res.status_code, 204)
+
+    def test_submit_mixed_data(self):
+        (lat, lon), ap_data = random.choice(self.AP_DATA)
+        cells = []
+        for cell_data in ap_data:
+            cells.append({"radio": "umts",
+                          "mcc": cell_data['mcc'],
+                          "mnc": cell_data['mnc'],
+                          "lac": cell_data['lac'],
+                          "cid": cell_data['cid']})
+
+        jdata = {"items": [{"lat": lat,
+                            "lon": lon,
+                            "accuracy": 10,
+                            "altitude": 1,
+                            "altitude_accuracy": 7,
+                            "radio": "gsm",
+                            "cell": cells}]}
+
+        jdata['items'].append({"lat": lat,
+                               "lon": lon,
+                               "accuracy": 17,
+                               "wifi": ap_data})
+        blob = json.dumps(jdata)
+        res = self.session.post(HOST+'/v1/submit', blob)
+        self.assertEqual(res.status_code, 204)
 
     def test_search_wifi(self):
         """
         Grab 3 keys for a lat lon
         """
-        for (lat, lon), ap_data in self.TOWER_DATA.items():
-            expected_lat = int(lat * 1000)
-            expected_lon = int(lon * 1000)
-            if len(ap_data) >= 3:
-                wifi_data = ap_data[:3]
-                if random.random() >= 0.5:
-                    # Throw in some garbage
-                    wifi_data.append({'key': 'aa:aa:aa:aa:aa:aa'})
-                jdata = json.dumps({'wifi': wifi_data})
-                res = self.session.post(HOST+'/v1/search?key=test', jdata)
+        (lat, lon), ap_data = random.choice(self.TOWER_DATA)
 
-                self.assertEqual(res.status_code, 200)
-                jdata = json.loads(res.content)
-                if jdata['status'] != 'not_found':
-                    actual_lat = int(jdata['lat']*1000)
-                    actual_lon = int(jdata['lon']*1000)
-                    self.assertEquals(actual_lat, expected_lat)
-                    self.assertEquals(actual_lon, expected_lon)
+        expected_lat = int(lat * 1000)
+        expected_lon = int(lon * 1000)
+        if len(ap_data) >= 3:
+            wifi_data = ap_data[:3]
+            if random.random() >= 0.5:
+                # Throw in some garbage
+                wifi_data.append({'key': 'aa:aa:aa:aa:aa:aa'})
+            jdata = json.dumps({'wifi': wifi_data})
+            res = self.session.post(HOST+'/v1/search?key=test', jdata)
+
+            self.assertEqual(res.status_code, 200)
+            jdata = json.loads(res.content)
+            if jdata['status'] != 'not_found':
+                actual_lat = int(jdata['lat']*1000)
+                actual_lon = int(jdata['lon']*1000)
+                self.assertEquals(actual_lat, expected_lat)
+                self.assertEquals(actual_lon, expected_lon)
 
     def test_search_cell(self):
         RADIO_MAP = dict([(v, k) for k, v in RADIO_TYPE.items() if k != ''])
 
-        for (lat, lon), all_cells in self.TOWER_DATA.items():
-            #expected_lat = int(lat * 1000)
-            #expected_lon = int(lon * 1000)
+        (lat, lon), all_cells = random.choice(self.TOWER_DATA)
 
-            query_data = {"radio": '', "cell": []}
-            for cell_data in all_cells:
-                radio_name = RADIO_MAP[cell_data['radio']]
-                if query_data['radio'] == '':
-                    query_data['radio'] = radio_name
-                query_data['cell'].append(dict(radio=radio_name,
-                                               cid=cell_data['cid'],
-                                               mcc=cell_data['mcc'],
-                                               mnc=cell_data['mnc'],
-                                               lac=cell_data['lac']))
-                jdata = json.dumps(query_data)
-                res = self.session.post(HOST+'/v1/search?key=test', jdata)
-                self.assertEqual(res.status_code, 200)
-                jdata = json.loads(res.content)
-                """
-                if jdata['status'] != 'not_found':
-                    actual_lat = int(jdata['lat']*1000)
-                    actual_lon = int(jdata['lon']*1000)
-                    self.assertEquals(actual_lat, expected_lat)
-                    self.assertEquals(actual_lon, expected_lon)
-                    return
-                """
+        expected_lat = int(lat * 1000)
+        expected_lon = int(lon * 1000)
+
+        query_data = {"radio": '', "cell": []}
+        for cell_data in all_cells:
+            radio_name = RADIO_MAP[cell_data['radio']]
+            if query_data['radio'] == '':
+                query_data['radio'] = radio_name
+            query_data['cell'].append(dict(radio=radio_name,
+                                           cid=cell_data['cid'],
+                                           mcc=cell_data['mcc'],
+                                           mnc=cell_data['mnc'],
+                                           lac=cell_data['lac']))
+            jdata = json.dumps(query_data)
+            res = self.session.post(HOST+'/v1/search?key=test', jdata)
+            self.assertEqual(res.status_code, 200)
+            jdata = json.loads(res.content)
+            if jdata['status'] != 'not_found':
+                actual_lat = int(jdata['lat']*1000)
+                actual_lon = int(jdata['lon']*1000)
+                self.assertEquals(actual_lat, expected_lat)
+                self.assertEquals(actual_lon, expected_lon)
