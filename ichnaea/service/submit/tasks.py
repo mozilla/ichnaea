@@ -121,7 +121,7 @@ def process_time(measure, utcnow, utcmin):
     return measure
 
 
-def process_measure(measure_id, data, session):
+def process_measure(measure_id, data):
     cell_measures = []
     wifi_measures = []
     measure_data = dict(
@@ -162,7 +162,7 @@ def process_measure(measure_id, data, session):
     return (cell_measures, wifi_measures)
 
 
-def process_measures(items, session, userid=None):
+def process_measures(items, archival_session, volatile_session, userid=None):
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
     utcmin = utcnow - datetime.timedelta(60)
 
@@ -171,17 +171,17 @@ def process_measures(items, session, userid=None):
     for i in range(len(items)):
         measure = Measure()
         measures.append(measure)
-        session.add(measure)
+        archival_session.add(measure)
     # TODO switch unique measure id to a uuid, so we don't have to do
     # get these from a savepoint here
-    session.flush()
+    archival_session.flush()
 
     positions = []
     cell_measures = []
     wifi_measures = []
     for i, item in enumerate(items):
         item = process_time(item, utcnow, utcmin)
-        cell, wifi = process_measure(measures[i].id, item, session)
+        cell, wifi = process_measure(measures[i].id, item)
         cell_measures.extend(cell)
         wifi_measures.extend(wifi)
         positions.append({
@@ -217,9 +217,9 @@ def process_measures(items, session, userid=None):
             insert_wifi_measures.delay(values, userid=userid)
 
     if userid is not None:
-        process_score(userid, len(items), session)
+        process_score(userid, len(items), volatile_session)
     if positions:
-        process_mapstat(positions, session, userid=userid)
+        process_mapstat(positions, volatile_session, userid=userid)
 
 
 @celery.task(base=DatabaseTask, bind=True)
@@ -230,13 +230,18 @@ def insert_measures(self, items=None, nickname=''):
     length = len(items)
 
     try:
-        with self.db_session() as session:
-            userid, nickname = process_user(nickname, session)
+        with self.archival_db_session() as a_session:
+            with self.volatile_db_session() as v_session:
+                userid, nickname = process_user(nickname, v_session)
 
-            process_measures(items, session, userid=userid)
-            self.heka_client.incr("items.uploaded.batches", count=length)
+                process_measures(items,
+                                 archival_session=a_session,
+                                 volatile_session=v_session,
+                                 userid=userid)
+                self.heka_client.incr("items.uploaded.batches", count=length)
 
-            session.commit()
+                a_session.commit()
+                v_session.commit()
         return length
     except IntegrityError as exc:  # pragma: no cover
         self.heka_client.raven('error')
@@ -332,7 +337,7 @@ def update_cell_measure_count(cell_key, count, utcnow, session):
     return new_cell
 
 
-def process_cell_measures(session, entries, userid=None,
+def process_cell_measures(entries, archival_session, volatile_session, userid=None,
                           max_measures_per_cell=11000):
     cell_count = defaultdict(int)
     cell_measures = []
@@ -357,7 +362,7 @@ def process_cell_measures(session, entries, userid=None,
         # check if there's space for new measurement within per-cell maximum
         # note: old measures gradually expire, so this is an intake-rate limit
         if cell_key not in space_available:
-            query = session.query(Cell.total_measures).filter(
+            query = volatile_session.query(Cell.total_measures).filter(
                 Cell.radio == cell_key.radio,
                 Cell.mcc == cell_key.mcc,
                 Cell.mnc == cell_key.mnc,
@@ -378,7 +383,7 @@ def process_cell_measures(session, entries, userid=None,
 
         # Possibly drop measure if we're receiving them too
         # quickly for this cell.
-        query = session.query(Cell.total_measures).filter(
+        query = volatile_session.query(Cell.total_measures).filter(
             Cell.radio == cell_measure.radio,
             Cell.mcc == cell_measure.mcc,
             Cell.mnc == cell_measure.mnc,
@@ -409,15 +414,15 @@ def process_cell_measures(session, entries, userid=None,
     new_cells = 0
     for cell_key, count in cell_count.items():
         new_cells += update_cell_measure_count(
-            cell_key, count, utcnow, session)
+            cell_key, count, utcnow, volatile_session)
 
     # update user score
     if userid is not None and new_cells > 0:
-        process_score(userid, new_cells, session, key='new_cell')
+        process_score(userid, new_cells, volatile_session, key='new_cell')
 
     heka_client.incr("items.inserted.cell_measures",
                      count=len(cell_measures))
-    session.add_all(cell_measures)
+    archival_session.add_all(cell_measures)
     return cell_measures
 
 
@@ -426,13 +431,17 @@ def insert_cell_measures(self, entries, userid=None,
                          max_measures_per_cell=11000):
     try:
         cell_measures = []
-        with self.db_session() as session:
-            cell_measures = process_cell_measures(
-                session, entries,
-                userid=userid,
-                max_measures_per_cell=max_measures_per_cell)
-            session.commit()
-        return len(cell_measures)
+        with self.archival_db_session() as a_session:
+            with self.volatile_db_session() as v_session:
+                cell_measures = process_cell_measures(
+                    entries,
+                    archival_session=a_session,
+                    volatile_session=v_session,
+                    userid=userid,
+                    max_measures_per_cell=max_measures_per_cell)
+                a_session.commit()
+                v_session.commit()
+                return len(cell_measures)
     except IntegrityError as exc:  # pragma: no cover
         self.heka_client.raven('error')
         return 0
@@ -468,7 +477,10 @@ def create_wifi_measure(utcnow, entry):
     )
 
 
-def process_wifi_measures(session, entries, userid=None,
+def process_wifi_measures(entries,
+                          archival_session,
+                          volatile_session,
+                          userid=None,
                           max_measures_per_wifi=11000):
     wifi_measures = []
     wifi_count = defaultdict(int)
@@ -477,7 +489,7 @@ def process_wifi_measures(session, entries, userid=None,
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
 
     # did we get measures for blacklisted wifis?
-    blacked = session.query(WifiBlacklist.key).filter(
+    blacked = volatile_session.query(WifiBlacklist.key).filter(
         WifiBlacklist.key.in_(wifi_keys)).all()
     blacked = set([b[0] for b in blacked])
 
@@ -491,7 +503,7 @@ def process_wifi_measures(session, entries, userid=None,
         # check if there's space for new measurement within per-AP maximum
         # note: old measures gradually expire, so this is an intake-rate limit
         if wifi_key not in space_available:
-            query = session.query(Wifi.total_measures).filter(
+            query = volatile_session.query(Wifi.total_measures).filter(
                 Wifi.key == wifi_key)
             curr = query.first()
             if curr is not None:
@@ -523,14 +535,15 @@ def process_wifi_measures(session, entries, userid=None,
         # do we already know about any wifis?
         white_keys = wifi_keys - blacked
         if white_keys:
-            wifis = session.query(Wifi.key).filter(Wifi.key.in_(white_keys))
+            wifis = volatile_session.query(Wifi.key).filter(
+                Wifi.key.in_(white_keys))
             wifis = dict([(w[0], True) for w in wifis.all()])
         else:
             wifis = {}
         # subtract known wifis from all unique wifis
         new_wifis = len(wifi_count) - len(wifis)
         if new_wifis > 0:
-            process_score(userid, new_wifis, session, key='new_wifi')
+            process_score(userid, new_wifis, volatile_session, key='new_wifi')
 
     # update new/total measure counts
     for wifi_key, num in wifi_count.items():
@@ -540,11 +553,11 @@ def process_wifi_measures(session, entries, userid=None,
         ).values(
             key=wifi_key, created=utcnow,
             new_measures=num, total_measures=num)
-        session.execute(stmt)
+        volatile_session.execute(stmt)
 
     heka_client.incr("items.inserted.wifi_measures",
                      count=len(wifi_measures))
-    session.add_all(wifi_measures)
+    archival_session.add_all(wifi_measures)
     return wifi_measures
 
 
@@ -553,13 +566,17 @@ def insert_wifi_measures(self, entries, userid=None,
                          max_measures_per_wifi=11000):
     wifi_measures = []
     try:
-        with self.db_session() as session:
-            wifi_measures = process_wifi_measures(
-                session, entries,
-                userid=userid,
-                max_measures_per_wifi=max_measures_per_wifi)
-            session.commit()
-        return len(wifi_measures)
+        with self.archival_db_session() as a_session:
+            with self.volatile_db_session() as v_session:
+                wifi_measures = process_wifi_measures(
+                    entries,
+                    archival_session=a_session,
+                    volatile_session=v_session,
+                    userid=userid,
+                    max_measures_per_wifi=max_measures_per_wifi)
+                a_session.commit()
+                v_session.commit()
+                return len(wifi_measures)
     except IntegrityError as exc:  # pragma: no cover
         self.heka_client.raven('error')
         return 0

@@ -14,8 +14,9 @@ class TestDatabase(DBTestCase):
             self.volatile_db_session.bind.engine is self.volatile_db.engine)
 
     def test_table_creation(self):
-        session = self.archival_db_session
-        result = session.execute('select * from cell;')
+        a_session = self.archival_db_session
+        v_session = self.volatile_db_session
+        result = v_session.execute('select * from cell;')
         self.assertTrue(result.first() is None)
-        result = session.execute('select * from measure;')
+        result = a_session.execute('select * from measure;')
         self.assertTrue(result.first() is None)

@@ -10,7 +10,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.mysql import INTEGER as Integer
 
-from ichnaea.db import _Model
+from ichnaea.db import _VolatileModel
 
 SCORE_TYPE = {
     'location': 0,
@@ -40,7 +40,7 @@ MAPSTAT_TYPE = {
 MAPSTAT_TYPE_INVERSE = dict((v, k) for k, v in MAPSTAT_TYPE.items())
 
 
-class MapStat(_Model):
+class MapStat(_VolatileModel):
     __tablename__ = 'mapstat'
     __table_args__ = (
         PrimaryKeyConstraint('key', 'lat', 'lon'),
@@ -64,7 +64,7 @@ class MapStat(_Model):
 mapstat_table = MapStat.__table__
 
 
-class Score(_Model):
+class Score(_VolatileModel):
     __tablename__ = 'score'
     __table_args__ = (
         UniqueConstraint('userid', 'key', 'time',
@@ -99,7 +99,7 @@ class Score(_Model):
 score_table = Score.__table__
 
 
-class Stat(_Model):
+class Stat(_VolatileModel):
     __tablename__ = 'stat'
     __table_args__ = (
         UniqueConstraint('key', 'time', name='stat_key_time_unique'),
@@ -128,7 +128,7 @@ class Stat(_Model):
 stat_table = Stat.__table__
 
 
-class User(_Model):
+class User(_VolatileModel):
     __tablename__ = 'user'
     __table_args__ = (
         UniqueConstraint('nickname', name='user_nickname_unique'),

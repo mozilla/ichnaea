@@ -7,7 +7,7 @@ from unittest2 import TestCase
 from webtest import TestApp
 
 from ichnaea import main
-from ichnaea.db import _Model
+from ichnaea.db import _VolatileModel, _ArchivalModel
 from ichnaea.db import Database
 from ichnaea.geoip import configure_geoip
 from ichnaea.heka_logging import configure_heka
@@ -21,16 +21,19 @@ except ImportError:
     from unittest import TestCase
 
 
-SQLURI = os.environ.get('SQLURI')
-SQLSOCKET = os.environ.get('SQLSOCKET')
+SQLURI_ARCHIVAL = os.environ.get('SQLURI_ARCHIVAL')
+SQLURI_VOLATILE = os.environ.get('SQLURI_VOLATILE')
+SQLSOCKET_ARCHIVAL = os.environ.get('SQLSOCKET_ARCHIVAL')
+SQLSOCKET_VOLATILE = os.environ.get('SQLSOCKET_VOLATILE')
 
 
-def _make_db(uri=SQLURI, socket=SQLSOCKET, create=True):
-    return Database(uri, socket=socket, create=create, model_class=_Model)
+def _make_db(model_base, uri, socket, create=True):
+    return Database(uri, model_base, socket=socket, create=create)
 
 
 def _make_app(_archival_db=None, _volatile_db=None, **settings):
-    wsgiapp = main({}, _archival_db=_archival_db, _volatile_db=_volatile_db, **settings)
+    wsgiapp = main({}, _archival_db=_archival_db, _volatile_db=_volatile_db,
+                   **settings)
     return TestApp(wsgiapp)
 
 
@@ -70,8 +73,10 @@ class DBIsolation(object):
 
     @classmethod
     def setup_engine(cls):
-        cls.archival_db = _make_db()
-        cls.volatile_db = _make_db(create=False)
+        cls.archival_db = _make_db(_ArchivalModel,
+                                   SQLURI_ARCHIVAL, SQLSOCKET_ARCHIVAL)
+        cls.volatile_db = _make_db(_VolatileModel,
+                                   SQLURI_VOLATILE, SQLSOCKET_VOLATILE)
 
     @classmethod
     def teardown_engine(cls):
@@ -83,7 +88,8 @@ class DBIsolation(object):
     def cleanup(self, engine):
         with engine.connect() as conn:
             trans = conn.begin()
-            _Model.metadata.drop_all(engine)
+            _ArchivalModel.metadata.drop_all(engine)
+            _VolatileModel.metadata.drop_all(engine)
             trans.commit()
 
 
@@ -91,11 +97,14 @@ class CeleryIsolation(object):
 
     @classmethod
     def attach_database(cls):
-        attach_database(celery, cls.archival_db)
+        attach_database(celery,
+                        _archival_db=cls.archival_db,
+                        _volatile_db=cls.volatile_db)
 
     @classmethod
     def detach_database(cls):
         del celery.archival_db
+        del celery.volatile_db
 
 
 class HekaIsolation(object):

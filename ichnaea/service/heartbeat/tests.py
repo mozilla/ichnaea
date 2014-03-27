@@ -1,3 +1,4 @@
+from ichnaea.db import _VolatileModel, _ArchivalModel
 from ichnaea.tests.base import (
     _make_db,
     AppTestCase,
@@ -20,9 +21,16 @@ class TestDatabaseHeartbeat(AppTestCase):
         # its own class to avoid isolation problems
         app = self.app
 
-        # create a database connection to the discard port
+        # create database connections to the discard ports
         self.app.app.registry.volatile_db = _make_db(
-            uri='mysql+pymysql://none:none@127.0.0.1:9/test_location',
+            _VolatileModel,
+            uri='mysql+pymysql://none:none@127.0.0.1:9/test_location_volatile',
+            socket=None,
+            create=False,
+        )
+        self.app.app.registry.archival_db = _make_db(
+            _ArchivalModel,
+            uri='mysql+pymysql://none:none@127.0.0.1:9/test_location_archival',
             socket=None,
             create=False,
         )

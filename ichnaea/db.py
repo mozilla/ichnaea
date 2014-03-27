@@ -6,7 +6,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.expression import Insert
 from sqlalchemy.orm import sessionmaker
 
-_Model = declarative_base()
+_VolatileModel = declarative_base()
+_ArchivalModel = declarative_base()
 
 
 @compiles(Insert)
@@ -74,7 +75,7 @@ def db_tween_factory(handler, registry):
 
 class Database(object):
 
-    def __init__(self, uri, model_class=_Model,
+    def __init__(self, uri, model_base,
                  socket=None, create=True, echo=False,
                  isolation_level='REPEATABLE READ'):
         options = {
@@ -97,7 +98,7 @@ class Database(object):
         if create:
             with self.engine.connect() as conn:
                 trans = conn.begin()
-                model_class.metadata.create_all(self.engine)
+                model_base.metadata.create_all(self.engine)
                 trans.commit()
 
     def session(self):

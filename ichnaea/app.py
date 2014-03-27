@@ -2,7 +2,7 @@ from pyramid.config import Configurator
 from pyramid.tweens import EXCVIEW
 
 from ichnaea import decimaljson
-from ichnaea.db import Database, _Model
+from ichnaea.db import Database, _ArchivalModel, _VolatileModel
 from ichnaea.db import archival_db_session
 from ichnaea.db import volatile_db_session
 from ichnaea.geoip import configure_geoip
@@ -27,16 +27,16 @@ def main(global_config, _archival_db=None, _volatile_db=None, **settings):
     if _archival_db is None:
         config.registry.archival_db = Database(
             settings['archival_db_url'],
+            _ArchivalModel,
             socket=settings.get('archival_db_socket'),
-            model_class=_Model,
         )
     else:
         config.registry.archival_db = _archival_db
     if _volatile_db is None:
         config.registry.volatile_db = Database(
             settings['volatile_db_url'],
+            _VolatileModel,
             socket=settings.get('volatile_db_socket'),
-            model_class=_Model,
             create=False,
         )
     else:

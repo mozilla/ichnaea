@@ -112,9 +112,13 @@ class DatabaseTask(Task):
 
         return super(DatabaseTask, self).apply(*args, **kw)
 
-    def db_session(self):
+    def archival_db_session(self):
         # returns a context manager
         return db_worker_session(self.app.archival_db)
+
+    def volatile_db_session(self):
+        # returns a context manager
+        return db_worker_session(self.app.volatile_db)
 
     @property
     def heka_client(self):
@@ -132,7 +136,7 @@ def daily_task_days(ago):
 def remove_wifi(self, wifi_keys):
     wifi_keys = set(wifi_keys)
     try:
-        with self.db_session() as session:
+        with self.volatile_db_session() as session:
             query = session.query(Wifi).filter(
                 Wifi.key.in_(wifi_keys))
             wifis = query.delete(synchronize_session=False)
@@ -149,7 +153,7 @@ def remove_wifi(self, wifi_keys):
 def remove_cell(self, cell_keys):
     cells_removed = 0
     try:
-        with self.db_session() as session:
+        with self.volatile_db_session() as session:
             for k in cell_keys:
                 key = to_cellkey(k)
                 query = session.query(Cell).filter(*join_cellkey(Cell, key))
@@ -246,36 +250,39 @@ def backfill_cell_location_update(self, new_cell_measures):
     try:
         cells = []
         new_cell_measures = dict(new_cell_measures)
-        with self.db_session() as session:
-            for tower_tuple, cell_measure_ids in new_cell_measures.items():
-                query = session.query(Cell).filter(
-                    *join_cellkey(Cell, CellKey(*tower_tuple)))
-                cells = query.all()
+        with self.archival_db_session() as a_session:
+            with self.volatile_db_session() as v_session:
 
-                if not cells:
-                    # This case shouldn't actually occur. The
-                    # backfill_cell_location_update is only called
-                    # when CellMeasure records are matched against
-                    # known Cell records.
-                    continue
+                for tower_tuple, cell_measure_ids in new_cell_measures.items():
+                    query = v_session.query(Cell).filter(
+                        *join_cellkey(Cell, CellKey(*tower_tuple)))
+                    cells = query.all()
 
-                moving_cells = set()
-                for cell in cells:
-                    measures = session.query(  # NOQA
-                        CellMeasure.lat, CellMeasure.lon).filter(
-                        CellMeasure.id.in_(cell_measure_ids)).all()
+                    if not cells:
+                        # This case shouldn't actually occur. The
+                        # backfill_cell_location_update is only called
+                        # when CellMeasure records are matched against
+                        # known Cell records.
+                        continue
 
-                    if measures:
-                        calculate_new_position(cell, measures, moving_cells,
-                                               CELL_MAX_DIST_KM,
-                                               backfill=True)
+                    moving_cells = set()
+                    for cell in cells:
+                        measures = a_session.query(  # NOQA
+                            CellMeasure.lat, CellMeasure.lon).filter(
+                            CellMeasure.id.in_(cell_measure_ids)).all()
 
-                if moving_cells:
-                    # some cells found to be moving too much
-                    mark_moving_cells(session, moving_cells)
+                        if measures:
+                            calculate_new_position(cell, measures,
+                                                   moving_cells,
+                                                   CELL_MAX_DIST_KM,
+                                                   backfill=True)
 
-            session.commit()
-        return (len(cells), len(moving_cells))
+                    if moving_cells:
+                        # some cells found to be moving too much
+                        mark_moving_cells(v_session, moving_cells)
+
+                v_session.commit()
+            return (len(cells), len(moving_cells))
     except IntegrityError as exc:  # pragma: no cover
         self.heka_client.raven('error')
         return 0
@@ -288,39 +295,40 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
 
     try:
         cells = []
-        with self.db_session() as session:
-            query = session.query(Cell).filter(
-                Cell.new_measures >= min_new).filter(
-                Cell.new_measures < max_new).limit(batch)
-            cells = query.all()
-            if not cells:
-                return 0
-            moving_cells = set()
-            for cell in cells:
-                # skip cells with a missing lac/cid
-                if cell.lac == -1 or cell.cid == -1:
-                    continue
+        with self.archival_db_session() as a_session:
+            with self.volatile_db_session() as v_session:
+                query = v_session.query(Cell).filter(
+                    Cell.new_measures >= min_new).filter(
+                    Cell.new_measures < max_new).limit(batch)
+                cells = query.all()
+                if not cells:
+                    return 0
+                moving_cells = set()
+                for cell in cells:
+                    # skip cells with a missing lac/cid
+                    if cell.lac == -1 or cell.cid == -1:
+                        continue
 
-                query = session.query(
-                    CellMeasure.lat, CellMeasure.lon).filter(
-                    *join_cellkey(CellMeasure, cell))
-                # only take the last X new_measures
-                query = query.order_by(
-                    CellMeasure.created.desc()).limit(
-                    cell.new_measures)
-                measures = query.all()
+                    query = a_session.query(
+                        CellMeasure.lat, CellMeasure.lon).filter(
+                        *join_cellkey(CellMeasure, cell))
+                    # only take the last X new_measures
+                    query = query.order_by(
+                        CellMeasure.created.desc()).limit(
+                        cell.new_measures)
+                    measures = query.all()
 
-                if measures:
-                    calculate_new_position(cell, measures, moving_cells,
-                                           CELL_MAX_DIST_KM,
-                                           backfill=False)
+                    if measures:
+                        calculate_new_position(cell, measures, moving_cells,
+                                               CELL_MAX_DIST_KM,
+                                               backfill=False)
 
-            if moving_cells:
-                # some cells found to be moving too much
-                mark_moving_cells(session, moving_cells)
+                if moving_cells:
+                    # some cells found to be moving too much
+                    mark_moving_cells(v_session, moving_cells)
 
-            session.commit()
-        return (len(cells), len(moving_cells))
+                v_session.commit()
+            return (len(cells), len(moving_cells))
     except IntegrityError as exc:  # pragma: no cover
         self.heka_client.raven('error')
         return 0
@@ -373,31 +381,33 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
 
     try:
         wifis = {}
-        with self.db_session() as session:
-            query = session.query(Wifi.key, Wifi).filter(
-                Wifi.new_measures >= min_new).filter(
-                Wifi.new_measures < max_new).limit(batch)
-            wifis = dict(query.all())
-            if not wifis:
-                return 0
-            moving_wifis = set()
-            for wifi_key, wifi in wifis.items():
-                # only take the last X new_measures
-                measures = session.query(
-                    WifiMeasure.lat, WifiMeasure.lon).filter(
-                    WifiMeasure.key == wifi_key).order_by(
-                    WifiMeasure.created.desc()).limit(
-                    wifi.new_measures).all()
-                if measures:
-                    calculate_new_position(wifi, measures, moving_wifis,
-                                           WIFI_MAX_DIST_KM, backfill=False)
+        with self.archival_db_session() as a_session:
+            with self.volatile_db_session() as v_session:
+                query = v_session.query(Wifi.key, Wifi).filter(
+                    Wifi.new_measures >= min_new).filter(
+                    Wifi.new_measures < max_new).limit(batch)
+                wifis = dict(query.all())
+                if not wifis:
+                    return 0
+                moving_wifis = set()
+                for wifi_key, wifi in wifis.items():
+                    # only take the last X new_measures
+                    measures = a_session.query(
+                        WifiMeasure.lat, WifiMeasure.lon).filter(
+                        WifiMeasure.key == wifi_key).order_by(
+                        WifiMeasure.created.desc()).limit(
+                        wifi.new_measures).all()
+                    if measures:
+                        calculate_new_position(wifi, measures, moving_wifis,
+                                               WIFI_MAX_DIST_KM,
+                                               backfill=False)
 
-            if moving_wifis:
-                # some wifis found to be moving too much
-                mark_moving_wifis(session, moving_wifis)
+                if moving_wifis:
+                    # some wifis found to be moving too much
+                    mark_moving_wifis(v_session, moving_wifis)
 
-            session.commit()
-        return (len(wifis), len(moving_wifis))
+                v_session.commit()
+            return (len(wifis), len(moving_wifis))
     except IntegrityError as exc:  # pragma: no cover
         self.heka_client.raven('error')
         return 0
@@ -405,7 +415,8 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
         raise self.retry(exc=exc)
 
 
-def trim_excessive_data(session, unique_model, measure_model,
+def trim_excessive_data(v_session, a_session,
+                        unique_model, measure_model,
                         join_measure, delstat, max_measures,
                         min_age_days, batch):
     """
@@ -429,7 +440,7 @@ def trim_excessive_data(session, unique_model, measure_model,
     # initial (fast) query to pull out those uniques that have
     # total_measures larger than max_measures; will refine this
     # set of keys subsequently by date-window.
-    query = session.query(unique_model).filter(
+    query = v_session.query(unique_model).filter(
         unique_model.total_measures > max_measures).limit(batch)
     uniques = query.all()
     counts = []
@@ -439,7 +450,7 @@ def trim_excessive_data(session, unique_model, measure_model,
     # date-window.
     for u in uniques:
 
-        query = session.query(func.count(measure_model.id)).filter(
+        query = a_session.query(func.count(measure_model.id)).filter(
             *join_measure(u)).filter(
             age_cond)
 
@@ -459,7 +470,7 @@ def trim_excessive_data(session, unique_model, measure_model,
         # determine the oldest measure (smallest (date,id) pair) to
         # keep for each key
         start = count - max_measures
-        (smallest_date_to_keep, smallest_id_to_keep) = session.query(
+        (smallest_date_to_keep, smallest_id_to_keep) = a_session.query(
             measure_model.time, measure_model.id).filter(
             *join_measure(u)).filter(
             age_cond).order_by(
@@ -467,7 +478,7 @@ def trim_excessive_data(session, unique_model, measure_model,
 
         # delete measures with (date,id) less than that, so long as they're
         # older than the date window.
-        n = session.query(
+        n = a_session.query(
             measure_model).filter(
             *join_measure(u)).filter(
             age_cond).filter(
@@ -477,27 +488,30 @@ def trim_excessive_data(session, unique_model, measure_model,
         # decrement model.total_measures; increment stats[delstat]
         assert u.total_measures >= 0
         u.total_measures -= n
-        incr_stat(session, delstat, n)
+        incr_stat(v_session, delstat, n)
 
-    session.commit()
+    a_session.commit()
+    v_session.commit()
     return n
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def wifi_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
     try:
-        with self.db_session() as session:
-            join_measure = lambda u: (WifiMeasure.key == u.key, )
+        with self.archival_db_session() as a_session:
+            with self.volatile_db_session() as v_session:
+                join_measure = lambda u: (WifiMeasure.key == u.key, )
 
-            n = trim_excessive_data(session=session,
-                                    unique_model=Wifi,
-                                    measure_model=WifiMeasure,
-                                    join_measure=join_measure,
-                                    delstat='deleted_wifi',
-                                    max_measures=max_measures,
-                                    min_age_days=min_age_days,
-                                    batch=batch)
-            self.heka_client.incr("items.dropped.wifi_trim_excessive", n)
+                n = trim_excessive_data(a_session=a_session,
+                                        v_session=v_session,
+                                        unique_model=Wifi,
+                                        measure_model=WifiMeasure,
+                                        join_measure=join_measure,
+                                        delstat='deleted_wifi',
+                                        max_measures=max_measures,
+                                        min_age_days=min_age_days,
+                                        batch=batch)
+                self.heka_client.incr("items.dropped.wifi_trim_excessive", n)
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
 
@@ -505,17 +519,19 @@ def wifi_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
 @celery.task(base=DatabaseTask, bind=True)
 def cell_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
     try:
-        with self.db_session() as session:
-            join_measure = lambda u: join_cellkey(CellMeasure, u)
+        with self.archival_db_session() as a_session:
+            with self.volatile_db_session() as v_session:
+                join_measure = lambda u: join_cellkey(CellMeasure, u)
 
-            n = trim_excessive_data(session=session,
-                                    unique_model=Cell,
-                                    measure_model=CellMeasure,
-                                    join_measure=join_measure,
-                                    delstat='deleted_cell',
-                                    max_measures=max_measures,
-                                    min_age_days=min_age_days,
-                                    batch=batch)
-            self.heka_client.incr("items.dropped.cell_trim_excessive", n)
+                n = trim_excessive_data(a_session=a_session,
+                                        v_session=v_session,
+                                        unique_model=Cell,
+                                        measure_model=CellMeasure,
+                                        join_measure=join_measure,
+                                        delstat='deleted_cell',
+                                        max_measures=max_measures,
+                                        min_age_days=min_age_days,
+                                        batch=batch)
+                self.heka_client.incr("items.dropped.cell_trim_excessive", n)
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)

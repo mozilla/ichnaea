@@ -263,7 +263,7 @@ class TestSubmit(CeleryAppTestCase):
 
     def test_mapstat(self):
         app = self.app
-        session = self.archival_db_session
+        session = self.volatile_db_session
         key_10m = MAPSTAT_TYPE['location']
         key_100m = MAPSTAT_TYPE['location_100m']
         session.add_all([
@@ -336,7 +336,7 @@ class TestSubmit(CeleryAppTestCase):
             ]},
             headers={'X-Nickname': nickname},
             status=204)
-        session = self.archival_db_session
+        session = self.volatile_db_session
         result = session.query(User).all()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
@@ -362,7 +362,7 @@ class TestSubmit(CeleryAppTestCase):
             ]},
             headers={'X-Nickname': "a"},
             status=204)
-        session = self.archival_db_session
+        session = self.volatile_db_session
         result = session.query(User).all()
         self.assertEqual(len(result), 0)
         result = session.query(Score).all()
@@ -372,7 +372,7 @@ class TestSubmit(CeleryAppTestCase):
         app = self.app
         nickname = 'World Tr\xc3\xa4veler'
         utcday = datetime.utcnow().date()
-        session = self.archival_db_session
+        session = self.volatile_db_session
         user = User(nickname=nickname.decode('utf-8'))
         session.add(user)
         session.flush()

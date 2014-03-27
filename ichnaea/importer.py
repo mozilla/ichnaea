@@ -6,7 +6,7 @@ import sys
 from colander import iso8601
 
 from ichnaea import config
-from ichnaea.db import Database, _Model
+from ichnaea.db import Database, _ArchivalModel, _VolatileModel
 from ichnaea.models import (
     normalize_wifi_key,
     valid_wifi_pattern,
@@ -14,7 +14,7 @@ from ichnaea.models import (
 from ichnaea.service.submit.tasks import process_measures
 
 
-def load_file(session, source_file, batch_size=100, userid=None):
+def load_file(a_session, v_session, source_file, batch_size=100, userid=None):
     utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
     utcmin = utcnow - datetime.timedelta(120)
 
@@ -69,20 +69,28 @@ def load_file(session, source_file, batch_size=100, userid=None):
 
             # flush every batch_size records
             if counter % batch_size == 0:
-                process_measures(items, session, userid=userid)
+                process_measures(items,
+                                 archival_session=a_session,
+                                 volatile_session=v_session,
+                                 userid=userid)
                 items = []
-                session.flush()
+                a_session.flush()
+                v_session.flush()
                 print('Added %s records.' % counter)
 
     # process the remaining items
-    process_measures(items, session, userid=userid)
+    process_measures(items,
+                     archival_session=a_session,
+                     volatile_session=v_session,
+                     userid=userid)
     print('Added %s records.' % counter)
 
-    session.flush()
+    a_session.flush()
+    v_session.flush()
     return counter
 
 
-def main(argv, _archival_db=None):
+def main(argv, _archival_db=None, _volatile_db=None):
     parser = argparse.ArgumentParser(
         prog=argv[0], description='Location Importer')
 
@@ -99,18 +107,32 @@ def main(argv, _archival_db=None):
 
     # configure databases incl. test override hooks
     if _archival_db is None:
-        db = Database(
+        a_db = Database(
             settings['archival_db_url'],
+            _ArchivalModel,
             socket=settings.get('archival_db_socket'),
             create=False,
-            model_class=_Model,
         )
     else:
-        db = _archival_db
-    session = db.session()
-    added = load_file(session, args.source, userid=userid)
+        a_db = _archival_db
+
+    # configure databases incl. test override hooks
+    if _volatile_db is None:
+        v_db = Database(
+            settings['volatile_db_url'],
+            _VolatileModel,
+            socket=settings.get('volatile_db_socket'),
+            create=False,
+        )
+    else:
+        v_db = _volatile_db
+
+    a_session = a_db.session()
+    v_session = v_db.session()
+    added = load_file(a_session, v_session, args.source, userid=userid)
     print('Added a total of %s records.' % added)
-    session.commit()
+    a_session.commit()
+    v_session.commit()
     return added
 
 
