@@ -142,7 +142,7 @@ def search_view(request):
         extra_checks=(check_cell_or_wifi, ),
     )
 
-    session = request.db_slave_session
+    session = request.volatile_db_session
     result = None
 
     if data['wifi']:

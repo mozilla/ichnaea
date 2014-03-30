@@ -18,7 +18,8 @@ class TestStats(CeleryTestCase):
 
     def test_cell_histogram(self):
         from ichnaea.content.tasks import cell_histogram
-        session = self.db_master_session
+        a_session = self.archival_db_session
+        v_session = self.volatile_db_session
         today = datetime.utcnow().date()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
@@ -32,12 +33,12 @@ class TestStats(CeleryTestCase):
             CellMeasure(lat=10000000, lon=20000000, created=two_days),
             CellMeasure(lat=10000000, lon=20000000, created=long_ago),
         ]
-        session.add_all(measures)
-        session.commit()
+        a_session.add_all(measures)
+        a_session.commit()
 
         cell_histogram.delay(ago=3).get()
 
-        stats = session.query(Stat).order_by(Stat.time).all()
+        stats = v_session.query(Stat).order_by(Stat.time).all()
         self.assertEqual(len(stats), 1)
         self.assertEqual(stats[0].key, STAT_TYPE['cell'])
         self.assertEqual(stats[0].time, long_ago)
@@ -51,7 +52,7 @@ class TestStats(CeleryTestCase):
         # test duplicate execution
         cell_histogram.delay(ago=1).get()
 
-        stats = session.query(Stat).order_by(Stat.time).all()
+        stats = v_session.query(Stat).order_by(Stat.time).all()
         self.assertEqual(len(stats), 4)
         self.assertEqual(stats[0].time, long_ago)
         self.assertEqual(stats[0].value, 1)
@@ -64,7 +65,7 @@ class TestStats(CeleryTestCase):
 
     def test_unique_cell_histogram(self):
         from ichnaea.content.tasks import unique_cell_histogram
-        session = self.db_master_session
+        session = self.volatile_db_session
         today = datetime.utcnow().date()
         one_day = (today - timedelta(1))
         two_days = (today - timedelta(2))
@@ -110,7 +111,8 @@ class TestStats(CeleryTestCase):
 
     def test_wifi_histogram(self):
         from ichnaea.content.tasks import wifi_histogram
-        session = self.db_master_session
+        a_session = self.archival_db_session
+        v_session = self.volatile_db_session
         today = datetime.utcnow().date()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
@@ -124,12 +126,12 @@ class TestStats(CeleryTestCase):
             WifiMeasure(lat=10000000, lon=20000000, created=two_days),
             WifiMeasure(lat=10000000, lon=20000000, created=long_ago),
         ]
-        session.add_all(measures)
-        session.commit()
+        a_session.add_all(measures)
+        a_session.commit()
 
         wifi_histogram.delay(ago=3).get()
 
-        stats = session.query(Stat).order_by(Stat.time).all()
+        stats = v_session.query(Stat).order_by(Stat.time).all()
         self.assertEqual(len(stats), 1)
         self.assertEqual(stats[0].key, STAT_TYPE['wifi'])
         self.assertEqual(stats[0].time, long_ago)
@@ -143,7 +145,7 @@ class TestStats(CeleryTestCase):
         # test duplicate execution
         wifi_histogram.delay(ago=1).get()
 
-        stats = session.query(Stat).order_by(Stat.time).all()
+        stats = v_session.query(Stat).order_by(Stat.time).all()
         self.assertEqual(len(stats), 4)
         self.assertEqual(stats[0].time, long_ago)
         self.assertEqual(stats[0].value, 1)
@@ -156,7 +158,7 @@ class TestStats(CeleryTestCase):
 
     def test_unique_wifi_histogram(self):
         from ichnaea.content.tasks import unique_wifi_histogram
-        session = self.db_master_session
+        session = self.volatile_db_session
         today = datetime.utcnow().date()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
@@ -212,7 +214,7 @@ class TestStats(CeleryTestCase):
         and copy forward each day's stat to the next day, as they go.
         """
         from ichnaea.content.tasks import incr_stat, get_curr_stat
-        session = self.db_master_session
+        session = self.volatile_db_session
         today = datetime.utcnow().date()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))

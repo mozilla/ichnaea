@@ -12,7 +12,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import INTEGER as Integer
 from sqlalchemy.dialects.mysql import BIGINT as BigInteger
 
-from ichnaea.db import _Model
+from ichnaea.db import _VolatileModel, _ArchivalModel
 
 # Latitudes and longitudes are stored as degrees * 10**7,
 # or equivalently: as an integer count of 1E-7ths of a degree.
@@ -54,7 +54,7 @@ def normalize_wifi_key(key):
     return key.lower()
 
 
-class Cell(_Model):
+class Cell(_VolatileModel):
     __tablename__ = 'cell'
     __table_args__ = (
         UniqueConstraint(
@@ -111,7 +111,7 @@ class Cell(_Model):
 cell_table = Cell.__table__
 
 
-class CellBlacklist(_Model):
+class CellBlacklist(_VolatileModel):
     __tablename__ = 'cell_blacklist'
     __table_args__ = (
         UniqueConstraint('radio', 'mcc', 'mnc', 'lac', 'cid',
@@ -136,7 +136,7 @@ class CellBlacklist(_Model):
         super(CellBlacklist, self).__init__(*args, **kw)
 
 
-class CellMeasure(_Model):
+class CellMeasure(_ArchivalModel):
     __tablename__ = 'cell_measure'
     __table_args__ = (
         Index('cell_measure_created_idx', 'created'),
@@ -181,7 +181,7 @@ class CellMeasure(_Model):
 cell_measure_table = CellMeasure.__table__
 
 
-class Wifi(_Model):
+class Wifi(_VolatileModel):
     __tablename__ = 'wifi'
     __table_args__ = (
         UniqueConstraint('key', name='wifi_key_unique'),
@@ -224,7 +224,7 @@ class Wifi(_Model):
 wifi_table = Wifi.__table__
 
 
-class WifiBlacklist(_Model):
+class WifiBlacklist(_VolatileModel):
     __tablename__ = 'wifi_blacklist'
     __table_args__ = (
         UniqueConstraint('key', name='wifi_blacklist_key_unique'),
@@ -244,7 +244,7 @@ class WifiBlacklist(_Model):
         super(WifiBlacklist, self).__init__(*args, **kw)
 
 
-class WifiMeasure(_Model):
+class WifiMeasure(_ArchivalModel):
     __tablename__ = 'wifi_measure'
     __table_args__ = (
         Index('wifi_measure_created_idx', 'created'),
@@ -283,7 +283,7 @@ class WifiMeasure(_Model):
 wifi_measure_table = WifiMeasure.__table__
 
 
-class Measure(_Model):
+class Measure(_ArchivalModel):
     __tablename__ = 'measure'
     __table_args__ = {
         'mysql_engine': 'InnoDB',

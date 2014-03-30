@@ -9,12 +9,15 @@ TRAVIS ?= false
 
 BUILD_DIRS = bin build dist include lib lib64 man node_modules share
 
-MYSQL_TEST_DB = test_location
+MYSQL_TEST_ARCHIVAL_DB = test_location_archival
+MYSQL_TEST_VOLATILE_DB = test_location_volatile
 ifeq ($(TRAVIS), true)
 	MYSQL_USER ?= travis
 	MYSQL_PWD ?=
-	SQLURI ?= mysql+pymysql://$(MYSQL_USER)@localhost/$(MYSQL_TEST_DB)
-	SQLSOCKET ?=
+	SQLURI_ARCHIVAL ?= mysql+pymysql://$(MYSQL_USER)@localhost/$(MYSQL_TEST_ARCHIVAL_DB)
+	SQLURI_VOLATILE ?= mysql+pymysql://$(MYSQL_USER)@localhost/$(MYSQL_TEST_VOLATILE_DB)
+	SQLSOCKET_ARCHIVAL ?=
+	SQLSOCKET_VOLATILE ?=
 
 	PYTHON = python
 	PIP = pip
@@ -23,8 +26,10 @@ ifeq ($(TRAVIS), true)
 else
 	MYSQL_USER ?= root
 	MYSQL_PWD ?= mysql
-	SQLURI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@localhost/$(MYSQL_TEST_DB)
-	SQLSOCKET ?= /opt/local/var/run/mysql56/mysqld.sock
+	SQLURI_ARCHIVAL ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@localhost/$(MYSQL_TEST_ARCHIVAL_DB)
+	SQLURI_VOLATILE ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@localhost/$(MYSQL_TEST_VOLATILE_DB)
+	SQLSOCKET_ARCHIVAL ?= /opt/local/var/run/mysql56/mysqld.sock
+	SQLSOCKET_VOLATILE ?= /opt/local/var/run/mysql56/mysqld.sock
 endif
 
 .PHONY: all js test docs mysql
@@ -33,10 +38,13 @@ all: build
 
 mysql:
 ifeq ($(TRAVIS), true)
-	mysql -u$(MYSQL_USER) -h localhost -e "create database $(MYSQL_TEST_DB)"
+	mysql -u$(MYSQL_USER) -h localhost -e "create database $(MYSQL_TEST_ARCHIVAL_DB)"
+	mysql -u$(MYSQL_USER) -h localhost -e "create database $(MYSQL_TEST_VOLATILE_DB)"
 else
 	mysql -u$(MYSQL_USER) -p$(MYSQL_PWD) -h localhost -e \
-		"create database $(MYSQL_TEST_DB)" || echo
+		"create database $(MYSQL_TEST_ARCHIVAL_DB)" || echo
+	mysql -u$(MYSQL_USER) -p$(MYSQL_PWD) -h localhost -e \
+		"create database $(MYSQL_TEST_VOLATILE_DB)" || echo
 endif
 
 node_modules:
@@ -81,7 +89,11 @@ clean:
 	rm -rf $(HERE)/ichnaea.egg-info
 
 test: mysql
-	SQLURI=$(SQLURI) SQLSOCKET=$(SQLSOCKET) CELERY_ALWAYS_EAGER=true \
+	SQLURI_ARCHIVAL=$(SQLURI_ARCHIVAL) \
+	SQLURI_VOLATILE=$(SQLURI_VOLATILE) \
+	SQLSOCKET_ARCHIVAL=$(SQLSOCKET_ARCHIVAL) \
+	SQLSOCKET_VOLATILE=$(SQLSOCKET_VOLATILE) \
+	CELERY_ALWAYS_EAGER=true \
 	$(NOSE) -s -d -v --with-coverage --cover-package ichnaea ichnaea
 
 bin/sphinx-build:

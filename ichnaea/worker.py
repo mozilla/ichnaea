@@ -7,7 +7,7 @@ from celery.signals import worker_process_init
 from celery.schedules import crontab
 
 from ichnaea import config
-from ichnaea.db import Database
+from ichnaea.db import Database, _ArchivalModel, _VolatileModel
 from ichnaea.heka_logging import configure_heka
 
 
@@ -86,17 +86,28 @@ CELERYBEAT_SCHEDULE = {
 celery = Celery('ichnaea.worker')
 
 
-def attach_database(app, _db_master=None):
+def attach_database(app, _archival_db=None, _volatile_db=None):
     # called manually during tests
     settings = config().get_map('ichnaea')
-    if _db_master is None:  # pragma: no cover
-        db_master = Database(
-            settings['db_master'],
-            socket=settings.get('db_master_socket'),
+    if _archival_db is None:  # pragma: no cover
+        archival_db = Database(
+            settings['archival_db_url'],
+            _ArchivalModel,
+            socket=settings.get('archival_db_socket'),
         )
     else:
-        db_master = _db_master
-    app.db_master = db_master
+        archival_db = _archival_db
+    app.archival_db = archival_db
+
+    if _volatile_db is None:  # pragma: no cover
+        volatile_db = Database(
+            settings['volatile_db_url'],
+            _VolatileModel,
+            socket=settings.get('volatile_db_socket'),
+        )
+    else:
+        volatile_db = _volatile_db
+    app.volatile_db = volatile_db
 
 
 @worker_process_init.connect
@@ -124,8 +135,8 @@ def configure(celery=celery):
     }
 
     # testing overrides
-    sqluri = os.environ.get('SQLURI', '')
-    sqlsocket = os.environ.get('SQLSOCKET', '')
+    sqluri = os.environ.get('SQLURI_VOLATILE', '')
+    sqlsocket = os.environ.get('SQLSOCKET_VOLATILE', '')
 
     if sqluri:
         broker_url = sqluri

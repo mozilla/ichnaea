@@ -14,7 +14,7 @@ def do_backfill(self):
     Find all cell (mcc, mnc, psc) 3-tuples that are missing lac,
     cid and spin up celery tasks to update cells.
     """
-    with self.db_session() as session:
+    with self.archival_db_session() as session:
         stmt = text("""
                 select
                     radio, mcc, mnc, psc
@@ -35,48 +35,51 @@ def do_backfill(self):
 @celery.task(base=DatabaseTask, bind=True)
 def update_tower(self, radio, mcc, mnc, psc):
     rows_updated = 0
-    with self.db_session() as session:
-        centroids = compute_matching_towers(session, radio, mcc, mnc, psc)
+    with self.archival_db_session() as a_session:
+        with self.volatile_db_session() as v_session:
+            centroids = compute_matching_towers(v_session,
+                                                radio, mcc, mnc, psc)
 
-        if centroids == []:
-            return
+            if centroids == []:
+                return
 
-        tower_proxy = compute_missing_towers(session, radio, mcc, mnc, psc)
+            tower_proxy = compute_missing_towers(a_session,
+                                                 radio, mcc, mnc, psc)
 
-        new_cell_measures = defaultdict(set)
-        for missing_tower in tower_proxy:
-            matching_tower = _nearest_tower(missing_tower['lat'],
-                                            missing_tower['lon'],
-                                            centroids)
-            if matching_tower:
-                lac = matching_tower['pt']['lac']
-                cid = matching_tower['pt']['cid']
-                tower_tuple = (radio, mcc, mnc, lac, cid)
+            new_cell_measures = defaultdict(set)
+            for missing_tower in tower_proxy:
+                matching_tower = _nearest_tower(missing_tower['lat'],
+                                                missing_tower['lon'],
+                                                centroids)
+                if matching_tower:
+                    lac = matching_tower['pt']['lac']
+                    cid = matching_tower['pt']['cid']
+                    tower_tuple = (radio, mcc, mnc, lac, cid)
 
-                stmt = text("""
-                update
-                    cell_measure
-                set
-                    lac = :lac,
-                    cid = :cid
-                where
-                  id = :id
-                """).bindparams(lac=lac, cid=cid, id=missing_tower['id'])
+                    stmt = text("""
+                    update
+                        cell_measure
+                    set
+                        lac = :lac,
+                        cid = :cid
+                    where
+                      id = :id
+                    """).bindparams(lac=lac, cid=cid, id=missing_tower['id'])
 
-                new_cell_measures[tower_tuple].add(missing_tower['id'])
+                    new_cell_measures[tower_tuple].add(missing_tower['id'])
 
-                result_proxy = session.execute(stmt)
-                rows_updated += result_proxy.rowcount
-        session.commit()
+                    result_proxy = a_session.execute(stmt)
+                    rows_updated += result_proxy.rowcount
+            a_session.commit()
 
-        # convert new_cell_measures to a JSON friendly representation
-        task_arguments = []
-        for k, v in new_cell_measures.items():
-            task_arguments.append((k, list(v)))
+            # convert new_cell_measures to a JSON friendly representation
+            task_arguments = []
+            for k, v in new_cell_measures.items():
+                task_arguments.append((k, list(v)))
 
-        # Update the cell tower locations with the newly backfilled
-        # measurements now
-        backfill_cell_location_update.delay(task_arguments)
+            # Update the cell tower locations with the newly backfilled
+            # measurements now
+            backfill_cell_location_update.delay(task_arguments)
 
     return rows_updated
 

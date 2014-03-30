@@ -19,7 +19,7 @@ class TestStats(DBTestCase):
 
     def test_global_stats(self):
         from ichnaea.content.stats import global_stats
-        session = self.db_master_session
+        session = self.volatile_db_session
         day = datetime.utcnow().date() - timedelta(1)
         stats = [
             Stat(key=STAT_TYPE['cell'], time=day, value=6100000),
@@ -39,7 +39,7 @@ class TestStats(DBTestCase):
 
     def test_global_stats_missing_today(self):
         from ichnaea.content.stats import global_stats
-        session = self.db_master_session
+        session = self.volatile_db_session
         day = datetime.utcnow().date() - timedelta(1)
         yesterday = day - timedelta(days=1)
         stats = [
@@ -60,7 +60,7 @@ class TestStats(DBTestCase):
 
     def test_histogram(self):
         from ichnaea.content.stats import histogram
-        session = self.db_master_session
+        session = self.volatile_db_session
         today = datetime.utcnow().date()
         one_day = (today - timedelta(1)).strftime('%Y-%m-%d')
         two_days = (today - timedelta(2)).strftime('%Y-%m-%d')
@@ -84,7 +84,7 @@ class TestStats(DBTestCase):
 
     def test_histogram_different_stat_name(self):
         from ichnaea.content.stats import histogram
-        session = self.db_master_session
+        session = self.volatile_db_session
         day = datetime.utcnow().date() - timedelta(1)
         day = day.strftime('%Y-%m-%d')
         stat = Stat(time=day, value=9)
@@ -96,7 +96,7 @@ class TestStats(DBTestCase):
 
     def test_leaders(self):
         from ichnaea.content.stats import leaders
-        session = self.db_master_session
+        session = self.volatile_db_session
         test_data = []
         for i in range(20):
             test_data.append((u'nick-%s' % i, 7))
@@ -122,7 +122,7 @@ class TestStats(DBTestCase):
 
     def test_countries(self):
         from ichnaea.content.stats import countries
-        session = self.db_master_session
+        session = self.volatile_db_session
         test_data = [
             Cell(radio=RADIO_TYPE[''], mcc=208, mnc=1),
             Cell(radio=RADIO_TYPE['gsm'], mcc=1, mnc=1),

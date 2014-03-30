@@ -77,11 +77,12 @@ def get_curr_stat(session, name, date=None):
 def cell_histogram(self, ago=1):
     day, max_day = daily_task_days(ago)
     try:
-        with self.db_session() as session:
-            value = histogram_query(session, CellMeasure, day, max_day)
-            add_stat(session, 'cell', day, value)
-            session.commit()
-            return 1
+        with self.archival_db_session() as a_session:
+            with self.volatile_db_session() as v_session:
+                value = histogram_query(a_session, CellMeasure, day, max_day)
+                add_stat(v_session, 'cell', day, value)
+                v_session.commit()
+                return 1
     except IntegrityError as exc:
         self.heka_client.raven('error')
         return 0
@@ -93,11 +94,12 @@ def cell_histogram(self, ago=1):
 def wifi_histogram(self, ago=1):
     day, max_day = daily_task_days(ago)
     try:
-        with self.db_session() as session:
-            value = histogram_query(session, WifiMeasure, day, max_day)
-            add_stat(session, 'wifi', day, value)
-            session.commit()
-            return 1
+        with self.archival_db_session() as a_session:
+            with self.volatile_db_session() as v_session:
+                value = histogram_query(a_session, WifiMeasure, day, max_day)
+                add_stat(v_session, 'wifi', day, value)
+                v_session.commit()
+                return 1
     except IntegrityError as exc:
         self.heka_client.raven('error')
         return 0
@@ -109,7 +111,7 @@ def wifi_histogram(self, ago=1):
 def unique_cell_histogram(self, ago=1):
     day, max_day = daily_task_days(ago)
     try:
-        with self.db_session() as session:
+        with self.volatile_db_session() as session:
             value = histogram_query(session, Cell, day, max_day)
             add_stat(session, 'unique_cell', day, value)
             session.commit()
@@ -125,7 +127,7 @@ def unique_cell_histogram(self, ago=1):
 def unique_wifi_histogram(self, ago=1):
     day, max_day = daily_task_days(ago)
     try:
-        with self.db_session() as session:
+        with self.volatile_db_session() as session:
             value = histogram_query(session, Wifi, day, max_day)
             add_stat(session, 'unique_wifi', day, value)
             session.commit()

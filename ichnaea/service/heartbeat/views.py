@@ -15,7 +15,7 @@ def configure_heartbeat(config):
 @view_config(renderer='json', name="__heartbeat__")
 def heartbeat_view(request):
     try:
-        session = request.db_slave_session
+        session = request.volatile_db_session
         conn = session.connection()
         if conn.execute(select([func.now()])).first() is None:
             return HTTPServiceUnavailable()

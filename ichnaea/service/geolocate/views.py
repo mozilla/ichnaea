@@ -125,7 +125,7 @@ def geolocate_view(request):
         response=JSONError,
     )
 
-    session = request.db_slave_session
+    session = request.volatile_db_session
     result = None
 
     if data['wifiAccessPoints']:

@@ -90,7 +90,7 @@ class ContentViews(Layout):
     @view_config(renderer='templates/leaders.pt',
                  name="leaders", http_cache=300)
     def leaders_view(self):
-        session = self.request.db_slave_session
+        session = self.request.volatile_db_session
         result = list(enumerate(leaders(session)))
         result = [
             {
@@ -114,19 +114,19 @@ class ContentViews(Layout):
     @view_config(
         renderer='json', name="stats_unique_cell.json", http_cache=3600)
     def stats_unique_cell_json(self):
-        session = self.request.db_slave_session
+        session = self.request.volatile_db_session
         return {'histogram': histogram(session, 'unique_cell')}
 
     @view_config(
         renderer='json', name="stats_unique_wifi.json", http_cache=3600)
     def stats_unique_wifi_json(self):
-        session = self.request.db_slave_session
+        session = self.request.volatile_db_session
         return {'histogram': histogram(session, 'unique_wifi')}
 
     @view_config(renderer='templates/stats.pt',
                  route_name="stats", http_cache=3600)
     def stats_view(self):
-        session = self.request.db_slave_session
+        session = self.request.volatile_db_session
         result = {'leaders': [], 'metrics': [], 'page_title': 'Statistics'}
         metrics = global_stats(session)
         metric_names = [
@@ -142,7 +142,7 @@ class ContentViews(Layout):
     @view_config(renderer='templates/stats_countries.pt',
                  route_name="stats_countries", http_cache=3600)
     def stats_countries_view(self):
-        session = self.request.db_slave_session
+        session = self.request.volatile_db_session
         result = {'page_title': 'Cell Statistics'}
         result['metrics'] = countries(session)
         return result

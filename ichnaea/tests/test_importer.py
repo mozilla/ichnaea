@@ -28,19 +28,21 @@ class TestLoadFile(CeleryTestCase):
 
     def test_no_lines(self):
         func, tmpfile = self._make_one()
-        counter = func(self.db_master_session, tmpfile[1])
+        counter = func(self.archival_db_session,
+                       self.volatile_db_session,
+                       tmpfile[1])
         self.assertEqual(counter, 0)
 
     def test_one_line(self):
         func, tmpfile = self._make_one()
-        session = self.db_master_session
+        a_session = self.archival_db_session
         today = datetime.utcnow().date()
 
         os.write(tmpfile[0], LINE)
-        counter = func(self.db_master_session, tmpfile[1])
+        counter = func(a_session, self.volatile_db_session, tmpfile[1])
         self.assertEqual(counter, 1)
 
-        measures = session.query(WifiMeasure).all()
+        measures = a_session.query(WifiMeasure).all()
         self.assertEqual(len(measures), 1)
         measure = measures[0]
         self.assertEqual(measure.lat, 378719300)
@@ -59,27 +61,31 @@ class TestLoadFile(CeleryTestCase):
         os.write(tmpfile[0], LINE)
         os.write(tmpfile[0], '\n1' + LINE)
         os.write(tmpfile[0], '\n2' + LINE)
-        counter = func(self.db_master_session, tmpfile[1], batch_size=2)
+        counter = func(self.archival_db_session,
+                       self.volatile_db_session,
+                       tmpfile[1], batch_size=2)
         self.assertEqual(counter, 3)
 
     def test_userid(self):
         func, tmpfile = self._make_one()
-        session = self.db_master_session
+        a_session = self.archival_db_session
+        v_session = self.volatile_db_session
         user = User(nickname='test'.decode('ascii'))
-        session.add(user)
-        session.flush()
+        v_session.add(user)
+        v_session.flush()
         userid = user.id
         os.write(tmpfile[0], LINE)
         os.write(tmpfile[0], '\n1' + LINE)
         os.write(tmpfile[0], '\n2' + LINE)
-        counter = func(session, tmpfile[1], batch_size=2, userid=userid)
+        counter = func(a_session, v_session, tmpfile[1],
+                       batch_size=2, userid=userid)
         self.assertEqual(counter, 3)
         # test user scores and mapstat
-        scores = session.query(Score).filter(Score.userid == userid).all()
+        scores = v_session.query(Score).filter(Score.userid == userid).all()
         scores = dict([(SCORE_TYPE_INVERSE[s.key], s.value) for s in scores])
         self.assertEqual(
             scores, {'new_location': 1, 'new_wifi': 1, 'location': 3})
-        mapstats = session.query(MapStat).filter(
+        mapstats = v_session.query(MapStat).filter(
             MapStat.key == MAPSTAT_TYPE['location']).all()
         mapstats = [(m.lat, m.lon, m.value) for m in mapstats]
         self.assertEqual(mapstats, [(378719, -1222732, 3)])
@@ -90,7 +96,7 @@ class TestLoadFile(CeleryTestCase):
         os.write(tmpfile[0], '3\t\\N\n')
         os.write(tmpfile[0], '4\t\\N\tabc\n')
         os.write(tmpfile[0], '5\t\\N\t1.0\t2.1\tabc\n')
-        counter = func(self.db_master_session, tmpfile[1])
+        counter = func(self.archival_db_session, self.volatile_db_session, tmpfile[1])
         self.assertEqual(counter, 1)
 
 
@@ -103,11 +109,14 @@ class TestMain(CeleryTestCase):
 
     def test_main(self):
         data, func = self._make_one()
-        counter = func(['main', data[1]], _db_master=self.db_master)
+        counter = func(['main', data[1]],
+                       _archival_db=self.archival_db,
+                       _volatile_db=self.volatile_db)
         self.assertEqual(counter, 0)
 
     def test_main_userid(self):
         data, func = self._make_one()
         counter = func(['main', data[1], '--userid=1'],
-                       _db_master=self.db_master)
+                       _archival_db=self.archival_db,
+                       _volatile_db=self.volatile_db)
         self.assertEqual(counter, 0)
