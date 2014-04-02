@@ -34,7 +34,7 @@ loads-runner --check-cluster --broker=tcp://loads.services.mozilla.com:7780
 
 ---
 
-The longer version:
+The longer version if you have to use CloudFormation:
 
 You'll first need to clone the mozilla-services/svcops repository
 from:
@@ -107,17 +107,4 @@ the settings
 Find your ELB instance and add that to your loadtest_env.sh script
 
 You should now be able to run the load tests from your single loads
-node using:
-
-    ```
-    . ./loadtest_env.sh
-    make query_cell
-    ```
-
-To run your tests against the loads cluster, you'll need to have your
-ssh keys added to the loads cluster.
-
-Invoking tests against the loads cluster is a manual process right
-now. Just add the `--ssh username@loads-host` argument to your
-loads-runner invocation and your load test should run against the
-cluster.
+node using make.

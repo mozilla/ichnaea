@@ -16,6 +16,9 @@ mysql:
 submit_cell:
 	loads-runner --config submit_cell.ini
 
+submit_wifi:
+	loads-runner --config submit_wifi.ini
+
 query_cell:
 	loads-runner --config query_cell.ini
 
