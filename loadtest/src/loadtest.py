@@ -81,7 +81,7 @@ def generate_data():
         ap_data = pickle.load(open(AP_FILE))
         tower_data = pickle.load(open(TOWER_FILE))
 
-    return tower_data, ap_data
+    return tower_data.items(), ap_data.items()
 
 
 class TestIchnaea(TestCase):
@@ -91,7 +91,6 @@ class TestIchnaea(TestCase):
     def setUp(self):
         if self.TOWER_DATA is None:
             self.TOWER_DATA, self.AP_DATA = generate_data()
-            self.TOWER_DATA, self.AP_DATA = self.TOWER_DATA.items(), self.AP_DATA.items()
 
     def test_submit_cell_data(self):
         """
