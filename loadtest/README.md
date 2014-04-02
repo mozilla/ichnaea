@@ -4,17 +4,12 @@ The short version:
 
 1. Get a new devstack running.
 2. Spin up an EC2 instance to initiate load tests.
-3. Edit loadtest_env.sh and setup the host name for your RDS and Webapp
-   instances in loadtest_env.sh.
-4. Setup your environment variables, install database fixtures and run
-   the load test:
-
+3. Install your MySQL fixture data
     ```
-    . ./loadtest_env.sh
-    make install_fixtures
+    MYSQL_HOST="your_rds_endpoint_here" make install_fixtures
     ```
 
-Run the two submission tests:
+4. Run the two submission tests:
 
     ```
     make submit_cell
@@ -28,9 +23,6 @@ Run the query tests:
     make query_wifi
     make query_cell_mixed
     ```
-
-Running against a loads cluster :
-loads-runner --check-cluster --broker=tcp://loads.services.mozilla.com:7780
 
 ---
 
