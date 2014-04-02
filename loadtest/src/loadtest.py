@@ -14,6 +14,9 @@ import pickle
 import random
 from ConfigParser import SafeConfigParser
 
+
+random.seed(32314)
+
 cfg = SafeConfigParser()
 cfg.read(os.path.join('src', 'ichnaea.ini'))
 
@@ -24,11 +27,15 @@ HOST = 'https://' + cfg.get('loadtest', 'WEBAPP_HOST')
 TESTING_AP_SUBSET = TESTING_CELL_SUBSET = 10000
 
 
+def rand_bytes(length):
+    return ''.join(chr(random.randint(0, 255)) for _ in range(length))
+
+
 def random_ap():
     for channel in range(1, 12):
         for frequency in range(1, 5000):
             for signal in range(-50, 0):
-                key = binascii.b2a_hex(os.urandom(15))[:12]
+                key = binascii.b2a_hex(rand_bytes(15))[:12]
                 key = ':'.join(key[i:i+2] for i in range(0, len(key), 2))
                 yield {"key": key,
                        "channel": random.randint(1, 12),
