@@ -18,6 +18,5 @@ blackout_redis:
 
 delay_redis:
 	vaurien --proxy 0.0.0.0:9379  --backend 0.0.0.0:6379 --protocol redis --behavior 100:delay --behavior-delay-sleep 1
-
 hang_redis:
 	vaurien --proxy 0.0.0.0:9379  --backend 0.0.0.0:6379 --protocol redis --behavior 100:hang

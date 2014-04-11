@@ -65,8 +65,6 @@ Redis:
               slow connections, but we need to verify so that we aren't
               open to slowloris attacks
 
-
-
 Mysql:
 
     * failure/blackout
@@ -77,12 +75,12 @@ Mysql:
               queued on redis
     * delay
         * with search api
-            * 200 responses come back slowly.  Need to do a load test
+            * 204 responses come back slowly.  Need to do a load test
             * to see if this opens us up to a slowloris attack.
         * with submit api
-            # TODO:
+            * 204 responses come back immediately. 
     * hang connections
         * with search api
-            # TODO:
+            * no impact. only 204 errors.
         * with submit api
-            # TODO:
+            * 500 errors recover into 204 just fine
