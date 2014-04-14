@@ -14,6 +14,7 @@ import pickle
 import random
 from ConfigParser import SafeConfigParser
 
+INVALID_WIFI_KEY = 'aa:aa:aa:aa:aa:aa'
 
 random.seed(32314)
 
@@ -177,7 +178,7 @@ class TestIchnaea(TestCase):
             wifi_data = ap_data[:3]
             if random.random() >= 0.5:
                 # Throw in some garbage
-                wifi_data.append({'key': 'aa:aa:aa:aa:aa:aa'})
+                wifi_data.append({'key': INVALID_WIFI_KEY})
             jdata = json.dumps({'wifi': wifi_data})
             res = self.session.post(HOST+'/v1/search?key=test', jdata)
 
