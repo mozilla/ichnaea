@@ -1,27 +1,47 @@
 You'll need to get Vaurien from the master branch off of github:
 
-Repo: https://github.com/mozilla-services/vaurien
+    make install_vaurien
 
-Mocking out MySQL:
 
-    make chaos_mysql
+Then start up ichnaea and your vaurien proxies using:
 
-Mocking out redis:
+    make start_ichnaea
+    make mysql_vaurien
+    make redis_vaurien
 
-    make chaos_redis
+
+The vaurien proxies can be instruments to be in one of 3 modes: dummy,
+delay or blackout.
+
+    make blackout_mysql
+    make blackout_redis
+
+    make delay_mysql
+    make delay_redis
+
+    make dummy_mysql
+    make dummy_redis
+
+The dummy mode is a plain proxy, delay will delay packets by 1 second,
+and blackout will not pass any traffic through to the backend.
+
+Observing the behavior of ichnaea can be done by running:
+
+    make run_submit
+    make run_search
+
+
+----------
 
 Notes:
-    
+
 * Adding just a 0.01 second delay to mysql causes the test runs to
   go from 6 seconds to 106 seconds on my laptop.
-* 
 
 Recovery behaviour:
 
     * black holes
     * delays
-    * dropped connections
-
 
 Redis:
 
@@ -42,9 +62,11 @@ Redis:
                         raise ConnectionError(self._error_message(e))
                     ConnectionError: Error 24 connecting 127.0.0.1:6379. Too many open
                     files.
-            * subsequent test runs - ichnaea recovered gracefully
+            * subsequent test runs, i got the expected results -
+              client stalls, but ichnaea recovered gracefully when
+              goes back to dummy mode
         * With search API
-            * no effect. 200 all the time.
+            * no effect. 204 all the time.
         * reproducing this test.
             * doesn't seem reproducible
             * i ran a FLUSHALL on the redis queue, maybe i had some
@@ -52,35 +74,22 @@ Redis:
             * ichnaea
     * delay
         * search api:
-            * No effect. 200 success everytime.
+            * No effect. 204 success everytime.
         * submit api:
             * vaurien yells a lot. Clients properly get 500 errors, and
               system recovers when delay goes away
-    * hang connections
-        * Search api:
-            * No effect. 200 success everytime.
-        * submit api:
-            * client stalls.
-            * Pretty sure that ops has nginx configured to drop
-              slow connections, but we need to verify so that we aren't
-              open to slowloris attacks
 
 Mysql:
 
     * failure/blackout
         * with search api
-            * 500 errors on blackout, 200 when blackout terminates
+            * 500 errors on blackout, 204 when blackout terminates
         * with submit api
-            * 200 success all the time which makes sense, data is just
+            * 204 success all the time which makes sense, data is just
               queued on redis
     * delay
         * with search api
             * 204 responses come back slowly.  Need to do a load test
             * to see if this opens us up to a slowloris attack.
         * with submit api
-            * 204 responses come back immediately. 
-    * hang connections
-        * with search api
-            * no impact. only 204 errors.
-        * with submit api
-            * 500 errors recover into 204 just fine
+            * no effect 204 responses come back immediately.
