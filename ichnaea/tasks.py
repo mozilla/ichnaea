@@ -64,6 +64,10 @@ def join_cellkey(model, k):
             model.cid == k.cid)
 
 
+def get_heka_client():
+    return get_client('ichnaea')
+
+
 class DatabaseTask(Task):
     abstract = True
     acks_late = False
@@ -519,3 +523,63 @@ def cell_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
             self.heka_client.incr("items.dropped.cell_trim_excessive", n)
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def read_database_gauges(self):
+    try:
+        with self.db_session() as session:
+
+            def gauge(name, q):
+                v = q.all()
+                if v is None:
+                    v = 0
+                else:
+                    v = v[0]
+                self.heka_client.gauge(name, v)
+
+            def count_model(model):
+                return session.query(func.count(model))
+
+            gauge("gauges.models.Cell", count_model(Cell.id))
+            gauge("gauges.models.CellBlacklist", count_model(CellBlacklist.id))
+            gauge("gauges.models.CellMeasure", count_model(CellMeasure.id))
+            gauge("gauges.models.Wifi", count_model(Wifi.id))
+            gauge("gauges.models.WifiBlacklist", count_model(WifiBlacklist.id))
+            gauge("gauges.models.WifiMeasure", count_model(WifiMeasure.id))
+
+    except Exception as exc:  # pragma: no cover
+        raise self.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def read_psutil_gauges(self):
+    import psutil
+    import platform
+
+    node = platform.node()
+
+    def gauge(name, v):
+        self.heka_client.gauge("gauges.system.%s.%s" % (node, name), v)
+
+    gauge("cpu_percent", psutil.cpu_percent())
+
+    vm = psutil.virtual_memory()
+    gauge("mem_used", vm.used)
+    gauge("mem_percent", vm.percent)
+
+    du = psutil.disk_usage('/')
+    gauge("disk_used", du.used)
+    gauge("disk_percent", du.percent)
+
+    nio = psutil.net_io_counters()
+    gauge("net_bytes_sent", nio.bytes_sent)
+    gauge("net_bytes_recv", nio.bytes_recv)
+    gauge("net_errin", nio.errin)
+    gauge("net_errout", nio.errout)
+
+    dio = psutil.disk_io_counters()
+    gauge("disk_read_bytes", dio.read_bytes)
+    gauge("disk_write_bytes", dio.write_bytes)
+    gauge("disk_read_time", dio.read_time)
+    gauge("disk_write_time", dio.write_time)

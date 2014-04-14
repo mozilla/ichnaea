@@ -75,6 +75,18 @@ CELERYBEAT_SCHEDULE = {
         'args': (10000, 3, 2000),
         'options': {'expires': 21407},
     },
+    'continuous-database-gauges': {
+        'task': 'ichnaea.tasks.read_database_gauges',
+        'schedule': timedelta(seconds=3713),  # about an hour
+        'args': (),
+        'options': {'expires': 3239},
+    },
+    'continuous-psutil-gauges': {
+        'task': 'ichnaea.tasks.read_psutil_gauges',
+        'schedule': timedelta(seconds=371),  # 7 * 53
+        'args': (),
+        'options': {'expires': 265},
+    },
 
     # TODO: start scheduling this once we handled the backlog
     # 'backfill-celltower-info': {

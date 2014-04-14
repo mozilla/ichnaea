@@ -32,7 +32,7 @@ from ichnaea.decimaljson import (
 )
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.submit.utils import process_score
-from ichnaea.tasks import DatabaseTask
+from ichnaea.tasks import DatabaseTask, get_heka_client
 from ichnaea.worker import celery
 
 
