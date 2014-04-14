@@ -5,7 +5,7 @@ decoder = "ProtobufDecoder"
 
 [GeneralCounterFilter]
 type="StatFilter"
-stat_accum_input = "StatAccumulator"
+stat_accum_name = "StatAccumulator"
 message_matcher = 'Type == "counter" && Fields[name] != "http.request"'
 
 [GeneralCounterFilter.Metric.hits]
@@ -25,7 +25,7 @@ value = "%Payload%"
 
 [GeneralTimingFilter]
 type="StatFilter"
-stat_accum_input = "StatAccumulator"
+stat_accum_name = "StatAccumulator"
 message_matcher = 'Type == "timer" && Fields[name] != "http.request"'
 
 [GeneralTimingFilter.Metric.timing]
@@ -35,7 +35,7 @@ value = "%Payload%"
 
 [RequestCountFilter]
 type="StatFilter"
-stat_accum_input = "StatAccumulator"
+stat_accum_name = "StatAccumulator"
 message_matcher = 'Type == "counter" && Fields[name] == "http.request"'
 
 [RequestCountFilter.Metric.hits]
@@ -45,7 +45,7 @@ value = "%Payload%"
 
 [RequestTimingFilter]
 type="StatFilter"
-stat_accum_input = "StatAccumulator"
+stat_accum_name = "StatAccumulator"
 message_matcher = 'Type == "timer" && Fields[name] == "http.request"'
 
 [RequestTimingFilter.Metric.timing]
