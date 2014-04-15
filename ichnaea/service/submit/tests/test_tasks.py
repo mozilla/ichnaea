@@ -1,7 +1,10 @@
+import base64
 from datetime import (
     datetime,
     timedelta,
 )
+import json
+import zlib
 
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy import text
@@ -425,5 +428,13 @@ class TestSubmitErrors(CeleryTestCase):
             self.fail("Unexpected exception caught: %s" % repr(exc))
 
         find_msg = self.find_heka_messages
-        self.assertEquals(
-            len(find_msg('sentry', RAVEN_ERROR, field_name='msg')), 1)
+        messages = find_msg('sentry', RAVEN_ERROR, field_name='msg')
+        self.assertEquals(len(messages), 1)
+
+        payload = messages[0].payload
+        # duplicate raven.base.RavenClient.decode
+        data = json.loads(zlib.decompress(base64.b64decode(payload)))
+        sentry_exc = data['sentry.interfaces.Exception']
+
+        self.assertEqual(sentry_exc['module'], ProgrammingError.__module__)
+        self.assertEqual(sentry_exc['type'], 'ProgrammingError')
