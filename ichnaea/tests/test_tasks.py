@@ -418,6 +418,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         for k in keys:
             kargs = kinit(k)
             measures.append(unique_model(lat=(m1 + m2) / 2, lon=(m1 + m2) / 2,
+                                         new_measures=measures_per_key,
                                          total_measures=measures_per_key * 2,
                                          **kargs))
             kargs['created'] = backdate
@@ -451,6 +452,10 @@ class TestWifiLocationUpdate(CeleryTestCase):
                                         m.lat == m2 + i and
                                         kcmp(m, k)
                                         for m in measures))
+
+            stations = session.query(unique_model).all()
+            for s in stations:
+                self.assertTrue(s.new_measures <= s.total_measures)
 
             # check that the deletion stat was updated
             self.assertEqual(get_curr_stat(session, delstat),

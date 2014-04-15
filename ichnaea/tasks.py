@@ -477,6 +477,10 @@ def trim_excessive_data(session, unique_model, measure_model,
         # decrement model.total_measures; increment stats[delstat]
         assert u.total_measures >= 0
         u.total_measures -= n
+        # if there's a lot of unprocessed new measures, forget them
+        # and only retain the ones we still have the underlying measures for
+        if u.new_measures > u.total_measures:
+            u.new_measures = u.total_measures
         incr_stat(session, delstat, n)
 
     session.commit()
