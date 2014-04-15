@@ -65,10 +65,10 @@ class TestFunctionalContent(AppTestCase):
     def test_not_found(self):
         self.app.get('/nobody-is-home', status=404)
 
-        # We should have caught at least one error here
+        # No tracebacks for 404's
         find_msg = self.find_heka_messages
         self.assertEquals(
-            len(find_msg('sentry', RAVEN_ERROR, field_name='msg')), 1)
+            len(find_msg('sentry', RAVEN_ERROR, field_name='msg')), 0)
 
         # No counters for URLs that are invalid
         self.assertEquals(

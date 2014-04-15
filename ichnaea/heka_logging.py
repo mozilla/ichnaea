@@ -2,6 +2,7 @@ from StringIO import StringIO
 
 from heka.config import client_from_text_config
 from heka.holder import get_client
+from pyramid.httpexceptions import HTTPNotFound
 
 from ichnaea import config
 from ichnaea.exceptions import BaseJSONError
@@ -42,8 +43,8 @@ def heka_tween_factory(handler, registry):
                                         fields={'url_path': request.path}):
             try:
                 response = handler(request)
-            except BaseJSONError:
-                # don't send client JSON errors via raven
+            except (BaseJSONError, HTTPNotFound):
+                # don't send client JSON errors or not founds via raven
                 raise
             except Exception:
                 registry.heka_client.raven(RAVEN_ERROR)
