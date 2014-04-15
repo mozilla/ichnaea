@@ -325,3 +325,9 @@ class TestSearchErrors(AppTestCase):
         find_msg = self.find_heka_messages
         self.assertEquals(
             len(find_msg('sentry', RAVEN_ERROR, field_name='msg')), 1)
+
+        self.assertEquals(
+            len(find_msg('counter', 'http.request')), 1)
+
+        self.assertEquals(
+            len(find_msg('timer', 'http.request')), 1)

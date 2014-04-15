@@ -74,6 +74,10 @@ class TestFunctionalContent(AppTestCase):
         self.assertEquals(
             len(find_msg('counter', 'http.request')), 0)
 
+        # No timers for invalid urls either
+        self.assertEquals(
+            len(find_msg('timer', 'http.request')), 0)
+
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)
 

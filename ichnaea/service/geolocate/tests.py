@@ -1,9 +1,11 @@
+import json
+
 from ichnaea.models import (
     Cell,
     Wifi,
 )
+from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.tests.base import AppTestCase
-import json
 
 
 class TestGeolocate(AppTestCase):
@@ -91,6 +93,16 @@ class TestGeolocate(AppTestCase):
 
         find_msg = self.find_heka_messages
         self.assertEqual(1, len(find_msg('counter', 'geolocate.api_key.test')))
+
+        # Make sure to get a counter and timer but no traceback
+        self.assertEquals(
+            len(find_msg('counter', 'http.request')), 1)
+
+        self.assertEquals(
+            len(find_msg('timer', 'http.request')), 1)
+
+        self.assertEquals(
+            len(find_msg('sentry', RAVEN_ERROR, field_name='msg')), 0)
 
     def test_geoip_fallback(self):
         app = self.app
