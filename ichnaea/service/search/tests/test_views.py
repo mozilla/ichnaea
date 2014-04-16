@@ -8,6 +8,7 @@ from ichnaea.models import (
     Wifi,
 )
 from ichnaea.tests.base import AppTestCase
+import random
 
 
 class TestSearch(AppTestCase):
@@ -140,6 +141,94 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0010000, "lon": 1.0020000,
+                                    "accuracy": 500})
+
+    def test_wifi_prefer_cluster_with_better_signals(self):
+        app = self.app
+        session = self.db_slave_session
+        wifis = [
+            Wifi(key="A1", lat=10000000, lon=10000000),
+            Wifi(key="B2", lat=10010000, lon=10020000),
+            Wifi(key="C3", lat=10020000, lon=10040000),
+            Wifi(key="D4", lat=20000000, lon=20000000),
+            Wifi(key="E5", lat=20010000, lon=20020000),
+            Wifi(key="F6", lat=20020000, lon=20040000),
+        ]
+        session.add_all(wifis)
+        session.commit()
+        res = app.post_json('/v1/search?key=test',
+                            {"wifi": [
+                                {"key": "A1", "signal": -100},
+                                {"key": "D4", "signal": -80},
+                                {"key": "B2", "signal": -100},
+                                {"key": "E5", "signal": -90},
+                                {"key": "C3", "signal": -100},
+                                {"key": "F6", "signal": -54},
+                            ]},
+                            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {"status": "ok",
+                                    "lat": 2.0010000, "lon": 2.0020000,
+                                    "accuracy": 500})
+
+    def test_wifi_find_sparse_high_signal_cluster(self):
+        app = self.app
+        session = self.db_slave_session
+        wifis = [Wifi(key="A%d" % i,
+                      lat=10000000 + i * 100,
+                      lon=10000000 + i * 120)
+                 for i in range(0, 100)]
+        wifis += [
+            Wifi(key="D4", lat=20000000, lon=20000000),
+            Wifi(key="E5", lat=20010000, lon=20020000),
+            Wifi(key="F6", lat=20020000, lon=20040000),
+        ]
+        session.add_all(wifis)
+        session.commit()
+        measures = [dict(key="A%d" % i,
+                         signal=-80)
+                    for i in range(0, 100)]
+        measures += [
+            dict(key="D4", signal=-75),
+            dict(key="E5", signal=-74),
+            dict(key="F6", signal=-73)
+        ]
+        random.shuffle(measures)
+        res = app.post_json('/v1/search?key=test',
+                            {"wifi": measures},
+                            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {"status": "ok",
+                                    "lat": 2.0010000, "lon": 2.0020000,
+                                    "accuracy": 500})
+
+    def test_wifi_only_use_top_three_signals_in_noisy_cluster(self):
+        app = self.app
+        session = self.db_slave_session
+        # all these should wind up in the same cluster since
+        # clustering threshold is 500m and the 100 wifis are
+        # spaced in increments of (+1m, +1.2m)
+        wifis = [Wifi(key="A%d" % i,
+                      lat=10000000 + i * 100,
+                      lon=10000000 + i * 120)
+                 for i in range(0, 100)]
+        session.add_all(wifis)
+        session.commit()
+        measures = [dict(key="A%d" % i,
+                         signal=-80)
+                    for i in range(3, 100)]
+        measures += [
+            dict(key="A0", signal=-75),
+            dict(key="A1", signal=-74),
+            dict(key="A2", signal=-73)
+        ]
+        random.shuffle(measures)
+        res = app.post_json('/v1/search?key=test',
+                            {"wifi": measures},
+                            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {"status": "ok",
+                                    "lat": 1.0000100, "lon": 1.0000120,
                                     "accuracy": 500})
 
     def test_wifi_not_closeby(self):
