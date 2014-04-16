@@ -20,6 +20,10 @@ from collections import namedtuple
 MAX_DIST = 0.5
 
 
+# helper class used in search_wifi
+Network = namedtuple('Network', ['key', 'lat', 'lon'])
+
+
 def configure_search(config):
     config.add_route('v1_search', '/v1/search')
     config.add_view(search_view, route_name='v1_search', renderer='json')
@@ -66,13 +70,14 @@ def search_cell(session, data):
 
 def search_wifi(session, data):
 
-    # estimate signal strength at -80 dBm if none is provided
-    # (see table on https://en.wikipedia.org/wiki/dBm)
+    # estimate signal strength at -100 dBm if none is provided,
+    # which is worse than the 99th percentile of wifi dBms we
+    # see in practice (-98).
     def signal_strength(w):
         if 'signal' in w:
             return int(w['signal'])
         else:
-            return -80
+            return -100
 
     wifi_signals = dict([(normalize_wifi_key(w['key']),
                           signal_strength(w))
@@ -95,7 +100,6 @@ def search_wifi(session, data):
         # we got fewer than three actual matches
         return None
 
-    Network = namedtuple('Network', ['key', 'lat', 'lon'])
     wifis = [Network(normalize_wifi_key(w[0]), w[1], w[2]) for w in wifis]
 
     # sort networks by signal strengths in query
