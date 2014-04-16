@@ -129,8 +129,8 @@ class TestIchnaea(TestCase):
 
     def test_submit_ap_data(self):
         """
-        This iterates over all generated cell data and submits it in
-        batches
+        This iterates over all generated wifi access point data and
+        submits it in batches
         """
         (lat, lon), ap_data = random.choice(self.AP_DATA)
         jdata = {"items": [{"lat": lat,
