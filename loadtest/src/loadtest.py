@@ -108,8 +108,9 @@ class TestIchnaea(TestCase):
         (lat, lon), all_cell_data = random.choice(self.TOWER_DATA)
 
         cells = []
+
         for cell_data in all_cell_data:
-            cells.append({"radio": "umts",
+            cells.append({"radio": cell_data['radio'],
                           "mcc": cell_data['mcc'],
                           "mnc": cell_data['mnc'],
                           "lac": cell_data['lac'],
@@ -141,10 +142,10 @@ class TestIchnaea(TestCase):
         self.assertEqual(res.status_code, 204)
 
     def test_submit_mixed_data(self):
-        (lat, lon), ap_data = random.choice(self.AP_DATA)
+        (lat, lon), cell_info = random.choice(self.TOWER_DATA)
         cells = []
-        for cell_data in ap_data:
-            cells.append({"radio": "umts",
+        for cell_data in cell_info:
+            cells.append({"radio": cell_data['radio'],
                           "mcc": cell_data['mcc'],
                           "mnc": cell_data['mnc'],
                           "lac": cell_data['lac'],
@@ -158,6 +159,7 @@ class TestIchnaea(TestCase):
                             "radio": "gsm",
                             "cell": cells}]}
 
+        ap_data = self.AP_DATA[(lat, lon)]
         jdata['items'].append({"lat": lat,
                                "lon": lon,
                                "accuracy": 17,
