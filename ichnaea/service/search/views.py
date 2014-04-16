@@ -13,10 +13,11 @@ from ichnaea.service.error import (
 )
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.search.schema import SearchSchema
+from ichnaea.geocalc import distance
+from collections import namedtuple
 
-# maximum difference of two decimal places, ~1km at equator
-# or 500m at 67 degrees north
-MAX_DIFF = 100000
+# maximum distance when clustering wifis, in km (0.5 => 500m)
+MAX_DIST = 0.5
 
 
 def configure_search(config):
@@ -64,8 +65,20 @@ def search_cell(session, data):
 
 
 def search_wifi(session, data):
-    wifi_data = data['wifi']
-    wifi_keys = set([normalize_wifi_key(w['key']) for w in wifi_data])
+
+    # estimate signal strength at -80 dBm if none is provided
+    # (see table on https://en.wikipedia.org/wiki/dBm)
+    def signal_strength(w):
+        if 'signal' in w:
+            return int(w['signal'])
+        else:
+            return -80
+
+    wifi_signals = dict([(normalize_wifi_key(w['key']),
+                          signal_strength(w))
+                         for w in data['wifi']])
+    wifi_keys = set(wifi_signals.keys())
+
     if not any(wifi_keys):
         # no valid normalized keys
         return None
@@ -73,7 +86,7 @@ def search_wifi(session, data):
         # we didn't even get three keys, bail out
         return None
     sql_null = None  # avoid pep8 warning
-    query = session.query(Wifi.lat, Wifi.lon).filter(
+    query = session.query(Wifi.key, Wifi.lat, Wifi.lon).filter(
         Wifi.key.in_(wifi_keys)).filter(
         Wifi.lat != sql_null).filter(
         Wifi.lon != sql_null)
@@ -81,24 +94,49 @@ def search_wifi(session, data):
     if len(wifis) < 3:
         # we got fewer than three actual matches
         return None
-    length = len(wifis)
-    avg_lat = sum([w[0] for w in wifis]) / length
-    avg_lon = sum([w[1] for w in wifis]) / length
 
-    # check to make sure all wifi AP's are close by
-    # we might later relax this to allow some outliers
-    latitudes = [w[0] for w in wifis]
-    longitudes = [w[1] for w in wifis]
-    lat_diff = abs(max(latitudes) - min(latitudes))
-    lon_diff = abs(max(longitudes) - min(longitudes))
-    if lat_diff >= MAX_DIFF or lon_diff >= MAX_DIFF:
-        return None
+    Network = namedtuple('Network', ['key', 'lat', 'lon'])
+    wifis = [Network(normalize_wifi_key(w[0]), w[1], w[2]) for w in wifis]
 
-    return {
-        'lat': quantize(avg_lat),
-        'lon': quantize(avg_lon),
-        'accuracy': 500,
-    }
+    # sort networks by signal strengths in query
+    wifis.sort(lambda a, b: cmp(wifi_signals[b.key],
+                                wifi_signals[a.key]))
+
+    clusters = []
+
+    for w in wifis:
+        # try to assign w to a cluster (but at most one)
+        for c in clusters:
+            for n in c:
+                if distance(quantize(n.lat), quantize(n.lon),
+                            quantize(w.lat), quantize(w.lon)) <= MAX_DIST:
+                    c.append(w)
+                    w = None
+                    break
+
+            if len(c) >= 3:
+                # if we have a cluster with more than 3
+                # networks in it, return its centroid.
+                length = len(c)
+                avg_lat = sum([n.lat for n in c]) / length
+                avg_lon = sum([n.lon for n in c]) / length
+                return {
+                    'lat': quantize(avg_lat),
+                    'lon': quantize(avg_lon),
+                    'accuracy': 500,
+                }
+
+            if w is None:
+                break
+
+        # if w didn't adhere to any cluster, make a new one
+        if w is not None:
+            clusters.append([w])
+
+    # if we didn't get any clusters with >3 networks,
+    # the query is a bunch of outliers; give up and
+    # let the next location method try.
+    return None
 
 
 def search_geoip(geoip_db, client_addr):
