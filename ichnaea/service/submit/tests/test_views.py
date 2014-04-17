@@ -47,9 +47,10 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
 
-        find_msg = self.find_heka_messages
-        self.assertEqual(1, len(find_msg('counter', 'http.request')))
-        self.assertEqual(1, len(find_msg('counter', 'submit.api_key.test')))
+        self.check_expected_heka_messages(
+            counter=['http.request',
+                     'submit.api_key.test']
+        )
 
         session = self.db_master_session
         measure_result = session.query(Measure).all()
@@ -428,8 +429,7 @@ class TestSubmit(CeleryAppTestCase):
             status=400)
         self.assertTrue('errors' in res.json)
 
-        find_msg = self.find_heka_messages
-        self.assertEqual(1, len(find_msg('counter', 'submit.no_api_key')))
+        self.check_expected_heka_messages(counter=['submit.no_api_key'])
 
     def test_error_no_mapping(self):
         app = self.app
@@ -506,24 +506,14 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
 
-        """
-        We should be capturing 4 metrics:
-        1) counter for URL request
-        2) counter for items.uploaded.batches
-        3) timer to respond
-        4) timer for "insert_cell_measure"
-        5) timer for "insert_measures"
-        """
-
-        find_msg = self.find_heka_messages
-        self.assertEqual(1, len(find_msg('counter', 'http.request')))
-        self.assertEqual(1, len(find_msg('counter', 'items.uploaded.batches')))
-        self.assertEqual(1, len(find_msg('counter', 'submit.api_key.test')))
-        self.assertEqual(1, len(find_msg('timer', 'http.request')))
-        taskname = 'task.service.submit.insert_cell_measures'
-        self.assertEqual(1, len(find_msg('timer', taskname)))
-        taskname = 'task.service.submit.insert_measures'
-        self.assertEqual(1, len(find_msg('timer', taskname)))
+        self.check_expected_heka_messages(
+            counter=['http.request',
+                     'items.uploaded.batches',
+                     'submit.api_key.test'],
+            timer=['http.request',
+                   'task.service.submit.insert_cell_measures',
+                   'task.service.submit.insert_measures']
+        )
 
     def test_unusual_wifi_keys(self):
         app = self.app

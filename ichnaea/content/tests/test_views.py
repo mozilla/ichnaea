@@ -65,18 +65,15 @@ class TestFunctionalContent(AppTestCase):
     def test_not_found(self):
         self.app.get('/nobody-is-home', status=404)
 
-        # No tracebacks for 404's
-        find_msg = self.find_heka_messages
-        self.assertEquals(
-            len(find_msg('sentry', RAVEN_ERROR, field_name='msg')), 0)
+        self.check_expected_heka_messages(
+            # No counters for URLs that are invalid
+            counter=[('http.request', 0)],
 
-        # No counters for URLs that are invalid
-        self.assertEquals(
-            len(find_msg('counter', 'http.request')), 0)
+            # No timers for invalid urls either
+            timer=[('http.request', 0)],
 
-        # No timers for invalid urls either
-        self.assertEquals(
-            len(find_msg('timer', 'http.request')), 0)
+            # No tracebacks for 404's
+            sentry=[('msg', RAVEN_ERROR, 0)])
 
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)

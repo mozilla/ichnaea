@@ -137,8 +137,8 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "not_found"})
 
-        find_msg = self.find_heka_messages
-        self.assertEquals(1, len(find_msg('counter', 'search.api_key')))
+        self.check_expected_heka_messages(counter=['search.api_key',
+                                                   'search.miss'])
 
     def test_wifi_not_found(self):
         app = self.app
@@ -148,8 +148,8 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "not_found"})
 
-        find_msg = self.find_heka_messages
-        self.assertEquals(1, len(find_msg('counter', 'search.api_key')))
+        self.check_expected_heka_messages(counter=['search.api_key',
+                                                   'search.miss'])
 
     def test_wifi_not_found_cell_fallback(self):
         app = self.app
@@ -263,8 +263,7 @@ class TestSearch(AppTestCase):
         res = app.post('/v1/search?key=test.test', "\xae", status=400)
         self.assertTrue('errors' in res.json)
 
-        find_msg = self.find_heka_messages
-        self.assertEqual(1, len(find_msg('counter', 'search.api_key')))
+        self.check_expected_heka_messages(counter=['search.api_key'])
 
     def test_gzip(self):
         app = self.app
@@ -296,8 +295,7 @@ class TestSearch(AppTestCase):
                             status=200)
         self.assertEqual(res.json, {"status": "not_found"})
 
-        find_msg = self.find_heka_messages
-        self.assertEqual(1, len(find_msg('counter', 'search.no_api_key')))
+        self.check_expected_heka_messages(counter=['search.no_api_key'])
 
 
 class TestSearchErrors(AppTestCase):
@@ -318,12 +316,8 @@ class TestSearchErrors(AppTestCase):
         except Exception:
             pass
 
-        find_msg = self.find_heka_messages
-        self.assertEquals(
-            len(find_msg('sentry', RAVEN_ERROR, field_name='msg')), 1)
-
-        self.assertEquals(
-            len(find_msg('counter', 'http.request')), 1)
-
-        self.assertEquals(
-            len(find_msg('timer', 'http.request')), 1)
+        self.check_expected_heka_messages(
+            sentry=[('msg', RAVEN_ERROR, 1)],
+            timer=['http.request'],
+            counter=['http.request']
+        )

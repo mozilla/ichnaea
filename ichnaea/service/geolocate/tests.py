@@ -33,10 +33,9 @@ class TestGeolocate(AppTestCase):
                 ]},
             status=200)
 
-        find_msg = self.find_heka_messages
-        self.assertEquals(
-            len(find_msg('counter', 'http.request')), 1)
-        self.assertEqual(1, len(find_msg('counter', 'geolocate.api_key.test')))
+        self.check_expected_heka_messages(
+            counter=['http.request', 'geolocate.api_key.test']
+        )
 
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"location": {"lat": 12.3456781,
@@ -63,8 +62,7 @@ class TestGeolocate(AppTestCase):
                     {"macAddress": "d4"},
                 ]},
             status=200)
-        find_msg = self.find_heka_messages
-        self.assertEqual(1, len(find_msg('counter', 'geolocate.api_key.test')))
+        self.check_expected_heka_messages(counter=['geolocate.api_key.test'])
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"location": {"lat": 1.0010000,
                                                  "lng": 1.0020000},
@@ -91,18 +89,13 @@ class TestGeolocate(AppTestCase):
             }}
         )
 
-        find_msg = self.find_heka_messages
-        self.assertEqual(1, len(find_msg('counter', 'geolocate.api_key.test')))
-
-        # Make sure to get a counter and timer but no traceback
-        self.assertEquals(
-            len(find_msg('counter', 'http.request')), 1)
-
-        self.assertEquals(
-            len(find_msg('timer', 'http.request')), 1)
-
-        self.assertEquals(
-            len(find_msg('sentry', RAVEN_ERROR, field_name='msg')), 0)
+        # Make sure to get two counters, a timer, and no traceback
+        self.check_expected_heka_messages(
+            counter=['geolocate.api_key.test',
+                     'http.request'],
+            timer=['http.request'],
+            sentry=[('msg', RAVEN_ERROR, 0)]
+        )
 
     def test_geoip_fallback(self):
         app = self.app
@@ -141,9 +134,9 @@ class TestGeolocate(AppTestCase):
             }}
         )
 
-        find_msg = self.find_heka_messages
-        expected_key = 'geolocate.api_key.test__test'
-        self.assertEqual(1, len(find_msg('counter', expected_key)))
+        self.check_expected_heka_messages(
+            counter=['geolocate.api_key.test__test']
+        )
 
     def test_no_data(self):
         app = self.app
@@ -175,5 +168,4 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(u'No API key', json_err['error']['message'])
         self.assertEqual(res.content_type, 'application/json')
 
-        find_msg = self.find_heka_messages
-        self.assertEqual(1, len(find_msg('counter', 'geolocate.no_api_key')))
+        self.check_expected_heka_messages(counter=['geolocate.no_api_key'])

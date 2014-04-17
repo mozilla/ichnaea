@@ -190,17 +190,15 @@ class TestCellLocationUpdate(CeleryTestCase):
         result = cell_location_update.delay(min_new=1)
         self.assertEqual(result.get(), 0)
 
-        msgs = self.heka_client.stream.msgs
-        self.assertEqual(4, len(msgs))
+        self.check_expected_heka_messages(
+            total=4,
+            timer=[
+                # We made duplicate calls
+                ('task.cell_location_update', 2),
 
-        # We made duplicate calls
-        find_msg = self.find_heka_messages
-        taskname = 'task.cell_location_update'
-        self.assertEqual(2, len(find_msg('timer', taskname)))
-
-        # One of those would've scheduled a remove_cell task
-        taskname = 'task.remove_cell'
-        self.assertEqual(1, len(find_msg('timer', taskname)))
+                # One of those would've scheduled a remove_cell task
+                ('task.remove_cell', 1)
+            ])
 
 
 class TestWifiLocationUpdate(CeleryTestCase):
@@ -357,17 +355,15 @@ class TestWifiLocationUpdate(CeleryTestCase):
         result = wifi_location_update.delay(min_new=1)
         self.assertEqual(result.get(), 0)
 
-        msgs = self.heka_client.stream.msgs
-        self.assertEqual(4, len(msgs))
+        self.check_expected_heka_messages(
+            total=4,
+            timer=[
+                # We made duplicate calls
+                ('task.wifi_location_update', 2),
 
-        # We made duplicate calls
-        find_msg = self.find_heka_messages
-        taskname = 'task.wifi_location_update'
-        self.assertEqual(2, len(find_msg('timer', taskname)))
-
-        # One of those would've scheduled a remove_wifi task
-        taskname = 'task.remove_wifi'
-        self.assertEqual(1, len(find_msg('timer', taskname)))
+                # One of those would've scheduled a remove_wifi task
+                ('task.remove_wifi', 1)
+            ])
 
     def test_remove_wifi(self):
         from ichnaea.tasks import remove_wifi
