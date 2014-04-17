@@ -180,9 +180,9 @@ class HekaIsolation(object):
             for p in pred:
                 fname = 'name'
                 match = 1
-                if type(p) is str:
+                if isinstance(p, str):
                     name = p
-                elif type(p) is tuple:
+                elif isinstance(p, tuple):
                     if len(p) == 2:
                         (name, match) = p
                     elif len(p) == 3:
@@ -195,9 +195,9 @@ class HekaIsolation(object):
                                     % type(p))
                 msgs = self.find_heka_messages(msg_type, name,
                                                field_name=fname)
-                if type(match) is int:
+                if isinstance(match, int):
                     self.assertEqual(match, len(msgs))
-                elif type(match) is dict:
+                elif isinstance(match, dict):
                     matching = []
                     for msg in msgs:
                         for (k, v) in match.items():
