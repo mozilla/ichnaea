@@ -118,6 +118,96 @@ class HekaIsolation(object):
         msgs = self.heka_client.stream.msgs
         return find_msg(msgs, *args, **kw)
 
+    def check_expected_heka_messages(self, total=None, **kw):
+        """Checks a partial specification of messages to be found in
+        the heka message stream.
+
+        Keyword arguments:
+        total --  (optional) exact count of messages expected in stream.
+        kw  --  for all remaining keyword args of the form k:v :
+
+                select messages of heka message-type k, comparing the
+                message fields against v subject to type-dependent
+                interpretation:
+
+                  if v is a str, select messages with field 'name' == v
+                  and let match = 1
+
+                  if v is a 2-tuple (n, match), select messages with
+                  field 'name' == n
+
+                  if v is a 3-tuple, (f, n, match), select messages
+                  with field f == n
+
+               the selected messages are then checked depending on the type
+               of match:
+
+                  if match is an int, assert match messages were selected
+
+                  if match is a dict, assert that at least one message
+                  exists with each f:n entry in the mapping in the message
+                  field list.
+
+        Examples:
+
+           check_expected_heka_messages(timer=['http.request'])
+
+           This call will check for exactly one timer message with
+           'name':'http.request' in its fields.
+
+
+           check_expected_heka_messages(
+               total=5,
+               timer=[('http.request', {'url_path': '/v1/search'})],
+               counter=['search.api_key.test',
+                        ('items.uploaded.batches', 2)],
+               sentry=[('msg', RAVEN_ERROR, 1)]
+           )
+
+           This call will check for exactly 5 messages, exactly one timer
+           with 'name':'http.request' and 'url_path':'/v1/search' in its
+           fields; exactly one counter with 'name':'search.api_key.test',
+           exactly two counters with 'name':'items.uploaded.batches', and
+           at least one sentry message with 'msg':RAVEN_ERROR in its
+           fields.
+
+        """
+
+        if total is not None:
+            self.assertEqual(total, len(self.heka_client.stream.msgs))
+
+        for (msg_type, pred) in kw.items():
+            for p in pred:
+                fname = 'name'
+                match = 1
+                if isinstance(p, str):
+                    name = p
+                elif isinstance(p, tuple):
+                    if len(p) == 2:
+                        (name, match) = p
+                    elif len(p) == 3:
+                        (fname, name, match) = p
+                    else:
+                        raise TypeError("wanted 2 or 3-element tuple, got %s"
+                                        % type(p))
+                else:
+                    raise TypeError("wanted str or tuple, got %s"
+                                    % type(p))
+                msgs = self.find_heka_messages(msg_type, name,
+                                               field_name=fname)
+                if isinstance(match, int):
+                    self.assertEqual(match, len(msgs))
+                elif isinstance(match, dict):
+                    matching = []
+                    for msg in msgs:
+                        for (k, v) in match.items():
+                            for f in msg.fields:
+                                if f.name == k and f.value_string == [v]:
+                                    matching.append(msg)
+                    self.assertNotEqual(matching, [])
+                else:
+                    raise TypeError("wanted int or dict, got %s" % type(match))
+
 
 class GeoIPIsolation(object):
 

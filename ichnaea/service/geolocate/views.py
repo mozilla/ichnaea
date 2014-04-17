@@ -130,14 +130,21 @@ def geolocate_view(request):
 
     if data['wifiAccessPoints']:
         result = search_wifi_ap(session, data)
+        if result is not None:
+            heka_client.incr('geolocate.wifi_hit')
     else:
         result = search_cell_tower(session, data)
+        if result is not None:
+            heka_client.incr('geolocate.cell_hit')
 
     if result is None and request.client_addr:
         result = search_geoip(request.registry.geoip_db,
                               request.client_addr)
+        if result is not None:
+            heka_client.incr('geolocate.geoip_hit')
 
     if result is None:
+        heka_client.incr('geolocate.miss')
         result = HTTPNotFound()
         result.content_type = 'application/json'
         result.body = NOT_FOUND

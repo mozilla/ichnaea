@@ -147,15 +147,22 @@ def search_view(request):
 
     if data['wifi']:
         result = search_wifi(session, data)
+        if result is not None:
+            heka_client.incr('search.wifi_hit')
     if result is None:
         # no wifi result found, fall back to cell
         result = search_cell(session, data)
+        if result is not None:
+            heka_client.incr('search.cell_hit')
     if result is None and request.client_addr:
         # no cell or wifi, fall back again to geoip
         result = search_geoip(request.registry.geoip_db,
                               request.client_addr)
+        if result is not None:
+            heka_client.incr('search.geoip_hit')
 
     if result is None:
+        heka_client.incr('search.miss')
         return {'status': 'not_found'}
 
     return {
