@@ -1,3 +1,11 @@
+from ConfigParser import SafeConfigParser
+from loads.case import TestCase
+import binascii
+import json
+import os
+import os.path
+import random
+
 RADIO_TYPE = {
     '': -1,
     'gsm': 0,
@@ -5,14 +13,6 @@ RADIO_TYPE = {
     'umts': 2,
     'lte': 3,
 }
-from loads.case import TestCase
-import binascii
-import json
-import os
-import os.path
-import pickle
-import random
-from ConfigParser import SafeConfigParser
 
 INVALID_WIFI_KEY = 'aa:aa:aa:aa:aa:aa'
 
@@ -21,8 +21,8 @@ random.seed(32314)
 cfg = SafeConfigParser()
 cfg.read(os.path.join('src', 'ichnaea.ini'))
 
-TOWER_FILE = os.path.join('src', 'tower.pickle')
-AP_FILE = os.path.join('src', 'ap.pickle')
+TOWER_FILE = os.path.join('src', 'tower.json')
+AP_FILE = os.path.join('src', 'ap.json')
 HOST = 'https://' + cfg.get('loadtest', 'WEBAPP_HOST')
 
 TESTING_AP_SUBSET = TESTING_CELL_SUBSET = 10000
@@ -59,8 +59,8 @@ def random_cell():
 
 def generate_data():
     if not os.path.isfile(TOWER_FILE) or not os.path.isfile(AP_FILE):
-        tower_data = {}
-        ap_data = {}
+        tower_data = JSONTupleKeyedDict()
+        ap_data = JSONTupleKeyedDict()
         cell_gen = random_cell()
         wifi_gen = random_ap()
         for i in range(TESTING_CELL_SUBSET):
@@ -83,11 +83,15 @@ def generate_data():
                 rapp = wifi_gen.next()
                 ap_data[(lat, lon)].append({"key": rapp['key']})
 
-        open(TOWER_FILE, 'w').write(pickle.dumps(tower_data))
-        open(AP_FILE, 'w').write(pickle.dumps(ap_data))
+        with open(TOWER_FILE, 'w') as f:
+            f.write(json.dumps(tower_data, cls=LocationDictEncoder))
+        with open(AP_FILE, 'w') as f:
+            f.write(json.dumps(ap_data, cls=LocationDictEncoder))
     else:
-        ap_data = pickle.load(open(AP_FILE))
-        tower_data = pickle.load(open(TOWER_FILE))
+        ap_data = json.load(open(AP_FILE),
+                            object_hook=JSONLocationDictDecoder)
+        tower_data = json.load(open(TOWER_FILE),
+                               object_hook=JSONLocationDictDecoder)
 
     return tower_data.items(), ap_data.items()
 
@@ -219,3 +223,25 @@ class TestIchnaea(TestCase):
                 actual_lon = int(jdata['lon']*1000)
                 self.assertEquals(actual_lat, expected_lat)
                 self.assertEquals(actual_lon, expected_lon)
+
+
+class JSONTupleKeyedDict(dict):
+    pass
+
+
+class LocationDictEncoder(json.JSONEncoder):
+    def iterencode(self, obj, *args, **kwargs):
+        if isinstance(obj, JSONTupleKeyedDict):
+            tmp = {'__JSONTupleKeyedDict__': True, 'dict': {}}
+            for k, v in obj.items():
+                tmp['dict'][json.dumps(k)] = v
+        return json.JSONEncoder.iterencode(self, tmp, *args, **kwargs)
+
+
+def JSONLocationDictDecoder(dct):
+    if '__JSONTupleKeyedDict__' in dct:
+        tmp = {}
+        for k, v in dct['dict'].items():
+            tmp[tuple(json.loads(k))] = v
+        return tmp
+    return dct
