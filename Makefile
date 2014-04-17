@@ -23,8 +23,8 @@ ifeq ($(TRAVIS), true)
 else
 	MYSQL_USER ?= root
 	MYSQL_PWD ?= mysql
-	SQLURI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@localhost:4404/$(MYSQL_TEST_DB)
-	#SQLSOCKET ?= /opt/local/var/run/mysql56/mysqld.sock
+	SQLURI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@localhost/$(MYSQL_TEST_DB)
+	SQLSOCKET ?= /opt/local/var/run/mysql56/mysqld.sock
 endif
 
 .PHONY: all js test docs mysql
