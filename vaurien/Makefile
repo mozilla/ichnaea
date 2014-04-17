@@ -1,7 +1,3 @@
-# Install vaurien
-install_vaurien:
-	pip install git+git://github.com/mozilla-services/vaurien.git --upgrade
-	
 # Start vaurien for MySQL with REST API enabled on port 8080
 mysql_vaurien:
 	vaurien --http --http-port 8080 --proxy 0.0.0.0:4404  --backend 0.0.0.0:3306 --protocol mysql
