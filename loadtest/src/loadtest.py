@@ -155,19 +155,20 @@ class TestIchnaea(TestCase):
                           "lac": cell_data['lac'],
                           "cid": cell_data['cid']})
 
+        ap_data = self.AP_DATA[(lat, lon)]
         jdata = {"items": [{"lat": lat,
                             "lon": lon,
                             "accuracy": 10,
                             "altitude": 1,
                             "altitude_accuracy": 7,
                             "radio": "gsm",
-                            "cell": cells}]}
+                            "cell": cells},
+                           {"lat": lat,
+                            "lon": lon,
+                            "accuracy": 17,
+                            "wifi": ap_data}]
+                 }
 
-        ap_data = self.AP_DATA[(lat, lon)]
-        jdata['items'].append({"lat": lat,
-                               "lon": lon,
-                               "accuracy": 17,
-                               "wifi": ap_data})
         blob = json.dumps(jdata)
         res = self.session.post(HOST+'/v1/submit', blob)
         self.assertEqual(res.status_code, 204)
