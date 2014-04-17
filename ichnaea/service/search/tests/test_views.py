@@ -31,26 +31,18 @@ class TestSearch(AppTestCase):
             ]},
             status=200)
 
-        find_msg = self.find_heka_messages
-        self.assertEquals(
-            len(find_msg('counter', 'http.request')), 1)
-
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0010000, "lon": 1.0020000,
                                     "accuracy": 35000})
 
-        self.assertEquals(1, len(find_msg('counter', 'http.request')))
-        timer_msgs = find_msg('timer', 'http.request')
-
-        self.assertEquals(1, len(timer_msgs))
-        msg = timer_msgs[0]
-        f = [f for f in msg.fields if f.name == 'url_path'][0]
-        self.assertEquals(f.value_string, ['/v1/search'])
-
-        self.assertEquals(1, len(find_msg('counter', 'search.api_key')))
-        self.assertEquals(1, len(find_msg('counter', 'http.request')))
-        self.assertEquals(3, len(self.heka_client.stream.msgs))
+        self.check_expected_heka_messages(
+            total=4,
+            timer=[('http.request', {'url_path': '/v1/search'})],
+            counter=[('search.api_key', 1),
+                     ('search.cell_hit', 1),
+                     ('http.request', 1)]
+        )
 
     def test_ok_wifi(self):
         app = self.app
@@ -74,17 +66,13 @@ class TestSearch(AppTestCase):
                                     "lat": 1.0010000, "lon": 1.0020000,
                                     "accuracy": 500})
 
-        find_msg = self.find_heka_messages
-        self.assertEquals(1, len(find_msg('counter', 'http.request')))
-        timer_msgs = find_msg('timer', 'http.request')
-
-        self.assertEquals(1, len(timer_msgs))
-        msg = timer_msgs[0]
-        f = [f for f in msg.fields if f.name == 'url_path'][0]
-        self.assertEquals(f.value_string, ['/v1/search'])
-        self.assertEquals(1, len(find_msg('counter', 'search.api_key')))
-        self.assertEquals(1, len(find_msg('counter', 'http.request')))
-        self.assertEquals(3, len(self.heka_client.stream.msgs))
+        self.check_expected_heka_messages(
+            total=4,
+            timer=[('http.request', {'url_path': '/v1/search'})],
+            counter=[('search.api_key', 1),
+                     ('search.wifi_hit', 1),
+                     ('http.request', 1)]
+        )
 
     def test_wifi_too_few_candidates(self):
         app = self.app
@@ -235,6 +223,14 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 37.5079, "lon": -121.96,
                                     "accuracy": 40000})
+
+        self.check_expected_heka_messages(
+            total=4,
+            timer=[('http.request', {'url_path': '/v1/search'})],
+            counter=[('search.api_key', 1),
+                     ('search.geoip_hit', 1),
+                     ('http.request', 1)]
+        )
 
     def test_error(self):
         app = self.app
