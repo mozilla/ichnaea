@@ -28,6 +28,16 @@ def submit_validator(data, errors):
     if errors:
         # don't add this error if something else was already wrong
         return
+
+    # for each of the measurements, if the lat or lon is -1
+    # drop the node
+    skips = []
+    for idx, item in enumerate(data.get('items', ())):
+        if item['lat'] == -1 or item['lon'] == -1:
+            skips.append(idx)
+    for idx in skips[::-1]:
+        del data['items'][idx]
+
     for item in data.get('items', ()):
         if not check_cell_or_wifi(item, errors):
             # quit on first Error

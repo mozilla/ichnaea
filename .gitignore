@@ -5,6 +5,7 @@
 *.egg-info
 *.log
 *.log.*
+*.json
 *.pid
 celerybeat-schedule
 coverage.xml

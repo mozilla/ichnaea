@@ -173,7 +173,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(res.body, '')
 
         # let's add a bad one
-        items.append({'whatever': 'xx'})
+        items.append({'lat': 10, 'lon': 10, 'whatever': 'xx'})
         res = app.post_json('/v1/submit', {"items": items}, status=400)
 
     def test_time(self):
@@ -556,3 +556,28 @@ class TestSubmit(CeleryAppTestCase):
         session = self.db_master_session
         result = session.query(WifiMeasure).all()
         self.assertEqual(len(result), 1)
+
+    def test_missing_latlon(self):
+        session = self.db_master_session
+        app = self.app
+
+        data = [{"lat": 12.3456781,
+                 "lon": 23.4567892,
+                 "accuracy": 17,
+                 "wifi": [{"key": "00:34:cd:34:cd:34"}]},
+                {"wifi": [],
+                 "accuracy": 16},
+                ]
+
+        cell_result = session.query(CellMeasure).all()
+        self.assertEqual(len(cell_result), 0)
+        wifi_result = session.query(WifiMeasure).all()
+        self.assertEqual(len(wifi_result), 0)
+
+        res = app.post_json('/v1/submit', {"items": data}, status=204)
+        self.assertEqual(res.body, '')
+
+        cell_result = session.query(CellMeasure).all()
+        self.assertEqual(len(cell_result), 0)
+        wifi_result = session.query(WifiMeasure).all()
+        self.assertEqual(len(wifi_result), 1)

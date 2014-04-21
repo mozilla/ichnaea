@@ -20,7 +20,7 @@ class TestMeasureSchema(TestCase):
         schema = self._make_schema()
         request = self._make_request('{}')
         data, errors = preprocess_request(request, schema, response=None)
-        self.assertTrue(errors)
+        self.assertFalse(errors)
 
     def test_empty_wifi_entry(self):
         schema = self._make_schema()

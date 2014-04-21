@@ -34,8 +34,11 @@ class WifisSchema(SequenceSchema):
 
 
 class MeasureSchema(MappingSchema):
-    lat = SchemaNode(Decimal(quant=EXPONENT_STR), location="body")
-    lon = SchemaNode(Decimal(quant=EXPONENT_STR), location="body")
+    # lat/lon being set to -1 indicates that this measure should be
+    # skipped.  Other fields can be filled in with defaults
+    lat = SchemaNode(Decimal(quant=EXPONENT_STR), location="body", missing=-1)
+    lon = SchemaNode(Decimal(quant=EXPONENT_STR), location="body", missing=-1)
+
     time = SchemaNode(String(), location="body", missing='')
     accuracy = SchemaNode(Integer(), location="body", type='int', missing=0)
     altitude = SchemaNode(Integer(), location="body", type='int', missing=0)
