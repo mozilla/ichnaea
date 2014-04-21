@@ -19,29 +19,30 @@ def check_cell_or_wifi(data, errors):
     cell = data.get('cell', ())
     wifi = data.get('wifi', ())
     if not any(wifi) and not any(cell):
-        errors.append(dict(name='body', description=MSG_ONE_OF))
+        #errors.append(dict(name='body', description=MSG_ONE_OF))
         return False
     return True
 
 
 def submit_validator(data, errors):
+    # for each of the measurements, if the lat or lon is -1
+    # drop the node
+    skips = set()
+    for idx, item in enumerate(data.get('items', ())):
+        if item['lat'] == -1 or item['lon'] == -1:
+            skips.add(idx)
+
+        if not check_cell_or_wifi(item, errors):
+            skips.add(idx)
+
+    skips = list(skips)
+    skips.sort(reverse=True)
+    for idx in skips:
+        del data['items'][idx]
+
     if errors:
         # don't add this error if something else was already wrong
         return
-
-    # for each of the measurements, if the lat or lon is -1
-    # drop the node
-    skips = []
-    for idx, item in enumerate(data.get('items', ())):
-        if item['lat'] == -1 or item['lon'] == -1:
-            skips.append(idx)
-    for idx in skips[::-1]:
-        del data['items'][idx]
-
-    for item in data.get('items', ()):
-        if not check_cell_or_wifi(item, errors):
-            # quit on first Error
-            return
 
 
 def submit_view(request):
