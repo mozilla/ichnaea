@@ -166,15 +166,19 @@ class TestSubmit(CeleryAppTestCase):
 
     def test_batches(self):
         app = self.app
-        wifi_data = [{"key": "aaaaaaaaaaaa"}, {"key": "bbbbbbbbbbbb"}]
+        EXPECTED_RECORDS = 10
+        wifi_data = [{"key": "aaaaaaaaaaaa"}]
         items = [{"lat": 12.34, "lon": 23.45 + i, "wifi": wifi_data}
-                 for i in range(10)]
-        res = app.post_json('/v1/submit', {"items": items}, status=204)
-        self.assertEqual(res.body, '')
+                 for i in range(EXPECTED_RECORDS)]
 
-        # let's add a bad one
-        items.append({'whatever': 'xx'})
-        res = app.post_json('/v1/submit', {"items": items}, status=400)
+        # let's add a bad one, this will just be skipped
+        items.append({'lat': 10, 'lon': 10, 'whatever': 'xx'})
+        app.post_json('/v1/submit', {"items": items}, status=204)
+
+        session = self.db_master_session
+
+        result = session.query(WifiMeasure).all()
+        self.assertEqual(len(result), EXPECTED_RECORDS)
 
     def test_time(self):
         app = self.app
@@ -409,25 +413,23 @@ class TestSubmit(CeleryAppTestCase):
     def test_error(self):
         app = self.app
         res = app.post_json(
-            '/v1/submit', {"items": [{"lat": 12.3, "lon": 23.4, "cell": []}]},
+            '/v1/submit', [{"lat": 12.3, "lon": 23.4, "cell": []}],
             status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
         self.assertFalse('status' in res.json)
 
-    def test_error_unknown_key(self):
+    def test_ignore_unknown_key(self):
         app = self.app
-        res = app.post_json(
+        app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3, "lon": 23.4, "foo": 1}]},
-            status=400)
-        self.assertTrue('errors' in res.json)
+            status=204)
 
-    def test_error_no_api_key(self):
+    def test_log_no_api_key(self):
         app = self.app
-        res = app.post_json(
+        app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3, "lon": 23.4}]},
-            status=400)
-        self.assertTrue('errors' in res.json)
+            status=204)
 
         self.check_expected_heka_messages(counter=['submit.no_api_key'])
 
@@ -556,3 +558,23 @@ class TestSubmit(CeleryAppTestCase):
         session = self.db_master_session
         result = session.query(WifiMeasure).all()
         self.assertEqual(len(result), 1)
+
+    def test_missing_latlon(self):
+        session = self.db_master_session
+        app = self.app
+
+        data = [{"lat": 12.3456781,
+                 "lon": 23.4567892,
+                 "accuracy": 17,
+                 "wifi": [{"key": "00:34:cd:34:cd:34"}]},
+                {"wifi": [],
+                 "accuracy": 16},
+                ]
+
+        res = app.post_json('/v1/submit', {"items": data}, status=204)
+        self.assertEqual(res.body, '')
+
+        cell_result = session.query(CellMeasure).all()
+        self.assertEqual(len(cell_result), 0)
+        wifi_result = session.query(WifiMeasure).all()
+        self.assertEqual(len(wifi_result), 1)

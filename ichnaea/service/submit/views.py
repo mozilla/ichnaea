@@ -4,7 +4,6 @@ from ichnaea.decimaljson import dumps
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.error import (
     preprocess_request,
-    MSG_ONE_OF,
 )
 from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.service.submit.tasks import insert_measures
@@ -19,19 +18,29 @@ def check_cell_or_wifi(data, errors):
     cell = data.get('cell', ())
     wifi = data.get('wifi', ())
     if not any(wifi) and not any(cell):
-        errors.append(dict(name='body', description=MSG_ONE_OF))
         return False
     return True
 
 
 def submit_validator(data, errors):
+    # for each of the measurements, if the lat or lon is -255
+    # drop the node
+    skips = set()
+    for idx, item in enumerate(data.get('items', ())):
+        if item['lat'] == -255 or item['lon'] == -255:
+            skips.add(idx)
+
+        if not check_cell_or_wifi(item, errors):
+            skips.add(idx)
+
+    skips = list(skips)
+    skips.sort(reverse=True)
+    for idx in skips:
+        del data['items'][idx]
+
     if errors:
         # don't add this error if something else was already wrong
         return
-    for item in data.get('items', ()):
-        if not check_cell_or_wifi(item, errors):
-            # quit on first Error
-            return
 
 
 def submit_view(request):
