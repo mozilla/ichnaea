@@ -440,6 +440,18 @@ class TestSubmit(CeleryAppTestCase):
 
         self.check_expected_heka_messages(counter=['submit.no_api_key'])
 
+    def test_log_unknown_api_key(self):
+        app = self.app
+        app.post_json(
+            '/v1/submit?key=invalidkey',
+            {"items": [{"lat": 12.3, "lon": 23.4}]},
+            status=204)
+
+        self.check_expected_heka_messages(counter=['submit.unknown_api_key'])
+        self.check_expected_heka_messages(counter=[
+                                          ('submit.api_key.invalidkey', 0)
+                                          ])
+
     def test_error_no_mapping(self):
         app = self.app
         res = app.post_json('/v1/submit', [1], status=400)
