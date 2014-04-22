@@ -1,1 +1,18 @@
-Generic single-database configuration.
+The first time you use alembic, it will automatically create an
+`alembic_version` table for you.
+
+To update your schema to the latest version, just issue this command:
+
+```
+$ alembic upgrade head
+```
+
+
+To downgrade your database to a specific database version, you will need
+the hash in ichnaea/alembic/versions.
+
+Example ::
+
+```
+$ alembic downgrade 2a311d11a90d
+```
