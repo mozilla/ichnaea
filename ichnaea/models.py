@@ -294,3 +294,16 @@ class Measure(_Model):
                 primary_key=True, autoincrement=True)
 
 measure_table = Measure.__table__
+
+
+class ApiKey(_Model):
+    __tablename__ = 'api_key'
+    __table_args__ = {
+        'mysql_engine': 'InnoDB',
+        'mysql_charset': 'utf8',
+    }
+
+    valid_key = Column(String(40),
+                       primary_key=True)
+
+api_key_table = ApiKey.__table__
