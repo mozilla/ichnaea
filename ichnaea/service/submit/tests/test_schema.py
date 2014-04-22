@@ -21,11 +21,11 @@ class TestMeasureSchema(TestCase):
         request = self._make_request('{}')
         data, errors = preprocess_request(request, schema, response=None)
 
-        # missing lat and lon will default to -1 and be stripped out
+        # missing lat and lon will default to -255 and be stripped out
         # instead of causing colander to drop the entire batch of
         # records
-        self.assertEquals(data['lat'], -1)
-        self.assertEquals(data['lon'], -1)
+        self.assertEquals(data['lat'], -255)
+        self.assertEquals(data['lon'], -255)
 
         self.assertFalse(errors)
 

@@ -23,11 +23,11 @@ def check_cell_or_wifi(data, errors):
 
 
 def submit_validator(data, errors):
-    # for each of the measurements, if the lat or lon is -1
+    # for each of the measurements, if the lat or lon is -255
     # drop the node
     skips = set()
     for idx, item in enumerate(data.get('items', ())):
-        if item['lat'] == -1 or item['lon'] == -1:
+        if item['lat'] == -255 or item['lon'] == -255:
             skips.add(idx)
 
         if not check_cell_or_wifi(item, errors):
