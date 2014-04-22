@@ -571,10 +571,10 @@ class TestSubmit(CeleryAppTestCase):
                  "accuracy": 16},
                 ]
 
+        res = app.post_json('/v1/submit', {"items": data}, status=204)
+        self.assertEqual(res.body, '')
+
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 0)
         wifi_result = session.query(WifiMeasure).all()
-        self.assertEqual(len(wifi_result), 0)
-
-        res = app.post_json('/v1/submit', {"items": data}, status=204)
-        self.assertEqual(res.body, '')
+        self.assertEqual(len(wifi_result), 1)
