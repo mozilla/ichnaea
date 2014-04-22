@@ -4,7 +4,6 @@ from ichnaea.decimaljson import dumps
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.error import (
     preprocess_request,
-    MSG_ONE_OF,
 )
 from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.service.submit.tasks import insert_measures
@@ -19,7 +18,6 @@ def check_cell_or_wifi(data, errors):
     cell = data.get('cell', ())
     wifi = data.get('wifi', ())
     if not any(wifi) and not any(cell):
-        #errors.append(dict(name='body', description=MSG_ONE_OF))
         return False
     return True
 
