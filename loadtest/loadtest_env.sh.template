@@ -1,0 +1,2 @@
+export MYSQL_HOST="your_rds_endpoint_here"
+export WEBAPP_HOST="your_webapp_host_here"
