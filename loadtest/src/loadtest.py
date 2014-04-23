@@ -37,7 +37,7 @@ def random_ap():
         for frequency in range(1, 5000):
             for signal in range(-50, 0):
                 key = binascii.b2a_hex(rand_bytes(15))[:12]
-                key = ':'.join(key[i:i+2] for i in range(0, len(key), 2))
+                key = ':'.join(key[i:i + 2] for i in range(0, len(key), 2))
                 yield {"key": key,
                        "channel": random.randint(1, 12),
                        "frequency": random.randint(0, 5000),
@@ -64,8 +64,8 @@ def generate_data():
         cell_gen = random_cell()
         wifi_gen = random_ap()
         for i in range(TESTING_CELL_SUBSET):
-            lat = random.randint(-900000000, 900000000) / ((10**7)*1.0)
-            lon = random.randint(-900000000, 900000000) / ((10**7)*1.0)
+            lat = random.randint(-900000000, 900000000) / ((10 ** 7) * 1.0)
+            lon = random.randint(-900000000, 900000000) / ((10 ** 7) * 1.0)
             tower_data[(lat, lon)] = []
             ap_data[(lat, lon)] = []
 
@@ -128,7 +128,7 @@ class TestIchnaea(TestCase):
                                 "radio": "gsm",
                                 "cell": cells}]}
         blob = json.dumps(json_data)
-        res = self.session.post(HOST+'/v1/submit', blob)
+        res = self.session.post(HOST + '/v1/submit', blob)
         self.assertEqual(res.status_code, 204)
 
     def test_submit_ap_data(self):
@@ -142,7 +142,7 @@ class TestIchnaea(TestCase):
                             "accuracy": 17,
                             "wifi": ap_data}]}
         blob = json.dumps(jdata)
-        res = self.session.post(HOST+'/v1/submit', blob)
+        res = self.session.post(HOST + '/v1/submit', blob)
         self.assertEqual(res.status_code, 204)
 
     def test_submit_mixed_data(self):
@@ -170,7 +170,7 @@ class TestIchnaea(TestCase):
                  }
 
         blob = json.dumps(jdata)
-        res = self.session.post(HOST+'/v1/submit', blob)
+        res = self.session.post(HOST + '/v1/submit', blob)
         self.assertEqual(res.status_code, 204)
 
     def test_search_wifi(self):
@@ -187,13 +187,13 @@ class TestIchnaea(TestCase):
                 # Throw in some garbage
                 wifi_data.append({'key': INVALID_WIFI_KEY})
             jdata = json.dumps({'wifi': wifi_data})
-            res = self.session.post(HOST+'/v1/search?key=test', jdata)
+            res = self.session.post(HOST + '/v1/search?key=test', jdata)
 
             self.assertEqual(res.status_code, 200)
             jdata = json.loads(res.content)
             if jdata['status'] != 'not_found':
-                actual_lat = int(jdata['lat']*1000)
-                actual_lon = int(jdata['lon']*1000)
+                actual_lat = int(jdata['lat'] * 1000)
+                actual_lon = int(jdata['lon'] * 1000)
                 self.assertEquals(actual_lat, expected_lat)
                 self.assertEquals(actual_lon, expected_lon)
 
@@ -216,12 +216,12 @@ class TestIchnaea(TestCase):
                                            mnc=cell_data['mnc'],
                                            lac=cell_data['lac']))
             jdata = json.dumps(query_data)
-            res = self.session.post(HOST+'/v1/search?key=test', jdata)
+            res = self.session.post(HOST + '/v1/search?key=test', jdata)
             self.assertEqual(res.status_code, 200)
             jdata = json.loads(res.content)
             if jdata['status'] != 'not_found':
-                actual_lat = int(jdata['lat']*1000)
-                actual_lon = int(jdata['lon']*1000)
+                actual_lat = int(jdata['lat'] * 1000)
+                actual_lon = int(jdata['lon'] * 1000)
                 self.assertEquals(actual_lat, expected_lat)
                 self.assertEquals(actual_lon, expected_lon)
 
