@@ -13,6 +13,7 @@ RADIO_TYPE = {
     'umts': 2,
     'lte': 3,
 }
+RADIO_MAP = dict([(v, k) for k, v in RADIO_TYPE.items() if k != ''])
 
 INVALID_WIFI_KEY = 'aa:aa:aa:aa:aa:aa'
 
@@ -45,7 +46,9 @@ def random_ap():
 
 
 def random_cell():
-    for radio in range(0, 3):
+    # don't test cdma, as that would complicate setting up the
+    # top-level radio field in the JSON dicts
+    for radio in (0, 2, 3):
         for mcc in range(1, 5):
             for mnc in range(1, 5):
                 for cid in range(1, 20000):
@@ -114,7 +117,7 @@ class TestIchnaea(TestCase):
         cells = []
 
         for cell_data in all_cell_data:
-            cells.append({"radio": cell_data['radio'],
+            cells.append({"radio": RADIO_MAP.get(cell_data['radio'], ''),
                           "mcc": cell_data['mcc'],
                           "mnc": cell_data['mnc'],
                           "lac": cell_data['lac'],
@@ -149,24 +152,22 @@ class TestIchnaea(TestCase):
         (lat, lon), cell_info = random.choice(self.TOWER_DATA)
         cells = []
         for cell_data in cell_info:
-            cells.append({"radio": cell_data['radio'],
+            cells.append({"radio": RADIO_MAP.get(cell_data['radio'], ''),
                           "mcc": cell_data['mcc'],
                           "mnc": cell_data['mnc'],
                           "lac": cell_data['lac'],
                           "cid": cell_data['cid']})
 
-        ap_data = self.AP_DATA[(lat, lon)]
+        ap_data = [v for k, v in self.AP_DATA if k == (lat, lon)][0]
         jdata = {"items": [{"lat": lat,
                             "lon": lon,
                             "accuracy": 10,
                             "altitude": 1,
                             "altitude_accuracy": 7,
                             "radio": "gsm",
-                            "cell": cells},
-                           {"lat": lat,
-                            "lon": lon,
-                            "accuracy": 17,
-                            "wifi": ap_data}]
+                            "cell": cells,
+                            "wifi": ap_data,
+                            }]
                  }
 
         blob = json.dumps(jdata)
@@ -177,7 +178,7 @@ class TestIchnaea(TestCase):
         """
         Grab 3 keys for a lat lon
         """
-        (lat, lon), ap_data = random.choice(self.TOWER_DATA)
+        (lat, lon), ap_data = random.choice(self.AP_DATA)
 
         expected_lat = int(lat * 1000)
         expected_lon = int(lon * 1000)
@@ -198,8 +199,6 @@ class TestIchnaea(TestCase):
                 self.assertEquals(actual_lon, expected_lon)
 
     def test_search_cell(self):
-        RADIO_MAP = dict([(v, k) for k, v in RADIO_TYPE.items() if k != ''])
-
         (lat, lon), all_cells = random.choice(self.TOWER_DATA)
 
         expected_lat = int(lat * 1000)
