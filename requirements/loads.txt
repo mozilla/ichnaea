@@ -5,10 +5,7 @@ Powerline==beta
 Pygments==1.6
 Sphinx==1.1.3
 WSGIProxy2==0.4.1
-WebTest==2.0.5
-beautifulsoup4==4.1.3
 cornice==0.14
-coverage==3.6
 docutils==0.11
 flake8==2.1.0
 gevent==1.0
@@ -17,7 +14,6 @@ ipython==1.1.0
 irc==8.5.4
 loads==0.2
 mccabe==0.2.1
-nose==1.2.1
 pep8==1.4.6
 pyflakes==0.7.3
 python-geohash==0.8.4
