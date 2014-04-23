@@ -1,12 +1,17 @@
+import json
 import os
 from ichnaea.db import Database
-import pickle
 from ichnaea.models import (
     Cell,
     Wifi,
 )
 
-from loadtest import generate_data
+from src.loadtest import (
+    AP_FILE,
+    TOWER_FILE,
+    generate_data,
+    JSONLocationDictDecoder,
+)
 
 SQLURI = os.environ.get('SQLURI')
 SQLSOCKET = os.environ.get('SQLSOCKET')
@@ -28,7 +33,8 @@ class DBFixture(object):
     def install_wifi_aps(self):
         self.db_master_session.execute(Wifi.__table__.delete())
 
-        ap_data = pickle.load(open('ap.pickle'))
+        ap_data = json.load(open(AP_FILE),
+                            object_hook=JSONLocationDictDecoder)
 
         session = self.db_master_session
         data = []
@@ -44,7 +50,9 @@ class DBFixture(object):
 
     def install_cell_towers(self):
         self.db_master_session.execute(Cell.__table__.delete())
-        tower_data = pickle.load(open('tower.pickle'))
+
+        tower_data = json.load(open(TOWER_FILE),
+                               object_hook=JSONLocationDictDecoder)
 
         session = self.db_master_session
 
