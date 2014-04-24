@@ -1,7 +1,4 @@
-from collections import (
-    defaultdict,
-    namedtuple,
-)
+from collections import defaultdict
 import datetime
 
 from colander import iso8601
@@ -23,6 +20,8 @@ from ichnaea.models import (
     Wifi,
     WifiBlacklist,
     WifiMeasure,
+    join_cellkey,
+    to_cellkey_psc,
 )
 from ichnaea.decimaljson import (
     loads,
@@ -37,8 +36,6 @@ from ichnaea.worker import celery
 
 
 sql_null = None  # avoid pep8 warning
-
-CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
 
 
 def process_mapstat_keyed(factor, stat_key, positions, session):
@@ -197,10 +194,7 @@ def process_measures(items, session, userid=None):
                          len(cell_measures))
         cells = defaultdict(list)
         for measure in cell_measures:
-            cell_key = CellKey(measure['radio'], measure['mcc'],
-                               measure['mnc'], measure['lac'],
-                               measure['cid'], measure['psc'])
-            cells[cell_key].append(measure)
+            cells[to_cellkey_psc(measure)].append(measure)
 
         for values in cells.values():
             insert_cell_measures.delay(values, userid=userid)
@@ -308,11 +302,7 @@ def update_cell_measure_count(cell_key, count, utcnow, session):
 
     # do we already know about this cell?
     query = session.query(Cell).filter(
-        Cell.radio == cell_key.radio).filter(
-        Cell.mcc == cell_key.mcc).filter(
-        Cell.mnc == cell_key.mnc).filter(
-        Cell.lac == cell_key.lac).filter(
-        Cell.cid == cell_key.cid).filter(
+        *join_cellkey(Cell, cell_key)).filter(
         Cell.psc == cell_key.psc
     )
 
@@ -350,9 +340,7 @@ def process_cell_measures(session, entries, userid=None,
             dropped_malformed += 1
             continue
 
-        cell_key = CellKey(cell_measure.radio, cell_measure.mcc,
-                           cell_measure.mnc, cell_measure.lac,
-                           cell_measure.cid, cell_measure.psc)
+        cell_key = to_cellkey_psc(cell_measure)
 
         # check if there's space for new measurement within per-cell maximum
         # note: old measures gradually expire, so this is an intake-rate limit

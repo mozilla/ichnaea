@@ -1,3 +1,4 @@
+from collections import namedtuple
 import datetime
 import re
 
@@ -34,6 +35,9 @@ RADIO_TYPE_INVERSE = dict((v, k) for k, v in RADIO_TYPE.items())
 invalid_wifi_regex = re.compile("(?!(0{12}|f{12}))")
 valid_wifi_regex = re.compile("([0-9a-fA-F]{12})")
 
+CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
+CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
+
 
 def from_degrees(deg):
     return int(deg * DEGREE_SCALE_FACTOR)
@@ -52,6 +56,58 @@ def normalize_wifi_key(key):
     if ":" in key or "-" in key or "." in key:
         key = key.replace(":", "").replace("-", "").replace(".", "")
     return key.lower()
+
+
+def to_cellkey(obj):
+    """
+    Construct a CellKey from any object with the requisite 5 fields.
+    """
+    if isinstance(obj, dict):
+        return CellKey(radio=obj['radio'],
+                       mcc=obj['mcc'],
+                       mnc=obj['mnc'],
+                       lac=obj['lac'],
+                       cid=obj['cid'])
+    else:
+        return CellKey(radio=obj.radio,
+                       mcc=obj.mcc,
+                       mnc=obj.mnc,
+                       lac=obj.lac,
+                       cid=obj.cid)
+
+
+def to_cellkey_psc(obj):
+    """
+    Construct a CellKeyPsc from any object with the requisite 6 fields.
+    """
+    if isinstance(obj, dict):
+        return CellKeyPsc(radio=obj['radio'],
+                          mcc=obj['mcc'],
+                          mnc=obj['mnc'],
+                          lac=obj['lac'],
+                          cid=obj['cid'],
+                          psc=obj['psc'],
+                          )
+    else:
+        return CellKeyPsc(radio=obj.radio,
+                          mcc=obj.mcc,
+                          mnc=obj.mnc,
+                          lac=obj.lac,
+                          cid=obj.cid,
+                          psc=obj.psc)
+
+
+def join_cellkey(model, k):
+    """
+    Return an sqlalchemy equality criterion for joining on the cell 5-tuple.
+    Should be spliced into a query filter call like so:
+    ``session.query(Cell).filter(*join_cellkey(Cell, k))``
+    """
+    return (model.radio == k.radio,
+            model.mcc == k.mcc,
+            model.mnc == k.mnc,
+            model.lac == k.lac,
+            model.cid == k.cid)
 
 
 class Cell(_Model):

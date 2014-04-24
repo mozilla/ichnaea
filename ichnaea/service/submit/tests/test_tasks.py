@@ -268,8 +268,8 @@ class TestInsert(CeleryTestCase):
         measures = [dict(mcc=1, mnc=2, lac=3, cid=4, psc=5,
                          radio=RADIO_TYPE['gsm'],
                          id=0,
-                         lat=10000000+i,
-                         lon=20000000+i) for i in range(3)]
+                         lat=10000000 + i,
+                         lon=20000000 + i) for i in range(3)]
 
         result = insert_cell_measures.delay(measures)
         self.assertEqual(result.get(), 3)
