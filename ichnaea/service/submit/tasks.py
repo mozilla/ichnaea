@@ -12,6 +12,7 @@ from ichnaea.content.models import (
 )
 from ichnaea.models import (
     Cell,
+    CellBlacklist,
     CellMeasure,
     Measure,
     normalize_wifi_key,
@@ -298,6 +299,13 @@ def update_cell_measure_count(cell_key, count, utcnow, session):
     # only update data for complete record
     if cell_key.radio < 0 or cell_key.mcc < 1 or cell_key.mnc < 0 or \
        cell_key.lac < 0 or cell_key.cid < 0:  # NOQA
+        return 0
+
+    # check cell blacklist
+    query = session.query(CellBlacklist).filter(
+        *join_cellkey(CellBlacklist, cell_key))
+    b = query.first()
+    if b is not None:
         return 0
 
     # do we already know about this cell?
