@@ -39,3 +39,11 @@ you can run the script in alembic/generate_diff.sh.
 When committing a new migration, it's handy to save the actual DDL
 into a .sql file in alembic/versions to make it easier to review the
 database upgrade change.
+
+
+---
+
+Stamping the database as 'current'.  If you generate the database
+directly from the models, you can use `alembic stamp head` to just
+force alembic to assume that everything is in sync.  Subsequent
+database migrations will work correctly.
