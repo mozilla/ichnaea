@@ -16,52 +16,21 @@ from ichnaea.heka_logging import (
 )
 from ichnaea.models import (
     Cell,
+    CellKey,
     CellBlacklist,
     CellMeasure,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
+    join_cellkey,
+    to_cellkey,
     to_degrees,
 )
 from ichnaea.worker import celery
 from ichnaea.geocalc import distance
-from collections import namedtuple
 
 WIFI_MAX_DIST_KM = 5
 CELL_MAX_DIST_KM = 150
-
-CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
-
-
-def to_cellkey(obj):
-    """
-    Construct a CellKey from any object with the requisite 5 named cell fields.
-    """
-    if isinstance(obj, dict):
-        return CellKey(radio=obj['radio'],
-                       mcc=obj['mcc'],
-                       mnc=obj['mnc'],
-                       lac=obj['lac'],
-                       cid=obj['cid'])
-    else:
-        return CellKey(radio=obj.radio,
-                       mcc=obj.mcc,
-                       mnc=obj.mnc,
-                       lac=obj.lac,
-                       cid=obj.cid)
-
-
-def join_cellkey(model, k):
-    """
-    Return an sqlalchemy equality criterion for joining on the cell 5-tuple.
-    Should be spliced into a query filter call like so:
-    ``session.query(Cell).filter(*join_cellkey(Cell, k))``
-    """
-    return (model.radio == k.radio,
-            model.mcc == k.mcc,
-            model.mnc == k.mnc,
-            model.lac == k.lac,
-            model.cid == k.cid)
 
 
 class DatabaseTask(Task):

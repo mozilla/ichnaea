@@ -19,6 +19,7 @@ from ichnaea.content.models import (
 from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.models import (
     Cell,
+    CellBlacklist,
     CellMeasure,
     Wifi,
     WifiBlacklist,
@@ -261,6 +262,32 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(len(wifis), 1)
         self.assertEqual(wifis[0].total_measures, 6)
 
+    def test_cell_blacklist(self):
+        from ichnaea.service.submit.tasks import insert_cell_measures
+        session = self.db_master_session
+
+        measures = [dict(mcc=1, mnc=2, lac=3, cid=i, psc=5,
+                         radio=RADIO_TYPE['gsm'],
+                         id=0,
+                         lat=10000000 + i,
+                         lon=20000000 + i) for i in range(3)]
+
+        black = CellBlacklist(
+            mcc=1, mnc=2, lac=3, cid=1,
+            radio=RADIO_TYPE['gsm'],
+        )
+        session.add(black)
+        session.flush()
+
+        result = insert_cell_measures.delay(measures)
+        self.assertEqual(result.get(), 3)
+
+        measures = session.query(CellMeasure).all()
+        self.assertEqual(len(measures), 3)
+
+        cells = session.query(Cell).all()
+        self.assertEqual(len(cells), 2)
+
     def test_cell_overflow(self):
         from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
@@ -268,8 +295,8 @@ class TestInsert(CeleryTestCase):
         measures = [dict(mcc=1, mnc=2, lac=3, cid=4, psc=5,
                          radio=RADIO_TYPE['gsm'],
                          id=0,
-                         lat=10000000+i,
-                         lon=20000000+i) for i in range(3)]
+                         lat=10000000 + i,
+                         lon=20000000 + i) for i in range(3)]
 
         result = insert_cell_measures.delay(measures)
         self.assertEqual(result.get(), 3)

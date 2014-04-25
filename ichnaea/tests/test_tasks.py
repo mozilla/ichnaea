@@ -4,13 +4,14 @@ from datetime import timedelta
 from ichnaea.models import (
     Cell,
     CellBlacklist,
+    CellKey,
     CellMeasure,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
+    to_cellkey,
 )
 from ichnaea.tests.base import CeleryTestCase
-from ichnaea.tasks import CellKey, to_cellkey
 
 
 class TestCellLocationUpdate(CeleryTestCase):
