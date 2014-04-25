@@ -14,6 +14,7 @@ from ichnaea.content.stats import (
     global_stats,
     histogram,
     leaders,
+    leaders_weekly,
 )
 
 
@@ -30,6 +31,9 @@ def configure_content(config):
                     http_cache=(86400, {'public': True}))
     config.add_static_view(
         name='static', path='ichnaea.content:static', cache_max_age=3600)
+
+    config.add_route('leaders_weekly', '/leaders/weekly')
+    config.add_route('leaders', '/leaders')
 
     config.add_route('stats_countries', '/stats/countries')
     config.add_route('stats', '/stats')
@@ -88,7 +92,7 @@ class ContentViews(Layout):
         return {'page_title': 'Privacy Policy'}
 
     @view_config(renderer='templates/leaders.pt',
-                 name="leaders", http_cache=300)
+                 route_name="leaders", http_cache=300)
     def leaders_view(self):
         session = self.request.db_slave_session
         result = list(enumerate(leaders(session)))
@@ -105,6 +109,31 @@ class ContentViews(Layout):
             'page_title': 'Leaderboard',
             'leaders1': leaders1,
             'leaders2': leaders2,
+        }
+
+    @view_config(renderer='templates/leaders_weekly.pt',
+                 route_name="leaders_weekly", http_cache=300)
+    def leaders_weekly_view(self):
+        session = self.request.db_slave_session
+        result = {
+            'new_cell': {'leaders1': [], 'leaders2': []},
+            'new_wifi': {'leaders1': [], 'leaders2': []},
+        }
+        for name, value in leaders_weekly(session).items():
+            value = [
+                {
+                    'pos': l[0] + 1,
+                    'num': l[1]['num'],
+                    'nickname': l[1]['nickname'],
+                } for l in list(enumerate(value))]
+            half = len(value) // 2 + len(value) % 2
+            result[name] = {
+                'leaders1': value[:half],
+                'leaders2': value[half:],
+            }
+        return {
+            'page_title': 'Weekly Leaderboard',
+            'scores': result,
         }
 
     @view_config(renderer='templates/map.pt', name="map", http_cache=300)

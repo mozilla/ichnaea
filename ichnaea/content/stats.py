@@ -76,27 +76,60 @@ def histogram(session, name, days=60):
 
 
 def leaders(session):
-    result = []
     score_rows = session.query(
         Score.userid, func.sum(Score.value)).filter(
         Score.key == SCORE_TYPE['location']).group_by(
-        Score.userid, Score.key).all()
+        Score.userid).all()
     # sort descending by value
     score_rows.sort(key=itemgetter(1), reverse=True)
     userids = [s[0] for s in score_rows]
     if not userids:
         return []
-    user_rows = session.query(User).filter(User.id.in_(userids)).all()
-    users = {}
-    for user in user_rows:
-        users[user.id] = user.nickname
+    user_rows = session.query(User.id, User.nickname).filter(
+        User.id.in_(userids)).all()
+    users = dict(user_rows)
 
+    result = []
     for userid, value in score_rows:
         nickname = users.get(userid, 'anonymous')
         if len(nickname) > 24:
             nickname = nickname[:24] + u'...'
         result.append(
             {'nickname': nickname, 'num': int(value)})
+    return result
+
+
+def leaders_weekly(session, batch=20):
+    result = {'new_cell': [], 'new_wifi': []}
+    today = datetime.datetime.utcnow().date()
+    one_week = today - timedelta(7)
+
+    score_rows = {}
+    userids = set()
+    for name in ('new_cell', 'new_wifi'):
+        score_rows[name] = session.query(
+            Score.userid, func.sum(Score.value)).filter(
+            Score.key == SCORE_TYPE[name]).filter(
+            Score.time >= one_week).order_by(
+            func.sum(Score.value).desc()).group_by(
+            Score.userid).limit(batch).all()
+        userids.update(set([s[0] for s in score_rows[name]]))
+
+    if not userids:
+        return result
+
+    user_rows = session.query(User.id, User.nickname).filter(
+        User.id.in_(userids)).all()
+    users = dict(user_rows)
+
+    for name, value in score_rows.items():
+        for userid, value in value:
+            nickname = users.get(userid, 'anonymous')
+            if len(nickname) > 24:
+                nickname = nickname[:24] + u'...'
+            result[name].append(
+                {'nickname': nickname, 'num': int(value)})
+
     return result
 
 

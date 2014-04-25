@@ -6,6 +6,11 @@
 <section id="main-content">
     <p>Data is updated in near-realtime.</p>
 
+    <p>
+        A <a href="/leaders/weekly">weekly leaderboard</a> showing new
+        cell and WiFi discoveries is also available.
+    </p>
+
     <div class="half-left">
         <table class="table half">
             <thead>
