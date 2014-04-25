@@ -158,6 +158,32 @@ class TestFunctionalContentViews(AppTestCase):
             result['leaders2'],
             [{'nickname': u'0', 'num': 1, 'pos': 3}])
 
+    def test_leaders_weekly(self):
+        session = self.db_master_session
+        for i in range(3):
+            user = User(nickname=unicode(i))
+            session.add(user)
+            session.flush()
+            score1 = Score(userid=user.id, value=i)
+            score1.name = 'new_cell'
+            session.add(score1)
+            score2 = Score(userid=user.id, value=i)
+            score2.name = 'new_wifi'
+            session.add(score2)
+        session.commit()
+        request = DummyRequest()
+        request.db_slave_session = self.db_master_session
+        inst = self._make_view(request)
+        result = inst.leaders_weekly_view()
+        for score_name in ('new_cell', 'new_wifi'):
+            self.assertEqual(
+                result['scores'][score_name]['leaders1'],
+                [{'nickname': u'2', 'num': 2, 'pos': 1},
+                 {'nickname': u'1', 'num': 1, 'pos': 2}])
+            self.assertEqual(
+                result['scores'][score_name]['leaders2'],
+                [{'nickname': u'0', 'num': 0, 'pos': 3}])
+
     def test_stats(self):
         day = datetime.utcnow().date() - timedelta(1)
         session = self.db_master_session
