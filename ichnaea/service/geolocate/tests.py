@@ -3,6 +3,7 @@ import json
 from ichnaea.models import (
     Cell,
     Wifi,
+    CELLID_LAC,
 )
 from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.tests.base import AppTestCase
@@ -95,6 +96,97 @@ class TestGeolocate(AppTestCase):
                      'http.request'],
             timer=['http.request'],
             sentry=[('msg', RAVEN_ERROR, 0)]
+        )
+
+    def test_cell_miss_lac_hit(self):
+        app = self.app
+        session = self.db_slave_session
+        key = dict(mcc=1, mnc=2, lac=3)
+        data = [
+            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
+            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
+            Cell(lat=10060000, lon=10060000, radio=2, cid=6, **key),
+            Cell(lat=10026666, lon=10033333, radio=2, cid=CELLID_LAC,
+                 range=50000, **key),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        res = app.post_json(
+            '/v1/geolocate?key=test',
+            {'radioType': 'wcdma',
+             'cellTowers': [
+                 {'cellId': 7,
+                  'mobileCountryCode': 1,
+                  'mobileNetworkCode': 2,
+                  'locationAreaCode': 3}]},
+            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {'location': {"lat": 1.0026666,
+                                                 "lng": 1.0033333},
+                                    "accuracy": 50000.0})
+
+    def test_cell_hit_ignores_lac(self):
+        app = self.app
+        session = self.db_slave_session
+        key = dict(mcc=1, mnc=2, lac=3)
+        data = [
+            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
+            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
+            Cell(lat=10060000, lon=10060000, radio=2, cid=6, **key),
+            Cell(lat=10026666, lon=10033333, radio=2, cid=CELLID_LAC,
+                 range=50000, **key),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        res = app.post_json(
+            '/v1/geolocate?key=test',
+            {'radioType': 'wcdma',
+             'cellTowers': [
+                 {'cellId': 5,
+                  'mobileCountryCode': 1,
+                  'mobileNetworkCode': 2,
+                  'locationAreaCode': 3}]},
+            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {'location': {"lat": 1.0020000,
+                                                 "lng": 1.0040000},
+                                    "accuracy": 35000.0})
+
+    def test_lac_miss(self):
+        app = self.app
+        session = self.db_slave_session
+        key = dict(mcc=1, mnc=2, lac=3)
+        data = [
+            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
+            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
+            Cell(lat=10060000, lon=10060000, radio=2, cid=6, **key),
+            Cell(lat=10026666, lon=10033333, radio=2, cid=CELLID_LAC,
+                 range=50000, **key),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        res = app.post_json(
+            '/v1/geolocate?key=test',
+            {'radioType': 'wcdma',
+             'cellTowers': [
+                 {'cellId': 5,
+                  'mobileCountryCode': 1,
+                  'mobileNetworkCode': 2,
+                  'locationAreaCode': 4}]},
+            status=404)
+        self.assertEqual(
+            res.json, {"error": {
+                "errors": [{
+                    "domain": "geolocation",
+                    "reason": "notFound",
+                    "message": "Not found",
+                }],
+                "code": 404,
+                "message": "Not found"
+            }}
         )
 
     def test_geoip_fallback(self):

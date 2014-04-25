@@ -2,6 +2,7 @@ from collections import defaultdict
 from sqlalchemy import text
 from ichnaea.tasks import DatabaseTask, backfill_cell_location_update
 from ichnaea.worker import celery
+from ichnaea.models import CELLID_LAC, to_degrees
 from ichnaea.geocalc import distance
 
 NEAREST_DISTANCE = 1.0  # Distance in kilometers between towers with no
@@ -98,8 +99,9 @@ def compute_matching_towers(session, radio, mcc, mnc, psc):
         mnc = :mnc and
         psc = :psc and
         lac != -1 and
+        cid != %d and
         cid != -1
-    """).bindparams(radio=radio, mcc=mcc, mnc=mnc, psc=psc)
+    """ % CELLID_LAC).bindparams(radio=radio, mcc=mcc, mnc=mnc, psc=psc)
     row_proxy = session.execute(stmt)
     return [dict(r) for r in row_proxy]
 

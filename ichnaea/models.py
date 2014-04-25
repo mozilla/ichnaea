@@ -27,10 +27,15 @@ RADIO_TYPE = {
     'gsm': 0,
     'cdma': 1,
     'umts': 2,
+    'wcdma': 2,  # WCDMA is the main air interface for UMTS,
+                 # but is the value google geolocation API
+                 # uses to refer to this radio family.
     'lte': 3,
 }
 RADIO_TYPE_KEYS = list(RADIO_TYPE.keys())
 RADIO_TYPE_INVERSE = dict((v, k) for k, v in RADIO_TYPE.items())
+
+CELLID_LAC = -2
 
 invalid_wifi_regex = re.compile("(?!(0{12}|f{12}))")
 valid_wifi_regex = re.compile("([0-9a-fA-F]{12})")
