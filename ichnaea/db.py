@@ -74,7 +74,7 @@ def db_tween_factory(handler, registry):
 
 class Database(object):
 
-    def __init__(self, uri, socket=None, create=True, echo=False,
+    def __init__(self, uri, socket=None, echo=False,
                  isolation_level='REPEATABLE READ'):
         options = {
             'pool_recycle': 3600,

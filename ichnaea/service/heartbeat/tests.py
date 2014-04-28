@@ -24,7 +24,6 @@ class TestDatabaseHeartbeat(AppTestCase):
         self.app.app.registry.db_slave = _make_db(
             uri='mysql+pymysql://none:none@127.0.0.1:9/test_location',
             socket=None,
-            create=False,
         )
 
         res = app.get('/__heartbeat__', status=503)
