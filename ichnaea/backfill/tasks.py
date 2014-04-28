@@ -111,14 +111,13 @@ def _nearest_tower(missing_lat, missing_lon, centroids):
     We just need the closest cell, so we can approximate
     using the haversine formula.
     """
-    FLOAT_CONST = 10000000.0
-    lat1 = missing_lat / FLOAT_CONST
-    lon1 = missing_lon / FLOAT_CONST
+    lat1 = to_degrees(missing_lat)
+    lon1 = to_degrees(missing_lon)
 
     min_dist = None
     for pt in centroids:
-        lat2 = float(pt['lat']) / FLOAT_CONST
-        lon2 = float(pt['lon']) / FLOAT_CONST
+        lat2 = to_degrees(pt['lat'])
+        lon2 = to_degrees(pt['lon'])
         dist = distance(lat1, lon1, lat2, lon2)
         if min_dist is None or min_dist['dist'] > dist:
             min_dist = {'dist': dist, 'pt': pt}
