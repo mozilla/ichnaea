@@ -121,9 +121,10 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(cell.min_lon, -10070000)
 
         # independent calculation: the cell bounding box is
-        # (1.000, -1.007) to (1.005, -1.000), and distance
-        # between those is 956.43m, int(round(dist/2.0)) is 478m
-        self.assertEqual(cell.range, 478)
+        # (1.000, -1.007) to (1.005, -1.000), with centroid
+        # at (1.002, -1.003); worst distance from centroid
+        # to any corner is 556m
+        self.assertEqual(cell.range, 556)
 
     def test_blacklist_moving_cells(self):
         from ichnaea.tasks import cell_location_update
@@ -435,13 +436,15 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.assertEqual(wifis[k2].min_lon, -20040000)
 
         # independent calculation: the k1 bounding box is
-        # (1.000, 1.000) to (1.002, 1.004), and distance
-        # between those is 497.21m, int(round(dist/2.0)) is 249m
+        # (1.000, 1.000) to (1.002, 1.004), with centroid
+        # at (1.001, 1.002); worst distance from centroid
+        # to any corner is 249m
         self.assertEqual(wifis[k1].range, 249)
 
         # independent calculation: the k2 bounding box is
-        # (1.998, -2.004) to (2.002, -1.996), and distance
-        # between those is 994.07m, int(round(dist/2.0)) is 497m
+        # (1.998, -2.004) to (2.002, -1.996), with centroid
+        # at (2.000, 2.000); worst distance from centroid
+        # to any corner is 497m
         self.assertEqual(wifis[k2].range, 497)
 
     def test_blacklist_moving_wifis(self):

@@ -233,8 +233,14 @@ def calculate_new_position(station, measures, moving_stations,
     station.max_lat = max_lat
     station.max_lon = max_lon
 
-    # give radio-range estimate, in meters, as half bounding box diagonal
-    station.range = int(round((box_dist * 1000.0) / 2.0))
+    # give radio-range estimate between extreme values and centroid
+    ctr = (to_degrees(station.lat), to_degrees(station.lon))
+    points = [(to_degrees(min_lat), to_degrees(min_lon)),
+              (to_degrees(min_lat), to_degrees(max_lon)),
+              (to_degrees(max_lat), to_degrees(min_lon)),
+              (to_degrees(max_lat), to_degrees(max_lon))]
+
+    station.range = range_to_points(ctr, points) * 1000.0
 
 
 def update_enclosing_lac(session, cell):
