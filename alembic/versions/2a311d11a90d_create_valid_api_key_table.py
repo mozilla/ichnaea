@@ -17,6 +17,8 @@ import sqlalchemy as sa
 def upgrade():
     op.create_table('api_key',
                     sa.Column('valid_key', sa.String(36), primary_key=True),
+                    mysql_engine='InnoDB',
+                    mysql_charset='utf8',
                     )
 
 
