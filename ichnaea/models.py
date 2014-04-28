@@ -86,8 +86,7 @@ def to_cellkey_psc(obj):
                           mnc=obj['mnc'],
                           lac=obj['lac'],
                           cid=obj['cid'],
-                          psc=obj['psc'],
-                          )
+                          psc=obj['psc'])
     else:
         return CellKeyPsc(radio=obj.radio,
                           mcc=obj.mcc,
@@ -99,15 +98,20 @@ def to_cellkey_psc(obj):
 
 def join_cellkey(model, k):
     """
-    Return an sqlalchemy equality criterion for joining on the cell 5-tuple.
+    Return an sqlalchemy equality criterion for joining on the cell n-tuple.
     Should be spliced into a query filter call like so:
     ``session.query(Cell).filter(*join_cellkey(Cell, k))``
     """
-    return (model.radio == k.radio,
-            model.mcc == k.mcc,
-            model.mnc == k.mnc,
-            model.lac == k.lac,
-            model.cid == k.cid)
+    criterion = (model.radio == k.radio,
+                 model.mcc == k.mcc,
+                 model.mnc == k.mnc,
+                 model.lac == k.lac,
+                 model.cid == k.cid)
+    if isinstance(k, CellKeyPsc) and getattr(model, 'psc', None) is not None:
+        # if the model has a psc column, and we get a CellKeyPsc,
+        # add it to the criterion
+        criterion += (model.psc == k.psc, )
+    return criterion
 
 
 class Cell(_Model):

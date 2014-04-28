@@ -354,12 +354,7 @@ def process_cell_measures(session, entries, userid=None,
         # note: old measures gradually expire, so this is an intake-rate limit
         if cell_key not in space_available:
             query = session.query(Cell.total_measures).filter(
-                Cell.radio == cell_key.radio,
-                Cell.mcc == cell_key.mcc,
-                Cell.mnc == cell_key.mnc,
-                Cell.lac == cell_key.lac,
-                Cell.cid == cell_key.cid,
-                Cell.psc == cell_key.psc)
+                *join_cellkey(Cell, cell_key))
             curr = query.first()
             if curr is not None:
                 space_available[cell_key] = max_measures_per_cell - curr[0]
@@ -375,12 +370,7 @@ def process_cell_measures(session, entries, userid=None,
         # Possibly drop measure if we're receiving them too
         # quickly for this cell.
         query = session.query(Cell.total_measures).filter(
-            Cell.radio == cell_measure.radio,
-            Cell.mcc == cell_measure.mcc,
-            Cell.mnc == cell_measure.mnc,
-            Cell.lac == cell_measure.lac,
-            Cell.cid == cell_measure.cid,
-            Cell.psc == cell_measure.psc)
+            *join_cellkey(Cell, cell_key))
         total_measures = query.first()
         if total_measures is not None:
             if total_measures[0] > max_measures_per_cell:
