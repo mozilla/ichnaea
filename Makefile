@@ -9,6 +9,7 @@ TRAVIS ?= false
 
 BUILD_DIRS = bin build dist include lib lib64 man node_modules share
 
+MYSQL_DB = location
 MYSQL_TEST_DB = test_location
 ifeq ($(TRAVIS), true)
 	MYSQL_USER ?= travis
@@ -36,6 +37,8 @@ ifeq ($(TRAVIS), true)
 	mysql -u$(MYSQL_USER) -h localhost -e "create database $(MYSQL_TEST_DB)"
 else
 	mysql -u$(MYSQL_USER) -p$(MYSQL_PWD) -h localhost -e \
+		"create database $(MYSQL_DB)" || echo
+	mysql -u$(MYSQL_USER) -p$(MYSQL_PWD) -h localhost -e \
 		"create database $(MYSQL_TEST_DB)" || echo
 endif
 
@@ -46,14 +49,10 @@ $(PYTHON):
 	virtualenv .
 	bin/pip install -U pip
 
-build: $(PYTHON)
+build: $(PYTHON) mysql
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/test.txt
 	$(PYTHON) setup.py develop
-ifneq ($(TRAVIS), true)
-	mysql -u$(MYSQL_USER) -p$(MYSQL_PWD) -h localhost -e \
-		"create database location" || echo
-endif
 
 css: node_modules
 	$(HERE)/node_modules/.bin/cleancss -d \
