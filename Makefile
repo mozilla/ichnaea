@@ -57,8 +57,8 @@ endif
 
 js: node_modules
 	$(HERE)/node_modules/.bin/uglifyjs \
-	$(HERE)/ichnaea/content/static/js/mapbox-1.5.2.min.js \
-	$(HERE)/ichnaea/content/static/js/leaflet-hash-20140111.js \
+	$(HERE)/ichnaea/content/static/js/mapbox-1.6.2.min.js \
+	$(HERE)/ichnaea/content/static/js/leaflet-hash-0.2.1.js \
 	$(HERE)/ichnaea/content/static/js/map.js \
 	-o $(HERE)/ichnaea/content/static/js/map-combined.js \
 	-m -c --stats

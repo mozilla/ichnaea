@@ -3,7 +3,7 @@
            metal:use-macro="view.base_template">
 
 <tal:slot metal:fill-slot="css">
-    <link rel="stylesheet" href="/static/css/mapbox-1.5.2.min.css" />
+    <link rel="stylesheet" href="/static/css/mapbox-1.6.2.min.css" />
 </tal:slot>
 
 <tal:slot metal:fill-slot="js">

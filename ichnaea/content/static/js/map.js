@@ -1,9 +1,12 @@
 $(document).ready(function() {
     // the retina version uses zoom level + 1 image tiles
-    // and we only generated tiles down to zoom level 13
-    var maxZoom = 13;
+    // and we only generated tiles down to zoom level 13,
+    // noted via the maxNativeZoom restriction on the tile layer
+    // we still allow more zoom levels on the base map, to make
+    // it easier to see which streets are covered
+    var maxZoom = 16;
     if (L.Browser.retina) {
-        maxZoom = 12;
+        maxZoom = 15;
     }
 
     var map = L.mapbox.map('map', 'mozilla-webprod.map-05ad0a21', {
@@ -28,7 +31,8 @@ $(document).ready(function() {
 
     // add tile layer
     L.tileLayer('/tiles/{z}/{x}/{y}.png', {
-        detectRetina: true
+        detectRetina: true,
+        maxNativeZoom: 13
     }).addTo(map);
 
     // add tile layer
