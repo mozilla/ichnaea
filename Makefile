@@ -32,7 +32,8 @@ all: build
 
 mysql:
 ifeq ($(TRAVIS), true)
-	mysql -u$(MYSQL_USER) -h localhost -e "create database $(MYSQL_TEST_DB)"
+	mysql -u$(MYSQL_USER) -h localhost -e \
+		"create database $(MYSQL_TEST_DB)" || echo
 else
 	mysql -u$(MYSQL_USER) -p$(MYSQL_PWD) -h localhost -e \
 		"create database $(MYSQL_DB)" || echo
