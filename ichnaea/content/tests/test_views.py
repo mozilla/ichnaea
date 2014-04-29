@@ -152,11 +152,11 @@ class TestFunctionalContentViews(AppTestCase):
         result = inst.leaders_view()
         self.assertEqual(
             result['leaders1'],
-            [{'nickname': u'2', 'num': 5, 'pos': 1},
-             {'nickname': u'1', 'num': 3, 'pos': 2}])
+            [{'anchor': u'2', 'nickname': u'2', 'num': 5, 'pos': 1},
+             {'anchor': u'1', 'nickname': u'1', 'num': 3, 'pos': 2}])
         self.assertEqual(
             result['leaders2'],
-            [{'nickname': u'0', 'num': 1, 'pos': 3}])
+            [{'anchor': u'0', 'nickname': u'0', 'num': 1, 'pos': 3}])
 
     def test_leaders_weekly(self):
         session = self.db_master_session

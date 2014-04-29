@@ -101,6 +101,7 @@ class ContentViews(Layout):
                 'pos': l[0] + 1,
                 'num': l[1]['num'],
                 'nickname': l[1]['nickname'],
+                'anchor': l[1]['nickname'],
             } for l in result]
         half = len(result) // 2 + len(result) % 2
         leaders1 = result[:half]

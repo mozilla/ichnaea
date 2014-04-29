@@ -23,7 +23,9 @@
             <tbody>
                 <tr tal:repeat="row leaders1">
                     <td>${row.pos}.</td>
-                    <td>${row.nickname}</td>
+                    <td><a id="${row.anchor}"
+                           href="#${row.anchor}">${row.nickname}</a>
+                    </td>
                     <td class="text-right">${row.num}</td>
                 </tr>
             </tbody>
@@ -41,7 +43,9 @@
             <tbody>
                 <tr tal:repeat="row leaders2">
                     <td>${row.pos}.</td>
-                    <td>${row.nickname}</td>
+                    <td><a id="${row.anchor}"
+                           href="#${row.anchor}">${row.nickname}</a>
+                    </td>
                     <td class="text-right">${row.num}</td>
                 </tr>
             </tbody>
