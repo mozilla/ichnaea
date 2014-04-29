@@ -55,6 +55,10 @@ ifneq ($(TRAVIS), true)
 		"create database location" || echo
 endif
 
+css: node_modules
+	$(HERE)/node_modules/.bin/cleancss -d \
+	-o $(HERE)/ichnaea/content/static/css/base-combined.css \
+	$(HERE)/ichnaea/content/static/css/base.css
 js: node_modules
 	$(HERE)/node_modules/.bin/uglifyjs \
 	$(HERE)/ichnaea/content/static/js/mapbox-1.6.2.min.js \

@@ -2,20 +2,32 @@
   "name": "ichnaea",
   "version": "0.1.0",
   "dependencies": {
+    "clean-css": {
+      "version": "2.1.8",
+      "from": "clean-css@>2.1.0",
+      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-2.1.8.tgz",
+      "dependencies": {
+        "commander": {
+          "version": "2.1.0",
+          "from": "commander@2.1.x",
+          "resolved": "https://registry.npmjs.org/commander/-/commander-2.1.0.tgz"
+        }
+      }
+    },
     "uglify-js": {
-      "version": "2.4.3",
+      "version": "2.4.13",
       "from": "uglify-js@>2.4.0",
-      "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-2.4.3.tgz",
+      "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-2.4.13.tgz",
       "dependencies": {
         "async": {
-          "version": "0.2.9",
+          "version": "0.2.10",
           "from": "async@~0.2.6",
-          "resolved": "https://registry.npmjs.org/async/-/async-0.2.9.tgz"
+          "resolved": "https://registry.npmjs.org/async/-/async-0.2.10.tgz"
         },
         "source-map": {
-          "version": "0.1.31",
-          "from": "source-map@~0.1.7",
-          "resolved": "https://registry.npmjs.org/source-map/-/source-map-0.1.31.tgz",
+          "version": "0.1.33",
+          "from": "source-map@~0.1.33",
+          "resolved": "https://registry.npmjs.org/source-map/-/source-map-0.1.33.tgz",
           "dependencies": {
             "amdefine": {
               "version": "0.1.0",
@@ -31,14 +43,15 @@
           "dependencies": {
             "wordwrap": {
               "version": "0.0.2",
-              "from": "wordwrap@~0.0.2"
+              "from": "wordwrap@~0.0.2",
+              "resolved": "https://registry.npmjs.org/wordwrap/-/wordwrap-0.0.2.tgz"
             }
           }
         },
         "uglify-to-browserify": {
-          "version": "1.0.1",
+          "version": "1.0.2",
           "from": "uglify-to-browserify@~1.0.0",
-          "resolved": "https://registry.npmjs.org/uglify-to-browserify/-/uglify-to-browserify-1.0.1.tgz"
+          "resolved": "https://registry.npmjs.org/uglify-to-browserify/-/uglify-to-browserify-1.0.2.tgz"
         }
       }
     }
