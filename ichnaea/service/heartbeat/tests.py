@@ -22,9 +22,7 @@ class TestDatabaseHeartbeat(AppTestCase):
 
         # create a database connection to the discard port
         self.app.app.registry.db_slave = _make_db(
-            uri='mysql+pymysql://none:none@127.0.0.1:9/test_location',
-            socket=None,
-        )
+            uri='mysql+pymysql://none:none@127.0.0.1:9/test_location')
 
         res = app.get('/__heartbeat__', status=503)
         self.assertEqual(res.content_type, 'text/plain')

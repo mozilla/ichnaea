@@ -25,17 +25,11 @@ def main(global_config, _db_master=None, _db_slave=None, **settings):
 
     # configure databases incl. test override hooks
     if _db_master is None:
-        config.registry.db_master = Database(
-            settings['db_master'],
-            socket=settings.get('db_master_socket'),
-        )
+        config.registry.db_master = Database(settings['db_master'])
     else:
         config.registry.db_master = _db_master
     if _db_slave is None:
-        config.registry.db_slave = Database(
-            settings['db_slave'],
-            socket=settings.get('db_slave_socket'),
-        )
+        config.registry.db_slave = Database(settings['db_slave'])
     else:
         config.registry.db_slave = _db_slave
 

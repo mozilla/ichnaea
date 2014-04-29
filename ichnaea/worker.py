@@ -90,10 +90,7 @@ def attach_database(app, _db_master=None):
     # called manually during tests
     settings = config().get_map('ichnaea')
     if _db_master is None:  # pragma: no cover
-        db_master = Database(
-            settings['db_master'],
-            socket=settings.get('db_master_socket'),
-        )
+        db_master = Database(settings['db_master'])
     else:
         db_master = _db_master
     app.db_master = db_master
@@ -125,7 +122,6 @@ def configure(celery=celery):
 
     # testing overrides
     sqluri = os.environ.get('SQLURI', '')
-    sqlsocket = os.environ.get('SQLSOCKET', '')
 
     if sqluri:
         broker_url = sqluri
@@ -137,17 +133,8 @@ def configure(celery=celery):
     if 'pymysql' in broker_url:
         broker_url = 'sqla+' + broker_url
 
-    if sqlsocket:
-        broker_socket = sqlsocket
-        result_socket = sqluri
-    else:  # pragma: no cover
-        broker_socket = section.get('broker_socket')
-        result_socket = section.get('result_socket')
-
     if 'pymysql' in broker_url:
         broker_connect_args = {"charset": "utf8"}
-        if broker_socket:
-            broker_connect_args['unix_socket'] = broker_socket
         broker_options = database_options.copy()
         broker_options['connect_args'] = broker_connect_args
     elif 'redis' in broker_url:
@@ -157,8 +144,6 @@ def configure(celery=celery):
 
     if 'pymysql' in result_url:
         result_connect_args = {"charset": "utf8"}
-        if result_socket:
-            result_connect_args['unix_socket'] = result_socket
         result_options = database_options.copy()
         result_options['connect_args'] = result_connect_args
         celery.conf.update(

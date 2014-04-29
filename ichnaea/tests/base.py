@@ -22,11 +22,10 @@ except ImportError:
 
 
 SQLURI = os.environ.get('SQLURI')
-SQLSOCKET = os.environ.get('SQLSOCKET')
 
 
-def _make_db(uri=SQLURI, socket=SQLSOCKET):
-    return Database(uri, socket=socket)
+def _make_db(uri=SQLURI):
+    return Database(uri)
 
 
 def _make_app(_db_master=None, _db_slave=None, **settings):

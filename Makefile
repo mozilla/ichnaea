@@ -15,7 +15,6 @@ ifeq ($(TRAVIS), true)
 	MYSQL_USER ?= travis
 	MYSQL_PWD ?=
 	SQLURI ?= mysql+pymysql://$(MYSQL_USER)@localhost/$(MYSQL_TEST_DB)
-	SQLSOCKET ?=
 
 	PYTHON = python
 	PIP = pip
@@ -25,7 +24,6 @@ else
 	MYSQL_USER ?= root
 	MYSQL_PWD ?= mysql
 	SQLURI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@localhost/$(MYSQL_TEST_DB)
-	SQLSOCKET ?= /opt/local/var/run/mysql56/mysqld.sock
 endif
 
 .PHONY: all js test docs mysql
@@ -84,7 +82,7 @@ clean:
 	rm -rf $(HERE)/ichnaea.egg-info
 	
 test: mysql
-	SQLURI=$(SQLURI) SQLSOCKET=$(SQLSOCKET) CELERY_ALWAYS_EAGER=true \
+	SQLURI=$(SQLURI) CELERY_ALWAYS_EAGER=true \
 	$(NOSE) -s -d -v --with-coverage --cover-package ichnaea ichnaea
 
 bin/sphinx-build:

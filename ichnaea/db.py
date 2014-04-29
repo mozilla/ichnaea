@@ -74,8 +74,7 @@ def db_tween_factory(handler, registry):
 
 class Database(object):
 
-    def __init__(self, uri, socket=None, echo=False,
-                 isolation_level='REPEATABLE READ'):
+    def __init__(self, uri, echo=False, isolation_level='REPEATABLE READ'):
         options = {
             'pool_recycle': 3600,
             'pool_size': 10,
@@ -85,8 +84,6 @@ class Database(object):
             'isolation_level': isolation_level,
         }
         options['connect_args'] = {'charset': 'utf8'}
-        if socket:  # pragma: no cover
-            options['connect_args'] = {'unix_socket': socket}
         options['execution_options'] = {'autocommit': False}
         self.engine = create_engine(uri, **options)
         self.session_factory = sessionmaker(

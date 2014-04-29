@@ -99,10 +99,7 @@ def main(argv, _db_master=None):
 
     # configure databases incl. test override hooks
     if _db_master is None:
-        db = Database(
-            settings['db_master'],
-            socket=settings.get('db_master_socket'),
-        )
+        db = Database(settings['db_master'])
     else:
         db = _db_master
     session = db.session()
