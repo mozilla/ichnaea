@@ -74,7 +74,7 @@ def db_tween_factory(handler, registry):
 
 class Database(object):
 
-    def __init__(self, uri, socket=None, create=True, echo=False,
+    def __init__(self, uri, socket=None, echo=False,
                  isolation_level='REPEATABLE READ'):
         options = {
             'pool_recycle': 3600,
@@ -91,13 +91,6 @@ class Database(object):
         self.engine = create_engine(uri, **options)
         self.session_factory = sessionmaker(
             bind=self.engine, autocommit=False, autoflush=False)
-
-        # create tables
-        if create:
-            with self.engine.connect() as conn:
-                trans = conn.begin()
-                _Model.metadata.create_all(self.engine)
-                trans.commit()
 
     def session(self):
         return self.session_factory()

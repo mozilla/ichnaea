@@ -15,6 +15,7 @@ from ichnaea.models import (
     Measure,
     RADIO_TYPE,
     WifiMeasure,
+    ApiKey,
 )
 from ichnaea.decimaljson import (
     dumps,
@@ -24,6 +25,12 @@ from ichnaea.tests.base import CeleryAppTestCase
 
 
 class TestSubmit(CeleryAppTestCase):
+
+    def setUp(self):
+        CeleryAppTestCase.setUp(self)
+        session = self.db_slave_session
+        session.add(ApiKey(valid_key='test'))
+        session.commit()
 
     def test_ok_cell(self):
         app = self.app
@@ -432,6 +439,17 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
 
         self.check_expected_heka_messages(counter=['submit.no_api_key'])
+
+    def test_log_unknown_api_key(self):
+        app = self.app
+        app.post_json(
+            '/v1/submit?key=invalidkey',
+            {"items": [{"lat": 12.3, "lon": 23.4}]},
+            status=204)
+
+        self.check_expected_heka_messages(
+            counter=['submit.unknown_api_key',
+                     ('submit.api_key.invalidkey', 0)])
 
     def test_error_no_mapping(self):
         app = self.app

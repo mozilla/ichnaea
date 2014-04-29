@@ -102,7 +102,6 @@ def main(argv, _db_master=None):
         db = Database(
             settings['db_master'],
             socket=settings.get('db_master_socket'),
-            create=False,
         )
     else:
         db = _db_master

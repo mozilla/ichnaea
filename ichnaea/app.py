@@ -35,7 +35,6 @@ def main(global_config, _db_master=None, _db_slave=None, **settings):
         config.registry.db_slave = Database(
             settings['db_slave'],
             socket=settings.get('db_slave_socket'),
-            create=False,
         )
     else:
         config.registry.db_slave = _db_slave
