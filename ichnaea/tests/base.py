@@ -25,8 +25,8 @@ SQLURI = os.environ.get('SQLURI')
 SQLSOCKET = os.environ.get('SQLSOCKET')
 
 
-def _make_db(uri=SQLURI, socket=SQLSOCKET, create=True):
-    return Database(uri, socket=socket, create=create)
+def _make_db(uri=SQLURI, socket=SQLSOCKET):
+    return Database(uri, socket=socket)
 
 
 def _make_app(_db_master=None, _db_slave=None, **settings):
@@ -36,8 +36,8 @@ def _make_app(_db_master=None, _db_slave=None, **settings):
 
 def find_msg(msgs, msg_type, field_value, field_name='name'):
     return [m for m in msgs if m.type == msg_type and
-           [f for f in m.fields if f.name == field_name and
-            f.value_string == [field_value]]]
+            [f for f in m.fields if f.name == field_name and
+             f.value_string == [field_value]]]
 
 
 class DBIsolation(object):
@@ -71,7 +71,13 @@ class DBIsolation(object):
     @classmethod
     def setup_engine(cls):
         cls.db_master = _make_db()
-        cls.db_slave = _make_db(create=False)
+        cls.db_slave = _make_db()
+
+        engine = cls.db_master.engine
+        with engine.connect() as conn:
+            trans = conn.begin()
+            _Model.metadata.create_all(engine)
+            trans.commit()
 
     @classmethod
     def teardown_engine(cls):

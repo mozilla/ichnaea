@@ -84,7 +84,11 @@ clean:
 	rm -f $(HERE)/*.log
 	rm -rf $(HERE)/ichnaea.egg-info
 
-test: mysql
+create_testdb: mysql
+	SQLURI=$(SQLURI) SQLSOCKET=$(SQLSOCKET) \
+	$(PYTHON) ichnaea/tests/create_db.py
+	
+test: mysql create_testdb
 	SQLURI=$(SQLURI) SQLSOCKET=$(SQLSOCKET) CELERY_ALWAYS_EAGER=true \
 	$(NOSE) -s -d -v --with-coverage --cover-package ichnaea ichnaea
 

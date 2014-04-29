@@ -2,6 +2,9 @@ from pyramid.httpexceptions import HTTPNoContent
 
 from ichnaea.decimaljson import dumps
 from ichnaea.heka_logging import get_heka_client
+from ichnaea.models import (
+    ApiKey
+)
 from ichnaea.service.error import (
     preprocess_request,
 )
@@ -51,7 +54,13 @@ def submit_view(request):
         # we don't require API keys for submit yet
         heka_client.incr('submit.no_api_key')
     else:
-        heka_client.incr('submit.api_key.%s' % api_key.replace('.', '__'))
+        session = request.db_slave_session
+        found_key_filter = session.query(ApiKey)
+        found_key_filter = found_key_filter.filter(ApiKey.valid_key == api_key)
+        if found_key_filter.count():
+            heka_client.incr('submit.api_key.%s' % api_key.replace('.', '__'))
+        else:
+            heka_client.incr('submit.unknown_api_key')
 
     data, errors = preprocess_request(
         request,
