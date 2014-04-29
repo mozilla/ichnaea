@@ -1,4 +1,6 @@
 Chameleon==2.14
+Mako==0.9.1
+MarkupSafe==0.21
 PasteDeploy==1.5.2
 PyMySQL==0.5
 SQLAlchemy==0.9.2
