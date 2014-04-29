@@ -1,5 +1,5 @@
 from pyramid.httpexceptions import HTTPError
-from pyramid.httpexceptions import HTTPNotFound, HTTPBadRequest
+from pyramid.httpexceptions import HTTPNotFound
 from pyramid.response import Response
 
 from ichnaea.decimaljson import dumps
@@ -10,24 +10,13 @@ from ichnaea.service.error import (
     MSG_ONE_OF,
     preprocess_request,
 )
+from ichnaea.service.base import check_api_key
 from ichnaea.service.search.views import (
     search_cell,
     search_geoip,
     search_wifi,
 )
 
-NO_API_KEY = {
-    "error": {
-        "errors": [{
-            "domain": "usageLimits",
-            "reason": "keyInvalid",
-            "message": "No API key was found",
-        }],
-        "code": 400,
-        "message": "No API key",
-    }
-}
-NO_API_KEY = dumps(NO_API_KEY)
 
 NOT_FOUND = {
     "error": {
@@ -104,19 +93,9 @@ def search_wifi_ap(session, data):
     return search_wifi(session, mapped)
 
 
+@check_api_key('geolocate', True)
 def geolocate_view(request):
-    api_key = request.GET.get('key', None)
     heka_client = get_heka_client()
-
-    if api_key is None:
-        heka_client.incr('geolocate.no_api_key')
-
-        result = HTTPBadRequest()
-        result.content_type = 'application/json'
-        result.body = NO_API_KEY
-        return result
-
-    heka_client.incr('geolocate.api_key.%s' % api_key.replace('.', '__'))
 
     data, errors = preprocess_request(
         request,
