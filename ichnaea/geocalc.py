@@ -43,3 +43,23 @@ def distance(lat1, lon1, lat2, lon2):
     c = 2 * math.asin(min(1, math.sqrt(a)))
     d = EARTH_RADIUS * c
     return d
+
+
+def centroid(points):
+    """
+    Compute the centroid (average lat and lon) from a set of points
+    ((lat,lon) pairs).
+    """
+    lat_avg = sum([p[0] for p in points]) / len(points)
+    lon_avg = sum([p[1] for p in points]) / len(points)
+    return (lat_avg, lon_avg)
+
+
+def range_to_points(point, points):
+    """
+    Compute the maximum distance, in km, from a (lat, lon) point to any
+    of the points in a set of points ((lat,lon) pairs).
+
+    """
+    (p_lat, p_lon) = point
+    return max([distance(p_lat, p_lon, p[0], p[1]) for p in points])

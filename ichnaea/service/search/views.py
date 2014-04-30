@@ -3,6 +3,7 @@ from ichnaea.models import (
     normalize_wifi_key,
     RADIO_TYPE,
     Wifi,
+    CELLID_LAC,
 )
 from ichnaea.decimaljson import (
     quantize,
@@ -15,6 +16,7 @@ from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.search.schema import SearchSchema
 from ichnaea.geocalc import distance
 from collections import namedtuple
+import operator
 
 # maximum distance when clustering wifis, in km (0.5 => 500m)
 MAX_DIST = 0.5
@@ -65,6 +67,45 @@ def search_cell(session, data):
         'lat': quantize(avg_lat),
         'lon': quantize(avg_lon),
         'accuracy': 35000,
+    }
+
+
+def search_cell_lac(session, data):
+    sql_null = None  # avoid pep8 warning
+    radio = RADIO_TYPE.get(data['radio'], -1)
+    lacs = []
+    for cell in data['cell']:
+        if cell['mcc'] < 1 or cell['mnc'] < 0 or \
+           cell['lac'] < 0 or cell['cid'] < 0:
+            # Skip over invalid values
+            continue
+
+        if cell.get('radio'):
+            radio = RADIO_TYPE.get(cell['radio'], -1)
+
+        query = session.query(Cell).filter(
+            Cell.radio == radio).filter(
+            Cell.mcc == cell['mcc']).filter(
+            Cell.mnc == cell['mnc']).filter(
+            Cell.lac == cell['lac']).filter(
+            Cell.cid == CELLID_LAC).filter(
+            Cell.lat != sql_null).filter(
+            Cell.lon != sql_null
+        )
+        result = query.first()
+        if result is not None:
+            lacs.append(result)
+
+    if not lacs:
+        return None
+
+    # take the smallest LAC of any the user is inside
+    lac = sorted(lacs, key=operator.attrgetter('range'))[0]
+
+    return {
+        'lat': quantize(lac.lat),
+        'lon': quantize(lac.lon),
+        'accuracy': lac.range,
     }
 
 
@@ -196,6 +237,11 @@ def search_view(request):
         result = search_cell(session, data)
         if result is not None:
             heka_client.incr('search.cell_hit')
+    if result is None:
+        # no direct cell result found, try cell LAC
+        result = search_cell_lac(session, data)
+        if result is not None:
+            heka_client.incr('search.cell_lac_hit')
     if result is None and request.client_addr:
         # no cell or wifi, fall back again to geoip
         result = search_geoip(request.registry.geoip_db,

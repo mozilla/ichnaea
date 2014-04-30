@@ -25,9 +25,11 @@ from ichnaea.models import (
     join_cellkey,
     to_cellkey,
     to_degrees,
+    from_degrees,
+    CELLID_LAC,
 )
 from ichnaea.worker import celery
-from ichnaea.geocalc import distance
+from ichnaea.geocalc import distance, centroid, range_to_points
 
 WIFI_MAX_DIST_KM = 5
 CELL_MAX_DIST_KM = 150
@@ -122,7 +124,32 @@ def remove_cell(self, cell_keys):
             for k in cell_keys:
                 key = to_cellkey(k)
                 query = session.query(Cell).filter(*join_cellkey(Cell, key))
-                cells_removed += query.delete(synchronize_session=False)
+                cells_removed += query.delete()
+
+                # Either schedule an update to the enclosing LAC or, if
+                # we just removed the last cell in the LAC, remove the LAC
+                # entirely.
+                query = session.query(func.count(Cell.id)).filter(
+                    Cell.radio == key.radio,
+                    Cell.mcc == key.mcc,
+                    Cell.mnc == key.mnc,
+                    Cell.lac == key.lac,
+                    Cell.cid != CELLID_LAC)
+
+                c = query.first()
+                assert c is not None
+                n = int(c[0])
+                query = session.query(Cell).filter(
+                    Cell.radio == key.radio,
+                    Cell.mcc == key.mcc,
+                    Cell.mnc == key.mnc,
+                    Cell.lac == key.lac,
+                    Cell.cid == CELLID_LAC)
+                if n < 1:
+                    query.delete()
+                else:
+                    query.update({'new_measures': '1'})
+
             session.commit()
         return cells_removed
     except IntegrityError as exc:  # pragma: no cover
@@ -188,7 +215,7 @@ def calculate_new_position(station, measures, moving_stations,
             station.total_measures = new_total
         else:
             new_total = station.total_measures
-            old_length = new_total - station.new_measures
+            old_length = new_total - length
 
         station.lat = ((station.lat * old_length) +
                        (new_lat * length)) // new_total
@@ -206,8 +233,24 @@ def calculate_new_position(station, measures, moving_stations,
     station.max_lat = max_lat
     station.max_lon = max_lon
 
-    # give radio-range estimate, in meters, as half bounding box diagonal
-    station.range = int(round((box_dist * 1000.0) / 2.0))
+    # give radio-range estimate between extreme values and centroid
+    ctr = (to_degrees(station.lat), to_degrees(station.lon))
+    points = [(to_degrees(min_lat), to_degrees(min_lon)),
+              (to_degrees(min_lat), to_degrees(max_lon)),
+              (to_degrees(max_lat), to_degrees(min_lon)),
+              (to_degrees(max_lat), to_degrees(max_lon))]
+
+    station.range = range_to_points(ctr, points) * 1000.0
+
+
+def update_enclosing_lac(session, cell):
+    stmt = Cell.__table__.insert(
+        on_duplicate='new_measures = new_measures + 1'
+    ).values(
+        radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac,
+        cid=CELLID_LAC, lat=cell.lat, lon=cell.lon, range=cell.range,
+        new_measures=1)
+    session.execute(stmt)
 
 
 @celery.task(base=DatabaseTask, bind=True)
@@ -238,6 +281,7 @@ def backfill_cell_location_update(self, new_cell_measures):
                         calculate_new_position(cell, measures, moving_cells,
                                                CELL_MAX_DIST_KM,
                                                backfill=True)
+                        update_enclosing_lac(session, cell)
 
                 if moving_cells:
                     # some cells found to be moving too much
@@ -260,14 +304,17 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
         with self.db_session() as session:
             query = session.query(Cell).filter(
                 Cell.new_measures >= min_new).filter(
-                Cell.new_measures < max_new).limit(batch)
+                Cell.new_measures < max_new).filter(
+                Cell.cid != CELLID_LAC).limit(batch)
             cells = query.all()
             if not cells:
                 return 0
             moving_cells = set()
             for cell in cells:
                 # skip cells with a missing lac/cid
-                if cell.lac == -1 or cell.cid == -1:
+                # or virtual LAC cells
+                if cell.lac == -1 or cell.cid == -1 or \
+                   cell.cid == CELLID_LAC:
                     continue
 
                 query = session.query(
@@ -283,6 +330,7 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
                     calculate_new_position(cell, measures, moving_cells,
                                            CELL_MAX_DIST_KM,
                                            backfill=False)
+                    update_enclosing_lac(session, cell)
 
             if moving_cells:
                 # some cells found to be moving too much
@@ -492,3 +540,88 @@ def cell_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
             self.heka_client.incr("items.dropped.cell_trim_excessive", n)
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def scan_lacs(self, batch=100):
+    """
+    Find cell LACs that have changed and update the bounding box.
+
+    """
+    with self.db_session() as session:
+        q = session.query(Cell).filter(
+            Cell.cid == CELLID_LAC).filter(
+            Cell.new_measures > 0).limit(batch)
+        lacs = q.all()
+        n = len(lacs)
+        for lac in lacs:
+            update_lac.delay(lac.radio, lac.mcc,
+                             lac.mnc, lac.lac)
+        session.commit()
+        return n
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def update_lac(self, radio, mcc, mnc, lac):
+
+    with self.db_session() as session:
+
+        # Select all the cells in this LAC that aren't the virtual
+        # cell itself, and derive a bounding box for them.
+
+        q = session.query(Cell).filter(
+            Cell.radio == radio).filter(
+            Cell.mcc == mcc).filter(
+            Cell.mnc == mnc).filter(
+            Cell.lac == lac).filter(
+            Cell.cid != CELLID_LAC)
+
+        cells = q.all()
+        points = [(to_degrees(c.lat),
+                   to_degrees(c.lon)) for c in cells]
+        min_lat = to_degrees(min([c.min_lat for c in cells]))
+        min_lon = to_degrees(min([c.min_lon for c in cells]))
+        max_lat = to_degrees(max([c.max_lat for c in cells]))
+        max_lon = to_degrees(max([c.max_lon for c in cells]))
+
+        bbox_points = [(min_lat, min_lon),
+                       (min_lat, max_lon),
+                       (max_lat, min_lon),
+                       (max_lat, max_lon)]
+
+        ctr = centroid(points)
+        rng = range_to_points(ctr, bbox_points)
+
+        # switch units back to DB preferred centimicrodegres angle
+        # and meters distance.
+        ctr_lat = from_degrees(ctr[0])
+        ctr_lon = from_degrees(ctr[1])
+        rng = int(round(rng * 1000.0))
+
+        # Now create or update the LAC virtual cell
+
+        q = session.query(Cell).filter(
+            Cell.radio == radio).filter(
+            Cell.mcc == mcc).filter(
+            Cell.mnc == mnc).filter(
+            Cell.lac == lac).filter(
+            Cell.cid == CELLID_LAC)
+
+        lac = q.first()
+
+        if lac is None:
+            lac = Cell(radio=radio,
+                       mcc=mcc,
+                       mnc=mnc,
+                       lac=lac,
+                       cid=CELLID_LAC,
+                       lat=ctr_lat,
+                       lon=ctr_lon,
+                       range=rng)
+        else:
+            lac.new_measures = 0
+            lac.lat = ctr_lat
+            lac.lon = ctr_lon
+            lac.range = rng
+
+        session.commit()

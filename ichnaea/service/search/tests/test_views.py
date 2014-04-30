@@ -6,6 +6,7 @@ from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.models import (
     Cell,
     Wifi,
+    CELLID_LAC
 )
 from ichnaea.tests.base import AppTestCase
 import random
@@ -288,6 +289,81 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0010000, "lon": 1.0020000,
                                     "accuracy": 35000})
+
+    def test_cell_miss_lac_hit(self):
+        app = self.app
+        session = self.db_slave_session
+        key = dict(mcc=1, mnc=2, lac=3)
+        data = [
+            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
+            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
+            Cell(lat=10060000, lon=10060000, radio=2, cid=6, **key),
+            Cell(lat=10026666, lon=10033333, radio=2, cid=CELLID_LAC,
+                 range=50000, **key),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        res = app.post_json(
+            '/v1/search?key=test',
+            {"radio": "gsm", "cell": [
+                dict(radio="umts", cid=7, **key),
+            ]},
+            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {"status": "ok",
+                                    "lat": 1.0026666,
+                                    "lon": 1.0033333,
+                                    "accuracy": 50000})
+
+    def test_cell_hit_ignores_lac(self):
+        app = self.app
+        session = self.db_slave_session
+        key = dict(mcc=1, mnc=2, lac=3)
+        data = [
+            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
+            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
+            Cell(lat=10060000, lon=10060000, radio=2, cid=6, **key),
+            Cell(lat=10026666, lon=10033333, radio=2, cid=CELLID_LAC,
+                 range=50000, **key),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        res = app.post_json(
+            '/v1/search?key=test',
+            {"radio": "gsm", "cell": [
+                dict(radio="umts", cid=5, **key),
+            ]},
+            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {"status": "ok",
+                                    "lat": 1.0020000,
+                                    "lon": 1.0040000,
+                                    "accuracy": 35000})
+
+    def test_lac_miss(self):
+        app = self.app
+        session = self.db_slave_session
+        key = dict(mcc=1, mnc=2, lac=3)
+        data = [
+            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
+            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
+            Cell(lat=10060000, lon=10060000, radio=2, cid=6, **key),
+            Cell(lat=10026666, lon=10033333, radio=2, cid=CELLID_LAC,
+                 range=50000, **key),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        res = app.post_json(
+            '/v1/search?key=test',
+            {"radio": "gsm", "cell": [
+                dict(radio="umts", mcc=1, mnc=2, lac=4, cid=5),
+            ]},
+            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {"status": "not_found"})
 
     def test_cell_ignore_invalid_lac_cid(self):
         app = self.app

@@ -10,6 +10,7 @@ from ichnaea.models import (
     WifiBlacklist,
     WifiMeasure,
     to_cellkey,
+    CELLID_LAC,
 )
 from ichnaea.tests.base import CeleryTestCase
 
@@ -49,7 +50,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         result = cell_location_update.delay(min_new=1)
         self.assertEqual(result.get(), (2, 0))
 
-        cells = session.query(Cell).all()
+        cells = session.query(Cell).filter(Cell.cid != CELLID_LAC).all()
         self.assertEqual(len(cells), 2)
         self.assertEqual([c.new_measures for c in cells], [0, 0])
         for cell in cells:
@@ -82,7 +83,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         result = backfill_cell_location_update.delay(new_measures)
         self.assertEqual(result.get(), (1, 0))
 
-        cells = session.query(Cell).all()
+        cells = session.query(Cell).filter(Cell.cid != CELLID_LAC).all()
         self.assertEqual(len(cells), 1)
         cell = cells[0]
         self.assertEqual(cell.lat, 10020000)
@@ -109,7 +110,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         result = cell_location_update.delay(min_new=1)
         self.assertEqual(result.get(), (1, 0))
 
-        cells = session.query(Cell).all()
+        cells = session.query(Cell).filter(Cell.cid != CELLID_LAC).all()
         self.assertEqual(len(cells), 1)
         cell = cells[0]
         self.assertEqual(cell.lat, 10020000)
@@ -120,9 +121,10 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(cell.min_lon, -10070000)
 
         # independent calculation: the cell bounding box is
-        # (1.000, -1.007) to (1.005, -1.000), and distance
-        # between those is 956.43m, int(round(dist/2.0)) is 478m
-        self.assertEqual(cell.range, 478)
+        # (1.000, -1.007) to (1.005, -1.000), with centroid
+        # at (1.002, -1.003); worst distance from centroid
+        # to any corner is 556m
+        self.assertEqual(cell.range, 556)
 
     def test_blacklist_moving_cells(self):
         from ichnaea.tasks import cell_location_update
@@ -200,6 +202,158 @@ class TestCellLocationUpdate(CeleryTestCase):
                 # One of those would've scheduled a remove_cell task
                 ('task.remove_cell', 1)
             ])
+
+    def add_line_of_cells_and_scan_lac(self):
+        from ichnaea.tasks import cell_location_update, scan_lacs
+        session = self.db_master_session
+        session.commit()
+        big = 10000000
+        small = big / 10
+        keys = dict(radio=1, mcc=1, mnc=1, lac=1)
+        measures = [
+            CellMeasure(lat=ctr + xd, lon=ctr + yd, cid=cell, **keys)
+            for cell in range(0, 10)
+            for ctr in [cell * big]
+            for (xd, yd) in [(small, small),
+                             (small, -small),
+                             (-small, small),
+                             (-small, -small)]
+        ]
+        session.add_all(measures)
+
+        cells = [
+            Cell(lat=ctr, lon=ctr, cid=cell,
+                 new_measures=4, total_measures=1, **keys)
+            for cell in range(0, 10)
+            for ctr in [cell * big]
+        ]
+
+        session.add_all(cells)
+        session.commit()
+        result = cell_location_update.delay(min_new=0,
+                                            max_new=9999,
+                                            batch=len(measures))
+        self.assertEqual(result.get(), (len(cells), 0))
+        scan_lacs.delay()
+        lac = session.query(Cell).filter(
+            Cell.lac == 1,
+            Cell.cid == CELLID_LAC).first()
+
+        # We produced a sequence of 0.2-degree-on-a-side
+        # cell bounding boxes centered at [0, 1, 2, ..., 9]
+        # degrees. So the lower-left corner is at (-0.1, -0.1)
+        # and the upper-right corner is at (9.1, 9.1)
+        # we should therefore see a LAC centroid at (4.5, 4.5)
+        # with a range of 723,001m
+        self.assertEqual(lac.lat, 45000000)
+        self.assertEqual(lac.lon, 45000000)
+        self.assertEqual(lac.range, 723001)
+
+    def test_cell_lac_update(self):
+        self.add_line_of_cells_and_scan_lac()
+
+    def test_cell_lac_asymmetric(self):
+        from ichnaea.tasks import cell_location_update, scan_lacs
+        session = self.db_master_session
+        big = 1000000
+        small = big / 10
+        keys = dict(radio=1, mcc=1, mnc=1, lac=1)
+        measures = [
+            CellMeasure(lat=ctr + xd, lon=ctr + yd, cid=cell, **keys)
+            for cell in range(0, 6)
+            for ctr in [(2 ** cell) * big]
+            for (xd, yd) in [(small, small),
+                             (small, -small),
+                             (-small, small),
+                             (-small, -small)]
+        ]
+        session.add_all(measures)
+
+        cells = [
+            Cell(lat=ctr, lon=ctr, cid=cell,
+                 new_measures=4, total_measures=1, **keys)
+            for cell in range(0, 6)
+            for ctr in [(2 ** cell) * big]
+        ]
+
+        session.add_all(cells)
+        session.commit()
+        result = cell_location_update.delay(min_new=0,
+                                            max_new=9999,
+                                            batch=len(measures))
+        self.assertEqual(result.get(), (len(cells), 0))
+        scan_lacs.delay()
+        lac = session.query(Cell).filter(
+            Cell.lac == 1,
+            Cell.cid == CELLID_LAC).first()
+
+        # We produced a sequence of 0.02-degree-on-a-side
+        # cell bounding boxes centered at
+        # [0, 0.2, 0.4, 0.8, 1.6, 3.2] degrees.
+        # So the lower-left corner is at (-0.01, -0.01)
+        # and the upper-right corner is at (3.21, 3.21)
+        # we should therefore see a LAC centroid at (1.05, 1.05)
+        # with a range of 339.540m
+        self.assertEqual(lac.lat, 10500000)
+        self.assertEqual(lac.lon, 10500000)
+        self.assertEqual(lac.range, 339540)
+
+    def test_cell_removal_updates_lac(self):
+        from ichnaea.tasks import remove_cell, scan_lacs
+
+        session = self.db_master_session
+        keys = dict(radio=1, mcc=1, mnc=1, lac=1)
+
+        # setup: build LAC as above
+        self.add_line_of_cells_and_scan_lac()
+
+        # confirm we got one
+        lac = session.query(Cell).filter(
+            Cell.lac == 1,
+            Cell.cid == CELLID_LAC).first()
+
+        self.assertEqual(lac.lat, 45000000)
+        self.assertEqual(lac.lon, 45000000)
+        self.assertEqual(lac.range, 723001)
+
+        # Remove cells one by one checking that the LAC
+        # changes shape along the way.
+        steps = [
+            ((50000000, 50000000), 644242),
+            ((55000000, 55000000), 565475),
+            ((60000000, 60000000), 486721),
+            ((65000000, 65000000), 408000),
+            ((70000000, 70000000), 329334),
+            ((75000000, 75000000), 250743),
+            ((80000000, 80000000), 172249),
+            ((85000000, 85000000), 93871),
+            ((90000000, 90000000), 15630),
+        ]
+        for i in range(0, 9):
+            session.expire(lac)
+            k = CellKey(cid=i, **keys)
+            result = remove_cell.delay([k])
+            self.assertEqual(1, result.get())
+            result = scan_lacs.delay()
+            self.assertEqual(1, result.get())
+            lac = session.query(Cell).filter(
+                Cell.lac == 1,
+                Cell.cid == CELLID_LAC).first()
+
+            self.assertEqual(lac.lat, steps[i][0][0])
+            self.assertEqual(lac.lon, steps[i][0][1])
+            self.assertEqual(lac.range, steps[i][1])
+
+        # Remove final cell, check LAC is gone
+        k = CellKey(cid=9, **keys)
+        result = remove_cell.delay([k])
+        self.assertEqual(1, result.get())
+        result = scan_lacs.delay()
+        self.assertEqual(0, result.get())
+        lac = session.query(Cell).filter(
+            Cell.lac == 1,
+            Cell.cid == CELLID_LAC).first()
+        self.assertEqual(lac, None)
 
 
 class TestWifiLocationUpdate(CeleryTestCase):
@@ -282,13 +436,15 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.assertEqual(wifis[k2].min_lon, -20040000)
 
         # independent calculation: the k1 bounding box is
-        # (1.000, 1.000) to (1.002, 1.004), and distance
-        # between those is 497.21m, int(round(dist/2.0)) is 249m
+        # (1.000, 1.000) to (1.002, 1.004), with centroid
+        # at (1.001, 1.002); worst distance from centroid
+        # to any corner is 249m
         self.assertEqual(wifis[k1].range, 249)
 
         # independent calculation: the k2 bounding box is
-        # (1.998, -2.004) to (2.002, -1.996), and distance
-        # between those is 994.07m, int(round(dist/2.0)) is 497m
+        # (1.998, -2.004) to (2.002, -1.996), with centroid
+        # at (2.000, 2.000); worst distance from centroid
+        # to any corner is 497m
         self.assertEqual(wifis[k2].range, 497)
 
     def test_blacklist_moving_wifis(self):

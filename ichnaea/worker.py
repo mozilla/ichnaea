@@ -75,6 +75,12 @@ CELERYBEAT_SCHEDULE = {
         'args': (10000, 3, 2000),
         'options': {'expires': 21407},
     },
+    'continuous-cell-scan-lacs': {
+        'task': 'ichnaea.tasks.scan_lacs',
+        'schedule': timedelta(seconds=3607),  # about an hour
+        'args': (100, ),
+        'options': {'expires': 3511},
+    },
 
     # TODO: start scheduling this once we handled the backlog
     # 'backfill-celltower-info': {

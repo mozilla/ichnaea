@@ -12,6 +12,7 @@ from ichnaea.models import (
     CellMeasure,
     Wifi,
     WifiMeasure,
+    CELLID_LAC,
 )
 from ichnaea.tasks import (
     DatabaseTask,
@@ -25,6 +26,8 @@ def histogram_query(session, model, min_day, max_day):
         func.count(model.id)).filter(
         model.created < max_day).filter(
         model.created >= min_day)
+    if isinstance(model, Cell):
+        query = query.filter(model.lac != CELLID_LAC)
     return query.first()[0]
 
 

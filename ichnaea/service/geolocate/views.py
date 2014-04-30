@@ -12,6 +12,7 @@ from ichnaea.service.error import (
 )
 from ichnaea.service.search.views import (
     search_cell,
+    search_cell_lac,
     search_geoip,
     search_wifi,
 )
@@ -93,6 +94,21 @@ def search_cell_tower(session, data):
     return search_cell(session, mapped)
 
 
+def search_cell_tower_lac(session, data):
+    mapped = {
+        'radio': data['radioType'],
+        'cell': [],
+    }
+    for cell in data['cellTowers']:
+        mapped['cell'].append({
+            'mcc': cell['mobileCountryCode'],
+            'mnc': cell['mobileNetworkCode'],
+            'lac': cell['locationAreaCode'],
+            'cid': cell['cellId'],
+        })
+    return search_cell_lac(session, mapped)
+
+
 def search_wifi_ap(session, data):
     mapped = {
         'wifi': [],
@@ -136,6 +152,11 @@ def geolocate_view(request):
         result = search_cell_tower(session, data)
         if result is not None:
             heka_client.incr('geolocate.cell_hit')
+
+        if result is None:
+            result = search_cell_tower_lac(session, data)
+            if result is not None:
+                heka_client.incr('geolocate.cell_lac_hit')
 
     if result is None and request.client_addr:
         result = search_geoip(request.registry.geoip_db,

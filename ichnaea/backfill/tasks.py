@@ -2,6 +2,7 @@ from collections import defaultdict
 from sqlalchemy import text
 from ichnaea.tasks import DatabaseTask, backfill_cell_location_update
 from ichnaea.worker import celery
+from ichnaea.models import CELLID_LAC, to_degrees
 from ichnaea.geocalc import distance
 
 NEAREST_DISTANCE = 1.0  # Distance in kilometers between towers with no
@@ -98,8 +99,9 @@ def compute_matching_towers(session, radio, mcc, mnc, psc):
         mnc = :mnc and
         psc = :psc and
         lac != -1 and
+        cid != %d and
         cid != -1
-    """).bindparams(radio=radio, mcc=mcc, mnc=mnc, psc=psc)
+    """ % CELLID_LAC).bindparams(radio=radio, mcc=mcc, mnc=mnc, psc=psc)
     row_proxy = session.execute(stmt)
     return [dict(r) for r in row_proxy]
 
@@ -109,14 +111,13 @@ def _nearest_tower(missing_lat, missing_lon, centroids):
     We just need the closest cell, so we can approximate
     using the haversine formula.
     """
-    FLOAT_CONST = 10000000.0
-    lat1 = missing_lat / FLOAT_CONST
-    lon1 = missing_lon / FLOAT_CONST
+    lat1 = to_degrees(missing_lat)
+    lon1 = to_degrees(missing_lon)
 
     min_dist = None
     for pt in centroids:
-        lat2 = float(pt['lat']) / FLOAT_CONST
-        lon2 = float(pt['lon']) / FLOAT_CONST
+        lat2 = to_degrees(pt['lat'])
+        lon2 = to_degrees(pt['lon'])
         dist = distance(lat1, lon1, lat2, lon2)
         if min_dist is None or min_dist['dist'] > dist:
             min_dist = {'dist': dist, 'pt': pt}
