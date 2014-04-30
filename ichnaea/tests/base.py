@@ -76,8 +76,6 @@ class DBIsolation(object):
             with engine.connect() as conn:
                 trans = conn.begin()
                 _Model.metadata.create_all(engine)
-                for tbl in reversed(_Model.metadata.sorted_tables):
-                    engine.execute(tbl.delete())
                 trans.commit()
 
     @classmethod
