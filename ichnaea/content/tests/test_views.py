@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from datetime import datetime
 from datetime import timedelta
 
@@ -157,6 +159,49 @@ class TestFunctionalContentViews(AppTestCase):
         self.assertEqual(
             result['leaders2'],
             [{'anchor': u'0', 'nickname': u'0', 'num': 1, 'pos': 3}])
+
+    def test_leaders_unicode_nicknames(self):
+        session = self.db_master_session
+        today = datetime.utcnow().date()
+        yesterday = today - timedelta(days=1)
+        users = [User(nickname=u'caméléon'),
+                 User(nickname=u'Ιχναία'),
+                 User(nickname=u'春花'),
+                 User(nickname=u'सन्दीप्'),
+                 User(nickname=u'Михаил')]
+        session.add_all(users)
+        session.flush()
+        for i in range(len(users)):
+            user = users[i]
+            score1 = Score(userid=user.id, time=today, value=i)
+            score1.name = 'location'
+            session.add(score1)
+            score2 = Score(userid=user.id, time=yesterday, value=i + 1)
+            score2.name = 'location'
+            session.add(score2)
+        session.commit()
+        request = DummyRequest()
+        request.db_slave_session = self.db_master_session
+        inst = self._make_view(request)
+        result = inst.leaders_view()
+
+        self.assertEqual(
+            result['leaders1'],
+            [{'anchor': u'\u041c\u0438\u0445\u0430\u0438\u043b',
+              'nickname': u'\u041c\u0438\u0445\u0430\u0438\u043b',
+              'num': 9, 'pos': 1},
+             {'anchor': u'\u0938\u0928\u094d\u0926\u0940\u092a\u094d',
+              'nickname': u'\u0938\u0928\u094d\u0926\u0940\u092a\u094d',
+              'num': 7, 'pos': 2},
+             {'anchor': u'\u6625\u82b1', 'nickname': u'\u6625\u82b1',
+              'num': 5, 'pos': 3}])
+        self.assertEqual(
+            result['leaders2'],
+            [{'anchor': u'\u0399\u03c7\u03bd\u03b1\u03af\u03b1',
+              'nickname': u'\u0399\u03c7\u03bd\u03b1\u03af\u03b1',
+              'num': 3, 'pos': 4},
+             {'anchor': u'cam\xe9l\xe9on',
+              'nickname': u'cam\xe9l\xe9on', 'num': 1, 'pos': 5}])
 
     def test_leaders_weekly(self):
         session = self.db_master_session
