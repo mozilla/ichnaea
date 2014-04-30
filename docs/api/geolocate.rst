@@ -35,5 +35,20 @@ Our server implements all of the standard API. At this stage it doesn't have
 any limits, so you won't get any `dailyLimitExceeded`
 or `userRateLimitExceeded` errors.
 
-For API key mismatches it doesn't yet use the `keyInvalid` message but
-returns a general 404 response.
+For API key mismatches we return a `keyInvalid` message with an HTTP
+400 error.  The JSON response should be:
+
+.. code-block:: javascript
+
+    {
+        "error": {
+            "errors": [{
+                "domain": "usageLimits",
+                "reason": "keyInvalid",
+                "message": "No API key was found",
+            }],
+            "code": 400,
+            "message": "No API key",
+        }
+    }
+

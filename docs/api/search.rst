@@ -11,8 +11,6 @@ An example POST request against URL::
 
     https://location.services.mozilla.com/v1/search?key=<API_KEY>
 
-The API_KEY can currently be any byte string, for example a uuid.
-
 The JSON body should be:
 
 .. code-block:: javascript
@@ -45,6 +43,24 @@ The JSON body should be:
             }
         ]
     }
+
+For API key mismatches we return a `keyInvalid` message with an HTTP
+400 error.  The JSON response should be:
+
+.. code-block:: javascript
+
+    {
+        "error": {
+            "errors": [{
+                "domain": "usageLimits",
+                "reason": "keyInvalid",
+                "message": "No API key was found",
+            }],
+            "code": 400,
+            "message": "No API key",
+        }
+    }
+
 
 The mapping can contain zero to many entries per category. At least for one
 category an entry has to be provided. Empty categories can be omitted
