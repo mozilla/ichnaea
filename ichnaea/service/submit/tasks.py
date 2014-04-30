@@ -262,6 +262,11 @@ def create_cell_measure(utcnow, entry):
     if 'psc' not in entry or entry['psc'] < 0 or entry['psc'] > 512:
         entry['psc'] = -1
 
+    # Treat the lac=0, cid=65535 combination as unspecified values
+    if entry['lac'] == 0 and entry['cid'] == 65535:
+        entry['lac'] = -1
+        entry['cid'] = -1
+
     # Must have LAC+CID or PSC
     if (entry['lac'] == -1 or entry['cid'] == -1) and entry['psc'] == -1:
         return
