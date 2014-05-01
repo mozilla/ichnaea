@@ -206,7 +206,6 @@ class TestCellLocationUpdate(CeleryTestCase):
     def add_line_of_cells_and_scan_lac(self):
         from ichnaea.tasks import cell_location_update, scan_lacs
         session = self.db_master_session
-        session.commit()
         big = 10000000
         small = big / 10
         keys = dict(radio=1, mcc=1, mnc=1, lac=1)
@@ -235,6 +234,11 @@ class TestCellLocationUpdate(CeleryTestCase):
                                             batch=len(measures))
         self.assertEqual(result.get(), (len(cells), 0))
         scan_lacs.delay()
+
+    def test_cell_lac_update(self):
+        session = self.db_master_session
+        self.add_line_of_cells_and_scan_lac()
+
         lac = session.query(Cell).filter(
             Cell.lac == 1,
             Cell.cid == CELLID_LAC).first()
@@ -248,9 +252,6 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(lac.lat, 45000000)
         self.assertEqual(lac.lon, 45000000)
         self.assertEqual(lac.range, 723001)
-
-    def test_cell_lac_update(self):
-        self.add_line_of_cells_and_scan_lac()
 
     def test_cell_lac_asymmetric(self):
         from ichnaea.tasks import cell_location_update, scan_lacs
