@@ -252,6 +252,9 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(lac.lat, 45000000)
         self.assertEqual(lac.lon, 45000000)
         self.assertEqual(lac.range, 723001)
+        self.assertEqual(lac.created.date(), datetime.utcnow().date())
+        self.assertEqual(lac.new_measures, 0)
+        self.assertEqual(lac.total_measures, 0)
 
     def test_cell_lac_asymmetric(self):
         from ichnaea.tasks import cell_location_update, scan_lacs

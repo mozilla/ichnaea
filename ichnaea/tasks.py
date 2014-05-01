@@ -244,12 +244,13 @@ def calculate_new_position(station, measures, moving_stations,
 
 
 def update_enclosing_lac(session, cell):
+    now = datetime.utcnow()
     stmt = Cell.__table__.insert(
         on_duplicate='new_measures = new_measures + 1'
     ).values(
         radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac,
         cid=CELLID_LAC, lat=cell.lat, lon=cell.lon, range=cell.range,
-        new_measures=1)
+        new_measures=1, total_measures=0, created=now)
     session.execute(stmt)
 
 
