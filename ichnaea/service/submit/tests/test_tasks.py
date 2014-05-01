@@ -401,6 +401,10 @@ class TestInsert(CeleryTestCase):
             {"mcc": 1, "mnc": 2},
             {"mcc": 1, "mnc": 2, "lac": 3},
             {"mcc": 1, "mnc": 2, "cid": 4},
+
+            # This fails the check for (lac=0, cid=65535)
+            # and subsequently the check for missing psc
+            {"mcc": 1, "mnc": 2, "lac": 0, "cid": 65535},
         ]
 
         for e in entries:
