@@ -6,7 +6,7 @@ from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.models import (
     Cell,
     Wifi,
-    CELLID_LAC
+    CELLID_LAC,
 )
 from ichnaea.tests.base import AppTestCase
 import random
