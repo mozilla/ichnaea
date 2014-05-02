@@ -29,9 +29,7 @@ Table of contents
 .. toctree::
    :maxdepth: 2
 
-   api/search
-   api/submit
-   api/geolocate
+   api/index.rst
    cell
    calculation
    deploy

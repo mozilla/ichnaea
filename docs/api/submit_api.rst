@@ -1,14 +1,14 @@
 .. _api_submit:
 
-============
-API - Submit
-============
+Submit
+======
 
-Submit data about nearby cell towers and wifi base stations.
+Purpose
+    Submit data about nearby cell towers and wifi base stations.
 
-An example POST request against URL::
+Submit requests are submitted using a POST request to the following URL::
 
-    https://location.services.mozilla.com/v1/submit
+    https://location.services.mozilla.com/v1/submit?key=<API_KEY>
 
 with a JSON body:
 
@@ -45,20 +45,28 @@ with a JSON body:
        ]
     }
 
-The fields have the same meaning as explained in the :ref:`api_search`.
+Record definition
+-----------------
+
+The record fields have the same meaning and requirements as explained
+in the :ref:`api_search`.
 
 The only required fields are `lat` and `lon` and at least one cell or wifi
-entry.
+entry.  If either `lat` or `lon` are not included, the record will
+not be accepted.
 
 The altitude, accuracy and altitude_accuracy fields are all measured in
 meters. Altitude measures the height above or below the mean sea level,
-as defined by WGS 84.
+as defined by WGS84.
 
 The timestamp has to be in UTC time, encoded in ISO 8601. If not
 provided, the server time will be used.
 
-On successful submission, you get a 204 status code back without any
-data in the body.
+Submit results
+--------------
+
+On successful submission, you will get a 204 status code back without
+any data in the body.
 
 If an error occurred, you get a 400 HTTP status code and a body of:
 
@@ -69,3 +77,5 @@ If an error occurred, you get a 400 HTTP status code and a body of:
     }
 
 The errors mapping contains detailed information about the errors.
+
+Note that the submit API will **not** reject data for invalid API keys.

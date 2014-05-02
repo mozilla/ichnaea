@@ -1,18 +1,27 @@
 from sqlalchemy import text
 from webob.response import gzip_app_iter
 
-from ichnaea.decimaljson import dumps
+from ichnaea.decimaljson import dumps, loads
 from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.models import (
+    ApiKey,
     Cell,
     Wifi,
     CELLID_LAC,
 )
 from ichnaea.tests.base import AppTestCase
+from ichnaea.service.base import NO_API_KEY
 import random
 
 
 class TestSearch(AppTestCase):
+
+    def setUp(self):
+        AppTestCase.setUp(self)
+        session = self.db_slave_session
+        session.add(ApiKey(valid_key='test'))
+        session.add(ApiKey(valid_key='test.test'))
+        session.commit()
 
     def test_ok_cell(self):
         app = self.app
@@ -41,7 +50,7 @@ class TestSearch(AppTestCase):
         self.check_expected_heka_messages(
             total=4,
             timer=[('http.request', {'url_path': '/v1/search'})],
-            counter=[('search.api_key', 1),
+            counter=[('search.api_key.test', 1),
                      ('search.cell_hit', 1),
                      ('http.request', 1)]
         )
@@ -71,7 +80,7 @@ class TestSearch(AppTestCase):
         self.check_expected_heka_messages(
             total=4,
             timer=[('http.request', {'url_path': '/v1/search'})],
-            counter=[('search.api_key', 1),
+            counter=[('search.api_key.test', 1),
                      ('search.wifi_hit', 1),
                      ('http.request', 1)]
         )
@@ -249,7 +258,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "not_found"})
 
-        self.check_expected_heka_messages(counter=['search.api_key',
+        self.check_expected_heka_messages(counter=['search.api_key.test',
                                                    'search.miss'])
 
     def test_wifi_not_found(self):
@@ -260,7 +269,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "not_found"})
 
-        self.check_expected_heka_messages(counter=['search.api_key',
+        self.check_expected_heka_messages(counter=['search.api_key.test',
                                                    'search.miss'])
 
     def test_wifi_not_found_cell_fallback(self):
@@ -414,7 +423,7 @@ class TestSearch(AppTestCase):
         self.check_expected_heka_messages(
             total=4,
             timer=[('http.request', {'url_path': '/v1/search'})],
-            counter=[('search.api_key', 1),
+            counter=[('search.api_key.test', 1),
                      ('search.geoip_hit', 1),
                      ('http.request', 1)]
         )
@@ -450,7 +459,8 @@ class TestSearch(AppTestCase):
         res = app.post('/v1/search?key=test.test', "\xae", status=400)
         self.assertTrue('errors' in res.json)
 
-        self.check_expected_heka_messages(counter=['search.api_key'])
+        self.check_expected_heka_messages(counter=[
+            'search.api_key.test__test'])
 
     def test_gzip(self):
         app = self.app
@@ -479,9 +489,8 @@ class TestSearch(AppTestCase):
                                 {"key": "A1"}, {"key": "B2"},
                                 {"key": "C3"}, {"key": "D4"},
                             ]},
-                            status=200)
-        self.assertEqual(res.json, {"status": "not_found"})
-
+                            status=400)
+        self.assertEqual(res.json, loads(NO_API_KEY))
         self.check_expected_heka_messages(counter=['search.no_api_key'])
 
 

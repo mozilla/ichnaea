@@ -72,11 +72,11 @@ class DBIsolation(object):
         cls.db_master = _make_db()
         cls.db_slave = _make_db()
 
-        engine = cls.db_master.engine
-        with engine.connect() as conn:
-            trans = conn.begin()
-            _Model.metadata.create_all(engine)
-            trans.commit()
+        for engine in [cls.db_master.engine, cls.db_slave.engine]:
+            with engine.connect() as conn:
+                trans = conn.begin()
+                _Model.metadata.create_all(engine)
+                trans.commit()
 
     @classmethod
     def teardown_engine(cls):
