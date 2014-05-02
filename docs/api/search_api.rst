@@ -1,17 +1,20 @@
 .. _api_search:
 
-============
-API - Search
-============
+Search
+======
 
-Determine the current location based on provided data about
-nearby cell towers or wifi base stations.
+Purpose
+    Determine the current location based on provided data about nearby
+    cell towers or wifi base stations.
 
-An example POST request against URL::
+Search requests are submitted using a POST request to the URL::
 
     https://location.services.mozilla.com/v1/search?key=<API_KEY>
 
-The JSON body should be:
+A search record can contain a list of cell records and a list of wifi
+records.
+
+A example of a well formed JSON search request :
 
 .. code-block:: javascript
 
@@ -44,48 +47,43 @@ The JSON body should be:
         ]
     }
 
-For API key mismatches we return a `keyInvalid` message with an HTTP
-400 error.  The JSON response should be:
-
-.. code-block:: javascript
-
-    {
-        "error": {
-            "errors": [{
-                "domain": "usageLimits",
-                "reason": "keyInvalid",
-                "message": "No API key was found",
-            }],
-            "code": 400,
-            "message": "No API key",
-        }
-    }
-
-
-The mapping can contain zero to many entries per category. At least for one
-category an entry has to be provided. Empty categories can be omitted
-entirely.
-
-The top-level radio type must be one of "gsm", "cdma" or be omitted (for
-example for tablets or laptops without a cell radio).
-
-The cell specific radio entry must be one of "gsm", "cdma", "umts" or
-"lte".
-
-See :ref:`cell_records` for a detailed explanation of the cell record
-fields for the different network standards.
+Record definition
+-----------------
 
 For `wifi` entries, the `key` field is required. The client must check the
 Wifi SSID for a `_nomap` suffix. Wifi's with such a suffix must not be
 submitted to the server. Wifi's with a hidden SSID should not be submitted
 to the server either.
 
+Most devices will only report the wifi frequency or the wifi channel,
+but not both.  The submit API will accept both if they are provided,
+but you must include at least one for your record to be accepted.
+
+Valid keys for the wifi record are :
+
+.. include:: wifi_keys.rst
+
 The `key` is a the BSSID or MAC address of the wifi network. So for example
 a valid key would look similar to `01:23:45:67:89:ab`.
 
-For wifi lookups you need to provide at least three wifi keys of nearby wifis.
-This is a industry standard that is meant to prevent you from looking up the
-position of a single wifi over time.
+See :ref:`cell_records` for a detailed explanation of the cell record
+fields for the different network standards.
+
+Mapping records into a search request
+-------------------------------------
+
+The mapping can contain zero or more wifi records and zero or more
+cell records. At least one record must be provided.  If either list of
+records is empty, it can be omitted entirely.
+
+For wifi lookups you need to provide at least three wifi keys of
+nearby wifis.  This is an industry standard that is meant to prevent
+you from looking up the position of a single wifi over time.
+
+Search results
+--------------
+
+.. include:: invalid_apikey.rst
 
 A successful result will be:
 
