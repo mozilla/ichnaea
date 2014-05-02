@@ -22,6 +22,7 @@ from ichnaea.models import (
     WifiBlacklist,
     WifiMeasure,
     join_cellkey,
+    to_cellkey,
     to_cellkey_psc,
 )
 from ichnaea.decimaljson import (
@@ -120,8 +121,8 @@ def process_time(measure, utcnow, utcmin):
 
 
 def process_measure(measure_id, data, session):
-    cell_measures = []
-    wifi_measures = []
+    cell_measures = {}
+    wifi_measures = {}
     measure_data = dict(
         measure_id=measure_id,
         lat=to_precise_int(data['lat']),
@@ -142,7 +143,19 @@ def process_measure(measure_id, data, session):
                 c['radio'] = RADIO_TYPE.get(c['radio'], -1)
             else:
                 c['radio'] = measure_radio
-        cell_measures = data['cell']
+            if 'psc' in c:
+                key = to_cellkey_psc(c)
+            else:
+                key = to_cellkey(c)
+            if key in cell_measures:
+                existing = cell_measures[key]
+                if existing['ta'] > c['ta'] or \
+                   existing['signal'] < c['signal'] or \
+                   existing['asu'] < c['asu']:
+                    cell_measures[key] = c
+            else:
+                cell_measures[key] = c
+    cell_measures = cell_measures.values()
     if data.get('wifi'):
         # filter out old-style sha1 hashes
         invalid_wifi_key = False
@@ -156,7 +169,16 @@ def process_measure(measure_id, data, session):
             # flatten measure / wifi data into a single dict
             for w in data['wifi']:
                 w.update(measure_data)
-            wifi_measures = data['wifi']
+                key = w['key']
+                if key in wifi_measures:
+                    existing = wifi_measures[key]
+                    if existing['signal'] < w['signal'] or \
+                       existing['channel'] != w['channel'] or \
+                       existing['frequency'] != w['frequency']:
+                        wifi_measures[key] = w
+                else:
+                    wifi_measures[key] = w
+            wifi_measures = wifi_measures.values()
     return (cell_measures, wifi_measures)
 
 
