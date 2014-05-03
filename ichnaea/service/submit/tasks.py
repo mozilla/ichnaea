@@ -16,19 +16,19 @@ from ichnaea.models import (
     CellMeasure,
     Measure,
     normalize_wifi_key,
+    normalized_cell_measure_dict,
     valid_wifi_pattern,
     RADIO_TYPE,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
     join_cellkey,
-    to_cellkey,
     to_cellkey_psc,
+    decode_datetime,
+    encode_datetime,
 )
 from ichnaea.decimaljson import (
     loads,
-    decode_datetime,
-    encode_datetime,
     to_precise_int,
 )
 from ichnaea.heka_logging import get_heka_client
@@ -137,16 +137,10 @@ def process_measure(measure_id, data, session):
         # flatten measure / cell data into a single dict
         for c in data['cell']:
             c.update(measure_data)
-            # use more specific cell type or
-            # fall back to less precise measure
-            if c['radio'] != '':
-                c['radio'] = RADIO_TYPE.get(c['radio'], -1)
-            else:
-                c['radio'] = measure_radio
-            if 'psc' in c:
-                key = to_cellkey_psc(c)
-            else:
-                key = to_cellkey(c)
+            c = normalized_cell_measure_dict(c, measure_radio)
+            if c is None:
+                continue
+            key = to_cellkey_psc(c)
             if key in cell_measures:
                 existing = cell_measures[key]
                 if existing['ta'] > c['ta'] or \
@@ -263,44 +257,9 @@ def insert_measures(self, items=None, nickname=''):
 
 
 def create_cell_measure(utcnow, entry):
-    # skip records with missing or invalid mcc or mnc
-    if 'mcc' not in entry or entry['mcc'] < 1 or entry['mcc'] > 999:
-        return
-    if 'mnc' not in entry or entry['mnc'] < 0 or entry['mnc'] > 32767:
-        return
-
-    # Skip CDMA towers missing lac or cid (no psc on CDMA exists to
-    # backfill using inference)
-    if entry.get('radio', -1) == 1 and \
-       (entry.get('lac', -1) < 0 or entry.get('cid', -1) < 0):
-        return
-
-    # some phones send maxint32 to signal "unknown"
-    # ignore anything above the maximum valid values
-    if 'lac' not in entry or entry['lac'] < 0 or entry['lac'] > 65535:
-        entry['lac'] = -1
-    if 'cid' not in entry or entry['cid'] < 0 or entry['cid'] > 268435455:
-        entry['cid'] = -1
-    if 'psc' not in entry or entry['psc'] < 0 or entry['psc'] > 512:
-        entry['psc'] = -1
-
-    # Treat the lac=0, cid=65535 combination as unspecified values
-    if entry['lac'] == 0 and entry['cid'] == 65535:
-        entry['lac'] = -1
-        entry['cid'] = -1
-
-    # Must have LAC+CID or PSC
-    if (entry['lac'] == -1 or entry['cid'] == -1) and entry['psc'] == -1:
-        return
-
-    # make sure fields stay within reasonable bounds
-    if 'asu' not in entry or entry['asu'] < 0 or entry['asu'] > 100:
-        entry['asu'] = -1
-    if 'signal' not in entry or entry['signal'] < -200 or entry['signal'] > -1:
-        entry['signal'] = 0
-    if 'ta' not in entry or entry['ta'] < 0 or entry['ta'] > 100:
-        entry['ta'] = 0
-
+    entry = normalized_cell_measure_dict(entry)
+    if entry is None:
+        return None
     return CellMeasure(
         measure_id=entry.get('measure_id'),
         created=utcnow,

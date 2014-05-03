@@ -2,29 +2,13 @@ from datetime import date
 from datetime import datetime
 from decimal import Decimal
 from decimal import localcontext
-from ichnaea.models import DEGREE_DECIMAL_PLACES
-from colander import iso8601
+from ichnaea.models import DEGREE_DECIMAL_PLACES, encode_datetime
 import simplejson as json
 
 FACTOR = Decimal(10 ** DEGREE_DECIMAL_PLACES)
 EXPONENT_STR = '1.' + ('0' * DEGREE_DECIMAL_PLACES)
 EXPONENT = Decimal(EXPONENT_STR)
 PRECISION = DEGREE_DECIMAL_PLACES
-
-
-def encode_datetime(obj):
-    if isinstance(obj, datetime):
-        return obj.strftime('%Y-%m-%dT%H:%M:%S.%f')
-    elif isinstance(obj, date):
-        return obj.strftime('%Y-%m-%d')
-    raise TypeError(repr(obj) + " is not JSON serializable")
-
-
-def decode_datetime(obj):
-    try:
-        return iso8601.parse_date(obj)
-    except (iso8601.ParseError, TypeError):
-        return datetime.utcnow().replace(tzinfo=iso8601.UTC)
 
 
 def dumps(value):

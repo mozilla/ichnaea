@@ -1,5 +1,6 @@
 from collections import namedtuple
-import datetime
+from datetime import date, datetime
+from colander import iso8601
 import re
 
 from sqlalchemy import (
@@ -34,8 +35,20 @@ RADIO_TYPE = {
 }
 RADIO_TYPE_KEYS = list(RADIO_TYPE.keys())
 RADIO_TYPE_INVERSE = dict((v, k) for k, v in RADIO_TYPE.items())
+MAX_RADIO_TYPE = max(RADIO_TYPE.values())
+MIN_RADIO_TYPE = min(RADIO_TYPE.values())
 
+# Challenger Deep, Mariana Trench.
+MIN_ALTITUDE = -10911
+
+# Karman Line, edge of space.
+MAX_ALTITUDE = 100000
+
+# Numeric constant used to indicate "virtual cells" for LACs, in db.
 CELLID_LAC = -2
+
+# Symbolic constant used in specs passed to normalization functions.
+REQUIRED = {}
 
 invalid_wifi_regex = re.compile("(?!(0{12}|f{12}))")
 valid_wifi_regex = re.compile("([0-9a-fA-F]{12})")
@@ -52,6 +65,21 @@ def to_degrees(i):
     return float(i) / DEGREE_SCALE_FACTOR
 
 
+def encode_datetime(obj):
+    if isinstance(obj, datetime):
+        return obj.strftime('%Y-%m-%dT%H:%M:%S.%f')
+    elif isinstance(obj, date):
+        return obj.strftime('%Y-%m-%d')
+    raise TypeError(repr(obj) + " is not JSON serializable")
+
+
+def decode_datetime(obj):
+    try:
+        return iso8601.parse_date(obj)
+    except (iso8601.ParseError, TypeError):
+        return datetime.utcnow().replace(tzinfo=iso8601.UTC)
+
+
 def valid_wifi_pattern(key):
     return invalid_wifi_regex.match(key) and \
         valid_wifi_regex.match(key) and len(key) == 12
@@ -61,6 +89,113 @@ def normalize_wifi_key(key):
     if ":" in key or "-" in key or "." in key:
         key = key.replace(":", "").replace("-", "").replace(".", "")
     return key.lower()
+
+
+def normalized_dict_value(d, k, lo, hi, default=REQUIRED):
+    """
+    Returns a dict value d[k] if within range [lo,hi]. If the
+    Value is missing or out of range, return default, unless
+    default is REQUIRED, in which case return None.
+    """
+    if k not in d or d[k] < lo or d[k] > hi:
+        if default is REQUIRED:
+            return None
+        else:
+            return default
+    else:
+        return d[k]
+
+
+def normalized_dict(d, specs):
+    """
+    Returns a copy of the provided dict, with its values set to a default
+    value if missing or outside a specified range. If any missing or
+    out-of-range values were specified as REQUIRED, return None.
+
+    Arguments:
+    d -- a dict to normalize
+    specs -- a dict mapping keys to (lo, hi, default) triples, where
+             default may be the symbolic constant REQUIRED;
+             if any REQUIRED fields are missing or out of
+             range, return None.
+    """
+    n = {}
+    for (k, (lo, hi, default)) in specs.items():
+        v = normalized_dict_value(d, k, lo, hi, default)
+        if v is None:
+            return None
+        n[k] = v
+
+    # copy forward anything not specified
+    for (k, v) in d.items():
+        if k not in n:
+            n[k] = v
+    return n
+
+
+def normalized_cell_dict(d, default_radio=-1):
+    """
+    Returns a normalized copy of the provided cell dict d,
+    or None if the dict was invalid.
+    """
+
+    r = dict(**d)
+    if 'radio' in r and isinstance(r['radio'], str):
+        r['radio'] = RADIO_TYPE.get(r['radio'], -1)
+
+    n = normalized_dict(
+        r, dict(radio=(MIN_RADIO_TYPE, MAX_RADIO_TYPE, default_radio),
+                mcc=(1, 999, REQUIRED),
+                mnc=(0, 32767, REQUIRED),
+                lac=(0, 65535, -1),
+                cid=(0, 268435455, -1),
+                psc=(0, 512, -1)))
+
+    if n is None:
+        return None
+
+    # Skip CDMA towers missing lac or cid (no psc on CDMA exists to
+    # backfill using inference)
+    if n['radio'] == RADIO_TYPE['cdma'] and (n['lac'] < 0 or n['cid'] < 0):
+        return None
+
+    # Treat the lac=0, cid=65535 combination as unspecified values
+    if n['lac'] == 0 and n['cid'] == 65535:
+        n['lac'] = -1
+        n['cid'] = -1
+
+    # Must have LAC+CID or PSC
+    if (n['lac'] == -1 or n['cid'] == -1) and n['psc'] == -1:
+        return None
+
+    return n
+
+
+def normalized_cell_measure_dict(d, measure_radio=-1):
+    """
+    Returns a normalized copy of the provided cell-measure dict d,
+    or None if the dict was invalid.
+    """
+    c = normalized_cell_dict(d, measure_radio)
+    if c is None:
+        return None
+    n = normalized_dict(
+        c, dict(lat=(from_degrees(-90.0), from_degrees(90.0), REQUIRED),
+                lon=(from_degrees(-180.0), from_degrees(180.0), REQUIRED),
+                asu=(0, 100, -1),
+                signal=(-200, -1, 0),
+                ta=(0, 100, 0),
+                altitude=(MIN_ALTITUDE, MAX_ALTITUDE, 0),
+                altitude_accuracy=(0, abs(MAX_ALTITUDE - MIN_ALTITUDE), 0),
+                # Accuracy on land is arbitrarily bounded to [0, 1000km],
+                # past which it seems more likely we're looking at bad data.
+                accuracy=(0, 1000000, 0)))
+    if n is None:
+        return None
+    if 'time' not in n:
+        n['time'] = ''
+    n['time'] = encode_datetime(decode_datetime(n['time']))
+    return n
 
 
 def to_cellkey(obj):
@@ -162,7 +297,7 @@ class Cell(_Model):
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
-            kw['created'] = datetime.datetime.utcnow()
+            kw['created'] = datetime.utcnow()
         if 'lac' not in kw:
             kw['lac'] = -1
         if 'cid' not in kw:
@@ -197,7 +332,7 @@ class CellBlacklist(_Model):
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
-            kw['created'] = datetime.datetime.utcnow()
+            kw['created'] = datetime.utcnow()
         super(CellBlacklist, self).__init__(*args, **kw)
 
 
@@ -240,7 +375,7 @@ class CellMeasure(_Model):
         if 'measure_id' not in kw:
             kw['measure_id'] = 0
         if 'created' not in kw:
-            kw['created'] = datetime.datetime.utcnow()
+            kw['created'] = datetime.utcnow()
         super(CellMeasure, self).__init__(*args, **kw)
 
 cell_measure_table = CellMeasure.__table__
@@ -279,7 +414,7 @@ class Wifi(_Model):
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
-            kw['created'] = datetime.datetime.utcnow()
+            kw['created'] = datetime.utcnow()
         if 'new_measures' not in kw:
             kw['new_measures'] = 0
         if 'total_measures' not in kw:
@@ -305,7 +440,7 @@ class WifiBlacklist(_Model):
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
-            kw['created'] = datetime.datetime.utcnow()
+            kw['created'] = datetime.utcnow()
         super(WifiBlacklist, self).__init__(*args, **kw)
 
 
@@ -342,7 +477,7 @@ class WifiMeasure(_Model):
         if 'measure_id' not in kw:
             kw['measure_id'] = 0
         if 'created' not in kw:
-            kw['created'] = datetime.datetime.utcnow()
+            kw['created'] = datetime.utcnow()
         super(WifiMeasure, self).__init__(*args, **kw)
 
 wifi_measure_table = WifiMeasure.__table__
