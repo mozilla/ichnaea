@@ -87,7 +87,7 @@ test: mysql
 	$(NOSE) -s -d -v --with-coverage --cover-package ichnaea ichnaea
 
 bin/sphinx-build:
-	$(INSTALL) Sphinx
+	$(INSTALL) -r requirements/docs.txt
 
 docs:  bin/sphinx-build
 	cd docs; make html
