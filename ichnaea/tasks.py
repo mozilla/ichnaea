@@ -19,6 +19,7 @@ from ichnaea.models import (
     CellKey,
     CellBlacklist,
     CellMeasure,
+    CellMeasureCheckPoint,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
@@ -300,6 +301,7 @@ def backfill_cell_location_update(self, new_cell_measures):
 @celery.task(base=DatabaseTask, bind=True)
 def cell_location_update(self, min_new=10, max_new=100, batch=10):
 
+    max_cm_id = None
     try:
         cells = []
         with self.db_session() as session:
@@ -319,7 +321,7 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
                     continue
 
                 query = session.query(
-                    CellMeasure.lat, CellMeasure.lon).filter(
+                    CellMeasure.lat, CellMeasure.lon, CellMeasure.id).filter(
                     *join_cellkey(CellMeasure, cell))
                 # only take the last X new_measures
                 query = query.order_by(
@@ -328,16 +330,23 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
                 measures = query.all()
 
                 if measures:
-                    calculate_new_position(cell, measures, moving_cells,
+                    lat_lons = [(m.lat, m.lon) for m in measures]
+                    calculate_new_position(cell, lat_lons, moving_cells,
                                            CELL_MAX_DIST_KM,
                                            backfill=False)
                     update_enclosing_lac(session, cell)
+
+                    max_cm_id = max([m.id for m in measures])
 
             if moving_cells:
                 # some cells found to be moving too much
                 mark_moving_cells(session, moving_cells)
 
+            if max_cm_id:
+                cm_cp = CellMeasureCheckPoint(cell_measure_id=max_cm_id)
+                session.add(cm_cp)
             session.commit()
+
         return (len(cells), len(moving_cells))
     except IntegrityError as exc:  # pragma: no cover
         self.heka_client.raven('error')
