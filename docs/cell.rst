@@ -13,6 +13,12 @@ constants <http://developer.android.com/reference/android/telephony/TelephonyMan
 A similar classification exists for Firefox OS devices with the
 `MozMobileConnectionInfo API <https://developer.mozilla.org/en-US/docs/Web/API/MozMobileConnectionInfo.type>`_.
 
+
+.. _cell_records_radio_type:
+radio
+    The radio type. Must be one of "gsm", "cdma" or an empty
+    string (for example for tablets or laptops without a cell radio).
+
 GSM
 ===
 

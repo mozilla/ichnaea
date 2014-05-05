@@ -8,6 +8,7 @@ from ichnaea.models import (
 from ichnaea.decimaljson import (
     quantize,
 )
+from ichnaea.service.base import check_api_key
 from ichnaea.service.error import (
     MSG_ONE_OF,
     preprocess_request,
@@ -208,16 +209,9 @@ def check_cell_or_wifi(data, errors):
         errors.append(dict(name='body', description=MSG_ONE_OF))
 
 
+@check_api_key('search', True)
 def search_view(request):
-    api_key = request.GET.get('key', None)
     heka_client = get_heka_client()
-
-    if api_key is None:
-        # TODO: change into a better error response
-        heka_client.incr('search.no_api_key')
-        return {'status': 'not_found'}
-
-    heka_client.incr('search.api_key')
 
     data, errors = preprocess_request(
         request,
