@@ -54,7 +54,7 @@ build: $(PYTHON) mysql
 	$(PYTHON) setup.py develop
 
 init_db:
-	$(BIN)/init_ichnaea_db --initdb
+	$(BIN)/location_initdb --initdb
 
 css: node_modules
 	$(HERE)/node_modules/.bin/cleancss -d \
