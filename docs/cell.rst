@@ -15,9 +15,15 @@ A similar classification exists for Firefox OS devices with the
 
 
 .. _cell_records_radio_type:
+
 radio
-    The radio type. Must be one of "gsm", "cdma" or an empty
-    string (for example for tablets or laptops without a cell radio).
+    The type of phone. Must be one of `gsm`, `cdma`, an empty
+    string (for example for tablets or laptops without a cell radio)
+    or can be omitted entirely.
+
+The top-level radio field identifies the phone type. The radio field in each
+cell record specify the type of cell.
+
 
 GSM
 ===
@@ -43,17 +49,20 @@ Example:
         }
     ]
 
-mcc
-    The mobile country code. An integer in the range of 0 to 999 (required).
+radio **(required)**
+    The string `gsm`.
 
-mnc
-    The mobile network code. An integer in the range of 0 to 999 (required).
+mcc **(required)**
+    The mobile country code. An integer in the range of 0 to 999.
 
-lac
-    The location area code. An integer in the range of 0 to 65535 (optional).
+mnc **(required)**
+    The mobile network code. An integer in the range of 0 to 999.
 
-cid
-    The cell id. An integer in the range of 0 to 65535 (required).
+lac **(required)**
+    The location area code. An integer in the range of 0 to 65535.
+
+cid **(required)**
+    The cell id. An integer in the range of 0 to 65535.
 
 signal
     The received signal strength (RSSI) in dBm, typically in the range of
@@ -92,17 +101,20 @@ Example:
         }
     ]
 
-mcc
-    The mobile country code. An integer in the range of 0 to 999 (required).
+radio **(required)**
+    The string `utms`.
 
-mnc
-    The mobile network code. An integer in the range of 0 to 999 (required).
+mcc **(required)**
+    The mobile country code. An integer in the range of 0 to 999.
 
-lac
-    The location area code. An integer in the range of 0 to 65535 (optional).
+mnc **(required)**
+    The mobile network code. An integer in the range of 0 to 999.
 
-cid
-    The cell id. An integer in the range of 0 to 268435455 (optional).
+lac **(required)**
+    The location area code. An integer in the range of 0 to 65535.
+
+cid **(required)**
+    The cell id. An integer in the range of 0 to 268435455.
 
 psc
     The primary scrambling code as an integer in the range of 0 to 511
@@ -115,6 +127,66 @@ signal
 asu
     The arbitrary strength unit. An integer in the range of -5 to 91 (optional).
     The formula: ``RSCP [dBm] = ASU - 116``.
+
+A special case exists for UMTS cells, to send data about neighboring cells.
+For these it is acceptable to specify the lac and cid fields as `-1` if at
+the same time a valid psc field is submitted.
+
+LTE
+===
+
+Example:
+
+.. code-block:: javascript
+
+    "radio": "gsm",
+    "cell": [
+        {
+            "radio": "lte",
+            "mcc": 123,
+            "mnc": 123,
+            "lac": 12345,
+            "cid": 12345,
+            "psc": 123,
+            "signal": -69,
+            "asu": 71,
+            "ta": 10
+        }
+    ]
+
+radio **(required)**
+    The string `lte`.
+
+mcc **(required)**
+    The mobile country code. An integer in the range of 0 to 999.
+
+mnc **(required)**
+    The mobile network code. An integer in the range of 0 to 999.
+
+lac **(required)**
+    The tracking area code. An integer in the range of 0 to 65535.
+
+cid **(required)**
+    The cell identity. An integer in the range of 0 to 268435455.
+
+psc
+    The physical cell id as an integer in the range of 0 to 503 (optional).
+
+signal
+    The received signal strength (RSRP) in dBm, typically in the range of
+    -45 to -137 (optional).
+
+asu
+    The arbitrary strength unit. An integer in the range of 0 to 95 (optional).
+    The formula: ``RSRP [dBm] = ASU – 140``.
+
+ta
+    The timing advance. An integer in the range of 0 to 63 (optional).
+
+
+A special case exists for LTE cells, to send data about neighboring cells.
+For these it is acceptable to specify the lac and cid fields as `-1` if at
+the same time a valid psc field is submitted.
 
 
 CDMA
@@ -141,17 +213,21 @@ Example:
         }
     ]
 
-mcc
-    The mobile country code. An integer in the range of 0 to 999 (required).
+radio **(required)**
+    The string `cdma`. If specified, the phone radio type must also be
+    `cdma`.
 
-mnc
-    The system identifier. An integer in the range of 0 to 32767 (required).
+mcc **(required)**
+    The mobile country code. An integer in the range of 0 to 999.
 
-lac
-    The network id. An integer in the range of 0 to 65535 (required).
+mnc **(required)**
+    The system identifier. An integer in the range of 0 to 32767.
 
-cid
-    The base station id. An integer in the range of 0 to 65535 (required).
+lac **(required)**
+    The network id. An integer in the range of 0 to 65535.
+
+cid **(required)**
+    The base station id. An integer in the range of 0 to 65535.
 
 signal
     The received signal strength (RSSI) in dBm, typically in the range of
@@ -162,52 +238,3 @@ asu
     Conversion rule: ``RSSI [dBm] >= -75: ASU = 16``,
     ``RSSI [dBm] >= -82: ASU = 8``, ``RSSI [dBm] >= -90: ASU = 4``,
     ``RSSI [dBm] >= -95: ASU = 2``, ``RSSI [dBm] >= -100: ASU = 1``.
-
-
-LTE
-===
-
-Example:
-
-.. code-block:: javascript
-
-    "radio": "gsm",
-    "cell": [
-        {
-            "radio": "lte",
-            "mcc": 123,
-            "mnc": 123,
-            "lac": 12345,
-            "cid": 12345,
-            "psc": 123,
-            "signal": -69,
-            "asu": 71,
-            "ta": 10
-        }
-    ]
-
-mcc
-    The mobile country code. An integer in the range of 0 to 999 (required).
-
-mnc
-    The mobile network code. An integer in the range of 0 to 999 (required).
-
-lac
-    The tracking area code. An integer in the range of 0 to 65535 (optional).
-
-cid
-    The cell identity. An integer in the range of 0 to 268435455 (required).
-
-psc
-    The physical cell id as an integer in the range of 0 to 503 (optional).
-
-signal
-    The received signal strength (RSRP) in dBm, typically in the range of
-    -45 to -137 (optional).
-
-asu
-    The arbitrary strength unit. An integer in the range of 0 to 95 (optional).
-    The formula: ``RSRP [dBm] = ASU – 140``.
-
-ta
-    The timing advance. An integer in the range of 0 to 63 (optional).

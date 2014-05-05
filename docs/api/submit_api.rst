@@ -4,7 +4,7 @@ Submit
 ======
 
 Purpose
-    Submit data about nearby cell towers and wifi base stations.
+    Submit data about nearby cell and WiFi networks.
 
 Submit requests are submitted using a POST request to the following URL::
 
@@ -18,7 +18,7 @@ with a JSON body:
        {
         "lat": -22.7539192,
         "lon": -43.4371081,
-        "time": "2012-03-15T11:12:13.456Z",
+        "time": "2012-03-01T00:00:00.000Z",
         "accuracy": 10,
         "altitude": 100,
         "altitude_accuracy": 1,
@@ -38,7 +38,7 @@ with a JSON body:
                 "key": "01:23:45:67:89:ab",
                 "channel": 11,
                 "frequency": 2412,
-                "signal": -50
+                "signal": -51
             }
         ]
        }
@@ -51,7 +51,7 @@ Record definition
 The record fields have the same meaning and requirements as explained
 in the :ref:`api_search`.
 
-The only required fields are `lat` and `lon` and at least one cell or wifi
+The only required fields are `lat` and `lon` and at least one cell or WiFi
 entry.  If either `lat` or `lon` are not included, the record will
 not be accepted.
 
@@ -59,8 +59,10 @@ The altitude, accuracy and altitude_accuracy fields are all measured in
 meters. Altitude measures the height above or below the mean sea level,
 as defined by WGS84.
 
-The timestamp has to be in UTC time, encoded in ISO 8601. If not
-provided, the server time will be used.
+The time has to be in UTC time, encoded in ISO 8601. If not provided,
+the server time will be used. It should be the first of the month, in
+which the radio environment was observed at the given location. The
+coarse grained month resolution protects the privacy of the observer.
 
 Submit results
 --------------

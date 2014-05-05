@@ -1,10 +1,10 @@
-key
-    **required** The client must check the Wifi SSID for a `_nomap`
-    suffix. Wifi's with such a suffix must not be submitted to the
-    server. Wifi's with a hidden SSID should not be submitted to the
+key **(required)**
+    The client must check the WiFi SSID for a `_nomap`
+    suffix. WiFi networks with such a suffix must not be submitted to the
+    server. WiFi networks with a hidden SSID should not be submitted to the
     server either.
 
-    The `key` is a the BSSID or MAC address of the wifi network. So for example
+    The `key` is the BSSID of the WiFi network. So for example
     a valid key would look similar to `01:23:45:67:89:ab`.
 
 frequency
@@ -19,7 +19,7 @@ signal
     The received signal strength (RSSI) in dBm, typically in the range of
     -51 to -113.
 
-An example of a valid wifi record is below:
+An example of a valid WiFi record is below:
 
 .. code-block:: javascript
 
@@ -27,5 +27,5 @@ An example of a valid wifi record is below:
         "key": "01:23:45:67:89:ab",
         "channel": 11,
         "frequency": 2412,
-        "signal": -50
+        "signal": -51
     }
