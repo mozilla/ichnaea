@@ -68,5 +68,6 @@ setup(
     entry_points="""\
     [console_scripts]
     location_import = ichnaea.importer:console_entry
+    init_ichnaea_db= ichnaea.db:console_entry
     """,
 )
