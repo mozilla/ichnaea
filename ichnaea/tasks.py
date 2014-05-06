@@ -19,6 +19,7 @@ from ichnaea.models import (
     CellKey,
     CellBlacklist,
     CellMeasure,
+    CellMeasureBlock,
     CellMeasureCheckPoint,
     Wifi,
     WifiBlacklist,
@@ -633,5 +634,49 @@ def update_lac(self, radio, mcc, mnc, lac):
             lac.lat = ctr_lat
             lac.lon = ctr_lon
             lac.range = rng
+
+        session.commit()
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def schedule_measure_archival(self):
+    """
+    This just looks at the CellMeasureCheckPoint table and adds an
+    entry into CellMeasureBlock to schedule archival
+    """
+    with self.db_session() as session:
+        query = session.query(CellMeasureCheckPoint.cell_measure_id)
+        query = query.order_by(CellMeasureCheckPoint.cell_measure_id.desc())
+        query = query.limit(1)
+        records = query.all()
+        if not len(records):
+            return
+        max_cell_measure_id = records[0]
+
+        query = session.query(CellMeasureBlock.end_cell_measure_id)
+        query = query.order_by(CellMeasureBlock.end_cell_measure_id.desc())
+        query = query.limit(1)
+        records = query.all()
+        if len(records):
+            last_cell_measure_id = records[0]
+        else:
+            last_cell_measure_id = 0
+
+        total_entries_to_journal = max_cell_measure_id - last_cell_measure_id
+        if total_entries_to_journal > 0:
+            # We have new entries to file
+            from ichnaea import config
+            conf = config()
+            batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
+            while total_entries_to_journal >= batch_size:
+                entries_to_journal = min(batch_size, total_entries_to_journal)
+                total_entries_to_journal -= entries_to_journal
+
+                start = last_cell_measure_id + 1
+                end = start + entries_to_journal
+
+                cm_blk = CellMeasureBlock(start_cell_measure_id=start,
+                                          end_cell_measure_id=end)
+                session.add(cm_blk)
 
         session.commit()

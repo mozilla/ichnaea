@@ -201,6 +201,30 @@ class CellBlacklist(_Model):
         super(CellBlacklist, self).__init__(*args, **kw)
 
 
+class CellMeasureBlock(_Model):
+    __tablename__ = 'cell_measure_block'
+    __table_args__ = (
+        Index('idx_cmblk_archive_date', 'archive_date'),
+        Index('idx_cmblk_s3_archive', 's3_archive'),
+        Index('idx_cmblk_end_cell_measure_id', 'end_cell_measure_id'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+            'mysql_row_format': 'compressed',
+            'mysql_key_block_size': '4',
+        }
+    )
+    id = Column(BigInteger(unsigned=True),
+                primary_key=True,
+                autoincrement=True)
+
+    start_cell_measure_id = Column(BigInteger(unsigned=True))
+    end_cell_measure_id = Column(BigInteger(unsigned=True))
+
+    archive_date = Column(DateTime)
+    s3_archive = Column(String(80))
+
+
 class CellMeasureCheckPoint(_Model):
     __tablename__ = 'cell_measure_checkpoint'
     __table_args__ = (
