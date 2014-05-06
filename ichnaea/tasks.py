@@ -651,14 +651,14 @@ def schedule_measure_archival(self):
         records = query.all()
         if not len(records):
             return
-        max_cell_measure_id = records[0]
+        max_cell_measure_id = records[0][0]
 
         query = session.query(CellMeasureBlock.end_cell_measure_id)
         query = query.order_by(CellMeasureBlock.end_cell_measure_id.desc())
         query = query.limit(1)
         records = query.all()
         if len(records):
-            last_cell_measure_id = records[0]
+            last_cell_measure_id = records[0][0]
         else:
             last_cell_measure_id = 0
 
@@ -668,15 +668,14 @@ def schedule_measure_archival(self):
             from ichnaea import config
             conf = config()
             batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
-            while total_entries_to_journal >= batch_size:
+            while total_entries_to_journal > 0:
                 entries_to_journal = min(batch_size, total_entries_to_journal)
                 total_entries_to_journal -= entries_to_journal
 
                 start = last_cell_measure_id + 1
-                end = start + entries_to_journal
+                end = start + entries_to_journal - 1
 
                 cm_blk = CellMeasureBlock(start_cell_measure_id=start,
                                           end_cell_measure_id=end)
                 session.add(cm_blk)
-
         session.commit()

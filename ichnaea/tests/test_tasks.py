@@ -6,6 +6,8 @@ from ichnaea.models import (
     CellBlacklist,
     CellKey,
     CellMeasure,
+    CellMeasureCheckPoint,
+    CellMeasureBlock,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
@@ -709,3 +711,23 @@ class TestWifiLocationUpdate(CeleryTestCase):
                                       trim_func=wifi_trim_excessive_data,
                                       kinit=lambda k: {'key': str(k)},
                                       delstat='deleted_wifi')
+
+
+class TestCellMeasureDump(CeleryTestCase):
+    def test_journal_measures(self):
+        session = self.db_master_session
+        session.add(CellMeasureCheckPoint(cell_measure_id=100))
+        for i in range(1, 100):
+            cm = CellMeasure(id=i)
+            session.add(cm)
+        session.commit()
+
+        from ichnaea.tasks import schedule_measure_archival
+        schedule_measure_archival()
+
+        query = session.query(CellMeasureBlock.start_cell_measure_id,
+                              CellMeasureBlock.end_cell_measure_id,)
+        blocks = query.all()
+        self.assertEquals(len(blocks), 1)
+        block = blocks[0]
+        self.assertEquals(block, (1, 100))
