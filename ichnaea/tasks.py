@@ -663,12 +663,13 @@ def schedule_measure_archival(self):
             last_cell_measure_id = 0
 
         total_entries_to_journal = max_cell_measure_id - last_cell_measure_id
+        blocks = []
         if total_entries_to_journal > 0:
             # We have new entries to file
             from ichnaea import config
             conf = config()
             batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
-            while total_entries_to_journal > 0:
+            while total_entries_to_journal > batch_size:
                 entries_to_journal = min(batch_size, total_entries_to_journal)
                 total_entries_to_journal -= entries_to_journal
 
@@ -677,5 +678,7 @@ def schedule_measure_archival(self):
 
                 cm_blk = CellMeasureBlock(start_cell_measure_id=start,
                                           end_cell_measure_id=end)
+                blocks.append((cm_blk.start_cell_measure_id, cm_blk.end_cell_measure_id))
                 session.add(cm_blk)
         session.commit()
+        return blocks
