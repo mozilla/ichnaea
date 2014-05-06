@@ -167,10 +167,7 @@ def process_measure(measure_id, data, session):
             add_missing_dict_entries(w, measure_data)
             w = normalized_wifi_measure_dict(w)
             if w is None:
-                # If there's a single bad wifi, reject
-                # the whole submission.
-                wifi_measures = {}
-                break
+                continue
             key = w['key']
             if key in wifi_measures:
                 existing = wifi_measures[key]

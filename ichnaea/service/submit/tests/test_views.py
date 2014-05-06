@@ -466,8 +466,8 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         session = self.db_master_session
         result = session.query(WifiMeasure).all()
-        # if any of the keys is too short, the entire batch gets rejected
-        self.assertEqual(len(result), 0)
+        # The too-short key gets rejected, the ok one gets in.
+        self.assertEqual(len(result), 1)
 
     def test_error_too_long_wifi_key(self):
         app = self.app
@@ -479,8 +479,8 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         session = self.db_master_session
         result = session.query(WifiMeasure).all()
-        # if any of the keys is too long, the entire batch gets rejected
-        self.assertEqual(len(result), 0)
+        # The too-long key gets rejected, the ok one gets in.
+        self.assertEqual(len(result), 1)
 
     def test_many_errors(self):
         app = self.app
