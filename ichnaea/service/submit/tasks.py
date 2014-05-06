@@ -234,7 +234,7 @@ def process_measures(items, session, userid=None):
 
     if userid is not None:
         process_score(userid, len(items), session)
-    if positions:
+    if positions and (cell_measures or wifi_measures):
         process_mapstat(positions, session, userid=userid)
 
 
