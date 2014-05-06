@@ -317,9 +317,9 @@ def normalized_cell_measure_dict(d, measure_radio=-1):
     d = normalized_cell_dict(d, measure_radio)
     d = normalized_measure_dict(d)
     return normalized_dict(
-        d, dict(asu=(0, 100, -1),
+        d, dict(asu=(0, 31, -1),
                 signal=(-200, -1, 0),
-                ta=(0, 100, 0)))
+                ta=(0, 63, 0)))
 
 
 def to_cellkey(obj):
