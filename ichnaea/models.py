@@ -53,6 +53,73 @@ REQUIRED = {}
 invalid_wifi_regex = re.compile("(?!(0{12}|f{12}))")
 valid_wifi_regex = re.compile("([0-9a-fA-F]{12})")
 
+WIFI_FREQUENCIES = {
+    # 2.4GHz band
+    2412: 1,
+    2417: 2,
+    2422: 3,
+    2427: 4,
+    2432: 5,
+    2437: 6,
+    2442: 7,
+    2447: 8,
+    2452: 9,
+    2457: 10,
+    2462: 11,
+    2467: 12,
+    2472: 13,
+    2484: 14,
+
+    # 5Ghz band
+    4915: 183,
+    4920: 184,
+    4925: 185,
+    4935: 187,
+    4940: 188,
+    4945: 189,
+    4960: 192,
+    4980: 196,
+    5035: 7,
+    5040: 8,
+    5045: 9,
+    5055: 11,
+    5060: 12,
+    5080: 16,
+    5170: 34,
+    5180: 36,
+    5190: 38,
+    5200: 40,
+    5210: 42,
+    5220: 44,
+    5230: 46,
+    5240: 48,
+    5260: 52,
+    5280: 56,
+    5300: 60,
+    5320: 64,
+    5500: 100,
+    5520: 104,
+    5540: 108,
+    5560: 112,
+    5580: 116,
+    5600: 120,
+    5620: 124,
+    5640: 128,
+    5660: 132,
+    5680: 136,
+    5700: 140,
+    5745: 149,
+    5765: 153,
+    5785: 157,
+    5805: 161,
+    5825: 165,
+}
+
+# Quasi-inverse mapping prefers lower (2.4Ghz) global channel numbers over
+# 5Ghz Japan-centric ones, when in conflict.
+WIFI_CHANNELS = dict([(v, k) for (k, v) in
+                      reversed(WIFI_FREQUENCIES.items())])
+
 CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
 
@@ -119,6 +186,9 @@ def normalized_dict(d, specs):
              if any REQUIRED fields are missing or out of
              range, return None.
     """
+    if not isinstance(d, dict):
+        return None
+
     n = {}
     for (k, (lo, hi, default)) in specs.items():
         v = normalized_dict_value(d, k, lo, hi, default)
@@ -133,42 +203,110 @@ def normalized_dict(d, specs):
     return n
 
 
+def normalized_measure_dict(d):
+    """
+    Returns a normalized copy of the provided measurement dict d,
+    or None if the dict was invalid.
+    """
+    d = normalized_dict(
+        d, dict(lat=(from_degrees(-90.0), from_degrees(90.0), REQUIRED),
+                lon=(from_degrees(-180.0), from_degrees(180.0), REQUIRED),
+                altitude=(MIN_ALTITUDE, MAX_ALTITUDE, 0),
+                altitude_accuracy=(0, abs(MAX_ALTITUDE - MIN_ALTITUDE), 0),
+                # Accuracy on land is arbitrarily bounded to [0, 1000km],
+                # past which it seems more likely we're looking at bad data.
+                accuracy=(0, 1000000, 0)))
+
+    if d is None:
+        return None
+
+    if 'time' not in d:
+        d['time'] = ''
+    d['time'] = encode_datetime(decode_datetime(d['time']))
+    return d
+
+
+def normalized_wifi_dict(d):
+    """
+    Returns a normalized copy of the provided wifi dict d,
+    or None if the dict was invalid.
+    """
+
+    d = normalized_dict(
+        d, dict(channel=(1, 200, 0),
+                frequency=(2400, 6000, 0)))
+
+    if d is None:
+        return None
+
+    if 'key' not in d:
+        return None
+
+    d['key'] = normalize_wifi_key(d['key'])
+
+    if not valid_wifi_pattern(d['key']):
+        return None
+
+    # Attempt to infer channel from frequency
+    if d['channel'] == 0 and d['frequency'] != 0:
+        d['channel'] = WIFI_FREQUENCIES.get(d['frequency'], 0)
+
+    # While we're at it, attempt the reverse (though we don't presently
+    # store frequency in the DB, and some channel numbers are reused to
+    # refer to different frequencies in different bands)
+    if d['frequency'] == 0 and d['channel'] != 0:
+        d['frequency'] = WIFI_CHANNELS.get(d['channel'], 0)
+
+    return d
+
+
+def normalized_wifi_measure_dict(d):
+    """
+    Returns a normalized copy of the provided wifi-measure dict d,
+    or None if the dict was invalid.
+    """
+    d = normalized_wifi_dict(d)
+    return normalized_measure_dict(d)
+
+
 def normalized_cell_dict(d, default_radio=-1):
     """
     Returns a normalized copy of the provided cell dict d,
     or None if the dict was invalid.
     """
+    if not isinstance(d, dict):
+        return None
 
-    r = dict(**d)
-    if 'radio' in r and isinstance(r['radio'], str):
-        r['radio'] = RADIO_TYPE.get(r['radio'], -1)
+    d = dict(**d)
+    if 'radio' in d and isinstance(d['radio'], str):
+        d['radio'] = RADIO_TYPE.get(d['radio'], -1)
 
-    n = normalized_dict(
-        r, dict(radio=(MIN_RADIO_TYPE, MAX_RADIO_TYPE, default_radio),
+    d = normalized_dict(
+        d, dict(radio=(MIN_RADIO_TYPE, MAX_RADIO_TYPE, default_radio),
                 mcc=(1, 999, REQUIRED),
                 mnc=(0, 32767, REQUIRED),
                 lac=(0, 65535, -1),
                 cid=(0, 268435455, -1),
                 psc=(0, 512, -1)))
 
-    if n is None:
+    if d is None:
         return None
 
     # Skip CDMA towers missing lac or cid (no psc on CDMA exists to
     # backfill using inference)
-    if n['radio'] == RADIO_TYPE['cdma'] and (n['lac'] < 0 or n['cid'] < 0):
+    if d['radio'] == RADIO_TYPE['cdma'] and (d['lac'] < 0 or d['cid'] < 0):
         return None
 
     # Treat the lac=0, cid=65535 combination as unspecified values
-    if n['lac'] == 0 and n['cid'] == 65535:
-        n['lac'] = -1
-        n['cid'] = -1
+    if d['lac'] == 0 and d['cid'] == 65535:
+        d['lac'] = -1
+        d['cid'] = -1
 
     # Must have LAC+CID or PSC
-    if (n['lac'] == -1 or n['cid'] == -1) and n['psc'] == -1:
+    if (d['lac'] == -1 or d['cid'] == -1) and d['psc'] == -1:
         return None
 
-    return n
+    return d
 
 
 def normalized_cell_measure_dict(d, measure_radio=-1):
@@ -176,26 +314,12 @@ def normalized_cell_measure_dict(d, measure_radio=-1):
     Returns a normalized copy of the provided cell-measure dict d,
     or None if the dict was invalid.
     """
-    c = normalized_cell_dict(d, measure_radio)
-    if c is None:
-        return None
-    n = normalized_dict(
-        c, dict(lat=(from_degrees(-90.0), from_degrees(90.0), REQUIRED),
-                lon=(from_degrees(-180.0), from_degrees(180.0), REQUIRED),
-                asu=(0, 100, -1),
+    d = normalized_cell_dict(d, measure_radio)
+    d = normalized_measure_dict(d)
+    return normalized_dict(
+        d, dict(asu=(0, 100, -1),
                 signal=(-200, -1, 0),
-                ta=(0, 100, 0),
-                altitude=(MIN_ALTITUDE, MAX_ALTITUDE, 0),
-                altitude_accuracy=(0, abs(MAX_ALTITUDE - MIN_ALTITUDE), 0),
-                # Accuracy on land is arbitrarily bounded to [0, 1000km],
-                # past which it seems more likely we're looking at bad data.
-                accuracy=(0, 1000000, 0)))
-    if n is None:
-        return None
-    if 'time' not in n:
-        n['time'] = ''
-    n['time'] = encode_datetime(decode_datetime(n['time']))
-    return n
+                ta=(0, 100, 0)))
 
 
 def to_cellkey(obj):

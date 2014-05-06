@@ -15,7 +15,7 @@ from ichnaea.models import (
     CellBlacklist,
     CellMeasure,
     Measure,
-    normalize_wifi_key,
+    normalized_wifi_measure_dict,
     normalized_cell_measure_dict,
     valid_wifi_pattern,
     RADIO_TYPE,
@@ -121,6 +121,14 @@ def process_time(measure, utcnow, utcmin):
 
 
 def process_measure(measure_id, data, session):
+
+    def add_missing_dict_entries(dst, src):
+        # x.update(y) overwrites entries in x with those in y;
+        # we want to only add those not already present
+        for (k, v) in src.items():
+            if k not in dst:
+                dst[k] = v
+
     cell_measures = {}
     wifi_measures = {}
     measure_data = dict(
@@ -136,9 +144,11 @@ def process_measure(measure_id, data, session):
     if data.get('cell'):
         # flatten measure / cell data into a single dict
         for c in data['cell']:
-            c.update(measure_data)
+            add_missing_dict_entries(c, measure_data)
             c = normalized_cell_measure_dict(c, measure_radio)
             if c is None:
+                # If there's a single bad wifi, reject
+                # the whole group.
                 continue
             key = to_cellkey_psc(c)
             if key in cell_measures:
@@ -150,29 +160,27 @@ def process_measure(measure_id, data, session):
             else:
                 cell_measures[key] = c
     cell_measures = cell_measures.values()
-    if data.get('wifi'):
-        # filter out old-style sha1 hashes
-        invalid_wifi_key = False
-        for w in data['wifi']:
-            w['key'] = key = normalize_wifi_key(w['key'])
-            if not valid_wifi_pattern(key):
-                invalid_wifi_key = True
-                break
 
-        if not invalid_wifi_key:
-            # flatten measure / wifi data into a single dict
-            for w in data['wifi']:
-                w.update(measure_data)
-                key = w['key']
-                if key in wifi_measures:
-                    existing = wifi_measures[key]
-                    if existing['signal'] < w['signal'] or \
-                       existing['channel'] != w['channel'] or \
-                       existing['frequency'] != w['frequency']:
-                        wifi_measures[key] = w
-                else:
+    # flatten measure / wifi data into a single dict
+    if data.get('wifi'):
+        for w in data['wifi']:
+            add_missing_dict_entries(w, measure_data)
+            w = normalized_wifi_measure_dict(w)
+            if w is None:
+                # If there's a single bad wifi, reject
+                # the whole submission.
+                wifi_measures = {}
+                break
+            key = w['key']
+            if key in wifi_measures:
+                existing = wifi_measures[key]
+                if existing['signal'] < w['signal'] or \
+                   existing['channel'] != w['channel'] or \
+                   existing['frequency'] != w['frequency']:
                     wifi_measures[key] = w
-            wifi_measures = wifi_measures.values()
+            else:
+                wifi_measures[key] = w
+        wifi_measures = wifi_measures.values()
     return (cell_measures, wifi_measures)
 
 
