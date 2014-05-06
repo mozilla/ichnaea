@@ -28,7 +28,7 @@ endif
 
 .PHONY: all js test docs mysql
 
-all: build
+all: build init_db
 
 mysql:
 ifeq ($(TRAVIS), true)
@@ -52,6 +52,9 @@ build: $(PYTHON) mysql
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/test.txt
 	$(PYTHON) setup.py develop
+
+init_db:
+	$(BIN)/location_initdb --initdb
 
 css: node_modules
 	$(HERE)/node_modules/.bin/cleancss -d \
