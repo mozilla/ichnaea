@@ -734,3 +734,38 @@ class TestCellMeasureDump(CeleryTestCase):
 
         blocks = schedule_measure_archival()
         self.assertEquals(len(blocks), 0)
+
+    def test_write_s3_backups(self):
+        from ichnaea import config
+        conf = config()
+        batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
+
+        session = self.db_master_session
+
+        import os
+        from alembic.config import Config
+        from alembic import command
+
+        ini = os.environ.get('ICHNAEA_CFG', 'ichnaea.ini')
+        alembic_ini = os.path.join(os.path.split(ini)[0],
+                                   'alembic.ini')
+        alembic_cfg = Config(alembic_ini)
+        command.stamp(alembic_cfg, "head")
+        ## End setup of alembic version code
+
+
+
+        session.add(CellMeasureCheckPoint(cell_measure_id=50050))
+        for i in range(1, 100):
+            cm = CellMeasure(id=i+49950)
+            session.add(cm)
+        session.commit()
+
+        from ichnaea.tasks import schedule_measure_archival
+        from ichnaea.tasks import write_s3_backups
+        blocks = schedule_measure_archival()
+        self.assertEquals(len(blocks), 1)
+        block = blocks[0]
+        self.assertEquals(block, (1, batch_size))
+
+        write_s3_backups()

@@ -10,6 +10,7 @@ alembic==0.6.4
 anyjson==0.3.3
 argparse==1.2.1
 billiard==3.3.0.16
+boto==2.27.0
 celery==3.1.9
 circus==0.10.0
 colander==1.0b1

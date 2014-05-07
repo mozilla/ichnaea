@@ -1,5 +1,13 @@
+from contextlib import contextmanager
+from contextlib import closing
 from datetime import datetime
 from datetime import timedelta
+import tempfile
+import os
+import csv
+import shutil
+from zipfile import ZipFile, ZIP_DEFLATED
+
 
 from celery import Task
 from kombu.serialization import (
@@ -638,6 +646,72 @@ def update_lac(self, radio, mcc, mnc, lac):
         session.commit()
 
 
+@contextmanager
+def selfdestruct_tempdir(s3_archive):
+    base_path = tempfile.mkdtemp()
+    try:
+        yield base_path
+    finally:
+        try:
+            zip_path = os.path.join(base_path, s3_archive)
+            with closing(ZipFile(zip_path, "w", ZIP_DEFLATED)) as z:
+                for root, dirs, files in os.walk(base_path):
+                    for fn in files:
+                        if fn == s3_archive:
+                            continue
+                        absfn = os.path.join(root, fn)
+                        zfn = absfn[len(base_path)+len(os.sep):] #XXX: relative path
+                        z.write(absfn, zfn)
+            # TODO: send to S3 bucket
+        finally:
+            shutil.rmtree(base_path)
+
+@celery.task(base=DatabaseTask, bind=True)
+def write_s3_backups(self):
+    """
+    Iterate over each of the CellMeasureblock records that aren't
+    backed up yet and back them up.
+
+    Assume that this is running in a single task
+    """
+    with self.db_session() as session:
+        query = session.query(CellMeasureBlock)
+        query = query.filter(CellMeasureBlock.archive_date == None)  # NOQA
+        query = query.order_by(CellMeasureBlock.end_cell_measure_id)
+        for cm in query.all():
+            now = datetime.now()
+            cm.archive_date = now
+            cm.s3_archive = '%s-%d_%d.zip' % (now.strftime("%Y%m%d_%H%M%S"),
+                                              cm.start_cell_measure_id,
+                                              cm.end_cell_measure_id)
+
+            with selfdestruct_tempdir(cm.s3_archive) as tmp_path:
+                rset = session.execute("select * from alembic_version")
+                rev = rset.first()[0]
+                with open(os.path.join(tmp_path,
+                                       'alembic_revision.txt'), 'w') as f:
+                    f.write('%s\n' % rev)
+
+                cm_fname = os.path.join(tmp_path, 'cell_measure.csv')
+
+                query = session.query(CellMeasure)
+                query = query.filter(
+                    CellMeasure.id >= cm.start_cell_measure_id)
+                query = query.filter(
+                    CellMeasure.id <= cm.end_cell_measure_id)
+
+                col_names = None
+                with open(cm_fname, 'w') as f:
+                    csv_out = csv.writer(f, dialect='excel')
+                    for i, row in enumerate(query.all()):
+                        if i == 0:
+                            col_names = [c.name for c in row.__table__.columns]
+                            csv_out.writerow(col_names)
+                            pass
+                        data_row = [getattr(row, cname) for cname in col_names]
+                        csv_out.writerow(data_row)
+
+
 @celery.task(base=DatabaseTask, bind=True)
 def schedule_measure_archival(self):
     """
@@ -678,7 +752,8 @@ def schedule_measure_archival(self):
 
                 cm_blk = CellMeasureBlock(start_cell_measure_id=start,
                                           end_cell_measure_id=end)
-                blocks.append((cm_blk.start_cell_measure_id, cm_blk.end_cell_measure_id))
+                blocks.append((cm_blk.start_cell_measure_id,
+                               cm_blk.end_cell_measure_id))
                 session.add(cm_blk)
         session.commit()
         return blocks
