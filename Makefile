@@ -84,7 +84,7 @@ clean:
 	rm -f $(HERE)/.coverage
 	rm -f $(HERE)/*.log
 	rm -rf $(HERE)/ichnaea.egg-info
-	
+
 test: mysql
 	SQLURI=$(SQLURI) CELERY_ALWAYS_EAGER=true \
 	$(NOSE) -s -d -v --with-coverage --cover-package ichnaea ichnaea
