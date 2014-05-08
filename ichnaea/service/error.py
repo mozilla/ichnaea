@@ -45,7 +45,7 @@ def preprocess_request(request, schema, extra_checks=(), response=JSONError):
     else:
         errors.append(dict(name=None, description=MSG_EMPTY))
 
-    if errors and response is not None:
+    if not body or (errors and response is not None):
         # the response / None check is used in schema tests
         # if we couldn't decode the JSON body, just return
         raise response(errors)
