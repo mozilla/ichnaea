@@ -8,7 +8,7 @@ from colander import iso8601
 from ichnaea import config
 from ichnaea.db import Database
 from ichnaea.models import (
-    normalize_wifi_key,
+    normalized_wifi_key,
     valid_wifi_pattern,
 )
 from ichnaea.service.submit.tasks import process_measures
@@ -33,7 +33,7 @@ def load_file(session, source_file, batch_size=100, userid=None):
                     # convert from unixtime to utc
                     time = datetime.datetime.utcfromtimestamp(time)
 
-                key = normalize_wifi_key(str(fields[1]))
+                key = normalized_wifi_key(str(fields[1]))
                 if not valid_wifi_pattern(key):  # pragma: no cover
                     continue
 

@@ -152,7 +152,7 @@ def valid_wifi_pattern(key):
         valid_wifi_regex.match(key) and len(key) == 12
 
 
-def normalize_wifi_key(key):
+def normalized_wifi_key(key):
     if ":" in key or "-" in key or "." in key:
         key = key.replace(":", "").replace("-", "").replace(".", "")
     return key.lower()
@@ -242,7 +242,7 @@ def normalized_wifi_dict(d):
     if 'key' not in d:
         return None
 
-    d['key'] = normalize_wifi_key(d['key'])
+    d['key'] = normalized_wifi_key(d['key'])
 
     if not valid_wifi_pattern(d['key']):
         return None
