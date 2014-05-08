@@ -596,3 +596,10 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(cell_result), 0)
         wifi_result = session.query(WifiMeasure).all()
         self.assertEqual(len(wifi_result), 1)
+
+    def test_completely_empty(self):
+        app = self.app
+        res = app.post_json('/v1/submit', None, status=400)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertTrue('errors' in res.json)
+        self.assertTrue(len(res.json['errors']) == 0)
