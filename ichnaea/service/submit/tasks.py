@@ -146,14 +146,13 @@ def process_measure(measure_id, data, session):
             add_missing_dict_entries(c, measure_data)
             c = normalized_cell_measure_dict(c, measure_radio)
             if c is None:
-                # If there's a single bad wifi, reject
-                # the whole group.
                 continue
             key = to_cellkey_psc(c)
             if key in cell_measures:
                 existing = cell_measures[key]
                 if existing['ta'] > c['ta'] or \
-                   existing['signal'] < c['signal'] or \
+                   (existing['signal'] != 0 and
+                    existing['signal'] < c['signal']) or \
                    existing['asu'] < c['asu']:
                     cell_measures[key] = c
             else:
@@ -170,9 +169,8 @@ def process_measure(measure_id, data, session):
             key = w['key']
             if key in wifi_measures:
                 existing = wifi_measures[key]
-                if existing['signal'] < w['signal'] or \
-                   existing['channel'] != w['channel'] or \
-                   existing['frequency'] != w['frequency']:
+                if existing['signal'] != 0 and \
+                   existing['signal'] < w['signal']:
                     wifi_measures[key] = w
             else:
                 wifi_measures[key] = w

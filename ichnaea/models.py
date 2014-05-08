@@ -48,7 +48,7 @@ MAX_ALTITUDE = 100000
 CELLID_LAC = -2
 
 # Symbolic constant used in specs passed to normalization functions.
-REQUIRED = {}
+REQUIRED = object()
 
 invalid_wifi_regex = re.compile("(?!(0{12}|f{12}))")
 valid_wifi_regex = re.compile("([0-9a-fA-F]{12})")
@@ -221,7 +221,7 @@ def normalized_cell_dict(d, default_radio=-1):
     if not isinstance(d, dict):
         return None
 
-    d = dict(**d)
+    d = d.copy()
     if 'radio' in d and isinstance(d['radio'], str):
         d['radio'] = RADIO_TYPE.get(d['radio'], -1)
 
