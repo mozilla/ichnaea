@@ -1,5 +1,3 @@
-from datetime import date
-from datetime import datetime
 from decimal import Decimal
 from decimal import localcontext
 from ichnaea.models import DEGREE_DECIMAL_PLACES, encode_datetime

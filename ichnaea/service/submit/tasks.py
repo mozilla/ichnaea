@@ -17,7 +17,6 @@ from ichnaea.models import (
     Measure,
     normalized_wifi_measure_dict,
     normalized_cell_measure_dict,
-    valid_wifi_pattern,
     RADIO_TYPE,
     Wifi,
     WifiBlacklist,
