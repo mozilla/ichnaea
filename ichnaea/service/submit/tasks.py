@@ -417,18 +417,6 @@ def insert_cell_measures(self, entries, userid=None,
         raise self.retry(exc=exc)
 
 
-def convert_frequency(entry):
-    freq = entry.pop('frequency', 0)
-    # if no explicit channel was given, calculate
-    if freq and not entry['channel']:
-        if 2411 < freq < 2473:
-            # 2.4 GHz band
-            entry['channel'] = (freq - 2407) // 5
-        elif 5169 < freq < 5826:
-            # 5 GHz band
-            entry['channel'] = (freq - 5000) // 5
-
-
 def create_wifi_measure(utcnow, entry):
     return WifiMeasure(
         measure_id=entry.get('measure_id'),
@@ -482,8 +470,6 @@ def process_wifi_measures(session, entries, userid=None,
             dropped_overflow += 1
             continue
 
-        # convert frequency into channel numbers and remove frequency
-        convert_frequency(entry)
         wifi_measures.append(create_wifi_measure(utcnow, entry))
         if wifi_key not in blacked:
             # skip blacklisted wifi AP's

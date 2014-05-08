@@ -53,73 +53,6 @@ REQUIRED = {}
 invalid_wifi_regex = re.compile("(?!(0{12}|f{12}))")
 valid_wifi_regex = re.compile("([0-9a-fA-F]{12})")
 
-WIFI_FREQUENCIES = {
-    # 2.4GHz band
-    2412: 1,
-    2417: 2,
-    2422: 3,
-    2427: 4,
-    2432: 5,
-    2437: 6,
-    2442: 7,
-    2447: 8,
-    2452: 9,
-    2457: 10,
-    2462: 11,
-    2467: 12,
-    2472: 13,
-    2484: 14,
-
-    # 5Ghz band
-    4915: 183,
-    4920: 184,
-    4925: 185,
-    4935: 187,
-    4940: 188,
-    4945: 189,
-    4960: 192,
-    4980: 196,
-    5035: 7,
-    5040: 8,
-    5045: 9,
-    5055: 11,
-    5060: 12,
-    5080: 16,
-    5170: 34,
-    5180: 36,
-    5190: 38,
-    5200: 40,
-    5210: 42,
-    5220: 44,
-    5230: 46,
-    5240: 48,
-    5260: 52,
-    5280: 56,
-    5300: 60,
-    5320: 64,
-    5500: 100,
-    5520: 104,
-    5540: 108,
-    5560: 112,
-    5580: 116,
-    5600: 120,
-    5620: 124,
-    5640: 128,
-    5660: 132,
-    5680: 136,
-    5700: 140,
-    5745: 149,
-    5765: 153,
-    5785: 157,
-    5805: 161,
-    5825: 165,
-}
-
-# Quasi-inverse mapping prefers lower (2.4Ghz) global channel numbers over
-# 5Ghz Japan-centric ones, when in conflict.
-WIFI_CHANNELS = dict([(v, k) for (k, v) in
-                      reversed(WIFI_FREQUENCIES.items())])
-
 CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
 
@@ -226,15 +159,33 @@ def normalized_measure_dict(d):
     return d
 
 
+def normalized_wifi_channel(d):
+    chan = int(d.get('channel', 0))
+
+    if 0 < chan and chan < 166:
+        return chan
+
+    # if no explicit channel was given, calculate
+    freq = d.get('frequency', 0)
+
+    if 2411 < freq < 2473:
+        # 2.4 GHz band
+        return (freq - 2407) // 5
+
+    elif 5169 < freq < 5826:
+        # 5 GHz band
+        return (freq - 5000) // 5
+
+    return 0
+
+
 def normalized_wifi_dict(d):
     """
     Returns a normalized copy of the provided wifi dict d,
     or None if the dict was invalid.
     """
-
     d = normalized_dict(
-        d, dict(channel=(1, 200, 0),
-                frequency=(2400, 6000, 0)))
+        d, dict(signal=(-200, -1, 0)))
 
     if d is None:
         return None
@@ -247,15 +198,8 @@ def normalized_wifi_dict(d):
     if not valid_wifi_pattern(d['key']):
         return None
 
-    # Attempt to infer channel from frequency
-    if d['channel'] == 0 and d['frequency'] != 0:
-        d['channel'] = WIFI_FREQUENCIES.get(d['frequency'], 0)
-
-    # While we're at it, attempt the reverse (though we don't presently
-    # store frequency in the DB, and some channel numbers are reused to
-    # refer to different frequencies in different bands)
-    if d['frequency'] == 0 and d['channel'] != 0:
-        d['frequency'] = WIFI_CHANNELS.get(d['channel'], 0)
+    d['channel'] = normalized_wifi_channel(d)
+    d.pop('frequency', 0)
 
     return d
 
