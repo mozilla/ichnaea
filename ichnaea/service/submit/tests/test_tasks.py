@@ -164,7 +164,7 @@ class TestInsert(CeleryTestCase):
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
-        session.add(Wifi(key="ab12"))
+        session.add(Wifi(key="ab1234567890"))
         session.add(Score(userid=1, key=SCORE_TYPE['new_wifi'], value=7))
         session.flush()
 
@@ -174,10 +174,10 @@ class TestInsert(CeleryTestCase):
             altitude_accuracy=0, radio=-1,
         )
         entries = [
-            {"key": "ab12", "channel": 11, "signal": -80},
-            {"key": "ab12", "channel": 3, "signal": -90},
-            {"key": "ab12", "channel": 3, "signal": -80},
-            {"key": "cd34", "channel": 3, "signal": -90},
+            {"key": "ab1234567890", "channel": 11, "signal": -80},
+            {"key": "ab1234567890", "channel": 3, "signal": -90},
+            {"key": "ab1234567890", "channel": 3, "signal": -80},
+            {"key": "cd3456789012", "channel": 3, "signal": -90},
         ]
         for e in entries:
             e.update(measure)
@@ -186,13 +186,15 @@ class TestInsert(CeleryTestCase):
 
         measures = session.query(WifiMeasure).all()
         self.assertEqual(len(measures), 4)
-        self.assertEqual(set([m.key for m in measures]), set(["ab12", "cd34"]))
+        self.assertEqual(set([m.key for m in measures]), set(["ab1234567890",
+                                                              "cd3456789012"]))
         self.assertEqual(set([m.channel for m in measures]), set([3, 11]))
         self.assertEqual(set([m.signal for m in measures]), set([-80, -90]))
 
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 2)
-        self.assertEqual(set([w.key for w in wifis]), set(["ab12", "cd34"]))
+        self.assertEqual(set([w.key for w in wifis]), set(["ab1234567890",
+                                                           "cd3456789012"]))
         self.assertEqual(set([w.new_measures for w in wifis]), set([1, 3]))
         self.assertEqual(set([w.total_measures for w in wifis]), set([1, 3]))
 

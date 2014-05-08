@@ -415,6 +415,9 @@ def insert_cell_measures(self, entries, userid=None,
 
 
 def create_wifi_measure(utcnow, entry):
+    entry = normalized_wifi_measure_dict(entry)
+    if entry is None:
+        return None
     return WifiMeasure(
         measure_id=entry.get('measure_id'),
         created=utcnow,
@@ -443,8 +446,9 @@ def process_wifi_measures(session, entries, userid=None,
         WifiBlacklist.key.in_(wifi_keys)).all()
     blacked = set([b[0] for b in blacked])
 
-    space_available = {}
+    dropped_malformed = 0
     dropped_overflow = 0
+    space_available = {}
 
     # process entries
     for entry in entries:
@@ -467,12 +471,22 @@ def process_wifi_measures(session, entries, userid=None,
             dropped_overflow += 1
             continue
 
-        wifi_measures.append(create_wifi_measure(utcnow, entry))
+        wifi_measure = create_wifi_measure(utcnow, entry)
+        if not wifi_measure:
+            dropped_malformed += 1
+            continue
+
+        wifi_measures.append(wifi_measure)
+
         if wifi_key not in blacked:
             # skip blacklisted wifi AP's
             wifi_count[wifi_key] += 1
 
     heka_client = get_heka_client()
+
+    if dropped_malformed != 0:
+        heka_client.incr("items.dropped.wifi_ingress_malformed",
+                         count=dropped_malformed)
 
     if dropped_overflow != 0:
         heka_client.incr("items.dropped.wifi_ingress_overflow",
