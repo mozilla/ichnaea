@@ -9,6 +9,7 @@ import shutil
 from zipfile import ZipFile, ZIP_DEFLATED
 
 
+from ichnaea.backup import S3Backend
 from celery import Task
 from kombu.serialization import (
     dumps as kombu_dumps,
@@ -649,22 +650,22 @@ def update_lac(self, radio, mcc, mnc, lac):
 @contextmanager
 def selfdestruct_tempdir(s3_archive):
     base_path = tempfile.mkdtemp()
+
+    s3_path = os.path.join(tempfile.mkdtemp(), s3_archive)
     try:
-        yield base_path
+        zip_path = os.path.join(base_path, s3_path)
+        yield base_path, zip_path
     finally:
         try:
-            zip_path = os.path.join(base_path, s3_archive)
             with closing(ZipFile(zip_path, "w", ZIP_DEFLATED)) as z:
                 for root, dirs, files in os.walk(base_path):
                     for fn in files:
-                        if fn == s3_archive:
-                            continue
                         absfn = os.path.join(root, fn)
-                        zfn = absfn[len(base_path)+len(os.sep):] #XXX: relative path
-                        z.write(absfn, zfn)
-            # TODO: send to S3 bucket
+                        zip_fn = absfn[len(base_path)+len(os.sep):]
+                        z.write(absfn, zip_fn)
         finally:
             shutil.rmtree(base_path)
+
 
 @celery.task(base=DatabaseTask, bind=True)
 def write_s3_backups(self):
@@ -684,8 +685,9 @@ def write_s3_backups(self):
             cm.s3_archive = '%s-%d_%d.zip' % (now.strftime("%Y%m%d_%H%M%S"),
                                               cm.start_cell_measure_id,
                                               cm.end_cell_measure_id)
+            session.add(cm)
 
-            with selfdestruct_tempdir(cm.s3_archive) as tmp_path:
+            with selfdestruct_tempdir(cm.s3_archive) as (tmp_path, zip_path):
                 rset = session.execute("select * from alembic_version")
                 rev = rset.first()[0]
                 with open(os.path.join(tmp_path,
@@ -710,6 +712,11 @@ def write_s3_backups(self):
                             pass
                         data_row = [getattr(row, cname) for cname in col_names]
                         csv_out.writerow(data_row)
+
+            s3 = S3Backend()
+            s3.backup_archive(zip_path)
+
+            session.commit()
 
 
 @celery.task(base=DatabaseTask, bind=True)

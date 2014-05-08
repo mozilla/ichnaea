@@ -1,11 +1,14 @@
 from datetime import datetime
 from datetime import timedelta
+import os
+from zipfile import ZipFile
 
 from ichnaea.models import (
     Cell,
     CellBlacklist,
     CellKey,
     CellMeasure,
+    CellMeasureBlock,
     CellMeasureCheckPoint,
     Wifi,
     WifiBlacklist,
@@ -14,6 +17,7 @@ from ichnaea.models import (
     CELLID_LAC,
 )
 from ichnaea.tests.base import CeleryTestCase
+from ichnaea.backup.tests import mock_s3
 
 
 class TestCellLocationUpdate(CeleryTestCase):
@@ -713,34 +717,14 @@ class TestWifiLocationUpdate(CeleryTestCase):
 
 
 class TestCellMeasureDump(CeleryTestCase):
-    def test_journal_measures(self):
+    def setUp(self):
+        super(TestCellMeasureDump, self).setUp()
 
         from ichnaea import config
         conf = config()
-        batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
+        self.batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
 
-        session = self.db_master_session
-        session.add(CellMeasureCheckPoint(cell_measure_id=50050))
-        for i in range(1, 100):
-            cm = CellMeasure(id=i+49950)
-            session.add(cm)
-        session.commit()
-
-        from ichnaea.tasks import schedule_measure_archival
-        blocks = schedule_measure_archival()
-        self.assertEquals(len(blocks), 1)
-        block = blocks[0]
-        self.assertEquals(block, (1, batch_size))
-
-        blocks = schedule_measure_archival()
-        self.assertEquals(len(blocks), 0)
-
-    def test_write_s3_backups(self):
-        from ichnaea import config
-        conf = config()
-        batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
-
-        session = self.db_master_session
+        self.session = self.db_master_session
 
         import os
         from alembic.config import Config
@@ -751,21 +735,58 @@ class TestCellMeasureDump(CeleryTestCase):
                                    'alembic.ini')
         alembic_cfg = Config(alembic_ini)
         command.stamp(alembic_cfg, "head")
-        ## End setup of alembic version code
 
-
-
-        session.add(CellMeasureCheckPoint(cell_measure_id=50050))
+    def test_journal_measures(self):
+        self.session.add(CellMeasureCheckPoint(cell_measure_id=50050))
         for i in range(1, 100):
             cm = CellMeasure(id=i+49950)
-            session.add(cm)
-        session.commit()
+            self.session.add(cm)
+        self.session.commit()
+
+        from ichnaea.tasks import schedule_measure_archival
+        blocks = schedule_measure_archival()
+        self.assertEquals(len(blocks), 1)
+        block = blocks[0]
+        self.assertEquals(block, (1, self.batch_size))
+
+        blocks = schedule_measure_archival()
+        self.assertEquals(len(blocks), 0)
+
+    def test_write_s3_backup_files(self):
+        self.session.add(CellMeasureCheckPoint(cell_measure_id=50050))
+        for i in range(1, 100):
+            cm = CellMeasure(id=i+49950)
+            self.session.add(cm)
+        self.session.commit()
 
         from ichnaea.tasks import schedule_measure_archival
         from ichnaea.tasks import write_s3_backups
         blocks = schedule_measure_archival()
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
-        self.assertEquals(block, (1, batch_size))
+        self.assertEquals(block, (1, self.batch_size))
 
-        write_s3_backups()
+        with mock_s3() as mock_key:
+            write_s3_backups()
+            self.assertTrue(mock_key.called)
+            fname = mock_key.call_args[0][0]
+            self.assertTrue(fname.endswith('.zip'))
+
+            # verify backup file exists
+            os.path.isfile(fname)
+
+            with ZipFile(fname) as myzip:
+                contents = set(myzip.namelist())
+                expected_contents = set(['alembic_revision.txt',
+                                         'cell_measure.csv'])
+                self.assertEquals(expected_contents, contents)
+
+        short_zipname = fname.split(os.path.sep)[-1]
+        blocks = self.session.query(CellMeasureBlock)\
+                     .filter(CellMeasureBlock.s3_archive == short_zipname)\
+                     .all()
+        self.assertEquals(len(blocks), 1)
+        block = blocks[0]
+        self.assertEquals(short_zipname, block.s3_archive)
+        self.assertEquals(datetime.today().strftime("%Y%m%d"),
+                          block.archive_date.strftime("%Y%m%d"))
