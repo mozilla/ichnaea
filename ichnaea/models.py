@@ -258,7 +258,7 @@ def normalized_cell_measure_dict(d, measure_radio=-1):
     Returns a normalized copy of the provided cell-measure dict d,
     or None if the dict was invalid.
     """
-    d = normalized_cell_dict(d, measure_radio)
+    d = normalized_cell_dict(d, default_radio=measure_radio)
     d = normalized_measure_dict(d)
     return normalized_dict(
         d, dict(asu=(0, 31, -1),
