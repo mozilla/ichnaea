@@ -78,7 +78,7 @@ CELERYBEAT_SCHEDULE = {
     'continuous-cell-scan-lacs': {
         'task': 'ichnaea.tasks.scan_lacs',
         'schedule': timedelta(seconds=3607),  # about an hour
-        'args': (100, ),
+        'args': (1000, ),
         'options': {'expires': 3511},
     },
 
