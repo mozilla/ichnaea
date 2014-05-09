@@ -256,8 +256,9 @@ class TestNormalization(TestCase):
         valid_signals = [-200, -100, -1]
         invalid_signals = [-300, -201, 0, 10]
 
+        time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
+
         def make_submission(**kw):
-            time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
             measure = dict(radio='umts',
                            lat=from_degrees(49.25),
                            lon=from_degrees(123.10), accuracy=120,
@@ -275,10 +276,7 @@ class TestNormalization(TestCase):
         # Try all radio values
         for (radio, v) in radio_pairs:
             (measure, cell) = make_submission(radio=radio)
-            if v is None:
-                self.check_normalized_cell(measure, cell, None)
-            else:
-                self.check_normalized_cell(measure, cell, dict(radio=v))
+            self.check_normalized_cell(measure, cell, dict(radio=v))
 
         # Try all valid (mcc, mnc) pairs
         for mcc in valid_mccs:
@@ -403,8 +401,6 @@ class TestNormalization(TestCase):
         invalid_frequencies = [-1, 2000, 2411, 2473,
                                5168, 5826, 6000]
 
-        invalid_channels = [-1, 0, 166, 167, 200]
-
         valid_key_pairs = [
             ("12:34:56:78:90:12", "123456789012"),
             ("12.34.56.78.90.12", "123456789012"),
@@ -431,8 +427,9 @@ class TestNormalization(TestCase):
         valid_signals = [-200, -100, -1]
         invalid_signals = [-300, -201, 0, 10]
 
+        time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
+
         def make_submission(**kw):
-            time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
             measure = dict(radio='',
                            lat=from_degrees(49.25),
                            lon=from_degrees(123.10), accuracy=120,
