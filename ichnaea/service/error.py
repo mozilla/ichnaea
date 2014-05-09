@@ -46,9 +46,9 @@ def preprocess_request(request, schema, extra_checks=(), response=JSONError):
         errors.append(dict(name=None, description=MSG_EMPTY))
 
     if not body or (errors and response is not None):
-        # the response / None check is used in schema tests
-        # if we couldn't decode the JSON body, just return
-        raise response(errors)
+        if response is not None:
+            request.registry.heka_client.debug('error_handler' + repr(errors))
+            raise response(errors)
 
     # schema validation, but report at most one error at a time
     schema = schema.bind(request=body)
