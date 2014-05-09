@@ -575,9 +575,15 @@ def update_lac(self, radio, mcc, mnc, lac):
             Cell.mcc == mcc).filter(
             Cell.mnc == mnc).filter(
             Cell.lac == lac).filter(
-            Cell.cid != CELLID_LAC)
+            Cell.cid != CELLID_LAC).filter(
+            Cell.new_measures == 0).filter(
+            Cell.lat.isnot(None)).filter(
+            Cell.lon.isnot(None))
 
         cells = q.all()
+        if len(cells) == 0:
+            return
+
         points = [(to_degrees(c.lat),
                    to_degrees(c.lon)) for c in cells]
         min_lat = to_degrees(min([c.min_lat for c in cells]))

@@ -256,6 +256,48 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(lac.new_measures, 0)
         self.assertEqual(lac.total_measures, 0)
 
+    def test_scan_lacs_race_with_cell_location_update(self):
+        from ichnaea.tasks import cell_location_update, scan_lacs
+        session = self.db_master_session
+
+        # First batch of cell measurements for CID 1
+        keys = dict(radio=1, mcc=1, mnc=1, lac=1, cid=1)
+        cell = Cell(new_measures=4, total_measures=1, **keys)
+        measures = [
+            CellMeasure(lat=10000000, lon=10000000, **keys),
+            CellMeasure(lat=10000000, lon=10000000, **keys),
+            CellMeasure(lat=10000000, lon=10000000, **keys),
+            CellMeasure(lat=10000000, lon=10000000, **keys),
+        ]
+        session.add(cell)
+        session.add_all(measures)
+        session.commit()
+
+        # Periodic cell_location_update runs and updates CID 1
+        # to have a location, inserts LAC 1 with new_measures=1
+        # which will be picked up by the next scan_lac.
+        result = cell_location_update.delay(min_new=1)
+        self.assertEqual(result.get(), (1, 0))
+
+        # Second batch of cell measurements for CID 2
+        keys['cid'] = 2
+        cell = Cell(new_measures=4, total_measures=1, **keys)
+        measures = [
+            CellMeasure(lat=10000000, lon=10000000, **keys),
+            CellMeasure(lat=10000000, lon=10000000, **keys),
+            CellMeasure(lat=10000000, lon=10000000, **keys),
+            CellMeasure(lat=10000000, lon=10000000, **keys),
+        ]
+        session.add(cell)
+        session.add_all(measures)
+        session.commit()
+
+        # Periodic LAC scan runs, picking up LAC 1; this could
+        # accidentally pick up CID 2, but it should not since it
+        # has not had its location updated yet. If there's no
+        # exception here, CID 2 is properly ignored.
+        scan_lacs.delay()
+
     def test_cell_lac_asymmetric(self):
         from ichnaea.tasks import cell_location_update, scan_lacs
         session = self.db_master_session
