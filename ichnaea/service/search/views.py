@@ -1,6 +1,6 @@
 from ichnaea.models import (
     Cell,
-    normalize_wifi_key,
+    normalized_wifi_key,
     RADIO_TYPE,
     Wifi,
     CELLID_LAC,
@@ -121,7 +121,7 @@ def search_wifi(session, data):
         else:
             return -100
 
-    wifi_signals = dict([(normalize_wifi_key(w['key']),
+    wifi_signals = dict([(normalized_wifi_key(w['key']),
                           signal_strength(w))
                          for w in data['wifi']])
     wifi_keys = set(wifi_signals.keys())
@@ -142,7 +142,7 @@ def search_wifi(session, data):
         # we got fewer than three actual matches
         return None
 
-    wifis = [Network(normalize_wifi_key(w[0]), w[1], w[2]) for w in wifis]
+    wifis = [Network(normalized_wifi_key(w[0]), w[1], w[2]) for w in wifis]
 
     # sort networks by signal strengths in query
     wifis.sort(lambda a, b: cmp(wifi_signals[b.key],

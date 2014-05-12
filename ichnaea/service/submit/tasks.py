@@ -15,19 +15,19 @@ from ichnaea.models import (
     CellBlacklist,
     CellMeasure,
     Measure,
-    normalize_wifi_key,
-    valid_wifi_pattern,
+    normalized_wifi_measure_dict,
+    normalized_cell_measure_dict,
     RADIO_TYPE,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
     join_cellkey,
     to_cellkey_psc,
+    decode_datetime,
+    encode_datetime,
 )
 from ichnaea.decimaljson import (
     loads,
-    decode_datetime,
-    encode_datetime,
     to_precise_int,
 )
 from ichnaea.heka_logging import get_heka_client
@@ -120,8 +120,16 @@ def process_time(measure, utcnow, utcmin):
 
 
 def process_measure(measure_id, data, session):
-    cell_measures = []
-    wifi_measures = []
+
+    def add_missing_dict_entries(dst, src):
+        # x.update(y) overwrites entries in x with those in y;
+        # we want to only add those not already present
+        for (k, v) in src.items():
+            if k not in dst:
+                dst[k] = v
+
+    cell_measures = {}
+    wifi_measures = {}
     measure_data = dict(
         measure_id=measure_id,
         lat=to_precise_int(data['lat']),
@@ -135,28 +143,38 @@ def process_measure(measure_id, data, session):
     if data.get('cell'):
         # flatten measure / cell data into a single dict
         for c in data['cell']:
-            c.update(measure_data)
-            # use more specific cell type or
-            # fall back to less precise measure
-            if c['radio'] != '':
-                c['radio'] = RADIO_TYPE.get(c['radio'], -1)
+            add_missing_dict_entries(c, measure_data)
+            c = normalized_cell_measure_dict(c, measure_radio)
+            if c is None:
+                continue
+            key = to_cellkey_psc(c)
+            if key in cell_measures:
+                existing = cell_measures[key]
+                if existing['ta'] > c['ta'] or \
+                   (existing['signal'] != 0 and
+                    existing['signal'] < c['signal']) or \
+                   existing['asu'] < c['asu']:
+                    cell_measures[key] = c
             else:
-                c['radio'] = measure_radio
-        cell_measures = data['cell']
-    if data.get('wifi'):
-        # filter out old-style sha1 hashes
-        invalid_wifi_key = False
-        for w in data['wifi']:
-            w['key'] = key = normalize_wifi_key(w['key'])
-            if not valid_wifi_pattern(key):
-                invalid_wifi_key = True
-                break
+                cell_measures[key] = c
+    cell_measures = cell_measures.values()
 
-        if not invalid_wifi_key:
-            # flatten measure / wifi data into a single dict
-            for w in data['wifi']:
-                w.update(measure_data)
-            wifi_measures = data['wifi']
+    # flatten measure / wifi data into a single dict
+    if data.get('wifi'):
+        for w in data['wifi']:
+            add_missing_dict_entries(w, measure_data)
+            w = normalized_wifi_measure_dict(w)
+            if w is None:
+                continue
+            key = w['key']
+            if key in wifi_measures:
+                existing = wifi_measures[key]
+                if existing['signal'] != 0 and \
+                   existing['signal'] < w['signal']:
+                    wifi_measures[key] = w
+            else:
+                wifi_measures[key] = w
+        wifi_measures = wifi_measures.values()
     return (cell_measures, wifi_measures)
 
 
@@ -213,7 +231,7 @@ def process_measures(items, session, userid=None):
 
     if userid is not None:
         process_score(userid, len(items), session)
-    if positions:
+    if positions and (cell_measures or wifi_measures):
         process_mapstat(positions, session, userid=userid)
 
 
@@ -241,44 +259,9 @@ def insert_measures(self, items=None, nickname=''):
 
 
 def create_cell_measure(utcnow, entry):
-    # skip records with missing or invalid mcc or mnc
-    if 'mcc' not in entry or entry['mcc'] < 1 or entry['mcc'] > 999:
-        return
-    if 'mnc' not in entry or entry['mnc'] < 0 or entry['mnc'] > 32767:
-        return
-
-    # Skip CDMA towers missing lac or cid (no psc on CDMA exists to
-    # backfill using inference)
-    if entry.get('radio', -1) == 1 and \
-       (entry.get('lac', -1) < 0 or entry.get('cid', -1) < 0):
-        return
-
-    # some phones send maxint32 to signal "unknown"
-    # ignore anything above the maximum valid values
-    if 'lac' not in entry or entry['lac'] < 0 or entry['lac'] > 65535:
-        entry['lac'] = -1
-    if 'cid' not in entry or entry['cid'] < 0 or entry['cid'] > 268435455:
-        entry['cid'] = -1
-    if 'psc' not in entry or entry['psc'] < 0 or entry['psc'] > 512:
-        entry['psc'] = -1
-
-    # Treat the lac=0, cid=65535 combination as unspecified values
-    if entry['lac'] == 0 and entry['cid'] == 65535:
-        entry['lac'] = -1
-        entry['cid'] = -1
-
-    # Must have LAC+CID or PSC
-    if (entry['lac'] == -1 or entry['cid'] == -1) and entry['psc'] == -1:
-        return
-
-    # make sure fields stay within reasonable bounds
-    if 'asu' not in entry or entry['asu'] < 0 or entry['asu'] > 100:
-        entry['asu'] = -1
-    if 'signal' not in entry or entry['signal'] < -200 or entry['signal'] > -1:
-        entry['signal'] = 0
-    if 'ta' not in entry or entry['ta'] < 0 or entry['ta'] > 100:
-        entry['ta'] = 0
-
+    entry = normalized_cell_measure_dict(entry)
+    if entry is None:
+        return None
     return CellMeasure(
         measure_id=entry.get('measure_id'),
         created=utcnow,
@@ -431,19 +414,10 @@ def insert_cell_measures(self, entries, userid=None,
         raise self.retry(exc=exc)
 
 
-def convert_frequency(entry):
-    freq = entry.pop('frequency', 0)
-    # if no explicit channel was given, calculate
-    if freq and not entry['channel']:
-        if 2411 < freq < 2473:
-            # 2.4 GHz band
-            entry['channel'] = (freq - 2407) // 5
-        elif 5169 < freq < 5826:
-            # 5 GHz band
-            entry['channel'] = (freq - 5000) // 5
-
-
 def create_wifi_measure(utcnow, entry):
+    entry = normalized_wifi_measure_dict(entry)
+    if entry is None:
+        return None
     return WifiMeasure(
         measure_id=entry.get('measure_id'),
         created=utcnow,
@@ -472,8 +446,9 @@ def process_wifi_measures(session, entries, userid=None,
         WifiBlacklist.key.in_(wifi_keys)).all()
     blacked = set([b[0] for b in blacked])
 
-    space_available = {}
+    dropped_malformed = 0
     dropped_overflow = 0
+    space_available = {}
 
     # process entries
     for entry in entries:
@@ -496,14 +471,22 @@ def process_wifi_measures(session, entries, userid=None,
             dropped_overflow += 1
             continue
 
-        # convert frequency into channel numbers and remove frequency
-        convert_frequency(entry)
-        wifi_measures.append(create_wifi_measure(utcnow, entry))
+        wifi_measure = create_wifi_measure(utcnow, entry)
+        if not wifi_measure:
+            dropped_malformed += 1
+            continue
+
+        wifi_measures.append(wifi_measure)
+
         if wifi_key not in blacked:
             # skip blacklisted wifi AP's
             wifi_count[wifi_key] += 1
 
     heka_client = get_heka_client()
+
+    if dropped_malformed != 0:
+        heka_client.incr("items.dropped.wifi_ingress_malformed",
+                         count=dropped_malformed)
 
     if dropped_overflow != 0:
         heka_client.incr("items.dropped.wifi_ingress_overflow",
