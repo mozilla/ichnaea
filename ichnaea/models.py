@@ -226,20 +226,6 @@ class CellMeasureBlock(_Model):
     archive_sha = Column(String(80))
 
 
-class CellMeasureCheckPoint(_Model):
-    __tablename__ = 'cell_measure_checkpoint'
-    __table_args__ = (
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-            'mysql_row_format': 'compressed',
-            'mysql_key_block_size': '4',
-        }
-    )
-    cell_measure_id = Column(BigInteger(unsigned=True),
-                             primary_key=True)
-
-
 class CellMeasure(_Model):
     __tablename__ = 'cell_measure'
     __table_args__ = (

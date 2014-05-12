@@ -3,7 +3,6 @@ from datetime import timedelta
 from mock import patch
 from zipfile import ZipFile
 import hashlib
-import os
 
 from ichnaea.models import (
     Cell,
@@ -11,7 +10,6 @@ from ichnaea.models import (
     CellKey,
     CellMeasure,
     CellMeasureBlock,
-    CellMeasureCheckPoint,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
@@ -743,7 +741,6 @@ class TestCellMeasureDump(CeleryTestCase):
         command.stamp(alembic_cfg, "head")
 
     def test_journal_measures(self):
-        self.session.add(CellMeasureCheckPoint(cell_measure_id=50050))
         for i in range(1, 100):
             cm = CellMeasure(id=i+49950)
             self.session.add(cm)
@@ -759,7 +756,6 @@ class TestCellMeasureDump(CeleryTestCase):
         self.assertEquals(len(blocks), 0)
 
     def test_write_s3_backup_files(self):
-        self.session.add(CellMeasureCheckPoint(cell_measure_id=50050))
         for i in range(1, 100):
             cm = CellMeasure(id=i+49950)
             self.session.add(cm)
@@ -770,8 +766,8 @@ class TestCellMeasureDump(CeleryTestCase):
         block = blocks[0]
         self.assertEquals(block, (1, self.batch_size))
 
-        with mock_s3() as mock_key:
-            with patch.object(S3Backend, 'check_archive', lambda x, y, z : True):
+        with mock_s3():
+            with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
                 zips = write_s3_backups(False)
                 self.assertTrue(len(zips), 1)
                 fname = zips[0]
@@ -781,7 +777,6 @@ class TestCellMeasureDump(CeleryTestCase):
                                              'cell_measure.csv'])
                     self.assertEquals(expected_contents, contents)
 
-        short_zipname = fname.split(os.path.sep)[-1]
         blocks = self.session.query(CellMeasureBlock).all()
 
         self.assertEquals(len(blocks), 1)

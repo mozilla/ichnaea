@@ -30,7 +30,6 @@ from ichnaea.models import (
     CellBlacklist,
     CellMeasure,
     CellMeasureBlock,
-    CellMeasureCheckPoint,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
@@ -312,7 +311,6 @@ def backfill_cell_location_update(self, new_cell_measures):
 @celery.task(base=DatabaseTask, bind=True)
 def cell_location_update(self, min_new=10, max_new=100, batch=10):
 
-    max_cm_id = None
     try:
         cells = []
         with self.db_session() as session:
@@ -347,15 +345,10 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
                                            backfill=False)
                     update_enclosing_lac(session, cell)
 
-                    max_cm_id = max([m.id for m in measures])
-
             if moving_cells:
                 # some cells found to be moving too much
                 mark_moving_cells(session, moving_cells)
 
-            if max_cm_id:
-                cm_cp = CellMeasureCheckPoint(cell_measure_id=max_cm_id)
-                session.add(cm_cp)
             session.commit()
 
         return (len(cells), len(moving_cells))
@@ -738,13 +731,18 @@ def write_s3_backups(self, cleanup_zip=True):
 @celery.task(base=DatabaseTask, bind=True)
 def schedule_measure_archival(self):
     """
-    This just looks at the CellMeasureCheckPoint table and adds an
+    This just looks for CellMeasure records in batches and adds an
     entry into CellMeasureBlock to schedule archival
     """
+    # We have new entries to file
+    from ichnaea import config
+    conf = config()
+    batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
     with self.db_session() as session:
-        query = session.query(CellMeasureCheckPoint.cell_measure_id)
-        query = query.order_by(CellMeasureCheckPoint.cell_measure_id.desc())
-        query = query.limit(1)
+        query = session.query(func.max(CellMeasure.id))
+        query = query.order_by(CellMeasure.id.asc())
+        query = query.limit(batch_size)
+
         records = query.all()
         if not len(records):
             return
@@ -762,10 +760,6 @@ def schedule_measure_archival(self):
         total_entries_to_journal = max_cell_measure_id - last_cell_measure_id
         blocks = []
         if total_entries_to_journal > 0:
-            # We have new entries to file
-            from ichnaea import config
-            conf = config()
-            batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
             while total_entries_to_journal > batch_size:
                 entries_to_journal = min(batch_size, total_entries_to_journal)
                 total_entries_to_journal -= entries_to_journal
