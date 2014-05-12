@@ -36,9 +36,6 @@ from ichnaea.tasks import DatabaseTask
 from ichnaea.worker import celery
 
 
-sql_null = None  # avoid pep8 warning
-
-
 def process_mapstat_keyed(factor, stat_key, positions, session):
     tiles = defaultdict(int)
     # aggregate to tiles, according to factor

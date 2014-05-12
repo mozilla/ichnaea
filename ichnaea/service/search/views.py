@@ -33,7 +33,6 @@ def configure_search(config):
 
 
 def search_cell(session, data):
-    sql_null = None  # avoid pep8 warning
     radio = RADIO_TYPE.get(data['radio'], -1)
     cells = []
     for cell in data['cell']:
@@ -51,8 +50,8 @@ def search_cell(session, data):
             Cell.mnc == cell['mnc']).filter(
             Cell.lac == cell['lac']).filter(
             Cell.cid == cell['cid']).filter(
-            Cell.lat != sql_null).filter(
-            Cell.lon != sql_null
+            Cell.lat.isnot(None)).filter(
+            Cell.lon.isnot(None)
         )
         result = query.first()
         if result is not None:
@@ -72,7 +71,6 @@ def search_cell(session, data):
 
 
 def search_cell_lac(session, data):
-    sql_null = None  # avoid pep8 warning
     radio = RADIO_TYPE.get(data['radio'], -1)
     lacs = []
     for cell in data['cell']:
@@ -90,8 +88,8 @@ def search_cell_lac(session, data):
             Cell.mnc == cell['mnc']).filter(
             Cell.lac == cell['lac']).filter(
             Cell.cid == CELLID_LAC).filter(
-            Cell.lat != sql_null).filter(
-            Cell.lon != sql_null
+            Cell.lat.isnot(None)).filter(
+            Cell.lon.isnot(None)
         )
         result = query.first()
         if result is not None:
@@ -132,11 +130,10 @@ def search_wifi(session, data):
     if len(wifi_keys) < 3:
         # we didn't even get three keys, bail out
         return None
-    sql_null = None  # avoid pep8 warning
     query = session.query(Wifi.key, Wifi.lat, Wifi.lon).filter(
         Wifi.key.in_(wifi_keys)).filter(
-        Wifi.lat != sql_null).filter(
-        Wifi.lon != sql_null)
+        Wifi.lat.isnot(None)).filter(
+        Wifi.lon.isnot(None))
     wifis = query.all()
     if len(wifis) < 3:
         # we got fewer than three actual matches
