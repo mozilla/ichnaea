@@ -107,6 +107,9 @@ def main(argv, _db_master=None):
 
     if args.initdb:
         from ichnaea import config
+        # make sure content models are imported
+        from ichnaea.content import models  # NOQA
+
         conf = config()
         db_master = Database(conf.get('ichnaea', 'db_master'))
         engine = db_master.engine
