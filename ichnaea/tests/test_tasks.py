@@ -771,7 +771,7 @@ class TestCellMeasureDump(CeleryTestCase):
         self.assertEquals(block, (1, self.batch_size))
 
         with mock_s3() as mock_key:
-            with patch.object(S3Backend, 'check_archive', lambda x, y: True):
+            with patch.object(S3Backend, 'check_archive', lambda x, y, z : True):
                 zips = write_s3_backups(False)
                 self.assertTrue(len(zips), 1)
                 fname = zips[0]

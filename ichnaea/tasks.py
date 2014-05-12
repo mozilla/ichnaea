@@ -686,8 +686,8 @@ def write_s3_backups(self, cleanup_zip=True):
         query = query.order_by(CellMeasureBlock.end_cell_measure_id)
         for cmb in query.all():
             cmb.s3_key = '%s/CellMeasure_%d_%d.zip' % (utcnow.strftime("%Y%m"),
-                                               cmb.start_cell_measure_id,
-                                               cmb.end_cell_measure_id)
+                            cmb.start_cell_measure_id,   # NOQA
+                            cmb.end_cell_measure_id)     # NOQA
 
             with selfdestruct_tempdir(cmb.s3_key) as (tmp_path, zip_path):
                 rset = session.execute("select * from alembic_version")
@@ -721,18 +721,8 @@ def write_s3_backups(self, cleanup_zip=True):
             cmb.archive_sha = sha.hexdigest()
             try:
                 s3 = S3Backend(self.heka_client)
-                if not s3.backup_and_check(cmb.s3_key, zip_path):
+                if not s3.backup_archive(cmb.s3_key, zip_path):
                     continue
-
-                """
-                TODO: move this into a separate task
-                del_query = session.query(CellMeasure)
-                del_query = del_query.filter(
-                    CellMeasure.id >= cmb.start_cell_measure_id)
-                del_query = query.filter(
-                    CellMeasure.id <= cmb.end_cell_measure_id)
-                del_query.delete()
-                """
             finally:
                 if cleanup_zip:
                     if os.path.exists(zip_path):
@@ -790,3 +780,23 @@ def schedule_measure_archival(self):
                 session.add(cm_blk)
         session.commit()
         return blocks
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def delete_cellmeasure_records(self, cleanup_zip=True):
+    with self.db_session() as session:
+        query = session.query(CellMeasureBlock)
+        query = query.filter(CellMeasureBlock.s3_key != None)    # NOQA
+        query = query.filter(CellMeasureBlock.archive_date == None)  # NOQA
+        for cmb in query.all():
+            expected_sha = cmb.archive_sha
+
+            s3 = S3Backend(self.heka_client)
+            if s3.check_archive(expected_sha, cmb.s3_key):
+                del_query = session.query(CellMeasure)
+                del_query = del_query.filter(
+                    CellMeasure.id >= cmb.start_cell_measure_id)
+                del_query = query.filter(
+                    CellMeasure.id <= cmb.end_cell_measure_id)
+                del_query.delete()
+                session.commit()
