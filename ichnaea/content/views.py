@@ -41,13 +41,14 @@ def configure_content(config):
     config.scan('ichnaea.content.views')
 
 
+CSP_BASE = "'self' *.cdn.mozilla.net"
 CSP_POLICY = """\
 default-src 'self' *.tiles.mapbox.com;
-font-src 'self' *.cdn.mozilla.net;
-img-src 'self' *.cdn.mozilla.net *.google-analytics.com *.tiles.mapbox.com data:;
-script-src 'self' 'unsafe-eval' *.cdn.mozilla.net *.google-analytics.com;
-style-src 'self' *.cdn.mozilla.net;
-"""
+font-src {base};
+img-src {base} *.google-analytics.com *.tiles.mapbox.com data:;
+script-src {base} *.google-analytics.com 'unsafe-eval';
+style-src {base};
+""".format(base=CSP_BASE)
 CSP_POLICY = CSP_POLICY.replace("\n", ' ').strip()
 
 
