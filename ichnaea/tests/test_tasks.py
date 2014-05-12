@@ -1,7 +1,9 @@
 from datetime import datetime
 from datetime import timedelta
-import os
+from mock import patch
 from zipfile import ZipFile
+import hashlib
+import os
 
 from ichnaea.models import (
     Cell,
@@ -16,8 +18,12 @@ from ichnaea.models import (
     to_cellkey,
     CELLID_LAC,
 )
-from ichnaea.tests.base import CeleryTestCase
+
+from ichnaea.backup.s3 import S3Backend
 from ichnaea.backup.tests import mock_s3
+from ichnaea.tasks import schedule_measure_archival
+from ichnaea.tasks import write_s3_backups
+from ichnaea.tests.base import CeleryTestCase
 
 
 class TestCellLocationUpdate(CeleryTestCase):
@@ -759,34 +765,28 @@ class TestCellMeasureDump(CeleryTestCase):
             self.session.add(cm)
         self.session.commit()
 
-        from ichnaea.tasks import schedule_measure_archival
-        from ichnaea.tasks import write_s3_backups
         blocks = schedule_measure_archival()
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
         self.assertEquals(block, (1, self.batch_size))
 
         with mock_s3() as mock_key:
-            write_s3_backups()
-            self.assertTrue(mock_key.called)
-            fname = mock_key.call_args[0][0]
-            self.assertTrue(fname.endswith('.zip'))
-
-            # verify backup file exists
-            os.path.isfile(fname)
-
-            with ZipFile(fname) as myzip:
-                contents = set(myzip.namelist())
-                expected_contents = set(['alembic_revision.txt',
-                                         'cell_measure.csv'])
-                self.assertEquals(expected_contents, contents)
+            with patch.object(S3Backend, 'check_archive', lambda x, y: True):
+                zips = write_s3_backups(False)
+                self.assertTrue(len(zips), 1)
+                fname = zips[0]
+                with ZipFile(fname) as myzip:
+                    contents = set(myzip.namelist())
+                    expected_contents = set(['alembic_revision.txt',
+                                             'cell_measure.csv'])
+                    self.assertEquals(expected_contents, contents)
 
         short_zipname = fname.split(os.path.sep)[-1]
-        blocks = self.session.query(CellMeasureBlock)\
-                     .filter(CellMeasureBlock.s3_archive == short_zipname)\
-                     .all()
+        blocks = self.session.query(CellMeasureBlock).all()
+
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
-        self.assertEquals(short_zipname, block.s3_archive)
-        self.assertEquals(datetime.today().strftime("%Y%m%d"),
-                          block.archive_date.strftime("%Y%m%d"))
+
+        actual_sha = hashlib.sha1()
+        actual_sha.update(open(fname, 'rb').read())
+        self.assertEquals(block.archive_sha, actual_sha.hexdigest())

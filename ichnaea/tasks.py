@@ -3,6 +3,7 @@ from contextlib import closing
 from datetime import datetime
 from datetime import timedelta
 import tempfile
+import hashlib
 import os
 import csv
 import shutil
@@ -648,10 +649,12 @@ def update_lac(self, radio, mcc, mnc, lac):
 
 
 @contextmanager
-def selfdestruct_tempdir(s3_archive):
+def selfdestruct_tempdir(s3_key):
+    short_name = os.path.split(s3_key)[-1]
+
     base_path = tempfile.mkdtemp()
 
-    s3_path = os.path.join(tempfile.mkdtemp(), s3_archive)
+    s3_path = os.path.join(tempfile.mkdtemp(), short_name)
     try:
         zip_path = os.path.join(base_path, s3_path)
         yield base_path, zip_path
@@ -668,26 +671,25 @@ def selfdestruct_tempdir(s3_archive):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def write_s3_backups(self):
+def write_s3_backups(self, cleanup_zip=True):
     """
     Iterate over each of the CellMeasureblock records that aren't
     backed up yet and back them up.
 
     Assume that this is running in a single task
     """
+    zips = []
+    utcnow = datetime.utcnow()
     with self.db_session() as session:
         query = session.query(CellMeasureBlock)
         query = query.filter(CellMeasureBlock.archive_date == None)  # NOQA
         query = query.order_by(CellMeasureBlock.end_cell_measure_id)
-        for cm in query.all():
-            now = datetime.now()
-            cm.archive_date = now
-            cm.s3_archive = '%s-%d_%d.zip' % (now.strftime("%Y%m%d_%H%M%S"),
-                                              cm.start_cell_measure_id,
-                                              cm.end_cell_measure_id)
-            session.add(cm)
+        for cmb in query.all():
+            cmb.s3_key = '%s/CellMeasure_%d_%d.zip' % (utcnow.strftime("%Y%m"),
+                                               cmb.start_cell_measure_id,
+                                               cmb.end_cell_measure_id)
 
-            with selfdestruct_tempdir(cm.s3_archive) as (tmp_path, zip_path):
+            with selfdestruct_tempdir(cmb.s3_key) as (tmp_path, zip_path):
                 rset = session.execute("select * from alembic_version")
                 rev = rset.first()[0]
                 with open(os.path.join(tmp_path,
@@ -696,16 +698,16 @@ def write_s3_backups(self):
 
                 cm_fname = os.path.join(tmp_path, 'cell_measure.csv')
 
-                query = session.query(CellMeasure)
-                query = query.filter(
-                    CellMeasure.id >= cm.start_cell_measure_id)
-                query = query.filter(
-                    CellMeasure.id <= cm.end_cell_measure_id)
+                cm_query = session.query(CellMeasure)
+                cm_query = cm_query.filter(
+                    CellMeasure.id >= cmb.start_cell_measure_id)
+                cm_query = cm_query.filter(
+                    CellMeasure.id <= cmb.end_cell_measure_id)
 
                 col_names = None
                 with open(cm_fname, 'w') as f:
                     csv_out = csv.writer(f, dialect='excel')
-                    for i, row in enumerate(query.all()):
+                    for i, row in enumerate(cm_query.all()):
                         if i == 0:
                             col_names = [c.name for c in row.__table__.columns]
                             csv_out.writerow(col_names)
@@ -713,10 +715,34 @@ def write_s3_backups(self):
                         data_row = [getattr(row, cname) for cname in col_names]
                         csv_out.writerow(data_row)
 
-            s3 = S3Backend()
-            s3.backup_archive(zip_path)
+            sha = hashlib.sha1()
+            sha.update(open(zip_path, 'rb').read())
 
+            cmb.archive_sha = sha.hexdigest()
+            try:
+                s3 = S3Backend(self.heka_client)
+                if not s3.backup_and_check(cmb.s3_key, zip_path):
+                    continue
+
+                """
+                TODO: move this into a separate task
+                del_query = session.query(CellMeasure)
+                del_query = del_query.filter(
+                    CellMeasure.id >= cmb.start_cell_measure_id)
+                del_query = query.filter(
+                    CellMeasure.id <= cmb.end_cell_measure_id)
+                del_query.delete()
+                """
+            finally:
+                if cleanup_zip:
+                    if os.path.exists(zip_path):
+                        os.unlink(zip_path)
+                else:
+                    zips.append(zip_path)
+
+            session.add(cmb)
             session.commit()
+    return zips
 
 
 @celery.task(base=DatabaseTask, bind=True)

@@ -205,7 +205,7 @@ class CellMeasureBlock(_Model):
     __tablename__ = 'cell_measure_block'
     __table_args__ = (
         Index('idx_cmblk_archive_date', 'archive_date'),
-        Index('idx_cmblk_s3_archive', 's3_archive'),
+        Index('idx_cmblk_s3_key', 's3_key'),
         Index('idx_cmblk_end_cell_measure_id', 'end_cell_measure_id'),
         {
             'mysql_engine': 'InnoDB',
@@ -222,7 +222,8 @@ class CellMeasureBlock(_Model):
     end_cell_measure_id = Column(BigInteger(unsigned=True))
 
     archive_date = Column(DateTime)
-    s3_archive = Column(String(80))
+    s3_key = Column(String(80))
+    archive_sha = Column(String(80))
 
 
 class CellMeasureCheckPoint(_Model):

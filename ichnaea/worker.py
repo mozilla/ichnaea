@@ -87,6 +87,16 @@ CELERYBEAT_SCHEDULE = {
     #     'task': 'ichnaea.backfill.tasks.do_backfill',
     #     'schedule': crontab(hour=0, minute=15),
     # }
+
+    # 's3-batch-measures-for-backup': {
+    #     'task': 'ichnaea.tasks.schedule_measure_archival',
+    #     'schedule': crontab(hour=0, minute=15),
+    # },
+
+    # 's3-write-backups': {
+    #     'task': 'ichnaea.tasks.schedule_measure_archival',
+    #     'schedule': crontab(hour=0, minute=15),
+    # }
 }
 
 celery = Celery('ichnaea.worker')
