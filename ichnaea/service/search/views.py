@@ -1,9 +1,13 @@
 from ichnaea.models import (
     Cell,
     normalized_wifi_key,
+    normalized_cell_dict,
     RADIO_TYPE,
     Wifi,
     CELLID_LAC,
+    to_degrees,
+    to_cellkey,
+    join_cellkey,
 )
 from ichnaea.decimaljson import (
     quantize,
@@ -23,8 +27,8 @@ import operator
 MAX_DIST = 0.5
 
 
-# helper class used in search_wifi
-Network = namedtuple('Network', ['key', 'lat', 'lon'])
+# helper class used in searching
+Network = namedtuple('Network', ['key', 'lat', 'lon', 'range'])
 
 
 def configure_search(config):
@@ -32,41 +36,53 @@ def configure_search(config):
     config.add_view(search_view, route_name='v1_search', renderer='json')
 
 
+def estimate_accuracy(lat, lon, points, minimum):
+    if len(points) == 1:
+        accuracy = points[0].range
+    else:
+        # Terrible approximation, but hopefully better
+        # than the old approximation, "worst-case range":
+        # this one takes the maximum distance from location
+        # to any of the provided points.
+        accuracy = max([distance(to_degrees(lat),
+                                 to_degrees(lon),
+                                 to_degrees(p.lat),
+                                 to_degrees(p.lon)) * 1000
+                        for p in points])
+    return max(accuracy, minimum)
+
+
 def search_cell(session, data):
     radio = RADIO_TYPE.get(data['radio'], -1)
     cells = []
     for cell in data['cell']:
-        if cell['mcc'] < 1 or cell['mnc'] < 0 or \
-           cell['lac'] < 0 or cell['cid'] < 0:
-            # Skip over invalid values
+        cell = normalized_cell_dict(cell, default_radio=radio)
+        if not cell:
             continue
 
-        if cell.get('radio'):
-            radio = RADIO_TYPE.get(cell['radio'], -1)
+        key = to_cellkey(cell)
 
-        query = session.query(Cell.lat, Cell.lon).filter(
-            Cell.radio == radio).filter(
-            Cell.mcc == cell['mcc']).filter(
-            Cell.mnc == cell['mnc']).filter(
-            Cell.lac == cell['lac']).filter(
-            Cell.cid == cell['cid']).filter(
+        query = session.query(Cell.lat, Cell.lon, Cell.range).filter(
+            *join_cellkey(Cell, key)).filter(
             Cell.lat.isnot(None)).filter(
             Cell.lon.isnot(None)
         )
         result = query.first()
         if result is not None:
-            cells.append(result)
+            cells.append(Network(key, *result))
 
     if not cells:
         return
 
+    cells = [Network(*c) for c in cells]
     length = len(cells)
-    avg_lat = sum([c[0] for c in cells]) / length
-    avg_lon = sum([c[1] for c in cells]) / length
+    avg_lat = sum([c.lat for c in cells]) / length
+    avg_lon = sum([c.lon for c in cells]) / length
     return {
         'lat': quantize(avg_lat),
         'lon': quantize(avg_lon),
-        'accuracy': 35000,
+        'accuracy': estimate_accuracy(avg_lat, avg_lon,
+                                      cells, 10000),
     }
 
 
@@ -104,7 +120,7 @@ def search_cell_lac(session, data):
     return {
         'lat': quantize(lac.lat),
         'lon': quantize(lac.lon),
-        'accuracy': lac.range,
+        'accuracy': max(10000, lac.range),
     }
 
 
@@ -130,7 +146,7 @@ def search_wifi(session, data):
     if len(wifi_keys) < 3:
         # we didn't even get three keys, bail out
         return None
-    query = session.query(Wifi.key, Wifi.lat, Wifi.lon).filter(
+    query = session.query(Wifi.key, Wifi.lat, Wifi.lon, Wifi.range).filter(
         Wifi.key.in_(wifi_keys)).filter(
         Wifi.lat.isnot(None)).filter(
         Wifi.lon.isnot(None))
@@ -139,7 +155,8 @@ def search_wifi(session, data):
         # we got fewer than three actual matches
         return None
 
-    wifis = [Network(normalized_wifi_key(w[0]), w[1], w[2]) for w in wifis]
+    wifis = [Network(normalized_wifi_key(w[0]), w[1], w[2], w[3])
+             for w in wifis]
 
     # sort networks by signal strengths in query
     wifis.sort(lambda a, b: cmp(wifi_signals[b.key],
@@ -166,7 +183,8 @@ def search_wifi(session, data):
                 return {
                     'lat': quantize(avg_lat),
                     'lon': quantize(avg_lon),
-                    'accuracy': 500,
+                    'accuracy': estimate_accuracy(avg_lat, avg_lon,
+                                                  c, 100),
                 }
 
             if w is None:
