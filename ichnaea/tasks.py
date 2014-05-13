@@ -824,9 +824,25 @@ def schedule_measure_archival(self, measure_type, measure_cls):
 
 @celery.task(base=DatabaseTask, bind=True)
 def delete_cellmeasure_records(self, cleanup_zip=True):
-    # TODO:
+    measure_cls = CellMeasure
     measure_type = MEASURE_TYPE['cell']
+    return delete_measure_records(self,
+                                  measure_cls,
+                                  measure_type,
+                                  cleanup_zip)
 
+
+@celery.task(base=DatabaseTask, bind=True)
+def delete_wifimeasure_records(self, cleanup_zip=True):
+    measure_cls = WifiMeasure
+    measure_type = MEASURE_TYPE['wifi']
+    return delete_measure_records(self,
+                                  measure_cls,
+                                  measure_type,
+                                  cleanup_zip)
+
+
+def delete_measure_records(self, measure_cls, measure_type, cleanup_zip):
     with self.db_session() as session:
         query = session.query(MeasureBlock)
         query = query.filter(MeasureBlock.measure_type == measure_type)
@@ -837,10 +853,6 @@ def delete_cellmeasure_records(self, cleanup_zip=True):
 
             s3 = S3Backend(self.heka_client)
             if s3.check_archive(expected_sha, cmb.s3_key):
-                del_query = session.query(CellMeasure)
-                del_query = del_query.filter(
-                    CellMeasure.id >= cmb.start_id)
-                del_query = query.filter(
-                    CellMeasure.id <= cmb.end_id)
-                del_query.delete()
+                session.execute("delete from %s where id >= %d and id <= %d" %
+                                (measure_cls.__table__.name, cmb.start_id, cmb.end_id))
                 session.commit()
