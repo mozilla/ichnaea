@@ -1,4 +1,4 @@
-"""add CellMeasureBlock
+"""add MeasureBlock
 
 Revision ID: d8b7991c338
 Revises: 4323e1f1a0b8
@@ -16,7 +16,7 @@ from sqlalchemy.dialects.mysql import BIGINT as BigInteger
 
 
 def upgrade():
-    op.create_table('cell_measure_block',
+    op.create_table('measure_block',
                     sa.Column('start_id',
                               BigInteger(unsigned=True)),
                     sa.Column('end_id',
@@ -27,15 +27,15 @@ def upgrade():
                     mysql_charset='utf8',
                     )
     op.create_index('idx_cmblk_archive_date',
-                    'cell_measure_block',
+                    'measure_block',
                     ['archive_date'])
     op.create_index('idx_cmblk_s3_key',
-                    'cell_measure_block',
+                    'measure_block',
                     ['s3_key'])
     op.create_index('idx_cmblk_end_id',
-                    'cell_measure_block',
+                    'measure_block',
                     ['end_id'])
 
 
 def downgrade():
-    op.drop_table('cell_measure_block')
+    op.drop_table('measure_block')

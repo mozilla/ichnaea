@@ -15,10 +15,10 @@ import sqlalchemy as sa
 
 
 def upgrade():
-    op.add_column('cell_measure_block',
+    op.add_column('measure_block',
                   sa.Column('archive_sha', sa.String(80)))
 
 
 def downgrade():
-    op.drop_column('cell_measure_block',
+    op.drop_column('measure_block',
                    sa.Column('archive_sha', sa.String(80)))
