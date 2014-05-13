@@ -89,29 +89,24 @@ def search_cell_lac(session, data):
     radio = RADIO_TYPE.get(data['radio'], -1)
     lacs = []
     for cell in data['cell']:
-        if cell['mcc'] < 1 or cell['mnc'] < 0 or \
-           cell['lac'] < 0 or cell['cid'] < 0:
-            # Skip over invalid values
+        cell = normalized_cell_dict(cell, default_radio=radio)
+        if not cell:
             continue
 
-        if cell.get('radio'):
-            radio = RADIO_TYPE.get(cell['radio'], -1)
+        cell['cid'] = CELLID_LAC
+        key = to_cellkey(cell)
 
-        query = session.query(Cell).filter(
-            Cell.radio == radio).filter(
-            Cell.mcc == cell['mcc']).filter(
-            Cell.mnc == cell['mnc']).filter(
-            Cell.lac == cell['lac']).filter(
-            Cell.cid == CELLID_LAC).filter(
+        query = session.query(Cell.lat, Cell.lon, Cell.range).filter(
+            *join_cellkey(Cell, key)).filter(
             Cell.lat.isnot(None)).filter(
             Cell.lon.isnot(None)
         )
         result = query.first()
         if result is not None:
-            lacs.append(result)
+            lacs.append(Network(key, *result))
 
     if not lacs:
-        return None
+        return
 
     # take the smallest LAC of any the user is inside
     lac = sorted(lacs, key=operator.attrgetter('range'))[0]
