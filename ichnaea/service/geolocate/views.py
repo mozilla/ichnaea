@@ -127,21 +127,29 @@ def geolocate_view(request):
         result = search_wifi_ap(session, data)
         if result is not None:
             heka_client.incr('geolocate.wifi_hit')
+            heka_client.timer_send('geolocate.accuracy.wifi',
+                                   result['accuracy'])
     else:
         result = search_cell_tower(session, data)
         if result is not None:
             heka_client.incr('geolocate.cell_hit')
+            heka_client.timer_send('geolocate.accuracy.cell',
+                                   result['accuracy'])
 
         if result is None:
             result = search_cell_tower_lac(session, data)
             if result is not None:
                 heka_client.incr('geolocate.cell_lac_hit')
+                heka_client.timer_send('geolocate.accuracy.cell_lac',
+                                       result['accuracy'])
 
     if result is None and request.client_addr:
         result = search_geoip(request.registry.geoip_db,
                               request.client_addr)
         if result is not None:
             heka_client.incr('geolocate.geoip_hit')
+            heka_client.timer_send('geolocate.accuracy.geoip',
+                                   result['accuracy'])
 
     if result is None:
         heka_client.incr('geolocate.miss')
