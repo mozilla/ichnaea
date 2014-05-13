@@ -664,7 +664,7 @@ def selfdestruct_tempdir(s3_key):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def write_s3_backups(self, cleanup_zip=True):
+def write_cellmeasure_s3_backups(self, cleanup_zip=True):
     """
     Iterate over each of the CellMeasureblock records that aren't
     backed up yet and back them up.
@@ -676,11 +676,11 @@ def write_s3_backups(self, cleanup_zip=True):
     with self.db_session() as session:
         query = session.query(CellMeasureBlock)
         query = query.filter(CellMeasureBlock.archive_date == None)  # NOQA
-        query = query.order_by(CellMeasureBlock.end_cell_measure_id)
+        query = query.order_by(CellMeasureBlock.end_id)
         for cmb in query.all():
             cmb.s3_key = '%s/CellMeasure_%d_%d.zip' % (utcnow.strftime("%Y%m"),
-                            cmb.start_cell_measure_id,   # NOQA
-                            cmb.end_cell_measure_id)     # NOQA
+                            cmb.start_id,   # NOQA
+                            cmb.end_id)     # NOQA
 
             with selfdestruct_tempdir(cmb.s3_key) as (tmp_path, zip_path):
                 rset = session.execute("select * from alembic_version")
@@ -693,9 +693,9 @@ def write_s3_backups(self, cleanup_zip=True):
 
                 cm_query = session.query(CellMeasure)
                 cm_query = cm_query.filter(
-                    CellMeasure.id >= cmb.start_cell_measure_id)
+                    CellMeasure.id >= cmb.start_id)
                 cm_query = cm_query.filter(
-                    CellMeasure.id <= cmb.end_cell_measure_id)
+                    CellMeasure.id <= cmb.end_id)
 
                 col_names = None
                 with open(cm_fname, 'w') as f:
@@ -729,7 +729,7 @@ def write_s3_backups(self, cleanup_zip=True):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def schedule_measure_archival(self):
+def schedule_cellmeasure_archival(self):
     """
     This just looks for CellMeasure records in batches and adds an
     entry into CellMeasureBlock to schedule archival
@@ -748,8 +748,8 @@ def schedule_measure_archival(self):
             return
         max_cell_measure_id = records[0][0]
 
-        query = session.query(CellMeasureBlock.end_cell_measure_id)
-        query = query.order_by(CellMeasureBlock.end_cell_measure_id.desc())
+        query = session.query(CellMeasureBlock.end_id)
+        query = query.order_by(CellMeasureBlock.end_id.desc())
         query = query.limit(1)
         records = query.all()
         if len(records):
@@ -767,10 +767,10 @@ def schedule_measure_archival(self):
                 start = last_cell_measure_id + 1
                 end = start + entries_to_journal - 1
 
-                cm_blk = CellMeasureBlock(start_cell_measure_id=start,
-                                          end_cell_measure_id=end)
-                blocks.append((cm_blk.start_cell_measure_id,
-                               cm_blk.end_cell_measure_id))
+                cm_blk = CellMeasureBlock(start_id=start,
+                                          end_id=end)
+                blocks.append((cm_blk.start_id,
+                               cm_blk.end_id))
                 session.add(cm_blk)
         session.commit()
         return blocks
@@ -789,8 +789,8 @@ def delete_cellmeasure_records(self, cleanup_zip=True):
             if s3.check_archive(expected_sha, cmb.s3_key):
                 del_query = session.query(CellMeasure)
                 del_query = del_query.filter(
-                    CellMeasure.id >= cmb.start_cell_measure_id)
+                    CellMeasure.id >= cmb.start_id)
                 del_query = query.filter(
-                    CellMeasure.id <= cmb.end_cell_measure_id)
+                    CellMeasure.id <= cmb.end_id)
                 del_query.delete()
                 session.commit()

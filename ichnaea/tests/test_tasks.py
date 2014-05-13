@@ -19,8 +19,8 @@ from ichnaea.models import (
 
 from ichnaea.backup.s3 import S3Backend
 from ichnaea.backup.tests import mock_s3
-from ichnaea.tasks import schedule_measure_archival
-from ichnaea.tasks import write_s3_backups
+from ichnaea.tasks import schedule_cellmeasure_archival
+from ichnaea.tasks import write_cellmeasure_s3_backups
 from ichnaea.tests.base import CeleryTestCase
 
 
@@ -746,13 +746,12 @@ class TestCellMeasureDump(CeleryTestCase):
             self.session.add(cm)
         self.session.commit()
 
-        from ichnaea.tasks import schedule_measure_archival
-        blocks = schedule_measure_archival()
+        blocks = schedule_cellmeasure_archival()
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
         self.assertEquals(block, (1, self.batch_size))
 
-        blocks = schedule_measure_archival()
+        blocks = schedule_cellmeasure_archival()
         self.assertEquals(len(blocks), 0)
 
     def test_write_s3_backup_files(self):
@@ -761,14 +760,14 @@ class TestCellMeasureDump(CeleryTestCase):
             self.session.add(cm)
         self.session.commit()
 
-        blocks = schedule_measure_archival()
+        blocks = schedule_cellmeasure_archival()
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
         self.assertEquals(block, (1, self.batch_size))
 
         with mock_s3():
             with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
-                zips = write_s3_backups(False)
+                zips = write_cellmeasure_s3_backups(False)
                 self.assertTrue(len(zips), 1)
                 fname = zips[0]
                 with ZipFile(fname) as myzip:

@@ -17,9 +17,9 @@ from sqlalchemy.dialects.mysql import BIGINT as BigInteger
 
 def upgrade():
     op.create_table('cell_measure_block',
-                    sa.Column('start_cell_measure_id',
+                    sa.Column('start_id',
                               BigInteger(unsigned=True)),
-                    sa.Column('end_cell_measure_id',
+                    sa.Column('end_id',
                               BigInteger(unsigned=True)),
                     sa.Column('archive_date', sa.DateTime()),
                     sa.Column('s3_key', sa.String(80)),
@@ -32,9 +32,9 @@ def upgrade():
     op.create_index('idx_cmblk_s3_key',
                     'cell_measure_block',
                     ['s3_key'])
-    op.create_index('idx_cmblk_end_cell_measure_id',
+    op.create_index('idx_cmblk_end_id',
                     'cell_measure_block',
-                    ['end_cell_measure_id'])
+                    ['end_id'])
 
 
 def downgrade():

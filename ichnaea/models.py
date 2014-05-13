@@ -201,12 +201,12 @@ class CellBlacklist(_Model):
         super(CellBlacklist, self).__init__(*args, **kw)
 
 
-class CellMeasureBlock(_Model):
-    __tablename__ = 'cell_measure_block'
+class WifiMeasureBlock(_Model):
+    __tablename__ = 'wifi_measure_block'
     __table_args__ = (
-        Index('idx_cmblk_archive_date', 'archive_date'),
-        Index('idx_cmblk_s3_key', 's3_key'),
-        Index('idx_cmblk_end_cell_measure_id', 'end_cell_measure_id'),
+        Index('idx_wmblk_archive_date', 'archive_date'),
+        Index('idx_wmblk_s3_key', 's3_key'),
+        Index('idx_wmblk_end_wifi_measure_id', 'end_wifi_measure_id'),
         {
             'mysql_engine': 'InnoDB',
             'mysql_charset': 'utf8',
@@ -218,8 +218,33 @@ class CellMeasureBlock(_Model):
                 primary_key=True,
                 autoincrement=True)
 
-    start_cell_measure_id = Column(BigInteger(unsigned=True))
-    end_cell_measure_id = Column(BigInteger(unsigned=True))
+    start_wifi_measure_id = Column(BigInteger(unsigned=True))
+    end_wifi_measure_id = Column(BigInteger(unsigned=True))
+
+    archive_date = Column(DateTime)
+    s3_key = Column(String(80))
+    archive_sha = Column(String(80))
+
+
+class CellMeasureBlock(_Model):
+    __tablename__ = 'cell_measure_block'
+    __table_args__ = (
+        Index('idx_cmblk_archive_date', 'archive_date'),
+        Index('idx_cmblk_s3_key', 's3_key'),
+        Index('idx_cmblk_end_id', 'end_id'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+            'mysql_row_format': 'compressed',
+            'mysql_key_block_size': '4',
+        }
+    )
+    id = Column(BigInteger(unsigned=True),
+                primary_key=True,
+                autoincrement=True)
+
+    start_id = Column(BigInteger(unsigned=True))
+    end_id = Column(BigInteger(unsigned=True))
 
     archive_date = Column(DateTime)
     s3_key = Column(String(80))
