@@ -49,7 +49,7 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"location": {"lat": 12.3456781,
                                                  "lng": 23.4567892},
-                                    "accuracy": 35000.0})
+                                    "accuracy": 10000.0})
 
     def test_ok_wifi(self):
         app = self.app
@@ -75,7 +75,7 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"location": {"lat": 1.0010000,
                                                  "lng": 1.0020000},
-                                    "accuracy": 500.0})
+                                    "accuracy": 248.60908969845744})
 
     def test_wifi_not_found(self):
         app = self.app
@@ -160,7 +160,7 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {'location': {"lat": 1.0020000,
                                                  "lng": 1.0040000},
-                                    "accuracy": 35000.0})
+                                    "accuracy": 10000.0})
 
     def test_lac_miss(self):
         app = self.app
