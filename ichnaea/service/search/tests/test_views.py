@@ -45,11 +45,12 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0010000, "lon": 1.0020000,
-                                    "accuracy": 35000})
+                                    "accuracy": 10000})
 
         self.check_expected_heka_messages(
-            total=4,
-            timer=[('http.request', {'url_path': '/v1/search'})],
+            total=5,
+            timer=[('http.request', {'url_path': '/v1/search'}),
+                   ('search.accuracy.cell', 1)],
             counter=[('search.api_key.test', 1),
                      ('search.cell_hit', 1),
                      ('http.request', 1)]
@@ -75,11 +76,12 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0010000, "lon": 1.0020000,
-                                    "accuracy": 500})
+                                    "accuracy": 248.60908969845744})
 
         self.check_expected_heka_messages(
-            total=4,
-            timer=[('http.request', {'url_path': '/v1/search'})],
+            total=5,
+            timer=[('http.request', {'url_path': '/v1/search'}),
+                   ('search.accuracy.wifi', 1)],
             counter=[('search.api_key.test', 1),
                      ('search.wifi_hit', 1),
                      ('http.request', 1)]
@@ -139,7 +141,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0010000, "lon": 1.0020000,
-                                    "accuracy": 500})
+                                    "accuracy": 248.60908969845744})
 
     def test_wifi_prefer_cluster_with_better_signals(self):
         app = self.app
@@ -167,7 +169,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 2.0010000, "lon": 2.0020000,
-                                    "accuracy": 500})
+                                    "accuracy": 248.51819000225819})
 
     def test_wifi_find_sparse_high_signal_cluster(self):
         app = self.app
@@ -198,7 +200,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 2.0010000, "lon": 2.0020000,
-                                    "accuracy": 500})
+                                    "accuracy": 248.51819000225819})
 
     def test_wifi_only_use_top_three_signals_in_noisy_cluster(self):
         app = self.app
@@ -227,7 +229,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0000100, "lon": 1.0000120,
-                                    "accuracy": 500})
+                                    "accuracy": 100})
 
     def test_wifi_not_closeby(self):
         app = self.app
@@ -297,7 +299,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0010000, "lon": 1.0020000,
-                                    "accuracy": 35000})
+                                    "accuracy": 10000})
 
     def test_cell_miss_lac_hit(self):
         app = self.app
@@ -349,7 +351,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0020000,
                                     "lon": 1.0040000,
-                                    "accuracy": 35000})
+                                    "accuracy": 10000})
 
     def test_lac_miss(self):
         app = self.app
@@ -403,7 +405,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0010000, "lon": 1.0020000,
-                                    "accuracy": 35000})
+                                    "accuracy": 10000})
 
     def test_geoip_fallback(self):
         app = self.app
@@ -421,8 +423,9 @@ class TestSearch(AppTestCase):
                                     "accuracy": 40000})
 
         self.check_expected_heka_messages(
-            total=4,
-            timer=[('http.request', {'url_path': '/v1/search'})],
+            total=5,
+            timer=[('http.request', {'url_path': '/v1/search'}),
+                   ('search.accuracy.geoip', 1)],
             counter=[('search.api_key.test', 1),
                      ('search.geoip_hit', 1),
                      ('http.request', 1)]
