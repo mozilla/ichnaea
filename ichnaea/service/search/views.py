@@ -74,7 +74,6 @@ def search_cell(session, data):
     if not cells:
         return
 
-    cells = [Network(*c) for c in cells]
     length = len(cells)
     avg_lat = sum([c.lat for c in cells]) / length
     avg_lon = sum([c.lon for c in cells]) / length

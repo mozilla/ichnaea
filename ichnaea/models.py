@@ -222,8 +222,7 @@ def normalized_cell_dict(d, default_radio=-1):
         return None
 
     d = d.copy()
-    if 'radio' in d and (isinstance(d['radio'], unicode) or
-                         isinstance(d['radio'], str)):
+    if 'radio' in d and isinstance(d['radio'], basestring):
         d['radio'] = RADIO_TYPE.get(d['radio'], -1)
 
     d = normalized_dict(
