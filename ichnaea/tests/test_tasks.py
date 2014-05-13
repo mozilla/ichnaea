@@ -741,21 +741,31 @@ class TestCellMeasureDump(CeleryTestCase):
         command.stamp(alembic_cfg, "head")
 
     def test_journal_measures(self):
-        for i in range(1, 100):
+        from ichnaea import config
+        conf = config()
+        batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
+
+        for i in range(0, batch_size*2):
             cm = CellMeasure(id=i+49950)
             self.session.add(cm)
         self.session.commit()
 
         blocks = schedule_cellmeasure_archival()
-        self.assertEquals(len(blocks), 1)
+        self.assertEquals(len(blocks), 2)
         block = blocks[0]
-        self.assertEquals(block, (1, self.batch_size))
+        self.assertEquals(block, (49950, 49950+batch_size-1))
+
+        block = blocks[1]
+        self.assertEquals(block, (49950+batch_size, 49950+2*batch_size-1))
 
         blocks = schedule_cellmeasure_archival()
         self.assertEquals(len(blocks), 0)
 
     def test_write_s3_backup_files(self):
-        for i in range(1, 100):
+        from ichnaea import config
+        conf = config()
+        batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
+        for i in range(0, batch_size):
             cm = CellMeasure(id=i+49950)
             self.session.add(cm)
         self.session.commit()
@@ -763,7 +773,7 @@ class TestCellMeasureDump(CeleryTestCase):
         blocks = schedule_cellmeasure_archival()
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
-        self.assertEquals(block, (1, self.batch_size))
+        self.assertEquals(block, (49950, 49950+batch_size-1))
 
         with mock_s3():
             with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):

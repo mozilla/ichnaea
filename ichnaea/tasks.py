@@ -734,46 +734,42 @@ def schedule_cellmeasure_archival(self):
     This just looks for CellMeasure records in batches and adds an
     entry into CellMeasureBlock to schedule archival
     """
+    blocks = []
+
     # We have new entries to file
     from ichnaea import config
     conf = config()
     batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
     with self.db_session() as session:
-        query = session.query(func.max(CellMeasure.id))
-        query = query.order_by(CellMeasure.id.asc())
-        query = query.limit(batch_size)
-
-        records = query.all()
+        records = session.query(CellMeasureBlock.end_id)
+        records = records.order_by(CellMeasureBlock.end_id.desc()).limit(1).all()
         if not len(records):
-            return
-        max_cell_measure_id = records[0][0]
-
-        query = session.query(CellMeasureBlock.end_id)
-        query = query.order_by(CellMeasureBlock.end_id.desc())
-        query = query.limit(1)
-        records = query.all()
-        if len(records):
-            last_cell_measure_id = records[0][0]
+            records = session.query(CellMeasure.id).order_by(CellMeasure.id.asc()).limit(1).all()
+            min_id = records[0][0]
         else:
-            last_cell_measure_id = 0
+            min_id = records[0][0] + 1
 
-        total_entries_to_journal = max_cell_measure_id - last_cell_measure_id
-        blocks = []
-        if total_entries_to_journal > 0:
-            while total_entries_to_journal > batch_size:
-                entries_to_journal = min(batch_size, total_entries_to_journal)
-                total_entries_to_journal -= entries_to_journal
+        records = session.query(CellMeasure.id).order_by(CellMeasure.id.desc()).limit(1).all()
+        max_id = records[0][0]
 
-                start = last_cell_measure_id + 1
-                end = start + entries_to_journal - 1
+        if max_id - min_id + 1 < batch_size:
+            # Not enough to fill a block
+            return blocks
 
-                cm_blk = CellMeasureBlock(start_id=start,
-                                          end_id=end)
-                blocks.append((cm_blk.start_id,
-                               cm_blk.end_id))
-                session.add(cm_blk)
+        this_max_id = min_id + batch_size - 1
+
+        while (this_max_id - min_id + 1) >= batch_size:
+            cm_blk = CellMeasureBlock(start_id=min_id, end_id=this_max_id)
+            blocks.append((cm_blk.start_id, cm_blk.end_id))
+            session.add(cm_blk)
+
+            min_id = this_max_id+1
+            this_max_id = min(batch_size+this_max_id, max_id)
+
+            if this_max_id > max_id:
+                break
         session.commit()
-        return blocks
+    return blocks
 
 
 @celery.task(base=DatabaseTask, bind=True)
