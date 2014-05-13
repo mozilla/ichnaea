@@ -25,19 +25,20 @@ from ichnaea.heka_logging import (
     RAVEN_ERROR,
 )
 from ichnaea.models import (
+    CELLID_LAC,
     Cell,
-    CellKey,
     CellBlacklist,
+    CellKey,
     CellMeasure,
-    CellMeasureBlock,
+    MEASURE_TYPE,
+    MeasureBlock,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
+    from_degrees,
     join_cellkey,
     to_cellkey,
     to_degrees,
-    from_degrees,
-    CELLID_LAC,
 )
 from ichnaea.worker import celery
 from ichnaea.geocalc import distance, centroid, range_to_points
@@ -666,17 +667,21 @@ def selfdestruct_tempdir(s3_key):
 @celery.task(base=DatabaseTask, bind=True)
 def write_cellmeasure_s3_backups(self, cleanup_zip=True):
     """
-    Iterate over each of the CellMeasureblock records that aren't
+    Iterate over each of the Measureblock records that aren't
     backed up yet and back them up.
 
     Assume that this is running in a single task
     """
+    # TODO:
+    measure_type = MEASURE_TYPE['cell']
+
     zips = []
     utcnow = datetime.utcnow()
     with self.db_session() as session:
-        query = session.query(CellMeasureBlock)
-        query = query.filter(CellMeasureBlock.archive_date == None)  # NOQA
-        query = query.order_by(CellMeasureBlock.end_id)
+        query = session.query(MeasureBlock)
+        query = query.filter(MeasureBlock.measure_type == measure_type)
+        query = query.filter(MeasureBlock.archive_date == None)  # NOQA
+        query = query.order_by(MeasureBlock.end_id)
         for cmb in query.all():
             cmb.s3_key = '%s/CellMeasure_%d_%d.zip' % (utcnow.strftime("%Y%m"),
                             cmb.start_id,   # NOQA
@@ -730,10 +735,12 @@ def write_cellmeasure_s3_backups(self, cleanup_zip=True):
 
 @celery.task(base=DatabaseTask, bind=True)
 def schedule_cellmeasure_archival(self):
-    """
-    This just looks for CellMeasure records in batches and adds an
-    entry into CellMeasureBlock to schedule archival
-    """
+    measure_type = MEASURE_TYPE['cell']
+    measure_cls = CellMeasure
+    return schedule_measure_archival(self, measure_type, measure_cls)
+
+
+def schedule_measure_archival(self, measure_type, measure_cls):
     blocks = []
 
     # We have new entries to file
@@ -741,19 +748,20 @@ def schedule_cellmeasure_archival(self):
     conf = config()
     batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
     with self.db_session() as session:
-        query = session.query(CellMeasureBlock.end_id)
-        query = query.order_by(CellMeasureBlock.end_id.desc())
+        query = session.query(MeasureBlock.end_id)
+        query = query.filter(MeasureBlock.measure_type == measure_type)
+        query = query.order_by(MeasureBlock.end_id.desc())
         records = query.limit(1).all()
         if not len(records):
-            query = session.query(CellMeasure.id)
-            query = query.order_by(CellMeasure.id.asc()).limit(1)
+            query = session.query(measure_cls.id)
+            query = query.order_by(measure_cls.id.asc()).limit(1)
             records = query.all()
             min_id = records[0][0]
         else:
             min_id = records[0][0] + 1
 
-        query = session.query(CellMeasure.id)
-        query = query.order_by(CellMeasure.id.desc())
+        query = session.query(measure_cls.id)
+        query = query.order_by(measure_cls.id.desc())
         records = query.limit(1).all()
         max_id = records[0][0]
 
@@ -764,7 +772,9 @@ def schedule_cellmeasure_archival(self):
         this_max_id = min_id + batch_size - 1
 
         while (this_max_id - min_id + 1) >= batch_size:
-            cm_blk = CellMeasureBlock(start_id=min_id, end_id=this_max_id)
+            cm_blk = MeasureBlock(start_id=min_id,
+                                  end_id=this_max_id,
+                                  measure_type=measure_type)
             blocks.append((cm_blk.start_id, cm_blk.end_id))
             session.add(cm_blk)
 
@@ -779,10 +789,14 @@ def schedule_cellmeasure_archival(self):
 
 @celery.task(base=DatabaseTask, bind=True)
 def delete_cellmeasure_records(self, cleanup_zip=True):
+    # TODO:
+    measure_type = MEASURE_TYPE['cell']
+
     with self.db_session() as session:
-        query = session.query(CellMeasureBlock)
-        query = query.filter(CellMeasureBlock.s3_key != None)    # NOQA
-        query = query.filter(CellMeasureBlock.archive_date == None)  # NOQA
+        query = session.query(MeasureBlock)
+        query = query.filter(MeasureBlock.measure_type == measure_type)
+        query = query.filter(MeasureBlock.s3_key != None)    # NOQA
+        query = query.filter(MeasureBlock.archive_date == None)  # NOQA
         for cmb in query.all():
             expected_sha = cmb.archive_sha
 

@@ -9,7 +9,7 @@ from ichnaea.models import (
     CellBlacklist,
     CellKey,
     CellMeasure,
-    CellMeasureBlock,
+    MeasureBlock,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
@@ -786,7 +786,7 @@ class TestCellMeasureDump(CeleryTestCase):
                                              'cell_measure.csv'])
                     self.assertEquals(expected_contents, contents)
 
-        blocks = self.session.query(CellMeasureBlock).all()
+        blocks = self.session.query(MeasureBlock).all()
 
         self.assertEquals(len(blocks), 1)
         block = blocks[0]

@@ -22,6 +22,11 @@ from ichnaea.db import _Model
 DEGREE_DECIMAL_PLACES = 7
 DEGREE_SCALE_FACTOR = 10 ** DEGREE_DECIMAL_PLACES
 
+MEASURE_TYPE = {
+    'wifi': 1,
+    'cell': 2,
+}
+
 RADIO_TYPE = {
     '': -1,
     'gsm': 0,
@@ -226,7 +231,7 @@ class WifiMeasureBlock(_Model):
     archive_sha = Column(String(80))
 
 
-class CellMeasureBlock(_Model):
+class MeasureBlock(_Model):
     __tablename__ = 'cell_measure_block'
     __table_args__ = (
         Index('idx_cmblk_archive_date', 'archive_date'),
@@ -246,6 +251,7 @@ class CellMeasureBlock(_Model):
     start_id = Column(BigInteger(unsigned=True))
     end_id = Column(BigInteger(unsigned=True))
 
+    measure_type = Column(BigInteger(unsigned=True))
     archive_date = Column(DateTime)
     s3_key = Column(String(80))
     archive_sha = Column(String(80))
