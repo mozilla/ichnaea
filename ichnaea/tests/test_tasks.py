@@ -20,7 +20,9 @@ from ichnaea.models import (
 from ichnaea.backup.s3 import S3Backend
 from ichnaea.backup.tests import mock_s3
 from ichnaea.tasks import schedule_cellmeasure_archival
+from ichnaea.tasks import schedule_wifimeasure_archival
 from ichnaea.tasks import write_cellmeasure_s3_backups
+from ichnaea.tasks import write_wifimeasure_s3_backups
 from ichnaea.tests.base import CeleryTestCase
 
 
@@ -740,7 +742,7 @@ class TestCellMeasureDump(CeleryTestCase):
         alembic_cfg = Config(alembic_ini)
         command.stamp(alembic_cfg, "head")
 
-    def test_journal_measures(self):
+    def test_journal_cell_measures(self):
         from ichnaea import config
         conf = config()
         batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
@@ -761,7 +763,28 @@ class TestCellMeasureDump(CeleryTestCase):
         blocks = schedule_cellmeasure_archival()
         self.assertEquals(len(blocks), 0)
 
-    def test_write_s3_backup_files(self):
+    def test_journal_wifi_measures(self):
+        from ichnaea import config
+        conf = config()
+        batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
+
+        for i in range(0, batch_size*2):
+            cm = WifiMeasure(id=i+49950)
+            self.session.add(cm)
+        self.session.commit()
+
+        blocks = schedule_wifimeasure_archival()
+        self.assertEquals(len(blocks), 2)
+        block = blocks[0]
+        self.assertEquals(block, (49950, 49950+batch_size-1))
+
+        block = blocks[1]
+        self.assertEquals(block, (49950+batch_size, 49950+2*batch_size-1))
+
+        blocks = schedule_wifimeasure_archival()
+        self.assertEquals(len(blocks), 0)
+
+    def test_backup_cell_to_s3(self):
         from ichnaea import config
         conf = config()
         batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
@@ -784,6 +807,41 @@ class TestCellMeasureDump(CeleryTestCase):
                     contents = set(myzip.namelist())
                     expected_contents = set(['alembic_revision.txt',
                                              'cell_measure.csv'])
+                    self.assertEquals(expected_contents, contents)
+
+        blocks = self.session.query(MeasureBlock).all()
+
+        self.assertEquals(len(blocks), 1)
+        block = blocks[0]
+
+        actual_sha = hashlib.sha1()
+        actual_sha.update(open(fname, 'rb').read())
+        self.assertEquals(block.archive_sha, actual_sha.hexdigest())
+
+
+    def test_backup_wifi_to_s3(self):
+        from ichnaea import config
+        conf = config()
+        batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
+        for i in range(0, batch_size):
+            cm = WifiMeasure(id=i+49950)
+            self.session.add(cm)
+        self.session.commit()
+
+        blocks = schedule_wifimeasure_archival()
+        self.assertEquals(len(blocks), 1)
+        block = blocks[0]
+        self.assertEquals(block, (49950, 49950+batch_size-1))
+
+        with mock_s3():
+            with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
+                zips = write_wifimeasure_s3_backups(False)
+                self.assertTrue(len(zips), 1)
+                fname = zips[0]
+                with ZipFile(fname) as myzip:
+                    contents = set(myzip.namelist())
+                    expected_contents = set(['alembic_revision.txt',
+                                             'wifi_measure.csv'])
                     self.assertEquals(expected_contents, contents)
 
         blocks = self.session.query(MeasureBlock).all()

@@ -666,14 +666,41 @@ def selfdestruct_tempdir(s3_key):
 
 @celery.task(base=DatabaseTask, bind=True)
 def write_cellmeasure_s3_backups(self, cleanup_zip=True):
+    measure_type = MEASURE_TYPE['cell']
+    zip_prefix = 'CellMeasure'
+    csv_name = 'cell_measure.csv'
+    measure_cls = CellMeasure
+    return write_measure_s3_backups(self,
+                                    measure_type,
+                                    zip_prefix,
+                                    csv_name,
+                                    measure_cls,
+                                    cleanup_zip)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def write_wifimeasure_s3_backups(self, cleanup_zip=True):
+    measure_type = MEASURE_TYPE['wifi']
+    zip_prefix = 'WifiMeasure'
+    csv_name = 'wifi_measure.csv'
+    measure_cls = WifiMeasure
+    return write_measure_s3_backups(self,
+                                    measure_type,
+                                    zip_prefix,
+                                    csv_name,
+                                    measure_cls,
+                                    cleanup_zip)
+
+
+def write_measure_s3_backups(self, measure_type,
+                             zip_prefix, csv_name,
+                             measure_cls, cleanup_zip):
     """
     Iterate over each of the Measureblock records that aren't
     backed up yet and back them up.
 
     Assume that this is running in a single task
     """
-    # TODO:
-    measure_type = MEASURE_TYPE['cell']
 
     zips = []
     utcnow = datetime.utcnow()
@@ -683,7 +710,8 @@ def write_cellmeasure_s3_backups(self, cleanup_zip=True):
         query = query.filter(MeasureBlock.archive_date == None)  # NOQA
         query = query.order_by(MeasureBlock.end_id)
         for cmb in query.all():
-            cmb.s3_key = '%s/CellMeasure_%d_%d.zip' % (utcnow.strftime("%Y%m"),
+            cmb.s3_key = '%s/%s_%d_%d.zip' % (utcnow.strftime("%Y%m"),
+                            zip_prefix,
                             cmb.start_id,   # NOQA
                             cmb.end_id)     # NOQA
 
@@ -694,13 +722,13 @@ def write_cellmeasure_s3_backups(self, cleanup_zip=True):
                                        'alembic_revision.txt'), 'w') as f:
                     f.write('%s\n' % rev)
 
-                cm_fname = os.path.join(tmp_path, 'cell_measure.csv')
+                cm_fname = os.path.join(tmp_path, csv_name)
 
-                cm_query = session.query(CellMeasure)
+                cm_query = session.query(measure_cls)
                 cm_query = cm_query.filter(
-                    CellMeasure.id >= cmb.start_id)
+                    measure_cls.id >= cmb.start_id)
                 cm_query = cm_query.filter(
-                    CellMeasure.id <= cmb.end_id)
+                    measure_cls.id <= cmb.end_id)
 
                 col_names = None
                 with open(cm_fname, 'w') as f:
@@ -737,6 +765,13 @@ def write_cellmeasure_s3_backups(self, cleanup_zip=True):
 def schedule_cellmeasure_archival(self):
     measure_type = MEASURE_TYPE['cell']
     measure_cls = CellMeasure
+    return schedule_measure_archival(self, measure_type, measure_cls)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def schedule_wifimeasure_archival(self):
+    measure_type = MEASURE_TYPE['wifi']
+    measure_cls = WifiMeasure
     return schedule_measure_archival(self, measure_type, measure_cls)
 
 
