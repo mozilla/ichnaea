@@ -741,15 +741,20 @@ def schedule_cellmeasure_archival(self):
     conf = config()
     batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
     with self.db_session() as session:
-        records = session.query(CellMeasureBlock.end_id)
-        records = records.order_by(CellMeasureBlock.end_id.desc()).limit(1).all()
+        query = session.query(CellMeasureBlock.end_id)
+        query = query.order_by(CellMeasureBlock.end_id.desc())
+        records = query.limit(1).all()
         if not len(records):
-            records = session.query(CellMeasure.id).order_by(CellMeasure.id.asc()).limit(1).all()
+            query = session.query(CellMeasure.id)
+            query = query.order_by(CellMeasure.id.asc()).limit(1)
+            records = query.all()
             min_id = records[0][0]
         else:
             min_id = records[0][0] + 1
 
-        records = session.query(CellMeasure.id).order_by(CellMeasure.id.desc()).limit(1).all()
+        query = session.query(CellMeasure.id)
+        query = query.order_by(CellMeasure.id.desc())
+        records = query.limit(1).all()
         max_id = records[0][0]
 
         if max_id - min_id + 1 < batch_size:
