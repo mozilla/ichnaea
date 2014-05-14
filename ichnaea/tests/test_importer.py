@@ -78,11 +78,11 @@ class TestLoadFile(CeleryTestCase):
         scores = session.query(Score).filter(Score.userid == userid).all()
         scores = dict([(SCORE_TYPE_INVERSE[s.key], s.value) for s in scores])
         self.assertEqual(
-            scores, {'new_location': 1, 'new_wifi': 1, 'location': 3})
+            scores, {'new_wifi': 1, 'location': 3})
         mapstats = session.query(MapStat).filter(
-            MapStat.key == MAPSTAT_TYPE['location']).all()
+            MapStat.key == MAPSTAT_TYPE['location_100m']).all()
         mapstats = [(m.lat, m.lon, m.value) for m in mapstats]
-        self.assertEqual(mapstats, [(378719, -1222732, 3)])
+        self.assertEqual(mapstats, [(37871, -122274, 3)])
 
     def test_corrupt_lines(self):
         func, tmpfile = self._make_one()

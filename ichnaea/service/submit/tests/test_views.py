@@ -276,13 +276,8 @@ class TestSubmit(CeleryAppTestCase):
     def test_mapstat(self):
         app = self.app
         session = self.db_master_session
-        key_10m = MAPSTAT_TYPE['location']
         key_100m = MAPSTAT_TYPE['location_100m']
         session.add_all([
-            MapStat(lat=10000, lon=20000, key=key_10m, value=13),
-            MapStat(lat=10000, lon=30000, key=key_10m, value=1),
-            MapStat(lat=20000, lon=30000, key=key_10m, value=3),
-            MapStat(lat=20000, lon=40000, key=key_10m, value=1),
             MapStat(lat=1000, lon=2000, key=key_100m, value=7),
             MapStat(lat=1000, lon=3000, key=key_100m, value=2),
             MapStat(lat=2000, lon=3000, key=key_100m, value=5),
@@ -305,20 +300,6 @@ class TestSubmit(CeleryAppTestCase):
                  "wifi": [{"key": "cccccccccccc"}]},
             ]},
             status=204)
-        # check fine grained stats
-        result = session.query(MapStat).filter(
-            MapStat.key == MAPSTAT_TYPE['location']).all()
-        self.assertEqual(len(result), 5)
-        self.assertEqual(
-            sorted([(int(r.lat), int(r.lon), int(r.value)) for r in result]),
-            [
-                (-20000, 30000, 1),
-                (10000, 20000, 14),
-                (10000, 30000, 1),
-                (20000, 30000, 5),
-                (20000, 40000, 1),
-            ]
-        )
         # check coarse grained stats
         result = session.query(MapStat).filter(
             MapStat.key == MAPSTAT_TYPE['location_100m']).all()
@@ -353,13 +334,11 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
         result = session.query(Score).all()
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), 2)
         self.assertEqual(set([r.name for r in result]),
-                         set(['location', 'new_location', 'new_wifi']))
+                         set(['location', 'new_wifi']))
         for r in result:
             if r.name == 'location':
-                self.assertEqual(r.value, 2)
-            elif r.name == 'new_location':
                 self.assertEqual(r.value, 2)
             elif r.name == 'new_wifi':
                 self.assertEqual(r.value, 2)
@@ -403,15 +382,12 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
         result = session.query(Score).all()
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), 2)
         self.assertEqual(set([r.name for r in result]),
-                         set(['location', 'new_location', 'new_wifi']))
+                         set(['location', 'new_wifi']))
         for r in result:
             if r.name == 'location':
                 self.assertEqual(r.value, 8)
-                self.assertEqual(r.time, utcday)
-            elif r.name == 'new_location':
-                self.assertEqual(r.value, 1)
                 self.assertEqual(r.time, utcday)
             elif r.name == 'new_wifi':
                 self.assertEqual(r.value, 4)

@@ -14,7 +14,7 @@ from ichnaea.db import _Model
 
 SCORE_TYPE = {
     'location': 0,
-    'new_location': 1,
+    # 1 was new_location, denoting 10x10m areas
     'new_cell': 2,
     'new_wifi': 3,
 }
@@ -33,7 +33,7 @@ STAT_TYPE = {
 STAT_TYPE_INVERSE = dict((v, k) for k, v in STAT_TYPE.items())
 
 MAPSTAT_TYPE = {
-    'location': 0,  # 10m
+    # 0 was 10m
     # 1 was 10km
     'location_100m': 2,
 }
@@ -58,7 +58,7 @@ class MapStat(_Model):
 
     def __init__(self, *args, **kw):
         if 'key' not in kw:
-            kw['key'] = MAPSTAT_TYPE['location']
+            kw['key'] = MAPSTAT_TYPE['location_100m']
         super(MapStat, self).__init__(*args, **kw)
 
 mapstat_table = MapStat.__table__

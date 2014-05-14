@@ -72,11 +72,6 @@ def process_mapstat_keyed(factor, stat_key, positions, session):
 
 
 def process_mapstat(positions, session, userid=None):
-    # 10x10 meter tiles
-    tile_count = process_mapstat_keyed(
-        1000, MAPSTAT_TYPE['location'], positions, session)
-    if userid is not None and tile_count > 0:
-        process_score(userid, tile_count, session, key='new_location')
     # 100x100 m tiles
     process_mapstat_keyed(
         10000, MAPSTAT_TYPE['location_100m'], positions, session)

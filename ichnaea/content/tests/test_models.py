@@ -86,7 +86,7 @@ class TestMapStat(DBTestCase):
         stat = self._make_one()
         self.assertTrue(stat.lat is None)
         self.assertTrue(stat.lon is None)
-        self.assertEqual(stat.key, 0)
+        self.assertEqual(stat.key, 2)
 
     def test_fields(self):
         stat = self._make_one(lat=12345, lon=-23456, value=13)
@@ -97,7 +97,7 @@ class TestMapStat(DBTestCase):
         result = session.query(stat.__class__).first()
         self.assertEqual(result.lat, 12345)
         self.assertEqual(result.lon, -23456)
-        self.assertEqual(result.key, 0)
+        self.assertEqual(result.key, 2)
         self.assertEqual(result.value, 13)
 
     def test_0_clash(self):
@@ -105,7 +105,7 @@ class TestMapStat(DBTestCase):
         stats = [
             self._make_one(lat=12345, lon=-23456, value=13),
             self._make_one(lat=0, lon=0, key=0, value=3),
-            self._make_one(lat=0, lon=0, key=1, value=5),
+            self._make_one(lat=0, lon=0, key=2, value=5),
         ]
         session.add_all(stats)
         session.commit()
