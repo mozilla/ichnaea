@@ -1,5 +1,4 @@
-from boto.s3.connection import S3Connection
-import boto.s3.key
+import boto
 import hashlib
 import os
 import shutil
@@ -11,9 +10,8 @@ class S3Backend(object):
         from ichnaea import config
         conf = config()
         self.heka = heka
-        self.access_key_id = conf.get('ichnaea', 'access_key_id')
-        self.secret_access_key = conf.get('ichnaea', 'secret_access_key')
         self.bucket_name = conf.get('ichnaea', 's3_backup_bucket')
+        self.s3_prefix = conf.get('ichnaea', 's3_key_prefix')
 
     def check_archive(self, expected_sha, s3_key):
         short_fname = os.path.split(s3_key)[-1]
@@ -22,10 +20,10 @@ class S3Backend(object):
         s3_copy = os.path.join(tmpdir, short_fname+".s3")
 
         try:
-            conn = S3Connection(self.access_key_id, self.secret_access_key)
-            bucket = conn.get_bucket(self.bucket_name)
+            conn = boto.connect_s3()
+            bucket = conn.get_bucket(self.bucket_name, validate=False)
             k = boto.s3.key.Key(bucket)
-            k.key = s3_key
+            k.key = ''.join([self.s3_prefix, '/', s3_key])
             k.get_contents_to_filename(s3_copy)
 
             # Compare
@@ -41,10 +39,10 @@ class S3Backend(object):
 
     def backup_archive(self, s3_key, fname, delete_on_write=False):
         try:
-            conn = S3Connection(self.access_key_id, self.secret_access_key)
+            conn = boto.connect_s3()
             bucket = conn.get_bucket(self.bucket_name)
             k = boto.s3.key.Key(bucket)
-            k.key = s3_key
+            k.key = ''.join([self.s3_prefix, '/', s3_key])
             k.set_contents_from_filename(fname)
             return True
         except Exception:

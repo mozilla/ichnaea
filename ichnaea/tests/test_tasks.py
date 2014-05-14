@@ -803,7 +803,7 @@ class TestCellMeasureDump(CeleryTestCase):
 
         with mock_s3():
             with patch.object(S3Backend,
-                              'check_archive', lambda x, y, z: True):
+                              'backup_archive', lambda x, y, z: True):
                 zips = write_cellmeasure_s3_backups(False)
                 self.assertTrue(len(zips), 1)
                 fname = zips[0]
@@ -838,7 +838,7 @@ class TestCellMeasureDump(CeleryTestCase):
 
         with mock_s3():
             with patch.object(S3Backend,
-                              'check_archive', lambda x, y, z: True):
+                              'backup_archive', lambda x, y, z: True):
                 zips = write_wifimeasure_s3_backups(False)
                 self.assertTrue(len(zips), 1)
                 fname = zips[0]
