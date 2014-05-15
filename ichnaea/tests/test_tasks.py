@@ -725,25 +725,15 @@ class TestWifiLocationUpdate(CeleryTestCase):
                                       delstat='deleted_wifi')
 
 
-class TestCellMeasureDump(CeleryTestCase):
+class TestMeasurementsDump(CeleryTestCase):
     def setUp(self):
-        super(TestCellMeasureDump, self).setUp()
+        super(TestMeasurementsDump, self).setUp()
 
         from ichnaea import config
         conf = config()
         self.batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
 
         self.session = self.db_master_session
-
-        import os
-        from alembic.config import Config
-        from alembic import command
-
-        ini = os.environ.get('ICHNAEA_CFG', 'ichnaea.ini')
-        alembic_ini = os.path.join(os.path.split(ini)[0],
-                                   'alembic.ini')
-        alembic_cfg = Config(alembic_ini)
-        command.stamp(alembic_cfg, "head")
 
     def test_journal_cell_measures(self):
         from ichnaea import config
