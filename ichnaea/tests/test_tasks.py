@@ -739,11 +739,7 @@ class TestMeasurementsDump(CeleryTestCase):
         self.START_ID = 49950
 
     def test_journal_cell_measures(self):
-        from ichnaea import config
-        conf = config()
-        batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
-
-        for i in range(batch_size*2):
+        for i in range(self.batch_size*2):
             cm = CellMeasure(id=i+self.START_ID)
             self.session.add(cm)
         self.session.commit()
@@ -751,22 +747,20 @@ class TestMeasurementsDump(CeleryTestCase):
         blocks = schedule_cellmeasure_archival()
         self.assertEquals(len(blocks), 2)
         block = blocks[0]
-        self.assertEquals(block, (self.START_ID, self.START_ID+batch_size))
+        self.assertEquals(block,
+                          (self.START_ID,
+                           self.START_ID+self.batch_size))
 
         block = blocks[1]
         self.assertEquals(block,
-                          (self.START_ID+batch_size,
-                           self.START_ID+2*batch_size))
+                          (self.START_ID+self.batch_size,
+                           self.START_ID+2*self.batch_size))
 
         blocks = schedule_cellmeasure_archival()
         self.assertEquals(len(blocks), 0)
 
     def test_journal_wifi_measures(self):
-        from ichnaea import config
-        conf = config()
-        batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
-
-        for i in range(batch_size*2):
+        for i in range(self.batch_size*2):
             cm = WifiMeasure(id=i+self.START_ID)
             self.session.add(cm)
         self.session.commit()
@@ -774,21 +768,20 @@ class TestMeasurementsDump(CeleryTestCase):
         blocks = schedule_wifimeasure_archival()
         self.assertEquals(len(blocks), 2)
         block = blocks[0]
-        self.assertEquals(block, (self.START_ID, self.START_ID+batch_size))
+        self.assertEquals(block,
+                          (self.START_ID,
+                           self.START_ID+self.batch_size))
 
         block = blocks[1]
         self.assertEquals(block,
-                          (self.START_ID+batch_size,
-                           self.START_ID+2*batch_size))
+                          (self.START_ID+self.batch_size,
+                           self.START_ID+2*self.batch_size))
 
         blocks = schedule_wifimeasure_archival()
         self.assertEquals(len(blocks), 0)
 
     def test_backup_cell_to_s3(self):
-        from ichnaea import config
-        conf = config()
-        batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
-        for i in range(batch_size):
+        for i in range(self.batch_size):
             cm = CellMeasure(id=i+self.START_ID)
             self.session.add(cm)
         self.session.commit()
@@ -796,7 +789,9 @@ class TestMeasurementsDump(CeleryTestCase):
         blocks = schedule_cellmeasure_archival()
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
-        self.assertEquals(block, (self.START_ID, self.START_ID+batch_size))
+        self.assertEquals(block,
+                          (self.START_ID,
+                           self.START_ID+self.batch_size))
 
         with mock_s3():
             with patch.object(S3Backend,
@@ -820,10 +815,7 @@ class TestMeasurementsDump(CeleryTestCase):
         self.assertEquals(block.archive_sha, actual_sha.hexdigest())
 
     def test_backup_wifi_to_s3(self):
-        from ichnaea import config
-        conf = config()
-        batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
-        for i in range(batch_size):
+        for i in range(self.batch_size):
             cm = WifiMeasure(id=i+self.START_ID)
             self.session.add(cm)
         self.session.commit()
@@ -831,7 +823,9 @@ class TestMeasurementsDump(CeleryTestCase):
         blocks = schedule_wifimeasure_archival()
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
-        self.assertEquals(block, (self.START_ID, self.START_ID+batch_size))
+        self.assertEquals(block,
+                          (self.START_ID,
+                           self.START_ID+self.batch_size))
 
         with mock_s3():
             with patch.object(S3Backend,
