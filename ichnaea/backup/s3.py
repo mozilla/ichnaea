@@ -5,6 +5,17 @@ import shutil
 import tempfile
 
 
+def compute_hash(zip_path):
+    sha = hashlib.sha1()
+    with open(zip_path, 'rb') as file_in:
+        while True:
+            data = file_in.read(4096)
+            if not data:
+                break
+            sha.update(data)
+    return sha.hexdigest()
+
+
 class S3Backend(object):
     def __init__(self, heka):
         from ichnaea import config
@@ -27,9 +38,8 @@ class S3Backend(object):
             k.get_contents_to_filename(s3_copy)
 
             # Compare
-            s3 = hashlib.sha1()
-            s3.update(open(s3_copy, 'rb').read())
-            return s3.hexdigest() == expected_sha
+            s3_hash = compute_hash(s3_copy)
+            return s3_hash == expected_sha
         except Exception:
             self.heka.error('s3 verification error')
             return False

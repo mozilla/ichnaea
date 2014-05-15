@@ -3,14 +3,13 @@ from contextlib import closing
 from datetime import datetime
 from datetime import timedelta
 import tempfile
-import hashlib
 import os
 import csv
 import shutil
 from zipfile import ZipFile, ZIP_DEFLATED
 
 
-from ichnaea.backup import S3Backend
+from ichnaea.backup import S3Backend, compute_hash
 from celery import Task
 from kombu.serialization import (
     dumps as kombu_dumps,
@@ -741,14 +740,14 @@ def write_measure_s3_backups(self, measure_type,
                         data_row = [getattr(row, cname) for cname in col_names]
                         csv_out.writerow(data_row)
 
-            sha = hashlib.sha1()
-            sha.update(open(zip_path, 'rb').read())
+            cmb.archive_sha = compute_hash(zip_path)
 
-            cmb.archive_sha = sha.hexdigest()
             try:
                 s3 = S3Backend(self.heka_client)
                 if not s3.backup_archive(cmb.s3_key, zip_path):
                     continue
+                self.heka_client.incr('s3.backup.%s',
+                                      (cmb.end_id-cmb.start_id+1))
             finally:
                 if cleanup_zip:
                     if os.path.exists(zip_path):
