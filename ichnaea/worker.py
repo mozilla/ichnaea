@@ -88,15 +88,33 @@ CELERYBEAT_SCHEDULE = {
     #     'schedule': crontab(hour=0, minute=15),
     # }
 
-    # 's3-batch-measures-for-backup': {
-    #     'task': 'ichnaea.tasks.schedule_measure_archival',
+    # 's3-batch-cellmeasures-for-backup': {
+    #     'task': 'ichnaea.tasks.schedule_cellmeasure_archival',
+    #     'schedule': crontab(hour=0, minute=15),
+    # },
+    # 's3-write-cellbackups': {
+    #     'task': 'ichnaea.tasks.write_cellmeasure_s3_backups',
+    #     'schedule': crontab(hour=3, minute=0),
+    # }
+
+    # 's3-batch-wifimeasures-for-backup': {
+    #     'task': 'ichnaea.tasks.schedule_wifimeasure_archival',
+    #     'schedule': crontab(hour=0, minute=15),
+    # },
+    # 's3-write-wifibackups': {
+    #     'task': 'ichnaea.tasks.write_wifimeasure_s3_backups',
+    #     'schedule': crontab(hour=3, minute=0),
+    # }
+
+    # 's3-delete-wifimeasures': {
+    #     'task': 'ichnaea.tasks.delete_wifimeasure_records',
+    #     'schedule': crontab(hour=0, minute=15),
+    # },
+    # 's3-delete-cellmeasures': {
+    #     'task': 'ichnaea.tasks.delete_cellmeasure_records',
     #     'schedule': crontab(hour=0, minute=15),
     # },
 
-    # 's3-write-backups': {
-    #     'task': 'ichnaea.tasks.schedule_measure_archival',
-    #     'schedule': crontab(hour=0, minute=15),
-    # }
 }
 
 celery = Celery('ichnaea.worker')
