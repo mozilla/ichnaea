@@ -787,7 +787,7 @@ def schedule_measure_archival(self, measure_type, measure_cls):
         query = query.order_by(MeasureBlock.end_id.desc())
         record = query.first()
         if record:
-            min_id = record[0] + 1
+            min_id = record[0]
         else:
             query = session.query(measure_cls.id)
             query = query.order_by(measure_cls.id.asc())
@@ -797,26 +797,25 @@ def schedule_measure_archival(self, measure_type, measure_cls):
         query = session.query(measure_cls.id)
         query = query.order_by(measure_cls.id.desc())
         record = query.first()
-        max_id = record[0]
+
+        # We're using half-open ranges, so we need to bump the max_id
+        max_id = record[0] + 1
 
         if max_id - min_id < batch_size - 1:
             # Not enough to fill a block
             return blocks
 
-        this_max_id = min_id + batch_size - 1
+        this_max_id = min_id + batch_size
 
-        while (this_max_id - min_id + 1) >= batch_size:
+        while (this_max_id - min_id) == batch_size:
             cm_blk = MeasureBlock(start_id=min_id,
                                   end_id=this_max_id,
                                   measure_type=measure_type)
             blocks.append((cm_blk.start_id, cm_blk.end_id))
             session.add(cm_blk)
 
-            min_id = this_max_id+1
+            min_id = this_max_id
             this_max_id = min(batch_size+this_max_id, max_id)
-
-            if this_max_id > max_id:
-                break
         session.commit()
     return blocks
 

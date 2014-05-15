@@ -736,6 +736,7 @@ class TestMeasurementsDump(CeleryTestCase):
         self.batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
 
         self.session = self.db_master_session
+        self.START_ID = 49950
 
     def test_journal_cell_measures(self):
         from ichnaea import config
@@ -743,17 +744,19 @@ class TestMeasurementsDump(CeleryTestCase):
         batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
 
         for i in range(batch_size*2):
-            cm = CellMeasure(id=i+49950)
+            cm = CellMeasure(id=i+self.START_ID)
             self.session.add(cm)
         self.session.commit()
 
         blocks = schedule_cellmeasure_archival()
         self.assertEquals(len(blocks), 2)
         block = blocks[0]
-        self.assertEquals(block, (49950, 49950+batch_size-1))
+        self.assertEquals(block, (self.START_ID, self.START_ID+batch_size))
 
         block = blocks[1]
-        self.assertEquals(block, (49950+batch_size, 49950+2*batch_size-1))
+        self.assertEquals(block,
+                          (self.START_ID+batch_size,
+                           self.START_ID+2*batch_size))
 
         blocks = schedule_cellmeasure_archival()
         self.assertEquals(len(blocks), 0)
@@ -764,17 +767,19 @@ class TestMeasurementsDump(CeleryTestCase):
         batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
 
         for i in range(batch_size*2):
-            cm = WifiMeasure(id=i+49950)
+            cm = WifiMeasure(id=i+self.START_ID)
             self.session.add(cm)
         self.session.commit()
 
         blocks = schedule_wifimeasure_archival()
         self.assertEquals(len(blocks), 2)
         block = blocks[0]
-        self.assertEquals(block, (49950, 49950+batch_size-1))
+        self.assertEquals(block, (self.START_ID, self.START_ID+batch_size))
 
         block = blocks[1]
-        self.assertEquals(block, (49950+batch_size, 49950+2*batch_size-1))
+        self.assertEquals(block,
+                          (self.START_ID+batch_size,
+                           self.START_ID+2*batch_size))
 
         blocks = schedule_wifimeasure_archival()
         self.assertEquals(len(blocks), 0)
@@ -784,14 +789,14 @@ class TestMeasurementsDump(CeleryTestCase):
         conf = config()
         batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
         for i in range(batch_size):
-            cm = CellMeasure(id=i+49950)
+            cm = CellMeasure(id=i+self.START_ID)
             self.session.add(cm)
         self.session.commit()
 
         blocks = schedule_cellmeasure_archival()
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
-        self.assertEquals(block, (49950, 49950+batch_size-1))
+        self.assertEquals(block, (self.START_ID, self.START_ID+batch_size))
 
         with mock_s3():
             with patch.object(S3Backend,
@@ -819,14 +824,14 @@ class TestMeasurementsDump(CeleryTestCase):
         conf = config()
         batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
         for i in range(batch_size):
-            cm = WifiMeasure(id=i+49950)
+            cm = WifiMeasure(id=i+self.START_ID)
             self.session.add(cm)
         self.session.commit()
 
         blocks = schedule_wifimeasure_archival()
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
-        self.assertEquals(block, (49950, 49950+batch_size-1))
+        self.assertEquals(block, (self.START_ID, self.START_ID+batch_size))
 
         with mock_s3():
             with patch.object(S3Backend,
