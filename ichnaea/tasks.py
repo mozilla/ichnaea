@@ -746,8 +746,8 @@ def write_measure_s3_backups(self, measure_type,
                 s3 = S3Backend(self.heka_client)
                 if not s3.backup_archive(cmb.s3_key, zip_path):
                     continue
-                self.heka_client.incr('s3.backup.%s',
-                                      (cmb.end_id-cmb.start_id+1))
+                self.heka_client.incr('s3.backup.%s' % measure_type,
+                                      (cmb.end_id-cmb.start_id))
             finally:
                 if cleanup_zip:
                     if os.path.exists(zip_path):
