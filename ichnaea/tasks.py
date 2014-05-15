@@ -799,7 +799,7 @@ def schedule_measure_archival(self, measure_type, measure_cls):
         record = query.first()
         max_id = record[0]
 
-        if max_id - min_id + 1 < batch_size:
+        if max_id - min_id < batch_size - 1:
             # Not enough to fill a block
             return blocks
 

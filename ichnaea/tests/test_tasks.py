@@ -227,7 +227,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         keys = dict(radio=1, mcc=1, mnc=1, lac=1)
         measures = [
             CellMeasure(lat=ctr + xd, lon=ctr + yd, cid=cell, **keys)
-            for cell in range(0, 10)
+            for cell in range(10)
             for ctr in [cell * big]
             for (xd, yd) in [(small, small),
                              (small, -small),
@@ -239,7 +239,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         cells = [
             Cell(lat=ctr, lon=ctr, cid=cell,
                  new_measures=4, total_measures=1, **keys)
-            for cell in range(0, 10)
+            for cell in range(10)
             for ctr in [cell * big]
         ]
 
@@ -280,7 +280,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         keys = dict(radio=1, mcc=1, mnc=1, lac=1)
         measures = [
             CellMeasure(lat=ctr + xd, lon=ctr + yd, cid=cell, **keys)
-            for cell in range(0, 6)
+            for cell in range(6)
             for ctr in [(2 ** cell) * big]
             for (xd, yd) in [(small, small),
                              (small, -small),
@@ -292,7 +292,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         cells = [
             Cell(lat=ctr, lon=ctr, cid=cell,
                  new_measures=4, total_measures=1, **keys)
-            for cell in range(0, 6)
+            for cell in range(6)
             for ctr in [(2 ** cell) * big]
         ]
 
@@ -349,7 +349,7 @@ class TestCellLocationUpdate(CeleryTestCase):
             ((85000000, 85000000), 93871),
             ((90000000, 90000000), 15630),
         ]
-        for i in range(0, 9):
+        for i in range(9):
             session.expire(lac)
             k = CellKey(cid=i, **keys)
             result = remove_cell.delay([k])
@@ -742,7 +742,7 @@ class TestMeasurementsDump(CeleryTestCase):
         conf = config()
         batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
 
-        for i in range(0, batch_size*2):
+        for i in range(batch_size*2):
             cm = CellMeasure(id=i+49950)
             self.session.add(cm)
         self.session.commit()
@@ -763,7 +763,7 @@ class TestMeasurementsDump(CeleryTestCase):
         conf = config()
         batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
 
-        for i in range(0, batch_size*2):
+        for i in range(batch_size*2):
             cm = WifiMeasure(id=i+49950)
             self.session.add(cm)
         self.session.commit()
@@ -783,7 +783,7 @@ class TestMeasurementsDump(CeleryTestCase):
         from ichnaea import config
         conf = config()
         batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
-        for i in range(0, batch_size):
+        for i in range(batch_size):
             cm = CellMeasure(id=i+49950)
             self.session.add(cm)
         self.session.commit()
@@ -818,7 +818,7 @@ class TestMeasurementsDump(CeleryTestCase):
         from ichnaea import config
         conf = config()
         batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
-        for i in range(0, batch_size):
+        for i in range(batch_size):
             cm = WifiMeasure(id=i+49950)
             self.session.add(cm)
         self.session.commit()
