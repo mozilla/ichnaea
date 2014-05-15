@@ -20,12 +20,14 @@ from ichnaea.models import (
 
 from ichnaea.backup.s3 import S3Backend
 from ichnaea.backup.tests import mock_s3
-from ichnaea.tasks import delete_wifimeasure_records
-from ichnaea.tasks import delete_cellmeasure_records
-from ichnaea.tasks import schedule_cellmeasure_archival
-from ichnaea.tasks import schedule_wifimeasure_archival
-from ichnaea.tasks import write_cellmeasure_s3_backups
-from ichnaea.tasks import write_wifimeasure_s3_backups
+from ichnaea.tasks import (
+    delete_cellmeasure_records,
+    delete_wifimeasure_records,
+    schedule_cellmeasure_archival,
+    schedule_wifimeasure_archival,
+    write_cellmeasure_s3_backups,
+    write_wifimeasure_s3_backups,
+)
 from ichnaea.tests.base import CeleryTestCase
 
 
