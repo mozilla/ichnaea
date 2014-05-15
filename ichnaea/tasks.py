@@ -852,6 +852,6 @@ def delete_measure_records(self, measure_cls, measure_type, cleanup_zip):
 
             s3 = S3Backend(self.heka_client)
             if s3.check_archive(expected_sha, cmb.s3_key):
-                session.execute("delete from %s where id >= %d and id <= %d" %
-                                (measure_cls.__table__.name, cmb.start_id, cmb.end_id))
+                q = session.query(measure_cls)
+                q.filter(measure_cls.id >= cmb.start_id, measure_cls.id <= cmb.end_id).delete()
                 session.commit()
