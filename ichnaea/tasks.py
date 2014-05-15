@@ -785,19 +785,19 @@ def schedule_measure_archival(self, measure_type, measure_cls):
         query = session.query(MeasureBlock.end_id)
         query = query.filter(MeasureBlock.measure_type == measure_type)
         query = query.order_by(MeasureBlock.end_id.desc())
-        records = query.limit(1).all()
-        if not len(records):
-            query = session.query(measure_cls.id)
-            query = query.order_by(measure_cls.id.asc()).limit(1)
-            records = query.all()
-            min_id = records[0][0]
+        record = query.first()
+        if record:
+            min_id = record[0] + 1
         else:
-            min_id = records[0][0] + 1
+            query = session.query(measure_cls.id)
+            query = query.order_by(measure_cls.id.asc())
+            record = query.first()
+            min_id = record[0]
 
         query = session.query(measure_cls.id)
         query = query.order_by(measure_cls.id.desc())
-        records = query.limit(1).all()
-        max_id = records[0][0]
+        record = query.first()
+        max_id = record[0]
 
         if max_id - min_id + 1 < batch_size:
             # Not enough to fill a block
