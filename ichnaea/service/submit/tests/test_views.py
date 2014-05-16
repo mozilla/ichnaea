@@ -82,7 +82,11 @@ class TestSubmit(CeleryAppTestCase):
 
     def test_ok_cell_radio(self):
         app = self.app
-        cell_data = [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
+        cell_data = [{'radio': 'gsm',
+                      "mcc": 123,
+                      "mnc": 1,
+                      "lac": 2,
+                      "cid": 1234}]
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3456781,
                                       "lon": 23.4567892,
@@ -579,3 +583,63 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
         self.assertTrue(len(res.json['errors']) == 0)
+
+    def test_missing_radio_in_measure(self):
+        app = self.app
+        cell_data = [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
+        res = app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.3456781,
+                                      "lon": 23.4567892,
+                                      "radio": "gsm",
+                                      "cell": cell_data}]},
+            status=204)
+        self.assertEqual(res.body, '')
+        session = self.db_master_session
+        measure_result = session.query(Measure).all()
+        self.assertEqual(len(measure_result), 0)
+
+        cell_result = session.query(CellMeasure).all()
+        self.assertEqual(len(cell_result), 0)
+
+        cell_data = [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234},
+                     {'radio': 'gsm',
+                      "mcc": 123,
+                      "mnc": 1,
+                      "lac": 2,
+                      "cid": 1234}, ]
+        res = app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.3456781,
+                                      "lon": 23.4567892,
+                                      "radio": "gsm",
+                                      "cell": cell_data}]},
+            status=204)
+        self.assertEqual(res.body, '')
+        session = self.db_master_session
+        measure_result = session.query(Measure).all()
+        self.assertEqual(len(measure_result), 1)
+
+        cell_result = session.query(CellMeasure).all()
+        self.assertEqual(len(cell_result), 1)
+        item = cell_result[0]
+        self.assertEqual(item.radio, RADIO_TYPE['gsm'])
+
+    def test_missing_radio_top_level(self):
+        app = self.app
+        cell_data = [{'radio': '',
+                      "mcc": 123,
+                      "mnc": 1,
+                      "lac": 2,
+                      "cid": 1234}]
+        res = app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.3456781,
+                                      "lon": 23.4567892,
+                                      "radio": "gsm",
+                                      "cell": cell_data}]},
+            status=204)
+        self.assertEqual(res.body, '')
+        session = self.db_master_session
+        measure_result = session.query(Measure).all()
+        self.assertEqual(len(measure_result), 0)
+
+        cell_result = session.query(CellMeasure).all()
+        self.assertEqual(len(cell_result), 0)
