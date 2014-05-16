@@ -76,7 +76,6 @@ def submit_view(request):
     # manages to submit us a huge single request
     for i in range(0, len(items), 100):
         insert_measures.delay(
-            # TODO convert items to json with support for decimal/datetime
             items=dumps(items[i:i + 100]),
             nickname=nickname,
         )
