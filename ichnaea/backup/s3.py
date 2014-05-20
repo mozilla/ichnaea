@@ -44,8 +44,8 @@ class S3Backend(object):
             self.heka.error('s3 verification error')
             return False
         finally:
-            if os.path.exists(s3_copy):
-                shutil.rmtree(s3_copy)
+            if os.path.exists(tmpdir):
+                shutil.rmtree(tmpdir)
 
     def backup_archive(self, s3_key, fname, delete_on_write=False):
         try:

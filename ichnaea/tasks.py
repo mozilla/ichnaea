@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-from contextlib import closing
 from datetime import datetime
 from datetime import timedelta
 import tempfile
@@ -653,12 +652,15 @@ def selfdestruct_tempdir(s3_key):
         yield base_path, zip_path
     finally:
         try:
-            with closing(ZipFile(zip_path, "w", ZIP_DEFLATED)) as z:
+            z = ZipFile(zip_path, "w", ZIP_DEFLATED)
+            try:
                 for root, dirs, files in os.walk(base_path):
                     for fn in files:
                         absfn = os.path.join(root, fn)
                         zip_fn = absfn[len(base_path)+len(os.sep):]
                         z.write(absfn, zip_fn)
+            finally:
+                z.close()
         finally:
             shutil.rmtree(base_path)
 
