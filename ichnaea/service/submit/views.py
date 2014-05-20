@@ -17,6 +17,23 @@ def configure_submit(config):
 def check_cell_or_wifi(data, errors):
     cell = data.get('cell', ())
     wifi = data.get('wifi', ())
+
+    if any(cell) and data['radio'] == '':
+        # Skip the whole set of CellMeasure records
+        return False
+
+    # Clean up the cell data
+    skips = set()
+    for idx, c in enumerate(cell):
+        if c['radio'] == '':
+            skips.add(idx)
+
+    skips = list(skips)
+    skips.sort(reverse=True)
+    for idx in skips:
+        del cell[idx]
+    data['cell'] = tuple(cell)
+
     if not any(wifi) and not any(cell):
         return False
     return True
@@ -59,7 +76,6 @@ def submit_view(request):
     # manages to submit us a huge single request
     for i in range(0, len(items), 100):
         insert_measures.delay(
-            # TODO convert items to json with support for decimal/datetime
             items=dumps(items[i:i + 100]),
             nickname=nickname,
         )
