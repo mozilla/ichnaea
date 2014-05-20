@@ -641,10 +641,21 @@ def update_lac(self, radio, mcc, mnc, lac):
 
 @contextmanager
 def selfdestruct_tempdir(s3_key):
+    """
+    We need two temp directories to do this properly.
+
+    The base_path is a temp directory that holds all the content that
+    will go into our zip file.. This is effectively a working
+    directory that gets immmediately deleted once the zip file is
+    ready.
+
+    The zip_path is the filename of the zip file that will get
+    uploaded into S3.  It is the responsibility of the caller of
+    selfdestruct_tempdir to remove the zip_path and parent directory.
+    """
     short_name = os.path.split(s3_key)[-1]
 
     base_path = tempfile.mkdtemp()
-
     s3_path = os.path.join(tempfile.mkdtemp(), short_name)
     try:
         zip_path = os.path.join(base_path, s3_path)
@@ -752,7 +763,9 @@ def write_measure_s3_backups(self, measure_type,
             finally:
                 if cleanup_zip:
                     if os.path.exists(zip_path):
-                        os.unlink(zip_path)
+                        zip_dir, zip_file = os.path.split(zip_path)
+                        if os.path.exists(zip_dir):
+                            shutil.rmtree(zip_dir)
                 else:
                     zips.append(zip_path)
 
