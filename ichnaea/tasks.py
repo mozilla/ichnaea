@@ -338,8 +338,7 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
                 measures = query.all()
 
                 if measures:
-                    lat_lons = [(m.lat, m.lon) for m in measures]
-                    calculate_new_position(cell, lat_lons, moving_cells,
+                    calculate_new_position(cell, measures, moving_cells,
                                            CELL_MAX_DIST_KM,
                                            backfill=False)
                     update_enclosing_lac(session, cell)
