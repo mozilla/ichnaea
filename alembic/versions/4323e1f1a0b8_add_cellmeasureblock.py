@@ -1,14 +1,14 @@
 """add MeasureBlock
 
-Revision ID: d8b7991c338
-Revises: 4323e1f1a0b8
-Create Date: 2014-05-05 16:19:00.256422
+Revision ID: 4323e1f1a0b8
+Revises: 51ba8090058d
+Create Date: 2014-05-05 13:43:43.004457
 
 """
 
 # revision identifiers, used by Alembic.
-revision = 'd8b7991c338'
-down_revision = '4323e1f1a0b8'
+revision = '4323e1f1a0b8'
+down_revision = '51ba8090058d'
 
 from alembic import op
 import sqlalchemy as sa
