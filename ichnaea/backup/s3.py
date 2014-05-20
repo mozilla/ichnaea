@@ -13,7 +13,7 @@ def compute_hash(zip_path):
             if not data:
                 break
             sha.update(data)
-    return sha.hexdigest()
+    return sha.digest()
 
 
 class S3Backend(object):

@@ -3,6 +3,7 @@ import datetime
 import re
 
 from sqlalchemy import (
+    BINARY,
     Column,
     DateTime,
     Index,
@@ -207,7 +208,7 @@ class CellBlacklist(_Model):
 
 
 class MeasureBlock(_Model):
-    __tablename__ = 'cell_measure_block'
+    __tablename__ = 'measure_block'
     __table_args__ = (
         Index('idx_cmblk_archive_date', 'archive_date'),
         Index('idx_cmblk_s3_key', 's3_key'),
@@ -229,7 +230,7 @@ class MeasureBlock(_Model):
     measure_type = Column(BigInteger(unsigned=True))
     archive_date = Column(DateTime)
     s3_key = Column(String(80))
-    archive_sha = Column(String(80))
+    archive_sha = Column(BINARY(length=20))
 
 
 class CellMeasure(_Model):

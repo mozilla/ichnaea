@@ -22,6 +22,7 @@ def upgrade():
                     sa.Column('end_id',
                               BigInteger(unsigned=True)),
                     sa.Column('archive_date', sa.DateTime()),
+                    sa.Column('archive_sha', sa.BINARY(length=20)),
                     sa.Column('s3_key', sa.String(80)),
                     mysql_engine='InnoDB',
                     mysql_charset='utf8',

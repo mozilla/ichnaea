@@ -812,7 +812,7 @@ class TestMeasurementsDump(CeleryTestCase):
 
         actual_sha = hashlib.sha1()
         actual_sha.update(open(fname, 'rb').read())
-        self.assertEquals(block.archive_sha, actual_sha.hexdigest())
+        self.assertEquals(block.archive_sha, actual_sha.digest())
 
     def test_backup_wifi_to_s3(self):
         for i in range(self.batch_size):
@@ -846,7 +846,7 @@ class TestMeasurementsDump(CeleryTestCase):
 
         actual_sha = hashlib.sha1()
         actual_sha.update(open(fname, 'rb').read())
-        self.assertEquals(block.archive_sha, actual_sha.hexdigest())
+        self.assertEquals(block.archive_sha, actual_sha.digest())
 
     def test_delete_cell_measures(self):
         block = MeasureBlock()
