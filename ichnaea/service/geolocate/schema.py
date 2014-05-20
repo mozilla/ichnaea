@@ -17,6 +17,8 @@ class CellTowerSchema(MappingSchema):
     # required
     cellId = SchemaNode(Integer(), location="body", type='int')
     locationAreaCode = SchemaNode(Integer(), location="body", type='int')
+    radio = SchemaNode(String(), location="body", type='str',
+                       validator=OneOf(RADIO_TYPE_KEYS), missing='')
     mobileCountryCode = SchemaNode(Integer(), location="body", type='int')
     mobileNetworkCode = SchemaNode(Integer(), location="body", type='int')
     # optional
