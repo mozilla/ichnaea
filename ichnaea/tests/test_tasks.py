@@ -799,11 +799,14 @@ class TestMeasurementsDump(CeleryTestCase):
                 zips = write_cellmeasure_s3_backups(False)
                 self.assertTrue(len(zips), 1)
                 fname = zips[0]
-                with ZipFile(fname) as myzip:
+                myzip = ZipFile(fname)
+                try:
                     contents = set(myzip.namelist())
                     expected_contents = set(['alembic_revision.txt',
                                              'cell_measure.csv'])
                     self.assertEquals(expected_contents, contents)
+                finally:
+                    myzip.close()
 
         blocks = self.session.query(MeasureBlock).all()
 
@@ -833,11 +836,14 @@ class TestMeasurementsDump(CeleryTestCase):
                 zips = write_wifimeasure_s3_backups(False)
                 self.assertTrue(len(zips), 1)
                 fname = zips[0]
-                with ZipFile(fname) as myzip:
+                myzip = ZipFile(fname)
+                try:
                     contents = set(myzip.namelist())
                     expected_contents = set(['alembic_revision.txt',
                                              'wifi_measure.csv'])
                     self.assertEquals(expected_contents, contents)
+                finally:
+                    myzip.close()
 
         blocks = self.session.query(MeasureBlock).all()
 
