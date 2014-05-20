@@ -9,7 +9,7 @@ import shutil
 from zipfile import ZipFile, ZIP_DEFLATED
 
 
-from ichnaea.backup import S3Backend, compute_hash
+from ichnaea.backup.s3 import S3Backend, compute_hash
 from celery import Task
 from kombu.serialization import (
     dumps as kombu_dumps,

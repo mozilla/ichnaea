@@ -1,5 +1,5 @@
 from unittest2 import TestCase
-from ichnaea.backup import S3Backend
+from ichnaea.backup.s3 import S3Backend
 from mock import patch, MagicMock, Mock
 import boto
 from contextlib import contextmanager
@@ -18,7 +18,7 @@ class TestBackup(TestCase):
     def test_backup(self):
         from ichnaea import config
         conf = config()
-        prefix = conf.get('ichnaea', 's3_key_prefix')
+        prefix = conf.get('ichnaea', 's3_backup_key_prefix')
 
         with mock_s3() as mock_key:
             s3 = S3Backend(Mock())

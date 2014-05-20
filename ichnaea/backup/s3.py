@@ -22,7 +22,7 @@ class S3Backend(object):
         conf = config()
         self.heka = heka
         self.bucket_name = conf.get('ichnaea', 's3_backup_bucket')
-        self.s3_prefix = conf.get('ichnaea', 's3_key_prefix')
+        self.s3_prefix = conf.get('ichnaea', 's3_backup_key_prefix')
 
     def check_archive(self, expected_sha, s3_key):
         short_fname = os.path.split(s3_key)[-1]
