@@ -13,6 +13,7 @@ from ichnaea.exceptions import BaseJSONError
 MSG_EMPTY = 'No JSON body was provided.'
 MSG_GZIP = 'Error decompressing gzip data stream.'
 MSG_ONE_OF = 'You need to provide a mapping with least one cell or wifi entry.'
+MSG_BAD_RADIO = 'Radio fields were not consistent in the cellTower data.'
 
 
 class JSONError(HTTPError, BaseJSONError):
@@ -47,7 +48,7 @@ def preprocess_request(request, schema, extra_checks=(), response=JSONError):
 
     if not body or (errors and response is not None):
         if response is not None:
-            request.registry.heka_client.debug('error_handler' + repr(errors))
+            request.registry.heka_client.error('error_handler' + repr(errors))
             raise response(errors)
 
     # schema validation, but report at most one error at a time
@@ -79,7 +80,7 @@ def preprocess_request(request, schema, extra_checks=(), response=JSONError):
 
     if errors and response is not None:
         # the response / None check is used in schema tests
-        request.registry.heka_client.debug('error_handler' + repr(errors))
+        request.registry.heka_client.error('error_handler' + repr(errors))
         raise response(errors)
 
     return (validated, errors)

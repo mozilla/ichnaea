@@ -269,3 +269,117 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
 
         self.check_expected_heka_messages(counter=['geolocate.no_api_key'])
+
+    def test_ok_cell_radio_in_celltowers(self):
+        app = self.app
+        session = self.db_slave_session
+        cell = Cell()
+        cell.lat = 123456781
+        cell.lon = 234567892
+        cell.radio = 0
+        cell.mcc = 123
+        cell.mnc = 1
+        cell.lac = 2
+        cell.cid = 1234
+        session.add(cell)
+        session.commit()
+
+        res = app.post_json(
+            '/v1/geolocate?key=test', {
+                "cellTowers": [
+                    {"radio": "gsm",
+                     "mobileCountryCode": 123,
+                     "mobileNetworkCode": 1,
+                     "locationAreaCode": 2,
+                     "cellId": 1234},
+                ]},
+            status=200)
+
+        self.check_expected_heka_messages(
+            counter=['http.request', 'geolocate.api_key.test']
+        )
+
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {"location": {"lat": 12.3456781,
+                                                 "lng": 23.4567892},
+                                    "accuracy": 10000.0})
+
+    def test_ok_cell_radio_in_celltowers_dupes(self):
+        app = self.app
+        session = self.db_slave_session
+        cell = Cell()
+        cell.lat = 123456781
+        cell.lon = 234567892
+        cell.radio = 0
+        cell.mcc = 123
+        cell.mnc = 1
+        cell.lac = 2
+        cell.cid = 1234
+        session.add(cell)
+        session.commit()
+        res = app.post_json(
+            '/v1/geolocate?key=test', {
+                "cellTowers": [
+                    {"radio": "gsm",
+                     "mobileCountryCode": 123,
+                     "mobileNetworkCode": 1,
+                     "locationAreaCode": 2,
+                     "cellId": 1234},
+                    {"radio": "gsm",
+                     "mobileCountryCode": 123,
+                     "mobileNetworkCode": 1,
+                     "locationAreaCode": 2,
+                     "cellId": 1234},
+                ]},
+            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {"location": {"lat": 12.3456781,
+                                                 "lng": 23.4567892},
+                                    "accuracy": 10000.0})
+
+    def test_inconsistent_cell_radio_in_towers(self):
+        app = self.app
+        session = self.db_slave_session
+        cell = Cell()
+        cell.lat = 123456781
+        cell.lon = 234567892
+        cell.radio = 0
+        cell.mcc = 123
+        cell.mnc = 1
+        cell.lac = 2
+        cell.cid = 1234
+        session.add(cell)
+        session.commit()
+
+        res = app.post_json(
+            '/v1/geolocate?key=test', {
+                "cellTowers": [
+                    {"radio": "gsm",
+                     "mobileCountryCode": 123,
+                     "mobileNetworkCode": 1,
+                     "locationAreaCode": 2,
+                     "cellId": 1234},
+                    {"radio": "cdma",
+                     "mobileCountryCode": 123,
+                     "mobileNetworkCode": 1,
+                     "locationAreaCode": 2,
+                     "cellId": 1234},
+                ]},
+            status=400)
+
+        self.check_expected_heka_messages(
+            counter=['http.request', 'geolocate.api_key.test']
+        )
+
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(
+            res.json, {"error": {
+                "errors": [{
+                    "domain": "global",
+                    "reason": "parseError",
+                    "message": "Parse Error",
+                }],
+                "code": 400,
+                "message": "Parse Error"
+            }}
+        )

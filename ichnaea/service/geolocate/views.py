@@ -7,6 +7,7 @@ from ichnaea.exceptions import BaseJSONError
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.error import (
+    MSG_BAD_RADIO,
     MSG_ONE_OF,
     preprocess_request,
 )
@@ -64,6 +65,19 @@ def geolocate_validator(data, errors):
         return
     cell = data.get('cellTowers', ())
     wifi = data.get('wifiAccessPoints', ())
+
+    # If a radio field is populated in any one of the cells in
+    # cellTowers, this is a buggy geolocate call from FirefoxOS.
+    # Just assume that we want to use the radio field in cellTowers
+    if data['radioType'] == '':
+        for c in cell:
+            cell_radio = c['radio']
+            if cell_radio != '' and data['radioType'] == '':
+                data['radioType'] = cell_radio
+            elif cell_radio != '' and data['radioType'] != cell_radio:
+                errors.append(dict(name='body', description=MSG_BAD_RADIO))
+                break
+
     if not any(wifi) and not any(cell):
         errors.append(dict(name='body', description=MSG_ONE_OF))
 
