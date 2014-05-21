@@ -301,12 +301,13 @@ def update_cell_measure_count(cell_key, count, utcnow, session):
 
     stmt = Cell.__table__.insert(
         on_duplicate='new_measures = new_measures + %s, '
-                     'total_measures = total_measures + %s' % (count, count)
+        'total_measures = total_measures + %s' % (count, count)
     ).values(
         created=utcnow, radio=cell_key.radio,
         mcc=cell_key.mcc, mnc=cell_key.mnc, lac=cell_key.lac, cid=cell_key.cid,
         psc=cell_key.psc, new_measures=count, total_measures=count)
     session.execute(stmt)
+    session.commit()
     return new_cell
 
 

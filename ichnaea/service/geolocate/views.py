@@ -1,9 +1,6 @@
-from pyramid.httpexceptions import HTTPError
 from pyramid.httpexceptions import HTTPNotFound
-from pyramid.response import Response
 
 from ichnaea.decimaljson import dumps
-from ichnaea.exceptions import BaseJSONError
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.error import (
@@ -12,6 +9,7 @@ from ichnaea.service.error import (
     preprocess_request,
 )
 from ichnaea.service.base import check_api_key
+from ichnaea.service.errors import JSONError
 from ichnaea.service.search.views import (
     search_cell,
     search_cell_lac,
@@ -32,26 +30,6 @@ NOT_FOUND = {
     }
 }
 NOT_FOUND = dumps(NOT_FOUND)
-
-PARSE_ERROR = {
-    "error": {
-        "errors": [{
-            "domain": "global",
-            "reason": "parseError",
-            "message": "Parse Error",
-        }],
-        "code": 400,
-        "message": "Parse Error"
-    }
-}
-PARSE_ERROR = dumps(PARSE_ERROR)
-
-
-class JSONError(HTTPError, BaseJSONError):
-    def __init__(self, errors, status=400):
-        Response.__init__(self, PARSE_ERROR)
-        self.status = status
-        self.content_type = 'application/json'
 
 
 def configure_geolocate(config):
