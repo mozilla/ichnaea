@@ -8,6 +8,9 @@ from ichnaea.models import (
     Cell,
     Wifi,
     CELLID_LAC,
+    CELL_MIN_ACCURACY,
+    WIFI_MIN_ACCURACY,
+    GEOIP_CITY_ACCURACY,
 )
 from ichnaea.tests.base import AppTestCase
 from ichnaea.service.base import NO_API_KEY
@@ -45,7 +48,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0010000, "lon": 1.0020000,
-                                    "accuracy": 10000})
+                                    "accuracy": CELL_MIN_ACCURACY})
 
         self.check_expected_heka_messages(
             total=5,
@@ -229,7 +232,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0000100, "lon": 1.0000120,
-                                    "accuracy": 100})
+                                    "accuracy": WIFI_MIN_ACCURACY})
 
     def test_wifi_not_closeby(self):
         app = self.app
@@ -299,7 +302,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0010000, "lon": 1.0020000,
-                                    "accuracy": 10000})
+                                    "accuracy": CELL_MIN_ACCURACY})
 
     def test_cell_miss_lac_hit(self):
         app = self.app
@@ -310,7 +313,7 @@ class TestSearch(AppTestCase):
             Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
             Cell(lat=10060000, lon=10060000, radio=2, cid=6, **key),
             Cell(lat=10026666, lon=10033333, radio=2, cid=CELLID_LAC,
-                 range=50000, **key),
+                 range=500000, **key),
         ]
         session.add_all(data)
         session.commit()
@@ -325,7 +328,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0026666,
                                     "lon": 1.0033333,
-                                    "accuracy": 50000})
+                                    "accuracy": 500000})
 
     def test_cell_hit_ignores_lac(self):
         app = self.app
@@ -351,7 +354,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0020000,
                                     "lon": 1.0040000,
-                                    "accuracy": 10000})
+                                    "accuracy": CELL_MIN_ACCURACY})
 
     def test_lac_miss(self):
         app = self.app
@@ -405,7 +408,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0010000, "lon": 1.0020000,
-                                    "accuracy": 10000})
+                                    "accuracy": CELL_MIN_ACCURACY})
 
     def test_geoip_fallback(self):
         app = self.app
@@ -420,7 +423,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 37.5079, "lon": -121.96,
-                                    "accuracy": 40000})
+                                    "accuracy": GEOIP_CITY_ACCURACY})
 
         self.check_expected_heka_messages(
             total=5,
