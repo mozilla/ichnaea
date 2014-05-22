@@ -8,6 +8,10 @@ from ichnaea.models import (
     to_degrees,
     to_cellkey,
     join_cellkey,
+    WIFI_MIN_ACCURACY,
+    CELL_MIN_ACCURACY,
+    LAC_MIN_ACCURACY,
+    GEOIP_CITY_ACCURACY
 )
 from ichnaea.decimaljson import (
     quantize,
@@ -81,7 +85,7 @@ def search_cell(session, data):
         'lat': quantize(avg_lat),
         'lon': quantize(avg_lon),
         'accuracy': estimate_accuracy(avg_lat, avg_lon,
-                                      cells, 10000),
+                                      cells, CELL_MIN_ACCURACY),
     }
 
 
@@ -114,7 +118,7 @@ def search_cell_lac(session, data):
     return {
         'lat': quantize(lac.lat),
         'lon': quantize(lac.lon),
-        'accuracy': max(10000, lac.range),
+        'accuracy': max(LAC_MIN_ACCURACY, lac.range),
     }
 
 
@@ -178,7 +182,7 @@ def search_wifi(session, data):
                     'lat': quantize(avg_lat),
                     'lon': quantize(avg_lon),
                     'accuracy': estimate_accuracy(avg_lat, avg_lon,
-                                                  c, 100),
+                                                  c, WIFI_MIN_ACCURACY),
                 }
 
             if w is None:
@@ -203,7 +207,7 @@ def search_geoip(geoip_db, client_addr):
     return {
         'lat': r['latitude'],
         'lon': r['longitude'],
-        'accuracy': 40 * 1000
+        'accuracy': GEOIP_CITY_ACCURACY
     }
 
 

@@ -44,6 +44,16 @@ MIN_ALTITUDE = -10911
 # Karman Line, edge of space.
 MAX_ALTITUDE = 100000
 
+
+# Empirical 95th percentile accuracy of ichnaea's responses,
+# from feedback testing of measurements as queries.
+WIFI_MIN_ACCURACY = 100
+CELL_MIN_ACCURACY = 5000
+LAC_MIN_ACCURACY = 20000
+
+# Pure guesswork, "size of a city"
+GEOIP_CITY_ACCURACY = 50000
+
 # Numeric constant used to indicate "virtual cells" for LACs, in db.
 CELLID_LAC = -2
 

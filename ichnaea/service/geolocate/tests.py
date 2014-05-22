@@ -5,6 +5,8 @@ from ichnaea.models import (
     Cell,
     Wifi,
     CELLID_LAC,
+    CELL_MIN_ACCURACY,
+    GEOIP_CITY_ACCURACY,
 )
 from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.tests.base import AppTestCase
@@ -49,7 +51,7 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"location": {"lat": 12.3456781,
                                                  "lng": 23.4567892},
-                                    "accuracy": 10000.0})
+                                    "accuracy": CELL_MIN_ACCURACY})
 
     def test_ok_wifi(self):
         app = self.app
@@ -160,7 +162,7 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {'location': {"lat": 1.0020000,
                                                  "lng": 1.0040000},
-                                    "accuracy": 10000.0})
+                                    "accuracy": CELL_MIN_ACCURACY})
 
     def test_lac_miss(self):
         app = self.app
@@ -211,7 +213,7 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"location": {"lat": 37.5079,
                                                  "lng": -121.96},
-                                    "accuracy": 40000.0})
+                                    "accuracy": GEOIP_CITY_ACCURACY})
 
     def test_parse_error(self):
         app = self.app
@@ -302,7 +304,7 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"location": {"lat": 12.3456781,
                                                  "lng": 23.4567892},
-                                    "accuracy": 10000.0})
+                                    "accuracy": CELL_MIN_ACCURACY})
 
     def test_ok_cell_radio_in_celltowers_dupes(self):
         app = self.app
@@ -335,7 +337,7 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"location": {"lat": 12.3456781,
                                                  "lng": 23.4567892},
-                                    "accuracy": 10000.0})
+                                    "accuracy": CELL_MIN_ACCURACY})
 
     def test_inconsistent_cell_radio_in_towers(self):
         app = self.app
