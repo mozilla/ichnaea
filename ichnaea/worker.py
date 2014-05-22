@@ -145,6 +145,9 @@ def configure(celery=celery):
         broker_options['connect_args'] = broker_connect_args
     elif 'redis' in broker_url:
         broker_options = {}
+        # Based on celery / redis caveats
+        # celery.rtfd.org/en/latest/getting-started/brokers/redis.html#caveats
+        broker_options['fanout_patterns'] = True
         broker_options['fanout_prefix'] = True
         broker_options['visibility_timeout'] = 3600
 
