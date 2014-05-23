@@ -132,18 +132,19 @@ def geolocate_view(request):
         schema=GeoLocateSchema(),
         extra_checks=(geolocate_validator, ),
         response=JSONError,
+        accept_empty=True,
     )
 
     session = request.db_slave_session
     result = None
 
-    if data['wifiAccessPoints']:
+    if data and data['wifiAccessPoints']:
         result = search_wifi_ap(session, data)
         if result is not None:
             heka_client.incr('geolocate.wifi_hit')
             heka_client.timer_send('geolocate.accuracy.wifi',
                                    result['accuracy'])
-    else:
+    elif data:
         result = search_cell_tower(session, data)
         if result is not None:
             heka_client.incr('geolocate.cell_hit')

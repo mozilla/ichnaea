@@ -230,31 +230,35 @@ def search_view(request):
         request,
         schema=SearchSchema(),
         extra_checks=(check_cell_or_wifi, ),
+        accept_empty=True,
     )
 
     session = request.db_slave_session
     result = None
 
-    if data['wifi']:
+    if data and data['wifi']:
         result = search_wifi(session, data)
         if result is not None:
             heka_client.incr('search.wifi_hit')
             heka_client.timer_send('search.accuracy.wifi',
                                    result['accuracy'])
-    if result is None:
+
+    if result is None and data:
         # no wifi result found, fall back to cell
         result = search_cell(session, data)
         if result is not None:
             heka_client.incr('search.cell_hit')
             heka_client.timer_send('search.accuracy.cell',
                                    result['accuracy'])
-    if result is None:
+
+    if result is None and data:
         # no direct cell result found, try cell LAC
         result = search_cell_lac(session, data)
         if result is not None:
             heka_client.incr('search.cell_lac_hit')
             heka_client.timer_send('search.accuracy.cell_lac',
                                    result['accuracy'])
+
     if result is None and request.client_addr:
         # no cell or wifi, fall back again to geoip
         result = search_geoip(request.registry.geoip_db,

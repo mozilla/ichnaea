@@ -434,6 +434,26 @@ class TestSearch(AppTestCase):
                      ('http.request', 1)]
         )
 
+    def test_empty_request_means_geoip(self):
+        app = self.app
+        res = app.post_json(
+            '/v1/search?key=test', {},
+            extra_environ={'HTTP_X_FORWARDED_FOR': '66.92.181.240'},
+            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {"status": "ok",
+                                    "lat": 37.5079, "lon": -121.96,
+                                    "accuracy": GEOIP_CITY_ACCURACY})
+
+        self.check_expected_heka_messages(
+            total=5,
+            timer=[('http.request', {'url_path': '/v1/search'}),
+                   ('search.accuracy.geoip', 1)],
+            counter=[('search.api_key.test', 1),
+                     ('search.geoip_hit', 1),
+                     ('http.request', 1)]
+        )
+
     def test_error(self):
         app = self.app
         res = app.post_json('/v1/search?key=test', {"cell": []}, status=400)
