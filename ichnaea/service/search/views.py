@@ -27,8 +27,11 @@ from ichnaea.geocalc import distance
 from collections import namedtuple
 import operator
 
-# maximum distance when clustering wifis, in km (0.5 => 500m)
-MAX_DIST = 0.5
+# parameters for wifi clustering
+MAX_WIFI_CLUSTER_KM = 0.5
+MIN_WIFIS_IN_QUERY = 2
+MIN_WIFIS_IN_CLUSTER = 2
+MAX_WIFIS_IN_CLUSTER = 5
 
 
 # helper class used in searching
@@ -124,7 +127,7 @@ def search_cell_lac(session, data):
 
 def search_wifi(session, data):
 
-    # estimate signal strength at -100 dBm if none is provided,
+    # Estimate signal strength at -100 dBm if none is provided,
     # which is worse than the 99th percentile of wifi dBms we
     # see in practice (-98).
     def signal_strength(w):
@@ -139,63 +142,91 @@ def search_wifi(session, data):
     wifi_keys = set(wifi_signals.keys())
 
     if not any(wifi_keys):
-        # no valid normalized keys
+        # No valid normalized keys.
         return None
-    if len(wifi_keys) < 3:
-        # we didn't even get three keys, bail out
+    if len(wifi_keys) < MIN_WIFIS_IN_QUERY:
+        # We didn't get enough keys.
         return None
     query = session.query(Wifi.key, Wifi.lat, Wifi.lon, Wifi.range).filter(
         Wifi.key.in_(wifi_keys)).filter(
         Wifi.lat.isnot(None)).filter(
         Wifi.lon.isnot(None))
     wifis = query.all()
-    if len(wifis) < 3:
-        # we got fewer than three actual matches
+    if len(wifis) < MIN_WIFIS_IN_QUERY:
+        # We didn't get enough matches.
         return None
 
     wifis = [Network(normalized_wifi_key(w[0]), w[1], w[2], w[3])
              for w in wifis]
 
-    # sort networks by signal strengths in query
+    # Sort networks by signal strengths in query.
     wifis.sort(lambda a, b: cmp(wifi_signals[b.key],
                                 wifi_signals[a.key]))
 
     clusters = []
 
+    # The first loop forms a set of clusters by distance,
+    # preferring the cluster with the stronger signal strength
+    # if there's a tie.
     for w in wifis:
-        # try to assign w to a cluster (but at most one)
+
+        # Try to assign w to a cluster (but at most one).
         for c in clusters:
             for n in c:
-                if distance(quantize(n.lat), quantize(n.lon),
-                            quantize(w.lat), quantize(w.lon)) <= MAX_DIST:
+                if distance(quantize(n.lat),
+                            quantize(n.lon),
+                            quantize(w.lat),
+                            quantize(w.lon)) <= MAX_WIFI_CLUSTER_KM:
                     c.append(w)
                     w = None
                     break
 
-            if len(c) >= 3:
-                # if we have a cluster with more than 3
-                # networks in it, return its centroid.
-                length = len(c)
-                avg_lat = sum([n.lat for n in c]) / length
-                avg_lon = sum([n.lon for n in c]) / length
-                return {
-                    'lat': quantize(avg_lat),
-                    'lon': quantize(avg_lon),
-                    'accuracy': estimate_accuracy(avg_lat, avg_lon,
-                                                  c, WIFI_MIN_ACCURACY),
-                }
-
             if w is None:
                 break
 
-        # if w didn't adhere to any cluster, make a new one
+        # If w didn't adhere to any cluster, make a new one.
         if w is not None:
             clusters.append([w])
 
-    # if we didn't get any clusters with >3 networks,
-    # the query is a bunch of outliers; give up and
-    # let the next location method try.
-    return None
+    # The second loop selects a cluster and estimates the position of that
+    # cluster. The selected cluster is the one with the most points, larger
+    # than MIN_WIFIS_IN_CLUSTER; its position is estimated taking up-to
+    # MAX_WIFIS_IN_CLUSTER worth of points from the cluster, which is
+    # pre-sorted in signal-strength order due to the way we built the
+    # clusters.
+    #
+    # The reasoning here is that if we have >1 cluster at all, we probably
+    # have some bad data -- likely an AP or set of APs associated with a
+    # single antenna that moved -- since a user shouldn't be able to hear
+    # multiple groups 500m apart.
+    #
+    # So we're trying to select a cluster that's most-likely good data,
+    # which we assume to be the one with the most points in it.
+    #
+    # The reason we take a subset of those points when estimating location
+    # is that we're doing a (non-weighted) centroid calculation, which is
+    # itself unbalanced by distant elements. Even if we did a weighted
+    # centroid here, using radio intensity as a proxy for distance has an
+    # error that increases significantly with distance, so we'd have to
+    # underweight pretty heavily.
+
+    clusters = [c for c in clusters if len(c) > MIN_WIFIS_IN_CLUSTER]
+
+    if len(clusters) == 0:
+        return None
+
+    clusters.sort(lambda a, b: cmp(len(b), len(a)))
+    cluster = clusters[0]
+    sample = cluster[:min(len(cluster), MAX_WIFIS_IN_CLUSTER)]
+    length = len(sample)
+    avg_lat = sum([n.lat for n in sample]) / length
+    avg_lon = sum([n.lon for n in sample]) / length
+    return {
+        'lat': quantize(avg_lat),
+        'lon': quantize(avg_lon),
+        'accuracy': estimate_accuracy(avg_lat, avg_lon,
+                                      sample, WIFI_MIN_ACCURACY),
+    }
 
 
 def search_geoip(geoip_db, client_addr):
