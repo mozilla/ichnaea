@@ -150,6 +150,7 @@ def write_measure_s3_backups(self, measure_type,
                 else:
                     zips.append(zip_path)
 
+            cmb.archive_date = utcnow
             session.add(cmb)
             session.commit()
     return zips

@@ -136,6 +136,7 @@ class TestMeasurementsDump(CeleryTestCase):
         actual_sha = hashlib.sha1()
         actual_sha.update(open(fname, 'rb').read())
         self.assertEquals(block.archive_sha, actual_sha.digest())
+        self.assertTrue(block.archive_date is not None)
 
     def test_backup_wifi_to_s3(self):
         session = self.db_master_session
@@ -175,6 +176,7 @@ class TestMeasurementsDump(CeleryTestCase):
         actual_sha = hashlib.sha1()
         actual_sha.update(open(fname, 'rb').read())
         self.assertEquals(block.archive_sha, actual_sha.digest())
+        self.assertTrue(block.archive_date is not None)
 
     def test_delete_cell_measures(self):
         session = self.db_master_session
