@@ -181,12 +181,13 @@ def schedule_measure_archival(self, measure_type, measure_cls, batch=100):
             # no data in the table
             return blocks
 
-        # We're using half-open ranges, so we need to bump the max_id
-        max_id = record[0] + 1
-
+        max_id = record[0]
         if max_id - min_id < batch - 1:
             # Not enough to fill a block
             return blocks
+
+        # We're using half-open ranges, so we need to bump the max_id
+        max_id += 1
 
         this_max_id = min_id + batch
 
