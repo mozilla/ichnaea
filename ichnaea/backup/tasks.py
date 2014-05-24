@@ -94,9 +94,9 @@ def write_measure_s3_backups(self, measure_type,
     zips = []
     utcnow = datetime.datetime.utcnow()
     s3_backend = S3Backend(
-        self.heka_client,
         self.app.s3_settings['backup_bucket'],
-        self.app.s3_settings['backup_prefix'])
+        self.app.s3_settings['backup_prefix'],
+        self.heka_client)
 
     with self.db_session() as session:
         query = session.query(MeasureBlock).filter(
@@ -212,9 +212,9 @@ def schedule_wifimeasure_archival(self, batch=100):
 
 def delete_measure_records(self, measure_type, measure_cls, cleanup_zip):
     s3_backend = S3Backend(
-        self.heka_client,
         self.app.s3_settings['backup_bucket'],
-        self.app.s3_settings['backup_prefix'])
+        self.app.s3_settings['backup_prefix'],
+        self.heka_client)
 
     with self.db_session() as session:
         query = session.query(MeasureBlock).filter(
