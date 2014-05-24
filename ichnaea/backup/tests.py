@@ -49,66 +49,67 @@ class TestBackup(CeleryTestCase):
 
 
 class TestMeasurementsDump(CeleryTestCase):
-    def setUp(self):
-        super(TestMeasurementsDump, self).setUp()
-        self.session = self.db_master_session
-        self.START_ID = 49950
-        self.batch_size = 100
 
-    def test_journal_cell_measures(self):
-        for i in range(self.batch_size * 2):
-            cm = CellMeasure(id=i + self.START_ID)
-            self.session.add(cm)
-        self.session.commit()
+    def test_schedule_cell_measures(self):
+        session = self.db_master_session
+        batch_size = 10
+        measures = []
+        for i in range(batch_size * 2):
+            measures.append(CellMeasure())
+        session.add_all(measures)
+        session.flush()
+        start_id = measures[0].id
 
-        blocks = schedule_cellmeasure_archival()
+        blocks = schedule_cellmeasure_archival(batch=batch_size)
         self.assertEquals(len(blocks), 2)
         block = blocks[0]
         self.assertEquals(block,
-                          (self.START_ID,
-                           self.START_ID + self.batch_size))
+                          (start_id, start_id + batch_size))
 
         block = blocks[1]
         self.assertEquals(block,
-                          (self.START_ID + self.batch_size,
-                           self.START_ID + 2 * self.batch_size))
+                          (start_id + batch_size, start_id + 2 * batch_size))
 
-        blocks = schedule_cellmeasure_archival()
+        blocks = schedule_cellmeasure_archival(batch=batch_size)
         self.assertEquals(len(blocks), 0)
 
-    def test_journal_wifi_measures(self):
-        for i in range(self.batch_size * 2):
-            cm = WifiMeasure(id=i + self.START_ID)
-            self.session.add(cm)
-        self.session.commit()
+    def test_schedule_wifi_measures(self):
+        session = self.db_master_session
+        batch_size = 10
+        measures = []
+        for i in range(batch_size * 2):
+            measures.append(WifiMeasure())
+        session.add_all(measures)
+        session.flush()
+        start_id = measures[0].id
 
-        blocks = schedule_wifimeasure_archival()
+        blocks = schedule_wifimeasure_archival(batch=batch_size)
         self.assertEquals(len(blocks), 2)
         block = blocks[0]
         self.assertEquals(block,
-                          (self.START_ID,
-                           self.START_ID + self.batch_size))
+                          (start_id, start_id + batch_size))
 
         block = blocks[1]
         self.assertEquals(block,
-                          (self.START_ID + self.batch_size,
-                           self.START_ID + 2 * self.batch_size))
+                          (start_id + batch_size, start_id + 2 * batch_size))
 
-        blocks = schedule_wifimeasure_archival()
+        blocks = schedule_wifimeasure_archival(batch=batch_size)
         self.assertEquals(len(blocks), 0)
 
     def test_backup_cell_to_s3(self):
-        for i in range(self.batch_size):
-            cm = CellMeasure(id=i + self.START_ID)
-            self.session.add(cm)
-        self.session.commit()
+        session = self.db_master_session
+        batch_size = 10
+        measures = []
+        for i in range(batch_size):
+            measures.append(CellMeasure())
+        session.add_all(measures)
+        session.flush()
+        start_id = measures[0].id
 
-        blocks = schedule_cellmeasure_archival()
+        blocks = schedule_cellmeasure_archival(batch=batch_size)
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
-        self.assertEquals(block,
-                          (self.START_ID,
-                           self.START_ID + self.batch_size))
+        self.assertEquals(block, (start_id, start_id + batch_size))
 
         with mock_s3():
             with patch.object(S3Backend,
@@ -125,7 +126,7 @@ class TestMeasurementsDump(CeleryTestCase):
                 finally:
                     myzip.close()
 
-        blocks = self.session.query(MeasureBlock).all()
+        blocks = session.query(MeasureBlock).all()
 
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
@@ -135,17 +136,19 @@ class TestMeasurementsDump(CeleryTestCase):
         self.assertEquals(block.archive_sha, actual_sha.digest())
 
     def test_backup_wifi_to_s3(self):
-        for i in range(self.batch_size):
-            cm = WifiMeasure(id=i + self.START_ID)
-            self.session.add(cm)
-        self.session.commit()
+        session = self.db_master_session
+        batch_size = 10
+        measures = []
+        for i in range(batch_size):
+            measures.append(WifiMeasure())
+        session.add_all(measures)
+        session.flush()
+        start_id = measures[0].id
 
-        blocks = schedule_wifimeasure_archival()
+        blocks = schedule_wifimeasure_archival(batch=batch_size)
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
-        self.assertEquals(block,
-                          (self.START_ID,
-                           self.START_ID + self.batch_size))
+        self.assertEquals(block, (start_id, start_id + batch_size))
 
         with mock_s3():
             with patch.object(S3Backend,
@@ -162,7 +165,7 @@ class TestMeasurementsDump(CeleryTestCase):
                 finally:
                     myzip.close()
 
-        blocks = self.session.query(MeasureBlock).all()
+        blocks = session.query(MeasureBlock).all()
 
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
@@ -172,35 +175,37 @@ class TestMeasurementsDump(CeleryTestCase):
         self.assertEquals(block.archive_sha, actual_sha.digest())
 
     def test_delete_cell_measures(self):
+        session = self.db_master_session
         block = MeasureBlock()
         block.measure_type = MEASURE_TYPE['cell']
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'
         block.archive_date = datetime.datetime.utcnow()
-        self.session.add(block)
+        session.add(block)
 
         for i in range(100, 150):
-            self.session.add(CellMeasure(id=i))
-        self.session.commit()
+            session.add(CellMeasure(id=i))
+        session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_cellmeasure_records()
-        self.assertEquals(self.session.query(CellMeasure).count(), 29)
+        self.assertEquals(session.query(CellMeasure).count(), 29)
 
     def test_delete_wifi_measures(self):
+        session = self.db_master_session
         block = MeasureBlock()
         block.measure_type = MEASURE_TYPE['wifi']
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'
         block.archive_date = datetime.datetime.utcnow()
-        self.session.add(block)
+        session.add(block)
 
         for i in range(100, 150):
-            self.session.add(WifiMeasure(id=i))
-        self.session.commit()
+            session.add(WifiMeasure(id=i))
+        session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_wifimeasure_records()
-        self.assertEquals(self.session.query(WifiMeasure).count(), 29)
+        self.assertEquals(session.query(WifiMeasure).count(), 29)
