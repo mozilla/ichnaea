@@ -119,10 +119,8 @@ def write_measure_s3_backups(self, measure_type,
 
                 cm_fname = os.path.join(tmp_path, csv_name)
 
-                cm_query = session.query(measure_cls)
-                cm_query = cm_query.filter(
-                    measure_cls.id >= cmb.start_id)
-                cm_query = cm_query.filter(
+                cm_query = session.query(measure_cls).filter(
+                    measure_cls.id >= cmb.start_id).filter(
                     measure_cls.id <= cmb.end_id)
 
                 col_names = None
