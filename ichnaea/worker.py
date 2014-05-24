@@ -13,6 +13,7 @@ from ichnaea.heka_logging import configure_heka
 
 CELERY_IMPORTS = [
     'ichnaea.tasks',
+    'ichnaea.backup.tasks',
     'ichnaea.content.tasks',
     'ichnaea.backfill.tasks',
     'ichnaea.service.submit.tasks',
@@ -88,32 +89,32 @@ CELERYBEAT_SCHEDULE = {
     #     'schedule': crontab(hour=0, minute=15),
     # }
 
-    # 's3-batch-cellmeasures-for-backup': {
-    #     'task': 'ichnaea.tasks.schedule_cellmeasure_archival',
+    # 's3-schedule-cellmeasure-archival': {
+    #     'task': 'ichnaea.backup.tasks.schedule_cellmeasure_archival',
     #     'args': (100, ),
     #     'schedule': crontab(hour=0, minute=15),
     # },
     # 's3-write-cellbackups': {
-    #     'task': 'ichnaea.tasks.write_cellmeasure_s3_backups',
+    #     'task': 'ichnaea.backup.tasks.write_cellmeasure_s3_backups',
     #     'schedule': crontab(hour=3, minute=0),
     # }
 
-    # 's3-batch-wifimeasures-for-backup': {
-    #     'task': 'ichnaea.tasks.schedule_wifimeasure_archival',
+    # 's3-schedule-wifimeasures-archival': {
+    #     'task': 'ichnaea.backup.tasks.schedule_wifimeasure_archival',
     #     'args': (100, ),
     #     'schedule': crontab(hour=0, minute=15),
     # },
     # 's3-write-wifibackups': {
-    #     'task': 'ichnaea.tasks.write_wifimeasure_s3_backups',
+    #     'task': 'ichnaea.backup.tasks.write_wifimeasure_s3_backups',
     #     'schedule': crontab(hour=3, minute=0),
     # }
 
     # 's3-delete-wifimeasures': {
-    #     'task': 'ichnaea.tasks.delete_wifimeasure_records',
+    #     'task': 'ichnaea.backup.tasks.delete_wifimeasure_records',
     #     'schedule': crontab(hour=0, minute=15),
     # },
     # 's3-delete-cellmeasures': {
-    #     'task': 'ichnaea.tasks.delete_cellmeasure_records',
+    #     'task': 'ichnaea.backup.tasks.delete_cellmeasure_records',
     #     'schedule': crontab(hour=0, minute=15),
     # },
 
