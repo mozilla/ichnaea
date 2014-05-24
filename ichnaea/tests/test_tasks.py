@@ -772,13 +772,9 @@ class TestWifiLocationUpdate(CeleryTestCase):
 class TestMeasurementsDump(CeleryTestCase):
     def setUp(self):
         super(TestMeasurementsDump, self).setUp()
-
-        from ichnaea import config
-        conf = config()
-        self.batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
-
         self.session = self.db_master_session
         self.START_ID = 49950
+        self.batch_size = 100
 
     def test_journal_cell_measures(self):
         for i in range(self.batch_size*2):

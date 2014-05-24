@@ -781,26 +781,21 @@ def write_measure_s3_backups(self, measure_type,
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def schedule_cellmeasure_archival(self):
+def schedule_cellmeasure_archival(self, batch=100):
     measure_type = MEASURE_TYPE['cell']
     measure_cls = CellMeasure
-    return schedule_measure_archival(self, measure_type, measure_cls)
+    return schedule_measure_archival(self, measure_type, measure_cls, batch)
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def schedule_wifimeasure_archival(self):
+def schedule_wifimeasure_archival(self, batch=100):
     measure_type = MEASURE_TYPE['wifi']
     measure_cls = WifiMeasure
-    return schedule_measure_archival(self, measure_type, measure_cls)
+    return schedule_measure_archival(self, measure_type, measure_cls, batch)
 
 
-def schedule_measure_archival(self, measure_type, measure_cls):
+def schedule_measure_archival(self, measure_type, measure_cls, batch=100):
     blocks = []
-
-    # We have new entries to file
-    from ichnaea import config
-    conf = config()
-    batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
     with self.db_session() as session:
         query = session.query(MeasureBlock.end_id)
         query = query.filter(MeasureBlock.measure_type == measure_type)
@@ -821,13 +816,13 @@ def schedule_measure_archival(self, measure_type, measure_cls):
         # We're using half-open ranges, so we need to bump the max_id
         max_id = record[0] + 1
 
-        if max_id - min_id < batch_size - 1:
+        if max_id - min_id < batch - 1:
             # Not enough to fill a block
             return blocks
 
-        this_max_id = min_id + batch_size
+        this_max_id = min_id + batch
 
-        while (this_max_id - min_id) == batch_size:
+        while (this_max_id - min_id) == batch:
             cm_blk = MeasureBlock(start_id=min_id,
                                   end_id=this_max_id,
                                   measure_type=measure_type)
@@ -835,7 +830,7 @@ def schedule_measure_archival(self, measure_type, measure_cls):
             session.add(cm_blk)
 
             min_id = this_max_id
-            this_max_id = min(batch_size+this_max_id, max_id)
+            this_max_id = min(batch + this_max_id, max_id)
         session.commit()
     return blocks
 

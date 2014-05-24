@@ -90,6 +90,7 @@ CELERYBEAT_SCHEDULE = {
 
     # 's3-batch-cellmeasures-for-backup': {
     #     'task': 'ichnaea.tasks.schedule_cellmeasure_archival',
+    #     'args': (100, ),
     #     'schedule': crontab(hour=0, minute=15),
     # },
     # 's3-write-cellbackups': {
@@ -99,6 +100,7 @@ CELERYBEAT_SCHEDULE = {
 
     # 's3-batch-wifimeasures-for-backup': {
     #     'task': 'ichnaea.tasks.schedule_wifimeasure_archival',
+    #     'args': (100, ),
     #     'schedule': crontab(hour=0, minute=15),
     # },
     # 's3-write-wifibackups': {
