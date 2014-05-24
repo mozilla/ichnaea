@@ -162,21 +162,23 @@ def schedule_measure_archival(self, measure_type, measure_cls, batch=100):
             MeasureBlock.measure_type == measure_type).order_by(
             MeasureBlock.end_id.desc())
         record = query.first()
-        if record:
+        if record is not None:
             min_id = record[0]
         else:
             query = session.query(measure_cls.id).order_by(
                 measure_cls.id.asc())
             record = query.first()
-            if record:
+            if record is not None:
                 min_id = record[0]
             else:
-                min_id = 0
+                # no data in the table
+                return blocks
 
         query = session.query(measure_cls.id).order_by(
             measure_cls.id.desc())
         record = query.first()
-        if not record:
+        if record is None:
+            # no data in the table
             return blocks
 
         # We're using half-open ranges, so we need to bump the max_id
