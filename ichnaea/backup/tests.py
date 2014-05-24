@@ -1,5 +1,6 @@
 import boto
 from contextlib import contextmanager
+import datetime
 import hashlib
 from mock import (
     MagicMock,
@@ -174,32 +175,32 @@ class TestMeasurementsDump(CeleryTestCase):
         block = MeasureBlock()
         block.measure_type = MEASURE_TYPE['cell']
         block.start_id = 120
-        block.end_id = 150
+        block.end_id = 140
         block.s3_key = 'fake_key'
+        block.archive_date = datetime.datetime.utcnow()
         self.session.add(block)
 
-        for i in range(50, 200):
+        for i in range(100, 150):
             self.session.add(CellMeasure(id=i))
         self.session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_cellmeasure_records()
-        self.assertEquals(119,
-                          self.session.query(CellMeasure).count())
+        self.assertEquals(self.session.query(CellMeasure).count(), 29)
 
     def test_delete_wifi_measures(self):
         block = MeasureBlock()
         block.measure_type = MEASURE_TYPE['wifi']
         block.start_id = 120
-        block.end_id = 150
+        block.end_id = 140
         block.s3_key = 'fake_key'
+        block.archive_date = datetime.datetime.utcnow()
         self.session.add(block)
 
-        for i in range(50, 200):
+        for i in range(100, 150):
             self.session.add(WifiMeasure(id=i))
         self.session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_wifimeasure_records()
-        self.assertEquals(119,
-                          self.session.query(WifiMeasure).count())
+        self.assertEquals(self.session.query(WifiMeasure).count(), 29)

@@ -223,7 +223,7 @@ def delete_measure_records(self, measure_type, measure_cls, cleanup_zip):
         query = session.query(MeasureBlock).filter(
             MeasureBlock.measure_type == measure_type).filter(
             MeasureBlock.s3_key.isnot(None)).filter(
-            MeasureBlock.archive_date.is_(None))
+            MeasureBlock.archive_date.isnot(None))
         for cmb in query.all():
             expected_sha = cmb.archive_sha
             if s3_backend.check_archive(expected_sha, cmb.s3_key):
