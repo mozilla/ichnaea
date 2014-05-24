@@ -1,6 +1,9 @@
 import os
 import os.path
 
+from alembic.config import Config
+from alembic import command
+
 from heka.encoders import NullEncoder
 from heka.streams import DebugCaptureStream
 from unittest2 import TestCase
@@ -72,27 +75,21 @@ class DBIsolation(object):
         cls.db_master = _make_db()
         cls.db_slave = _make_db()
 
-        for engine in [cls.db_master.engine, cls.db_slave.engine]:
-            with engine.connect() as conn:
-                trans = conn.begin()
-                _Model.metadata.create_all(engine)
-                trans.commit()
+        engine = cls.db_master.engine
+        with engine.connect() as conn:
+            trans = conn.begin()
+            _Model.metadata.create_all(engine)
+            # Now stamp the latest alembic version
+            alembic_cfg = Config()
+            alembic_cfg.set_section_option('alembic',
+                                           'script_location',
+                                           'alembic')
+            alembic_cfg.set_section_option('alembic',
+                                           'sqlalchemy.url',
+                                           str(engine.url))
 
-                # Now stamp the latest alembic version
-                from alembic.config import Config
-                from alembic import command
-                import os
-                ini = os.environ.get('ICHNAEA_CFG', 'ichnaea.ini')
-                alembic_ini = os.path.join(os.path.split(ini)[0],
-                                           'alembic.ini')
-                alembic_cfg = Config(alembic_ini)
-
-                # Clobber the sqlalchemy_url
-                alembic_cfg.set_section_option('alembic',
-                                               'sqlalchemy.url',
-                                               str(engine.url))
-
-                command.stamp(alembic_cfg, "head")
+            command.stamp(alembic_cfg, "head")
+            trans.commit()
 
     @classmethod
     def teardown_engine(cls):
