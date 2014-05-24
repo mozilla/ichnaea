@@ -121,7 +121,7 @@ def write_measure_s3_backups(self, measure_type,
 
                 cm_query = session.query(measure_cls).filter(
                     measure_cls.id >= cmb.start_id).filter(
-                    measure_cls.id <= cmb.end_id)
+                    measure_cls.id < cmb.end_id)
 
                 col_names = None
                 with open(cm_fname, 'w') as f:
