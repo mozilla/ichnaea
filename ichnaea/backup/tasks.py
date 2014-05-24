@@ -192,7 +192,8 @@ def schedule_measure_archival(self, measure_type, measure_cls, batch=100):
 
         this_max_id = min_id + batch
 
-        while (this_max_id - min_id) == batch:
+        i = 0
+        while i < 100 and (this_max_id - min_id) == batch:
             cm_blk = MeasureBlock(start_id=min_id,
                                   end_id=this_max_id,
                                   measure_type=measure_type)
@@ -201,6 +202,7 @@ def schedule_measure_archival(self, measure_type, measure_cls, batch=100):
 
             min_id = this_max_id
             this_max_id = min(batch + this_max_id, max_id)
+            i += 1
         session.commit()
     return blocks
 
