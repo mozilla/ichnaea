@@ -426,9 +426,9 @@ class CellBlacklist(_Model):
 class MeasureBlock(_Model):
     __tablename__ = 'measure_block'
     __table_args__ = (
-        Index('idx_cmblk_archive_date', 'archive_date'),
-        Index('idx_cmblk_s3_key', 's3_key'),
-        Index('idx_cmblk_end_id', 'end_id'),
+        Index('idx_measure_block_archive_date', 'archive_date'),
+        Index('idx_measure_block_s3_key', 's3_key'),
+        Index('idx_measure_block_end_id', 'end_id'),
         {
             'mysql_engine': 'InnoDB',
             'mysql_charset': 'utf8',
@@ -439,14 +439,12 @@ class MeasureBlock(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True,
                 autoincrement=True)
-
+    measure_type = Column(SmallInteger)
+    s3_key = Column(String(80))
+    archive_date = Column(DateTime)
+    archive_sha = Column(BINARY(length=20))
     start_id = Column(BigInteger(unsigned=True))
     end_id = Column(BigInteger(unsigned=True))
-
-    measure_type = Column(BigInteger(unsigned=True))
-    archive_date = Column(DateTime)
-    s3_key = Column(String(80))
-    archive_sha = Column(BINARY(length=20))
 
 
 class CellMeasure(_Model):

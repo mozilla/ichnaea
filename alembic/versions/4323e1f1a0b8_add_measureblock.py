@@ -17,23 +17,28 @@ from sqlalchemy.dialects.mysql import BIGINT as BigInteger
 
 def upgrade():
     op.create_table('measure_block',
-                    sa.Column('start_id',
-                              BigInteger(unsigned=True)),
-                    sa.Column('end_id',
-                              BigInteger(unsigned=True)),
+                    sa.Column('id',
+                              BigInteger(unsigned=True),
+                              primary_key=True,
+                              autoincrement=True),
+                    sa.Column('measure_type', sa.SmallInteger()),
+                    sa.Column('s3_key', sa.String(80)),
                     sa.Column('archive_date', sa.DateTime()),
                     sa.Column('archive_sha', sa.BINARY(length=20)),
-                    sa.Column('s3_key', sa.String(80)),
+                    sa.Column('start_id', BigInteger(unsigned=True)),
+                    sa.Column('end_id', BigInteger(unsigned=True)),
                     mysql_engine='InnoDB',
                     mysql_charset='utf8',
+                    mysql_row_format='compressed',
+                    mysql_key_block_size='4',
                     )
-    op.create_index('idx_cmblk_archive_date',
+    op.create_index('idx_measure_block_archive_date',
                     'measure_block',
                     ['archive_date'])
-    op.create_index('idx_cmblk_s3_key',
+    op.create_index('idx_measure_block_s3_key',
                     'measure_block',
                     ['s3_key'])
-    op.create_index('idx_cmblk_end_id',
+    op.create_index('idx_measure_block_end_id',
                     'measure_block',
                     ['end_id'])
 
