@@ -1,6 +1,14 @@
+from contextlib import contextmanager
 from datetime import datetime
 from datetime import timedelta
+import tempfile
+import os
+import csv
+import shutil
+from zipfile import ZipFile, ZIP_DEFLATED
 
+
+from ichnaea.backup.s3 import S3Backend, compute_hash
 from celery import Task
 from kombu.serialization import (
     dumps as kombu_dumps,
@@ -15,18 +23,20 @@ from ichnaea.heka_logging import (
     RAVEN_ERROR,
 )
 from ichnaea.models import (
+    CELLID_LAC,
     Cell,
-    CellKey,
     CellBlacklist,
+    CellKey,
     CellMeasure,
+    MEASURE_TYPE,
+    MeasureBlock,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
+    from_degrees,
     join_cellkey,
     to_cellkey,
     to_degrees,
-    from_degrees,
-    CELLID_LAC,
 )
 from ichnaea.worker import celery
 from ichnaea.geocalc import distance, centroid, range_to_points
@@ -319,7 +329,7 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
                     continue
 
                 query = session.query(
-                    CellMeasure.lat, CellMeasure.lon).filter(
+                    CellMeasure.lat, CellMeasure.lon, CellMeasure.id).filter(
                     *join_cellkey(CellMeasure, cell))
                 # only take the last X new_measures
                 query = query.order_by(
@@ -338,6 +348,7 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
                 mark_moving_cells(session, moving_cells)
 
             session.commit()
+
         return (len(cells), len(moving_cells))
     except IntegrityError as exc:  # pragma: no cover
         self.heka_client.raven('error')
@@ -632,3 +643,235 @@ def update_lac(self, radio, mcc, mnc, lac):
             lac.range = rng
 
         session.commit()
+
+
+@contextmanager
+def selfdestruct_tempdir(s3_key):
+    """
+    We need two temp directories to do this properly.
+
+    The base_path is a temp directory that holds all the content that
+    will go into our zip file.. This is effectively a working
+    directory that gets immmediately deleted once the zip file is
+    ready.
+
+    The zip_path is the filename of the zip file that will get
+    uploaded into S3.  It is the responsibility of the caller of
+    selfdestruct_tempdir to remove the zip_path and parent directory.
+    """
+    short_name = os.path.split(s3_key)[-1]
+
+    base_path = tempfile.mkdtemp()
+    s3_path = os.path.join(tempfile.mkdtemp(), short_name)
+    try:
+        zip_path = os.path.join(base_path, s3_path)
+        yield base_path, zip_path
+    finally:
+        try:
+            z = ZipFile(zip_path, "w", ZIP_DEFLATED)
+            try:
+                for root, dirs, files in os.walk(base_path):
+                    for fn in files:
+                        absfn = os.path.join(root, fn)
+                        zip_fn = absfn[len(base_path)+len(os.sep):]
+                        z.write(absfn, zip_fn)
+            finally:
+                z.close()
+        finally:
+            shutil.rmtree(base_path)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def write_cellmeasure_s3_backups(self, cleanup_zip=True):
+    measure_type = MEASURE_TYPE['cell']
+    zip_prefix = 'CellMeasure'
+    csv_name = 'cell_measure.csv'
+    measure_cls = CellMeasure
+    return write_measure_s3_backups(self,
+                                    measure_type,
+                                    zip_prefix,
+                                    csv_name,
+                                    measure_cls,
+                                    cleanup_zip)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def write_wifimeasure_s3_backups(self, cleanup_zip=True):
+    measure_type = MEASURE_TYPE['wifi']
+    zip_prefix = 'WifiMeasure'
+    csv_name = 'wifi_measure.csv'
+    measure_cls = WifiMeasure
+    return write_measure_s3_backups(self,
+                                    measure_type,
+                                    zip_prefix,
+                                    csv_name,
+                                    measure_cls,
+                                    cleanup_zip)
+
+
+def write_measure_s3_backups(self, measure_type,
+                             zip_prefix, csv_name,
+                             measure_cls, cleanup_zip):
+    """
+    Iterate over each of the Measureblock records that aren't
+    backed up yet and back them up.
+
+    Assume that this is running in a single task
+    """
+
+    zips = []
+    utcnow = datetime.utcnow()
+    with self.db_session() as session:
+        query = session.query(MeasureBlock)
+        query = query.filter(MeasureBlock.measure_type == measure_type)
+        query = query.filter(MeasureBlock.archive_date == None)  # NOQA
+        query = query.order_by(MeasureBlock.end_id)
+        for cmb in query.all():
+            cmb.s3_key = '%s/%s_%d_%d.zip' % (utcnow.strftime("%Y%m"),
+                            zip_prefix,
+                            cmb.start_id,   # NOQA
+                            cmb.end_id)     # NOQA
+
+            with selfdestruct_tempdir(cmb.s3_key) as (tmp_path, zip_path):
+                rset = session.execute("select * from alembic_version")
+                rev = rset.first()[0]
+                with open(os.path.join(tmp_path,
+                                       'alembic_revision.txt'), 'w') as f:
+                    f.write('%s\n' % rev)
+
+                cm_fname = os.path.join(tmp_path, csv_name)
+
+                cm_query = session.query(measure_cls)
+                cm_query = cm_query.filter(
+                    measure_cls.id >= cmb.start_id)
+                cm_query = cm_query.filter(
+                    measure_cls.id <= cmb.end_id)
+
+                col_names = None
+                with open(cm_fname, 'w') as f:
+                    csv_out = csv.writer(f, dialect='excel')
+                    for i, row in enumerate(cm_query.all()):
+                        if i == 0:
+                            col_names = [c.name for c in row.__table__.columns]
+                            csv_out.writerow(col_names)
+                            pass
+                        data_row = [getattr(row, cname) for cname in col_names]
+                        csv_out.writerow(data_row)
+
+            cmb.archive_sha = compute_hash(zip_path)
+
+            try:
+                s3 = S3Backend(self.heka_client)
+                if not s3.backup_archive(cmb.s3_key, zip_path):
+                    continue
+                self.heka_client.incr('s3.backup.%s' % measure_type,
+                                      (cmb.end_id-cmb.start_id))
+            finally:
+                if cleanup_zip:
+                    if os.path.exists(zip_path):
+                        zip_dir, zip_file = os.path.split(zip_path)
+                        if os.path.exists(zip_dir):
+                            shutil.rmtree(zip_dir)
+                else:
+                    zips.append(zip_path)
+
+            session.add(cmb)
+            session.commit()
+    return zips
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def schedule_cellmeasure_archival(self):
+    measure_type = MEASURE_TYPE['cell']
+    measure_cls = CellMeasure
+    return schedule_measure_archival(self, measure_type, measure_cls)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def schedule_wifimeasure_archival(self):
+    measure_type = MEASURE_TYPE['wifi']
+    measure_cls = WifiMeasure
+    return schedule_measure_archival(self, measure_type, measure_cls)
+
+
+def schedule_measure_archival(self, measure_type, measure_cls):
+    blocks = []
+
+    # We have new entries to file
+    from ichnaea import config
+    conf = config()
+    batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
+    with self.db_session() as session:
+        query = session.query(MeasureBlock.end_id)
+        query = query.filter(MeasureBlock.measure_type == measure_type)
+        query = query.order_by(MeasureBlock.end_id.desc())
+        record = query.first()
+        if record:
+            min_id = record[0]
+        else:
+            query = session.query(measure_cls.id)
+            query = query.order_by(measure_cls.id.asc())
+            record = query.first()
+            min_id = record[0]
+
+        query = session.query(measure_cls.id)
+        query = query.order_by(measure_cls.id.desc())
+        record = query.first()
+
+        # We're using half-open ranges, so we need to bump the max_id
+        max_id = record[0] + 1
+
+        if max_id - min_id < batch_size - 1:
+            # Not enough to fill a block
+            return blocks
+
+        this_max_id = min_id + batch_size
+
+        while (this_max_id - min_id) == batch_size:
+            cm_blk = MeasureBlock(start_id=min_id,
+                                  end_id=this_max_id,
+                                  measure_type=measure_type)
+            blocks.append((cm_blk.start_id, cm_blk.end_id))
+            session.add(cm_blk)
+
+            min_id = this_max_id
+            this_max_id = min(batch_size+this_max_id, max_id)
+        session.commit()
+    return blocks
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def delete_cellmeasure_records(self, cleanup_zip=True):
+    measure_cls = CellMeasure
+    measure_type = MEASURE_TYPE['cell']
+    return delete_measure_records(self,
+                                  measure_cls,
+                                  measure_type,
+                                  cleanup_zip)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def delete_wifimeasure_records(self, cleanup_zip=True):
+    measure_cls = WifiMeasure
+    measure_type = MEASURE_TYPE['wifi']
+    return delete_measure_records(self,
+                                  measure_cls,
+                                  measure_type,
+                                  cleanup_zip)
+
+
+def delete_measure_records(self, measure_cls, measure_type, cleanup_zip):
+    with self.db_session() as session:
+        query = session.query(MeasureBlock)
+        query = query.filter(MeasureBlock.measure_type == measure_type)
+        query = query.filter(MeasureBlock.s3_key != None)    # NOQA
+        query = query.filter(MeasureBlock.archive_date == None)  # NOQA
+        for cmb in query.all():
+            expected_sha = cmb.archive_sha
+
+            s3 = S3Backend(self.heka_client)
+            if s3.check_archive(expected_sha, cmb.s3_key):
+                q = session.query(measure_cls)
+                q.filter(measure_cls.id >= cmb.start_id,
+                         measure_cls.id <= cmb.end_id).delete()
+                session.commit()

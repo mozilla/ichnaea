@@ -4,6 +4,7 @@ from colander import iso8601
 import re
 
 from sqlalchemy import (
+    BINARY,
     Column,
     DateTime,
     Index,
@@ -22,6 +23,11 @@ from ichnaea.db import _Model
 # 1E-7 degrees =~ 1.1cm, so that is our spatial resolution.
 DEGREE_DECIMAL_PLACES = 7
 DEGREE_SCALE_FACTOR = 10 ** DEGREE_DECIMAL_PLACES
+
+MEASURE_TYPE = {
+    'wifi': 1,
+    'cell': 2,
+}
 
 RADIO_TYPE = {
     '': -1,
@@ -415,6 +421,32 @@ class CellBlacklist(_Model):
         if 'created' not in kw:
             kw['created'] = datetime.utcnow()
         super(CellBlacklist, self).__init__(*args, **kw)
+
+
+class MeasureBlock(_Model):
+    __tablename__ = 'measure_block'
+    __table_args__ = (
+        Index('idx_cmblk_archive_date', 'archive_date'),
+        Index('idx_cmblk_s3_key', 's3_key'),
+        Index('idx_cmblk_end_id', 'end_id'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+            'mysql_row_format': 'compressed',
+            'mysql_key_block_size': '4',
+        }
+    )
+    id = Column(BigInteger(unsigned=True),
+                primary_key=True,
+                autoincrement=True)
+
+    start_id = Column(BigInteger(unsigned=True))
+    end_id = Column(BigInteger(unsigned=True))
+
+    measure_type = Column(BigInteger(unsigned=True))
+    archive_date = Column(DateTime)
+    s3_key = Column(String(80))
+    archive_sha = Column(BINARY(length=20))
 
 
 class CellMeasure(_Model):

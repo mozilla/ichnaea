@@ -78,6 +78,22 @@ class DBIsolation(object):
                 _Model.metadata.create_all(engine)
                 trans.commit()
 
+                # Now stamp the latest alembic version
+                from alembic.config import Config
+                from alembic import command
+                import os
+                ini = os.environ.get('ICHNAEA_CFG', 'ichnaea.ini')
+                alembic_ini = os.path.join(os.path.split(ini)[0],
+                                           'alembic.ini')
+                alembic_cfg = Config(alembic_ini)
+
+                # Clobber the sqlalchemy_url
+                alembic_cfg.set_section_option('alembic',
+                                               'sqlalchemy.url',
+                                               str(engine.url))
+
+                command.stamp(alembic_cfg, "head")
+
     @classmethod
     def teardown_engine(cls):
         cls.db_master.engine.pool.dispose()

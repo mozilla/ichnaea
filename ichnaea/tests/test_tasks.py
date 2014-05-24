@@ -1,16 +1,32 @@
 from datetime import datetime
 from datetime import timedelta
+from mock import patch
+from zipfile import ZipFile
+import hashlib
 
 from ichnaea.models import (
     Cell,
     CellBlacklist,
     CellKey,
     CellMeasure,
+    MeasureBlock,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
     to_cellkey,
     CELLID_LAC,
+    MEASURE_TYPE,
+)
+
+from ichnaea.backup.s3 import S3Backend
+from ichnaea.backup.tests import mock_s3
+from ichnaea.tasks import (
+    delete_cellmeasure_records,
+    delete_wifimeasure_records,
+    schedule_cellmeasure_archival,
+    schedule_wifimeasure_archival,
+    write_cellmeasure_s3_backups,
+    write_wifimeasure_s3_backups,
 )
 from ichnaea.tests.base import CeleryTestCase
 
@@ -211,7 +227,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         keys = dict(radio=1, mcc=1, mnc=1, lac=1)
         measures = [
             CellMeasure(lat=ctr + xd, lon=ctr + yd, cid=cell, **keys)
-            for cell in range(0, 10)
+            for cell in range(10)
             for ctr in [cell * big]
             for (xd, yd) in [(small, small),
                              (small, -small),
@@ -223,7 +239,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         cells = [
             Cell(lat=ctr, lon=ctr, cid=cell,
                  new_measures=4, total_measures=1, **keys)
-            for cell in range(0, 10)
+            for cell in range(10)
             for ctr in [cell * big]
         ]
 
@@ -306,7 +322,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         keys = dict(radio=1, mcc=1, mnc=1, lac=1)
         measures = [
             CellMeasure(lat=ctr + xd, lon=ctr + yd, cid=cell, **keys)
-            for cell in range(0, 6)
+            for cell in range(6)
             for ctr in [(2 ** cell) * big]
             for (xd, yd) in [(small, small),
                              (small, -small),
@@ -318,7 +334,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         cells = [
             Cell(lat=ctr, lon=ctr, cid=cell,
                  new_measures=4, total_measures=1, **keys)
-            for cell in range(0, 6)
+            for cell in range(6)
             for ctr in [(2 ** cell) * big]
         ]
 
@@ -375,7 +391,7 @@ class TestCellLocationUpdate(CeleryTestCase):
             ((85000000, 85000000), 93871),
             ((90000000, 90000000), 15630),
         ]
-        for i in range(0, 9):
+        for i in range(9):
             session.expire(lac)
             k = CellKey(cid=i, **keys)
             result = remove_cell.delay([k])
@@ -751,3 +767,165 @@ class TestWifiLocationUpdate(CeleryTestCase):
                                       trim_func=wifi_trim_excessive_data,
                                       kinit=lambda k: {'key': str(k)},
                                       delstat='deleted_wifi')
+
+
+class TestMeasurementsDump(CeleryTestCase):
+    def setUp(self):
+        super(TestMeasurementsDump, self).setUp()
+
+        from ichnaea import config
+        conf = config()
+        self.batch_size = int(conf.get('ichnaea', 'archive_batch_size'))
+
+        self.session = self.db_master_session
+        self.START_ID = 49950
+
+    def test_journal_cell_measures(self):
+        for i in range(self.batch_size*2):
+            cm = CellMeasure(id=i+self.START_ID)
+            self.session.add(cm)
+        self.session.commit()
+
+        blocks = schedule_cellmeasure_archival()
+        self.assertEquals(len(blocks), 2)
+        block = blocks[0]
+        self.assertEquals(block,
+                          (self.START_ID,
+                           self.START_ID+self.batch_size))
+
+        block = blocks[1]
+        self.assertEquals(block,
+                          (self.START_ID+self.batch_size,
+                           self.START_ID+2*self.batch_size))
+
+        blocks = schedule_cellmeasure_archival()
+        self.assertEquals(len(blocks), 0)
+
+    def test_journal_wifi_measures(self):
+        for i in range(self.batch_size*2):
+            cm = WifiMeasure(id=i+self.START_ID)
+            self.session.add(cm)
+        self.session.commit()
+
+        blocks = schedule_wifimeasure_archival()
+        self.assertEquals(len(blocks), 2)
+        block = blocks[0]
+        self.assertEquals(block,
+                          (self.START_ID,
+                           self.START_ID+self.batch_size))
+
+        block = blocks[1]
+        self.assertEquals(block,
+                          (self.START_ID+self.batch_size,
+                           self.START_ID+2*self.batch_size))
+
+        blocks = schedule_wifimeasure_archival()
+        self.assertEquals(len(blocks), 0)
+
+    def test_backup_cell_to_s3(self):
+        for i in range(self.batch_size):
+            cm = CellMeasure(id=i+self.START_ID)
+            self.session.add(cm)
+        self.session.commit()
+
+        blocks = schedule_cellmeasure_archival()
+        self.assertEquals(len(blocks), 1)
+        block = blocks[0]
+        self.assertEquals(block,
+                          (self.START_ID,
+                           self.START_ID+self.batch_size))
+
+        with mock_s3():
+            with patch.object(S3Backend,
+                              'backup_archive', lambda x, y, z: True):
+                zips = write_cellmeasure_s3_backups(False)
+                self.assertTrue(len(zips), 1)
+                fname = zips[0]
+                myzip = ZipFile(fname)
+                try:
+                    contents = set(myzip.namelist())
+                    expected_contents = set(['alembic_revision.txt',
+                                             'cell_measure.csv'])
+                    self.assertEquals(expected_contents, contents)
+                finally:
+                    myzip.close()
+
+        blocks = self.session.query(MeasureBlock).all()
+
+        self.assertEquals(len(blocks), 1)
+        block = blocks[0]
+
+        actual_sha = hashlib.sha1()
+        actual_sha.update(open(fname, 'rb').read())
+        self.assertEquals(block.archive_sha, actual_sha.digest())
+
+    def test_backup_wifi_to_s3(self):
+        for i in range(self.batch_size):
+            cm = WifiMeasure(id=i+self.START_ID)
+            self.session.add(cm)
+        self.session.commit()
+
+        blocks = schedule_wifimeasure_archival()
+        self.assertEquals(len(blocks), 1)
+        block = blocks[0]
+        self.assertEquals(block,
+                          (self.START_ID,
+                           self.START_ID+self.batch_size))
+
+        with mock_s3():
+            with patch.object(S3Backend,
+                              'backup_archive', lambda x, y, z: True):
+                zips = write_wifimeasure_s3_backups(False)
+                self.assertTrue(len(zips), 1)
+                fname = zips[0]
+                myzip = ZipFile(fname)
+                try:
+                    contents = set(myzip.namelist())
+                    expected_contents = set(['alembic_revision.txt',
+                                             'wifi_measure.csv'])
+                    self.assertEquals(expected_contents, contents)
+                finally:
+                    myzip.close()
+
+        blocks = self.session.query(MeasureBlock).all()
+
+        self.assertEquals(len(blocks), 1)
+        block = blocks[0]
+
+        actual_sha = hashlib.sha1()
+        actual_sha.update(open(fname, 'rb').read())
+        self.assertEquals(block.archive_sha, actual_sha.digest())
+
+    def test_delete_cell_measures(self):
+        block = MeasureBlock()
+        block.measure_type = MEASURE_TYPE['cell']
+        block.start_id = 120
+        block.end_id = 150
+        block.s3_key = 'fake_key'
+        self.session.add(block)
+
+        for i in range(50, 200):
+            self.session.add(CellMeasure(id=i))
+        self.session.commit()
+
+        with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
+            delete_cellmeasure_records()
+        self.assertEquals(119,
+                          self.session.query(CellMeasure).count())
+
+    def test_delete_wifi_measures(self):
+        block = MeasureBlock()
+        block.measure_type = MEASURE_TYPE['wifi']
+        block.start_id = 120
+        block.end_id = 150
+        block.s3_key = 'fake_key'
+        self.session.add(block)
+
+        for i in range(50, 200):
+            self.session.add(WifiMeasure(id=i))
+        self.session.commit()
+
+        with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
+            delete_wifimeasure_records()
+        self.assertEquals(119,
+                          self.session.query(WifiMeasure).count())
