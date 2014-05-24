@@ -11,6 +11,14 @@
         the numbers are only loosely correlated with the number of physical
         cell towers. Data is updated near real time.
     </p>
+    <p>
+        The underlying data is grouped by mobile country code. In some cases
+        these mobile country codes are shared between multiple countries, as
+        identified by ISO 3-letter codes. In these cases we report all data
+        for each of these countries and mark the country with a `*`. For
+        example Australia and the Norfolk Islands share a mobile country code,
+        so they get each listed with the same data.
+    </p>
     <div class="separator">
     <table class="table">
         <thead>
@@ -25,7 +33,7 @@
         </thead>
         <tbody>
             <tr tal:repeat="row metrics">
-                <td>${row.name}</td>
+                <td>${row.name}<tal:c condition="row.multiple"> *</tal:c></td>
                 <td class="text-right">${row.gsm}</td>
                 <td class="text-right">${row.cdma}</td>
                 <td class="text-right">${row.umts}</td>

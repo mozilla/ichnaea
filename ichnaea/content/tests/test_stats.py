@@ -165,33 +165,42 @@ class TestStats(DBTestCase):
         test_data = [
             Cell(radio=RADIO_TYPE[''], mcc=208, mnc=1),
             Cell(radio=RADIO_TYPE['gsm'], mcc=1, mnc=1),
+            Cell(radio=RADIO_TYPE['lte'], mcc=262, mnc=1),
             Cell(radio=RADIO_TYPE['gsm'], mcc=310, mnc=1),
             Cell(radio=RADIO_TYPE['gsm'], mcc=310, mnc=2),
-            Cell(radio=RADIO_TYPE['gsm'], mcc=311, mnc=1),
+            Cell(radio=RADIO_TYPE['gsm'], mcc=313, mnc=1),
             Cell(radio=RADIO_TYPE['cdma'], mcc=310, mnc=1),
-            Cell(radio=RADIO_TYPE['umts'], mcc=262, mnc=1),
-            Cell(radio=RADIO_TYPE['lte'], mcc=262, mnc=1),
+            Cell(radio=RADIO_TYPE['umts'], mcc=425, mnc=1),
+            Cell(radio=RADIO_TYPE['lte'], mcc=425, mnc=1),
         ]
         session.add_all(test_data)
         session.commit()
 
         # check the result
         result = countries(session)
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]['name'], 'Germany')
-        self.assertEqual(result[1]['name'], 'United States')
+        self.assertEqual(len(result), 6)
+        self.assertEqual(set([r['code'] for r in result]),
+                         set(['BMU', 'DEU', 'GUM', 'ISR', 'PSE', 'USA']))
 
         countries = {}
         for r in result:
-            name = r['name']
-            countries[name] = r
-            del countries[name]['name']
+            code = r['code']
+            countries[code] = r
+            del countries[code]['code']
+            del countries[code]['name']
 
-        self.assertEqual(
-            countries['United States'],
-            {'cdma': 1, 'gsm': 3, 'lte': 0, 'total': 4, 'umts': 0}
-        )
-        self.assertEqual(
-            countries['Germany'],
-            {'cdma': 0, 'gsm': 0, 'lte': 1, 'total': 2, 'umts': 1}
-        )
+        # a simple case with a 1:1 mapping of mcc to ISO country code
+        self.assertEqual(countries['DEU'], {'cdma': 0, 'gsm': 0, 'lte': 1,
+                         'total': 1, 'umts': 0, 'multiple': False})
+
+        # mcc 310 is valid for both GUM/USA, 313 only for USA
+        self.assertEqual(countries['USA'], {'cdma': 1, 'gsm': 3, 'lte': 0,
+                         'total': 4, 'umts': 0, 'multiple': True})
+        self.assertEqual(countries['GUM'], {'cdma': 1, 'gsm': 2, 'lte': 0,
+                         'total': 3, 'umts': 0, 'multiple': True})
+
+        # These two countries share a mcc, so we report the same data
+        # for both of them
+        self.assertEqual(countries['ISR'], {'cdma': 0, 'gsm': 0, 'lte': 1,
+                         'total': 2, 'umts': 1, 'multiple': True})
+        self.assertEqual(countries['ISR'], countries['PSE'])
