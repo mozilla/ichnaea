@@ -71,7 +71,7 @@ Mapping records into a search request
 The mapping can contain zero or more WiFi records and zero or more
 cell records. If either list of records is empty, it can be omitted entirely.
 
-For WiFi lookups you need to provide at least three WiFi keys of
+For WiFi lookups you need to provide at least two WiFi keys of
 nearby WiFi networks. This is an industry standard that is meant to
 prevent you from looking up the position of a single WiFi over time.
 
