@@ -92,30 +92,36 @@ CELERYBEAT_SCHEDULE = {
     # 's3-schedule-cellmeasure-archival': {
     #     'task': 'ichnaea.backup.tasks.schedule_cellmeasure_archival',
     #     'args': (100, ),
-    #     'schedule': crontab(hour=0, minute=15),
+    #     'schedule': crontab(hour=0, minute=7),
+    #     'options': {'expires': 43200},
     # },
     # 's3-write-cellbackups': {
     #     'task': 'ichnaea.backup.tasks.write_cellmeasure_s3_backups',
-    #     'schedule': crontab(hour=3, minute=0),
+    #     'schedule': crontab(hour=1, minute=7),
+    #     'options': {'expires': 43200},
     # }
 
     # 's3-schedule-wifimeasures-archival': {
     #     'task': 'ichnaea.backup.tasks.schedule_wifimeasure_archival',
     #     'args': (100, ),
-    #     'schedule': crontab(hour=0, minute=15),
+    #     'schedule': crontab(hour=0, minute=17),
+    #     'options': {'expires': 43200},
     # },
     # 's3-write-wifibackups': {
     #     'task': 'ichnaea.backup.tasks.write_wifimeasure_s3_backups',
-    #     'schedule': crontab(hour=3, minute=0),
-    # }
+    #     'schedule': crontab(hour=1, minute=17),
+    #     'options': {'expires': 43200},
+    # },
 
     # 's3-delete-wifimeasures': {
     #     'task': 'ichnaea.backup.tasks.delete_wifimeasure_records',
-    #     'schedule': crontab(hour=0, minute=15),
+    #     'schedule': crontab(hour=2, minute=27),
+    #     'options': {'expires': 43200},
     # },
     # 's3-delete-cellmeasures': {
     #     'task': 'ichnaea.backup.tasks.delete_cellmeasure_records',
-    #     'schedule': crontab(hour=0, minute=15),
+    #     'schedule': crontab(hour=2, minute=27),
+    #     'options': {'expires': 43200},
     # },
 
 }
