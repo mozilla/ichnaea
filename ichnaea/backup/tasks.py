@@ -93,6 +93,11 @@ def write_measure_s3_backups(self, measure_type,
 
     zips = []
     utcnow = datetime.datetime.utcnow()
+    s3_backend = S3Backend(
+        self.heka_client,
+        self.app.s3_settings['backup_bucket'],
+        self.app.s3_settings['backup_prefix'])
+
     with self.db_session() as session:
         query = session.query(MeasureBlock).filter(
             MeasureBlock.measure_type == measure_type).filter(
@@ -134,8 +139,7 @@ def write_measure_s3_backups(self, measure_type,
             cmb.archive_sha = compute_hash(zip_path)
 
             try:
-                s3 = S3Backend(self.heka_client)
-                if not s3.backup_archive(cmb.s3_key, zip_path):
+                if not s3_backend.backup_archive(cmb.s3_key, zip_path):
                     continue
                 self.heka_client.incr('s3.backup.%s' % measure_type,
                                       (cmb.end_id - cmb.start_id))
@@ -207,7 +211,11 @@ def schedule_wifimeasure_archival(self, batch=100):
 
 
 def delete_measure_records(self, measure_type, measure_cls, cleanup_zip):
-    s3 = S3Backend(self.heka_client)
+    s3_backend = S3Backend(
+        self.heka_client,
+        self.app.s3_settings['backup_bucket'],
+        self.app.s3_settings['backup_prefix'])
+
     with self.db_session() as session:
         query = session.query(MeasureBlock).filter(
             MeasureBlock.measure_type == measure_type).filter(
@@ -215,7 +223,7 @@ def delete_measure_records(self, measure_type, measure_cls, cleanup_zip):
             MeasureBlock.archive_date.is_(None))
         for cmb in query.all():
             expected_sha = cmb.archive_sha
-            if s3.check_archive(expected_sha, cmb.s3_key):
+            if s3_backend.check_archive(expected_sha, cmb.s3_key):
                 q = session.query(measure_cls).filter(
                     measure_cls.id >= cmb.start_id,
                     measure_cls.id <= cmb.end_id)

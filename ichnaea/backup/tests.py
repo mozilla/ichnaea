@@ -3,10 +3,8 @@ from contextlib import contextmanager
 import hashlib
 from mock import (
     MagicMock,
-    Mock,
     patch,
 )
-from unittest2 import TestCase
 from zipfile import ZipFile
 
 from ichnaea.backup.s3 import S3Backend
@@ -36,15 +34,12 @@ def mock_s3():
             yield mock_key
 
 
-class TestBackup(TestCase):
+class TestBackup(CeleryTestCase):
+
     def test_backup(self):
-        from ichnaea import config
-        conf = config()
-        prefix = conf.get('ichnaea', 's3_backup_key_prefix')
-
+        prefix = 'backups/tests'
         with mock_s3() as mock_key:
-            s3 = S3Backend(Mock())
-
+            s3 = S3Backend('localhost.bucket', prefix, self.heka_client)
             s3.backup_archive('some_key', '/tmp/not_a_real_file.zip')
             self.assertEquals(mock_key.key, '/'.join([prefix, 'some_key']))
             method = mock_key.set_contents_from_filename

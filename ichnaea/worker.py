@@ -123,9 +123,8 @@ CELERYBEAT_SCHEDULE = {
 celery = Celery('ichnaea.worker')
 
 
-def attach_database(app, _db_master=None):
+def attach_database(app, settings=None, _db_master=None):
     # called manually during tests
-    settings = config().get_map('ichnaea')
     if _db_master is None:  # pragma: no cover
         db_master = Database(settings['db_master'])
     else:
@@ -133,12 +132,22 @@ def attach_database(app, _db_master=None):
     app.db_master = db_master
 
 
+def configure_s3_backup(app, settings=None):
+    # called manually during tests
+    app.s3_settings = {
+        'backup_bucket': settings['s3_backup_bucket'],
+        'backup_prefix': settings['s3_backup_prefix'],
+    }
+
+
 @worker_process_init.connect
 def init_worker_process(signal, sender, **kw):  # pragma: no cover
     # called automatically when `celery worker` is started
     # get the app in the current worker process
     app = app_or_default()
-    attach_database(app)
+    settings = config().get_map('ichnaea')
+    attach_database(app, settings=settings)
+    configure_s3_backup(app, settings=settings)
     configure_heka()
 
 

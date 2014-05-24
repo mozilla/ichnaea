@@ -14,7 +14,10 @@ from ichnaea.db import _Model
 from ichnaea.db import Database
 from ichnaea.geoip import configure_geoip
 from ichnaea.heka_logging import configure_heka
-from ichnaea.worker import attach_database
+from ichnaea.worker import (
+    attach_database,
+    configure_s3_backup,
+)
 from ichnaea.worker import celery
 
 # make new unittest API's available under Python 2.6
@@ -108,11 +111,16 @@ class DBIsolation(object):
 class CeleryIsolation(object):
 
     @classmethod
-    def attach_database(cls):
-        attach_database(celery, cls.db_master)
+    def setup_celery(cls):
+        attach_database(celery, _db_master=cls.db_master)
+        configure_s3_backup(celery, settings={
+            's3_backup_bucket': 'localhost.bucket',
+            's3_backup_prefix': 'backups/tests',
+        })
 
     @classmethod
-    def detach_database(cls):
+    def teardown_celery(cls):
+        del celery.s3_settings
         del celery.db_master
 
 
@@ -292,11 +300,11 @@ class CeleryTestCase(DBTestCase, CeleryIsolation):
     @classmethod
     def setUpClass(cls):
         super(CeleryTestCase, cls).setUpClass()
-        super(CeleryTestCase, cls).attach_database()
+        super(CeleryTestCase, cls).setup_celery()
 
     @classmethod
     def tearDownClass(cls):
-        super(CeleryTestCase, cls).detach_database()
+        super(CeleryTestCase, cls).teardown_celery()
         super(CeleryTestCase, cls).tearDownClass()
 
 
@@ -305,9 +313,9 @@ class CeleryAppTestCase(AppTestCase, CeleryIsolation):
     @classmethod
     def setUpClass(cls):
         super(CeleryAppTestCase, cls).setUpClass()
-        super(CeleryAppTestCase, cls).attach_database()
+        super(CeleryAppTestCase, cls).setup_celery()
 
     @classmethod
     def tearDownClass(cls):
-        super(CeleryAppTestCase, cls).detach_database()
+        super(CeleryAppTestCase, cls).teardown_celery()
         super(CeleryAppTestCase, cls).tearDownClass()
