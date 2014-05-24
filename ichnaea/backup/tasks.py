@@ -54,7 +54,7 @@ def selfdestruct_tempdir(s3_key):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def write_cellmeasure_s3_backups(self, cleanup_zip=True):
+def write_cellmeasure_s3_backups(self, limit=100, cleanup_zip=True):
     measure_type = MEASURE_TYPE['cell']
     zip_prefix = 'CellMeasure'
     csv_name = 'cell_measure.csv'
@@ -64,11 +64,12 @@ def write_cellmeasure_s3_backups(self, cleanup_zip=True):
                                     zip_prefix,
                                     csv_name,
                                     measure_cls,
-                                    cleanup_zip)
+                                    limit=limit,
+                                    cleanup_zip=cleanup_zip)
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def write_wifimeasure_s3_backups(self, cleanup_zip=True):
+def write_wifimeasure_s3_backups(self, limit=100, cleanup_zip=True):
     measure_type = MEASURE_TYPE['wifi']
     zip_prefix = 'WifiMeasure'
     csv_name = 'wifi_measure.csv'
@@ -78,12 +79,13 @@ def write_wifimeasure_s3_backups(self, cleanup_zip=True):
                                     zip_prefix,
                                     csv_name,
                                     measure_cls,
-                                    cleanup_zip)
+                                    limit=limit,
+                                    cleanup_zip=cleanup_zip)
 
 
 def write_measure_s3_backups(self, measure_type,
                              zip_prefix, csv_name,
-                             measure_cls, cleanup_zip):
+                             measure_cls, limit=100, cleanup_zip=True):
     """
     Iterate over each of the measure block records that aren't
     backed up yet and back them up.
@@ -102,7 +104,7 @@ def write_measure_s3_backups(self, measure_type,
         query = session.query(MeasureBlock).filter(
             MeasureBlock.measure_type == measure_type).filter(
             MeasureBlock.archive_date.is_(None)).order_by(
-            MeasureBlock.end_id)
+            MeasureBlock.end_id).limit(limit)
         for cmb in query.all():
             cmb.s3_key = '%s/%s_%d_%d.zip' % (
                 utcnow.strftime("%Y%m"),
@@ -156,7 +158,8 @@ def write_measure_s3_backups(self, measure_type,
     return zips
 
 
-def schedule_measure_archival(self, measure_type, measure_cls, batch=100):
+def schedule_measure_archival(self, measure_type, measure_cls,
+                              batch=100, limit=100):
     blocks = []
     with self.db_session() as session:
         query = session.query(MeasureBlock.end_id).filter(
@@ -193,7 +196,7 @@ def schedule_measure_archival(self, measure_type, measure_cls, batch=100):
         this_max_id = min_id + batch
 
         i = 0
-        while i < 100 and (this_max_id - min_id) == batch:
+        while i < limit and (this_max_id - min_id) == batch:
             cm_blk = MeasureBlock(start_id=min_id,
                                   end_id=this_max_id,
                                   measure_type=measure_type)
@@ -208,15 +211,15 @@ def schedule_measure_archival(self, measure_type, measure_cls, batch=100):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def schedule_cellmeasure_archival(self, batch=100):
+def schedule_cellmeasure_archival(self, batch=100, limit=100):
     return schedule_measure_archival(
-        self, MEASURE_TYPE['cell'], CellMeasure, batch)
+        self, MEASURE_TYPE['cell'], CellMeasure, batch, limit)
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def schedule_wifimeasure_archival(self, batch=100):
+def schedule_wifimeasure_archival(self, batch=100, limit=100):
     return schedule_measure_archival(
-        self, MEASURE_TYPE['wifi'], WifiMeasure, batch)
+        self, MEASURE_TYPE['wifi'], WifiMeasure, batch, limit)
 
 
 def delete_measure_records(self, measure_type, measure_cls, cleanup_zip):
