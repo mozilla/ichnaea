@@ -101,7 +101,7 @@ class TestSearch(AppTestCase):
         session.commit()
         res = app.post_json('/v1/search?key=test',
                             {"wifi": [
-                                {"key": "A1"}, {"key": "B2"},
+                                {"key": "A1"},
                             ]},
                             status=200)
         self.assertEqual(res.json, {"status": "not_found"})
@@ -118,7 +118,7 @@ class TestSearch(AppTestCase):
         session.commit()
         res = app.post_json('/v1/search?key=test',
                             {"wifi": [
-                                {"key": "A1"}, {"key": "B2"}, {"key": "C3"},
+                                {"key": "A1"}, {"key": "C3"},
                             ]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
@@ -174,7 +174,7 @@ class TestSearch(AppTestCase):
                                     "lat": 2.0010000, "lon": 2.0020000,
                                     "accuracy": 248.51819000225819})
 
-    def test_wifi_find_sparse_high_signal_cluster(self):
+    def test_wifi_prefer_larger_cluster_over_high_signal(self):
         app = self.app
         session = self.db_slave_session
         wifis = [Wifi(key="A%d" % i,
@@ -202,10 +202,10 @@ class TestSearch(AppTestCase):
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": 2.0010000, "lon": 2.0020000,
-                                    "accuracy": 248.51819000225819})
+                                    "lat": 1.000020, "lon": 1.000024,
+                                    "accuracy": WIFI_MIN_ACCURACY})
 
-    def test_wifi_only_use_top_three_signals_in_noisy_cluster(self):
+    def test_wifi_only_use_top_five_signals_in_noisy_cluster(self):
         app = self.app
         session = self.db_slave_session
         # all these should wind up in the same cluster since
@@ -219,11 +219,13 @@ class TestSearch(AppTestCase):
         session.commit()
         measures = [dict(key="A%d" % i,
                          signal=-80)
-                    for i in range(3, 100)]
+                    for i in range(5, 100)]
         measures += [
             dict(key="A0", signal=-75),
             dict(key="A1", signal=-74),
-            dict(key="A2", signal=-73)
+            dict(key="A2", signal=-73),
+            dict(key="A3", signal=-72),
+            dict(key="A4", signal=-71),
         ]
         random.shuffle(measures)
         res = app.post_json('/v1/search?key=test',
@@ -231,7 +233,7 @@ class TestSearch(AppTestCase):
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": 1.0000100, "lon": 1.0000120,
+                                    "lat": 1.000020, "lon": 1.000024,
                                     "accuracy": WIFI_MIN_ACCURACY})
 
     def test_wifi_not_closeby(self):
@@ -247,8 +249,8 @@ class TestSearch(AppTestCase):
         session.commit()
         res = app.post_json('/v1/search?key=test',
                             {"wifi": [
-                                {"key": "A1"}, {"key": "B2"},
-                                {"key": "C3"}, {"key": "D4"},
+                                {"key": "A1"},
+                                {"key": "C3"},
                             ]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
