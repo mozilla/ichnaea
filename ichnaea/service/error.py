@@ -24,7 +24,8 @@ class JSONError(HTTPError, BaseJSONError):
         self.content_type = 'application/json'
 
 
-def preprocess_request(request, schema, extra_checks=(), response=JSONError):
+def preprocess_request(request, schema, extra_checks=(), response=JSONError,
+                       accept_empty=False):
     body = {}
     errors = []
     validated = {}
@@ -45,6 +46,9 @@ def preprocess_request(request, schema, extra_checks=(), response=JSONError):
                 errors.append(dict(name=None, description=e.message))
     else:
         errors.append(dict(name=None, description=MSG_EMPTY))
+
+    if accept_empty and body == {}:
+        return ({}, errors)
 
     if not body or (errors and response is not None):
         if response is not None:

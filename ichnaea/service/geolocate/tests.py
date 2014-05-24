@@ -201,13 +201,23 @@ class TestGeolocate(AppTestCase):
 
     def test_geoip_fallback(self):
         app = self.app
-
         res = app.post_json(
             '/v1/geolocate?key=test',
             {"wifiAccessPoints": [
                 {"macAddress": "Porky"}, {"macAddress": "Piggy"},
                 {"macAddress": "Davis"}, {"macAddress": "McSnappy"},
             ]},
+            extra_environ={'HTTP_X_FORWARDED_FOR': '66.92.181.240'},
+            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {"location": {"lat": 37.5079,
+                                                 "lng": -121.96},
+                                    "accuracy": GEOIP_CITY_ACCURACY})
+
+    def test_empty_request_means_geoip(self):
+        app = self.app
+        res = app.post_json(
+            '/v1/geolocate?key=test', {},
             extra_environ={'HTTP_X_FORWARDED_FOR': '66.92.181.240'},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
