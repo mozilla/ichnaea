@@ -101,10 +101,14 @@ def write_measure_s3_backups(self, measure_type,
         self.heka_client)
 
     with self.db_session() as session:
+        rset = session.execute("select * from alembic_version")
+        alembic_rev = rset.first()[0]
+
         query = session.query(MeasureBlock).filter(
             MeasureBlock.measure_type == measure_type).filter(
             MeasureBlock.s3_key.is_(None)).order_by(
             MeasureBlock.end_id).limit(limit)
+
         for block in query.all():
             s3_key = '%s/%s_%d_%d.zip' % (
                 utcnow.strftime("%Y%m"),
@@ -113,11 +117,9 @@ def write_measure_s3_backups(self, measure_type,
                 block.end_id)
 
             with selfdestruct_tempdir(s3_key) as (tmp_path, zip_path):
-                rset = session.execute("select * from alembic_version")
-                rev = rset.first()[0]
                 with open(os.path.join(tmp_path,
                                        'alembic_revision.txt'), 'w') as f:
-                    f.write('%s\n' % rev)
+                    f.write('%s\n' % alembic_rev)
 
                 cm_fname = os.path.join(tmp_path, csv_name)
 

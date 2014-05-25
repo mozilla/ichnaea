@@ -9,7 +9,7 @@ def compute_hash(zip_path):
     sha = hashlib.sha1()
     with open(zip_path, 'rb') as file_in:
         while True:
-            data = file_in.read(4096)
+            data = file_in.read(16384)
             if not data:
                 break
             sha.update(data)
