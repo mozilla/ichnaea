@@ -105,12 +105,12 @@ def write_measure_s3_backups(self, measure_type,
             MeasureBlock.measure_type == measure_type).filter(
             MeasureBlock.s3_key.is_(None)).order_by(
             MeasureBlock.end_id).limit(limit)
-        for cmb in query.all():
+        for block in query.all():
             s3_key = '%s/%s_%d_%d.zip' % (
                 utcnow.strftime("%Y%m"),
                 zip_prefix,
-                cmb.start_id,
-                cmb.end_id)
+                block.start_id,
+                block.end_id)
 
             with selfdestruct_tempdir(s3_key) as (tmp_path, zip_path):
                 rset = session.execute("select * from alembic_version")
@@ -122,8 +122,8 @@ def write_measure_s3_backups(self, measure_type,
                 cm_fname = os.path.join(tmp_path, csv_name)
 
                 cm_query = session.query(measure_cls).filter(
-                    measure_cls.id >= cmb.start_id).filter(
-                    measure_cls.id < cmb.end_id)
+                    measure_cls.id >= block.start_id).filter(
+                    measure_cls.id < block.end_id)
 
                 col_names = None
                 with open(cm_fname, 'w') as f:
@@ -142,7 +142,7 @@ def write_measure_s3_backups(self, measure_type,
                 if not s3_backend.backup_archive(s3_key, zip_path):
                     continue
                 self.heka_client.incr('s3.backup.%s' % measure_type,
-                                      (cmb.end_id - cmb.start_id))
+                                      (block.end_id - block.start_id))
             finally:
                 if cleanup_zip:
                     if os.path.exists(zip_path):
@@ -153,8 +153,8 @@ def write_measure_s3_backups(self, measure_type,
                     zips.append(zip_path)
 
             # only set archive_sha / s3_key if upload was successful
-            cmb.archive_sha = archive_sha
-            cmb.s3_key = s3_key
+            block.archive_sha = archive_sha
+            block.s3_key = s3_key
 
             session.commit()
     return zips
@@ -237,14 +237,14 @@ def delete_measure_records(self, measure_type, measure_cls, cleanup_zip):
             MeasureBlock.s3_key.isnot(None)).filter(
             MeasureBlock.archive_sha.isnot(None)).filter(
             MeasureBlock.archive_date.is_(None))
-        for cmb in query.all():
-            expected_sha = cmb.archive_sha
-            if s3_backend.check_archive(expected_sha, cmb.s3_key):
+        for block in query.all():
+            expected_sha = block.archive_sha
+            if s3_backend.check_archive(expected_sha, block.s3_key):
                 q = session.query(measure_cls).filter(
-                    measure_cls.id >= cmb.start_id,
-                    measure_cls.id <= cmb.end_id)
+                    measure_cls.id >= block.start_id,
+                    measure_cls.id <= block.end_id)
                 q.delete()
-                cmb.archive_date = utcnow
+                block.archive_date = utcnow
                 session.commit()
 
 
