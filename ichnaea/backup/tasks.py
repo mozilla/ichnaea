@@ -224,7 +224,7 @@ def schedule_wifimeasure_archival(self, batch=100, limit=100):
         self, MEASURE_TYPE['wifi'], WifiMeasure, batch, limit)
 
 
-def delete_measure_records(self, measure_type, measure_cls, cleanup_zip):
+def delete_measure_records(self, measure_type, measure_cls, limit=100):
     s3_backend = S3Backend(
         self.app.s3_settings['backup_bucket'],
         self.app.s3_settings['backup_prefix'],
@@ -236,7 +236,7 @@ def delete_measure_records(self, measure_type, measure_cls, cleanup_zip):
             MeasureBlock.measure_type == measure_type).filter(
             MeasureBlock.s3_key.isnot(None)).filter(
             MeasureBlock.archive_sha.isnot(None)).filter(
-            MeasureBlock.archive_date.is_(None))
+            MeasureBlock.archive_date.is_(None)).limit(limit)
         for block in query.all():
             expected_sha = block.archive_sha
             if s3_backend.check_archive(expected_sha, block.s3_key):
@@ -249,12 +249,12 @@ def delete_measure_records(self, measure_type, measure_cls, cleanup_zip):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def delete_cellmeasure_records(self, cleanup_zip=True):
+def delete_cellmeasure_records(self, limit=100):
     return delete_measure_records(
-        self, MEASURE_TYPE['cell'], CellMeasure, cleanup_zip)
+        self, MEASURE_TYPE['cell'], CellMeasure, limit=limit)
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def delete_wifimeasure_records(self, cleanup_zip=True):
+def delete_wifimeasure_records(self, limit=100):
     return delete_measure_records(
-        self, MEASURE_TYPE['wifi'], WifiMeasure, cleanup_zip)
+        self, MEASURE_TYPE['wifi'], WifiMeasure, limit=limit)
