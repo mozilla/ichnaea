@@ -123,20 +123,19 @@ def write_measure_s3_backups(self, measure_type,
 
                 cm_fname = os.path.join(tmp_path, csv_name)
 
-                cm_query = session.query(measure_cls).filter(
-                    measure_cls.id >= block.start_id).filter(
-                    measure_cls.id < block.end_id)
+                # avoid ORM session overhead
+                table = measure_cls.__table__
+                query = table.select().where(
+                    table.c.id >= block.start_id).where(
+                    table.c.id < block.end_id)
+                columns = table.c.keys()
+                result = session.execute(query)
 
-                col_names = None
                 with open(cm_fname, 'w') as f:
                     csv_out = csv.writer(f, dialect='excel')
-                    for i, row in enumerate(cm_query.all()):
-                        if i == 0:
-                            col_names = [c.name for c in row.__table__.columns]
-                            csv_out.writerow(col_names)
-                            pass
-                        data_row = [getattr(row, cname) for cname in col_names]
-                        csv_out.writerow(data_row)
+                    csv_out.writerow(columns)
+                    for row in result:
+                        csv_out.writerow(row)
 
             archive_sha = compute_hash(zip_path)
 
