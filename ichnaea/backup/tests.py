@@ -136,7 +136,8 @@ class TestMeasurementsDump(CeleryTestCase):
         actual_sha = hashlib.sha1()
         actual_sha.update(open(fname, 'rb').read())
         self.assertEquals(block.archive_sha, actual_sha.digest())
-        self.assertTrue(block.archive_date is not None)
+        self.assertTrue(block.s3_key is not None)
+        self.assertTrue(block.archive_date is None)
 
     def test_backup_wifi_to_s3(self):
         session = self.db_master_session
@@ -176,7 +177,8 @@ class TestMeasurementsDump(CeleryTestCase):
         actual_sha = hashlib.sha1()
         actual_sha.update(open(fname, 'rb').read())
         self.assertEquals(block.archive_sha, actual_sha.digest())
-        self.assertTrue(block.archive_date is not None)
+        self.assertTrue(block.s3_key is not None)
+        self.assertTrue(block.archive_date is None)
 
     def test_delete_cell_measures(self):
         session = self.db_master_session
@@ -185,7 +187,8 @@ class TestMeasurementsDump(CeleryTestCase):
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'
-        block.archive_date = datetime.datetime.utcnow()
+        block.archive_sha = 'fake_sha'
+        block.archive_date = None
         session.add(block)
 
         for i in range(100, 150):
@@ -194,7 +197,9 @@ class TestMeasurementsDump(CeleryTestCase):
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_cellmeasure_records()
+
         self.assertEquals(session.query(CellMeasure).count(), 29)
+        self.assertTrue(block.archive_date is not None)
 
     def test_delete_wifi_measures(self):
         session = self.db_master_session
@@ -203,7 +208,8 @@ class TestMeasurementsDump(CeleryTestCase):
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'
-        block.archive_date = datetime.datetime.utcnow()
+        block.archive_sha = 'fake_sha'
+        block.archive_date = None
         session.add(block)
 
         for i in range(100, 150):
@@ -212,4 +218,6 @@ class TestMeasurementsDump(CeleryTestCase):
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_wifimeasure_records()
+
         self.assertEquals(session.query(WifiMeasure).count(), 29)
+        self.assertTrue(block.archive_date is not None)
