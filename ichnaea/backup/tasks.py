@@ -237,7 +237,8 @@ def delete_measure_records(self, measure_type, measure_cls, limit=100):
             MeasureBlock.measure_type == measure_type).filter(
             MeasureBlock.s3_key.isnot(None)).filter(
             MeasureBlock.archive_sha.isnot(None)).filter(
-            MeasureBlock.archive_date.is_(None)).limit(limit)
+            MeasureBlock.archive_date.is_(None)).order_by(
+            MeasureBlock.end_id.asc()).limit(limit)
         for block in query.all():
             expected_sha = block.archive_sha
             if s3_backend.check_archive(expected_sha, block.s3_key):
