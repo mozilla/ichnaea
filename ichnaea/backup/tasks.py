@@ -101,7 +101,7 @@ def write_measure_s3_backups(self, measure_type,
         self.heka_client)
 
     with self.db_session() as session:
-        rset = session.execute("select * from alembic_version")
+        rset = session.execute("select version_num from alembic_version")
         alembic_rev = rset.first()[0]
 
         query = session.query(MeasureBlock).filter(
