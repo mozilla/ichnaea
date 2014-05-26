@@ -1,3 +1,5 @@
+from colander import Invalid
+from datetime import datetime
 from pyramid.httpexceptions import HTTPNotFound
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.base import check_api_key
@@ -6,6 +8,7 @@ from ichnaea.service.geolocate.views import (
     NOT_FOUND,
 )
 from ichnaea.service.geosubmit.schema import GeoSubmitSchema
+from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.service.error import (
     MSG_BAD_RADIO,
     MSG_ONE_OF,
@@ -67,9 +70,14 @@ def process_upload(nickname, items):
             wifi['signal'] = w['signalStrength']
             normalized_wifi.append(wifi)
 
+        if batch['timestamp'] == -255:
+            ts = datetime.utcnow().isoformat()
+        else:
+            ts = datetime.fromordinal(batch['timestamp']).isoformat()
+
         normalized_batch = {'lat': batch['lat'] / (10**7),
                             'lon': batch['lon'] / (10**7),
-                            'time': batch['timestamp'],
+                            'time': ts,
                             'accuracy': batch['accuracy'],
                             'altitude': batch['altitude'],
                             'altitude_accuracy': batch['altitude_accuracy'],
@@ -78,11 +86,46 @@ def process_upload(nickname, items):
                             'wifi': normalized_wifi}
         batch_list.append(normalized_batch)
 
+    body = {'items': batch_list}
+    errors = []
+    validated = {}
+
+    # Run the SubmitScheme validator against the normalized submit
+    # data.
+    schema = SubmitSchema()
+    schema.bind(request=body)
+    for attr in schema.children:
+        name = attr.name
+        try:
+            if name not in body:
+                deserialized = attr.deserialize()
+            else:
+                deserialized = attr.deserialize(body[name])
+        except Invalid as e:
+            # the struct is invalid
+            err_dict = e.asdict()
+            try:
+                errors.append(dict(name=name, description=err_dict[name]))
+                break
+            except KeyError:
+                for k, v in err_dict.items():
+                    if k.startswith(name):
+                        errors.append(dict(name=k, description=v))
+                        break
+                break
+        else:
+            validated[name] = deserialized
+
+    if errors:
+        # Short circuit on any error in schema validation
+        return validated, errors
+
     for i in range(0, len(batch_list), 100):
         insert_measures.delay(
             items=dumps(batch_list[i:i + 100]),
             nickname=nickname,
         )
+    return validated, errors
 
 
 def configure_geosubmit(config):
@@ -111,10 +154,13 @@ def geosubmit_view(request):
 
     items = data.get('items', [data])
     nickname = request.headers.get('X-Nickname', u'')
-    process_upload(nickname, items)
+    validated, errors = process_upload(nickname, items)
+
+    if errors:
+        heka_client.incr('geosubmit.upload.errors', len(errors))
 
     if result is None:
-        heka_client.incr('geolocate.miss')
+        heka_client.incr('geosubmit.miss')
         result = HTTPNotFound()
         result.content_type = 'application/json'
         result.body = NOT_FOUND
