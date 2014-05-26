@@ -114,35 +114,7 @@ def geolocate_view(request):
     )
 
     session = request.db_slave_session
-    result = None
-
-    if data and data['wifiAccessPoints']:
-        result = search_wifi_ap(session, data)
-        if result is not None:
-            heka_client.incr('geolocate.wifi_hit')
-            heka_client.timer_send('geolocate.accuracy.wifi',
-                                   result['accuracy'])
-    elif data:
-        result = search_cell_tower(session, data)
-        if result is not None:
-            heka_client.incr('geolocate.cell_hit')
-            heka_client.timer_send('geolocate.accuracy.cell',
-                                   result['accuracy'])
-
-        if result is None:
-            result = search_cell_tower_lac(session, data)
-            if result is not None:
-                heka_client.incr('geolocate.cell_lac_hit')
-                heka_client.timer_send('geolocate.accuracy.cell_lac',
-                                       result['accuracy'])
-
-    if result is None and request.client_addr:
-        result = search_geoip(request.registry.geoip_db,
-                              request.client_addr)
-        if result is not None:
-            heka_client.incr('geolocate.geoip_hit')
-            heka_client.timer_send('geolocate.accuracy.geoip',
-                                   result['accuracy'])
+    result = do_geolocate(session, request, data, heka_client, 'geolocate')
 
     if result is None:
         heka_client.incr('geolocate.miss')
@@ -158,3 +130,37 @@ def geolocate_view(request):
         },
         "accuracy": float(result['accuracy']),
     }
+
+
+def do_geolocate(session, request, data, heka_client, svc_name):
+    result = None
+    if data and data['wifiAccessPoints']:
+        result = search_wifi_ap(session, data)
+        if result is not None:
+            heka_client.incr('%s.wifi_hit' % svc_name)
+            heka_client.timer_send('%s.accuracy.wifi' % svc_name,
+                                   result['accuracy'])
+    elif data:
+        result = search_cell_tower(session, data)
+        if result is not None:
+            heka_client.incr('%s.cell_hit' % svc_name)
+            heka_client.timer_send('%s.accuracy.cell' % svc_name,
+                                   result['accuracy'])
+
+        if result is None:
+            result = search_cell_tower_lac(session, data)
+            if result is not None:
+                heka_client.incr('%s.cell_lac_hit' % svc_name)
+                heka_client.timer_send('%s.accuracy.cell_lac' % svc_name,
+                                       result['accuracy'])
+
+    if result is None and request.client_addr:
+        result = search_geoip(request.registry.geoip_db,
+                              request.client_addr)
+        if result is not None:
+            heka_client.incr('%s.geoip_hit' % svc_name)
+            heka_client.timer_send('%s.accuracy.geoip' % svc_name,
+                                   result['accuracy'])
+
+
+    return result

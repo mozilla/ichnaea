@@ -13,12 +13,7 @@ from ichnaea.service.error import (
 )
 
 from ichnaea.service.geolocate.views import (
-    search_wifi_ap,
-    search_cell_tower,
-    search_cell_tower_lac,
-)
-from ichnaea.service.search.views import (
-    search_geoip,
+    do_geolocate,
 )
 from ichnaea.service.submit.tasks import insert_measures
 from ichnaea.decimaljson import dumps
@@ -107,35 +102,12 @@ def geosubmit_view(request):
     )
 
     session = request.db_slave_session
-    result = None
 
-    if data['wifiAccessPoints']:
-        result = search_wifi_ap(session, data)
-        if result is not None:
-            heka_client.incr('geosubmit.wifi_hit')
-            heka_client.timer_send('geosubmit.accuracy.wifi',
-                                   result['accuracy'])
-    else:
-        result = search_cell_tower(session, data)
-        if result is not None:
-            heka_client.incr('geosubmit.cell_hit')
-            heka_client.timer_send('geosubmit.accuracy.cell',
-                                   result['accuracy'])
-
-        if result is None:
-            result = search_cell_tower_lac(session, data)
-            if result is not None:
-                heka_client.incr('geosubmit.cell_lac_hit')
-                heka_client.timer_send('geosubmit.accuracy.cell_lac',
-                                       result['accuracy'])
-
-    if result is None and request.client_addr:
-        result = search_geoip(request.registry.geoip_db,
-                              request.client_addr)
-        if result is not None:
-            heka_client.incr('geosubmit.geoip_hit')
-            heka_client.timer_send('geosubmit.accuracy.geoip',
-                                   result['accuracy'])
+    result = do_geolocate(session,
+                          request,
+                          data,
+                          heka_client,
+                          'geosubmit')
 
     items = data.get('items', [data])
     nickname = request.headers.get('X-Nickname', u'')

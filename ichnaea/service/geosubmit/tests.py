@@ -51,7 +51,7 @@ class TestGeosubmit(CeleryAppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"location": {"lat": 12.3456781,
                                                  "lng": 23.4567892},
-                                    "accuracy": 10000})
+                                    "accuracy": 5000})
 
         cell = session.query(Cell).first()
         self.assertEqual(2, cell.total_measures)
