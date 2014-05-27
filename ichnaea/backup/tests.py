@@ -1,11 +1,11 @@
 import boto
 from contextlib import contextmanager
-import datetime
 import hashlib
 from mock import (
     MagicMock,
     patch,
 )
+
 from zipfile import ZipFile
 
 from ichnaea.backup.s3 import S3Backend
@@ -116,9 +116,14 @@ class TestMeasurementsDump(CeleryTestCase):
         with mock_s3():
             with patch.object(S3Backend,
                               'backup_archive', lambda x, y, z: True):
-                zips = write_cellmeasure_s3_backups(cleanup_zip=False)
-                self.assertTrue(len(zips), 1)
-                fname = zips[0]
+                write_cellmeasure_s3_backups(cleanup_zip=False)
+
+                msgs = self.heka_client.stream.msgs
+                info_msgs = [m for m in msgs if m.type == 'oldstyle']
+                self.assertEquals(1, len(info_msgs))
+                info = info_msgs[0]
+                fname = info.payload.split(":")[-1]
+
                 myzip = ZipFile(fname)
                 try:
                     contents = set(myzip.namelist())
@@ -157,9 +162,14 @@ class TestMeasurementsDump(CeleryTestCase):
         with mock_s3():
             with patch.object(S3Backend,
                               'backup_archive', lambda x, y, z: True):
-                zips = write_wifimeasure_s3_backups(cleanup_zip=False)
-                self.assertTrue(len(zips), 1)
-                fname = zips[0]
+                write_wifimeasure_s3_backups(cleanup_zip=False)
+
+                msgs = self.heka_client.stream.msgs
+                info_msgs = [m for m in msgs if m.type == 'oldstyle']
+                self.assertEquals(1, len(info_msgs))
+                info = info_msgs[0]
+                fname = info.payload.split(":")[-1]
+
                 myzip = ZipFile(fname)
                 try:
                     contents = set(myzip.namelist())

@@ -147,6 +147,7 @@ def configure_s3_backup(app, settings=None):
     app.s3_settings = {
         'backup_bucket': settings['s3_backup_bucket'],
         'backup_prefix': settings['s3_backup_prefix'],
+        'backup_chunksize': settings['s3_backup_chunksize'],
     }
 
 

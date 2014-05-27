@@ -92,5 +92,8 @@ test: mysql
 bin/sphinx-build:
 	$(INSTALL) -r requirements/docs.txt
 
+shell:
+	SQLURI=$(SQLURI) $(PYTHON) scripts/start_ipython.py
+
 docs:  bin/sphinx-build
 	cd docs; make html

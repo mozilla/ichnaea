@@ -92,73 +92,107 @@ def write_measure_s3_backups(self, measure_type,
 
     Assume that this is running in a single task.
     """
-
-    zips = []
-    utcnow = datetime.datetime.utcnow()
-    s3_backend = S3Backend(
-        self.app.s3_settings['backup_bucket'],
-        self.app.s3_settings['backup_prefix'],
-        self.heka_client)
-
     with self.db_session() as session:
-        rset = session.execute("select version_num from alembic_version")
-        alembic_rev = rset.first()[0]
 
         query = session.query(MeasureBlock).filter(
             MeasureBlock.measure_type == measure_type).filter(
             MeasureBlock.s3_key.is_(None)).order_by(
             MeasureBlock.end_id).limit(limit)
 
-        for block in query.all():
-            s3_key = '%s/%s_%d_%d.zip' % (
-                utcnow.strftime("%Y%m"),
-                zip_prefix,
-                block.start_id,
-                block.end_id)
+        for block in query:
+            # TODO: change this to invoke .delay(*args) instead
+            do_write_measure_s3_backups.delay(measure_type,
+                                              zip_prefix,
+                                              csv_name,
+                                              measure_cls.__name__,
+                                              limit,
+                                              cleanup_zip,
+                                              block.id,
+                                              block.start_id,
+                                              block.end_id,)
 
-            with selfdestruct_tempdir(s3_key) as (tmp_path, zip_path):
-                with open(os.path.join(tmp_path,
-                                       'alembic_revision.txt'), 'w') as f:
-                    f.write('%s\n' % alembic_rev)
 
-                cm_fname = os.path.join(tmp_path, csv_name)
+@celery.task(base=DatabaseTask, bind=True)
+def do_write_measure_s3_backups(self,
+                                measure_type,
+                                zip_prefix,
+                                csv_name,
+                                measure_cls_name,
+                                limit,
+                                cleanup_zip,
+                                block_id,
+                                start_id,  # TODO: get rid of start/end_id
+                                end_id):
 
-                # avoid ORM session overhead
-                table = measure_cls.__table__
-                query = table.select().where(
-                    table.c.id >= block.start_id).where(
-                    table.c.id < block.end_id)
-                columns = table.c.keys()
-                result = session.execute(query)
+    from ichnaea import models
+    measure_cls = getattr(models, measure_cls_name)
 
-                with open(cm_fname, 'w') as f:
-                    csv_out = csv.writer(f, dialect='excel')
-                    csv_out.writerow(columns)
-                    for row in result:
-                        csv_out.writerow(row)
+    with self.db_session() as session:
+        rset = session.execute("select version_num from alembic_version")
+        alembic_rev = rset.first()[0]
 
-            archive_sha = compute_hash(zip_path)
+        s3_backend = S3Backend(
+            self.app.s3_settings['backup_bucket'],
+            self.app.s3_settings['backup_prefix'],
+            self.heka_client)
 
-            try:
-                if not s3_backend.backup_archive(s3_key, zip_path):
-                    continue
-                self.heka_client.incr('s3.backup.%s' % measure_type,
-                                      (block.end_id - block.start_id))
-            finally:
-                if cleanup_zip:
-                    if os.path.exists(zip_path):
-                        zip_dir, zip_file = os.path.split(zip_path)
-                        if os.path.exists(zip_dir):
-                            shutil.rmtree(zip_dir)
-                else:
-                    zips.append(zip_path)
+        chunk_size = self.app.s3_settings['backup_chunksize']
 
-            # only set archive_sha / s3_key if upload was successful
-            block.archive_sha = archive_sha
-            block.s3_key = s3_key
+        utcnow = datetime.datetime.utcnow()
+        s3_key = '%s/%s_%d_%d.zip' % (utcnow.strftime("%Y%m"),
+                                      zip_prefix,
+                                      start_id,
+                                      end_id)
 
-            session.commit()
-    return zips
+        with selfdestruct_tempdir(s3_key) as (tmp_path, zip_path):
+            with open(os.path.join(tmp_path,
+                                   'alembic_revision.txt'), 'w') as f:
+                f.write('%s\n' % alembic_rev)
+
+            # avoid ORM session overhead
+            table = measure_cls.__table__
+
+            cm_fname = os.path.join(tmp_path, csv_name)
+            with open(cm_fname, 'w') as f:
+                csv_out = csv.writer(f, dialect='excel')
+                for this_start in range(start_id,
+                                        end_id,
+                                        chunk_size):
+                    this_end = min(this_start+chunk_size, end_id)
+
+                    query = table.select().where(
+                        table.c.id >= this_start).where(
+                        table.c.id < this_end)
+
+                    if this_start == start_id:
+                        columns = table.c.keys()
+                        csv_out.writerow(columns)
+
+                    rproxy = session.execute(query)
+                    csv_out.writerows(rproxy)
+
+        archive_sha = compute_hash(zip_path)
+
+        try:
+            if not s3_backend.backup_archive(s3_key, zip_path):
+                return
+            self.heka_client.incr('s3.backup.%s' % measure_type,
+                                  (end_id - start_id))
+        finally:
+            if cleanup_zip:
+                if os.path.exists(zip_path):
+                    zip_dir, zip_file = os.path.split(zip_path)
+                    if os.path.exists(zip_dir):
+                        shutil.rmtree(zip_dir)
+            else:
+                self.heka_client.debug("s3.backup:%s" % zip_path)
+
+        # only set archive_sha / s3_key if upload was successful
+        block = session.query(MeasureBlock).filter(
+            MeasureBlock.id == block_id).first()
+        block.archive_sha = archive_sha
+        block.s3_key = s3_key
+        session.commit()
 
 
 def schedule_measure_archival(self, measure_type, measure_cls,
