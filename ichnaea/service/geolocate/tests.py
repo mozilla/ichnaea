@@ -235,15 +235,8 @@ class TestGeolocate(AppTestCase):
             status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(
-            res.json, {"error": {
-                "errors": [{
-                    "domain": "global",
-                    "reason": "parseError",
-                    "message": "Parse Error",
-                }],
-                "code": 400,
-                "message": "Parse Error"
-            }}
+            res.json,
+            {u'errors': [{u'description': u'Required', u'name': u'wifiAccessPoints.0.macAddress'}]}
         )
 
         self.check_expected_heka_messages(
@@ -384,14 +377,6 @@ class TestGeolocate(AppTestCase):
         )
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(
-            res.json, {"error": {
-                "errors": [{
-                    "domain": "global",
-                    "reason": "parseError",
-                    "message": "Parse Error",
-                }],
-                "code": 400,
-                "message": "Parse Error"
-            }}
-        )
+        self.assertEqual(res.json, {u'errors': [
+                         {u'description': u'Radio fields were not consistent in the cellTower data.',
+                          u'name': u'body'}]})

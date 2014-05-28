@@ -14,18 +14,6 @@ MSG_EMPTY = 'No JSON body was provided.'
 MSG_GZIP = 'Error decompressing gzip data stream.'
 MSG_ONE_OF = 'You need to provide a mapping with least one cell or wifi entry.'
 MSG_BAD_RADIO = 'Radio fields were not consistent in the cellTower data.'
-PARSE_ERROR = {
-    "error": {
-        "errors": [{
-            "domain": "global",
-            "reason": "parseError",
-            "message": "Parse Error",
-        }],
-        "code": 400,
-        "message": "Parse Error"
-    }
-}
-PARSE_ERROR = dumps(PARSE_ERROR)
 
 
 class JSONError(HTTPError, BaseJSONError):
