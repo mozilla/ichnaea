@@ -25,10 +25,10 @@ SUBMIT_RADIO_TYPE_KEYS = ['gsm', 'cdma', 'wcdma', 'lte']
 class GeoSubmitSchema(MappingSchema):
     # lat/lon being set to -255 indicates that this measure should be
     # skipped.  Other fields can be filled in with defaults
-    lat = SchemaNode(Decimal(quant=EXPONENT_STR), location="body",
-                     missing=-255)
-    lon = SchemaNode(Decimal(quant=EXPONENT_STR), location="body",
-                     missing=-255)
+    latitude = SchemaNode(Decimal(quant=EXPONENT_STR), location="body",
+                          missing=-255)
+    longitude = SchemaNode(Decimal(quant=EXPONENT_STR), location="body",
+                           missing=-255)
     accuracy = SchemaNode(Integer(), location="body", type='int', missing=0)
 
     altitude = SchemaNode(Integer(), location="body", type='int', missing=0)

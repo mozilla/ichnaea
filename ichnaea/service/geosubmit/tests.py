@@ -35,8 +35,8 @@ class TestGeosubmit(CeleryAppTestCase):
         session.commit()
 
         res = app.post_json('/v1/geosubmit?key=test', {
-                            "lat": 123456700,
-                            "lon": 234567800,
+                            "latitude": 123456700,
+                            "longitude": 234567800,
                             "accuracy": 12.4,
                             "radioType": "gsm",
                             "cellTowers": [{
@@ -65,8 +65,8 @@ class TestGeosubmit(CeleryAppTestCase):
         session = self.db_master_session
 
         res = app.post_json('/v1/geosubmit?key=test', {
-                            "lat": 123456700,
-                            "lon": 234567800,
+                            "latitude": 123456700,
+                            "longitude": 234567800,
                             "accuracy": 12.4,
                             "radioType": "gsm",
                             "cellTowers": [{
@@ -108,8 +108,8 @@ class TestGeosubmit(CeleryAppTestCase):
         session.commit()
         res = app.post_json(
             '/v1/geosubmit?key=test', {
-                "lat": 123456700,
-                "lon": 234567800,
+                "latitude": 123456700,
+                "longitude": 234567800,
                 "accuracy": 12.4,
                 "radioType": "gsm",
                 "wifiAccessPoints": [
@@ -139,8 +139,8 @@ class TestGeosubmit(CeleryAppTestCase):
 
         res = app.post_json(
             '/v1/geosubmit?key=test', {
-                "lat": 123456700,
-                "lon": 234567800,
+                "latitude": 123456700,
+                "longitude": 234567800,
                 "accuracy": 12.4,
                 "radioType": "gsm",
                 "wifiAccessPoints": [

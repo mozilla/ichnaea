@@ -75,8 +75,8 @@ def process_upload(nickname, items):
         else:
             ts = datetime.fromordinal(batch['timestamp']).isoformat()
 
-        normalized_batch = {'lat': batch['lat'] / (10**7),
-                            'lon': batch['lon'] / (10**7),
+        normalized_batch = {'lat': batch['latitude'] / (10**7),
+                            'lon': batch['longitude'] / (10**7),
                             'time': ts,
                             'accuracy': batch['accuracy'],
                             'altitude': batch['altitude'],
