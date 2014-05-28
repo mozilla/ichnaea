@@ -1,5 +1,6 @@
-# matches the schema definition of:
-# https://developers.google.com/maps/documentation/business/geolocation/
+# This API is based on both the Google geolocation API (link to
+# business stuff) and the W3C geolocation position interface
+# (http://www.w3.org/TR/geolocation-API/#position_interface)
 
 from ichnaea.decimaljson import (
     EXPONENT_STR,
