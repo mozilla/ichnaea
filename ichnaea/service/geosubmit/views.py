@@ -80,7 +80,7 @@ def process_upload(nickname, items):
                             'time': ts,
                             'accuracy': batch['accuracy'],
                             'altitude': batch['altitude'],
-                            'altitude_accuracy': batch['altitude_accuracy'],
+                            'altitude_accuracy': batch['altitudeAccuracy'],
                             'radio': batch['radioType'],
                             'cell': normalized_cells,
                             'wifi': normalized_wifi}

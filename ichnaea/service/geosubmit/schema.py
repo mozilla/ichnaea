@@ -32,8 +32,8 @@ class GeoSubmitSchema(MappingSchema):
     accuracy = SchemaNode(Integer(), location="body", type='int', missing=0)
 
     altitude = SchemaNode(Integer(), location="body", type='int', missing=0)
-    altitude_accuracy = SchemaNode(Integer(), location="body", type='int',
-                                   missing=0)
+    altitudeAccuracy = SchemaNode(Integer(), location="body", type='int',
+                                  missing=0)
 
     heading = SchemaNode(Decimal(quant=EXPONENT_STR), location="body",
                          missing=-255)
