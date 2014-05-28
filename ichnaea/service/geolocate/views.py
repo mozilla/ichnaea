@@ -9,7 +9,7 @@ from ichnaea.service.error import (
     preprocess_request,
 )
 from ichnaea.service.base import check_api_key
-from ichnaea.service.errors import JSONError
+from ichnaea.service.error import JSONError
 from ichnaea.service.search.views import (
     search_cell,
     search_cell_lac,

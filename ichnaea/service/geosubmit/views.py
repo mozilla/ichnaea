@@ -3,13 +3,13 @@ from datetime import datetime
 from pyramid.httpexceptions import HTTPNotFound
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.base import check_api_key
-from ichnaea.service.errors import JSONError
 from ichnaea.service.geolocate.views import (
     NOT_FOUND,
 )
 from ichnaea.service.geosubmit.schema import GeoSubmitSchema
 from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.service.error import (
+    JSONError,
     MSG_BAD_RADIO,
     MSG_ONE_OF,
     preprocess_request,
