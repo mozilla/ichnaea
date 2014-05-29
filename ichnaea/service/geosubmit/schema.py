@@ -3,19 +3,38 @@
 # (http://www.w3.org/TR/geolocation-API/#position_interface)
 
 from colander import (
-    Integer,
     Float,
+    Integer,
     MappingSchema,
     OneOf,
     SchemaNode,
+    SequenceSchema,
     String,
 )
 
 from ichnaea.service.geolocate.schema import (
     CellTowersSchema,
-    WifiAccessPointsSchema,
 )
 SUBMIT_RADIO_TYPE_KEYS = ['gsm', 'cdma', 'wcdma', 'lte']
+
+
+class WifiAccessPointSchema(MappingSchema):
+    # required
+    macAddress = SchemaNode(String(), location="body", type='str')
+    # optional
+    signalStrength = SchemaNode(
+        Integer(), location="body", type='int', missing=0)
+    age = SchemaNode(
+        Integer(), location="body", type='int', missing=0)
+    frequency = SchemaNode(Integer(), location="body", type='int', missing=0)
+    channel = SchemaNode(
+        Integer(), location="body", type='int', missing=0)
+    signalToNoiseRatio = SchemaNode(
+        Integer(), location="body", type='int', missing=0)
+
+
+class WifiAccessPointsSchema(SequenceSchema):
+    wifi = WifiAccessPointSchema()
 
 
 class GeoSubmitSchema(MappingSchema):

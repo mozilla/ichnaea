@@ -55,7 +55,7 @@ def process_upload(nickname, items):
         for w in batch['wifiAccessPoints']:
             wifi = {}
             wifi['key'] = w['macAddress']
-            wifi['frequency'] = 0
+            wifi['frequency'] = w['frequency']
             wifi['channel'] = w['channel']
             wifi['signal'] = w['signalStrength']
             normalized_wifi.append(wifi)
