@@ -56,6 +56,21 @@ def preprocess_request(request, schema, extra_checks=(), response=JSONError,
             raise response(errors)
 
     # schema validation, but report at most one error at a time
+
+    verify_schema(schema, body, errors, validated)
+
+    for func in extra_checks:
+        func(validated, errors)
+
+    if errors and response is not None:
+        # the response / None check is used in schema tests
+        request.registry.heka_client.error('error_handler' + repr(errors))
+        raise response(errors)
+
+    return (validated, errors)
+
+
+def verify_schema(schema, body, errors, validated):
     schema = schema.bind(request=body)
     for attr in schema.children:
         name = attr.name
@@ -78,13 +93,3 @@ def preprocess_request(request, schema, extra_checks=(), response=JSONError,
                 break
         else:
             validated[name] = deserialized
-
-    for func in extra_checks:
-        func(validated, errors)
-
-    if errors and response is not None:
-        # the response / None check is used in schema tests
-        request.registry.heka_client.error('error_handler' + repr(errors))
-        raise response(errors)
-
-    return (validated, errors)

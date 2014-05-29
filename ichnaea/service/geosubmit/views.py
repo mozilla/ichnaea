@@ -1,4 +1,3 @@
-from colander import Invalid
 from datetime import datetime
 import time
 from pyramid.httpexceptions import HTTPNotFound
@@ -10,6 +9,7 @@ from ichnaea.service.error import (
     JSONError,
     MSG_ONE_OF,
     preprocess_request,
+    verify_schema,
 )
 from ichnaea.service.geolocate.views import (
     NOT_FOUND,
@@ -75,35 +75,13 @@ def process_upload(nickname, items):
                             'wifi': normalized_wifi}
         batch_list.append(normalized_batch)
 
-    body = {'items': batch_list}
-    errors = []
-    validated = {}
-
     # Run the SubmitScheme validator against the normalized submit
     # data.
     schema = SubmitSchema()
-    schema.bind(request=body)
-    for attr in schema.children:
-        name = attr.name
-        try:
-            if name not in body:
-                deserialized = attr.deserialize()
-            else:
-                deserialized = attr.deserialize(body[name])
-        except Invalid as e:
-            # the struct is invalid
-            err_dict = e.asdict()
-            try:
-                errors.append(dict(name=name, description=err_dict[name]))
-                break
-            except KeyError:
-                for k, v in err_dict.items():
-                    if k.startswith(name):
-                        errors.append(dict(name=k, description=v))
-                        break
-                break
-        else:
-            validated[name] = deserialized
+    body = {'items': batch_list}
+    errors = []
+    validated = {}
+    verify_schema(schema, body, errors, validated)
 
     if errors:
         # Short circuit on any error in schema validation
