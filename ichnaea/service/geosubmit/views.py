@@ -1,25 +1,26 @@
 from colander import Invalid
 from datetime import datetime
+import time
 from pyramid.httpexceptions import HTTPNotFound
+
+from ichnaea.decimaljson import dumps
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.base import check_api_key
-from ichnaea.service.geolocate.views import (
-    NOT_FOUND,
-)
-from ichnaea.service.geosubmit.schema import GeoSubmitSchema
-from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.service.error import (
     JSONError,
     MSG_BAD_RADIO,
     MSG_ONE_OF,
     preprocess_request,
 )
-
 from ichnaea.service.geolocate.views import (
+    NOT_FOUND,
     do_geolocate,
 )
+from ichnaea.service.geosubmit.schema import GeoSubmitSchema
+from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.service.submit.tasks import insert_measures
-from ichnaea.decimaljson import dumps
+
+from pytz import utc
 
 
 def geosubmit_validator(data, errors):
@@ -40,6 +41,9 @@ def geosubmit_validator(data, errors):
             elif cell_radio != '' and data['radioType'] != cell_radio:
                 errors.append(dict(name='body', description=MSG_BAD_RADIO))
                 break
+
+    if data['timestamp'] == 0:
+        data['timestamp'] = time.time()*1000.0
 
     if not any(wifi) and not any(cell):
         errors.append(dict(name='body', description=MSG_ONE_OF))
@@ -70,10 +74,9 @@ def process_upload(nickname, items):
             wifi['signal'] = w['signalStrength']
             normalized_wifi.append(wifi)
 
-        if batch['timestamp'] == -255:
-            ts = datetime.utcnow().isoformat()
-        else:
-            ts = datetime.fromordinal(batch['timestamp']).isoformat()
+        dt = utc.fromutc(datetime.utcfromtimestamp(
+                         batch['timestamp']/1000.0).replace(tzinfo=utc))
+        ts = dt.isoformat()
 
         normalized_batch = {'lat': batch['latitude'] / (10**7),
                             'lon': batch['longitude'] / (10**7),

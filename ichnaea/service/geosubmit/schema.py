@@ -2,12 +2,7 @@
 # business stuff) and the W3C geolocation position interface
 # (http://www.w3.org/TR/geolocation-API/#position_interface)
 
-from ichnaea.decimaljson import (
-    EXPONENT_STR,
-)
-
 from colander import (
-    Decimal,
     Integer,
     Float,
     MappingSchema,
@@ -29,16 +24,12 @@ class GeoSubmitSchema(MappingSchema):
     latitude = SchemaNode(Float(), location="body", missing=-255)
     longitude = SchemaNode(Float(), location="body", missing=-255)
     accuracy = SchemaNode(Float(), location="body", missing=0)
-
     altitude = SchemaNode(Float(), location="body", type='int', missing=0)
     altitudeAccuracy = SchemaNode(Float(), location="body", missing=0)
-
     heading = SchemaNode(Float(), location="body", missing=-255)
-
     speed = SchemaNode(Float(), location="body", missing=-255)
 
-    timestamp = SchemaNode(Decimal(quant=EXPONENT_STR),
-                           location="body", missing=-255)
+    timestamp = SchemaNode(Integer(), type='long', location="body", missing=0)
 
     # the following fields are the same as the geolocate API, with
     # the addition of the lte radio type
