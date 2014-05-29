@@ -9,6 +9,7 @@ from ichnaea.decimaljson import (
 from colander import (
     Decimal,
     Integer,
+    Float,
     MappingSchema,
     OneOf,
     SchemaNode,
@@ -25,21 +26,16 @@ SUBMIT_RADIO_TYPE_KEYS = ['gsm', 'cdma', 'wcdma', 'lte']
 class GeoSubmitSchema(MappingSchema):
     # lat/lon being set to -255 indicates that this measure should be
     # skipped.  Other fields can be filled in with defaults
-    latitude = SchemaNode(Decimal(quant=EXPONENT_STR), location="body",
-                          missing=-255)
-    longitude = SchemaNode(Decimal(quant=EXPONENT_STR), location="body",
-                           missing=-255)
-    accuracy = SchemaNode(Integer(), location="body", type='int', missing=0)
+    latitude = SchemaNode(Float(), location="body", missing=-255)
+    longitude = SchemaNode(Float(), location="body", missing=-255)
+    accuracy = SchemaNode(Float(), location="body", missing=0)
 
-    altitude = SchemaNode(Integer(), location="body", type='int', missing=0)
-    altitudeAccuracy = SchemaNode(Integer(), location="body", type='int',
-                                  missing=0)
+    altitude = SchemaNode(Float(), location="body", type='int', missing=0)
+    altitudeAccuracy = SchemaNode(Float(), location="body", missing=0)
 
-    heading = SchemaNode(Decimal(quant=EXPONENT_STR), location="body",
-                         missing=-255)
+    heading = SchemaNode(Float(), location="body", missing=-255)
 
-    speed = SchemaNode(Decimal(quant=EXPONENT_STR),
-                       location="body", missing=-255)
+    speed = SchemaNode(Float(), location="body", missing=-255)
 
     timestamp = SchemaNode(Decimal(quant=EXPONENT_STR),
                            location="body", missing=-255)
