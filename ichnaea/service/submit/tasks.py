@@ -307,7 +307,6 @@ def update_cell_measure_count(cell_key, count, utcnow, session):
         mcc=cell_key.mcc, mnc=cell_key.mnc, lac=cell_key.lac, cid=cell_key.cid,
         psc=cell_key.psc, new_measures=count, total_measures=count)
     session.execute(stmt)
-    session.commit()
     return new_cell
 
 
