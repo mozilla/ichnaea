@@ -8,7 +8,6 @@ from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.base import check_api_key
 from ichnaea.service.error import (
     JSONError,
-    MSG_BAD_RADIO,
     MSG_ONE_OF,
     preprocess_request,
 )
@@ -30,18 +29,6 @@ def geosubmit_validator(data, errors):
     cell = data.get('cellTowers', ())
     wifi = data.get('wifiAccessPoints', ())
 
-    # If a radio field is populated in any one of the cells in
-    # cellTowers, this is a buggy geolocate call from FirefoxOS.
-    # Just assume that we want to use the radio field in cellTowers
-    if data['radioType'] == '':
-        for c in cell:
-            cell_radio = c['radio']
-            if cell_radio != '' and data['radioType'] == '':
-                data['radioType'] = cell_radio
-            elif cell_radio != '' and data['radioType'] != cell_radio:
-                errors.append(dict(name='body', description=MSG_BAD_RADIO))
-                break
-
     if data['timestamp'] == 0:
         data['timestamp'] = time.time()*1000.0
 
@@ -58,7 +45,6 @@ def process_upload(nickname, items):
         normalized_cells = []
         for c in batch['cellTowers']:
             cell = {}
-            cell['radio'] = c['radio']
             cell['mcc'] = c['mobileCountryCode']
             cell['mnc'] = c['mobileNetworkCode']
             cell['lac'] = c['locationAreaCode']
