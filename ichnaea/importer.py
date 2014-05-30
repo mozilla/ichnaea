@@ -1,3 +1,11 @@
+"""
+This script is used to process imports of user contributed data into
+the Ichnaea database.
+
+The fileformat is a custom TSV format based on the code found at:
+https://github.com/cpeterso/stumbler-tsv
+"""
+
 import argparse
 import csv
 import datetime
