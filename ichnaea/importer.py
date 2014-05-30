@@ -63,8 +63,8 @@ def load_file(session, source_file, batch_size=100, userid=None):
 
                     # not sure if the importer has an actual file
                     # specification anywhere
-                    heading=0,
-                    speed=0,
+                    heading=-255,
+                    speed=-255,
                 )
             except (ValueError, IndexError):
                 continue
