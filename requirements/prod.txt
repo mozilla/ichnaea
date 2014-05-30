@@ -24,6 +24,8 @@ iowait==0.2
 kombu==3.0.16
 konfig==0.8
 mobile-codes==0.3
+country_bounding_boxes==0.2.1
+iso3166==0.5
 ordereddict==1.1
 protobuf==2.5.0
 psutil==1.2.1

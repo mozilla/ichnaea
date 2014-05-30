@@ -26,6 +26,8 @@ from ichnaea.service.search.schema import SearchSchema
 from ichnaea.geocalc import distance
 from collections import namedtuple
 import operator
+import mobile_codes
+from country_bounding_boxes import country_subunits_by_iso_code
 
 # parameters for wifi clustering
 MAX_WIFI_CLUSTER_KM = 0.5
@@ -229,19 +231,6 @@ def search_wifi(session, data):
     }
 
 
-def search_geoip(geoip_db, client_addr):
-    r = geoip_db.geoip_lookup(client_addr)
-
-    if r is None:
-        return None
-
-    return {
-        'lat': r['latitude'],
-        'lon': r['longitude'],
-        'accuracy': GEOIP_CITY_ACCURACY
-    }
-
-
 def check_cell_or_wifi(data, errors):
     if errors:
         # don't add this error if something else was already wrong
@@ -253,9 +242,162 @@ def check_cell_or_wifi(data, errors):
         errors.append(dict(name='body', description=MSG_ONE_OF))
 
 
+def most_common(ls):
+    """
+    Return the most commonly-occurring element of an iterable, or
+    None if the iterable is empty.
+    """
+    counts = {}
+    for e in ls:
+        if e in counts:
+            counts[e] += 1
+        else:
+            counts[e] = 1
+    m = None
+    n = 0
+    for (e, c) in counts.items():
+        if c > n:
+            n = c
+            m = e
+    return m
+
+
+def geoip_and_best_guess_country_code(data, request):
+    """
+    Return (geoip, alpha2) where geoip is the result of a GeoIP lookup
+    and alpha2 is a best-guess ISO 3166 alpha2 country code. The country
+    code guess uses both GeoIP and cell MCCs, preferring MCCs if it can find
+    any. Return None for either field if no data is available.
+    """
+    geoip = None
+    geoip_res = None
+
+    if request.client_addr:
+        geoip = request.registry.geoip_db.geoip_lookup(request.client_addr)
+        geoip_res = {
+            'lat': geoip['latitude'],
+            'lon': geoip['longitude'],
+            'accuracy': GEOIP_CITY_ACCURACY
+        }
+
+    cell_mccs = []
+    if data and data['cell']:
+        radio = RADIO_TYPE.get(data['radio'], -1)
+        for cell in data['cell']:
+            cell = normalized_cell_dict(cell, default_radio=radio)
+            if cell:
+                for c in mobile_codes.mcc(str(cell['mcc'])):
+                    cell_mccs.append(c.alpha2)
+
+    if geoip:
+        # If there were no cell MCCs, or we got a GeoIP hit that
+        # matches one of the cell MCCs, go with the GeoIP.
+        if not cell_mccs or geoip['country_code'] in cell_mccs:
+            return (geoip_res, geoip['country_code'])
+
+    # Pick the most-commonly-occurring MCC if we got any,
+    cc = most_common(cell_mccs)
+    if cc:
+        return (geoip_res, cc)
+
+    return (geoip_res, None)
+
+
+def location_is_in_country(lat, lon, country):
+    """
+    Return whether or not a given lat, lon pair is inside one of the
+    country subunits associated with a given alpha2 country code.
+
+    """
+    assert isinstance(country, basestring)
+    assert len(country) == 2
+    for c in country_subunits_by_iso_code(country):
+        (lon1, lat1, lon2, lat2) = c.bbox
+        if lon1 <= lon and lon <= lon2 and \
+           lat1 <= lat and lat <= lat2:
+            return True
+    return False
+
+
+def search_all_sources(request, data, api_name):
+    """
+    Common code-path for both the search and geolocate APIs, searching
+    wifi, cell, cell-lac and GeoIP data sources.
+
+    Arguments:
+    request -- the original HTTP request object
+    data -- a dict conforming to the search API
+    api_name -- a string to use in Heka metrics ("search" or "geolocate")
+    """
+
+    heka_client = get_heka_client()
+
+    session = request.db_slave_session
+    result = None
+    result_metric = None
+
+    # Always do a GeoIP lookup because we at _least_ want to use the
+    # country estimate to filter out bogus requests. We may also use
+    # the full GeoIP City-level estimate as well, if all else fails.
+    (geoip_res, country) = geoip_and_best_guess_country_code(data, request)
+
+    # First we attempt a "zoom-in" from cell-lac, to cell
+    # to wifi, tightening our estimate each step only so
+    # long as it doesn't contradict the existing best-estimate
+    # nor the country of origin.
+    for (data_field, metric_name, search_fn) in [
+            ('cell', 'cell_lac', search_cell_lac),
+            ('cell', 'cell', search_cell),
+            ('wifi', 'wifi', search_wifi)]:
+
+        if data and data[data_field]:
+
+            r = search_fn(session, data)
+            if r is not None:
+
+                lat = r['lat']
+                lon = r['lon']
+
+                # Skip any hit that seems to be in the wrong country.
+                if country and not location_is_in_country(lat, lon, country):
+                    heka_client.incr('%s.%s_country_mismatch' %
+                                     (api_name, metric_name))
+
+                # Otherwise at least accept the first result we get.
+                elif result is None:
+                    result = r
+                    result_metric = metric_name
+
+                # Or any result that appears to be an improvement over the
+                # existing best guess.
+                elif (distance(result['lat'], result['lon'], lat, lon) * 1000
+                      <= result['accuracy']):
+                    result = r
+                    result_metric = metric_name
+
+    # Fall back to GeoIP if nothing has worked yet. We do not
+    # include this in the "zoom-in" loop because GeoIP is
+    # frequently _wrong_ at the city level; we only want to
+    # accept that estimate if we got nothing better from cell
+    # or wifi.
+    if not result and geoip_res:
+        result = geoip_res
+        result_metric = 'geoip'
+
+    if not result:
+        heka_client.incr('%s.miss' % api_name)
+        return None
+
+    assert result
+    assert result_metric
+    heka_client.incr('%s.%s_hit' % (api_name, result_metric))
+    heka_client.timer_send('%s.accuracy.%s' % (api_name, result_metric),
+                           result['accuracy'])
+    return result
+
+
 @check_api_key('search', True)
 def search_view(request):
-    heka_client = get_heka_client()
 
     data, errors = preprocess_request(
         request,
@@ -264,43 +406,9 @@ def search_view(request):
         accept_empty=True,
     )
 
-    session = request.db_slave_session
-    result = None
+    result = search_all_sources(request, data, "search")
 
-    if data and data['wifi']:
-        result = search_wifi(session, data)
-        if result is not None:
-            heka_client.incr('search.wifi_hit')
-            heka_client.timer_send('search.accuracy.wifi',
-                                   result['accuracy'])
-
-    if result is None and data:
-        # no wifi result found, fall back to cell
-        result = search_cell(session, data)
-        if result is not None:
-            heka_client.incr('search.cell_hit')
-            heka_client.timer_send('search.accuracy.cell',
-                                   result['accuracy'])
-
-    if result is None and data:
-        # no direct cell result found, try cell LAC
-        result = search_cell_lac(session, data)
-        if result is not None:
-            heka_client.incr('search.cell_lac_hit')
-            heka_client.timer_send('search.accuracy.cell_lac',
-                                   result['accuracy'])
-
-    if result is None and request.client_addr:
-        # no cell or wifi, fall back again to geoip
-        result = search_geoip(request.registry.geoip_db,
-                              request.client_addr)
-        if result is not None:
-            heka_client.incr('search.geoip_hit')
-            heka_client.timer_send('search.accuracy.geoip',
-                                   result['accuracy'])
-
-    if result is None:
-        heka_client.incr('search.miss')
+    if not result:
         return {'status': 'not_found'}
 
     return {

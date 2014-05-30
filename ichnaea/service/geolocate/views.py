@@ -4,7 +4,6 @@ from pyramid.response import Response
 
 from ichnaea.decimaljson import dumps
 from ichnaea.exceptions import BaseJSONError
-from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.error import (
     MSG_BAD_RADIO,
@@ -13,10 +12,7 @@ from ichnaea.service.error import (
 )
 from ichnaea.service.base import check_api_key
 from ichnaea.service.search.views import (
-    search_cell,
-    search_cell_lac,
-    search_geoip,
-    search_wifi,
+    search_all_sources,
 )
 
 
@@ -82,50 +78,38 @@ def geolocate_validator(data, errors):
         errors.append(dict(name='body', description=MSG_ONE_OF))
 
 
-def search_cell_tower(session, data):
+def map_data(data):
+    """
+    Transform a geolocate API dictionary to an equivalent search API
+    dictionary.
+    """
+    if not data:
+        return data
+
     mapped = {
         'radio': data['radioType'],
         'cell': [],
-    }
-    for cell in data['cellTowers']:
-        mapped['cell'].append({
-            'mcc': cell['mobileCountryCode'],
-            'mnc': cell['mobileNetworkCode'],
-            'lac': cell['locationAreaCode'],
-            'cid': cell['cellId'],
-        })
-    return search_cell(session, mapped)
-
-
-def search_cell_tower_lac(session, data):
-    mapped = {
-        'radio': data['radioType'],
-        'cell': [],
-    }
-    for cell in data['cellTowers']:
-        mapped['cell'].append({
-            'mcc': cell['mobileCountryCode'],
-            'mnc': cell['mobileNetworkCode'],
-            'lac': cell['locationAreaCode'],
-            'cid': cell['cellId'],
-        })
-    return search_cell_lac(session, mapped)
-
-
-def search_wifi_ap(session, data):
-    mapped = {
         'wifi': [],
     }
-    for wifi in data['wifiAccessPoints']:
-        mapped['wifi'].append({
+
+    if 'cellTowers' in data:
+        mapped['cell'] = [{
+            'mcc': cell['mobileCountryCode'],
+            'mnc': cell['mobileNetworkCode'],
+            'lac': cell['locationAreaCode'],
+            'cid': cell['cellId'],
+        } for cell in data['cellTowers']]
+
+    if 'wifiAccessPoints' in data:
+        mapped['wifi'] = [{
             'key': wifi['macAddress'],
-        })
-    return search_wifi(session, mapped)
+        } for wifi in data['wifiAccessPoints']]
+
+    return mapped
 
 
 @check_api_key('geolocate', True)
 def geolocate_view(request):
-    heka_client = get_heka_client()
 
     data, errors = preprocess_request(
         request,
@@ -135,39 +119,10 @@ def geolocate_view(request):
         accept_empty=True,
     )
 
-    session = request.db_slave_session
-    result = None
+    data = map_data(data)
+    result = search_all_sources(request, data, "geolocate")
 
-    if data and data['wifiAccessPoints']:
-        result = search_wifi_ap(session, data)
-        if result is not None:
-            heka_client.incr('geolocate.wifi_hit')
-            heka_client.timer_send('geolocate.accuracy.wifi',
-                                   result['accuracy'])
-    elif data:
-        result = search_cell_tower(session, data)
-        if result is not None:
-            heka_client.incr('geolocate.cell_hit')
-            heka_client.timer_send('geolocate.accuracy.cell',
-                                   result['accuracy'])
-
-        if result is None:
-            result = search_cell_tower_lac(session, data)
-            if result is not None:
-                heka_client.incr('geolocate.cell_lac_hit')
-                heka_client.timer_send('geolocate.accuracy.cell_lac',
-                                       result['accuracy'])
-
-    if result is None and request.client_addr:
-        result = search_geoip(request.registry.geoip_db,
-                              request.client_addr)
-        if result is not None:
-            heka_client.incr('geolocate.geoip_hit')
-            heka_client.timer_send('geolocate.accuracy.geoip',
-                                   result['accuracy'])
-
-    if result is None:
-        heka_client.incr('geolocate.miss')
+    if not result:
         result = HTTPNotFound()
         result.content_type = 'application/json'
         result.body = NOT_FOUND
