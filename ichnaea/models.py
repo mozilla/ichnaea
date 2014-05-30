@@ -24,6 +24,9 @@ from ichnaea.db import _Model
 DEGREE_DECIMAL_PLACES = 7
 DEGREE_SCALE_FACTOR = 10 ** DEGREE_DECIMAL_PLACES
 
+SPEED_DECIMAL_PLACES = 3
+SPEED_SCALE_FACTOR = 10 ** DEGREE_DECIMAL_PLACES
+
 MEASURE_TYPE = {
     'wifi': 1,
     'cell': 2,
@@ -50,6 +53,9 @@ MIN_ALTITUDE = -10911
 # Karman Line, edge of space.
 MAX_ALTITUDE = 100000
 
+# Speed is in meters per second.
+MAX_SPEED = 2000
+
 
 # Empirical 95th percentile accuracy of ichnaea's responses,
 # from feedback testing of measurements as queries.
@@ -71,6 +77,10 @@ valid_wifi_regex = re.compile("([0-9a-fA-F]{12})")
 
 CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
+
+
+def from_speed(spd):
+    return int(spd * SPEED_SCALE_FACTOR)
 
 
 def from_degrees(deg):
@@ -160,6 +170,10 @@ def normalized_measure_dict(d):
     d = normalized_dict(
         d, dict(lat=(from_degrees(-90.0), from_degrees(90.0), REQUIRED),
                 lon=(from_degrees(-180.0), from_degrees(180.0), REQUIRED),
+                heading=(from_degrees(-90.0),
+                         from_degrees(90.0),
+                         0),
+                speed=(0, from_speed(MAX_SPEED), 0),
                 altitude=(MIN_ALTITUDE, MAX_ALTITUDE, 0),
                 altitude_accuracy=(0, abs(MAX_ALTITUDE - MIN_ALTITUDE), 0),
                 # Accuracy on land is arbitrarily bounded to [0, 1000km],
@@ -470,6 +484,14 @@ class CellMeasure(_Model):
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)
+
+    # http://dev.w3.org/geo/api/spec-source.html#heading
+    heading = Column(Integer)
+
+    # http://dev.w3.org/geo/api/spec-source.html#speed
+    # speed is in meters per second * (10**3)
+    speed = Column(Integer)
+
     # mapped via RADIO_TYPE
     radio = Column(SmallInteger)
     mcc = Column(SmallInteger)
@@ -579,6 +601,14 @@ class WifiMeasure(_Model):
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)
+
+    # http://dev.w3.org/geo/api/spec-source.html#heading
+    heading = Column(Integer)
+
+    # http://dev.w3.org/geo/api/spec-source.html#speed
+    # speed is in meters per second * (10**3)
+    speed = Column(Integer)
+
     key = Column(String(12))
     channel = Column(SmallInteger)
     signal = Column(SmallInteger)

@@ -1,5 +1,5 @@
 from colander import MappingSchema, SchemaNode, SequenceSchema
-from colander import Decimal, Integer, String, OneOf
+from colander import Decimal, Integer, String, OneOf, Float
 
 from ichnaea.decimaljson import EXPONENT_STR
 from ichnaea.models import RADIO_TYPE_KEYS
@@ -48,6 +48,10 @@ class MeasureSchema(MappingSchema):
                                    missing=0)
     radio = SchemaNode(String(), location="body", type='str',
                        validator=OneOf(RADIO_TYPE_KEYS), missing='')
+
+    heading = SchemaNode(Float(), location="body", missing=-255)
+    speed = SchemaNode(Float(), location="body", missing=-255)
+
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())
 

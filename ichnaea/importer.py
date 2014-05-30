@@ -60,6 +60,11 @@ def load_file(session, source_file, batch_size=100, userid=None):
                     radio='',
                     cell=(),
                     wifi=[wifi],
+
+                    # not sure if the importer has an actual file
+                    # specification anywhere
+                    heading=0,
+                    speed=0,
                 )
             except (ValueError, IndexError):
                 continue

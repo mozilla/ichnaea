@@ -29,6 +29,7 @@ from ichnaea.models import (
 from ichnaea.decimaljson import (
     loads,
     to_precise_int,
+    int_speed,
 )
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.submit.utils import process_score
@@ -126,6 +127,8 @@ def process_measure(measure_id, data, session):
         measure_id=measure_id,
         lat=to_precise_int(data['lat']),
         lon=to_precise_int(data['lon']),
+        heading=to_precise_int(data['heading']),
+        speed=int_speed(data['speed']),
         time=encode_datetime(data['time']),
         accuracy=data['accuracy'],
         altitude=data['altitude'],
@@ -272,6 +275,8 @@ def create_cell_measure(utcnow, entry):
         asu=entry.get('asu', -1),
         signal=entry.get('signal', 0),
         ta=entry.get('ta', 0),
+        heading=entry.get('heading', -1),
+        speed=entry.get('speed', -1),
     )
 
 
@@ -422,6 +427,9 @@ def create_wifi_measure(utcnow, entry):
         key=entry['key'],
         channel=entry.get('channel', 0),
         signal=entry.get('signal', 0),
+
+        heading=entry.get('heading', -1),
+        speed=entry.get('speed', -1),
     )
 
 

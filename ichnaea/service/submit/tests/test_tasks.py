@@ -1,4 +1,5 @@
 import base64
+from decimal import Decimal
 from datetime import (
     datetime,
     timedelta,
@@ -27,6 +28,8 @@ from ichnaea.models import (
 )
 from ichnaea.decimaljson import (
     encode_datetime,
+    to_precise_int,
+    int_speed,
 )
 from ichnaea.tests.base import CeleryTestCase
 
@@ -172,6 +175,8 @@ class TestInsert(CeleryTestCase):
             id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
             time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=-1,
+            heading=to_precise_int(Decimal('52.9')),
+            speed=int_speed(532.5),
         )
         entries = [
             {"key": "ab1234567890", "channel": 11, "signal": -80},
@@ -190,6 +195,10 @@ class TestInsert(CeleryTestCase):
                                                               "cd3456789012"]))
         self.assertEqual(set([m.channel for m in measures]), set([3, 11]))
         self.assertEqual(set([m.signal for m in measures]), set([-80, -90]))
+        self.assertEqual(set([m.heading or m in measures]),
+                         set([to_precise_int(Decimal('52.9'))]))
+        self.assertEqual(set([m.speed or m in measures]),
+                         set([int_speed(532.5)]))
 
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 2)

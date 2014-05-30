@@ -71,8 +71,11 @@ def process_upload(nickname, items):
                             'altitude': batch['altitude'],
                             'altitude_accuracy': batch['altitudeAccuracy'],
                             'radio': batch['radioType'],
+                            'heading': batch['heading'],
+                            'speed': batch['speed'],
                             'cell': normalized_cells,
-                            'wifi': normalized_wifi}
+                            'wifi': normalized_wifi,
+                            }
         batch_list.append(normalized_batch)
 
     # Run the SubmitScheme validator against the normalized submit
