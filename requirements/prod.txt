@@ -34,6 +34,7 @@ pytz==2014.3
 pyzmq==14.0.1
 redis==2.9.1
 repoze.lru==0.6
+setproctitle==1.1.8
 simplejson==3.3.2
 six==1.6.1
 tornado==3.1.1
