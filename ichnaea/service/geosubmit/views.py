@@ -1,6 +1,6 @@
 from datetime import datetime
 import time
-from pyramid.httpexceptions import HTTPNotFound
+from pyramid.httpexceptions import HTTPNotFound, HTTPOk
 
 from ichnaea.decimaljson import dumps
 from ichnaea.heka_logging import get_heka_client
@@ -16,6 +16,7 @@ from ichnaea.service.geolocate.views import (
     do_geolocate,
 )
 from ichnaea.service.geosubmit.schema import GeoSubmitSchema
+from ichnaea.service.geosubmit.schema import GeoSubmitBatchSchema
 from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.service.submit.tasks import insert_measures
 
@@ -26,14 +27,19 @@ def geosubmit_validator(data, errors):
     if errors:
         # don't add this error if something else was already wrong
         return
-    cell = data.get('cellTowers', ())
-    wifi = data.get('wifiAccessPoints', ())
+    if 'items' in data:
+        chunk_list = data['items']
+    else:
+        chunk_list = [data]
+    for chunk in chunk_list:
+        cell = chunk.get('cellTowers', ())
+        wifi = chunk.get('wifiAccessPoints', ())
 
-    if data['timestamp'] == 0:
-        data['timestamp'] = time.time()*1000.0
+        if chunk['timestamp'] == 0:
+            chunk['timestamp'] = time.time()*1000.0
 
-    if not any(wifi) and not any(cell):
-        errors.append(dict(name='body', description=MSG_ONE_OF))
+        if not any(wifi) and not any(cell):
+            errors.append(dict(name='body', description=MSG_ONE_OF))
 
 
 def process_upload(nickname, items):
@@ -116,23 +122,43 @@ def geosubmit_view(request):
         request,
         schema=GeoSubmitSchema(),
         extra_checks=(geosubmit_validator, ),
-        response=JSONError,
+        response=None,
     )
+
+    if any(data.get('wifiAccessPoints', ())) or \
+       any(data.get('cellTowers', ())):
+        # Any geosubmit call that is not using the batch mode
+        # should have cell or wifi data
+        data = {'items': [data]}
+    else:
+        data, errors = preprocess_request(
+            request,
+            schema=GeoSubmitBatchSchema(),
+            extra_checks=(geosubmit_validator, ),
+            response=JSONError,
+        )
 
     session = request.db_slave_session
 
-    result = do_geolocate(session,
-                          request,
-                          data,
-                          heka_client,
-                          'geosubmit')
-
-    items = data.get('items', [data])
     nickname = request.headers.get('X-Nickname', u'')
-    validated, errors = process_upload(nickname, items)
+    validated, errors = process_upload(nickname, data['items'])
 
     if errors:
         heka_client.incr('geosubmit.upload.errors', len(errors))
+
+    if len(data['items']) == 1:
+        # We only run geolocate if we are not operating in a batch
+        # mode
+        result = do_geolocate(session,
+                              request,
+                              data['items'][0],
+                              heka_client,
+                              'geosubmit')
+    else:
+        result = HTTPOk()
+        result.content_type = 'application/json'
+        result.body = dumps({})
+        return result
 
     if result is None:
         heka_client.incr('geosubmit.miss')

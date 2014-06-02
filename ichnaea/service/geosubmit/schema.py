@@ -114,3 +114,11 @@ class GeoSubmitSchema(MappingSchema):
 
     heading = SchemaNode(Float(), location="body", missing=-255)
     speed = SchemaNode(Float(), location="body", missing=-255)
+
+
+class GeoSubmitListSchema(SequenceSchema):
+    items = GeoSubmitSchema()
+
+
+class GeoSubmitBatchSchema(MappingSchema):
+    items = GeoSubmitListSchema()
