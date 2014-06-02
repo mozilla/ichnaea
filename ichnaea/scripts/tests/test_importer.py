@@ -22,7 +22,7 @@ LINE = ("1376952704\tdc:45:17:75:8f:80\t37.871930\t-122.273156\t"
 class TestLoadFile(CeleryTestCase):
 
     def _make_one(self):
-        from ichnaea.importer import load_file
+        from ichnaea.scripts.importer import load_file
         tmpfile = mkstemp()
         return load_file, tmpfile
 
@@ -97,7 +97,7 @@ class TestLoadFile(CeleryTestCase):
 class TestMain(CeleryTestCase):
 
     def _make_one(self):
-        from ichnaea.importer import main
+        from ichnaea.scripts.importer import main
         data = mkstemp()
         return data, main
 

@@ -58,6 +58,8 @@ def security_headers(event):
     if response.content_type == 'text/html':
         response.headers.add("Strict-Transport-Security", "max-age=31536000")
         response.headers.add("Content-Security-Policy", CSP_POLICY)
+        response.headers.add("X-Content-Type-Options", "nosniff")
+        response.headers.add("X-XSS-Protection", "1; mode=block")
         response.headers.add("X-Frame-Options", "DENY")
 
 
