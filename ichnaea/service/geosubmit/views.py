@@ -49,6 +49,11 @@ def process_upload(nickname, items):
             cell['mnc'] = c['mobileNetworkCode']
             cell['lac'] = c['locationAreaCode']
             cell['cid'] = c['cellId']
+            cell['psc'] = c['psc']
+            cell['asu'] = c['asu']
+            cell['signal'] = c['signalStrength']
+            cell['ta'] = c['timingAdvance']
+
             normalized_cells.append(cell)
 
         normalized_wifi = []
