@@ -1,26 +1,35 @@
 from datetime import datetime
 import time
 from pyramid.httpexceptions import HTTPNotFound, HTTPOk
+from pytz import utc
 
 from ichnaea.decimaljson import dumps
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.base import check_api_key
+
 from ichnaea.service.error import (
     JSONError,
     MSG_ONE_OF,
     preprocess_request,
     verify_schema,
 )
+
+
+from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.geolocate.views import (
     NOT_FOUND,
     do_geolocate,
+    geolocate_validator,
 )
-from ichnaea.service.geosubmit.schema import GeoSubmitSchema
-from ichnaea.service.geosubmit.schema import GeoSubmitBatchSchema
+
+from ichnaea.service.geosubmit.schema import (
+    GeoSubmitBatchSchema,
+    GeoSubmitSchema,
+)
+
+
 from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.service.submit.tasks import insert_measures
-
-from pytz import utc
 
 
 def geosubmit_validator(data, errors):
@@ -116,7 +125,47 @@ def configure_geosubmit(config):
 
 @check_api_key('geosubmit', True)
 def geosubmit_view(request):
+    # Order matters here.  We need to try the batch mode *before* the
+    # single upload mode as classic w3c geolocate calls should behave
+    # identically using either geosubmit or geolocate
+    data, errors = preprocess_request(
+        request,
+        schema=GeoSubmitBatchSchema(),
+        extra_checks=(geosubmit_validator, ),
+        response=None,
+    )
+
+    if any(data.get('items', ())):
+        # TODO: process batch mode
+        return process_batch(request, data, errors)
+    else:
+        return process_single(request)
+
+
+def process_batch(request, data, errors):
     heka_client = get_heka_client()
+    nickname = request.headers.get('X-Nickname', u'')
+    validated, errors = process_upload(nickname, data['items'])
+
+    if errors:
+        heka_client.incr('geosubmit.upload.errors', len(errors))
+
+    result = HTTPOk()
+    result.content_type = 'application/json'
+    result.body = dumps({})
+    return result
+
+
+def process_single(request):
+    heka_client = get_heka_client()
+
+    locate_data, locate_errors = preprocess_request(
+        request,
+        schema=GeoLocateSchema(),
+        extra_checks=(geolocate_validator, ),
+        response=JSONError,
+        accept_empty=True,
+    )
 
     data, errors = preprocess_request(
         request,
@@ -124,19 +173,7 @@ def geosubmit_view(request):
         extra_checks=(geosubmit_validator, ),
         response=None,
     )
-
-    if any(data.get('wifiAccessPoints', ())) or \
-       any(data.get('cellTowers', ())):
-        # Any geosubmit call that is not using the batch mode
-        # should have cell or wifi data
-        data = {'items': [data]}
-    else:
-        data, errors = preprocess_request(
-            request,
-            schema=GeoSubmitBatchSchema(),
-            extra_checks=(geosubmit_validator, ),
-            response=JSONError,
-        )
+    data = {'items': [data]}
 
     session = request.db_slave_session
 
@@ -146,19 +183,11 @@ def geosubmit_view(request):
     if errors:
         heka_client.incr('geosubmit.upload.errors', len(errors))
 
-    if len(data['items']) == 1:
-        # We only run geolocate if we are not operating in a batch
-        # mode
-        result = do_geolocate(session,
-                              request,
-                              data['items'][0],
-                              heka_client,
-                              'geosubmit')
-    else:
-        result = HTTPOk()
-        result.content_type = 'application/json'
-        result.body = dumps({})
-        return result
+    result = do_geolocate(session,
+                          request,
+                          data['items'][0],
+                          heka_client,
+                          'geosubmit')
 
     if result is None:
         heka_client.incr('geosubmit.miss')

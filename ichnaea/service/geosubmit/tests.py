@@ -6,6 +6,8 @@ from ichnaea.models import (
     WifiMeasure,
 )
 from ichnaea.tests.base import CeleryAppTestCase
+from ichnaea.service.geolocate.tests import\
+    TestGeolocate as GeolocateRegressionTest
 
 
 class TestGeosubmit(CeleryAppTestCase):
@@ -225,5 +227,46 @@ class TestGeosubmitBatch(CeleryAppTestCase):
 
         # check that two new CellMeasure records are created
         self.assertEquals(2, session.query(CellMeasure).count())
-        self.assertEquals(1, session.query(CellMeasure).filter(CellMeasure.cid == 1234).count())
-        self.assertEquals(1, session.query(CellMeasure).filter(CellMeasure.cid == 2234).count())
+        cm1 = session.query(CellMeasure).filter(
+            CellMeasure.cid == 1234).count()
+        cm2 = session.query(CellMeasure).filter(
+            CellMeasure.cid == 2234).count()
+        self.assertEquals(1, cm1)
+        self.assertEquals(1, cm2)
+
+
+class TestGeolocateRegression(GeolocateRegressionTest, CeleryAppTestCase):
+    def setUp(self):
+        CeleryAppTestCase.setUp(self)
+        session = self.db_master_session
+        self.app.app.registry.db_slave = self.db_master
+        session.add(ApiKey(valid_key='test'))
+        session.add(ApiKey(valid_key='test.test'))
+        session.commit()
+        self.url = '/v1/geosubmit'
+
+    def get_session(self):
+        return self.db_master_session
+
+    def check_expected_heka_messages(self, total=None, **kw):
+        # Just clobber these for now.  All heka messages are going to
+        # be processed by the geolocate task anyway so any test
+        # failures that we would see here are going to show up in the
+        # geolocate test suite anyway.
+        return True
+
+    def test_ok_cell_radio_in_celltowers(self):
+        # This test covered a bug related to FxOS calling the
+        # geolocate API incorrectly.  The geosubmit API should expect
+        # that clients are well behaved and return errors for badly
+        # formed messages.
+        # tl;dr - just skip this test as it's not applicable.
+        return True
+
+    def test_ok_cell_radio_in_celltowers_dupes(self):
+        # This test covered a bug related to FxOS calling the
+        # geolocate API incorrectly.  The geosubmit API should expect
+        # that clients are well behaved and return errors for badly
+        # formed messages.
+        # tl;dr - just skip this test as it's not applicable.
+        return True
