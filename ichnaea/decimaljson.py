@@ -25,12 +25,6 @@ def quantize(value):
     return (Decimal(value) / FACTOR).quantize(EXPONENT)
 
 
-def int_speed(value):
-    if isinstance(value, str):
-        value = Decimal(value)
-    return int(value * (10**3))
-
-
 def to_precise_int(value):
     if isinstance(value, str):
         value = Decimal(value)

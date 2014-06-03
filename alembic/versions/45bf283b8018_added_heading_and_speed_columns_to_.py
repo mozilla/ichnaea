@@ -12,19 +12,18 @@ down_revision = '4323e1f1a0b8'
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects.mysql import BIGINT as BigInteger
 
 
 def upgrade():
     op.add_column('wifi_measure',
-                  sa.Column('heading', BigInteger()))
+                  sa.Column('heading', sa.Float()))
     op.add_column('cell_measure',
-                  sa.Column('heading', BigInteger()))
+                  sa.Column('heading', sa.Float()))
 
     op.add_column('wifi_measure',
-                  sa.Column('speed', BigInteger()))
+                  sa.Column('speed', sa.Float()))
     op.add_column('cell_measure',
-                  sa.Column('speed', BigInteger()))
+                  sa.Column('speed', sa.Float()))
 
 
 def downgrade():

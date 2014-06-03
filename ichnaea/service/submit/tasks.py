@@ -29,7 +29,6 @@ from ichnaea.models import (
 from ichnaea.decimaljson import (
     loads,
     to_precise_int,
-    int_speed,
 )
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.submit.utils import process_score
@@ -127,8 +126,8 @@ def process_measure(measure_id, data, session):
         measure_id=measure_id,
         lat=to_precise_int(data['lat']),
         lon=to_precise_int(data['lon']),
-        heading=to_precise_int(data['heading']),
-        speed=int_speed(data['speed']),
+        heading=data['heading'],
+        speed=data['speed'],
         time=encode_datetime(data['time']),
         accuracy=data['accuracy'],
         altitude=data['altitude'],

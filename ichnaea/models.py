@@ -7,6 +7,7 @@ from sqlalchemy import (
     BINARY,
     Column,
     DateTime,
+    Float,
     Index,
     SmallInteger,
     String,
@@ -170,9 +171,7 @@ def normalized_measure_dict(d):
     d = normalized_dict(
         d, dict(lat=(from_degrees(-90.0), from_degrees(90.0), REQUIRED),
                 lon=(from_degrees(-180.0), from_degrees(180.0), REQUIRED),
-                heading=(from_degrees(-90.0),
-                         from_degrees(90.0),
-                         0),
+                heading=(0.0, 360.0, 0),
                 speed=(0, from_speed(MAX_SPEED), 0),
                 altitude=(MIN_ALTITUDE, MAX_ALTITUDE, 0),
                 altitude_accuracy=(0, abs(MAX_ALTITUDE - MIN_ALTITUDE), 0),
@@ -486,11 +485,10 @@ class CellMeasure(_Model):
     altitude_accuracy = Column(Integer)
 
     # http://dev.w3.org/geo/api/spec-source.html#heading
-    heading = Column(Integer)
+    heading = Column(Float)
 
     # http://dev.w3.org/geo/api/spec-source.html#speed
-    # speed is in meters per second * (10**3)
-    speed = Column(Integer)
+    speed = Column(Float)
 
     # mapped via RADIO_TYPE
     radio = Column(SmallInteger)
@@ -603,11 +601,10 @@ class WifiMeasure(_Model):
     altitude_accuracy = Column(Integer)
 
     # http://dev.w3.org/geo/api/spec-source.html#heading
-    heading = Column(Integer)
+    heading = Column(Float)
 
     # http://dev.w3.org/geo/api/spec-source.html#speed
-    # speed is in meters per second * (10**3)
-    speed = Column(Integer)
+    speed = Column(Float)
 
     key = Column(String(12))
     channel = Column(SmallInteger)
