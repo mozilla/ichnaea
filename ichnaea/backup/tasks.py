@@ -100,16 +100,13 @@ def write_measure_s3_backups(self, measure_type,
             MeasureBlock.end_id).limit(limit)
 
         for block in query:
-            # TODO: change this to invoke .delay(*args) instead
             do_write_measure_s3_backups.delay(measure_type,
                                               zip_prefix,
                                               csv_name,
                                               measure_cls.__name__,
                                               limit,
                                               cleanup_zip,
-                                              block.id,
-                                              block.start_id,
-                                              block.end_id,)
+                                              block.id)
 
 
 @celery.task(base=DatabaseTask, bind=True)
@@ -120,14 +117,17 @@ def do_write_measure_s3_backups(self,
                                 measure_cls_name,
                                 limit,
                                 cleanup_zip,
-                                block_id,
-                                start_id,  # TODO: get rid of start/end_id
-                                end_id):
+                                block_id):
 
     from ichnaea import models
     measure_cls = getattr(models, measure_cls_name)
 
     with self.db_session() as session:
+        block = session.query(MeasureBlock).filter(
+            MeasureBlock.id == block_id).first()
+        start_id = block.start_id
+        end_id = block.end_id
+
         rset = session.execute("select version_num from alembic_version")
         alembic_rev = rset.first()[0]
 
@@ -188,8 +188,6 @@ def do_write_measure_s3_backups(self,
                 self.heka_client.debug("s3.backup:%s" % zip_path)
 
         # only set archive_sha / s3_key if upload was successful
-        block = session.query(MeasureBlock).filter(
-            MeasureBlock.id == block_id).first()
         block.archive_sha = archive_sha
         block.s3_key = s3_key
         session.commit()
