@@ -54,7 +54,10 @@ def selfdestruct_tempdir(s3_key):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def write_cellmeasure_s3_backups(self, limit=100, cleanup_zip=True):
+def write_cellmeasure_s3_backups(self,
+                                 limit=100,
+                                 chunk_size=10000,
+                                 cleanup_zip=True):
     measure_type = MEASURE_TYPE['cell']
     zip_prefix = 'CellMeasure'
     csv_name = 'cell_measure.csv'
@@ -65,11 +68,15 @@ def write_cellmeasure_s3_backups(self, limit=100, cleanup_zip=True):
                                     csv_name,
                                     measure_cls,
                                     limit=limit,
+                                    chunk_size=chunk_size,
                                     cleanup_zip=cleanup_zip)
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def write_wifimeasure_s3_backups(self, limit=100, cleanup_zip=True):
+def write_wifimeasure_s3_backups(self,
+                                 limit=100,
+                                 chunk_size=10000,
+                                 cleanup_zip=True):
     measure_type = MEASURE_TYPE['wifi']
     zip_prefix = 'WifiMeasure'
     csv_name = 'wifi_measure.csv'
@@ -80,12 +87,18 @@ def write_wifimeasure_s3_backups(self, limit=100, cleanup_zip=True):
                                     csv_name,
                                     measure_cls,
                                     limit=limit,
+                                    chunk_size=chunk_size,
                                     cleanup_zip=cleanup_zip)
 
 
-def write_measure_s3_backups(self, measure_type,
-                             zip_prefix, csv_name,
-                             measure_cls, limit=100, cleanup_zip=True):
+def write_measure_s3_backups(self,
+                             measure_type,
+                             zip_prefix,
+                             csv_name,
+                             measure_cls,
+                             limit=100,
+                             chunk_size=10000,
+                             cleanup_zip=True):
     """
     Iterate over each of the measure block records that aren't
     backed up yet and back them up.
@@ -105,6 +118,7 @@ def write_measure_s3_backups(self, measure_type,
                                               csv_name,
                                               measure_cls.__name__,
                                               limit,
+                                              chunk_size,
                                               cleanup_zip,
                                               block.id)
 
@@ -116,6 +130,7 @@ def do_write_measure_s3_backups(self,
                                 csv_name,
                                 measure_cls_name,
                                 limit,
+                                chunk_size,
                                 cleanup_zip,
                                 block_id):
 
@@ -135,8 +150,6 @@ def do_write_measure_s3_backups(self,
             self.app.s3_settings['backup_bucket'],
             self.app.s3_settings['backup_prefix'],
             self.heka_client)
-
-        chunk_size = self.app.s3_settings['backup_chunksize']
 
         utcnow = datetime.datetime.utcnow()
         s3_key = '%s/%s_%d_%d.zip' % (utcnow.strftime("%Y%m"),

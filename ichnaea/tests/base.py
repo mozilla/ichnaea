@@ -116,7 +116,6 @@ class CeleryIsolation(object):
         configure_s3_backup(celery, settings={
             's3_backup_bucket': 'localhost.bucket',
             's3_backup_prefix': 'backups/tests',
-            's3_backup_chunksize': 10000,
         })
 
     @classmethod

@@ -97,7 +97,7 @@ CELERYBEAT_SCHEDULE = {
     # },
     # 's3-write-cellbackups': {
     #     'task': 'ichnaea.backup.tasks.write_cellmeasure_s3_backups',
-    #     'args': (100, ),
+    #     'args': (100, 10000),
     #     'schedule': crontab(hour=1, minute=7),
     #     'options': {'expires': 43200},
     # }
@@ -110,7 +110,7 @@ CELERYBEAT_SCHEDULE = {
     # },
     # 's3-write-wifibackups': {
     #     'task': 'ichnaea.backup.tasks.write_wifimeasure_s3_backups',
-    #     'args': (100, ),
+    #     'args': (100, 10000),
     #     'schedule': crontab(hour=1, minute=17),
     #     'options': {'expires': 43200},
     # },
@@ -147,7 +147,6 @@ def configure_s3_backup(app, settings=None):
     app.s3_settings = {
         'backup_bucket': settings['s3_backup_bucket'],
         'backup_prefix': settings['s3_backup_prefix'],
-        'backup_chunksize': settings['s3_backup_chunksize'],
     }
 
 
