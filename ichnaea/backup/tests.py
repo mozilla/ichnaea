@@ -1,10 +1,9 @@
 import boto
 from contextlib import contextmanager
+from mock import MagicMock, patch
+import datetime
 import hashlib
-from mock import (
-    MagicMock,
-    patch,
-)
+import pytz
 
 from zipfile import ZipFile
 
@@ -50,11 +49,15 @@ class TestBackup(CeleryTestCase):
 
 class TestMeasurementsDump(CeleryTestCase):
 
+    def setUp(self):
+        CeleryTestCase.setUp(self)
+        self.really_old = datetime.datetime(1980, 1, 1).replace(tzinfo=pytz.UTC)
+
     def test_schedule_cell_measures(self):
         session = self.db_master_session
         measures = []
         for i in range(20):
-            measures.append(CellMeasure())
+            measures.append(CellMeasure(created=self.really_old))
         session.add_all(measures)
         session.flush()
         start_id = measures[0].id
@@ -80,7 +83,7 @@ class TestMeasurementsDump(CeleryTestCase):
         batch_size = 10
         measures = []
         for i in range(batch_size * 2):
-            measures.append(WifiMeasure())
+            measures.append(WifiMeasure(created=self.really_old))
         session.add_all(measures)
         session.flush()
         start_id = measures[0].id
@@ -103,7 +106,7 @@ class TestMeasurementsDump(CeleryTestCase):
         batch_size = 10
         measures = []
         for i in range(batch_size):
-            measures.append(CellMeasure())
+            measures.append(CellMeasure(created=self.really_old))
         session.add_all(measures)
         session.flush()
         start_id = measures[0].id
@@ -149,7 +152,7 @@ class TestMeasurementsDump(CeleryTestCase):
         batch_size = 10
         measures = []
         for i in range(batch_size):
-            measures.append(WifiMeasure())
+            measures.append(WifiMeasure(created=self.really_old))
         session.add_all(measures)
         session.flush()
         start_id = measures[0].id
@@ -202,7 +205,7 @@ class TestMeasurementsDump(CeleryTestCase):
         session.add(block)
 
         for i in range(100, 150):
-            session.add(CellMeasure(id=i))
+            session.add(CellMeasure(id=i, created=self.really_old))
         session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
@@ -223,11 +226,51 @@ class TestMeasurementsDump(CeleryTestCase):
         session.add(block)
 
         for i in range(100, 150):
-            session.add(WifiMeasure(id=i))
+            session.add(WifiMeasure(id=i, created=self.really_old))
         session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_wifimeasure_records()
 
         self.assertEquals(session.query(WifiMeasure).count(), 29)
+        self.assertTrue(block.archive_date is not None)
+
+    def test_skip_delete_new_blocks(self):
+        now = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+        session = self.db_master_session
+        block = MeasureBlock()
+        block.measure_type = MEASURE_TYPE['cell']
+        block.start_id = 120
+        block.end_id = 140
+        block.s3_key = 'fake_key'
+        block.archive_sha = 'fake_sha'
+        block.archive_date = None
+        session.add(block)
+
+        measures = []
+        for i in range(100, 150):
+            measures.append(CellMeasure(id=i, created=now))
+        session.add_all(measures)
+        session.commit()
+
+        with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
+            delete_cellmeasure_records()
+
+        self.assertEquals(session.query(CellMeasure).count(), 50)
+        # The archive_date should *not* be set as we haven't deleted
+        # the actual records yet
+        self.assertTrue(block.archive_date is None)
+
+        # Update all the create dates to be far in the past
+        for m in measures:
+            m.created = self.really_old
+        session.add_all(measures)
+        session.commit()
+
+        with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
+            delete_cellmeasure_records()
+
+        self.assertEquals(session.query(CellMeasure).count(), 29)
+        # The archive_date should *not* be set as we haven't deleted
+        # the actual records yet
         self.assertTrue(block.archive_date is not None)

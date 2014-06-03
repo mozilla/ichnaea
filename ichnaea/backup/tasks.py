@@ -1,10 +1,11 @@
-import csv
 from contextlib import contextmanager
+from zipfile import ZipFile, ZIP_DEFLATED
+import csv
 import datetime
 import os
+import pytz
 import shutil
 import tempfile
-from zipfile import ZipFile, ZIP_DEFLATED
 
 from ichnaea.backup.s3 import S3Backend, compute_hash
 from ichnaea.models import (
@@ -15,6 +16,7 @@ from ichnaea.models import (
 )
 from ichnaea.tasks import DatabaseTask
 from ichnaea.worker import celery
+from sqlalchemy import func
 
 
 @contextmanager
@@ -151,7 +153,7 @@ def do_write_measure_s3_backups(self,
             self.app.s3_settings['backup_prefix'],
             self.heka_client)
 
-        utcnow = datetime.datetime.utcnow()
+        utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
         s3_key = '%s/%s_%d_%d.zip' % (utcnow.strftime("%Y%m"),
                                       zip_prefix,
                                       start_id,
@@ -268,12 +270,16 @@ def schedule_wifimeasure_archival(self, batch=100, limit=100):
         self, MEASURE_TYPE['wifi'], WifiMeasure, batch, limit)
 
 
-def delete_measure_records(self, measure_type, measure_cls, limit=100):
+def delete_measure_records(self,
+                           measure_type,
+                           measure_cls,
+                           limit=100,
+                           days_old=7):
     s3_backend = S3Backend(
         self.app.s3_settings['backup_bucket'],
         self.app.s3_settings['backup_prefix'],
         self.heka_client)
-    utcnow = datetime.datetime.utcnow()
+    utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
 
     with self.db_session() as session:
         query = session.query(MeasureBlock).filter(
@@ -285,6 +291,16 @@ def delete_measure_records(self, measure_type, measure_cls, limit=100):
         for block in query.all():
             expected_sha = block.archive_sha
             if s3_backend.check_archive(expected_sha, block.s3_key):
+                # Note that created is indexed for both CellMeasure
+                # and WifiMeasure
+                tbl = measure_cls.__table__
+                qry = session.query(func.max(tbl.c.created)).filter(
+                    tbl.c.id < block.end_id)
+                max_created = qry.first()[0].replace(tzinfo=pytz.UTC)
+                if (utcnow - max_created).days < days_old:
+                    # Skip this block from deletion, it's not old
+                    # enough
+                    continue
                 q = session.query(measure_cls).filter(
                     measure_cls.id >= block.start_id,
                     measure_cls.id <= block.end_id)
@@ -294,12 +310,20 @@ def delete_measure_records(self, measure_type, measure_cls, limit=100):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def delete_cellmeasure_records(self, limit=100):
+def delete_cellmeasure_records(self, limit=100, days_old=7):
     return delete_measure_records(
-        self, MEASURE_TYPE['cell'], CellMeasure, limit=limit)
+        self,
+        MEASURE_TYPE['cell'],
+        CellMeasure,
+        limit=limit,
+        days_old=days_old)
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def delete_wifimeasure_records(self, limit=100):
+def delete_wifimeasure_records(self, limit=100, days_old=7):
     return delete_measure_records(
-        self, MEASURE_TYPE['wifi'], WifiMeasure, limit=limit)
+        self,
+        MEASURE_TYPE['wifi'],
+        WifiMeasure,
+        limit=limit,
+        days_old=days_old)
