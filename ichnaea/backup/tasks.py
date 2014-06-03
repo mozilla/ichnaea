@@ -168,6 +168,8 @@ def do_write_measure_s3_backups(self,
             cm_fname = os.path.join(tmp_path, csv_name)
             with open(cm_fname, 'w') as f:
                 csv_out = csv.writer(f, dialect='excel')
+                columns = table.c.keys()
+                csv_out.writerow(columns)
                 for this_start in range(start_id,
                                         end_id,
                                         chunk_size):
@@ -176,10 +178,6 @@ def do_write_measure_s3_backups(self,
                     query = table.select().where(
                         table.c.id >= this_start).where(
                         table.c.id < this_end)
-
-                    if this_start == start_id:
-                        columns = table.c.keys()
-                        csv_out.writerow(columns)
 
                     rproxy = session.execute(query)
                     csv_out.writerows(rproxy)
