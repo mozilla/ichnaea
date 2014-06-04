@@ -262,23 +262,20 @@ def most_common(ls):
     return m
 
 
-def geoip_and_best_guess_country_code(data, request):
+def geoip_and_best_guess_country_code(data, request, api_name):
     """
     Return (geoip, alpha2) where geoip is the result of a GeoIP lookup
     and alpha2 is a best-guess ISO 3166 alpha2 country code. The country
     code guess uses both GeoIP and cell MCCs, preferring MCCs if it can find
     any. Return None for either field if no data is available.
     """
+
+    heka_client = get_heka_client()
     geoip = None
     geoip_res = None
 
     if request.client_addr:
         geoip = request.registry.geoip_db.geoip_lookup(request.client_addr)
-        geoip_res = {
-            'lat': geoip['latitude'],
-            'lon': geoip['longitude'],
-            'accuracy': GEOIP_CITY_ACCURACY
-        }
 
     cell_mccs = []
     if data and data['cell']:
@@ -290,16 +287,32 @@ def geoip_and_best_guess_country_code(data, request):
                     cell_mccs.append(c.alpha2)
 
     if geoip:
+        heka_client.incr('%s.geoip_found' % api_name)
+
         # If there were no cell MCCs, or we got a GeoIP hit that
         # matches one of the cell MCCs, go with the GeoIP.
         if not cell_mccs or geoip['country_code'] in cell_mccs:
+            heka_client.incr('%s.country_from_geoip' % api_name)
+            geoip_res = {
+                'lat': geoip['latitude'],
+                'lon': geoip['longitude'],
+                'accuracy': GEOIP_CITY_ACCURACY
+            }
             return (geoip_res, geoip['country_code'])
+
+        if geoip['country_code'] not in cell_mccs:
+            heka_client.incr('%s.anomaly.geoip_mcc_mismatch' % api_name)
+
+    if len(cell_mccs) > 1:
+        heka_client.incr('%s.anomaly.multiple_mccs' % api_name)
 
     # Pick the most-commonly-occurring MCC if we got any,
     cc = most_common(cell_mccs)
     if cc:
+        heka_client.incr('%s.country_from_mcc' % api_name)
         return (geoip_res, cc)
 
+    heka_client.incr('%s.no_country' % api_name)
     return (geoip_res, None)
 
 
@@ -311,6 +324,8 @@ def location_is_in_country(lat, lon, country):
     """
     assert isinstance(country, basestring)
     assert len(country) == 2
+    assert isinstance(lat, float)
+    assert isinstance(lon, float)
     for c in country_subunits_by_iso_code(country):
         (lon1, lat1, lon2, lat2) = c.bbox
         if lon1 <= lon and lon <= lon2 and \
@@ -339,7 +354,8 @@ def search_all_sources(request, data, api_name):
     # Always do a GeoIP lookup because we at _least_ want to use the
     # country estimate to filter out bogus requests. We may also use
     # the full GeoIP City-level estimate as well, if all else fails.
-    (geoip_res, country) = geoip_and_best_guess_country_code(data, request)
+    (geoip_res, country) = geoip_and_best_guess_country_code(data, request,
+                                                             api_name)
 
     # First we attempt a "zoom-in" from cell-lac, to cell
     # to wifi, tightening our estimate each step only so
@@ -355,12 +371,15 @@ def search_all_sources(request, data, api_name):
             r = search_fn(session, data)
             if r is not None:
 
-                lat = r['lat']
-                lon = r['lon']
+                lat = float(r['lat'])
+                lon = float(r['lon'])
+
+                heka_client.incr('%s.%s_found' %
+                                 (api_name, metric_name))
 
                 # Skip any hit that seems to be in the wrong country.
                 if country and not location_is_in_country(lat, lon, country):
-                    heka_client.incr('%s.%s_country_mismatch' %
+                    heka_client.incr('%s.anomaly.%s_country_mismatch' %
                                      (api_name, metric_name))
 
                 # Otherwise at least accept the first result we get.
@@ -370,10 +389,15 @@ def search_all_sources(request, data, api_name):
 
                 # Or any result that appears to be an improvement over the
                 # existing best guess.
-                elif (distance(result['lat'], result['lon'], lat, lon) * 1000
+                elif (distance(float(result['lat']),
+                               float(result['lon']), lat, lon) * 1000
                       <= result['accuracy']):
                     result = r
                     result_metric = metric_name
+
+                else:
+                    heka_client.incr('%s.anomaly.%s_%s_mismatch' %
+                                     (api_name, metric_name, result_metric))
 
     # Fall back to GeoIP if nothing has worked yet. We do not
     # include this in the "zoom-in" loop because GeoIP is

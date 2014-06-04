@@ -144,6 +144,15 @@ class HekaIsolation(object):
         msgs = self.heka_client.stream.msgs
         return find_msg(msgs, *args, **kw)
 
+    def print_heka_messages(self):
+        i = 0
+        for m in self.heka_client.stream.msgs:
+            print("Heka Message #%d:" % i)
+            i += 1
+            for field in m.fields:
+                print("    field: %s = %s" %
+                      (field.name, ", ".join(field.value_string)))
+
     def check_expected_heka_messages(self, total=None, **kw):
         """Checks a partial specification of messages to be found in
         the heka message stream.
