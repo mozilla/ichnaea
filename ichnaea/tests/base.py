@@ -354,3 +354,11 @@ class CeleryAppTestCase(AppTestCase, CeleryIsolation):
     def tearDownClass(cls):
         super(CeleryAppTestCase, cls).teardown_celery()
         super(CeleryAppTestCase, cls).tearDownClass()
+
+
+def setup_package(module):
+    pass
+
+
+def teardown_package(module):
+    pass
