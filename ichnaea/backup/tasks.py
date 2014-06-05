@@ -9,11 +9,9 @@ import tempfile
 
 from ichnaea.backup.s3 import S3Backend, compute_hash
 from ichnaea.models import (
-    CellMeasure,
     MEASURE_TYPE_CODE,
     MEASURE_TYPE_META,
     MeasureBlock,
-    WifiMeasure,
 )
 from ichnaea.tasks import DatabaseTask
 from ichnaea.worker import celery
@@ -181,9 +179,9 @@ def write_block_to_s3(self, block_id, chunk_size, cleanup_zip):
         session.commit()
 
 
-def schedule_measure_archival(self, measure_type, measure_cls,
-                              batch=100, limit=100):
+def schedule_measure_archival(self, measure_type, batch=100, limit=100):
     blocks = []
+    measure_cls = MEASURE_TYPE_META[measure_type]['class']
     with self.db_session() as session:
         query = session.query(MeasureBlock.end_id).filter(
             MeasureBlock.measure_type == measure_type).order_by(
@@ -236,24 +234,19 @@ def schedule_measure_archival(self, measure_type, measure_cls,
 @celery.task(base=DatabaseTask, bind=True)
 def schedule_cellmeasure_archival(self, batch=100, limit=100):
     return schedule_measure_archival(
-        self, MEASURE_TYPE_CODE['cell'], CellMeasure, batch, limit)
+        self, MEASURE_TYPE_CODE['cell'], batch, limit)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def schedule_wifimeasure_archival(self, batch=100, limit=100):
     return schedule_measure_archival(
-        self, MEASURE_TYPE_CODE['wifi'], WifiMeasure, batch, limit)
+        self, MEASURE_TYPE_CODE['wifi'], batch, limit)
 
 
 def delete_measure_records(self,
                            measure_type,
-                           measure_cls,
                            limit=100,
                            days_old=7):
-    s3_backend = S3Backend(
-        self.app.s3_settings['backup_bucket'],
-        self.app.s3_settings['backup_prefix'],
-        self.heka_client)
     utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
 
     with self.db_session() as session:
@@ -268,6 +261,7 @@ def delete_measure_records(self,
 
             # Note that 'created' is indexed for both CellMeasure
             # and WifiMeasure
+            measure_cls = MEASURE_TYPE_META[measure_type]['class']
             tbl = measure_cls.__table__
             qry = session.query(func.max(tbl.c.created)).filter(
                 tbl.c.id < block.end_id)
@@ -277,13 +271,26 @@ def delete_measure_records(self,
                 # enough
                 continue
 
-            if s3_backend.check_archive(expected_sha, block.s3_key):
-                q = session.query(measure_cls).filter(
-                    measure_cls.id >= block.start_id,
-                    measure_cls.id <= block.end_id)
-                q.delete()
-                block.archive_date = utcnow
-                session.commit()
+            dispatch_delete.delay(measure_type, expected_sha, block.id)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def dispatch_delete(self, measure_type, expected_sha, block_id):
+    s3_backend = S3Backend(self.app.s3_settings['backup_bucket'],
+                           self.app.s3_settings['backup_prefix'],
+                           self.heka_client)
+    utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+    with self.db_session() as session:
+        block = session.query(MeasureBlock).filter(
+            MeasureBlock.id == block_id).first()
+        measure_cls = MEASURE_TYPE_META[measure_type]['class']
+        if s3_backend.check_archive(expected_sha, block.s3_key):
+            q = session.query(measure_cls).filter(
+                measure_cls.id >= block.start_id,
+                measure_cls.id <= block.end_id)
+            q.delete()
+            block.archive_date = utcnow
+            session.commit()
 
 
 @celery.task(base=DatabaseTask, bind=True)
@@ -291,7 +298,6 @@ def delete_cellmeasure_records(self, limit=100, days_old=7):
     return delete_measure_records(
         self,
         MEASURE_TYPE_CODE['cell'],
-        CellMeasure,
         limit=limit,
         days_old=days_old)
 
@@ -301,6 +307,5 @@ def delete_wifimeasure_records(self, limit=100, days_old=7):
     return delete_measure_records(
         self,
         MEASURE_TYPE_CODE['wifi'],
-        WifiMeasure,
         limit=limit,
         days_old=days_old)
