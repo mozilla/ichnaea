@@ -290,17 +290,19 @@ def delete_measure_records(self,
             MeasureBlock.end_id.asc()).limit(limit)
         for block in query.all():
             expected_sha = block.archive_sha
+
+            # Note that 'created' is indexed for both CellMeasure
+            # and WifiMeasure
+            tbl = measure_cls.__table__
+            qry = session.query(func.max(tbl.c.created)).filter(
+                tbl.c.id < block.end_id)
+            max_created = qry.first()[0].replace(tzinfo=pytz.UTC)
+            if (utcnow - max_created).days < days_old:
+                # Skip this block from deletion, it's not old
+                # enough
+                continue
+
             if s3_backend.check_archive(expected_sha, block.s3_key):
-                # Note that created is indexed for both CellMeasure
-                # and WifiMeasure
-                tbl = measure_cls.__table__
-                qry = session.query(func.max(tbl.c.created)).filter(
-                    tbl.c.id < block.end_id)
-                max_created = qry.first()[0].replace(tzinfo=pytz.UTC)
-                if (utcnow - max_created).days < days_old:
-                    # Skip this block from deletion, it's not old
-                    # enough
-                    continue
                 q = session.query(measure_cls).filter(
                     measure_cls.id >= block.start_id,
                     measure_cls.id <= block.end_id)
