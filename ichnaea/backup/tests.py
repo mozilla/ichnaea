@@ -19,7 +19,7 @@ from ichnaea.backup.tasks import (
 from ichnaea.models import (
     CellMeasure,
     MeasureBlock,
-    MEASURE_TYPE,
+    MEASURE_TYPE_CODE,
     WifiMeasure,
 )
 from ichnaea.tests.base import CeleryTestCase
@@ -51,7 +51,8 @@ class TestMeasurementsDump(CeleryTestCase):
 
     def setUp(self):
         CeleryTestCase.setUp(self)
-        self.really_old = datetime.datetime(1980, 1, 1).replace(tzinfo=pytz.UTC)
+        self.really_old = datetime.datetime(1980, 1, 1).replace(
+            tzinfo=pytz.UTC)
 
     def test_schedule_cell_measures(self):
         session = self.db_master_session
@@ -196,7 +197,7 @@ class TestMeasurementsDump(CeleryTestCase):
     def test_delete_cell_measures(self):
         session = self.db_master_session
         block = MeasureBlock()
-        block.measure_type = MEASURE_TYPE['cell']
+        block.measure_type = MEASURE_TYPE_CODE['cell']
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'
@@ -217,7 +218,7 @@ class TestMeasurementsDump(CeleryTestCase):
     def test_delete_wifi_measures(self):
         session = self.db_master_session
         block = MeasureBlock()
-        block.measure_type = MEASURE_TYPE['wifi']
+        block.measure_type = MEASURE_TYPE_CODE['wifi']
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'
@@ -239,7 +240,7 @@ class TestMeasurementsDump(CeleryTestCase):
         now = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
         session = self.db_master_session
         block = MeasureBlock()
-        block.measure_type = MEASURE_TYPE['cell']
+        block.measure_type = MEASURE_TYPE_CODE['cell']
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'
@@ -271,6 +272,6 @@ class TestMeasurementsDump(CeleryTestCase):
             delete_cellmeasure_records()
 
         self.assertEquals(session.query(CellMeasure).count(), 29)
-        # The archive_date should *not* be set as we haven't deleted
-        # the actual records yet
+        # The archive_date should now be set as the measure records
+        # have been deleted.
         self.assertTrue(block.archive_date is not None)
