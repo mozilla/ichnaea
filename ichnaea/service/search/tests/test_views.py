@@ -71,13 +71,15 @@ class TestSearch(AppTestCase):
                                     "accuracy": CELL_MIN_ACCURACY})
 
         self.check_expected_heka_messages(
-            total=7,
+            total=9,
             timer=[('http.request', {'url_path': '/v1/search'}),
                    ('search.accuracy.cell', 1)],
             counter=[('search.api_key.test', 1),
                      ('search.cell_hit', 1),
                      ('http.request', 1),
                      ('search.cell_found', 1),
+                     ('search.no_cell_lac_found', 1),
+                     ('search.no_geoip_found', 1),
                      ('search.no_country', 1)]
         )
 
@@ -104,13 +106,14 @@ class TestSearch(AppTestCase):
                                     "accuracy": 248.60908969845744})
 
         self.check_expected_heka_messages(
-            total=7,
+            total=8,
             timer=[('http.request', {'url_path': '/v1/search'}),
                    ('search.accuracy.wifi', 1)],
             counter=[('search.api_key.test', 1),
                      ('search.wifi_hit', 1),
                      ('http.request', 1),
                      ('search.wifi_found', 1),
+                     ('search.no_geoip_found', 1),
                      ('search.no_country', 1)]
         )
 
@@ -453,13 +456,14 @@ class TestSearch(AppTestCase):
                                     "accuracy": GEOIP_CITY_ACCURACY})
 
         self.check_expected_heka_messages(
-            total=7,
+            total=8,
             timer=[('http.request', {'url_path': '/v1/search'}),
                    ('search.accuracy.geoip', 1)],
             counter=[('search.api_key.test', 1),
                      ('search.geoip_hit', 1),
                      ('http.request', 1),
-                     ('search.geoip_found', 1),
+                     ('search.no_wifi_found', 1),
+                     ('search.geoip_city_found', 1),
                      ('search.country_from_geoip', 1)]
         )
 
@@ -482,13 +486,13 @@ class TestSearch(AppTestCase):
             counter=[('search.api_key.test', 1),
                      ('search.geoip_hit', 1),
                      ('http.request', 1),
-                     ('search.geoip_found', 1),
+                     ('search.geoip_city_found', 1),
                      ('search.country_from_geoip', 1)]
         )
 
     def test_geoip_disagrees_with_mcc(self):
         # This test checks that when GeoIP disagrees with MCC,
-        # we go with MCC's idea of country, and get a cell hit.
+        # we go with GeoIP's idea of country, and get a GeoIP hit.
         app = self.app
         session = self.db_slave_session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
@@ -509,24 +513,26 @@ class TestSearch(AppTestCase):
             status=200)
 
         self.check_expected_heka_messages(
-            total=9,
+            total=11,
             timer=[('http.request', {'url_path': '/v1/search'}),
-                   ('search.accuracy.cell', 1)],
+                   ('search.accuracy.geoip', 1)],
             counter=[
                 ('search.api_key.test', 1),
                 ('http.request', 1),
-                ('search.geoip_found', 1),
+                ('search.geoip_city_found', 1),
                 ('search.anomaly.geoip_mcc_mismatch', 1),
-                ('search.country_from_mcc', 1),
+                ('search.country_from_geoip', 1),
+                ('search.no_cell_lac_found', 1),
                 ('search.cell_found', 1),
-                ('search.cell_hit', 1),
+                ('search.anomaly.cell_country_mismatch', 1),
+                ('search.geoip_hit', 1),
             ]
         )
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": SAO_PAULO_LAT,
-                                    "lon": SAO_PAULO_LON,
-                                    "accuracy": CELL_MIN_ACCURACY})
+                                    "lat": FREMONT_LAT,
+                                    "lon": FREMONT_LON,
+                                    "accuracy": GEOIP_CITY_ACCURACY})
 
     def test_cell_disagrees_with_country(self):
         # This test checks that when a cell is at a lat/lon that
@@ -553,7 +559,7 @@ class TestSearch(AppTestCase):
             status=200)
 
         self.check_expected_heka_messages(
-            total=7,
+            total=9,
             timer=[
                 ('http.request', {'url_path': '/v1/search'}),
             ],
@@ -562,7 +568,9 @@ class TestSearch(AppTestCase):
                 ('http.request', 1),
                 ('search.anomaly.cell_country_mismatch', 1),
                 ('search.country_from_mcc', 1),
+                ('search.no_geoip_found', 1),
                 ('search.cell_found', 1),
+                ('search.no_cell_lac_found', 1),
                 ('search.miss', 1),
             ]
         )
@@ -594,7 +602,7 @@ class TestSearch(AppTestCase):
             status=200)
 
         self.check_expected_heka_messages(
-            total=7,
+            total=9,
             timer=[
                 ('http.request', {'url_path': '/v1/search'}),
             ],
@@ -603,6 +611,8 @@ class TestSearch(AppTestCase):
                 ('http.request', 1),
                 ('search.anomaly.cell_lac_country_mismatch', 1),
                 ('search.country_from_mcc', 1),
+                ('search.no_geoip_found', 1),
+                ('search.no_cell_found', 1),
                 ('search.cell_lac_found', 1),
                 ('search.miss', 1),
             ]
@@ -649,7 +659,7 @@ class TestSearch(AppTestCase):
                 ('http.request', 1),
                 ('search.anomaly.wifi_country_mismatch', 1),
                 ('search.country_from_geoip', 1),
-                ('search.geoip_found', 1),
+                ('search.geoip_city_found', 1),
                 ('search.wifi_found', 1),
                 ('search.geoip_hit', 1),
             ]
@@ -689,7 +699,7 @@ class TestSearch(AppTestCase):
             status=200)
 
         self.check_expected_heka_messages(
-            total=9,
+            total=10,
             timer=[
                 ('http.request', {'url_path': '/v1/search'}),
                 ('search.accuracy.cell_lac', 1)
@@ -699,6 +709,7 @@ class TestSearch(AppTestCase):
                 ('http.request', 1),
                 ('search.anomaly.cell_cell_lac_mismatch', 1),
                 ('search.country_from_mcc', 1),
+                ('search.no_geoip_found', 1),
                 ('search.cell_lac_found', 1),
                 ('search.cell_found', 1),
                 ('search.cell_lac_hit', 1),
@@ -744,7 +755,7 @@ class TestSearch(AppTestCase):
             status=200)
 
         self.check_expected_heka_messages(
-            total=9,
+            total=11,
             timer=[
                 ('http.request', {'url_path': '/v1/search'}),
                 ('search.accuracy.cell_lac', 1)
@@ -754,6 +765,7 @@ class TestSearch(AppTestCase):
                 ('http.request', 1),
                 ('search.anomaly.wifi_cell_lac_mismatch', 1),
                 ('search.country_from_mcc', 1),
+                ('search.no_geoip_found', 1),
                 ('search.cell_lac_found', 1),
                 ('search.wifi_found', 1),
                 ('search.cell_lac_hit', 1),
@@ -799,7 +811,7 @@ class TestSearch(AppTestCase):
             status=200)
 
         self.check_expected_heka_messages(
-            total=9,
+            total=11,
             timer=[
                 ('http.request', {'url_path': '/v1/search'}),
                 ('search.accuracy.cell', 1)
@@ -809,6 +821,8 @@ class TestSearch(AppTestCase):
                 ('http.request', 1),
                 ('search.anomaly.wifi_cell_mismatch', 1),
                 ('search.country_from_mcc', 1),
+                ('search.no_geoip_found', 1),
+                ('search.no_cell_lac_found', 1),
                 ('search.cell_found', 1),
                 ('search.wifi_found', 1),
                 ('search.cell_hit', 1),
@@ -847,7 +861,7 @@ class TestSearch(AppTestCase):
             status=200)
 
         self.check_expected_heka_messages(
-            total=8,
+            total=9,
             timer=[
                 ('http.request', {'url_path': '/v1/search'}),
                 ('search.accuracy.cell', 1)
@@ -856,6 +870,7 @@ class TestSearch(AppTestCase):
                 ('search.api_key.test', 1),
                 ('http.request', 1),
                 ('search.country_from_mcc', 1),
+                ('search.no_geoip_found', 1),
                 ('search.cell_lac_found', 1),
                 ('search.cell_found', 1),
                 ('search.cell_hit', 1),
@@ -903,7 +918,7 @@ class TestSearch(AppTestCase):
             status=200)
 
         self.check_expected_heka_messages(
-            total=8,
+            total=10,
             timer=[
                 ('http.request', {'url_path': '/v1/search'}),
                 ('search.accuracy.wifi', 1)
@@ -912,6 +927,8 @@ class TestSearch(AppTestCase):
                 ('search.api_key.test', 1),
                 ('http.request', 1),
                 ('search.country_from_mcc', 1),
+                ('search.no_geoip_found', 1),
+                ('search.no_cell_lac_found', 1),
                 ('search.wifi_found', 1),
                 ('search.cell_found', 1),
                 ('search.wifi_hit', 1),
@@ -959,7 +976,7 @@ class TestSearch(AppTestCase):
             status=200)
 
         self.check_expected_heka_messages(
-            total=8,
+            total=10,
             timer=[
                 ('http.request', {'url_path': '/v1/search'}),
                 ('search.accuracy.wifi', 1)
@@ -968,6 +985,8 @@ class TestSearch(AppTestCase):
                 ('search.api_key.test', 1),
                 ('http.request', 1),
                 ('search.country_from_mcc', 1),
+                ('search.no_geoip_found', 1),
+                ('search.no_cell_found', 1),
                 ('search.wifi_found', 1),
                 ('search.cell_lac_found', 1),
                 ('search.wifi_hit', 1),
@@ -1018,7 +1037,7 @@ class TestSearch(AppTestCase):
             status=200)
 
         self.check_expected_heka_messages(
-            total=9,
+            total=10,
             timer=[
                 ('http.request', {'url_path': '/v1/search'}),
                 ('search.accuracy.wifi', 1)
@@ -1027,6 +1046,7 @@ class TestSearch(AppTestCase):
                 ('search.api_key.test', 1),
                 ('http.request', 1),
                 ('search.country_from_mcc', 1),
+                ('search.no_geoip_found', 1),
                 ('search.wifi_found', 1),
                 ('search.cell_found', 1),
                 ('search.cell_lac_found', 1),

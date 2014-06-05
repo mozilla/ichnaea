@@ -266,54 +266,57 @@ def geoip_and_best_guess_country_code(data, request, api_name):
     """
     Return (geoip, alpha2) where geoip is the result of a GeoIP lookup
     and alpha2 is a best-guess ISO 3166 alpha2 country code. The country
-    code guess uses both GeoIP and cell MCCs, preferring MCCs if it can find
-    any. Return None for either field if no data is available.
+    code guess uses both GeoIP and cell MCCs, preferring GeoIP. Return
+    None for either field if no data is available.
     """
 
     heka_client = get_heka_client()
     geoip = None
-    geoip_res = None
 
     if request.client_addr:
         geoip = request.registry.geoip_db.geoip_lookup(request.client_addr)
 
-    cell_mccs = []
+    cell_countries = []
     if data and data['cell']:
         radio = RADIO_TYPE.get(data['radio'], -1)
         for cell in data['cell']:
             cell = normalized_cell_dict(cell, default_radio=radio)
             if cell:
                 for c in mobile_codes.mcc(str(cell['mcc'])):
-                    cell_mccs.append(c.alpha2)
+                    cell_countries.append(c.alpha2)
 
-    if geoip:
-        heka_client.incr('%s.geoip_found' % api_name)
-
-        # If there were no cell MCCs, or we got a GeoIP hit that
-        # matches one of the cell MCCs, go with the GeoIP.
-        if not cell_mccs or geoip['country_code'] in cell_mccs:
-            heka_client.incr('%s.country_from_geoip' % api_name)
-            geoip_res = {
-                'lat': geoip['latitude'],
-                'lon': geoip['longitude'],
-                'accuracy': GEOIP_CITY_ACCURACY
-            }
-            return (geoip_res, geoip['country_code'])
-
-        if geoip['country_code'] not in cell_mccs:
-            heka_client.incr('%s.anomaly.geoip_mcc_mismatch' % api_name)
-
-    if len(cell_mccs) > 1:
+    if len(cell_countries) > 1:
         heka_client.incr('%s.anomaly.multiple_mccs' % api_name)
 
-    # Pick the most-commonly-occurring MCC if we got any,
-    cc = most_common(cell_mccs)
+    if geoip:
+        # GeoIP always wins if we have it.
+        if 'city' in geoip:
+            heka_client.incr('%s.geoip_city_found' % api_name)
+        else:
+            heka_client.incr('%s.geoip_country_found' % api_name)
+
+        if cell_countries and geoip['country_code'] not in cell_countries:
+            heka_client.incr('%s.anomaly.geoip_mcc_mismatch' % api_name)
+
+        heka_client.incr('%s.country_from_geoip' % api_name)
+        geoip_res = {
+            'lat': geoip['latitude'],
+            'lon': geoip['longitude'],
+            'accuracy': GEOIP_CITY_ACCURACY
+        }
+        return (geoip_res, geoip['country_code'])
+
+    else:
+        heka_client.incr('%s.no_geoip_found' % api_name)
+
+    # Pick the most-commonly-occurring MCC if we got any
+    cc = most_common(cell_countries)
     if cc:
         heka_client.incr('%s.country_from_mcc' % api_name)
-        return (geoip_res, cc)
+        return (None, cc)
 
     heka_client.incr('%s.no_country' % api_name)
-    return (geoip_res, None)
+    return (None, None)
 
 
 def location_is_in_country(lat, lon, country):
@@ -369,8 +372,11 @@ def search_all_sources(request, data, api_name):
         if data and data[data_field]:
 
             r = search_fn(session, data)
-            if r is not None:
+            if r is None:
+                heka_client.incr('%s.no_%s_found' %
+                                 (api_name, metric_name))
 
+            else:
                 lat = float(r['lat'])
                 lon = float(r['lon'])
 
