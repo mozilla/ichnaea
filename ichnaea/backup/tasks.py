@@ -257,8 +257,6 @@ def delete_measure_records(self,
             MeasureBlock.archive_date.is_(None)).order_by(
             MeasureBlock.end_id.asc()).limit(limit)
         for block in query.all():
-            expected_sha = block.archive_sha
-
             # Note that 'created' is indexed for both CellMeasure
             # and WifiMeasure
             measure_cls = MEASURE_TYPE_META[measure_type]['class']
@@ -271,11 +269,11 @@ def delete_measure_records(self,
                 # enough
                 continue
 
-            dispatch_delete.delay(measure_type, expected_sha, block.id)
+            dispatch_delete.delay(block.id)
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def dispatch_delete(self, measure_type, expected_sha, block_id):
+def dispatch_delete(self, block_id):
     s3_backend = S3Backend(self.app.s3_settings['backup_bucket'],
                            self.app.s3_settings['backup_prefix'],
                            self.heka_client)
@@ -283,8 +281,9 @@ def dispatch_delete(self, measure_type, expected_sha, block_id):
     with self.db_session() as session:
         block = session.query(MeasureBlock).filter(
             MeasureBlock.id == block_id).first()
+        measure_type = block.measure_type
         measure_cls = MEASURE_TYPE_META[measure_type]['class']
-        if s3_backend.check_archive(expected_sha, block.s3_key):
+        if s3_backend.check_archive(block.archive_sha, block.s3_key):
             q = session.query(measure_cls).filter(
                 measure_cls.id >= block.start_id,
                 measure_cls.id <= block.end_id)
