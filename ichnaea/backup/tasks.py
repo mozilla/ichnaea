@@ -179,7 +179,7 @@ def write_block_to_s3(self, block_id, batch=1000000, cleanup_zip=True):
         session.commit()
 
 
-def schedule_measure_archival(self, measure_type, batch=1000000, limit=100):
+def schedule_measure_archival(self, measure_type, limit=100, batch=1000000):
     blocks = []
     measure_cls = MEASURE_TYPE_META[measure_type]['class']
     with self.db_session() as session:
@@ -232,15 +232,15 @@ def schedule_measure_archival(self, measure_type, batch=1000000, limit=100):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def schedule_cellmeasure_archival(self, batch=1000000, limit=100):
+def schedule_cellmeasure_archival(self, limit=100, batch=1000000):
     return schedule_measure_archival(
-        self, MEASURE_TYPE_CODE['cell'], batch, limit)
+        self, MEASURE_TYPE_CODE['cell'], limit=limit, batch=batch)
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def schedule_wifimeasure_archival(self, batch=1000000, limit=100):
+def schedule_wifimeasure_archival(self, limit=100, batch=1000000):
     return schedule_measure_archival(
-        self, MEASURE_TYPE_CODE['wifi'], batch, limit)
+        self, MEASURE_TYPE_CODE['wifi'], limit=limit, batch=batch)
 
 
 def delete_measure_records(self,
