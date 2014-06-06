@@ -623,9 +623,7 @@ MEASURE_TYPE_CODE = {
 
 MEASURE_TYPE_META = {
     1: {'class': WifiMeasure,
-        'csv_name': 'wifi_measure.csv',
-        'zip_prefix': 'WifiMeasure'},
+        'csv_name': 'wifi_measure.csv'},
     2: {'class': CellMeasure,
-        'csv_name': 'cell_measure.csv',
-        'zip_prefix': 'CellMeasure'},
+        'csv_name': 'cell_measure.csv'},
 }
