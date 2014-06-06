@@ -40,7 +40,9 @@ class S3Backend(object):
             s3_hash = compute_hash(s3_copy)
             return s3_hash == expected_sha
         except Exception:
-            self.heka_client.error('s3 verification error')
+            from binascii import hexlify
+            msg = 'S3 verification error: SHA hash [%s]' % hexlify(expected_sha)
+            self.heka_client.error(msg)
             return False
         finally:
             if os.path.exists(tmpdir):

@@ -24,10 +24,6 @@ from ichnaea.db import _Model
 DEGREE_DECIMAL_PLACES = 7
 DEGREE_SCALE_FACTOR = 10 ** DEGREE_DECIMAL_PLACES
 
-MEASURE_TYPE = {
-    'wifi': 1,
-    'cell': 2,
-}
 
 RADIO_TYPE = {
     '': -1,
@@ -618,3 +614,18 @@ class ApiKey(_Model):
                        primary_key=True)
 
 api_key_table = ApiKey.__table__
+
+
+MEASURE_TYPE_CODE = {
+    'wifi': 1,
+    'cell': 2,
+}
+
+MEASURE_TYPE_META = {
+    1: {'class': WifiMeasure,
+        'csv_name': 'wifi_measure.csv',
+        'zip_prefix': 'WifiMeasure'},
+    2: {'class': CellMeasure,
+        'csv_name': 'cell_measure.csv',
+        'zip_prefix': 'CellMeasure'},
+}
