@@ -57,33 +57,33 @@ def selfdestruct_tempdir(s3_key):
 @celery.task(base=DatabaseTask, bind=True)
 def write_cellmeasure_s3_backups(self,
                                  limit=100,
-                                 chunk_size=10000,
+                                 batch=1000000,
                                  cleanup_zip=True):
     measure_type = MEASURE_TYPE_CODE['cell']
     return write_measure_s3_backups(self,
                                     measure_type,
                                     limit=limit,
-                                    chunk_size=chunk_size,
+                                    batch=batch,
                                     cleanup_zip=cleanup_zip)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def write_wifimeasure_s3_backups(self,
                                  limit=100,
-                                 chunk_size=10000,
+                                 batch=1000000,
                                  cleanup_zip=True):
     measure_type = MEASURE_TYPE_CODE['wifi']
     return write_measure_s3_backups(self,
                                     measure_type,
                                     limit=limit,
-                                    chunk_size=chunk_size,
+                                    batch=batch,
                                     cleanup_zip=cleanup_zip)
 
 
 def write_measure_s3_backups(self,
                              measure_type,
                              limit=100,
-                             chunk_size=10000,
+                             batch=1000000,
                              cleanup_zip=True):
     """
     Iterate over each of the measure block records that aren't
@@ -100,12 +100,12 @@ def write_measure_s3_backups(self,
 
         for block in query:
             write_block_to_s3.delay(block.id,
-                                    chunk_size,
+                                    batch,
                                     cleanup_zip)
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def write_block_to_s3(self, block_id, chunk_size, cleanup_zip):
+def write_block_to_s3(self, block_id, batch=1000000, cleanup_zip=True):
 
     with self.db_session() as session:
         block = session.query(MeasureBlock).filter(
@@ -147,8 +147,8 @@ def write_block_to_s3(self, block_id, chunk_size, cleanup_zip):
                 csv_out.writerow(columns)
                 for this_start in range(start_id,
                                         end_id,
-                                        chunk_size):
-                    this_end = min(this_start+chunk_size, end_id)
+                                        batch):
+                    this_end = min(this_start + batch, end_id)
 
                     query = table.select().where(
                         table.c.id >= this_start).where(
@@ -179,7 +179,7 @@ def write_block_to_s3(self, block_id, chunk_size, cleanup_zip):
         session.commit()
 
 
-def schedule_measure_archival(self, measure_type, batch=100, limit=100):
+def schedule_measure_archival(self, measure_type, batch=1000000, limit=100):
     blocks = []
     measure_cls = MEASURE_TYPE_META[measure_type]['class']
     with self.db_session() as session:
@@ -232,13 +232,13 @@ def schedule_measure_archival(self, measure_type, batch=100, limit=100):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def schedule_cellmeasure_archival(self, batch=100, limit=100):
+def schedule_cellmeasure_archival(self, batch=1000000, limit=100):
     return schedule_measure_archival(
         self, MEASURE_TYPE_CODE['cell'], batch, limit)
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def schedule_wifimeasure_archival(self, batch=100, limit=100):
+def schedule_wifimeasure_archival(self, batch=1000000, limit=100):
     return schedule_measure_archival(
         self, MEASURE_TYPE_CODE['wifi'], batch, limit)
 
