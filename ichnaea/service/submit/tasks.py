@@ -25,10 +25,10 @@ from ichnaea.models import (
     to_cellkey_psc,
     decode_datetime,
     encode_datetime,
+    from_degrees,
 )
 from ichnaea.decimaljson import (
     loads,
-    to_precise_int,
 )
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.submit.utils import process_score
@@ -124,8 +124,8 @@ def process_measure(measure_id, data, session):
     wifi_measures = {}
     measure_data = dict(
         measure_id=measure_id,
-        lat=to_precise_int(data['lat']),
-        lon=to_precise_int(data['lon']),
+        lat=from_degrees(data['lat']),
+        lon=from_degrees(data['lon']),
         time=encode_datetime(data['time']),
         accuracy=data['accuracy'],
         altitude=data['altitude'],
@@ -193,8 +193,8 @@ def process_measures(items, session, userid=None):
         cell_measures.extend(cell)
         wifi_measures.extend(wifi)
         positions.append({
-            'lat': to_precise_int(item['lat']),
-            'lon': to_precise_int(item['lon']),
+            'lat': from_degrees(item['lat']),
+            'lon': from_degrees(item['lon']),
         })
 
     heka_client = get_heka_client()
