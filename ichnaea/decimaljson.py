@@ -1,34 +1,14 @@
-from decimal import Decimal
-from decimal import localcontext
-from ichnaea.models import DEGREE_DECIMAL_PLACES, encode_datetime
+import sys
 import simplejson as json
-
-FACTOR = Decimal(10 ** DEGREE_DECIMAL_PLACES)
-EXPONENT_STR = '1.' + ('0' * DEGREE_DECIMAL_PLACES)
-EXPONENT = Decimal(EXPONENT_STR)
-PRECISION = DEGREE_DECIMAL_PLACES
+from ichnaea.models import encode_datetime
 
 
 def dumps(value):
-    with localcontext() as ctx:
-        ctx.prec = PRECISION
-        return json.dumps(value, use_decimal=True, default=encode_datetime)
+    return json.dumps(value, default=encode_datetime)
 
 
 def loads(value, encoding="utf-8"):
-    with localcontext() as ctx:
-        ctx.prec = PRECISION
-        return json.loads(value, use_decimal=True, encoding=encoding)
-
-
-def quantize(value):
-    return (Decimal(value) / FACTOR).quantize(EXPONENT)
-
-
-def to_precise_int(value):
-    if isinstance(value, str):
-        value = Decimal(value)
-    return int(value * FACTOR)
+    return json.loads(value, encoding=encoding)
 
 
 class Renderer(object):
@@ -40,3 +20,36 @@ class Renderer(object):
                 request.response.content_type = 'application/json'
             return dumps(value)
         return _render
+
+
+if sys.version_info < (2, 7):
+
+    # monkey-patch simplejson to emit floats using str() rather than repr()
+    # when running under python2.6 or earlier. Because 2.6 doesn't round the
+    # result pleasantly.
+    #
+    # In python2.7:
+    #
+    # >>> repr(1.1)
+    # '1.1'
+    #
+    # In python2.6:
+    #
+    # >>> repr(1.1)
+    # '1.1000000000000001'
+
+    import simplejson.encoder as enc
+
+    # This is the replacement repr function we're going to inject.
+    def frepr(ob):
+        if isinstance(ob, float):
+            return str(ob)
+        else:
+            return repr(ob)
+
+    # First disable the C encoder, causing the module to use
+    # its own python fallbacks.
+    enc.c_make_encoder = None
+
+    # Then inject our repr function into the python encoder.
+    enc.FLOAT_REPR = frepr
