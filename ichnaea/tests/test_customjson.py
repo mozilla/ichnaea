@@ -4,7 +4,7 @@ from datetime import datetime
 from datetime import timedelta
 import sys
 
-from ichnaea.decimaljson import (
+from ichnaea.customjson import (
     dumps,
     Renderer
 )
@@ -29,7 +29,7 @@ class TestRenderer(TestCase):
         self.assertEqual(render({'d': datetime(2012, 5, 17, 14, 28, 56)}, {}),
                          '{"d": "2012-05-17T14:28:56.000000"}')
 
-    def test_decimal(self):
+    def test_high_precision(self):
         render = self._make_one()
         d = 12.345678
         self.assertEqual(render({'accuracy': d}, {}),
@@ -47,7 +47,7 @@ class TestRenderer(TestCase):
             expect = '{"z": 12.345678}'
         self.assertEqual(render({'z': d}, {}), expect)
 
-    def test_decimal_low_precision(self):
+    def test_low_precision(self):
         render = self._make_one()
         d = 12.34
         self.assertEqual(render({'accuracy': d}, {}), '{"accuracy": 12.34}')

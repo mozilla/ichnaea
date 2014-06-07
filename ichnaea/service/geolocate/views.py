@@ -2,7 +2,7 @@ from pyramid.httpexceptions import HTTPError
 from pyramid.httpexceptions import HTTPNotFound
 from pyramid.response import Response
 
-from ichnaea.decimaljson import dumps
+from ichnaea.customjson import dumps
 from ichnaea.exceptions import BaseJSONError
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.error import (
