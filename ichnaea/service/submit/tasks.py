@@ -27,7 +27,7 @@ from ichnaea.models import (
     encode_datetime,
     from_degrees,
 )
-from ichnaea.decimaljson import (
+from ichnaea.customjson import (
     loads,
 )
 from ichnaea.heka_logging import get_heka_client
