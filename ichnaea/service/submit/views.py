@@ -7,6 +7,8 @@ from ichnaea.service.error import (
 from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.service.submit.tasks import insert_measures
 from ichnaea.service.base import check_api_key
+from country_bounding_boxes import country_subunits_by_iso_code
+from ichnaea.heka_logging import get_heka_client
 
 
 def configure_submit(config):
@@ -60,12 +62,36 @@ def submit_validator(data, errors):
         return
 
 
+def check_geoip(request, data, errors):
+    # Verify that the request comes from the same country as the lat/lon.
+    if request.client_addr:
+        geoip = request.registry.geoip_db.geoip_lookup(request.client_addr)
+        if geoip:
+            for item in data['items']:
+                lat = float(item['lat'])
+                lon = float(item['lon'])
+                country = geoip['country_code']
+                found = False
+                for c in country_subunits_by_iso_code(country):
+                    (lon1, lat1, lon2, lat2) = c.bbox
+                    if lon1 <= lon and lon <= lon2 and \
+                       lat1 <= lat and lat <= lat2:
+                        found = True
+                        break
+                if not found:
+                    heka_client = get_heka_client()
+                    heka_client.incr("submit.geoip_mismatch")
+                    desc = 'Submitted lat/lon does not match GeoIP.'
+                    errors.append(dict(name=None, description=desc))
+
+
 @check_api_key('submit')
 def submit_view(request):
     data, errors = preprocess_request(
         request,
         schema=SubmitSchema(),
-        extra_checks=(submit_validator, ),
+        extra_checks=(submit_validator,
+                      lambda d, e: check_geoip(request, d, e), ),
     )
 
     items = data['items']
