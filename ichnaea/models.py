@@ -620,6 +620,7 @@ MEASURE_TYPE_CODE = {
     'wifi': 1,
     'cell': 2,
 }
+MEASURE_TYPE_CODE_INVERSE = dict((v, k) for k, v in MEASURE_TYPE_CODE.items())
 
 MEASURE_TYPE_META = {
     1: {'class': WifiMeasure,

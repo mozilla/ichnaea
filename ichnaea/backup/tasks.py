@@ -10,6 +10,7 @@ import tempfile
 from ichnaea.backup.s3 import S3Backend, compute_hash
 from ichnaea.models import (
     MEASURE_TYPE_CODE,
+    MEASURE_TYPE_CODE_INVERSE,
     MEASURE_TYPE_META,
     MeasureBlock,
 )
@@ -114,6 +115,7 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
         measure_type = block.measure_type
         measure_cls = MEASURE_TYPE_META[measure_type]['class']
         csv_name = MEASURE_TYPE_META[measure_type]['csv_name']
+        zip_prefix = MEASURE_TYPE_CODE_INVERSE[measure_type]
 
         start_id = block.start_id
         end_id = block.end_id
@@ -128,7 +130,7 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
 
         utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
         s3_key = '%s/%s_%d_%d.zip' % (utcnow.strftime("%Y%m"),
-                                      measure_type,
+                                      zip_prefix,
                                       start_id,
                                       end_id)
 

@@ -146,6 +146,7 @@ class TestMeasurementsDump(CeleryTestCase):
         actual_sha.update(open(fname, 'rb').read())
         self.assertEquals(block.archive_sha, actual_sha.digest())
         self.assertTrue(block.s3_key is not None)
+        self.assertTrue('/cell_' in block.s3_key)
         self.assertTrue(block.archive_date is None)
 
     def test_backup_wifi_to_s3(self):
@@ -192,6 +193,7 @@ class TestMeasurementsDump(CeleryTestCase):
         actual_sha.update(open(fname, 'rb').read())
         self.assertEquals(block.archive_sha, actual_sha.digest())
         self.assertTrue(block.s3_key is not None)
+        self.assertTrue('/wifi_' in block.s3_key)
         self.assertTrue(block.archive_date is None)
 
     def test_delete_cell_measures(self):
