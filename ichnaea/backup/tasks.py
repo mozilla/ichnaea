@@ -115,7 +115,7 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
         measure_type = block.measure_type
         measure_cls = MEASURE_TYPE_META[measure_type]['class']
         csv_name = MEASURE_TYPE_META[measure_type]['csv_name']
-        zip_prefix = MEASURE_TYPE_CODE_INVERSE[measure_type]
+        name = MEASURE_TYPE_CODE_INVERSE[measure_type]
 
         start_id = block.start_id
         end_id = block.end_id
@@ -130,7 +130,7 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
 
         utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
         s3_key = '%s/%s_%d_%d.zip' % (utcnow.strftime("%Y%m"),
-                                      zip_prefix,
+                                      name,
                                       start_id,
                                       end_id)
 
@@ -164,7 +164,7 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
         try:
             if not s3_backend.backup_archive(s3_key, zip_path):
                 return
-            self.heka_client.incr('s3.backup.%s' % measure_type,
+            self.heka_client.incr('s3.backup.%s' % name,
                                   (end_id - start_id))
         finally:
             if cleanup_zip:
