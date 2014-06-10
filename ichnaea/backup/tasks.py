@@ -57,7 +57,7 @@ def selfdestruct_tempdir(s3_key):
 @celery.task(base=DatabaseTask, bind=True)
 def write_cellmeasure_s3_backups(self,
                                  limit=100,
-                                 batch=1000000,
+                                 batch=10000,
                                  cleanup_zip=True):
     measure_type = MEASURE_TYPE_CODE['cell']
     return write_measure_s3_backups(self,
@@ -70,7 +70,7 @@ def write_cellmeasure_s3_backups(self,
 @celery.task(base=DatabaseTask, bind=True)
 def write_wifimeasure_s3_backups(self,
                                  limit=100,
-                                 batch=1000000,
+                                 batch=10000,
                                  cleanup_zip=True):
     measure_type = MEASURE_TYPE_CODE['wifi']
     return write_measure_s3_backups(self,
@@ -83,7 +83,7 @@ def write_wifimeasure_s3_backups(self,
 def write_measure_s3_backups(self,
                              measure_type,
                              limit=100,
-                             batch=1000000,
+                             batch=10000,
                              cleanup_zip=True):
     """
     Iterate over each of the measure block records that aren't
@@ -105,7 +105,7 @@ def write_measure_s3_backups(self,
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def write_block_to_s3(self, block_id, batch=1000000, cleanup_zip=True):
+def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
 
     with self.db_session() as session:
         block = session.query(MeasureBlock).filter(
