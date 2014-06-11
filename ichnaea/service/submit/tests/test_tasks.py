@@ -25,7 +25,7 @@ from ichnaea.models import (
     WifiBlacklist,
     WifiMeasure,
 )
-from ichnaea.decimaljson import (
+from ichnaea.models import (
     encode_datetime,
 )
 from ichnaea.tests.base import CeleryTestCase

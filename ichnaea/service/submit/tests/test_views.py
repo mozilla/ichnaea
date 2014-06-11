@@ -17,7 +17,7 @@ from ichnaea.models import (
     WifiMeasure,
     ApiKey,
 )
-from ichnaea.decimaljson import (
+from ichnaea.customjson import (
     dumps,
     encode_datetime,
 )

@@ -1,6 +1,6 @@
 from pyramid.httpexceptions import HTTPNoContent
 
-from ichnaea.decimaljson import dumps
+from ichnaea.customjson import dumps
 from ichnaea.service.error import (
     preprocess_request,
 )
