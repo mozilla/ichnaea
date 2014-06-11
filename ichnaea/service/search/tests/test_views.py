@@ -14,27 +14,23 @@ from ichnaea.models import (
     GEOIP_CITY_ACCURACY,
     from_degrees,
 )
-from ichnaea.tests.base import AppTestCase
+from ichnaea.tests.base import (
+    AppTestCase,
+    FREMONT_IP,
+    FREMONT_LAT,
+    FREMONT_LON,
+    BRAZIL_MCC,
+    VIVO_MNC,
+    SAO_PAULO_LAT,
+    SAO_PAULO_LON,
+    PORTO_ALEGRE_LAT,
+    PORTO_ALEGRE_LON,
+    PARIS_LAT,
+    PARIS_LON,
+)
+
 from ichnaea.service.base import NO_API_KEY
 import random
-
-# Some test-data constants
-
-FREMONT_IP = '66.92.181.240'
-FREMONT_LAT = 37.5079
-FREMONT_LON = -121.96
-
-BRAZIL_MCC = 724
-VIVO_MNC = 11
-
-SAO_PAULO_LAT = -23.54
-SAO_PAULO_LON = -46.64
-
-PORTO_ALEGRE_LAT = -30.032
-PORTO_ALEGRE_LON = -51.22
-
-PARIS_LAT = 48.8568
-PARIS_LON = 2.3508
 
 
 class TestSearch(AppTestCase):

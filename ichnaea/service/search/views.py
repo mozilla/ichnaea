@@ -23,11 +23,13 @@ from ichnaea.service.error import (
 )
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.search.schema import SearchSchema
-from ichnaea.geocalc import distance
+from ichnaea.geocalc import (
+    distance,
+    location_is_in_country
+)
 from collections import namedtuple
 import operator
 import mobile_codes
-from country_bounding_boxes import country_subunits_by_iso_code
 
 # parameters for wifi clustering
 MAX_WIFI_CLUSTER_KM = 0.5
@@ -317,24 +319,6 @@ def geoip_and_best_guess_country_code(data, request, api_name):
 
     heka_client.incr('%s.no_country' % api_name)
     return (None, None)
-
-
-def location_is_in_country(lat, lon, country):
-    """
-    Return whether or not a given lat, lon pair is inside one of the
-    country subunits associated with a given alpha2 country code.
-
-    """
-    assert isinstance(country, basestring)
-    assert len(country) == 2
-    assert isinstance(lat, float)
-    assert isinstance(lon, float)
-    for c in country_subunits_by_iso_code(country):
-        (lon1, lat1, lon2, lat2) = c.bbox
-        if lon1 <= lon and lon <= lon2 and \
-           lat1 <= lat and lat <= lat2:
-            return True
-    return False
 
 
 def search_all_sources(request, data, api_name):
