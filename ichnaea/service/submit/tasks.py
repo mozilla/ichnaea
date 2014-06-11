@@ -426,7 +426,6 @@ def create_wifi_measure(utcnow, entry):
         key=entry['key'],
         channel=entry.get('channel', 0),
         signal=entry.get('signal', 0),
-
         heading=entry.get('heading', -1),
         speed=entry.get('speed', -1),
     )

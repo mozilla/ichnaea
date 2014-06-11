@@ -49,8 +49,8 @@ class MeasureSchema(MappingSchema):
     radio = SchemaNode(String(), location="body", type='str',
                        validator=OneOf(RADIO_TYPE_KEYS), missing='')
 
-    heading = SchemaNode(Float(), location="body", missing=-255)
-    speed = SchemaNode(Float(), location="body", missing=-255)
+    heading = SchemaNode(Float(), location="body", missing=-1)
+    speed = SchemaNode(Float(), location="body", missing=-1)
 
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())
