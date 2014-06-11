@@ -8,7 +8,7 @@ from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.base import check_api_key
 
 from ichnaea.service.error import (
-    JSONError,
+    JSONParseError,
     MSG_ONE_OF,
     preprocess_request,
     verify_schema,
@@ -136,7 +136,6 @@ def geosubmit_view(request):
     )
 
     if any(data.get('items', ())):
-        # TODO: process batch mode
         return process_batch(request, data, errors)
     else:
         return process_single(request)
@@ -163,7 +162,7 @@ def process_single(request):
         request,
         schema=GeoLocateSchema(),
         extra_checks=(geolocate_validator, ),
-        response=JSONError,
+        response=JSONParseError,
         accept_empty=True,
     )
 

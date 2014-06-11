@@ -4,12 +4,12 @@ from ichnaea.decimaljson import dumps
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.error import (
+    JSONParseError,
     MSG_BAD_RADIO,
     MSG_ONE_OF,
     preprocess_request,
 )
 from ichnaea.service.base import check_api_key
-from ichnaea.service.error import JSONError
 from ichnaea.service.search.views import (
     search_cell,
     search_cell_lac,
@@ -109,7 +109,7 @@ def geolocate_view(request):
         request,
         schema=GeoLocateSchema(),
         extra_checks=(geolocate_validator, ),
-        response=JSONError,
+        response=JSONParseError,
         accept_empty=True,
     )
 
@@ -161,6 +161,4 @@ def do_geolocate(session, request, data, heka_client, svc_name):
             heka_client.incr('%s.geoip_hit' % svc_name)
             heka_client.timer_send('%s.accuracy.geoip' % svc_name,
                                    result['accuracy'])
-
-
     return result
