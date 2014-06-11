@@ -214,7 +214,7 @@ class TestMeasurementsDump(CeleryTestCase):
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_cellmeasure_records()
 
-        self.assertEquals(session.query(CellMeasure).count(), 29)
+        self.assertEquals(session.query(CellMeasure).count(), 30)
         self.assertTrue(block.archive_date is not None)
 
     def test_delete_wifi_measures(self):
@@ -235,7 +235,7 @@ class TestMeasurementsDump(CeleryTestCase):
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_wifimeasure_records()
 
-        self.assertEquals(session.query(WifiMeasure).count(), 29)
+        self.assertEquals(session.query(WifiMeasure).count(), 30)
         self.assertTrue(block.archive_date is not None)
 
     def test_skip_delete_new_blocks(self):
@@ -273,7 +273,7 @@ class TestMeasurementsDump(CeleryTestCase):
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_cellmeasure_records()
 
-        self.assertEquals(session.query(CellMeasure).count(), 29)
+        self.assertEquals(session.query(CellMeasure).count(), 30)
         # The archive_date should now be set as the measure records
         # have been deleted.
         self.assertTrue(block.archive_date is not None)

@@ -288,7 +288,7 @@ def dispatch_delete(self, block_id):
         if s3_backend.check_archive(block.archive_sha, block.s3_key):
             q = session.query(measure_cls).filter(
                 measure_cls.id >= block.start_id,
-                measure_cls.id <= block.end_id)
+                measure_cls.id < block.end_id)
             q.delete()
             block.archive_date = utcnow
             session.commit()
