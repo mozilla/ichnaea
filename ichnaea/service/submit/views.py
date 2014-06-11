@@ -67,15 +67,17 @@ def check_geoip(request, data, errors):
     if request.client_addr:
         geoip = request.registry.geoip_db.geoip_lookup(request.client_addr)
         if geoip:
+            filtered_items = []
             for item in data['items']:
                 lat = float(item['lat'])
                 lon = float(item['lon'])
                 country = geoip['country_code']
-                if not location_is_in_country(lat, lon, country):
+                if location_is_in_country(lat, lon, country):
+                    filtered_items.append(item)
+                else:
                     heka_client = get_heka_client()
                     heka_client.incr("submit.geoip_mismatch")
-                    desc = 'Submitted lat/lon does not match GeoIP.'
-                    errors.append(dict(name=None, description=desc))
+            data['items'] = filtered_items
 
 
 @check_api_key('submit')

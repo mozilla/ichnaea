@@ -35,14 +35,6 @@ from ichnaea.tests.base import (
 )
 
 
-FREMONT_IP = '66.92.181.240'
-FREMONT_LAT = 37.5079
-FREMONT_LON = -121.96
-
-SAO_PAULO_LAT = -23.54
-SAO_PAULO_LON = -46.64
-
-
 class TestSubmit(CeleryAppTestCase):
 
     def setUp(self):
@@ -683,18 +675,25 @@ class TestSubmit(CeleryAppTestCase):
     def test_geoip_mismatch(self):
         session = self.db_master_session
         app = self.app
-        data = [{"lat": SAO_PAULO_LAT,
+        data = [{"lat": FREMONT_LAT,
+                 "lon": FREMONT_LON,
+                 "accuracy": 17,
+                 "wifi": [{"key": "00:34:cd:34:cd:34"}]},
+                {"lat": PARIS_LAT,
+                 "lon": PARIS_LON,
+                 "accuracy": 17,
+                 "wifi": [{"key": "00:34:cd:34:cd:34"}]},
+                {"lat": SAO_PAULO_LAT,
                  "lon": SAO_PAULO_LON,
                  "accuracy": 17,
                  "wifi": [{"key": "00:34:cd:34:cd:34"}]},
                 ]
         res = app.post_json('/v1/submit', {"items": data},
                             extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
-                            status=400)
-        self.assertTrue('errors' in res.json)
-        self.assertFalse('status' in res.json)
+                            status=204)
+        self.assertEqual(res.body, '')
         wifi_result = session.query(WifiMeasure).all()
-        self.assertEqual(len(wifi_result), 0)
+        self.assertEqual(len(wifi_result), 1)
         self.check_expected_heka_messages(
-            counter=['submit.geoip_mismatch'],
+            counter=[('submit.geoip_mismatch', 2)],
         )
