@@ -22,8 +22,6 @@ class CellTowerSchema(MappingSchema):
     cellId = SchemaNode(Integer(), location="body", type='int')
     # mapped to 'lac' for submit
     locationAreaCode = SchemaNode(Integer(), location="body", type='int')
-    radio = SchemaNode(String(), location="body", type='str',
-                       validator=OneOf(RADIO_TYPE_KEYS), missing='')
     # mapped to 'mcc' for submit
     mobileCountryCode = SchemaNode(Integer(), location="body", type='int')
     # mapped to 'mnc' for submit
