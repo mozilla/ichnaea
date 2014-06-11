@@ -24,11 +24,15 @@ from ichnaea.models import (
     Wifi,
     WifiBlacklist,
     WifiMeasure,
+    from_degrees,
 )
 from ichnaea.decimaljson import (
     encode_datetime,
 )
-from ichnaea.tests.base import CeleryTestCase
+from ichnaea.tests.base import (
+    CeleryTestCase,
+    PARIS_LAT, PARIS_LON, FRANCE_MCC,
+)
 
 
 class TestInsert(CeleryTestCase):
@@ -37,27 +41,30 @@ class TestInsert(CeleryTestCase):
         from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
+        mcc = FRANCE_MCC
 
-        session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=1, mnc=2, lac=3,
+        session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=mcc, mnc=2, lac=3,
                          cid=4, psc=5, new_measures=2,
                          total_measures=5))
         session.add(Score(userid=1, key=SCORE_TYPE['new_cell'], value=7))
         session.flush()
 
         measure = dict(
-            id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
+            id=0, created=encode_datetime(time),
+            lat=from_degrees(PARIS_LAT),
+            lon=from_degrees(PARIS_LON),
             time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=RADIO_TYPE['gsm'],
         )
         entries = [
             # Note that this first entry will be skipped as it does
             # not include (lac, cid) or (psc)
-            {"mcc": 1, "mnc": 2, "signal": -100},
+            {"mcc": mcc, "mnc": 2, "signal": -100},
 
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 15},
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 7, "psc": 5},
+            {"mcc": mcc, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
+            {"mcc": mcc, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
+            {"mcc": mcc, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 15},
+            {"mcc": mcc, "mnc": 2, "lac": 3, "cid": 7, "psc": 5},
         ]
         for e in entries:
             e.update(measure)
@@ -67,7 +74,7 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(result.get(), 4)
         measures = session.query(CellMeasure).all()
         self.assertEqual(len(measures), 4)
-        self.assertEqual(set([m.mcc for m in measures]), set([1]))
+        self.assertEqual(set([m.mcc for m in measures]), set([mcc]))
         self.assertEqual(set([m.mnc for m in measures]), set([2]))
         self.assertEqual(set([m.asu for m in measures]), set([-1, 8, 15]))
         self.assertEqual(set([m.psc for m in measures]), set([5]))
@@ -75,7 +82,7 @@ class TestInsert(CeleryTestCase):
 
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 2)
-        self.assertEqual(set([c.mcc for c in cells]), set([1]))
+        self.assertEqual(set([c.mcc for c in cells]), set([mcc]))
         self.assertEqual(set([c.mnc for c in cells]), set([2]))
         self.assertEqual(set([c.lac for c in cells]), set([3]))
         self.assertEqual(set([c.cid for c in cells]), set([4, 7]))
@@ -100,19 +107,21 @@ class TestInsert(CeleryTestCase):
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
-        session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=1, mnc=2, lac=3, cid=4,
-                         new_measures=2, total_measures=5))
+        session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=FRANCE_MCC, mnc=2,
+                         lac=3, cid=4, new_measures=2, total_measures=5))
         session.add(Score(userid=1, key=SCORE_TYPE['new_cell'], value=7))
         session.flush()
 
         measure = dict(
-            id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
+            id=0, created=encode_datetime(time),
+            lat=from_degrees(PARIS_LAT),
+            lon=from_degrees(PARIS_LON),
             time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=RADIO_TYPE['gsm'])
         entries = [
-            {"mcc": 1, "mnc": 2, "lac": 3147483647, "cid": 2147483647,
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3147483647, "cid": 2147483647,
              "psc": 5, "asu": 8},
-            {"mcc": 1, "mnc": 2, "lac": -1, "cid": -1,
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": -1, "cid": -1,
              "psc": 5, "asu": 8},
         ]
         for e in entries:
@@ -138,9 +147,11 @@ class TestInsert(CeleryTestCase):
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
         measure = dict(
-            id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
+            id=0, created=encode_datetime(time),
+            lat=from_degrees(PARIS_LAT),
+            lon=from_degrees(PARIS_LON),
             time=encode_datetime(time), accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=RADIO_TYPE['gsm'], mcc=1,
+            altitude_accuracy=0, radio=RADIO_TYPE['gsm'], mcc=FRANCE_MCC,
             mnc=2, lac=3, cid=4)
         entries = [
             {"asu": 8, "signal": -70, "ta": 32},
@@ -268,14 +279,14 @@ class TestInsert(CeleryTestCase):
         from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
 
-        measures = [dict(mcc=1, mnc=2, lac=3, cid=i, psc=5,
+        measures = [dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=i, psc=5,
                          radio=RADIO_TYPE['gsm'],
                          id=0,
-                         lat=10000000 + i,
-                         lon=20000000 + i) for i in range(3)]
+                         lat=from_degrees(PARIS_LAT) + i,
+                         lon=from_degrees(PARIS_LON) + i) for i in range(3)]
 
         black = CellBlacklist(
-            mcc=1, mnc=2, lac=3, cid=1,
+            mcc=FRANCE_MCC, mnc=2, lac=3, cid=1,
             radio=RADIO_TYPE['gsm'],
         )
         session.add(black)
@@ -294,11 +305,11 @@ class TestInsert(CeleryTestCase):
         from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
 
-        measures = [dict(mcc=1, mnc=2, lac=3, cid=4, psc=5,
+        measures = [dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4, psc=5,
                          radio=RADIO_TYPE['gsm'],
                          id=0,
-                         lat=10000000 + i,
-                         lon=20000000 + i) for i in range(3)]
+                         lat=from_degrees(PARIS_LAT) + i,
+                         lon=from_degrees(PARIS_LON) + i) for i in range(3)]
 
         result = insert_cell_measures.delay(measures)
         self.assertEqual(result.get(), 3)
@@ -326,22 +337,23 @@ class TestInsert(CeleryTestCase):
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
         measure = dict(
-            id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
-            time=encode_datetime(time), accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=RADIO_TYPE['cdma'],
+            id=0, created=encode_datetime(time), lat=from_degrees(PARIS_LAT),
+            lon=from_degrees(PARIS_LON), time=encode_datetime(time),
+            accuracy=0, altitude=0, altitude_accuracy=0,
+            radio=RADIO_TYPE['cdma'],
         )
         entries = [
             # This records is valid
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3, "cid": 4},
 
             # This record should fail as it's missing CID
-            {"mcc": 1, "mnc": 2, "lac": 3},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3},
 
             # This fails for missing lac
-            {"mcc": 1, "mnc": 2, "cid": 4},
+            {"mcc": FRANCE_MCC, "mnc": 2, "cid": 4},
 
             # Adding a psc doesn't change things
-            {"mcc": 1, "mnc": 2, "psc": 5},
+            {"mcc": FRANCE_MCC, "mnc": 2, "psc": 5},
         ]
 
         for e in entries:
@@ -362,14 +374,16 @@ class TestInsert(CeleryTestCase):
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
         measure = dict(
-            id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
+            id=0, created=encode_datetime(time),
+            lat=from_degrees(PARIS_LAT),
+            lon=from_degrees(PARIS_LON),
             time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=RADIO_TYPE['gsm'],
         )
         entries = [
             # These records are valid
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4},
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 4, "psc": 5},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3, "cid": 4},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3, "cid": 4, "psc": 5},
 
             # This record is missing everything
             {},
@@ -382,31 +396,31 @@ class TestInsert(CeleryTestCase):
             {"mcc": 2000, "mnc": 2, "lac": 3, "cid": 4},
 
             # These records fail the mnc check
-            {"mcc": 1, "lac": 3, "cid": 4},
-            {"mcc": 1, "mnc": -1, "lac": 3, "cid": 4},
-            {"mcc": 1, "mnc": -2, "lac": 3, "cid": 4},
-            {"mcc": 1, "mnc": 33000, "lac": 3, "cid": 4},
+            {"mcc": FRANCE_MCC, "lac": 3, "cid": 4},
+            {"mcc": FRANCE_MCC, "mnc": -1, "lac": 3, "cid": 4},
+            {"mcc": FRANCE_MCC, "mnc": -2, "lac": 3, "cid": 4},
+            {"mcc": FRANCE_MCC, "mnc": 33000, "lac": 3, "cid": 4},
 
             # These records fail the lac check
-            {"mcc": 1, "mnc": 2, "cid": 4},
-            {"mcc": 1, "mnc": 2, "lac": -1, "cid": 4},
-            {"mcc": 1, "mnc": 2, "lac": -2, "cid": 4},
-            {"mcc": 1, "mnc": 2, "lac": 65536, "cid": 4},
+            {"mcc": FRANCE_MCC, "mnc": 2, "cid": 4},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": -1, "cid": 4},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": -2, "cid": 4},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 65536, "cid": 4},
 
             # These records fail the cid check
-            {"mcc": 1, "mnc": 2, "lac": 3},
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": -1},
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": -2},
-            {"mcc": 1, "mnc": 2, "lac": 3, "cid": 2 ** 28},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3, "cid": -1},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3, "cid": -2},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3, "cid": 2 ** 28},
 
             # These records fail the (lac or cid) and psc check
-            {"mcc": 1, "mnc": 2},
-            {"mcc": 1, "mnc": 2, "lac": 3},
-            {"mcc": 1, "mnc": 2, "cid": 4},
+            {"mcc": FRANCE_MCC, "mnc": 2},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3},
+            {"mcc": FRANCE_MCC, "mnc": 2, "cid": 4},
 
             # This fails the check for (lac=0, cid=65535)
             # and subsequently the check for missing psc
-            {"mcc": 1, "mnc": 2, "lac": 0, "cid": 65535},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 0, "cid": 65535},
         ]
 
         for e in entries:
@@ -421,9 +435,9 @@ class TestInsert(CeleryTestCase):
 
         entries = [
             # These records are valid
-            {"mcc": 1, "mnc": 2, "psc": 5},
-            {"mcc": 1, "mnc": 2, "lac": 3, "psc": 5},
-            {"mcc": 1, "mnc": 2, "cid": 4, "psc": 5},
+            {"mcc": FRANCE_MCC, "mnc": 2, "psc": 5},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3, "psc": 5},
+            {"mcc": FRANCE_MCC, "mnc": 2, "cid": 4, "psc": 5},
         ]
         for e in entries:
             e.update(measure)

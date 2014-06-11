@@ -1,6 +1,8 @@
 from collections import namedtuple
 from datetime import date, datetime
 from colander import iso8601
+import mobile_codes
+from ichnaea.geocalc import location_is_in_country
 import re
 
 from sqlalchemy import (
@@ -275,6 +277,15 @@ def normalized_cell_measure_dict(d, measure_radio=-1):
     """
     d = normalized_cell_dict(d, default_radio=measure_radio)
     d = normalized_measure_dict(d)
+
+    if d is not None:
+        # Lat/lon must be inside one of the bounding boxes for the MCC.
+        lat = to_degrees(int(d['lat']))
+        lon = to_degrees(int(d['lon']))
+        if not any([location_is_in_country(lat, lon, c.alpha2)
+                    for c in mobile_codes.mcc(str(d['mcc']))]):
+            d = None
+
     return normalized_dict(
         d, dict(asu=(0, 31, -1),
                 signal=(-200, -1, 0),

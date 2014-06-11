@@ -29,6 +29,32 @@ except ImportError:
 
 SQLURI = os.environ.get('SQLURI')
 
+# Some test-data constants
+
+USA_MCC = 310
+ATT_MNC = 150
+
+FREMONT_IP = '66.92.181.240'
+FREMONT_LAT = 37.5079
+FREMONT_LON = -121.96
+
+BRAZIL_MCC = 724
+VIVO_MNC = 11
+
+SAO_PAULO_IP = '200.153.101.58'
+SAO_PAULO_LAT = -23.54
+SAO_PAULO_LON = -46.64
+
+PORTO_ALEGRE_LAT = -30.032
+PORTO_ALEGRE_LON = -51.22
+
+FRANCE_MCC = 208
+VIVENDI_MNC = 10
+
+PARIS_IP = '146.0.66.11'
+PARIS_LAT = 48.8568
+PARIS_LON = 2.3508
+
 
 def _make_db(uri=SQLURI):
     return Database(uri)

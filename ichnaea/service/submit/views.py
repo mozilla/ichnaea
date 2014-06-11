@@ -7,8 +7,8 @@ from ichnaea.service.error import (
 from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.service.submit.tasks import insert_measures
 from ichnaea.service.base import check_api_key
-from country_bounding_boxes import country_subunits_by_iso_code
 from ichnaea.heka_logging import get_heka_client
+from ichnaea.geocalc import location_is_in_country
 
 
 def configure_submit(config):
@@ -71,14 +71,7 @@ def check_geoip(request, data, errors):
                 lat = float(item['lat'])
                 lon = float(item['lon'])
                 country = geoip['country_code']
-                found = False
-                for c in country_subunits_by_iso_code(country):
-                    (lon1, lat1, lon2, lat2) = c.bbox
-                    if lon1 <= lon and lon <= lon2 and \
-                       lat1 <= lat and lat <= lat2:
-                        found = True
-                        break
-                if not found:
+                if not location_is_in_country(lat, lon, country):
                     heka_client = get_heka_client()
                     heka_client.incr("submit.geoip_mismatch")
                     desc = 'Submitted lat/lon does not match GeoIP.'
