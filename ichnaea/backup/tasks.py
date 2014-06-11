@@ -59,12 +59,14 @@ def selfdestruct_tempdir(s3_key):
 def write_cellmeasure_s3_backups(self,
                                  limit=100,
                                  batch=10000,
+                                 countdown=300,
                                  cleanup_zip=True):
     measure_type = MEASURE_TYPE_CODE['cell']
     return write_measure_s3_backups(self,
                                     measure_type,
                                     limit=limit,
                                     batch=batch,
+                                    countdown=countdown,
                                     cleanup_zip=cleanup_zip)
 
 
@@ -72,12 +74,14 @@ def write_cellmeasure_s3_backups(self,
 def write_wifimeasure_s3_backups(self,
                                  limit=100,
                                  batch=10000,
+                                 countdown=300,
                                  cleanup_zip=True):
     measure_type = MEASURE_TYPE_CODE['wifi']
     return write_measure_s3_backups(self,
                                     measure_type,
                                     limit=limit,
                                     batch=batch,
+                                    countdown=countdown,
                                     cleanup_zip=cleanup_zip)
 
 
@@ -85,12 +89,11 @@ def write_measure_s3_backups(self,
                              measure_type,
                              limit=100,
                              batch=10000,
+                             countdown=300,
                              cleanup_zip=True):
     """
     Iterate over each of the measure block records that aren't
     backed up yet and back them up.
-
-    Assume that this is running in a single task.
     """
     with self.db_session() as session:
 
@@ -99,10 +102,13 @@ def write_measure_s3_backups(self,
             MeasureBlock.s3_key.is_(None)).order_by(
             MeasureBlock.end_id).limit(limit)
 
+        c = 0
         for block in query:
-            write_block_to_s3.delay(block.id,
-                                    batch,
-                                    cleanup_zip)
+            write_block_to_s3.apply_async(
+                args=[block.id],
+                kwargs={'batch': batch, 'cleanup_zip': cleanup_zip},
+                countdown=c)
+            c += countdown
 
 
 @celery.task(base=DatabaseTask, bind=True)
@@ -248,7 +254,8 @@ def schedule_wifimeasure_archival(self, limit=100, batch=1000000):
 def delete_measure_records(self,
                            measure_type,
                            limit=100,
-                           days_old=7):
+                           days_old=7,
+                           countdown=300):
     utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
 
     with self.db_session() as session:
@@ -258,6 +265,7 @@ def delete_measure_records(self,
             MeasureBlock.archive_sha.isnot(None)).filter(
             MeasureBlock.archive_date.is_(None)).order_by(
             MeasureBlock.end_id.asc()).limit(limit)
+        c = 0
         for block in query.all():
             # Note that 'created' is indexed for both CellMeasure
             # and WifiMeasure
@@ -271,7 +279,8 @@ def delete_measure_records(self,
                 # enough
                 continue
 
-            dispatch_delete.delay(block.id)
+            dispatch_delete.apply_async(args=[block.id], countdown=c)
+            c += countdown
 
 
 @celery.task(base=DatabaseTask, bind=True)
@@ -295,18 +304,20 @@ def dispatch_delete(self, block_id):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def delete_cellmeasure_records(self, limit=100, days_old=7):
+def delete_cellmeasure_records(self, limit=100, days_old=7, countdown=300):
     return delete_measure_records(
         self,
         MEASURE_TYPE_CODE['cell'],
         limit=limit,
-        days_old=days_old)
+        days_old=days_old,
+        countdown=countdown)
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def delete_wifimeasure_records(self, limit=100, days_old=7):
+def delete_wifimeasure_records(self, limit=100, days_old=7, countdown=300):
     return delete_measure_records(
         self,
         MEASURE_TYPE_CODE['wifi'],
         limit=limit,
-        days_old=days_old)
+        days_old=days_old,
+        countdown=countdown)
