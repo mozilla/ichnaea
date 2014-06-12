@@ -80,10 +80,6 @@ CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
 
 
-def from_speed(spd):
-    return int(spd * SPEED_SCALE_FACTOR)
-
-
 def from_degrees(deg):
     return int(deg * DEGREE_SCALE_FACTOR)
 
@@ -172,7 +168,7 @@ def normalized_measure_dict(d):
         d, dict(lat=(from_degrees(-90.0), from_degrees(90.0), REQUIRED),
                 lon=(from_degrees(-180.0), from_degrees(180.0), REQUIRED),
                 heading=(0.0, 360.0, 0),
-                speed=(0, from_speed(MAX_SPEED), 0),
+                speed=(0, 300.0, 0),
                 altitude=(MIN_ALTITUDE, MAX_ALTITUDE, 0),
                 altitude_accuracy=(0, abs(MAX_ALTITUDE - MIN_ALTITUDE), 0),
                 # Accuracy on land is arbitrarily bounded to [0, 1000km],

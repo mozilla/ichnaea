@@ -173,7 +173,7 @@ class TestInsert(CeleryTestCase):
             time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=-1,
             heading=52.9,
-            speed=532.5,
+            speed=158.5,
         )
         entries = [
             {"key": "ab1234567890", "channel": 11, "signal": -80},
@@ -193,7 +193,7 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([m.channel for m in measures]), set([3, 11]))
         self.assertEqual(set([m.signal for m in measures]), set([-80, -90]))
         self.assertEqual(set([m.heading or m in measures]), set([52.9]))
-        self.assertEqual(set([m.speed or m in measures]), set([532.5]))
+        self.assertEqual(set([m.speed or m in measures]), set([158.5]))
 
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 2)
