@@ -72,7 +72,7 @@ def check_geoip(request, data, errors):
                 lat = float(item['lat'])
                 lon = float(item['lon'])
                 country = geoip['country_code']
-                if location_is_in_country(lat, lon, country):
+                if location_is_in_country(lat, lon, country, 1):
                     filtered_items.append(item)
                 else:
                     heka_client = get_heka_client()
