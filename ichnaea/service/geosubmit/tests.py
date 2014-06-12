@@ -51,9 +51,9 @@ class TestGeosubmit(CeleryAppTestCase):
 
         # check that we get back a location
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 12.3456781,
-                                                 "lng": 23.4567892},
-                                    "accuracy": 5000})
+        self.assertEqual(res.json, {"location": {"lat": 123456700,
+                                                 "lng": 234567800},
+                                    "accuracy": 12.4})
 
         cell = session.query(Cell).first()
         self.assertEqual(2, cell.total_measures)
@@ -63,6 +63,7 @@ class TestGeosubmit(CeleryAppTestCase):
         self.assertEquals(1, session.query(CellMeasure).count())
 
     def test_ok_no_existing_cell(self):
+        # Even if ichnaea has no data, we need
         app = self.app
         session = self.db_master_session
 
@@ -77,20 +78,12 @@ class TestGeosubmit(CeleryAppTestCase):
                                 "mobileCountryCode": 123,
                                 "mobileNetworkCode": 1,
                             }]},
-                            status=404)
+                            status=200)
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(
-            res.json, {"error": {
-                "errors": [{
-                    "domain": "geolocation",
-                    "reason": "notFound",
-                    "message": "Not found",
-                }],
-                "code": 404,
-                "message": "Not found"
-            }}
-        )
+        self.assertEqual(res.json, {"location": {"lat": 123456700,
+                                                 "lng": 234567800},
+                                    "accuracy": 12.4})
 
         self.assertEquals(1, session.query(Cell).count())
 
@@ -123,9 +116,9 @@ class TestGeosubmit(CeleryAppTestCase):
                 ]},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 1.0010000,
-                                                 "lng": 1.0020000},
-                                    "accuracy": 248.60908969845744})
+        self.assertEqual(res.json, {"location": {"lat": 123456700,
+                                                 "lng": 234567800},
+                                    "accuracy": 12.4})
 
         # Check that e5 exists
         query = session.query(Wifi)
@@ -148,20 +141,12 @@ class TestGeosubmit(CeleryAppTestCase):
                 "wifiAccessPoints": [
                     {"macAddress": "0000000000e5"},
                 ]},
-            status=404)
+            status=200)
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(
-            res.json, {"error": {
-                "errors": [{
-                    "domain": "geolocation",
-                    "reason": "notFound",
-                    "message": "Not found",
-                }],
-                "code": 404,
-                "message": "Not found"
-            }}
-        )
+        self.assertEqual(res.json, {"location": {"lat": 123456700,
+                                                 "lng": 234567800},
+                                    "accuracy": 12.4})
 
         # Check that e5 exists
         query = session.query(Wifi)

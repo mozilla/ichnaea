@@ -44,9 +44,6 @@ def geosubmit_validator(data, errors):
         cell = chunk.get('cellTowers', ())
         wifi = chunk.get('wifiAccessPoints', ())
 
-        if chunk['timestamp'] == 0:
-            chunk['timestamp'] = time.time()*1000.0
-
         if not any(wifi) and not any(cell):
             errors.append(dict(name='body', description=MSG_ONE_OF))
 
@@ -60,6 +57,7 @@ def process_upload(nickname, items):
         normalized_cells = []
         for c in batch['cellTowers']:
             cell = {}
+            cell['radio'] = batch['radioType']
             cell['mcc'] = c['mobileCountryCode']
             cell['mnc'] = c['mobileNetworkCode']
             cell['lac'] = c['locationAreaCode']
@@ -80,6 +78,9 @@ def process_upload(nickname, items):
             wifi['signal'] = w['signalStrength']
             normalized_wifi.append(wifi)
 
+        if batch['timestamp'] == 0:
+            batch['timestamp'] = time.time()*1000.0
+
         dt = utc.fromutc(datetime.utcfromtimestamp(
                          batch['timestamp']/1000.0).replace(tzinfo=utc))
         ts = dt.isoformat()
@@ -98,7 +99,7 @@ def process_upload(nickname, items):
                             }
         batch_list.append(normalized_batch)
 
-    # Run the SubmitScheme validator against the normalized submit
+    # Run the SubmitSchema validator against the normalized submit
     # data.
     schema = SubmitSchema()
     body = {'items': batch_list}
@@ -151,7 +152,7 @@ def process_batch(request, data, errors):
 
     result = HTTPOk()
     result.content_type = 'application/json'
-    result.body = dumps({})
+    result.body = '{}'
     return result
 
 
@@ -182,11 +183,17 @@ def process_single(request):
     if errors:
         heka_client.incr('geosubmit.upload.errors', len(errors))
 
-    result = do_geolocate(session,
-                          request,
-                          data['items'][0],
-                          heka_client,
-                          'geosubmit')
+    first_item = data['items'][0]
+    if first_item['latitude'] == -255 or first_item['longitude'] == -255:
+        result = do_geolocate(session,
+                              request,
+                              data['items'][0],
+                              heka_client,
+                              'geosubmit')
+    else:
+        result = {'lat': first_item['latitude'],
+                  'lon': first_item['longitude'],
+                  'accuracy': first_item['accuracy']}
 
     if result is None:
         heka_client.incr('geosubmit.miss')

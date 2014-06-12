@@ -31,9 +31,11 @@ class CellTowerSchema(MappingSchema):
     age = SchemaNode(
         Integer(), location="body", type='int', missing=0)
     # mapped to 'signal' for submit
-    signalStrength = SchemaNode(Integer(), location="body", type='int', missing=0)
+    signalStrength = SchemaNode(
+        Integer(), location="body", type='int', missing=0)
     # mapped to 'ta' for submit
-    timingAdvance = SchemaNode(Integer(), location="body", type='int', missing=0)
+    timingAdvance = SchemaNode(
+        Integer(), location="body", type='int', missing=0)
 
     # The fields below are extra fields which are not part of the
     # geolocate API, but assist with data submission
@@ -74,9 +76,9 @@ class GeoSubmitSchema(MappingSchema):
     # Gelocate schema with the exception that the radioType validator
     # can accept one more radioType (lte)
     homeMobileCountryCode = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
+        Integer(), location="body", type='int', missing=-1)
     homeMobileNetworkCode = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
+        Integer(), location="body", type='int', missing=-1)
 
     # mapped to 'radio' for submit
     radioType = SchemaNode(String(), location="body", type='str',
@@ -87,7 +89,7 @@ class GeoSubmitSchema(MappingSchema):
     wifiAccessPoints = WifiAccessPointsSchema(missing=())
 
     # The fields below are extra fields which are not part of the
-    # geolocate API, but are part of the submit schema 
+    # geolocate API, but are part of the submit schema
 
     # mapped to 'lat' for submit
     latitude = SchemaNode(Float(), location="body", missing=-255)
@@ -102,7 +104,7 @@ class GeoSubmitSchema(MappingSchema):
     accuracy = SchemaNode(Float(), location="body", missing=0)
 
     # mapped to 'altitude' for submit
-    altitude = SchemaNode(Float(), location="body", type='int', missing=0)
+    altitude = SchemaNode(Float(), location="body", missing=0)
 
     # mapped to 'altitude_accuracy' for submit
     altitudeAccuracy = SchemaNode(Float(), location="body", missing=0)
@@ -115,7 +117,7 @@ class GeoSubmitSchema(MappingSchema):
 
 
 class GeoSubmitListSchema(SequenceSchema):
-    items = GeoSubmitSchema()
+    measure = GeoSubmitSchema()
 
 
 class GeoSubmitBatchSchema(MappingSchema):

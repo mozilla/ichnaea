@@ -609,6 +609,7 @@ class WifiMeasure(_Model):
     key = Column(String(12))
     channel = Column(SmallInteger)
     signal = Column(SmallInteger)
+    snr = Column(SmallInteger)
 
     def __init__(self, *args, **kw):
         if 'measure_id' not in kw:

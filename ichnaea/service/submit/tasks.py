@@ -112,7 +112,6 @@ def process_time(measure, utcnow, utcmin):
 
 
 def process_measure(measure_id, data, session):
-
     def add_missing_dict_entries(dst, src):
         # x.update(y) overwrites entries in x with those in y;
         # we want to only add those not already present
@@ -426,6 +425,7 @@ def create_wifi_measure(utcnow, entry):
         key=entry['key'],
         channel=entry.get('channel', 0),
         signal=entry.get('signal', 0),
+        snr=entry.get('signalToNoiseRatio', 0),
         heading=entry.get('heading', -1),
         speed=entry.get('speed', -1),
     )

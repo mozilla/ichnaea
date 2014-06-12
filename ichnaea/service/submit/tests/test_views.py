@@ -107,7 +107,10 @@ class TestSubmit(CeleryAppTestCase):
     def test_ok_wifi(self):
         app = self.app
         today = datetime.utcnow().date()
-        wifi_data = [{"key": "0012AB12AB12"}, {"key": "00:34:cd:34:cd:34"}]
+        wifi_data = [{"key": "0012AB12AB12",
+                      "signalToNoiseRatio": 5},
+                     {"key": "00:34:cd:34:cd:34",
+                      "signalToNoiseRatio": 5}]
         month_rounded_today = today.replace(day=1)
         month_rounded_dt = datetime(month_rounded_today.year,
                                     month_rounded_today.month,
@@ -138,6 +141,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertTrue(item.key in ("0012ab12ab12", "0034cd34cd34"))
         self.assertEqual(item.channel, 0)
         self.assertEqual(item.signal, 0)
+        self.assertEqual(item.snr, 5)
         item = wifi_result[1]
         self.assertEqual(item.measure_id, measure_result[0].id)
         self.assertEqual(item.created.date(), today)
