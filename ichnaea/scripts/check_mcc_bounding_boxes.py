@@ -22,25 +22,24 @@ def main():
     bad = []
 
     offset = 0
-    count = 1000
+    count = 10000
     results = True
     while results:
         results = False
         r = session.execute("select id, lat, lon, mcc, mnc, lac, cid, radio, "
-                            + "total_measures from cell limit %d offset %d" %
+                            "total_measures from cell where "
+                            "lat is not null and lon is not null and "
+                            "mcc not in (1, 260) "
+                            "order by id limit %d offset %d" %
                             (count, offset))
         offset += count
         for row in r:
             results = True
             (id, lat, lon, mcc, mnc, lac, cid, radio, total_measures) = row
-            if not lat or not lon or not id or not mcc:
-                continue
             lat = to_degrees(lat)
             lon = to_degrees(lon)
             ccs = [c.alpha2 for c in mobile_codes.mcc(str(mcc))]
             if not any([location_is_in_country(lat, lon, c, 1) for c in ccs]):
-                if mcc == 260 or mcc == 1:
-                    continue
                 if ccs:
                     s = ",".join(ccs)
                 else:
