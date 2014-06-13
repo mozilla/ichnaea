@@ -45,8 +45,8 @@ def load_file(session, source_file, batch_size=100, userid=None):
                 if not valid_wifi_pattern(key):  # pragma: no cover
                     continue
 
-                lat = fields[2]
-                lon = fields[3]
+                lat = float(fields[2])
+                lon = float(fields[3])
                 accuracy = int(fields[4])
                 altitude = int(fields[5])
                 altitude_accuracy = int(fields[6])

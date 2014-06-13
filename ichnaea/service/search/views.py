@@ -11,10 +11,8 @@ from ichnaea.models import (
     WIFI_MIN_ACCURACY,
     CELL_MIN_ACCURACY,
     LAC_MIN_ACCURACY,
-    GEOIP_CITY_ACCURACY
-)
-from ichnaea.decimaljson import (
-    quantize,
+    GEOIP_CITY_ACCURACY,
+    DEGREE_DECIMAL_PLACES,
 )
 from ichnaea.service.base import check_api_key
 from ichnaea.service.error import (
@@ -30,6 +28,8 @@ from ichnaea.geocalc import (
 from collections import namedtuple
 import operator
 import mobile_codes
+from numbers import Number
+
 
 # parameters for wifi clustering
 MAX_WIFI_CLUSTER_KM = 0.5
@@ -48,6 +48,9 @@ def configure_search(config):
 
 
 def estimate_accuracy(lat, lon, points, minimum):
+    assert isinstance(lat, Number)
+    assert isinstance(lon, Number)
+    assert isinstance(minimum, Number)
     if len(points) == 1:
         accuracy = points[0].range
     else:
@@ -60,6 +63,9 @@ def estimate_accuracy(lat, lon, points, minimum):
                                  to_degrees(p.lat),
                                  to_degrees(p.lon)) * 1000
                         for p in points])
+    if accuracy is not None:
+        assert isinstance(accuracy, Number)
+        accuracy = round(float(accuracy), DEGREE_DECIMAL_PLACES)
     return max(accuracy, minimum)
 
 
@@ -89,8 +95,8 @@ def search_cell(session, data):
     avg_lat = sum([c.lat for c in cells]) / length
     avg_lon = sum([c.lon for c in cells]) / length
     return {
-        'lat': quantize(avg_lat),
-        'lon': quantize(avg_lon),
+        'lat': to_degrees(avg_lat),
+        'lon': to_degrees(avg_lon),
         'accuracy': estimate_accuracy(avg_lat, avg_lon,
                                       cells, CELL_MIN_ACCURACY),
     }
@@ -121,11 +127,13 @@ def search_cell_lac(session, data):
 
     # take the smallest LAC of any the user is inside
     lac = sorted(lacs, key=operator.attrgetter('range'))[0]
-
+    accuracy = max(LAC_MIN_ACCURACY, lac.range)
+    assert isinstance(accuracy, Number)
+    accuracy = round(float(accuracy), DEGREE_DECIMAL_PLACES)
     return {
-        'lat': quantize(lac.lat),
-        'lon': quantize(lac.lon),
-        'accuracy': max(LAC_MIN_ACCURACY, lac.range),
+        'lat': to_degrees(lac.lat),
+        'lon': to_degrees(lac.lon),
+        'accuracy': accuracy,
     }
 
 
@@ -177,10 +185,10 @@ def search_wifi(session, data):
         # Try to assign w to a cluster (but at most one).
         for c in clusters:
             for n in c:
-                if distance(quantize(n.lat),
-                            quantize(n.lon),
-                            quantize(w.lat),
-                            quantize(w.lon)) <= MAX_WIFI_CLUSTER_KM:
+                if distance(to_degrees(n.lat),
+                            to_degrees(n.lon),
+                            to_degrees(w.lat),
+                            to_degrees(w.lon)) <= MAX_WIFI_CLUSTER_KM:
                     c.append(w)
                     w = None
                     break
@@ -226,8 +234,8 @@ def search_wifi(session, data):
     avg_lat = sum([n.lat for n in sample]) / length
     avg_lon = sum([n.lon for n in sample]) / length
     return {
-        'lat': quantize(avg_lat),
-        'lon': quantize(avg_lon),
+        'lat': to_degrees(avg_lat),
+        'lon': to_degrees(avg_lon),
         'accuracy': estimate_accuracy(avg_lat, avg_lon,
                                       sample, WIFI_MIN_ACCURACY),
     }
@@ -368,7 +376,7 @@ def search_all_sources(request, data, api_name):
                                  (api_name, metric_name))
 
                 # Skip any hit that seems to be in the wrong country.
-                if country and not location_is_in_country(lat, lon, country):
+                if country and not location_is_in_country(lat, lon, country, 1):
                     heka_client.incr('%s.anomaly.%s_country_mismatch' %
                                      (api_name, metric_name))
 

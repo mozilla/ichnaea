@@ -18,7 +18,7 @@ from ichnaea.models import (
     ApiKey,
     from_degrees,
 )
-from ichnaea.decimaljson import (
+from ichnaea.customjson import (
     dumps,
     encode_datetime,
 )
@@ -701,3 +701,18 @@ class TestSubmit(CeleryAppTestCase):
         self.check_expected_heka_messages(
             counter=[('submit.geoip_mismatch', 2)],
         )
+
+    def test_geoip_with_data_error(self):
+        session = self.db_master_session
+        app = self.app
+        data = [{"lat": FREMONT_LAT,
+                 "lon": FREMONT_LON,
+                 "wifi": [{"key": 123}]},
+                ]
+        res = app.post_json('/v1/submit', {"items": data},
+                            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
+                            status=400)
+        self.assertEqual([e['name'] for e in res.json['errors']],
+                         [u'items.0.wifi.0.key'])
+        wifi_result = session.query(WifiMeasure).all()
+        self.assertEqual(len(wifi_result), 0)

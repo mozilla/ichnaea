@@ -1,7 +1,7 @@
 from pyramid.config import Configurator
 from pyramid.tweens import EXCVIEW
 
-from ichnaea import decimaljson
+from ichnaea import customjson
 from ichnaea.db import Database
 from ichnaea.db import db_master_session
 from ichnaea.db import db_slave_session
@@ -42,6 +42,6 @@ def main(global_config, _db_master=None, _db_slave=None, **settings):
     config.add_request_method(db_master_session, property=True)
     config.add_request_method(db_slave_session, property=True)
 
-    # replace json renderer with decimal json variant
-    config.add_renderer('json', decimaljson.Renderer())
+    # replace json renderer with custom json variant
+    config.add_renderer('json', customjson.Renderer())
     return config.make_wsgi_app()

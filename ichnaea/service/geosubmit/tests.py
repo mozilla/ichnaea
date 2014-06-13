@@ -11,7 +11,7 @@ from ichnaea.service.geolocate.tests import\
 from mock import patch, MagicMock
 
 # Mock out the verification that a location is in a particular country
-mock_location = lambda lat, lon, country: True
+mock_location = lambda *args: True
 mock_mcc = lambda mcc: [MagicMock()]
 
 

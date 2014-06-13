@@ -5,7 +5,7 @@ from ichnaea.exceptions import BaseJSONError
 from pyramid.httpexceptions import HTTPError
 from pyramid.response import Response
 
-from ichnaea.decimaljson import (
+from ichnaea.customjson import (
     dumps,
     loads,
 )

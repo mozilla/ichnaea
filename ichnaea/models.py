@@ -38,7 +38,8 @@ RADIO_TYPE = {
     'lte': 3,
 }
 RADIO_TYPE_KEYS = list(RADIO_TYPE.keys())
-RADIO_TYPE_INVERSE = dict((v, k) for k, v in RADIO_TYPE.items())
+RADIO_TYPE_INVERSE = dict((v, k) for k, v in RADIO_TYPE.items() if v != 2)
+RADIO_TYPE_INVERSE[2] = 'umts'
 MAX_RADIO_TYPE = max(RADIO_TYPE.values())
 MIN_RADIO_TYPE = min(RADIO_TYPE.values())
 
@@ -287,7 +288,7 @@ def normalized_cell_measure_dict(d, measure_radio=-1):
         # Lat/lon must be inside one of the bounding boxes for the MCC.
         lat = to_degrees(int(d['lat']))
         lon = to_degrees(int(d['lon']))
-        if not any([location_is_in_country(lat, lon, c.alpha2)
+        if not any([location_is_in_country(lat, lon, c.alpha2, 1)
                     for c in mobile_codes.mcc(str(d['mcc']))]):
             d = None
 

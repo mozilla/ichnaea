@@ -1,7 +1,6 @@
 from colander import MappingSchema, SchemaNode, SequenceSchema
-from colander import Decimal, Integer, String, OneOf, Float
+from colander import Float, Integer, String, OneOf
 
-from ichnaea.decimaljson import EXPONENT_STR
 from ichnaea.models import RADIO_TYPE_KEYS
 
 
@@ -38,10 +37,8 @@ class WifisSchema(SequenceSchema):
 class MeasureSchema(MappingSchema):
     # lat/lon being set to -255 indicates that this measure should be
     # skipped.  Other fields can be filled in with defaults
-    lat = SchemaNode(Decimal(quant=EXPONENT_STR), location="body",
-                     missing=-255)
-    lon = SchemaNode(Decimal(quant=EXPONENT_STR), location="body",
-                     missing=-255)
+    lat = SchemaNode(Float(), location="body", missing=-255)
+    lon = SchemaNode(Float(), location="body", missing=-255)
 
     time = SchemaNode(String(), location="body", missing='')
     accuracy = SchemaNode(Integer(), location="body", type='int', missing=0)

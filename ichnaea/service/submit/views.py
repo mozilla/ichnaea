@@ -1,6 +1,6 @@
 from pyramid.httpexceptions import HTTPNoContent
 
-from ichnaea.decimaljson import dumps
+from ichnaea.customjson import dumps
 from ichnaea.geocalc import location_is_in_country
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.error import (
@@ -66,13 +66,13 @@ def check_geoip(request, data, errors):
     # Verify that the request comes from the same country as the lat/lon.
     if request.client_addr:
         geoip = request.registry.geoip_db.geoip_lookup(request.client_addr)
-        if geoip:
+        if geoip and 'items' in data:
             filtered_items = []
             for item in data['items']:
                 lat = float(item['lat'])
                 lon = float(item['lon'])
                 country = geoip['country_code']
-                if location_is_in_country(lat, lon, country):
+                if location_is_in_country(lat, lon, country, 1):
                     filtered_items.append(item)
                 else:
                     heka_client = get_heka_client()

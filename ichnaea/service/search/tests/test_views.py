@@ -1,7 +1,7 @@
 from sqlalchemy import text
 from webob.response import gzip_app_iter
 
-from ichnaea.decimaljson import dumps, loads
+from ichnaea.customjson import dumps, loads
 from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.models import (
     ApiKey,
@@ -99,7 +99,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0010000, "lon": 1.0020000,
-                                    "accuracy": 248.60908969845744})
+                                    "accuracy": 248.6090897})
 
         self.check_expected_heka_messages(
             total=8,
@@ -167,7 +167,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0010000, "lon": 1.0020000,
-                                    "accuracy": 248.60908969845744})
+                                    "accuracy": 248.6090897})
 
     def test_wifi_prefer_cluster_with_better_signals(self):
         app = self.app
@@ -195,7 +195,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 2.0010000, "lon": 2.0020000,
-                                    "accuracy": 248.51819000225819})
+                                    "accuracy": 248.5181900})
 
     def test_wifi_prefer_larger_cluster_over_high_signal(self):
         app = self.app
