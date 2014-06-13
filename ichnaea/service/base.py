@@ -5,7 +5,7 @@ from pyramid.httpexceptions import HTTPBadRequest
 from ichnaea.models import (
     ApiKey
 )
-from ichnaea.decimaljson import dumps
+from ichnaea.customjson import dumps
 
 NO_API_KEY = {
     "error": {

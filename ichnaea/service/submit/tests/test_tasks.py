@@ -26,7 +26,7 @@ from ichnaea.models import (
     WifiMeasure,
     from_degrees,
 )
-from ichnaea.decimaljson import (
+from ichnaea.models import (
     encode_datetime,
 )
 from ichnaea.tests.base import (

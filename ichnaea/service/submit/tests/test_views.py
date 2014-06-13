@@ -18,7 +18,7 @@ from ichnaea.models import (
     ApiKey,
     from_degrees,
 )
-from ichnaea.decimaljson import (
+from ichnaea.customjson import (
     dumps,
     encode_datetime,
 )

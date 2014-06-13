@@ -2,7 +2,7 @@ import socket
 
 import pygeoip
 
-from ichnaea.decimaljson import PRECISION
+from ichnaea.models import DEGREE_DECIMAL_PLACES
 
 
 class GeoIPError(Exception):
@@ -51,7 +51,7 @@ class GeoIPWrapper(pygeoip.GeoIP):
             return None
 
         for i in ('latitude', 'longitude'):
-            r[i] = round(r[i], PRECISION)
+            r[i] = round(r[i], DEGREE_DECIMAL_PLACES)
 
         return r
 

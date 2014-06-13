@@ -1,6 +1,6 @@
 from pyramid.httpexceptions import HTTPNoContent
 
-from ichnaea.decimaljson import dumps
+from ichnaea.customjson import dumps
 from ichnaea.geocalc import location_is_in_country
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.error import (

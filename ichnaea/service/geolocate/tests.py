@@ -77,7 +77,7 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"location": {"lat": 1.0010000,
                                                  "lng": 1.0020000},
-                                    "accuracy": 248.60908969845744})
+                                    "accuracy": 248.6090897})
 
     def test_wifi_not_found(self):
         app = self.app
