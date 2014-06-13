@@ -66,7 +66,7 @@ def check_geoip(request, data, errors):
     # Verify that the request comes from the same country as the lat/lon.
     if request.client_addr:
         geoip = request.registry.geoip_db.geoip_lookup(request.client_addr)
-        if geoip:
+        if geoip and 'items' in data:
             filtered_items = []
             for item in data['items']:
                 lat = float(item['lat'])
