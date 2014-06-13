@@ -376,7 +376,7 @@ def search_all_sources(request, data, api_name):
                                  (api_name, metric_name))
 
                 # Skip any hit that seems to be in the wrong country.
-                if country and not location_is_in_country(lat, lon, country):
+                if country and not location_is_in_country(lat, lon, country, 1):
                     heka_client.incr('%s.anomaly.%s_country_mismatch' %
                                      (api_name, metric_name))
 
