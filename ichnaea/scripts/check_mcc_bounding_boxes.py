@@ -1,12 +1,12 @@
-import sys
 import json
+import sys
+
+import mobile_codes
+
 from ichnaea import config
 from ichnaea.db import Database
 from ichnaea.geocalc import location_is_in_country
-import mobile_codes
-from ichnaea.models import (
-    to_degrees
-)
+from ichnaea.models import to_degrees
 
 # This script scans the cell table looking for cells located outside the
 # bounding box of the country associated with the MCC. It produces geojson
