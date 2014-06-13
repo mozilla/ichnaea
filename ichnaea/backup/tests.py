@@ -1,11 +1,10 @@
 import boto
 from contextlib import contextmanager
+from mock import MagicMock, patch
 import datetime
 import hashlib
-from mock import (
-    MagicMock,
-    patch,
-)
+import pytz
+
 from zipfile import ZipFile
 
 from ichnaea.backup.s3 import S3Backend
@@ -20,7 +19,7 @@ from ichnaea.backup.tasks import (
 from ichnaea.models import (
     CellMeasure,
     MeasureBlock,
-    MEASURE_TYPE,
+    MEASURE_TYPE_CODE,
     WifiMeasure,
 )
 from ichnaea.tests.base import CeleryTestCase
@@ -50,11 +49,16 @@ class TestBackup(CeleryTestCase):
 
 class TestMeasurementsDump(CeleryTestCase):
 
+    def setUp(self):
+        CeleryTestCase.setUp(self)
+        self.really_old = datetime.datetime(1980, 1, 1).replace(
+            tzinfo=pytz.UTC)
+
     def test_schedule_cell_measures(self):
         session = self.db_master_session
         measures = []
         for i in range(20):
-            measures.append(CellMeasure())
+            measures.append(CellMeasure(created=self.really_old))
         session.add_all(measures)
         session.flush()
         start_id = measures[0].id
@@ -80,7 +84,7 @@ class TestMeasurementsDump(CeleryTestCase):
         batch_size = 10
         measures = []
         for i in range(batch_size * 2):
-            measures.append(WifiMeasure())
+            measures.append(WifiMeasure(created=self.really_old))
         session.add_all(measures)
         session.flush()
         start_id = measures[0].id
@@ -103,7 +107,7 @@ class TestMeasurementsDump(CeleryTestCase):
         batch_size = 10
         measures = []
         for i in range(batch_size):
-            measures.append(CellMeasure())
+            measures.append(CellMeasure(created=self.really_old))
         session.add_all(measures)
         session.flush()
         start_id = measures[0].id
@@ -116,9 +120,14 @@ class TestMeasurementsDump(CeleryTestCase):
         with mock_s3():
             with patch.object(S3Backend,
                               'backup_archive', lambda x, y, z: True):
-                zips = write_cellmeasure_s3_backups(cleanup_zip=False)
-                self.assertTrue(len(zips), 1)
-                fname = zips[0]
+                write_cellmeasure_s3_backups(cleanup_zip=False)
+
+                msgs = self.heka_client.stream.msgs
+                info_msgs = [m for m in msgs if m.type == 'oldstyle']
+                self.assertEquals(1, len(info_msgs))
+                info = info_msgs[0]
+                fname = info.payload.split(":")[-1]
+
                 myzip = ZipFile(fname)
                 try:
                     contents = set(myzip.namelist())
@@ -137,6 +146,7 @@ class TestMeasurementsDump(CeleryTestCase):
         actual_sha.update(open(fname, 'rb').read())
         self.assertEquals(block.archive_sha, actual_sha.digest())
         self.assertTrue(block.s3_key is not None)
+        self.assertTrue('/cell_' in block.s3_key)
         self.assertTrue(block.archive_date is None)
 
     def test_backup_wifi_to_s3(self):
@@ -144,7 +154,7 @@ class TestMeasurementsDump(CeleryTestCase):
         batch_size = 10
         measures = []
         for i in range(batch_size):
-            measures.append(WifiMeasure())
+            measures.append(WifiMeasure(created=self.really_old))
         session.add_all(measures)
         session.flush()
         start_id = measures[0].id
@@ -157,9 +167,14 @@ class TestMeasurementsDump(CeleryTestCase):
         with mock_s3():
             with patch.object(S3Backend,
                               'backup_archive', lambda x, y, z: True):
-                zips = write_wifimeasure_s3_backups(cleanup_zip=False)
-                self.assertTrue(len(zips), 1)
-                fname = zips[0]
+                write_wifimeasure_s3_backups(cleanup_zip=False)
+
+                msgs = self.heka_client.stream.msgs
+                info_msgs = [m for m in msgs if m.type == 'oldstyle']
+                self.assertEquals(1, len(info_msgs))
+                info = info_msgs[0]
+                fname = info.payload.split(":")[-1]
+
                 myzip = ZipFile(fname)
                 try:
                     contents = set(myzip.namelist())
@@ -178,12 +193,13 @@ class TestMeasurementsDump(CeleryTestCase):
         actual_sha.update(open(fname, 'rb').read())
         self.assertEquals(block.archive_sha, actual_sha.digest())
         self.assertTrue(block.s3_key is not None)
+        self.assertTrue('/wifi_' in block.s3_key)
         self.assertTrue(block.archive_date is None)
 
     def test_delete_cell_measures(self):
         session = self.db_master_session
         block = MeasureBlock()
-        block.measure_type = MEASURE_TYPE['cell']
+        block.measure_type = MEASURE_TYPE_CODE['cell']
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'
@@ -192,19 +208,19 @@ class TestMeasurementsDump(CeleryTestCase):
         session.add(block)
 
         for i in range(100, 150):
-            session.add(CellMeasure(id=i))
+            session.add(CellMeasure(id=i, created=self.really_old))
         session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_cellmeasure_records()
 
-        self.assertEquals(session.query(CellMeasure).count(), 29)
+        self.assertEquals(session.query(CellMeasure).count(), 30)
         self.assertTrue(block.archive_date is not None)
 
     def test_delete_wifi_measures(self):
         session = self.db_master_session
         block = MeasureBlock()
-        block.measure_type = MEASURE_TYPE['wifi']
+        block.measure_type = MEASURE_TYPE_CODE['wifi']
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'
@@ -213,11 +229,51 @@ class TestMeasurementsDump(CeleryTestCase):
         session.add(block)
 
         for i in range(100, 150):
-            session.add(WifiMeasure(id=i))
+            session.add(WifiMeasure(id=i, created=self.really_old))
         session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_wifimeasure_records()
 
-        self.assertEquals(session.query(WifiMeasure).count(), 29)
+        self.assertEquals(session.query(WifiMeasure).count(), 30)
+        self.assertTrue(block.archive_date is not None)
+
+    def test_skip_delete_new_blocks(self):
+        now = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+        session = self.db_master_session
+        block = MeasureBlock()
+        block.measure_type = MEASURE_TYPE_CODE['cell']
+        block.start_id = 120
+        block.end_id = 140
+        block.s3_key = 'fake_key'
+        block.archive_sha = 'fake_sha'
+        block.archive_date = None
+        session.add(block)
+
+        measures = []
+        for i in range(100, 150):
+            measures.append(CellMeasure(id=i, created=now))
+        session.add_all(measures)
+        session.commit()
+
+        with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
+            delete_cellmeasure_records()
+
+        self.assertEquals(session.query(CellMeasure).count(), 50)
+        # The archive_date should *not* be set as we haven't deleted
+        # the actual records yet
+        self.assertTrue(block.archive_date is None)
+
+        # Update all the create dates to be far in the past
+        for m in measures:
+            m.created = self.really_old
+        session.add_all(measures)
+        session.commit()
+
+        with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
+            delete_cellmeasure_records()
+
+        self.assertEquals(session.query(CellMeasure).count(), 30)
+        # The archive_date should now be set as the measure records
+        # have been deleted.
         self.assertTrue(block.archive_date is not None)

@@ -18,8 +18,11 @@ from ichnaea.service.error import (
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.geolocate.views import (
     NOT_FOUND,
-    do_geolocate,
     geolocate_validator,
+)
+from ichnaea.service.search.views import (
+    search_all_sources,
+    map_data,
 )
 
 from ichnaea.service.geosubmit.schema import (
@@ -175,8 +178,6 @@ def process_single(request):
     )
     data = {'items': [data]}
 
-    session = request.db_slave_session
-
     nickname = request.headers.get('X-Nickname', u'')
     validated, errors = process_upload(nickname, data['items'])
 
@@ -185,11 +186,8 @@ def process_single(request):
 
     first_item = data['items'][0]
     if first_item['latitude'] == -255 or first_item['longitude'] == -255:
-        result = do_geolocate(session,
-                              request,
-                              data['items'][0],
-                              heka_client,
-                              'geosubmit')
+        data = map_data(data['items'][0])
+        result = search_all_sources(request, data, 'geosubmit')
     else:
         result = {'lat': first_item['latitude'],
                   'lon': first_item['longitude'],

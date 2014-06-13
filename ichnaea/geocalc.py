@@ -1,4 +1,5 @@
 import math
+from country_bounding_boxes import country_subunits_by_iso_code
 
 EARTH_RADIUS = 6371  # radius of earth in km
 
@@ -63,3 +64,21 @@ def range_to_points(point, points):
     """
     (p_lat, p_lon) = point
     return max([distance(p_lat, p_lon, p[0], p[1]) for p in points])
+
+
+def location_is_in_country(lat, lon, country):
+    """
+    Return whether or not a given lat, lon pair is inside one of the
+    country subunits associated with a given alpha2 country code.
+
+    """
+    assert isinstance(country, basestring)
+    assert len(country) == 2
+    assert isinstance(lat, float)
+    assert isinstance(lon, float)
+    for c in country_subunits_by_iso_code(country):
+        (lon1, lat1, lon2, lat2) = c.bbox
+        if lon1 <= lon and lon <= lon2 and \
+           lat1 <= lat and lat <= lat2:
+            return True
+    return False

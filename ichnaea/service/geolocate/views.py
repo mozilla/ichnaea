@@ -1,7 +1,6 @@
 from pyramid.httpexceptions import HTTPNotFound
 
 from ichnaea.decimaljson import dumps
-from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.error import (
     JSONParseError,
@@ -11,10 +10,8 @@ from ichnaea.service.error import (
 )
 from ichnaea.service.base import check_api_key
 from ichnaea.service.search.views import (
-    search_cell,
-    search_cell_lac,
-    search_geoip,
-    search_wifi,
+    search_all_sources,
+    map_data,
 )
 
 
@@ -60,50 +57,8 @@ def geolocate_validator(data, errors):
         errors.append(dict(name='body', description=MSG_ONE_OF))
 
 
-def search_cell_tower(session, data):
-    mapped = {
-        'radio': data['radioType'],
-        'cell': [],
-    }
-    for cell in data['cellTowers']:
-        mapped['cell'].append({
-            'mcc': cell['mobileCountryCode'],
-            'mnc': cell['mobileNetworkCode'],
-            'lac': cell['locationAreaCode'],
-            'cid': cell['cellId'],
-        })
-    return search_cell(session, mapped)
-
-
-def search_cell_tower_lac(session, data):
-    mapped = {
-        'radio': data['radioType'],
-        'cell': [],
-    }
-    for cell in data['cellTowers']:
-        mapped['cell'].append({
-            'mcc': cell['mobileCountryCode'],
-            'mnc': cell['mobileNetworkCode'],
-            'lac': cell['locationAreaCode'],
-            'cid': cell['cellId'],
-        })
-    return search_cell_lac(session, mapped)
-
-
-def search_wifi_ap(session, data):
-    mapped = {
-        'wifi': [],
-    }
-    for wifi in data['wifiAccessPoints']:
-        mapped['wifi'].append({
-            'key': wifi['macAddress'],
-        })
-    return search_wifi(session, mapped)
-
-
 @check_api_key('geolocate', True)
 def geolocate_view(request):
-    heka_client = get_heka_client()
 
     data, errors = preprocess_request(
         request,
@@ -113,11 +68,10 @@ def geolocate_view(request):
         accept_empty=True,
     )
 
-    session = request.db_slave_session
-    result = do_geolocate(session, request, data, heka_client, 'geolocate')
+    data = map_data(data)
+    result = search_all_sources(request, data, "geolocate")
 
-    if result is None:
-        heka_client.incr('geolocate.miss')
+    if not result:
         result = HTTPNotFound()
         result.content_type = 'application/json'
         result.body = NOT_FOUND
@@ -130,35 +84,3 @@ def geolocate_view(request):
         },
         "accuracy": float(result['accuracy']),
     }
-
-
-def do_geolocate(session, request, data, heka_client, svc_name):
-    result = None
-    if data and data['wifiAccessPoints']:
-        result = search_wifi_ap(session, data)
-        if result is not None:
-            heka_client.incr('%s.wifi_hit' % svc_name)
-            heka_client.timer_send('%s.accuracy.wifi' % svc_name,
-                                   result['accuracy'])
-    elif data:
-        result = search_cell_tower(session, data)
-        if result is not None:
-            heka_client.incr('%s.cell_hit' % svc_name)
-            heka_client.timer_send('%s.accuracy.cell' % svc_name,
-                                   result['accuracy'])
-
-        if result is None:
-            result = search_cell_tower_lac(session, data)
-            if result is not None:
-                heka_client.incr('%s.cell_lac_hit' % svc_name)
-                heka_client.timer_send('%s.accuracy.cell_lac' % svc_name,
-                                       result['accuracy'])
-
-    if result is None and request.client_addr:
-        result = search_geoip(request.registry.geoip_db,
-                              request.client_addr)
-        if result is not None:
-            heka_client.incr('%s.geoip_hit' % svc_name)
-            heka_client.timer_send('%s.accuracy.geoip' % svc_name,
-                                   result['accuracy'])
-    return result

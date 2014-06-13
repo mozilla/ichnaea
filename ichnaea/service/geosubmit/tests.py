@@ -8,8 +8,15 @@ from ichnaea.models import (
 from ichnaea.tests.base import CeleryAppTestCase
 from ichnaea.service.geolocate.tests import\
     TestGeolocate as GeolocateRegressionTest
+from mock import patch, MagicMock
+
+# Mock out the verification that a location is in a particular country
+mock_location = lambda lat, lon, country: True
+mock_mcc = lambda mcc: [MagicMock()]
 
 
+@patch('ichnaea.geocalc.location_is_in_country', mock_location)
+@patch('mobile_codes.mcc', mock_mcc)
 class TestGeosubmit(CeleryAppTestCase):
     def setUp(self):
         CeleryAppTestCase.setUp(self)
@@ -62,6 +69,8 @@ class TestGeosubmit(CeleryAppTestCase):
         # check that one new CellMeasure record is created
         self.assertEquals(1, session.query(CellMeasure).count())
 
+    @patch('ichnaea.geocalc.location_is_in_country', mock_location)
+    @patch('mobile_codes.mcc', mock_mcc)
     def test_ok_no_existing_cell(self):
         # Even if ichnaea has no data, we need
         app = self.app
@@ -157,6 +166,8 @@ class TestGeosubmit(CeleryAppTestCase):
         self.assertEquals(1, session.query(WifiMeasure).count())
 
 
+@patch('ichnaea.geocalc.location_is_in_country', mock_location)
+@patch('mobile_codes.mcc', mock_mcc)
 class TestGeosubmitBatch(CeleryAppTestCase):
     def setUp(self):
         CeleryAppTestCase.setUp(self)

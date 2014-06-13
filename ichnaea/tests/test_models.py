@@ -8,6 +8,11 @@ from ichnaea.models import (
     normalized_cell_measure_dict,
     normalized_wifi_measure_dict,
 )
+from ichnaea.tests.base import (
+    FREMONT_LAT, FREMONT_LON, USA_MCC,
+    SAO_PAULO_LAT, SAO_PAULO_LON, BRAZIL_MCC,
+    PARIS_LAT, PARIS_LON, FRANCE_MCC
+)
 
 from unittest2 import TestCase
 
@@ -213,7 +218,6 @@ class TestNormalization(TestCase):
                        ('hspa', -1),
                        ('n/a', -1)]
 
-        valid_mccs = [1, 25, 999]
         invalid_mccs = [-10, 0, 1000, 3456]
 
         valid_mncs = [0, 542, 32767]
@@ -228,13 +232,16 @@ class TestNormalization(TestCase):
         valid_pscs = [0, 120, 512]
         invalid_pscs = [-1, 513, 4456]
 
-        valid_latitudes = [from_degrees(x)
-                           for x in [-90.0, -45.0, 0.0, 45.0, 90.0]]
+        valid_lat_lon_mcc_triples = [
+            (from_degrees(lat), from_degrees(lon), mcc)
+            for (lat, lon, mcc) in
+            [(FREMONT_LAT, FREMONT_LON, USA_MCC),
+             (SAO_PAULO_LAT, SAO_PAULO_LON, BRAZIL_MCC),
+             (PARIS_LAT, PARIS_LON, FRANCE_MCC)]]
+
         invalid_latitudes = [from_degrees(x)
                              for x in [-100.0, -90.1, 90.1, 100.0]]
 
-        valid_longitudes = [from_degrees(x)
-                            for x in [-180.0, -90.0, 0.0, 90.0, 180.0]]
         invalid_longitudes = [from_degrees(x)
                               for x in [-190.0, -180.1, 180.1, 190]]
 
@@ -260,11 +267,11 @@ class TestNormalization(TestCase):
 
         def make_submission(**kw):
             measure = dict(radio='umts',
-                           lat=from_degrees(49.25),
-                           lon=from_degrees(123.10), accuracy=120,
+                           lat=from_degrees(PARIS_LAT),
+                           lon=from_degrees(PARIS_LON), accuracy=120,
                            altitude=220, altitude_accuracy=10,
                            time=time)
-            cell = dict(mcc=302, mnc=220, lac=12345, cid=34567, psc=-1,
+            cell = dict(mcc=FRANCE_MCC, mnc=220, lac=12345, cid=34567, psc=-1,
                         asu=15, signal=-83, ta=5)
             for (k, v) in kw.items():
                 if k in measure:
@@ -278,11 +285,14 @@ class TestNormalization(TestCase):
             (measure, cell) = make_submission(radio=radio)
             self.check_normalized_cell(measure, cell, dict(radio=v))
 
-        # Try all valid (mcc, mnc) pairs
-        for mcc in valid_mccs:
+        # Try all valid (lat, lon, mcc, mnc) groups
+        for (lat, lon, mcc) in valid_lat_lon_mcc_triples:
             for mnc in valid_mncs:
-                (measure, cell) = make_submission(mcc=mcc, mnc=mnc)
-                self.check_normalized_cell(measure, cell, dict(mcc=mcc,
+                (measure, cell) = make_submission(lat=lat, lon=lon,
+                                                  mcc=mcc, mnc=mnc)
+                self.check_normalized_cell(measure, cell, dict(lat=lat,
+                                                               lon=lon,
+                                                               mcc=mcc,
                                                                mnc=mnc))
 
         # Try all invalid mcc variants individually
@@ -330,14 +340,6 @@ class TestNormalization(TestCase):
                 (measure, cell) = make_submission(cid=cid, psc=psc)
                 self.check_normalized_cell(measure, cell, dict(cid=-1,
                                                                psc=psc))
-
-        # Try all valid (lat, lon) pairs
-        for lat in valid_latitudes:
-            for lon in valid_longitudes:
-                (measure, cell) = make_submission(lat=lat, lon=lon)
-                self.check_normalized_cell(measure, cell,
-                                           dict(lat=lat,
-                                                lon=lon))
 
         # Try all invalid latitudes individually
         for lat in invalid_latitudes:

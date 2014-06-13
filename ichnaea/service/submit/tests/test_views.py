@@ -16,12 +16,23 @@ from ichnaea.models import (
     RADIO_TYPE,
     WifiMeasure,
     ApiKey,
+    from_degrees,
 )
 from ichnaea.decimaljson import (
     dumps,
     encode_datetime,
 )
-from ichnaea.tests.base import CeleryAppTestCase
+from ichnaea.tests.base import (
+    CeleryAppTestCase,
+    FREMONT_IP,
+    FREMONT_LAT,
+    FREMONT_LON,
+    SAO_PAULO_LAT,
+    SAO_PAULO_LON,
+    FRANCE_MCC,
+    PARIS_LAT,
+    PARIS_LON,
+)
 
 
 class TestSubmit(CeleryAppTestCase):
@@ -41,11 +52,12 @@ class TestSubmit(CeleryAppTestCase):
                                     month_rounded_today.day)
 
         cell_data = [
-            {"radio": "umts", "mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
+            {"radio": "umts", "mcc": FRANCE_MCC,
+             "mnc": 1, "lac": 2, "cid": 1234}]
         res = app.post_json(
             '/v1/submit?key=test',
-            {"items": [{"lat": 12.3456781,
-                        "lon": 23.4567892,
+            {"items": [{"lat": PARIS_LAT,
+                        "lon": PARIS_LON,
                         "accuracy": 10,
                         "altitude": 123,
                         "altitude_accuracy": 7,
@@ -69,13 +81,13 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.measure_id, measure_result[0].id)
         self.assertEqual(item.created.date(), today)
         self.assertEqual(item.time, month_rounded_dt)
-        self.assertEqual(item.lat, 123456781)
-        self.assertEqual(item.lon, 234567892)
+        self.assertEqual(item.lat, from_degrees(PARIS_LAT))
+        self.assertEqual(item.lon, from_degrees(PARIS_LON))
         self.assertEqual(item.accuracy, 10)
         self.assertEqual(item.altitude, 123)
         self.assertEqual(item.altitude_accuracy, 7)
         self.assertEqual(item.radio, RADIO_TYPE['umts'])
-        self.assertEqual(item.mcc, 123)
+        self.assertEqual(item.mcc, FRANCE_MCC)
         self.assertEqual(item.mnc, 1)
         self.assertEqual(item.lac, 2)
         self.assertEqual(item.cid, 1234)
@@ -83,13 +95,13 @@ class TestSubmit(CeleryAppTestCase):
     def test_ok_cell_radio(self):
         app = self.app
         cell_data = [{'radio': 'gsm',
-                      "mcc": 123,
+                      "mcc": FRANCE_MCC,
                       "mnc": 1,
                       "lac": 2,
                       "cid": 1234}]
         res = app.post_json(
-            '/v1/submit', {"items": [{"lat": 12.3456781,
-                                      "lon": 23.4567892,
+            '/v1/submit', {"items": [{"lat": PARIS_LAT,
+                                      "lon": PARIS_LON,
                                       "radio": "gsm",
                                       "cell": cell_data}]},
             status=204)
@@ -497,11 +509,12 @@ class TestSubmit(CeleryAppTestCase):
     def test_heka_logging(self):
         app = self.app
         cell_data = [
-            {"radio": "umts", "mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
+            {"radio": "umts", "mcc": FRANCE_MCC,
+             "mnc": 1, "lac": 2, "cid": 1234}]
         res = app.post_json(
             '/v1/submit?key=test',
-            {"items": [{"lat": 12.3456781,
-                        "lon": 23.4567892,
+            {"items": [{"lat": PARIS_LAT,
+                        "lon": PARIS_LON,
                         "accuracy": 10,
                         "altitude": 123,
                         "altitude_accuracy": 7,
@@ -590,10 +603,10 @@ class TestSubmit(CeleryAppTestCase):
 
     def test_missing_radio_in_measure(self):
         app = self.app
-        cell_data = [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234}]
+        cell_data = [{"mcc": FRANCE_MCC, "mnc": 1, "lac": 2, "cid": 1234}]
         res = app.post_json(
-            '/v1/submit', {"items": [{"lat": 12.3456781,
-                                      "lon": 23.4567892,
+            '/v1/submit', {"items": [{"lat": PARIS_LAT,
+                                      "lon": PARIS_LON,
                                       "radio": "gsm",
                                       "cell": cell_data}]},
             status=204)
@@ -605,15 +618,15 @@ class TestSubmit(CeleryAppTestCase):
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 0)
 
-        cell_data = [{"mcc": 123, "mnc": 1, "lac": 2, "cid": 1234},
+        cell_data = [{"mcc": FRANCE_MCC, "mnc": 1, "lac": 2, "cid": 1234},
                      {'radio': 'gsm',
-                      "mcc": 123,
+                      "mcc": FRANCE_MCC,
                       "mnc": 1,
                       "lac": 2,
                       "cid": 1234}, ]
         res = app.post_json(
-            '/v1/submit', {"items": [{"lat": 12.3456781,
-                                      "lon": 23.4567892,
+            '/v1/submit', {"items": [{"lat": PARIS_LAT,
+                                      "lon": PARIS_LON,
                                       "radio": "gsm",
                                       "cell": cell_data}]},
             status=204)
@@ -647,3 +660,44 @@ class TestSubmit(CeleryAppTestCase):
 
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 0)
+
+    def test_geoip_match(self):
+        session = self.db_master_session
+        app = self.app
+        data = [{"lat": FREMONT_LAT,
+                 "lon": FREMONT_LON,
+                 "accuracy": 17,
+                 "wifi": [{"key": "00:34:cd:34:cd:34"}]},
+                ]
+        res = app.post_json('/v1/submit', {"items": data},
+                            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
+                            status=204)
+        self.assertEqual(res.body, '')
+        wifi_result = session.query(WifiMeasure).all()
+        self.assertEqual(len(wifi_result), 1)
+
+    def test_geoip_mismatch(self):
+        session = self.db_master_session
+        app = self.app
+        data = [{"lat": FREMONT_LAT,
+                 "lon": FREMONT_LON,
+                 "accuracy": 17,
+                 "wifi": [{"key": "00:34:cd:34:cd:34"}]},
+                {"lat": PARIS_LAT,
+                 "lon": PARIS_LON,
+                 "accuracy": 17,
+                 "wifi": [{"key": "00:34:cd:34:cd:34"}]},
+                {"lat": SAO_PAULO_LAT,
+                 "lon": SAO_PAULO_LON,
+                 "accuracy": 17,
+                 "wifi": [{"key": "00:34:cd:34:cd:34"}]},
+                ]
+        res = app.post_json('/v1/submit', {"items": data},
+                            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
+                            status=204)
+        self.assertEqual(res.body, '')
+        wifi_result = session.query(WifiMeasure).all()
+        self.assertEqual(len(wifi_result), 1)
+        self.check_expected_heka_messages(
+            counter=[('submit.geoip_mismatch', 2)],
+        )

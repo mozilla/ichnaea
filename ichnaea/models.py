@@ -1,6 +1,8 @@
 from collections import namedtuple
 from datetime import date, datetime
 from colander import iso8601
+import ichnaea.geocalc
+import mobile_codes
 import re
 
 from sqlalchemy import (
@@ -24,14 +26,6 @@ from ichnaea.db import _Model
 # 1E-7 degrees =~ 1.1cm, so that is our spatial resolution.
 DEGREE_DECIMAL_PLACES = 7
 DEGREE_SCALE_FACTOR = 10 ** DEGREE_DECIMAL_PLACES
-
-SPEED_DECIMAL_PLACES = 3
-SPEED_SCALE_FACTOR = 10 ** DEGREE_DECIMAL_PLACES
-
-MEASURE_TYPE = {
-    'wifi': 1,
-    'cell': 2,
-}
 
 RADIO_TYPE = {
     '': -1,
@@ -287,6 +281,16 @@ def normalized_cell_measure_dict(d, measure_radio=-1):
     """
     d = normalized_cell_dict(d, default_radio=measure_radio)
     d = normalized_measure_dict(d)
+
+    location_is_in_country = ichnaea.geocalc.location_is_in_country
+    if d is not None:
+        # Lat/lon must be inside one of the bounding boxes for the MCC.
+        lat = to_degrees(int(d['lat']))
+        lon = to_degrees(int(d['lon']))
+        if not any([location_is_in_country(lat, lon, c.alpha2)
+                    for c in mobile_codes.mcc(str(d['mcc']))]):
+            d = None
+
     return normalized_dict(
         d, dict(asu=(0, 31, -1),
                 signal=(-200, -1, 0),
@@ -641,3 +645,17 @@ class ApiKey(_Model):
                        primary_key=True)
 
 api_key_table = ApiKey.__table__
+
+
+MEASURE_TYPE_CODE = {
+    'wifi': 1,
+    'cell': 2,
+}
+MEASURE_TYPE_CODE_INVERSE = dict((v, k) for k, v in MEASURE_TYPE_CODE.items())
+
+MEASURE_TYPE_META = {
+    1: {'class': WifiMeasure,
+        'csv_name': 'wifi_measure.csv'},
+    2: {'class': CellMeasure,
+        'csv_name': 'cell_measure.csv'},
+}
