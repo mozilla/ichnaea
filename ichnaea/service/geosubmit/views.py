@@ -3,7 +3,7 @@ import time
 from pyramid.httpexceptions import HTTPNotFound, HTTPOk
 from pytz import utc
 
-from ichnaea.decimaljson import dumps
+from ichnaea.customjson import dumps
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.base import check_api_key
 
