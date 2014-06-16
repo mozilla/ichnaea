@@ -231,6 +231,7 @@ class TestGeosubmitBatch(CeleryAppTestCase):
 
 
 class TestGeolocateRegression(GeolocateRegressionTest, CeleryAppTestCase):
+
     def setUp(self):
         CeleryAppTestCase.setUp(self)
         session = self.db_master_session
@@ -238,6 +239,7 @@ class TestGeolocateRegression(GeolocateRegressionTest, CeleryAppTestCase):
         session.add(ApiKey(valid_key='test'))
         session.add(ApiKey(valid_key='test.test'))
         session.commit()
+
         self.url = '/v1/geosubmit'
 
     def get_session(self):
@@ -250,18 +252,3 @@ class TestGeolocateRegression(GeolocateRegressionTest, CeleryAppTestCase):
         # geolocate test suite anyway.
         return True
 
-    def test_ok_cell_radio_in_celltowers(self):
-        # This test covered a bug related to FxOS calling the
-        # geolocate API incorrectly.  The geosubmit API should expect
-        # that clients are well behaved and return errors for badly
-        # formed messages.
-        # tl;dr - just skip this test as it's not applicable.
-        return True
-
-    def test_ok_cell_radio_in_celltowers_dupes(self):
-        # This test covered a bug related to FxOS calling the
-        # geolocate API incorrectly.  The geosubmit API should expect
-        # that clients are well behaved and return errors for badly
-        # formed messages.
-        # tl;dr - just skip this test as it's not applicable.
-        return True

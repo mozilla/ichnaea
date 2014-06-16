@@ -287,7 +287,12 @@ class TestGeolocate(AppTestCase):
 
         self.check_expected_heka_messages(counter=['geolocate.no_api_key'])
 
+
+class TestGeolocateFxOSWorkarounds(TestGeolocate):
+
     def test_ok_cell_radio_in_celltowers(self):
+        # This test covers a bug related to FxOS calling the
+        # geolocate API incorrectly.
         app = self.app
         session = self.get_session()
         cell = Cell()
@@ -322,6 +327,8 @@ class TestGeolocate(AppTestCase):
                                     "accuracy": CELL_MIN_ACCURACY})
 
     def test_ok_cell_radio_in_celltowers_dupes(self):
+        # This test covered a bug related to FxOS calling the
+        # geolocate API incorrectly.
         app = self.app
         session = self.get_session()
         cell = Cell()
