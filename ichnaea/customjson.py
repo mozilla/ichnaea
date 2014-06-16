@@ -1,7 +1,6 @@
 import sys
 import simplejson as json
 from ichnaea.models import encode_datetime
-from contextlib import contextmanager
 
 
 def custom_iterencode(value):

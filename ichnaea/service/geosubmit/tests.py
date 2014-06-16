@@ -203,7 +203,7 @@ class TestGeosubmitBatch(CeleryAppTestCase):
                                             "locationAreaCode": 2,
                                             "mobileCountryCode": 123,
                                             "mobileNetworkCode": 1,
-                                            }]},
+                                        }]},
                                        {"latitude": 123456702,
                                         "longitude": 234567802,
                                         "accuracy": 22.4,
@@ -213,7 +213,7 @@ class TestGeosubmitBatch(CeleryAppTestCase):
                                             "locationAreaCode": 22,
                                             "mobileCountryCode": 223,
                                             "mobileNetworkCode": 2,
-                                            }]}]},
+                                        }]}]},
                             status=200)
 
         # check that we get an empty response

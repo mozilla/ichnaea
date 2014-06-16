@@ -14,7 +14,6 @@ from ichnaea.service.error import (
     verify_schema,
 )
 
-
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.geolocate.views import (
     NOT_FOUND,
@@ -29,7 +28,6 @@ from ichnaea.service.geosubmit.schema import (
     GeoSubmitBatchSchema,
     GeoSubmitSchema,
 )
-
 
 from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.service.submit.tasks import insert_measures
@@ -82,10 +80,10 @@ def process_upload(nickname, items):
             normalized_wifi.append(wifi)
 
         if batch['timestamp'] == 0:
-            batch['timestamp'] = time.time()*1000.0
+            batch['timestamp'] = time.time() * 1000.0
 
         dt = utc.fromutc(datetime.utcfromtimestamp(
-                         batch['timestamp']/1000.0).replace(tzinfo=utc))
+                         batch['timestamp'] / 1000.0).replace(tzinfo=utc))
         ts = dt.isoformat()
 
         normalized_batch = {'lat': batch['latitude'] / (10**7),
