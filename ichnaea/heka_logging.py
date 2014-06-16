@@ -40,7 +40,12 @@ def configure_heka(registry_settings={}):
 
 def heka_tween_factory(handler, registry):
 
-    VALID_4xx_URLS = ['/v1/submit', '/v1/search', '/v1/geolocate']
+    VALID_4xx_URLS = [
+        '/v1/submit',
+        '/v1/search',
+        '/v1/geolocate',
+        '/v1/geosubmit',
+    ]
 
     def heka_tween(request):
         heka_client = registry.heka_client

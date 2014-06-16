@@ -241,14 +241,7 @@ class TestGeolocateRegression(GeolocateRegressionTest, CeleryAppTestCase):
         session.commit()
 
         self.url = '/v1/geosubmit'
+        self.metric = 'geosubmit'
 
     def get_session(self):
         return self.db_master_session
-
-    def check_expected_heka_messages(self, total=None, **kw):
-        # Just clobber these for now.  All heka messages are going to
-        # be processed by the geolocate task anyway so any test
-        # failures that we would see here are going to show up in the
-        # geolocate test suite anyway.
-        return True
-

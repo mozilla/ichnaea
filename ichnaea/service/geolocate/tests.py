@@ -22,6 +22,7 @@ class TestGeolocate(AppTestCase):
         session.commit()
 
         self.url = '/v1/geolocate'
+        self.metric = 'geolocate'
 
     def get_session(self):
         return self.db_slave_session
@@ -50,7 +51,7 @@ class TestGeolocate(AppTestCase):
             status=200)
 
         self.check_expected_heka_messages(
-            counter=['http.request', 'geolocate.api_key.test']
+            counter=['http.request', self.metric + '.api_key.test']
         )
 
         self.assertEqual(res.content_type, 'application/json')
@@ -78,7 +79,8 @@ class TestGeolocate(AppTestCase):
                     {"macAddress": "d4"},
                 ]},
             status=200)
-        self.check_expected_heka_messages(counter=['geolocate.api_key.test'])
+        self.check_expected_heka_messages(
+            counter=[self.metric + '.api_key.test'])
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"location": {"lat": 1.0010000,
                                                  "lng": 1.0020000},
@@ -107,7 +109,7 @@ class TestGeolocate(AppTestCase):
 
         # Make sure to get two counters, a timer, and no traceback
         self.check_expected_heka_messages(
-            counter=['geolocate.api_key.test',
+            counter=[self.metric + '.api_key.test',
                      'http.request'],
             timer=['http.request'],
             sentry=[('msg', RAVEN_ERROR, 0)]
@@ -252,7 +254,7 @@ class TestGeolocate(AppTestCase):
         )
 
         self.check_expected_heka_messages(
-            counter=['geolocate.api_key.test__test']
+            counter=[self.metric + '.api_key.test__test']
         )
 
     def test_no_data(self):
@@ -285,7 +287,8 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(u'No API key', json_err['error']['message'])
         self.assertEqual(res.content_type, 'application/json')
 
-        self.check_expected_heka_messages(counter=['geolocate.no_api_key'])
+        self.check_expected_heka_messages(
+            counter=[self.metric + '.no_api_key'])
 
 
 class TestGeolocateFxOSWorkarounds(TestGeolocate):
@@ -318,7 +321,7 @@ class TestGeolocateFxOSWorkarounds(TestGeolocate):
             status=200)
 
         self.check_expected_heka_messages(
-            counter=['http.request', 'geolocate.api_key.test']
+            counter=['http.request', self.metric + '.api_key.test']
         )
 
         self.assertEqual(res.content_type, 'application/json')
@@ -392,7 +395,7 @@ class TestGeolocateFxOSWorkarounds(TestGeolocate):
             status=400)
 
         self.check_expected_heka_messages(
-            counter=['http.request', 'geolocate.api_key.test']
+            counter=['http.request', self.metric + '.api_key.test']
         )
 
         self.assertEqual(res.content_type, 'application/json')
