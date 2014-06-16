@@ -26,6 +26,8 @@ class WifiSchema(MappingSchema):
     frequency = SchemaNode(Integer(), location="body", type='int', missing=0)
     channel = SchemaNode(Integer(), location="body", type='int', missing=0)
     signal = SchemaNode(Integer(), location="body", type='int', missing=0)
+    signalToNoiseRatio = SchemaNode(
+        Integer(), location="body", type='int', missing=0)
 
 
 class WifisSchema(SequenceSchema):
@@ -45,6 +47,10 @@ class MeasureSchema(MappingSchema):
                                    missing=0)
     radio = SchemaNode(String(), location="body", type='str',
                        validator=OneOf(RADIO_TYPE_KEYS), missing='')
+
+    heading = SchemaNode(Float(), location="body", missing=-1)
+    speed = SchemaNode(Float(), location="body", missing=-1)
+
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())
 

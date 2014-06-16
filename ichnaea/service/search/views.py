@@ -439,3 +439,33 @@ def search_view(request):
         'lon': result['lon'],
         'accuracy': result['accuracy'],
     }
+
+
+def map_data(data):
+    """
+    Transform a geolocate API dictionary to an equivalent search API
+    dictionary.
+    """
+    if not data:
+        return data
+
+    mapped = {
+        'radio': data['radioType'],
+        'cell': [],
+        'wifi': [],
+    }
+
+    if 'cellTowers' in data:
+        mapped['cell'] = [{
+            'mcc': cell['mobileCountryCode'],
+            'mnc': cell['mobileNetworkCode'],
+            'lac': cell['locationAreaCode'],
+            'cid': cell['cellId'],
+        } for cell in data['cellTowers']]
+
+    if 'wifiAccessPoints' in data:
+        mapped['wifi'] = [{
+            'key': wifi['macAddress'],
+        } for wifi in data['wifiAccessPoints']]
+
+    return mapped

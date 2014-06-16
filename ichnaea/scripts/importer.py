@@ -1,3 +1,11 @@
+"""
+This script is used to process imports of user contributed data into
+the Ichnaea database.
+
+The fileformat is a custom TSV format based on the code found at:
+https://github.com/cpeterso/stumbler-tsv
+"""
+
 import argparse
 import csv
 import datetime
@@ -60,6 +68,11 @@ def load_file(session, source_file, batch_size=100, userid=None):
                     radio='',
                     cell=(),
                     wifi=[wifi],
+
+                    # not sure if the importer has an actual file
+                    # specification anywhere
+                    heading=-255,
+                    speed=-255,
                 )
             except (ValueError, IndexError):
                 continue

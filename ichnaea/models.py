@@ -1,14 +1,15 @@
 from collections import namedtuple
 from datetime import date, datetime
 from colander import iso8601
+import ichnaea.geocalc
 import mobile_codes
-from ichnaea.geocalc import location_is_in_country
 import re
 
 from sqlalchemy import (
     BINARY,
     Column,
     DateTime,
+    Float,
     Index,
     SmallInteger,
     String,
@@ -25,7 +26,6 @@ from ichnaea.db import _Model
 # 1E-7 degrees =~ 1.1cm, so that is our spatial resolution.
 DEGREE_DECIMAL_PLACES = 7
 DEGREE_SCALE_FACTOR = 10 ** DEGREE_DECIMAL_PLACES
-
 
 RADIO_TYPE = {
     '': -1,
@@ -48,6 +48,9 @@ MIN_ALTITUDE = -10911
 
 # Karman Line, edge of space.
 MAX_ALTITUDE = 100000
+
+# Speed is in meters per second.
+MAX_SPEED = 2000
 
 
 # Empirical 95th percentile accuracy of ichnaea's responses,
@@ -159,6 +162,8 @@ def normalized_measure_dict(d):
     d = normalized_dict(
         d, dict(lat=(from_degrees(-90.0), from_degrees(90.0), REQUIRED),
                 lon=(from_degrees(-180.0), from_degrees(180.0), REQUIRED),
+                heading=(0.0, 360.0, 0),
+                speed=(0, 300.0, 0),
                 altitude=(MIN_ALTITUDE, MAX_ALTITUDE, 0),
                 altitude_accuracy=(0, abs(MAX_ALTITUDE - MIN_ALTITUDE), 0),
                 # Accuracy on land is arbitrarily bounded to [0, 1000km],
@@ -199,8 +204,7 @@ def normalized_wifi_dict(d):
     Returns a normalized copy of the provided wifi dict d,
     or None if the dict was invalid.
     """
-    d = normalized_dict(
-        d, dict(signal=(-200, -1, 0)))
+    d = normalized_dict(d, dict(signal=(-200, -1, 0)))
 
     if d is None:
         return None
@@ -279,6 +283,7 @@ def normalized_cell_measure_dict(d, measure_radio=-1):
     d = normalized_cell_dict(d, default_radio=measure_radio)
     d = normalized_measure_dict(d)
 
+    location_is_in_country = ichnaea.geocalc.location_is_in_country
     if d is not None:
         # Lat/lon must be inside one of the bounding boxes for the MCC.
         lat = to_degrees(int(d['lat']))
@@ -479,6 +484,13 @@ class CellMeasure(_Model):
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)
+
+    # http://dev.w3.org/geo/api/spec-source.html#heading
+    heading = Column(Float)
+
+    # http://dev.w3.org/geo/api/spec-source.html#speed
+    speed = Column(Float)
+
     # mapped via RADIO_TYPE
     radio = Column(SmallInteger)
     mcc = Column(SmallInteger)
@@ -588,9 +600,17 @@ class WifiMeasure(_Model):
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)
+
+    # http://dev.w3.org/geo/api/spec-source.html#heading
+    heading = Column(Float)
+
+    # http://dev.w3.org/geo/api/spec-source.html#speed
+    speed = Column(Float)
+
     key = Column(String(12))
     channel = Column(SmallInteger)
     signal = Column(SmallInteger)
+    snr = Column(SmallInteger)
 
     def __init__(self, *args, **kw):
         if 'measure_id' not in kw:

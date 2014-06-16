@@ -21,9 +21,14 @@ class TestGeolocate(AppTestCase):
         session.add(ApiKey(valid_key='test.test'))
         session.commit()
 
+        self.url = '/v1/geolocate'
+
+    def get_session(self):
+        return self.db_slave_session
+
     def test_ok_cell(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.get_session()
         cell = Cell()
         cell.lat = 123456781
         cell.lon = 234567892
@@ -36,7 +41,7 @@ class TestGeolocate(AppTestCase):
         session.commit()
 
         res = app.post_json(
-            '/v1/geolocate?key=test', {
+            '%s?key=test' % self.url, {
                 "radioType": "gsm",
                 "cellTowers": [
                     {"mobileCountryCode": 123, "mobileNetworkCode": 1,
@@ -55,7 +60,7 @@ class TestGeolocate(AppTestCase):
 
     def test_ok_wifi(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.get_session()
         wifis = [
             Wifi(key="a1", lat=10000000, lon=10000000),
             Wifi(key="b2", lat=10010000, lon=10020000),
@@ -65,7 +70,7 @@ class TestGeolocate(AppTestCase):
         session.add_all(wifis)
         session.commit()
         res = app.post_json(
-            '/v1/geolocate?key=test', {
+            '%s?key=test' % self.url, {
                 "wifiAccessPoints": [
                     {"macAddress": "a1"},
                     {"macAddress": "b2"},
@@ -82,7 +87,7 @@ class TestGeolocate(AppTestCase):
     def test_wifi_not_found(self):
         app = self.app
         res = app.post_json(
-            '/v1/geolocate?key=test', {
+            '%s?key=test' % self.url, {
                 "wifiAccessPoints": [
                     {"macAddress": "abcd"}, {"macAddress": "cdef"},
                 ]},
@@ -110,7 +115,7 @@ class TestGeolocate(AppTestCase):
 
     def test_cell_miss_lac_hit(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.get_session()
         key = dict(mcc=1, mnc=2, lac=3)
         data = [
             Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
@@ -123,7 +128,7 @@ class TestGeolocate(AppTestCase):
         session.commit()
 
         res = app.post_json(
-            '/v1/geolocate?key=test',
+            '%s?key=test' % self.url,
             {'radioType': 'wcdma',
              'cellTowers': [
                  {'cellId': 7,
@@ -138,7 +143,7 @@ class TestGeolocate(AppTestCase):
 
     def test_cell_hit_ignores_lac(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.get_session()
         key = dict(mcc=1, mnc=2, lac=3)
         data = [
             Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
@@ -151,7 +156,7 @@ class TestGeolocate(AppTestCase):
         session.commit()
 
         res = app.post_json(
-            '/v1/geolocate?key=test',
+            '%s?key=test' % self.url,
             {'radioType': 'wcdma',
              'cellTowers': [
                  {'cellId': 5,
@@ -166,7 +171,7 @@ class TestGeolocate(AppTestCase):
 
     def test_lac_miss(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.get_session()
         key = dict(mcc=1, mnc=2, lac=3)
         data = [
             Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
@@ -179,7 +184,7 @@ class TestGeolocate(AppTestCase):
         session.commit()
 
         res = app.post_json(
-            '/v1/geolocate?key=test',
+            '%s?key=test' % self.url,
             {'radioType': 'wcdma',
              'cellTowers': [
                  {'cellId': 5,
@@ -202,7 +207,7 @@ class TestGeolocate(AppTestCase):
     def test_geoip_fallback(self):
         app = self.app
         res = app.post_json(
-            '/v1/geolocate?key=test',
+            '%s?key=test' % self.url,
             {"wifiAccessPoints": [
                 {"macAddress": "Porky"}, {"macAddress": "Piggy"},
                 {"macAddress": "Davis"}, {"macAddress": "McSnappy"},
@@ -217,7 +222,7 @@ class TestGeolocate(AppTestCase):
     def test_empty_request_means_geoip(self):
         app = self.app
         res = app.post_json(
-            '/v1/geolocate?key=test', {},
+            '%s?key=test' % self.url, {},
             extra_environ={'HTTP_X_FORWARDED_FOR': '66.92.181.240'},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
@@ -228,7 +233,7 @@ class TestGeolocate(AppTestCase):
     def test_parse_error(self):
         app = self.app
         res = app.post_json(
-            '/v1/geolocate?key=test.test', {
+            '%s?key=test.test' % self.url, {
                 "wifiAccessPoints": [
                     {"nomac": 1},
                 ]},
@@ -253,13 +258,13 @@ class TestGeolocate(AppTestCase):
     def test_no_data(self):
         app = self.app
         res = app.post_json(
-            '/v1/geolocate?key=test', {"wifiAccessPoints": []},
+            '%s?key=test' % self.url, {"wifiAccessPoints": []},
             status=400)
         self.assertEqual(res.content_type, 'application/json')
 
     def test_no_api_key(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.get_session()
         wifis = [
             Wifi(key="a1", lat=10000000, lon=10000000, total_measures=9),
             Wifi(key="b2", lat=10010000, lon=10020000, total_measures=9),
@@ -268,7 +273,7 @@ class TestGeolocate(AppTestCase):
         session.add_all(wifis)
         session.commit()
         res = app.post_json(
-            '/v1/geolocate', {
+            '%s' % self.url, {
                 "wifiAccessPoints": [
                     {"macAddress": "a1"},
                     {"macAddress": "b2"},
@@ -284,7 +289,7 @@ class TestGeolocate(AppTestCase):
 
     def test_ok_cell_radio_in_celltowers(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.get_session()
         cell = Cell()
         cell.lat = 123456781
         cell.lon = 234567892
@@ -297,7 +302,7 @@ class TestGeolocate(AppTestCase):
         session.commit()
 
         res = app.post_json(
-            '/v1/geolocate?key=test', {
+            '%s?key=test' % self.url, {
                 "cellTowers": [
                     {"radio": "gsm",
                      "mobileCountryCode": 123,
@@ -318,7 +323,7 @@ class TestGeolocate(AppTestCase):
 
     def test_ok_cell_radio_in_celltowers_dupes(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.get_session()
         cell = Cell()
         cell.lat = 123456781
         cell.lon = 234567892
@@ -330,7 +335,7 @@ class TestGeolocate(AppTestCase):
         session.add(cell)
         session.commit()
         res = app.post_json(
-            '/v1/geolocate?key=test', {
+            '%s?key=test' % self.url, {
                 "cellTowers": [
                     {"radio": "gsm",
                      "mobileCountryCode": 123,
@@ -351,7 +356,7 @@ class TestGeolocate(AppTestCase):
 
     def test_inconsistent_cell_radio_in_towers(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.get_session()
         cell = Cell()
         cell.lat = 123456781
         cell.lon = 234567892
@@ -364,7 +369,7 @@ class TestGeolocate(AppTestCase):
         session.commit()
 
         res = app.post_json(
-            '/v1/geolocate?key=test', {
+            '%s?key=test' % self.url, {
                 "cellTowers": [
                     {"radio": "gsm",
                      "mobileCountryCode": 123,

@@ -112,7 +112,6 @@ def process_time(measure, utcnow, utcmin):
 
 
 def process_measure(measure_id, data, session):
-
     def add_missing_dict_entries(dst, src):
         # x.update(y) overwrites entries in x with those in y;
         # we want to only add those not already present
@@ -126,6 +125,8 @@ def process_measure(measure_id, data, session):
         measure_id=measure_id,
         lat=from_degrees(data['lat']),
         lon=from_degrees(data['lon']),
+        heading=data['heading'],
+        speed=data['speed'],
         time=encode_datetime(data['time']),
         accuracy=data['accuracy'],
         altitude=data['altitude'],
@@ -272,6 +273,8 @@ def create_cell_measure(utcnow, entry):
         asu=entry.get('asu', -1),
         signal=entry.get('signal', 0),
         ta=entry.get('ta', 0),
+        heading=entry.get('heading', -1),
+        speed=entry.get('speed', -1),
     )
 
 
@@ -301,7 +304,7 @@ def update_cell_measure_count(cell_key, count, utcnow, session):
 
     stmt = Cell.__table__.insert(
         on_duplicate='new_measures = new_measures + %s, '
-                     'total_measures = total_measures + %s' % (count, count)
+        'total_measures = total_measures + %s' % (count, count)
     ).values(
         created=utcnow, radio=cell_key.radio,
         mcc=cell_key.mcc, mnc=cell_key.mnc, lac=cell_key.lac, cid=cell_key.cid,
@@ -422,6 +425,9 @@ def create_wifi_measure(utcnow, entry):
         key=entry['key'],
         channel=entry.get('channel', 0),
         signal=entry.get('signal', 0),
+        snr=entry.get('signalToNoiseRatio', 0),
+        heading=entry.get('heading', -1),
+        speed=entry.get('speed', -1),
     )
 
 
