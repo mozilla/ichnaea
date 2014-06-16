@@ -112,8 +112,8 @@ class GeoSubmitSchema(MappingSchema):
     # cell is taken from cellTowers
     # wifi is taken from wifiAccessPoints
 
-    heading = SchemaNode(Float(), location="body", missing=-1)
-    speed = SchemaNode(Float(), location="body", missing=-1)
+    heading = SchemaNode(Float(), location="body", missing=-1.0)
+    speed = SchemaNode(Float(), location="body", missing=-1.0)
 
 
 class GeoSubmitListSchema(SequenceSchema):

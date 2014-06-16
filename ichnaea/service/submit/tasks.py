@@ -125,8 +125,8 @@ def process_measure(measure_id, data, session):
         measure_id=measure_id,
         lat=from_degrees(data['lat']),
         lon=from_degrees(data['lon']),
-        heading=data.get('heading', -1),
-        speed=data.get('speed', -1),
+        heading=data.get('heading', -1.0),
+        speed=data.get('speed', -1.0),
         time=encode_datetime(data['time']),
         accuracy=data.get('accuracy', 0),
         altitude=data.get('altitude', 0),
@@ -273,8 +273,8 @@ def create_cell_measure(utcnow, entry):
         asu=entry.get('asu', -1),
         signal=entry.get('signal', 0),
         ta=entry.get('ta', 0),
-        heading=entry.get('heading', -1),
-        speed=entry.get('speed', -1),
+        heading=entry.get('heading', -1.0),
+        speed=entry.get('speed', -1.0),
     )
 
 
@@ -426,8 +426,8 @@ def create_wifi_measure(utcnow, entry):
         channel=entry.get('channel', 0),
         signal=entry.get('signal', 0),
         snr=entry.get('signalToNoiseRatio', 0),
-        heading=entry.get('heading', -1),
-        speed=entry.get('speed', -1),
+        heading=entry.get('heading', -1.0),
+        speed=entry.get('speed', -1.0),
     )
 
 

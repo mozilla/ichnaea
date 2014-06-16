@@ -169,8 +169,8 @@ def normalized_measure_dict(d):
     d = normalized_dict(
         d, dict(lat=(from_degrees(-90.0), from_degrees(90.0), REQUIRED),
                 lon=(from_degrees(-180.0), from_degrees(180.0), REQUIRED),
-                heading=(0.0, MAX_HEADING, 0),
-                speed=(0, MAX_SPEED, 0),
+                heading=(0.0, MAX_HEADING, -1.0),
+                speed=(0, MAX_SPEED, -1.0),
                 altitude=(MIN_ALTITUDE, MAX_ALTITUDE, 0),
                 altitude_accuracy=(0, MAX_ALTITUDE_ACCURACY, 0),
                 accuracy=(0, MAX_ACCURACY, 0)))
