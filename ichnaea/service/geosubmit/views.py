@@ -5,7 +5,6 @@ from pytz import utc
 
 from ichnaea.customjson import dumps
 from ichnaea.heka_logging import get_heka_client
-from ichnaea.models import to_degrees
 from ichnaea.service.base import check_api_key
 
 from ichnaea.service.error import (
@@ -87,8 +86,8 @@ def process_upload(nickname, items):
                          batch['timestamp'] / 1000.0).replace(tzinfo=utc))
         ts = dt.isoformat()
 
-        normalized_batch = {'lat': to_degrees(batch['latitude']),
-                            'lon': to_degrees(batch['longitude']),
+        normalized_batch = {'lat': batch['latitude'],
+                            'lon': batch['longitude'],
                             'time': ts,
                             'accuracy': batch['accuracy'],
                             'altitude': batch['altitude'],

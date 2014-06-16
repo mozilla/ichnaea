@@ -4,9 +4,15 @@ from ichnaea.models import (
     CellMeasure,
     Wifi,
     WifiMeasure,
+    from_degrees,
 )
-from ichnaea.tests.base import CeleryAppTestCase
-from ichnaea.service.geolocate.tests import\
+from ichnaea.tests.base import (
+    CeleryAppTestCase,
+    FRANCE_MCC,
+    PARIS_LAT,
+    PARIS_LON,
+)
+from ichnaea.service.geolocate.tests import \
     TestGeolocate as GeolocateRegressionTest
 from mock import patch, MagicMock
 
@@ -15,9 +21,8 @@ mock_location = lambda *args: True
 mock_mcc = lambda mcc: [MagicMock()]
 
 
-@patch('ichnaea.geocalc.location_is_in_country', mock_location)
-@patch('mobile_codes.mcc', mock_mcc)
-class TestGeosubmit(CeleryAppTestCase):
+class TestGeoSubmit(CeleryAppTestCase):
+
     def setUp(self):
         CeleryAppTestCase.setUp(self)
         session = self.db_master_session
@@ -30,10 +35,10 @@ class TestGeosubmit(CeleryAppTestCase):
         app = self.app
         session = self.db_master_session
         cell = Cell()
-        cell.lat = 123456781
-        cell.lon = 234567892
+        cell.lat = from_degrees(PARIS_LAT + 0.1)
+        cell.lon = from_degrees(PARIS_LON + 0.1)
         cell.radio = 0
-        cell.mcc = 123
+        cell.mcc = FRANCE_MCC
         cell.mnc = 1
         cell.lac = 2
         cell.cid = 1234
@@ -44,22 +49,22 @@ class TestGeosubmit(CeleryAppTestCase):
         session.commit()
 
         res = app.post_json('/v1/geosubmit?key=test', {
-                            "latitude": 123456700,
-                            "longitude": 234567800,
+                            "latitude": PARIS_LAT,
+                            "longitude": PARIS_LON,
                             "accuracy": 12.4,
                             "radioType": "gsm",
                             "cellTowers": [{
                                 "cellId": 1234,
                                 "locationAreaCode": 2,
-                                "mobileCountryCode": 123,
+                                "mobileCountryCode": FRANCE_MCC,
                                 "mobileNetworkCode": 1,
                             }]},
                             status=200)
 
         # check that we get back a location
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 123456700,
-                                                 "lng": 234567800},
+        self.assertEqual(res.json, {"location": {"lat": PARIS_LAT,
+                                                 "lng": PARIS_LON},
                                     "accuracy": 12.4})
 
         cell = session.query(Cell).first()
@@ -76,8 +81,8 @@ class TestGeosubmit(CeleryAppTestCase):
         session = self.db_master_session
 
         res = app.post_json('/v1/geosubmit?key=test', {
-                            "latitude": 123456700,
-                            "longitude": 234567800,
+                            "latitude": 12.3456700,
+                            "longitude": 23.4567800,
                             "accuracy": 12.4,
                             "radioType": "gsm",
                             "cellTowers": [{
@@ -89,8 +94,8 @@ class TestGeosubmit(CeleryAppTestCase):
                             status=200)
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 123456700,
-                                                 "lng": 234567800},
+        self.assertEqual(res.json, {"location": {"lat": 12.3456700,
+                                                 "lng": 23.4567800},
                                     "accuracy": 12.4})
 
         self.assertEquals(1, session.query(Cell).count())
@@ -98,6 +103,8 @@ class TestGeosubmit(CeleryAppTestCase):
         # check that one new CellMeasure record is created
         self.assertEquals(1, session.query(CellMeasure).count())
 
+    @patch('ichnaea.geocalc.location_is_in_country', mock_location)
+    @patch('mobile_codes.mcc', mock_mcc)
     def test_ok_wifi(self):
         app = self.app
         session = self.db_master_session
@@ -111,8 +118,8 @@ class TestGeosubmit(CeleryAppTestCase):
         session.commit()
         res = app.post_json(
             '/v1/geosubmit?key=test', {
-                "latitude": 123456700,
-                "longitude": 234567800,
+                "latitude": 12.3456700,
+                "longitude": 23.4567800,
                 "accuracy": 12.4,
                 "radioType": "gsm",
                 "wifiAccessPoints": [
@@ -124,8 +131,8 @@ class TestGeosubmit(CeleryAppTestCase):
                 ]},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 123456700,
-                                                 "lng": 234567800},
+        self.assertEqual(res.json, {"location": {"lat": 12.3456700,
+                                                 "lng": 23.4567800},
                                     "accuracy": 12.4})
 
         # Check that e5 exists
@@ -136,14 +143,16 @@ class TestGeosubmit(CeleryAppTestCase):
         # check that WifiMeasure records are created
         self.assertEquals(5, session.query(WifiMeasure).count())
 
+    @patch('ichnaea.geocalc.location_is_in_country', mock_location)
+    @patch('mobile_codes.mcc', mock_mcc)
     def test_ok_no_existing_wifi(self):
         app = self.app
         session = self.db_master_session
 
         res = app.post_json(
             '/v1/geosubmit?key=test', {
-                "latitude": 123456700,
-                "longitude": 234567800,
+                "latitude": 12.3456700,
+                "longitude": 23.4567800,
                 "accuracy": 12.4,
                 "radioType": "gsm",
                 "wifiAccessPoints": [
@@ -152,8 +161,8 @@ class TestGeosubmit(CeleryAppTestCase):
             status=200)
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 123456700,
-                                                 "lng": 234567800},
+        self.assertEqual(res.json, {"location": {"lat": 12.3456700,
+                                                 "lng": 23.4567800},
                                     "accuracy": 12.4})
 
         # Check that e5 exists
@@ -167,7 +176,7 @@ class TestGeosubmit(CeleryAppTestCase):
 
 @patch('ichnaea.geocalc.location_is_in_country', mock_location)
 @patch('mobile_codes.mcc', mock_mcc)
-class TestGeosubmitBatch(CeleryAppTestCase):
+class TestGeoSubmitBatch(CeleryAppTestCase):
     def setUp(self):
         CeleryAppTestCase.setUp(self)
         session = self.db_master_session
@@ -194,8 +203,8 @@ class TestGeosubmitBatch(CeleryAppTestCase):
         session.commit()
 
         res = app.post_json('/v1/geosubmit?key=test',
-                            {'items': [{"latitude": 123456700,
-                                        "longitude": 234567800,
+                            {'items': [{"latitude": 12.3456700,
+                                        "longitude": 23.4567800,
                                         "accuracy": 12.4,
                                         "radioType": "gsm",
                                         "cellTowers": [{
@@ -204,8 +213,8 @@ class TestGeosubmitBatch(CeleryAppTestCase):
                                             "mobileCountryCode": 123,
                                             "mobileNetworkCode": 1,
                                         }]},
-                                       {"latitude": 123456702,
-                                        "longitude": 234567802,
+                                       {"latitude": 12.3456702,
+                                        "longitude": 23.4567802,
                                         "accuracy": 22.4,
                                         "radioType": "gsm",
                                         "cellTowers": [{
