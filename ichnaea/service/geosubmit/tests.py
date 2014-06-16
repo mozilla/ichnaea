@@ -14,11 +14,6 @@ from ichnaea.tests.base import (
 )
 from ichnaea.service.geolocate.tests import \
     TestGeolocate as GeolocateRegressionTest
-from mock import patch, MagicMock
-
-# Mock out the verification that a location is in a particular country
-mock_location = lambda *args: True
-mock_mcc = lambda mcc: [MagicMock()]
 
 
 class TestGeoSubmit(CeleryAppTestCase):
@@ -74,28 +69,26 @@ class TestGeoSubmit(CeleryAppTestCase):
         # check that one new CellMeasure record is created
         self.assertEquals(1, session.query(CellMeasure).count())
 
-    @patch('ichnaea.geocalc.location_is_in_country', mock_location)
-    @patch('mobile_codes.mcc', mock_mcc)
     def test_ok_no_existing_cell(self):
         app = self.app
         session = self.db_master_session
 
         res = app.post_json('/v1/geosubmit?key=test', {
-                            "latitude": 12.3456700,
-                            "longitude": 23.4567800,
+                            "latitude": PARIS_LAT,
+                            "longitude": PARIS_LON,
                             "accuracy": 12.4,
                             "radioType": "gsm",
                             "cellTowers": [{
                                 "cellId": 1234,
                                 "locationAreaCode": 2,
-                                "mobileCountryCode": 123,
+                                "mobileCountryCode": FRANCE_MCC,
                                 "mobileNetworkCode": 1,
                             }]},
                             status=200)
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 12.3456700,
-                                                 "lng": 23.4567800},
+        self.assertEqual(res.json, {"location": {"lat": PARIS_LAT,
+                                                 "lng": PARIS_LON},
                                     "accuracy": 12.4})
 
         self.assertEquals(1, session.query(Cell).count())
@@ -103,8 +96,6 @@ class TestGeoSubmit(CeleryAppTestCase):
         # check that one new CellMeasure record is created
         self.assertEquals(1, session.query(CellMeasure).count())
 
-    @patch('ichnaea.geocalc.location_is_in_country', mock_location)
-    @patch('mobile_codes.mcc', mock_mcc)
     def test_ok_wifi(self):
         app = self.app
         session = self.db_master_session
@@ -143,8 +134,6 @@ class TestGeoSubmit(CeleryAppTestCase):
         # check that WifiMeasure records are created
         self.assertEquals(5, session.query(WifiMeasure).count())
 
-    @patch('ichnaea.geocalc.location_is_in_country', mock_location)
-    @patch('mobile_codes.mcc', mock_mcc)
     def test_ok_no_existing_wifi(self):
         app = self.app
         session = self.db_master_session
@@ -174,9 +163,8 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEquals(1, session.query(WifiMeasure).count())
 
 
-@patch('ichnaea.geocalc.location_is_in_country', mock_location)
-@patch('mobile_codes.mcc', mock_mcc)
 class TestGeoSubmitBatch(CeleryAppTestCase):
+
     def setUp(self):
         CeleryAppTestCase.setUp(self)
         session = self.db_master_session
@@ -189,10 +177,10 @@ class TestGeoSubmitBatch(CeleryAppTestCase):
         app = self.app
         session = self.db_master_session
         cell = Cell()
-        cell.lat = 123456781
-        cell.lon = 234567892
+        cell.lat = from_degrees(PARIS_LAT)
+        cell.lon = from_degrees(PARIS_LON)
         cell.radio = 0
-        cell.mcc = 123
+        cell.mcc = FRANCE_MCC
         cell.mnc = 1
         cell.lac = 2
         cell.cid = 1234
@@ -203,24 +191,24 @@ class TestGeoSubmitBatch(CeleryAppTestCase):
         session.commit()
 
         res = app.post_json('/v1/geosubmit?key=test',
-                            {'items': [{"latitude": 12.3456700,
-                                        "longitude": 23.4567800,
+                            {'items': [{"latitude": PARIS_LAT + 0.1,
+                                        "longitude": PARIS_LON + 0.1,
                                         "accuracy": 12.4,
                                         "radioType": "gsm",
                                         "cellTowers": [{
                                             "cellId": 1234,
                                             "locationAreaCode": 2,
-                                            "mobileCountryCode": 123,
+                                            "mobileCountryCode": FRANCE_MCC,
                                             "mobileNetworkCode": 1,
                                         }]},
-                                       {"latitude": 12.3456702,
-                                        "longitude": 23.4567802,
+                                       {"latitude": PARIS_LAT - 0.1,
+                                        "longitude": PARIS_LON - 0.1,
                                         "accuracy": 22.4,
                                         "radioType": "gsm",
                                         "cellTowers": [{
                                             "cellId": 2234,
                                             "locationAreaCode": 22,
-                                            "mobileCountryCode": 223,
+                                            "mobileCountryCode": FRANCE_MCC,
                                             "mobileNetworkCode": 2,
                                         }]}]},
                             status=200)
