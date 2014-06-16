@@ -125,12 +125,12 @@ def process_measure(measure_id, data, session):
         measure_id=measure_id,
         lat=from_degrees(data['lat']),
         lon=from_degrees(data['lon']),
-        heading=data['heading'],
-        speed=data['speed'],
+        heading=data.get('heading', -1),
+        speed=data.get('speed', -1),
         time=encode_datetime(data['time']),
-        accuracy=data['accuracy'],
-        altitude=data['altitude'],
-        altitude_accuracy=data['altitude_accuracy'],
+        accuracy=data.get('accuracy', 0),
+        altitude=data.get('altitude', 0),
+        altitude_accuracy=data.get('altitude_accuracy', 0),
     )
     measure_radio = RADIO_TYPE.get(data['radio'], -1)
     if data.get('cell'):
