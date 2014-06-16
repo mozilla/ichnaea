@@ -72,7 +72,6 @@ class TestGeosubmit(CeleryAppTestCase):
     @patch('ichnaea.geocalc.location_is_in_country', mock_location)
     @patch('mobile_codes.mcc', mock_mcc)
     def test_ok_no_existing_cell(self):
-        # Even if ichnaea has no data, we need
         app = self.app
         session = self.db_master_session
 
