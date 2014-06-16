@@ -10,3 +10,6 @@ notifications:
 script:
     - make build
     - make test
+
+services:
+  - redis-server
