@@ -96,4 +96,5 @@ shell:
 	SQLURI=$(SQLURI) $(PYTHON) scripts/start_ipython.py
 
 docs:  bin/sphinx-build
+	git submodule update --recursive --init
 	cd docs; make html
