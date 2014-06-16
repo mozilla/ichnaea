@@ -43,15 +43,22 @@ RADIO_TYPE_INVERSE[2] = 'umts'
 MAX_RADIO_TYPE = max(RADIO_TYPE.values())
 MIN_RADIO_TYPE = min(RADIO_TYPE.values())
 
+# Accuracy on land is arbitrarily bounded to [0, 1000km],
+# past which it seems more likely we're looking at bad data.
+MAX_ACCURACY = 1000000
+
 # Challenger Deep, Mariana Trench.
 MIN_ALTITUDE = -10911
 
 # Karman Line, edge of space.
 MAX_ALTITUDE = 100000
 
-# Speed is in meters per second.
-MAX_SPEED = 2000
+MAX_ALTITUDE_ACCURACY = abs(MAX_ALTITUDE - MIN_ALTITUDE)
 
+MAX_HEADING = 360.0
+
+# A bit less than speed of sound, in meters per second
+MAX_SPEED = 300.0
 
 # Empirical 95th percentile accuracy of ichnaea's responses,
 # from feedback testing of measurements as queries.
@@ -162,13 +169,11 @@ def normalized_measure_dict(d):
     d = normalized_dict(
         d, dict(lat=(from_degrees(-90.0), from_degrees(90.0), REQUIRED),
                 lon=(from_degrees(-180.0), from_degrees(180.0), REQUIRED),
-                heading=(0.0, 360.0, 0),
-                speed=(0, 300.0, 0),
+                heading=(0.0, MAX_HEADING, 0),
+                speed=(0, MAX_SPEED, 0),
                 altitude=(MIN_ALTITUDE, MAX_ALTITUDE, 0),
-                altitude_accuracy=(0, abs(MAX_ALTITUDE - MIN_ALTITUDE), 0),
-                # Accuracy on land is arbitrarily bounded to [0, 1000km],
-                # past which it seems more likely we're looking at bad data.
-                accuracy=(0, 1000000, 0)))
+                altitude_accuracy=(0, MAX_ALTITUDE_ACCURACY, 0),
+                accuracy=(0, MAX_ACCURACY, 0)))
 
     if d is None:
         return None
