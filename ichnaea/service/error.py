@@ -23,17 +23,17 @@ class JSONError(HTTPError, BaseJSONError):
         self.status = status
         self.content_type = 'application/json'
 
-PARSE_ERROR = {"error": {"errors": [{
-    "domain": "global",
-    "reason":
-    "parseError",
-    "message":
-    "Parse Error",
+PARSE_ERROR = {"error": {
+    "errors": [{
+        "domain": "global",
+        "reason":
+        "parseError",
+        "message":
+        "Parse Error",
     }],
     "code": 400,
     "message": "Parse Error"
-    }
-    }
+}}
 
 PARSE_ERROR = dumps(PARSE_ERROR)
 
