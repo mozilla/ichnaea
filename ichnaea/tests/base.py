@@ -104,7 +104,17 @@ class DBIsolation(object):
         cls.db_master = _make_db()
         cls.db_slave = _make_db()
 
-        engine = cls.db_master.engine
+        cls.setup_tables(cls.db_master.engine)
+
+    @classmethod
+    def teardown_engine(cls):
+        cls.db_master.engine.pool.dispose()
+        del cls.db_master
+        cls.db_slave.engine.pool.dispose()
+        del cls.db_slave
+
+    @classmethod
+    def setup_tables(cls, engine):
         with engine.connect() as conn:
             trans = conn.begin()
             _Model.metadata.create_all(engine)
@@ -121,13 +131,7 @@ class DBIsolation(object):
             trans.commit()
 
     @classmethod
-    def teardown_engine(cls):
-        cls.db_master.engine.pool.dispose()
-        del cls.db_master
-        cls.db_slave.engine.pool.dispose()
-        del cls.db_slave
-
-    def cleanup(self, engine):
+    def cleanup_tables(cls, engine):
         with engine.connect() as conn:
             trans = conn.begin()
             _Model.metadata.drop_all(engine)
