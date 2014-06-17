@@ -104,8 +104,6 @@ class DBIsolation(object):
         cls.db_master = _make_db()
         cls.db_slave = _make_db()
 
-        cls.setup_tables(cls.db_master.engine)
-
     @classmethod
     def teardown_engine(cls):
         cls.db_master.engine.pool.dispose()
@@ -361,7 +359,10 @@ class CeleryAppTestCase(AppTestCase, CeleryIsolation):
 
 
 def setup_package(module):
-    pass
+    db = _make_db()
+    DBIsolation.cleanup_tables(db.engine)
+    DBIsolation.setup_tables(db.engine)
+    db.engine.pool.dispose()
 
 
 def teardown_package(module):

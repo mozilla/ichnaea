@@ -1123,6 +1123,10 @@ class TestSearch(AppTestCase):
 class TestSearchErrors(AppTestCase):
     # this is a standalone class to ensure DB isolation for dropping tables
 
+    def tearDown(self):
+        self.setup_tables(self.db_master.engine)
+        super(TestSearchErrors, self).tearDown()
+
     def test_database_error(self):
         app = self.app
         session = self.db_slave_session

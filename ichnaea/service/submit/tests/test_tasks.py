@@ -457,6 +457,10 @@ class TestInsert(CeleryTestCase):
 class TestSubmitErrors(CeleryTestCase):
     # this is a standalone class to ensure DB isolation for dropping tables
 
+    def tearDown(self):
+        self.setup_tables(self.db_master.engine)
+        super(TestSubmitErrors, self).tearDown()
+
     def test_database_error(self):
         from ichnaea.service.submit.tasks import insert_wifi_measures
         session = self.db_master_session
