@@ -1,5 +1,5 @@
 For API key mismatches we return a `keyInvalid` message with an HTTP
-400 error.  The JSON response should be:
+400 error. The JSON response should be:
 
 .. code-block:: javascript
 
@@ -8,9 +8,9 @@ For API key mismatches we return a `keyInvalid` message with an HTTP
             "errors": [{
                 "domain": "usageLimits",
                 "reason": "keyInvalid",
-                "message": "No API key was found",
+                "message": "Missing or invalid API key.",
             }],
             "code": 400,
-            "message": "No API key",
+            "message": "Invalid API key",
         }
     }

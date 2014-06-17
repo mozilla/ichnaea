@@ -7,18 +7,25 @@ from ichnaea.models import (
 )
 from ichnaea.customjson import dumps
 
-NO_API_KEY = {
+INVALID_API_KEY = {
     "error": {
         "errors": [{
             "domain": "usageLimits",
             "reason": "keyInvalid",
-            "message": "No API key was found",
+            "message": "Missing or invalid API key.",
         }],
         "code": 400,
-        "message": "No API key",
+        "message": "Invalid API key",
     }
 }
-NO_API_KEY = dumps(NO_API_KEY)
+INVALID_API_KEY = dumps(INVALID_API_KEY)
+
+
+def invalid_api_key_response():
+    result = HTTPBadRequest()
+    result.content_type = 'application/json'
+    result.body = INVALID_API_KEY
+    return result
 
 
 def check_api_key(func_name, error_on_invalidkey=False):
@@ -31,10 +38,7 @@ def check_api_key(func_name, error_on_invalidkey=False):
             if api_key is None:
                 heka_client.incr('%s.no_api_key' % func_name)
                 if error_on_invalidkey:
-                    result = HTTPBadRequest()
-                    result.content_type = 'application/json'
-                    result.body = NO_API_KEY
-                    return result
+                    return invalid_api_key_response()
             else:
                 session = request.db_slave_session
                 found_key_filter = session.query(ApiKey).filter(
@@ -43,6 +47,8 @@ def check_api_key(func_name, error_on_invalidkey=False):
                     heka_client.incr('%s.api_key.%s' % (func_name, api_key))
                 else:
                     heka_client.incr('%s.unknown_api_key' % func_name)
+                    if error_on_invalidkey:
+                        return invalid_api_key_response()
 
             return func(request, *args, **kwargs)
         return closure

@@ -6,9 +6,16 @@ from ichnaea.models import (
     CELLID_LAC,
     CELL_MIN_ACCURACY,
     GEOIP_CITY_ACCURACY,
+    RADIO_TYPE,
+    from_degrees,
 )
 from ichnaea.heka_logging import RAVEN_ERROR
-from ichnaea.tests.base import AppTestCase
+from ichnaea.tests.base import (
+    AppTestCase,
+    FRANCE_MCC,
+    PARIS_LAT,
+    PARIS_LON,
+)
 
 
 class TestGeolocate(AppTestCase):
@@ -261,28 +268,58 @@ class TestGeolocate(AppTestCase):
     def test_no_api_key(self):
         app = self.app
         session = self.get_session()
-        wifis = [
-            Wifi(key="a1", lat=10000000, lon=10000000, total_measures=9),
-            Wifi(key="b2", lat=10010000, lon=10020000, total_measures=9),
-            Wifi(key="c3", lat=10020000, lon=10040000, total_measures=9),
-        ]
-        session.add_all(wifis)
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4)
+        session.add(Cell(
+            lat=from_degrees(PARIS_LAT),
+            lon=from_degrees(PARIS_LON),
+            radio=RADIO_TYPE['gsm'], **key)
+        )
         session.commit()
-        res = app.post_json(
-            '%s' % self.url, {
-                "wifiAccessPoints": [
-                    {"macAddress": "a1"},
-                    {"macAddress": "b2"},
-                    {"macAddress": "c3"},
-                ]},
-            status=400)
 
-        json_err = json.loads(res.body)
-        self.assertEqual(u'No API key', json_err['error']['message'])
+        res = app.post_json(
+            self.url, {
+                "radioType": "gsm",
+                "cellTowers": [
+                    {"mobileCountryCode": FRANCE_MCC,
+                     "mobileNetworkCode": 2,
+                     "locationAreaCode": 3,
+                     "cellId": 4},
+                ]
+            },
+            status=400)
         self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(u'Invalid API key', res.json['error']['message'])
 
         self.check_expected_heka_messages(
             counter=[self.metric + '.no_api_key'])
+
+    def test_unknown_api_key(self):
+        app = self.app
+        session = self.get_session()
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4)
+        session.add(Cell(
+            lat=from_degrees(PARIS_LAT),
+            lon=from_degrees(PARIS_LON),
+            radio=RADIO_TYPE['gsm'], **key)
+        )
+        session.commit()
+
+        res = app.post_json(
+            '%s?key=unknown_key' % self.url, {
+                "radioType": "gsm",
+                "cellTowers": [
+                    {"mobileCountryCode": FRANCE_MCC,
+                     "mobileNetworkCode": 2,
+                     "locationAreaCode": 3,
+                     "cellId": 4},
+                ]
+            },
+            status=400)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(u'Invalid API key', res.json['error']['message'])
+
+        self.check_expected_heka_messages(
+            counter=[self.metric + '.unknown_api_key'])
 
 
 class TestGeolocateFxOSWorkarounds(TestGeolocate):

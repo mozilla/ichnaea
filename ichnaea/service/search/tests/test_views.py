@@ -11,10 +11,12 @@ from ichnaea.models import (
     LAC_MIN_ACCURACY,
     WIFI_MIN_ACCURACY,
     GEOIP_CITY_ACCURACY,
+    RADIO_TYPE,
     from_degrees,
 )
 from ichnaea.tests.base import (
     AppTestCase,
+    FRANCE_MCC,
     FREMONT_IP,
     FREMONT_LAT,
     FREMONT_LON,
@@ -28,7 +30,7 @@ from ichnaea.tests.base import (
     PARIS_LON,
 )
 
-from ichnaea.service.base import NO_API_KEY
+from ichnaea.service.base import INVALID_API_KEY
 import random
 
 
@@ -1096,21 +1098,42 @@ class TestSearch(AppTestCase):
     def test_no_api_key(self):
         app = self.app
         session = self.db_slave_session
-        wifis = [
-            Wifi(key="A1", lat=10000000, lon=10000000, total_measures=9),
-            Wifi(key="B2", lat=10010000, lon=10020000, total_measures=9),
-            Wifi(key="C3", lat=10020000, lon=10040000, total_measures=9),
-        ]
-        session.add_all(wifis)
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4)
+        session.add(Cell(
+            lat=from_degrees(PARIS_LAT),
+            lon=from_degrees(PARIS_LON),
+            radio=RADIO_TYPE['umts'], **key)
+        )
         session.commit()
-        res = app.post_json('/v1/search',
-                            {"wifi": [
-                                {"key": "A1"}, {"key": "B2"},
-                                {"key": "C3"}, {"key": "D4"},
-                            ]},
-                            status=400)
-        self.assertEqual(res.json, loads(NO_API_KEY))
+
+        res = app.post_json(
+            '/v1/search',
+            {"radio": "gsm", "cell": [
+                dict(radio="umts", **key),
+            ]},
+            status=400)
+        self.assertEqual(res.json, loads(INVALID_API_KEY))
         self.check_expected_heka_messages(counter=['search.no_api_key'])
+
+    def test_unknown_api_key(self):
+        app = self.app
+        session = self.db_slave_session
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4)
+        session.add(Cell(
+            lat=from_degrees(PARIS_LAT),
+            lon=from_degrees(PARIS_LON),
+            radio=RADIO_TYPE['umts'], **key)
+        )
+        session.commit()
+
+        res = app.post_json(
+            '/v1/search?key=unknown_key',
+            {"radio": "gsm", "cell": [
+                dict(radio="umts", **key),
+            ]},
+            status=400)
+        self.assertEqual(res.json, loads(INVALID_API_KEY))
+        self.check_expected_heka_messages(counter=['search.unknown_api_key'])
 
 
 class TestSearchErrors(AppTestCase):
