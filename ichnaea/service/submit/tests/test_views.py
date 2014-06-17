@@ -15,7 +15,6 @@ from ichnaea.models import (
     Measure,
     RADIO_TYPE,
     WifiMeasure,
-    ApiKey,
     from_degrees,
 )
 from ichnaea.customjson import (
@@ -36,12 +35,6 @@ from ichnaea.tests.base import (
 
 
 class TestSubmit(CeleryAppTestCase):
-
-    def setUp(self):
-        CeleryAppTestCase.setUp(self)
-        session = self.db_slave_session
-        session.add(ApiKey(valid_key='test'))
-        session.commit()
 
     def test_ok_cell(self):
         app = self.app

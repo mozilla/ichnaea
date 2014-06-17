@@ -1,5 +1,4 @@
 from ichnaea.models import (
-    ApiKey,
     Cell,
     CellMeasure,
     Wifi,
@@ -20,10 +19,7 @@ class TestGeoSubmit(CeleryAppTestCase):
 
     def setUp(self):
         CeleryAppTestCase.setUp(self)
-        session = self.db_master_session
         self.app.app.registry.db_slave = self.db_master
-        session.add(ApiKey(valid_key='test'))
-        session.commit()
 
     def test_ok_cell(self):
         app = self.app
@@ -166,10 +162,7 @@ class TestGeoSubmitBatch(CeleryAppTestCase):
 
     def setUp(self):
         CeleryAppTestCase.setUp(self)
-        session = self.db_master_session
         self.app.app.registry.db_slave = self.db_master
-        session.add(ApiKey(valid_key='test'))
-        session.commit()
 
     def test_ok_cell(self):
         app = self.app
@@ -229,10 +222,7 @@ class TestGeolocateRegression(GeolocateRegressionTest, CeleryAppTestCase):
 
     def setUp(self):
         CeleryAppTestCase.setUp(self)
-        session = self.db_master_session
         self.app.app.registry.db_slave = self.db_master
-        session.add(ApiKey(valid_key='test'))
-        session.commit()
 
         self.url = '/v1/geosubmit'
         self.metric = 'geosubmit'

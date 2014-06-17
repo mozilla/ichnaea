@@ -14,6 +14,7 @@ from ichnaea.db import _Model
 from ichnaea.db import Database
 from ichnaea.geoip import configure_geoip
 from ichnaea.heka_logging import configure_heka
+from ichnaea.models import ApiKey
 from ichnaea.worker import (
     attach_database,
     configure_s3_backup,
@@ -360,8 +361,14 @@ class CeleryAppTestCase(AppTestCase, CeleryIsolation):
 
 def setup_package(module):
     db = _make_db()
-    DBIsolation.cleanup_tables(db.engine)
-    DBIsolation.setup_tables(db.engine)
+    engine = db.engine
+    DBIsolation.cleanup_tables(engine)
+    DBIsolation.setup_tables(engine)
+    # always add a test API key
+    session = db.session()
+    session.add(ApiKey(valid_key='test'))
+    session.commit()
+    session.close()
     db.engine.pool.dispose()
 
 

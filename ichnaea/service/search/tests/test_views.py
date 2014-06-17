@@ -4,7 +4,6 @@ from webob.response import gzip_app_iter
 from ichnaea.customjson import dumps, loads
 from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.models import (
-    ApiKey,
     Cell,
     Wifi,
     CELLID_LAC,
@@ -34,12 +33,6 @@ import random
 
 
 class TestSearch(AppTestCase):
-
-    def setUp(self):
-        AppTestCase.setUp(self)
-        session = self.db_slave_session
-        session.add(ApiKey(valid_key='test'))
-        session.commit()
 
     def test_ok_cell(self):
         app = self.app

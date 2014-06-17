@@ -1,7 +1,6 @@
 import json
 
 from ichnaea.models import (
-    ApiKey,
     Cell,
     Wifi,
     CELLID_LAC,
@@ -16,10 +15,6 @@ class TestGeolocate(AppTestCase):
 
     def setUp(self):
         AppTestCase.setUp(self)
-        session = self.db_slave_session
-        session.add(ApiKey(valid_key='test'))
-        session.commit()
-
         self.url = '/v1/geolocate'
         self.metric = 'geolocate'
 
