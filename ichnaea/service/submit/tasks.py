@@ -25,10 +25,10 @@ from ichnaea.models import (
     to_cellkey_psc,
     decode_datetime,
     encode_datetime,
+    from_degrees,
 )
-from ichnaea.decimaljson import (
+from ichnaea.customjson import (
     loads,
-    to_precise_int,
 )
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.submit.utils import process_score
@@ -112,7 +112,6 @@ def process_time(measure, utcnow, utcmin):
 
 
 def process_measure(measure_id, data, session):
-
     def add_missing_dict_entries(dst, src):
         # x.update(y) overwrites entries in x with those in y;
         # we want to only add those not already present
@@ -124,12 +123,14 @@ def process_measure(measure_id, data, session):
     wifi_measures = {}
     measure_data = dict(
         measure_id=measure_id,
-        lat=to_precise_int(data['lat']),
-        lon=to_precise_int(data['lon']),
+        lat=from_degrees(data['lat']),
+        lon=from_degrees(data['lon']),
+        heading=data.get('heading', -1.0),
+        speed=data.get('speed', -1.0),
         time=encode_datetime(data['time']),
-        accuracy=data['accuracy'],
-        altitude=data['altitude'],
-        altitude_accuracy=data['altitude_accuracy'],
+        accuracy=data.get('accuracy', 0),
+        altitude=data.get('altitude', 0),
+        altitude_accuracy=data.get('altitude_accuracy', 0),
     )
     measure_radio = RADIO_TYPE.get(data['radio'], -1)
     if data.get('cell'):
@@ -193,8 +194,8 @@ def process_measures(items, session, userid=None):
         cell_measures.extend(cell)
         wifi_measures.extend(wifi)
         positions.append({
-            'lat': to_precise_int(item['lat']),
-            'lon': to_precise_int(item['lon']),
+            'lat': from_degrees(item['lat']),
+            'lon': from_degrees(item['lon']),
         })
 
     heka_client = get_heka_client()
@@ -272,6 +273,8 @@ def create_cell_measure(utcnow, entry):
         asu=entry.get('asu', -1),
         signal=entry.get('signal', 0),
         ta=entry.get('ta', 0),
+        heading=entry.get('heading', -1.0),
+        speed=entry.get('speed', -1.0),
     )
 
 
@@ -301,7 +304,7 @@ def update_cell_measure_count(cell_key, count, utcnow, session):
 
     stmt = Cell.__table__.insert(
         on_duplicate='new_measures = new_measures + %s, '
-                     'total_measures = total_measures + %s' % (count, count)
+        'total_measures = total_measures + %s' % (count, count)
     ).values(
         created=utcnow, radio=cell_key.radio,
         mcc=cell_key.mcc, mnc=cell_key.mnc, lac=cell_key.lac, cid=cell_key.cid,
@@ -422,6 +425,9 @@ def create_wifi_measure(utcnow, entry):
         key=entry['key'],
         channel=entry.get('channel', 0),
         signal=entry.get('signal', 0),
+        snr=entry.get('signalToNoiseRatio', 0),
+        heading=entry.get('heading', -1.0),
+        speed=entry.get('speed', -1.0),
     )
 
 

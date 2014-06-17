@@ -1,6 +1,8 @@
 from pyramid.httpexceptions import HTTPNoContent
 
-from ichnaea.decimaljson import dumps
+from ichnaea.customjson import dumps
+from ichnaea.geocalc import location_is_in_country
+from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.error import (
     preprocess_request,
 )
@@ -60,12 +62,31 @@ def submit_validator(data, errors):
         return
 
 
+def check_geoip(request, data, errors):
+    # Verify that the request comes from the same country as the lat/lon.
+    if request.client_addr:
+        geoip = request.registry.geoip_db.geoip_lookup(request.client_addr)
+        if geoip and 'items' in data:
+            filtered_items = []
+            for item in data['items']:
+                lat = float(item['lat'])
+                lon = float(item['lon'])
+                country = geoip['country_code']
+                if location_is_in_country(lat, lon, country, 1):
+                    filtered_items.append(item)
+                else:
+                    heka_client = get_heka_client()
+                    heka_client.incr("submit.geoip_mismatch")
+            data['items'] = filtered_items
+
+
 @check_api_key('submit')
 def submit_view(request):
     data, errors = preprocess_request(
         request,
         schema=SubmitSchema(),
-        extra_checks=(submit_validator, ),
+        extra_checks=(submit_validator,
+                      lambda d, e: check_geoip(request, d, e), ),
     )
 
     items = data['items']

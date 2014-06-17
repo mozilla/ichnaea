@@ -54,9 +54,9 @@ class WifiAccessPointsSchema(SequenceSchema):
 
 class GeoLocateSchema(MappingSchema):
     homeMobileCountryCode = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
+        Integer(), location="body", type='int', missing=-1)
     homeMobileNetworkCode = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
+        Integer(), location="body", type='int', missing=-1)
     radioType = SchemaNode(String(), location="body", type='str',
                            validator=OneOf(RADIO_TYPE_KEYS), missing='')
     carrier = SchemaNode(String(), location="body", missing='')

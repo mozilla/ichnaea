@@ -62,12 +62,16 @@ def db_tween_factory(handler, registry):
                 master_session.rollback()
             master_session.close()
         slave_session = getattr(request, '_db_slave_session', None)
-        if slave_session is not None:
-            # always rollback/close the `read-only` slave sessions
-            try:
-                slave_session.rollback()
-            finally:
-                slave_session.close()
+
+        # The db_master and db_slave will only be the same in the case
+        # where we are running on a single node (dev) or under test
+        if request.registry.db_master != request.registry.db_slave:
+            if slave_session is not None:
+                # always rollback/close the `read-only` slave sessions
+                try:
+                    slave_session.rollback()
+                finally:
+                    slave_session.close()
         return response
 
     return db_tween

@@ -6,8 +6,9 @@ from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden
 from ichnaea.models import (
     ApiKey
 )
-from ichnaea.decimaljson import dumps
+from ichnaea.customjson import dumps
 from ichnaea.service.error import DAILY_LIMIT
+
 import redis
 
 NO_API_KEY = {

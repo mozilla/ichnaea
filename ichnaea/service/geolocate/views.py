@@ -1,11 +1,9 @@
-from pyramid.httpexceptions import HTTPError
 from pyramid.httpexceptions import HTTPNotFound
-from pyramid.response import Response
 
-from ichnaea.decimaljson import dumps
-from ichnaea.exceptions import BaseJSONError
+from ichnaea.customjson import dumps
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.error import (
+    JSONParseError,
     MSG_BAD_RADIO,
     MSG_ONE_OF,
     preprocess_request,
@@ -13,6 +11,7 @@ from ichnaea.service.error import (
 from ichnaea.service.base import check_api_key
 from ichnaea.service.search.views import (
     search_all_sources,
+    map_data,
 )
 
 
@@ -28,26 +27,6 @@ NOT_FOUND = {
     }
 }
 NOT_FOUND = dumps(NOT_FOUND)
-
-PARSE_ERROR = {
-    "error": {
-        "errors": [{
-            "domain": "global",
-            "reason": "parseError",
-            "message": "Parse Error",
-        }],
-        "code": 400,
-        "message": "Parse Error"
-    }
-}
-PARSE_ERROR = dumps(PARSE_ERROR)
-
-
-class JSONError(HTTPError, BaseJSONError):
-    def __init__(self, errors, status=400):
-        Response.__init__(self, PARSE_ERROR)
-        self.status = status
-        self.content_type = 'application/json'
 
 
 def configure_geolocate(config):
@@ -78,36 +57,6 @@ def geolocate_validator(data, errors):
         errors.append(dict(name='body', description=MSG_ONE_OF))
 
 
-def map_data(data):
-    """
-    Transform a geolocate API dictionary to an equivalent search API
-    dictionary.
-    """
-    if not data:
-        return data
-
-    mapped = {
-        'radio': data['radioType'],
-        'cell': [],
-        'wifi': [],
-    }
-
-    if 'cellTowers' in data:
-        mapped['cell'] = [{
-            'mcc': cell['mobileCountryCode'],
-            'mnc': cell['mobileNetworkCode'],
-            'lac': cell['locationAreaCode'],
-            'cid': cell['cellId'],
-        } for cell in data['cellTowers']]
-
-    if 'wifiAccessPoints' in data:
-        mapped['wifi'] = [{
-            'key': wifi['macAddress'],
-        } for wifi in data['wifiAccessPoints']]
-
-    return mapped
-
-
 @check_api_key('geolocate', True)
 def geolocate_view(request):
 
@@ -115,7 +64,7 @@ def geolocate_view(request):
         request,
         schema=GeoLocateSchema(),
         extra_checks=(geolocate_validator, ),
-        response=JSONError,
+        response=JSONParseError,
         accept_empty=True,
     )
 

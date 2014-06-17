@@ -177,10 +177,10 @@ class TestStats(DBTestCase):
         session.commit()
 
         # check the result
+        expected = set(['BMU', 'DEU', 'GUM', 'ISR', 'PRI', 'PSE', 'USA'])
         result = countries(session)
-        self.assertEqual(len(result), 6)
-        self.assertEqual(set([r['code'] for r in result]),
-                         set(['BMU', 'DEU', 'GUM', 'ISR', 'PSE', 'USA']))
+        self.assertEqual(len(result), len(expected))
+        self.assertEqual(set([r['code'] for r in result]), expected)
 
         countries = {}
         for r in result:

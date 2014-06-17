@@ -11,10 +11,8 @@ from ichnaea.models import (
     WIFI_MIN_ACCURACY,
     CELL_MIN_ACCURACY,
     LAC_MIN_ACCURACY,
-    GEOIP_CITY_ACCURACY
-)
-from ichnaea.decimaljson import (
-    quantize,
+    GEOIP_CITY_ACCURACY,
+    DEGREE_DECIMAL_PLACES,
 )
 from ichnaea.service.base import check_api_key
 from ichnaea.service.error import (
@@ -23,11 +21,15 @@ from ichnaea.service.error import (
 )
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.search.schema import SearchSchema
-from ichnaea.geocalc import distance
+from ichnaea.geocalc import (
+    distance,
+    location_is_in_country
+)
 from collections import namedtuple
 import operator
 import mobile_codes
-from country_bounding_boxes import country_subunits_by_iso_code
+from numbers import Number
+
 
 # parameters for wifi clustering
 MAX_WIFI_CLUSTER_KM = 0.5
@@ -46,6 +48,9 @@ def configure_search(config):
 
 
 def estimate_accuracy(lat, lon, points, minimum):
+    assert isinstance(lat, Number)
+    assert isinstance(lon, Number)
+    assert isinstance(minimum, Number)
     if len(points) == 1:
         accuracy = points[0].range
     else:
@@ -58,6 +63,9 @@ def estimate_accuracy(lat, lon, points, minimum):
                                  to_degrees(p.lat),
                                  to_degrees(p.lon)) * 1000
                         for p in points])
+    if accuracy is not None:
+        assert isinstance(accuracy, Number)
+        accuracy = round(float(accuracy), DEGREE_DECIMAL_PLACES)
     return max(accuracy, minimum)
 
 
@@ -87,8 +95,8 @@ def search_cell(session, data):
     avg_lat = sum([c.lat for c in cells]) / length
     avg_lon = sum([c.lon for c in cells]) / length
     return {
-        'lat': quantize(avg_lat),
-        'lon': quantize(avg_lon),
+        'lat': to_degrees(avg_lat),
+        'lon': to_degrees(avg_lon),
         'accuracy': estimate_accuracy(avg_lat, avg_lon,
                                       cells, CELL_MIN_ACCURACY),
     }
@@ -119,11 +127,13 @@ def search_cell_lac(session, data):
 
     # take the smallest LAC of any the user is inside
     lac = sorted(lacs, key=operator.attrgetter('range'))[0]
-
+    accuracy = max(LAC_MIN_ACCURACY, lac.range)
+    assert isinstance(accuracy, Number)
+    accuracy = round(float(accuracy), DEGREE_DECIMAL_PLACES)
     return {
-        'lat': quantize(lac.lat),
-        'lon': quantize(lac.lon),
-        'accuracy': max(LAC_MIN_ACCURACY, lac.range),
+        'lat': to_degrees(lac.lat),
+        'lon': to_degrees(lac.lon),
+        'accuracy': accuracy,
     }
 
 
@@ -175,10 +185,10 @@ def search_wifi(session, data):
         # Try to assign w to a cluster (but at most one).
         for c in clusters:
             for n in c:
-                if distance(quantize(n.lat),
-                            quantize(n.lon),
-                            quantize(w.lat),
-                            quantize(w.lon)) <= MAX_WIFI_CLUSTER_KM:
+                if distance(to_degrees(n.lat),
+                            to_degrees(n.lon),
+                            to_degrees(w.lat),
+                            to_degrees(w.lon)) <= MAX_WIFI_CLUSTER_KM:
                     c.append(w)
                     w = None
                     break
@@ -224,8 +234,8 @@ def search_wifi(session, data):
     avg_lat = sum([n.lat for n in sample]) / length
     avg_lon = sum([n.lon for n in sample]) / length
     return {
-        'lat': quantize(avg_lat),
-        'lon': quantize(avg_lon),
+        'lat': to_degrees(avg_lat),
+        'lon': to_degrees(avg_lon),
         'accuracy': estimate_accuracy(avg_lat, avg_lon,
                                       sample, WIFI_MIN_ACCURACY),
     }
@@ -319,24 +329,6 @@ def geoip_and_best_guess_country_code(data, request, api_name):
     return (None, None)
 
 
-def location_is_in_country(lat, lon, country):
-    """
-    Return whether or not a given lat, lon pair is inside one of the
-    country subunits associated with a given alpha2 country code.
-
-    """
-    assert isinstance(country, basestring)
-    assert len(country) == 2
-    assert isinstance(lat, float)
-    assert isinstance(lon, float)
-    for c in country_subunits_by_iso_code(country):
-        (lon1, lat1, lon2, lat2) = c.bbox
-        if lon1 <= lon and lon <= lon2 and \
-           lat1 <= lat and lat <= lat2:
-            return True
-    return False
-
-
 def search_all_sources(request, data, api_name):
     """
     Common code-path for both the search and geolocate APIs, searching
@@ -384,7 +376,7 @@ def search_all_sources(request, data, api_name):
                                  (api_name, metric_name))
 
                 # Skip any hit that seems to be in the wrong country.
-                if country and not location_is_in_country(lat, lon, country):
+                if country and not location_is_in_country(lat, lon, country, 1):
                     heka_client.incr('%s.anomaly.%s_country_mismatch' %
                                      (api_name, metric_name))
 
@@ -447,3 +439,33 @@ def search_view(request):
         'lon': result['lon'],
         'accuracy': result['accuracy'],
     }
+
+
+def map_data(data):
+    """
+    Transform a geolocate API dictionary to an equivalent search API
+    dictionary.
+    """
+    if not data:
+        return data
+
+    mapped = {
+        'radio': data['radioType'],
+        'cell': [],
+        'wifi': [],
+    }
+
+    if 'cellTowers' in data:
+        mapped['cell'] = [{
+            'mcc': cell['mobileCountryCode'],
+            'mnc': cell['mobileNetworkCode'],
+            'lac': cell['locationAreaCode'],
+            'cid': cell['cellId'],
+        } for cell in data['cellTowers']]
+
+    if 'wifiAccessPoints' in data:
+        mapped['wifi'] = [{
+            'key': wifi['macAddress'],
+        } for wifi in data['wifiAccessPoints']]
+
+    return mapped

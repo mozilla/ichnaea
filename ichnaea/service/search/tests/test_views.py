@@ -1,7 +1,7 @@
 from sqlalchemy import text
 from webob.response import gzip_app_iter
 
-from ichnaea.decimaljson import dumps, loads
+from ichnaea.customjson import dumps, loads
 from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.models import (
     ApiKey,
@@ -14,27 +14,23 @@ from ichnaea.models import (
     GEOIP_CITY_ACCURACY,
     from_degrees,
 )
-from ichnaea.tests.base import AppTestCase
+from ichnaea.tests.base import (
+    AppTestCase,
+    FREMONT_IP,
+    FREMONT_LAT,
+    FREMONT_LON,
+    BRAZIL_MCC,
+    VIVO_MNC,
+    SAO_PAULO_LAT,
+    SAO_PAULO_LON,
+    PORTO_ALEGRE_LAT,
+    PORTO_ALEGRE_LON,
+    PARIS_LAT,
+    PARIS_LON,
+)
+
 from ichnaea.service.base import NO_API_KEY
 import random
-
-# Some test-data constants
-
-FREMONT_IP = '66.92.181.240'
-FREMONT_LAT = 37.5079
-FREMONT_LON = -121.96
-
-BRAZIL_MCC = 724
-VIVO_MNC = 11
-
-SAO_PAULO_LAT = -23.54
-SAO_PAULO_LON = -46.64
-
-PORTO_ALEGRE_LAT = -30.032
-PORTO_ALEGRE_LON = -51.22
-
-PARIS_LAT = 48.8568
-PARIS_LON = 2.3508
 
 
 class TestSearch(AppTestCase):
@@ -103,7 +99,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0010000, "lon": 1.0020000,
-                                    "accuracy": 248.60908969845744})
+                                    "accuracy": 248.6090897})
 
         self.check_expected_heka_messages(
             total=8,
@@ -171,7 +167,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 1.0010000, "lon": 1.0020000,
-                                    "accuracy": 248.60908969845744})
+                                    "accuracy": 248.6090897})
 
     def test_wifi_prefer_cluster_with_better_signals(self):
         app = self.app
@@ -199,7 +195,7 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
                                     "lat": 2.0010000, "lon": 2.0020000,
-                                    "accuracy": 248.51819000225819})
+                                    "accuracy": 248.5181900})
 
     def test_wifi_prefer_larger_cluster_over_high_signal(self):
         app = self.app

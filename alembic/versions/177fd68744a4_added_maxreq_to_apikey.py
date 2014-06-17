@@ -1,14 +1,14 @@
 """added maxreq to apikey
 
-Revision ID: 36f517eea789
-Revises: 4323e1f1a0b8
-Create Date: 2014-06-13 18:31:32.263846
+Revision ID: 177fd68744a4
+Revises: 10f2bbd0fdaa
+Create Date: 2014-06-17 10:42:04.074647
 
 """
 
 # revision identifiers, used by Alembic.
-revision = '36f517eea789'
-down_revision = '4323e1f1a0b8'
+revision = '177fd68744a4'
+down_revision = '10f2bbd0fdaa'
 
 from alembic import op
 import sqlalchemy as sa

@@ -10,6 +10,7 @@ import tempfile
 from ichnaea.backup.s3 import S3Backend, compute_hash
 from ichnaea.models import (
     MEASURE_TYPE_CODE,
+    MEASURE_TYPE_CODE_INVERSE,
     MEASURE_TYPE_META,
     MeasureBlock,
 )
@@ -57,39 +58,42 @@ def selfdestruct_tempdir(s3_key):
 @celery.task(base=DatabaseTask, bind=True)
 def write_cellmeasure_s3_backups(self,
                                  limit=100,
-                                 batch=1000000,
+                                 batch=10000,
+                                 countdown=300,
                                  cleanup_zip=True):
     measure_type = MEASURE_TYPE_CODE['cell']
     return write_measure_s3_backups(self,
                                     measure_type,
                                     limit=limit,
                                     batch=batch,
+                                    countdown=countdown,
                                     cleanup_zip=cleanup_zip)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def write_wifimeasure_s3_backups(self,
                                  limit=100,
-                                 batch=1000000,
+                                 batch=10000,
+                                 countdown=300,
                                  cleanup_zip=True):
     measure_type = MEASURE_TYPE_CODE['wifi']
     return write_measure_s3_backups(self,
                                     measure_type,
                                     limit=limit,
                                     batch=batch,
+                                    countdown=countdown,
                                     cleanup_zip=cleanup_zip)
 
 
 def write_measure_s3_backups(self,
                              measure_type,
                              limit=100,
-                             batch=1000000,
+                             batch=10000,
+                             countdown=300,
                              cleanup_zip=True):
     """
     Iterate over each of the measure block records that aren't
     backed up yet and back them up.
-
-    Assume that this is running in a single task.
     """
     with self.db_session() as session:
 
@@ -98,14 +102,17 @@ def write_measure_s3_backups(self,
             MeasureBlock.s3_key.is_(None)).order_by(
             MeasureBlock.end_id).limit(limit)
 
+        c = 0
         for block in query:
-            write_block_to_s3.delay(block.id,
-                                    batch,
-                                    cleanup_zip)
+            write_block_to_s3.apply_async(
+                args=[block.id],
+                kwargs={'batch': batch, 'cleanup_zip': cleanup_zip},
+                countdown=c)
+            c += countdown
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def write_block_to_s3(self, block_id, batch=1000000, cleanup_zip=True):
+def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
 
     with self.db_session() as session:
         block = session.query(MeasureBlock).filter(
@@ -114,6 +121,7 @@ def write_block_to_s3(self, block_id, batch=1000000, cleanup_zip=True):
         measure_type = block.measure_type
         measure_cls = MEASURE_TYPE_META[measure_type]['class']
         csv_name = MEASURE_TYPE_META[measure_type]['csv_name']
+        name = MEASURE_TYPE_CODE_INVERSE[measure_type]
 
         start_id = block.start_id
         end_id = block.end_id
@@ -128,7 +136,7 @@ def write_block_to_s3(self, block_id, batch=1000000, cleanup_zip=True):
 
         utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
         s3_key = '%s/%s_%d_%d.zip' % (utcnow.strftime("%Y%m"),
-                                      measure_type,
+                                      name,
                                       start_id,
                                       end_id)
 
@@ -162,7 +170,7 @@ def write_block_to_s3(self, block_id, batch=1000000, cleanup_zip=True):
         try:
             if not s3_backend.backup_archive(s3_key, zip_path):
                 return
-            self.heka_client.incr('s3.backup.%s' % measure_type,
+            self.heka_client.incr('s3.backup.%s' % name,
                                   (end_id - start_id))
         finally:
             if cleanup_zip:
@@ -246,7 +254,8 @@ def schedule_wifimeasure_archival(self, limit=100, batch=1000000):
 def delete_measure_records(self,
                            measure_type,
                            limit=100,
-                           days_old=7):
+                           days_old=7,
+                           countdown=300):
     utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
 
     with self.db_session() as session:
@@ -256,6 +265,7 @@ def delete_measure_records(self,
             MeasureBlock.archive_sha.isnot(None)).filter(
             MeasureBlock.archive_date.is_(None)).order_by(
             MeasureBlock.end_id.asc()).limit(limit)
+        c = 0
         for block in query.all():
             # Note that 'created' is indexed for both CellMeasure
             # and WifiMeasure
@@ -269,7 +279,8 @@ def delete_measure_records(self,
                 # enough
                 continue
 
-            dispatch_delete.delay(block.id)
+            dispatch_delete.apply_async(args=[block.id], countdown=c)
+            c += countdown
 
 
 @celery.task(base=DatabaseTask, bind=True)
@@ -286,25 +297,27 @@ def dispatch_delete(self, block_id):
         if s3_backend.check_archive(block.archive_sha, block.s3_key):
             q = session.query(measure_cls).filter(
                 measure_cls.id >= block.start_id,
-                measure_cls.id <= block.end_id)
+                measure_cls.id < block.end_id)
             q.delete()
             block.archive_date = utcnow
             session.commit()
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def delete_cellmeasure_records(self, limit=100, days_old=7):
+def delete_cellmeasure_records(self, limit=100, days_old=7, countdown=300):
     return delete_measure_records(
         self,
         MEASURE_TYPE_CODE['cell'],
         limit=limit,
-        days_old=days_old)
+        days_old=days_old,
+        countdown=countdown)
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def delete_wifimeasure_records(self, limit=100, days_old=7):
+def delete_wifimeasure_records(self, limit=100, days_old=7, countdown=300):
     return delete_measure_records(
         self,
         MEASURE_TYPE_CODE['wifi'],
         limit=limit,
-        days_old=days_old)
+        days_old=days_old,
+        countdown=countdown)

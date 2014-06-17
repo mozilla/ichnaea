@@ -1,12 +1,15 @@
 from collections import namedtuple
 from datetime import date, datetime
 from colander import iso8601
+import ichnaea.geocalc
+import mobile_codes
 import re
 
 from sqlalchemy import (
     BINARY,
     Column,
     DateTime,
+    Float,
     Index,
     SmallInteger,
     String,
@@ -24,7 +27,6 @@ from ichnaea.db import _Model
 DEGREE_DECIMAL_PLACES = 7
 DEGREE_SCALE_FACTOR = 10 ** DEGREE_DECIMAL_PLACES
 
-
 RADIO_TYPE = {
     '': -1,
     'gsm': 0,
@@ -36,9 +38,14 @@ RADIO_TYPE = {
     'lte': 3,
 }
 RADIO_TYPE_KEYS = list(RADIO_TYPE.keys())
-RADIO_TYPE_INVERSE = dict((v, k) for k, v in RADIO_TYPE.items())
+RADIO_TYPE_INVERSE = dict((v, k) for k, v in RADIO_TYPE.items() if v != 2)
+RADIO_TYPE_INVERSE[2] = 'umts'
 MAX_RADIO_TYPE = max(RADIO_TYPE.values())
 MIN_RADIO_TYPE = min(RADIO_TYPE.values())
+
+# Accuracy on land is arbitrarily bounded to [0, 1000km],
+# past which it seems more likely we're looking at bad data.
+MAX_ACCURACY = 1000000
 
 # Challenger Deep, Mariana Trench.
 MIN_ALTITUDE = -10911
@@ -46,6 +53,12 @@ MIN_ALTITUDE = -10911
 # Karman Line, edge of space.
 MAX_ALTITUDE = 100000
 
+MAX_ALTITUDE_ACCURACY = abs(MAX_ALTITUDE - MIN_ALTITUDE)
+
+MAX_HEADING = 360.0
+
+# A bit less than speed of sound, in meters per second
+MAX_SPEED = 300.0
 
 # Empirical 95th percentile accuracy of ichnaea's responses,
 # from feedback testing of measurements as queries.
@@ -156,11 +169,11 @@ def normalized_measure_dict(d):
     d = normalized_dict(
         d, dict(lat=(from_degrees(-90.0), from_degrees(90.0), REQUIRED),
                 lon=(from_degrees(-180.0), from_degrees(180.0), REQUIRED),
+                heading=(0.0, MAX_HEADING, -1.0),
+                speed=(0, MAX_SPEED, -1.0),
                 altitude=(MIN_ALTITUDE, MAX_ALTITUDE, 0),
-                altitude_accuracy=(0, abs(MAX_ALTITUDE - MIN_ALTITUDE), 0),
-                # Accuracy on land is arbitrarily bounded to [0, 1000km],
-                # past which it seems more likely we're looking at bad data.
-                accuracy=(0, 1000000, 0)))
+                altitude_accuracy=(0, MAX_ALTITUDE_ACCURACY, 0),
+                accuracy=(0, MAX_ACCURACY, 0)))
 
     if d is None:
         return None
@@ -196,8 +209,7 @@ def normalized_wifi_dict(d):
     Returns a normalized copy of the provided wifi dict d,
     or None if the dict was invalid.
     """
-    d = normalized_dict(
-        d, dict(signal=(-200, -1, 0)))
+    d = normalized_dict(d, dict(signal=(-200, -1, 0)))
 
     if d is None:
         return None
@@ -275,6 +287,16 @@ def normalized_cell_measure_dict(d, measure_radio=-1):
     """
     d = normalized_cell_dict(d, default_radio=measure_radio)
     d = normalized_measure_dict(d)
+
+    location_is_in_country = ichnaea.geocalc.location_is_in_country
+    if d is not None:
+        # Lat/lon must be inside one of the bounding boxes for the MCC.
+        lat = to_degrees(int(d['lat']))
+        lon = to_degrees(int(d['lon']))
+        if not any([location_is_in_country(lat, lon, c.alpha2, 1)
+                    for c in mobile_codes.mcc(str(d['mcc']))]):
+            d = None
+
     return normalized_dict(
         d, dict(asu=(0, 31, -1),
                 signal=(-200, -1, 0),
@@ -467,6 +489,13 @@ class CellMeasure(_Model):
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)
+
+    # http://dev.w3.org/geo/api/spec-source.html#heading
+    heading = Column(Float)
+
+    # http://dev.w3.org/geo/api/spec-source.html#speed
+    speed = Column(Float)
+
     # mapped via RADIO_TYPE
     radio = Column(SmallInteger)
     mcc = Column(SmallInteger)
@@ -576,9 +605,17 @@ class WifiMeasure(_Model):
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)
+
+    # http://dev.w3.org/geo/api/spec-source.html#heading
+    heading = Column(Float)
+
+    # http://dev.w3.org/geo/api/spec-source.html#speed
+    speed = Column(Float)
+
     key = Column(String(12))
     channel = Column(SmallInteger)
     signal = Column(SmallInteger)
+    snr = Column(SmallInteger)
 
     def __init__(self, *args, **kw):
         if 'measure_id' not in kw:
@@ -623,6 +660,7 @@ MEASURE_TYPE_CODE = {
     'wifi': 1,
     'cell': 2,
 }
+MEASURE_TYPE_CODE_INVERSE = dict((v, k) for k, v in MEASURE_TYPE_CODE.items())
 
 MEASURE_TYPE_META = {
     1: {'class': WifiMeasure,
