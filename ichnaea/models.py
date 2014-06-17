@@ -75,8 +75,11 @@ CELLID_LAC = -2
 # Symbolic constant used in specs passed to normalization functions.
 REQUIRED = object()
 
-invalid_wifi_regex = re.compile("(?!(0{12}|f{12}))")
-valid_wifi_regex = re.compile("([0-9a-fA-F]{12})")
+# We use a documentation-only multi-cast address as a test key
+# http://tools.ietf.org/html/rfc7042#section-2.1.1
+WIFI_TEST_KEY = "01005e901000"
+INVALID_WIFI_REGEX = re.compile("(?!(0{12}|f{12}|%s))" % WIFI_TEST_KEY)
+VALID_WIFI_REGEX = re.compile("([0-9a-fA-F]{12})")
 
 CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
@@ -106,8 +109,8 @@ def decode_datetime(obj):
 
 
 def valid_wifi_pattern(key):
-    return invalid_wifi_regex.match(key) and \
-        valid_wifi_regex.match(key) and len(key) == 12
+    return INVALID_WIFI_REGEX.match(key) and \
+        VALID_WIFI_REGEX.match(key) and len(key) == 12
 
 
 def normalized_wifi_key(key):

@@ -15,6 +15,7 @@ from ichnaea.models import (
     Measure,
     RADIO_TYPE,
     WifiMeasure,
+    WIFI_TEST_KEY,
     from_degrees,
 )
 from ichnaea.customjson import (
@@ -542,6 +543,19 @@ class TestSubmit(CeleryAppTestCase):
 
         # we ban 0{12}
         wifi_data = [{"key": "00:00:00:00:00:00"}]
+        app.post_json(
+            '/v1/submit', {"items": [{"lat": 12.3456781,
+                                      "lon": 23.4567892,
+                                      "accuracy": 17,
+                                      "wifi": wifi_data}]},
+            status=204)
+
+        session = self.db_master_session
+        result = session.query(WifiMeasure).all()
+        self.assertEqual(len(result), 0)
+
+        # we ban a WiFi test key
+        wifi_data = [{"key": WIFI_TEST_KEY}]
         app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3456781,
                                       "lon": 23.4567892,
