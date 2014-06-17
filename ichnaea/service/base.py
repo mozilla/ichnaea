@@ -40,8 +40,7 @@ def check_api_key(func_name, error_on_invalidkey=False):
                 found_key_filter = session.query(ApiKey).filter(
                     ApiKey.valid_key == api_key)
                 if found_key_filter.count():
-                    heka_client.incr('%s.api_key.%s' % (
-                        func_name, api_key.replace('.', '__')))
+                    heka_client.incr('%s.api_key.%s' % (func_name, api_key))
                 else:
                     heka_client.incr('%s.unknown_api_key' % func_name)
 

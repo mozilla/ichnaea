@@ -18,7 +18,6 @@ class TestGeolocate(AppTestCase):
         AppTestCase.setUp(self)
         session = self.db_slave_session
         session.add(ApiKey(valid_key='test'))
-        session.add(ApiKey(valid_key='test.test'))
         session.commit()
 
         self.url = '/v1/geolocate'
@@ -235,7 +234,7 @@ class TestGeolocate(AppTestCase):
     def test_parse_error(self):
         app = self.app
         res = app.post_json(
-            '%s?key=test.test' % self.url, {
+            '%s?key=test' % self.url, {
                 "wifiAccessPoints": [
                     {"nomac": 1},
                 ]},
@@ -254,7 +253,7 @@ class TestGeolocate(AppTestCase):
         )
 
         self.check_expected_heka_messages(
-            counter=[self.metric + '.api_key.test__test']
+            counter=[self.metric + '.api_key.test']
         )
 
     def test_no_data(self):

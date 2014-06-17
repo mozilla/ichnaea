@@ -23,7 +23,6 @@ class TestGeoSubmit(CeleryAppTestCase):
         session = self.db_master_session
         self.app.app.registry.db_slave = self.db_master
         session.add(ApiKey(valid_key='test'))
-        session.add(ApiKey(valid_key='test.test'))
         session.commit()
 
     def test_ok_cell(self):
@@ -170,7 +169,6 @@ class TestGeoSubmitBatch(CeleryAppTestCase):
         session = self.db_master_session
         self.app.app.registry.db_slave = self.db_master
         session.add(ApiKey(valid_key='test'))
-        session.add(ApiKey(valid_key='test.test'))
         session.commit()
 
     def test_ok_cell(self):
@@ -234,7 +232,6 @@ class TestGeolocateRegression(GeolocateRegressionTest, CeleryAppTestCase):
         session = self.db_master_session
         self.app.app.registry.db_slave = self.db_master
         session.add(ApiKey(valid_key='test'))
-        session.add(ApiKey(valid_key='test.test'))
         session.commit()
 
         self.url = '/v1/geosubmit'

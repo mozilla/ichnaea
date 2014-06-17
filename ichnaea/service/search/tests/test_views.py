@@ -39,7 +39,6 @@ class TestSearch(AppTestCase):
         AppTestCase.setUp(self)
         session = self.db_slave_session
         session.add(ApiKey(valid_key='test'))
-        session.add(ApiKey(valid_key='test.test'))
         session.commit()
 
     def test_ok_cell(self):
@@ -1083,11 +1082,11 @@ class TestSearch(AppTestCase):
 
     def test_no_json(self):
         app = self.app
-        res = app.post('/v1/search?key=test.test', "\xae", status=400)
+        res = app.post('/v1/search?key=test', "\xae", status=400)
         self.assertTrue('errors' in res.json)
 
         self.check_expected_heka_messages(counter=[
-            'search.api_key.test__test'])
+            'search.api_key.test'])
 
     def test_gzip(self):
         app = self.app
