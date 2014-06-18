@@ -22,6 +22,8 @@ with a JSON body:
         "accuracy": 10,
         "altitude": 100,
         "altitude_accuracy": 1,
+        "heading": 45.0,
+        "speed": 13.88,
         "radio": "gsm",
         "cell": [
             {
@@ -58,6 +60,16 @@ not be accepted.
 The altitude, accuracy and altitude_accuracy fields are all measured in
 meters. Altitude measures the height above or below the mean sea level,
 as defined by WGS84.
+
+The heading field specifies the direction of travel in
+0 <= heading <= 360 degrees, counting clockwise relative to the true north.
+
+The speed field specifies the current horizontal velocity and is measured
+in meters per second.
+
+The heading and speed fields should be omitted from the report, if the
+speed and heading cannot be determined or the device was stationary
+while observing the environment.
 
 The time has to be in UTC time, encoded in ISO 8601. If not provided,
 the server time will be used. It should be the first of the month, in

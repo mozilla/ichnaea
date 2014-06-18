@@ -19,6 +19,9 @@ signal
     The received signal strength (RSSI) in dBm, typically in the range of
     -51 to -113.
 
+signalToNoiseRatio
+    The current signal to noise ratio measured in dB.
+
 An example of a valid WiFi record is below:
 
 .. code-block:: javascript
@@ -27,5 +30,6 @@ An example of a valid WiFi record is below:
         "key": "01:23:45:67:89:ab",
         "channel": 11,
         "frequency": 2412,
-        "signal": -51
+        "signal": -51,
+        "signalToNoiseRatio": 37
     }
