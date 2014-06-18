@@ -20,10 +20,6 @@ def check_cell_or_wifi(data, errors):
     cell = data.get('cell', ())
     wifi = data.get('wifi', ())
 
-    if any(cell) and data['radio'] == '':
-        # Skip the whole set of CellMeasure records
-        return False
-
     # Clean up the cell data
     skips = set()
     for idx, c in enumerate(cell):

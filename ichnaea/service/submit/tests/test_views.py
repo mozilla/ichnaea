@@ -96,7 +96,6 @@ class TestSubmit(CeleryAppTestCase):
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": PARIS_LAT,
                                       "lon": PARIS_LON,
-                                      "radio": "gsm",
                                       "cell": cell_data}]},
             status=204)
         self.assertEqual(res.body, '')
