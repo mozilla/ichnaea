@@ -429,6 +429,9 @@ class TestNormalization(TestCase):
         valid_signals = [-200, -100, -1]
         invalid_signals = [-300, -201, 0, 10]
 
+        valid_snrs = [0, 12, 100]
+        invalid_snrs = [-1, -50, 101]
+
         time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
 
         def make_submission(**kw):
@@ -440,7 +443,8 @@ class TestNormalization(TestCase):
             wifi = dict(key="12:34:56:78:90:12",
                         frequency=2442,
                         channel=7,
-                        signal=-85)
+                        signal=-85,
+                        signalToNoiseRatio=37)
             for (k, v) in kw.items():
                 if k in measure:
                     measure[k] = v
@@ -485,6 +489,18 @@ class TestNormalization(TestCase):
         for s in invalid_signals:
             (measure, wifi) = make_submission(signal=s)
             self.check_normalized_wifi(measure, wifi, dict(signal=0))
+
+        # Check valid snrs
+        for s in valid_snrs:
+            (measure, wifi) = make_submission(signalToNoiseRatio=s)
+            self.check_normalized_wifi(
+                measure, wifi, dict(signalToNoiseRatio=s))
+
+        # Check invalid snrs
+        for s in invalid_snrs:
+            (measure, wifi) = make_submission(signalToNoiseRatio=s)
+            self.check_normalized_wifi(
+                measure, wifi, dict(signalToNoiseRatio=0))
 
         # Check valid channels
         for c in valid_channels:

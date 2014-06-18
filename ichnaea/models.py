@@ -212,7 +212,9 @@ def normalized_wifi_dict(d):
     Returns a normalized copy of the provided wifi dict d,
     or None if the dict was invalid.
     """
-    d = normalized_dict(d, dict(signal=(-200, -1, 0)))
+    d = normalized_dict(
+        d, dict(signal=(-200, -1, 0),
+                signalToNoiseRatio=(0, 100, 0)))
 
     if d is None:
         return None

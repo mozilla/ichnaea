@@ -26,6 +26,8 @@ class WifiSchema(MappingSchema):
     frequency = SchemaNode(Integer(), type='int', missing=0)
     channel = SchemaNode(Integer(), type='int', missing=0)
     signal = SchemaNode(Integer(), type='int', missing=0)
+    signalToNoiseRatio = SchemaNode(
+        Integer(), location="body", type='int', missing=0)
 
 
 class WifisSchema(SequenceSchema):
