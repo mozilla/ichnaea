@@ -3,21 +3,16 @@ Mozilla Ichnaea
 ===============
 
 ``Mozilla Ichnaea`` is an application to provide geo-location coordinates
-from other sources of data (cell, wifi networks, IP addresses, etc.).
+from other sources of data (cell or WiFi networks, GeoIP, etc.).
 
 More information about the specific instance hosted by Mozilla can be found
 at https://wiki.mozilla.org/CloudServices/Location
 
-We currently provide three API endpoints:
+You can interact with the service in two ways:
 
-- one for submitting information about what you see around you,
-  given a location.
+- either submit information about what you see around you, given a location.
 
-- one for searching for your current location, given what you
-  see around you.
-
-- another one for searching for your current location, compatible
-  with Google's geolocation API.
+- or search for your current location, given what you see around you.
 
 
 About the name

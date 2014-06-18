@@ -13,9 +13,9 @@ API Access Keys
 ===============
 
 You must identify your client to the service using an API key when
-using the search or geolocate APIs. For data submission, we do not
-enforce the use of a valid key. We currently do not define a way to
-register a new API key.
+using any of the APIs. We currently do not define a way to register
+a new API key. Please contact us via our public mailing list or IRC
+channel if you want to use MLS in your own application.
 
 Each method that the MLS exposes expects the API key to be provided as
 a key parameter in the request URI in the form::

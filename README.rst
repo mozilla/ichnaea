@@ -3,7 +3,7 @@ Mozilla Ichnaea
 ===============
 
 ``Mozilla Ichnaea`` is an application to provide geo-location coordinates
-from other sources of data (cellphone towers, wifi networks, etc.).
+from other sources of data (cell or WiFi networks, GeoIP, etc.).
 
 See `the full docs`_ for more information.
 
