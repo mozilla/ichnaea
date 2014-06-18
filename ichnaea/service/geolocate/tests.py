@@ -32,10 +32,10 @@ class TestGeolocate(AppTestCase):
         app = self.app
         session = self.get_session()
         cell = Cell()
-        cell.lat = 123456781
-        cell.lon = 234567892
+        cell.lat = from_degrees(PARIS_LAT)
+        cell.lon = from_degrees(PARIS_LON)
         cell.radio = 0
-        cell.mcc = 123
+        cell.mcc = FRANCE_MCC
         cell.mnc = 1
         cell.lac = 2
         cell.cid = 1234
@@ -46,8 +46,10 @@ class TestGeolocate(AppTestCase):
             '%s?key=test' % self.url, {
                 "radioType": "gsm",
                 "cellTowers": [
-                    {"mobileCountryCode": 123, "mobileNetworkCode": 1,
-                     "locationAreaCode": 2, "cellId": 1234},
+                    {"mobileCountryCode": FRANCE_MCC,
+                     "mobileNetworkCode": 1,
+                     "locationAreaCode": 2,
+                     "cellId": 1234},
                 ]},
             status=200)
 
@@ -56,8 +58,8 @@ class TestGeolocate(AppTestCase):
         )
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 12.3456781,
-                                                 "lng": 23.4567892},
+        self.assertEqual(res.json, {"location": {"lat": PARIS_LAT,
+                                                 "lng": PARIS_LON},
                                     "accuracy": CELL_MIN_ACCURACY})
 
     def test_ok_wifi(self):
@@ -119,12 +121,14 @@ class TestGeolocate(AppTestCase):
     def test_cell_miss_lac_hit(self):
         app = self.app
         session = self.get_session()
-        key = dict(mcc=1, mnc=2, lac=3)
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        lat = from_degrees(PARIS_LAT)
+        lon = from_degrees(PARIS_LON)
         data = [
-            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
-            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
-            Cell(lat=10060000, lon=10060000, radio=2, cid=6, **key),
-            Cell(lat=10026666, lon=10033333, radio=2, cid=CELLID_LAC,
+            Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
+            Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
+            Cell(lat=lat + 60000, lon=lon + 60000, radio=2, cid=6, **key),
+            Cell(lat=lat + 26666, lon=lon + 33333, radio=2, cid=CELLID_LAC,
                  range=50000, **key),
         ]
         session.add_all(data)
@@ -135,24 +139,27 @@ class TestGeolocate(AppTestCase):
             {'radioType': 'wcdma',
              'cellTowers': [
                  {'cellId': 7,
-                  'mobileCountryCode': 1,
+                  'mobileCountryCode': FRANCE_MCC,
                   'mobileNetworkCode': 2,
                   'locationAreaCode': 3}]},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {'location': {"lat": 1.0026666,
-                                                 "lng": 1.0033333},
-                                    "accuracy": 50000.0})
+        self.assertEqual(res.json, {
+            'location': {"lat": PARIS_LAT + 0.0026666,
+                         "lng": PARIS_LON + 0.0033333},
+            'accuracy': 50000.0})
 
     def test_cell_hit_ignores_lac(self):
         app = self.app
         session = self.get_session()
-        key = dict(mcc=1, mnc=2, lac=3)
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        lat = from_degrees(PARIS_LAT)
+        lon = from_degrees(PARIS_LON)
         data = [
-            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
-            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
-            Cell(lat=10060000, lon=10060000, radio=2, cid=6, **key),
-            Cell(lat=10026666, lon=10033333, radio=2, cid=CELLID_LAC,
+            Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
+            Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
+            Cell(lat=lat + 60000, lon=lon + 60000, radio=2, cid=6, **key),
+            Cell(lat=lat + 26666, lon=lon + 33333, radio=2, cid=CELLID_LAC,
                  range=50000, **key),
         ]
         session.add_all(data)
@@ -163,19 +170,20 @@ class TestGeolocate(AppTestCase):
             {'radioType': 'wcdma',
              'cellTowers': [
                  {'cellId': 5,
-                  'mobileCountryCode': 1,
+                  'mobileCountryCode': FRANCE_MCC,
                   'mobileNetworkCode': 2,
                   'locationAreaCode': 3}]},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {'location': {"lat": 1.0020000,
-                                                 "lng": 1.0040000},
-                                    "accuracy": CELL_MIN_ACCURACY})
+        self.assertEqual(res.json, {
+            'location': {"lat": PARIS_LAT + 0.0020000,
+                         "lng": PARIS_LON + 0.0040000},
+            'accuracy': CELL_MIN_ACCURACY})
 
     def test_lac_miss(self):
         app = self.app
         session = self.get_session()
-        key = dict(mcc=1, mnc=2, lac=3)
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
             Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
             Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
@@ -191,7 +199,7 @@ class TestGeolocate(AppTestCase):
             {'radioType': 'wcdma',
              'cellTowers': [
                  {'cellId': 5,
-                  'mobileCountryCode': 1,
+                  'mobileCountryCode': FRANCE_MCC,
                   'mobileNetworkCode': 2,
                   'locationAreaCode': 4}]},
             status=404)
@@ -330,10 +338,10 @@ class TestGeolocateFxOSWorkarounds(TestGeolocate):
         app = self.app
         session = self.get_session()
         cell = Cell()
-        cell.lat = 123456781
-        cell.lon = 234567892
+        cell.lat = from_degrees(PARIS_LAT)
+        cell.lon = from_degrees(PARIS_LON)
         cell.radio = 0
-        cell.mcc = 123
+        cell.mcc = FRANCE_MCC
         cell.mnc = 1
         cell.lac = 2
         cell.cid = 1234
@@ -344,7 +352,7 @@ class TestGeolocateFxOSWorkarounds(TestGeolocate):
             '%s?key=test' % self.url, {
                 "cellTowers": [
                     {"radio": "gsm",
-                     "mobileCountryCode": 123,
+                     "mobileCountryCode": FRANCE_MCC,
                      "mobileNetworkCode": 1,
                      "locationAreaCode": 2,
                      "cellId": 1234},
@@ -356,8 +364,8 @@ class TestGeolocateFxOSWorkarounds(TestGeolocate):
         )
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 12.3456781,
-                                                 "lng": 23.4567892},
+        self.assertEqual(res.json, {"location": {"lat": PARIS_LAT,
+                                                 "lng": PARIS_LON},
                                     "accuracy": CELL_MIN_ACCURACY})
 
     def test_ok_cell_radio_in_celltowers_dupes(self):
@@ -366,10 +374,10 @@ class TestGeolocateFxOSWorkarounds(TestGeolocate):
         app = self.app
         session = self.get_session()
         cell = Cell()
-        cell.lat = 123456781
-        cell.lon = 234567892
+        cell.lat = from_degrees(PARIS_LAT)
+        cell.lon = from_degrees(PARIS_LON)
         cell.radio = 0
-        cell.mcc = 123
+        cell.mcc = FRANCE_MCC
         cell.mnc = 1
         cell.lac = 2
         cell.cid = 1234
@@ -379,20 +387,20 @@ class TestGeolocateFxOSWorkarounds(TestGeolocate):
             '%s?key=test' % self.url, {
                 "cellTowers": [
                     {"radio": "gsm",
-                     "mobileCountryCode": 123,
+                     "mobileCountryCode": FRANCE_MCC,
                      "mobileNetworkCode": 1,
                      "locationAreaCode": 2,
                      "cellId": 1234},
                     {"radio": "gsm",
-                     "mobileCountryCode": 123,
+                     "mobileCountryCode": FRANCE_MCC,
                      "mobileNetworkCode": 1,
                      "locationAreaCode": 2,
                      "cellId": 1234},
                 ]},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 12.3456781,
-                                                 "lng": 23.4567892},
+        self.assertEqual(res.json, {"location": {"lat": PARIS_LAT,
+                                                 "lng": PARIS_LON},
                                     "accuracy": CELL_MIN_ACCURACY})
 
     def test_inconsistent_cell_radio_in_towers(self):
@@ -402,7 +410,7 @@ class TestGeolocateFxOSWorkarounds(TestGeolocate):
         cell.lat = 123456781
         cell.lon = 234567892
         cell.radio = 0
-        cell.mcc = 123
+        cell.mcc = FRANCE_MCC
         cell.mnc = 1
         cell.lac = 2
         cell.cid = 1234
@@ -413,12 +421,12 @@ class TestGeolocateFxOSWorkarounds(TestGeolocate):
             '%s?key=test' % self.url, {
                 "cellTowers": [
                     {"radio": "gsm",
-                     "mobileCountryCode": 123,
+                     "mobileCountryCode": FRANCE_MCC,
                      "mobileNetworkCode": 1,
                      "locationAreaCode": 2,
                      "cellId": 1234},
                     {"radio": "cdma",
-                     "mobileCountryCode": 123,
+                     "mobileCountryCode": FRANCE_MCC,
                      "mobileNetworkCode": 1,
                      "locationAreaCode": 2,
                      "cellId": 1234},
