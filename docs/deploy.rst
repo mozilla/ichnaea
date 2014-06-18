@@ -18,6 +18,14 @@ just three changes you need to do. For example via the my.cnf:
     innodb_strict_mode=on
     sql-mode="STRICT_TRANS_TABLES"
 
+For you local development environment, you might need to add one additional
+setting to successfully run the tests. This is not required in production:
+
+.. code-block:: ini
+
+    [mysqld]
+    max_connections=10000
+
 
 Heka configuration
 ==================
