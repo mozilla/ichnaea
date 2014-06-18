@@ -29,3 +29,5 @@ a key parameter in the request URI in the form::
 .. include:: submit_api.rst
 
 .. include:: geolocate_api.rst
+
+.. include:: geosubmit_api.rst
