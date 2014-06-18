@@ -36,6 +36,7 @@ Table of contents
    cell
    calculation
    deploy
+   metrics
    changelog
 
 
