@@ -81,6 +81,16 @@ WIFI_TEST_KEY = "01005e901000"
 INVALID_WIFI_REGEX = re.compile("(?!(0{12}|f{12}|%s))" % WIFI_TEST_KEY)
 VALID_WIFI_REGEX = re.compile("([0-9a-fA-F]{12})")
 
+ALL_VALID_MCCS = frozenset(
+    [int(country.mcc)
+     for country in mobile_codes._countries()
+     if isinstance(country.mcc, str)] +
+    [int(code)
+     for country in mobile_codes._countries()
+     if isinstance(country.mcc, tuple)
+     for code in country.mcc]
+)
+
 CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
 
@@ -263,6 +273,10 @@ def normalized_cell_dict(d, default_radio=-1):
                 psc=(0, 512, -1)))
 
     if d is None:
+        return None
+
+    # Tighten the MCC check even more
+    if d['mcc'] not in ALL_VALID_MCCS:
         return None
 
     if d['radio'] == -1 and default_radio != -1:

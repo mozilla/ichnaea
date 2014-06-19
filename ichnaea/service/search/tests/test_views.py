@@ -39,10 +39,12 @@ class TestSearch(AppTestCase):
     def test_ok_cell(self):
         app = self.app
         session = self.db_slave_session
-        key = dict(mcc=1, mnc=2, lac=3)
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        lat = from_degrees(PARIS_LAT)
+        lon = from_degrees(PARIS_LON)
         data = [
-            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
-            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
+            Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
+            Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
         ]
         session.add_all(data)
         session.commit()
@@ -57,7 +59,8 @@ class TestSearch(AppTestCase):
 
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": 1.0010000, "lon": 1.0020000,
+                                    "lat": PARIS_LAT + 0.0010000,
+                                    "lon": PARIS_LON + 0.0020000,
                                     "accuracy": CELL_MIN_ACCURACY})
 
         self.check_expected_heka_messages(
@@ -70,7 +73,7 @@ class TestSearch(AppTestCase):
                      ('search.cell_found', 1),
                      ('search.no_cell_lac_found', 1),
                      ('search.no_geoip_found', 1),
-                     ('search.no_country', 1)]
+                     ('search.country_from_mcc', 1)]
         )
 
     def test_ok_wifi(self):
@@ -276,7 +279,7 @@ class TestSearch(AppTestCase):
     def test_not_found(self):
         app = self.app
         res = app.post_json('/v1/search?key=test',
-                            {"cell": [{"mcc": 1, "mnc": 2,
+                            {"cell": [{"mcc": FRANCE_MCC, "mnc": 2,
                                        "lac": 3, "cid": 4}]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
@@ -299,11 +302,13 @@ class TestSearch(AppTestCase):
     def test_wifi_not_found_cell_fallback(self):
         app = self.app
         session = self.db_slave_session
-        key = dict(mcc=1, mnc=2, lac=3)
+        lat = from_degrees(PARIS_LAT)
+        lon = from_degrees(PARIS_LON)
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
             Wifi(key="abcd", lat=30000000, lon=30000000),
-            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
-            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
+            Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
+            Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
         ]
         session.add_all(data)
         session.commit()
@@ -320,18 +325,21 @@ class TestSearch(AppTestCase):
             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": 1.0010000, "lon": 1.0020000,
+                                    "lat": PARIS_LAT + 0.0010000,
+                                    "lon": PARIS_LON + 0.0020000,
                                     "accuracy": CELL_MIN_ACCURACY})
 
     def test_cell_miss_lac_hit(self):
         app = self.app
         session = self.db_slave_session
-        key = dict(mcc=1, mnc=2, lac=3)
+        lat = from_degrees(PARIS_LAT)
+        lon = from_degrees(PARIS_LON)
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
-            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
-            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
-            Cell(lat=10060000, lon=10060000, radio=2, cid=6, **key),
-            Cell(lat=10026666, lon=10033333, radio=2, cid=CELLID_LAC,
+            Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
+            Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
+            Cell(lat=lat + 60000, lon=lon + 60000, radio=2, cid=6, **key),
+            Cell(lat=lat + 26666, lon=lon + 33333, radio=2, cid=CELLID_LAC,
                  range=500000, **key),
         ]
         session.add_all(data)
@@ -345,19 +353,21 @@ class TestSearch(AppTestCase):
             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": 1.0026666,
-                                    "lon": 1.0033333,
+                                    "lat": PARIS_LAT + 0.0026666,
+                                    "lon": PARIS_LON + 0.0033333,
                                     "accuracy": 500000})
 
     def test_cell_hit_ignores_lac(self):
         app = self.app
         session = self.db_slave_session
-        key = dict(mcc=1, mnc=2, lac=3)
+        lat = from_degrees(PARIS_LAT)
+        lon = from_degrees(PARIS_LON)
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
-            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
-            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
-            Cell(lat=10060000, lon=10060000, radio=2, cid=6, **key),
-            Cell(lat=10026666, lon=10033333, radio=2, cid=CELLID_LAC,
+            Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
+            Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
+            Cell(lat=lat + 60000, lon=lon + 60000, radio=2, cid=6, **key),
+            Cell(lat=lat + 26666, lon=lon + 33333, radio=2, cid=CELLID_LAC,
                  range=50000, **key),
         ]
         session.add_all(data)
@@ -371,17 +381,19 @@ class TestSearch(AppTestCase):
             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": 1.0020000,
-                                    "lon": 1.0040000,
+                                    "lat": PARIS_LAT + 0.0020000,
+                                    "lon": PARIS_LON + 0.0040000,
                                     "accuracy": CELL_MIN_ACCURACY})
 
     def test_lac_miss(self):
         app = self.app
         session = self.db_slave_session
-        key = dict(mcc=1, mnc=2, lac=3)
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        lat = from_degrees(PARIS_LAT)
+        lon = from_degrees(PARIS_LON)
         data = [
-            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
-            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
+            Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
+            Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
             Cell(lat=10060000, lon=10060000, radio=2, cid=6, **key),
             Cell(lat=10026666, lon=10033333, radio=2, cid=CELLID_LAC,
                  range=50000, **key),
@@ -392,7 +404,7 @@ class TestSearch(AppTestCase):
         res = app.post_json(
             '/v1/search?key=test',
             {"radio": "gsm", "cell": [
-                dict(radio="umts", mcc=1, mnc=2, lac=4, cid=5),
+                dict(radio="umts", mcc=FRANCE_MCC, mnc=2, lac=4, cid=5),
             ]},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
@@ -401,15 +413,17 @@ class TestSearch(AppTestCase):
     def test_cell_ignore_invalid_lac_cid(self):
         app = self.app
         session = self.db_slave_session
+        lat = from_degrees(PARIS_LAT)
+        lon = from_degrees(PARIS_LON)
 
-        key = dict(mcc=1, mnc=2, lac=3)
-        ignored_key = dict(mcc=1, mnc=2, lac=-1, cid=-1)
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        ignored_key = dict(mcc=FRANCE_MCC, mnc=2, lac=-1, cid=-1)
 
         data = [
-            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
-            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
-            Cell(lat=10000000, lon=10000000, radio=2, **ignored_key),
-            Cell(lat=10020000, lon=10040000, radio=3, **ignored_key),
+            Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
+            Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
+            Cell(lat=lat, lon=lon, radio=2, **ignored_key),
+            Cell(lat=lat + 20000, lon=lon + 40000, radio=3, **ignored_key),
         ]
         session.add_all(data)
         session.commit()
@@ -420,13 +434,14 @@ class TestSearch(AppTestCase):
                 dict(radio="umts", cid=4, **key),
                 dict(radio="umts", cid=5, **key),
 
-                dict(radio="umts", cid=5, mcc=1, mnc=2, lac=-1),
-                dict(radio="umts", cid=-1, mcc=1, mnc=2, lac=3),
+                dict(radio="umts", cid=5, mcc=FRANCE_MCC, mnc=2, lac=-1),
+                dict(radio="umts", cid=-1, mcc=FRANCE_MCC, mnc=2, lac=3),
             ]},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": 1.0010000, "lon": 1.0020000,
+                                    "lat": PARIS_LAT + 0.0010000,
+                                    "lon": PARIS_LON + 0.0020000,
                                     "accuracy": CELL_MIN_ACCURACY})
 
     def test_geoip_fallback(self):
@@ -1085,7 +1100,7 @@ class TestSearch(AppTestCase):
 
     def test_gzip(self):
         app = self.app
-        data = {"cell": [{"mcc": 1, "mnc": 2, "lac": 3, "cid": 4}]}
+        data = {"cell": [{"mcc": FRANCE_MCC, "mnc": 2, "lac": 3, "cid": 4}]}
         body = ''.join(gzip_app_iter(dumps(data)))
         headers = {
             'Content-Encoding': 'gzip',

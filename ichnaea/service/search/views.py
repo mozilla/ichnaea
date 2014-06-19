@@ -287,6 +287,7 @@ def geoip_and_best_guess_country_code(data, request, api_name):
         geoip = request.registry.geoip_db.geoip_lookup(request.client_addr)
 
     cell_countries = []
+    cell_mccs = set()
     if data and data['cell']:
         radio = RADIO_TYPE.get(data['radio'], -1)
         for cell in data['cell']:
@@ -294,8 +295,9 @@ def geoip_and_best_guess_country_code(data, request, api_name):
             if cell:
                 for c in mobile_codes.mcc(str(cell['mcc'])):
                     cell_countries.append(c.alpha2)
+                    cell_mccs.add(cell['mcc'])
 
-    if len(cell_countries) > 1:
+    if len(cell_mccs) > 1:
         heka_client.incr('%s.anomaly.multiple_mccs' % api_name)
 
     if geoip:
