@@ -2,6 +2,7 @@ from ichnaea.tests.base import (
     _make_app,
     _make_db,
     DBTestCase,
+    REDIS_URI,
     SQLURI,
 )
 
@@ -12,6 +13,7 @@ class TestApp(DBTestCase):
         settings = {
             'db_master': SQLURI,
             'db_slave': SQLURI,
+            'redis_url': REDIS_URI,
             '_heka_client': self.heka_client,
         }
         app = _make_app(**settings)
@@ -26,5 +28,16 @@ class TestApp(DBTestCase):
         self.setup_session()
         app = _make_app(_db_master=self.db_master,
                         _db_slave=self.db_slave,
-                        _heka_client=self.heka_client)
+                        _heka_client=self.heka_client,
+                        )
         app.get('/stats_unique_cell.json', status=200)
+
+    def test_redis_config(self):
+        settings = {
+            'db_master': SQLURI,
+            'db_slave': SQLURI,
+            'redis_url': REDIS_URI,
+            '_heka_client': self.heka_client,
+        }
+        app = _make_app(**settings)
+        self.assertTrue(app.app.registry.redis_con is not None)

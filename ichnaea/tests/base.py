@@ -28,6 +28,7 @@ except ImportError:
 
 
 SQLURI = os.environ.get('SQLURI')
+REDIS_URI = 'redis://localhost:6379/0'
 
 # Some test-data constants
 
