@@ -4,6 +4,7 @@ from pyramid.httpexceptions import HTTPNotFound, HTTPOk
 from pytz import utc
 
 from ichnaea.customjson import dumps
+from ichnaea.geocalc import location_is_in_country
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.base import check_api_key
 
@@ -125,6 +126,30 @@ def configure_geosubmit(config):
     config.add_view(geosubmit_view, route_name='v1_geosubmit', renderer='json')
 
 
+def check_geoip(request, data):
+    if any(data.get('items', ())):
+        items = data['items']
+    else:
+        items = [data]
+
+    # Verify that the submission comes from the same country as the lat/lon.
+    if request.client_addr:
+        geoip = request.registry.geoip_db.geoip_lookup(request.client_addr)
+        if geoip:
+            filtered_items = []
+            for item in items:
+                lat = float(item['latitude'])
+                lon = float(item['longitude'])
+                country = geoip['country_code']
+                if location_is_in_country(lat, lon, country):
+                    filtered_items.append(item)
+                else:
+                    heka_client = get_heka_client()
+                    heka_client.incr("submit.geoip_mismatch")
+            return filtered_items
+    return items
+
+
 @check_api_key('geosubmit', True)
 def geosubmit_view(request):
     # Order matters here.  We need to try the batch mode *before* the
@@ -133,7 +158,7 @@ def geosubmit_view(request):
     data, errors = preprocess_request(
         request,
         schema=GeoSubmitBatchSchema(),
-        extra_checks=(geosubmit_validator, ),
+        extra_checks=(geosubmit_validator,),
         response=None,
     )
 
@@ -146,7 +171,8 @@ def geosubmit_view(request):
 def process_batch(request, data, errors):
     heka_client = get_heka_client()
     nickname = request.headers.get('X-Nickname', u'')
-    validated, errors = process_upload(nickname, data['items'])
+    upload_items = check_geoip(request, data)
+    validated, errors = process_upload(nickname, upload_items)
 
     if errors:
         heka_client.incr('geosubmit.upload.errors', len(errors))
@@ -171,13 +197,14 @@ def process_single(request):
     data, errors = preprocess_request(
         request,
         schema=GeoSubmitSchema(),
-        extra_checks=(geosubmit_validator, ),
+        extra_checks=(geosubmit_validator,),
         response=None,
     )
     data = {'items': [data]}
 
     nickname = request.headers.get('X-Nickname', u'')
-    validated, errors = process_upload(nickname, data['items'])
+    upload_items = check_geoip(request, data)
+    validated, errors = process_upload(nickname, upload_items)
 
     if errors:
         heka_client.incr('geosubmit.upload.errors', len(errors))
