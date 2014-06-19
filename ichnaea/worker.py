@@ -117,13 +117,13 @@ CELERYBEAT_SCHEDULE = {
 
     's3-delete-wifimeasures': {
         'task': 'ichnaea.backup.tasks.delete_wifimeasure_records',
-        'args': (100, 7, 300),
+        'args': (100, 3, 300),
         'schedule': crontab(hour=2, minute=27),
         'options': {'expires': 43200},
     },
     's3-delete-cellmeasures': {
         'task': 'ichnaea.backup.tasks.delete_cellmeasure_records',
-        'args': (100, 7, 300),
+        'args': (100, 3, 300),
         'schedule': crontab(hour=2, minute=27),
         'options': {'expires': 43200},
     },
