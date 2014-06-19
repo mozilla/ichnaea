@@ -379,11 +379,11 @@ cell, cell LAC, GeoIP and wifi-based responses:
 Submit counters
 ---------------
 
-The ``submit`` API has one additional counter, ``submit.geoip_mismatch``.
-This metric counts submissions that are discarded on arrival due to a
-mismatch between the submission's claimed location (a ``lat``/``lon`` pair)
-and the country the submission was sent from, as determined by GeoIP
-lookup.
+The ``submit`` and ``geosubmit`` APIs have an additional counter each,
+``submit.geoip_mismatch`` and ``geosubmit.geoip_mismatch``.  This metric
+counts submissions that are discarded on arrival due to a mismatch between
+the submission's claimed location (a ``lat``/``lon`` pair) and the country
+the submission was sent from, as determined by GeoIP lookup.
 
 
 Fine-grained ingress counters
