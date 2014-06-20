@@ -5,7 +5,8 @@ Mozilla Ichnaea
 ``Mozilla Ichnaea`` is an application to provide geo-location coordinates
 from other sources of data (cell or WiFi networks, GeoIP, etc.).
 
-More information about the specific instance hosted by Mozilla can be found
+Mozilla hosts an instance of this service, called the Mozilla Location
+Service or MLS. More information about this specific service can be found
 at https://wiki.mozilla.org/CloudServices/Location
 
 You can interact with the service in two ways:
