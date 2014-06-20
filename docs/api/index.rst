@@ -35,6 +35,9 @@ as a key parameter in the request URI in the form::
 
     key=<API_KEY>
 
+Each API key can be rate limited per calendar day, but the default is
+to allow an unlimited number of requests per day.
+
 .. include:: invalid_apikey.rst
 
 .. include:: geolocate_api.rst

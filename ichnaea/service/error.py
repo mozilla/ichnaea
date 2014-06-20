@@ -16,6 +16,19 @@ MSG_ONE_OF = 'You need to provide a mapping with least one cell or wifi entry.'
 MSG_BAD_RADIO = 'Radio fields were not consistent in the cellTower data.'
 
 
+DAILY_LIMIT = dumps({
+    "error": {
+        "errors": [{
+            "domain": "usageLimits",
+            "reason": "dailyLimitExceeded",
+            "message": "You have exceeded your daily limit.",
+        }],
+        "code": 403,
+        "message": "You have exceeded your daily limit.",
+    }
+})
+
+
 class JSONError(HTTPError, BaseJSONError):
     def __init__(self, errors, status=400):
         body = {'errors': errors}
