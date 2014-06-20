@@ -31,14 +31,13 @@ def invalid_api_key_response():
     return result
 
 
-def rate_limit(func_name, api_key, registry, maxreq=0, expire=86400):
+def rate_limit(redis_con, func_name, api_key, maxreq=0, expire=86400):
     if maxreq == 0:
         return False
 
     dstamp = datetime.date.today().strftime("%Y%m%d")
     key = "%s:%s:%s" % (func_name, api_key, dstamp)
 
-    redis_con = registry.redis_con
     current = redis_con.get(key)
     if current is None or int(current) < maxreq:
         pipe = redis_con.pipeline()
@@ -69,8 +68,8 @@ def check_api_key(func_name, error_on_invalidkey=False):
             found_key = found_key_filter.first()
             if found_key:
                 heka_client.incr('%s.api_key.%s' % (func_name, api_key))
-                if rate_limit(request.registry, func_name,
-                              api_key, found_key.maxreq):
+                if rate_limit(request.registry.redis_con, func_name,
+                              api_key, maxreq=found_key.maxreq):
                     result = HTTPForbidden()
                     result.content_type = 'application/json'
                     result.body = DAILY_LIMIT
