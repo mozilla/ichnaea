@@ -28,6 +28,7 @@ Table of contents
 .. toctree::
    :maxdepth: 2
 
+   usage
    api/index.rst
    cell
    calculation

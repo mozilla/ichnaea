@@ -1,4 +1,4 @@
-.. _api_geolocate:
+.. _api_geosubmit:
 
 Geosubmit
 =========
@@ -6,42 +6,15 @@ Geosubmit
 Purpose
     Determine the current location based on provided data about nearby
     cell or WiFi networks. This is a fully backwards compatible
-    extension to the :ref:`api_geolocate` api.
+    extension to the :ref:`api_geolocate` API.
 
     The extensions that geosubmit implement allow clients to submit
-    addional location data to the geosubmit API that will be added to
-    the Mozilla Location Service.
+    additional location data to the geosubmit API that will be added to
+    the service.
 
 Geosubmit requests are submitted using a POST request to the URL::
 
     https://location.services.mozilla.com/v1/geosubmit?key=<API_KEY>
-
-Using MLS from Firefox
-----------------------
-
-This implements a backwards compatible interface as the `Google Maps Geolocation
-API <https://developers.google.com/maps/documentation/business/geolocation/>`_
-endpoint.
-
-You can point your Firefox Desktop browser version 24 or later at this service
-by changing the `geo.wifi.uri` setting in `about:config` to::
-
-    https://location.services.mozilla.com/v1/geosubmit?key=<API_KEY>
-
-If you are using an official Mozilla build of Firefox you can use
-`%GOOGLE_API_KEY%` (including the percent signs) as the API key. We have
-whitelisted Mozilla's official Google key to also work for our location
-service.
-
-If you only want to do a short test of the functionality, you can currently
-also use a key of `test`.
-
-This only works if your version of Firefox already uses the new Google
-Geolocation API. If you reset the settings value it should have been::
-
-    https://www.googleapis.com/geolocation/v1/geolocate?key=%GOOGLE_API_KEY%
-
-If you see a different value, please update to Firefox 24 or later.
 
 
 Geosubmit upload format
