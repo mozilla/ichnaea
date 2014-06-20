@@ -5,8 +5,7 @@ Geolocate
 
 Purpose
     Determine the current location based on provided data about nearby
-    cell or WiFi networks. This is an alternative to our
-    own :ref:`api_search`.
+    cell or WiFi networks.
 
 Geolocate requests are submitted using a POST request to the URL::
 

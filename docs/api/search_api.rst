@@ -5,7 +5,8 @@ Search
 
 Purpose
     Determine the current location based on provided data about nearby
-    cell or wifi networks.
+    cell or WiFi networks. This is an alternative to the
+    :ref:`api_geolocate` API.
 
 Search requests are submitted using a POST request to the URL::
 

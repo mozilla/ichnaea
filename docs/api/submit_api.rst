@@ -4,7 +4,8 @@ Submit
 ======
 
 Purpose
-    Submit data about nearby cell and WiFi networks.
+    Submit data about nearby cell and WiFi networks. This is an alternative
+    to the :ref:`api_geosubmit` API.
 
 Submit requests are submitted using a POST request to the following URL::
 
