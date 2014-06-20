@@ -4,7 +4,7 @@
 Metrics
 =======
 
-As discussed in `the deployment document <deploy.html>`_, Ichnaea emits
+As discussed in :ref:`the deployment document <deploy>`, Ichnaea emits
 metrics through the Heka client library with the intent of aggregating and
 viewing them on a Graphite server.
 
