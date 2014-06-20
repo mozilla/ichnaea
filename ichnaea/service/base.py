@@ -9,8 +9,6 @@ from ichnaea.models import (
 from ichnaea.customjson import dumps
 from ichnaea.service.error import DAILY_LIMIT
 
-import redis
-import urlparse
 
 INVALID_API_KEY = {
     "error": {
@@ -85,16 +83,3 @@ def check_api_key(func_name, error_on_invalidkey=False):
             return func(request, *args, **kwargs)
         return closure
     return c
-
-
-def redis_con(redis_url, registry):
-    r_url = urlparse.urlparse(redis_url)
-    r_host = r_url.netloc.split(":")[0]
-    r_port = int(r_url.netloc.split(":")[1])
-    r_db = int(r_url.path[1:])
-    pool = redis.ConnectionPool(max_connections=100)
-    registry.redis_pool = pool
-    return redis.StrictRedis(host=r_host,
-                             port=r_port,
-                             db=r_db,
-                             connection_pool=pool)

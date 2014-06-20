@@ -2,6 +2,7 @@ from pyramid.config import Configurator
 from pyramid.tweens import EXCVIEW
 
 from ichnaea import customjson
+from ichnaea.cache import redis_con
 from ichnaea.db import Database
 from ichnaea.db import db_master_session
 from ichnaea.db import db_slave_session
@@ -36,7 +37,6 @@ def main(global_config, _db_master=None,
         config.registry.db_slave = _db_slave
 
     if _redis is None:
-        from ichnaea.service.base import redis_con
         config.registry.redis_con = None
         if 'redis_url' in settings:
             config.registry.redis_con = redis_con(settings['redis_url'],
