@@ -101,4 +101,4 @@ docs:  bin/sphinx-build
 
 release:
 	$(INSTALL) -r requirements/prod.txt
-	$(PYTHON) setup.py develop
+	$(PYTHON) setup.py install
