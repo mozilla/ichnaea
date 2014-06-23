@@ -5,8 +5,8 @@ PasteDeploy==1.5.2
 PyMySQL==0.5
 SQLAlchemy==0.9.4
 WebOb==1.4
-amqp==1.4.5
 alembic==0.6.5
+amqp==1.4.5
 anyjson==0.3.3
 argparse==1.2.1
 billiard==3.3.0.17
@@ -15,7 +15,7 @@ celery==3.1.11
 circus==0.10.0
 colander==1.0b1
 configparser==3.3.0r2
-country_bounding_boxes==0.2.1
+country-bounding-boxes==0.2.1
 docopt==0.6.1
 gunicorn==18.0
 heka-py==0.30.3
@@ -31,7 +31,7 @@ protobuf==2.5.0
 psutil==1.2.1
 pygeoip==0.3.1
 pyramid==1.5
-pyramid_chameleon==0.1
+pyramid-chameleon==0.1
 pytz==2014.3
 pyzmq==14.0.1
 raven==3.4.1
@@ -42,6 +42,7 @@ simplejson==3.3.2
 six==1.6.1
 tornado==3.1.1
 translationstring==1.1
+unittest2==0.5.1
 venusian==1.0a8
 wsgiref==0.1.2
 zope.deprecation==4.1.1
