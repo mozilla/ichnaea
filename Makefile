@@ -98,3 +98,7 @@ shell:
 docs:  bin/sphinx-build
 	git submodule update --recursive --init
 	cd docs; make html
+
+release:
+	$(INSTALL) -r requirements/prod.txt
+	$(PYTHON) setup.py develop
