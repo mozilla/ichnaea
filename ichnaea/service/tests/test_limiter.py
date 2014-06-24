@@ -29,7 +29,6 @@ class TestLimiter(TestCase, RedisIsolation):
             self.assertFalse(rate_limit(redis_client, f, a,
                                         maxreq=maxreq,
                                         expire=expire))
-            time.sleep(0.1)
         self.assertTrue(rate_limit(redis_client, f, a,
                                    maxreq=maxreq,
                                    expire=expire))
