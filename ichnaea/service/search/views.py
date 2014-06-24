@@ -303,7 +303,7 @@ def geoip_and_best_guess_country_code(data, request, api_name):
 
     if geoip:
         # GeoIP always wins if we have it.
-        if 'city' in geoip:
+        if 'city' in geoip and geoip['city']:
             accuracy = GEOIP_CITY_ACCURACY
             heka_client.incr('%s.geoip_city_found' % api_name)
         else:
