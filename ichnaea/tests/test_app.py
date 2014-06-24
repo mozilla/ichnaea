@@ -40,4 +40,4 @@ class TestApp(DBTestCase):
             '_heka_client': self.heka_client,
         }
         app = _make_app(**settings)
-        self.assertTrue(app.app.registry.redis_con is not None)
+        self.assertTrue(app.app.registry.redis_client is not None)

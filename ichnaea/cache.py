@@ -2,7 +2,7 @@ import redis
 import urlparse
 
 
-def redis_con(redis_url, registry):
+def redis_client(redis_url):
     r_url = urlparse.urlparse(redis_url)
     r_host = r_url.netloc.split(":")[0]
     r_port = int(r_url.netloc.split(":")[1])
@@ -13,7 +13,6 @@ def redis_con(redis_url, registry):
         socket_connect_timeout=30.0,
         socket_keepalive=True,
     )
-    registry.redis_pool = pool
     return redis.StrictRedis(host=r_host,
                              port=r_port,
                              db=r_db,

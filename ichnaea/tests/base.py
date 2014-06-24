@@ -10,6 +10,7 @@ from unittest2 import TestCase
 from webtest import TestApp
 
 from ichnaea import main
+from ichnaea.cache import redis_client
 from ichnaea.db import _Model
 from ichnaea.db import Database
 from ichnaea.geoip import configure_geoip
@@ -62,8 +63,17 @@ def _make_db(uri=SQLURI):
     return Database(uri)
 
 
-def _make_app(_db_master=None, _db_slave=None, **settings):
-    wsgiapp = main({}, _db_master=_db_master, _db_slave=_db_slave, **settings)
+def _make_redis(uri=REDIS_URI):
+    return redis_client(uri)
+
+
+def _make_app(_db_master=None, _db_slave=None, _redis=None, **settings):
+    wsgiapp = main(
+        {},
+        _db_master=_db_master,
+        _db_slave=_db_slave,
+        _redis=_redis,
+        **settings)
     return TestApp(wsgiapp)
 
 
