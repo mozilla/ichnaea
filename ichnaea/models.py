@@ -17,7 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import INTEGER as Integer
 from sqlalchemy.dialects.mysql import BIGINT as BigInteger
 
-from ichnaea.sa_types import TZDateTime
+from ichnaea.sa_types import TZDateTime as DateTime
 from ichnaea.db import _Model
 
 # Latitudes and longitudes are stored as degrees * 10**7,
@@ -397,7 +397,7 @@ class Cell(_Model):
 
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
-    created = Column(TZDateTime(fsp=6))
+    created = Column(DateTime)
 
     # lat/lon * DEGREE_SCALE_FACTOR
     lat = Column(Integer)
@@ -450,7 +450,7 @@ class CellBlacklist(_Model):
     )
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
-    created = Column(TZDateTime(fsp=6))
+    created = Column(DateTime)
     radio = Column(SmallInteger)
     mcc = Column(SmallInteger)
     mnc = Column(Integer)
@@ -481,7 +481,7 @@ class MeasureBlock(_Model):
                 autoincrement=True)
     measure_type = Column(SmallInteger)
     s3_key = Column(String(80))
-    archive_date = Column(TZDateTime(fsp=6))
+    archive_date = Column(DateTime)
     archive_sha = Column(BINARY(length=20))
     start_id = Column(BigInteger(unsigned=True))
     end_id = Column(BigInteger(unsigned=True))
@@ -502,11 +502,11 @@ class CellMeasure(_Model):
                 primary_key=True, autoincrement=True)
     report_id = Column(BINARY(length=16))
     measure_id = Column(BigInteger(unsigned=True))
-    created = Column(TZDateTime(fsp=6))  # the insert time of the record into the DB
+    created = Column(DateTime)  # the insert time of the record into the DB
     # lat/lon * DEGREE_SCALE_FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
-    time = Column(TZDateTime(fsp=6))  # the time of observation of this data
+    time = Column(DateTime)  # the time of observation of this data
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)
@@ -551,7 +551,7 @@ class Wifi(_Model):
 
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
-    created = Column(TZDateTime(fsp=6))
+    created = Column(DateTime)
     key = Column(String(12))
 
     # lat/lon * DEGREE_SCALE_FACTOR
@@ -590,7 +590,7 @@ class WifiBlacklist(_Model):
     )
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
-    created = Column(TZDateTime(fsp=6))
+    created = Column(DateTime)
     key = Column(String(12))
 
     def __init__(self, *args, **kw):
@@ -615,11 +615,11 @@ class WifiMeasure(_Model):
                 primary_key=True, autoincrement=True)
     report_id = Column(BINARY(length=16))
     measure_id = Column(BigInteger(unsigned=True))
-    created = Column(TZDateTime(fsp=6))  # the insert time of the record into the DB
+    created = Column(DateTime)  # the insert time of the record into the DB
     # lat/lon * DEGREE_SCALE_FACTOR
     lat = Column(Integer)
     lon = Column(Integer)
-    time = Column(TZDateTime(fsp=6))  # the time of observation of this data
+    time = Column(DateTime)  # the time of observation of this data
     accuracy = Column(Integer)
     altitude = Column(Integer)
     altitude_accuracy = Column(Integer)

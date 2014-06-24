@@ -6,7 +6,7 @@ import pytz
 
 
 class TZDateTime(TypeDecorator):
-    """Safely coerce Python bytestrings to Unicode
+    """Safely coerce Python datetime with timezone data
     before passing off to the database."""
 
     impl = DateTime
