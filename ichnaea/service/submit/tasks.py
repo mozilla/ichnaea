@@ -3,6 +3,7 @@ import datetime
 import uuid
 
 from colander import iso8601
+import pytz
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import and_, or_
 
@@ -174,7 +175,7 @@ def process_measure(report_id, measure_id, data, session):
 
 
 def process_measures(items, session, userid=None):
-    utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
+    utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
     utcmin = utcnow - datetime.timedelta(60)
 
     # get enough auto-increment ids assigned
@@ -324,7 +325,7 @@ def process_cell_measures(session, entries, userid=None,
                           max_measures_per_cell=11000):
     cell_count = defaultdict(int)
     cell_measures = []
-    utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
+    utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
 
     dropped_malformed = 0
     dropped_overflow = 0
@@ -448,7 +449,7 @@ def process_wifi_measures(session, entries, userid=None,
     wifi_count = defaultdict(int)
     wifi_keys = set([e['key'] for e in entries])
 
-    utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
+    utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
 
     # did we get measures for blacklisted wifis?
     blacked = session.query(WifiBlacklist.key).filter(
