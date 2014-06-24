@@ -62,7 +62,7 @@ css: node_modules
 	$(HERE)/ichnaea/content/static/css/base.css
 js: node_modules
 	$(HERE)/node_modules/.bin/uglifyjs \
-	$(HERE)/ichnaea/content/static/js/mapbox-1.6.2.min.js \
+	$(HERE)/ichnaea/content/static/js/mapbox-1.6.4.min.js \
 	$(HERE)/ichnaea/content/static/js/leaflet-hash-0.2.1.js \
 	$(HERE)/ichnaea/content/static/js/map.js \
 	-o $(HERE)/ichnaea/content/static/js/map-combined.js \

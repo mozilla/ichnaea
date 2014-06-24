@@ -18,7 +18,7 @@ $(document).ready(function() {
     var hash = new L.Hash(map);
 
     // add open street map attribution for base tiles
-    map.infoControl.addInfo(
+    map.attributionControl.setPrefix(
         '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     );
 
