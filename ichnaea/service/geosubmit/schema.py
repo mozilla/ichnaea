@@ -19,28 +19,25 @@ GEOSUBMIT_RADIO_TYPE_KEYS = list(set(RADIO_TYPE_KEYS + ['lte']))
 
 class CellTowerSchema(MappingSchema):
     # mapped to 'cid' for submit
-    cellId = SchemaNode(Integer(), location="body", type='int')
+    cellId = SchemaNode(Integer())
     # mapped to 'lac' for submit
-    locationAreaCode = SchemaNode(Integer(), location="body", type='int')
+    locationAreaCode = SchemaNode(Integer())
     # mapped to 'mcc' for submit
-    mobileCountryCode = SchemaNode(Integer(), location="body", type='int')
+    mobileCountryCode = SchemaNode(Integer())
     # mapped to 'mnc' for submit
-    mobileNetworkCode = SchemaNode(Integer(), location="body", type='int')
+    mobileNetworkCode = SchemaNode(Integer())
 
     # optional
-    age = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
+    age = SchemaNode(Integer(), missing=0)
     # mapped to 'signal' for submit
-    signalStrength = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
+    signalStrength = SchemaNode(Integer(), missing=0)
     # mapped to 'ta' for submit
-    timingAdvance = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
+    timingAdvance = SchemaNode(Integer(), missing=0)
 
     # The fields below are extra fields which are not part of the
     # geolocate API, but assist with data submission
-    psc = SchemaNode(Integer(), location="body", type='int', missing=-1)
-    asu = SchemaNode(Integer(), location="body", type='int', missing=-1)
+    psc = SchemaNode(Integer(), missing=-1)
+    asu = SchemaNode(Integer(), missing=-1)
 
 
 class CellTowersSchema(SequenceSchema):
@@ -49,22 +46,17 @@ class CellTowersSchema(SequenceSchema):
 
 class WifiAccessPointSchema(MappingSchema):
     # mapped to 'key' for submit
-    macAddress = SchemaNode(String(), location="body", type='str')
+    macAddress = SchemaNode(String())
 
     # mapped to 'signal' for submit
-    signalStrength = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
-    age = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
-    channel = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
-    signalToNoiseRatio = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
+    signalStrength = SchemaNode(Integer(), missing=0)
+    age = SchemaNode(Integer(), missing=0)
+    channel = SchemaNode(Integer(), missing=0)
+    signalToNoiseRatio = SchemaNode(Integer(), missing=0)
 
     # The fields below are extra fields which are not part of the
     # geolocate API, but assist with data submission
-    frequency = SchemaNode(Integer(), location="body",
-                           type='int', missing=0)
+    frequency = SchemaNode(Integer(), missing=0)
 
 
 class WifiAccessPointsSchema(SequenceSchema):
@@ -76,15 +68,15 @@ class GeoSubmitSchema(MappingSchema):
     # Gelocate schema with the exception that the radioType validator
     # can accept one more radioType (lte)
     homeMobileCountryCode = SchemaNode(
-        Integer(), location="body", type='int', missing=-1)
+        Integer(), missing=-1)
     homeMobileNetworkCode = SchemaNode(
-        Integer(), location="body", type='int', missing=-1)
+        Integer(), missing=-1)
 
     # mapped to 'radio' for submit
-    radioType = SchemaNode(String(), location="body", type='str',
+    radioType = SchemaNode(String(),
                            validator=OneOf(GEOSUBMIT_RADIO_TYPE_KEYS),
                            missing='')
-    carrier = SchemaNode(String(), location="body", missing='')
+    carrier = SchemaNode(String(), missing='')
     cellTowers = CellTowersSchema(missing=())
     wifiAccessPoints = WifiAccessPointsSchema(missing=())
 
@@ -92,28 +84,28 @@ class GeoSubmitSchema(MappingSchema):
     # geolocate API, but are part of the submit schema
 
     # mapped to 'lat' for submit
-    latitude = SchemaNode(Float(), location="body", missing=-255)
+    latitude = SchemaNode(Float(), missing=-255)
 
     # mapped to 'lon' for submit
-    longitude = SchemaNode(Float(), location="body", missing=-255)
+    longitude = SchemaNode(Float(), missing=-255)
 
     # parsed and mapped to 'time' for submit
-    timestamp = SchemaNode(Integer(), type='long', location="body", missing=0)
+    timestamp = SchemaNode(Integer(), missing=0)
 
     # mapped to 'accuracy' for submit
-    accuracy = SchemaNode(Float(), location="body", missing=0)
+    accuracy = SchemaNode(Float(), missing=0)
 
     # mapped to 'altitude' for submit
-    altitude = SchemaNode(Float(), location="body", missing=0)
+    altitude = SchemaNode(Float(), missing=0)
 
     # mapped to 'altitude_accuracy' for submit
-    altitudeAccuracy = SchemaNode(Float(), location="body", missing=0)
+    altitudeAccuracy = SchemaNode(Float(), missing=0)
     # radio is taken from radioType
     # cell is taken from cellTowers
     # wifi is taken from wifiAccessPoints
 
-    heading = SchemaNode(Float(), location="body", missing=-1.0)
-    speed = SchemaNode(Float(), location="body", missing=-1.0)
+    heading = SchemaNode(Float(), missing=-1.0)
+    speed = SchemaNode(Float(), missing=-1.0)
 
 
 class GeoSubmitListSchema(SequenceSchema):

@@ -15,19 +15,16 @@ RADIO_TYPE_KEYS = ['gsm', 'cdma', 'wcdma']
 
 class CellTowerSchema(MappingSchema):
     # required
-    cellId = SchemaNode(Integer(), location="body", type='int')
-    locationAreaCode = SchemaNode(Integer(), location="body", type='int')
-    radio = SchemaNode(String(), location="body", type='str',
+    cellId = SchemaNode(Integer())
+    locationAreaCode = SchemaNode(Integer())
+    radio = SchemaNode(String(),
                        validator=OneOf(RADIO_TYPE_KEYS), missing='')
-    mobileCountryCode = SchemaNode(Integer(), location="body", type='int')
-    mobileNetworkCode = SchemaNode(Integer(), location="body", type='int')
+    mobileCountryCode = SchemaNode(Integer())
+    mobileNetworkCode = SchemaNode(Integer())
     # optional
-    age = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
-    signalStrength = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
-    timingAdvance = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
+    age = SchemaNode(Integer(), missing=0)
+    signalStrength = SchemaNode(Integer(), missing=0)
+    timingAdvance = SchemaNode(Integer(), missing=0)
 
 
 class CellTowersSchema(SequenceSchema):
@@ -36,16 +33,12 @@ class CellTowersSchema(SequenceSchema):
 
 class WifiAccessPointSchema(MappingSchema):
     # required
-    macAddress = SchemaNode(String(), location="body", type='str')
+    macAddress = SchemaNode(String())
     # optional
-    signalStrength = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
-    age = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
-    channel = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
-    signalToNoiseRatio = SchemaNode(
-        Integer(), location="body", type='int', missing=0)
+    signalStrength = SchemaNode(Integer(), missing=0)
+    age = SchemaNode(Integer(), missing=0)
+    channel = SchemaNode(Integer(), missing=0)
+    signalToNoiseRatio = SchemaNode(Integer(), missing=0)
 
 
 class WifiAccessPointsSchema(SequenceSchema):
@@ -53,12 +46,10 @@ class WifiAccessPointsSchema(SequenceSchema):
 
 
 class GeoLocateSchema(MappingSchema):
-    homeMobileCountryCode = SchemaNode(
-        Integer(), location="body", type='int', missing=-1)
-    homeMobileNetworkCode = SchemaNode(
-        Integer(), location="body", type='int', missing=-1)
-    radioType = SchemaNode(String(), location="body", type='str',
+    homeMobileCountryCode = SchemaNode(Integer(), missing=-1)
+    homeMobileNetworkCode = SchemaNode(Integer(), missing=-1)
+    radioType = SchemaNode(String(),
                            validator=OneOf(RADIO_TYPE_KEYS), missing='')
-    carrier = SchemaNode(String(), location="body", missing='')
+    carrier = SchemaNode(String(), missing='')
     cellTowers = CellTowersSchema(missing=())
     wifiAccessPoints = WifiAccessPointsSchema(missing=())
