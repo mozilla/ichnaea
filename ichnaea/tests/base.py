@@ -148,6 +148,22 @@ class DBIsolation(object):
             trans.commit()
 
 
+class RedisIsolation(object):
+
+    @classmethod
+    def setup_redis(cls):
+        cls.redis_client = _make_redis()
+
+    @classmethod
+    def teardown_redis(cls):
+        cls.redis_client.connection_pool.disconnect()
+        del cls.redis_client
+
+    @classmethod
+    def cleanup_redis(cls):
+        cls.redis_client.flushdb()
+
+
 class CeleryIsolation(object):
 
     @classmethod
@@ -296,16 +312,19 @@ class GeoIPIsolation(object):
         del cls.geoip_db
 
 
-class AppTestCase(TestCase, DBIsolation, HekaIsolation, GeoIPIsolation):
+class AppTestCase(TestCase, DBIsolation,
+                  RedisIsolation, HekaIsolation, GeoIPIsolation):
 
     @classmethod
     def setUpClass(cls):
         super(AppTestCase, cls).setup_engine()
+        super(AppTestCase, cls).setup_redis()
         super(AppTestCase, cls).setup_heka()
         super(AppTestCase, cls).setup_geoip()
 
         cls.app = _make_app(_db_master=cls.db_master,
                             _db_slave=cls.db_slave,
+                            _redis=cls.redis_client,
                             _heka_client=cls.heka_client,
                             _geoip_db=cls.geoip_db)
 
@@ -313,6 +332,7 @@ class AppTestCase(TestCase, DBIsolation, HekaIsolation, GeoIPIsolation):
     def tearDownClass(cls):
         del cls.app
         super(AppTestCase, cls).teardown_engine()
+        super(AppTestCase, cls).teardown_redis()
         super(AppTestCase, cls).teardown_heka()
         super(AppTestCase, cls).teardown_geoip()
 
@@ -321,6 +341,7 @@ class AppTestCase(TestCase, DBIsolation, HekaIsolation, GeoIPIsolation):
         self.clear_heka_messages()
 
     def tearDown(self):
+        self.cleanup_redis()
         self.teardown_session()
 
 
