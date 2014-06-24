@@ -35,7 +35,7 @@ def rate_limit(redis_client, func_name, api_key, maxreq=0, expire=86400):
     if maxreq == 0:
         return False
 
-    dstamp = datetime.date.today().strftime("%Y%m%d")
+    dstamp = datetime.datetime.utcnow().strftime("%Y%m%d")
     key = "%s:%s:%s" % (func_name, api_key, dstamp)
 
     current = redis_client.get(key)
