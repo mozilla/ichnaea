@@ -1,5 +1,6 @@
 from collections import defaultdict
 import datetime
+import uuid
 
 from colander import iso8601
 from sqlalchemy.exc import IntegrityError
@@ -111,7 +112,7 @@ def process_time(measure, utcnow, utcmin):
     return measure
 
 
-def process_measure(measure_id, data, session):
+def process_measure(report_id, measure_id, data, session):
     def add_missing_dict_entries(dst, src):
         # x.update(y) overwrites entries in x with those in y;
         # we want to only add those not already present
@@ -122,6 +123,7 @@ def process_measure(measure_id, data, session):
     cell_measures = {}
     wifi_measures = {}
     measure_data = dict(
+        report_id=report_id,
         measure_id=measure_id,
         lat=from_degrees(data['lat']),
         lon=from_degrees(data['lon']),
@@ -190,7 +192,8 @@ def process_measures(items, session, userid=None):
     wifi_measures = []
     for i, item in enumerate(items):
         item = process_time(item, utcnow, utcmin)
-        cell, wifi = process_measure(measures[i].id, item, session)
+        report_id = uuid.uuid1().hex
+        cell, wifi = process_measure(report_id, measures[i].id, item, session)
         cell_measures.extend(cell)
         wifi_measures.extend(wifi)
         positions.append({
@@ -255,7 +258,11 @@ def create_cell_measure(utcnow, entry):
     entry = normalized_cell_measure_dict(entry)
     if entry is None:
         return None
+    report_id = entry.get('report_id')
+    if report_id:
+        report_id = uuid.UUID(hex=report_id).bytes
     return CellMeasure(
+        report_id=report_id,
         measure_id=entry.get('measure_id'),
         created=utcnow,
         lat=entry['lat'],
@@ -413,7 +420,11 @@ def create_wifi_measure(utcnow, entry):
     entry = normalized_wifi_measure_dict(entry)
     if entry is None:
         return None
+    report_id = entry.get('report_id')
+    if report_id:
+        report_id = uuid.UUID(hex=report_id).bytes
     return WifiMeasure(
+        report_id=report_id,
         measure_id=entry.get('measure_id'),
         created=utcnow,
         lat=entry['lat'],

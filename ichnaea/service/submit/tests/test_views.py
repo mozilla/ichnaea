@@ -72,6 +72,8 @@ class TestSubmit(CeleryAppTestCase):
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
+        self.assertTrue(isinstance(item.report_id, bytes))
+        self.assertEqual(len(item.report_id), 16)
         self.assertEqual(item.measure_id, measure_result[0].id)
         self.assertEqual(item.created.date(), today)
         self.assertEqual(item.time, month_rounded_dt)
@@ -106,6 +108,8 @@ class TestSubmit(CeleryAppTestCase):
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
+        self.assertTrue(isinstance(item.report_id, bytes))
+        self.assertEqual(len(item.report_id), 16)
         self.assertEqual(item.measure_id, measure_result[0].id)
         self.assertEqual(item.radio, RADIO_TYPE['gsm'])
 
@@ -135,6 +139,9 @@ class TestSubmit(CeleryAppTestCase):
         wifi_result = session.query(WifiMeasure).all()
         self.assertEqual(len(wifi_result), 2)
         item = wifi_result[0]
+        report_id = item.report_id
+        self.assertTrue(isinstance(report_id, bytes))
+        self.assertEqual(len(report_id), 16)
         self.assertEqual(item.measure_id, measure_result[0].id)
         self.assertEqual(item.created.date(), today)
         self.assertEqual(item.time, month_rounded_dt)
@@ -148,6 +155,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.signal, 0)
         self.assertEqual(item.snr, 5)
         item = wifi_result[1]
+        self.assertEqual(item.report_id, report_id)
         self.assertEqual(item.measure_id, measure_result[0].id)
         self.assertEqual(item.created.date(), today)
         self.assertEqual(item.lat, 123456781)

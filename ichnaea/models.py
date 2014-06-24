@@ -497,6 +497,7 @@ class CellMeasure(_Model):
 
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
+    report_id = Column(BINARY(length=16))
     measure_id = Column(BigInteger(unsigned=True))
     created = Column(DateTime)  # the insert time of the record into the DB
     # lat/lon * DEGREE_SCALE_FACTOR
@@ -525,8 +526,6 @@ class CellMeasure(_Model):
     ta = Column(SmallInteger)
 
     def __init__(self, *args, **kw):
-        if 'measure_id' not in kw:
-            kw['measure_id'] = 0
         if 'created' not in kw:
             kw['created'] = datetime.utcnow()
         super(CellMeasure, self).__init__(*args, **kw)
@@ -611,6 +610,7 @@ class WifiMeasure(_Model):
 
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
+    report_id = Column(BINARY(length=16))
     measure_id = Column(BigInteger(unsigned=True))
     created = Column(DateTime)  # the insert time of the record into the DB
     # lat/lon * DEGREE_SCALE_FACTOR
@@ -633,8 +633,6 @@ class WifiMeasure(_Model):
     snr = Column(SmallInteger)
 
     def __init__(self, *args, **kw):
-        if 'measure_id' not in kw:
-            kw['measure_id'] = 0
         if 'created' not in kw:
             kw['created'] = datetime.utcnow()
         super(WifiMeasure, self).__init__(*args, **kw)

@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 from sqlalchemy.exc import IntegrityError
 
@@ -57,15 +58,26 @@ class TestCellMeasure(DBTestCase):
         self.assertTrue(cell.id is None)
 
     def test_fields(self):
-        cell = self._make_one(lat=12345678, lon=23456789, radio=0, mcc=100,
-                              mnc=5, lac=12345, cid=234567, asu=26,
-                              signal=-61, ta=10)
+        report_id = uuid.uuid1().bytes
+        cell = self._make_one(
+            lat=12345678,
+            lon=23456789,
+            report_id=report_id,
+            radio=0,
+            mcc=100,
+            mnc=5,
+            lac=12345,
+            cid=234567,
+            asu=26,
+            signal=-61,
+            ta=10,
+        )
         session = self.db_master_session
         session.add(cell)
         session.commit()
 
         result = session.query(cell.__class__).first()
-        self.assertEqual(result.measure_id, 0)
+        self.assertEqual(result.report_id, report_id)
         self.assertTrue(isinstance(result.created, datetime.datetime))
         self.assertEqual(result.lat, 12345678)
         self.assertEqual(result.lon, 23456789)
@@ -156,14 +168,21 @@ class TestWifiMeasure(DBTestCase):
 
     def test_fields(self):
         key = "3680873e9b83"
+        report_id = uuid.uuid1().bytes
         wifi = self._make_one(
-            lat=12345678, lon=23456789, key=key, channel=2412, signal=-45)
+            lat=12345678,
+            lon=23456789,
+            report_id=report_id,
+            key=key,
+            channel=2412,
+            signal=-45,
+        )
         session = self.db_master_session
         session.add(wifi)
         session.commit()
 
         result = session.query(wifi.__class__).first()
-        self.assertEqual(result.measure_id, 0)
+        self.assertEqual(result.report_id, report_id)
         self.assertTrue(isinstance(result.created, datetime.datetime))
         self.assertEqual(result.lat, 12345678)
         self.assertEqual(result.lon, 23456789)
