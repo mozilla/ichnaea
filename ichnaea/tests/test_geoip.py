@@ -2,7 +2,10 @@ import os.path
 import tempfile
 
 import ichnaea.geoip as geoip
-from ichnaea.tests.base import TestCase
+from ichnaea.tests.base import (
+    TestCase,
+    FREMONT_IP,
+)
 
 
 class TestGeoIPFallback(TestCase):
@@ -50,7 +53,7 @@ class TestGeoIPFallback(TestCase):
 
         db = self._open_db()
         # Known good value in the wee sample DB we're using
-        r = db.geoip_lookup('66.92.181.240')
+        r = db.geoip_lookup(FREMONT_IP)
         for i in expected.keys():
             if i in ('latitude', 'longitude'):
                 self.assertAlmostEqual(expected[i], r[i])

@@ -1,5 +1,3 @@
-import json
-
 from ichnaea.models import (
     Cell,
     Wifi,
@@ -13,6 +11,7 @@ from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.tests.base import (
     AppTestCase,
     FRANCE_MCC,
+    FREMONT_IP,
     PARIS_LAT,
     PARIS_LON,
 )
@@ -223,7 +222,7 @@ class TestGeolocate(AppTestCase):
                 {"macAddress": "Porky"}, {"macAddress": "Piggy"},
                 {"macAddress": "Davis"}, {"macAddress": "McSnappy"},
             ]},
-            extra_environ={'HTTP_X_FORWARDED_FOR': '66.92.181.240'},
+            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"location": {"lat": 37.5079,
@@ -234,7 +233,7 @@ class TestGeolocate(AppTestCase):
         app = self.app
         res = app.post_json(
             '%s?key=test' % self.url, {},
-            extra_environ={'HTTP_X_FORWARDED_FOR': '66.92.181.240'},
+            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"location": {"lat": 37.5079,
