@@ -32,7 +32,7 @@ def invalid_api_key_response():
 
 
 def rate_limit(redis_client, func_name, api_key, maxreq=0, expire=86400):
-    if maxreq == 0:
+    if not maxreq:
         return False
 
     dstamp = datetime.datetime.utcnow().strftime("%Y%m%d")
