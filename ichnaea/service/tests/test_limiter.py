@@ -1,25 +1,27 @@
-from ichnaea.tests.base import TestCase
-from ichnaea.service.base import rate_limit
 import time
 
+from ichnaea.service.base import rate_limit
 from ichnaea.tests.base import (
-    _make_app,
-    _make_db,
-    _make_redis,
+    RedisIsolation,
+    TestCase,
 )
 
 
-class TestLimiter(TestCase):
+class TestLimiter(TestCase, RedisIsolation):
 
-    def setUp(self):
-        TestCase.setUp(self)
-        db = _make_db()
-        cache = _make_redis()
-        self.app = _make_app(_db_master=db, _db_slave=db, _redis=cache)
-        self.registry = self.app.app.registry
+    @classmethod
+    def setUpClass(cls):
+        super(TestLimiter, cls).setup_redis()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestLimiter, cls).teardown_redis()
+
+    def tearDown(self):
+        self.cleanup_redis()
 
     def test_limiter_maxrequests(self):
-        redis_client = self.registry.redis_client
+        redis_client = self.redis_client
         f, a = 'func_a', 'key_b'
         maxreq = 5
         expire = 1
@@ -33,7 +35,7 @@ class TestLimiter(TestCase):
                                    expire=expire))
 
     def test_limiter_expiry(self):
-        redis_client = self.registry.redis_client
+        redis_client = self.redis_client
         f, a = 'func_c', 'key_d'
         maxreq = 100
         expire = 1
