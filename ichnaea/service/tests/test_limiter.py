@@ -22,26 +22,26 @@ class TestLimiter(TestCase, RedisIsolation):
 
     def test_limiter_maxrequests(self):
         redis_client = self.redis_client
-        f, a = 'func_a', 'key_b'
+        a = 'key_a'
         maxreq = 5
         expire = 1
         for i in range(5):
-            self.assertFalse(rate_limit(redis_client, f, a,
+            self.assertFalse(rate_limit(redis_client, a,
                                         maxreq=maxreq,
                                         expire=expire))
-        self.assertTrue(rate_limit(redis_client, f, a,
+        self.assertTrue(rate_limit(redis_client, a,
                                    maxreq=maxreq,
                                    expire=expire))
 
     def test_limiter_expiry(self):
         redis_client = self.redis_client
-        f, a = 'func_c', 'key_d'
+        a = 'key_b'
         maxreq = 100
         expire = 1
-        self.assertFalse(rate_limit(redis_client, f, a,
+        self.assertFalse(rate_limit(redis_client, a,
                                     maxreq=maxreq,
                                     expire=expire))
         time.sleep(1)
-        self.assertFalse(rate_limit(redis_client, f, a,
+        self.assertFalse(rate_limit(redis_client, a,
                                     maxreq=maxreq,
                                     expire=expire))
