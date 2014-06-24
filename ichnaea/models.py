@@ -68,6 +68,9 @@ LAC_MIN_ACCURACY = 20000
 
 # Pure guesswork, "size of a city"
 GEOIP_CITY_ACCURACY = 50000
+# Worst case scenario for Russia, rounded down a bit
+# geocalc.distance(60.0, 100.0, 41.199278, 27.351944) == 5220613 meters
+GEOIP_COUNTRY_ACCURACY = 5000000
 
 # Numeric constant used to indicate "virtual cells" for LACs, in db.
 CELLID_LAC = -2

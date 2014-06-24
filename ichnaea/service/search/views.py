@@ -12,6 +12,7 @@ from ichnaea.models import (
     CELL_MIN_ACCURACY,
     LAC_MIN_ACCURACY,
     GEOIP_CITY_ACCURACY,
+    GEOIP_COUNTRY_ACCURACY,
     DEGREE_DECIMAL_PLACES,
 )
 from ichnaea.service.base import check_api_key
@@ -303,8 +304,10 @@ def geoip_and_best_guess_country_code(data, request, api_name):
     if geoip:
         # GeoIP always wins if we have it.
         if 'city' in geoip:
+            accuracy = GEOIP_CITY_ACCURACY
             heka_client.incr('%s.geoip_city_found' % api_name)
         else:
+            accuracy = GEOIP_COUNTRY_ACCURACY
             heka_client.incr('%s.geoip_country_found' % api_name)
 
         if cell_countries and geoip['country_code'] not in cell_countries:
@@ -314,7 +317,7 @@ def geoip_and_best_guess_country_code(data, request, api_name):
         geoip_res = {
             'lat': geoip['latitude'],
             'lon': geoip['longitude'],
-            'accuracy': GEOIP_CITY_ACCURACY
+            'accuracy': accuracy
         }
         return (geoip_res, geoip['country_code'])
 
