@@ -15,7 +15,7 @@ import sqlalchemy as sa
 
 
 def upgrade():
-    op.add_column('api_key', sa.Column('maxreq', sa.Integer(), default=0))
+    op.add_column('api_key', sa.Column('maxreq', sa.Integer()))
 
 
 def downgrade():

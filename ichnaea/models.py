@@ -664,7 +664,7 @@ class ApiKey(_Model):
                        primary_key=True)
 
     # Maximum number of requests per day
-    maxreq = Column(Integer, default=0)
+    maxreq = Column(Integer)
 
 api_key_table = ApiKey.__table__
 
