@@ -218,7 +218,6 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEquals(0, session.query(CellMeasure).count())
 
 
-
 class TestGeoSubmitBatch(CeleryAppTestCase):
 
     def setUp(self):
