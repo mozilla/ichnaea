@@ -1,10 +1,9 @@
 from collections import namedtuple
 from datetime import date, datetime
-from colander import iso8601
-import ichnaea.geocalc
-import mobile_codes
 import re
 
+from colander import iso8601
+import mobile_codes
 import pytz
 from sqlalchemy import (
     BINARY,
@@ -15,11 +14,12 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.mysql import INTEGER as Integer
 from sqlalchemy.dialects.mysql import BIGINT as BigInteger
+from sqlalchemy.dialects.mysql import INTEGER as Integer
 
-from ichnaea.sa_types import TZDateTime as DateTime
+from ichnaea import geocalc
 from ichnaea.db import _Model
+from ichnaea.sa_types import TZDateTime as DateTime
 
 # Latitudes and longitudes are stored as degrees * 10**7,
 # or equivalently: as an integer count of 1E-7ths of a degree.
@@ -311,7 +311,7 @@ def normalized_cell_measure_dict(d, measure_radio=-1):
     d = normalized_cell_dict(d, default_radio=measure_radio)
     d = normalized_measure_dict(d)
 
-    location_is_in_country = ichnaea.geocalc.location_is_in_country
+    location_is_in_country = geocalc.location_is_in_country
     if d is not None:
         # Lat/lon must be inside one of the bounding boxes for the MCC.
         lat = to_degrees(int(d['lat']))
