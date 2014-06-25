@@ -2,11 +2,40 @@ import socket
 
 import pygeoip
 
-from ichnaea.models import DEGREE_DECIMAL_PLACES
+from ichnaea.geocalc import maximum_country_radius
+from ichnaea.models import (
+    DEGREE_DECIMAL_PLACES,
+    GEOIP_CITY_ACCURACY,
+    GEOIP_COUNTRY_ACCURACY,
+)
 
 
 class GeoIPError(Exception):
     pass
+
+
+def radius_from_geoip(record):
+    """
+    Returns the best accuracy guess in meters for the given GeoIP record
+    and whether or not the record included city data.
+    """
+    accuracy = None
+    if 'country_code3' in record and record['country_code3']:
+        accuracy = maximum_country_radius(record['country_code3'])
+    elif 'country_code' in record and record['country_code']:
+        accuracy = maximum_country_radius(record['country_code'])
+    if accuracy is None:
+        # No country code or no successful radius lookup
+        accuracy = GEOIP_COUNTRY_ACCURACY
+
+    city = False
+    if 'city' in record and record['city']:
+        # Use country radius as an upper bound for city radius
+        # for really small countries
+        accuracy = min(GEOIP_CITY_ACCURACY, accuracy)
+        city = True
+
+    return (accuracy, city)
 
 
 def configure_geoip(registry_settings=None, filename=None):

@@ -1,9 +1,12 @@
-import unittest
+from ichnaea.geocalc import (
+    _radius_cache,
+    distance,
+    maximum_country_radius,
+)
+from ichnaea.tests.base import TestCase
 
-from ichnaea.geocalc import distance
 
-
-class TestDistance(unittest.TestCase):
+class TestDistance(TestCase):
 
     def test_simple_distance(self):
         # This is a simple case where the points are close to each other.
@@ -42,3 +45,58 @@ class TestDistance(unittest.TestCase):
         delta = distance(lat1, lon1, lat2, lon2)
         sdelta = "%0.4f" % delta
         self.assertEqual(sdelta, '8901.7476')
+
+
+class TestMaximumRadius(TestCase):
+
+    li_radius = 13000.0
+    usa_radius = 2826000.0
+    vat_radius = 1000.0
+
+    def test_alpha2(self):
+        r = maximum_country_radius('US')
+        self.assertEqual(r, self.usa_radius)
+        cached = _radius_cache['US']
+        self.assertEqual(r, cached)
+
+        r = maximum_country_radius('us')
+        self.assertEqual(r, self.usa_radius)
+        self.assertFalse('us' in _radius_cache)
+
+    def test_alpha3(self):
+        r = maximum_country_radius('USA')
+        self.assertEqual(r, self.usa_radius)
+        cached = _radius_cache['USA']
+        self.assertEqual(r, cached)
+
+        r = maximum_country_radius('usa')
+        self.assertEqual(r, self.usa_radius)
+        self.assertFalse('usa' in _radius_cache)
+
+    def test_small_countries(self):
+        r = maximum_country_radius('LI')
+        self.assertEqual(r, self.li_radius)
+        r = maximum_country_radius('VAT')
+        self.assertEqual(r, self.vat_radius)
+
+    def test_malformed_country(self):
+        r = maximum_country_radius(None)
+        self.assertTrue(r is None)
+
+        r = maximum_country_radius(42)
+        self.assertTrue(r is None)
+
+        r = maximum_country_radius('A')
+        self.assertTrue(r is None)
+
+        r = maximum_country_radius('-#1-')
+        self.assertTrue(r is None)
+
+    def test_unknown_country(self):
+        r = maximum_country_radius('AA')
+        self.assertTrue(r is None)
+        self.assertFalse('AA' in _radius_cache)
+
+        r = maximum_country_radius('AAA')
+        self.assertTrue(r is None)
+        self.assertFalse('AAA' in _radius_cache)
