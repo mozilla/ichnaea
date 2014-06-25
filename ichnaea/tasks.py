@@ -424,122 +424,67 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
         raise self.retry(exc=exc)
 
 
-def trim_excessive_data(session, unique_model, measure_model,
-                        join_measure, delstat, max_measures,
-                        min_age_days, batch):
+def unthrottle_measures(session, station_model, measure_model,
+                        join_measure, max_measures, batch):
     """
-    Delete measurements of type `measure_model` when, for any given
-    key-field `kname`, there are more than `max_measures` measurements.
-    Avoid deleting any measurements at all younger than `min_age_days`,
-    and only delete measurements from at most `batch` keys per call.
-    Increment the deleted-measurements stat named `delstat` and decrement
-    the `total_measurements` field of the associated `unique_model`, as
-    side effects.
+    Periodically recalculate the total_measures value for any 'throttled'
+    station, that is, one with total_measures >= max_measures, which is
+    therefore dropping additional incoming measures on the floor. This
+    recalculation (potentially, temporarily) 'un-throttles' the rate, due
+    to the fact that every night, a day worth of measures is backed up and
+    purged from the measures table, so some new room may be made in the
+    measure tables for new measures to be absorbed. Once a station's
+    total_measures count gets back up to max_measures, it will be throttled
+    again.
+
     """
-    from ichnaea.content.tasks import incr_stat
+    q = session.query(station_model).filter(
+        station_model.total_measures > max_measures).limit(batch)
 
-    # generally: only work with rows that are older than a
-    # date threshold, so that we are definitely not interfering
-    # with periodic recent-stat calculations on incoming new data
-    utcnow = datetime.utcnow()
-    age_threshold = utcnow - timedelta(days=min_age_days)
-    age_cond = measure_model.created < age_threshold
-
-    # initial (fast) query to pull out those uniques that have
-    # total_measures larger than max_measures; will refine this
-    # set of keys subsequently by date-window.
-    query = session.query(unique_model).filter(
-        unique_model.total_measures > max_measures).limit(batch)
-    uniques = query.all()
-    counts = []
-
-    # secondarily, refine set of candidate keys by explicitly
-    # counting measurements on each key, within the expiration
-    # date-window.
-    for u in uniques:
-
-        query = session.query(func.count(measure_model.id)).filter(
-            *join_measure(u)).filter(
-            age_cond)
-
-        c = query.first()
+    unthrottled = 0
+    for station in q.all():
+        q = session.query(func.count(measure_model.id)).filter(
+            *join_measure(station))
+        c = q.first()
         assert c is not None
         n = int(c[0])
-        if n > max_measures:
-            counts.append((u, n))
-
-    if len(counts) == 0:
-        return 0
-
-    # finally, for each definitely over-measured key, find a
-    # cutoff row and trim measurements to it
-    for (u, count) in counts:
-
-        # determine the oldest measure (smallest (date,id) pair) to
-        # keep for each key
-        start = count - max_measures
-        (smallest_date_to_keep, smallest_id_to_keep) = session.query(
-            measure_model.time, measure_model.id).filter(
-            *join_measure(u)).filter(
-            age_cond).order_by(
-            measure_model.time, measure_model.id).slice(start, count).first()
-
-        # delete measures with (date,id) less than that, so long as they're
-        # older than the date window.
-        n = session.query(
-            measure_model).filter(
-            *join_measure(u)).filter(
-            age_cond).filter(
-            measure_model.time <= smallest_date_to_keep).filter(
-            measure_model.id < smallest_id_to_keep).delete()
-
-        # decrement model.total_measures; increment stats[delstat]
-        assert u.total_measures >= 0
-        u.total_measures -= n
-        # if there's a lot of unprocessed new measures, forget them
-        # and only retain the ones we still have the underlying measures for
-        if u.new_measures > u.total_measures:
-            u.new_measures = u.total_measures
-        incr_stat(session, delstat, n)
+        assert n <= station.total_measures
+        unthrottled += station.total_measures - n
+        station.total_measures = n
+        station.new_measures = min(station.new_measures, n)
 
     session.commit()
-    return n
+    return unthrottled
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def wifi_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
+def wifi_unthrottle_measures(self, max_measures, batch=1000):
     try:
         with self.db_session() as session:
             join_measure = lambda u: (WifiMeasure.key == u.key, )
-
-            n = trim_excessive_data(session=session,
-                                    unique_model=Wifi,
+            n = unthrottle_measures(session=session,
+                                    station_model=Wifi,
                                     measure_model=WifiMeasure,
                                     join_measure=join_measure,
-                                    delstat='deleted_wifi',
                                     max_measures=max_measures,
-                                    min_age_days=min_age_days,
                                     batch=batch)
-            self.heka_client.incr("items.dropped.wifi_trim_excessive", n)
+            self.heka_client.incr("items.wifi_unthrottled", n)
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def cell_trim_excessive_data(self, max_measures, min_age_days=7, batch=10):
+def cell_unthrottle_measures(self, max_measures, batch=100):
     try:
         with self.db_session() as session:
             join_measure = lambda u: join_cellkey(CellMeasure, u)
-
-            n = trim_excessive_data(session=session,
-                                    unique_model=Cell,
+            n = unthrottle_measures(session=session,
+                                    station_model=Cell,
                                     measure_model=CellMeasure,
                                     join_measure=join_measure,
-                                    delstat='deleted_cell',
                                     max_measures=max_measures,
-                                    min_age_days=min_age_days,
                                     batch=batch)
-            self.heka_client.incr("items.dropped.cell_trim_excessive", n)
+            self.heka_client.incr("items.cell_unthrottled", n)
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
 

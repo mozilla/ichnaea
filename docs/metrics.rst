@@ -445,13 +445,15 @@ database tables. Along the way several counters measure the steps involved:
     Count cell or wifi measurements that are successfully normalized and
     integrated, not discarded due to rate limits or consistency errors.
 
-``items.dropped.cell_trim_excessive``, ``items.dropped.wifi_trim_excessive`` : counters
+``items.cell_unthrottled``, ``items.wifi_unthrottled`` : counters
 
-    Count *old* cell or wifi measurements that were discarded from the
-    database due to a periodic trimming task. Measurements are counted and
-    discarded per-station, in other words only those measurements
-    pertaining to a cell or wifi that already has "too many" measurements
-    are discarded, and only the oldest measurements are discarded.
+    Count space made for new measures in the wifi and cell measure tables
+    due to periodic backup and trimming of old records. Specifically: for
+    cell or wifi stations that were previously rate-limited, count the
+    amount of new space for measures of those stations freed up after each
+    backup and trim task runs. This is not the same as the number of
+    measures backed up; it's *only* a count of the cumulative space freed
+    for previously rate-limited stations.
 
 
 S3 backup counters
@@ -515,7 +517,7 @@ system:
   - ``task.backup.write_cellmeasure_s3_backups``
   - ``task.backup.write_wifimeasure_s3_backups``
   - ``task.cell_location_update``
-  - ``task.cell_trim_excessive_data``
+  - ``task.cell_unthrottle_measures``
   - ``task.content.cell_histogram``
   - ``task.content.unique_cell_histogram``
   - ``task.content.unique_wifi_histogram``
@@ -528,4 +530,4 @@ system:
   - ``task.service.submit.insert_wifi_measures``
   - ``task.update_lac``
   - ``task.wifi_location_update``
-  - ``task.wifi_trim_excessive_data``
+  - ``task.wifi_unthrottle_measures``
