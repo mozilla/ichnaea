@@ -64,18 +64,6 @@ CELERYBEAT_SCHEDULE = {
         'args': (1, 10, 5000),
         'options': {'expires': 320},
     },
-    'continuous-cell-trim-excessive-data': {
-        'task': 'ichnaea.tasks.cell_trim_excessive_data',
-        'schedule': timedelta(seconds=21589),  # about 6 hours
-        'args': (10000, 3, 1000),
-        'options': {'expires': 21407},
-    },
-    'continuous-wifi-trim-excessive-data': {
-        'task': 'ichnaea.tasks.wifi_trim_excessive_data',
-        'schedule': timedelta(seconds=21577),  # about 6 hours
-        'args': (10000, 3, 2000),
-        'options': {'expires': 21407},
-    },
     'continuous-cell-scan-lacs': {
         'task': 'ichnaea.tasks.scan_lacs',
         'schedule': timedelta(seconds=3607),  # about an hour
@@ -125,6 +113,18 @@ CELERYBEAT_SCHEDULE = {
         'task': 'ichnaea.backup.tasks.delete_cellmeasure_records',
         'args': (100, 3, 300),
         'schedule': crontab(hour=2, minute=27),
+        'options': {'expires': 43200},
+    },
+    'nightly-cell-unthrottle-messages': {
+        'task': 'ichnaea.tasks.cell_unthrottle_measures',
+        'schedule': crontab(hour=3, minute=27),
+        'args': (10000, 1000),
+        'options': {'expires': 43200},
+    },
+    'nightly-wifi-unthrottle': {
+        'task': 'ichnaea.tasks.wifi_unthrottle_measures',
+        'schedule': crontab(hour=3, minute=27),
+        'args': (10000, 1000),
         'options': {'expires': 43200},
     },
 

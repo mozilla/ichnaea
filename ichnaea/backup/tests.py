@@ -17,12 +17,18 @@ from ichnaea.backup.tasks import (
     write_wifimeasure_s3_backups,
 )
 from ichnaea.models import (
+    Cell,
     CellMeasure,
     MeasureBlock,
     MEASURE_TYPE_CODE,
+    Wifi,
     WifiMeasure,
 )
 from ichnaea.tests.base import CeleryTestCase
+from ichnaea.tasks import (
+    wifi_unthrottle_measures,
+    cell_unthrottle_measures
+)
 
 
 @contextmanager
@@ -277,3 +283,67 @@ class TestMeasurementsDump(CeleryTestCase):
         # The archive_date should now be set as the measure records
         # have been deleted.
         self.assertTrue(block.archive_date is not None)
+
+    def test_unthrottle_cell_measures(self):
+        session = self.db_master_session
+        block = MeasureBlock()
+        block.measure_type = MEASURE_TYPE_CODE['cell']
+        block.start_id = 120
+        block.end_id = 140
+        block.s3_key = 'fake_key'
+        block.archive_sha = 'fake_sha'
+        block.archive_date = None
+        session.add(block)
+
+        k = dict(mcc=1, mnc=2, lac=4, lat=10000000, lon=10000000)
+        for i in range(100, 150):
+            session.add(CellMeasure(id=i, cid=i, created=self.really_old, **k))
+            session.add(Cell(total_measures=11000, cid=i, **k))
+        session.commit()
+
+        with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
+            delete_cellmeasure_records()
+
+        cell_unthrottle_measures(10000, 1000)
+
+        cells = session.query(Cell).all()
+        self.assertEquals(len(cells), 50)
+        for cell in cells:
+            if 120 <= cell.cid and cell.cid < 140:
+                self.assertEquals(cell.total_measures, 0)
+            else:
+                self.assertEquals(cell.total_measures, 1)
+
+        self.check_expected_heka_messages(counter=['items.cell_unthrottled'])
+
+    def test_unthrottle_wifi_measures(self):
+        session = self.db_master_session
+        block = MeasureBlock()
+        block.measure_type = MEASURE_TYPE_CODE['wifi']
+        block.start_id = 120
+        block.end_id = 140
+        block.s3_key = 'fake_key'
+        block.archive_sha = 'fake_sha'
+        block.archive_date = None
+        session.add(block)
+
+        k = dict(lat=10000000, lon=10000000)
+        for i in range(100, 150):
+            session.add(WifiMeasure(id=i, key=str(i), created=self.really_old))
+            session.add(Wifi(total_measures=11000, key=str(i), **k))
+        session.commit()
+
+        with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
+            delete_wifimeasure_records()
+
+        wifi_unthrottle_measures(10000, 1000)
+
+        wifis = session.query(Wifi).all()
+        self.assertEquals(len(wifis), 50)
+        for wifi in wifis:
+            if 120 <= int(wifi.key) and int(wifi.key) < 140:
+                self.assertEquals(wifi.total_measures, 0)
+            else:
+                self.assertEquals(wifi.total_measures, 1)
+
+        self.check_expected_heka_messages(counter=['items.wifi_unthrottled'])
