@@ -44,7 +44,8 @@ class TestSubmit(CeleryAppTestCase):
         month_rounded_today = today.replace(day=1)
         month_rounded_dt = datetime(month_rounded_today.year,
                                     month_rounded_today.month,
-                                    month_rounded_today.day).replace(tzinfo=pytz.UTC)
+                                    month_rounded_today.day)
+        month_rounded_dt = month_rounded_dt.replace(tzinfo=pytz.UTC)
 
         cell_data = [
             {"radio": "umts", "mcc": FRANCE_MCC,
@@ -125,7 +126,9 @@ class TestSubmit(CeleryAppTestCase):
         month_rounded_today = today.replace(day=1)
         month_rounded_dt = datetime(month_rounded_today.year,
                                     month_rounded_today.month,
-                                    month_rounded_today.day).replace(tzinfo=pytz.UTC)
+                                    month_rounded_today.day)
+        month_rounded_dt = month_rounded_dt.replace(tzinfo=pytz.UTC)
+
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3456781,
                                       "lon": 23.4567892,
@@ -233,7 +236,8 @@ class TestSubmit(CeleryAppTestCase):
         wifis = dict([(w.key, (w.created, w.time)) for w in result])
         today = datetime.utcnow().date()
 
-        month_rounded_tday = time.replace(day=1, hour=0, minute=0, second=0).replace(tzinfo=pytz.UTC)
+        month_rounded_tday = time.replace(day=1, hour=0, minute=0, second=0)
+        month_rounded_tday = month_rounded_tday.replace(tzinfo=pytz.UTC)
         month_rounded_today = today.replace(day=1)
 
         self.assertEqual(wifis['00aaaaaaaaaa'][0].date(), today)
