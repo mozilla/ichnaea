@@ -27,17 +27,17 @@ CELERYBEAT_SCHEDULE = {
     },
     'histogram-wifi-yesterday': {
         'task': 'ichnaea.content.tasks.wifi_histogram',
-        'schedule': crontab(hour=0, minute=3),
+        'schedule': crontab(hour=0, minute=4),
         'args': (1, ),
     },
     'histogram-unique-cell-yesterday': {
         'task': 'ichnaea.content.tasks.unique_cell_histogram',
-        'schedule': crontab(hour=0, minute=4),
+        'schedule': crontab(hour=0, minute=5),
         'args': (1, ),
     },
     'histogram-unique-wifi-yesterday': {
         'task': 'ichnaea.content.tasks.unique_wifi_histogram',
-        'schedule': crontab(hour=0, minute=4),
+        'schedule': crontab(hour=0, minute=6),
         'args': (1, ),
     },
     'continuous-cell-location-update': {
@@ -106,7 +106,7 @@ CELERYBEAT_SCHEDULE = {
     's3-delete-wifimeasures': {
         'task': 'ichnaea.backup.tasks.delete_wifimeasure_records',
         'args': (100, 3, 300),
-        'schedule': crontab(hour=2, minute=27),
+        'schedule': crontab(hour=2, minute=17),
         'options': {'expires': 43200},
     },
     's3-delete-cellmeasures': {
@@ -117,7 +117,7 @@ CELERYBEAT_SCHEDULE = {
     },
     'nightly-cell-unthrottle-messages': {
         'task': 'ichnaea.backup.tasks.cell_unthrottle_measures',
-        'schedule': crontab(hour=3, minute=27),
+        'schedule': crontab(hour=3, minute=17),
         'args': (10000, 1000),
         'options': {'expires': 43200},
     },
