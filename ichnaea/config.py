@@ -1,3 +1,5 @@
+import os
+
 from configparser import ConfigParser
 
 
@@ -20,3 +22,8 @@ class Config(ConfigParser):
     def optionxform(self, option):
         # Avoid lower-casing the option names
         return option
+
+
+def read_config():
+    ini = os.environ.get('ICHNAEA_CFG', 'ichnaea.ini')
+    return Config(ini)

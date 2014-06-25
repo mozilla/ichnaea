@@ -5,7 +5,7 @@ import sys
 from alembic.config import Config
 from alembic import command
 
-from ichnaea import config
+from ichnaea.config import read_config
 # make sure content models are imported
 from ichnaea.content import models  # NOQA
 from ichnaea.db import _Model
@@ -22,7 +22,7 @@ def main(argv, _db_master=None):
     args = parser.parse_args(argv[1:])
 
     if args.initdb:
-        conf = config()
+        conf = read_config()
         db_master = Database(conf.get('ichnaea', 'db_master'))
         engine = db_master.engine
         with engine.connect() as conn:

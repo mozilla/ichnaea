@@ -1,22 +1,15 @@
-import os
-
 from ichnaea.app import main
-from ichnaea.config import Config
+from ichnaea.config import read_config
 
-__all__ = ('application', 'config', 'main', )
+__all__ = ('application', 'main', )
 _APP = None
-
-
-def config():
-    ini = os.environ.get('ICHNAEA_CFG', 'ichnaea.ini')
-    return Config(ini)
 
 
 def application(environ, start_response):  # pragma: no cover
     global _APP
 
     if _APP is None:
-        conf = config()
+        conf = read_config()
         _APP = main({}, heka_config=conf.filename, **conf.get_map('ichnaea'))
 
     return _APP(environ, start_response)

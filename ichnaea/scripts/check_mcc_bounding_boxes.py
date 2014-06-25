@@ -3,7 +3,7 @@ import sys
 
 import mobile_codes
 
-from ichnaea import config
+from ichnaea.config import read_config
 from ichnaea.db import Database
 from ichnaea.geocalc import location_is_in_country
 from ichnaea.models import to_degrees
@@ -15,7 +15,7 @@ from ichnaea.models import to_degrees
 
 def main():
 
-    settings = config().get_map('ichnaea')
+    settings = read_config().get_map('ichnaea')
     db = Database(settings['db_slave'])
     session = db.session()
 

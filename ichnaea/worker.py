@@ -6,7 +6,7 @@ from celery.app import app_or_default
 from celery.signals import worker_process_init
 from celery.schedules import crontab
 
-from ichnaea import config
+from ichnaea.config import read_config
 from ichnaea.db import Database
 from ichnaea.heka_logging import configure_heka
 
@@ -155,7 +155,7 @@ def init_worker_process(signal, sender, **kw):  # pragma: no cover
     # called automatically when `celery worker` is started
     # get the app in the current worker process
     app = app_or_default()
-    conf = config()
+    conf = read_config()
     settings = conf.get_map('ichnaea')
     attach_database(app, settings=settings)
     configure_s3_backup(app, settings=settings)
@@ -163,7 +163,7 @@ def init_worker_process(signal, sender, **kw):  # pragma: no cover
 
 
 def configure(celery=celery):
-    conf = config()
+    conf = read_config()
     if conf.has_section('celery'):
         section = conf.get_map('celery')
     else:  # pragma: no cover

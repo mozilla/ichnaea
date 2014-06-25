@@ -13,7 +13,7 @@ import sys
 
 import pytz
 
-from ichnaea import config
+from ichnaea.config import read_config
 from ichnaea.db import Database
 from ichnaea.models import (
     normalized_wifi_key,
@@ -108,7 +108,7 @@ def main(argv, _db_master=None):
     if args.userid is not None:
         userid = int(args.userid)
 
-    settings = config().get_map('ichnaea')
+    settings = read_config().get_map('ichnaea')
 
     # configure databases incl. test override hooks
     if _db_master is None:
