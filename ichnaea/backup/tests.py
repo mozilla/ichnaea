@@ -15,6 +15,8 @@ from ichnaea.backup.tasks import (
     schedule_wifimeasure_archival,
     write_cellmeasure_s3_backups,
     write_wifimeasure_s3_backups,
+    cell_unthrottle_measures,
+    wifi_unthrottle_measures,
 )
 from ichnaea.models import (
     Cell,
@@ -25,10 +27,6 @@ from ichnaea.models import (
     WifiMeasure,
 )
 from ichnaea.tests.base import CeleryTestCase
-from ichnaea.tasks import (
-    wifi_unthrottle_measures,
-    cell_unthrottle_measures
-)
 
 
 @contextmanager

@@ -9,10 +9,15 @@ import tempfile
 
 from ichnaea.backup.s3 import S3Backend, compute_hash
 from ichnaea.models import (
+    Cell,
+    CellMeasure,
+    join_cellkey,
     MEASURE_TYPE_CODE,
     MEASURE_TYPE_CODE_INVERSE,
     MEASURE_TYPE_META,
     MeasureBlock,
+    Wifi,
+    WifiMeasure,
 )
 from ichnaea.tasks import DatabaseTask
 from ichnaea.worker import celery
@@ -321,3 +326,68 @@ def delete_wifimeasure_records(self, limit=100, days_old=7, countdown=300):
         limit=limit,
         days_old=days_old,
         countdown=countdown)
+
+
+def unthrottle_measures(session, station_model, measure_model,
+                        join_measure, max_measures, batch):
+    """
+    Periodically recalculate the total_measures value for any 'throttled'
+    station, that is, one with total_measures >= max_measures, which is
+    therefore dropping additional incoming measures on the floor. This
+    recalculation (potentially, temporarily) 'un-throttles' the rate, due
+    to the fact that every night, a day worth of measures is backed up and
+    purged from the measures table, so some new room may be made in the
+    measure tables for new measures to be absorbed. Once a station's
+    total_measures count gets back up to max_measures, it will be throttled
+    again.
+
+    """
+    q = session.query(station_model).filter(
+        station_model.total_measures > max_measures).limit(batch)
+
+    unthrottled = 0
+    for station in q.all():
+        q = session.query(func.count(measure_model.id)).filter(
+            *join_measure(station))
+        c = q.first()
+        assert c is not None
+        n = int(c[0])
+        assert n <= station.total_measures
+        unthrottled += station.total_measures - n
+        station.total_measures = n
+        station.new_measures = min(station.new_measures, n)
+
+    session.commit()
+    return unthrottled
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def wifi_unthrottle_measures(self, max_measures, batch=1000):
+    try:
+        with self.db_session() as session:
+            join_measure = lambda u: (WifiMeasure.key == u.key, )
+            n = unthrottle_measures(session=session,
+                                    station_model=Wifi,
+                                    measure_model=WifiMeasure,
+                                    join_measure=join_measure,
+                                    max_measures=max_measures,
+                                    batch=batch)
+            self.heka_client.incr("items.wifi_unthrottled", n)
+    except Exception as exc:  # pragma: no cover
+        raise self.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def cell_unthrottle_measures(self, max_measures, batch=100):
+    try:
+        with self.db_session() as session:
+            join_measure = lambda u: join_cellkey(CellMeasure, u)
+            n = unthrottle_measures(session=session,
+                                    station_model=Cell,
+                                    measure_model=CellMeasure,
+                                    join_measure=join_measure,
+                                    max_measures=max_measures,
+                                    batch=batch)
+            self.heka_client.incr("items.cell_unthrottled", n)
+    except Exception as exc:  # pragma: no cover
+        raise self.retry(exc=exc)
