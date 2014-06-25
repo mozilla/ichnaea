@@ -22,9 +22,10 @@ from ichnaea.service.error import (
 )
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.search.schema import SearchSchema
+from ichnaea.geoip import radius_from_geoip
 from ichnaea.geocalc import (
     distance,
-    location_is_in_country
+    location_is_in_country,
 )
 from collections import namedtuple
 import operator
@@ -303,11 +304,10 @@ def geoip_and_best_guess_country_code(data, request, api_name):
 
     if geoip:
         # GeoIP always wins if we have it.
-        if 'city' in geoip and geoip['city']:
-            accuracy = GEOIP_CITY_ACCURACY
+        accuracy, city = radius_from_geoip(geoip)
+        if city:
             heka_client.incr('%s.geoip_city_found' % api_name)
         else:
-            accuracy = GEOIP_COUNTRY_ACCURACY
             heka_client.incr('%s.geoip_country_found' % api_name)
 
         if cell_countries and geoip['country_code'] not in cell_countries:

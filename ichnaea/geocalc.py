@@ -3,6 +3,34 @@ from country_bounding_boxes import country_subunits_by_iso_code
 
 EARTH_RADIUS = 6371  # radius of earth in km
 
+_radius_cache = {}
+
+
+def maximum_country_radius(country):
+    """
+    Return the maximum radius of a circle encompassing the largest
+    country subunit in meters, rounded to 1 km increments.
+    """
+    if not isinstance(country, str):
+        return None
+    country = country.upper()
+    if len(country) not in (2, 3):
+        return None
+
+    value = _radius_cache.get(country, None)
+    if value:
+        return value
+
+    diagonals = []
+    for c in country_subunits_by_iso_code(country):
+        (lon1, lat1, lon2, lat2) = c.bbox
+        diagonals.append(distance(lat1, lon1, lat2, lon2))
+    if diagonals:
+        # Divide by two to get radius, round to 1 km and convert to meters
+        value = _radius_cache[country] = round(max(diagonals) / 2.0) * 1000.0
+
+    return value
+
 
 def distance(lat1, lon1, lat2, lon2):
     """

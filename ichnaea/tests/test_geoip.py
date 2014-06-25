@@ -1,7 +1,9 @@
 import os.path
 import tempfile
 
-import ichnaea.geoip as geoip
+from ichnaea import geoip
+from ichnaea.geoip import radius_from_geoip
+from ichnaea.models import GEOIP_CITY_ACCURACY
 from ichnaea.tests.base import (
     TestCase,
     FREMONT_IP,
@@ -70,3 +72,44 @@ class TestGeoIPFallback(TestCase):
 
     def test_lookup_with_dummy_db(self):
         self.assertIsNone(geoip.GeoIPNull().geoip_lookup('200'))
+
+
+class TestGuessRadius(TestCase):
+
+    li_radius = 13000.0
+    usa_radius = 2826000.0
+    vat_radius = 1000.0
+
+    def test_alpha2(self):
+        a, c = radius_from_geoip({'country_code': 'US'})
+        self.assertEqual(a, self.usa_radius)
+        self.assertFalse(c)
+
+    def test_alpha3(self):
+        a, c = radius_from_geoip({'country_code3': 'USA'})
+        self.assertEqual(a, self.usa_radius)
+        self.assertFalse(c)
+
+    def test_alpha3_takes_precedence(self):
+        a, c = radius_from_geoip({'country_code3': 'USA',
+                                  'country_code': 'LI'})
+        self.assertEqual(a, self.usa_radius)
+        self.assertFalse(c)
+
+    def test_city(self):
+        a, c = radius_from_geoip({'country_code3': 'USA',
+                                  'city': 'Fremont'})
+        self.assertEqual(a, GEOIP_CITY_ACCURACY)
+        self.assertTrue(c)
+
+    def test_small_country_alpha2(self):
+        a, c = radius_from_geoip({'country_code': 'LI',
+                                  'city': 'Vaduz'})
+        self.assertEqual(a, self.li_radius)
+        self.assertTrue(c)
+
+    def test_small_country_alpha3(self):
+        a, c = radius_from_geoip({'country_code3': 'VAT',
+                                  'city': 'Vatican City'})
+        self.assertEqual(a, self.vat_radius)
+        self.assertTrue(c)
