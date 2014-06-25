@@ -1,40 +1,27 @@
 import time
-from StringIO import StringIO
 
-from heka.config import client_from_text_config
+from heka.config import client_from_stream_config
 from heka.holder import get_client
 from pyramid.httpexceptions import (
     HTTPException,
     HTTPNotFound,
 )
 
-from ichnaea import config
 from ichnaea.exceptions import BaseJSONError
 
 
-RAVEN_ERROR = 'Unhandled error occured'
+RAVEN_ERROR = 'Unhandled error occurred'
 
 
 def get_heka_client():
     return get_client('ichnaea')
 
 
-def configure_heka(registry_settings={}):
-    # If a test client is defined just use that instead of whatever is
-    # defined in the configuration
-    if '_heka_client' in registry_settings:
-        return registry_settings['_heka_client']
-
-    # deal with konfig's include/extends syntax and construct a merged
-    # file-like object from all the files
-    merged_stream = StringIO()
-    konfig = config()
-    konfig.write(merged_stream)
-    merged_stream.seek(0)
-
+def configure_heka(heka_config):
     client = get_heka_client()
-    client = client_from_text_config(merged_stream.read(), 'heka', client)
-
+    if heka_config:
+        with open(heka_config, 'r') as fd:
+            client = client_from_stream_config(fd, 'heka', client=client)
     return client
 
 

@@ -9,8 +9,8 @@ from ichnaea.db import db_slave_session
 from ichnaea.geoip import configure_geoip
 
 
-def main(global_config, _db_master=None,
-         _db_slave=None, _redis=None,
+def main(global_config, heka_config=None,
+         _db_master=None, _db_slave=None, _heka_client=None, _redis=None,
          **settings):
     config = Configurator(settings=settings)
 
@@ -45,7 +45,10 @@ def main(global_config, _db_master=None,
 
     config.registry.geoip_db = configure_geoip(config.registry.settings)
 
-    config.registry.heka_client = configure_heka(config.registry.settings)
+    if _heka_client is None:
+        config.registry.heka_client = configure_heka(heka_config)
+    else:
+        config.registry.heka_client = _heka_client
 
     config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)
     config.add_tween('ichnaea.heka_logging.heka_tween_factory', under=EXCVIEW)

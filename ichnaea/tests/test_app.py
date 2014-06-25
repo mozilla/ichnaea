@@ -14,9 +14,8 @@ class TestApp(DBTestCase):
             'db_master': SQLURI,
             'db_slave': SQLURI,
             'redis_url': REDIS_URI,
-            '_heka_client': self.heka_client,
         }
-        app = _make_app(**settings)
+        app = _make_app(_heka_client=self.heka_client, **settings)
         self.db_master = app.app.registry.db_master
         self.db_slave = app.app.registry.db_slave
         self.setup_session()
@@ -37,7 +36,6 @@ class TestApp(DBTestCase):
             'db_master': SQLURI,
             'db_slave': SQLURI,
             'redis_url': REDIS_URI,
-            '_heka_client': self.heka_client,
         }
-        app = _make_app(**settings)
+        app = _make_app(_heka_client=self.heka_client, **settings)
         self.assertTrue(app.app.registry.redis_client is not None)

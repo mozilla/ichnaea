@@ -17,7 +17,7 @@ def application(environ, start_response):  # pragma: no cover
 
     if _APP is None:
         conf = config()
-        _APP = main({}, **conf.get_map('ichnaea'))
+        _APP = main({}, heka_config=conf.filename, **conf.get_map('ichnaea'))
 
     return _APP(environ, start_response)
 

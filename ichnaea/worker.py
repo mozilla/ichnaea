@@ -155,10 +155,11 @@ def init_worker_process(signal, sender, **kw):  # pragma: no cover
     # called automatically when `celery worker` is started
     # get the app in the current worker process
     app = app_or_default()
-    settings = config().get_map('ichnaea')
+    conf = config()
+    settings = conf.get_map('ichnaea')
     attach_database(app, settings=settings)
     configure_s3_backup(app, settings=settings)
-    configure_heka()
+    configure_heka(conf.filename)
 
 
 def configure(celery=celery):

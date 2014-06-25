@@ -28,6 +28,8 @@ try:
 except ImportError:
     from unittest import TestCase
 
+TEST_DIRECTORY = os.path.dirname(__file__)
+HEKA_TEST_CONFIG = os.path.join(TEST_DIRECTORY, 'heka.ini')
 
 SQLURI = os.environ.get('SQLURI')
 REDIS_URI = os.environ.get('REDIS_URI', 'redis://localhost:6379/1')
@@ -67,11 +69,13 @@ def _make_redis(uri=REDIS_URI):
     return redis_client(uri)
 
 
-def _make_app(_db_master=None, _db_slave=None, _redis=None, **settings):
+def _make_app(_db_master=None, _db_slave=None, _heka_client=None, _redis=None,
+              **settings):
     wsgiapp = main(
         {},
         _db_master=_db_master,
         _db_slave=_db_slave,
+        _heka_client=_heka_client,
         _redis=_redis,
         **settings)
     return TestApp(wsgiapp)
@@ -184,10 +188,8 @@ class HekaIsolation(object):
 
     @classmethod
     def setup_heka(cls):
-        # Clobber the stream with a debug version
-        cls.heka_client = configure_heka()
-        cls.heka_client.stream = DebugCaptureStream()
-        cls.heka_client.encoder = NullEncoder(None)
+        # Use a debug configuration
+        cls.heka_client = configure_heka(HEKA_TEST_CONFIG)
 
     @classmethod
     def teardown_heka(cls):
@@ -324,8 +326,8 @@ class AppTestCase(TestCase, DBIsolation,
 
         cls.app = _make_app(_db_master=cls.db_master,
                             _db_slave=cls.db_slave,
-                            _redis=cls.redis_client,
                             _heka_client=cls.heka_client,
+                            _redis=cls.redis_client,
                             _geoip_db=cls.geoip_db)
 
     @classmethod
