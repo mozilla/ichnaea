@@ -1,7 +1,7 @@
 import os
-from konfig import Config
 
-from ichnaea.app import main  # NOQA
+from ichnaea.app import main
+from ichnaea.config import Config
 
 __all__ = ('application', 'config', 'main', )
 _APP = None
