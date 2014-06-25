@@ -41,7 +41,8 @@ class S3Backend(object):
             return s3_hash == expected_sha
         except Exception:
             from binascii import hexlify
-            msg = 'S3 verification error: SHA hash [%s]' % hexlify(expected_sha)
+            msg = ('S3 verification error: SHA hash [%s]' %
+                   hexlify(expected_sha))
             self.heka_client.error(msg)
             return False
         finally:
