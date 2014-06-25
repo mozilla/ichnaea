@@ -76,8 +76,6 @@ class TestSubmit(CeleryAppTestCase):
         self.assertTrue(isinstance(item.report_id, bytes))
         self.assertEqual(len(item.report_id), 16)
         self.assertEqual(item.measure_id, measure_result[0].id)
-
-        # TODO: where did CellMeasure.created come from?
         self.assertEqual(item.created.date(), today)
 
         self.assertEqual(item.time, month_rounded_dt)
