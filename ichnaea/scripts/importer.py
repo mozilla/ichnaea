@@ -11,7 +11,7 @@ import csv
 import datetime
 import sys
 
-from colander import iso8601
+import pytz
 
 from ichnaea import config
 from ichnaea.db import Database
@@ -23,7 +23,7 @@ from ichnaea.service.submit.tasks import process_measures
 
 
 def load_file(session, source_file, batch_size=100, userid=None):
-    utcnow = datetime.datetime.utcnow().replace(tzinfo=iso8601.UTC)
+    utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
     utcmin = utcnow - datetime.timedelta(120)
 
     with open(source_file, 'r') as fd:

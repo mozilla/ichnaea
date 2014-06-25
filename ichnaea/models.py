@@ -5,6 +5,7 @@ import ichnaea.geocalc
 import mobile_codes
 import re
 
+import pytz
 from sqlalchemy import (
     BINARY,
     Column,
@@ -118,7 +119,7 @@ def decode_datetime(obj):
     try:
         return iso8601.parse_date(obj)
     except (iso8601.ParseError, TypeError):
-        return datetime.utcnow().replace(tzinfo=iso8601.UTC)
+        return datetime.utcnow().replace(tzinfo=pytz.UTC)
 
 
 def valid_wifi_pattern(key):
