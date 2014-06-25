@@ -8,7 +8,6 @@ import re
 from sqlalchemy import (
     BINARY,
     Column,
-    DateTime,
     Float,
     Index,
     SmallInteger,
@@ -18,6 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import INTEGER as Integer
 from sqlalchemy.dialects.mysql import BIGINT as BigInteger
 
+from ichnaea.sa_types import TZDateTime as DateTime
 from ichnaea.db import _Model
 
 # Latitudes and longitudes are stored as degrees * 10**7,
