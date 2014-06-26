@@ -175,6 +175,7 @@ def process_measure(report_id, measure_id, data, session):
 
 
 def process_measures(items, session, userid=None):
+    heka_client = get_heka_client()
     utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
     utcmin = utcnow - datetime.timedelta(60)
 
@@ -202,8 +203,6 @@ def process_measures(items, session, userid=None):
                 'lat': from_degrees(item['lat']),
                 'lon': from_degrees(item['lon']),
             })
-
-    heka_client = get_heka_client()
 
     if cell_measures:
         # group by and create task per cell key
@@ -258,8 +257,8 @@ def insert_measures(self, items=None, nickname=''):
 
 def throttled_station(session, key, space_available, station_model,
                       join_key, max_measures_per_station):
-    # check if there's space for new measurement within per-station maximum
-    # note: old measures gradually expire, so this is an intake-rate limit
+    # check if there's space for new measurements within per-station maximum
+    # old measures are gradually backed up, so this is an intake-rate limit
     if key not in space_available:
         query = session.query(station_model.total_measures).filter(
             *join_key(station_model, key))
@@ -322,16 +321,17 @@ def update_station_measure_counts(session, userid, station_type,
 def process_station_measures(session, entries, station_type,
                              station_model, measure_model, blacklist_model,
                              create_measure, create_key, join_key,
-                             userid=None, max_measures_per_station=11000,):
+                             userid=None, max_measures_per_station=11000):
 
-    station_count = defaultdict(int)
-    station_measures = []
-    utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
     blacked = {}
     dropped_malformed = 0
     dropped_overflow = 0
-    space_available = {}
+    heka_client = get_heka_client()
     is_new_station = {}
+    space_available = {}
+    station_count = defaultdict(int)
+    station_measures = []
+    utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
 
     # Process entries
     for entry in entries:
@@ -364,8 +364,6 @@ def process_station_measures(session, entries, station_type,
                 q = session.query(station_model.id).filter(
                     *join_key(station_model, key))
                 is_new_station[key] = (q.first() is None)
-
-    heka_client = get_heka_client()
 
     if dropped_malformed != 0:
         heka_client.incr("items.dropped.%s_ingress_malformed" % station_type,
