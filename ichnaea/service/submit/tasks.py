@@ -255,67 +255,52 @@ def insert_measures(self, items=None, nickname=''):
         raise self.retry(exc=exc)
 
 
-def throttled_station(session, key, space_available, station_model,
-                      join_key, max_measures_per_station):
+def available_space(session, key, station_model, join_key,
+                    max_measures_per_station):
     # check if there's space for new measurements within per-station maximum
     # old measures are gradually backed up, so this is an intake-rate limit
-    if key not in space_available:
-        query = session.query(station_model.total_measures).filter(
-            *join_key(station_model, key))
-        curr = query.first()
-        if curr is not None:
-            space_available[key] = max_measures_per_station - curr[0]
-        else:
-            space_available[key] = max_measures_per_station
 
-    if space_available[key] > 0:
-        space_available[key] -= 1
-        return False
+    query = session.query(station_model.total_measures).filter(
+        *join_key(station_model, key))
+    curr = query.first()
+
+    if curr is not None:
+        result = max_measures_per_station - curr[0]
     else:
-        return True
+        result = max_measures_per_station
+
+    return result
 
 
-def blacklisted_or_incomplete_station(session, key, blacked, blacklist_model,
+def blacklisted_or_incomplete_station(session, key, blacklist_model,
                                       join_key):
 
     if isinstance(key, tuple) and \
        (key.radio < 0 or key.lac < 0 or key.cid < 0):  # NOQA
         return True
 
-    if key not in blacked:
-        query = session.query(blacklist_model).filter(
-            *join_key(blacklist_model, key))
-        b = query.first()
-        blacked[key] = (b is not None)
-    return blacked[key]
+    query = session.query(blacklist_model).filter(
+        *join_key(blacklist_model, key))
+    b = query.first()
+    return (b is not None)
 
 
-def update_station_measure_counts(session, userid, station_type,
-                                  station_model, utcnow,
-                                  station_count, is_new_station):
-
-    # Credit the user with discovering any new stations.
-    if userid is not None:
-        new_station_count = len(filter(lambda x: x, is_new_station.values()))
-        if new_station_count > 0:
-            process_score(userid, new_station_count, session,
-                          key='new_' + station_type)
+def update_station_counts(session, key, station_model, utcnow, num):
 
     # Update new/total measure counts
-    for key, num in station_count.items():
-        if isinstance(key, tuple):
-            d = key._asdict()
-        else:
-            d = {'key': key}
-        stmt = station_model.__table__.insert(
-            on_duplicate='new_measures = new_measures + %s, '
-                         'total_measures = total_measures + %s' % (num, num)
-        ).values(
-            created=utcnow,
-            new_measures=num,
-            total_measures=num,
-            **d)
-        session.execute(stmt)
+    if isinstance(key, tuple):
+        d = key._asdict()
+    else:
+        d = {'key': key}
+    stmt = station_model.__table__.insert(
+        on_duplicate='new_measures = new_measures + %s, '
+                     'total_measures = total_measures + %s' % (num, num)
+    ).values(
+        created=utcnow,
+        new_measures=num,
+        total_measures=num,
+        **d)
+    session.execute(stmt)
 
 
 def process_station_measures(session, entries, station_type,
@@ -323,47 +308,64 @@ def process_station_measures(session, entries, station_type,
                              create_measure, create_key, join_key,
                              userid=None, max_measures_per_station=11000):
 
-    blacked = {}
+    all_measures = []
     dropped_malformed = 0
     dropped_overflow = 0
     heka_client = get_heka_client()
-    is_new_station = {}
-    space_available = {}
-    station_count = defaultdict(int)
-    station_measures = []
+    new_stations = 0
     utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
 
-    # Process entries
+    # Process entries and group by validated station key
+    station_measures = defaultdict(list)
     for entry in entries:
-
         measure = create_measure(utcnow, entry)
 
         if not measure:
             dropped_malformed += 1
             continue
 
-        key = create_key(measure)
+        station_measures[create_key(measure)].append(measure)
 
-        # We _drop_ throttled measures before they hit the database.
-        if throttled_station(session, key, space_available, station_model,
-                             join_key, max_measures_per_station):
-            dropped_overflow += 1
-            continue
+    # Process measures one station at a time
+    for key, measures in station_measures.items():
 
-        station_measures.append(measure)
+        # Figure out how much space is left for this station
+        free = available_space(session, key, station_model,
+                               join_key, max_measures_per_station)
+        # Is the station on the blacklist?
+        blacked = blacklisted_or_incomplete_station(session, key,
+                                                    blacklist_model, join_key)
 
-        # We _accept_ blacklisted and incomplete measures into the
-        # database, we just overlook them during position estimation (much
-        # later: see ichnaea.tasks.*_location_update).
-        if blacklisted_or_incomplete_station(session, key, blacked,
-                                             blacklist_model, join_key):
-            is_new_station[key] = False
+        if not blacked:
+            q = session.query(station_model.id).filter(
+                *join_key(station_model, key))
+            is_new_station = (q.first() is None)
+            if is_new_station:
+                new_stations += 1
         else:
-            station_count[key] += 1
-            if key not in is_new_station:
-                q = session.query(station_model.id).filter(
-                    *join_key(station_model, key))
-                is_new_station[key] = (q.first() is None)
+            is_new_station = False
+
+        num = 0
+        for measure in measures:
+            # We _drop_ throttled measures before they hit the database.
+            if free <= 0:
+                dropped_overflow += 1
+                continue
+
+            # We _accept_ blacklisted and incomplete measures into the
+            # database, we just overlook them during position estimation (much
+            # later: see ichnaea.tasks.*_location_update).
+            all_measures.append(measure)
+            free -= 1
+            num += 1
+
+        if not blacked and num > 0:
+            update_station_counts(session, key, station_model, utcnow, num)
+
+    # Credit the user with discovering any new stations.
+    if userid is not None and new_stations > 0:
+        process_score(userid, new_stations, session,
+                      key='new_' + station_type)
 
     if dropped_malformed != 0:
         heka_client.incr("items.dropped.%s_ingress_malformed" % station_type,
@@ -373,14 +375,11 @@ def process_station_measures(session, entries, station_type,
         heka_client.incr("items.dropped.%s_ingress_overflow" % station_type,
                          count=dropped_overflow)
 
-    update_station_measure_counts(session, userid, station_type,
-                                  station_model, utcnow,
-                                  station_count, is_new_station)
-
     heka_client.incr("items.inserted.%s_measures" % station_type,
-                     count=len(station_measures))
-    session.add_all(station_measures)
-    return station_measures
+                     count=len(all_measures))
+
+    session.add_all(all_measures)
+    return all_measures
 
 
 def create_cell_measure(utcnow, entry):
