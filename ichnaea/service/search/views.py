@@ -11,8 +11,6 @@ from ichnaea.models import (
     WIFI_MIN_ACCURACY,
     CELL_MIN_ACCURACY,
     LAC_MIN_ACCURACY,
-    GEOIP_CITY_ACCURACY,
-    GEOIP_COUNTRY_ACCURACY,
     DEGREE_DECIMAL_PLACES,
 )
 from ichnaea.service.base import check_api_key

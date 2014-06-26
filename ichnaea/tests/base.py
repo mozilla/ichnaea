@@ -3,9 +3,6 @@ import os.path
 
 from alembic.config import Config
 from alembic import command
-
-from heka.encoders import NullEncoder
-from heka.streams import DebugCaptureStream
 from unittest2 import TestCase
 from webtest import TestApp
 
@@ -18,9 +15,9 @@ from ichnaea.heka_logging import configure_heka
 from ichnaea.models import ApiKey
 from ichnaea.worker import (
     attach_database,
+    celery,
     configure_s3_backup,
 )
-from ichnaea.worker import celery
 
 # make new unittest API's available under Python 2.6
 try:
