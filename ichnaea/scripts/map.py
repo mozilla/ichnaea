@@ -23,25 +23,35 @@ def tempdir():
 
 def export_to_csv(db, filename):
     session = db.session()
-    query = text('select lat / 1000, lon / 1000 from mapstat where `key` = 2')
+    stmt = text('select lat, lon from mapstat where `key` = 2 '
+                'order by lat, lon limit :l offset :o')
 
     # Set up a pseudo random generator with a fixed seed to prevent
     # datamap tiles from changing with every generation
     pseudorandom = Random()
     pseudorandom.seed(42)
+    random = pseudorandom.random
+    offset = 0
+    batch = 200000
+    pattern = '%.6f,%.6f'
 
     # export mapstat mysql table as csv to local file
     with open(filename, 'w') as fd:
-        result = session.execute(query)
-        random = pseudorandom.random
-        for r in result:
+        while True:
+            result = session.execute(stmt.bindparams(o=offset, l=batch))
+            rows = result.fetchall()
+            result.close()
+            if not rows:
+                break
             lines = []
-            for i in range(10):
-                lat = float(r[0]) + random() / 1000.0
-                lon = float(r[1]) + random() / 1000.0
-                lines.append('%.6f,%.6f' % (lat, lon))
+            append = lines.append
+            for r in rows:
+                for i in xrange(5):
+                    lat = (r[0] + random()) / 1000.0
+                    lon = (r[1] + random()) / 1000.0
+                    append(pattern % (lat, lon))
             fd.writelines(lines)
-        result.close()
+            offset += batch
 
 
 def generate(db, bucketname, datamaps='', output=None):
