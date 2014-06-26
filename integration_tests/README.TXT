@@ -1,14 +1,8 @@
-You'll need to get Vaurien from the master branch off of github:
-
-    make install_vaurien
-
-
 Then start up ichnaea and your vaurien proxies using:
 
     make start_ichnaea
     make mysql_vaurien
     make redis_vaurien
-
 
 The vaurien proxies can be instruments to be in one of 3 modes: dummy,
 delay or blackout.

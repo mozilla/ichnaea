@@ -7,9 +7,20 @@ notifications:
   email:
     - hschlichting@mozilla.com
 
+
 script:
     - make build
     - make test
 
 services:
   - redis-server
+
+branches:
+    only:
+        - travis_ci
+
+after_script:
+  - make install_vaurien_deps
+  - make mysql_vaurien &
+  - make redis_vaurien &
+  - VENV_BIN=/home/travis/virtualenv/python${TRAVIS_PYTHON_VERSION}/bin make start_ichnaea

@@ -1,0 +1,9 @@
+cornice==0.16.2
+gevent==1.0.1
+heka-py-raven==0.7
+http-parser==0.8.3
+pyramid-chameleon==0.1
+requests==2.3.0
+statsd-client==1.0.4
+vaurien==1.9
+vaurienclient==1.1

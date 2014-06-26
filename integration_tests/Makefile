@@ -8,7 +8,7 @@ redis_vaurien:
 
 # Start the ichnaea server using the vaurien proxy ports for Redis and MySQL
 start_ichnaea:
-	cd .. && ICHNAEA_CFG=vaurien/ichnaea.ini ./run_server.sh
+	cd .. && ICHNAEA_CFG=integration_tests/ichnaea.ini ./run_server.sh
 
 # Reset proxy so that it just passes through to mysql
 dummy_mysql:
@@ -35,7 +35,7 @@ blackout_redis:
 	curl -XPUT -d '{"name": "blackout"}' http://localhost:8090/behavior -H "Content-Type: application/json"
 
 run_submit:
-	python iclient --submit
+	python iclient.py --submit
 
 run_search:
-	python iclient --submit
+	python iclient.py --search

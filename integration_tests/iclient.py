@@ -14,11 +14,14 @@ def submit_test():
                                      "accuracy": 17,
                                      "wifi": wifi_data}]})
 
+    expected_status = 204
+
     while True:
         try:
             r = requests.post('http://127.0.0.1:7001/v1/submit',
                               data=payload)
             print r.status_code, time.time()
+            assert r.status_code == expected_status
         except:
             pass
 
