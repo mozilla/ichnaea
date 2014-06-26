@@ -92,28 +92,32 @@ class DBIsolation(object):
     # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
 
     def setup_session(self):
-        master_conn = self.db_master.engine.connect()
-        self.master_trans = master_conn.begin()
-        self.db_master.session_factory.configure(bind=master_conn)
+        self.master_conn = self.db_master.engine.connect()
+        self.master_trans = self.master_conn.begin()
+        self.db_master.session_factory.configure(bind=self.master_conn)
         self.db_master_session = self.db_master.session()
-        slave_conn = self.db_slave.engine.connect()
-        self.slave_trans = slave_conn.begin()
-        self.db_slave.session_factory.configure(bind=slave_conn)
+        self.slave_conn = self.db_slave.engine.connect()
+        self.slave_trans = self.slave_conn.begin()
+        self.db_slave.session_factory.configure(bind=self.slave_conn)
         self.db_slave_session = self.db_slave.session()
 
     def teardown_session(self):
         self.slave_trans.rollback()
         self.db_slave_session.close()
         del self.db_slave_session
-        self.slave_trans.close()
         self.db_slave.session_factory.configure(bind=None)
+        self.slave_trans.close()
         del self.slave_trans
+        self.slave_conn.close()
+        del self.slave_conn
         self.master_trans.rollback()
         self.db_master_session.close()
         del self.db_master_session
-        self.master_trans.close()
         self.db_master.session_factory.configure(bind=None)
+        self.master_trans.close()
         del self.master_trans
+        self.master_conn.close()
+        del self.master_conn
 
     @classmethod
     def setup_engine(cls):
