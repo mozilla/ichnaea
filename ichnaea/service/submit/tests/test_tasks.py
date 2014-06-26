@@ -469,10 +469,14 @@ class TestSubmitErrors(CeleryTestCase):
         session.execute(stmt)
 
         entries = [
-            {"lat": 10000000, "lon": 20000000, "key": "ab12", "channel": 11},
-            {"lat": 10000000, "lon": 20000000, "key": "ab12", "channel": 3},
-            {"lat": 10000000, "lon": 20000000, "key": "ab12", "channel": 3},
-            {"lat": 10000000, "lon": 20000000, "key": "cd34", "channel": 3},
+            {"lat": 10000000, "lon": 20000000,
+             "key": "ab:12:34:56:78:90", "channel": 11},
+            {"lat": 10000000, "lon": 20000000,
+             "key": "ab:12:34:56:78:90", "channel": 3},
+            {"lat": 10000000, "lon": 20000000,
+             "key": "ab:12:34:56:78:90", "channel": 3},
+            {"lat": 10000000, "lon": 20000000,
+             "key": "cd:12:34:56:78:90", "channel": 3},
         ]
 
         try:
