@@ -18,4 +18,5 @@ build
 dist
 include
 lib
+lib64
 man
