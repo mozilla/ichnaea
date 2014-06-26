@@ -197,10 +197,11 @@ def process_measures(items, session, userid=None):
         cell, wifi = process_measure(report_id, measures[i].id, item, session)
         cell_measures.extend(cell)
         wifi_measures.extend(wifi)
-        positions.append({
-            'lat': from_degrees(item['lat']),
-            'lon': from_degrees(item['lon']),
-        })
+        if cell or wifi:
+            positions.append({
+                'lat': from_degrees(item['lat']),
+                'lon': from_degrees(item['lon']),
+            })
 
     heka_client = get_heka_client()
 
@@ -227,8 +228,8 @@ def process_measures(items, session, userid=None):
             insert_wifi_measures.delay(values, userid=userid)
 
     if userid is not None:
-        process_score(userid, len(items), session)
-    if positions and (cell_measures or wifi_measures):
+        process_score(userid, len(positions), session)
+    if positions:
         process_mapstat(positions, session, userid=userid)
 
 

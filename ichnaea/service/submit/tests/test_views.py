@@ -325,6 +325,9 @@ class TestSubmit(CeleryAppTestCase):
                 {"lat": -2.0,
                  "lon": 3.0,
                  "wifi": [{"key": "cccccccccccc"}]},
+                {"lat": 10.0,
+                 "lon": 10.0,
+                 "wifi": [{"key": "invalid"}]},
             ]},
             status=204)
         # check coarse grained stats
@@ -353,6 +356,9 @@ class TestSubmit(CeleryAppTestCase):
                 {"lat": 2.0,
                  "lon": 3.0,
                  "wifi": [{"key": "00bbbbbbbbbb"}]},
+                {"lat": 10.0,
+                 "lon": 10.0,
+                 "wifi": [{"key": "invalid"}]},
             ]},
             headers={'X-Nickname': nickname},
             status=204)
