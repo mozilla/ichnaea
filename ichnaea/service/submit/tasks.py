@@ -255,8 +255,8 @@ def insert_measures(self, items=None, nickname=''):
         raise self.retry(exc=exc)
 
 
-def available_space(session, key, station_model, join_key,
-                    max_measures_per_station):
+def available_station_space(session, key, station_model, join_key,
+                            max_measures_per_station):
     # check if there's space for new measurements within per-station maximum
     # old measures are gradually backed up, so this is an intake-rate limit
 
@@ -265,11 +265,10 @@ def available_space(session, key, station_model, join_key,
     curr = query.first()
 
     if curr is not None:
-        result = max_measures_per_station - curr[0]
-    else:
-        result = max_measures_per_station
+        return max_measures_per_station - curr[0]
 
-    return result
+    # Return None to signal no station record was found.
+    return None
 
 
 def blacklisted_or_incomplete_station(session, key, blacklist_model,
@@ -329,21 +328,25 @@ def process_station_measures(session, entries, station_type,
     # Process measures one station at a time
     for key, measures in station_measures.items():
 
-        # Figure out how much space is left for this station
-        free = available_space(session, key, station_model,
-                               join_key, max_measures_per_station)
-        # Is the station on the blacklist?
-        blacked = blacklisted_or_incomplete_station(session, key,
-                                                    blacklist_model, join_key)
+        blacked = False
+        is_new_station = False
 
-        if not blacked:
-            q = session.query(station_model.id).filter(
-                *join_key(station_model, key))
-            is_new_station = (q.first() is None)
-            if is_new_station:
+        # Figure out how much space is left for this station
+        free = available_station_space(session, key, station_model,
+                                       join_key, max_measures_per_station)
+        if free is None:
+            is_new_station = True
+            free = max_measures_per_station
+
+        if is_new_station:
+            # If we can lookup limits for the station, it's not blacklisted
+            # or incomplete, only lookup status for unknown stations.
+            blacked = blacklisted_or_incomplete_station(session, key,
+                                                        blacklist_model,
+                                                        join_key)
+            if not blacked:
+                # We discovered an actual new complete station
                 new_stations += 1
-        else:
-            is_new_station = False
 
         num = 0
         for measure in measures:
