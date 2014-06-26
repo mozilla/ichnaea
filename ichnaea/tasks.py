@@ -359,8 +359,8 @@ def mark_moving_wifis(session, moving_wifis):
     for key in moving_keys:
         # on duplicate key, do a no-op change
         stmt = WifiBlacklist.__table__.insert(
-            on_duplicate='created=created').values(
-            key=key, created=utcnow)
+            on_duplicate='time=time').values(
+            key=key, time=utcnow)
         session.execute(stmt)
     get_heka_client().incr("items.blacklisted.wifi_moving",
                            len(moving_keys))

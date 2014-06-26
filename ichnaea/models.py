@@ -451,16 +451,19 @@ class CellBlacklist(_Model):
     )
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
-    created = Column(DateTime)
+    time = Column(DateTime)
     radio = Column(SmallInteger)
     mcc = Column(SmallInteger)
     mnc = Column(Integer)
     lac = Column(Integer)
     cid = Column(Integer)
+    count = Column(Integer)
 
     def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = datetime.utcnow()
+        if 'time' not in kw:
+            kw['time'] = datetime.utcnow()
+        if 'count' not in kw:
+            kw['count'] = 1
         super(CellBlacklist, self).__init__(*args, **kw)
 
 
@@ -591,12 +594,15 @@ class WifiBlacklist(_Model):
     )
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
-    created = Column(DateTime)
+    time = Column(DateTime)
     key = Column(String(12))
+    count = Column(Integer)
 
     def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = datetime.utcnow()
+        if 'time' not in kw:
+            kw['time'] = datetime.utcnow()
+        if 'count' not in kw:
+            kw['count'] = 1
         super(WifiBlacklist, self).__init__(*args, **kw)
 
 

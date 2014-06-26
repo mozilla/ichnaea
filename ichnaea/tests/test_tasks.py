@@ -172,7 +172,7 @@ class TestCellLocationUpdate(CeleryTestCase):
             # estimate has been updated since
             Cell(lat=60000000, lon=60000000,
                  new_measures=2, total_measures=1, **k6),
-            CellMeasure(lat=69000000, lon=69000000, created=long_ago, **k6),
+            CellMeasure(lat=69000000, lon=69000000, time=long_ago, **k6),
             CellMeasure(lat=60000000, lon=60000000, **k6),
             CellMeasure(lat=60010000, lon=60000000, **k6),
         ]
@@ -538,7 +538,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
             # estimate has been updated since
             Wifi(lat=60000000, lon=60000000, key=k6,
                  new_measures=2, total_measures=1),
-            WifiMeasure(lat=69000000, lon=69000000, key=k6, created=long_ago),
+            WifiMeasure(lat=69000000, lon=69000000, key=k6, time=long_ago),
             WifiMeasure(lat=60000000, lon=60000000, key=k6),
             WifiMeasure(lat=60010000, lon=60000000, key=k6),
         ]

@@ -131,7 +131,8 @@ class TestWifiBlacklist(DBTestCase):
     def test_constructor(self):
         wifi = self._make_one()
         self.assertTrue(wifi.key is None)
-        self.assertTrue(wifi.created is not None)
+        self.assertTrue(wifi.time is not None)
+        self.assertTrue(wifi.count is not None)
 
     def test_fields(self):
         key = "3680873e9b83"
@@ -142,7 +143,8 @@ class TestWifiBlacklist(DBTestCase):
 
         result = session.query(wifi.__class__).first()
         self.assertEqual(result.key, key)
-        self.assertTrue(isinstance(result.created, datetime.datetime))
+        self.assertTrue(isinstance(result.time, datetime.datetime))
+        self.assertTrue(isinstance(result.count, int))
 
     def test_unique_key(self):
         key = "3680873e9b83"
