@@ -56,7 +56,7 @@ def export_to_csv(db, filename):
             offset += batch
 
 
-def generate(db, bucketname, datamaps='', output=None):
+def generate(db, bucketname, concurrency=2, datamaps='', output=None):
     datamaps_encode = os.path.join(datamaps, 'encode')
     datamaps_enumerate = os.path.join(datamaps, 'enumerate')
     datamaps_render = os.path.join(datamaps, 'render')
@@ -67,16 +67,27 @@ def generate(db, bucketname, datamaps='', output=None):
 
         # create shapefile / quadtree
         shapes = os.path.join(workdir, 'shapes')
-        os.system('%s -z15 -o %s %s' % (datamaps_encode, shapes, csv))
+        cmd = '{encode} -z15 -o {output} {input}'.format(
+            encode=datamaps_encode,
+            output=shapes,
+            input=csv)
+        os.system(cmd)
 
         # render tiles
         if output:
             tiles = output
         else:
             tiles = os.path.join(workdir, 'tiles')
-        options = '-B 12:0.0379:0.874 -c0088FF -t0 -O 16:1600:1.5 -G 0.5'
-        os.system('%s -z13 %s | xargs -L1 -P3 %s -o %s %s' % (
-            datamaps_enumerate, shapes, datamaps_render, tiles, options))
+        cmd = ('{enumerate} -z13 {shapes} | xargs -L1 -P{concurrency} '
+               '{render} -o {output} -B 12:0.0379:0.874 -c0088FF -t0 '
+               '-O 16:1600:1.5 -G 0.5')
+        cmd = cmd.format(
+            enumerate=datamaps_enumerate,
+            shapes=shapes,
+            concurrency=concurrency,
+            render=datamaps_render,
+            output=tiles)
+        os.system(cmd)
 
 
 def main(argv, _db_master=None):
@@ -89,6 +100,8 @@ def main(argv, _db_master=None):
 
     parser.add_argument('--create', action='store_true',
                         help='Create tiles.')
+    parser.add_argument('--concurrency', default=2,
+                        help='How many concurrent render processes to use?')
     parser.add_argument('--datamaps',
                         help='Directory of the datamaps tools.')
     parser.add_argument('--output',
@@ -101,6 +114,10 @@ def main(argv, _db_master=None):
         db = Database(conf.get('ichnaea', 'db_master'))
         bucketname = conf.get('ichnaea', 's3_assets_bucket')
 
+        concurrency = 2
+        if args.concurrency:
+            concurrency = int(args.concurrency)
+
         datamaps = ''
         if args.datamaps:
             datamaps = os.path.abspath(args.datamaps)
@@ -109,7 +126,8 @@ def main(argv, _db_master=None):
         if args.output:
             output = os.path.abspath(args.output)
 
-        generate(db, bucketname, datamaps=datamaps, output=output)
+        generate(db, bucketname,
+                 concurrency=concurrency, datamaps=datamaps, output=output)
     else:
         parser.print_help()
 
