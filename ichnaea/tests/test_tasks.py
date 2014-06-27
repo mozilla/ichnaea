@@ -573,10 +573,11 @@ class TestWifiLocationUpdate(CeleryTestCase):
         from ichnaea.tasks import remove_wifi
         session = self.db_master_session
         measures = []
-        wifi_keys = ["a%s1234567890" % i for i in range(5)]
+        wifi_keys = [{'key': "a%s1234567890" % i} for i in range(5)]
         m1 = 10000000
         m2 = 10000000
         for key in wifi_keys:
+            key = key['key']
             measures.append(Wifi(key=key))
             measures.append(WifiMeasure(lat=m1, lon=m1, key=key))
             measures.append(WifiMeasure(lat=m2, lon=m2, key=key))
