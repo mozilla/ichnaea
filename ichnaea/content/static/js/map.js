@@ -9,9 +9,15 @@ $(document).ready(function() {
         maxZoom = 15;
     }
 
+    // Restrict to typical Web Mercator bounds
+    var southWest = L.latLng(-85.0511, -270.0),
+        northEast = L.latLng(85.0511, 270.0),
+        bounds = L.latLngBounds(southWest, northEast);
+
     var map = L.mapbox.map('map', 'mozilla-webprod.map-05ad0a21', {
         minZoom: 1,
         maxZoom: maxZoom,
+        maxBounds: bounds,
         tileLayer: { detectRetina: true }
     }).setView([15.0, 10.0], 2);
 

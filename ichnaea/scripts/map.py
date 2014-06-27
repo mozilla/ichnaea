@@ -23,8 +23,10 @@ def tempdir():
 
 def export_to_csv(db, filename):
     session = db.session()
-    stmt = text('select lat, lon from mapstat where `key` = 2 '
-                'order by lat, lon limit :l offset :o')
+    # restrict lat/lon to web mercator projection values
+    stmt = text('select lat, lon from mapstat where `key` = 2 and '
+                'lat < 85051 and lat > -85051 and lon < 180000 and '
+                'lon > -180000 order by lat, lon limit :l offset :o')
 
     # Set up a pseudo random generator with a fixed seed to prevent
     # datamap tiles from changing with every generation

@@ -60,13 +60,16 @@ css: node_modules
 	$(HERE)/node_modules/.bin/cleancss -d \
 	-o $(HERE)/ichnaea/content/static/css/base-combined.css \
 	$(HERE)/ichnaea/content/static/css/base.css
-js: node_modules
+
+js_map:
 	$(HERE)/node_modules/.bin/uglifyjs \
 	$(HERE)/ichnaea/content/static/js/mapbox-1.6.4.min.js \
 	$(HERE)/ichnaea/content/static/js/leaflet-hash-0.2.1.js \
 	$(HERE)/ichnaea/content/static/js/map.js \
 	-o $(HERE)/ichnaea/content/static/js/map-combined.js \
 	-m -c --stats
+
+js: node_modules js_map
 	$(HERE)/node_modules/.bin/uglifyjs \
 	$(HERE)/ichnaea/content/static/js/d3-3.3.11.min.js \
 	$(HERE)/ichnaea/content/static/js/rickshaw-1.4.5.min.js \
