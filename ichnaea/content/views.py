@@ -1,5 +1,6 @@
 import datetime
 import os
+import urlparse
 
 from pyramid.decorator import reify
 from pyramid.events import NewResponse
@@ -23,6 +24,25 @@ FAVICON_PATH = os.path.join(HERE, 'static', 'favicon.ico')
 # cache year lookup, needs server restart after new year :)
 THIS_YEAR = unicode(datetime.datetime.utcnow().year)
 
+CSP_BASE = "'self' *.cdn.mozilla.net"
+CSP_POLICY = """\
+default-src 'self' *.tiles.mapbox.com;
+font-src {base};
+img-src {base} {tiles} *.google-analytics.com *.tiles.mapbox.com data:;
+script-src {base} *.google-analytics.com 'unsafe-eval';
+style-src {base};
+"""
+CSP_POLICY = CSP_POLICY.replace("\n", ' ').strip()
+LOCAL_TILES = 'http://127.0.0.1:7001/static/tiles/{z}/{x}/{y}.png'
+
+
+def map_tiles_url(base_url):
+    if base_url is None:
+        return LOCAL_TILES
+    elif not base_url.endswith('/'):
+        base_url = base_url + '/'
+    return urlparse.urljoin(base_url, 'tiles/{z}/{x}/{y}.png')
+
 
 def configure_content(config):
     config.add_view(favicon_view, name='favicon.ico',
@@ -40,24 +60,19 @@ def configure_content(config):
 
     config.scan('ichnaea.content.views')
 
-
-CSP_BASE = "'self' *.cdn.mozilla.net"
-CSP_POLICY = """\
-default-src 'self' *.tiles.mapbox.com;
-font-src {base};
-img-src {base} *.google-analytics.com *.tiles.mapbox.com data:;
-script-src {base} *.google-analytics.com 'unsafe-eval';
-style-src {base};
-""".format(base=CSP_BASE)
-CSP_POLICY = CSP_POLICY.replace("\n", ' ').strip()
+    assets_url = config.registry.settings.get('assets_url', None)
+    config.registry.tiles_url = tiles_url = map_tiles_url(assets_url)
+    result = urlparse.urlsplit(tiles_url)
+    config.registry.csp = CSP_POLICY.format(base=CSP_BASE, tiles=result.netloc)
 
 
 @subscriber(NewResponse)
 def security_headers(event):
     response = event.response
     if response.content_type == 'text/html':
+        csp = event.request.registry.csp
         response.headers.add("Strict-Transport-Security", "max-age=31536000")
-        response.headers.add("Content-Security-Policy", CSP_POLICY)
+        response.headers.add("Content-Security-Policy", csp)
         response.headers.add("X-Content-Type-Options", "nosniff")
         response.headers.add("X-XSS-Protection", "1; mode=block")
         response.headers.add("X-Frame-Options", "DENY")
@@ -142,7 +157,10 @@ class ContentViews(Layout):
 
     @view_config(renderer='templates/map.pt', name="map", http_cache=300)
     def map_view(self):
-        return {'page_title': 'Map'}
+        tiles_url = getattr(self.request.registry, 'tiles_url', None)
+        if not tiles_url:
+            tiles_url = map_tiles_url(None)
+        return {'page_title': 'Map', 'tiles': tiles_url}
 
     @view_config(
         renderer='json', name="stats_unique_cell.json", http_cache=3600)

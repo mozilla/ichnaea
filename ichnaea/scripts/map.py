@@ -35,7 +35,7 @@ def export_to_csv(db, filename):
     random = pseudorandom.random
     offset = 0
     batch = 200000
-    pattern = '%.6f,%.6f'
+    pattern = '%.6f,%.6f\n'
 
     # export mapstat mysql table as csv to local file
     with open(filename, 'w') as fd:

@@ -20,7 +20,7 @@
         The map shows general areas in which we have data samples.
         It does not show the locations of cell towers or WiFi access points.
     </p>
-    <div id='map'></div>
+    <div id='map' data-tiles='${tiles}'></div>
 </section>
 </tal:slot>
 

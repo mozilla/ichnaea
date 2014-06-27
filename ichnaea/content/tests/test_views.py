@@ -36,10 +36,12 @@ class TestContentViews(TestCase):
         self.assertEqual(result['page_title'], 'Overview')
 
     def test_map(self):
+        from ichnaea.content.views import LOCAL_TILES
         request = DummyRequest()
         inst = self._make_view(request)
         result = inst.map_view()
         self.assertEqual(result['page_title'], 'Map')
+        self.assertEqual(result['tiles'], LOCAL_TILES)
 
 
 class TestFunctionalContent(AppTestCase):
@@ -50,6 +52,15 @@ class TestFunctionalContent(AppTestCase):
         self.app.get('/map', status=200)
         self.app.get('/privacy', status=200)
         self.app.get('/stats', status=200)
+
+    def test_csp(self):
+        result = self.app.get('/', status=200)
+        self.assertTrue('Content-Security-Policy' in result.headers)
+        csp = result.headers['Content-Security-Policy']
+        # make sure CSP_BASE interpolation worked
+        self.assertTrue("'self' *.cdn.mozilla.net" in csp)
+        # make sure map assets url interpolation worked
+        self.assertTrue('127.0.0.1:7001' in csp)
 
     def test_favicon(self):
         self.app.get('/favicon.ico', status=200)

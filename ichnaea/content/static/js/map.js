@@ -36,7 +36,8 @@ $(document).ready(function() {
     }).addTo(map);
 
     // add tile layer
-    L.tileLayer('/tiles/{z}/{x}/{y}.png', {
+    var tiles = $('#map').data('tiles');
+    L.tileLayer(tiles, {
         detectRetina: true,
         maxNativeZoom: 13
     }).addTo(map);
