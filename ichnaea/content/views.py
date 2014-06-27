@@ -63,7 +63,8 @@ def configure_content(config):
     assets_url = config.registry.settings.get('assets_url', None)
     config.registry.tiles_url = tiles_url = map_tiles_url(assets_url)
     result = urlparse.urlsplit(tiles_url)
-    config.registry.csp = CSP_POLICY.format(base=CSP_BASE, tiles=result.netloc)
+    tiles = urlparse.urlunparse((result.scheme, result.netloc, '', '', '', ''))
+    config.registry.csp = CSP_POLICY.format(base=CSP_BASE, tiles=tiles)
 
 
 @subscriber(NewResponse)
