@@ -97,6 +97,7 @@ ALL_VALID_MCCS = frozenset(
 
 CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
+WifiKey = namedtuple('WifiKey', 'key')
 
 
 def from_degrees(deg):
@@ -380,6 +381,19 @@ def join_cellkey(model, k):
         # add it to the criterion
         criterion += (model.psc == k.psc, )
     return criterion
+
+
+def to_wifikey(obj):
+    if isinstance(obj, dict):
+        return WifiKey(key=obj['key'])
+    elif isinstance(obj, basestring):
+        return WifiKey(key=obj)
+    else:
+        return WifiKey(key=obj.key)
+
+
+def join_wifikey(model, k):
+    return (model.key == k.key,)
 
 
 class Cell(_Model):

@@ -25,7 +25,9 @@ from ichnaea.models import (
     WifiMeasure,
     from_degrees,
     join_cellkey,
+    join_wifikey,
     to_cellkey,
+    to_wifikey,
     to_degrees,
 )
 from ichnaea.worker import celery
@@ -348,7 +350,7 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
 
 
 def mark_moving_station(session, blacklist_model, station_type,
-                        to_key, dict_key, join_key, moving_stations,
+                        to_key, join_key, moving_stations,
                         remove_station):
     moving_keys = []
     blacklist = set()
@@ -362,7 +364,7 @@ def mark_moving_station(session, blacklist_model, station_type,
             b.time = utcnow
             b.count += 1
         else:
-            d = dict_key(key)
+            d = key._asdict()
             b = blacklist_model(**d)
             moving_keys.append(d)
         blacklist.add(b)
@@ -379,9 +381,8 @@ def mark_moving_wifis(session, moving_wifis):
     mark_moving_station(session,
                         blacklist_model=WifiBlacklist,
                         station_type="wifi",
-                        to_key=lambda w: w.key,
-                        dict_key=lambda k: {'key': k},
-                        join_key=lambda m, k: (m.key == k,),
+                        to_key=to_wifikey,
+                        join_key=join_wifikey,
                         moving_stations=moving_wifis,
                         remove_station=remove_wifi)
 
@@ -391,7 +392,6 @@ def mark_moving_cells(session, moving_cells):
                         blacklist_model=CellBlacklist,
                         station_type="cell",
                         to_key=to_cellkey,
-                        dict_key=lambda k: k._asdict(),
                         join_key=join_cellkey,
                         moving_stations=moving_cells,
                         remove_station=remove_cell)
