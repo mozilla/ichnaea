@@ -1,5 +1,5 @@
 from collections import namedtuple
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import re
 
 from colander import iso8601
@@ -94,6 +94,16 @@ ALL_VALID_MCCS = frozenset(
      if isinstance(country.mcc, tuple)
      for code in country.mcc]
 )
+
+# Time during which each temporary blacklisting (detection of station
+# movement) causes measurements to be dropped on the floor.
+TEMPORARY_BLACKLIST_DURATION = timedelta(days=7)
+
+# Number of temporary blacklistings that result in a permanent
+# blacklisting; in other words, number of times a station can
+# "legitimately" move to a new location before we permanently give
+# up trying to figure out its fixed location.
+PERMANENT_BLACKLIST_THRESHOLD = 6
 
 CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')

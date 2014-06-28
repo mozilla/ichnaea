@@ -28,6 +28,8 @@ from ichnaea.models import (
     decode_datetime,
     encode_datetime,
     from_degrees,
+    PERMANENT_BLACKLIST_THRESHOLD,
+    TEMPORARY_BLACKLIST_DURATION,
 )
 from ichnaea.customjson import (
     loads,
@@ -281,7 +283,14 @@ def blacklisted_or_incomplete_station(session, key, blacklist_model,
     query = session.query(blacklist_model).filter(
         *join_key(blacklist_model, key))
     b = query.first()
-    return (b is not None)
+    if b is not None:
+        utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+        age = utcnow - b.time
+        temporarily_blacklisted = age < TEMPORARY_BLACKLIST_DURATION
+        permanently_blacklisted = b.count >= PERMANENT_BLACKLIST_THRESHOLD
+        if temporarily_blacklisted or permanently_blacklisted:
+            return True
+    return False
 
 
 def update_station_counts(session, key, station_model, utcnow, num):
