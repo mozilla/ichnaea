@@ -6,6 +6,7 @@ from kombu.serialization import (
     dumps as kombu_dumps,
     loads as kombu_loads,
 )
+import pytz
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 
@@ -246,7 +247,7 @@ def calculate_new_position(station, measures, moving_stations,
 
 
 def update_enclosing_lac(session, cell):
-    now = datetime.utcnow()
+    now = datetime.utcnow().replace(tzinfo=pytz.UTC)
     stmt = Cell.__table__.insert(
         on_duplicate='new_measures = new_measures + 1'
     ).values(
@@ -354,7 +355,7 @@ def mark_moving_station(session, blacklist_model, station_type,
                         remove_station):
     moving_keys = []
     blacklist = set()
-    utcnow = datetime.utcnow()
+    utcnow = datetime.utcnow().replace(tzinfo=pytz.UTC)
     for station in moving_stations:
         key = to_key(station)
         query = session.query(blacklist_model).filter(

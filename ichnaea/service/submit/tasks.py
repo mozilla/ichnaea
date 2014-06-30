@@ -274,7 +274,7 @@ def available_station_space(session, key, station_model, join_key,
 
 
 def blacklisted_or_incomplete_station(session, key, blacklist_model,
-                                      join_key):
+                                      join_key, utcnow):
 
     if isinstance(key, tuple) and \
        (key.radio < 0 or key.lac < 0 or key.cid < 0):  # NOQA
@@ -284,7 +284,6 @@ def blacklisted_or_incomplete_station(session, key, blacklist_model,
         *join_key(blacklist_model, key))
     b = query.first()
     if b is not None:
-        utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
         age = utcnow - b.time
         temporarily_blacklisted = age < TEMPORARY_BLACKLIST_DURATION
         permanently_blacklisted = b.count >= PERMANENT_BLACKLIST_THRESHOLD
@@ -352,7 +351,7 @@ def process_station_measures(session, entries, station_type,
             # or incomplete, only lookup status for unknown stations.
             blacked = blacklisted_or_incomplete_station(session, key,
                                                         blacklist_model,
-                                                        join_key)
+                                                        join_key, utcnow)
             if not blacked:
                 # We discovered an actual new complete station
                 new_stations += 1
