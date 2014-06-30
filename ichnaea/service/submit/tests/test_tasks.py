@@ -287,7 +287,7 @@ class TestInsert(CeleryTestCase):
                          radio=RADIO_TYPE['gsm'],
                          id=0,
                          lat=from_degrees(PARIS_LAT) + i,
-                         lon=from_degrees(PARIS_LON) + i) for i in range(3)]
+                         lon=from_degrees(PARIS_LON) + i) for i in range(1, 4)]
 
         black = CellBlacklist(
             mcc=FRANCE_MCC, mnc=2, lac=3, cid=1,

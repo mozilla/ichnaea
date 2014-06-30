@@ -272,8 +272,8 @@ def normalized_cell_dict(d, default_radio=-1):
         d, dict(radio=(MIN_RADIO_TYPE, MAX_RADIO_TYPE, default_radio),
                 mcc=(1, 999, REQUIRED),
                 mnc=(0, 32767, REQUIRED),
-                lac=(0, 65535, -1),
-                cid=(0, 268435455, -1),
+                lac=(1, 65535, -1),
+                cid=(1, 268435455, -1),
                 psc=(0, 512, -1)))
 
     if d is None:

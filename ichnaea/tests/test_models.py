@@ -242,11 +242,11 @@ class TestNormalization(TestCase):
         valid_mncs = [0, 542, 32767]
         invalid_mncs = [-10, -1, 32768, 93870]
 
-        valid_lacs = [0, 763, 65535]
-        invalid_lacs = [-1, -10, 65536, 987347]
+        valid_lacs = [1, 763, 65535]
+        invalid_lacs = [-1, 0, -10, 65536, 987347]
 
-        valid_cids = [0, 12345, 268435455]
-        invalid_cids = [-10, -1, 268435456, 498169872]
+        valid_cids = [1, 12345, 268435455]
+        invalid_cids = [-10, -1, 0, 268435456, 498169872]
 
         valid_pscs = [0, 120, 512]
         invalid_pscs = [-1, 513, 4456]
