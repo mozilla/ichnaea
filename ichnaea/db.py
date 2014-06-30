@@ -1,10 +1,12 @@
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine
+from sqlalchemy import exc, event
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql.expression import Insert
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import Pool
+from sqlalchemy.sql.expression import Insert
 
 
 _Model = declarative_base()
@@ -91,8 +93,34 @@ class Database(object):
         options['connect_args'] = {'charset': 'utf8'}
         options['execution_options'] = {'autocommit': False}
         self.engine = create_engine(uri, **options)
+        event.listen(self.engine, "checkout", check_connection)
+
         self.session_factory = sessionmaker(
             bind=self.engine, autocommit=False, autoflush=False)
 
     def session(self):
         return self.session_factory()
+
+
+@event.listens_for(Pool, "checkout")
+def check_connection(dbapi_con, con_record, con_proxy):
+    '''
+    Listener for Pool checkout events that pings every connection before using.
+    Implements pessimistic disconnect handling strategy. See also:
+    http://docs.sqlalchemy.org/en/rel_0_9/core/pooling.html#disconnect-handling-pessimistic
+    '''
+
+    try:
+        # dbapi_con.ping() ends up calling mysql_ping()
+        # http://dev.mysql.com/doc/refman/5.0/en/mysql-ping.html
+        dbapi_con.ping()
+    except exc.OperationalError, ex:
+        if ex.args[0] in (2006,     # MySQL server has gone away
+                          2013,     # Lost connection to MySQL server
+                                    # during query
+                          2055):    # Lost connection to MySQL server at '%s',
+                                    # system error: %d
+            # caught by pool, which will retry with a new connection
+            raise exc.DisconnectionError()
+        else:
+            raise
