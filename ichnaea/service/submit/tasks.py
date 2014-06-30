@@ -273,12 +273,22 @@ def available_station_space(session, key, station_model, join_key,
     return None
 
 
-def blacklisted_or_incomplete_station(session, key, blacklist_model,
-                                      join_key, utcnow):
-
+def incomplete_measure(key):
+    """
+    Certain incomplete measures we want to store in the database
+    even though they should not lead to the creation of a station
+    entry; these are cell measures with -1 for LAC and/or CID, and
+    will be inferred from neighbouring cells.
+    See ichnaea.backfill.tasks.
+    """
     if isinstance(key, tuple) and \
        (key.radio < 0 or key.lac < 0 or key.cid < 0):  # NOQA
         return True
+    return False
+
+
+def blacklisted_station(session, key, blacklist_model,
+                        join_key, utcnow):
 
     query = session.query(blacklist_model).filter(
         *join_key(blacklist_model, key))
@@ -292,9 +302,11 @@ def blacklisted_or_incomplete_station(session, key, blacklist_model,
     return False
 
 
-def update_station_counts(session, key, station_model, utcnow, num):
-
-    # Update new/total measure counts
+def create_or_update_station(session, key, station_model, utcnow, num):
+    """
+    Creates a station or updates its new/total_measures counts to reflect
+    recently-received measures.
+    """
     if isinstance(key, tuple):
         d = key._asdict()
     else:
@@ -336,10 +348,10 @@ def process_station_measures(session, entries, station_type,
     # Process measures one station at a time
     for key, measures in station_measures.items():
 
-        blacked = False
+        incomplete = False
         is_new_station = False
 
-        # Figure out how much space is left for this station
+        # Figure out how much space is left for this station.
         free = available_station_space(session, key, station_model,
                                        join_key, max_measures_per_station)
         if free is None:
@@ -347,31 +359,30 @@ def process_station_measures(session, entries, station_type,
             free = max_measures_per_station
 
         if is_new_station:
-            # If we can lookup limits for the station, it's not blacklisted
-            # or incomplete, only lookup status for unknown stations.
-            blacked = blacklisted_or_incomplete_station(session, key,
-                                                        blacklist_model,
-                                                        join_key, utcnow)
-            if not blacked:
-                # We discovered an actual new complete station
+            # Drop measures for blacklisted stations.
+            if blacklisted_station(session, key, blacklist_model,
+                                   join_key, utcnow):
+                continue
+
+            incomplete = incomplete_measure(key)
+            if not incomplete:
+                # We discovered an actual new complete station.
                 new_stations += 1
 
+        # Accept measures up to input-throttling limit, then drop.
         num = 0
         for measure in measures:
-            # We _drop_ throttled measures before they hit the database.
             if free <= 0:
                 dropped_overflow += 1
                 continue
-
-            # We _accept_ blacklisted and incomplete measures into the
-            # database, we just overlook them during position estimation (much
-            # later: see ichnaea.tasks.*_location_update).
             all_measures.append(measure)
             free -= 1
             num += 1
 
-        if not blacked and num > 0:
-            update_station_counts(session, key, station_model, utcnow, num)
+        # Accept incomplete measures, just don't make stations for them.
+        # (station creation is a side effect of count-updating)
+        if not incomplete and num > 0:
+            create_or_update_station(session, key, station_model, utcnow, num)
 
     # Credit the user with discovering any new stations.
     if userid is not None and new_stations > 0:

@@ -289,7 +289,7 @@ def backfill_cell_location_update(self, new_cell_measures):
 
                 if moving_cells:
                     # some cells found to be moving too much
-                    mark_moving_cells(session, moving_cells)
+                    blacklist_and_remove_moving_cells(session, moving_cells)
 
             session.commit()
         return (len(cells), len(moving_cells))
@@ -338,7 +338,7 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
 
             if moving_cells:
                 # some cells found to be moving too much
-                mark_moving_cells(session, moving_cells)
+                blacklist_and_remove_moving_cells(session, moving_cells)
 
             session.commit()
 
@@ -350,9 +350,9 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
         raise self.retry(exc=exc)
 
 
-def mark_moving_station(session, blacklist_model, station_type,
-                        to_key, join_key, moving_stations,
-                        remove_station):
+def blacklist_and_remove_moving_stations(session, blacklist_model,
+                                         station_type, to_key, join_key,
+                                         moving_stations, remove_station):
     moving_keys = []
     utcnow = datetime.utcnow().replace(tzinfo=pytz.UTC)
     for station in moving_stations:
@@ -375,24 +375,24 @@ def mark_moving_station(session, blacklist_model, station_type,
         remove_station.delay(moving_keys)
 
 
-def mark_moving_wifis(session, moving_wifis):
-    mark_moving_station(session,
-                        blacklist_model=WifiBlacklist,
-                        station_type="wifi",
-                        to_key=to_wifikey,
-                        join_key=join_wifikey,
-                        moving_stations=moving_wifis,
-                        remove_station=remove_wifi)
+def blacklist_and_remove_moving_wifis(session, moving_wifis):
+    blacklist_and_remove_moving_stations(session,
+                                         blacklist_model=WifiBlacklist,
+                                         station_type="wifi",
+                                         to_key=to_wifikey,
+                                         join_key=join_wifikey,
+                                         moving_stations=moving_wifis,
+                                         remove_station=remove_wifi)
 
 
-def mark_moving_cells(session, moving_cells):
-    mark_moving_station(session,
-                        blacklist_model=CellBlacklist,
-                        station_type="cell",
-                        to_key=to_cellkey,
-                        join_key=join_cellkey,
-                        moving_stations=moving_cells,
-                        remove_station=remove_cell)
+def blacklist_and_remove_moving_cells(session, moving_cells):
+    blacklist_and_remove_moving_stations(session,
+                                         blacklist_model=CellBlacklist,
+                                         station_type="cell",
+                                         to_key=to_cellkey,
+                                         join_key=join_cellkey,
+                                         moving_stations=moving_cells,
+                                         remove_station=remove_cell)
 
 
 @celery.task(base=DatabaseTask, bind=True)
@@ -423,7 +423,7 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
 
             if moving_wifis:
                 # some wifis found to be moving too much
-                mark_moving_wifis(session, moving_wifis)
+                blacklist_and_remove_moving_wifis(session, moving_wifis)
 
             session.commit()
         return (len(wifis), len(moving_wifis))

@@ -239,12 +239,12 @@ class TestInsert(CeleryTestCase):
             e.update(measure)
 
         result = insert_wifi_measures.delay(entries)
-        self.assertEqual(result.get(), 3)
+        self.assertEqual(result.get(), 2)
 
         measures = session.query(WifiMeasure).all()
-        self.assertEqual(len(measures), 3)
+        self.assertEqual(len(measures), 2)
         self.assertEqual(
-            set([m.key for m in measures]), set([bad_key, good_key]))
+            set([m.key for m in measures]), set([good_key]))
 
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 1)
@@ -297,10 +297,10 @@ class TestInsert(CeleryTestCase):
         session.flush()
 
         result = insert_cell_measures.delay(measures)
-        self.assertEqual(result.get(), 3)
+        self.assertEqual(result.get(), 2)
 
         measures = session.query(CellMeasure).all()
-        self.assertEqual(len(measures), 3)
+        self.assertEqual(len(measures), 2)
 
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 2)
