@@ -291,9 +291,8 @@ def normalized_cell_dict(d, default_radio=-1):
     if d['radio'] == RADIO_TYPE['cdma'] and (d['lac'] < 0 or d['cid'] < 0):
         return None
 
-    # Treat the lac=0, cid=65535 combination as unspecified values
-    if d['lac'] == 0 and d['cid'] == 65535:
-        d['lac'] = -1
+    # Treat cid=65535 without a valid lac as an unspecified value
+    if d['lac'] == -1 and d['cid'] == 65535:
         d['cid'] = -1
 
     # Must have LAC+CID or PSC

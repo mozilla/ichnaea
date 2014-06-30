@@ -422,7 +422,7 @@ class TestInsert(CeleryTestCase):
             {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3},
             {"mcc": FRANCE_MCC, "mnc": 2, "cid": 4},
 
-            # This fails the check for (lac=0, cid=65535)
+            # This fails the check for (unknown lac, cid=65535)
             # and subsequently the check for missing psc
             {"mcc": FRANCE_MCC, "mnc": 2, "lac": 0, "cid": 65535},
         ]
