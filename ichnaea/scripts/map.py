@@ -10,6 +10,7 @@ from sqlalchemy import text
 
 from ichnaea.config import read_config
 from ichnaea.db import Database
+from ichnaea.heka_logging import configure_heka
 
 
 @contextmanager
@@ -90,7 +91,7 @@ def generate(db, bucketname, concurrency=2, datamaps='', output=None):
         os.system(cmd)
 
 
-def main(argv, _db_master=None):
+def main(argv, _db_master=None, _heka_client=None):
     # run for example via:
     # bin/location_map --create --datamaps=/path/to/datamaps/ \
     #   --output=ichnaea/content/static/tiles/
@@ -113,6 +114,7 @@ def main(argv, _db_master=None):
         conf = read_config()
         db = Database(conf.get('ichnaea', 'db_master'))
         bucketname = conf.get('ichnaea', 's3_assets_bucket')
+        configure_heka(conf.filename, _heka_client=_heka_client)
 
         concurrency = 2
         if args.concurrency:

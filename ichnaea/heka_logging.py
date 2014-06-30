@@ -1,7 +1,10 @@
 import time
 
 from heka.config import client_from_stream_config
-from heka.holder import get_client
+from heka.holder import (
+    CLIENT_HOLDER,
+    get_client,
+)
 from pyramid.httpexceptions import (
     HTTPException,
     HTTPNotFound,
@@ -17,7 +20,15 @@ def get_heka_client():
     return get_client('ichnaea')
 
 
-def configure_heka(heka_config):
+def set_heka_client(client):
+    CLIENT_HOLDER.set_client('ichnaea', client)
+    return get_heka_client()
+
+
+def configure_heka(heka_config, _heka_client=None):
+    if _heka_client is not None:
+        return set_heka_client(_heka_client)
+
     client = get_heka_client()
     if heka_config:
         with open(heka_config, 'r') as fd:

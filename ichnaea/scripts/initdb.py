@@ -10,9 +10,10 @@ from ichnaea.config import read_config
 from ichnaea.content import models  # NOQA
 from ichnaea.db import _Model
 from ichnaea.db import Database
+from ichnaea.heka_logging import configure_heka
 
 
-def main(argv, _db_master=None):
+def main(argv, _db_master=None, _heka_client=None):
     parser = argparse.ArgumentParser(
         prog=argv[0], description='Initialize Ichnaea database')
 
@@ -24,6 +25,8 @@ def main(argv, _db_master=None):
     if args.initdb:
         conf = read_config()
         db_master = Database(conf.get('ichnaea', 'db_master'))
+        configure_heka(conf.filename, _heka_client=_heka_client)
+
         engine = db_master.engine
         with engine.connect() as conn:
             trans = conn.begin()

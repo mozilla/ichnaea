@@ -15,6 +15,7 @@ import pytz
 
 from ichnaea.config import read_config
 from ichnaea.db import Database
+from ichnaea.heka_logging import configure_heka
 from ichnaea.models import (
     normalized_wifi_key,
     valid_wifi_pattern,
@@ -95,7 +96,7 @@ def load_file(session, source_file, batch_size=100, userid=None):
     return counter
 
 
-def main(argv, _db_master=None):
+def main(argv, _db_master=None, _heka_client=None):
     parser = argparse.ArgumentParser(
         prog=argv[0], description='Location Importer')
 
@@ -108,7 +109,9 @@ def main(argv, _db_master=None):
     if args.userid is not None:
         userid = int(args.userid)
 
-    settings = read_config().get_map('ichnaea')
+    conf = read_config()
+    settings = conf.get_map('ichnaea')
+    configure_heka(conf.filename, _heka_client=_heka_client)
 
     # configure databases incl. test override hooks
     if _db_master is None:

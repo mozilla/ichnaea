@@ -103,11 +103,14 @@ class TestMain(CeleryTestCase):
 
     def test_main(self):
         data, func = self._make_one()
-        counter = func(['main', data[1]], _db_master=self.db_master)
+        counter = func(['main', data[1]],
+                       _db_master=self.db_master,
+                       _heka_client=self.heka_client)
         self.assertEqual(counter, 0)
 
     def test_main_userid(self):
         data, func = self._make_one()
         counter = func(['main', data[1], '--userid=1'],
-                       _db_master=self.db_master)
+                       _db_master=self.db_master,
+                       _heka_client=self.heka_client)
         self.assertEqual(counter, 0)
