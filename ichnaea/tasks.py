@@ -354,7 +354,6 @@ def mark_moving_station(session, blacklist_model, station_type,
                         to_key, join_key, moving_stations,
                         remove_station):
     moving_keys = []
-    blacklist = set()
     utcnow = datetime.utcnow().replace(tzinfo=pytz.UTC)
     for station in moving_stations:
         key = to_key(station)
@@ -368,9 +367,7 @@ def mark_moving_station(session, blacklist_model, station_type,
             d = key._asdict()
             b = blacklist_model(**d)
             moving_keys.append(d)
-        blacklist.add(b)
-
-    session.add_all(blacklist)
+            session.add(b)
 
     if moving_keys:
         get_heka_client().incr("items.blacklisted.%s_moving" % station_type,
