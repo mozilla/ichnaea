@@ -1,5 +1,5 @@
 from collections import namedtuple
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import re
 
 from colander import iso8601
@@ -95,8 +95,19 @@ ALL_VALID_MCCS = frozenset(
      for code in country.mcc]
 )
 
+# Time during which each temporary blacklisting (detection of station
+# movement) causes measurements to be dropped on the floor.
+TEMPORARY_BLACKLIST_DURATION = timedelta(days=7)
+
+# Number of temporary blacklistings that result in a permanent
+# blacklisting; in other words, number of times a station can
+# "legitimately" move to a new location before we permanently give
+# up trying to figure out its fixed location.
+PERMANENT_BLACKLIST_THRESHOLD = 6
+
 CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
+WifiKey = namedtuple('WifiKey', 'key')
 
 
 def from_degrees(deg):
@@ -381,6 +392,19 @@ def join_cellkey(model, k):
     return criterion
 
 
+def to_wifikey(obj):
+    if isinstance(obj, dict):
+        return WifiKey(key=obj['key'])
+    elif isinstance(obj, basestring):
+        return WifiKey(key=obj)
+    else:
+        return WifiKey(key=obj.key)
+
+
+def join_wifikey(model, k):
+    return (model.key == k.key,)
+
+
 class Cell(_Model):
     __tablename__ = 'cell'
     __table_args__ = (
@@ -450,16 +474,19 @@ class CellBlacklist(_Model):
     )
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
-    created = Column(DateTime)
+    time = Column(DateTime)
     radio = Column(SmallInteger)
     mcc = Column(SmallInteger)
     mnc = Column(Integer)
     lac = Column(Integer)
     cid = Column(Integer)
+    count = Column(Integer)
 
     def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = datetime.utcnow()
+        if 'time' not in kw:
+            kw['time'] = datetime.utcnow()
+        if 'count' not in kw:
+            kw['count'] = 1
         super(CellBlacklist, self).__init__(*args, **kw)
 
 
@@ -590,12 +617,15 @@ class WifiBlacklist(_Model):
     )
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
-    created = Column(DateTime)
+    time = Column(DateTime)
     key = Column(String(12))
+    count = Column(Integer)
 
     def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = datetime.utcnow()
+        if 'time' not in kw:
+            kw['time'] = datetime.utcnow()
+        if 'count' not in kw:
+            kw['count'] = 1
         super(WifiBlacklist, self).__init__(*args, **kw)
 
 
