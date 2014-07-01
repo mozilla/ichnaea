@@ -261,23 +261,23 @@ class TestInsert(CeleryTestCase):
         # permanently blacklisted.
 
         now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        # Station moves between these 4 points, all in the USA:
+        points = [
+            # NYC
+            (from_degrees(40), from_degrees(-74)),
+            # SF
+            (from_degrees(37), from_degrees(-122)),
+            # Seattle
+            (from_degrees(47), from_degrees(-122)),
+            # Miami
+            (from_degrees(25), from_degrees(-80)),
+        ]
+
         N = 4 * PERMANENT_BLACKLIST_THRESHOLD
         for month in range(0, N):
             days_ago = (N - (month + 1)) * 30
             time = now - timedelta(days=days_ago)
             time_enc = encode_datetime(time)
-
-            # Station moves between these 4 points, all in the USA:
-            points = [
-                # NYC
-                (from_degrees(40), from_degrees(-74)),
-                # SF
-                (from_degrees(37), from_degrees(-122)),
-                # Seattle
-                (from_degrees(47), from_degrees(-122)),
-                # Miami
-                (from_degrees(25), from_degrees(-80)),
-            ]
 
             measure = dict(id=month, key="ab1234567890",
                            created=time_enc, time=time_enc,
@@ -413,23 +413,23 @@ class TestInsert(CeleryTestCase):
         # permanently blacklisted.
 
         now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        # Station moves between these 4 points, all in the USA:
+        points = [
+            # NYC
+            (from_degrees(40), from_degrees(-74)),
+            # SF
+            (from_degrees(37), from_degrees(-122)),
+            # Seattle
+            (from_degrees(47), from_degrees(-122)),
+            # Miami
+            (from_degrees(25), from_degrees(-80)),
+        ]
+
         N = 4 * PERMANENT_BLACKLIST_THRESHOLD
         for month in range(0, N):
             days_ago = (N - (month + 1)) * 30
             time = now - timedelta(days=days_ago)
             time_enc = encode_datetime(time)
-
-            # Station moves between these 4 points, all in the USA:
-            points = [
-                # NYC
-                (from_degrees(40), from_degrees(-74)),
-                # SF
-                (from_degrees(37), from_degrees(-122)),
-                # Seattle
-                (from_degrees(47), from_degrees(-122)),
-                # Miami
-                (from_degrees(25), from_degrees(-80)),
-            ]
 
             measure = dict(id=month, radio=RADIO_TYPE['gsm'],
                            mcc=USA_MCC, mnc=ATT_MNC, lac=456, cid=123,
