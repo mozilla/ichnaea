@@ -6,28 +6,34 @@ from datetime import (
 import json
 import zlib
 
+import pytz
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy import text
 
-from ichnaea.models import (
-    RADIO_TYPE,
-)
 from ichnaea.content.models import (
     Score,
     SCORE_TYPE,
 )
 from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.models import (
+    encode_datetime,
     Cell,
     CellBlacklist,
     CellMeasure,
+    from_degrees,
+    PERMANENT_BLACKLIST_THRESHOLD,
+    RADIO_TYPE,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
-    from_degrees,
 )
-from ichnaea.models import (
-    encode_datetime,
+from ichnaea.service.submit.tasks import (
+    insert_cell_measures,
+    insert_wifi_measures,
+)
+from ichnaea.tasks import (
+    cell_location_update,
+    wifi_location_update,
 )
 from ichnaea.tests.base import (
     CeleryTestCase,
@@ -39,7 +45,6 @@ from ichnaea.tests.base import (
 class TestInsert(CeleryTestCase):
 
     def test_cell(self):
-        from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
         mcc = FRANCE_MCC
@@ -104,7 +109,6 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(len(measures), 8)
 
     def test_insert_invalid_lac(self):
-        from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
@@ -143,7 +147,6 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([c.total_measures for c in cells]), set([5]))
 
     def test_cell_out_of_range_values(self):
-        from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
@@ -172,7 +175,6 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([m.ta for m in measures]), set([0, 32]))
 
     def test_wifi(self):
-        from ichnaea.service.submit.tasks import insert_wifi_measures
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
@@ -227,7 +229,6 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(len(measures), 8)
 
     def test_wifi_blacklist(self):
-        from ichnaea.service.submit.tasks import insert_wifi_measures
         session = self.db_master_session
         bad_key = "ab1234567890"
         good_key = "cd1234567890"
@@ -252,10 +253,6 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(set([w.key for w in wifis]), set([good_key]))
 
     def test_wifi_blacklist_temporary_and_permanent(self):
-        from ichnaea.service.submit.tasks import insert_wifi_measures
-        from ichnaea.tasks import wifi_location_update
-        from ichnaea.models import PERMANENT_BLACKLIST_THRESHOLD
-        import pytz
         session = self.db_master_session
 
         # This test simulates a wifi that moves once a month, for 2 years.
@@ -263,11 +260,11 @@ class TestInsert(CeleryTestCase):
         # temporary, forgotten after a week; after that it should be
         # permanently blacklisted.
 
+        now = datetime.utcnow().replace(tzinfo=pytz.UTC)
         N = 4 * PERMANENT_BLACKLIST_THRESHOLD
         for month in range(0, N):
             days_ago = (N - (month + 1)) * 30
-            time = (datetime.utcnow().replace(tzinfo=pytz.UTC) -
-                    timedelta(days=days_ago))
+            time = now - timedelta(days=days_ago)
             time_enc = encode_datetime(time)
 
             # Station moves between these 4 points, all in the USA:
@@ -321,11 +318,11 @@ class TestInsert(CeleryTestCase):
                 session.add(bl)
                 session.commit()
 
-            if month < N/2:
+            if month < N / 2:
                 # We still haven't exceeded the threshold, so the
                 # measurement was admitted.
                 self.assertEqual(insert_result.get(), 1)
-                self.assertEqual(session.query(WifiMeasure).count(), month+1)
+                self.assertEqual(session.query(WifiMeasure).count(), month + 1)
                 if month % 2 == 0:
                     # The station was (re)created.
                     self.assertEqual(update_result.get(), (1, 0))
@@ -335,7 +332,7 @@ class TestInsert(CeleryTestCase):
                     # The station existed and was seen moving,
                     # thereby activating the blacklist.
                     self.assertEqual(update_result.get(), (1, 1))
-                    self.assertEqual(bl.count, ((month+1)/2))
+                    self.assertEqual(bl.count, ((month + 1) / 2))
                     self.assertEqual(session.query(WifiBlacklist).count(), 1)
                     self.assertEqual(session.query(Wifi).count(), 0)
 
@@ -355,7 +352,6 @@ class TestInsert(CeleryTestCase):
                 self.assertEqual(update_result.get(), 0)
 
     def test_wifi_overflow(self):
-        from ichnaea.service.submit.tasks import insert_wifi_measures
         session = self.db_master_session
         key = "001234567890"
 
@@ -384,7 +380,6 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(wifis[0].total_measures, 6)
 
     def test_cell_blacklist(self):
-        from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
 
         measures = [dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=i, psc=5,
@@ -410,10 +405,6 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(len(cells), 2)
 
     def test_cell_blacklist_temporary_and_permanent(self):
-        from ichnaea.service.submit.tasks import insert_cell_measures
-        from ichnaea.tasks import cell_location_update
-        from ichnaea.models import PERMANENT_BLACKLIST_THRESHOLD
-        import pytz
         session = self.db_master_session
 
         # This test simulates a cell that moves once a month, for 2 years.
@@ -421,11 +412,11 @@ class TestInsert(CeleryTestCase):
         # temporary, forgotten after a week; after that it should be
         # permanently blacklisted.
 
+        now = datetime.utcnow().replace(tzinfo=pytz.UTC)
         N = 4 * PERMANENT_BLACKLIST_THRESHOLD
         for month in range(0, N):
             days_ago = (N - (month + 1)) * 30
-            time = (datetime.utcnow().replace(tzinfo=pytz.UTC) -
-                    timedelta(days=days_ago))
+            time = now - timedelta(days=days_ago)
             time_enc = encode_datetime(time)
 
             # Station moves between these 4 points, all in the USA:
@@ -480,11 +471,11 @@ class TestInsert(CeleryTestCase):
                 session.add(bl)
                 session.commit()
 
-            if month < N/2:
+            if month < N / 2:
                 # We still haven't exceeded the threshold, so the
                 # measurement was admitted.
                 self.assertEqual(insert_result.get(), 1)
-                self.assertEqual(session.query(CellMeasure).count(), month+1)
+                self.assertEqual(session.query(CellMeasure).count(), month + 1)
                 if month % 2 == 0:
                     # The station was (re)created.
                     self.assertEqual(update_result.get(), (1, 0))
@@ -494,7 +485,7 @@ class TestInsert(CeleryTestCase):
                     # The station existed and was seen moving,
                     # thereby activating the blacklist and deleting the cell.
                     self.assertEqual(update_result.get(), (1, 1))
-                    self.assertEqual(bl.count, ((month+1)/2))
+                    self.assertEqual(bl.count, ((month + 1) / 2))
                     self.assertEqual(session.query(CellBlacklist).count(), 1)
                     self.assertEqual(session.query(Cell).count(), 0)
 
@@ -514,7 +505,6 @@ class TestInsert(CeleryTestCase):
                 self.assertEqual(update_result.get(), 0)
 
     def test_cell_overflow(self):
-        from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
 
         measures = [dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4, psc=5,
@@ -544,7 +534,6 @@ class TestInsert(CeleryTestCase):
 
     def test_ignore_unhelpful_incomplete_cdma_cells(self):
         # CDMA cell records must have MNC, MCC, LAC and CID filled in
-        from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
@@ -581,7 +570,6 @@ class TestInsert(CeleryTestCase):
     def test_ignore_unhelpful_incomplete_cells(self):
         # Cell records must have MNC, MCC and at least one of (LAC, CID) or PSC
         # values filled in.
-        from ichnaea.service.submit.tasks import insert_cell_measures
         session = self.db_master_session
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
@@ -670,7 +658,6 @@ class TestSubmitErrors(CeleryTestCase):
         super(TestSubmitErrors, self).tearDown()
 
     def test_database_error(self):
-        from ichnaea.service.submit.tasks import insert_wifi_measures
         session = self.db_master_session
 
         stmt = text("drop table wifi;")
