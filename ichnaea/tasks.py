@@ -302,7 +302,6 @@ def backfill_cell_location_update(self, new_cell_measures):
 
 @celery.task(base=DatabaseTask, bind=True)
 def cell_location_update(self, min_new=10, max_new=100, batch=10):
-
     try:
         cells = []
         with self.db_session() as session:
@@ -397,9 +396,6 @@ def blacklist_and_remove_moving_cells(session, moving_cells):
 
 @celery.task(base=DatabaseTask, bind=True)
 def wifi_location_update(self, min_new=10, max_new=100, batch=10):
-    # TODO: this doesn't take into account wifi AP's which have
-    # permanently moved after a certain date
-
     try:
         wifis = {}
         with self.db_session() as session:
