@@ -24,7 +24,9 @@ from ichnaea.models import (
     WifiBlacklist,
     WifiMeasure,
     join_cellkey,
+    join_wifikey,
     to_cellkey_psc,
+    to_wifikey,
     decode_datetime,
     encode_datetime,
     from_degrees,
@@ -281,7 +283,7 @@ def incomplete_measure(key):
     will be inferred from neighbouring cells.
     See ichnaea.backfill.tasks.
     """
-    if isinstance(key, tuple) and \
+    if hasattr(key, 'radio') and \
        (key.radio < 0 or key.lac < 0 or key.cid < 0):  # NOQA
         return True
     return False
@@ -307,10 +309,7 @@ def create_or_update_station(session, key, station_model, utcnow, num):
     Creates a station or updates its new/total_measures counts to reflect
     recently-received measures.
     """
-    if isinstance(key, tuple):
-        d = key._asdict()
-    else:
-        d = {'key': key}
+    d = key._asdict()
     stmt = station_model.__table__.insert(
         on_duplicate='new_measures = new_measures + %s, '
                      'total_measures = total_measures + %s' % (num, num)
@@ -513,8 +512,8 @@ def insert_wifi_measures(self, entries, userid=None,
                 measure_model=WifiMeasure,
                 blacklist_model=WifiBlacklist,
                 create_measure=create_wifi_measure,
-                create_key=lambda m: m.key,
-                join_key=lambda m, k: (m.key == k,),
+                create_key=to_wifikey,
+                join_key=join_wifikey,
                 userid=userid,
                 max_measures_per_station=max_measures_per_wifi,
                 utcnow=utcnow)
