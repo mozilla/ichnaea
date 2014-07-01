@@ -342,7 +342,6 @@ class TestInsert(CeleryTestCase):
                     # to be sure it is dropped by the now-active blacklist.
                     next_day = encode_datetime(time + timedelta(days=1))
                     measure['time'] = next_day
-                    measure['created'] = next_day
                     self.assertEqual(
                         0, insert_wifi_measures.delay([measure],
                                                       utcnow=next_day).get())
@@ -497,7 +496,6 @@ class TestInsert(CeleryTestCase):
                     # to be sure it is dropped by the now-active blacklist.
                     next_day = encode_datetime(time + timedelta(days=1))
                     measure['time'] = next_day
-                    measure['created'] = next_day
                     self.assertEqual(
                         0, insert_cell_measures.delay([measure],
                                                       utcnow=next_day).get())
