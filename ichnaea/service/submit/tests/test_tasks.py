@@ -280,12 +280,14 @@ class TestInsert(CeleryTestCase):
             time_enc = encode_datetime(time)
 
             measure = dict(id=month, key="ab1234567890",
-                           created=time_enc, time=time_enc,
+                           time=time_enc,
                            lat=points[month % 4][0],
                            lon=points[month % 4][1])
 
-            # insert_result is num-accepted-measures
-            insert_result = insert_wifi_measures.delay([measure])
+            # insert_result is num-accepted-measures, override
+            # utcnow to set creation date
+            insert_result = insert_wifi_measures.delay(
+                [measure], utcnow=time_enc)
 
             # update_result is (num-stations, num-moving-stations)
             update_result = wifi_location_update.delay(min_new=1)
@@ -433,12 +435,14 @@ class TestInsert(CeleryTestCase):
 
             measure = dict(id=month, radio=RADIO_TYPE['gsm'],
                            mcc=USA_MCC, mnc=ATT_MNC, lac=456, cid=123,
-                           created=time_enc, time=time_enc,
+                           time=time_enc,
                            lat=points[month % 4][0],
                            lon=points[month % 4][1])
 
-            # insert_result is num-accepted-measures
-            insert_result = insert_cell_measures.delay([measure])
+            # insert_result is num-accepted-measures, override
+            # utcnow to set creation date
+            insert_result = insert_cell_measures.delay(
+                [measure], utcnow=time_enc)
 
             # update_result is (num-stations, num-moving-stations)
             update_result = cell_location_update.delay(min_new=1)
