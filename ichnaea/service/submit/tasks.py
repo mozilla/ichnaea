@@ -325,14 +325,19 @@ def create_or_update_station(session, key, station_model, utcnow, num):
 def process_station_measures(session, entries, station_type,
                              station_model, measure_model, blacklist_model,
                              create_measure, create_key, join_key,
-                             userid=None, max_measures_per_station=11000):
+                             userid=None, max_measures_per_station=11000,
+                             utcnow=None):
 
     all_measures = []
+    dropped_blacklisted = 0
     dropped_malformed = 0
     dropped_overflow = 0
     heka_client = get_heka_client()
     new_stations = 0
-    utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+    if utcnow is None:
+        utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+    elif isinstance(utcnow, basestring):
+        utcnow = decode_datetime(utcnow)
 
     # Process entries and group by validated station key
     station_measures = defaultdict(list)
@@ -362,6 +367,7 @@ def process_station_measures(session, entries, station_type,
             # Drop measures for blacklisted stations.
             if blacklisted_station(session, key, blacklist_model,
                                    join_key, utcnow):
+                dropped_blacklisted += len(measures)
                 continue
 
             incomplete = incomplete_measure(key)
@@ -388,6 +394,10 @@ def process_station_measures(session, entries, station_type,
     if userid is not None and new_stations > 0:
         process_score(userid, new_stations, session,
                       key='new_' + station_type)
+
+    if dropped_blacklisted != 0:
+        heka_client.incr("items.dropped.%s_ingress_blacklisted" % station_type,
+                         count=dropped_blacklisted)
 
     if dropped_malformed != 0:
         heka_client.incr("items.dropped.%s_ingress_malformed" % station_type,
@@ -463,7 +473,8 @@ def create_wifi_measure(utcnow, entry):
 
 @celery.task(base=DatabaseTask, bind=True)
 def insert_cell_measures(self, entries, userid=None,
-                         max_measures_per_cell=11000):
+                         max_measures_per_cell=11000,
+                         utcnow=None):
     try:
         cell_measures = []
         with self.db_session() as session:
@@ -477,7 +488,8 @@ def insert_cell_measures(self, entries, userid=None,
                 create_key=to_cellkey_psc,
                 join_key=join_cellkey,
                 userid=userid,
-                max_measures_per_station=max_measures_per_cell)
+                max_measures_per_station=max_measures_per_cell,
+                utcnow=utcnow)
             session.commit()
         return len(cell_measures)
     except IntegrityError as exc:  # pragma: no cover
@@ -489,7 +501,8 @@ def insert_cell_measures(self, entries, userid=None,
 
 @celery.task(base=DatabaseTask, bind=True)
 def insert_wifi_measures(self, entries, userid=None,
-                         max_measures_per_wifi=11000):
+                         max_measures_per_wifi=11000,
+                         utcnow=None):
     wifi_measures = []
     try:
         with self.db_session() as session:
@@ -503,7 +516,8 @@ def insert_wifi_measures(self, entries, userid=None,
                 create_key=lambda m: m.key,
                 join_key=lambda m, k: (m.key == k,),
                 userid=userid,
-                max_measures_per_station=max_measures_per_wifi)
+                max_measures_per_station=max_measures_per_wifi,
+                utcnow=utcnow)
             session.commit()
         return len(wifi_measures)
     except IntegrityError as exc:  # pragma: no cover

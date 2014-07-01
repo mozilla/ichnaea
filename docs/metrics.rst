@@ -432,6 +432,12 @@ database tables. Along the way several counters measure the steps involved:
     cell or wifi that already has "too many" recent measurements are
     discarded, and only the newest measurements are discarded.
 
+``items.dropped.cell_ingress_blacklisted``, ``items.dropped.wifi_ingress_blacklisted`` : counters
+
+    Count incoming cell or wifi measurements that were discarded before
+    integration due to the presence of a blacklist record for the station
+    (see next metric).
+
 ``items.blacklisted.cell_moving``, ``items.blacklisted.wifi_moving`` : counters
 
     Count any cell or wifi that is blacklisted due to the acceptance of

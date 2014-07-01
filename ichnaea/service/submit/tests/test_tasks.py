@@ -32,6 +32,7 @@ from ichnaea.models import (
 from ichnaea.tests.base import (
     CeleryTestCase,
     PARIS_LAT, PARIS_LON, FRANCE_MCC,
+    USA_MCC, ATT_MNC,
 )
 
 
@@ -250,6 +251,109 @@ class TestInsert(CeleryTestCase):
         self.assertEqual(len(wifis), 1)
         self.assertEqual(set([w.key for w in wifis]), set([good_key]))
 
+    def test_wifi_blacklist_temporary_and_permanent(self):
+        from ichnaea.service.submit.tasks import insert_wifi_measures
+        from ichnaea.tasks import wifi_location_update
+        from ichnaea.models import PERMANENT_BLACKLIST_THRESHOLD
+        import pytz
+        session = self.db_master_session
+
+        # This test simulates a wifi that moves once a month, for 2 years.
+        # The first 2 * PERMANENT_BLACKLIST_THRESHOLD (12) moves should be
+        # temporary, forgotten after a week; after that it should be
+        # permanently blacklisted.
+
+        N = 4 * PERMANENT_BLACKLIST_THRESHOLD
+        for month in range(0, N):
+            days_ago = (N - (month + 1)) * 30
+            time = (datetime.utcnow().replace(tzinfo=pytz.UTC) -
+                    timedelta(days=days_ago))
+            time_enc = encode_datetime(time)
+
+            # Station moves between these 4 points, all in the USA:
+            points = [
+                # NYC
+                (from_degrees(40), from_degrees(-74)),
+                # SF
+                (from_degrees(37), from_degrees(-122)),
+                # Seattle
+                (from_degrees(47), from_degrees(-122)),
+                # Miami
+                (from_degrees(25), from_degrees(-80)),
+            ]
+
+            measure = dict(id=month, key="ab1234567890",
+                           created=time_enc, time=time_enc,
+                           lat=points[month % 4][0],
+                           lon=points[month % 4][1])
+
+            # insert_result is num-accepted-measures
+            insert_result = insert_wifi_measures.delay([measure])
+
+            # update_result is (num-stations, num-moving-stations)
+            update_result = wifi_location_update.delay(min_new=1)
+
+            # Assuming PERMANENT_BLACKLIST_THRESHOLD == 6:
+            #
+            # 0th insert will create the station
+            # 1st insert will create first blacklist entry, delete station
+            # 2nd insert will recreate the station at new position
+            # 3rd insert will update blacklist, re-delete station
+            # 4th insert will recreate the station at new position
+            # 5th insert will update blacklist, re-delete station
+            # 6th insert will recreate the station at new position
+            # ...
+            # 11th insert will make blacklisting permanent, re-delete station
+            # 12th insert will not recreate station
+            # 13th insert will not recreate station
+            # ...
+            # 23rd insert will not recreate station
+
+            bl = session.query(WifiBlacklist).all()
+            if month == 0:
+                self.assertEqual(len(bl), 0)
+            else:
+                self.assertEqual(len(bl), 1)
+                # force the blacklist back in time to whenever the
+                # measure was supposedly inserted.
+                bl = bl[0]
+                bl.time = time
+                session.add(bl)
+                session.commit()
+
+            if month < N/2:
+                # We still haven't exceeded the threshold, so the
+                # measurement was admitted.
+                self.assertEqual(insert_result.get(), 1)
+                self.assertEqual(session.query(WifiMeasure).count(), month+1)
+                if month % 2 == 0:
+                    # The station was (re)created.
+                    self.assertEqual(update_result.get(), (1, 0))
+                    # One wifi record should exist.
+                    self.assertEqual(session.query(Wifi).count(), 1)
+                else:
+                    # The station existed and was seen moving,
+                    # thereby activating the blacklist.
+                    self.assertEqual(update_result.get(), (1, 1))
+                    self.assertEqual(bl.count, ((month+1)/2))
+                    self.assertEqual(session.query(WifiBlacklist).count(), 1)
+                    self.assertEqual(session.query(Wifi).count(), 0)
+
+                    # Try adding one more measurement 1 day later
+                    # to be sure it is dropped by the now-active blacklist.
+                    next_day = encode_datetime(time + timedelta(days=1))
+                    measure['time'] = next_day
+                    measure['created'] = next_day
+                    self.assertEqual(
+                        0, insert_wifi_measures.delay([measure],
+                                                      utcnow=next_day).get())
+
+            else:
+                # Blacklist has exceeded threshold, gone to "permanent" mode,
+                # so no measures accepted, no stations seen.
+                self.assertEqual(insert_result.get(), 0)
+                self.assertEqual(update_result.get(), 0)
+
     def test_wifi_overflow(self):
         from ichnaea.service.submit.tasks import insert_wifi_measures
         session = self.db_master_session
@@ -304,6 +408,110 @@ class TestInsert(CeleryTestCase):
 
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 2)
+
+    def test_cell_blacklist_temporary_and_permanent(self):
+        from ichnaea.service.submit.tasks import insert_cell_measures
+        from ichnaea.tasks import cell_location_update
+        from ichnaea.models import PERMANENT_BLACKLIST_THRESHOLD
+        import pytz
+        session = self.db_master_session
+
+        # This test simulates a cell that moves once a month, for 2 years.
+        # The first 2 * PERMANENT_BLACKLIST_THRESHOLD (12) moves should be
+        # temporary, forgotten after a week; after that it should be
+        # permanently blacklisted.
+
+        N = 4 * PERMANENT_BLACKLIST_THRESHOLD
+        for month in range(0, N):
+            days_ago = (N - (month + 1)) * 30
+            time = (datetime.utcnow().replace(tzinfo=pytz.UTC) -
+                    timedelta(days=days_ago))
+            time_enc = encode_datetime(time)
+
+            # Station moves between these 4 points, all in the USA:
+            points = [
+                # NYC
+                (from_degrees(40), from_degrees(-74)),
+                # SF
+                (from_degrees(37), from_degrees(-122)),
+                # Seattle
+                (from_degrees(47), from_degrees(-122)),
+                # Miami
+                (from_degrees(25), from_degrees(-80)),
+            ]
+
+            measure = dict(id=month, radio=RADIO_TYPE['gsm'],
+                           mcc=USA_MCC, mnc=ATT_MNC, lac=456, cid=123,
+                           created=time_enc, time=time_enc,
+                           lat=points[month % 4][0],
+                           lon=points[month % 4][1])
+
+            # insert_result is num-accepted-measures
+            insert_result = insert_cell_measures.delay([measure])
+
+            # update_result is (num-stations, num-moving-stations)
+            update_result = cell_location_update.delay(min_new=1)
+
+            # Assuming PERMANENT_BLACKLIST_THRESHOLD == 6:
+            #
+            # 0th insert will create the station
+            # 1st insert will create first blacklist entry, delete station
+            # 2nd insert will recreate the station at new position
+            # 3rd insert will update blacklist, re-delete station
+            # 4th insert will recreate the station at new position
+            # 5th insert will update blacklist, re-delete station
+            # 6th insert will recreate the station at new position
+            # ...
+            # 11th insert will make blacklisting permanent, re-delete station
+            # 12th insert will not recreate station
+            # 13th insert will not recreate station
+            # ...
+            # 23rd insert will not recreate station
+
+            bl = session.query(CellBlacklist).all()
+            if month == 0:
+                self.assertEqual(len(bl), 0)
+            else:
+                self.assertEqual(len(bl), 1)
+                # force the blacklist back in time to whenever the
+                # measure was supposedly inserted.
+                bl = bl[0]
+                bl.time = time
+                session.add(bl)
+                session.commit()
+
+            if month < N/2:
+                # We still haven't exceeded the threshold, so the
+                # measurement was admitted.
+                self.assertEqual(insert_result.get(), 1)
+                self.assertEqual(session.query(CellMeasure).count(), month+1)
+                if month % 2 == 0:
+                    # The station was (re)created.
+                    self.assertEqual(update_result.get(), (1, 0))
+                    # One cell + one cell-LAC record should exist.
+                    self.assertEqual(session.query(Cell).count(), 2)
+                else:
+                    # The station existed and was seen moving,
+                    # thereby activating the blacklist and deleting the cell.
+                    self.assertEqual(update_result.get(), (1, 1))
+                    self.assertEqual(bl.count, ((month+1)/2))
+                    self.assertEqual(session.query(CellBlacklist).count(), 1)
+                    self.assertEqual(session.query(Cell).count(), 0)
+
+                    # Try adding one more measurement 1 day later
+                    # to be sure it is dropped by the now-active blacklist.
+                    next_day = encode_datetime(time + timedelta(days=1))
+                    measure['time'] = next_day
+                    measure['created'] = next_day
+                    self.assertEqual(
+                        0, insert_cell_measures.delay([measure],
+                                                      utcnow=next_day).get())
+
+            else:
+                # Blacklist has exceeded threshold, gone to "permanent" mode,
+                # so no measures accepted, no stations seen.
+                self.assertEqual(insert_result.get(), 0)
+                self.assertEqual(update_result.get(), 0)
 
     def test_cell_overflow(self):
         from ichnaea.service.submit.tasks import insert_cell_measures

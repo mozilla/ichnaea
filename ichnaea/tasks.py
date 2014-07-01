@@ -360,13 +360,13 @@ def blacklist_and_remove_moving_stations(session, blacklist_model,
         query = session.query(blacklist_model).filter(
             *join_key(blacklist_model, key))
         b = query.first()
+        d = key._asdict()
+        moving_keys.append(d)
         if b:
             b.time = utcnow
             b.count += 1
         else:
-            d = key._asdict()
             b = blacklist_model(**d)
-            moving_keys.append(d)
             session.add(b)
 
     if moving_keys:
