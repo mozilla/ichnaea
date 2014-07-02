@@ -367,8 +367,13 @@ def search_all_sources(request, data, api_name):
             ('wifi', 'wifi', search_wifi)]:
 
         if data and data[data_field]:
+            r = None
+            try:
+                r = search_fn(session, data)
+            except Exception:
+                heka_client.incr('%s.%s_error' %
+                                 (api_name, metric_name))
 
-            r = search_fn(session, data)
             if r is None:
                 heka_client.incr('%s.no_%s_found' %
                                  (api_name, metric_name))
@@ -426,7 +431,6 @@ def search_all_sources(request, data, api_name):
 
 @check_api_key('search', True)
 def search_view(request):
-
     data, errors = preprocess_request(
         request,
         schema=SearchSchema(),

@@ -6,6 +6,8 @@ from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden
 from ichnaea.models import (
     ApiKey
 )
+
+from sqlalchemy.exc import OperationalError
 from ichnaea.customjson import dumps
 from ichnaea.service.error import DAILY_LIMIT
 
@@ -65,7 +67,12 @@ def check_api_key(func_name, error_on_invalidkey=False):
             found_key_filter = session.query(ApiKey).filter(
                 ApiKey.valid_key == api_key)
 
-            found_key = found_key_filter.first()
+            try:
+                found_key = found_key_filter.first()
+            except OperationalError, op_exc:
+                heka_client.incr('%s.dbfailure_skip_api_key' % func_name)
+                return func(request, *args, **kwargs)
+
             if found_key:
                 heka_client.incr('%s.api_key.%s' % (func_name, api_key))
                 if rate_limit(request.registry.redis_client,
