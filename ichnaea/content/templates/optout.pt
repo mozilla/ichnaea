@@ -1,0 +1,35 @@
+<tal:macro xmlns:tal="http://xml.zope.org/namespaces/tal"
+           xmlns:metal="http://xml.zope.org/namespaces/metal"
+           metal:use-macro="view.base_template">
+
+<tal:slot metal:fill-slot="content">
+<section id="main-content">
+
+    <p class="text-justified">
+        For general information please have a look at the general
+        <a href="/privacy">Privacy Policy</a>
+        for this service and the client applications developed by Mozilla.
+    </p>
+
+    <h3>How do I prevent my wireless access point from being collected?</h3>
+
+    <p class="text-justified">
+        Mozilla's client applications do not collect information about WiFi
+        access points whose SSID is hidden or ends with the string "_nomap".
+        If you would like to prevent your WiFi access point from being reported
+        to this service, you can rename your SSID to append "_nomap" to the name
+        (e.g., SSID "MyWirelessNetwork" becomes "MyWirelessNetwork_nomap")
+        or configure your SSID to be hidden.
+    </p>
+
+    <p class="text-justified">
+        This approach is used by other companies offering similar services.
+        We have chosen to follow the example established by others, to make
+        sure you do not have to learn about specific ways to opt-out of this
+        service, but can generally signal your desire to do so.
+    </p>
+
+</section>
+</tal:slot>
+
+</tal:macro>

@@ -35,6 +35,30 @@ class TestContentViews(TestCase):
         result = inst.homepage_view()
         self.assertEqual(result['page_title'], 'Overview')
 
+    def test_api(self):
+        request = DummyRequest()
+        inst = self._make_view(request)
+        result = inst.api_view()
+        self.assertTrue('API' in result['page_title'])
+
+    def test_apps(self):
+        request = DummyRequest()
+        inst = self._make_view(request)
+        result = inst.apps_view()
+        self.assertTrue('App' in result['page_title'])
+
+    def test_optout(self):
+        request = DummyRequest()
+        inst = self._make_view(request)
+        result = inst.optout_view()
+        self.assertTrue('Opt' in result['page_title'])
+
+    def test_privacy(self):
+        request = DummyRequest()
+        inst = self._make_view(request)
+        result = inst.privacy_view()
+        self.assertTrue('Privacy' in result['page_title'])
+
     def test_map(self):
         from ichnaea.content.views import LOCAL_TILES
         request = DummyRequest()
@@ -212,9 +236,12 @@ class TestFunctionalContentViews(AppTestCase):
         result = inst.stats_view()
         self.assertEqual(result['page_title'], 'Statistics')
         self.assertEqual(
-            result['metrics'], [
+            result['metrics1'], [
                 {'name': 'Unique Cells', 'value': '1.00'},
                 {'name': 'Cell Observations', 'value': '2.00'},
+            ])
+        self.assertEqual(
+            result['metrics2'], [
                 {'name': 'Unique Wifi Networks', 'value': '2.00'},
                 {'name': 'Wifi Observations', 'value': '2.00'},
             ])

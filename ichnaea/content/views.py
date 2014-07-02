@@ -34,6 +34,7 @@ style-src {base};
 """
 CSP_POLICY = CSP_POLICY.replace("\n", ' ').strip()
 LOCAL_TILES = 'http://127.0.0.1:7001/static/tiles/{z}/{x}/{y}.png'
+BASE_MAP_KEY = 'mozilla-webprod.map-05ad0a21'
 
 
 def map_tiles_url(base_url):
@@ -103,7 +104,38 @@ class ContentViews(Layout):
 
     @view_config(renderer='templates/homepage.pt', http_cache=300)
     def homepage_view(self):
-        return {'page_title': 'Overview'}
+        tiles_url = getattr(self.request.registry, 'tiles_url', None)
+        if not tiles_url:
+            tiles_url = map_tiles_url(None)
+        map_url = tiles_url.format(z=0, x=0, y=0)
+        scheme = urlparse.urlparse(self.request.url).scheme
+        map_base_url = '%s://a.tiles.mapbox.com/v3/%s/0/0/0.png' % (
+            scheme, BASE_MAP_KEY)
+        return {
+            'page_title': 'Overview',
+            'map_url': map_url,
+            'map_base_url': map_base_url,
+        }
+
+    @view_config(renderer='templates/api.pt',
+                 name="api", http_cache=300)
+    def api_view(self):
+        return {'page_title': 'API'}
+
+    @view_config(renderer='templates/apps.pt',
+                 name="apps", http_cache=300)
+    def apps_view(self):
+        return {'page_title': 'Client Applications'}
+
+    @view_config(renderer='templates/contact.pt',
+                 name="contact", http_cache=300)
+    def contact_view(self):
+        return {'page_title': 'Contact Us'}
+
+    @view_config(renderer='templates/optout.pt',
+                 name="optout", http_cache=300)
+    def optout_view(self):
+        return {'page_title': 'Opt-Out'}
 
     @view_config(renderer='templates/privacy.pt',
                  name="privacy", http_cache=300)
@@ -179,7 +211,12 @@ class ContentViews(Layout):
                  route_name="stats", http_cache=3600)
     def stats_view(self):
         session = self.request.db_slave_session
-        result = {'leaders': [], 'metrics': [], 'page_title': 'Statistics'}
+        result = {
+            'page_title': 'Statistics',
+            'leaders': [],
+            'metrics1': [],
+            'metrics2': [],
+        }
         metrics = global_stats(session)
         metric_names = [
             ('unique_cell', 'Unique Cells'),
@@ -187,8 +224,10 @@ class ContentViews(Layout):
             ('unique_wifi', 'Unique Wifi Networks'),
             ('wifi', 'Wifi Observations'),
         ]
-        for mid, name in metric_names:
-            result['metrics'].append({'name': name, 'value': metrics[mid]})
+        for mid, name in metric_names[:2]:
+            result['metrics1'].append({'name': name, 'value': metrics[mid]})
+        for mid, name in metric_names[2:]:
+            result['metrics2'].append({'name': name, 'value': metrics[mid]})
         return result
 
     @view_config(renderer='templates/stats_countries.pt',

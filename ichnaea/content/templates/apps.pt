@@ -1,0 +1,101 @@
+<tal:macro xmlns:tal="http://xml.zope.org/namespaces/tal"
+           xmlns:metal="http://xml.zope.org/namespaces/metal"
+           metal:use-macro="view.base_template">
+
+<tal:slot metal:fill-slot="content">
+<section id="main-content">
+
+    <p class="text-justified">
+        There is a wide variety of current applications and libraries
+        for different audiences. The following list does not claim to
+        be complete and specifically does not call out applications
+        merely using this service.
+    </p>
+
+    <h3>MozStumbler for Android</h3>
+
+    <div class="map-callout-left text-justified">
+        <p >
+            MozStumbler is an open source Android application, which both
+            collects data to contribute to the service and also includes a
+            test mode to show ones location on a map.
+        </p>
+
+        <p>
+            You can find <a href="https://github.com/mozilla/MozStumbler">
+                MozStumbler on Github</a>
+            to download it or to contribute to its development.
+        </p>
+
+        <p>
+            As an alternative you can also
+            <a href="https://f-droid.org/wiki/page/org.mozilla.mozstumbler">
+                install MozStumbler from the f-droid catalog</a>.
+        </p>
+
+        <p>
+            MozStumbler allows you to compete in our
+            <a href="/leaders">leaderboards</a> by choosing a nickname
+            in its preferences screen.
+        </p>
+
+    </div>
+
+    <div class="map-callout-right">
+        <a href="https://github.com/mozilla/MozStumbler">
+            <img src="/static/images/mozstumbler.png"
+                 title="MozStumbler on Github"
+                 width="192" height="320" /></a>
+    </div>
+
+    <h3 class="separator">Firefox for Android</h3>
+
+    <p class="text-justified">
+        Nightly versions of
+        <a href="https://play.google.com/store/apps/details?id=org.mozilla.firefox">
+            Firefox for Android</a>
+        include a way to contribute data and enhance this service. In order
+        to enable this, you need to go to the Mozilla settings section and
+        look for the contribution option under data choices.
+    </p>
+
+    <h3>Firefox OS</h3>
+
+    <p class="text-justified">
+        Integration of this service into Firefox OS is an ongoing process.
+        If the specific Firefox OS device uses this service depends on a
+        number of factors including which chipset is used in the device,
+        which manufacturer built the device and via what partner and channel
+        it was sold or given out.
+    </p>
+
+    <p class="text-justified">
+        In general client side code to talk to this service appeared in
+        Firefox OS version 1.3T and 1.4.
+    </p>
+
+    <h3>FxStumbler</h3>
+
+    <p class="text-justified">
+        FxStumbler is an open source Firefox OS application similar in purpose
+        to MozStumbler. It collects data about the radio environment to
+        enhance the service. To contribute to the development of
+        <a href="https://github.com/clochix/FxStumbler">
+            FxStumbler visit it on github</a>.
+    </p>
+
+    <h3>Firefox Desktop</h3>
+
+    <p class="text-justified">
+        Recent versions of Firefox Desktop allow you to use this service
+        instead of the default location provider. Please refer to the
+        documentation on
+        <a href="https://mozilla-ichnaea.readthedocs.org/en/latest/usage.html#firefox-desktop">
+            how to customize the location provider</a> in our development
+        documentation.
+    </p>
+
+</section>
+</tal:slot>
+
+</tal:macro>

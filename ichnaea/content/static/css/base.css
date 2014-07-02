@@ -211,14 +211,19 @@ img {
 
 .half-left,
 .half-right {
-    width: 400px;
-    margin: 0 20px;
+    width: 460px;
+    margin: 0;
 }
 .half-left {
     float: left;
+    margin-right: 10px;
 }
 .half-right {
     float: right;
+    margin-left: 10px;
+}
+.text-justified {
+    text-align: justify;
 }
 
 #masthead,
@@ -377,6 +382,39 @@ img {
     height: 600px;
 }
 
+.map-callout {
+    width: 256px;
+    height: 220px;
+}
+.map-callout-caption {
+    position: absolute;
+    top: 205px;
+    font-size: .875em;
+    padding-bottom: 5px;
+}
+.map-callout a {
+    height: 200px;
+}
+.map-callout img {
+    position: absolute;
+    top: 0;
+    margin: 0;
+    padding: 0;
+    clip: rect(0px, 256px, 200px, 0px);
+    opacity: 1;
+}
+.map-callout-left {
+    width: 664px;
+    margin-right: 20px;
+    float: left;
+}
+.map-callout-right {
+    width: 256px;
+    margin-left: 20px;
+    float: right;
+}
+
+
 /* Mobile Layout: 320px */
 
 @media only screen and (max-width: 760px) {
@@ -450,11 +488,18 @@ img {
     }
     .half-left, .half-right {
         width: 300px;
-        margin: 0;
+    }
+    .half-left {
+        margin-right: 0;
     }
     .half-right {
+        margin-left: 0;
         margin-top: 10px;
         float: left;
+        clear: both;
+    }
+    .text-justified {
+        text-align: left;
     }
     .chart_container {
         width: 260px;
@@ -465,6 +510,18 @@ img {
     #map {
         width: 300px;
         height: 300px;
+    }
+    .map-callout-left, .map-callout-right{
+        width: auto;
+        margin: 0;
+    }
+    .map-callout-right {
+        float: left;
+    }
+    .map-callout {
+        position: relative;
+        width: 256px;
+        padding-bottom: 20px;
     }
 }
 
@@ -519,8 +576,13 @@ img {
     }
     .half-left,
     .half-right {
-        width: 340px;
-        margin: 0 10px;
+        width: 350px;
+    }
+    .half-left {
+        margin-right: 10px;
+    }
+    .half-right {
+        margin-left: 10px;
     }
     .chart_container {
         width: 600px;
@@ -531,5 +593,13 @@ img {
     #map {
         width: 720px;
         height: 360px;
+    }
+    .map-callout-left {
+        width: 440px;
+        margin-right: 10px;
+    }
+    .map-callout-right {
+        width: 260px;
+        margin-left: 10px;
     }
 }

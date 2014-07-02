@@ -13,16 +13,13 @@
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
     <p>
-        This page shows global statistics.
-        Data is updated daily shortly after midnight in UTC.
-    </p>
-    <p>
-        More <a href="/stats/countries">detailed statistics on cell
-        networks</a> are also available.
+        This page shows global statistics, updated daily.
+        You can also <a href="/stats/countries">
+            view country specific statistics on cell networks</a>.
     </p>
 
     <div class="separator">
-    <table class="table half">
+    <table class="table half-left">
         <thead>
             <tr>
                 <th>Metric</th>
@@ -30,29 +27,45 @@
             </tr>
         </thead>
         <tbody>
-            <tr tal:repeat="row metrics">
+            <tr tal:repeat="row metrics1">
+                <td>${row.name}</td>
+                <td class="text-right">${row.value}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="table half-right">
+        <thead>
+            <tr>
+                <th>Metric</th>
+                <th class="text-right">Value (in millions)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr tal:repeat="row metrics2">
                 <td>${row.name}</td>
                 <td class="text-right">${row.value}</td>
             </tr>
         </tbody>
     </table>
     </div>
-    <div class="separator">
+
+    <p class="separator">
         <h3>Unique cells</h3>
         <div id="unique_cell_chart" class="chart_container">
                 <div class="chart_y_axis"></div>
                 <div class="chart"></div>
                 <div class="chart_x_axis"></div>
         </div>
-    </div>
-    <div class="separator">
+    </p>
+    <p class="separator">
         <h3>Unique WiFi networks</h3>
         <div id="unique_wifi_chart" class="chart_container">
                 <div class="chart_y_axis"></div>
                 <div class="chart"></div>
                 <div class="chart_x_axis"></div>
         </div>
-    </div>
+    </p>
 </section>
 </tal:slot>
 
