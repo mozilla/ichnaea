@@ -13,7 +13,6 @@ from ichnaea.content.models import (
 )
 from ichnaea.models import (
     CellMeasure,
-    Measure,
     RADIO_TYPE,
     WifiMeasure,
     WIFI_TEST_KEY,
@@ -68,15 +67,11 @@ class TestSubmit(CeleryAppTestCase):
         )
 
         session = self.db_master_session
-        measure_result = session.query(Measure).all()
-        self.assertEqual(len(measure_result), 1)
-
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
         self.assertTrue(isinstance(item.report_id, bytes))
         self.assertEqual(len(item.report_id), 16)
-        self.assertEqual(item.measure_id, measure_result[0].id)
         self.assertEqual(item.created.date(), today)
 
         self.assertEqual(item.time, month_rounded_dt)
@@ -105,15 +100,11 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        measure_result = session.query(Measure).all()
-        self.assertEqual(len(measure_result), 1)
-
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
         self.assertTrue(isinstance(item.report_id, bytes))
         self.assertEqual(len(item.report_id), 16)
-        self.assertEqual(item.measure_id, measure_result[0].id)
         self.assertEqual(item.radio, RADIO_TYPE['gsm'])
 
     def test_ok_wifi(self):
@@ -137,17 +128,12 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        measure_result = session.query(Measure).all()
-        self.assertEqual(len(measure_result), 1)
-        item = measure_result[0]
-
         wifi_result = session.query(WifiMeasure).all()
         self.assertEqual(len(wifi_result), 2)
         item = wifi_result[0]
         report_id = item.report_id
         self.assertTrue(isinstance(report_id, bytes))
         self.assertEqual(len(report_id), 16)
-        self.assertEqual(item.measure_id, measure_result[0].id)
         self.assertEqual(item.created.date(), today)
         self.assertEqual(item.time, month_rounded_dt)
         self.assertEqual(item.lat, 123456781)
@@ -161,7 +147,6 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.snr, 5)
         item = wifi_result[1]
         self.assertEqual(item.report_id, report_id)
-        self.assertEqual(item.measure_id, measure_result[0].id)
         self.assertEqual(item.created.date(), today)
         self.assertEqual(item.lat, 123456781)
         self.assertEqual(item.lon, 234567892)
@@ -638,9 +623,6 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        measure_result = session.query(Measure).all()
-        self.assertEqual(len(measure_result), 0)
-
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 0)
 
@@ -658,9 +640,6 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        measure_result = session.query(Measure).all()
-        self.assertEqual(len(measure_result), 1)
-
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
@@ -681,9 +660,6 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        measure_result = session.query(Measure).all()
-        self.assertEqual(len(measure_result), 0)
-
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 0)
 

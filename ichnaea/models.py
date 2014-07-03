@@ -528,7 +528,6 @@ class CellMeasure(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
     report_id = Column(BINARY(length=16))
-    measure_id = Column(BigInteger(unsigned=True))
     created = Column(DateTime)  # the insert time of the record into the DB
     # lat/lon * DEGREE_SCALE_FACTOR
     lat = Column(Integer)
@@ -644,7 +643,6 @@ class WifiMeasure(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
     report_id = Column(BINARY(length=16))
-    measure_id = Column(BigInteger(unsigned=True))
     created = Column(DateTime)  # the insert time of the record into the DB
     # lat/lon * DEGREE_SCALE_FACTOR
     lat = Column(Integer)
@@ -671,19 +669,6 @@ class WifiMeasure(_Model):
         super(WifiMeasure, self).__init__(*args, **kw)
 
 wifi_measure_table = WifiMeasure.__table__
-
-
-class Measure(_Model):
-    __tablename__ = 'measure'
-    __table_args__ = {
-        'mysql_engine': 'InnoDB',
-        'mysql_charset': 'utf8',
-    }
-
-    id = Column(BigInteger(unsigned=True),
-                primary_key=True, autoincrement=True)
-
-measure_table = Measure.__table__
 
 
 class ApiKey(_Model):

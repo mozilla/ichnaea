@@ -16,7 +16,6 @@ from ichnaea.models import (
     Cell,
     CellBlacklist,
     CellMeasure,
-    Measure,
     normalized_wifi_measure_dict,
     normalized_cell_measure_dict,
     RADIO_TYPE,
@@ -117,7 +116,7 @@ def process_time(measure, utcnow, utcmin):
     return measure
 
 
-def process_measure(report_id, measure_id, data, session):
+def process_measure(report_id, data, session):
     def add_missing_dict_entries(dst, src):
         # x.update(y) overwrites entries in x with those in y;
         # we want to only add those not already present
@@ -129,7 +128,6 @@ def process_measure(report_id, measure_id, data, session):
     wifi_measures = {}
     measure_data = dict(
         report_id=report_id,
-        measure_id=measure_id,
         lat=from_degrees(data['lat']),
         lon=from_degrees(data['lon']),
         heading=data.get('heading', -1.0),
@@ -183,23 +181,13 @@ def process_measures(items, session, userid=None):
     utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
     utcmin = utcnow - datetime.timedelta(60)
 
-    # get enough auto-increment ids assigned
-    measures = []
-    for i in range(len(items)):
-        measure = Measure()
-        measures.append(measure)
-        session.add(measure)
-    # TODO switch unique measure id to a uuid, so we don't have to do
-    # get these from a savepoint here
-    session.flush()
-
     positions = []
     cell_measures = []
     wifi_measures = []
     for i, item in enumerate(items):
         item = process_time(item, utcnow, utcmin)
         report_id = uuid.uuid1().hex
-        cell, wifi = process_measure(report_id, measures[i].id, item, session)
+        cell, wifi = process_measure(report_id, item, session)
         cell_measures.extend(cell)
         wifi_measures.extend(wifi)
         if cell or wifi:
@@ -422,7 +410,6 @@ def create_cell_measure(utcnow, entry):
         report_id = uuid.UUID(hex=report_id).bytes
     return CellMeasure(
         report_id=report_id,
-        measure_id=entry.get('measure_id'),
         created=utcnow,
         lat=entry['lat'],
         lon=entry['lon'],
@@ -453,7 +440,6 @@ def create_wifi_measure(utcnow, entry):
         report_id = uuid.UUID(hex=report_id).bytes
     return WifiMeasure(
         report_id=report_id,
-        measure_id=entry.get('measure_id'),
         created=utcnow,
         lat=entry['lat'],
         lon=entry['lon'],

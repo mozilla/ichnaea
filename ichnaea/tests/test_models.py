@@ -193,26 +193,6 @@ class TestWifiMeasure(DBTestCase):
         self.assertEqual(result.signal, -45)
 
 
-class TestMeasure(DBTestCase):
-
-    def _make_one(self, **kw):
-        from ichnaea.models import Measure
-        return Measure(**kw)
-
-    def test_constructor(self):
-        measure = self._make_one()
-        self.assertTrue(measure.id is None)
-
-    def test_fields(self):
-        measure = self._make_one()
-        session = self.db_master_session
-        session.add(measure)
-        session.commit()
-
-        result = session.query(measure.__class__).first()
-        self.assertFalse(result.id is None)
-
-
 class TestNormalization(TestCase):
 
     def check_normalized_cell(self, measure, cell, expect):
