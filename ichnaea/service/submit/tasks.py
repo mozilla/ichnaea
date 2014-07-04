@@ -9,7 +9,6 @@ from sqlalchemy.sql import and_, or_
 
 from ichnaea.content.models import (
     MapStat,
-    MAPSTAT_TYPE,
     User,
 )
 from ichnaea.models import (
@@ -41,13 +40,14 @@ from ichnaea.tasks import DatabaseTask
 from ichnaea.worker import celery
 
 
-def process_mapstat_keyed(factor, stat_key, positions, session):
-    tiles = defaultdict(int)
+def process_mapstat(session, utcnow, positions):
+    factor = 10000  # 100x100 m tiles
+    today = utcnow.date()
+    tiles = {}
     # aggregate to tiles, according to factor
     for position in positions:
-        tiles[(position['lat'] / factor, position['lon'] / factor)] += 1
-    query = session.query(MapStat.lat, MapStat.lon).filter(
-        MapStat.key == stat_key)
+        tiles[(position['lat'] / factor, position['lon'] / factor)] = True
+    query = session.query(MapStat.lat, MapStat.lon)
     # dynamically construct a (lat, lon) in (list of tuples) filter
     # as MySQL isn't able to use indexes on such in queries
     lat_lon = []
@@ -58,28 +58,13 @@ def process_mapstat_keyed(factor, stat_key, positions, session):
     prior = {}
     for r in result:
         prior[(r[0], r[1])] = True
-    tile_count = 0
-    for (lat, lon), value in tiles.items():
+    for (lat, lon) in tiles.keys():
         old = prior.get((lat, lon), False)
-        if old:
-            stmt = MapStat.__table__.update().where(
-                MapStat.lat == lat).where(
-                MapStat.lon == lon).where(
-                MapStat.key == stat_key).values(
-                value=MapStat.value + value)
-        else:
-            tile_count += 1
+        if not old:
             stmt = MapStat.__table__.insert(
-                on_duplicate='value = value + %s' % int(value)).values(
-                lat=lat, lon=lon, key=stat_key, value=value)
-        session.execute(stmt)
-    return tile_count
-
-
-def process_mapstat(positions, session, userid=None):
-    # 100x100 m tiles
-    process_mapstat_keyed(
-        10000, MAPSTAT_TYPE['location_100m'], positions, session)
+                on_duplicate='id = id').values(
+                time=today, lat=lat, lon=lon)
+            session.execute(stmt)
 
 
 def process_user(nickname, session):
@@ -221,7 +206,7 @@ def process_measures(items, session, userid=None):
     if userid is not None:
         process_score(userid, len(positions), session)
     if positions:
-        process_mapstat(positions, session, userid=userid)
+        process_mapstat(session, utcnow, positions)
 
 
 @celery.task(base=DatabaseTask, bind=True)

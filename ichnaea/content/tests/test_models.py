@@ -84,12 +84,13 @@ class TestMapStat(DBTestCase):
 
     def test_constructor(self):
         stat = self._make_one()
+        self.assertTrue(stat.time is None)
         self.assertTrue(stat.lat is None)
         self.assertTrue(stat.lon is None)
-        self.assertEqual(stat.key, 2)
 
     def test_fields(self):
-        stat = self._make_one(lat=12345, lon=-23456, value=13)
+        today = datetime.datetime.utcnow().date()
+        stat = self._make_one(lat=12345, lon=-23456, time=today)
         session = self.db_master_session
         session.add(stat)
         session.commit()
@@ -97,21 +98,7 @@ class TestMapStat(DBTestCase):
         result = session.query(stat.__class__).first()
         self.assertEqual(result.lat, 12345)
         self.assertEqual(result.lon, -23456)
-        self.assertEqual(result.key, 2)
-        self.assertEqual(result.value, 13)
-
-    def test_0_clash(self):
-        session = self.db_master_session
-        stats = [
-            self._make_one(lat=12345, lon=-23456, value=13),
-            self._make_one(lat=0, lon=0, key=0, value=3),
-            self._make_one(lat=0, lon=0, key=2, value=5),
-        ]
-        session.add_all(stats)
-        session.commit()
-
-        results = session.query(stats[0].__class__).all()
-        self.assertEqual(len(results), 3)
+        self.assertEqual(result.time, today)
 
 
 class TestUser(DBTestCase):

@@ -8,7 +8,6 @@ from ichnaea.models import (
 
 from ichnaea.content.models import (
     MapStat,
-    MAPSTAT_TYPE,
     Score,
     SCORE_TYPE_INVERSE,
     User,
@@ -79,10 +78,9 @@ class TestLoadFile(CeleryTestCase):
         scores = dict([(SCORE_TYPE_INVERSE[s.key], s.value) for s in scores])
         self.assertEqual(
             scores, {'new_wifi': 1, 'location': 3})
-        mapstats = session.query(MapStat).filter(
-            MapStat.key == MAPSTAT_TYPE['location_100m']).all()
-        mapstats = [(m.lat, m.lon, m.value) for m in mapstats]
-        self.assertEqual(mapstats, [(37871, -122274, 3)])
+        mapstats = session.query(MapStat).all()
+        mapstats = [(m.lat, m.lon) for m in mapstats]
+        self.assertEqual(mapstats, [(37871, -122274)])
 
     def test_corrupt_lines(self):
         func, tmpfile = self._make_one()

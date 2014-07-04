@@ -1,12 +1,14 @@
-from datetime import datetime
-from datetime import timedelta
+from datetime import (
+    date,
+    datetime,
+    timedelta,
+)
 import pytz
 
 from webob.response import gzip_app_iter
 
 from ichnaea.content.models import (
     MapStat,
-    MAPSTAT_TYPE,
     Score,
     SCORE_TYPE,
     User,
@@ -287,14 +289,15 @@ class TestSubmit(CeleryAppTestCase):
 
     def test_mapstat(self):
         app = self.app
+        long_ago = date(2011, 10, 20)
+        today = datetime.utcnow().date()
         session = self.db_master_session
-        key_100m = MAPSTAT_TYPE['location_100m']
-        session.add_all([
-            MapStat(lat=1000, lon=2000, key=key_100m, value=7),
-            MapStat(lat=1000, lon=3000, key=key_100m, value=2),
-            MapStat(lat=2000, lon=3000, key=key_100m, value=5),
-            MapStat(lat=2000, lon=4000, key=key_100m, value=9),
-        ])
+        stats = [
+            MapStat(lat=1000, lon=2000, time=long_ago),
+            MapStat(lat=2000, lon=3000, time=long_ago),
+            MapStat(lat=3000, lon=4000, time=long_ago),
+        ]
+        session.add_all(stats)
         session.flush()
         app.post_json(
             '/v1/submit', {"items": [
@@ -316,17 +319,15 @@ class TestSubmit(CeleryAppTestCase):
             ]},
             status=204)
         # check coarse grained stats
-        result = session.query(MapStat).filter(
-            MapStat.key == MAPSTAT_TYPE['location_100m']).all()
-        self.assertEqual(len(result), 5)
+        result = session.query(MapStat).all()
+        self.assertEqual(len(result), 4)
         self.assertEqual(
-            sorted([(int(r.lat), int(r.lon), int(r.value)) for r in result]),
+            sorted([(int(r.lat), int(r.lon), r.time, r.id) for r in result]),
             [
-                (-2000, 3000, 1),
-                (1000, 2000, 8),
-                (1000, 3000, 2),
-                (2000, 3000, 7),
-                (2000, 4000, 9),
+                (-2000, 3000, today, stats[2].id + 1),
+                (1000, 2000, long_ago, stats[0].id),
+                (2000, 3000, long_ago, stats[1].id),
+                (3000, 4000, long_ago, stats[2].id),
             ]
         )
 
