@@ -44,6 +44,10 @@ RADIO_TYPE_INVERSE[2] = 'umts'
 MAX_RADIO_TYPE = max(RADIO_TYPE.values())
 MIN_RADIO_TYPE = min(RADIO_TYPE.values())
 
+# Restrict latitudes to Web Mercator projection
+MAX_LAT = 85.051
+MIN_LAT = -85.051
+
 # Accuracy on land is arbitrarily bounded to [0, 1000km],
 # past which it seems more likely we're looking at bad data.
 MAX_ACCURACY = 1000000
@@ -195,7 +199,7 @@ def normalized_measure_dict(d):
     or None if the dict was invalid.
     """
     d = normalized_dict(
-        d, dict(lat=(from_degrees(-90.0), from_degrees(90.0), REQUIRED),
+        d, dict(lat=(from_degrees(MIN_LAT), from_degrees(MAX_LAT), REQUIRED),
                 lon=(from_degrees(-180.0), from_degrees(180.0), REQUIRED),
                 heading=(0.0, MAX_HEADING, -1.0),
                 speed=(0, MAX_SPEED, -1.0),

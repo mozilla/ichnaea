@@ -241,7 +241,7 @@ class TestNormalization(TestCase):
              (PARIS_LAT, PARIS_LON, FRANCE_MCC)]]
 
         invalid_latitudes = [from_degrees(x)
-                             for x in [-100.0, -90.1, 90.1, 100.0]]
+                             for x in [-100.0, -85.0511, 85.0511, 100.0]]
 
         invalid_longitudes = [from_degrees(x)
                               for x in [-190.0, -180.1, 180.1, 190]]
