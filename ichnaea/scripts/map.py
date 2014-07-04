@@ -1,11 +1,13 @@
 import argparse
 from contextlib import contextmanager
+import hashlib
 import os
 from random import Random
 import shutil
 import sys
 import tempfile
 
+import boto
 from sqlalchemy import text
 
 from ichnaea.config import read_config
@@ -56,7 +58,62 @@ def export_to_csv(db, filename):
             offset += batch
 
 
-def generate(db, bucketname, concurrency=2, datamaps='', output=None):
+def upload_to_s3(bucketname, tiles):
+    tiles = os.path.abspath(tiles)
+
+    conn = boto.connect_s3()
+    bucket = conn.get_bucket(bucketname, validate=False)
+    result = {'changed': 0, 'unchanged': 0, 'new': 0}
+
+    def _key(name):
+        try:
+            return int(name)
+        except Exception:
+            return -1
+
+    for name in sorted(os.listdir(tiles), key=_key):
+        folder = os.path.join(tiles, name)
+        if not os.path.isdir(folder):
+            continue
+
+        for root, dirs, files in os.walk(folder):
+            rel_root = 'tiles/' + root.lstrip(tiles) + '/'
+            for f in files:
+                if not f.endswith('.png'):
+                    continue
+                filename = root + os.sep + f
+                keyname = rel_root + f
+                key = bucket.get_key(keyname)
+                changed = True
+                if key is not None:
+                    if os.path.getsize(filename) != key.size:
+                        # do the file sizes match?
+                        changed = True
+                    else:
+                        remote_md5 = key.etag.strip('"')
+                        with open(filename, 'rb') as fd:
+                            local_md5 = hashlib.md5(fd.read()).hexdigest()
+                        if local_md5 == remote_md5:
+                            # do the md5/etags match?
+                            changed = False
+                if changed:
+                    if key is None:
+                        result['new'] += 1
+                        key = boto.s3.key.Key(bucketname)
+                        key.key = keyname
+                    else:
+                        result['changed'] += 1
+                    # TODO: activate once tested
+                    # set correct metadata, acl, RR storage policy
+                    # key.set_contents_from_filename(filename)
+                else:
+                    result['unchanged'] += 1
+
+    return result
+
+
+def generate(db, bucketname,
+             upload=True, concurrency=2, datamaps='', output=None):
     datamaps_encode = os.path.join(datamaps, 'encode')
     datamaps_enumerate = os.path.join(datamaps, 'enumerate')
     datamaps_render = os.path.join(datamaps, 'render')
@@ -89,6 +146,10 @@ def generate(db, bucketname, concurrency=2, datamaps='', output=None):
             output=tiles)
         os.system(cmd)
 
+        if upload:
+            result = upload_to_s3(bucketname, tiles)
+            sys.stdout.write('Upload to S3: %s' % result)
+
 
 def main(argv, _db_master=None, _heka_client=None):
     # run for example via:
@@ -100,6 +161,8 @@ def main(argv, _db_master=None, _heka_client=None):
 
     parser.add_argument('--create', action='store_true',
                         help='Create tiles.')
+    parser.add_argument('--upload', action='store_true',
+                        help='Upload tiles to S3.')
     parser.add_argument('--concurrency', default=2,
                         help='How many concurrent render processes to use?')
     parser.add_argument('--datamaps',
@@ -112,8 +175,12 @@ def main(argv, _db_master=None, _heka_client=None):
     if args.create:
         conf = read_config()
         db = Database(conf.get('ichnaea', 'db_master'))
-        bucketname = conf.get('ichnaea', 's3_assets_bucket')
+        bucketname = conf.get('ichnaea', 's3_assets_bucket').strip('/')
         configure_heka(conf.filename, _heka_client=_heka_client)
+
+        upload = False
+        if args.upload:
+            upload = bool(args.upload)
 
         concurrency = 2
         if args.concurrency:
@@ -128,7 +195,10 @@ def main(argv, _db_master=None, _heka_client=None):
             output = os.path.abspath(args.output)
 
         generate(db, bucketname,
-                 concurrency=concurrency, datamaps=datamaps, output=output)
+                 upload=upload,
+                 concurrency=concurrency,
+                 datamaps=datamaps,
+                 output=output)
     else:
         parser.print_help()
 
