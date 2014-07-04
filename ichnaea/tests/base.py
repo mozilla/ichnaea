@@ -3,6 +3,12 @@ import os.path
 
 from alembic.config import Config
 from alembic import command
+from sqlalchemy import inspect
+from sqlalchemy.schema import (
+    DropTable,
+    MetaData,
+    Table,
+)
 from unittest2 import TestCase
 from webtest import TestApp
 
@@ -147,9 +153,17 @@ class DBIsolation(object):
 
     @classmethod
     def cleanup_tables(cls, engine):
+        # reflect and delete all tables, not just those known to
+        # our current code version / models
+        metadata = MetaData()
+        inspector = inspect(engine)
+        tables = []
         with engine.connect() as conn:
             trans = conn.begin()
-            _Model.metadata.drop_all(engine)
+            for t in inspector.get_table_names():
+                tables.append(Table(t, metadata))
+            for t in tables:
+                conn.execute(DropTable(t))
             trans.commit()
 
 
