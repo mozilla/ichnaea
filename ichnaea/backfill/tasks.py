@@ -5,8 +5,9 @@ from ichnaea.worker import celery
 from ichnaea.models import CELLID_LAC, to_degrees
 from ichnaea.geocalc import distance
 
-NEAREST_DISTANCE = 1.0  # Distance in kilometers between towers with no
-                        # LAC/CID and towers with known LAC/CID
+# Distance in kilometers between towers with no
+# LAC/CID and towers with known LAC/CID
+NEAREST_DISTANCE = 1.0
 
 
 @celery.task(base=DatabaseTask, bind=True)
