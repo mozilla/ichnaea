@@ -78,12 +78,19 @@ def upload_to_s3(bucketname, tiles):
 
         for root, dirs, files in os.walk(folder):
             rel_root = 'tiles/' + root.lstrip(tiles) + '/'
-            for f in files:
-                if not f.endswith('.png'):
-                    continue
+            rel_root_len = len(rel_root)
+            filtered_files = [f for f in files if f.endswith('.png')]
+            if not filtered_files:
+                continue
+            # get all the keys
+            keys = {}
+            for key in bucket.list(prefix=rel_root):
+                rel_name = key.name[rel_root_len:]
+                keys[rel_name] = key
+            for f in filtered_files:
                 filename = root + os.sep + f
                 keyname = rel_root + f
-                key = bucket.get_key(keyname)
+                key = keys.get(f, None)
                 changed = True
                 if key is not None:
                     if os.path.getsize(filename) != key.size:
