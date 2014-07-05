@@ -108,11 +108,14 @@ def upload_to_s3(bucketname, tiles):
                         result['new'] += 1
                         key = boto.s3.key.Key(bucketname)
                         key.key = keyname
+                        key.content_type = 'image/png'
+                        key.cache_control = 'max-age=3600, public'
                     else:
                         result['changed'] += 1
-                    # TODO: activate once tested
-                    # set correct metadata, acl, RR storage policy
-                    # key.set_contents_from_filename(filename)
+                    # upload or update the key
+                    key.set_contents_from_filename(
+                        filename,
+                        reduced_redundancy=True)
                 else:
                     result['unchanged'] += 1
 
