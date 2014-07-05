@@ -409,6 +409,9 @@ class CeleryAppTestCase(AppTestCase, CeleryIsolation):
 
 
 def setup_package(module):
+    # make sure all models are imported
+    from ichnaea import models  # NOQA
+    from ichnaea.content import models  # NOQA
     db = _make_db()
     engine = db.engine
     DBIsolation.cleanup_tables(engine)
