@@ -14,6 +14,11 @@ from ichnaea.config import read_config
 from ichnaea.db import Database
 from ichnaea.heka_logging import configure_heka
 
+IMAGE_HEADERS = {
+    'Content-Type': 'image/png',
+    'Cache-Control': 'max-age=3600, public',
+}
+
 
 @contextmanager
 def tempdir():
@@ -106,15 +111,14 @@ def upload_to_s3(bucketname, tiles):
                 if changed:
                     if key is None:
                         result['new'] += 1
-                        key = boto.s3.key.Key(bucketname)
+                        key = boto.s3.key.Key(bucket)
                         key.key = keyname
-                        key.content_type = 'image/png'
-                        key.cache_control = 'max-age=3600, public'
                     else:
                         result['changed'] += 1
                     # upload or update the key
                     key.set_contents_from_filename(
                         filename,
+                        headers=IMAGE_HEADERS,
                         reduced_redundancy=True)
                 else:
                     result['unchanged'] += 1
