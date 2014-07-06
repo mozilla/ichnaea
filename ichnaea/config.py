@@ -24,6 +24,7 @@ class Config(ConfigParser):
         return option
 
 
-def read_config():
-    ini = os.environ.get('ICHNAEA_CFG', 'ichnaea.ini')
-    return Config(ini)
+def read_config(filename=None):
+    if filename is None:
+        filename = os.environ.get('ICHNAEA_CFG', 'ichnaea.ini')
+    return Config(filename)
