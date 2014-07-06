@@ -26,7 +26,7 @@ else
 	SQLURI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@localhost/$(MYSQL_TEST_DB)
 endif
 
-.PHONY: all js test docs mysql
+.PHONY: all js mysql init_db css js_map js test clean shell docs release
 
 all: build init_db
 
