@@ -68,7 +68,13 @@ def upload_to_s3(bucketname, tiles):
 
     conn = boto.connect_s3()
     bucket = conn.get_bucket(bucketname, validate=False)
-    result = {'changed': 0, 'unchanged': 0, 'new': 0}
+    result = {
+        'changed': 0,
+        'unchanged': 0,
+        'new': 0,
+        's3_put': 0,
+        's3_list': 0,
+    }
 
     def _key(name):
         try:
@@ -89,6 +95,7 @@ def upload_to_s3(bucketname, tiles):
                 continue
             # get all the keys
             keys = {}
+            result['s3_list'] += 1
             for key in bucket.list(prefix=rel_root):
                 rel_name = key.name[rel_root_len:]
                 keys[rel_name] = key
@@ -116,6 +123,7 @@ def upload_to_s3(bucketname, tiles):
                     else:
                         result['changed'] += 1
                     # upload or update the key
+                    result['s3_put'] += 1
                     key.set_contents_from_filename(
                         filename,
                         headers=IMAGE_HEADERS,
