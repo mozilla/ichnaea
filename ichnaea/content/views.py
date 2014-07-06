@@ -102,7 +102,7 @@ class ContentViews(Layout):
     def __init__(self, request):
         self.request = request
 
-    @view_config(renderer='templates/homepage.pt', http_cache=300)
+    @view_config(renderer='templates/homepage.pt', http_cache=3600)
     def homepage_view(self):
         tiles_url = getattr(self.request.registry, 'tiles_url', None)
         if not tiles_url:
@@ -118,32 +118,32 @@ class ContentViews(Layout):
         }
 
     @view_config(renderer='templates/api.pt',
-                 name="api", http_cache=300)
+                 name="api", http_cache=3600)
     def api_view(self):
         return {'page_title': 'API'}
 
     @view_config(renderer='templates/apps.pt',
-                 name="apps", http_cache=300)
+                 name="apps", http_cache=3600)
     def apps_view(self):
         return {'page_title': 'Client Applications'}
 
     @view_config(renderer='templates/contact.pt',
-                 name="contact", http_cache=300)
+                 name="contact", http_cache=3600)
     def contact_view(self):
         return {'page_title': 'Contact Us'}
 
     @view_config(renderer='templates/optout.pt',
-                 name="optout", http_cache=300)
+                 name="optout", http_cache=3600)
     def optout_view(self):
         return {'page_title': 'Opt-Out'}
 
     @view_config(renderer='templates/privacy.pt',
-                 name="privacy", http_cache=300)
+                 name="privacy", http_cache=3600)
     def privacy_view(self):
         return {'page_title': 'Privacy Policy'}
 
     @view_config(renderer='templates/leaders.pt',
-                 route_name="leaders", http_cache=300)
+                 route_name="leaders", http_cache=3600)
     def leaders_view(self):
         session = self.request.db_slave_session
         result = list(enumerate(leaders(session)))
@@ -164,7 +164,7 @@ class ContentViews(Layout):
         }
 
     @view_config(renderer='templates/leaders_weekly.pt',
-                 route_name="leaders_weekly", http_cache=300)
+                 route_name="leaders_weekly", http_cache=3600)
     def leaders_weekly_view(self):
         session = self.request.db_slave_session
         result = {
@@ -188,7 +188,7 @@ class ContentViews(Layout):
             'scores': result,
         }
 
-    @view_config(renderer='templates/map.pt', name="map", http_cache=300)
+    @view_config(renderer='templates/map.pt', name="map", http_cache=3600)
     def map_view(self):
         tiles_url = getattr(self.request.registry, 'tiles_url', None)
         if not tiles_url:
