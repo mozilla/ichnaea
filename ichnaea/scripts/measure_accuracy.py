@@ -375,12 +375,10 @@ def main():
     for cell in load_named_tuples_from_csv(CellMeasure, args.cell_measure):
         if cell.radio == args.exclude_radio:
             continue
-        rid = cell.report_id
-        cell_measures[rid].append(cell)
+        cell_measures[cell.report_id].append(cell)
 
     for wifi in load_named_tuples_from_csv(WifiMeasure, args.wifi_measure):
-        rid = wifi.report_id
-        wifi_measures[rid].append(wifi)
+        wifi_measures[wifi.report_id].append(wifi)
 
     wifi_measures = dict([(k, v)
                           for (k, v)
