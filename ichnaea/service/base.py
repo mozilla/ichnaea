@@ -62,14 +62,17 @@ def check_api_key(func_name, error_on_invalidkey=False):
                     return invalid_api_key_response()
 
             session = request.db_slave_session
-            found_key_filter = session.query(ApiKey).filter(
-                ApiKey.valid_key == api_key)
+            found_key = session.query(
+                ApiKey.maxreq, ApiKey.shortname).filter(
+                ApiKey.valid_key == api_key).first()
 
-            found_key = found_key_filter.first()
-            if found_key:
-                heka_client.incr('%s.api_key.%s' % (func_name, api_key))
+            if found_key is not None:
+                maxreq, shortname = found_key
+                if not shortname:
+                    shortname = api_key
+                heka_client.incr('%s.api_key.%s' % (func_name, shortname))
                 if rate_limit(request.registry.redis_client,
-                              api_key, maxreq=found_key.maxreq):
+                              api_key, maxreq=maxreq):
                     result = HTTPForbidden()
                     result.content_type = 'application/json'
                     result.body = DAILY_LIMIT

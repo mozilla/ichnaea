@@ -418,7 +418,7 @@ def setup_package(module):
     DBIsolation.setup_tables(engine)
     # always add a test API key
     session = db.session()
-    session.add(ApiKey(valid_key='test'))
+    session.add(ApiKey(valid_key='test', shortname='test'))
     session.commit()
     session.close()
     db.engine.pool.dispose()
