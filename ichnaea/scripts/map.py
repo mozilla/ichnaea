@@ -73,9 +73,9 @@ def upload_to_s3(bucketname, tiles):
     conn = boto.connect_s3()
     bucket = conn.get_bucket(bucketname, validate=False)
     result = {
-        'changed': 0,
-        'unchanged': 0,
-        'new': 0,
+        'tile_changed': 0,
+        'tile_unchanged': 0,
+        'tile_new': 0,
         's3_put': 0,
         's3_list': 0,
     }
@@ -121,11 +121,11 @@ def upload_to_s3(bucketname, tiles):
                             changed = False
                 if changed:
                     if key is None:
-                        result['new'] += 1
+                        result['tile_new'] += 1
                         key = boto.s3.key.Key(bucket)
                         key.key = keyname
                     else:
-                        result['changed'] += 1
+                        result['tile_changed'] += 1
                     # upload or update the key
                     result['s3_put'] += 1
                     key.set_contents_from_filename(
@@ -133,7 +133,7 @@ def upload_to_s3(bucketname, tiles):
                         headers=IMAGE_HEADERS,
                         reduced_redundancy=True)
                 else:
-                    result['unchanged'] += 1
+                    result['tile_unchanged'] += 1
 
     return result
 
@@ -194,7 +194,7 @@ def generate(db, bucketname, heka_client,
 
 def main(argv, _db_master=None, _heka_client=None):
     # run for example via:
-    # bin/location_map --create --datamaps=/path/to/datamaps/ \
+    # bin/location_map --create --upload --datamaps=/path/to/datamaps/ \
     #   --output=ichnaea/content/static/tiles/
 
     parser = argparse.ArgumentParser(

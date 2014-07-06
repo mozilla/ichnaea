@@ -537,3 +537,27 @@ system:
   - ``task.update_lac``
   - ``task.wifi_location_update``
   - ``task.wifi_unthrottle_measures``
+
+
+Datamaps timers
+---------------
+
+Ichnaea includes a script to generate a data map from the gathered map
+statistics. This script includes a number of timers and pseudo-timers
+to monitor its operation.
+
+This includes timers to track the individual steps of the generation process:
+
+  - ``datamaps.export_to_csv``
+  - ``datamaps.encode``
+  - ``datamaps.render``
+  - ``datamaps.upload_to_s3``
+
+And pseudo-timers to track the number of rows, image tiles and S3 operations:
+
+  - ``datamaps.csv_rows``
+  - ``datamaps.s3_list``
+  - ``datamaps.s3_put``
+  - ``datamaps.tile_new``
+  - ``datamaps.tile_changed``
+  - ``datamaps.tile_unchanged``
