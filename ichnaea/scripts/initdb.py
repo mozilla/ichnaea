@@ -1,4 +1,5 @@
 import argparse
+from collections import namedtuple
 import os
 import sys
 
@@ -14,6 +15,14 @@ from ichnaea.db import _Model
 from ichnaea.db import Database
 from ichnaea.heka_logging import configure_heka
 
+DBCreds = namedtuple('DBCreds', 'user pwd')
+
+
+def _db_creds(connection):
+    # for example 'mysql+pymysql://user:pwd@localhost/location'
+    result = connection.split('@')[0].split('//')[-1].split(':')
+    return DBCreds(*result)
+
 
 def add_test_api_key(conn):
     stmt = text('select valid_key from api_key')
@@ -22,6 +31,27 @@ def add_test_api_key(conn):
         stmt = text('insert into api_key (valid_key, shortname) '
                     'values ("test", "test")')
         conn.execute(stmt)
+
+
+def add_users(conn, location_cfg):
+    # We don't take into account hostname or database restrictions
+    # the users / grants, but use global privileges.
+    ichnaea_section = location_cfg.get_map('ichnaea')
+
+    creds = {}
+    creds['master'] = _db_creds(ichnaea_section.get('db_master'))
+    creds['slave'] = _db_creds(ichnaea_section.get('db_slave'))
+
+    stmt = text("SELECT user FROM mysql.user")
+    result = conn.execute(stmt)
+    userids = set([r[0] for r in result.fetchall()])
+
+    create_stmt = text("CREATE USER :user IDENTIFIED BY :pwd")
+    grant_stmt = text("GRANT delete, insert, select, update ON *.* TO :user")
+    for cred in creds.values():
+        if cred.user not in userids:
+            conn.execute(create_stmt.bindparams(user=cred.user, pwd=cred.pwd))
+            conn.execute(grant_stmt.bindparams(user=cred.user))
 
 
 def create_schema(engine, alembic_cfg, location_cfg):
@@ -40,6 +70,7 @@ def create_schema(engine, alembic_cfg, location_cfg):
             _Model.metadata.create_all(engine)
 
         add_test_api_key(conn)
+        add_users(conn, location_cfg)
 
         trans.commit()
 
