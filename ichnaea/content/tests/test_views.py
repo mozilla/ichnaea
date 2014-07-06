@@ -12,6 +12,10 @@ from ichnaea.content.models import (
     STAT_TYPE,
     User,
 )
+from ichnaea.content.views import (
+    LOCAL_TILES,
+    LOCAL_TILES_BASE,
+)
 from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.tests.base import AppTestCase
 
@@ -60,7 +64,6 @@ class TestContentViews(TestCase):
         self.assertTrue('Privacy' in result['page_title'])
 
     def test_map(self):
-        from ichnaea.content.views import LOCAL_TILES
         request = DummyRequest()
         inst = self._make_view(request)
         result = inst.map_view()
@@ -112,6 +115,10 @@ class TestFunctionalContent(AppTestCase):
 
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)
+
+    def test_map_json(self):
+        result = self.app.get('/map.json', status=200)
+        self.assertEqual(result.json['tiles_url'], LOCAL_TILES_BASE)
 
     def test_stats_countries(self):
         self.app.get('/stats/countries', status=200)

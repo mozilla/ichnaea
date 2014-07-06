@@ -33,7 +33,9 @@ script-src {base} *.google-analytics.com 'unsafe-eval';
 style-src {base};
 """
 CSP_POLICY = CSP_POLICY.replace("\n", ' ').strip()
-LOCAL_TILES = 'http://127.0.0.1:7001/static/tiles/{z}/{x}/{y}.png'
+LOCAL_TILES_BASE = 'http://127.0.0.1:7001/static/tiles/'
+TILES_PATTERN = '{z}/{x}/{y}.png'
+LOCAL_TILES = LOCAL_TILES_BASE + TILES_PATTERN
 BASE_MAP_KEY = 'mozilla-webprod.map-05ad0a21'
 
 
@@ -42,7 +44,7 @@ def map_tiles_url(base_url):
         return LOCAL_TILES
     elif not base_url.endswith('/'):
         base_url = base_url + '/'
-    return urlparse.urljoin(base_url, 'tiles/{z}/{x}/{y}.png')
+    return urlparse.urljoin(base_url, 'tiles/' + TILES_PATTERN)
 
 
 def configure_content(config):
@@ -102,11 +104,15 @@ class ContentViews(Layout):
     def __init__(self, request):
         self.request = request
 
-    @view_config(renderer='templates/homepage.pt', http_cache=3600)
-    def homepage_view(self):
+    def _tiles_url(self):
         tiles_url = getattr(self.request.registry, 'tiles_url', None)
         if not tiles_url:
             tiles_url = map_tiles_url(None)
+        return tiles_url
+
+    @view_config(renderer='templates/homepage.pt', http_cache=3600)
+    def homepage_view(self):
+        tiles_url = self._tiles_url()
         map_url = tiles_url.format(z=0, x=0, y=0)
         scheme = urlparse.urlparse(self.request.url).scheme
         map_base_url = '%s://a.tiles.mapbox.com/v3/%s/0/0/0.png' % (
@@ -190,10 +196,15 @@ class ContentViews(Layout):
 
     @view_config(renderer='templates/map.pt', name="map", http_cache=3600)
     def map_view(self):
-        tiles_url = getattr(self.request.registry, 'tiles_url', None)
-        if not tiles_url:
-            tiles_url = map_tiles_url(None)
-        return {'page_title': 'Map', 'tiles': tiles_url}
+        return {'page_title': 'Map', 'tiles': self._tiles_url()}
+
+    @view_config(
+        renderer='json', name="map.json", http_cache=3600)
+    def map_json(self):
+        tiles_url = self._tiles_url()
+        offset = tiles_url.find(TILES_PATTERN)
+        base_url = tiles_url[:offset]
+        return {'tiles_url': base_url}
 
     @view_config(
         renderer='json', name="stats_unique_cell.json", http_cache=3600)
