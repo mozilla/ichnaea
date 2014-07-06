@@ -44,6 +44,7 @@ def export_to_csv(db, filename):
     batch = 200000
     pattern = '%.6f,%.6f\n'
 
+    result_rows = 0
     # export mapstat mysql table as csv to local file
     with open(filename, 'w') as fd:
         while True:
@@ -60,7 +61,10 @@ def export_to_csv(db, filename):
                     lon = (r[1] + random()) / 1000.0
                     append(pattern % (lat, lon))
             fd.writelines(lines)
+            result_rows += len(lines)
             offset += batch
+
+    return result_rows
 
 
 def upload_to_s3(bucketname, tiles):
@@ -145,7 +149,8 @@ def generate(db, bucketname, heka_client,
 
         heka_client.debug('Datamaps export to CSV started.')
         with heka_client.timer("datamaps.export_to_csv"):
-            export_to_csv(db, csv)
+            result_rows = export_to_csv(db, csv)
+        heka_client.timer_send('datamaps.csv_rows', result_rows)
         heka_client.debug('Datamaps export to CSV finished.')
 
         # create shapefile / quadtree
