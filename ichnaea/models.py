@@ -687,6 +687,13 @@ class ApiKey(_Model):
 
     # Maximum number of requests per day
     maxreq = Column(Integer)
+    # A readable short name used in metrics
+    shortname = Column(String(40))
+    # A contact address
+    email = Column(String(255))
+    # Some free form context / description
+    description = Column(String(255))
+
 
 api_key_table = ApiKey.__table__
 
