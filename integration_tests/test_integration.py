@@ -3,6 +3,7 @@ import json
 import requests
 import time
 from nose.tools import eq_
+import os
 from ichnaea.models import ApiKey, Cell, Wifi
 from ichnaea.db import Database
 from ichnaea.models import from_degrees, GEOIP_CITY_ACCURACY
@@ -147,8 +148,7 @@ class TestSearch(TestCase):
         self.redis = VaurienRedis()
         self.mysql = VaurienMySQL()
 
-        # TODO: pull the URI from the enviroment
-        uri = "mysql+pymysql://root:mysql@localhost/location"
+        uri = os.environ.get('SQLURI')
         self.db = Database(uri)
 
         self.install_apikey()
@@ -193,7 +193,7 @@ class TestSearch(TestCase):
         session.add(ApiKey(valid_key='test', maxreq=0))
         session.commit()
 
-    def test_dummy(self):
+    def test_mysql_dummy(self):
         # this should pass, otherwise, vaurien has screwed up
         self.mysql.dummy()
         self.redis.dummy()
@@ -210,7 +210,7 @@ class TestSearch(TestCase):
         self.assertAlmostEquals(actual['lon'], expected['lon'])
         self.assertAlmostEquals(actual['accuracy'], expected['accuracy'])
 
-    def test_delay(self):
+    def test_mysql_delay(self):
         # this should pass, otherwise, vaurien has screwed up
         self.mysql.delay()
         self.redis.dummy()
@@ -223,6 +223,29 @@ class TestSearch(TestCase):
                                   "lat": PARIS_LAT,
                                   "lon": PARIS_LON,
                                   "accuracy": 100})
+
+    def test_mysql_blackout(self):
+        # This test has been renamed so that it runs last
+        self.mysql.blackout()
+        self.redis.dummy()
+
+        # MySQL blackouts will cause API key checking to be disabled
+        status_code, content = do_search(apikey='invalid_key',
+                                         use_ip=FREMONT_IP)
+
+        # MySQL blackouts will force only geo-ip to work
+        eq_(status_code, 200)
+        actual = json.loads(content)
+        expected = {"status": "ok",
+                    "lat": FREMONT_LAT,
+                    "lon": FREMONT_LON,
+                    "accuracy": GEOIP_CITY_ACCURACY}
+
+        # TODO: not sure why we need almost equal for geoip
+        self.assertAlmostEquals(actual['status'], expected['status'])
+        self.assertAlmostEquals(actual['lat'], expected['lat'])
+        self.assertAlmostEquals(actual['lon'], expected['lon'])
+        self.assertAlmostEquals(actual['accuracy'], expected['accuracy'])
 
     def test_redis_dummy(self):
         self.mysql.dummy()
@@ -262,26 +285,3 @@ class TestSearch(TestCase):
                                   "lat": PARIS_LAT,
                                   "lon": PARIS_LON,
                                   "accuracy": 100})
-
-    def test_mysql_blackout(self):
-        # This test has been renamed so that it runs last
-        self.mysql.blackout()
-        self.redis.dummy()
-
-        # MySQL blackouts will cause API key checking to be disabled
-        status_code, content = do_search(apikey='invalid_key',
-                                         use_ip=FREMONT_IP)
-
-        # MySQL blackouts will force only geo-ip to work
-        eq_(status_code, 200)
-        actual = json.loads(content)
-        expected = {"status": "ok",
-                    "lat": FREMONT_LAT,
-                    "lon": FREMONT_LON,
-                    "accuracy": GEOIP_CITY_ACCURACY}
-
-        # TODO: not sure why we need almost equal for geoip
-        self.assertAlmostEquals(actual['status'], expected['status'])
-        self.assertAlmostEquals(actual['lat'], expected['lat'])
-        self.assertAlmostEquals(actual['lon'], expected['lon'])
-        self.assertAlmostEquals(actual['accuracy'], expected['accuracy'])
