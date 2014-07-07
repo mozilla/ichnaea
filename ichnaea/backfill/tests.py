@@ -29,8 +29,8 @@ class TestBackfill(CeleryTestCase):
         session.add_all(data)
 
         # This is tower C and should map back to tower A
-        towerC_lat = 378348600
-        towerC_lon = -1222828703
+        towerC_lat = 37.8348600
+        towerC_lon = -12.22828703
         session.add_all([CellMeasure(lat=towerC_lat, lon=towerC_lon, radio=2,
                                      lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
                                      accuracy=20)])
@@ -48,7 +48,7 @@ class TestBackfill(CeleryTestCase):
 
         # This is tower F and should not map back to anything as it's
         # too far away.
-        session.add_all([CellMeasure(lat=99.8409925, lon=99.8409925, radio=3,
+        session.add_all([CellMeasure(lat=9.8409925, lon=9.8409925, radio=3,
                                      lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
                                      accuracy=20)])
 
@@ -84,6 +84,6 @@ class TestBackfill(CeleryTestCase):
         # Tower F shouldn't map to any known tower as it's too far away
         rset = session.execute(text(
             "select count(*) from cell_measure where radio = 3 and "
-            "lat = 98409925 and lon = 98409925 and lac = -1 and cid = -1"))
+            "lat = 9.8409925 and lon = 9.8409925 and lac = -1 and cid = -1"))
         rset = list(rset)
         self.assertEquals(len(rset), 1)

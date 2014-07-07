@@ -259,6 +259,7 @@ def backfill_cell_location_update(self, new_cell_measures):
     try:
         cells = []
         new_cell_measures = dict(new_cell_measures)
+        moving_cells = set()
         with self.db_session() as session:
             for tower_tuple, cell_measure_ids in new_cell_measures.items():
                 query = session.query(Cell).filter(
@@ -272,7 +273,6 @@ def backfill_cell_location_update(self, new_cell_measures):
                     # known Cell records.
                     continue
 
-                moving_cells = set()
                 for cell in cells:
                     measures = session.query(  # NOQA
                         CellMeasure.lat, CellMeasure.lon).filter(
