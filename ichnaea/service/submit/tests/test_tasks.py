@@ -20,7 +20,6 @@ from ichnaea.models import (
     Cell,
     CellBlacklist,
     CellMeasure,
-    from_degrees,
     PERMANENT_BLACKLIST_THRESHOLD,
     RADIO_TYPE,
     Wifi,
@@ -57,8 +56,8 @@ class TestInsert(CeleryTestCase):
 
         measure = dict(
             id=0, created=encode_datetime(time),
-            lat=from_degrees(PARIS_LAT),
-            lon=from_degrees(PARIS_LON),
+            lat=PARIS_LAT,
+            lon=PARIS_LON,
             time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=RADIO_TYPE['gsm'],
         )
@@ -119,8 +118,8 @@ class TestInsert(CeleryTestCase):
 
         measure = dict(
             id=0, created=encode_datetime(time),
-            lat=from_degrees(PARIS_LAT),
-            lon=from_degrees(PARIS_LON),
+            lat=PARIS_LAT,
+            lon=PARIS_LON,
             time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=RADIO_TYPE['gsm'])
         entries = [
@@ -152,8 +151,8 @@ class TestInsert(CeleryTestCase):
 
         measure = dict(
             id=0, created=encode_datetime(time),
-            lat=from_degrees(PARIS_LAT),
-            lon=from_degrees(PARIS_LON),
+            lat=PARIS_LAT,
+            lon=PARIS_LON,
             time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=RADIO_TYPE['gsm'], mcc=FRANCE_MCC,
             mnc=2, lac=3, cid=4)
@@ -264,13 +263,13 @@ class TestInsert(CeleryTestCase):
         # Station moves between these 4 points, all in the USA:
         points = [
             # NYC
-            (from_degrees(40), from_degrees(-74)),
+            (40, -74),
             # SF
-            (from_degrees(37), from_degrees(-122)),
+            (37, -122),
             # Seattle
-            (from_degrees(47), from_degrees(-122)),
+            (47, -122),
             # Miami
-            (from_degrees(25), from_degrees(-80)),
+            (25, -80),
         ]
 
         N = 4 * PERMANENT_BLACKLIST_THRESHOLD
@@ -386,8 +385,8 @@ class TestInsert(CeleryTestCase):
         measures = [dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=i, psc=5,
                          radio=RADIO_TYPE['gsm'],
                          id=0,
-                         lat=from_degrees(PARIS_LAT) + i,
-                         lon=from_degrees(PARIS_LON) + i) for i in range(1, 4)]
+                         lat=PARIS_LAT + i * 0.0000001,
+                         lon=PARIS_LON + i * 0.0000001) for i in range(1, 4)]
 
         black = CellBlacklist(
             mcc=FRANCE_MCC, mnc=2, lac=3, cid=1,
@@ -417,13 +416,13 @@ class TestInsert(CeleryTestCase):
         # Station moves between these 4 points, all in the USA:
         points = [
             # NYC
-            (from_degrees(40), from_degrees(-74)),
+            (40, -74),
             # SF
-            (from_degrees(37), from_degrees(-122)),
+            (37, -122),
             # Seattle
-            (from_degrees(47), from_degrees(-122)),
+            (47, -122),
             # Miami
-            (from_degrees(25), from_degrees(-80)),
+            (25, -80),
         ]
 
         N = 4 * PERMANENT_BLACKLIST_THRESHOLD
@@ -512,8 +511,8 @@ class TestInsert(CeleryTestCase):
         measures = [dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4, psc=5,
                          radio=RADIO_TYPE['gsm'],
                          id=0,
-                         lat=from_degrees(PARIS_LAT) + i,
-                         lon=from_degrees(PARIS_LON) + i) for i in range(3)]
+                         lat=PARIS_LAT + i * 0.0000001,
+                         lon=PARIS_LON + i * 0.0000001) for i in range(3)]
 
         result = insert_cell_measures.delay(measures)
         self.assertEqual(result.get(), 3)
@@ -540,8 +539,8 @@ class TestInsert(CeleryTestCase):
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
         measure = dict(
-            id=0, created=encode_datetime(time), lat=from_degrees(PARIS_LAT),
-            lon=from_degrees(PARIS_LON), time=encode_datetime(time),
+            id=0, created=encode_datetime(time), lat=PARIS_LAT,
+            lon=PARIS_LON, time=encode_datetime(time),
             accuracy=0, altitude=0, altitude_accuracy=0,
             radio=RADIO_TYPE['cdma'],
         )
@@ -577,8 +576,8 @@ class TestInsert(CeleryTestCase):
 
         measure = dict(
             id=0, created=encode_datetime(time),
-            lat=from_degrees(PARIS_LAT),
-            lon=from_degrees(PARIS_LON),
+            lat=PARIS_LAT,
+            lon=PARIS_LON,
             time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=RADIO_TYPE['gsm'],
         )

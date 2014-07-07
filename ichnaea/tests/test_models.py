@@ -5,7 +5,6 @@ from sqlalchemy.exc import IntegrityError
 
 from ichnaea.tests.base import DBTestCase
 from ichnaea.models import (
-    from_degrees,
     normalized_cell_measure_dict,
     normalized_wifi_measure_dict,
 )
@@ -261,17 +260,12 @@ class TestNormalization(TestCase):
         invalid_pscs = [-1, 513, 4456]
 
         valid_lat_lon_mcc_triples = [
-            (from_degrees(lat), from_degrees(lon), mcc)
-            for (lat, lon, mcc) in
-            [(FREMONT_LAT, FREMONT_LON, USA_MCC),
-             (SAO_PAULO_LAT, SAO_PAULO_LON, BRAZIL_MCC),
-             (PARIS_LAT, PARIS_LON, FRANCE_MCC)]]
+            (FREMONT_LAT, FREMONT_LON, USA_MCC),
+            (SAO_PAULO_LAT, SAO_PAULO_LON, BRAZIL_MCC),
+            (PARIS_LAT, PARIS_LON, FRANCE_MCC)]
 
-        invalid_latitudes = [from_degrees(x)
-                             for x in [-100.0, -85.0511, 85.0511, 100.0]]
-
-        invalid_longitudes = [from_degrees(x)
-                              for x in [-190.0, -180.1, 180.1, 190]]
+        invalid_latitudes = [-100.0, -85.0511, 85.0511, 100.0]
+        invalid_longitudes = [-190.0, -180.1, 180.1, 190]
 
         valid_accuracies = [0, 1, 100, 10000]
         invalid_accuracies = [-10, -1, 5000000]
@@ -295,8 +289,8 @@ class TestNormalization(TestCase):
 
         def make_submission(**kw):
             measure = dict(radio='umts',
-                           lat=from_degrees(PARIS_LAT),
-                           lon=from_degrees(PARIS_LON), accuracy=120,
+                           lat=PARIS_LAT,
+                           lon=PARIS_LON, accuracy=120,
                            altitude=220, altitude_accuracy=10,
                            time=time)
             cell = dict(mcc=FRANCE_MCC, mnc=220, lac=12345, cid=34567, psc=-1,
@@ -464,8 +458,8 @@ class TestNormalization(TestCase):
 
         def make_submission(**kw):
             measure = dict(radio='',
-                           lat=from_degrees(49.25),
-                           lon=from_degrees(123.10), accuracy=120,
+                           lat=49.25,
+                           lon=123.10, accuracy=120,
                            altitude=220, altitude_accuracy=10,
                            time=time)
             wifi = dict(key="12:34:56:78:90:12",

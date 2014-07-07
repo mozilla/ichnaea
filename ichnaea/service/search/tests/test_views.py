@@ -12,7 +12,6 @@ from ichnaea.models import (
     WIFI_MIN_ACCURACY,
     GEOIP_CITY_ACCURACY,
     RADIO_TYPE,
-    from_degrees,
 )
 from ichnaea.tests.base import (
     AppTestCase,
@@ -40,8 +39,8 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
-        lat = from_degrees(PARIS_LAT)
-        lon = from_degrees(PARIS_LON)
+        lat = PARIS_LAT
+        lon = PARIS_LON
         data = [
             Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
             Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
@@ -302,8 +301,8 @@ class TestSearch(AppTestCase):
     def test_wifi_not_found_cell_fallback(self):
         app = self.app
         session = self.db_slave_session
-        lat = from_degrees(PARIS_LAT)
-        lon = from_degrees(PARIS_LON)
+        lat = PARIS_LAT
+        lon = PARIS_LON
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
             Wifi(key="abcd", lat=3, lon=3),
@@ -332,8 +331,8 @@ class TestSearch(AppTestCase):
     def test_cell_miss_lac_hit(self):
         app = self.app
         session = self.db_slave_session
-        lat = from_degrees(PARIS_LAT)
-        lon = from_degrees(PARIS_LON)
+        lat = PARIS_LAT
+        lon = PARIS_LON
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
             Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
@@ -360,8 +359,8 @@ class TestSearch(AppTestCase):
     def test_cell_hit_ignores_lac(self):
         app = self.app
         session = self.db_slave_session
-        lat = from_degrees(PARIS_LAT)
-        lon = from_degrees(PARIS_LON)
+        lat = PARIS_LAT
+        lon = PARIS_LON
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
             Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
@@ -389,8 +388,8 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
-        lat = from_degrees(PARIS_LAT)
-        lon = from_degrees(PARIS_LON)
+        lat = PARIS_LAT
+        lon = PARIS_LON
         data = [
             Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
             Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
@@ -413,8 +412,8 @@ class TestSearch(AppTestCase):
     def test_cell_ignore_invalid_lac_cid(self):
         app = self.app
         session = self.db_slave_session
-        lat = from_degrees(PARIS_LAT)
-        lon = from_degrees(PARIS_LON)
+        lat = PARIS_LAT
+        lon = PARIS_LON
 
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         ignored_key = dict(mcc=FRANCE_MCC, mnc=2, lac=-1, cid=-1)
@@ -502,8 +501,8 @@ class TestSearch(AppTestCase):
         session = self.db_slave_session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
         data = [
-            Cell(lat=from_degrees(SAO_PAULO_LAT),
-                 lon=from_degrees(SAO_PAULO_LON),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
                  radio=0, cid=6789, **key),
         ]
         session.add_all(data)
@@ -549,8 +548,8 @@ class TestSearch(AppTestCase):
         session = self.db_slave_session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
         data = [
-            Cell(lat=from_degrees(PARIS_LAT),
-                 lon=from_degrees(PARIS_LON),
+            Cell(lat=PARIS_LAT,
+                 lon=PARIS_LON,
                  radio=0, cid=6789, **key),
         ]
         session.add_all(data)
@@ -592,8 +591,8 @@ class TestSearch(AppTestCase):
         session = self.db_slave_session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
         data = [
-            Cell(lat=from_degrees(PARIS_LAT),
-                 lon=from_degrees(PARIS_LON),
+            Cell(lat=PARIS_LAT,
+                 lon=PARIS_LON,
                  radio=0, cid=CELLID_LAC, **key),
         ]
         session.add_all(data)
@@ -634,7 +633,7 @@ class TestSearch(AppTestCase):
         session = self.db_slave_session
 
         # This lat/lon is Paris, France
-        (lat, lon) = (from_degrees(PARIS_LAT), from_degrees(PARIS_LON))
+        (lat, lon) = (PARIS_LAT, PARIS_LON)
 
         wifi1 = dict(key="1234567890ab")
         wifi2 = dict(key="1234890ab567")
@@ -686,11 +685,11 @@ class TestSearch(AppTestCase):
         session = self.db_slave_session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
         data = [
-            Cell(lat=from_degrees(PORTO_ALEGRE_LAT),
-                 lon=from_degrees(PORTO_ALEGRE_LON),
+            Cell(lat=PORTO_ALEGRE_LAT,
+                 lon=PORTO_ALEGRE_LON,
                  radio=0, cid=6789, **key),
-            Cell(lat=from_degrees(SAO_PAULO_LAT),
-                 lon=from_degrees(SAO_PAULO_LON),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
                  radio=0, cid=CELLID_LAC, **key),
         ]
         session.add_all(data)
@@ -737,14 +736,14 @@ class TestSearch(AppTestCase):
         wifi1 = dict(key="1234567890ab")
         wifi2 = dict(key="1234890ab567")
         wifi3 = dict(key="4321890ab567")
-        lat = from_degrees(PORTO_ALEGRE_LAT)
-        lon = from_degrees(PORTO_ALEGRE_LON)
+        lat = PORTO_ALEGRE_LAT
+        lon = PORTO_ALEGRE_LON
         data = [
             Wifi(lat=lat, lon=lon, **wifi1),
             Wifi(lat=lat, lon=lon, **wifi2),
             Wifi(lat=lat, lon=lon, **wifi3),
-            Cell(lat=from_degrees(SAO_PAULO_LAT),
-                 lon=from_degrees(SAO_PAULO_LON),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
                  radio=0, cid=CELLID_LAC, **key),
         ]
         session.add_all(data)
@@ -793,14 +792,14 @@ class TestSearch(AppTestCase):
         wifi1 = dict(key="1234567890ab")
         wifi2 = dict(key="1234890ab567")
         wifi3 = dict(key="4321890ab567")
-        lat = from_degrees(PORTO_ALEGRE_LAT)
-        lon = from_degrees(PORTO_ALEGRE_LON)
+        lat = PORTO_ALEGRE_LAT
+        lon = PORTO_ALEGRE_LON
         data = [
             Wifi(lat=lat, lon=lon, **wifi1),
             Wifi(lat=lat, lon=lon, **wifi2),
             Wifi(lat=lat, lon=lon, **wifi3),
-            Cell(lat=from_degrees(SAO_PAULO_LAT),
-                 lon=from_degrees(SAO_PAULO_LON),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
                  radio=0, cid=6789, **key),
         ]
         session.add_all(data)
@@ -848,11 +847,11 @@ class TestSearch(AppTestCase):
         session = self.db_slave_session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
         data = [
-            Cell(lat=from_degrees(SAO_PAULO_LAT + 0.002),
-                 lon=from_degrees(SAO_PAULO_LON + 0.002),
+            Cell(lat=SAO_PAULO_LAT + 0.002,
+                 lon=SAO_PAULO_LON + 0.002,
                  radio=0, cid=6789, **key),
-            Cell(lat=from_degrees(SAO_PAULO_LAT),
-                 lon=from_degrees(SAO_PAULO_LON),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
                  radio=0, cid=CELLID_LAC, **key),
         ]
         session.add_all(data)
@@ -898,14 +897,14 @@ class TestSearch(AppTestCase):
         wifi1 = dict(key="1234567890ab")
         wifi2 = dict(key="1234890ab567")
         wifi3 = dict(key="4321890ab567")
-        lat = from_degrees(SAO_PAULO_LAT + 0.002)
-        lon = from_degrees(SAO_PAULO_LON + 0.002)
+        lat = SAO_PAULO_LAT + 0.002
+        lon = SAO_PAULO_LON + 0.002
         data = [
             Wifi(lat=lat, lon=lon, **wifi1),
             Wifi(lat=lat, lon=lon, **wifi2),
             Wifi(lat=lat, lon=lon, **wifi3),
-            Cell(lat=from_degrees(SAO_PAULO_LAT),
-                 lon=from_degrees(SAO_PAULO_LON),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
                  radio=0, cid=6789, **key),
         ]
         session.add_all(data)
@@ -956,14 +955,14 @@ class TestSearch(AppTestCase):
         wifi1 = dict(key="1234567890ab")
         wifi2 = dict(key="1234890ab567")
         wifi3 = dict(key="4321890ab567")
-        lat = from_degrees(SAO_PAULO_LAT + 0.002)
-        lon = from_degrees(SAO_PAULO_LON + 0.002)
+        lat = SAO_PAULO_LAT + 0.002
+        lon = SAO_PAULO_LON + 0.002
         data = [
             Wifi(lat=lat, lon=lon, **wifi1),
             Wifi(lat=lat, lon=lon, **wifi2),
             Wifi(lat=lat, lon=lon, **wifi3),
-            Cell(lat=from_degrees(SAO_PAULO_LAT),
-                 lon=from_degrees(SAO_PAULO_LON),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
                  radio=0, cid=CELLID_LAC, **key),
         ]
         session.add_all(data)
@@ -1014,17 +1013,17 @@ class TestSearch(AppTestCase):
         wifi1 = dict(key="1234567890ab")
         wifi2 = dict(key="1234890ab567")
         wifi3 = dict(key="4321890ab567")
-        lat = from_degrees(SAO_PAULO_LAT + 0.002)
-        lon = from_degrees(SAO_PAULO_LON + 0.002)
+        lat = SAO_PAULO_LAT + 0.002
+        lon = SAO_PAULO_LON + 0.002
         data = [
             Wifi(lat=lat, lon=lon, **wifi1),
             Wifi(lat=lat, lon=lon, **wifi2),
             Wifi(lat=lat, lon=lon, **wifi3),
-            Cell(lat=from_degrees(SAO_PAULO_LAT),
-                 lon=from_degrees(SAO_PAULO_LON),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
                  radio=0, cid=6789, **key),
-            Cell(lat=from_degrees(SAO_PAULO_LAT),
-                 lon=from_degrees(SAO_PAULO_LON),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
                  radio=0, cid=CELLID_LAC, **key),
         ]
         session.add_all(data)
@@ -1115,8 +1114,8 @@ class TestSearch(AppTestCase):
         session = self.db_slave_session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4)
         session.add(Cell(
-            lat=from_degrees(PARIS_LAT),
-            lon=from_degrees(PARIS_LON),
+            lat=PARIS_LAT,
+            lon=PARIS_LON,
             radio=RADIO_TYPE['umts'], **key)
         )
         session.commit()
@@ -1135,8 +1134,8 @@ class TestSearch(AppTestCase):
         session = self.db_slave_session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4)
         session.add(Cell(
-            lat=from_degrees(PARIS_LAT),
-            lon=from_degrees(PARIS_LON),
+            lat=PARIS_LAT,
+            lon=PARIS_LON,
             radio=RADIO_TYPE['umts'], **key)
         )
         session.commit()

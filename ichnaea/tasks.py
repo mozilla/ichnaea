@@ -24,12 +24,10 @@ from ichnaea.models import (
     Wifi,
     WifiBlacklist,
     WifiMeasure,
-    from_degrees,
     join_cellkey,
     join_wifikey,
     to_cellkey,
     to_wifikey,
-    to_degrees,
 )
 from ichnaea.worker import celery
 from ichnaea.geocalc import distance, centroid, range_to_points
@@ -199,8 +197,7 @@ def calculate_new_position(station, measures, moving_stations,
     # calculate sphere-distance from opposite corners of
     # bounding box containing current location estimate
     # and new measurements; if too big, station is moving
-    box_dist = distance(to_degrees(min_lat), to_degrees(min_lon),
-                        to_degrees(max_lat), to_degrees(max_lon))
+    box_dist = distance(min_lat, min_lon, max_lat, max_lon)
 
     if existing_station:
 
@@ -237,11 +234,11 @@ def calculate_new_position(station, measures, moving_stations,
     station.max_lon = max_lon
 
     # give radio-range estimate between extreme values and centroid
-    ctr = (to_degrees(station.lat), to_degrees(station.lon))
-    points = [(to_degrees(min_lat), to_degrees(min_lon)),
-              (to_degrees(min_lat), to_degrees(max_lon)),
-              (to_degrees(max_lat), to_degrees(min_lon)),
-              (to_degrees(max_lat), to_degrees(max_lon))]
+    ctr = (station.lat, station.lon)
+    points = [(min_lat, min_lon),
+              (min_lat, max_lon),
+              (max_lat, min_lon),
+              (max_lat, max_lon)]
 
     station.range = range_to_points(ctr, points) * 1000.0
 
@@ -471,12 +468,11 @@ def update_lac(self, radio, mcc, mnc, lac):
         if len(cells) == 0:
             return
 
-        points = [(to_degrees(c.lat),
-                   to_degrees(c.lon)) for c in cells]
-        min_lat = to_degrees(min([c.min_lat for c in cells]))
-        min_lon = to_degrees(min([c.min_lon for c in cells]))
-        max_lat = to_degrees(max([c.max_lat for c in cells]))
-        max_lon = to_degrees(max([c.max_lon for c in cells]))
+        points = [(c.lat, c.lon) for c in cells]
+        min_lat = min([c.min_lat for c in cells])
+        min_lon = min([c.min_lon for c in cells])
+        max_lat = max([c.max_lat for c in cells])
+        max_lon = max([c.max_lon for c in cells])
 
         bbox_points = [(min_lat, min_lon),
                        (min_lat, max_lon),
@@ -488,8 +484,8 @@ def update_lac(self, radio, mcc, mnc, lac):
 
         # switch units back to DB preferred centimicrodegres angle
         # and meters distance.
-        ctr_lat = from_degrees(ctr[0])
-        ctr_lon = from_degrees(ctr[1])
+        ctr_lat = ctr[0]
+        ctr_lon = ctr[1]
         rng = int(round(rng * 1000.0))
 
         # Now create or update the LAC virtual cell

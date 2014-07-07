@@ -5,7 +5,6 @@ from ichnaea.models import (
     RADIO_TYPE,
     Wifi,
     CELLID_LAC,
-    to_degrees,
     to_cellkey,
     join_cellkey,
     WIFI_MIN_ACCURACY,
@@ -58,10 +57,7 @@ def estimate_accuracy(lat, lon, points, minimum):
         # than the old approximation, "worst-case range":
         # this one takes the maximum distance from location
         # to any of the provided points.
-        accuracy = max([distance(to_degrees(lat),
-                                 to_degrees(lon),
-                                 to_degrees(p.lat),
-                                 to_degrees(p.lon)) * 1000
+        accuracy = max([distance(lat, lon, p.lat, p.lon) * 1000
                         for p in points])
     if accuracy is not None:
         assert isinstance(accuracy, Number)
@@ -95,8 +91,8 @@ def search_cell(session, data):
     avg_lat = sum([c.lat for c in cells]) / length
     avg_lon = sum([c.lon for c in cells]) / length
     return {
-        'lat': to_degrees(avg_lat),
-        'lon': to_degrees(avg_lon),
+        'lat': avg_lat,
+        'lon': avg_lon,
         'accuracy': estimate_accuracy(avg_lat, avg_lon,
                                       cells, CELL_MIN_ACCURACY),
     }
@@ -131,8 +127,8 @@ def search_cell_lac(session, data):
     assert isinstance(accuracy, Number)
     accuracy = round(float(accuracy), DEGREE_DECIMAL_PLACES)
     return {
-        'lat': to_degrees(lac.lat),
-        'lon': to_degrees(lac.lon),
+        'lat': lac.lat,
+        'lon': lac.lon,
         'accuracy': accuracy,
     }
 
@@ -185,10 +181,8 @@ def search_wifi(session, data):
         # Try to assign w to a cluster (but at most one).
         for c in clusters:
             for n in c:
-                if distance(to_degrees(n.lat),
-                            to_degrees(n.lon),
-                            to_degrees(w.lat),
-                            to_degrees(w.lon)) <= MAX_WIFI_CLUSTER_KM:
+                if distance(n.lat, n.lon,
+                            w.lat, w.lon) <= MAX_WIFI_CLUSTER_KM:
                     c.append(w)
                     w = None
                     break
@@ -234,8 +228,8 @@ def search_wifi(session, data):
     avg_lat = sum([n.lat for n in sample]) / length
     avg_lon = sum([n.lon for n in sample]) / length
     return {
-        'lat': to_degrees(avg_lat),
-        'lon': to_degrees(avg_lon),
+        'lat': avg_lat,
+        'lon': avg_lon,
         'accuracy': estimate_accuracy(avg_lat, avg_lon,
                                       sample, WIFI_MIN_ACCURACY),
     }

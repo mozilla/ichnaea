@@ -115,14 +115,6 @@ CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
 WifiKey = namedtuple('WifiKey', 'key')
 
 
-def from_degrees(deg):
-    return float(deg)
-
-
-def to_degrees(i):
-    return float(i)
-
-
 def encode_datetime(obj):
     if isinstance(obj, datetime):
         return obj.strftime('%Y-%m-%dT%H:%M:%S.%f')
@@ -200,8 +192,8 @@ def normalized_measure_dict(d):
     or None if the dict was invalid.
     """
     d = normalized_dict(
-        d, dict(lat=(from_degrees(MIN_LAT), from_degrees(MAX_LAT), REQUIRED),
-                lon=(from_degrees(-180.0), from_degrees(180.0), REQUIRED),
+        d, dict(lat=(MIN_LAT, MAX_LAT, REQUIRED),
+                lon=(-180.0, 180.0, REQUIRED),
                 heading=(0.0, MAX_HEADING, -1.0),
                 speed=(0, MAX_SPEED, -1.0),
                 altitude=(MIN_ALTITUDE, MAX_ALTITUDE, 0),
@@ -329,8 +321,8 @@ def normalized_cell_measure_dict(d, measure_radio=-1):
     location_is_in_country = geocalc.location_is_in_country
     if d is not None:
         # Lat/lon must be inside one of the bounding boxes for the MCC.
-        lat = to_degrees(int(d['lat']))
-        lon = to_degrees(int(d['lon']))
+        lat = float(d['lat'])
+        lon = float(d['lon'])
         if not any([location_is_in_country(lat, lon, c.alpha2, 1)
                     for c in mobile_codes.mcc(str(d['mcc']))]):
             d = None

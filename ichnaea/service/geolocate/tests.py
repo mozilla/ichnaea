@@ -5,7 +5,6 @@ from ichnaea.models import (
     CELL_MIN_ACCURACY,
     GEOIP_CITY_ACCURACY,
     RADIO_TYPE,
-    from_degrees,
 )
 from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.tests.base import (
@@ -31,8 +30,8 @@ class TestGeolocate(AppTestCase):
         app = self.app
         session = self.get_session()
         cell = Cell()
-        cell.lat = from_degrees(PARIS_LAT)
-        cell.lon = from_degrees(PARIS_LON)
+        cell.lat = PARIS_LAT
+        cell.lon = PARIS_LON
         cell.radio = 0
         cell.mcc = FRANCE_MCC
         cell.mnc = 1
@@ -121,13 +120,15 @@ class TestGeolocate(AppTestCase):
         app = self.app
         session = self.get_session()
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
-        lat = from_degrees(PARIS_LAT)
-        lon = from_degrees(PARIS_LON)
+        lat = PARIS_LAT
+        lon = PARIS_LON
         data = [
             Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
-            Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
-            Cell(lat=lat + 60000, lon=lon + 60000, radio=2, cid=6, **key),
-            Cell(lat=lat + 26666, lon=lon + 33333, radio=2, cid=CELLID_LAC,
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=2, cid=5, **key),
+            Cell(lat=lat + 0.006, lon=lon + 0.006, radio=2, cid=6, **key),
+            Cell(lat=lat + 0.0026666,
+                 lon=lon + 0.0033333,
+                 radio=2, cid=CELLID_LAC,
                  range=50000, **key),
         ]
         session.add_all(data)
@@ -152,13 +153,15 @@ class TestGeolocate(AppTestCase):
         app = self.app
         session = self.get_session()
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
-        lat = from_degrees(PARIS_LAT)
-        lon = from_degrees(PARIS_LON)
+        lat = PARIS_LAT
+        lon = PARIS_LON
         data = [
             Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
-            Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
-            Cell(lat=lat + 60000, lon=lon + 60000, radio=2, cid=6, **key),
-            Cell(lat=lat + 26666, lon=lon + 33333, radio=2, cid=CELLID_LAC,
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=2, cid=5, **key),
+            Cell(lat=lat + 0.006, lon=lon + 0.006, radio=2, cid=6, **key),
+            Cell(lat=lat + 0.0026666,
+                 lon=lon + 0.0033333,
+                 radio=2, cid=CELLID_LAC,
                  range=50000, **key),
         ]
         session.add_all(data)
@@ -223,7 +226,7 @@ class TestGeolocate(AppTestCase):
         app = self.app
         session = self.get_session()
         cell = Cell(
-            lat=from_degrees(PARIS_LAT), lon=from_degrees(PARIS_LON),
+            lat=PARIS_LAT, lon=PARIS_LON,
             radio=RADIO_TYPE['gsm'], mcc=FRANCE_MCC, mnc=1, lac=2, cid=3)
         session.add(cell)
         session.commit()
@@ -307,8 +310,8 @@ class TestGeolocate(AppTestCase):
         session = self.get_session()
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4)
         session.add(Cell(
-            lat=from_degrees(PARIS_LAT),
-            lon=from_degrees(PARIS_LON),
+            lat=PARIS_LAT,
+            lon=PARIS_LON,
             radio=RADIO_TYPE['gsm'], **key)
         )
         session.commit()
@@ -335,8 +338,8 @@ class TestGeolocate(AppTestCase):
         session = self.get_session()
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4)
         session.add(Cell(
-            lat=from_degrees(PARIS_LAT),
-            lon=from_degrees(PARIS_LON),
+            lat=PARIS_LAT,
+            lon=PARIS_LON,
             radio=RADIO_TYPE['gsm'], **key)
         )
         session.commit()
@@ -367,8 +370,8 @@ class TestGeolocateFxOSWorkarounds(TestGeolocate):
         app = self.app
         session = self.get_session()
         cell = Cell()
-        cell.lat = from_degrees(PARIS_LAT)
-        cell.lon = from_degrees(PARIS_LON)
+        cell.lat = PARIS_LAT
+        cell.lon = PARIS_LON
         cell.radio = 0
         cell.mcc = FRANCE_MCC
         cell.mnc = 1
@@ -403,8 +406,8 @@ class TestGeolocateFxOSWorkarounds(TestGeolocate):
         app = self.app
         session = self.get_session()
         cell = Cell()
-        cell.lat = from_degrees(PARIS_LAT)
-        cell.lon = from_degrees(PARIS_LON)
+        cell.lat = PARIS_LAT
+        cell.lon = PARIS_LON
         cell.radio = 0
         cell.mcc = FRANCE_MCC
         cell.mnc = 1
@@ -436,12 +439,12 @@ class TestGeolocateFxOSWorkarounds(TestGeolocate):
         app = self.app
         session = self.get_session()
         cells = [
-            Cell(lat=from_degrees(PARIS_LAT),
-                 lon=from_degrees(PARIS_LON),
+            Cell(lat=PARIS_LAT,
+                 lon=PARIS_LON,
                  radio=RADIO_TYPE['gsm'],
                  mcc=FRANCE_MCC, mnc=1, lac=2, cid=3),
-            Cell(lat=from_degrees(PARIS_LAT) + 20000,
-                 lon=from_degrees(PARIS_LON) + 40000,
+            Cell(lat=PARIS_LAT + 0.002,
+                 lon=PARIS_LON + 0.004,
                  radio=RADIO_TYPE['umts'],
                  mcc=FRANCE_MCC, mnc=2, lac=3, cid=4),
         ]

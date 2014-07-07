@@ -3,7 +3,6 @@ from ichnaea.models import (
     CellMeasure,
     Wifi,
     WifiMeasure,
-    from_degrees,
 )
 from ichnaea.tests.base import (
     CeleryAppTestCase,
@@ -30,8 +29,8 @@ class TestGeoSubmit(CeleryAppTestCase):
         app = self.app
         session = self.db_master_session
         cell = Cell()
-        cell.lat = from_degrees(PARIS_LAT + 0.1)
-        cell.lon = from_degrees(PARIS_LON + 0.1)
+        cell.lat = PARIS_LAT + 0.1
+        cell.lon = PARIS_LON + 0.1
         cell.radio = 0
         cell.mcc = FRANCE_MCC
         cell.mnc = 1
@@ -228,8 +227,8 @@ class TestGeoSubmitBatch(CeleryAppTestCase):
         app = self.app
         session = self.db_master_session
         cell = Cell()
-        cell.lat = from_degrees(PARIS_LAT)
-        cell.lon = from_degrees(PARIS_LON)
+        cell.lat = PARIS_LAT
+        cell.lon = PARIS_LON
         cell.radio = 0
         cell.mcc = FRANCE_MCC
         cell.mnc = 1
@@ -281,8 +280,8 @@ class TestGeoSubmitBatch(CeleryAppTestCase):
         app = self.app
         session = self.db_master_session
         cell = Cell()
-        cell.lat = from_degrees(PARIS_LAT)
-        cell.lon = from_degrees(PARIS_LON)
+        cell.lat = PARIS_LAT
+        cell.lon = PARIS_LON
         cell.radio = 0
         cell.mcc = FRANCE_MCC
         cell.mnc = 1
@@ -335,8 +334,8 @@ class TestGeoSubmitBatch(CeleryAppTestCase):
         app = self.app
         session = self.db_master_session
         cell = Cell()
-        cell.lat = from_degrees(PARIS_LAT)
-        cell.lon = from_degrees(PARIS_LON)
+        cell.lat = PARIS_LAT
+        cell.lon = PARIS_LON
         cell.radio = 0
         cell.mcc = FRANCE_MCC
         cell.mnc = 1

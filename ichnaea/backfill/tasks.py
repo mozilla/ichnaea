@@ -2,7 +2,7 @@ from collections import defaultdict
 from sqlalchemy import text
 from ichnaea.tasks import DatabaseTask, backfill_cell_location_update
 from ichnaea.worker import celery
-from ichnaea.models import CELLID_LAC, to_degrees
+from ichnaea.models import CELLID_LAC
 from ichnaea.geocalc import distance
 
 # Distance in kilometers between towers with no
@@ -112,13 +112,13 @@ def _nearest_tower(missing_lat, missing_lon, centroids):
     We just need the closest cell, so we can approximate
     using the haversine formula.
     """
-    lat1 = to_degrees(missing_lat)
-    lon1 = to_degrees(missing_lon)
+    lat1 = missing_lat
+    lon1 = missing_lon
 
     min_dist = None
     for pt in centroids:
-        lat2 = to_degrees(pt['lat'])
-        lon2 = to_degrees(pt['lon'])
+        lat2 = pt['lat']
+        lon2 = pt['lon']
         dist = distance(lat1, lon1, lat2, lon2)
         if min_dist is None or min_dist['dist'] > dist:
             min_dist = {'dist': dist, 'pt': pt}

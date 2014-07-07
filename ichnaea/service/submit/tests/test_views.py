@@ -18,7 +18,6 @@ from ichnaea.models import (
     RADIO_TYPE,
     WifiMeasure,
     WIFI_TEST_KEY,
-    from_degrees,
 )
 from ichnaea.customjson import (
     dumps,
@@ -77,8 +76,8 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.created.date(), today)
 
         self.assertEqual(item.time, month_rounded_dt)
-        self.assertEqual(item.lat, from_degrees(PARIS_LAT))
-        self.assertEqual(item.lon, from_degrees(PARIS_LON))
+        self.assertEqual(item.lat, PARIS_LAT)
+        self.assertEqual(item.lon, PARIS_LON)
         self.assertEqual(item.accuracy, 10)
         self.assertEqual(item.altitude, 123)
         self.assertEqual(item.altitude_accuracy, 7)

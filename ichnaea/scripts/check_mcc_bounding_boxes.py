@@ -6,7 +6,6 @@ import mobile_codes
 from ichnaea.config import read_config
 from ichnaea.db import Database
 from ichnaea.geocalc import location_is_in_country
-from ichnaea.models import to_degrees
 
 # This script scans the cell table looking for cells located outside the
 # bounding box of the country associated with the MCC. It produces geojson
@@ -36,8 +35,6 @@ def main():
         for row in r:
             results = True
             (id, lat, lon, mcc, mnc, lac, cid, radio, total_measures) = row
-            lat = to_degrees(lat)
-            lon = to_degrees(lon)
             ccs = [c.alpha2 for c in mobile_codes.mcc(str(mcc))]
             if not any([location_is_in_country(lat, lon, c, 1) for c in ccs]):
                 if ccs:

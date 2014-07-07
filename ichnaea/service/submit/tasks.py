@@ -27,7 +27,6 @@ from ichnaea.models import (
     to_wifikey,
     decode_datetime,
     encode_datetime,
-    from_degrees,
     PERMANENT_BLACKLIST_THRESHOLD,
     TEMPORARY_BLACKLIST_DURATION,
 )
@@ -113,8 +112,8 @@ def process_measure(report_id, data, session):
     wifi_measures = {}
     measure_data = dict(
         report_id=report_id,
-        lat=from_degrees(data['lat']),
-        lon=from_degrees(data['lon']),
+        lat=data['lat'],
+        lon=data['lon'],
         heading=data.get('heading', -1.0),
         speed=data.get('speed', -1.0),
         time=encode_datetime(data['time']),
@@ -177,8 +176,8 @@ def process_measures(items, session, userid=None):
         wifi_measures.extend(wifi)
         if cell or wifi:
             positions.append({
-                'lat': from_degrees(item['lat']),
-                'lon': from_degrees(item['lon']),
+                'lat': item['lat'],
+                'lon': item['lon'],
             })
 
     if cell_measures:
