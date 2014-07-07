@@ -460,12 +460,19 @@ def map_data(data):
     }
 
     if 'cellTowers' in data:
-        mapped['cell'] = [{
-            'mcc': cell['mobileCountryCode'],
-            'mnc': cell['mobileNetworkCode'],
-            'lac': cell['locationAreaCode'],
-            'cid': cell['cellId'],
-        } for cell in data['cellTowers']]
+        for cell in data['cellTowers']:
+            new_cell = {
+                'mcc': cell['mobileCountryCode'],
+                'mnc': cell['mobileNetworkCode'],
+                'lac': cell['locationAreaCode'],
+                'cid': cell['cellId'],
+            }
+            # If a radio field is populated in any one of the cells in
+            # cellTowers, this is a buggy geolocate call from FirefoxOS.
+            # Just pass on the radio field, as long as it's non-empty.
+            if 'radio' in cell and cell['radio'] != '':
+                new_cell['radio'] = cell['radio']
+            mapped['cell'].append(new_cell)
 
     if 'wifiAccessPoints' in data:
         mapped['wifi'] = [{
