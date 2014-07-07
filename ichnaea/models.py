@@ -16,6 +16,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.mysql import BIGINT as BigInteger
 from sqlalchemy.dialects.mysql import INTEGER as Integer
+from sqlalchemy.dialects.mysql import DOUBLE as Double
 
 from ichnaea import geocalc
 from ichnaea.db import _Model
@@ -115,11 +116,11 @@ WifiKey = namedtuple('WifiKey', 'key')
 
 
 def from_degrees(deg):
-    return int(deg * DEGREE_SCALE_FACTOR)
+    return float(deg)
 
 
 def to_degrees(i):
-    return float(i) / DEGREE_SCALE_FACTOR
+    return float(i)
 
 
 def encode_datetime(obj):
@@ -437,14 +438,14 @@ class Cell(_Model):
                 primary_key=True, autoincrement=True)
     created = Column(DateTime)
 
-    # lat/lon * DEGREE_SCALE_FACTOR
-    lat = Column(Integer)
-    max_lat = Column(Integer)
-    min_lat = Column(Integer)
+    # lat/lon
+    lat = Column(Double)
+    max_lat = Column(Double)
+    min_lat = Column(Double)
 
-    lon = Column(Integer)
-    max_lon = Column(Integer)
-    min_lon = Column(Integer)
+    lon = Column(Double)
+    max_lon = Column(Double)
+    min_lon = Column(Double)
 
     # mapped via RADIO_TYPE
     radio = Column(SmallInteger)
@@ -543,9 +544,9 @@ class CellMeasure(_Model):
                 primary_key=True, autoincrement=True)
     report_id = Column(BINARY(length=16))
     created = Column(DateTime)  # the insert time of the record into the DB
-    # lat/lon * DEGREE_SCALE_FACTOR
-    lat = Column(Integer)
-    lon = Column(Integer)
+    # lat/lon
+    lat = Column(Double)
+    lon = Column(Double)
     time = Column(DateTime)  # the time of observation of this data
     accuracy = Column(Integer)
     altitude = Column(Integer)
@@ -594,14 +595,14 @@ class Wifi(_Model):
     created = Column(DateTime)
     key = Column(String(12))
 
-    # lat/lon * DEGREE_SCALE_FACTOR
-    lat = Column(Integer)
-    max_lat = Column(Integer)
-    min_lat = Column(Integer)
+    # lat/lon
+    lat = Column(Double)
+    max_lat = Column(Double)
+    min_lat = Column(Double)
 
-    lon = Column(Integer)
-    max_lon = Column(Integer)
-    min_lon = Column(Integer)
+    lon = Column(Double)
+    max_lon = Column(Double)
+    min_lon = Column(Double)
 
     range = Column(Integer)
     new_measures = Column(Integer(unsigned=True))
@@ -658,9 +659,9 @@ class WifiMeasure(_Model):
                 primary_key=True, autoincrement=True)
     report_id = Column(BINARY(length=16))
     created = Column(DateTime)  # the insert time of the record into the DB
-    # lat/lon * DEGREE_SCALE_FACTOR
-    lat = Column(Integer)
-    lon = Column(Integer)
+    # lat/lon
+    lat = Column(Double)
+    lon = Column(Double)
     time = Column(DateTime)  # the time of observation of this data
     accuracy = Column(Integer)
     altitude = Column(Integer)
