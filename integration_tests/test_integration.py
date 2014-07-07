@@ -85,22 +85,41 @@ class VaurienController(object):
                         'Accept': 'text/plain'}
 
     def dummy(self, timeout=3):
-        requests.put(self.url,
-                     data=json.dumps({"name": "dummy"}),
-                     headers=self.headers,
-                     timeout=timeout)
+        while True:
+            resp = requests.put(self.url,
+                                data=json.dumps({"name": "dummy"}),
+                                headers=self.headers,
+                                timeout=timeout)
+            if json.loads(resp.content)['status'] == 'ok':
+                break
+
+        resp = requests.get(self.url)
+        assert json.loads(resp.content)['behavior'] == 'dummy'
 
     def delay(self, delay_second=1, timeout=3):
-        requests.put(self.url,
-                     data=json.dumps({"name": "delay",
-                                      'sleep': delay_second}),
-                     headers=self.headers,
-                     timeout=timeout)
+        while True:
+            resp = requests.put(self.url,
+                                data=json.dumps({"name": "delay",
+                                                 'sleep': delay_second}),
+                                headers=self.headers,
+                                timeout=timeout)
+            if json.loads(resp.content)['status'] == 'ok':
+                break
+
+        resp = requests.get(self.url)
+        assert json.loads(resp.content)['behavior'] == 'delay'
 
     def blackout(self):
-        requests.put(self.url,
-                     data=json.dumps({"name": "blackout"}),
-                     headers=self.headers)
+        while True:
+            resp = requests.put(self.url,
+                                data=json.dumps({"name": "blackout"}),
+                                headers=self.headers)
+
+            if json.loads(resp.content)['status'] == 'ok':
+                break
+
+        resp = requests.get(self.url)
+        assert json.loads(resp.content)['behavior'] == 'blackout'
 
 
 class VaurienMySQL(VaurienController):
@@ -148,7 +167,8 @@ class TestSearch(TestCase):
         self.redis = VaurienRedis()
         self.mysql = VaurienMySQL()
 
-        uri = os.environ.get('SQLURI')
+        uri = os.environ.get('SQLURI',
+                             'mysql+pymysql://root:mysql@localhost/location')
         self.db = Database(uri)
 
         self.install_apikey()

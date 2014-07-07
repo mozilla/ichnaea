@@ -66,7 +66,7 @@ def check_api_key(func_name, error_on_invalidkey=False):
             session = request.db_slave_session
             found_key_filter = session.query(
                 ApiKey.maxreq, ApiKey.shortname).filter(
-                ApiKey.valid_key == api_key).first()
+                ApiKey.valid_key == api_key)
 
             try:
                 found_key = found_key_filter.first()
