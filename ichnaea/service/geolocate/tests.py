@@ -214,6 +214,36 @@ class TestGeolocate(AppTestCase):
             }}
         )
 
+    def test_cell_mcc_mnc_strings(self):
+        # mcc and mnc are officially defined as strings, where "01" is
+        # different from "1". In practice many systems ours included treat
+        # them as integers, so both of these are encoded as 1 instead.
+        # Some clients sends us these values as strings, some as integers,
+        # so we want to make sure we support both.
+        app = self.app
+        session = self.get_session()
+        cell = Cell(
+            lat=from_degrees(PARIS_LAT), lon=from_degrees(PARIS_LON),
+            radio=RADIO_TYPE['gsm'], mcc=FRANCE_MCC, mnc=1, lac=2, cid=3)
+        session.add(cell)
+        session.commit()
+
+        res = app.post_json(
+            '%s?key=test' % self.url, {
+                "radioType": "gsm",
+                "cellTowers": [
+                    {"mobileCountryCode": str(FRANCE_MCC),
+                     "mobileNetworkCode": "01",
+                     "locationAreaCode": 2,
+                     "cellId": 3},
+                ]},
+            status=200)
+
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {"location": {"lat": PARIS_LAT,
+                                                 "lng": PARIS_LON},
+                                    "accuracy": CELL_MIN_ACCURACY})
+
     def test_geoip_fallback(self):
         app = self.app
         res = app.post_json(
