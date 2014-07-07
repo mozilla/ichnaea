@@ -28,21 +28,21 @@ class TestCellLocationUpdate(CeleryTestCase):
         k3 = dict(radio=1, mcc=1, mnc=2, lac=-1, cid=-1)
         data = [
             Cell(new_measures=3, total_measures=5, **k1),
-            CellMeasure(lat=10000000, lon=10000000, **k1),
-            CellMeasure(lat=10020000, lon=10030000, **k1),
-            CellMeasure(lat=10040000, lon=10060000, **k1),
+            CellMeasure(lat=1, lon=1, **k1),
+            CellMeasure(lat=1.002, lon=1.003, **k1),
+            CellMeasure(lat=1.004, lon=1.006, **k1),
             # The lac, cid are invalid and should be skipped
-            CellMeasure(lat=15000000, lon=15000000, **k3),
-            CellMeasure(lat=15020000, lon=15030000, **k3),
+            CellMeasure(lat=1.5, lon=1.5, **k3),
+            CellMeasure(lat=1.502, lon=1.503, **k3),
 
-            Cell(lat=20000000, lon=20000000,
+            Cell(lat=2, lon=2,
                  new_measures=2, total_measures=4, **k2),
             # the lat/lon is bogus and mismatches the line above on purpose
             # to make sure old measures are skipped
-            CellMeasure(lat=-10000000, lon=-10000000, created=before, **k2),
-            CellMeasure(lat=-10000000, lon=-10000000, created=before, **k2),
-            CellMeasure(lat=20020000, lon=20040000, **k2),
-            CellMeasure(lat=20020000, lon=20040000, **k2),
+            CellMeasure(lat=-1, lon=-1, created=before, **k2),
+            CellMeasure(lat=-1, lon=-1, created=before, **k2),
+            CellMeasure(lat=2.002, lon=2.004, **k2),
+            CellMeasure(lat=2.002, lon=2.004, **k2),
 
         ]
         session.add_all(data)
@@ -67,10 +67,10 @@ class TestCellLocationUpdate(CeleryTestCase):
         session = self.db_master_session
         k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
         data = [
-            Cell(lat=10010000, lon=10010000, new_measures=0,
+            Cell(lat=1.001, lon=1.001, new_measures=0,
                  total_measures=1, **k1),
-            CellMeasure(lat=10000000, lon=10000000, **k1),
-            CellMeasure(lat=10050000, lon=10080000, **k1),
+            CellMeasure(lat=1, lon=1, **k1),
+            CellMeasure(lat=1.005, lon=1.008, **k1),
         ]
         session.add_all(data)
         session.commit()
@@ -98,12 +98,12 @@ class TestCellLocationUpdate(CeleryTestCase):
 
         k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
         data = [
-            Cell(lat=10010000, lon=-10010000,
-                 max_lat=10020000, min_lat=10000000,
-                 max_lon=-10000000, min_lon=-10020000,
+            Cell(lat=1.001, lon=-1.001,
+                 max_lat=1.002, min_lat=1,
+                 max_lon=-1, min_lon=-1.002,
                  new_measures=2, total_measures=4, **k1),
-            CellMeasure(lat=10010000, lon=-10030000, **k1),
-            CellMeasure(lat=10050000, lon=-10070000, **k1),
+            CellMeasure(lat=1.001, lon=-1.003, **k1),
+            CellMeasure(lat=1.005, lon=-1.007, **k1),
         ]
         session.add_all(data)
         session.commit()
@@ -146,35 +146,35 @@ class TestCellLocationUpdate(CeleryTestCase):
         data = [
             # a cell with an entry but no prior position
             Cell(new_measures=3, total_measures=0, **k1),
-            CellMeasure(lat=10010000, lon=10010000, **k1),
-            CellMeasure(lat=10020000, lon=10050000, **k1),
-            CellMeasure(lat=10030000, lon=10090000, **k1),
+            CellMeasure(lat=1.001, lon=1.001, **k1),
+            CellMeasure(lat=1.002, lon=1.005, **k1),
+            CellMeasure(lat=1.003, lon=1.009, **k1),
             # a cell with a prior known position
-            Cell(lat=20000000, lon=20000000,
+            Cell(lat=2, lon=2,
                  new_measures=2, total_measures=1, **k2),
-            CellMeasure(lat=20000000, lon=20000000, **k2),
-            CellMeasure(lat=40000000, lon=20000000, **k2),
+            CellMeasure(lat=2, lon=2, **k2),
+            CellMeasure(lat=4, lon=2, **k2),
             # a cell with a very different prior position
-            Cell(lat=10000000, lon=10000000,
+            Cell(lat=1, lon=1,
                  new_measures=2, total_measures=1, **k3),
-            CellMeasure(lat=30000000, lon=30000000, **k3),
-            CellMeasure(lat=-30000000, lon=30000000, **k3),
+            CellMeasure(lat=3, lon=3, **k3),
+            CellMeasure(lat=-3, lon=3, **k3),
             # another cell with a prior known position (and negative lat)
-            Cell(lat=-40000000, lon=40000000,
+            Cell(lat=-4, lon=4,
                  new_measures=2, total_measures=1, **k4),
-            CellMeasure(lat=-40000000, lon=40000000, **k4),
-            CellMeasure(lat=-60000000, lon=40000000, **k4),
+            CellMeasure(lat=-4, lon=4, **k4),
+            CellMeasure(lat=-6, lon=4, **k4),
             # an already blacklisted cell
             CellBlacklist(**k5),
-            CellMeasure(lat=50000000, lon=50000000, **k5),
-            CellMeasure(lat=80000000, lon=50000000, **k5),
+            CellMeasure(lat=5, lon=5, **k5),
+            CellMeasure(lat=8, lon=5, **k5),
             # a cell with an old different record we ignore, position
             # estimate has been updated since
-            Cell(lat=60000000, lon=60000000,
+            Cell(lat=6, lon=6,
                  new_measures=2, total_measures=1, **k6),
-            CellMeasure(lat=69000000, lon=69000000, time=long_ago, **k6),
-            CellMeasure(lat=60000000, lon=60000000, **k6),
-            CellMeasure(lat=60010000, lon=60000000, **k6),
+            CellMeasure(lat=6.9, lon=6.9, time=long_ago, **k6),
+            CellMeasure(lat=6, lon=6, **k6),
+            CellMeasure(lat=6.001, lon=6, **k6),
         ]
         session.add_all(data)
         session.commit()
@@ -265,10 +265,10 @@ class TestCellLocationUpdate(CeleryTestCase):
         keys = dict(radio=1, mcc=1, mnc=1, lac=1, cid=1)
         cell = Cell(new_measures=4, total_measures=1, **keys)
         measures = [
-            CellMeasure(lat=10000000, lon=10000000, **keys),
-            CellMeasure(lat=10000000, lon=10000000, **keys),
-            CellMeasure(lat=10000000, lon=10000000, **keys),
-            CellMeasure(lat=10000000, lon=10000000, **keys),
+            CellMeasure(lat=1, lon=1, **keys),
+            CellMeasure(lat=1, lon=1, **keys),
+            CellMeasure(lat=1, lon=1, **keys),
+            CellMeasure(lat=1, lon=1, **keys),
         ]
         session.add(cell)
         session.add_all(measures)
@@ -284,10 +284,10 @@ class TestCellLocationUpdate(CeleryTestCase):
         keys['cid'] = 2
         cell = Cell(new_measures=4, total_measures=1, **keys)
         measures = [
-            CellMeasure(lat=10000000, lon=10000000, **keys),
-            CellMeasure(lat=10000000, lon=10000000, **keys),
-            CellMeasure(lat=10000000, lon=10000000, **keys),
-            CellMeasure(lat=10000000, lon=10000000, **keys),
+            CellMeasure(lat=1, lon=1, **keys),
+            CellMeasure(lat=1, lon=1, **keys),
+            CellMeasure(lat=1, lon=1, **keys),
+            CellMeasure(lat=1, lon=1, **keys),
         ]
         session.add(cell)
         session.add_all(measures)
@@ -414,17 +414,17 @@ class TestWifiLocationUpdate(CeleryTestCase):
         k2 = "cd1234567890"
         data = [
             Wifi(key=k1, new_measures=3, total_measures=3),
-            WifiMeasure(lat=10000000, lon=10000000, key=k1),
-            WifiMeasure(lat=10020000, lon=10030000, key=k1),
-            WifiMeasure(lat=10040000, lon=10060000, key=k1),
-            Wifi(key=k2, lat=20000000, lon=20000000,
+            WifiMeasure(lat=1, lon=1, key=k1),
+            WifiMeasure(lat=1.002, lon=1.003, key=k1),
+            WifiMeasure(lat=1.004, lon=1.006, key=k1),
+            Wifi(key=k2, lat=2, lon=2,
                  new_measures=2, total_measures=4),
             # the lat/lon is bogus and mismatches the line above on purpose
             # to make sure old measures are skipped
-            WifiMeasure(lat=-10000000, lon=-10000000, key=k2, created=before),
-            WifiMeasure(lat=-10000000, lon=-10000000, key=k2, created=before),
-            WifiMeasure(lat=20020000, lon=20040000, key=k2, created=now),
-            WifiMeasure(lat=20020000, lon=20040000, key=k2, created=now),
+            WifiMeasure(lat=-1, lon=-1, key=k2, created=before),
+            WifiMeasure(lat=-1, lon=-1, key=k2, created=before),
+            WifiMeasure(lat=2.002, lon=2.004, key=k2, created=now),
+            WifiMeasure(lat=2.002, lon=2.004, key=k2, created=now),
         ]
         session.add_all(data)
         session.commit()
@@ -450,14 +450,14 @@ class TestWifiLocationUpdate(CeleryTestCase):
         k2 = "cd1234567890"
         data = [
             Wifi(key=k1, new_measures=2, total_measures=2),
-            WifiMeasure(lat=10000000, lon=10000000, key=k1),
-            WifiMeasure(lat=10020000, lon=10040000, key=k1),
-            Wifi(key=k2, lat=20000000, lon=-20000000,
-                 max_lat=20010000, min_lat=19990000,
-                 max_lon=-19990000, min_lon=-20010000,
+            WifiMeasure(lat=1, lon=1, key=k1),
+            WifiMeasure(lat=1.002, lon=1.004, key=k1),
+            Wifi(key=k2, lat=2, lon=-2,
+                 max_lat=2.001, min_lat=1.999,
+                 max_lon=-1.999, min_lon=-2.001,
                  new_measures=2, total_measures=4),
-            WifiMeasure(lat=20020000, lon=-20040000, key=k2),
-            WifiMeasure(lat=19980000, lon=-19960000, key=k2),
+            WifiMeasure(lat=2.002, lon=-2.004, key=k2),
+            WifiMeasure(lat=1.998, lon=-1.996, key=k2),
         ]
         session.add_all(data)
         session.commit()
@@ -512,35 +512,35 @@ class TestWifiLocationUpdate(CeleryTestCase):
         data = [
             # a wifi with an entry but no prior position
             Wifi(key=k1, new_measures=3, total_measures=0),
-            WifiMeasure(lat=10010000, lon=10010000, key=k1),
-            WifiMeasure(lat=10020000, lon=10050000, key=k1),
-            WifiMeasure(lat=10030000, lon=10090000, key=k1),
+            WifiMeasure(lat=1.001, lon=1.001, key=k1),
+            WifiMeasure(lat=1.002, lon=1.005, key=k1),
+            WifiMeasure(lat=1.003, lon=1.009, key=k1),
             # a wifi with a prior known position
-            Wifi(lat=20000000, lon=20000000, key=k2,
+            Wifi(lat=2, lon=2, key=k2,
                  new_measures=2, total_measures=1),
-            WifiMeasure(lat=20100000, lon=20000000, key=k2),
-            WifiMeasure(lat=20700000, lon=20000000, key=k2),
+            WifiMeasure(lat=2.01, lon=2, key=k2),
+            WifiMeasure(lat=2.07, lon=2, key=k2),
             # a wifi with a very different prior position
-            Wifi(lat=10000000, lon=10000000, key=k3,
+            Wifi(lat=1, lon=1, key=k3,
                  new_measures=2, total_measures=1),
-            WifiMeasure(lat=30000000, lon=30000000, key=k3),
-            WifiMeasure(lat=-30000000, lon=30000000, key=k3),
+            WifiMeasure(lat=3, lon=3, key=k3),
+            WifiMeasure(lat=-3, lon=3, key=k3),
             # another wifi with a prior known position (and negative lat)
-            Wifi(lat=-40000000, lon=40000000, key=k4,
+            Wifi(lat=-4, lon=4, key=k4,
                  new_measures=2, total_measures=1),
-            WifiMeasure(lat=-41000000, lon=40000000, key=k4),
-            WifiMeasure(lat=-41600000, lon=40000000, key=k4),
+            WifiMeasure(lat=-4.1, lon=4, key=k4),
+            WifiMeasure(lat=-4.16, lon=4, key=k4),
             # an already blacklisted wifi
             WifiBlacklist(key=k5),
-            WifiMeasure(lat=50000000, lon=50000000, key=k5),
-            WifiMeasure(lat=51000000, lon=50000000, key=k5),
+            WifiMeasure(lat=5, lon=5, key=k5),
+            WifiMeasure(lat=5.1, lon=5, key=k5),
             # a wifi with an old different record we ignore, position
             # estimate has been updated since
-            Wifi(lat=60000000, lon=60000000, key=k6,
+            Wifi(lat=6, lon=6, key=k6,
                  new_measures=2, total_measures=1),
-            WifiMeasure(lat=69000000, lon=69000000, key=k6, time=long_ago),
-            WifiMeasure(lat=60000000, lon=60000000, key=k6),
-            WifiMeasure(lat=60010000, lon=60000000, key=k6),
+            WifiMeasure(lat=6.9, lon=6.9, key=k6, time=long_ago),
+            WifiMeasure(lat=6, lon=6, key=k6),
+            WifiMeasure(lat=6.001, lon=6, key=k6),
         ]
         session.add_all(data)
         session.commit()

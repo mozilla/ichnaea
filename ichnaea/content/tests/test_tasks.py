@@ -24,13 +24,13 @@ class TestStats(CeleryTestCase):
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
         measures = [
-            CellMeasure(lat=10000000, lon=20000000, created=today),
-            CellMeasure(lat=10000000, lon=20000000, created=today),
-            CellMeasure(lat=10000000, lon=20000000, created=yesterday),
-            CellMeasure(lat=10000000, lon=20000000, created=two_days),
-            CellMeasure(lat=10000000, lon=20000000, created=two_days),
-            CellMeasure(lat=10000000, lon=20000000, created=two_days),
-            CellMeasure(lat=10000000, lon=20000000, created=long_ago),
+            CellMeasure(lat=1, lon=2, created=today),
+            CellMeasure(lat=1, lon=2, created=today),
+            CellMeasure(lat=1, lon=2, created=yesterday),
+            CellMeasure(lat=1, lon=2, created=two_days),
+            CellMeasure(lat=1, lon=2, created=two_days),
+            CellMeasure(lat=1, lon=2, created=two_days),
+            CellMeasure(lat=1, lon=2, created=long_ago),
         ]
         session.add_all(measures)
         session.commit()
@@ -116,13 +116,13 @@ class TestStats(CeleryTestCase):
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
         measures = [
-            WifiMeasure(lat=10000000, lon=20000000, created=today),
-            WifiMeasure(lat=10000000, lon=20000000, created=today),
-            WifiMeasure(lat=10000000, lon=20000000, created=yesterday),
-            WifiMeasure(lat=10000000, lon=20000000, created=two_days),
-            WifiMeasure(lat=10000000, lon=20000000, created=two_days),
-            WifiMeasure(lat=10000000, lon=20000000, created=two_days),
-            WifiMeasure(lat=10000000, lon=20000000, created=long_ago),
+            WifiMeasure(lat=1, lon=2, created=today),
+            WifiMeasure(lat=1, lon=2, created=today),
+            WifiMeasure(lat=1, lon=2, created=yesterday),
+            WifiMeasure(lat=1, lon=2, created=two_days),
+            WifiMeasure(lat=1, lon=2, created=two_days),
+            WifiMeasure(lat=1, lon=2, created=two_days),
+            WifiMeasure(lat=1, lon=2, created=long_ago),
         ]
         session.add_all(measures)
         session.commit()

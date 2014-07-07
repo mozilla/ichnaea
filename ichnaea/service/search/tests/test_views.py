@@ -80,9 +80,9 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=10000000, lon=10000000),
-            Wifi(key="B2", lat=10010000, lon=10020000),
-            Wifi(key="C3", lat=10020000, lon=10040000),
+            Wifi(key="A1", lat=1, lon=1),
+            Wifi(key="B2", lat=1.001, lon=1.002),
+            Wifi(key="C3", lat=1.002, lon=1.004),
             Wifi(key="D4", lat=None, lon=None),
         ]
         session.add_all(wifis)
@@ -114,8 +114,8 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=10000000, lon=10000000),
-            Wifi(key="B2", lat=10010000, lon=10020000),
+            Wifi(key="A1", lat=1, lon=1),
+            Wifi(key="B2", lat=1.001, lon=1.002),
         ]
         session.add_all(wifis)
         session.commit()
@@ -130,8 +130,8 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=10000000, lon=10000000),
-            Wifi(key="B2", lat=10010000, lon=10020000),
+            Wifi(key="A1", lat=1, lon=1),
+            Wifi(key="B2", lat=1.001, lon=1.002),
             Wifi(key="C3", lat=None, lon=None),
         ]
         session.add_all(wifis)
@@ -148,10 +148,10 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=10000000, lon=10000000),
-            Wifi(key="B2", lat=10010000, lon=10020000),
-            Wifi(key="C3", lat=10020000, lon=10040000),
-            Wifi(key="D4", lat=20000000, lon=20000000),
+            Wifi(key="A1", lat=1, lon=1),
+            Wifi(key="B2", lat=1.001, lon=1.002),
+            Wifi(key="C3", lat=1.002, lon=1.004),
+            Wifi(key="D4", lat=2, lon=2),
         ]
         session.add_all(wifis)
         session.commit()
@@ -170,12 +170,12 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=10000000, lon=10000000),
-            Wifi(key="B2", lat=10010000, lon=10020000),
-            Wifi(key="C3", lat=10020000, lon=10040000),
-            Wifi(key="D4", lat=20000000, lon=20000000),
-            Wifi(key="E5", lat=20010000, lon=20020000),
-            Wifi(key="F6", lat=20020000, lon=20040000),
+            Wifi(key="A1", lat=1, lon=1),
+            Wifi(key="B2", lat=1.001, lon=1.002),
+            Wifi(key="C3", lat=1.002, lon=1.004),
+            Wifi(key="D4", lat=2, lon=2),
+            Wifi(key="E5", lat=2.001, lon=2.002),
+            Wifi(key="F6", lat=2.002, lon=2.004),
         ]
         session.add_all(wifis)
         session.commit()
@@ -198,13 +198,13 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [Wifi(key="A%d" % i,
-                      lat=10000000 + i * 100,
-                      lon=10000000 + i * 120)
+                      lat=1 + i * 0.000010,
+                      lon=1 + i * 0.000012)
                  for i in range(0, 100)]
         wifis += [
-            Wifi(key="D4", lat=20000000, lon=20000000),
-            Wifi(key="E5", lat=20010000, lon=20020000),
-            Wifi(key="F6", lat=20020000, lon=20040000),
+            Wifi(key="D4", lat=2, lon=2),
+            Wifi(key="E5", lat=2.001, lon=2.002),
+            Wifi(key="F6", lat=2.002, lon=2.004),
         ]
         session.add_all(wifis)
         session.commit()
@@ -232,8 +232,8 @@ class TestSearch(AppTestCase):
         # clustering threshold is 500m and the 100 wifis are
         # spaced in increments of (+1m, +1.2m)
         wifis = [Wifi(key="A%d" % i,
-                      lat=10000000 + i * 100,
-                      lon=10000000 + i * 120)
+                      lat=1 + i * 0.000010,
+                      lon=1 + i * 0.000012)
                  for i in range(0, 100)]
         session.add_all(wifis)
         session.commit()
@@ -260,10 +260,10 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=10000000, lon=10000000),
-            Wifi(key="B2", lat=10010000, lon=10020000),
-            Wifi(key="C3", lat=20020000, lon=20040000),
-            Wifi(key="D4", lat=20000000, lon=20000000),
+            Wifi(key="A1", lat=1, lon=1),
+            Wifi(key="B2", lat=1.001, lon=1.002),
+            Wifi(key="C3", lat=2.002, lon=2.004),
+            Wifi(key="D4", lat=2, lon=2),
         ]
         session.add_all(wifis)
         session.commit()
@@ -306,7 +306,7 @@ class TestSearch(AppTestCase):
         lon = from_degrees(PARIS_LON)
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
-            Wifi(key="abcd", lat=30000000, lon=30000000),
+            Wifi(key="abcd", lat=3, lon=3),
             Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
             Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
         ]
@@ -394,8 +394,8 @@ class TestSearch(AppTestCase):
         data = [
             Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
             Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
-            Cell(lat=10060000, lon=10060000, radio=2, cid=6, **key),
-            Cell(lat=10026666, lon=10033333, radio=2, cid=CELLID_LAC,
+            Cell(lat=1.006, lon=1.006, radio=2, cid=6, **key),
+            Cell(lat=1.0026666, lon=1.0033333, radio=2, cid=CELLID_LAC,
                  range=50000, **key),
         ]
         session.add_all(data)

@@ -183,7 +183,7 @@ class TestInsert(CeleryTestCase):
         session.flush()
 
         measure = dict(
-            id=0, created=encode_datetime(time), lat=10000000, lon=20000000,
+            id=0, created=encode_datetime(time), lat=1, lon=2,
             time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=-1,
             heading=52.9,
@@ -235,7 +235,7 @@ class TestInsert(CeleryTestCase):
         black = WifiBlacklist(key=bad_key)
         session.add(black)
         session.flush()
-        measure = dict(id=0, lat=10000000, lon=20000000)
+        measure = dict(id=0, lat=1, lon=2)
         entries = [{"key": good_key}, {"key": good_key}, {"key": bad_key}]
         for e in entries:
             e.update(measure)
@@ -358,8 +358,8 @@ class TestInsert(CeleryTestCase):
 
         measures = [dict(id=0,
                          key=key,
-                         lat=10000000 + i,
-                         lon=20000000 + i) for i in range(3)]
+                         lat=1 + i * 0.0000001,
+                         lon=2 + i * 0.0000001) for i in range(3)]
 
         result = insert_wifi_measures.delay(measures)
         self.assertEqual(result.get(), 3)

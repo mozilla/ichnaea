@@ -65,9 +65,9 @@ class TestGeolocate(AppTestCase):
         app = self.app
         session = self.get_session()
         wifis = [
-            Wifi(key="a1", lat=10000000, lon=10000000),
-            Wifi(key="b2", lat=10010000, lon=10020000),
-            Wifi(key="c3", lat=10020000, lon=10040000),
+            Wifi(key="a1", lat=1, lon=1),
+            Wifi(key="b2", lat=1.001, lon=1.002),
+            Wifi(key="c3", lat=1.002, lon=1.004),
             Wifi(key="d4", lat=None, lon=None),
         ]
         session.add_all(wifis)
@@ -184,10 +184,10 @@ class TestGeolocate(AppTestCase):
         session = self.get_session()
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
-            Cell(lat=10000000, lon=10000000, radio=2, cid=4, **key),
-            Cell(lat=10020000, lon=10040000, radio=2, cid=5, **key),
-            Cell(lat=10060000, lon=10060000, radio=2, cid=6, **key),
-            Cell(lat=10026666, lon=10033333, radio=2, cid=CELLID_LAC,
+            Cell(lat=1, lon=1, radio=2, cid=4, **key),
+            Cell(lat=1.002, lon=1.004, radio=2, cid=5, **key),
+            Cell(lat=1.006, lon=1.006, radio=2, cid=6, **key),
+            Cell(lat=1.0026666, lon=1.0033333, radio=2, cid=CELLID_LAC,
                  range=50000, **key),
         ]
         session.add_all(data)

@@ -100,9 +100,9 @@ class TestGeoSubmit(CeleryAppTestCase):
         app = self.app
         session = self.db_master_session
         wifis = [
-            Wifi(key="0000000000a1", lat=10000000, lon=10000000),
-            Wifi(key="0000000000b2", lat=10010000, lon=10020000),
-            Wifi(key="0000000000c3", lat=10020000, lon=10040000),
+            Wifi(key="0000000000a1", lat=1, lon=1),
+            Wifi(key="0000000000b2", lat=1.001, lon=1.002),
+            Wifi(key="0000000000c3", lat=1.002, lon=1.004),
             Wifi(key="0000000000d4", lat=None, lon=None),
         ]
         session.add_all(wifis)

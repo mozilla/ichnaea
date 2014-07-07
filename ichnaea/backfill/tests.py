@@ -17,7 +17,7 @@ class TestBackfill(CeleryTestCase):
         # similar towers
         data = [
             # These are measurements for tower A
-            Cell(lat=378348600, lon=-1222828703, radio=2,
+            Cell(lat=37.83486, lon=-12.2282873, radio=2,
                  lac=56955, cid=5286246, mcc=310, mnc=410, psc=38,
                  new_measures=0, total_measures=1),
 
@@ -48,7 +48,7 @@ class TestBackfill(CeleryTestCase):
 
         # This is tower F and should not map back to anything as it's
         # too far away.
-        session.add_all([CellMeasure(lat=998409925, lon=998409925, radio=3,
+        session.add_all([CellMeasure(lat=99.8409925, lon=99.8409925, radio=3,
                                      lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
                                      accuracy=20)])
 

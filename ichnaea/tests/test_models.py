@@ -59,7 +59,7 @@ class TestCell(DBTestCase):
 
     def test_fields(self):
         cell = self._make_one(
-            lat=12345678, lon=23456789, mcc=100, mnc=5, lac=12345, cid=234567,
+            lat=1.2345678, lon=2.3456789, mcc=100, mnc=5, lac=12345, cid=234567,
             new_measures=2, total_measures=15,
         )
         session = self.db_master_session
@@ -87,8 +87,8 @@ class TestCellMeasure(DBTestCase):
     def test_fields(self):
         report_id = uuid.uuid1().bytes
         cell = self._make_one(
-            lat=12345678,
-            lon=23456789,
+            lat=1.2345678,
+            lon=2.3456789,
             report_id=report_id,
             radio=0,
             mcc=100,
@@ -133,7 +133,7 @@ class TestWifi(DBTestCase):
     def test_fields(self):
         key = "3680873e9b83"
         wifi = self._make_one(
-            key=key, lat=12345678, lon=23456789, range=200,
+            key=key, lat=1.2345678, lon=2.3456789, range=200,
             new_measures=2, total_measures=15,
         )
         session = self.db_master_session
@@ -199,8 +199,8 @@ class TestWifiMeasure(DBTestCase):
         key = "3680873e9b83"
         report_id = uuid.uuid1().bytes
         wifi = self._make_one(
-            lat=12345678,
-            lon=23456789,
+            lat=1.2345678,
+            lon=2.3456789,
             report_id=report_id,
             key=key,
             channel=2412,
