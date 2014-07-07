@@ -17,5 +17,3 @@ class TestDatabase(DBTestCase):
         session = self.db_master_session
         result = session.execute('select * from cell;')
         self.assertTrue(result.first() is None)
-        result = session.execute('select * from measure;')
-        self.assertTrue(result.first() is None)

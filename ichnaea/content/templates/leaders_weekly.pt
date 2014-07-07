@@ -4,7 +4,11 @@
 
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
-    <p>Data is updated in near-realtime.</p>
+    <p>
+        This leaderboard shows the contributions of individual community
+        members who are particular good at discovering new places and
+        new WiFi and cell networks.
+    </p>
 
     <div class="separator">
         <h3>Top 20 new cells</h3>

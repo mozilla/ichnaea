@@ -1,19 +1,20 @@
-from datetime import datetime
-from datetime import timedelta
+from datetime import (
+    date,
+    datetime,
+    timedelta,
+)
 import pytz
 
 from webob.response import gzip_app_iter
 
 from ichnaea.content.models import (
     MapStat,
-    MAPSTAT_TYPE,
     Score,
     SCORE_TYPE,
     User,
 )
 from ichnaea.models import (
     CellMeasure,
-    Measure,
     RADIO_TYPE,
     WifiMeasure,
     WIFI_TEST_KEY,
@@ -68,15 +69,11 @@ class TestSubmit(CeleryAppTestCase):
         )
 
         session = self.db_master_session
-        measure_result = session.query(Measure).all()
-        self.assertEqual(len(measure_result), 1)
-
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
         self.assertTrue(isinstance(item.report_id, bytes))
         self.assertEqual(len(item.report_id), 16)
-        self.assertEqual(item.measure_id, measure_result[0].id)
         self.assertEqual(item.created.date(), today)
 
         self.assertEqual(item.time, month_rounded_dt)
@@ -105,15 +102,11 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        measure_result = session.query(Measure).all()
-        self.assertEqual(len(measure_result), 1)
-
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
         self.assertTrue(isinstance(item.report_id, bytes))
         self.assertEqual(len(item.report_id), 16)
-        self.assertEqual(item.measure_id, measure_result[0].id)
         self.assertEqual(item.radio, RADIO_TYPE['gsm'])
 
     def test_ok_wifi(self):
@@ -137,17 +130,12 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        measure_result = session.query(Measure).all()
-        self.assertEqual(len(measure_result), 1)
-        item = measure_result[0]
-
         wifi_result = session.query(WifiMeasure).all()
         self.assertEqual(len(wifi_result), 2)
         item = wifi_result[0]
         report_id = item.report_id
         self.assertTrue(isinstance(report_id, bytes))
         self.assertEqual(len(report_id), 16)
-        self.assertEqual(item.measure_id, measure_result[0].id)
         self.assertEqual(item.created.date(), today)
         self.assertEqual(item.time, month_rounded_dt)
         self.assertEqual(item.lat, 123456781)
@@ -161,7 +149,6 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.snr, 5)
         item = wifi_result[1]
         self.assertEqual(item.report_id, report_id)
-        self.assertEqual(item.measure_id, measure_result[0].id)
         self.assertEqual(item.created.date(), today)
         self.assertEqual(item.lat, 123456781)
         self.assertEqual(item.lon, 234567892)
@@ -302,14 +289,15 @@ class TestSubmit(CeleryAppTestCase):
 
     def test_mapstat(self):
         app = self.app
+        long_ago = date(2011, 10, 20)
+        today = datetime.utcnow().date()
         session = self.db_master_session
-        key_100m = MAPSTAT_TYPE['location_100m']
-        session.add_all([
-            MapStat(lat=1000, lon=2000, key=key_100m, value=7),
-            MapStat(lat=1000, lon=3000, key=key_100m, value=2),
-            MapStat(lat=2000, lon=3000, key=key_100m, value=5),
-            MapStat(lat=2000, lon=4000, key=key_100m, value=9),
-        ])
+        stats = [
+            MapStat(lat=1000, lon=2000, time=long_ago),
+            MapStat(lat=2000, lon=3000, time=long_ago),
+            MapStat(lat=3000, lon=4000, time=long_ago),
+        ]
+        session.add_all(stats)
         session.flush()
         app.post_json(
             '/v1/submit', {"items": [
@@ -325,20 +313,21 @@ class TestSubmit(CeleryAppTestCase):
                 {"lat": -2.0,
                  "lon": 3.0,
                  "wifi": [{"key": "cccccccccccc"}]},
+                {"lat": 10.0,
+                 "lon": 10.0,
+                 "wifi": [{"key": "invalid"}]},
             ]},
             status=204)
         # check coarse grained stats
-        result = session.query(MapStat).filter(
-            MapStat.key == MAPSTAT_TYPE['location_100m']).all()
-        self.assertEqual(len(result), 5)
+        result = session.query(MapStat).all()
+        self.assertEqual(len(result), 4)
         self.assertEqual(
-            sorted([(int(r.lat), int(r.lon), int(r.value)) for r in result]),
+            sorted([(int(r.lat), int(r.lon), r.time, r.id) for r in result]),
             [
-                (-2000, 3000, 1),
-                (1000, 2000, 8),
-                (1000, 3000, 2),
-                (2000, 3000, 7),
-                (2000, 4000, 9),
+                (-2000, 3000, today, stats[2].id + 1),
+                (1000, 2000, long_ago, stats[0].id),
+                (2000, 3000, long_ago, stats[1].id),
+                (3000, 4000, long_ago, stats[2].id),
             ]
         )
 
@@ -353,6 +342,9 @@ class TestSubmit(CeleryAppTestCase):
                 {"lat": 2.0,
                  "lon": 3.0,
                  "wifi": [{"key": "00bbbbbbbbbb"}]},
+                {"lat": 10.0,
+                 "lon": 10.0,
+                 "wifi": [{"key": "invalid"}]},
             ]},
             headers={'X-Nickname': nickname},
             status=204)
@@ -632,9 +624,6 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        measure_result = session.query(Measure).all()
-        self.assertEqual(len(measure_result), 0)
-
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 0)
 
@@ -652,9 +641,6 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        measure_result = session.query(Measure).all()
-        self.assertEqual(len(measure_result), 1)
-
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
@@ -675,9 +661,6 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        measure_result = session.query(Measure).all()
-        self.assertEqual(len(measure_result), 0)
-
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 0)
 

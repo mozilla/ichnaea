@@ -12,6 +12,10 @@ from ichnaea.content.models import (
     STAT_TYPE,
     User,
 )
+from ichnaea.content.views import (
+    LOCAL_TILES,
+    LOCAL_TILES_BASE,
+)
 from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.tests.base import AppTestCase
 
@@ -35,11 +39,36 @@ class TestContentViews(TestCase):
         result = inst.homepage_view()
         self.assertEqual(result['page_title'], 'Overview')
 
+    def test_api(self):
+        request = DummyRequest()
+        inst = self._make_view(request)
+        result = inst.api_view()
+        self.assertTrue('API' in result['page_title'])
+
+    def test_apps(self):
+        request = DummyRequest()
+        inst = self._make_view(request)
+        result = inst.apps_view()
+        self.assertTrue('App' in result['page_title'])
+
+    def test_optout(self):
+        request = DummyRequest()
+        inst = self._make_view(request)
+        result = inst.optout_view()
+        self.assertTrue('Opt' in result['page_title'])
+
+    def test_privacy(self):
+        request = DummyRequest()
+        inst = self._make_view(request)
+        result = inst.privacy_view()
+        self.assertTrue('Privacy' in result['page_title'])
+
     def test_map(self):
         request = DummyRequest()
         inst = self._make_view(request)
         result = inst.map_view()
         self.assertEqual(result['page_title'], 'Map')
+        self.assertEqual(result['tiles'], LOCAL_TILES)
 
 
 class TestFunctionalContent(AppTestCase):
@@ -50,6 +79,15 @@ class TestFunctionalContent(AppTestCase):
         self.app.get('/map', status=200)
         self.app.get('/privacy', status=200)
         self.app.get('/stats', status=200)
+
+    def test_csp(self):
+        result = self.app.get('/', status=200)
+        self.assertTrue('Content-Security-Policy' in result.headers)
+        csp = result.headers['Content-Security-Policy']
+        # make sure CSP_BASE interpolation worked
+        self.assertTrue("'self' *.cdn.mozilla.net" in csp)
+        # make sure map assets url interpolation worked
+        self.assertTrue('127.0.0.1:7001' in csp)
 
     def test_favicon(self):
         self.app.get('/favicon.ico', status=200)
@@ -77,6 +115,10 @@ class TestFunctionalContent(AppTestCase):
 
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)
+
+    def test_map_json(self):
+        result = self.app.get('/map.json', status=200)
+        self.assertEqual(result.json['tiles_url'], LOCAL_TILES_BASE)
 
     def test_stats_countries(self):
         self.app.get('/stats/countries', status=200)
@@ -201,9 +243,12 @@ class TestFunctionalContentViews(AppTestCase):
         result = inst.stats_view()
         self.assertEqual(result['page_title'], 'Statistics')
         self.assertEqual(
-            result['metrics'], [
+            result['metrics1'], [
                 {'name': 'Unique Cells', 'value': '1.00'},
                 {'name': 'Cell Observations', 'value': '2.00'},
+            ])
+        self.assertEqual(
+            result['metrics2'], [
                 {'name': 'Unique Wifi Networks', 'value': '2.00'},
                 {'name': 'Wifi Observations', 'value': '2.00'},
             ])

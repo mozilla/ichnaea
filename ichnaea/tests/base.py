@@ -3,9 +3,12 @@ import os.path
 
 from alembic.config import Config
 from alembic import command
-
-from heka.encoders import NullEncoder
-from heka.streams import DebugCaptureStream
+from sqlalchemy import inspect
+from sqlalchemy.schema import (
+    DropTable,
+    MetaData,
+    Table,
+)
 from unittest2 import TestCase
 from webtest import TestApp
 
@@ -18,9 +21,9 @@ from ichnaea.heka_logging import configure_heka
 from ichnaea.models import ApiKey
 from ichnaea.worker import (
     attach_database,
+    celery,
     configure_s3_backup,
 )
-from ichnaea.worker import celery
 
 # make new unittest API's available under Python 2.6
 try:
@@ -92,28 +95,32 @@ class DBIsolation(object):
     # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
 
     def setup_session(self):
-        master_conn = self.db_master.engine.connect()
-        self.master_trans = master_conn.begin()
-        self.db_master.session_factory.configure(bind=master_conn)
+        self.master_conn = self.db_master.engine.connect()
+        self.master_trans = self.master_conn.begin()
+        self.db_master.session_factory.configure(bind=self.master_conn)
         self.db_master_session = self.db_master.session()
-        slave_conn = self.db_slave.engine.connect()
-        self.slave_trans = slave_conn.begin()
-        self.db_slave.session_factory.configure(bind=slave_conn)
+        self.slave_conn = self.db_slave.engine.connect()
+        self.slave_trans = self.slave_conn.begin()
+        self.db_slave.session_factory.configure(bind=self.slave_conn)
         self.db_slave_session = self.db_slave.session()
 
     def teardown_session(self):
         self.slave_trans.rollback()
         self.db_slave_session.close()
         del self.db_slave_session
-        self.slave_trans.close()
         self.db_slave.session_factory.configure(bind=None)
+        self.slave_trans.close()
         del self.slave_trans
+        self.slave_conn.close()
+        del self.slave_conn
         self.master_trans.rollback()
         self.db_master_session.close()
         del self.db_master_session
-        self.master_trans.close()
         self.db_master.session_factory.configure(bind=None)
+        self.master_trans.close()
         del self.master_trans
+        self.master_conn.close()
+        del self.master_conn
 
     @classmethod
     def setup_engine(cls):
@@ -146,9 +153,17 @@ class DBIsolation(object):
 
     @classmethod
     def cleanup_tables(cls, engine):
+        # reflect and delete all tables, not just those known to
+        # our current code version / models
+        metadata = MetaData()
+        inspector = inspect(engine)
+        tables = []
         with engine.connect() as conn:
             trans = conn.begin()
-            _Model.metadata.drop_all(engine)
+            for t in inspector.get_table_names():
+                tables.append(Table(t, metadata))
+            for t in tables:
+                conn.execute(DropTable(t))
             trans.commit()
 
 
@@ -394,13 +409,16 @@ class CeleryAppTestCase(AppTestCase, CeleryIsolation):
 
 
 def setup_package(module):
+    # make sure all models are imported
+    from ichnaea import models  # NOQA
+    from ichnaea.content import models  # NOQA
     db = _make_db()
     engine = db.engine
     DBIsolation.cleanup_tables(engine)
     DBIsolation.setup_tables(engine)
     # always add a test API key
     session = db.session()
-    session.add(ApiKey(valid_key='test'))
+    session.add(ApiKey(valid_key='test', shortname='test'))
     session.commit()
     session.close()
     db.engine.pool.dispose()

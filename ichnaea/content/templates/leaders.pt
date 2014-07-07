@@ -4,7 +4,13 @@
 
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
-    <p>Data is updated in near-realtime.</p>
+    <p>
+        This leaderboard shows the contributions of individual community
+        members, who are using on of the
+        <a href="/apps">client applications</a> and contribute back data
+        to us - we call this activity stumbling. Joining this competition
+        is optional and you can contribute data anonymously.
+    </p>
 
     <p>
         A <a href="/leaders/weekly">weekly leaderboard</a> showing new
@@ -12,7 +18,7 @@
     </p>
 
     <div class="half-left">
-        <table class="table half">
+        <table class="table">
             <thead>
                 <tr>
                     <th>Rank</th>
@@ -32,7 +38,7 @@
         </table>
     </div>
     <div class="half-right" tal:condition="leaders2">
-        <table class="table half">
+        <table class="table">
             <thead>
                 <tr>
                     <th>Rank</th>

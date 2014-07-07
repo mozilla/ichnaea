@@ -27,6 +27,8 @@
             <nav id="nav-main" role="navigation">
                 <ul id="nav-main-menu">
                     <li class="first"><a href="/">Home</a></li>
+                    <li><a href="/apps">Apps</a></li>
+                    <li><a href="/api">API</a></li>
                     <li><a href="/leaders">Leaderboard</a></li>
                     <li><a href="/stats">Statistics</a></li>
                     <li class="last"><a href="/map">Map</a></li>
@@ -57,12 +59,9 @@
             </div>
 
             <ul class="footer-nav">
-                <li><a href="https://wiki.mozilla.org/CloudServices/Location#Meetings">
-                    Contact Us</a>
-                </li>
+                <li><a href="/contact">Contact Us</a></li>
                 <li><a href="/privacy">Privacy Policy</a></li>
-                <li><a href="https://www.mozilla.org/en-US/legal/fraud-report/index.html">
-                    Report Trademark Abuse</a>
+                <li><a href="/optout">Opt-Out</a>
                 </li>
             </ul>
 
@@ -72,9 +71,6 @@
                 </li>
                 <li><a href="https://github.com/mozilla/ichnaea/">
                     Source Code</a>
-                </li>
-                <li><a href="https://mozilla-ichnaea.readthedocs.org/en/latest/">
-                    API</a>
                 </li>
             </ul>
         </div>

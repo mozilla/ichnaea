@@ -4,8 +4,8 @@
 # location services for accuracy against a provided set of measurements.
 #
 # It requires 1 or 2 CSV files containing either cell or wifi measurements,
-# each carrying a GPS-measured lat/lon, and with a common numeric field
-# 'measure_id' shared between all rows asociated with the same measurement
+# each carrying a GPS-measured lat/lon, and with a common binary field
+# 'report_id' shared between all rows asociated with the same measurement
 # event. Any simple CSV dump of the wifi_measure and cell_measure tables in
 # ichnaea should suffice, though you should probably use a small-ish
 # subset, less than a few thousand rows.
@@ -39,7 +39,10 @@ import json
 import requests
 import argparse
 import random
-from collections import namedtuple
+from collections import (
+    defaultdict,
+    namedtuple,
+)
 import math
 import pylab
 import re
@@ -65,11 +68,11 @@ def distance(lat1, lon1, lat2, lon2):
 
 
 CellMeasure = namedtuple("CellMeasure",
-                         "measure_id lat lon mcc mnc lac cid radio")
+                         "report_id lat lon mcc mnc lac cid radio")
 
 
 WifiMeasure = namedtuple("WifiMeasure",
-                         "measure_id lat lon key channel")
+                         "report_id lat lon key channel")
 
 TestQuery = namedtuple("TestQuery",
                        "lat lon cells wifis")
@@ -255,7 +258,7 @@ def plot_distance_and_accuracy(da, percentiles, pct_lim, label):
 
 
 def damage_cid(cid, cell):
-    return CellMeasure(measure_id=cell.measure_id,
+    return CellMeasure(report_id=cell.report_id,
                        lat=cell.lat,
                        lon=cell.lon,
                        mcc=cell.mcc,
@@ -366,114 +369,108 @@ def main():
 
     args = parser.parse_args()
 
-    cell_measures = {}
-    wifi_measures = {}
+    cell_measures = defaultdict(list)
+    wifi_measures = defaultdict(list)
 
     for cell in load_named_tuples_from_csv(CellMeasure, args.cell_measure):
         if cell.radio == args.exclude_radio:
             continue
-        mid = cell.measure_id
-        if mid not in cell_measures:
-            cell_measures[mid] = []
-        cell_measures[mid].append(cell)
+        cell_measures[cell.report_id].append(cell)
 
     for wifi in load_named_tuples_from_csv(WifiMeasure, args.wifi_measure):
-        mid = wifi.measure_id
-        if mid not in wifi_measures:
-            wifi_measures[mid] = []
-        wifi_measures[mid].append(wifi)
+        wifi_measures[wifi.report_id].append(wifi)
 
     wifi_measures = dict([(k, v)
                           for (k, v)
                           in wifi_measures.items()
                           if len(v) > args.min_wifi])
 
-    at_least_cell_measure_ids = cell_measures.keys()
-    at_least_wifi_measure_ids = wifi_measures.keys()
+    at_least_cell_report_ids = cell_measures.keys()
+    at_least_wifi_report_ids = wifi_measures.keys()
 
-    both_measure_ids = list(set(at_least_cell_measure_ids).intersection(
-        set(at_least_wifi_measure_ids)))
+    both_report_ids = list(set(at_least_cell_report_ids).intersection(
+        set(at_least_wifi_report_ids)))
 
-    only_cell_measure_ids = list(set(at_least_cell_measure_ids).difference(
-        set(at_least_wifi_measure_ids)))
-    only_wifi_measure_ids = list(set(at_least_wifi_measure_ids).difference(
-        set(at_least_cell_measure_ids)))
+    only_cell_report_ids = list(set(at_least_cell_report_ids).difference(
+        set(at_least_wifi_report_ids)))
+    only_wifi_report_ids = list(set(at_least_wifi_report_ids).difference(
+        set(at_least_cell_report_ids)))
 
-    print("cell_measures: %d" % len(at_least_cell_measure_ids))
-    print("wifi_measures: %d" % len(at_least_wifi_measure_ids))
-    print("measures with both: %d" % len(both_measure_ids))
-    print("measures with only wifi: %d" % len(only_wifi_measure_ids))
-    print("measures with only cell: %d" % len(only_cell_measure_ids))
+    print("cell_measures: %d" % len(at_least_cell_report_ids))
+    print("wifi_measures: %d" % len(at_least_wifi_report_ids))
+    print("measures with both: %d" % len(both_report_ids))
+    print("measures with only wifi: %d" % len(only_wifi_report_ids))
+    print("measures with only cell: %d" % len(only_cell_report_ids))
 
-    random.shuffle(at_least_cell_measure_ids)
-    random.shuffle(at_least_wifi_measure_ids)
-    random.shuffle(both_measure_ids)
-    random.shuffle(only_cell_measure_ids)
-    random.shuffle(only_wifi_measure_ids)
+    random.shuffle(at_least_cell_report_ids)
+    random.shuffle(at_least_wifi_report_ids)
+    random.shuffle(both_report_ids)
+    random.shuffle(only_cell_report_ids)
+    random.shuffle(only_wifi_report_ids)
 
-    wn = min(len(only_wifi_measure_ids), args.count)
-    cn = min(len(only_cell_measure_ids), args.count)
-    bn = min(len(both_measure_ids), args.count)
+    wn = min(len(only_wifi_report_ids), args.count)
+    cn = min(len(only_cell_report_ids), args.count)
+    bn = min(len(both_report_ids), args.count)
 
     variants = [
         ("both-wifi-and-cell", args.both,
-         [TestQuery(lat=wifi_measures[mid][0].lat,
-                    lon=wifi_measures[mid][0].lon,
-                    cells=cell_measures[mid],
-                    wifis=wifi_measures[mid])
-          for mid in both_measure_ids[:bn]]),
+         [TestQuery(lat=wifi_measures[rid][0].lat,
+                    lon=wifi_measures[rid][0].lon,
+                    cells=cell_measures[rid],
+                    wifis=wifi_measures[rid])
+          for rid in both_report_ids[:bn]]),
 
         ("both-wifi-and-lac", args.both_lac,
-         [TestQuery(lat=wifi_measures[mid][0].lat,
-                    lon=wifi_measures[mid][0].lon,
+         [TestQuery(lat=wifi_measures[rid][0].lat,
+                    lon=wifi_measures[rid][0].lon,
                     cells=[damage_cid(args.lac_cellid, cell)
-                           for cell in cell_measures[mid]],
-                    wifis=wifi_measures[mid])
-          for mid in both_measure_ids[:bn]]),
+                           for cell in cell_measures[rid]],
+                    wifis=wifi_measures[rid])
+          for rid in both_report_ids[:bn]]),
 
         ("at-least-wifi", args.at_least_wifi,
-         [TestQuery(lat=wifi_measures[mid][0].lat,
-                    lon=wifi_measures[mid][0].lon,
+         [TestQuery(lat=wifi_measures[rid][0].lat,
+                    lon=wifi_measures[rid][0].lon,
                     cells=[],
-                    wifis=wifi_measures[mid])
-          for mid in at_least_wifi_measure_ids[:wn]]),
+                    wifis=wifi_measures[rid])
+          for rid in at_least_wifi_report_ids[:wn]]),
 
         ("at-least-cell", args.at_least_cell,
-         [TestQuery(lat=cell_measures[mid][0].lat,
-                    lon=cell_measures[mid][0].lon,
-                    cells=cell_measures[mid],
+         [TestQuery(lat=cell_measures[rid][0].lat,
+                    lon=cell_measures[rid][0].lon,
+                    cells=cell_measures[rid],
                     wifis=[])
-          for mid in at_least_cell_measure_ids[:cn]]),
+          for rid in at_least_cell_report_ids[:cn]]),
 
         ("at-least-lac", args.at_least_lac,
-         [TestQuery(lat=cell_measures[mid][0].lat,
-                    lon=cell_measures[mid][0].lon,
+         [TestQuery(lat=cell_measures[rid][0].lat,
+                    lon=cell_measures[rid][0].lon,
                     cells=[damage_cid(args.lac_cellid, cell)
-                           for cell in cell_measures[mid]],
+                           for cell in cell_measures[rid]],
                     wifis=[])
-          for mid in at_least_cell_measure_ids[:cn]]),
+          for rid in at_least_cell_report_ids[:cn]]),
 
         ("only-wifi", args.only_wifi,
-         [TestQuery(lat=wifi_measures[mid][0].lat,
-                    lon=wifi_measures[mid][0].lon,
+         [TestQuery(lat=wifi_measures[rid][0].lat,
+                    lon=wifi_measures[rid][0].lon,
                     cells=[],
-                    wifis=wifi_measures[mid])
-          for mid in only_wifi_measure_ids[:wn]]),
+                    wifis=wifi_measures[rid])
+          for rid in only_wifi_report_ids[:wn]]),
 
         ("only-cell", args.only_cell,
-         [TestQuery(lat=cell_measures[mid][0].lat,
-                    lon=cell_measures[mid][0].lon,
-                    cells=cell_measures[mid],
+         [TestQuery(lat=cell_measures[rid][0].lat,
+                    lon=cell_measures[rid][0].lon,
+                    cells=cell_measures[rid],
                     wifis=[])
-          for mid in only_cell_measure_ids[:cn]]),
+          for rid in only_cell_report_ids[:cn]]),
 
         ("only-lac", args.only_lac,
-         [TestQuery(lat=cell_measures[mid][0].lat,
-                    lon=cell_measures[mid][0].lon,
+         [TestQuery(lat=cell_measures[rid][0].lat,
+                    lon=cell_measures[rid][0].lon,
                     cells=[damage_cid(args.lac_cellid, cell)
-                           for cell in cell_measures[mid]],
+                           for cell in cell_measures[rid]],
                     wifis=[])
-          for mid in only_cell_measure_ids[:cn]])
+          for rid in only_cell_report_ids[:cn]])
     ]
 
     pylab.figure()

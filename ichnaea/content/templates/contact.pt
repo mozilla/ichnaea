@@ -1,0 +1,50 @@
+<tal:macro xmlns:tal="http://xml.zope.org/namespaces/tal"
+           xmlns:metal="http://xml.zope.org/namespaces/metal"
+           metal:use-macro="view.base_template">
+
+<tal:slot metal:fill-slot="content">
+<section id="main-content">
+
+    <p>
+        You have a variety of options in order to contact us. If you want
+        to engage with the larger community or are comfortable discussing
+        your request in the open, please use either:
+        <ul>
+            <li>
+                <a href="https://lists.mozilla.org/listinfo/dev-geolocation">
+                    Our public mailing list</a> or
+                <a href="http://groups.google.com/group/mozilla.dev.geolocation">
+                    view an online archive of the discussions</a>
+            </li>
+            <li>
+                or join the #geo channel on
+                <a href="https://wiki.mozilla.org/IRC">
+                    Mozilla's IRC network</a>.
+            </li>
+        </ul>
+    </p>
+
+    <p>
+        If your inquiry should stay private, you can contact
+        <a href="mailto:Hanno Schlichting %3Chschlichting@mozilla.com%3E">
+            Hanno Schlichting</a>,
+        who will help you direct your question to the right audience.
+    </p>
+
+    <p>
+        In the unlikely event that you want to raise a formal legal
+        question, our address is:
+
+        <pre>
+            Mozilla Corporation
+            Attn: Legal Notices
+            331 E. Evelyn Ave.
+            Mountain View, CA 94041
+            Phone: +1-650-903-0800
+        </pre>
+    </p>
+
+</section>
+</tal:slot>
+
+</tal:macro>

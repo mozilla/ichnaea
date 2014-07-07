@@ -18,6 +18,33 @@ from ichnaea.tests.base import (
 from unittest2 import TestCase
 
 
+class TestApiKey(DBTestCase):
+
+    def _make_one(self, **kw):
+        from ichnaea.models import ApiKey
+        return ApiKey(**kw)
+
+    def test_constructor(self):
+        key = self._make_one(valid_key='foo')
+        self.assertEqual(key.valid_key, 'foo')
+        self.assertEqual(key.maxreq, None)
+
+    def test_fields(self):
+        key = self._make_one(
+            valid_key='foo-bar', maxreq=10, shortname='foo',
+            email='Test <test@test.com>', description='A longer text.',
+        )
+        session = self.db_master_session
+        session.add(key)
+        session.commit()
+
+        result = session.query(key.__class__).first()
+        self.assertEqual(result.valid_key, 'foo-bar')
+        self.assertEqual(result.shortname, 'foo')
+        self.assertEqual(result.email, 'Test <test@test.com>')
+        self.assertEqual(result.description, 'A longer text.')
+
+
 class TestCell(DBTestCase):
 
     def _make_one(self, **kw):
@@ -131,7 +158,8 @@ class TestWifiBlacklist(DBTestCase):
     def test_constructor(self):
         wifi = self._make_one()
         self.assertTrue(wifi.key is None)
-        self.assertTrue(wifi.created is not None)
+        self.assertTrue(wifi.time is not None)
+        self.assertTrue(wifi.count is not None)
 
     def test_fields(self):
         key = "3680873e9b83"
@@ -142,7 +170,8 @@ class TestWifiBlacklist(DBTestCase):
 
         result = session.query(wifi.__class__).first()
         self.assertEqual(result.key, key)
-        self.assertTrue(isinstance(result.created, datetime.datetime))
+        self.assertTrue(isinstance(result.time, datetime.datetime))
+        self.assertTrue(isinstance(result.count, int))
 
     def test_unique_key(self):
         key = "3680873e9b83"
@@ -191,26 +220,6 @@ class TestWifiMeasure(DBTestCase):
         self.assertEqual(result.signal, -45)
 
 
-class TestMeasure(DBTestCase):
-
-    def _make_one(self, **kw):
-        from ichnaea.models import Measure
-        return Measure(**kw)
-
-    def test_constructor(self):
-        measure = self._make_one()
-        self.assertTrue(measure.id is None)
-
-    def test_fields(self):
-        measure = self._make_one()
-        session = self.db_master_session
-        session.add(measure)
-        session.commit()
-
-        result = session.query(measure.__class__).first()
-        self.assertFalse(result.id is None)
-
-
 class TestNormalization(TestCase):
 
     def check_normalized_cell(self, measure, cell, expect):
@@ -242,11 +251,11 @@ class TestNormalization(TestCase):
         valid_mncs = [0, 542, 32767]
         invalid_mncs = [-10, -1, 32768, 93870]
 
-        valid_lacs = [0, 763, 65535]
-        invalid_lacs = [-1, -10, 65536, 987347]
+        valid_lacs = [1, 763, 65535]
+        invalid_lacs = [-1, 0, -10, 65536, 987347]
 
-        valid_cids = [0, 12345, 268435455]
-        invalid_cids = [-10, -1, 268435456, 498169872]
+        valid_cids = [1, 12345, 268435455]
+        invalid_cids = [-10, -1, 0, 268435456, 498169872]
 
         valid_pscs = [0, 120, 512]
         invalid_pscs = [-1, 513, 4456]
@@ -259,7 +268,7 @@ class TestNormalization(TestCase):
              (PARIS_LAT, PARIS_LON, FRANCE_MCC)]]
 
         invalid_latitudes = [from_degrees(x)
-                             for x in [-100.0, -90.1, 90.1, 100.0]]
+                             for x in [-100.0, -85.0511, 85.0511, 100.0]]
 
         invalid_longitudes = [from_degrees(x)
                               for x in [-190.0, -180.1, 180.1, 190]]

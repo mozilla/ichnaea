@@ -3,7 +3,6 @@ import datetime
 from sqlalchemy import (
     Column,
     Date,
-    PrimaryKeyConstraint,
     SmallInteger,
     Unicode,
     UniqueConstraint,
@@ -32,34 +31,24 @@ STAT_TYPE = {
 }
 STAT_TYPE_INVERSE = dict((v, k) for k, v in STAT_TYPE.items())
 
-MAPSTAT_TYPE = {
-    # 0 was 10m
-    # 1 was 10km
-    'location_100m': 2,
-}
-MAPSTAT_TYPE_INVERSE = dict((v, k) for k, v in MAPSTAT_TYPE.items())
-
 
 class MapStat(_Model):
     __tablename__ = 'mapstat'
     __table_args__ = (
-        PrimaryKeyConstraint('key', 'lat', 'lon'),
+        UniqueConstraint('lat', 'lon',
+                         name='mapstat_lat_lon_unique'),
         {
             'mysql_engine': 'InnoDB',
             'mysql_charset': 'utf8',
         }
     )
+    id = Column(Integer(unsigned=True),
+                primary_key=True, autoincrement=True)
+    # tracks the creation time
+    time = Column(Date)
     # lat/lon * 10000, so 12.3456 is stored as 123456
-    lat = Column(Integer, autoincrement=False)
-    lon = Column(Integer, autoincrement=False)
-    # mapped via MAPSTAT_TYPE
-    key = Column(SmallInteger, autoincrement=False)
-    value = Column(Integer(unsigned=True))
-
-    def __init__(self, *args, **kw):
-        if 'key' not in kw:
-            kw['key'] = MAPSTAT_TYPE['location_100m']
-        super(MapStat, self).__init__(*args, **kw)
+    lat = Column(Integer)
+    lon = Column(Integer)
 
 mapstat_table = MapStat.__table__
 

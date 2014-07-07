@@ -1,5 +1,5 @@
 from collections import namedtuple
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import re
 
 from colander import iso8601
@@ -43,6 +43,10 @@ RADIO_TYPE_INVERSE = dict((v, k) for k, v in RADIO_TYPE.items() if v != 2)
 RADIO_TYPE_INVERSE[2] = 'umts'
 MAX_RADIO_TYPE = max(RADIO_TYPE.values())
 MIN_RADIO_TYPE = min(RADIO_TYPE.values())
+
+# Restrict latitudes to Web Mercator projection
+MAX_LAT = 85.051
+MIN_LAT = -85.051
 
 # Accuracy on land is arbitrarily bounded to [0, 1000km],
 # past which it seems more likely we're looking at bad data.
@@ -95,8 +99,19 @@ ALL_VALID_MCCS = frozenset(
      for code in country.mcc]
 )
 
+# Time during which each temporary blacklisting (detection of station
+# movement) causes measurements to be dropped on the floor.
+TEMPORARY_BLACKLIST_DURATION = timedelta(days=7)
+
+# Number of temporary blacklistings that result in a permanent
+# blacklisting; in other words, number of times a station can
+# "legitimately" move to a new location before we permanently give
+# up trying to figure out its fixed location.
+PERMANENT_BLACKLIST_THRESHOLD = 6
+
 CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
+WifiKey = namedtuple('WifiKey', 'key')
 
 
 def from_degrees(deg):
@@ -184,7 +199,7 @@ def normalized_measure_dict(d):
     or None if the dict was invalid.
     """
     d = normalized_dict(
-        d, dict(lat=(from_degrees(-90.0), from_degrees(90.0), REQUIRED),
+        d, dict(lat=(from_degrees(MIN_LAT), from_degrees(MAX_LAT), REQUIRED),
                 lon=(from_degrees(-180.0), from_degrees(180.0), REQUIRED),
                 heading=(0.0, MAX_HEADING, -1.0),
                 speed=(0, MAX_SPEED, -1.0),
@@ -272,8 +287,8 @@ def normalized_cell_dict(d, default_radio=-1):
         d, dict(radio=(MIN_RADIO_TYPE, MAX_RADIO_TYPE, default_radio),
                 mcc=(1, 999, REQUIRED),
                 mnc=(0, 32767, REQUIRED),
-                lac=(0, 65535, -1),
-                cid=(0, 268435455, -1),
+                lac=(1, 65535, -1),
+                cid=(1, 268435455, -1),
                 psc=(0, 512, -1)))
 
     if d is None:
@@ -291,9 +306,8 @@ def normalized_cell_dict(d, default_radio=-1):
     if d['radio'] == RADIO_TYPE['cdma'] and (d['lac'] < 0 or d['cid'] < 0):
         return None
 
-    # Treat the lac=0, cid=65535 combination as unspecified values
-    if d['lac'] == 0 and d['cid'] == 65535:
-        d['lac'] = -1
+    # Treat cid=65535 without a valid lac as an unspecified value
+    if d['lac'] == -1 and d['cid'] == 65535:
         d['cid'] = -1
 
     # Must have LAC+CID or PSC
@@ -382,6 +396,19 @@ def join_cellkey(model, k):
     return criterion
 
 
+def to_wifikey(obj):
+    if isinstance(obj, dict):
+        return WifiKey(key=obj['key'])
+    elif isinstance(obj, basestring):
+        return WifiKey(key=obj)
+    else:
+        return WifiKey(key=obj.key)
+
+
+def join_wifikey(model, k):
+    return (model.key == k.key,)
+
+
 class Cell(_Model):
     __tablename__ = 'cell'
     __table_args__ = (
@@ -451,16 +478,19 @@ class CellBlacklist(_Model):
     )
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
-    created = Column(DateTime)
+    time = Column(DateTime)
     radio = Column(SmallInteger)
     mcc = Column(SmallInteger)
     mnc = Column(Integer)
     lac = Column(Integer)
     cid = Column(Integer)
+    count = Column(Integer)
 
     def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = datetime.utcnow()
+        if 'time' not in kw:
+            kw['time'] = datetime.utcnow()
+        if 'count' not in kw:
+            kw['count'] = 1
         super(CellBlacklist, self).__init__(*args, **kw)
 
 
@@ -502,7 +532,6 @@ class CellMeasure(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
     report_id = Column(BINARY(length=16))
-    measure_id = Column(BigInteger(unsigned=True))
     created = Column(DateTime)  # the insert time of the record into the DB
     # lat/lon * DEGREE_SCALE_FACTOR
     lat = Column(Integer)
@@ -591,12 +620,15 @@ class WifiBlacklist(_Model):
     )
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
-    created = Column(DateTime)
+    time = Column(DateTime)
     key = Column(String(12))
+    count = Column(Integer)
 
     def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = datetime.utcnow()
+        if 'time' not in kw:
+            kw['time'] = datetime.utcnow()
+        if 'count' not in kw:
+            kw['count'] = 1
         super(WifiBlacklist, self).__init__(*args, **kw)
 
 
@@ -615,7 +647,6 @@ class WifiMeasure(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
     report_id = Column(BINARY(length=16))
-    measure_id = Column(BigInteger(unsigned=True))
     created = Column(DateTime)  # the insert time of the record into the DB
     # lat/lon * DEGREE_SCALE_FACTOR
     lat = Column(Integer)
@@ -644,19 +675,6 @@ class WifiMeasure(_Model):
 wifi_measure_table = WifiMeasure.__table__
 
 
-class Measure(_Model):
-    __tablename__ = 'measure'
-    __table_args__ = {
-        'mysql_engine': 'InnoDB',
-        'mysql_charset': 'utf8',
-    }
-
-    id = Column(BigInteger(unsigned=True),
-                primary_key=True, autoincrement=True)
-
-measure_table = Measure.__table__
-
-
 class ApiKey(_Model):
     __tablename__ = 'api_key'
     __table_args__ = {
@@ -669,6 +687,13 @@ class ApiKey(_Model):
 
     # Maximum number of requests per day
     maxreq = Column(Integer)
+    # A readable short name used in metrics
+    shortname = Column(String(40))
+    # A contact address
+    email = Column(String(255))
+    # Some free form context / description
+    description = Column(String(255))
+
 
 api_key_table = ApiKey.__table__
 

@@ -9,6 +9,7 @@
 *.pid
 celerybeat-schedule
 coverage.xml
+ichnaea/content/static/tiles/
 data
 node_modules
 nosetests.xml
@@ -18,4 +19,5 @@ build
 dist
 include
 lib
+lib64
 man

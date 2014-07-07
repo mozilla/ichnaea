@@ -5,3 +5,4 @@ exclude private-*.ini
 
 recursive-include ichnaea *
 recursive-exclude ichnaea *.pyc *.pyo .DS_Store
+recursive-exclude ichnaea/content/static/tiles *

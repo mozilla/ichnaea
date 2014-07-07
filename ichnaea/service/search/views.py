@@ -11,8 +11,6 @@ from ichnaea.models import (
     WIFI_MIN_ACCURACY,
     CELL_MIN_ACCURACY,
     LAC_MIN_ACCURACY,
-    GEOIP_CITY_ACCURACY,
-    GEOIP_COUNTRY_ACCURACY,
     DEGREE_DECIMAL_PLACES,
 )
 from ichnaea.service.base import check_api_key
@@ -22,9 +20,10 @@ from ichnaea.service.error import (
 )
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.search.schema import SearchSchema
+from ichnaea.geoip import radius_from_geoip
 from ichnaea.geocalc import (
     distance,
-    location_is_in_country
+    location_is_in_country,
 )
 from collections import namedtuple
 import operator
@@ -303,11 +302,10 @@ def geoip_and_best_guess_country_code(data, request, api_name):
 
     if geoip:
         # GeoIP always wins if we have it.
-        if 'city' in geoip and geoip['city']:
-            accuracy = GEOIP_CITY_ACCURACY
+        accuracy, city = radius_from_geoip(geoip)
+        if city:
             heka_client.incr('%s.geoip_city_found' % api_name)
         else:
-            accuracy = GEOIP_COUNTRY_ACCURACY
             heka_client.incr('%s.geoip_country_found' % api_name)
 
         if cell_countries and geoip['country_code'] not in cell_countries:
@@ -466,12 +464,19 @@ def map_data(data):
     }
 
     if 'cellTowers' in data:
-        mapped['cell'] = [{
-            'mcc': cell['mobileCountryCode'],
-            'mnc': cell['mobileNetworkCode'],
-            'lac': cell['locationAreaCode'],
-            'cid': cell['cellId'],
-        } for cell in data['cellTowers']]
+        for cell in data['cellTowers']:
+            new_cell = {
+                'mcc': cell['mobileCountryCode'],
+                'mnc': cell['mobileNetworkCode'],
+                'lac': cell['locationAreaCode'],
+                'cid': cell['cellId'],
+            }
+            # If a radio field is populated in any one of the cells in
+            # cellTowers, this is a buggy geolocate call from FirefoxOS.
+            # Just pass on the radio field, as long as it's non-empty.
+            if 'radio' in cell and cell['radio'] != '':
+                new_cell['radio'] = cell['radio']
+            mapped['cell'].append(new_cell)
 
     if 'wifiAccessPoints' in data:
         mapped['wifi'] = [{

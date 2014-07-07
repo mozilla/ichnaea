@@ -432,6 +432,12 @@ database tables. Along the way several counters measure the steps involved:
     cell or wifi that already has "too many" recent measurements are
     discarded, and only the newest measurements are discarded.
 
+``items.dropped.cell_ingress_blacklisted``, ``items.dropped.wifi_ingress_blacklisted`` : counters
+
+    Count incoming cell or wifi measurements that were discarded before
+    integration due to the presence of a blacklist record for the station
+    (see next metric).
+
 ``items.blacklisted.cell_moving``, ``items.blacklisted.wifi_moving`` : counters
 
     Count any cell or wifi that is blacklisted due to the acceptance of
@@ -531,3 +537,27 @@ system:
   - ``task.update_lac``
   - ``task.wifi_location_update``
   - ``task.wifi_unthrottle_measures``
+
+
+Datamaps timers
+---------------
+
+Ichnaea includes a script to generate a data map from the gathered map
+statistics. This script includes a number of timers and pseudo-timers
+to monitor its operation.
+
+This includes timers to track the individual steps of the generation process:
+
+  - ``datamaps.export_to_csv``
+  - ``datamaps.encode``
+  - ``datamaps.render``
+  - ``datamaps.upload_to_s3``
+
+And pseudo-timers to track the number of rows, image tiles and S3 operations:
+
+  - ``datamaps.csv_rows``
+  - ``datamaps.s3_list``
+  - ``datamaps.s3_put``
+  - ``datamaps.tile_new``
+  - ``datamaps.tile_changed``
+  - ``datamaps.tile_unchanged``

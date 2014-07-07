@@ -6,6 +6,7 @@ from kombu.serialization import (
     dumps as kombu_dumps,
     loads as kombu_loads,
 )
+import pytz
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 
@@ -25,7 +26,9 @@ from ichnaea.models import (
     WifiMeasure,
     from_degrees,
     join_cellkey,
+    join_wifikey,
     to_cellkey,
+    to_wifikey,
     to_degrees,
 )
 from ichnaea.worker import celery
@@ -101,7 +104,7 @@ def daily_task_days(ago):
 
 @celery.task(base=DatabaseTask, bind=True)
 def remove_wifi(self, wifi_keys):
-    wifi_keys = set(wifi_keys)
+    wifi_keys = set([w['key'] for w in wifi_keys])
     try:
         with self.db_session() as session:
             query = session.query(Wifi).filter(
@@ -244,7 +247,7 @@ def calculate_new_position(station, measures, moving_stations,
 
 
 def update_enclosing_lac(session, cell):
-    now = datetime.utcnow()
+    now = datetime.utcnow().replace(tzinfo=pytz.UTC)
     stmt = Cell.__table__.insert(
         on_duplicate='new_measures = new_measures + 1'
     ).values(
@@ -286,7 +289,7 @@ def backfill_cell_location_update(self, new_cell_measures):
 
                 if moving_cells:
                     # some cells found to be moving too much
-                    mark_moving_cells(session, moving_cells)
+                    blacklist_and_remove_moving_cells(session, moving_cells)
 
             session.commit()
         return (len(cells), len(moving_cells))
@@ -299,7 +302,6 @@ def backfill_cell_location_update(self, new_cell_measures):
 
 @celery.task(base=DatabaseTask, bind=True)
 def cell_location_update(self, min_new=10, max_new=100, batch=10):
-
     try:
         cells = []
         with self.db_session() as session:
@@ -335,7 +337,7 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
 
             if moving_cells:
                 # some cells found to be moving too much
-                mark_moving_cells(session, moving_cells)
+                blacklist_and_remove_moving_cells(session, moving_cells)
 
             session.commit()
 
@@ -347,49 +349,53 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
         raise self.retry(exc=exc)
 
 
-def mark_moving_wifis(session, moving_wifis):
-    moving_keys = set([wifi.key for wifi in moving_wifis])
-    utcnow = datetime.utcnow()
-    query = session.query(WifiBlacklist.key).filter(
-        WifiBlacklist.key.in_(moving_keys))
-    already_blocked = set([a[0] for a in query.all()])
-    moving_keys = moving_keys - already_blocked
-    if not moving_keys:
-        return
-    for key in moving_keys:
-        # on duplicate key, do a no-op change
-        stmt = WifiBlacklist.__table__.insert(
-            on_duplicate='created=created').values(
-            key=key, created=utcnow)
-        session.execute(stmt)
-    get_heka_client().incr("items.blacklisted.wifi_moving",
-                           len(moving_keys))
-    remove_wifi.delay(list(moving_keys))
-
-
-def mark_moving_cells(session, moving_cells):
+def blacklist_and_remove_moving_stations(session, blacklist_model,
+                                         station_type, to_key, join_key,
+                                         moving_stations, remove_station):
     moving_keys = []
-    blacklist = set()
-    for cell in moving_cells:
-        query = session.query(CellBlacklist).filter(
-            *join_cellkey(CellBlacklist, cell))
+    utcnow = datetime.utcnow().replace(tzinfo=pytz.UTC)
+    for station in moving_stations:
+        key = to_key(station)
+        query = session.query(blacklist_model).filter(
+            *join_key(blacklist_model, key))
         b = query.first()
-        if b is None:
-            key = to_cellkey(cell)._asdict()
-            blacklist.add(CellBlacklist(**key))
-            moving_keys.append(key)
+        d = key._asdict()
+        moving_keys.append(d)
+        if b:
+            b.time = utcnow
+            b.count += 1
+        else:
+            b = blacklist_model(**d)
+            session.add(b)
 
-    get_heka_client().incr("items.blacklisted.cell_moving",
-                           len(moving_keys))
-    session.add_all(blacklist)
-    remove_cell.delay(moving_keys)
+    if moving_keys:
+        get_heka_client().incr("items.blacklisted.%s_moving" % station_type,
+                               len(moving_keys))
+        remove_station.delay(moving_keys)
+
+
+def blacklist_and_remove_moving_wifis(session, moving_wifis):
+    blacklist_and_remove_moving_stations(session,
+                                         blacklist_model=WifiBlacklist,
+                                         station_type="wifi",
+                                         to_key=to_wifikey,
+                                         join_key=join_wifikey,
+                                         moving_stations=moving_wifis,
+                                         remove_station=remove_wifi)
+
+
+def blacklist_and_remove_moving_cells(session, moving_cells):
+    blacklist_and_remove_moving_stations(session,
+                                         blacklist_model=CellBlacklist,
+                                         station_type="cell",
+                                         to_key=to_cellkey,
+                                         join_key=join_cellkey,
+                                         moving_stations=moving_cells,
+                                         remove_station=remove_cell)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def wifi_location_update(self, min_new=10, max_new=100, batch=10):
-    # TODO: this doesn't take into account wifi AP's which have
-    # permanently moved after a certain date
-
     try:
         wifis = {}
         with self.db_session() as session:
@@ -413,7 +419,7 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
 
             if moving_wifis:
                 # some wifis found to be moving too much
-                mark_moving_wifis(session, moving_wifis)
+                blacklist_and_remove_moving_wifis(session, moving_wifis)
 
             session.commit()
         return (len(wifis), len(moving_wifis))
