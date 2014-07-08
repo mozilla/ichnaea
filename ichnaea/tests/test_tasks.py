@@ -56,11 +56,11 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual([c.new_measures for c in cells], [0, 0])
         for cell in cells:
             if cell.cid == 4:
-                self.assertEqual(cell.lat, 10020000)
-                self.assertEqual(cell.lon, 10030000)
+                self.assertEqual(cell.lat, 1.0020000)
+                self.assertEqual(cell.lon, 1.0030000)
             elif cell.cid == 8:
-                self.assertEqual(cell.lat, 20010000)
-                self.assertEqual(cell.lon, 20020000)
+                self.assertEqual(cell.lat, 2.0010000)
+                self.assertEqual(cell.lon, 2.0020000)
 
     def test_backfill_cell_location_update(self):
         from ichnaea.tasks import backfill_cell_location_update
@@ -87,8 +87,8 @@ class TestCellLocationUpdate(CeleryTestCase):
         cells = session.query(Cell).filter(Cell.cid != CELLID_LAC).all()
         self.assertEqual(len(cells), 1)
         cell = cells[0]
-        self.assertEqual(cell.lat, 10020000)
-        self.assertEqual(cell.lon, 10030000)
+        self.assertEqual(cell.lat, 1.0020000)
+        self.assertEqual(cell.lon, 1.0030000)
         self.assertEqual(cell.new_measures, 0)
         self.assertEqual(cell.total_measures, 3)
 
@@ -114,12 +114,12 @@ class TestCellLocationUpdate(CeleryTestCase):
         cells = session.query(Cell).filter(Cell.cid != CELLID_LAC).all()
         self.assertEqual(len(cells), 1)
         cell = cells[0]
-        self.assertEqual(cell.lat, 10020000)
-        self.assertEqual(cell.max_lat, 10050000)
-        self.assertEqual(cell.min_lat, 10000000)
-        self.assertEqual(cell.lon, -10030000)
-        self.assertEqual(cell.max_lon, -10000000)
-        self.assertEqual(cell.min_lon, -10070000)
+        self.assertEqual(cell.lat, 1.0020000)
+        self.assertEqual(cell.max_lat, 1.0050000)
+        self.assertEqual(cell.min_lat, 1.0000000)
+        self.assertEqual(cell.lon, -1.0030000)
+        self.assertEqual(cell.max_lon, -1.0000000)
+        self.assertEqual(cell.min_lon, -1.0070000)
 
         # independent calculation: the cell bounding box is
         # (1.000, -1.007) to (1.005, -1.000), with centroid
@@ -250,8 +250,8 @@ class TestCellLocationUpdate(CeleryTestCase):
         # and the upper-right corner is at (9.1, 9.1)
         # we should therefore see a LAC centroid at (4.5, 4.5)
         # with a range of 723,001m
-        self.assertEqual(lac.lat, 45000000)
-        self.assertEqual(lac.lon, 45000000)
+        self.assertEqual(lac.lat, 4.5000000)
+        self.assertEqual(lac.lon, 4.5000000)
         self.assertEqual(lac.range, 723001)
         self.assertEqual(lac.created.date(), datetime.utcnow().date())
         self.assertEqual(lac.new_measures, 0)
@@ -341,8 +341,8 @@ class TestCellLocationUpdate(CeleryTestCase):
         # and the upper-right corner is at (3.21, 3.21)
         # we should therefore see a LAC centroid at (1.05, 1.05)
         # with a range of 339.540m
-        self.assertEqual(lac.lat, 10500000)
-        self.assertEqual(lac.lon, 10500000)
+        self.assertEqual(lac.lat, 1.0500000)
+        self.assertEqual(lac.lon, 1.0500000)
         self.assertEqual(lac.range, 339540)
 
     def test_cell_removal_updates_lac(self):
@@ -359,8 +359,8 @@ class TestCellLocationUpdate(CeleryTestCase):
             Cell.lac == 1,
             Cell.cid == CELLID_LAC).first()
 
-        self.assertEqual(lac.lat, 45000000)
-        self.assertEqual(lac.lon, 45000000)
+        self.assertEqual(lac.lat, 4.5000000)
+        self.assertEqual(lac.lon, 4.5000000)
         self.assertEqual(lac.range, 723001)
 
         # Remove cells one by one checking that the LAC
@@ -435,12 +435,12 @@ class TestWifiLocationUpdate(CeleryTestCase):
         wifis = dict(session.query(Wifi.key, Wifi).all())
         self.assertEqual(set(wifis.keys()), set([k1, k2]))
 
-        self.assertEqual(wifis[k1].lat, 10020000)
-        self.assertEqual(wifis[k1].lon, 10030000)
+        self.assertEqual(wifis[k1].lat, 1.0020000)
+        self.assertEqual(wifis[k1].lon, 1.0030000)
         self.assertEqual(wifis[k1].new_measures, 0)
 
-        self.assertEqual(wifis[k2].lat, 20010000)
-        self.assertEqual(wifis[k2].lon, 20020000)
+        self.assertEqual(wifis[k2].lat, 2.0010000)
+        self.assertEqual(wifis[k2].lon, 2.0020000)
         self.assertEqual(wifis[k2].new_measures, 0)
 
     def test_wifi_max_min_range_update(self):
@@ -468,19 +468,19 @@ class TestWifiLocationUpdate(CeleryTestCase):
         wifis = dict(session.query(Wifi.key, Wifi).all())
         self.assertEqual(set(wifis.keys()), set([k1, k2]))
 
-        self.assertEqual(wifis[k1].lat, 10010000)
-        self.assertEqual(wifis[k1].max_lat, 10020000)
-        self.assertEqual(wifis[k1].min_lat, 10000000)
-        self.assertEqual(wifis[k1].lon, 10020000)
-        self.assertEqual(wifis[k1].max_lon, 10040000)
-        self.assertEqual(wifis[k1].min_lon, 10000000)
+        self.assertEqual(wifis[k1].lat, 1.0010000)
+        self.assertEqual(wifis[k1].max_lat, 1.0020000)
+        self.assertEqual(wifis[k1].min_lat, 1.0000000)
+        self.assertEqual(wifis[k1].lon, 1.0020000)
+        self.assertEqual(wifis[k1].max_lon, 1.0040000)
+        self.assertEqual(wifis[k1].min_lon, 1.0000000)
 
-        self.assertEqual(wifis[k2].lat, 20000000)
-        self.assertEqual(wifis[k2].max_lat, 20020000)
-        self.assertEqual(wifis[k2].min_lat, 19980000)
-        self.assertEqual(wifis[k2].lon, -20000000)
-        self.assertEqual(wifis[k2].max_lon, -19960000)
-        self.assertEqual(wifis[k2].min_lon, -20040000)
+        self.assertEqual(wifis[k2].lat, 2.0000000)
+        self.assertEqual(wifis[k2].max_lat, 2.0020000)
+        self.assertEqual(wifis[k2].min_lat, 1.9980000)
+        self.assertEqual(wifis[k2].lon, -2.0000000)
+        self.assertEqual(wifis[k2].max_lon, -1.9960000)
+        self.assertEqual(wifis[k2].min_lon, -2.0040000)
 
         # independent calculation: the k1 bounding box is
         # (1.000, 1.000) to (1.002, 1.004), with centroid
@@ -574,8 +574,8 @@ class TestWifiLocationUpdate(CeleryTestCase):
         session = self.db_master_session
         measures = []
         wifi_keys = [{'key': "a%s1234567890" % i} for i in range(5)]
-        m1 = 10000000
-        m2 = 10000000
+        m1 = 1.0000000
+        m2 = 1.0000000
         for key in wifi_keys:
             key = key['key']
             measures.append(Wifi(key=key))

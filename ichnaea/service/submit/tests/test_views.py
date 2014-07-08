@@ -160,8 +160,8 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(report_id), 16)
         self.assertEqual(item.created.date(), today)
         self.assertEqual(item.time, month_rounded_dt)
-        self.assertEqual(item.lat, 123456781)
-        self.assertEqual(item.lon, 234567892)
+        self.assertEqual(item.lat, 12.3456781)
+        self.assertEqual(item.lon, 23.4567892)
         self.assertEqual(item.accuracy, 17)
         self.assertEqual(item.altitude, 0)
         self.assertEqual(item.altitude_accuracy, 0)
@@ -172,8 +172,8 @@ class TestSubmit(CeleryAppTestCase):
         item = wifi_result[1]
         self.assertEqual(item.report_id, report_id)
         self.assertEqual(item.created.date(), today)
-        self.assertEqual(item.lat, 123456781)
-        self.assertEqual(item.lon, 234567892)
+        self.assertEqual(item.lat, 12.3456781)
+        self.assertEqual(item.lon, 23.4567892)
 
     def test_ok_wifi_frequency(self):
         app = self.app
