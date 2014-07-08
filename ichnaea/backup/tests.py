@@ -41,11 +41,10 @@ def mock_s3():
 class TestBackup(CeleryTestCase):
 
     def test_backup(self):
-        prefix = 'backups/tests'
         with mock_s3() as mock_key:
-            s3 = S3Backend('localhost.bucket', prefix, self.heka_client)
+            s3 = S3Backend('localhost.bucket', self.heka_client)
             s3.backup_archive('some_key', '/tmp/not_a_real_file.zip')
-            self.assertEquals(mock_key.key, '/'.join([prefix, 'some_key']))
+            self.assertEquals(mock_key.key, 'backups/some_key')
             method = mock_key.set_contents_from_filename
             self.assertEquals(method.call_args[0][0],
                               '/tmp/not_a_real_file.zip')

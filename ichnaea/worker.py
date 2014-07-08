@@ -146,7 +146,6 @@ def configure_s3_backup(app, settings=None):
     # called manually during tests
     app.s3_settings = {
         'backup_bucket': settings['s3_backup_bucket'],
-        'backup_prefix': settings['s3_backup_prefix'],
     }
 
 

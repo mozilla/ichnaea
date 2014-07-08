@@ -136,7 +136,6 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
 
         s3_backend = S3Backend(
             self.app.s3_settings['backup_bucket'],
-            self.app.s3_settings['backup_prefix'],
             self.heka_client)
 
         utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
@@ -291,7 +290,6 @@ def delete_measure_records(self,
 @celery.task(base=DatabaseTask, bind=True)
 def dispatch_delete(self, block_id):
     s3_backend = S3Backend(self.app.s3_settings['backup_bucket'],
-                           self.app.s3_settings['backup_prefix'],
                            self.heka_client)
     utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
     with self.db_session() as session:

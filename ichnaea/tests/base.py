@@ -190,7 +190,6 @@ class CeleryIsolation(object):
         attach_database(celery, _db_master=cls.db_master)
         configure_s3_backup(celery, settings={
             's3_backup_bucket': 'localhost.bucket',
-            's3_backup_prefix': 'backups/tests',
         })
 
     @classmethod

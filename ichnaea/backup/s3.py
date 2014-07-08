@@ -18,10 +18,9 @@ def compute_hash(zip_path):
 
 class S3Backend(object):
 
-    def __init__(self, backup_bucket, backup_prefix, heka_client):
+    def __init__(self, backup_bucket, heka_client):
         self.heka_client = heka_client
         self.backup_bucket = backup_bucket
-        self.backup_prefix = backup_prefix
 
     def check_archive(self, expected_sha, s3_key):
         short_fname = os.path.split(s3_key)[-1]
@@ -33,7 +32,7 @@ class S3Backend(object):
             conn = boto.connect_s3()
             bucket = conn.get_bucket(self.backup_bucket, validate=False)
             k = boto.s3.key.Key(bucket)
-            k.key = ''.join([self.backup_prefix, '/', s3_key])
+            k.key = 'backups/' + s3_key
             k.get_contents_to_filename(s3_copy)
 
             # Compare
@@ -54,7 +53,7 @@ class S3Backend(object):
             conn = boto.connect_s3()
             bucket = conn.get_bucket(self.backup_bucket)
             k = boto.s3.key.Key(bucket)
-            k.key = ''.join([self.backup_prefix, '/', s3_key])
+            k.key = 'backups/' + s3_key
             k.set_contents_from_filename(fname)
             return True
         except Exception:
