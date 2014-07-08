@@ -334,6 +334,16 @@ def normalized_cell_measure_dict(d, measure_radio=-1):
                     for c in mobile_codes.mcc(str(d['mcc']))]):
             d = None
 
+    if d is None:
+        return None
+
+    if 'asu' in d and 'signal' in d:
+        # some clients send us a dBm value in the asu field, move it
+        # over to the signal field before hitting validation
+        if d['asu'] < -1 and d['signal'] == 0:
+            d['signal'] = d['asu']
+            d['asu'] = -1
+
     return normalized_dict(
         d, dict(asu=(0, 31, -1),
                 signal=(-200, -1, 0),

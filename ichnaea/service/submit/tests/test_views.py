@@ -109,6 +109,29 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(item.report_id), 16)
         self.assertEqual(item.radio, RADIO_TYPE['gsm'])
 
+    def test_ok_cell_asu(self):
+        app = self.app
+        key = {'radio': 'gsm', "mcc": FRANCE_MCC, "mnc": 1, "lac": 2}
+        cell_data = [
+            dict(asu=5, cid=3, **key),
+            dict(signal=-90, cid=4, **key),
+            dict(asu=-95, cid=5, **key),
+            dict(asu=-70, signal=-80, cid=6, **key),
+        ]
+        res = app.post_json(
+            '/v1/submit', {"items": [{"lat": PARIS_LAT,
+                                      "lon": PARIS_LON,
+                                      "cell": cell_data}]},
+            status=204)
+        self.assertEqual(res.body, '')
+        session = self.db_master_session
+        cell_result = session.query(CellMeasure).all()
+        self.assertEqual(len(cell_result), 4)
+        self.assertEqual(set([c.cid for c in cell_result]), set([3, 4, 5, 6]))
+        self.assertEqual(set([c.asu for c in cell_result]), set([-1, 5]))
+        signals = set([c.signal for c in cell_result])
+        self.assertEqual(signals, set([0, -80, -90, -95]))
+
     def test_ok_wifi(self):
         app = self.app
         today = datetime.utcnow().date()
