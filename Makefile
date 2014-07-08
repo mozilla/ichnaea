@@ -66,7 +66,7 @@ start_ichnaea:
 	ICHNAEA_CFG=integration_tests/ichnaea.ini ./run_server.sh
 
 automate_vaurien:
-	SQLURI=$(SQLURI) nosetests -sv integration_tests/test_integration.py:TestSearch.test_mysql_dummy
+	SQLURI=$(SQLURI) nosetests -sv integration_tests/test_integration.py
 
 build: $(PYTHON) mysql
 	$(INSTALL) -r requirements/prod.txt
