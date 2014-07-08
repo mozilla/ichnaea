@@ -431,13 +431,13 @@ class Cell(_Model):
     created = Column(DateTime)
 
     # lat/lon
-    lat = Column(Double)
-    max_lat = Column(Double)
-    min_lat = Column(Double)
+    lat = Column(Double(asdecimal=False))
+    max_lat = Column(Double(asdecimal=False))
+    min_lat = Column(Double(asdecimal=False))
 
-    lon = Column(Double)
-    max_lon = Column(Double)
-    min_lon = Column(Double)
+    lon = Column(Double(asdecimal=False))
+    max_lon = Column(Double(asdecimal=False))
+    min_lon = Column(Double(asdecimal=False))
 
     # mapped via RADIO_TYPE
     radio = Column(SmallInteger)
@@ -537,8 +537,8 @@ class CellMeasure(_Model):
     report_id = Column(BINARY(length=16))
     created = Column(DateTime)  # the insert time of the record into the DB
     # lat/lon
-    lat = Column(Double)
-    lon = Column(Double)
+    lat = Column(Double(asdecimal=False))
+    lon = Column(Double(asdecimal=False))
     time = Column(DateTime)  # the time of observation of this data
     accuracy = Column(Integer)
     altitude = Column(Integer)
@@ -588,13 +588,13 @@ class Wifi(_Model):
     key = Column(String(12))
 
     # lat/lon
-    lat = Column(Double)
-    max_lat = Column(Double)
-    min_lat = Column(Double)
+    lat = Column(Double(asdecimal=False))
+    max_lat = Column(Double(asdecimal=False))
+    min_lat = Column(Double(asdecimal=False))
 
-    lon = Column(Double)
-    max_lon = Column(Double)
-    min_lon = Column(Double)
+    lon = Column(Double(asdecimal=False))
+    max_lon = Column(Double(asdecimal=False))
+    min_lon = Column(Double(asdecimal=False))
 
     range = Column(Integer)
     new_measures = Column(Integer(unsigned=True))
@@ -652,8 +652,8 @@ class WifiMeasure(_Model):
     report_id = Column(BINARY(length=16))
     created = Column(DateTime)  # the insert time of the record into the DB
     # lat/lon
-    lat = Column(Double)
-    lon = Column(Double)
+    lat = Column(Double(asdecimal=False))
+    lon = Column(Double(asdecimal=False))
     time = Column(DateTime)  # the time of observation of this data
     accuracy = Column(Integer)
     altitude = Column(Integer)
