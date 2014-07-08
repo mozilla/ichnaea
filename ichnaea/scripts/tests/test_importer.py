@@ -42,8 +42,8 @@ class TestLoadFile(CeleryTestCase):
         measures = session.query(WifiMeasure).all()
         self.assertEqual(len(measures), 1)
         measure = measures[0]
-        self.assertEqual(measure.lat, 37.8719300)
-        self.assertEqual(measure.lon, -122.2731560)
+        self.assertEqual(float(measure.lat), 37.8719300)
+        self.assertEqual(float(measure.lon), -122.2731560)
         self.assertEqual(measure.key, 'dc4517758f80')
         self.assertEqual(measure.channel, 11)
         self.assertEqual(measure.signal, -16)
@@ -80,7 +80,7 @@ class TestLoadFile(CeleryTestCase):
             scores, {'new_wifi': 1, 'location': 3})
         mapstats = session.query(MapStat).all()
         mapstats = [(m.lat, m.lon) for m in mapstats]
-        self.assertEqual(mapstats, [(37871, -122274)])
+        self.assertEqual(mapstats, [(37.871, -122.274)])
 
     def test_corrupt_lines(self):
         func, tmpfile = self._make_one()
