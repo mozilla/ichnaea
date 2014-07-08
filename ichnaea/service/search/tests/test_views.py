@@ -364,9 +364,10 @@ class TestSearch(AppTestCase):
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
             Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
-            Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
-            Cell(lat=lat + 60000, lon=lon + 60000, radio=2, cid=6, **key),
-            Cell(lat=lat + 26666, lon=lon + 33333, radio=2, cid=CELLID_LAC,
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=2, cid=5, **key),
+            Cell(lat=lat + 0.006, lon=lon + 0.006, radio=2, cid=6, **key),
+            Cell(lat=lat + 0.0026666,
+                 lon=lon + 0.0033333, radio=2, cid=CELLID_LAC,
                  range=50000, **key),
         ]
         session.add_all(data)
@@ -380,8 +381,8 @@ class TestSearch(AppTestCase):
             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": PARIS_LAT + 0.0020000,
-                                    "lon": PARIS_LON + 0.0040000,
+                                    "lat": PARIS_LAT + 0.002,
+                                    "lon": PARIS_LON + 0.004,
                                     "accuracy": CELL_MIN_ACCURACY})
 
     def test_lac_miss(self):
@@ -420,9 +421,9 @@ class TestSearch(AppTestCase):
 
         data = [
             Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
-            Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=2, cid=5, **key),
             Cell(lat=lat, lon=lon, radio=2, **ignored_key),
-            Cell(lat=lat + 20000, lon=lon + 40000, radio=3, **ignored_key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=3, **ignored_key),
         ]
         session.add_all(data)
         session.commit()
@@ -439,8 +440,8 @@ class TestSearch(AppTestCase):
             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": PARIS_LAT + 0.0010000,
-                                    "lon": PARIS_LON + 0.0020000,
+                                    "lat": PARIS_LAT + 0.001,
+                                    "lon": PARIS_LON + 0.002,
                                     "accuracy": CELL_MIN_ACCURACY})
 
     def test_geoip_fallback(self):
