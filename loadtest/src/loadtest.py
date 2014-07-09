@@ -27,6 +27,14 @@ AP_FILE = os.path.join('src', 'ap.json')
 HOST = 'https://' + cfg.get('loadtest', 'WEBAPP_HOST')
 
 TESTING_AP_SUBSET = TESTING_CELL_SUBSET = 10000
+MCC_US = 310
+FACTOR = 10 ** 7
+BBOX_US = {
+    'min_lon': int(-124.7 * FACTOR),
+    'min_lat': int(24.5 * FACTOR),
+    'max_lon': int(-66.9 * FACTOR),
+    'max_lat': int(49.3 * FACTOR),
+}
 
 
 def rand_bytes(length):
@@ -49,15 +57,14 @@ def random_cell():
     # don't test cdma, as that would complicate setting up the
     # top-level radio field in the JSON dicts
     for radio in (0, 2, 3):
-        for mcc in range(1, 5):
-            for mnc in range(1, 5):
-                for cid in range(1, 20000):
-                    for lac in range(1, 5):
-                        yield {'cid': cid,
-                               'mnc': mnc,
-                               'lac': lac,
-                               'mcc': mcc,
-                               'radio': radio}
+        for mnc in range(1, 20):
+            for cid in range(1, 20000):
+                for lac in range(1, 25):
+                    yield {'cid': cid,
+                           'mnc': mnc,
+                           'lac': lac,
+                           'mcc': MCC_US,
+                           'radio': radio}
 
 
 def generate_data():
@@ -67,12 +74,14 @@ def generate_data():
         cell_gen = random_cell()
         wifi_gen = random_ap()
         for i in range(TESTING_CELL_SUBSET):
-            lat = random.randint(-900000000, 900000000) / ((10 ** 7) * 1.0)
-            lon = random.randint(-900000000, 900000000) / ((10 ** 7) * 1.0)
+            lat = random.randint(BBOX_US['min_lat'], BBOX_US['max_lat'])
+            lat = float(lat) / FACTOR
+            lon = random.randint(BBOX_US['min_lon'], BBOX_US['max_lon'])
+            lon = float(lon) / FACTOR
             tower_data[(lat, lon)] = []
             ap_data[(lat, lon)] = []
 
-            for x in range(random.randint(1, 20)):
+            for x in range(random.randint(1, 5)):
                 rcell = cell_gen.next()
                 data = {"radio": rcell['radio'],
                         "mcc": rcell['mcc'],
