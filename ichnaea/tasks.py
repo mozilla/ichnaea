@@ -167,8 +167,8 @@ def calculate_new_position(station, measures, moving_stations,
     length = len(measures)
     latitudes = [w[0] for w in measures]
     longitudes = [w[1] for w in measures]
-    new_lat = sum(latitudes) // length
-    new_lon = sum(longitudes) // length
+    new_lat = sum(latitudes) / length
+    new_lon = sum(longitudes) / length
 
     if station.lat and station.lon:
         latitudes.append(station.lat)
@@ -218,9 +218,9 @@ def calculate_new_position(station, measures, moving_stations,
             old_length = new_total - length
 
         station.lat = ((station.lat * old_length) +
-                       (new_lat * length)) // new_total
+                       (new_lat * length)) / new_total
         station.lon = ((station.lon * old_length) +
-                       (new_lon * length)) // new_total
+                       (new_lon * length)) / new_total
 
     if not backfill:
         # decrease new counter, total is already correct
