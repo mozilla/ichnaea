@@ -22,12 +22,11 @@ from ichnaea import geocalc
 from ichnaea.db import _Model
 from ichnaea.sa_types import TZDateTime as DateTime
 
-# Latitudes and longitudes are stored as degrees * 10**7,
-# or equivalently: as an integer count of 1E-7ths of a degree.
-# This is done so that we can treat them with integer types;
-# 1E-7 degrees =~ 1.1cm, so that is our spatial resolution.
+# We return position and accuracy values rounded to 7 decimal places,
+# mostly to make the resulting JSON look prettier.  1E-7 degrees =~ 1.1cm
+# at the equator, so clients of our external APIs will see that as our
+# spatial resolution.
 DEGREE_DECIMAL_PLACES = 7
-DEGREE_SCALE_FACTOR = 10 ** DEGREE_DECIMAL_PLACES
 
 RADIO_TYPE = {
     '': -1,
