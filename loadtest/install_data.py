@@ -1,5 +1,7 @@
-import json
 import os
+
+import simplejson as json
+
 from ichnaea.db import Database
 from ichnaea.models import (
     Cell,
@@ -39,8 +41,9 @@ class DBFixture(object):
                             lon=lon * (10 ** 7))
                 data.append(wifi)
             session.add_all(data)
-            session.commit()
+            session.flush()
             data = []
+        session.commit()
 
     def install_cell_towers(self):
         self.db_master_session.execute(Cell.__table__.delete())
@@ -61,8 +64,9 @@ class DBFixture(object):
                                  mnc=cell_data['mnc'],
                                  lac=cell_data['lac']))
             session.add_all(data)
-            session.commit()
+            session.flush()
             data = []
+        session.commit()
 
 
 if __name__ == '__main__':
