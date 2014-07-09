@@ -665,13 +665,13 @@ class TestSubmitErrors(CeleryTestCase):
         session.execute(stmt)
 
         entries = [
-            {"lat": 10000000, "lon": 20000000,
+            {"lat": 1.0000000, "lon": 2.0000000,
              "key": "ab:12:34:56:78:90", "channel": 11},
-            {"lat": 10000000, "lon": 20000000,
+            {"lat": 1.0000000, "lon": 2.0000000,
              "key": "ab:12:34:56:78:90", "channel": 3},
-            {"lat": 10000000, "lon": 20000000,
+            {"lat": 1.0000000, "lon": 2.0000000,
              "key": "ab:12:34:56:78:90", "channel": 3},
-            {"lat": 10000000, "lon": 20000000,
+            {"lat": 1.0000000, "lon": 2.0000000,
              "key": "cd:12:34:56:78:90", "channel": 3},
         ]
 

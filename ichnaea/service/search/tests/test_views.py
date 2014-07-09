@@ -43,7 +43,7 @@ class TestSearch(AppTestCase):
         lon = PARIS_LON
         data = [
             Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
-            Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=2, cid=5, **key),
         ]
         session.add_all(data)
         session.commit()
@@ -307,7 +307,7 @@ class TestSearch(AppTestCase):
         data = [
             Wifi(key="abcd", lat=3, lon=3),
             Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
-            Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=2, cid=5, **key),
         ]
         session.add_all(data)
         session.commit()
@@ -336,9 +336,10 @@ class TestSearch(AppTestCase):
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
             Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
-            Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
-            Cell(lat=lat + 60000, lon=lon + 60000, radio=2, cid=6, **key),
-            Cell(lat=lat + 26666, lon=lon + 33333, radio=2, cid=CELLID_LAC,
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=2, cid=5, **key),
+            Cell(lat=lat + 0.006, lon=lon + 0.006, radio=2, cid=6, **key),
+            Cell(lat=lat + 0.0026666, lon=lon + 0.0033333,
+                 radio=2, cid=CELLID_LAC,
                  range=500000, **key),
         ]
         session.add_all(data)
