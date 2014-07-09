@@ -14,18 +14,12 @@ from src.loadtest import (
 )
 
 SQLURI = os.environ.get('SQLURI')
-SQLSOCKET = os.environ.get('SQLSOCKET')
-
-
-def _make_db(create=True):
-    return Database(SQLURI, socket=SQLSOCKET, create=create)
 
 
 class DBFixture(object):
 
     def __init__(self):
-        self.db_master = _make_db(False)
-
+        self.db_master = Database(SQLURI)
         master_conn = self.db_master.engine.connect()
         self.master_trans = master_conn.begin()
         self.db_master_session = self.db_master.session()

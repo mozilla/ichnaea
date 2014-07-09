@@ -2,16 +2,15 @@ MYSQL_TEST_DB = location
 MYSQL_USER ?= location
 MYSQL_PWD ?= location
 SQLURI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@$(MYSQL_HOST)/$(MYSQL_TEST_DB)
-SQLSOCKET ?= /opt/local/var/run/mysql56/mysqld.sock
 
 install_fixtures:
-	SQLURI=$(SQLURI) SQLSOCKET=$(SQLSOCKET) python install_data.py
+	SQLURI=$(SQLURI) python install_data.py
 
 ipython:
-	SQLURI=$(SQLURI) SQLSOCKET=$(SQLSOCKET) ipython
+	SQLURI=$(SQLURI) ipython
 
 mysql:
-	mysql -u location --password=location -h $(MYSQL_HOST)
+	mysql -u$(MYSQL_USER) --password=$(MYSQL_PWD) -h $(MYSQL_HOST) $(MYSQL_TEST_DB)
 
 submit_cell:
 	loads-runner --config submit_cell.ini
