@@ -40,12 +40,15 @@ from ichnaea.worker import celery
 
 
 def process_mapstat(session, utcnow, positions):
-    factor = 10000  # 100x100 m tiles
+    # Scale from floating point degrees to integer counts of thousandths of
+    # a degree; 1/1000 degree is about 110m at the equator.
+    factor = 1000
     today = utcnow.date()
     tiles = {}
     # aggregate to tiles, according to factor
     for position in positions:
-        tiles[(position['lat'] / factor, position['lon'] / factor)] = True
+        tiles[(int(position['lat'] * factor),
+               int(position['lon'] * factor))] = True
     query = session.query(MapStat.lat, MapStat.lon)
     # dynamically construct a (lat, lon) in (list of tuples) filter
     # as MySQL isn't able to use indexes on such in queries
