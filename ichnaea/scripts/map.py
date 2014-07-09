@@ -12,7 +12,10 @@ from sqlalchemy import text
 
 from ichnaea.config import read_config
 from ichnaea.db import Database
-from ichnaea.heka_logging import configure_heka
+from ichnaea.heka_logging import (
+    configure_heka,
+    RAVEN_ERROR,
+)
 
 IMAGE_HEADERS = {
     'Content-Type': 'image/png',
@@ -235,11 +238,16 @@ def main(argv, _db_master=None, _heka_client=None):
         if args.output:
             output = os.path.abspath(args.output)
 
-        generate(db, bucketname, heka_client,
-                 upload=upload,
-                 concurrency=concurrency,
-                 datamaps=datamaps,
-                 output=output)
+        try:
+            with heka_client.timer("datamaps.total_time"):
+                generate(db, bucketname, heka_client,
+                         upload=upload,
+                         concurrency=concurrency,
+                         datamaps=datamaps,
+                         output=output)
+        except Exception:
+            heka_client.raven(RAVEN_ERROR)
+            raise
     else:
         parser.print_help()
 
