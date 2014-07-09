@@ -131,7 +131,7 @@ class TestIchnaea(TestCase):
                                 "radio": "gsm",
                                 "cell": cells}]}
         blob = json.dumps(json_data)
-        res = self.session.post(HOST + '/v1/submit', blob)
+        res = self.session.post(HOST + '/v1/submit?key=test', blob)
         self.assertEqual(res.status_code, 204)
 
     def test_submit_ap_data(self):
@@ -145,7 +145,7 @@ class TestIchnaea(TestCase):
                             "accuracy": 17,
                             "wifi": ap_data}]}
         blob = json.dumps(jdata)
-        res = self.session.post(HOST + '/v1/submit', blob)
+        res = self.session.post(HOST + '/v1/submit?key=test', blob)
         self.assertEqual(res.status_code, 204)
 
     def test_submit_mixed_data(self):
@@ -171,7 +171,7 @@ class TestIchnaea(TestCase):
                  }
 
         blob = json.dumps(jdata)
-        res = self.session.post(HOST + '/v1/submit', blob)
+        res = self.session.post(HOST + '/v1/submit?key=test', blob)
         self.assertEqual(res.status_code, 204)
 
     def test_search_wifi(self):
