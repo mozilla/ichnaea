@@ -207,7 +207,7 @@ class TestCellLocationUpdate(CeleryTestCase):
     def add_line_of_cells_and_scan_lac(self):
         from ichnaea.tasks import cell_location_update, scan_lacs
         session = self.db_master_session
-        big = 10000000
+        big = 1.0000000
         small = big / 10
         keys = dict(radio=1, mcc=1, mnc=1, lac=1)
         measures = [
@@ -302,7 +302,7 @@ class TestCellLocationUpdate(CeleryTestCase):
     def test_cell_lac_asymmetric(self):
         from ichnaea.tasks import cell_location_update, scan_lacs
         session = self.db_master_session
-        big = 1000000
+        big = 0.1000000
         small = big / 10
         keys = dict(radio=1, mcc=1, mnc=1, lac=1)
         measures = [
@@ -366,15 +366,15 @@ class TestCellLocationUpdate(CeleryTestCase):
         # Remove cells one by one checking that the LAC
         # changes shape along the way.
         steps = [
-            ((50000000, 50000000), 644242),
-            ((55000000, 55000000), 565475),
-            ((60000000, 60000000), 486721),
-            ((65000000, 65000000), 408000),
-            ((70000000, 70000000), 329334),
-            ((75000000, 75000000), 250743),
-            ((80000000, 80000000), 172249),
-            ((85000000, 85000000), 93871),
-            ((90000000, 90000000), 15630),
+            ((5.0000000, 5.0000000), 644242),
+            ((5.5000000, 5.5000000), 565475),
+            ((6.0000000, 6.0000000), 486721),
+            ((6.5000000, 6.5000000), 408000),
+            ((7.0000000, 7.0000000), 329334),
+            ((7.5000000, 7.5000000), 250743),
+            ((8.0000000, 8.0000000), 172249),
+            ((8.5000000, 8.5000000), 93871),
+            ((9.0000000, 9.0000000), 15630),
         ]
         for i in range(9):
             session.expire(lac)
