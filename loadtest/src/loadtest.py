@@ -46,8 +46,8 @@ BBOX = {
     'CN': {
         'min_lon': int(73.6 * FACTOR),
         'min_lat': int(20.2 * FACTOR),
-        'max_lon': int(-66.9 * FACTOR),
-        'max_lat': int(134.7 * FACTOR),
+        'max_lon': int(134.7 * FACTOR),
+        'max_lat': int(53.5 * FACTOR),
     }
 }
 
