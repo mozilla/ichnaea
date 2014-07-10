@@ -6,6 +6,13 @@ import os
 import os.path
 import random
 
+try:
+    from simplejson import load as json_load
+    from simplejson import loads as json_loads
+except ImportError:
+    from json import load as json_load
+    from json import loads as json_loads
+
 RADIO_TYPE = {
     '': -1,
     'gsm': 0,
@@ -100,9 +107,9 @@ def generate_data():
         with open(AP_FILE, 'w') as f:
             f.write(json.dumps(ap_data, cls=LocationDictEncoder))
     else:
-        ap_data = json.load(open(AP_FILE),
+        ap_data = json_load(open(AP_FILE),
                             object_hook=JSONLocationDictDecoder)
-        tower_data = json.load(open(TOWER_FILE),
+        tower_data = json_load(open(TOWER_FILE),
                                object_hook=JSONLocationDictDecoder)
 
     return tower_data.items(), ap_data.items()
@@ -200,7 +207,7 @@ class TestIchnaea(TestCase):
             res = self.session.post(HOST + '/v1/search?key=test', jdata)
 
             self.assertEqual(res.status_code, 200)
-            jdata = json.loads(res.content)
+            jdata = json_loads(res.content)
             if jdata['status'] != 'not_found':
                 actual_lat = int(jdata['lat'] * 1000)
                 actual_lon = int(jdata['lon'] * 1000)
@@ -226,7 +233,7 @@ class TestIchnaea(TestCase):
             jdata = json.dumps(query_data)
             res = self.session.post(HOST + '/v1/search?key=test', jdata)
             self.assertEqual(res.status_code, 200)
-            jdata = json.loads(res.content)
+            jdata = json_loads(res.content)
             if jdata['status'] != 'not_found':
                 actual_lat = int(jdata['lat'] * 1000)
                 actual_lon = int(jdata['lon'] * 1000)
@@ -251,6 +258,6 @@ def JSONLocationDictDecoder(dct):
     if '__JSONTupleKeyedDict__' in dct:
         tmp = {}
         for k, v in dct['dict'].items():
-            tmp[tuple(json.loads(k))] = v
+            tmp[tuple(json_loads(k))] = v
         return tmp
     return dct
