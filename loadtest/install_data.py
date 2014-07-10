@@ -70,7 +70,7 @@ class DBFixture(object):
 
 
 if __name__ == '__main__':
-    generate_data()
+    generate_data(country='US')
     db = DBFixture()
     db.install_wifi_aps()
     db.install_cell_towers()

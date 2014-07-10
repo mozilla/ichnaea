@@ -34,13 +34,21 @@ AP_FILE = os.path.join('src', 'ap.json')
 HOST = 'https://' + cfg.get('loadtest', 'WEBAPP_HOST')
 
 TESTING_AP_SUBSET = TESTING_CELL_SUBSET = 10000
-MCC_US = 310
 FACTOR = 10 ** 7
-BBOX_US = {
-    'min_lon': int(-124.7 * FACTOR),
-    'min_lat': int(24.5 * FACTOR),
-    'max_lon': int(-66.9 * FACTOR),
-    'max_lat': int(49.3 * FACTOR),
+MCC = {'US': 310, 'CN': 460}
+BBOX = {
+    'US': {
+        'min_lon': int(-124.7 * FACTOR),
+        'min_lat': int(24.5 * FACTOR),
+        'max_lon': int(-66.9 * FACTOR),
+        'max_lat': int(49.3 * FACTOR),
+    },
+    'CN': {
+        'min_lon': int(73.6 * FACTOR),
+        'min_lat': int(20.2 * FACTOR),
+        'max_lon': int(-66.9 * FACTOR),
+        'max_lat': int(134.7 * FACTOR),
+    }
 }
 
 
@@ -48,7 +56,7 @@ def rand_bytes(length):
     return ''.join(chr(random.randint(0, 255)) for _ in range(length))
 
 
-def random_ap():
+def random_ap(country='US'):
     for channel in range(1, 12):
         for frequency in range(1, 5000):
             for signal in range(-50, 0):
@@ -60,7 +68,7 @@ def random_ap():
                        "signal": random.randint(-50, 0)}
 
 
-def random_cell():
+def random_cell(country='US'):
     # don't test cdma, as that would complicate setting up the
     # top-level radio field in the JSON dicts
     for radio in (0, 2, 3):
@@ -70,20 +78,22 @@ def random_cell():
                     yield {'cid': cid,
                            'mnc': mnc,
                            'lac': lac,
-                           'mcc': MCC_US,
+                           'mcc': MCC[country],
                            'radio': radio}
 
 
-def generate_data():
+def generate_data(country='US'):
     if not os.path.isfile(TOWER_FILE) or not os.path.isfile(AP_FILE):
         tower_data = JSONTupleKeyedDict()
         ap_data = JSONTupleKeyedDict()
-        cell_gen = random_cell()
-        wifi_gen = random_ap()
+        cell_gen = random_cell(country=country)
+        wifi_gen = random_ap(country=country)
         for i in range(TESTING_CELL_SUBSET):
-            lat = random.randint(BBOX_US['min_lat'], BBOX_US['max_lat'])
+            lat = random.randint(
+                BBOX[country]['min_lat'], BBOX[country]['max_lat'])
             lat = float(lat) / FACTOR
-            lon = random.randint(BBOX_US['min_lon'], BBOX_US['max_lon'])
+            lon = random.randint(
+                BBOX[country]['min_lon'], BBOX[country]['max_lon'])
             lon = float(lon) / FACTOR
             tower_data[(lat, lon)] = []
             ap_data[(lat, lon)] = []
@@ -121,7 +131,7 @@ class TestIchnaea(TestCase):
 
     def setUp(self):
         if self.TOWER_DATA is None:
-            self.TOWER_DATA, self.AP_DATA = generate_data()
+            self.TOWER_DATA, self.AP_DATA = generate_data(country='US')
 
     def test_submit_cell_data(self):
         """
