@@ -35,7 +35,7 @@ HOST = 'https://' + cfg.get('loadtest', 'WEBAPP_HOST')
 
 TESTING_AP_SUBSET = TESTING_CELL_SUBSET = 10000
 FACTOR = 10 ** 7
-MCC = {'US': 310, 'CN': 460}
+MCC = {'US': 310, 'CN': 460, 'SG': 525}
 BBOX = {
     'US': {
         'min_lon': int(-124.7 * FACTOR),
@@ -48,7 +48,13 @@ BBOX = {
         'min_lat': int(20.2 * FACTOR),
         'max_lon': int(134.7 * FACTOR),
         'max_lat': int(53.5 * FACTOR),
-    }
+    },
+    'SG': {
+        'min_lon': int(103.65 * FACTOR),
+        'min_lat': int(1.26 * FACTOR),
+        'max_lon': int(103.99 * FACTOR),
+        'max_lat': int(1.44 * FACTOR),
+    },
 }
 
 
