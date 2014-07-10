@@ -1,6 +1,6 @@
 import sys
 import simplejson as json
-from ichnaea.models import encode_datetime
+from ichnaea.models import (encode_datetime, DEGREE_DECIMAL_PLACES)
 
 
 def custom_iterencode(value):
@@ -24,7 +24,7 @@ def custom_iterencode(value):
         elif o == _neginf:
             text = '-Infinity'
         else:
-            return str(o)
+            return str(round(o, DEGREE_DECIMAL_PLACES))
         if ignore_nan:
             text = 'null'
         elif not allow_nan:
@@ -52,12 +52,13 @@ def custom_iterencode(value):
 def dumps(value):
 
     if isinstance(value, dict) \
-       and 'accuracy' in value \
-       and sys.version_info < (2, 7):
+       and 'accuracy' in value: \
 
         # Use a custom variant of simplejson to emit floats using str()
-        # rather than repr() when running under python2.6 or earlier and
-        # writing out a dict that has an 'accuracy' key.
+        # rather than repr(). Initially we did this only when running under
+        # python2.6 or earlier and writing out a dict that has an
+        # 'accuracy' key, but now we do it for any dict with an 'accuracy'
+        # key.
         #
         # We want to do this because 2.6 doesn't round floating point values
         # very nicely:
@@ -71,6 +72,26 @@ def dumps(value):
         #
         # >>> repr(1.1)
         # '1.1000000000000001'
+        #
+        # Python 2.7 has fixed _that_ bug but it still has a tendency towards
+        # producing curious rounding artifacts:
+        #
+        # In python 2.7:
+        #
+        # >>> repr(3.3/3)
+        # '1.0999999999999999'
+        # >>> repr(3.03/3)
+        # '1.01'
+        # >>> repr(3.003/3)
+        # '1.0010000000000001'
+        # >>> repr(3.0003/3)
+        # '1.0001'
+        # >>> repr(3.00003/3)
+        # '1.00001'
+        #
+        # This behavior is preserved in python3, and made "more uniform" merely
+        # by causing str() to do the same thing. So we explicitly round in the
+        # custom_iterencode routine.
 
         return u''.join(custom_iterencode(value))
 
