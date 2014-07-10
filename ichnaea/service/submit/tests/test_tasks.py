@@ -182,7 +182,7 @@ class TestInsert(CeleryTestCase):
         session.flush()
 
         measure = dict(
-            id=0, created=encode_datetime(time), lat=1, lon=2,
+            id=0, created=encode_datetime(time), lat=1.0, lon=2.0,
             time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=-1,
             heading=52.9,
@@ -263,13 +263,13 @@ class TestInsert(CeleryTestCase):
         # Station moves between these 4 points, all in the USA:
         points = [
             # NYC
-            (40, -74),
+            (40.0, -74.0),
             # SF
-            (37, -122),
+            (37.0, -122.0),
             # Seattle
-            (47, -122),
+            (47.0, -122.0),
             # Miami
-            (25, -80),
+            (25.0, -80.0),
         ]
 
         N = 4 * PERMANENT_BLACKLIST_THRESHOLD
@@ -357,8 +357,8 @@ class TestInsert(CeleryTestCase):
 
         measures = [dict(id=0,
                          key=key,
-                         lat=1 + i * 0.0000001,
-                         lon=2 + i * 0.0000001) for i in range(3)]
+                         lat=1.0 + i * 0.0000001,
+                         lon=2.0 + i * 0.0000001) for i in range(3)]
 
         result = insert_wifi_measures.delay(measures)
         self.assertEqual(result.get(), 3)
@@ -384,7 +384,6 @@ class TestInsert(CeleryTestCase):
 
         measures = [dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=i, psc=5,
                          radio=RADIO_TYPE['gsm'],
-                         id=0,
                          lat=PARIS_LAT + i * 0.0000001,
                          lon=PARIS_LON + i * 0.0000001) for i in range(1, 4)]
 
@@ -416,13 +415,13 @@ class TestInsert(CeleryTestCase):
         # Station moves between these 4 points, all in the USA:
         points = [
             # NYC
-            (40, -74),
+            (40.0, -74.0),
             # SF
-            (37, -122),
+            (37.0, -122.0),
             # Seattle
-            (47, -122),
+            (47.0, -122.0),
             # Miami
-            (25, -80),
+            (25.0, -80.0),
         ]
 
         N = 4 * PERMANENT_BLACKLIST_THRESHOLD
@@ -510,7 +509,6 @@ class TestInsert(CeleryTestCase):
 
         measures = [dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4, psc=5,
                          radio=RADIO_TYPE['gsm'],
-                         id=0,
                          lat=PARIS_LAT + i * 0.0000001,
                          lon=PARIS_LON + i * 0.0000001) for i in range(3)]
 
@@ -539,7 +537,7 @@ class TestInsert(CeleryTestCase):
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
         measure = dict(
-            id=0, created=encode_datetime(time), lat=PARIS_LAT,
+            created=encode_datetime(time), lat=PARIS_LAT,
             lon=PARIS_LON, time=encode_datetime(time),
             accuracy=0, altitude=0, altitude_accuracy=0,
             radio=RADIO_TYPE['cdma'],
@@ -575,7 +573,7 @@ class TestInsert(CeleryTestCase):
         time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
 
         measure = dict(
-            id=0, created=encode_datetime(time),
+            created=encode_datetime(time),
             lat=PARIS_LAT,
             lon=PARIS_LON,
             time=encode_datetime(time), accuracy=0, altitude=0,
@@ -665,13 +663,13 @@ class TestSubmitErrors(CeleryTestCase):
         session.execute(stmt)
 
         entries = [
-            {"lat": 1.0000000, "lon": 2.0000000,
+            {"lat": 1.0, "lon": 2.0,
              "key": "ab:12:34:56:78:90", "channel": 11},
-            {"lat": 1.0000000, "lon": 2.0000000,
+            {"lat": 1.0, "lon": 2.0,
              "key": "ab:12:34:56:78:90", "channel": 3},
-            {"lat": 1.0000000, "lon": 2.0000000,
+            {"lat": 1.0, "lon": 2.0,
              "key": "ab:12:34:56:78:90", "channel": 3},
-            {"lat": 1.0000000, "lon": 2.0000000,
+            {"lat": 1.0, "lon": 2.0,
              "key": "cd:12:34:56:78:90", "channel": 3},
         ]
 

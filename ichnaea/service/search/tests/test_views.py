@@ -58,8 +58,8 @@ class TestSearch(AppTestCase):
 
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": PARIS_LAT + 0.0010000,
-                                    "lon": PARIS_LON + 0.0020000,
+                                    "lat": PARIS_LAT + 0.001,
+                                    "lon": PARIS_LON + 0.002,
                                     "accuracy": CELL_MIN_ACCURACY})
 
         self.check_expected_heka_messages(
@@ -79,7 +79,7 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=1, lon=1),
+            Wifi(key="A1", lat=1.0, lon=1.0),
             Wifi(key="B2", lat=1.001, lon=1.002),
             Wifi(key="C3", lat=1.002, lon=1.004),
             Wifi(key="D4", lat=None, lon=None),
@@ -94,7 +94,7 @@ class TestSearch(AppTestCase):
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": 1.0010000, "lon": 1.0020000,
+                                    "lat": 1.001, "lon": 1.002,
                                     "accuracy": 248.6090897})
 
         self.check_expected_heka_messages(
@@ -113,7 +113,7 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=1, lon=1),
+            Wifi(key="A1", lat=1.0, lon=1.0),
             Wifi(key="B2", lat=1.001, lon=1.002),
         ]
         session.add_all(wifis)
@@ -129,7 +129,7 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=1, lon=1),
+            Wifi(key="A1", lat=1.0, lon=1.0),
             Wifi(key="B2", lat=1.001, lon=1.002),
             Wifi(key="C3", lat=None, lon=None),
         ]
@@ -147,7 +147,7 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=1, lon=1),
+            Wifi(key="A1", lat=1.0, lon=1.0),
             Wifi(key="B2", lat=1.001, lon=1.002),
             Wifi(key="C3", lat=1.002, lon=1.004),
             Wifi(key="D4", lat=2, lon=2),
@@ -162,17 +162,17 @@ class TestSearch(AppTestCase):
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": 1.0010000, "lon": 1.0020000,
+                                    "lat": 1.001, "lon": 1.002,
                                     "accuracy": 248.6090897})
 
     def test_wifi_prefer_cluster_with_better_signals(self):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=1, lon=1),
+            Wifi(key="A1", lat=1.0, lon=1.0),
             Wifi(key="B2", lat=1.001, lon=1.002),
             Wifi(key="C3", lat=1.002, lon=1.004),
-            Wifi(key="D4", lat=2, lon=2),
+            Wifi(key="D4", lat=2.0, lon=2.0),
             Wifi(key="E5", lat=2.001, lon=2.002),
             Wifi(key="F6", lat=2.002, lon=2.004),
         ]
@@ -190,7 +190,7 @@ class TestSearch(AppTestCase):
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": 2.0010000, "lon": 2.0020000,
+                                    "lat": 2.001, "lon": 2.002,
                                     "accuracy": 248.5181900})
 
     def test_wifi_prefer_larger_cluster_over_high_signal(self):
@@ -201,7 +201,7 @@ class TestSearch(AppTestCase):
                       lon=1 + i * 0.000012)
                  for i in range(0, 100)]
         wifis += [
-            Wifi(key="D4", lat=2, lon=2),
+            Wifi(key="D4", lat=2.0, lon=2.0),
             Wifi(key="E5", lat=2.001, lon=2.002),
             Wifi(key="F6", lat=2.002, lon=2.004),
         ]
@@ -252,17 +252,17 @@ class TestSearch(AppTestCase):
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": 1.000020, "lon": 1.000024,
+                                    "lat": 1.00002, "lon": 1.000024,
                                     "accuracy": WIFI_MIN_ACCURACY})
 
     def test_wifi_not_closeby(self):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=1, lon=1),
+            Wifi(key="A1", lat=1.0, lon=1.0),
             Wifi(key="B2", lat=1.001, lon=1.002),
             Wifi(key="C3", lat=2.002, lon=2.004),
-            Wifi(key="D4", lat=2, lon=2),
+            Wifi(key="D4", lat=2.0, lon=2.0),
         ]
         session.add_all(wifis)
         session.commit()
@@ -324,8 +324,8 @@ class TestSearch(AppTestCase):
             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": PARIS_LAT + 0.0010000,
-                                    "lon": PARIS_LON + 0.0020000,
+                                    "lat": PARIS_LAT + 0.001,
+                                    "lon": PARIS_LON + 0.002,
                                     "accuracy": CELL_MIN_ACCURACY})
 
     def test_cell_miss_lac_hit(self):
@@ -394,7 +394,7 @@ class TestSearch(AppTestCase):
         lon = PARIS_LON
         data = [
             Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
-            Cell(lat=lat + 20000, lon=lon + 40000, radio=2, cid=5, **key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=2, cid=5, **key),
             Cell(lat=1.006, lon=1.006, radio=2, cid=6, **key),
             Cell(lat=1.0026666, lon=1.0033333, radio=2, cid=CELLID_LAC,
                  range=50000, **key),

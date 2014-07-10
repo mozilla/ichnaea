@@ -64,7 +64,7 @@ class TestGeolocate(AppTestCase):
         app = self.app
         session = self.get_session()
         wifis = [
-            Wifi(key="a1", lat=1, lon=1),
+            Wifi(key="a1", lat=1.0, lon=1.0),
             Wifi(key="b2", lat=1.001, lon=1.002),
             Wifi(key="c3", lat=1.002, lon=1.004),
             Wifi(key="d4", lat=None, lon=None),
@@ -83,8 +83,8 @@ class TestGeolocate(AppTestCase):
         self.check_expected_heka_messages(
             counter=[self.metric + '.api_key.test'])
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 1.0010000,
-                                                 "lng": 1.0020000},
+        self.assertEqual(res.json, {"location": {"lat": 1.001,
+                                                 "lng": 1.002},
                                     "accuracy": 248.6090897})
 
     def test_wifi_not_found(self):
@@ -178,8 +178,8 @@ class TestGeolocate(AppTestCase):
             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {
-            'location': {"lat": PARIS_LAT + 0.0020000,
-                         "lng": PARIS_LON + 0.0040000},
+            'location': {"lat": PARIS_LAT + 0.002,
+                         "lng": PARIS_LON + 0.004},
             'accuracy': CELL_MIN_ACCURACY})
 
     def test_lac_miss(self):
@@ -187,7 +187,7 @@ class TestGeolocate(AppTestCase):
         session = self.get_session()
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
-            Cell(lat=1, lon=1, radio=2, cid=4, **key),
+            Cell(lat=1.0, lon=1.0, radio=2, cid=4, **key),
             Cell(lat=1.002, lon=1.004, radio=2, cid=5, **key),
             Cell(lat=1.006, lon=1.006, radio=2, cid=6, **key),
             Cell(lat=1.0026666, lon=1.0033333, radio=2, cid=CELLID_LAC,

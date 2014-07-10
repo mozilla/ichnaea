@@ -29,8 +29,8 @@ class TestBackfill(CeleryTestCase):
         session.add_all(data)
 
         # This is tower C and should map back to tower A
-        towerC_lat = 37.8348600
-        towerC_lon = -12.22828703
+        towerC_lat = 37.83486
+        towerC_lon = -12.2282873
         session.add_all([CellMeasure(lat=towerC_lat, lon=towerC_lon, radio=2,
                                      lac=-1, cid=-1, mcc=310, mnc=410, psc=38,
                                      accuracy=20)])

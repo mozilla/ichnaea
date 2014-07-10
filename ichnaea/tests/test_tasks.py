@@ -28,19 +28,19 @@ class TestCellLocationUpdate(CeleryTestCase):
         k3 = dict(radio=1, mcc=1, mnc=2, lac=-1, cid=-1)
         data = [
             Cell(new_measures=3, total_measures=5, **k1),
-            CellMeasure(lat=1, lon=1, **k1),
+            CellMeasure(lat=1.0, lon=1.0, **k1),
             CellMeasure(lat=1.002, lon=1.003, **k1),
             CellMeasure(lat=1.004, lon=1.006, **k1),
             # The lac, cid are invalid and should be skipped
             CellMeasure(lat=1.5, lon=1.5, **k3),
             CellMeasure(lat=1.502, lon=1.503, **k3),
 
-            Cell(lat=2, lon=2,
+            Cell(lat=2.0, lon=2.0,
                  new_measures=2, total_measures=4, **k2),
             # the lat/lon is bogus and mismatches the line above on purpose
             # to make sure old measures are skipped
-            CellMeasure(lat=-1, lon=-1, created=before, **k2),
-            CellMeasure(lat=-1, lon=-1, created=before, **k2),
+            CellMeasure(lat=-1.0, lon=-1.0, created=before, **k2),
+            CellMeasure(lat=-1.0, lon=-1.0, created=before, **k2),
             CellMeasure(lat=2.002, lon=2.004, **k2),
             CellMeasure(lat=2.002, lon=2.004, **k2),
 
@@ -56,11 +56,11 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual([c.new_measures for c in cells], [0, 0])
         for cell in cells:
             if cell.cid == 4:
-                self.assertEqual(cell.lat, 1.0020000)
-                self.assertEqual(cell.lon, 1.0030000)
+                self.assertEqual(cell.lat, 1.002)
+                self.assertEqual(cell.lon, 1.003)
             elif cell.cid == 8:
-                self.assertEqual(cell.lat, 2.0010000)
-                self.assertEqual(cell.lon, 2.0020000)
+                self.assertEqual(cell.lat, 2.001)
+                self.assertEqual(cell.lon, 2.002)
 
     def test_backfill_cell_location_update(self):
         from ichnaea.tasks import backfill_cell_location_update
@@ -69,7 +69,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         data = [
             Cell(lat=1.001, lon=1.001, new_measures=0,
                  total_measures=1, **k1),
-            CellMeasure(lat=1, lon=1, **k1),
+            CellMeasure(lat=1.0, lon=1.0, **k1),
             CellMeasure(lat=1.005, lon=1.008, **k1),
         ]
         session.add_all(data)
@@ -87,8 +87,8 @@ class TestCellLocationUpdate(CeleryTestCase):
         cells = session.query(Cell).filter(Cell.cid != CELLID_LAC).all()
         self.assertEqual(len(cells), 1)
         cell = cells[0]
-        self.assertEqual(cell.lat, 1.0020000)
-        self.assertEqual(cell.lon, 1.0030000)
+        self.assertEqual(cell.lat, 1.002)
+        self.assertEqual(cell.lon, 1.003)
         self.assertEqual(cell.new_measures, 0)
         self.assertEqual(cell.total_measures, 3)
 
@@ -99,8 +99,8 @@ class TestCellLocationUpdate(CeleryTestCase):
         k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
         data = [
             Cell(lat=1.001, lon=-1.001,
-                 max_lat=1.002, min_lat=1,
-                 max_lon=-1, min_lon=-1.002,
+                 max_lat=1.002, min_lat=1.0,
+                 max_lon=-1.0, min_lon=-1.002,
                  new_measures=2, total_measures=4, **k1),
             CellMeasure(lat=1.001, lon=-1.003, **k1),
             CellMeasure(lat=1.005, lon=-1.007, **k1),
@@ -114,12 +114,12 @@ class TestCellLocationUpdate(CeleryTestCase):
         cells = session.query(Cell).filter(Cell.cid != CELLID_LAC).all()
         self.assertEqual(len(cells), 1)
         cell = cells[0]
-        self.assertEqual(cell.lat, 1.0020000)
-        self.assertEqual(cell.max_lat, 1.0050000)
-        self.assertEqual(cell.min_lat, 1.0000000)
-        self.assertEqual(cell.lon, -1.0030000)
-        self.assertEqual(cell.max_lon, -1.0000000)
-        self.assertEqual(cell.min_lon, -1.0070000)
+        self.assertEqual(cell.lat, 1.002)
+        self.assertEqual(cell.max_lat, 1.005)
+        self.assertEqual(cell.min_lat, 1.0)
+        self.assertEqual(cell.lon, -1.003)
+        self.assertEqual(cell.max_lon, -1.0)
+        self.assertEqual(cell.min_lon, -1.007)
 
         # independent calculation: the cell bounding box is
         # (1.000, -1.007) to (1.005, -1.000), with centroid
@@ -150,30 +150,30 @@ class TestCellLocationUpdate(CeleryTestCase):
             CellMeasure(lat=1.002, lon=1.005, **k1),
             CellMeasure(lat=1.003, lon=1.009, **k1),
             # a cell with a prior known position
-            Cell(lat=2, lon=2,
+            Cell(lat=2.0, lon=2.0,
                  new_measures=2, total_measures=1, **k2),
-            CellMeasure(lat=2, lon=2, **k2),
-            CellMeasure(lat=4, lon=2, **k2),
+            CellMeasure(lat=2.0, lon=2.0, **k2),
+            CellMeasure(lat=4.0, lon=2.0, **k2),
             # a cell with a very different prior position
-            Cell(lat=1, lon=1,
+            Cell(lat=1.0, lon=1.0,
                  new_measures=2, total_measures=1, **k3),
-            CellMeasure(lat=3, lon=3, **k3),
-            CellMeasure(lat=-3, lon=3, **k3),
+            CellMeasure(lat=3.0, lon=3.0, **k3),
+            CellMeasure(lat=-3.0, lon=3.0, **k3),
             # another cell with a prior known position (and negative lat)
-            Cell(lat=-4, lon=4,
+            Cell(lat=-4.0, lon=4.0,
                  new_measures=2, total_measures=1, **k4),
-            CellMeasure(lat=-4, lon=4, **k4),
-            CellMeasure(lat=-6, lon=4, **k4),
+            CellMeasure(lat=-4.0, lon=4.0, **k4),
+            CellMeasure(lat=-6.0, lon=4.0, **k4),
             # an already blacklisted cell
             CellBlacklist(**k5),
-            CellMeasure(lat=5, lon=5, **k5),
-            CellMeasure(lat=8, lon=5, **k5),
+            CellMeasure(lat=5.0, lon=5.0, **k5),
+            CellMeasure(lat=8.0, lon=5.0, **k5),
             # a cell with an old different record we ignore, position
             # estimate has been updated since
-            Cell(lat=6, lon=6,
+            Cell(lat=6.0, lon=6.0,
                  new_measures=2, total_measures=1, **k6),
             CellMeasure(lat=6.9, lon=6.9, time=long_ago, **k6),
-            CellMeasure(lat=6, lon=6, **k6),
+            CellMeasure(lat=6.0, lon=6.0, **k6),
             CellMeasure(lat=6.001, lon=6, **k6),
         ]
         session.add_all(data)
@@ -207,7 +207,7 @@ class TestCellLocationUpdate(CeleryTestCase):
     def add_line_of_cells_and_scan_lac(self):
         from ichnaea.tasks import cell_location_update, scan_lacs
         session = self.db_master_session
-        big = 1.0000000
+        big = 1.0
         small = big / 10
         keys = dict(radio=1, mcc=1, mnc=1, lac=1)
         measures = [
@@ -250,8 +250,8 @@ class TestCellLocationUpdate(CeleryTestCase):
         # and the upper-right corner is at (9.1, 9.1)
         # we should therefore see a LAC centroid at (4.5, 4.5)
         # with a range of 723,001m
-        self.assertEqual(lac.lat, 4.5000000)
-        self.assertEqual(lac.lon, 4.5000000)
+        self.assertEqual(lac.lat, 4.5)
+        self.assertEqual(lac.lon, 4.5)
         self.assertEqual(lac.range, 723001)
         self.assertEqual(lac.created.date(), datetime.utcnow().date())
         self.assertEqual(lac.new_measures, 0)
@@ -265,10 +265,10 @@ class TestCellLocationUpdate(CeleryTestCase):
         keys = dict(radio=1, mcc=1, mnc=1, lac=1, cid=1)
         cell = Cell(new_measures=4, total_measures=1, **keys)
         measures = [
-            CellMeasure(lat=1, lon=1, **keys),
-            CellMeasure(lat=1, lon=1, **keys),
-            CellMeasure(lat=1, lon=1, **keys),
-            CellMeasure(lat=1, lon=1, **keys),
+            CellMeasure(lat=1.0, lon=1.0, **keys),
+            CellMeasure(lat=1.0, lon=1.0, **keys),
+            CellMeasure(lat=1.0, lon=1.0, **keys),
+            CellMeasure(lat=1.0, lon=1.0, **keys),
         ]
         session.add(cell)
         session.add_all(measures)
@@ -284,10 +284,10 @@ class TestCellLocationUpdate(CeleryTestCase):
         keys['cid'] = 2
         cell = Cell(new_measures=4, total_measures=1, **keys)
         measures = [
-            CellMeasure(lat=1, lon=1, **keys),
-            CellMeasure(lat=1, lon=1, **keys),
-            CellMeasure(lat=1, lon=1, **keys),
-            CellMeasure(lat=1, lon=1, **keys),
+            CellMeasure(lat=1.0, lon=1.0, **keys),
+            CellMeasure(lat=1.0, lon=1.0, **keys),
+            CellMeasure(lat=1.0, lon=1.0, **keys),
+            CellMeasure(lat=1.0, lon=1.0, **keys),
         ]
         session.add(cell)
         session.add_all(measures)
@@ -302,7 +302,7 @@ class TestCellLocationUpdate(CeleryTestCase):
     def test_cell_lac_asymmetric(self):
         from ichnaea.tasks import cell_location_update, scan_lacs
         session = self.db_master_session
-        big = 0.1000000
+        big = 0.1
         small = big / 10
         keys = dict(radio=1, mcc=1, mnc=1, lac=1)
         measures = [
@@ -341,8 +341,8 @@ class TestCellLocationUpdate(CeleryTestCase):
         # and the upper-right corner is at (3.21, 3.21)
         # we should therefore see a LAC centroid at (1.05, 1.05)
         # with a range of 339.540m
-        self.assertEqual(lac.lat, 1.0500000)
-        self.assertEqual(lac.lon, 1.0500000)
+        self.assertEqual(lac.lat, 1.05)
+        self.assertEqual(lac.lon, 1.05)
         self.assertEqual(lac.range, 339540)
 
     def test_cell_removal_updates_lac(self):
@@ -359,22 +359,22 @@ class TestCellLocationUpdate(CeleryTestCase):
             Cell.lac == 1,
             Cell.cid == CELLID_LAC).first()
 
-        self.assertEqual(lac.lat, 4.5000000)
-        self.assertEqual(lac.lon, 4.5000000)
+        self.assertEqual(lac.lat, 4.5)
+        self.assertEqual(lac.lon, 4.5)
         self.assertEqual(lac.range, 723001)
 
         # Remove cells one by one checking that the LAC
         # changes shape along the way.
         steps = [
-            ((5.0000000, 5.0000000), 644242),
-            ((5.5000000, 5.5000000), 565475),
-            ((6.0000000, 6.0000000), 486721),
-            ((6.5000000, 6.5000000), 408000),
-            ((7.0000000, 7.0000000), 329334),
-            ((7.5000000, 7.5000000), 250743),
-            ((8.0000000, 8.0000000), 172249),
-            ((8.5000000, 8.5000000), 93871),
-            ((9.0000000, 9.0000000), 15630),
+            ((5.0, 5.0), 644242),
+            ((5.5, 5.5), 565475),
+            ((6.0, 6.0), 486721),
+            ((6.5, 6.5), 408000),
+            ((7.0, 7.0), 329334),
+            ((7.5, 7.5), 250743),
+            ((8.0, 8.0), 172249),
+            ((8.5, 8.5), 93871),
+            ((9.0, 9.0), 15630),
         ]
         for i in range(9):
             session.expire(lac)
@@ -414,15 +414,15 @@ class TestWifiLocationUpdate(CeleryTestCase):
         k2 = "cd1234567890"
         data = [
             Wifi(key=k1, new_measures=3, total_measures=3),
-            WifiMeasure(lat=1, lon=1, key=k1),
+            WifiMeasure(lat=1.0, lon=1.0, key=k1),
             WifiMeasure(lat=1.002, lon=1.003, key=k1),
             WifiMeasure(lat=1.004, lon=1.006, key=k1),
-            Wifi(key=k2, lat=2, lon=2,
+            Wifi(key=k2, lat=2.0, lon=2.0,
                  new_measures=2, total_measures=4),
             # the lat/lon is bogus and mismatches the line above on purpose
             # to make sure old measures are skipped
-            WifiMeasure(lat=-1, lon=-1, key=k2, created=before),
-            WifiMeasure(lat=-1, lon=-1, key=k2, created=before),
+            WifiMeasure(lat=-1.0, lon=-1.0, key=k2, created=before),
+            WifiMeasure(lat=-1.0, lon=-1.0, key=k2, created=before),
             WifiMeasure(lat=2.002, lon=2.004, key=k2, created=now),
             WifiMeasure(lat=2.002, lon=2.004, key=k2, created=now),
         ]
@@ -435,12 +435,12 @@ class TestWifiLocationUpdate(CeleryTestCase):
         wifis = dict(session.query(Wifi.key, Wifi).all())
         self.assertEqual(set(wifis.keys()), set([k1, k2]))
 
-        self.assertEqual(wifis[k1].lat, 1.0020000)
-        self.assertEqual(wifis[k1].lon, 1.0030000)
+        self.assertEqual(wifis[k1].lat, 1.002)
+        self.assertEqual(wifis[k1].lon, 1.003)
         self.assertEqual(wifis[k1].new_measures, 0)
 
-        self.assertEqual(wifis[k2].lat, 2.0010000)
-        self.assertEqual(wifis[k2].lon, 2.0020000)
+        self.assertEqual(wifis[k2].lat, 2.001)
+        self.assertEqual(wifis[k2].lon, 2.002)
         self.assertEqual(wifis[k2].new_measures, 0)
 
     def test_wifi_max_min_range_update(self):
@@ -450,9 +450,9 @@ class TestWifiLocationUpdate(CeleryTestCase):
         k2 = "cd1234567890"
         data = [
             Wifi(key=k1, new_measures=2, total_measures=2),
-            WifiMeasure(lat=1, lon=1, key=k1),
+            WifiMeasure(lat=1.0, lon=1.0, key=k1),
             WifiMeasure(lat=1.002, lon=1.004, key=k1),
-            Wifi(key=k2, lat=2, lon=-2,
+            Wifi(key=k2, lat=2.0, lon=-2.0,
                  max_lat=2.001, min_lat=1.999,
                  max_lon=-1.999, min_lon=-2.001,
                  new_measures=2, total_measures=4),
@@ -468,19 +468,19 @@ class TestWifiLocationUpdate(CeleryTestCase):
         wifis = dict(session.query(Wifi.key, Wifi).all())
         self.assertEqual(set(wifis.keys()), set([k1, k2]))
 
-        self.assertEqual(wifis[k1].lat, 1.0010000)
-        self.assertEqual(wifis[k1].max_lat, 1.0020000)
-        self.assertEqual(wifis[k1].min_lat, 1.0000000)
-        self.assertEqual(wifis[k1].lon, 1.0020000)
-        self.assertEqual(wifis[k1].max_lon, 1.0040000)
-        self.assertEqual(wifis[k1].min_lon, 1.0000000)
+        self.assertEqual(wifis[k1].lat, 1.001)
+        self.assertEqual(wifis[k1].max_lat, 1.002)
+        self.assertEqual(wifis[k1].min_lat, 1.0)
+        self.assertEqual(wifis[k1].lon, 1.002)
+        self.assertEqual(wifis[k1].max_lon, 1.004)
+        self.assertEqual(wifis[k1].min_lon, 1.0)
 
-        self.assertEqual(wifis[k2].lat, 2.0000000)
-        self.assertEqual(wifis[k2].max_lat, 2.0020000)
-        self.assertEqual(wifis[k2].min_lat, 1.9980000)
-        self.assertEqual(wifis[k2].lon, -2.0000000)
-        self.assertEqual(wifis[k2].max_lon, -1.9960000)
-        self.assertEqual(wifis[k2].min_lon, -2.0040000)
+        self.assertEqual(wifis[k2].lat, 2.0)
+        self.assertEqual(wifis[k2].max_lat, 2.002)
+        self.assertEqual(wifis[k2].min_lat, 1.998)
+        self.assertEqual(wifis[k2].lon, -2.0)
+        self.assertEqual(wifis[k2].max_lon, -1.996)
+        self.assertEqual(wifis[k2].min_lon, -2.004)
 
         # independent calculation: the k1 bounding box is
         # (1.000, 1.000) to (1.002, 1.004), with centroid
@@ -516,31 +516,31 @@ class TestWifiLocationUpdate(CeleryTestCase):
             WifiMeasure(lat=1.002, lon=1.005, key=k1),
             WifiMeasure(lat=1.003, lon=1.009, key=k1),
             # a wifi with a prior known position
-            Wifi(lat=2, lon=2, key=k2,
+            Wifi(lat=2.0, lon=2.0, key=k2,
                  new_measures=2, total_measures=1),
             WifiMeasure(lat=2.01, lon=2, key=k2),
             WifiMeasure(lat=2.07, lon=2, key=k2),
             # a wifi with a very different prior position
-            Wifi(lat=1, lon=1, key=k3,
+            Wifi(lat=1.0, lon=1.0, key=k3,
                  new_measures=2, total_measures=1),
-            WifiMeasure(lat=3, lon=3, key=k3),
-            WifiMeasure(lat=-3, lon=3, key=k3),
+            WifiMeasure(lat=3.0, lon=3.0, key=k3),
+            WifiMeasure(lat=-3.0, lon=3.0, key=k3),
             # another wifi with a prior known position (and negative lat)
-            Wifi(lat=-4, lon=4, key=k4,
+            Wifi(lat=-4.0, lon=4.0, key=k4,
                  new_measures=2, total_measures=1),
             WifiMeasure(lat=-4.1, lon=4, key=k4),
             WifiMeasure(lat=-4.16, lon=4, key=k4),
             # an already blacklisted wifi
             WifiBlacklist(key=k5),
-            WifiMeasure(lat=5, lon=5, key=k5),
-            WifiMeasure(lat=5.1, lon=5, key=k5),
+            WifiMeasure(lat=5.0, lon=5.0, key=k5),
+            WifiMeasure(lat=5.1, lon=5.0, key=k5),
             # a wifi with an old different record we ignore, position
             # estimate has been updated since
-            Wifi(lat=6, lon=6, key=k6,
+            Wifi(lat=6.0, lon=6.0, key=k6,
                  new_measures=2, total_measures=1),
             WifiMeasure(lat=6.9, lon=6.9, key=k6, time=long_ago),
-            WifiMeasure(lat=6, lon=6, key=k6),
-            WifiMeasure(lat=6.001, lon=6, key=k6),
+            WifiMeasure(lat=6.0, lon=6.0, key=k6),
+            WifiMeasure(lat=6.001, lon=6.0, key=k6),
         ]
         session.add_all(data)
         session.commit()
@@ -574,8 +574,8 @@ class TestWifiLocationUpdate(CeleryTestCase):
         session = self.db_master_session
         measures = []
         wifi_keys = [{'key': "a%s1234567890" % i} for i in range(5)]
-        m1 = 1.0000000
-        m2 = 1.0000000
+        m1 = 1.0
+        m2 = 2.0
         for key in wifi_keys:
             key = key['key']
             measures.append(Wifi(key=key))

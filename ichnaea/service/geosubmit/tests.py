@@ -99,7 +99,7 @@ class TestGeoSubmit(CeleryAppTestCase):
         app = self.app
         session = self.db_master_session
         wifis = [
-            Wifi(key="0000000000a1", lat=1, lon=1),
+            Wifi(key="0000000000a1", lat=1.0, lon=1.0),
             Wifi(key="0000000000b2", lat=1.001, lon=1.002),
             Wifi(key="0000000000c3", lat=1.002, lon=1.004),
             Wifi(key="0000000000d4", lat=None, lon=None),
@@ -108,8 +108,8 @@ class TestGeoSubmit(CeleryAppTestCase):
         session.commit()
         res = app.post_json(
             '/v1/geosubmit?key=test', {
-                "latitude": 12.3456700,
-                "longitude": 23.4567800,
+                "latitude": 12.34567,
+                "longitude": 23.45678,
                 "accuracy": 12.4,
                 "radioType": "gsm",
                 "wifiAccessPoints": [
@@ -121,8 +121,8 @@ class TestGeoSubmit(CeleryAppTestCase):
                 ]},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 12.3456700,
-                                                 "lng": 23.4567800},
+        self.assertEqual(res.json, {"location": {"lat": 12.34567,
+                                                 "lng": 23.45678},
                                     "accuracy": 12.4})
 
         # Check that e5 exists
@@ -139,8 +139,8 @@ class TestGeoSubmit(CeleryAppTestCase):
 
         res = app.post_json(
             '/v1/geosubmit?key=test', {
-                "latitude": 12.3456700,
-                "longitude": 23.4567800,
+                "latitude": 12.34567,
+                "longitude": 23.45678,
                 "accuracy": 12.4,
                 "radioType": "gsm",
                 "wifiAccessPoints": [
@@ -149,8 +149,8 @@ class TestGeoSubmit(CeleryAppTestCase):
             status=200)
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 12.3456700,
-                                                 "lng": 23.4567800},
+        self.assertEqual(res.json, {"location": {"lat": 12.34567,
+                                                 "lng": 23.45678},
                                     "accuracy": 12.4})
 
         # Check that e5 exists
