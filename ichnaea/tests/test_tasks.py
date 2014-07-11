@@ -50,6 +50,12 @@ class TestCellLocationUpdate(CeleryTestCase):
 
         result = cell_location_update.delay(min_new=1)
         self.assertEqual(result.get(), (2, 0))
+        self.check_stats(
+            total=2,
+            timer=[
+                ('task.cell_location_update', 2),
+                'task.cell_location_update.new_measures_1_100',
+            ])
 
         cells = session.query(Cell).filter(Cell.cid != CELLID_LAC).all()
         self.assertEqual(len(cells), 2)
@@ -195,10 +201,11 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(result.get(), 0)
 
         self.check_stats(
-            total=4,
+            total=6,
             timer=[
                 # We made duplicate calls
-                ('task.cell_location_update', 2),
+                ('task.cell_location_update', 4),
+                ('task.cell_location_update.new_measures_1_100', 2),
 
                 # One of those would've scheduled a remove_cell task
                 ('task.remove_cell', 1)
@@ -431,6 +438,12 @@ class TestWifiLocationUpdate(CeleryTestCase):
 
         result = wifi_location_update.delay(min_new=1)
         self.assertEqual(result.get(), (2, 0))
+        self.check_stats(
+            total=2,
+            timer=[
+                ('task.wifi_location_update', 2),
+                'task.wifi_location_update.new_measures_1_100',
+            ])
 
         wifis = dict(session.query(Wifi.key, Wifi).all())
         self.assertEqual(set(wifis.keys()), set([k1, k2]))
@@ -560,10 +573,11 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.assertEqual(result.get(), 0)
 
         self.check_stats(
-            total=4,
+            total=6,
             timer=[
                 # We made duplicate calls
-                ('task.wifi_location_update', 2),
+                ('task.wifi_location_update', 4),
+                ('task.wifi_location_update.new_measures_1_100', 2),
 
                 # One of those would've scheduled a remove_wifi task
                 ('task.remove_wifi', 1)

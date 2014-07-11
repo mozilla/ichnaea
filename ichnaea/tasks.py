@@ -259,6 +259,23 @@ def update_enclosing_lac(session, cell):
     session.execute(stmt)
 
 
+def emit_new_measures_metric(stats_client, session, shortname,
+                             model, min_new, max_new):
+    # FIXME: this should emit a gauge, but at the moment we're using
+    # a version of heka-py that does not have gauge support and
+    # heka-py itself is deprecated, unlikely to see an update. Fix
+    # by rewriting to a gauge when we switch to emitting statsd
+    # messages manually.
+    q = session.query(func.count(model.id)).filter(
+        model.new_measures >= min_new,
+        model.new_measures < max_new)
+    c = q.first()
+    assert c is not None
+    n = int(c[0])
+    stats_client.timing('task.%s.new_measures_%d_%d' %
+                        (shortname, min_new, max_new), n)
+
+
 @celery.task(base=DatabaseTask, bind=True)
 def backfill_cell_location_update(self, new_cell_measures):
     try:
@@ -307,6 +324,9 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
     try:
         cells = []
         with self.db_session() as session:
+            emit_new_measures_metric(self.stats_client, session,
+                                     self.shortname, Cell,
+                                     min_new, max_new)
             query = session.query(Cell).filter(
                 Cell.new_measures >= min_new).filter(
                 Cell.new_measures < max_new).filter(
@@ -401,6 +421,9 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
     try:
         wifis = {}
         with self.db_session() as session:
+            emit_new_measures_metric(self.stats_client, session,
+                                     self.shortname, Wifi,
+                                     min_new, max_new)
             query = session.query(Wifi.key, Wifi).filter(
                 Wifi.new_measures >= min_new).filter(
                 Wifi.new_measures < max_new).limit(batch)
