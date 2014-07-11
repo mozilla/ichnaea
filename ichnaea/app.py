@@ -11,7 +11,7 @@ from ichnaea.geoip import configure_geoip
 
 def main(global_config, heka_config=None,
          _db_master=None, _db_slave=None, _heka_client=None, _redis=None,
-         **settings):
+         _stats_client=None, **settings):
     config = Configurator(settings=settings)
 
     # add support for pt templates
@@ -22,6 +22,7 @@ def main(global_config, heka_config=None,
     from ichnaea.content.views import configure_content
     from ichnaea.service import configure_service
     from ichnaea.heka_logging import configure_heka
+    from ichnaea.stats import configure_stats
 
     configure_content(config)
     configure_service(config)
@@ -49,6 +50,9 @@ def main(global_config, heka_config=None,
         config.registry.heka_client = configure_heka(heka_config)
     else:
         config.registry.heka_client = _heka_client
+
+    config.registry.stats_client = configure_stats(
+        settings.get('statsd_host'), _client=_stats_client)
 
     config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)
     config.add_tween('ichnaea.heka_logging.heka_tween_factory', under=EXCVIEW)

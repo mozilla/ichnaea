@@ -19,6 +19,10 @@ from ichnaea.db import Database
 from ichnaea.geoip import configure_geoip
 from ichnaea.heka_logging import configure_heka
 from ichnaea.models import ApiKey
+from ichnaea.stats import (
+    configure_stats,
+    DebugStatsClient,
+)
 from ichnaea.worker import (
     attach_database,
     celery,
@@ -73,13 +77,14 @@ def _make_redis(uri=REDIS_URI):
 
 
 def _make_app(_db_master=None, _db_slave=None, _heka_client=None, _redis=None,
-              **settings):
+              _stats_client=None, **settings):
     wsgiapp = main(
         {},
         _db_master=_db_master,
         _db_slave=_db_slave,
         _heka_client=_heka_client,
         _redis=_redis,
+        _stats_client=_stats_client,
         **settings)
     return TestApp(wsgiapp)
 
@@ -204,13 +209,16 @@ class HekaIsolation(object):
     def setup_heka(cls):
         # Use a debug configuration
         cls.heka_client = configure_heka(HEKA_TEST_CONFIG)
+        cls.stats_client = configure_stats('', DebugStatsClient())
 
     @classmethod
     def teardown_heka(cls):
         del cls.heka_client
+        del cls.stats_client
 
     def clear_heka_messages(self):
         self.heka_client.stream.msgs.clear()
+        self.stats_client.msgs.clear()
 
     def find_heka_messages(self, *args, **kw):
         msgs = self.heka_client.stream.msgs
@@ -224,6 +232,97 @@ class HekaIsolation(object):
             for field in m.fields:
                 print("    field: %s = %s" %
                       (field.name, ", ".join(field.value_string)))
+
+    def find_stats_messages(self, msg_type, msg_name):
+        result = {
+            'counter': [],
+            'timer': [],
+            'gauge': [],
+            'histogram': [],
+            'meter': [],
+            'set': [],
+        }
+        for m in self.stats_client.msgs:
+            suffix = m.split('|')[-1]
+            name, value = m.split('|')[0].split(':')
+            if suffix == 'g':
+                result['gauge'].append((name, value))
+            elif suffix == 'ms':
+                result['timer'].append((name, value))
+            elif suffix.startswith('c'):
+                result['counter'].append((name, value))
+            elif suffix == 'h':
+                result['histogram'].append((name, value))
+            elif suffix == 'm':
+                result['meter'].append((name, value))
+            elif suffix == 's':
+                result['set'].append((name, value))
+        return [(m[0], m[1]) for m in result.get(msg_type)
+                if m[0].startswith(msg_name)]
+
+    def print_stats_messages(self):
+        for m in self.stats_client.msgs:
+            print(m)
+
+    def check_stats(self, total=None, **kw):
+        """Checks a partial specification of messages to be found in
+        the stats message stream.
+
+        Keyword arguments:
+        total --  (optional) exact count of messages expected in stream.
+        kw  --  for all remaining keyword args of the form k:v :
+
+            select messages of type k, comparing the
+            message fields against v subject to type-dependent
+            interpretation:
+
+              if v is a str, select messages with field 'name' == v
+              and let match = 1
+
+              if v is a 2-tuple (n, match), select messages with
+              field 'name' == n
+
+           the selected messages are then checked depending on the type
+           of match:
+
+              if match is an int, assert match messages were selected
+
+        Examples:
+
+           check_stats(
+               total=4,
+               timer=['request.v1.search'],
+               counter=['search.api_key.test',
+                        ('items.uploaded.batches', 2)],
+           )
+
+           This call will check for exactly 4 messages, exactly one timer
+           with 'name':'request.v1.search', exactly one counter
+           with 'name':'search.api_key.test'and  exactly two counters with
+           'name':'items.uploaded.batches'.
+        """
+        if total is not None:
+            self.assertEqual(total, len(self.stats_client.msgs))
+
+        for (msg_type, pred) in kw.items():
+            for p in pred:
+                match = 1
+                if isinstance(p, str):
+                    name = p
+                elif isinstance(p, tuple):
+                    if len(p) == 2:
+                        (name, match) = p
+                    else:
+                        raise TypeError("wanted 2-element tuple, got %s"
+                                        % type(p))
+                else:
+                    raise TypeError("wanted str or tuple, got %s"
+                                    % type(p))
+                msgs = self.find_stats_messages(msg_type, name)
+                if isinstance(match, int):
+                    self.assertEqual(match, len(msgs))
+                else:
+                    raise TypeError("wanted int, got %s" % type(match))
 
     def check_expected_heka_messages(self, total=None, **kw):
         """Checks a partial specification of messages to be found in
@@ -257,22 +356,22 @@ class HekaIsolation(object):
 
         Examples:
 
-           check_expected_heka_messages(timer=['http.request'])
+           check_expected_heka_messages(timer=['request'])
 
            This call will check for exactly one timer message with
-           'name':'http.request' in its fields.
+           'name':'request' in its fields.
 
 
            check_expected_heka_messages(
                total=5,
-               timer=[('http.request', {'url_path': '/v1/search'})],
+               timer=[('request', {'url_path': '/v1/search'})],
                counter=['search.api_key.test',
                         ('items.uploaded.batches', 2)],
                sentry=[('msg', RAVEN_ERROR, 1)]
            )
 
            This call will check for exactly 5 messages, exactly one timer
-           with 'name':'http.request' and 'url_path':'/v1/search' in its
+           with 'name':'request' and 'url_path':'/v1/search' in its
            fields; exactly one counter with 'name':'search.api_key.test',
            exactly two counters with 'name':'items.uploaded.batches', and
            at least one sentry message with 'msg':RAVEN_ERROR in its
@@ -342,6 +441,7 @@ class AppTestCase(TestCase, DBIsolation,
                             _db_slave=cls.db_slave,
                             _heka_client=cls.heka_client,
                             _redis=cls.redis_client,
+                            _stats_client=cls.stats_client,
                             _geoip_db=cls.geoip_db)
 
     @classmethod

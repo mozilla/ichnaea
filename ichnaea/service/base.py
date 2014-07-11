@@ -1,13 +1,13 @@
 import datetime
 from functools import wraps
 
-from ichnaea.heka_logging import get_heka_client
+from ichnaea.customjson import dumps
 from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden
 from ichnaea.models import (
     ApiKey
 )
-from ichnaea.customjson import dumps
 from ichnaea.service.error import DAILY_LIMIT
+from ichnaea.stats import get_stats_client
 
 
 INVALID_API_KEY = {
@@ -54,10 +54,10 @@ def check_api_key(func_name, error_on_invalidkey=False):
         @wraps(func)
         def closure(request, *args, **kwargs):
             api_key = request.GET.get('key', None)
-            heka_client = get_heka_client()
+            stats_client = get_stats_client()
 
             if api_key is None:
-                heka_client.incr('%s.no_api_key' % func_name)
+                stats_client.incr('%s.no_api_key' % func_name)
                 if error_on_invalidkey:
                     return invalid_api_key_response()
 
@@ -70,7 +70,7 @@ def check_api_key(func_name, error_on_invalidkey=False):
                 maxreq, shortname = found_key
                 if not shortname:
                     shortname = api_key
-                heka_client.incr('%s.api_key.%s' % (func_name, shortname))
+                stats_client.incr('%s.api_key.%s' % (func_name, shortname))
                 if rate_limit(request.registry.redis_client,
                               api_key, maxreq=maxreq):
                     result = HTTPForbidden()
@@ -78,7 +78,7 @@ def check_api_key(func_name, error_on_invalidkey=False):
                     result.body = DAILY_LIMIT
                     return result
             else:
-                heka_client.incr('%s.unknown_api_key' % func_name)
+                stats_client.incr('%s.unknown_api_key' % func_name)
                 if error_on_invalidkey:
                     return invalid_api_key_response()
 

@@ -5,8 +5,8 @@ Metrics
 =======
 
 As discussed in :ref:`the deployment document <deploy>`, Ichnaea emits
-metrics through the Heka client library with the intent of aggregating and
-viewing them on a Graphite server.
+metrics through the Heka and Statsd client libraries with the intent of
+aggregating and viewing them on a Graphite server.
 
 This document describes the metrics collected.
 
@@ -16,7 +16,7 @@ Counter aggregation
 In the following sections, any counter described will typically result in
 *two* sub-metrics emitted from Heka. This is because Heka performs a level
 of time-based aggregation before reporting to Graphite. In other words,
-Heka typically accumulates counter messages for a given reporting period (5
+Heka typically accumulates counter messages for a given reporting period (60
 seconds by default) and passes along to Graphite a single aggregate
 function applied to the messages in each reporting period.
 
@@ -294,7 +294,7 @@ These inconsistencies are generally not automatically correctable as it's
 not clear which data is correct or incorrect, merely that two data points
 disagree on some fact that they "should" agree on. The corrective measure
 taken is usually to reduce the estimated accuracy of the result, or discard
-the data that suggests higher accuracy in favour of that which suggests
+the data that suggests higher accuracy in favor of that which suggests
 lower.
 
 ``geolocate.anomaly.cell_lac_country_mismatch`` : counter
@@ -478,14 +478,13 @@ HTTP counters
 -------------
 
 Every legitimate, routed request to Ichnaea, whether to an API endpoint or
-to static content, also increments an ``http.request.*`` counter. The path
+to static content, also increments an ``request.*`` counter. The path
 of the counter is the based on the path of the HTTP request, with slashes
 replaced with periods, followed by a final component named by the response
 code produced by the request.
 
 For example, a GET of ``/leaders/weekly`` that results in an HTTP 200
-status code, will increment the counter
-``http.request.leaders.weekly.200``.
+status code, will increment the counter ``request.leaders.weekly.200``.
 
 Response codes in the 400 range (eg. 404) are only generated for HTTP paths
 referring to API endpoints; for static content, no counter is incremented on
@@ -496,7 +495,7 @@ HTTP timers
 -----------
 
 In addition to the HTTP counters, every legitimate, routed request to
-Ichnaea emits an ``http.request.*`` *timer*. These timers have the same
+Ichnaea emits an ``request.*`` *timer*. These timers have the same
 name structure as the HTTP counters, except they do not have a final
 component based on the response code. Rather, they aggregate over all
 response codes for a given HTTP path.

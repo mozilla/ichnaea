@@ -5,16 +5,13 @@ from pytz import utc
 
 from ichnaea.customjson import dumps
 from ichnaea.geocalc import location_is_in_country
-from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.base import check_api_key
-
 from ichnaea.service.error import (
     JSONParseError,
     MSG_ONE_OF,
     preprocess_request,
     verify_schema,
 )
-
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.geolocate.views import (
     NOT_FOUND,
@@ -24,14 +21,13 @@ from ichnaea.service.search.views import (
     search_all_sources,
     map_data,
 )
-
 from ichnaea.service.geosubmit.schema import (
     GeoSubmitBatchSchema,
     GeoSubmitSchema,
 )
-
 from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.service.submit.tasks import insert_measures
+from ichnaea.stats import get_stats_client
 
 
 def geosubmit_validator(data, errors):
@@ -144,8 +140,7 @@ def check_geoip(request, data):
                 if location_is_in_country(lat, lon, country):
                     filtered_items.append(item)
                 else:
-                    heka_client = get_heka_client()
-                    heka_client.incr("submit.geoip_mismatch")
+                    get_stats_client().incr("submit.geoip_mismatch")
             return filtered_items
     return items
 
@@ -169,13 +164,12 @@ def geosubmit_view(request):
 
 
 def process_batch(request, data, errors):
-    heka_client = get_heka_client()
     nickname = request.headers.get('X-Nickname', u'')
     upload_items = check_geoip(request, data)
     validated, errors = process_upload(nickname, upload_items)
 
     if errors:
-        heka_client.incr('geosubmit.upload.errors', len(errors))
+        get_stats_client().incr('geosubmit.upload.errors', len(errors))
 
     result = HTTPOk()
     result.content_type = 'application/json'
@@ -184,7 +178,7 @@ def process_batch(request, data, errors):
 
 
 def process_single(request):
-    heka_client = get_heka_client()
+    stats_client = get_stats_client()
 
     locate_data, locate_errors = preprocess_request(
         request,
@@ -207,7 +201,7 @@ def process_single(request):
     validated, errors = process_upload(nickname, upload_items)
 
     if errors:
-        heka_client.incr('geosubmit.upload.errors', len(errors))
+        stats_client.incr('geosubmit.upload.errors', len(errors))
 
     first_item = data['items'][0]
     if first_item['latitude'] == -255 or first_item['longitude'] == -255:
@@ -219,7 +213,7 @@ def process_single(request):
                   'accuracy': first_item['accuracy']}
 
     if result is None:
-        heka_client.incr('geosubmit.miss')
+        stats_client.incr('geosubmit.miss')
         result = HTTPNotFound()
         result.content_type = 'application/json'
         result.body = NOT_FOUND

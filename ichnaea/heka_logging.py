@@ -47,18 +47,17 @@ def heka_tween_factory(handler, registry):
 
     def heka_tween(request):
         heka_client = registry.heka_client
+        stats_client = registry.stats_client
         start = time.time()
 
         def timer_send():
-            heka_client.timer_send(
-                'http.request',
-                time.time() - start, fields={'url_path': request.path})
+            duration = time.time() - start
+            path = request.path.replace('/', '.').lstrip('.')
+            stats_client.timing('request.' + path, duration)
 
         def counter_send(status_code):
-            heka_client.incr(
-                'http.request',
-                fields={'status': str(status_code),
-                        'url_path': request.path})
+            path = request.path.replace('/', '.').lstrip('.')
+            stats_client.incr('request.%s.%s' % (path, status_code))
 
         try:
             response = handler(request)

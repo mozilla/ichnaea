@@ -9,6 +9,7 @@ from celery.schedules import crontab
 from ichnaea.config import read_config
 from ichnaea.db import Database
 from ichnaea.heka_logging import configure_heka
+from ichnaea.stats import configure_stats
 
 
 CELERY_IMPORTS = [
@@ -159,6 +160,7 @@ def init_worker_process(signal, sender, **kw):  # pragma: no cover
     attach_database(app, settings=settings)
     configure_s3_backup(app, settings=settings)
     configure_heka(conf.filename)
+    configure_stats(settings.get('statsd_host'))
 
 
 def configure(celery=celery):

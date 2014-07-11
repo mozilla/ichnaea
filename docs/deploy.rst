@@ -23,10 +23,10 @@ Heka configuration
 ==================
 
 The default configuration in ichnaea.ini assumes that you are running
-a hekad instance listening for UDP messages on port 5565. This is
-a pretty standard heka configuration, so if you have any problems, you
-should consult the heka documentation to verify that messages are
-being captured properly by hekad.
+a hekad instance listening for UDP messages on port 5565 and listening
+for Statsd UDP messages on port 8125. This is a pretty standard heka
+configuration, so if you have any problems, you should consult the heka
+documentation to verify that messages are being captured properly by hekad.
 
 To get heka to log exceptions to Sentry, you will need to obtain the
 DSN for your Sentry instance. Edit ichnaea.ini in the `heka_plugin_raven`

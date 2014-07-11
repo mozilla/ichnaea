@@ -194,7 +194,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         result = cell_location_update.delay(min_new=1)
         self.assertEqual(result.get(), 0)
 
-        self.check_expected_heka_messages(
+        self.check_stats(
             total=4,
             timer=[
                 # We made duplicate calls
@@ -559,7 +559,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         result = wifi_location_update.delay(min_new=1)
         self.assertEqual(result.get(), 0)
 
-        self.check_expected_heka_messages(
+        self.check_stats(
             total=4,
             timer=[
                 # We made duplicate calls

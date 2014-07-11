@@ -103,13 +103,14 @@ class TestFunctionalContent(AppTestCase):
     def test_not_found(self):
         self.app.get('/nobody-is-home', status=404)
 
-        self.check_expected_heka_messages(
+        self.check_stats(
             # No counters for URLs that are invalid
-            counter=[('http.request', 0)],
+            counter=[('request', 0)],
 
             # No timers for invalid urls either
-            timer=[('http.request', 0)],
+            timer=[('request', 0)])
 
+        self.check_expected_heka_messages(
             # No tracebacks for 404's
             sentry=[('msg', RAVEN_ERROR, 0)])
 

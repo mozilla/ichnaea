@@ -62,9 +62,10 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
 
-        self.check_expected_heka_messages(
-            counter=['http.request',
-                     'submit.api_key.test']
+        self.check_stats(
+            counter=['request.v1.submit',
+                     'submit.api_key.test'],
+            timer=['request.v1.submit'],
         )
 
         session = self.db_master_session
@@ -455,7 +456,7 @@ class TestSubmit(CeleryAppTestCase):
             '/v1/submit', {"items": [{"lat": 12.3, "lon": 23.4}]},
             status=204)
 
-        self.check_expected_heka_messages(counter=['submit.no_api_key'])
+        self.check_stats(counter=['submit.no_api_key'])
 
     def test_log_unknown_api_key(self):
         app = self.app
@@ -464,7 +465,7 @@ class TestSubmit(CeleryAppTestCase):
             {"items": [{"lat": 12.3, "lon": 23.4}]},
             status=204)
 
-        self.check_expected_heka_messages(
+        self.check_stats(
             counter=['submit.unknown_api_key',
                      ('submit.api_key.invalidkey', 0)])
 
@@ -544,11 +545,11 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
 
-        self.check_expected_heka_messages(
-            counter=['http.request',
+        self.check_stats(
+            counter=['request.v1.submit',
                      'items.uploaded.batches',
                      'submit.api_key.test'],
-            timer=['http.request',
+            timer=['request.v1.submit',
                    'task.service.submit.insert_cell_measures',
                    'task.service.submit.insert_measures']
         )
@@ -723,9 +724,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(res.body, '')
         wifi_result = session.query(WifiMeasure).all()
         self.assertEqual(len(wifi_result), 1)
-        self.check_expected_heka_messages(
-            counter=[('submit.geoip_mismatch', 2)],
-        )
+        self.check_stats(counter=[('submit.geoip_mismatch', 2)])
 
     def test_geoip_with_data_error(self):
         session = self.db_master_session

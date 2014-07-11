@@ -174,8 +174,7 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
         try:
             if not s3_backend.backup_archive(s3_key, zip_path):
                 return
-            self.heka_client.incr('s3.backup.%s' % name,
-                                  (end_id - start_id))
+            self.stats_client.incr('s3.backup.%s' % name, (end_id - start_id))
         finally:
             if cleanup_zip:
                 if os.path.exists(zip_path):
@@ -370,7 +369,7 @@ def wifi_unthrottle_measures(self, max_measures, batch=1000):
                                     join_measure=join_measure,
                                     max_measures=max_measures,
                                     batch=batch)
-            self.heka_client.incr("items.wifi_unthrottled", n)
+            self.stats_client.incr("items.wifi_unthrottled", n)
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)
 
@@ -386,6 +385,6 @@ def cell_unthrottle_measures(self, max_measures, batch=100):
                                     join_measure=join_measure,
                                     max_measures=max_measures,
                                     batch=batch)
-            self.heka_client.incr("items.cell_unthrottled", n)
+            self.stats_client.incr("items.cell_unthrottled", n)
     except Exception as exc:  # pragma: no cover
         raise self.retry(exc=exc)

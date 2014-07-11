@@ -28,8 +28,8 @@ from ichnaea.service.error import (
     MSG_ONE_OF,
     preprocess_request,
 )
-from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.search.schema import SearchSchema
+from ichnaea.stats import get_stats_client
 
 
 # parameters for wifi clustering
@@ -276,7 +276,7 @@ def geoip_and_best_guess_country_code(data, request, api_name):
     None for either field if no data is available.
     """
 
-    heka_client = get_heka_client()
+    stats_client = get_stats_client()
     geoip = None
 
     if request.client_addr:
@@ -294,20 +294,20 @@ def geoip_and_best_guess_country_code(data, request, api_name):
                     cell_mccs.add(cell['mcc'])
 
     if len(cell_mccs) > 1:
-        heka_client.incr('%s.anomaly.multiple_mccs' % api_name)
+        stats_client.incr('%s.anomaly.multiple_mccs' % api_name)
 
     if geoip:
         # GeoIP always wins if we have it.
         accuracy, city = radius_from_geoip(geoip)
         if city:
-            heka_client.incr('%s.geoip_city_found' % api_name)
+            stats_client.incr('%s.geoip_city_found' % api_name)
         else:
-            heka_client.incr('%s.geoip_country_found' % api_name)
+            stats_client.incr('%s.geoip_country_found' % api_name)
 
         if cell_countries and geoip['country_code'] not in cell_countries:
-            heka_client.incr('%s.anomaly.geoip_mcc_mismatch' % api_name)
+            stats_client.incr('%s.anomaly.geoip_mcc_mismatch' % api_name)
 
-        heka_client.incr('%s.country_from_geoip' % api_name)
+        stats_client.incr('%s.country_from_geoip' % api_name)
         geoip_res = {
             'lat': geoip['latitude'],
             'lon': geoip['longitude'],
@@ -316,15 +316,15 @@ def geoip_and_best_guess_country_code(data, request, api_name):
         return (geoip_res, geoip['country_code'])
 
     else:
-        heka_client.incr('%s.no_geoip_found' % api_name)
+        stats_client.incr('%s.no_geoip_found' % api_name)
 
     # Pick the most-commonly-occurring MCC if we got any
     cc = most_common(cell_countries)
     if cc:
-        heka_client.incr('%s.country_from_mcc' % api_name)
+        stats_client.incr('%s.country_from_mcc' % api_name)
         return (None, cc)
 
-    heka_client.incr('%s.no_country' % api_name)
+    stats_client.incr('%s.no_country' % api_name)
     return (None, None)
 
 
@@ -339,7 +339,7 @@ def search_all_sources(request, data, api_name):
     api_name -- a string to use in Heka metrics ("search" or "geolocate")
     """
 
-    heka_client = get_heka_client()
+    stats_client = get_stats_client()
 
     session = request.db_slave_session
     result = None
@@ -364,21 +364,21 @@ def search_all_sources(request, data, api_name):
 
             r = search_fn(session, data)
             if r is None:
-                heka_client.incr('%s.no_%s_found' %
-                                 (api_name, metric_name))
+                stats_client.incr('%s.no_%s_found' %
+                                  (api_name, metric_name))
 
             else:
                 lat = float(r['lat'])
                 lon = float(r['lon'])
 
-                heka_client.incr('%s.%s_found' %
-                                 (api_name, metric_name))
+                stats_client.incr('%s.%s_found' %
+                                  (api_name, metric_name))
 
                 # Skip any hit that seems to be in the wrong country.
                 if country and not location_is_in_country(lat, lon,
                                                           country, 1):
-                    heka_client.incr('%s.anomaly.%s_country_mismatch' %
-                                     (api_name, metric_name))
+                    stats_client.incr('%s.anomaly.%s_country_mismatch' %
+                                      (api_name, metric_name))
 
                 # Otherwise at least accept the first result we get.
                 elif result is None:
@@ -394,8 +394,8 @@ def search_all_sources(request, data, api_name):
                     result_metric = metric_name
 
                 else:
-                    heka_client.incr('%s.anomaly.%s_%s_mismatch' %
-                                     (api_name, metric_name, result_metric))
+                    stats_client.incr('%s.anomaly.%s_%s_mismatch' %
+                                      (api_name, metric_name, result_metric))
 
     # Fall back to GeoIP if nothing has worked yet. We do not
     # include this in the "zoom-in" loop because GeoIP is
@@ -407,14 +407,14 @@ def search_all_sources(request, data, api_name):
         result_metric = 'geoip'
 
     if not result:
-        heka_client.incr('%s.miss' % api_name)
+        stats_client.incr('%s.miss' % api_name)
         return None
 
     assert result
     assert result_metric
-    heka_client.incr('%s.%s_hit' % (api_name, result_metric))
-    heka_client.timer_send('%s.accuracy.%s' % (api_name, result_metric),
-                           result['accuracy'])
+    stats_client.incr('%s.%s_hit' % (api_name, result_metric))
+    stats_client.timing('%s.accuracy.%s' % (api_name, result_metric),
+                        result['accuracy'])
     return result
 
 

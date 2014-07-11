@@ -311,7 +311,7 @@ class TestMeasurementsDump(CeleryTestCase):
             else:
                 self.assertEquals(cell.total_measures, 1)
 
-        self.check_expected_heka_messages(counter=['items.cell_unthrottled'])
+        self.check_stats(counter=['items.cell_unthrottled'])
 
     def test_unthrottle_wifi_measures(self):
         session = self.db_master_session
@@ -343,4 +343,4 @@ class TestMeasurementsDump(CeleryTestCase):
             else:
                 self.assertEquals(wifi.total_measures, 1)
 
-        self.check_expected_heka_messages(counter=['items.wifi_unthrottled'])
+        self.check_stats(counter=['items.wifi_unthrottled'])

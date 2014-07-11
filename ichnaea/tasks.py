@@ -29,6 +29,7 @@ from ichnaea.models import (
     to_cellkey,
     to_wifikey,
 )
+from ichnaea.stats import get_stats_client
 from ichnaea.worker import celery
 from ichnaea.geocalc import distance, centroid, range_to_points
 
@@ -55,7 +56,7 @@ class DatabaseTask(Task):
         return short
 
     def __call__(self, *args, **kw):
-        with self.heka_client.timer("task." + self.shortname):
+        with self.stats_client.timer("task." + self.shortname):
             try:
                 result = super(DatabaseTask, self).__call__(*args, **kw)
             except Exception:
@@ -91,6 +92,10 @@ class DatabaseTask(Task):
     @property
     def heka_client(self):
         return get_heka_client()
+
+    @property
+    def stats_client(self):
+        return get_stats_client()
 
 
 def daily_task_days(ago):
@@ -366,8 +371,8 @@ def blacklist_and_remove_moving_stations(session, blacklist_model,
             session.add(b)
 
     if moving_keys:
-        get_heka_client().incr("items.blacklisted.%s_moving" % station_type,
-                               len(moving_keys))
+        get_stats_client().incr("items.blacklisted.%s_moving" % station_type,
+                                len(moving_keys))
         remove_station.delay(moving_keys)
 
 

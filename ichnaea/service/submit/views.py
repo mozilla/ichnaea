@@ -2,13 +2,13 @@ from pyramid.httpexceptions import HTTPNoContent
 
 from ichnaea.customjson import dumps
 from ichnaea.geocalc import location_is_in_country
-from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.error import (
     preprocess_request,
 )
 from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.service.submit.tasks import insert_measures
 from ichnaea.service.base import check_api_key
+from ichnaea.stats import get_stats_client
 
 
 def configure_submit(config):
@@ -71,8 +71,7 @@ def check_geoip(request, data, errors):
                 if location_is_in_country(lat, lon, country, 1):
                     filtered_items.append(item)
                 else:
-                    heka_client = get_heka_client()
-                    heka_client.incr("submit.geoip_mismatch")
+                    get_stats_client().incr("submit.geoip_mismatch")
             data['items'] = filtered_items
 
 

@@ -33,8 +33,8 @@ from ichnaea.models import (
 from ichnaea.customjson import (
     loads,
 )
-from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.submit.utils import process_score
+from ichnaea.stats import get_stats_client
 from ichnaea.tasks import DatabaseTask
 from ichnaea.worker import celery
 
@@ -164,7 +164,7 @@ def process_measure(report_id, data, session):
 
 
 def process_measures(items, session, userid=None):
-    heka_client = get_heka_client()
+    stats_client = get_stats_client()
     utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
     utcmin = utcnow - datetime.timedelta(60)
 
@@ -185,8 +185,8 @@ def process_measures(items, session, userid=None):
 
     if cell_measures:
         # group by and create task per cell key
-        heka_client.incr("items.uploaded.cell_measures",
-                         len(cell_measures))
+        stats_client.incr("items.uploaded.cell_measures",
+                          len(cell_measures))
         cells = defaultdict(list)
         for measure in cell_measures:
             cells[to_cellkey_psc(measure)].append(measure)
@@ -196,8 +196,8 @@ def process_measures(items, session, userid=None):
 
     if wifi_measures:
         # group by and create task per wifi key
-        heka_client.incr("items.uploaded.wifi_measures",
-                         len(wifi_measures))
+        stats_client.incr("items.uploaded.wifi_measures",
+                          len(wifi_measures))
         wifis = defaultdict(list)
         for measure in wifi_measures:
             wifis[measure['key']].append(measure)
@@ -223,7 +223,7 @@ def insert_measures(self, items=None, nickname=''):
             userid, nickname = process_user(nickname, session)
 
             process_measures(items, session, userid=userid)
-            self.heka_client.incr("items.uploaded.batches", count=length)
+            self.stats_client.incr("items.uploaded.batches", count=length)
 
             session.commit()
         return length
@@ -306,7 +306,7 @@ def process_station_measures(session, entries, station_type,
     dropped_blacklisted = 0
     dropped_malformed = 0
     dropped_overflow = 0
-    heka_client = get_heka_client()
+    stats_client = get_stats_client()
     new_stations = 0
     if utcnow is None:
         utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
@@ -370,19 +370,19 @@ def process_station_measures(session, entries, station_type,
                       key='new_' + station_type)
 
     if dropped_blacklisted != 0:
-        heka_client.incr("items.dropped.%s_ingress_blacklisted" % station_type,
-                         count=dropped_blacklisted)
+        stats_client.incr("items.dropped.%s_ingress_blacklisted" % station_type,
+                          count=dropped_blacklisted)
 
     if dropped_malformed != 0:
-        heka_client.incr("items.dropped.%s_ingress_malformed" % station_type,
-                         count=dropped_malformed)
+        stats_client.incr("items.dropped.%s_ingress_malformed" % station_type,
+                          count=dropped_malformed)
 
     if dropped_overflow != 0:
-        heka_client.incr("items.dropped.%s_ingress_overflow" % station_type,
-                         count=dropped_overflow)
+        stats_client.incr("items.dropped.%s_ingress_overflow" % station_type,
+                          count=dropped_overflow)
 
-    heka_client.incr("items.inserted.%s_measures" % station_type,
-                     count=len(all_measures))
+    stats_client.incr("items.inserted.%s_measures" % station_type,
+                      count=len(all_measures))
 
     session.add_all(all_measures)
     return all_measures
