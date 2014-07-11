@@ -461,14 +461,18 @@ database tables. Along the way several counters measure the steps involved:
     measures backed up; it's *only* a count of the cumulative space freed
     for previously rate-limited stations.
 
+
+Gauges
+------
+
 ``task.cell_location_update.new_measures_1_10``,
 ``task.wifi_location_update.new_measures_1_10``,
 ``task.cell_location_update.new_measures_10_1000000``,
 ``task.wifi_location_update.new_measures_10_1000000``, : timers
 
-    These pseudo-timers measure the number of stations with between 1 and
+    These gauges measure the number of stations with between 1 and
     10 (or between 10 and 1000000) pending new location-measures when the
-    station location update tasks run. These timers should remain relatively
+    station location update tasks run. These gauges should remain relatively
     constant if Ichnaea is "keeping up with" new location-measures.
 
 

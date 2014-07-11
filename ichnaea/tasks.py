@@ -261,19 +261,12 @@ def update_enclosing_lac(session, cell):
 
 def emit_new_measures_metric(stats_client, session, shortname,
                              model, min_new, max_new):
-    # FIXME: this should emit a gauge, but at the moment we're using
-    # a version of heka-py that does not have gauge support and
-    # heka-py itself is deprecated, unlikely to see an update. Fix
-    # by rewriting to a gauge when we switch to emitting statsd
-    # messages manually.
-    q = session.query(func.count(model.id)).filter(
+    q = session.query(model).filter(
         model.new_measures >= min_new,
         model.new_measures < max_new)
-    c = q.first()
-    assert c is not None
-    n = int(c[0])
-    stats_client.timing('task.%s.new_measures_%d_%d' %
-                        (shortname, min_new, max_new), n)
+    n = q.count()
+    stats_client.gauge('task.%s.new_measures_%d_%d' %
+                       (shortname, min_new, max_new), n)
 
 
 @celery.task(base=DatabaseTask, bind=True)

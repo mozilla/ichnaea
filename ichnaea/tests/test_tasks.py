@@ -52,10 +52,9 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(result.get(), (2, 0))
         self.check_stats(
             total=2,
-            timer=[
-                'task.cell_location_update',
-                'task.cell_location_update.new_measures_1_100',
-            ])
+            timer=['task.cell_location_update'],
+            gauge=['task.cell_location_update.new_measures_1_100'],
+        )
 
         cells = session.query(Cell).filter(Cell.cid != CELLID_LAC).all()
         self.assertEqual(len(cells), 2)
@@ -205,10 +204,11 @@ class TestCellLocationUpdate(CeleryTestCase):
             timer=[
                 # We made duplicate calls
                 ('task.cell_location_update', 2),
-                ('task.cell_location_update.new_measures_1_100', 2),
-
                 # One of those would've scheduled a remove_cell task
                 ('task.remove_cell', 1)
+            ],
+            gauge=[
+                ('task.cell_location_update.new_measures_1_100', 2),
             ])
 
     def add_line_of_cells_and_scan_lac(self):
@@ -440,10 +440,9 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.assertEqual(result.get(), (2, 0))
         self.check_stats(
             total=2,
-            timer=[
-                'task.wifi_location_update',
-                'task.wifi_location_update.new_measures_1_100',
-            ])
+            timer=['task.wifi_location_update'],
+            gauge=['task.wifi_location_update.new_measures_1_100'],
+        )
 
         wifis = dict(session.query(Wifi.key, Wifi).all())
         self.assertEqual(set(wifis.keys()), set([k1, k2]))
@@ -577,10 +576,11 @@ class TestWifiLocationUpdate(CeleryTestCase):
             timer=[
                 # We made duplicate calls
                 ('task.wifi_location_update', 2),
-                ('task.wifi_location_update.new_measures_1_100', 2),
-
                 # One of those would've scheduled a remove_wifi task
                 ('task.remove_wifi', 1)
+            ],
+            gauge=[
+                ('task.wifi_location_update.new_measures_1_100', 2),
             ])
 
     def test_remove_wifi(self):
