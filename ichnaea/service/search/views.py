@@ -1,3 +1,14 @@
+from collections import namedtuple
+import operator
+from numbers import Number
+
+import mobile_codes
+
+from ichnaea.geocalc import (
+    distance,
+    location_is_in_country,
+)
+from ichnaea.geoip import radius_from_geoip
 from ichnaea.models import (
     Cell,
     normalized_wifi_key,
@@ -19,15 +30,6 @@ from ichnaea.service.error import (
 )
 from ichnaea.heka_logging import get_heka_client
 from ichnaea.service.search.schema import SearchSchema
-from ichnaea.geoip import radius_from_geoip
-from ichnaea.geocalc import (
-    distance,
-    location_is_in_country,
-)
-from collections import namedtuple
-import operator
-import mobile_codes
-from numbers import Number
 
 
 # parameters for wifi clustering
