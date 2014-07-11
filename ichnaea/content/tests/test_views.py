@@ -105,10 +105,10 @@ class TestFunctionalContent(AppTestCase):
 
         self.check_stats(
             # No counters for URLs that are invalid
-            counter=[('request', 0)],
+            counter=[('request.nobody-is-home.404', 0)],
 
             # No timers for invalid urls either
-            timer=[('request', 0)])
+            timer=[('request.nobody-is-home', 0)])
 
         self.check_expected_heka_messages(
             # No tracebacks for 404's

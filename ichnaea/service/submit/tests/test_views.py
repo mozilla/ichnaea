@@ -63,7 +63,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(res.body, '')
 
         self.check_stats(
-            counter=['request.v1.submit',
+            counter=['request.v1.submit.204',
                      'submit.api_key.test'],
             timer=['request.v1.submit'],
         )
@@ -528,7 +528,7 @@ class TestSubmit(CeleryAppTestCase):
                        content_type='application/json', status=204)
         self.assertEqual(res.body, '')
 
-    def test_heka_logging(self):
+    def test_stats(self):
         app = self.app
         cell_data = [
             {"radio": "umts", "mcc": FRANCE_MCC,
@@ -546,7 +546,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(res.body, '')
 
         self.check_stats(
-            counter=['request.v1.submit',
+            counter=['request.v1.submit.204',
                      'items.uploaded.batches',
                      'submit.api_key.test'],
             timer=['request.v1.submit',

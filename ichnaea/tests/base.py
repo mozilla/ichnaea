@@ -258,7 +258,7 @@ class HekaIsolation(object):
             elif suffix == 's':
                 result['set'].append((name, value))
         return [(m[0], m[1]) for m in result.get(msg_type)
-                if m[0].startswith(msg_name)]
+                if m[0] == msg_name]
 
     def print_stats_messages(self):
         for m in self.stats_client.msgs:

@@ -68,7 +68,7 @@ class TestSearch(AppTestCase):
                    ('search.accuracy.cell', 1)],
             counter=[('search.api_key.test', 1),
                      ('search.cell_hit', 1),
-                     ('request', 1),
+                     ('request.v1.search.200', 1),
                      ('search.cell_found', 1),
                      ('search.no_cell_lac_found', 1),
                      ('search.no_geoip_found', 1),
@@ -103,7 +103,7 @@ class TestSearch(AppTestCase):
                    ('search.accuracy.wifi', 1)],
             counter=[('search.api_key.test', 1),
                      ('search.wifi_hit', 1),
-                     ('request', 1),
+                     ('request.v1.search.200', 1),
                      ('search.wifi_found', 1),
                      ('search.no_geoip_found', 1),
                      ('search.no_country', 1)]
@@ -467,7 +467,7 @@ class TestSearch(AppTestCase):
                    ('search.accuracy.geoip', 1)],
             counter=[('search.api_key.test', 1),
                      ('search.geoip_hit', 1),
-                     ('request', 1),
+                     ('request.v1.search.200', 1),
                      ('search.no_wifi_found', 1),
                      ('search.geoip_city_found', 1),
                      ('search.country_from_geoip', 1)]
@@ -491,7 +491,7 @@ class TestSearch(AppTestCase):
                    ('search.accuracy.geoip', 1)],
             counter=[('search.api_key.test', 1),
                      ('search.geoip_hit', 1),
-                     ('request', 1),
+                     ('request.v1.search.200', 1),
                      ('search.geoip_city_found', 1),
                      ('search.country_from_geoip', 1)]
         )
@@ -524,7 +524,7 @@ class TestSearch(AppTestCase):
                    ('search.accuracy.geoip', 1)],
             counter=[
                 ('search.api_key.test', 1),
-                ('request', 1),
+                ('request.v1.search.200', 1),
                 ('search.geoip_city_found', 1),
                 ('search.anomaly.geoip_mcc_mismatch', 1),
                 ('search.country_from_geoip', 1),
@@ -571,7 +571,7 @@ class TestSearch(AppTestCase):
             ],
             counter=[
                 ('search.api_key.test', 1),
-                ('request', 1),
+                ('request.v1.search.200', 1),
                 ('search.anomaly.cell_country_mismatch', 1),
                 ('search.country_from_mcc', 1),
                 ('search.no_geoip_found', 1),
@@ -614,7 +614,7 @@ class TestSearch(AppTestCase):
             ],
             counter=[
                 ('search.api_key.test', 1),
-                ('request', 1),
+                ('request.v1.search.200', 1),
                 ('search.anomaly.cell_lac_country_mismatch', 1),
                 ('search.country_from_mcc', 1),
                 ('search.no_geoip_found', 1),
@@ -662,7 +662,7 @@ class TestSearch(AppTestCase):
             ],
             counter=[
                 ('search.api_key.test', 1),
-                ('request', 1),
+                ('request.v1.search.200', 1),
                 ('search.anomaly.wifi_country_mismatch', 1),
                 ('search.country_from_geoip', 1),
                 ('search.geoip_city_found', 1),
@@ -712,7 +712,7 @@ class TestSearch(AppTestCase):
             ],
             counter=[
                 ('search.api_key.test', 1),
-                ('request', 1),
+                ('request.v1.search.200', 1),
                 ('search.anomaly.cell_cell_lac_mismatch', 1),
                 ('search.country_from_mcc', 1),
                 ('search.no_geoip_found', 1),
@@ -768,7 +768,7 @@ class TestSearch(AppTestCase):
             ],
             counter=[
                 ('search.api_key.test', 1),
-                ('request', 1),
+                ('request.v1.search.200', 1),
                 ('search.anomaly.wifi_cell_lac_mismatch', 1),
                 ('search.country_from_mcc', 1),
                 ('search.no_geoip_found', 1),
@@ -824,7 +824,7 @@ class TestSearch(AppTestCase):
             ],
             counter=[
                 ('search.api_key.test', 1),
-                ('request', 1),
+                ('request.v1.search.200', 1),
                 ('search.anomaly.wifi_cell_mismatch', 1),
                 ('search.country_from_mcc', 1),
                 ('search.no_geoip_found', 1),
@@ -874,7 +874,7 @@ class TestSearch(AppTestCase):
             ],
             counter=[
                 ('search.api_key.test', 1),
-                ('request', 1),
+                ('request.v1.search.200', 1),
                 ('search.country_from_mcc', 1),
                 ('search.no_geoip_found', 1),
                 ('search.cell_lac_found', 1),
@@ -931,7 +931,7 @@ class TestSearch(AppTestCase):
             ],
             counter=[
                 ('search.api_key.test', 1),
-                ('request', 1),
+                ('request.v1.search.200', 1),
                 ('search.country_from_mcc', 1),
                 ('search.no_geoip_found', 1),
                 ('search.no_cell_lac_found', 1),
@@ -989,7 +989,7 @@ class TestSearch(AppTestCase):
             ],
             counter=[
                 ('search.api_key.test', 1),
-                ('request', 1),
+                ('request.v1.search.200', 1),
                 ('search.country_from_mcc', 1),
                 ('search.no_geoip_found', 1),
                 ('search.no_cell_found', 1),
@@ -1050,7 +1050,7 @@ class TestSearch(AppTestCase):
             ],
             counter=[
                 ('search.api_key.test', 1),
-                ('request', 1),
+                ('request.v1.search.200', 1),
                 ('search.country_from_mcc', 1),
                 ('search.no_geoip_found', 1),
                 ('search.wifi_found', 1),
@@ -1173,8 +1173,8 @@ class TestSearchErrors(AppTestCase):
             pass
 
         self.check_stats(
-            timer=['request'],
-            counter=['request']
+            timer=['request.v1.search'],
+            counter=['request.v1.search.500']
         )
         self.check_expected_heka_messages(
             sentry=[('msg', RAVEN_ERROR, 1)]

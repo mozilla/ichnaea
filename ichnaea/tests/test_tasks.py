@@ -53,7 +53,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.check_stats(
             total=2,
             timer=[
-                ('task.cell_location_update', 2),
+                'task.cell_location_update',
                 'task.cell_location_update.new_measures_1_100',
             ])
 
@@ -204,7 +204,7 @@ class TestCellLocationUpdate(CeleryTestCase):
             total=6,
             timer=[
                 # We made duplicate calls
-                ('task.cell_location_update', 4),
+                ('task.cell_location_update', 2),
                 ('task.cell_location_update.new_measures_1_100', 2),
 
                 # One of those would've scheduled a remove_cell task
@@ -441,7 +441,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.check_stats(
             total=2,
             timer=[
-                ('task.wifi_location_update', 2),
+                'task.wifi_location_update',
                 'task.wifi_location_update.new_measures_1_100',
             ])
 
@@ -576,7 +576,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
             total=6,
             timer=[
                 # We made duplicate calls
-                ('task.wifi_location_update', 4),
+                ('task.wifi_location_update', 2),
                 ('task.wifi_location_update.new_measures_1_100', 2),
 
                 # One of those would've scheduled a remove_wifi task

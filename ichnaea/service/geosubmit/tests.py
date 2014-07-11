@@ -393,6 +393,7 @@ class TestGeolocateRegression(GeolocateRegressionTest, CeleryAppTestCase):
 
         self.url = '/v1/geosubmit'
         self.metric = 'geosubmit'
+        self.metric_url = 'request.v1.geosubmit'
 
     def get_session(self):
         return self.db_master_session
