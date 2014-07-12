@@ -51,7 +51,7 @@ def heka_tween_factory(handler, registry):
         start = time.time()
 
         def timer_send():
-            duration = time.time() - start
+            duration = int(round((time.time() - start) * 1000))
             path = request.path.replace('/', '.').lstrip('.')
             stats_client.timing('request.' + path, duration)
 
