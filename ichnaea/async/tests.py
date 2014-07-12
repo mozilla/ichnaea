@@ -1,6 +1,6 @@
 from unittest2 import TestCase
 
-from ichnaea.worker import attach_database
+from ichnaea.async.config import attach_database
 from ichnaea.worker import celery
 from ichnaea.tests.base import DBTestCase
 

@@ -1,6 +1,9 @@
 from collections import defaultdict
+
 from sqlalchemy import text
-from ichnaea.tasks import DatabaseTask, backfill_cell_location_update
+
+from ichnaea.async.task import DatabaseTask
+from ichnaea.tasks import backfill_cell_location_update
 from ichnaea.worker import celery
 from ichnaea.models import CELLID_LAC
 from ichnaea.geocalc import distance

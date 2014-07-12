@@ -7,6 +7,7 @@ import pytz
 import shutil
 import tempfile
 
+from ichnaea.async.task import DatabaseTask
 from ichnaea.backup.s3 import S3Backend, compute_hash
 from ichnaea.models import (
     Cell,
@@ -19,7 +20,6 @@ from ichnaea.models import (
     Wifi,
     WifiMeasure,
 )
-from ichnaea.tasks import DatabaseTask
 from ichnaea.worker import celery
 from sqlalchemy import func
 

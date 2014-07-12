@@ -7,6 +7,7 @@ import pytz
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import and_, or_
 
+from ichnaea.async.task import DatabaseTask
 from ichnaea.content.models import (
     MapStat,
     User,
@@ -35,7 +36,6 @@ from ichnaea.customjson import (
 )
 from ichnaea.service.submit.utils import process_score
 from ichnaea.stats import get_stats_client
-from ichnaea.tasks import DatabaseTask
 from ichnaea.worker import celery
 
 

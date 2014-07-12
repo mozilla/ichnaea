@@ -13,6 +13,10 @@ from unittest2 import TestCase
 from webtest import TestApp
 
 from ichnaea import main
+from ichnaea.async.config import (
+    attach_database,
+    configure_s3_backup,
+)
 from ichnaea.cache import redis_client
 from ichnaea.db import _Model
 from ichnaea.db import Database
@@ -24,9 +28,7 @@ from ichnaea.stats import (
     DebugStatsClient,
 )
 from ichnaea.worker import (
-    attach_database,
     celery,
-    configure_s3_backup,
 )
 
 # make new unittest API's available under Python 2.6

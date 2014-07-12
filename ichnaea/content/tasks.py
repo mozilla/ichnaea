@@ -3,6 +3,7 @@ from datetime import timedelta, datetime
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
+from ichnaea.async.task import DatabaseTask
 from ichnaea.content.models import (
     Stat,
     STAT_TYPE,
@@ -14,10 +15,7 @@ from ichnaea.models import (
     WifiMeasure,
     CELLID_LAC,
 )
-from ichnaea.tasks import (
-    DatabaseTask,
-    daily_task_days,
-)
+from ichnaea.tasks import daily_task_days
 from ichnaea.worker import celery
 
 
