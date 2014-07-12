@@ -16,6 +16,7 @@ from ichnaea.heka_logging import (
     configure_heka,
     RAVEN_ERROR,
 )
+from ichnaea.stats import configure_stats
 
 IMAGE_HEADERS = {
     'Content-Type': 'image/png',
@@ -141,7 +142,7 @@ def upload_to_s3(bucketname, tiles):
     return result
 
 
-def generate(db, bucketname, heka_client,
+def generate(db, bucketname, heka_client, stats_client,
              upload=True, concurrency=2, datamaps='', output=None):
     datamaps_encode = os.path.join(datamaps, 'encode')
     datamaps_enumerate = os.path.join(datamaps, 'enumerate')
@@ -151,9 +152,9 @@ def generate(db, bucketname, heka_client,
         csv = os.path.join(workdir, 'map.csv')
 
         heka_client.debug('Datamaps export to CSV started.')
-        with heka_client.timer("datamaps.export_to_csv"):
+        with stats_client.timer("datamaps.export_to_csv"):
             result_rows = export_to_csv(db, csv)
-        heka_client.timer_send('datamaps.csv_rows', result_rows)
+        stats_client.timing('datamaps.csv_rows', result_rows)
         heka_client.debug('Datamaps export to CSV finished.')
 
         # create shapefile / quadtree
@@ -163,7 +164,7 @@ def generate(db, bucketname, heka_client,
             output=shapes,
             input=csv)
         heka_client.debug('Datamaps encode started.')
-        with heka_client.timer("datamaps.encode"):
+        with stats_client.timer("datamaps.encode"):
             os.system(cmd)
         heka_client.debug('Datamaps encode finished.')
 
@@ -182,20 +183,20 @@ def generate(db, bucketname, heka_client,
             render=datamaps_render,
             output=tiles)
         heka_client.debug('Datamaps rendering started.')
-        with heka_client.timer("datamaps.render"):
+        with stats_client.timer("datamaps.render"):
             os.system(cmd)
         heka_client.debug('Datamaps rendering finished.')
 
         if upload:
             heka_client.debug('Datamaps upload to S3 started.')
-            with heka_client.timer("datamaps.upload_to_s3"):
+            with stats_client.timer("datamaps.upload_to_s3"):
                 result = upload_to_s3(bucketname, tiles)
             for metric, value in result.items():
-                heka_client.timer_send('datamaps.%s' % metric, value)
+                stats_client.timing('datamaps.%s' % metric, value)
             heka_client.debug('Datamaps upload to S3 finished.')
 
 
-def main(argv, _db_master=None, _heka_client=None):
+def main(argv, _db_master=None, _heka_client=None, _stats_client=None):
     # run for example via:
     # bin/location_map --create --upload --datamaps=/path/to/datamaps/ \
     #   --output=ichnaea/content/static/tiles/
@@ -221,6 +222,8 @@ def main(argv, _db_master=None, _heka_client=None):
         db = Database(conf.get('ichnaea', 'db_master'))
         bucketname = conf.get('ichnaea', 's3_assets_bucket').strip('/')
         heka_client = configure_heka(conf.filename, _heka_client=_heka_client)
+        stats_client = configure_stats(
+            conf.get('ichnaea', 'statsd_host'), _client=_stats_client)
 
         upload = False
         if args.upload:
@@ -239,8 +242,8 @@ def main(argv, _db_master=None, _heka_client=None):
             output = os.path.abspath(args.output)
 
         try:
-            with heka_client.timer("datamaps.total_time"):
-                generate(db, bucketname, heka_client,
+            with stats_client.timer("datamaps.total_time"):
+                generate(db, bucketname, heka_client, stats_client,
                          upload=upload,
                          concurrency=concurrency,
                          datamaps=datamaps,
