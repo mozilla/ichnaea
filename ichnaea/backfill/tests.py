@@ -62,7 +62,7 @@ class TestBackfill(CeleryTestCase):
         rset = list(rset)
         self.assertEquals(len(rset), 1)
         lat_longs = [(row['lat'], row['lon']) for row in rset]
-        assert (towerC_lat, towerC_lon) in lat_longs
+        self.assertTrue((towerC_lat, towerC_lon) in lat_longs)
 
         # check that tower D was mapped correctly
         rset = session.execute(text(
@@ -71,7 +71,7 @@ class TestBackfill(CeleryTestCase):
         rset = list(rset)
         self.assertEquals(len(rset), 1)
         lat_longs = [(row['lat'], row['lon']) for row in rset]
-        assert (30, -20) in lat_longs
+        self.assertTrue((30, -20) in lat_longs)
 
         # we shouldn't map tower E when the known towers have
         # different radios than our incomplete tower records

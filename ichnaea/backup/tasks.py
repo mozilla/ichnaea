@@ -347,7 +347,6 @@ def unthrottle_measures(session, station_model, measure_model,
         q = session.query(func.count(measure_model.id)).filter(
             *join_measure(station))
         c = q.first()
-        assert c is not None
         n = int(c[0])
         assert n <= station.total_measures
         unthrottled += station.total_measures - n

@@ -100,10 +100,6 @@ def location_is_in_country(lat, lon, country, margin=0):
     country subunits associated with a given alpha2 country code.
 
     """
-    assert isinstance(country, basestring)
-    assert len(country) == 2
-    assert isinstance(lat, float)
-    assert isinstance(lon, float)
     for c in country_subunits_by_iso_code(country):
         (lon1, lat1, lon2, lat2) = c.bbox
         if lon1 - margin <= lon and lon <= lon2 + margin and \

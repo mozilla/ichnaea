@@ -143,7 +143,6 @@ def remove_cell(self, cell_keys):
                     Cell.cid != CELLID_LAC)
 
                 c = query.first()
-                assert c is not None
                 n = int(c[0])
                 query = session.query(Cell).filter(
                     Cell.radio == key.radio,

@@ -1,6 +1,5 @@
 from collections import namedtuple
 import operator
-from numbers import Number
 
 import mobile_codes
 from sqlalchemy.sql import and_, or_
@@ -50,9 +49,6 @@ def configure_search(config):
 
 
 def estimate_accuracy(lat, lon, points, minimum):
-    assert isinstance(lat, Number)
-    assert isinstance(lon, Number)
-    assert isinstance(minimum, Number)
     if len(points) == 1:
         accuracy = points[0].range
     else:
@@ -63,7 +59,6 @@ def estimate_accuracy(lat, lon, points, minimum):
         accuracy = max([distance(lat, lon, p.lat, p.lon) * 1000
                         for p in points])
     if accuracy is not None:
-        assert isinstance(accuracy, Number)
         accuracy = round(float(accuracy), DEGREE_DECIMAL_PLACES)
     return max(accuracy, minimum)
 
@@ -127,7 +122,6 @@ def search_cell_lac(session, data):
     # take the smallest LAC of any the user is inside
     lac = sorted(lacs, key=operator.attrgetter('range'))[0]
     accuracy = max(LAC_MIN_ACCURACY, lac.range)
-    assert isinstance(accuracy, Number)
     accuracy = round(float(accuracy), DEGREE_DECIMAL_PLACES)
     return {
         'lat': lac.lat,
@@ -418,8 +412,6 @@ def search_all_sources(request, data, api_name):
         stats_client.incr('%s.miss' % api_name)
         return None
 
-    assert result
-    assert result_metric
     stats_client.incr('%s.%s_hit' % (api_name, result_metric))
     stats_client.timing('%s.accuracy.%s' % (api_name, result_metric),
                         result['accuracy'])
