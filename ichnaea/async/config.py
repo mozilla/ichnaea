@@ -1,5 +1,7 @@
 import os
 
+from kombu import Queue
+
 from ichnaea.async.schedule import CELERYBEAT_SCHEDULE
 from ichnaea.config import read_config
 from ichnaea.db import Database
@@ -12,6 +14,12 @@ CELERY_IMPORTS = [
     'ichnaea.backfill.tasks',
     'ichnaea.service.submit.tasks',
 ]
+
+CELERY_QUEUES = (
+    Queue('default', routing_key='default'),
+    Queue('incoming', routing_key='incoming'),
+    Queue('insert', routing_key='insert'),
+)
 
 
 def attach_database(app, settings=None, _db_master=None):
@@ -94,6 +102,9 @@ def configure_celery(celery):
         # broker
         BROKER_URL=broker_url,
         BROKER_TRANSPORT_OPTIONS=broker_options,
+        # queues
+        CELERY_DEFAULT_QUEUE='default',
+        CELERY_QUEUES=CELERY_QUEUES,
         # tasks
         CELERY_IMPORTS=CELERY_IMPORTS,
         # forward compatibility

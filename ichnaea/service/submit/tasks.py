@@ -230,7 +230,7 @@ def process_measures(items, session, userid=None):
         process_mapstat(session, utcnow, positions)
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery.task(base=DatabaseTask, bind=True, queue='incoming')
 def insert_measures(self, items=None, nickname=''):
     if not items:  # pragma: no cover
         return 0
@@ -466,7 +466,7 @@ def create_wifi_measure(utcnow, entry):
     )
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery.task(base=DatabaseTask, bind=True, queue='insert')
 def insert_cell_measures(self, entries, userid=None,
                          max_measures_per_cell=11000,
                          utcnow=None):
@@ -494,7 +494,7 @@ def insert_cell_measures(self, entries, userid=None,
         raise self.retry(exc=exc)
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery.task(base=DatabaseTask, bind=True, queue='insert')
 def insert_wifi_measures(self, entries, userid=None,
                          max_measures_per_wifi=11000,
                          utcnow=None):
