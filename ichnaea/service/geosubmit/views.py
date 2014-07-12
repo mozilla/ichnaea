@@ -110,10 +110,12 @@ def process_upload(nickname, items):
         return validated, errors
 
     for i in range(0, len(batch_list), 100):
-        insert_measures.delay(
-            items=dumps(batch_list[i:i + 100]),
-            nickname=nickname,
-        )
+        items = dumps(batch_list[i:i + 100])
+        # insert measures, expire the task if it wasn't processed
+        # after two hours to avoid queue overload
+        insert_measures.apply_async(
+            kwargs={'items': items, 'nickname': nickname},
+            expires=7200)
     return validated, errors
 
 

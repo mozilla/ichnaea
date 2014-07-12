@@ -192,7 +192,12 @@ def process_measures(items, session, userid=None):
             cells[to_cellkey_psc(measure)].append(measure)
 
         for values in cells.values():
-            insert_cell_measures.delay(values, userid=userid)
+            # insert measures, expire the task if it wasn't processed
+            # after two hours to avoid queue overload
+            insert_cell_measures.apply_async(
+                args=[values],
+                kwargs={'userid': userid},
+                expires=7200)
 
     if wifi_measures:
         # group by and create task per wifi key
@@ -203,7 +208,12 @@ def process_measures(items, session, userid=None):
             wifis[measure['key']].append(measure)
 
         for values in wifis.values():
-            insert_wifi_measures.delay(values, userid=userid)
+            # insert measures, expire the task if it wasn't processed
+            # after two hours to avoid queue overload
+            insert_wifi_measures.apply_async(
+                args=[values],
+                kwargs={'userid': userid},
+                expires=7200)
 
     if userid is not None:
         process_score(userid, len(positions), session)
