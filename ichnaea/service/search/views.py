@@ -3,6 +3,7 @@ import operator
 from numbers import Number
 
 import mobile_codes
+from sqlalchemy.sql import and_, or_
 
 from ichnaea.geocalc import (
     distance,
@@ -68,18 +69,20 @@ def estimate_accuracy(lat, lon, points, minimum):
 
 
 def search_cell(session, data):
-    cells = []
+    cell_filter = []
     for cell in data['cell']:
-        key = to_cellkey(cell)
+        # create a list of and criteria for cell keys
+        criterion = join_cellkey(Cell, to_cellkey(cell))
+        cell_filter.append(and_(*criterion))
 
-        query = session.query(Cell.lat, Cell.lon, Cell.range).filter(
-            *join_cellkey(Cell, key)).filter(
-            Cell.lat.isnot(None)).filter(
-            Cell.lon.isnot(None)
-        )
-        result = query.first()
-        if result is not None:
-            cells.append(Network(key, *result))
+    query = session.query(Cell.lat, Cell.lon, Cell.range).filter(
+        or_(*cell_filter)).filter(
+        Cell.lat.isnot(None)).filter(
+        Cell.lon.isnot(None))
+
+    cells = []
+    for result in query.all():
+        cells.append(Network(None, *result))
 
     if not cells:
         return
