@@ -58,7 +58,7 @@ class TestCell(DBTestCase):
 
     def test_fields(self):
         cell = self._make_one(
-            lat=1.2345678, lon=2.3456789, mcc=100, mnc=5, lac=12345, cid=234567,
+            lat=1.2345678, lon=2.3456789, mcc=100, mnc=5, lac=1234, cid=23456,
             new_measures=2, total_measures=15,
         )
         session = self.db_master_session
@@ -67,8 +67,11 @@ class TestCell(DBTestCase):
 
         result = session.query(cell.__class__).first()
         self.assertEqual(result.lat, 1.2345678)
+        self.assertEqual(result.lon, 2.3456789)
         self.assertEqual(result.mcc, 100)
-        self.assertEqual(result.cid, 234567)
+        self.assertEqual(result.mnc, 5)
+        self.assertEqual(result.lac, 1234)
+        self.assertEqual(result.cid, 23456)
         self.assertEqual(result.new_measures, 2)
         self.assertEqual(result.total_measures, 15)
 

@@ -370,19 +370,23 @@ def process_station_measures(session, entries, station_type,
                       key='new_' + station_type)
 
     if dropped_blacklisted != 0:
-        stats_client.incr("items.dropped.%s_ingress_blacklisted" % station_type,
-                          count=dropped_blacklisted)
+        stats_client.incr(
+            "items.dropped.%s_ingress_blacklisted" % station_type,
+            count=dropped_blacklisted)
 
     if dropped_malformed != 0:
-        stats_client.incr("items.dropped.%s_ingress_malformed" % station_type,
-                          count=dropped_malformed)
+        stats_client.incr(
+            "items.dropped.%s_ingress_malformed" % station_type,
+            count=dropped_malformed)
 
     if dropped_overflow != 0:
-        stats_client.incr("items.dropped.%s_ingress_overflow" % station_type,
-                          count=dropped_overflow)
+        stats_client.incr(
+            "items.dropped.%s_ingress_overflow" % station_type,
+            count=dropped_overflow)
 
-    stats_client.incr("items.inserted.%s_measures" % station_type,
-                      count=len(all_measures))
+    stats_client.incr(
+        "items.inserted.%s_measures" % station_type,
+        count=len(all_measures))
 
     session.add_all(all_measures)
     return all_measures

@@ -4,7 +4,6 @@ from ichnaea.customjson import dumps
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.error import (
     JSONParseError,
-    MSG_BAD_RADIO,
     MSG_ONE_OF,
     preprocess_request,
 )

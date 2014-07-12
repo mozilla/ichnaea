@@ -1,4 +1,3 @@
-import sys
 import simplejson as json
 from ichnaea.models import (encode_datetime, DEGREE_DECIMAL_PLACES)
 
