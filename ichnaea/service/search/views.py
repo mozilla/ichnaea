@@ -71,7 +71,7 @@ def estimate_accuracy(lat, lon, points, minimum):
 def search_cell(session, data):
     cell_filter = []
     for cell in data['cell']:
-        # create a list of and criteria for cell keys
+        # create a list of 'and' criteria for cell keys
         criterion = join_cellkey(Cell, to_cellkey(cell))
         cell_filter.append(and_(*criterion))
 
@@ -99,20 +99,27 @@ def search_cell(session, data):
 
 
 def search_cell_lac(session, data):
-    lacs = []
+    # merge cells from the same location area
+    lac_keys = set()
     for cell in data['cell']:
         cell = cell.copy()
         cell['cid'] = CELLID_LAC
-        key = to_cellkey(cell)
+        lac_keys.add(to_cellkey(cell))
 
-        query = session.query(Cell.lat, Cell.lon, Cell.range).filter(
-            *join_cellkey(Cell, key)).filter(
-            Cell.lat.isnot(None)).filter(
-            Cell.lon.isnot(None)
-        )
-        result = query.first()
-        if result is not None:
-            lacs.append(Network(key, *result))
+    lac_filter = []
+    for key in lac_keys:
+        # create a list of 'and' criteria for lac keys
+        criterion = join_cellkey(Cell, key)
+        lac_filter.append(and_(*criterion))
+
+    query = session.query(Cell.lat, Cell.lon, Cell.range).filter(
+        or_(*lac_filter)).filter(
+        Cell.lat.isnot(None)).filter(
+        Cell.lon.isnot(None))
+
+    lacs = []
+    for result in query.all():
+        lacs.append(Network(None, *result))
 
     if not lacs:
         return
