@@ -68,13 +68,8 @@ def estimate_accuracy(lat, lon, points, minimum):
 
 
 def search_cell(session, data):
-    radio = RADIO_TYPE.get(data['radio'], -1)
     cells = []
     for cell in data['cell']:
-        cell = normalized_cell_dict(cell, default_radio=radio)
-        if not cell:
-            continue
-
         key = to_cellkey(cell)
 
         query = session.query(Cell.lat, Cell.lon, Cell.range).filter(
@@ -101,13 +96,9 @@ def search_cell(session, data):
 
 
 def search_cell_lac(session, data):
-    radio = RADIO_TYPE.get(data['radio'], -1)
     lacs = []
     for cell in data['cell']:
-        cell = normalized_cell_dict(cell, default_radio=radio)
-        if not cell:
-            continue
-
+        cell = cell.copy()
         cell['cid'] = CELLID_LAC
         key = to_cellkey(cell)
 
@@ -285,13 +276,10 @@ def geoip_and_best_guess_country_code(data, request, api_name):
     cell_countries = []
     cell_mccs = set()
     if data and data['cell']:
-        radio = RADIO_TYPE.get(data['radio'], -1)
         for cell in data['cell']:
-            cell = normalized_cell_dict(cell, default_radio=radio)
-            if cell:
-                for c in mobile_codes.mcc(str(cell['mcc'])):
-                    cell_countries.append(c.alpha2)
-                    cell_mccs.add(cell['mcc'])
+            for c in mobile_codes.mcc(str(cell['mcc'])):
+                cell_countries.append(c.alpha2)
+                cell_mccs.add(cell['mcc'])
 
     if len(cell_mccs) > 1:
         stats_client.incr('%s.anomaly.multiple_mccs' % api_name)
@@ -318,7 +306,7 @@ def geoip_and_best_guess_country_code(data, request, api_name):
     else:
         stats_client.incr('%s.no_geoip_found' % api_name)
 
-    # Pick the most-commonly-occurring MCC if we got any
+    # Pick the most-commonly-occurring country code if we got any
     cc = most_common(cell_countries)
     if cc:
         stats_client.incr('%s.country_from_mcc' % api_name)
@@ -345,6 +333,15 @@ def search_all_sources(request, data, api_name):
     result = None
     result_metric = None
 
+    # Pre-process cell data
+    radio = RADIO_TYPE.get(data.get('radio', ''), -1)
+    cells = []
+    for cell in data.get('cell', ()):
+        cell = normalized_cell_dict(cell, default_radio=radio)
+        if cell:
+            cells.append(cell)
+    data['cell'] = cells
+
     # Always do a GeoIP lookup because we at _least_ want to use the
     # country estimate to filter out bogus requests. We may also use
     # the full GeoIP City-level estimate as well, if all else fails.
@@ -355,12 +352,13 @@ def search_all_sources(request, data, api_name):
     # to wifi, tightening our estimate each step only so
     # long as it doesn't contradict the existing best-estimate
     # nor the country of origin.
+
     for (data_field, metric_name, search_fn) in [
             ('cell', 'cell_lac', search_cell_lac),
             ('cell', 'cell', search_cell),
             ('wifi', 'wifi', search_wifi)]:
 
-        if data and data[data_field]:
+        if data and data.get(data_field):
 
             r = search_fn(session, data)
             if r is None:
