@@ -63,11 +63,11 @@ def estimate_accuracy(lat, lon, points, minimum):
     return max(accuracy, minimum)
 
 
-def search_cell(session, data):
+def search_cell(session, cell_keys):
     cell_filter = []
-    for cell in data['cell']:
+    for key in cell_keys:
         # create a list of 'and' criteria for cell keys
-        criterion = join_cellkey(Cell, to_cellkey(cell))
+        criterion = join_cellkey(Cell, key)
         cell_filter.append(and_(*criterion))
 
     query = session.query(Cell.lat, Cell.lon, Cell.range).filter(
@@ -93,14 +93,7 @@ def search_cell(session, data):
     }
 
 
-def search_cell_lac(session, data):
-    # merge cells from the same location area
-    lac_keys = set()
-    for cell in data['cell']:
-        cell = cell.copy()
-        cell['cid'] = CELLID_LAC
-        lac_keys.add(to_cellkey(cell))
-
+def search_cell_lac(session, lac_keys):
     lac_filter = []
     for key in lac_keys:
         # create a list of 'and' criteria for lac keys
@@ -130,8 +123,7 @@ def search_cell_lac(session, data):
     }
 
 
-def search_wifi(session, data):
-
+def search_wifi(session, wifis):
     # Estimate signal strength at -100 dBm if none is provided,
     # which is worse than the 99th percentile of wifi dBms we
     # see in practice (-98).
@@ -143,7 +135,7 @@ def search_wifi(session, data):
 
     wifi_signals = dict([(normalized_wifi_key(w['key']),
                           signal_strength(w))
-                         for w in data['wifi']])
+                         for w in wifis])
     wifi_keys = set(wifi_signals.keys())
 
     if not any(wifi_keys):
@@ -263,7 +255,7 @@ def most_common(ls):
     return m
 
 
-def geoip_and_best_guess_country_code(data, request, api_name):
+def geoip_and_best_guess_country_code(cell_keys, request, api_name):
     """
     Return (geoip, alpha2) where geoip is the result of a GeoIP lookup
     and alpha2 is a best-guess ISO 3166 alpha2 country code. The country
@@ -279,11 +271,10 @@ def geoip_and_best_guess_country_code(data, request, api_name):
 
     cell_countries = []
     cell_mccs = set()
-    if data and data['cell']:
-        for cell in data['cell']:
-            for c in mobile_codes.mcc(str(cell['mcc'])):
-                cell_countries.append(c.alpha2)
-                cell_mccs.add(cell['mcc'])
+    for cell_key in cell_keys:
+        for c in mobile_codes.mcc(str(cell_key.mcc)):
+            cell_countries.append(c.alpha2)
+            cell_mccs.add(cell_key.mcc)
 
     if len(cell_mccs) > 1:
         stats_client.incr('%s.anomaly.multiple_mccs' % api_name)
@@ -337,20 +328,29 @@ def search_all_sources(request, data, api_name):
     result = None
     result_metric = None
 
+    validated = {
+        'cell': [],
+        'cell_lac': set(),
+        'wifi': [],
+    }
+
+    # Pass-through wifi data
+    validated['wifi'] = data.get('wifi', [])
+
     # Pre-process cell data
     radio = RADIO_TYPE.get(data.get('radio', ''), -1)
-    cells = []
     for cell in data.get('cell', ()):
         cell = normalized_cell_dict(cell, default_radio=radio)
         if cell:
-            cells.append(cell)
-    data['cell'] = cells
+            cell_key = to_cellkey(cell)
+            validated['cell'].append(cell_key)
+            validated['cell_lac'].add(cell_key._replace(cid=CELLID_LAC))
 
     # Always do a GeoIP lookup because we at _least_ want to use the
     # country estimate to filter out bogus requests. We may also use
     # the full GeoIP City-level estimate as well, if all else fails.
-    (geoip_res, country) = geoip_and_best_guess_country_code(data, request,
-                                                             api_name)
+    (geoip_res, country) = geoip_and_best_guess_country_code(
+        validated['cell'], request, api_name)
 
     # First we attempt a "zoom-in" from cell-lac, to cell
     # to wifi, tightening our estimate each step only so
@@ -358,13 +358,12 @@ def search_all_sources(request, data, api_name):
     # nor the country of origin.
 
     for (data_field, metric_name, search_fn) in [
-            ('cell', 'cell_lac', search_cell_lac),
+            ('cell_lac', 'cell_lac', search_cell_lac),
             ('cell', 'cell', search_cell),
             ('wifi', 'wifi', search_wifi)]:
 
-        if data and data.get(data_field):
-
-            r = search_fn(session, data)
+        if validated[data_field]:
+            r = search_fn(session, validated[data_field])
             if r is None:
                 stats_client.incr('%s.no_%s_found' %
                                   (api_name, metric_name))
