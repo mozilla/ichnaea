@@ -708,7 +708,9 @@ MEASURE_TYPE_CODE_INVERSE = dict((v, k) for k, v in MEASURE_TYPE_CODE.items())
 
 MEASURE_TYPE_META = {
     1: {'class': WifiMeasure,
-        'csv_name': 'wifi_measure.csv'},
+        'csv_name': 'wifi_measure.csv',
+        'name': 'wifi_measure'},
     2: {'class': CellMeasure,
-        'csv_name': 'cell_measure.csv'},
+        'csv_name': 'cell_measure.csv',
+        'name': 'cell_measure'},
 }

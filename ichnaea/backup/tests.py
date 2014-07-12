@@ -59,6 +59,11 @@ class TestMeasurementsDump(CeleryTestCase):
 
     def test_schedule_cell_measures(self):
         session = self.db_master_session
+
+        blocks = schedule_cellmeasure_archival(batch=1)
+        self.assertEquals(len(blocks), 0)
+        self.check_stats(gauge=[('table.cell_measure', 0)])
+
         measures = []
         for i in range(20):
             measures.append(CellMeasure(created=self.really_old))
@@ -70,6 +75,7 @@ class TestMeasurementsDump(CeleryTestCase):
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
         self.assertEquals(block, (start_id, start_id + 15))
+        self.check_stats(gauge=[('table.cell_measure', 1, '20')])
 
         blocks = schedule_cellmeasure_archival(batch=6)
         self.assertEquals(len(blocks), 0)
@@ -84,6 +90,11 @@ class TestMeasurementsDump(CeleryTestCase):
 
     def test_schedule_wifi_measures(self):
         session = self.db_master_session
+
+        blocks = schedule_wifimeasure_archival(batch=1)
+        self.assertEquals(len(blocks), 0)
+        self.check_stats(gauge=[('table.wifi_measure', 0)])
+
         batch_size = 10
         measures = []
         for i in range(batch_size * 2):
@@ -97,6 +108,7 @@ class TestMeasurementsDump(CeleryTestCase):
         block = blocks[0]
         self.assertEquals(block,
                           (start_id, start_id + batch_size))
+        self.check_stats(gauge=[('table.wifi_measure', 1, '20')])
 
         block = blocks[1]
         self.assertEquals(block,

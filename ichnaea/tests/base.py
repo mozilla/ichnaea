@@ -235,8 +235,8 @@ class HekaIsolation(object):
                 print("    field: %s = %s" %
                       (field.name, ", ".join(field.value_string)))
 
-    def find_stats_messages(self, msg_type, msg_name):
-        result = {
+    def find_stats_messages(self, msg_type, msg_name, msg_value=None):
+        data = {
             'counter': [],
             'timer': [],
             'gauge': [],
@@ -248,19 +248,24 @@ class HekaIsolation(object):
             suffix = m.split('|')[-1]
             name, value = m.split('|')[0].split(':')
             if suffix == 'g':
-                result['gauge'].append((name, value))
+                data['gauge'].append((name, value))
             elif suffix == 'ms':
-                result['timer'].append((name, value))
+                data['timer'].append((name, value))
             elif suffix.startswith('c'):
-                result['counter'].append((name, value))
+                data['counter'].append((name, value))
             elif suffix == 'h':
-                result['histogram'].append((name, value))
+                data['histogram'].append((name, value))
             elif suffix == 'm':
-                result['meter'].append((name, value))
+                data['meter'].append((name, value))
             elif suffix == 's':
-                result['set'].append((name, value))
-        return [(m[0], m[1]) for m in result.get(msg_type)
-                if m[0] == msg_name]
+                data['set'].append((name, value))
+
+        result = []
+        for m in data.get(msg_type):
+            if m[0] == msg_name:
+                if msg_value is None or m[1] == msg_value:
+                    result.append((m[0], m[1]))
+        return result
 
     def print_stats_messages(self):
         for m in self.stats_client.msgs:
@@ -278,11 +283,14 @@ class HekaIsolation(object):
             message fields against v subject to type-dependent
             interpretation:
 
-              if v is a str, select messages with field 'name' == v
+              if v is a str, select messages with name == v
               and let match = 1
 
               if v is a 2-tuple (n, match), select messages with
-              field 'name' == n
+              name == n
+
+              if v is a 3-tuple (n, match, value), select messages with
+              name == n and value == value
 
            the selected messages are then checked depending on the type
            of match:
@@ -309,22 +317,23 @@ class HekaIsolation(object):
         for (msg_type, pred) in kw.items():
             for p in pred:
                 match = 1
+                value = None
                 if isinstance(p, str):
                     name = p
                 elif isinstance(p, tuple):
                     if len(p) == 2:
                         (name, match) = p
+                    elif len(p) == 3:
+                        (name, match, value) = p
                     else:
-                        raise TypeError("wanted 2-element tuple, got %s"
+                        raise TypeError("wanted 2 or 3-element tuple, got %s"
                                         % type(p))
                 else:
                     raise TypeError("wanted str or tuple, got %s"
                                     % type(p))
-                msgs = self.find_stats_messages(msg_type, name)
+                msgs = self.find_stats_messages(msg_type, name, value)
                 if isinstance(match, int):
                     self.assertEqual(match, len(msgs))
-                else:
-                    raise TypeError("wanted int, got %s" % type(match))
 
     def check_expected_heka_messages(self, total=None, **kw):
         """Checks a partial specification of messages to be found in

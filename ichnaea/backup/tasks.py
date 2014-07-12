@@ -20,6 +20,7 @@ from ichnaea.models import (
     Wifi,
     WifiMeasure,
 )
+from ichnaea.stats import get_stats_client
 from ichnaea.worker import celery
 from sqlalchemy import func
 
@@ -192,8 +193,33 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
 
 def schedule_measure_archival(self, measure_type, limit=100, batch=1000000):
     blocks = []
-    measure_cls = MEASURE_TYPE_META[measure_type]['class']
+    measure_meta = MEASURE_TYPE_META[measure_type]
+    measure_cls = measure_meta['class']
+    measure_name = measure_meta['name']
     with self.db_session() as session:
+        table_min_id = 0
+        table_max_id = 0
+
+        query = session.query(measure_cls.id).order_by(
+            measure_cls.id.asc())
+        record = query.first()
+        if record is not None:
+            table_min_id = record[0]
+
+        query = session.query(measure_cls.id).order_by(
+            measure_cls.id.desc())
+        record = query.first()
+        if record is not None:
+            table_max_id = record[0]
+
+        if not table_max_id:
+            # no data in the table
+            return blocks
+
+        # record current number of db rows in *_measure table
+        get_stats_client().gauge(
+            'table.' + measure_name, table_max_id - table_min_id + 1)
+
         query = session.query(MeasureBlock.end_id).filter(
             MeasureBlock.measure_type == measure_type).order_by(
             MeasureBlock.end_id.desc())
@@ -201,23 +227,9 @@ def schedule_measure_archival(self, measure_type, limit=100, batch=1000000):
         if record is not None:
             min_id = record[0]
         else:
-            query = session.query(measure_cls.id).order_by(
-                measure_cls.id.asc())
-            record = query.first()
-            if record is not None:
-                min_id = record[0]
-            else:
-                # no data in the table
-                return blocks
+            min_id = table_min_id
 
-        query = session.query(measure_cls.id).order_by(
-            measure_cls.id.desc())
-        record = query.first()
-        if record is None:
-            # no data in the table
-            return blocks
-
-        max_id = record[0]
+        max_id = table_max_id
         if max_id - min_id < batch - 1:
             # Not enough to fill a block
             return blocks

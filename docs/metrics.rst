@@ -468,12 +468,22 @@ Gauges
 ``task.cell_location_update.new_measures_1_10``,
 ``task.wifi_location_update.new_measures_1_10``,
 ``task.cell_location_update.new_measures_10_1000000``,
-``task.wifi_location_update.new_measures_10_1000000``, : timers
+``task.wifi_location_update.new_measures_10_1000000``, : gauges
 
     These gauges measure the number of stations with between 1 and
     10 (or between 10 and 1000000) pending new location-measures when the
     station location update tasks run. These gauges should remain relatively
     constant if Ichnaea is "keeping up with" new location-measures.
+
+``table.cell_measure``, ``table.cell_measure`` : gauges
+
+    These gauges measure the number of database rows in each of the
+    measure table at the time the measure blocks used for backup are
+    scheduled and created. Since the backup jobs will archive and delete
+    rows from those tables, these gauges should represent a high-water
+    mark for the number of rows. For performance reasons the gauges is
+    based on `max(id) - min(id)`, which might be higher than the actual
+    number of rows if not all auto-increment numbers are taken.
 
 
 S3 backup counters
