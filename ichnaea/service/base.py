@@ -1,14 +1,15 @@
 import datetime
 from functools import wraps
 
+from sqlalchemy import text
+
 from ichnaea.customjson import dumps
 from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden
-from ichnaea.models import (
-    ApiKey
-)
 from ichnaea.service.error import DAILY_LIMIT
 from ichnaea.stats import get_stats_client
 
+API_CHECK = text('select maxreq, shortname from api_key '
+                 'where valid_key = :api_key')
 
 INVALID_API_KEY = {
     "error": {
@@ -62,9 +63,8 @@ def check_api_key(func_name, error_on_invalidkey=False):
                     return invalid_api_key_response()
 
             session = request.db_slave_session
-            found_key = session.query(
-                ApiKey.maxreq, ApiKey.shortname).filter(
-                ApiKey.valid_key == api_key).first()
+            result = session.execute(API_CHECK.bindparams(api_key=api_key))
+            found_key = result.fetchone()
 
             if found_key is not None:
                 maxreq, shortname = found_key
