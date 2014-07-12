@@ -200,14 +200,23 @@ def process_measures(items, session, userid=None):
                 expires=7200)
 
     if wifi_measures:
-        # group by and create task per wifi key
+        # group by WiFi key
         stats_client.incr("items.uploaded.wifi_measures",
                           len(wifi_measures))
         wifis = defaultdict(list)
         for measure in wifi_measures:
             wifis[measure['key']].append(measure)
 
-        for values in wifis.values():
+        # Create a task per group of 5 WiFi keys at a time.
+        # We tend to get a huge number of unique WiFi networks per
+        # batch upload, with one to very few measures per WiFi.
+        # Grouping them helps in avoiding per-task overhead.
+        wifis = list(wifis.values())
+        batch_size = 5
+        for i in range(0, len(wifis), batch_size):
+            values = []
+            for measures in wifis[i:i + batch_size]:
+                values.extend(measures)
             # insert measures, expire the task if it wasn't processed
             # after two hours to avoid queue overload
             insert_wifi_measures.apply_async(
