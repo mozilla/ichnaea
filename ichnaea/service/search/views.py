@@ -70,20 +70,21 @@ def query_cell_networks(session, cell_keys):
         criterion = join_cellkey(Cell, key)
         cell_filter.append(and_(*criterion))
 
-    query = session.query(Cell.lat, Cell.lon, Cell.range).filter(
+    # Keep the cid to distinguish cell from lac later on
+    query = session.query(Cell.cid, Cell.lat, Cell.lon, Cell.range).filter(
         or_(*cell_filter)).filter(
         Cell.lat.isnot(None)).filter(
         Cell.lon.isnot(None))
 
     cells = []
     for result in query.all():
-        cells.append(Network(None, *result))
+        # The first entry is the key, used only to distinguish cell from lac
+        cells.append(Network(*result))
 
     return cells
 
 
-def search_cell(session, cell_keys):
-    cells = query_cell_networks(session, cell_keys)
+def search_cell(session, cells):
     if not cells:
         return
 
@@ -98,8 +99,7 @@ def search_cell(session, cell_keys):
     }
 
 
-def search_cell_lac(session, lac_keys):
-    lacs = query_cell_networks(session, lac_keys)
+def search_cell_lac(session, lacs):
     if not lacs:
         return
 
@@ -320,9 +320,11 @@ def search_all_sources(request, data, api_name):
     result_metric = None
 
     validated = {
+        'wifi': [],
         'cell': [],
         'cell_lac': set(),
-        'wifi': [],
+        'cell_network': [],
+        'cell_lac_network': [],
     }
 
     # Pass-through wifi data
@@ -337,6 +339,20 @@ def search_all_sources(request, data, api_name):
             validated['cell'].append(cell_key)
             validated['cell_lac'].add(cell_key._replace(cid=CELLID_LAC))
 
+    # Merge all possible cell and lac keys into one list
+    all_cell_keys = []
+    all_cell_keys.extend(validated['cell'])
+    for key in validated['cell_lac']:
+        all_cell_keys.append(key)
+
+    # Do a single query for all cells and lacs at the same time
+    all_networks = query_cell_networks(session, all_cell_keys)
+    for network in all_networks:
+        if network.key == CELLID_LAC:
+            validated['cell_lac_network'].append(network)
+        else:
+            validated['cell_network'].append(network)
+
     # Always do a GeoIP lookup because we at _least_ want to use the
     # country estimate to filter out bogus requests. We may also use
     # the full GeoIP City-level estimate as well, if all else fails.
@@ -348,13 +364,13 @@ def search_all_sources(request, data, api_name):
     # long as it doesn't contradict the existing best-estimate
     # nor the country of origin.
 
-    for (data_field, metric_name, search_fn) in [
-            ('cell_lac', 'cell_lac', search_cell_lac),
-            ('cell', 'cell', search_cell),
-            ('wifi', 'wifi', search_wifi)]:
+    for (data_field, object_field, metric_name, search_fn) in [
+            ('cell_lac', 'cell_lac_network', 'cell_lac', search_cell_lac),
+            ('cell', 'cell_network', 'cell', search_cell),
+            ('wifi', 'wifi', 'wifi', search_wifi)]:
 
         if validated[data_field]:
-            r = search_fn(session, validated[data_field])
+            r = search_fn(session, validated[object_field])
             if r is None:
                 stats_client.incr('%s.no_%s_found' %
                                   (api_name, metric_name))
