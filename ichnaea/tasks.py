@@ -202,6 +202,7 @@ def emit_new_measures_metric(stats_client, session, shortname,
 def backfill_cell_location_update(self, new_cell_measures):
     try:
         cells = []
+        moving_cells = set()
         new_cell_measures = dict(new_cell_measures)
         with self.db_session() as session:
             for tower_tuple, cell_measure_ids in new_cell_measures.items():
@@ -216,7 +217,6 @@ def backfill_cell_location_update(self, new_cell_measures):
                     # known Cell records.
                     continue
 
-                moving_cells = set()
                 for cell in cells:
                     measures = session.query(  # NOQA
                         CellMeasure.lat, CellMeasure.lon).filter(
@@ -228,9 +228,9 @@ def backfill_cell_location_update(self, new_cell_measures):
                                                backfill=True)
                         update_enclosing_lac(session, cell)
 
-                if moving_cells:
-                    # some cells found to be moving too much
-                    blacklist_and_remove_moving_cells(session, moving_cells)
+            if moving_cells:
+                # some cells found to be moving too much
+                blacklist_and_remove_moving_cells(session, moving_cells)
 
             session.commit()
         return (len(cells), len(moving_cells))
