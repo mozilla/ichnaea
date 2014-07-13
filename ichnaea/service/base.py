@@ -5,7 +5,6 @@ from sqlalchemy import text
 from ichnaea.customjson import dumps
 from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden
 from ichnaea.service.error import DAILY_LIMIT
-from ichnaea.stats import get_stats_client
 from ichnaea import util
 
 API_CHECK = text('select maxreq, shortname from api_key '
@@ -55,7 +54,7 @@ def check_api_key(func_name, error_on_invalidkey=False):
         @wraps(func)
         def closure(request, *args, **kwargs):
             api_key = request.GET.get('key', None)
-            stats_client = get_stats_client()
+            stats_client = request.registry.stats_client
 
             if api_key is None:
                 stats_client.incr('%s.no_api_key' % func_name)
