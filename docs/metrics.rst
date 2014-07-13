@@ -465,15 +465,13 @@ database tables. Along the way several counters measure the steps involved:
 Gauges
 ------
 
-``task.cell_location_update.new_measures_1_10``,
-``task.wifi_location_update.new_measures_1_10``,
-``task.cell_location_update.new_measures_10_1000000``,
-``task.wifi_location_update.new_measures_10_1000000``, : gauges
+``task.cell_location_update.new_measures_<min>_<max>``,
+``task.wifi_location_update.new_measures_<min>_<max>``, : gauges
 
-    These gauges measure the number of stations with between 1 and
-    10 (or between 10 and 1000000) pending new location-measures when the
-    station location update tasks run. These gauges should remain relatively
-    constant if Ichnaea is "keeping up with" new location-measures.
+    These gauges measure the number of stations which have a new measure
+    count within a certain range. These gauges should remain relatively
+    constant if Ichnaea is "keeping up with" using new measures to
+    update the position estimates of these stations.
 
 ``table.cell_measure``, ``table.cell_measure`` : gauges
 
