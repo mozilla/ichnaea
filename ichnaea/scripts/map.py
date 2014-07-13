@@ -8,6 +8,7 @@ import sys
 import tempfile
 
 import boto
+from simplejson import dumps
 from sqlalchemy import text
 
 from ichnaea.config import read_config
@@ -17,9 +18,14 @@ from ichnaea.heka_logging import (
     RAVEN_ERROR,
 )
 from ichnaea.stats import configure_stats
+from ichnaea import util
 
 IMAGE_HEADERS = {
     'Content-Type': 'image/png',
+    'Cache-Control': 'max-age=3600, public',
+}
+JSON_HEADERS = {
+    'Content-Type': 'application/json',
     'Cache-Control': 'max-age=3600, public',
 }
 
@@ -138,6 +144,15 @@ def upload_to_s3(bucketname, tiles):
                         reduced_redundancy=True)
                 else:
                     result['tile_unchanged'] += 1
+
+    # Update status file
+    data = {'updated': util.utcnow().isoformat()}
+    k = boto.s3.key.Key(bucket)
+    k.key = 'tiles/data.json'
+    k.set_contents_from_string(
+        dumps(data),
+        headers=JSON_HEADERS,
+        reduced_redundancy=True)
 
     return result
 
