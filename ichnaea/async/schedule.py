@@ -24,28 +24,40 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(hour=0, minute=6),
         'args': (1, ),
     },
-    'continuous-cell-location-update': {
+    'cell-location-update-1': {
         'task': 'ichnaea.tasks.cell_location_update',
         'schedule': timedelta(seconds=299),  # 13*23
-        'args': (10, 1000000, 1000),
+        'args': (1, 20, 1000),
         'options': {'expires': 290},
     },
-    'continuous-cell-location-update-2': {
+    'cell-location-update-20': {
         'task': 'ichnaea.tasks.cell_location_update',
-        'schedule': timedelta(seconds=319),  # 11*29
-        'args': (1, 10, 5000),
+        'schedule': timedelta(seconds=305),  # 5*61
+        'args': (20, 1000, 500),
+        'options': {'expires': 295},
+    },
+    'cell-location-update-1000': {
+        'task': 'ichnaea.tasks.cell_location_update',
+        'schedule': timedelta(seconds=323),  # 17*19
+        'args': (1000, 1000000, 100),
         'options': {'expires': 310},
     },
-    'continuous-wifi-location-update': {
+    'wifi-location-update-1': {
         'task': 'ichnaea.tasks.wifi_location_update',
-        'schedule': timedelta(seconds=323),  # 17*19
-        'args': (10, 1000000, 1000),
-        'options': {'expires': 320},
+        'schedule': timedelta(seconds=301),  # 7*43
+        'args': (1, 20, 1000),
+        'options': {'expires': 290},
     },
-    'continuous-wifi-location-update-2': {
+    'wifi-location-update-20': {
+        'task': 'ichnaea.tasks.wifi_location_update',
+        'schedule': timedelta(seconds=319),  # 11*29
+        'args': (20, 1000, 500),
+        'options': {'expires': 310},
+    },
+    'wifi-location-update-1000': {
         'task': 'ichnaea.tasks.wifi_location_update',
         'schedule': timedelta(seconds=329),  # 7*47
-        'args': (1, 10, 5000),
+        'args': (1000, 1000000, 100),
         'options': {'expires': 320},
     },
     'continuous-cell-scan-lacs': {
