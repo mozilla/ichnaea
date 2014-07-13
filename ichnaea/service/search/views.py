@@ -64,6 +64,9 @@ def estimate_accuracy(lat, lon, points, minimum):
 
 
 def query_cell_networks(session, cell_keys):
+    if not cell_keys:
+        return []
+
     cell_filter = []
     for key in cell_keys:
         # create a list of 'and' criteria for cell keys
