@@ -4,7 +4,6 @@ import re
 
 from colander import iso8601
 import mobile_codes
-import pytz
 from sqlalchemy import (
     BINARY,
     Column,
@@ -21,6 +20,7 @@ from sqlalchemy.dialects.mysql import DOUBLE as Double
 from ichnaea import geocalc
 from ichnaea.db import _Model
 from ichnaea.sa_types import TZDateTime as DateTime
+from ichnaea import util
 
 # We return position and accuracy values rounded to 7 decimal places,
 # mostly to make the resulting JSON look prettier.  1E-7 degrees =~ 1.1cm
@@ -126,7 +126,7 @@ def decode_datetime(obj):
     try:
         return iso8601.parse_date(obj)
     except (iso8601.ParseError, TypeError):
-        return datetime.utcnow().replace(tzinfo=pytz.UTC)
+        return util.utcnow()
 
 
 def valid_wifi_pattern(key):
@@ -454,7 +454,7 @@ class Cell(_Model):
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
-            kw['created'] = datetime.utcnow()
+            kw['created'] = util.utcnow()
         if 'lac' not in kw:
             kw['lac'] = -1
         if 'cid' not in kw:
@@ -490,7 +490,7 @@ class CellBlacklist(_Model):
 
     def __init__(self, *args, **kw):
         if 'time' not in kw:
-            kw['time'] = datetime.utcnow()
+            kw['time'] = util.utcnow()
         if 'count' not in kw:
             kw['count'] = 1
         super(CellBlacklist, self).__init__(*args, **kw)
@@ -562,7 +562,7 @@ class CellMeasure(_Model):
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
-            kw['created'] = datetime.utcnow()
+            kw['created'] = util.utcnow()
         super(CellMeasure, self).__init__(*args, **kw)
 
 cell_measure_table = CellMeasure.__table__
@@ -601,7 +601,7 @@ class Wifi(_Model):
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
-            kw['created'] = datetime.utcnow()
+            kw['created'] = util.utcnow()
         if 'new_measures' not in kw:
             kw['new_measures'] = 0
         if 'total_measures' not in kw:
@@ -628,7 +628,7 @@ class WifiBlacklist(_Model):
 
     def __init__(self, *args, **kw):
         if 'time' not in kw:
-            kw['time'] = datetime.utcnow()
+            kw['time'] = util.utcnow()
         if 'count' not in kw:
             kw['count'] = 1
         super(WifiBlacklist, self).__init__(*args, **kw)
@@ -671,7 +671,7 @@ class WifiMeasure(_Model):
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
-            kw['created'] = datetime.utcnow()
+            kw['created'] = util.utcnow()
         super(WifiMeasure, self).__init__(*args, **kw)
 
 wifi_measure_table = WifiMeasure.__table__

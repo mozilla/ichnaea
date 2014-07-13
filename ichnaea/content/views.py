@@ -1,4 +1,3 @@
-import datetime
 import os
 import urlparse
 
@@ -17,12 +16,12 @@ from ichnaea.content.stats import (
     leaders,
     leaders_weekly,
 )
-
+from ichnaea import util
 
 HERE = os.path.dirname(__file__)
 FAVICON_PATH = os.path.join(HERE, 'static', 'favicon.ico')
 # cache year lookup, needs server restart after new year :)
-THIS_YEAR = unicode(datetime.datetime.utcnow().year)
+THIS_YEAR = unicode(util.utcnow().year)
 
 CSP_BASE = "'self' *.cdn.mozilla.net"
 CSP_POLICY = """\

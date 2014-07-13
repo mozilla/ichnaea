@@ -3,7 +3,6 @@ import datetime
 import uuid
 
 from colander import iso8601
-import pytz
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import and_, or_
 
@@ -36,6 +35,7 @@ from ichnaea.customjson import (
 )
 from ichnaea.service.submit.utils import process_score
 from ichnaea.stats import get_stats_client
+from ichnaea import util
 from ichnaea.worker import celery
 
 
@@ -165,7 +165,7 @@ def process_measure(report_id, data, session):
 
 def process_measures(items, session, userid=None):
     stats_client = get_stats_client()
-    utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+    utcnow = util.utcnow()
     utcmin = utcnow - datetime.timedelta(60)
 
     positions = []
@@ -328,7 +328,7 @@ def process_station_measures(session, entries, station_type,
     stats_client = get_stats_client()
     new_stations = 0
     if utcnow is None:
-        utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+        utcnow = util.utcnow()
     elif isinstance(utcnow, basestring):
         utcnow = decode_datetime(utcnow)
 

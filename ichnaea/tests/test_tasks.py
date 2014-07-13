@@ -1,4 +1,3 @@
-from datetime import datetime
 from datetime import timedelta
 
 from ichnaea.models import (
@@ -12,15 +11,15 @@ from ichnaea.models import (
     to_cellkey,
     CELLID_LAC,
 )
-
 from ichnaea.tests.base import CeleryTestCase
+from ichnaea import util
 
 
 class TestCellLocationUpdate(CeleryTestCase):
 
     def test_cell_location_update(self):
         from ichnaea.tasks import cell_location_update
-        now = datetime.utcnow()
+        now = util.utcnow()
         before = now - timedelta(days=1)
         session = self.db_master_session
         k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
@@ -134,7 +133,7 @@ class TestCellLocationUpdate(CeleryTestCase):
 
     def test_blacklist_moving_cells(self):
         from ichnaea.tasks import cell_location_update
-        now = datetime.utcnow()
+        now = util.utcnow()
         long_ago = now - timedelta(days=40)
         session = self.db_master_session
 
@@ -260,7 +259,7 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(lac.lat, 4.5)
         self.assertEqual(lac.lon, 4.5)
         self.assertEqual(lac.range, 723001)
-        self.assertEqual(lac.created.date(), datetime.utcnow().date())
+        self.assertEqual(lac.created.date(), util.utcnow().date())
         self.assertEqual(lac.new_measures, 0)
         self.assertEqual(lac.total_measures, 0)
 
@@ -414,7 +413,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
 
     def test_wifi_location_update(self):
         from ichnaea.tasks import wifi_location_update
-        now = datetime.utcnow()
+        now = util.utcnow()
         before = now - timedelta(days=1)
         session = self.db_master_session
         k1 = "ab1234567890"
@@ -508,7 +507,7 @@ class TestWifiLocationUpdate(CeleryTestCase):
 
     def test_blacklist_moving_wifis(self):
         from ichnaea.tasks import wifi_location_update
-        now = datetime.utcnow()
+        now = util.utcnow()
         long_ago = now - timedelta(days=40)
         session = self.db_master_session
         k1 = "ab1234567890"

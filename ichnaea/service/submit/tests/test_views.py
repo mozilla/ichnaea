@@ -34,13 +34,14 @@ from ichnaea.tests.base import (
     PARIS_LAT,
     PARIS_LON,
 )
+from ichnaea import util
 
 
 class TestSubmit(CeleryAppTestCase):
 
     def test_ok_cell(self):
         app = self.app
-        today = datetime.utcnow().date()
+        today = util.utcnow().date()
         month_rounded_today = today.replace(day=1)
         month_rounded_dt = datetime(month_rounded_today.year,
                                     month_rounded_today.month,
@@ -134,7 +135,7 @@ class TestSubmit(CeleryAppTestCase):
 
     def test_ok_wifi(self):
         app = self.app
-        today = datetime.utcnow().date()
+        today = util.utcnow().date()
         wifi_data = [{"key": "0012AB12AB12",
                       "signalToNoiseRatio": 5},
                      {"key": "00:34:cd:34:cd:34",
@@ -226,7 +227,7 @@ class TestSubmit(CeleryAppTestCase):
     def test_time(self):
         app = self.app
         # test two weeks ago and "now"
-        time = (datetime.utcnow() - timedelta(14)).replace(microsecond=0)
+        time = util.utcnow() - timedelta(14)
         tstr = encode_datetime(time)
         app.post_json(
             '/v1/submit', {"items": [
@@ -244,7 +245,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(result), 2)
 
         wifis = dict([(w.key, (w.created, w.time)) for w in result])
-        today = datetime.utcnow().date()
+        today = util.utcnow().date()
 
         month_rounded_tday = time.replace(day=1, hour=0, minute=0, second=0)
         month_rounded_tday = month_rounded_tday.replace(tzinfo=pytz.UTC)
@@ -259,7 +260,7 @@ class TestSubmit(CeleryAppTestCase):
     def test_time_short_format(self):
         app = self.app
         # a string like "2014-01-15"
-        time = datetime.utcnow().date()
+        time = util.utcnow().date()
         month_rounded_time = time.replace(day=1)
         tstr = time.isoformat()
         app.post_json(
@@ -313,7 +314,7 @@ class TestSubmit(CeleryAppTestCase):
     def test_mapstat(self):
         app = self.app
         long_ago = date(2011, 10, 20)
-        today = datetime.utcnow().date()
+        today = util.utcnow().date()
         session = self.db_master_session
         stats = [
             MapStat(lat=1000, lon=2000, time=long_ago),
@@ -404,7 +405,7 @@ class TestSubmit(CeleryAppTestCase):
     def test_nickname_header_update(self):
         app = self.app
         nickname = 'World Tr\xc3\xa4veler'
-        utcday = datetime.utcnow().date()
+        utcday = util.utcnow().date()
         session = self.db_master_session
         user = User(nickname=nickname.decode('utf-8'))
         session.add(user)

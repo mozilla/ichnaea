@@ -1,5 +1,3 @@
-import datetime
-
 from sqlalchemy import (
     Column,
     Date,
@@ -10,6 +8,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import INTEGER as Integer
 
 from ichnaea.db import _Model
+from ichnaea import util
 
 SCORE_TYPE = {
     'location': 0,
@@ -74,7 +73,7 @@ class Score(_Model):
 
     def __init__(self, *args, **kw):
         if 'time' not in kw:
-            kw['time'] = datetime.datetime.utcnow().date()
+            kw['time'] = util.utcnow().date()
         super(Score, self).__init__(*args, **kw)
 
     @property

@@ -1,4 +1,3 @@
-import datetime
 from functools import wraps
 
 from sqlalchemy import text
@@ -7,6 +6,7 @@ from ichnaea.customjson import dumps
 from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden
 from ichnaea.service.error import DAILY_LIMIT
 from ichnaea.stats import get_stats_client
+from ichnaea import util
 
 API_CHECK = text('select maxreq, shortname from api_key '
                  'where valid_key = :api_key')
@@ -36,7 +36,7 @@ def rate_limit(redis_client, api_key, maxreq=0, expire=86400):
     if not maxreq:
         return False
 
-    dstamp = datetime.datetime.utcnow().strftime("%Y%m%d")
+    dstamp = util.utcnow().strftime("%Y%m%d")
     key = "apilimit:%s:%s" % (api_key, dstamp)
 
     current = redis_client.get(key)

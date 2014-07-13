@@ -11,8 +11,6 @@ import csv
 import datetime
 import sys
 
-import pytz
-
 from ichnaea.config import read_config
 from ichnaea.db import Database
 from ichnaea.heka_logging import configure_heka
@@ -21,10 +19,11 @@ from ichnaea.models import (
     valid_wifi_pattern,
 )
 from ichnaea.service.submit.tasks import process_measures
+from ichnaea import util
 
 
 def load_file(session, source_file, batch_size=100, userid=None):
-    utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+    utcnow = util.utcnow()
     utcmin = utcnow - datetime.timedelta(120)
 
     with open(source_file, 'r') as fd:

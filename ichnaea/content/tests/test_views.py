@@ -1,4 +1,3 @@
-from datetime import datetime
 from datetime import timedelta
 
 from pyramid.testing import DummyRequest
@@ -18,6 +17,7 @@ from ichnaea.content.views import (
 )
 from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.tests.base import AppTestCase
+from ichnaea import util
 
 
 class TestContentViews(TestCase):
@@ -126,7 +126,7 @@ class TestFunctionalContent(AppTestCase):
 
     def test_stats_unique_cell_json(self):
         app = self.app
-        today = datetime.utcnow().date()
+        today = util.utcnow().date()
         yesterday = today - timedelta(1)
         yesterday = yesterday.strftime('%Y-%m-%d')
         session = self.db_slave_session
@@ -143,7 +143,7 @@ class TestFunctionalContent(AppTestCase):
 
     def test_stats_unique_wifi_json(self):
         app = self.app
-        today = datetime.utcnow().date()
+        today = util.utcnow().date()
         yesterday = today - timedelta(1)
         yesterday = yesterday.strftime('%Y-%m-%d')
         session = self.db_slave_session
@@ -176,7 +176,7 @@ class TestFunctionalContentViews(AppTestCase):
 
     def test_leaders(self):
         session = self.db_master_session
-        today = datetime.utcnow().date()
+        today = util.utcnow().date()
         yesterday = today - timedelta(days=1)
         for i in range(3):
             user = User(nickname=unicode(i))
@@ -228,7 +228,7 @@ class TestFunctionalContentViews(AppTestCase):
                 [{'nickname': u'0', 'num': 0, 'pos': 3}])
 
     def test_stats(self):
-        day = datetime.utcnow().date() - timedelta(1)
+        day = util.utcnow().date() - timedelta(1)
         session = self.db_master_session
         stats = [
             Stat(key=STAT_TYPE['cell'], time=day, value=2000000),

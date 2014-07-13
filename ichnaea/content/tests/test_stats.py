@@ -1,10 +1,4 @@
-from datetime import datetime
 from datetime import timedelta
-
-from ichnaea.models import (
-    Cell,
-    RADIO_TYPE,
-)
 
 from ichnaea.content.models import (
     Score,
@@ -12,7 +6,12 @@ from ichnaea.content.models import (
     Stat,
     STAT_TYPE,
 )
+from ichnaea.models import (
+    Cell,
+    RADIO_TYPE,
+)
 from ichnaea.tests.base import DBTestCase
+from ichnaea import util
 
 
 class TestStats(DBTestCase):
@@ -20,7 +19,7 @@ class TestStats(DBTestCase):
     def test_global_stats(self):
         from ichnaea.content.stats import global_stats
         session = self.db_master_session
-        day = datetime.utcnow().date() - timedelta(1)
+        day = util.utcnow().date() - timedelta(1)
         stats = [
             Stat(key=STAT_TYPE['cell'], time=day, value=6100000),
             Stat(key=STAT_TYPE['wifi'], time=day, value=3212000),
@@ -40,7 +39,7 @@ class TestStats(DBTestCase):
     def test_global_stats_missing_today(self):
         from ichnaea.content.stats import global_stats
         session = self.db_master_session
-        day = datetime.utcnow().date() - timedelta(1)
+        day = util.utcnow().date() - timedelta(1)
         yesterday = day - timedelta(days=1)
         stats = [
             Stat(key=STAT_TYPE['cell'], time=yesterday, value=5000000),
@@ -61,7 +60,7 @@ class TestStats(DBTestCase):
     def test_histogram(self):
         from ichnaea.content.stats import histogram
         session = self.db_master_session
-        today = datetime.utcnow().date()
+        today = util.utcnow().date()
         one_day = (today - timedelta(1)).strftime('%Y-%m-%d')
         two_days = (today - timedelta(2)).strftime('%Y-%m-%d')
         long_ago = (today - timedelta(25)).strftime('%Y-%m-%d')
@@ -85,7 +84,7 @@ class TestStats(DBTestCase):
     def test_histogram_different_stat_name(self):
         from ichnaea.content.stats import histogram
         session = self.db_master_session
-        day = datetime.utcnow().date() - timedelta(1)
+        day = util.utcnow().date() - timedelta(1)
         day = day.strftime('%Y-%m-%d')
         stat = Stat(time=day, value=9)
         stat.name = 'unique_cell'

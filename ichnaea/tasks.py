@@ -1,11 +1,10 @@
-from datetime import datetime
 from datetime import timedelta
 
-import pytz
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 
 from ichnaea.async.task import DatabaseTask
+from ichnaea.geocalc import distance, centroid, range_to_points
 from ichnaea.models import (
     CELLID_LAC,
     Cell,
@@ -21,15 +20,15 @@ from ichnaea.models import (
     to_wifikey,
 )
 from ichnaea.stats import get_stats_client
+from ichnaea import util
 from ichnaea.worker import celery
-from ichnaea.geocalc import distance, centroid, range_to_points
 
 WIFI_MAX_DIST_KM = 5
 CELL_MAX_DIST_KM = 150
 
 
 def daily_task_days(ago):
-    today = datetime.utcnow().date()
+    today = util.utcnow().date()
     day = today - timedelta(days=ago)
     max_day = day + timedelta(days=1)
     return day, max_day
@@ -178,7 +177,7 @@ def calculate_new_position(station, measures, moving_stations,
 
 
 def update_enclosing_lac(session, cell):
-    now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+    now = util.utcnow()
     stmt = Cell.__table__.insert(
         on_duplicate='new_measures = new_measures + 1'
     ).values(
@@ -297,7 +296,7 @@ def blacklist_and_remove_moving_stations(session, blacklist_model,
                                          station_type, to_key, join_key,
                                          moving_stations, remove_station):
     moving_keys = []
-    utcnow = datetime.utcnow().replace(tzinfo=pytz.UTC)
+    utcnow = util.utcnow()
     for station in moving_stations:
         key = to_key(station)
         query = session.query(blacklist_model).filter(

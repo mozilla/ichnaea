@@ -3,18 +3,17 @@ import uuid
 
 from sqlalchemy.exc import IntegrityError
 
-from ichnaea.tests.base import DBTestCase
 from ichnaea.models import (
     normalized_cell_measure_dict,
     normalized_wifi_measure_dict,
 )
+from ichnaea.tests.base import DBTestCase, TestCase
 from ichnaea.tests.base import (
     FREMONT_LAT, FREMONT_LON, USA_MCC,
     SAO_PAULO_LAT, SAO_PAULO_LON, BRAZIL_MCC,
     PARIS_LAT, PARIS_LON, FRANCE_MCC
 )
-
-from unittest2 import TestCase
+from ichnaea import util
 
 
 class TestApiKey(DBTestCase):
@@ -288,7 +287,7 @@ class TestNormalization(TestCase):
         valid_signals = [-200, -100, -1]
         invalid_signals = [-300, -201, 0, 10]
 
-        time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
+        time = util.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
 
         def make_submission(**kw):
             measure = dict(radio='umts',
@@ -457,7 +456,7 @@ class TestNormalization(TestCase):
         valid_snrs = [0, 12, 100]
         invalid_snrs = [-1, -50, 101]
 
-        time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
+        time = util.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
 
         def make_submission(**kw):
             measure = dict(radio='',

@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
@@ -16,6 +16,7 @@ from ichnaea.models import (
     CELLID_LAC,
 )
 from ichnaea.tasks import daily_task_days
+from ichnaea import util
 from ichnaea.worker import celery
 
 
@@ -48,7 +49,7 @@ def add_stat(session, name, day, value):
 
 def incr_stat(session, name, incr, date=None):
     if date is None:
-        date = datetime.utcnow().date()
+        date = util.utcnow().date()
     stat_key = STAT_TYPE[name]
     cumulative = get_curr_stat(session, name) + incr
 
@@ -61,7 +62,7 @@ def incr_stat(session, name, incr, date=None):
 
 def get_curr_stat(session, name, date=None):
     if date is None:
-        date = datetime.utcnow().date()
+        date = util.utcnow().date()
     stat_key = STAT_TYPE[name]
     query = session.query(Stat.value).filter(
         Stat.key == stat_key).filter(

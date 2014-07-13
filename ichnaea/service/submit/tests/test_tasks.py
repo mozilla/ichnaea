@@ -1,12 +1,8 @@
 import base64
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import timedelta
 import json
 import zlib
 
-import pytz
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy import text
 
@@ -39,13 +35,14 @@ from ichnaea.tests.base import (
     PARIS_LAT, PARIS_LON, FRANCE_MCC,
     USA_MCC, ATT_MNC,
 )
+from ichnaea import util
 
 
 class TestInsert(CeleryTestCase):
 
     def test_cell(self):
         session = self.db_master_session
-        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
+        time = util.utcnow() - timedelta(days=1)
         mcc = FRANCE_MCC
 
         session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=mcc, mnc=2, lac=3,
@@ -109,7 +106,7 @@ class TestInsert(CeleryTestCase):
 
     def test_insert_invalid_lac(self):
         session = self.db_master_session
-        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
+        time = util.utcnow() - timedelta(days=1)
 
         session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=FRANCE_MCC, mnc=2,
                          lac=3, cid=4, new_measures=2, total_measures=5))
@@ -147,7 +144,7 @@ class TestInsert(CeleryTestCase):
 
     def test_cell_out_of_range_values(self):
         session = self.db_master_session
-        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
+        time = util.utcnow() - timedelta(days=1)
 
         measure = dict(
             id=0, created=encode_datetime(time),
@@ -175,7 +172,7 @@ class TestInsert(CeleryTestCase):
 
     def test_wifi(self):
         session = self.db_master_session
-        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
+        time = util.utcnow() - timedelta(days=1)
 
         session.add(Wifi(key="ab1234567890"))
         session.add(Score(userid=1, key=SCORE_TYPE['new_wifi'], value=7))
@@ -259,7 +256,7 @@ class TestInsert(CeleryTestCase):
         # temporary, forgotten after a week; after that it should be
         # permanently blacklisted.
 
-        now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        now = util.utcnow()
         # Station moves between these 4 points, all in the USA:
         points = [
             # NYC
@@ -411,7 +408,7 @@ class TestInsert(CeleryTestCase):
         # temporary, forgotten after a week; after that it should be
         # permanently blacklisted.
 
-        now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        now = util.utcnow()
         # Station moves between these 4 points, all in the USA:
         points = [
             # NYC
@@ -534,7 +531,7 @@ class TestInsert(CeleryTestCase):
     def test_ignore_unhelpful_incomplete_cdma_cells(self):
         # CDMA cell records must have MNC, MCC, LAC and CID filled in
         session = self.db_master_session
-        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
+        time = util.utcnow() - timedelta(days=1)
 
         measure = dict(
             created=encode_datetime(time), lat=PARIS_LAT,
@@ -570,7 +567,7 @@ class TestInsert(CeleryTestCase):
         # Cell records must have MNC, MCC and at least one of (LAC, CID) or PSC
         # values filled in.
         session = self.db_master_session
-        time = datetime.utcnow().replace(microsecond=0) - timedelta(days=1)
+        time = util.utcnow() - timedelta(days=1)
 
         measure = dict(
             created=encode_datetime(time),

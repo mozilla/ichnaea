@@ -27,6 +27,7 @@ from ichnaea.models import (
     WifiMeasure,
 )
 from ichnaea.tests.base import CeleryTestCase
+from ichnaea import util
 
 
 @contextmanager
@@ -254,7 +255,7 @@ class TestMeasurementsDump(CeleryTestCase):
         self.assertTrue(block.archive_date is not None)
 
     def test_skip_delete_new_blocks(self):
-        now = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+        now = util.utcnow()
         session = self.db_master_session
         block = MeasureBlock()
         block.measure_type = MEASURE_TYPE_CODE['cell']

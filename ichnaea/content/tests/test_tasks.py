@@ -1,4 +1,3 @@
-from datetime import datetime
 from datetime import timedelta
 
 from ichnaea.content.models import (
@@ -12,6 +11,7 @@ from ichnaea.models import (
     WifiMeasure,
 )
 from ichnaea.tests.base import CeleryTestCase
+from ichnaea import util
 
 
 class TestStats(CeleryTestCase):
@@ -19,7 +19,7 @@ class TestStats(CeleryTestCase):
     def test_cell_histogram(self):
         from ichnaea.content.tasks import cell_histogram
         session = self.db_master_session
-        today = datetime.utcnow().date()
+        today = util.utcnow().date()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
@@ -65,7 +65,7 @@ class TestStats(CeleryTestCase):
     def test_unique_cell_histogram(self):
         from ichnaea.content.tasks import unique_cell_histogram
         session = self.db_master_session
-        today = datetime.utcnow().date()
+        today = util.utcnow().date()
         one_day = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
@@ -111,7 +111,7 @@ class TestStats(CeleryTestCase):
     def test_wifi_histogram(self):
         from ichnaea.content.tasks import wifi_histogram
         session = self.db_master_session
-        today = datetime.utcnow().date()
+        today = util.utcnow().date()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
@@ -157,7 +157,7 @@ class TestStats(CeleryTestCase):
     def test_unique_wifi_histogram(self):
         from ichnaea.content.tasks import unique_wifi_histogram
         session = self.db_master_session
-        today = datetime.utcnow().date()
+        today = util.utcnow().date()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
@@ -213,7 +213,7 @@ class TestStats(CeleryTestCase):
         """
         from ichnaea.content.tasks import incr_stat, get_curr_stat
         session = self.db_master_session
-        today = datetime.utcnow().date()
+        today = util.utcnow().date()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
 

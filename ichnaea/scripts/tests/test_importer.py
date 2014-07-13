@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 from tempfile import mkstemp
 
 from ichnaea.models import (
@@ -13,6 +12,7 @@ from ichnaea.content.models import (
     User,
 )
 from ichnaea.tests.base import CeleryTestCase
+from ichnaea import util
 
 LINE = ("1376952704\tdc:45:17:75:8f:80\t37.871930\t-122.273156\t"
         "5\t500\t0\t11\t-16\tATT560")
@@ -33,7 +33,7 @@ class TestLoadFile(CeleryTestCase):
     def test_one_line(self):
         func, tmpfile = self._make_one()
         session = self.db_master_session
-        today = datetime.utcnow().date()
+        today = util.utcnow().date()
 
         os.write(tmpfile[0], LINE)
         counter = func(self.db_master_session, tmpfile[1])

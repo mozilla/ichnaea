@@ -1,6 +1,5 @@
-import datetime
-
 from ichnaea.tests.base import DBTestCase
+from ichnaea import util
 
 
 class TestScore(DBTestCase):
@@ -10,13 +9,13 @@ class TestScore(DBTestCase):
         return Score(**kw)
 
     def test_constructor(self):
-        utcday = datetime.datetime.utcnow().date()
+        utcday = util.utcnow().date()
         score = self._make_one()
         self.assertTrue(score.id is None)
         self.assertEqual(score.time, utcday)
 
     def test_fields(self):
-        utcday = datetime.datetime.utcnow().date()
+        utcday = util.utcnow().date()
         score = self._make_one(userid=3, time=utcday, value=15)
         score.name = 'location'
         session = self.db_master_session
@@ -51,7 +50,7 @@ class TestStat(DBTestCase):
         self.assertTrue(stat.id is None)
 
     def test_fields(self):
-        utcday = datetime.datetime.utcnow().date()
+        utcday = util.utcnow().date()
         stat = self._make_one(key=1, time=utcday, value=13)
         session = self.db_master_session
         session.add(stat)
@@ -89,7 +88,7 @@ class TestMapStat(DBTestCase):
         self.assertTrue(stat.lon is None)
 
     def test_fields(self):
-        today = datetime.datetime.utcnow().date()
+        today = util.utcnow().date()
         stat = self._make_one(lat=12345, lon=-23456, time=today)
         session = self.db_master_session
         session.add(stat)

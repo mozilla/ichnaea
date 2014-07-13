@@ -1,7 +1,6 @@
 from contextlib import contextmanager
 from zipfile import ZipFile, ZIP_DEFLATED
 import csv
-import datetime
 import os
 import pytz
 import shutil
@@ -21,6 +20,7 @@ from ichnaea.models import (
     WifiMeasure,
 )
 from ichnaea.stats import get_stats_client
+from ichnaea import util
 from ichnaea.worker import celery
 from sqlalchemy import func
 
@@ -139,7 +139,7 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
             self.app.s3_settings['backup_bucket'],
             self.heka_client)
 
-        utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+        utcnow = util.utcnow()
         s3_key = '%s/%s_%d_%d.zip' % (utcnow.strftime("%Y%m"),
                                       name,
                                       start_id,
@@ -271,7 +271,7 @@ def delete_measure_records(self,
                            limit=100,
                            days_old=7,
                            countdown=300):
-    utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+    utcnow = util.utcnow()
 
     with self.db_session() as session:
         query = session.query(MeasureBlock).filter(
@@ -302,7 +302,7 @@ def delete_measure_records(self,
 def dispatch_delete(self, block_id):
     s3_backend = S3Backend(self.app.s3_settings['backup_bucket'],
                            self.heka_client)
-    utcnow = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+    utcnow = util.utcnow()
     with self.db_session() as session:
         block = session.query(MeasureBlock).filter(
             MeasureBlock.id == block_id).first()

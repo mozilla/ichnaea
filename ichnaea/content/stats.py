@@ -1,6 +1,5 @@
 from collections import defaultdict
-import datetime
-from datetime import timedelta
+from datetime import date, timedelta
 from operator import itemgetter
 
 from mobile_codes import mcc
@@ -18,10 +17,11 @@ from ichnaea.content.models import (
     STAT_TYPE,
     User,
 )
+from ichnaea import util
 
 
 def global_stats(session):
-    today = datetime.datetime.utcnow().date()
+    today = util.utcnow().date()
     yesterday = today - timedelta(1)
     names = ('cell', 'wifi', 'unique_cell', 'unique_wifi')
     stat_keys = [STAT_TYPE[name] for name in names]
@@ -58,7 +58,7 @@ def global_stats(session):
 
 
 def histogram(session, name, days=60):
-    today = datetime.datetime.utcnow().date()
+    today = util.utcnow().date()
     start = today - timedelta(days=days)
     stat_key = STAT_TYPE[name]
     rows = session.query(Stat.time, Stat.value).filter(
@@ -69,7 +69,7 @@ def histogram(session, name, days=60):
     )
     result = []
     for day, num in rows.all():
-        if isinstance(day, datetime.date):  # pragma: no cover
+        if isinstance(day, date):  # pragma: no cover
             day = day.strftime('%Y-%m-%d')
         result.append({'day': day, 'num': num})
     return result
@@ -101,7 +101,7 @@ def leaders(session):
 
 def leaders_weekly(session, batch=20):
     result = {'new_cell': [], 'new_wifi': []}
-    today = datetime.datetime.utcnow().date()
+    today = util.utcnow().date()
     one_week = today - timedelta(7)
 
     score_rows = {}
