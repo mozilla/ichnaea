@@ -36,6 +36,10 @@ def configure_heka(heka_config, _heka_client=None):
     return client
 
 
+def quote_statsd_path(path):
+    return path.replace('/', '.').lstrip('.').replace('@', '-')
+
+
 def heka_tween_factory(handler, registry):
 
     VALID_4xx_URLS = [
@@ -52,11 +56,11 @@ def heka_tween_factory(handler, registry):
 
         def timer_send():
             duration = int(round((time.time() - start) * 1000))
-            path = request.path.replace('/', '.').lstrip('.')
+            path = quote_statsd_path(request.path)
             stats_client.timing('request.' + path, duration)
 
         def counter_send(status_code):
-            path = request.path.replace('/', '.').lstrip('.')
+            path = quote_statsd_path(request.path)
             stats_client.incr('request.%s.%s' % (path, status_code))
 
         try:

@@ -114,6 +114,13 @@ class TestFunctionalContent(AppTestCase):
             # No tracebacks for 404's
             sentry=[('msg', RAVEN_ERROR, 0)])
 
+    def test_image_file(self):
+        self.app.get('/static/css/images/icons-000000@2x.png', status=200)
+        quoted_path = 'request.static.css.images.icons-000000-2x.png'
+        self.check_stats(
+            counter=[(quoted_path + '.200', 1)],
+            timer=[(quoted_path, 1)])
+
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)
 
