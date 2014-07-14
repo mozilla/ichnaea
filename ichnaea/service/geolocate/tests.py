@@ -1,3 +1,5 @@
+from sqlalchemy import text
+
 from ichnaea.models import (
     Cell,
     Wifi,
@@ -11,6 +13,8 @@ from ichnaea.tests.base import (
     AppTestCase,
     FRANCE_MCC,
     FREMONT_IP,
+    FREMONT_LAT,
+    FREMONT_LON,
     PARIS_LAT,
     PARIS_LON,
 )
@@ -480,3 +484,53 @@ class TestGeolocateFxOSWorkarounds(TestGeolocate):
         self.assertAlmostEquals(location['lat'], PARIS_LAT + 0.001)
         self.assertAlmostEquals(location['lng'], PARIS_LON + 0.002)
         self.assertEqual(res.json['accuracy'], CELL_MIN_ACCURACY)
+
+
+class TestGeolocateErrors(AppTestCase):
+    # this is a standalone class to ensure DB isolation for dropping tables
+
+    def tearDown(self):
+        self.setup_tables(self.db_master.engine)
+        super(TestGeolocateErrors, self).tearDown()
+
+    def test_database_error(self):
+        app = self.app
+        session = self.db_slave_session
+        stmt = text("drop table wifi;")
+        session.execute(stmt)
+        stmt = text("drop table cell;")
+        session.execute(stmt)
+
+        res = app.post_json(
+            '/v1/geolocate?key=test', {
+                "radioType": "gsm",
+                "cellTowers": [
+                    {"mobileCountryCode": FRANCE_MCC,
+                     "mobileNetworkCode": 1,
+                     "locationAreaCode": 2,
+                     "cellId": 1234},
+                ],
+                "wifiAccessPoints": [
+                    {"macAddress": "a1"},
+                    {"macAddress": "b2"},
+                ]},
+            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
+            status=200)
+
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {"location": {"lat": FREMONT_LAT,
+                                                 "lng": FREMONT_LON},
+                                    "accuracy": GEOIP_CITY_ACCURACY})
+
+        self.check_stats(
+            timer=['request.v1.geolocate'],
+            counter=[
+                'request.v1.geolocate.200',
+                'geolocate.geoip_hit',
+                'geolocate.no_wifi_found',
+                'geolocate.wifi_error',
+            ],
+        )
+        self.check_expected_heka_messages(
+            sentry=[('msg', RAVEN_ERROR, 2)]
+        )
