@@ -1,9 +1,10 @@
 from functools import wraps
 
+from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 
 from ichnaea.customjson import dumps
-from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden
 from ichnaea.service.error import DAILY_LIMIT
 from ichnaea import util
 
@@ -62,8 +63,13 @@ def check_api_key(func_name, error_on_invalidkey=False):
                     return invalid_api_key_response()
 
             session = request.db_slave_session
-            result = session.execute(API_CHECK.bindparams(api_key=api_key))
-            found_key = result.fetchone()
+            try:
+                result = session.execute(API_CHECK.bindparams(api_key=api_key))
+                found_key = result.fetchone()
+            except OperationalError:
+                # if we cannot connect to backend DB, skip api key check
+                stats_client.incr('%s.dbfailure_skip_api_key' % func_name)
+                return func(request, *args, **kwargs)
 
             if found_key is not None:
                 maxreq, shortname = found_key

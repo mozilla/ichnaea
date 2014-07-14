@@ -48,6 +48,26 @@ $(PYTHON):
 	virtualenv .
 	bin/pip install -U pip
 
+install_vaurien_deps:
+	$(INSTALL) -r requirements/vaurien.txt
+	$(INSTALL) -r requirements/prod.txt
+	$(INSTALL) -r requirements/test.txt
+	$(INSTALL) -r requirements/loads.txt
+
+# Start vaurien for MySQL with REST API enabled on port 8080
+mysql_vaurien:
+	vaurien --http --http-port 8080 --proxy 0.0.0.0:4404  --backend 0.0.0.0:3306 --protocol mysql
+	#
+# Start vaurien for redis with REST API enabled on port 8090
+redis_vaurien:
+	vaurien --http --http-port 8090 --proxy 0.0.0.0:9379 --backend 0.0.0.0:6379 --protocol redis
+
+start_ichnaea:
+	ICHNAEA_CFG=integration_tests/ichnaea.ini ./run_server.sh
+
+automate_vaurien:
+	SQLURI=$(SQLURI) nosetests -sv integration_tests/test_integration.py
+
 build: $(PYTHON) mysql
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/test.txt

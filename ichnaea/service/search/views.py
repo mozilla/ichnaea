@@ -9,6 +9,7 @@ from ichnaea.geocalc import (
     location_is_in_country,
 )
 from ichnaea.geoip import radius_from_geoip
+from ichnaea.heka_logging import get_heka_client, RAVEN_ERROR
 from ichnaea.models import (
     Cell,
     normalized_wifi_key,
@@ -317,6 +318,7 @@ def search_all_sources(request, data, api_name):
     """
 
     stats_client = get_stats_client()
+    heka_client = get_heka_client()
 
     session = request.db_slave_session
     result = None
@@ -349,7 +351,11 @@ def search_all_sources(request, data, api_name):
         all_cell_keys.append(key)
 
     # Do a single query for all cells and lacs at the same time
-    all_networks = query_cell_networks(session, all_cell_keys)
+    try:
+        all_networks = query_cell_networks(session, all_cell_keys)
+    except Exception:
+        heka_client.raven(RAVEN_ERROR)
+        all_networks = []
     for network in all_networks:
         if network.key == CELLID_LAC:
             validated['cell_lac_network'].append(network)
@@ -373,7 +379,13 @@ def search_all_sources(request, data, api_name):
             ('wifi', 'wifi', 'wifi', search_wifi)]:
 
         if validated[data_field]:
-            r = search_fn(session, validated[object_field])
+            try:
+                r = search_fn(session, validated[object_field])
+            except Exception:
+                heka_client.raven(RAVEN_ERROR)
+                stats_client.incr('%s.%s_error' %
+                                  (api_name, metric_name))
+
             if r is None:
                 stats_client.incr('%s.no_%s_found' %
                                   (api_name, metric_name))
@@ -429,7 +441,6 @@ def search_all_sources(request, data, api_name):
 
 @check_api_key('search', True)
 def search_view(request):
-
     data, errors = preprocess_request(
         request,
         schema=SearchSchema(),
