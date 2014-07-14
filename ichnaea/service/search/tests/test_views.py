@@ -1163,18 +1163,28 @@ class TestSearchErrors(AppTestCase):
         stmt = text("drop table wifi;")
         session.execute(stmt)
 
-        try:
-            app.post_json('/v1/search?key=test',
-                          {"wifi": [
-                              {"key": "A1"}, {"key": "B2"},
-                              {"key": "C3"}, {"key": "D4"},
-                          ]})
-        except Exception:
-            pass
+        res = app.post_json(
+            '/v1/search?key=test',
+            {"wifi": [
+                {"key": "A1"}, {"key": "B2"},
+                {"key": "C3"}, {"key": "D4"},
+            ]},
+            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
+        )
+
+        self.assertEqual(res.json, {"status": "ok",
+                                    "lat": FREMONT_LAT,
+                                    "lon": FREMONT_LON,
+                                    "accuracy": GEOIP_CITY_ACCURACY})
 
         self.check_stats(
             timer=['request.v1.search'],
-            counter=['request.v1.search.500']
+            counter=[
+                'request.v1.search.200',
+                'search.geoip_hit',
+                'search.no_wifi_found',
+                'search.wifi_error',
+            ],
         )
         self.check_expected_heka_messages(
             sentry=[('msg', RAVEN_ERROR, 1)]

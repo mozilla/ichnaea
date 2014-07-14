@@ -379,6 +379,7 @@ def search_all_sources(request, data, api_name):
             ('wifi', 'wifi', 'wifi', search_wifi)]:
 
         if validated[data_field]:
+            r = None
             try:
                 r = search_fn(session, validated[object_field])
             except Exception:
