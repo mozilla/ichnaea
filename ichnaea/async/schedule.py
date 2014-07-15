@@ -27,13 +27,13 @@ CELERYBEAT_SCHEDULE = {
     'cell-location-update-1': {
         'task': 'ichnaea.tasks.cell_location_update',
         'schedule': timedelta(seconds=299),  # 13*23
-        'args': (1, 20, 1000),
+        'args': (1, 10, 5000),
         'options': {'expires': 290},
     },
-    'cell-location-update-20': {
+    'cell-location-update-10': {
         'task': 'ichnaea.tasks.cell_location_update',
         'schedule': timedelta(seconds=305),  # 5*61
-        'args': (20, 1000, 500),
+        'args': (10, 1000, 1000),
         'options': {'expires': 295},
     },
     'cell-location-update-1000': {
@@ -45,13 +45,13 @@ CELERYBEAT_SCHEDULE = {
     'wifi-location-update-1': {
         'task': 'ichnaea.tasks.wifi_location_update',
         'schedule': timedelta(seconds=301),  # 7*43
-        'args': (1, 20, 1000),
+        'args': (1, 10, 5000),
         'options': {'expires': 290},
     },
-    'wifi-location-update-20': {
+    'wifi-location-update-10': {
         'task': 'ichnaea.tasks.wifi_location_update',
         'schedule': timedelta(seconds=319),  # 11*29
-        'args': (20, 1000, 500),
+        'args': (10, 1000, 1000),
         'options': {'expires': 310},
     },
     'wifi-location-update-1000': {

@@ -4,6 +4,11 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+Scheduler
+*********
+
+- Adjust beat schedule to update more rows during each location update task.
+
 
 1.0 (2014-07-14)
 ----------------
