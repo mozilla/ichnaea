@@ -24,5 +24,6 @@ class TestDatabaseHeartbeat(AppTestCase):
         self.app.app.registry.db_slave = _make_db(
             uri='mysql+pymysql://none:none@127.0.0.1:9/test_location')
 
-        res = app.get('/__heartbeat__', status=503)
-        self.assertEqual(res.content_type, 'text/plain')
+        res = app.get('/__heartbeat__', status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json['status'], "OK")
