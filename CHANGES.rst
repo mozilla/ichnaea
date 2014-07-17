@@ -4,15 +4,12 @@ Changelog
 1.1 (unreleased)
 ----------------
 
-Scheduler
-*********
+20140715114000
+**************
 
 - Adjust beat schedule to update more rows during each location update task.
 
 - Let the backup tasks retain three full days of measures in the DB.
-
-Webapp
-******
 
 - Remove the database connectivity test from the heartbeat view.
 
