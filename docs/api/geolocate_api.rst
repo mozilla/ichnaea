@@ -17,11 +17,7 @@ Geolocate results
 
 This implements the same interface as the `Google Maps Geolocation
 API <https://developers.google.com/maps/documentation/business/geolocation/>`_
-endpoint.
-
-Our service implements all of the standard API. At this stage it doesn't have
-any limits, so you won't get any `dailyLimitExceeded` or
-`userRateLimitExceeded` errors.
+endpoint. Our service implements all of the standard API.
 
 A successful result will be:
 
@@ -34,6 +30,3 @@ A successful result will be:
         },
         "accuracy": 1200.4
     }
-    
-
-.. include:: invalid_apikey.rst

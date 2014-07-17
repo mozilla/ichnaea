@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Improve geosubmit API docs and make them independent of the submit docs.
+
 - Update and tweak metrics docs.
 
 - Adjust Fennec link to point to Fennec Nightly install instructions.

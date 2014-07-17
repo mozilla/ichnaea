@@ -28,8 +28,12 @@ body:
        {
         "latitude": -22.7539192,
         "longitude": -43.4371081,
-        "accuracy": 10,
-        "altitude": 100,
+        "accuracy": 10.0,
+        "altitude": 100.0,
+        "altitudeAccuracy": 50.0,
+        "timestamp": 1405602028568,
+        "heading": 45.0,
+        "speed": 3.6,
         "radioType": "gsm",
         "cellTowers": [
             {
@@ -37,16 +41,23 @@ body:
                 "locationAreaCode": 2,
                 "mobileCountryCode": 208,
                 "mobileNetworkCode": 1,
-                "age": 3
+                "age": 3,
+                "asu": 31,
+                "signalStrength": -51,
+                "timingAdvance": 1
             }
         ],
-        "wifi": [
+        "wifiAccessPoints": [
             {
                 "macAddress": "01:23:45:67:89:ab",
-                "signalStrength": 5,
                 "age": 3,
-                "channel": 11,
-                "signalToNoiseRatio": -51
+                "channel": 6,
+                "frequency": 2437,
+                "signalToNoiseRatio": 13,
+                "signalStrength": -77
+            },
+            {
+                "macAddress": "23:45:67:89:ab:cd"
             }
         ]
        }
@@ -54,90 +65,100 @@ body:
 Record definition
 -----------------
 
-Records must contain at least one of the `wifi` list of wifi access points or the `cellTowers` list of cellular tower records. 
+Requests must contain at least one entry in the `cellTowers` array or
+two entries in the `wifiAccessPoints` array.
 
-The minimum requirements for the `WifiAccessPointSchema` and the `CellTowerSchema` are identical to the geolocate API.
+Most of the fields are optional. For WiFi records only the `macAddress` field
+is required. For cell records, the `radioType`, `mobileCountryCode`,
+`mobileNetworkCode`, `locationAreaCode` and `cellId` fields are required.
 
-The `CellTowerSchema` has been extended to include two more optional
-fields:
+The cell record has been extended over the geolocate schema to include
+two more optional fields:
 
 psc
     The physical cell id as an integer in the range of 0 to 503 (optional).
 
 asu
     The arbitrary strength unit. An integer in the range of 0 to 95 (optional).
-    The formula: ``RSRP [dBm] = ASU – 140``.
 
-The `WifiAccessPointSchema` record has been extended with one extra
-optional field `frequency`.  Either `frequency` or `channel` maybe
-submitted to the geosubmit API as they are functionally equivalent.
+The WiFi record has been extended with one extra optional field
+`frequency`.  Either `frequency` or `channel` maybe submitted to the
+geosubmit API as they are functionally equivalent.
 
 frequency
     The frequency in MHz of the channel over which the client is
     communicating with the access point.
 
 
-The top level `GeosubmitSchema` is identical to the `GeolocateSchema`
-with the folowing addtional fields:
+The top level schema is identical to the geolocate schema with the
+following additional fields:
 
 latitude
-    This is mapped to `latitude` in the :ref:`api_submit` API.
+    The latitude of the observation (WSG 84).
 
 longitude
-    This is mapped to `longitude` in the :ref:`api_submit` API.
+    The longitude of the observation (WSG 84).
 
 timestamp
-    This is mapped to `timestamp` in the :ref:`api_submit` API.
+    The time of observation of the data, measured in milliseconds since
+    the UNIX epoch. Should be omitted if the observation time is very
+    recent.
 
 accuracy
-    This is mapped to `accuracy` in the :ref:`api_submit` API.
+    The accuracy of the observed position in meters.
 
 altitude
-    This is mapped to `altitude` in the :ref:`api_submit` API.
+    The altitude at which the data was observed in meters above sea-level.
 
 altitudeAccuracy
-    This is the same as `altitude_accuracy` in the :ref:`api_submit` API.
+    The accuracy of the altitude estimate in meters.
 
 heading
-    The heading attribute denotes the direction of travel of the hosting device and is specified in degrees, where 0° ≤ heading < 360°, counting clockwise relative to the true north. If the implementation cannot provide heading information, the value of this attribute must be null. If the hosting device is stationary (i.e. the value of the speed attribute is 0), then the value of the heading attribute must be NaN.
+    The heading field denotes the direction of travel of the device and is
+    specified in degrees, where 0° ≤ heading < 360°, counting clockwise
+    relative to the true north. If the device cannot provide heading
+    information or the device is stationary, the field should be omitted.
 
 speed
-    The speed attribute denotes the magnitude of the horizontal component of the hosting device's current velocity and is specified in meters per second. If the implementation cannot provide speed information, the value of this attribute must be null. Otherwise, the value of the speed attribute must be a non-negative real number. 
+    The speed field denotes the magnitude of the horizontal component of
+    the device's current velocity and is specified in meters per second.
+    If the device cannot provide speed information, the field should be
+    omitted.
 
-Batch uploads where multiple sets of lat/long pairs and wifi and cell
-data are supported by using an 'items' at the top level of the JSON
-blob:
+Batch uploads where multiple sets of latitude/longitude pairs and WiFi
+and cell data are supported by using an 'items' at the top level of the
+JSON object:
 
 .. code-block:: javascript
 
     {"items": [
-       {
-        "latitude": -22.7539192,
-        "longitude": -43.4371081,
-        "accuracy": 10,
-        "altitude": 100,
-        "radioType": "gsm",
-        "cellTowers": [
-            {
-                "cellId": 12345,
-                "locationAreaCode": 2,
-                "mobileCountryCode": 208,
-                "mobileNetworkCode": 1,
-                "age": 3
-            }
-        ],
-        "wifi": [
-            {
-                "macAddress": "01:23:45:67:89:ab",
-                "signalStrength": 5,
-                "age": 3,
-                "channel": 11,
-                "signalToNoiseRatio": -51
-            }
-        ]
-       }
-       ]
-    }
+        {
+            "latitude": -22.7,
+            "longitude": -43.4,
+            "wifi": [
+                {
+                    "macAddress": "01:23:45:67:89:ab",
+                },
+                {
+                    "macAddress": "23:45:67:89:ab:cd"
+                }
+            ]
+        },
+        {
+            "latitude": -22.6,
+            "longitude": -43.4,
+            "radioType": "gsm",
+            "cellTowers": [
+                {
+                    "cellId": 12345,
+                    "locationAreaCode": 2,
+                    "mobileCountryCode": 208,
+                    "mobileNetworkCode": 1,
+                    "age": 3
+                }
+            ]
+        }
+    ]}
 
 Geosubmit results
 -----------------
@@ -147,6 +168,4 @@ will always be identical to the same call made on the :ref:`api_geolocate`
 API endpoint.
 
 For geosubmit uploads where the batch mode is used, the result will
-always be an empty JSON dictionary.
-
-.. include:: invalid_apikey.rst
+always be a HTTP 200 response with a body of an empty JSON object.
