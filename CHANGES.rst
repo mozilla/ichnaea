@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Test all additional fields in geosubmit API and correctly retain new
+  `signalToNoiseRatio` field for WiFi observations.
+
 - Improve geosubmit API docs and make them independent of the submit docs.
 
 - Update and tweak metrics docs.

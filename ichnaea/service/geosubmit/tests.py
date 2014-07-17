@@ -1,6 +1,9 @@
+import time
+
 from ichnaea.models import (
     Cell,
     CellMeasure,
+    RADIO_TYPE,
     Wifi,
     WifiMeasure,
 )
@@ -17,6 +20,7 @@ from ichnaea.tests.base import (
 )
 from ichnaea.service.geolocate.tests import \
     TestGeolocate as GeolocateRegressionTest
+from ichnaea.util import utcnow
 
 
 class TestGeoSubmit(CeleryAppTestCase):
@@ -71,17 +75,29 @@ class TestGeoSubmit(CeleryAppTestCase):
     def test_ok_no_existing_cell(self):
         app = self.app
         session = self.db_master_session
+        now_ms = int(time.time() * 1000)
+        first_of_month = utcnow().replace(day=1, hour=0, minute=0, second=0)
 
         res = app.post_json('/v1/geosubmit?key=test', {
                             "latitude": PARIS_LAT,
                             "longitude": PARIS_LON,
                             "accuracy": 12.4,
+                            "altitude": 100.1,
+                            "altitudeAccuracy": 23.7,
+                            "heading": 45.0,
+                            "speed": 3.6,
+                            "timestamp": now_ms,
                             "radioType": "gsm",
                             "cellTowers": [{
                                 "cellId": 1234,
                                 "locationAreaCode": 2,
                                 "mobileCountryCode": FRANCE_MCC,
                                 "mobileNetworkCode": 1,
+                                "age": 3,
+                                "asu": 31,
+                                "psc": 15,
+                                "signalStrength": -51,
+                                "timingAdvance": 1,
                             }]},
                             status=200)
 
@@ -90,10 +106,29 @@ class TestGeoSubmit(CeleryAppTestCase):
                                                  "lng": PARIS_LON},
                                     "accuracy": 12.4})
 
-        self.assertEquals(1, session.query(Cell).count())
+        self.assertEquals(session.query(Cell).count(), 1)
 
         # check that one new CellMeasure record is created
-        self.assertEquals(1, session.query(CellMeasure).count())
+        result = session.query(CellMeasure).all()
+        self.assertEquals(len(result), 1)
+        measure = result[0]
+        self.assertEqual(measure.lat, PARIS_LAT)
+        self.assertEqual(measure.lon, PARIS_LON)
+        self.assertEqual(measure.accuracy, 12)
+        self.assertEqual(measure.altitude, 100)
+        self.assertEqual(measure.altitude_accuracy, 24)
+        self.assertEqual(measure.heading, 45.0)
+        self.assertEqual(measure.speed, 3.6)
+        self.assertEqual(measure.time, first_of_month)
+        self.assertEqual(measure.radio, RADIO_TYPE['gsm'])
+        self.assertEqual(measure.mcc, FRANCE_MCC)
+        self.assertEqual(measure.mnc, 1)
+        self.assertEqual(measure.lac, 2)
+        self.assertEqual(measure.cid, 1234)
+        self.assertEqual(measure.psc, 15)
+        self.assertEqual(measure.asu, 31)
+        self.assertEqual(measure.signal, -51)
+        self.assertEqual(measure.ta, 1)
 
     def test_ok_wifi(self):
         app = self.app
@@ -139,27 +174,39 @@ class TestGeoSubmit(CeleryAppTestCase):
 
         res = app.post_json(
             '/v1/geosubmit?key=test', {
-                "latitude": 12.34567,
-                "longitude": 23.45678,
+                "latitude": PARIS_LAT,
+                "longitude": PARIS_LON,
                 "accuracy": 12.4,
                 "radioType": "gsm",
-                "wifiAccessPoints": [
-                    {"macAddress": "0000000000e5"},
-                ]},
+                "wifiAccessPoints": [{
+                    "macAddress": "0000000000e5",
+                    "age": 3,
+                    "channel": 6,
+                    "frequency": 2437,
+                    "signalToNoiseRatio": 13,
+                    "signalStrength": -77,
+                }]},
             status=200)
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 12.34567,
-                                                 "lng": 23.45678},
+        self.assertEqual(res.json, {"location": {"lat": PARIS_LAT,
+                                                 "lng": PARIS_LON},
                                     "accuracy": 12.4})
 
         # Check that e5 exists
         query = session.query(Wifi)
         count = query.filter(Wifi.key == "0000000000e5").count()
-        self.assertEquals(1, count)
+        self.assertEquals(count, 1)
 
         # check that WifiMeasure records are created
-        self.assertEquals(1, session.query(WifiMeasure).count())
+        result = session.query(WifiMeasure).all()
+        self.assertEquals(len(result), 1)
+        measure = result[0]
+        self.assertEqual(measure.lat, PARIS_LAT)
+        self.assertEqual(measure.lon, PARIS_LON)
+        self.assertEqual(measure.channel, 6)
+        self.assertEqual(measure.signal, -77)
+        self.assertEqual(measure.snr, 13)
 
     def test_geoip_match(self):
         app = self.app

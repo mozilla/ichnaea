@@ -74,6 +74,7 @@ def process_upload(nickname, items):
             wifi['frequency'] = w['frequency']
             wifi['channel'] = w['channel']
             wifi['signal'] = w['signalStrength']
+            wifi['signalToNoiseRatio'] = w['signalToNoiseRatio']
             normalized_wifi.append(wifi)
 
         if batch['timestamp'] == 0:
