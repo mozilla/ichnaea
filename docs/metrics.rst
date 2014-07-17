@@ -84,7 +84,7 @@ for timers are different than for counters, however:
 API-key counters
 ----------------
 
-Several families of counter exist based on API keys. These have the prefixes:
+Several families of counters exist based on API keys. These have the prefixes:
 
   - ``geolocate.api_key.*``
   - ``search.api_key.*``
@@ -380,7 +380,7 @@ Submit counters
 ---------------
 
 The ``submit`` and ``geosubmit`` APIs have an additional counter each,
-``submit.geoip_mismatch`` and ``geosubmit.geoip_mismatch``.  This metric
+``submit.geoip_mismatch`` and ``geosubmit.geoip_mismatch``. This metric
 counts submissions that are discarded on arrival due to a mismatch between
 the submission's claimed location (a ``lat``/``lon`` pair) and the country
 the submission was sent from, as determined by GeoIP lookup.
@@ -414,7 +414,6 @@ database tables. Along the way several counters measure the steps involved:
     have been applied. In other words this metric counts "total cell or wifi
     measurements inside each submitted batch", as each batch is decomposed
     into individual measurements.
-
 
 ``items.dropped.cell_ingress_malformed``, ``items.dropped.wifi_ingress_malformed`` : counters
 
@@ -476,10 +475,10 @@ Gauges
 ``table.cell_measure``, ``table.cell_measure`` : gauges
 
     These gauges measure the number of database rows in each of the
-    measure table at the time the measure blocks used for backup are
+    measure tables at the time the measure blocks used for backup are
     scheduled and created. Since the backup jobs will archive and delete
     rows from those tables, these gauges should represent a high-water
-    mark for the number of rows. For performance reasons the gauges is
+    mark for the number of rows. For performance reasons the gauges are
     based on `max(id) - min(id)`, which might be higher than the actual
     number of rows if not all auto-increment numbers are taken.
 
@@ -505,12 +504,13 @@ of the counter is the based on the path of the HTTP request, with slashes
 replaced with periods, followed by a final component named by the response
 code produced by the request.
 
-For example, a GET of ``/leaders/weekly`` that results in an HTTP 200
-status code, will increment the counter ``request.leaders.weekly.200``.
+For example, a GET of ``/stats/countries`` that results in an HTTP 200
+status code, will increment the counter ``request.stats.countries.200``.
 
 Response codes in the 400 range (eg. 404) are only generated for HTTP paths
-referring to API endpoints; for static content, no counter is incremented on
-404 (since such requests do not refer to legitimate paths).
+referring to API endpoints. Logging them for unknown and invalid paths would
+overwhelm the graphite backend with all the random paths the friendly
+Internet bots army sends along.
 
 
 HTTP timers
@@ -574,9 +574,12 @@ This includes timers to track the individual steps of the generation process:
   - ``datamaps.render``
   - ``datamaps.upload_to_s3``
 
-And pseudo-timers to track the number of rows, image tiles and S3 operations:
+A gauge to plot the number of rows in the mapstat table:
 
   - ``datamaps.csv_rows``
+
+And pseudo-timers to track the number of image tiles and S3 operations:
+
   - ``datamaps.s3_list``
   - ``datamaps.s3_put``
   - ``datamaps.tile_new``
