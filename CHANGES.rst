@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Adjust Fennec link to point to Fennec Nightly install instructions.
+  https://bugzilla.mozilla.org/show_bug.cgi?id=1039787
+
 20140715114000
 **************
 

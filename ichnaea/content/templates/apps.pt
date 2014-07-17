@@ -52,8 +52,7 @@
 
     <p class="text-justified">
         Nightly versions of
-        <a href="https://play.google.com/store/apps/details?id=org.mozilla.firefox">
-            Firefox for Android</a>
+        <a href="https://quality.mozilla.org/docs/mobile-firefox/how-to-install-fennec-nightly-builds/">Firefox for Android</a>
         include a way to contribute data and enhance this service. In order
         to enable this, you need to go to the Mozilla settings section and
         look for the contribution option under data choices.
