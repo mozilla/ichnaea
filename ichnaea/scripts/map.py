@@ -166,11 +166,10 @@ def generate(db, bucketname, heka_client, stats_client,
     with tempdir() as workdir:
         csv = os.path.join(workdir, 'map.csv')
 
-        heka_client.debug('Datamaps export to CSV started.')
         with stats_client.timer("datamaps.export_to_csv"):
             result_rows = export_to_csv(db, csv)
+
         stats_client.timing('datamaps.csv_rows', result_rows)
-        heka_client.debug('Datamaps export to CSV finished.')
 
         # create shapefile / quadtree
         shapes = os.path.join(workdir, 'shapes')
@@ -178,10 +177,9 @@ def generate(db, bucketname, heka_client, stats_client,
             encode=datamaps_encode,
             output=shapes,
             input=csv)
-        heka_client.debug('Datamaps encode started.')
+
         with stats_client.timer("datamaps.encode"):
             os.system(cmd)
-        heka_client.debug('Datamaps encode finished.')
 
         # render tiles
         if output:
@@ -197,18 +195,16 @@ def generate(db, bucketname, heka_client, stats_client,
             concurrency=concurrency,
             render=datamaps_render,
             output=tiles)
-        heka_client.debug('Datamaps rendering started.')
+
         with stats_client.timer("datamaps.render"):
             os.system(cmd)
-        heka_client.debug('Datamaps rendering finished.')
 
         if upload:
-            heka_client.debug('Datamaps upload to S3 started.')
             with stats_client.timer("datamaps.upload_to_s3"):
                 result = upload_to_s3(bucketname, tiles)
+
             for metric, value in result.items():
                 stats_client.timing('datamaps.%s' % metric, value)
-            heka_client.debug('Datamaps upload to S3 finished.')
 
 
 def main(argv, _db_master=None, _heka_client=None, _stats_client=None):

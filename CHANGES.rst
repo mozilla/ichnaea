@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Remove non-local debug logging from map tiles generation script.
+
 - Test all additional fields in geosubmit API and correctly retain new
   `signalToNoiseRatio` field for WiFi observations.
 
