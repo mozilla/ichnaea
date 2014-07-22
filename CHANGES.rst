@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Updated deployment docs to more clearly mention the Redis dependency
+  and clean up Heka / logging related docs.
+
 - Split out circus and its dependencies into a separate requirements file.
 
 - Remove non-local debug logging from map tiles generation script.
