@@ -9,12 +9,10 @@ here = os.path.abspath(os.path.dirname(__file__))
 requires = [
     'celery',
     'Chameleon',
-    'circus',
     'colander',
     'configparser',
     'gunicorn',
     'heka-py',
-    'konfig',
     'PyMySQL',
     'SQLAlchemy',
 ]

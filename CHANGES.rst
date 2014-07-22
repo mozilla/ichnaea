@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Split out circus and its dependencies into a separate requirements file.
+
 - Remove non-local debug logging from map tiles generation script.
 
 - Test all additional fields in geosubmit API and correctly retain new

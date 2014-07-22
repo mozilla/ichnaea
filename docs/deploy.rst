@@ -48,8 +48,8 @@ Specify the database connection string and run make:
 
     SQLURI=mysql+pymysql://root:mysql@localhost/location make
 
-Adjust the circus.ini and ichnaea.ini files with your database connection
-strings. You can use the same database for the master and slave connections.
+Adjust the ichnaea.ini file with your database connection strings.
+You can use the same database for the master and slave connections.
 
 For the celery broker and result backend you can either use MySQL for low
 volume or use Redis via a connection string like `redis://127.0.0.1/0`.
@@ -58,19 +58,34 @@ Now you can run the server:
 
 .. code-block:: bash
 
-   bin/circusd circus.ini
+   bin/gunicorn -b 127.0.0.1:7001 ichnaea:application
 
-This command will launch 2 web server processes, one celery beat daemon and
-two celery worker processes. You can access the web service on port 7001.
-
-You can also run the service as a daemon:
+The celery processes are started via:
 
 .. code-block:: bash
 
-   bin/circusd --daemon circus.ini
+   bin/celery -A ichnaea.worker:celery beat
+   bin/celery -A ichnaea.worker:celery worker --no-execv
 
-And interact with it using circusctl. Have a look at `the Circus documentation
-<https://circus.readthedocs.org/>`_ for more information on this.
+
+Circus
+======
+
+You can also use a process manager like circus to supervise all processes.
+
+To install circus and its dependencies call:
+
+.. code-block:: bash
+
+    bin/pip install --no-deps -r requirements/circus.ini
+
+And then start circus via our example config:
+
+    bin/circusd --daemon circus.ini
+
+You can interact with a daemonized circus via circusctl. Have a look at
+`the Circus documentation <https://circus.readthedocs.org/>`_ for more
+information on this.
 
 
 Logging

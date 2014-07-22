@@ -1,0 +1,5 @@
+circus==0.10.0
+iowait==0.2
+psutil==1.2.1
+pyzmq==13.1.0
+tornado==3.1.1
