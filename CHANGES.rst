@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Changed graphs on the stats page to show a monthly count for the past
+  year, closes https://bugzilla.mozilla.org/show_bug.cgi?id=1043386.
+
 - Update rickshaw.js to 1.5.0 and tweak stats page layout.
 
 - Add MLS logo and use higher resolution images where available.

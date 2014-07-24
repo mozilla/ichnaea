@@ -57,20 +57,29 @@ def global_stats(session):
     return result
 
 
-def histogram(session, name, days=60):
+def histogram(session, name, days=365):
     today = util.utcnow().date()
     start = today - timedelta(days=days)
     stat_key = STAT_TYPE[name]
-    rows = session.query(Stat.time, Stat.value).filter(
+    month_key = (func.year(Stat.time), func.month(Stat.time))
+    rows = session.query(func.max(Stat.value), *month_key).filter(
         Stat.key == stat_key).filter(
         Stat.time >= start).filter(
-        Stat.time < today).order_by(
-        Stat.time
+        Stat.time < today).group_by(
+        *month_key).order_by(
+        *month_key
     )
     result = []
-    for day, num in rows.all():
-        if isinstance(day, date):  # pragma: no cover
-            day = day.strftime('%Y-%m-%d')
+    for num, year, month in rows.all():
+        # use first of August to plot the highest result for July
+        if month == 12:
+            next_month = date(year + 1, 1, 1)
+        else:
+            next_month = date(year, month + 1, 1)
+        if next_month >= today:
+            # we restrict dates to be at most yesterday
+            next_month = today - timedelta(days=1)
+        day = next_month.strftime('%Y-%m-%d')
         result.append({'day': day, 'num': num})
     return result
 

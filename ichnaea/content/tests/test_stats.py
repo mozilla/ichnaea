@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 
 from ichnaea.content.models import (
     Score,
@@ -61,37 +61,42 @@ class TestStats(DBTestCase):
         from ichnaea.content.stats import histogram
         session = self.db_master_session
         today = util.utcnow().date()
-        one_day = (today - timedelta(1)).strftime('%Y-%m-%d')
-        two_days = (today - timedelta(2)).strftime('%Y-%m-%d')
-        long_ago = (today - timedelta(25)).strftime('%Y-%m-%d')
-        today = today.strftime('%Y-%m-%d')
+        one_day = today - timedelta(days=1)
+        two_days = today - timedelta(days=2)
+        one_month = today - timedelta(days=35)
+        two_months = today - timedelta(days=70)
+        long_ago = today - timedelta(days=100)
         stats = [
-            Stat(time=long_ago, value=1),
-            Stat(time=two_days, value=3),
-            Stat(time=one_day, value=7),
-            Stat(time=today, value=9),
+            Stat(name='cell', time=long_ago, value=40),
+            Stat(name='cell', time=two_months, value=50),
+            Stat(name='cell', time=one_month, value=60),
+            Stat(name='cell', time=two_days, value=70),
+            Stat(name='cell', time=one_day, value=80),
+            Stat(name='cell', time=today, value=90),
         ]
-        for stat in stats:
-            stat.name = 'cell'
         session.add_all(stats)
         session.commit()
-        result = histogram(session, 'cell', days=20)
-        self.assertEqual(result, [
-            {'num': 3, 'day': two_days},
-            {'num': 7, 'day': one_day},
-        ])
+        result = histogram(session, 'cell', days=90)
+        self.assertTrue(
+            {'num': 80, 'day': one_day.strftime('%Y-%m-%d')} in result)
+
+        if two_months.month == 12:
+            expected = date(two_months.year + 1, 1, 1)
+        else:
+            expected = date(two_months.year, two_months.month + 1, 1)
+        self.assertTrue(
+            {'num': 50, 'day': expected.strftime('%Y-%m-%d')} in result)
 
     def test_histogram_different_stat_name(self):
         from ichnaea.content.stats import histogram
         session = self.db_master_session
-        day = util.utcnow().date() - timedelta(1)
-        day = day.strftime('%Y-%m-%d')
+        day = util.utcnow().date() - timedelta(days=1)
         stat = Stat(time=day, value=9)
         stat.name = 'unique_cell'
         session.add(stat)
         session.commit()
         result = histogram(session, 'unique_cell')
-        self.assertEqual(result, [{'num': 9, 'day': day}])
+        self.assertEqual(result, [{'num': 9, 'day': day.strftime('%Y-%m-%d')}])
 
     def test_leaders(self):
         from ichnaea.content.stats import leaders
