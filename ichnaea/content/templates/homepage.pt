@@ -28,7 +28,9 @@
     <div class="map-callout-right map-callout">
         <a href="/map" title="Detailed data map">
             <img src="${map_base_url}" width="256" height="256" />
-            <img src="${map_url}" width="256" height="256" />
+            <img src="${map_url}"
+                 srcset="${map_url} 1x, ${map_url_2} 2x"
+                 width="256" height="256" />
         </a>
         <p class="map-callout-caption">Detailed data map</p>
     </div>

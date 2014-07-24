@@ -35,7 +35,17 @@
                 </ul>
             </nav>
 
-            <h2><a href="/">Mozilla Location Service</a></h2>
+            <div class="header-logo">
+                <a href="/" title="Mozilla Location Service"><img
+                   src="/static/images/mls-logo.png"
+                   srcset="/static/images/mls-logo.png 1x,
+                           /static/images/mls-logo@2x.png 2x"
+                   title="Mozilla Location Service"/></a>
+
+                <h2>
+                    <a href="/">Mozilla<br />Location Service</a>
+                </h2>
+            </div>
         </header>
     </div>
     </tal:macro>
@@ -52,7 +62,9 @@
         <div class="row">
             <div class="footer-logo">
                 <img src="/static/images/mozilla-logo.png"
-                     alt="Mozilla" width="93" height="24" />
+                     srcset="/static/images/mozilla-logo.png 1x,
+                             /static/images/mozilla-logo@2x.png 2x"
+                     alt="Mozilla" />
             </div>
             <div class="footer-license">
                 This content is ©2012–${view.this_year} by Mozilla.

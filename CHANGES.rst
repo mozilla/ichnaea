@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Add MLS logo and use higher resolution images where available.
+
 - Always load cdn.mozilla.net resources over https.
 
 - Updated deployment docs to more clearly mention the Redis dependency

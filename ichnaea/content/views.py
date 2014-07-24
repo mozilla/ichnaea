@@ -119,6 +119,7 @@ class ContentViews(Layout):
         return {
             'page_title': 'Overview',
             'map_url': map_url,
+            'map_url_2': map_url.replace('/0.png', '/0@2x.png'),
             'map_base_url': map_base_url,
         }
 

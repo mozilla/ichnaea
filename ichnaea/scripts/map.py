@@ -186,18 +186,35 @@ def generate(db, bucketname, heka_client, stats_client,
             tiles = output
         else:
             tiles = os.path.join(workdir, 'tiles')
-        cmd = ('{enumerate} -z13 {shapes} | xargs -L1 -P{concurrency} '
+        cmd = ('{enumerate} -z{zoom} {shapes} | xargs -L1 -P{concurrency} '
                '{render} -o {output} -B 12:0.0379:0.874 -c0088FF -t0 '
-               '-O 16:1600:1.5 -G 0.5')
-        cmd = cmd.format(
+               '-O 16:1600:1.5 -G 0.5{extra}')
+        zoom_0_cmd = cmd.format(
             enumerate=datamaps_enumerate,
+            zoom=0,
             shapes=shapes,
             concurrency=concurrency,
             render=datamaps_render,
-            output=tiles)
+            output=tiles,
+            extra=' -T 512')
+
+        # create high-res version for zoom level 0
+        os.system(zoom_0_cmd)
+        zoom_0 = os.path.join(tiles, '0', '0')
+        os.rename(os.path.join(zoom_0, '0.png'),
+                  os.path.join(zoom_0, '0@2x.png'))
+
+        zoom_all_cmd = cmd.format(
+            enumerate=datamaps_enumerate,
+            zoom=5,
+            shapes=shapes,
+            concurrency=concurrency,
+            render=datamaps_render,
+            output=tiles,
+            extra='')
 
         with stats_client.timer("datamaps.render"):
-            os.system(cmd)
+            os.system(zoom_all_cmd)
 
         if upload:
             with stats_client.timer("datamaps.upload_to_s3"):

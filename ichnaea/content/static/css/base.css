@@ -252,10 +252,6 @@ img {
     content: ".";
 }
 
-#masthead h2 {
-    padding: 30px 0 20px 0;
-}
-
 #masthead nav {
     float: right;
     margin-right: 16px;
@@ -289,6 +285,17 @@ img {
 #masthead nav li a:link,
 #masthead nav li a:visited {
     color: #484848;
+}
+
+.header-logo {
+    padding-top: 20px;
+}
+.header-logo img {
+    float: left;
+    padding-right: 5px;
+}
+.header-logo h2 {
+    padding-top: 5px;
 }
 
 #colophon {
@@ -434,10 +441,6 @@ img {
     }
     .row {
         margin-left: auto;
-    }
-    #masthead h2 {
-        padding-top: 10px;
-        padding-bottom: 10px;
     }
     #masthead nav {
         float: none;
