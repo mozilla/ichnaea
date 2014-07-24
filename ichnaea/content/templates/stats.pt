@@ -3,7 +3,7 @@
            metal:use-macro="view.base_template">
 
 <tal:slot metal:fill-slot="css">
-    <link rel="stylesheet" href="/static/css/rickshaw-1.4.5.min.css" />
+    <link rel="stylesheet" href="/static/css/stat-combined.css" />
 </tal:slot>
 
 <tal:slot metal:fill-slot="js">

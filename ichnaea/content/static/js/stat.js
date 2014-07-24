@@ -8,9 +8,7 @@ var XHover = Rickshaw.Class.create(Rickshaw.Graph.HoverDetail, {
 
         var graph = this.graph;
         var points = args.points;
-        var point = points.filter(function(p) {
-            return p.active;
-        }).shift();
+        var point = points.filter( function(p) { return p.active; } ).shift();
 
         if (point.value.y === null) return;
 
@@ -20,15 +18,17 @@ var XHover = Rickshaw.Class.create(Rickshaw.Graph.HoverDetail, {
         this.element.innerHTML = '';
         this.element.style.left = graph.x(point.value.x) + 'px';
 
+        // skipped xLabel block
+
         var item = document.createElement('div');
+
         item.className = 'item';
 
         // invert the scale if this series displays using a scale
         var series = point.series;
         var actualY = series.scale ? series.scale.invert(point.value.y) : point.value.y;
 
-        item.innerHTML = this.formatter(
-            series, point.value.x, actualY, formattedXValue, formattedYValue, point);
+        item.innerHTML = this.formatter(series, point.value.x, actualY, formattedXValue, formattedYValue, point);
         item.style.top = this.graph.y(point.value.y0 + point.value.y) + 'px';
 
         this.element.appendChild(item);
@@ -46,7 +46,32 @@ var XHover = Rickshaw.Class.create(Rickshaw.Graph.HoverDetail, {
             dot.className = 'dot active';
         }
 
+        // Assume left alignment until the element has been displayed and
+        // bounding box calculations are possible.
+        var alignables = [item];
+        alignables.forEach(function(el) {
+            el.classList.add('left');
+        });
+
         this.show();
+
+        // If left-alignment results in any error, try right-alignment.
+        var leftAlignError = this._calcLayoutError(alignables);
+        if (leftAlignError > 0) {
+            alignables.forEach(function(el) {
+                el.classList.remove('left');
+                el.classList.add('right');
+            });
+
+            // If right-alignment is worse than left alignment, switch back.
+            var rightAlignError = this._calcLayoutError(alignables);
+            if (rightAlignError > leftAlignError) {
+                alignables.forEach(function(el) {
+                    el.classList.remove('right');
+                    el.classList.add('left');
+                });
+            }
+        }
 
         if (typeof this.onRender == 'function') {
             this.onRender(args);
@@ -55,7 +80,7 @@ var XHover = Rickshaw.Class.create(Rickshaw.Graph.HoverDetail, {
 });
 
 function make_graph(url, graph_id) {
-    var graphWidth = 720;
+    var graphWidth = 880;
     var graphHeight = 120;
     var graphXScale = 170;
     var graphYScale = 50;
@@ -63,7 +88,7 @@ function make_graph(url, graph_id) {
     // adjust graph sizes to match responsive CSS rules
     var screenWidth = screen.width;
     if (screenWidth >= 760 && screenWidth < 1000) {
-        graphWidth = 520;
+        graphWidth = 580;
         graphXScale = 160;
     } else if (screenWidth < 760) {
         graphWidth = 220;
@@ -100,7 +125,7 @@ function make_graph(url, graph_id) {
         renderer: 'area',
         series: [ {
                 data: entries,
-                color: 'steelblue'
+                color: '#0096dd'
         } ]
     } );
 

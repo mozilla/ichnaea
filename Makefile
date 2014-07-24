@@ -80,6 +80,9 @@ css: node_modules
 	$(HERE)/node_modules/.bin/cleancss -d \
 	-o $(HERE)/ichnaea/content/static/css/base-combined.css \
 	$(HERE)/ichnaea/content/static/css/base.css
+	$(HERE)/node_modules/.bin/cleancss -d \
+	-o $(HERE)/ichnaea/content/static/css/stat-combined.css \
+	$(HERE)/ichnaea/content/static/css/rickshaw-1.5.0.min.css
 
 js_map:
 	$(HERE)/node_modules/.bin/uglifyjs \
@@ -92,7 +95,7 @@ js_map:
 js: node_modules js_map
 	$(HERE)/node_modules/.bin/uglifyjs \
 	$(HERE)/ichnaea/content/static/js/d3-3.3.11.min.js \
-	$(HERE)/ichnaea/content/static/js/rickshaw-1.4.5.min.js \
+	$(HERE)/ichnaea/content/static/js/rickshaw-1.5.0.min.js \
 	$(HERE)/ichnaea/content/static/js/stat.js \
 	-o $(HERE)/ichnaea/content/static/js/stat-combined.js \
 	-c --stats

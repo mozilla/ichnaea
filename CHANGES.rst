@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Update rickshaw.js to 1.5.0 and tweak stats page layout.
+
 - Add MLS logo and use higher resolution images where available.
 
 - Always load cdn.mozilla.net resources over https.

@@ -357,11 +357,21 @@ img {
 
 .chart_container {
     position: relative;
-    font-family: Arial, Helvetica, sans-serif;
-    width: 800px;
+    margin-top: 20px;
+    font-family: 'Open Sans', 'Droid Arabic Naskh', sans-serif;
+    width: 960px;
 }
 .rickshaw_graph {
-    width: 760px;
+    width: 940px;
+}
+.rickshaw_graph .y_ticks .tick line,
+.rickshaw_graph .x_ticks_d3 .tick {
+    stroke-width: 0px !important;
+}
+.rickshaw_graph .y_ticks text,
+.rickshaw_graph .x_ticks_d3 text {
+    opacity: 1.0 !important;
+    font-size: 13px !important;
 }
 .chart {
     position: relative;
@@ -588,10 +598,10 @@ img {
         margin-left: 10px;
     }
     .chart_container {
-        width: 600px;
+        width: 660px;
     }
     .rickshaw_graph {
-        width: 560px;
+        width: 620px;
     }
     #map {
         width: 720px;
