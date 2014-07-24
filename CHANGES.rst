@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Always load cdn.mozilla.net resources over https.
+
 - Updated deployment docs to more clearly mention the Redis dependency
   and clean up Heka / logging related docs.
 

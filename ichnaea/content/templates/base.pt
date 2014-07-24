@@ -9,11 +9,11 @@
     <title>Mozilla Location Service - ${page_title}</title>
 
     <link rel="stylesheet" href="/static/css/base-combined.css" />
-    <link href="//mozorg.cdn.mozilla.net/media/css/tabzilla-min.css" rel="stylesheet" />
+    <link href="https://mozorg.cdn.mozilla.net/media/css/tabzilla-min.css" rel="stylesheet" />
     <tal:slot metal:define-slot="css"></tal:slot>
 
     <script src='/static/js/base-combined.js'></script>
-    <script src="//mozorg.cdn.mozilla.net/en-US/tabzilla/tabzilla.js"></script>
+    <script src="https://mozorg.cdn.mozilla.net/en-US/tabzilla/tabzilla.js"></script>
     <tal:slot metal:define-slot="js"></tal:slot>
 
     <tal:slot metal:define-slot="head"></tal:slot>

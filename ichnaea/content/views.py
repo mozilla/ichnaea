@@ -23,7 +23,7 @@ FAVICON_PATH = os.path.join(HERE, 'static', 'favicon.ico')
 # cache year lookup, needs server restart after new year :)
 THIS_YEAR = unicode(util.utcnow().year)
 
-CSP_BASE = "'self' *.cdn.mozilla.net"
+CSP_BASE = "'self' https://*.cdn.mozilla.net"
 CSP_POLICY = """\
 default-src 'self' *.tiles.mapbox.com;
 font-src {base};
