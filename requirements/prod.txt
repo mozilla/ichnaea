@@ -30,7 +30,7 @@ pygeoip==0.3.1
 pyramid==1.5.1
 pyramid-chameleon==0.3
 pytz==2014.4
-raven==3.4.1  # rq.filter: <3.6.0
+raven==3.4.1  # rq.filter: <3.5.0
 redis==2.10.1
 repoze.lru==0.6
 setproctitle==1.1.8
