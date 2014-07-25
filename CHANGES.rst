@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Updated supporting Python libraries to latest versions.
+
 - Update clean-css to 2.2.9 and uglify-js to 2.4.15.
 
 - Update d3.js to 3.4.11 and jQuery 1.11.1.

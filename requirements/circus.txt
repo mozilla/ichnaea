@@ -1,5 +1,6 @@
-circus==0.10.0
+backports.ssl-match-hostname==3.4.0.2
+circus==0.11.1
 iowait==0.2
-psutil==1.2.1
+psutil==2.1.1
 pyzmq==13.1.0
-tornado==3.1.1
+tornado==3.2.2

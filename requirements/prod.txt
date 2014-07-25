@@ -15,7 +15,7 @@ celery==3.1.13
 colander==1.0b1
 configparser==3.3.0r2
 country-bounding-boxes==0.2.1
-docopt==0.6.1
+docopt==0.6.2
 filechunkio==1.5
 gunicorn==18.0
 heka-py==0.30.3
