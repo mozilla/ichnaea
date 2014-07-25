@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Updated production Python dependencies to latest versions.
+
 - Updated supporting Python libraries to latest versions.
 
 - Update clean-css to 2.2.9 and uglify-js to 2.4.15.

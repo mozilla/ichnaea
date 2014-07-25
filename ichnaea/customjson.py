@@ -4,13 +4,12 @@ from ichnaea.models import (encode_datetime, DEGREE_DECIMAL_PLACES)
 
 def custom_iterencode(value):
     from simplejson.encoder import (
-        JSONEncoder,
         _make_iterencode,
+        encode_basestring,
         FLOAT_REPR,
+        JSONEncoder,
         PosInf,
-        encode_basestring
     )
-    from decimal import Decimal
 
     j = JSONEncoder()
 
@@ -41,9 +40,9 @@ def custom_iterencode(value):
         j.key_separator, j.item_separator, j.sort_keys,
         j.skipkeys, _one_shot, j.use_decimal,
         j.namedtuple_as_object, j.tuple_as_array,
-        j.bigint_as_string, j.item_sort_key,
+        j.int_as_string_bitcount, j.item_sort_key,
         j.encoding, j.for_json,
-        Decimal=Decimal)
+    )
 
     return _iterencode(value, 0)
 
