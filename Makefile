@@ -97,14 +97,14 @@ js_map:
 
 js: node_modules js_map
 	$(HERE)/node_modules/.bin/uglifyjs \
-	$(HERE)/ichnaea/content/static/js/d3-3.3.11.min.js \
+	$(HERE)/ichnaea/content/static/js/d3-3.4.11.min.js \
 	$(HERE)/ichnaea/content/static/js/rickshaw-1.5.0.min.js \
 	$(HERE)/ichnaea/content/static/js/stat.js \
 	-o $(HERE)/ichnaea/content/static/js/stat-combined.js \
 	-c --stats
 	$(HERE)/node_modules/.bin/uglifyjs \
 	$(HERE)/ichnaea/content/static/js/ga.js \
-	$(HERE)/ichnaea/content/static/js/jquery-1.9.1.js \
+	$(HERE)/ichnaea/content/static/js/jquery-1.11.1.js \
 	-o $(HERE)/ichnaea/content/static/js/base-combined.js \
 	-m -c --stats
 

@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Update d3.js to 3.4.11 and jQuery 1.11.1.
+
 - Changed graphs on the stats page to show a monthly count for the past
   year, closes https://bugzilla.mozilla.org/show_bug.cgi?id=1043386.
 
