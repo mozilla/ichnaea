@@ -83,6 +83,9 @@ css: node_modules
 	$(HERE)/node_modules/.bin/cleancss -d \
 	-o $(HERE)/ichnaea/content/static/css/stat-combined.css \
 	$(HERE)/ichnaea/content/static/css/rickshaw-1.5.0.min.css
+	$(HERE)/node_modules/.bin/cleancss -d \
+	-o $(HERE)/ichnaea/content/static/css/map-combined.css \
+	$(HERE)/ichnaea/content/static/css/mapbox-1.6.4.min.css
 
 js_map:
 	$(HERE)/node_modules/.bin/uglifyjs \
