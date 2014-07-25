@@ -20,4 +20,5 @@ dist
 include
 lib
 lib64
+logs
 man
