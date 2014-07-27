@@ -4,6 +4,10 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Initialize the application and outbound connections as part of the
+  gunicorn worker startup process, instead of waiting for the first
+  request and slowing it down.
+
 - Switch pygeoip module to use memory caching, to prevent errors from
   changing the datafile from underneath the running process.
 

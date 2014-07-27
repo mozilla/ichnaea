@@ -25,3 +25,6 @@ def post_worker_init(worker):
     # as they get an almost equal number of requests
     jitter = randint(0, max_requests // 10)
     worker.max_requests += jitter
+
+    # Actually initialize the application
+    worker.wsgi(None, None)

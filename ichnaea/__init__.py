@@ -10,7 +10,12 @@ def application(environ, start_response):  # pragma: no cover
 
     if _APP is None:
         conf = read_config()
-        _APP = main({}, heka_config=conf.filename, **conf.get_map('ichnaea'))
+        # Signal this call was made as part of app initialization
+        _APP = main({}, heka_config=conf.filename, init=True,
+                    **conf.get_map('ichnaea'))
+        if environ is None and start_response is None:
+            # Called as part of gunicorn's post_worker_init
+            return _APP
 
     return _APP(environ, start_response)
 
