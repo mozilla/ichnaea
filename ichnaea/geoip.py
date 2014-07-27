@@ -1,6 +1,7 @@
 import socket
 
 import pygeoip
+from pygeoip import GeoIPError
 
 from ichnaea.geocalc import maximum_country_radius
 from ichnaea.models import (
@@ -8,10 +9,6 @@ from ichnaea.models import (
     GEOIP_CITY_ACCURACY,
     GEOIP_COUNTRY_ACCURACY,
 )
-
-
-class GeoIPError(Exception):
-    pass
 
 
 def radius_from_geoip(record):
@@ -55,7 +52,11 @@ def configure_geoip(registry_settings=None, filename=None):
         return GeoIPNull()
 
     try:
-        db = GeoIPWrapper(filename)
+        # Use a memory cache to avoid changes to the underlying files from
+        # causing errors. Also disable class level caching.
+        db = GeoIPWrapper(filename, flags=pygeoip.MEMORY_CACHE, cache=False)
+        # Actually initialize the memory cache, by doing one fake look-up
+        db.geoip_lookup('127.0.0.1')
     except IOError as e:
         raise GeoIPError("Failed to open GeoIP database '%s': %s" % (
                          filename, e))
@@ -69,9 +70,8 @@ class GeoIPWrapper(pygeoip.GeoIP):
         try:
             r = self.record_by_addr(addr_string)
         except (socket.error, AttributeError):
-            # socket.error: Almost certainly an invalid IP adress
+            # socket.error: Almost certainly an invalid IP address
             # AttributeError: The GeoIP database has no data for that IP
-            # FIXME log a warning for an invalid IP?
             return None
 
         # Translate "no data found" in the unlikely case that it's returned by

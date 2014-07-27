@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Switch pygeoip module to use memory caching, to prevent errors from
+  changing the datafile from underneath the running process.
+
 - Introduce 10% jitter into gunicorn's max_requests setting, to prevent
   all worker processes from being recycled at once.
 

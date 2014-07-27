@@ -24,16 +24,16 @@ class TestGeoIPFallback(TestCase):
     def test_open_fail(self):
         # FIXME going to fail at this point due to GeoIPNull
         with self.assertRaises(geoip.GeoIPError):
-            geoip.configure_geoip(filename='/i/taught/i/taw/a/putty/tat')
+            self._open_db('/i/taught/i/taw/a/putty/tat')
 
         with tempfile.NamedTemporaryFile() as temp:
             temp.write('Bucephalus')
             temp.seek(0)
             with self.assertRaises(geoip.GeoIPError):
-                geoip.configure_geoip(filename=temp.name)
+                self._open_db(temp.name)
 
     def test_open_ok(self):
-        result = geoip.configure_geoip(filename=self.filename)
+        result = self._open_db()
         self.assertIsInstance(result, geoip.GeoIPWrapper)
 
     def test_lookup_ok(self):
