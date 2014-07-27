@@ -16,3 +16,12 @@ max_requests = 100000
 
 # Avoid too much output on the console
 loglevel = "warning"
+
+
+def post_worker_init(worker):
+    from random import randint
+
+    # Use 10% jitter, to prevent all workers from restarting at once,
+    # as they get an almost equal number of requests
+    jitter = randint(0, max_requests // 10)
+    worker.max_requests += jitter

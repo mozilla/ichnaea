@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Introduce 10% jitter into gunicorn's max_requests setting, to prevent
+  all worker processes from being recycled at once.
+
 - Update gunicorn to 19.1.0 and use the new support for config settings
   based on a Python module. The gunicorn invocation needs to include
   `-c ichnaea.gunicorn_config` now and can drop various of the other
