@@ -4,6 +4,11 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Update gunicorn to 19.1.0 and use the new support for config settings
+  based on a Python module. The gunicorn invocation needs to include
+  `-c ichnaea.gunicorn_config` now and can drop various of the other
+  arguments.
+
 - Updated production Python dependencies to latest versions.
 
 - Updated supporting Python libraries to latest versions.
