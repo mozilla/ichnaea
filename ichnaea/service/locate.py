@@ -131,7 +131,7 @@ def query_cell_networks(session, cell_keys):
     return cells
 
 
-def geoip_and_best_guess_country_code(cell_keys, request, api_name):
+def geoip_and_best_guess_country_code(cell_keys, client_addr, api_name, geoip_db):
     """
     Return (geoip, alpha2) where geoip is the result of a GeoIP lookup
     and alpha2 is a best-guess ISO 3166 alpha2 country code. The country
@@ -142,8 +142,8 @@ def geoip_and_best_guess_country_code(cell_keys, request, api_name):
     stats_client = get_stats_client()
     geoip = None
 
-    if request.client_addr:
-        geoip = request.registry.geoip_db.geoip_lookup(request.client_addr)
+    if client_addr:
+        geoip = geoip_db.geoip_lookup(client_addr)
 
     cell_countries = []
     cell_mccs = set()
@@ -318,21 +318,21 @@ def search_wifi(session, wifis):
     }
 
 
-def search_all_sources(request, data, api_name):
+def search_all_sources(session, data, api_name, client_addr, geoip_db):
     """
-    Common code-path for both the search and geolocate APIs, searching
-    wifi, cell, cell-lac and GeoIP data sources.
+    Common code-path for all lookup APIs, using
+    WiFi, cell, cell-lac and GeoIP data sources.
 
-    Arguments:
-    request -- the original HTTP request object
-    data -- a dict conforming to the search API
-    api_name -- a string to use in Heka metrics ("search" or "geolocate")
+    :param session: A database session for queries.
+    :param data: A dict conforming to the search API.
+    :param api_name: A string to use in metrics (for example "geolocate").
+    :param client_addr: The IP address the request came from.
+    :param geoip_db: The geoip database.
     """
 
     stats_client = get_stats_client()
     heka_client = get_heka_client()
 
-    session = request.db_slave_session
     result = None
     result_metric = None
 
@@ -378,7 +378,7 @@ def search_all_sources(request, data, api_name):
     # country estimate to filter out bogus requests. We may also use
     # the full GeoIP City-level estimate as well, if all else fails.
     (geoip_res, country) = geoip_and_best_guess_country_code(
-        validated['cell'], request, api_name)
+        validated['cell'], client_addr, api_name, geoip_db)
 
     # First we attempt a "zoom-in" from cell-lac, to cell
     # to wifi, tightening our estimate each step only so

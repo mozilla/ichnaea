@@ -56,7 +56,10 @@ def geolocate_view(request):
     )
 
     data = map_data(data)
-    result = search_all_sources(request, data, "geolocate")
+    session = request.db_slave_session
+    result = search_all_sources(
+        session, data, "geolocate",
+        request.client_addr, request.registry.geoip_db)
 
     if not result:
         result = HTTPNotFound()

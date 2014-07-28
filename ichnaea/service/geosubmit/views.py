@@ -209,7 +209,10 @@ def process_single(request):
     first_item = data['items'][0]
     if first_item['latitude'] == -255 or first_item['longitude'] == -255:
         data = map_data(data['items'][0])
-        result = search_all_sources(request, data, 'geosubmit')
+        session = request.db_slave_session
+        result = search_all_sources(
+            session, data, 'geosubmit',
+            request.client_addr, request.registry.geoip_db)
     else:
         result = {'lat': first_item['latitude'],
                   'lon': first_item['longitude'],

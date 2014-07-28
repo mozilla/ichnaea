@@ -32,7 +32,10 @@ def search_view(request):
         accept_empty=True,
     )
 
-    result = search_all_sources(request, data, "search")
+    session = request.db_slave_session
+    result = search_all_sources(
+        session, data, "search",
+        request.client_addr, request.registry.geoip_db)
 
     if not result:
         return {'status': 'not_found'}
