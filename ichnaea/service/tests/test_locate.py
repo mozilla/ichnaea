@@ -54,32 +54,33 @@ class TestSearchAllSources(DBTestCase):
 
     def test_no_data(self):
         result = locate.search_all_sources(
-            self.db_slave_session, 'geolocate', {}, geoip_db=self.geoip_db)
+            self.db_slave_session, 'm', {},
+            client_addr=None, geoip_db=self.geoip_db)
         self.assertTrue(result is None)
 
         self.check_stats(
             counter=[
-                'geolocate.no_country',
-                'geolocate.no_geoip_found',
+                'm.no_country',
+                'm.no_geoip_found',
             ],
         )
 
     def test_geoip_unknown(self):
         result = locate.search_all_sources(
-            self.db_slave_session, 'geolocate', {},
+            self.db_slave_session, 'm', {},
             client_addr='127.0.0.1', geoip_db=self.geoip_db)
         self.assertTrue(result is None)
 
         self.check_stats(
             counter=[
-                'geolocate.no_country',
-                'geolocate.no_geoip_found',
+                'm.no_country',
+                'm.no_geoip_found',
             ],
         )
 
     def test_geoip_city(self):
         result = locate.search_all_sources(
-            self.db_slave_session, 'geolocate', {},
+            self.db_slave_session, 'm', {},
             client_addr=FREMONT_IP, geoip_db=self.geoip_db)
 
         self.assertEqual(result,
@@ -89,15 +90,15 @@ class TestSearchAllSources(DBTestCase):
 
         self.check_stats(
             counter=[
-                'geolocate.country_from_geoip',
-                'geolocate.geoip_city_found',
-                'geolocate.geoip_hit',
+                'm.country_from_geoip',
+                'm.geoip_city_found',
+                'm.geoip_hit',
             ],
         )
 
     def test_geoip_country(self):
         result = locate.search_all_sources(
-            self.db_slave_session, 'geolocate', {},
+            self.db_slave_session, 'm', {},
             client_addr=GB_IP, geoip_db=self.geoip_db)
 
         self.assertEqual(result,
@@ -107,9 +108,9 @@ class TestSearchAllSources(DBTestCase):
 
         self.check_stats(
             counter=[
-                'geolocate.country_from_geoip',
-                'geolocate.geoip_country_found',
-                'geolocate.geoip_hit',
+                'm.country_from_geoip',
+                'm.geoip_country_found',
+                'm.geoip_hit',
             ],
         )
 
@@ -121,7 +122,7 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, 'geolocate',
+            session, 'm',
             {'cell': [cell]},
             client_addr=GB_IP, geoip_db=self.geoip_db)
 
@@ -132,9 +133,8 @@ class TestSearchAllSources(DBTestCase):
 
         self.check_stats(
             counter=[
-                'geolocate.country_from_geoip',
-                'geolocate.geoip_country_found',
-                'geolocate.geoip_hit',
+                'm.country_from_geoip',
+                'm.geoip_country_found',
             ],
         )
 
@@ -146,7 +146,7 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, 'geolocate',
+            session, 'm',
             {'cell': [cell]},
             client_addr=GB_IP, geoip_db=self.geoip_db)
 
@@ -157,10 +157,7 @@ class TestSearchAllSources(DBTestCase):
 
         self.check_stats(
             counter=[
-                'geolocate.anomaly.geoip_mcc_mismatch',
-                'geolocate.country_from_geoip',
-                'geolocate.geoip_country_found',
-                'geolocate.geoip_hit',
+                'm.anomaly.geoip_mcc_mismatch',
             ],
         )
 
@@ -171,7 +168,7 @@ class TestSearchAllSources(DBTestCase):
         cell = {'radio': gsm, 'mcc': USA_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
 
         result = locate.search_all_sources(
-            session, 'geolocate',
+            session, 'm',
             {'cell': [cell]},
             client_addr=GB_IP, geoip_db=self.geoip_db)
 
@@ -182,10 +179,7 @@ class TestSearchAllSources(DBTestCase):
 
         self.check_stats(
             counter=[
-                'geolocate.anomaly.geoip_mcc_mismatch',
-                'geolocate.country_from_geoip',
-                'geolocate.geoip_country_found',
-                'geolocate.geoip_hit',
+                'm.anomaly.geoip_mcc_mismatch',
             ],
         )
 
@@ -202,7 +196,7 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, 'geolocate',
+            session, 'm',
             {'cell': cells},
             client_addr=GB_IP, geoip_db=self.geoip_db)
 
@@ -213,10 +207,8 @@ class TestSearchAllSources(DBTestCase):
 
         self.check_stats(
             counter=[
-                'geolocate.anomaly.multiple_mccs',
-                'geolocate.country_from_geoip',
-                'geolocate.geoip_country_found',
-                'geolocate.geoip_hit',
+                'm.anomaly.multiple_mccs',
+                'm.country_from_geoip',
             ],
         )
 
@@ -233,7 +225,7 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, 'geolocate',
+            session, 'm',
             {'cell': cells},
             client_addr=GB_IP, geoip_db=self.geoip_db)
 
@@ -244,10 +236,8 @@ class TestSearchAllSources(DBTestCase):
 
         self.check_stats(
             counter=[
-                'geolocate.anomaly.multiple_mccs',
-                'geolocate.country_from_geoip',
-                'geolocate.geoip_country_found',
-                'geolocate.geoip_hit',
+                'm.anomaly.multiple_mccs',
+                'm.country_from_geoip',
             ],
         )
 
@@ -263,7 +253,7 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, 'geolocate',
+            session, 'm',
             {'cell': [dict(cid=1, **cell_key)]},
             client_addr=GB_IP, geoip_db=self.geoip_db)
 
@@ -274,11 +264,9 @@ class TestSearchAllSources(DBTestCase):
 
         self.check_stats(
             counter=[
-                'geolocate.cell_found',
-                'geolocate.cell_hit',
-                'geolocate.cell_lac_found',
-                'geolocate.country_from_geoip',
-                'geolocate.geoip_country_found',
+                'm.cell_found',
+                'm.cell_hit',
+                'm.cell_lac_found',
             ],
         )
 
@@ -292,7 +280,7 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, 'geolocate',
+            session, 'm',
             {'wifi': wifis},
             client_addr=GB_IP, geoip_db=self.geoip_db)
 
@@ -303,10 +291,8 @@ class TestSearchAllSources(DBTestCase):
 
         self.check_stats(
             counter=[
-                'geolocate.wifi_found',
-                'geolocate.wifi_hit',
-                'geolocate.country_from_geoip',
-                'geolocate.geoip_country_found',
+                'm.wifi_found',
+                'm.wifi_hit',
             ],
         )
 
@@ -320,14 +306,14 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, 'geolocate',
+            session, 'm',
             {'wifi': [{"key": "001122334455"}]})
 
         self.assertTrue(result is None)
         self.check_stats(
             counter=[
-                'geolocate.miss',
-                'geolocate.no_wifi_found',
+                'm.miss',
+                'm.no_wifi_found',
             ],
         )
 
@@ -342,14 +328,14 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, 'geolocate',
+            session, 'm',
             {'wifi': [{"key": "001122334455"}, {"key": "223344556677"}]})
 
         self.assertTrue(result is None)
         self.check_stats(
             counter=[
-                'geolocate.miss',
-                'geolocate.no_wifi_found',
+                'm.miss',
+                'm.no_wifi_found',
             ],
         )
 
@@ -365,7 +351,7 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, 'geolocate',
+            session, 'm',
             {'wifi': [
                 {"key": "001122334455"}, {"key": "112233445566"},
                 {"key": "223344556677"}, {"key": "334455667788"},
@@ -390,7 +376,7 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, 'geolocate',
+            session, 'm',
             {'wifi': [
                 {"key": "A1", "signal": -100},
                 {"key": "D4", "signal": -80},
@@ -430,7 +416,7 @@ class TestSearchAllSources(DBTestCase):
         random.shuffle(measures)
 
         result = locate.search_all_sources(
-            session, 'geolocate',
+            session, 'm',
             {'wifi': measures})
 
         self.assertEqual(result,
@@ -462,7 +448,7 @@ class TestSearchAllSources(DBTestCase):
         random.shuffle(measures)
 
         result = locate.search_all_sources(
-            session, 'geolocate',
+            session, 'm',
             {'wifi': measures})
 
         self.assertEqual(result,
@@ -482,7 +468,7 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, 'geolocate',
+            session, 'm',
             {'wifi': [{"key": "A1"}, {"key": "C3"}]})
 
         self.assertTrue(result is None)
