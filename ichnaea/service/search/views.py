@@ -34,8 +34,9 @@ def search_view(request):
 
     session = request.db_slave_session
     result = search_all_sources(
-        session, data, "search",
-        request.client_addr, request.registry.geoip_db)
+        session, 'search', data,
+        client_addr=request.client_addr,
+        geoip_db=request.registry.geoip_db)
 
     if not result:
         return {'status': 'not_found'}

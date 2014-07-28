@@ -325,14 +325,15 @@ def search_wifi(session, wifis):
     }
 
 
-def search_all_sources(session, data, api_name, client_addr, geoip_db):
+def search_all_sources(session, api_name, data,
+                       client_addr=None, geoip_db=None):
     """
     Common code-path for all lookup APIs, using
     WiFi, cell, cell-lac and GeoIP data sources.
 
     :param session: A database session for queries.
-    :param data: A dict conforming to the search API.
     :param api_name: A string to use in metrics (for example "geolocate").
+    :param data: A dict conforming to the search API.
     :param client_addr: The IP address the request came from.
     :param geoip_db: The geoip database.
     """

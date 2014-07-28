@@ -52,7 +52,7 @@ class TestSearchAllSources(DBTestCase):
 
     def test_no_data(self):
         result = locate.search_all_sources(
-            self.db_slave_session, {}, 'geolocate', None, self.geoip_db)
+            self.db_slave_session, 'geolocate', {}, geoip_db=self.geoip_db)
         self.assertTrue(result is None)
 
         self.check_stats(
@@ -64,7 +64,8 @@ class TestSearchAllSources(DBTestCase):
 
     def test_geoip_unknown(self):
         result = locate.search_all_sources(
-            self.db_slave_session, {}, 'geolocate', '127.0.0.1', self.geoip_db)
+            self.db_slave_session, 'geolocate', {},
+            client_addr='127.0.0.1', geoip_db=self.geoip_db)
         self.assertTrue(result is None)
 
         self.check_stats(
@@ -76,7 +77,8 @@ class TestSearchAllSources(DBTestCase):
 
     def test_geoip_city(self):
         result = locate.search_all_sources(
-            self.db_slave_session, {}, 'geolocate', FREMONT_IP, self.geoip_db)
+            self.db_slave_session, 'geolocate', {},
+            client_addr=FREMONT_IP, geoip_db=self.geoip_db)
 
         self.assertEqual(result,
                          {'lat': FREMONT_LAT,
@@ -93,7 +95,8 @@ class TestSearchAllSources(DBTestCase):
 
     def test_geoip_country(self):
         result = locate.search_all_sources(
-            self.db_slave_session, {}, 'geolocate', GB_IP, self.geoip_db)
+            self.db_slave_session, 'geolocate', {},
+            client_addr=GB_IP, geoip_db=self.geoip_db)
 
         self.assertEqual(result,
                          {'lat': GB_LAT,
@@ -116,7 +119,9 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, {'cell': [cell]}, 'geolocate', GB_IP, self.geoip_db)
+            session, 'geolocate',
+            {'cell': [cell]},
+            client_addr=GB_IP, geoip_db=self.geoip_db)
 
         self.assertEqual(result,
                          {'lat': GB_LAT,
@@ -139,7 +144,9 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, {'cell': [cell]}, 'geolocate', GB_IP, self.geoip_db)
+            session, 'geolocate',
+            {'cell': [cell]},
+            client_addr=GB_IP, geoip_db=self.geoip_db)
 
         self.assertEqual(result,
                          {'lat': GB_LAT,
@@ -162,7 +169,9 @@ class TestSearchAllSources(DBTestCase):
         cell = {'radio': gsm, 'mcc': USA_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
 
         result = locate.search_all_sources(
-            session, {'cell': [cell]}, 'geolocate', GB_IP, self.geoip_db)
+            session, 'geolocate',
+            {'cell': [cell]},
+            client_addr=GB_IP, geoip_db=self.geoip_db)
 
         self.assertEqual(result,
                          {'lat': GB_LAT,
@@ -191,7 +200,9 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, {'cell': cells}, 'geolocate', GB_IP, self.geoip_db)
+            session, 'geolocate',
+            {'cell': cells},
+            client_addr=GB_IP, geoip_db=self.geoip_db)
 
         self.assertEqual(result,
                          {'lat': GB_LAT,
@@ -220,7 +231,9 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, {'cell': cells}, 'geolocate', GB_IP, self.geoip_db)
+            session, 'geolocate',
+            {'cell': cells},
+            client_addr=GB_IP, geoip_db=self.geoip_db)
 
         self.assertEqual(result,
                          {'lat': GB_LAT,
@@ -248,8 +261,9 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, {'cell': [dict(cid=1, **cell_key)]},
-            'geolocate', GB_IP, self.geoip_db)
+            session, 'geolocate',
+            {'cell': [dict(cid=1, **cell_key)]},
+            client_addr=GB_IP, geoip_db=self.geoip_db)
 
         self.assertEqual(result,
                          {'lat': GB_LAT,
@@ -276,7 +290,9 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = locate.search_all_sources(
-            session, {'wifi': wifis}, 'geolocate', GB_IP, self.geoip_db)
+            session, 'geolocate',
+            {'wifi': wifis},
+            client_addr=GB_IP, geoip_db=self.geoip_db)
 
         self.assertEqual(result,
                          {'lat': GB_LAT,

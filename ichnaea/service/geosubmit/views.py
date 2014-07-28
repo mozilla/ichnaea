@@ -211,8 +211,9 @@ def process_single(request):
         data = map_data(data['items'][0])
         session = request.db_slave_session
         result = search_all_sources(
-            session, data, 'geosubmit',
-            request.client_addr, request.registry.geoip_db)
+            session, 'geosubmit', data,
+            client_addr=request.client_addr,
+            geoip_db=request.registry.geoip_db)
     else:
         result = {'lat': first_item['latitude'],
                   'lon': first_item['longitude'],
