@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Fix requirement in WiFi lookups to really only require two networks.
+
 - Added basic setup for documenting internal code API's and use the geocalc
   and service.locate modules as first examples.
 

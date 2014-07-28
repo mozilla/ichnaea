@@ -227,6 +227,7 @@ def search_wifi(session, wifis):
     # Estimate signal strength at -100 dBm if none is provided,
     # which is worse than the 99th percentile of wifi dBms we
     # see in practice (-98).
+
     def signal_strength(w):
         if 'signal' in w:
             return int(w['signal'])
@@ -305,7 +306,7 @@ def search_wifi(session, wifis):
     # error that increases significantly with distance, so we'd have to
     # underweight pretty heavily.
 
-    clusters = [c for c in clusters if len(c) > MIN_WIFIS_IN_CLUSTER]
+    clusters = [c for c in clusters if len(c) >= MIN_WIFIS_IN_CLUSTER]
 
     if len(clusters) == 0:
         return None

@@ -5,6 +5,8 @@ from ichnaea.models import (
     CELLID_LAC,
     GEOIP_CITY_ACCURACY,
     RADIO_TYPE,
+    Wifi,
+    WIFI_MIN_ACCURACY,
 )
 from ichnaea.tests.base import (
     DBTestCase,
@@ -259,6 +261,32 @@ class TestSearchAllSources(DBTestCase):
                 'geolocate.cell_found',
                 'geolocate.cell_hit',
                 'geolocate.cell_lac_found',
+                'geolocate.country_from_geoip',
+                'geolocate.geoip_country_found',
+            ],
+        )
+
+    def test_wifi(self):
+        session = self.db_slave_session
+        wifis = [{'key': '001122334455'}, {'key': '112233445566'}]
+        session.add(Wifi(
+            key=wifis[0]['key'], lat=GB_LAT, lon=GB_LON, range=200))
+        session.add(Wifi(
+            key=wifis[1]['key'], lat=GB_LAT, lon=GB_LON + 0.00001, range=300))
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, {'wifi': wifis}, 'geolocate', GB_IP, self.geoip_db)
+
+        self.assertEqual(result,
+                         {'lat': GB_LAT,
+                          'lon': GB_LON + 0.000005,
+                          'accuracy': WIFI_MIN_ACCURACY})
+
+        self.check_stats(
+            counter=[
+                'geolocate.wifi_found',
+                'geolocate.wifi_hit',
                 'geolocate.country_from_geoip',
                 'geolocate.geoip_country_found',
             ],
