@@ -388,6 +388,120 @@ class TestSearchAllSources(DBTestCase):
                           'lon': PARIS_LON + 0.002,
                           'accuracy': CELL_MIN_ACCURACY})
 
+    def test_cell_multiple_lac_hit(self):
+        session = self.db_slave_session
+        lat = PARIS_LAT
+        lon = PARIS_LON
+        gsm = RADIO_TYPE['gsm']
+
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        key2 = dict(mcc=FRANCE_MCC, mnc=2, lac=4)
+
+        data = [
+            Cell(lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
+                 cid=CELLID_LAC, range=20000, **key),
+            Cell(lat=lat + 0.2, lon=lon + 0.4, radio=gsm,
+                 cid=5, range=1000, **key),
+            Cell(lat=lat, lon=lon, radio=gsm,
+                 cid=CELLID_LAC, range=30000, **key2),
+            Cell(lat=lat + 0.02, lon=lon + 0.02, radio=gsm,
+                 cid=4, range=2000, **key2),
+            Cell(lat=lat + 0.04, lon=lon + 0.04, radio=gsm,
+                 cid=5, range=3000, **key2),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        # We have two lacs, both with two cells, but only know about
+        # one cell in one of them and two in the other.
+        # The lac with two known cells wins and we use both their
+        # positions to calculate the final result.
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [
+                dict(radio="gsm", cid=4, **key),
+                dict(radio="gsm", cid=9, **key),
+                dict(radio="gsm", cid=4, **key2),
+                dict(radio="gsm", cid=5, **key2),
+            ]})
+
+        self.assertEqual(result,
+                         {'lat': PARIS_LAT + 0.03,
+                          'lon': PARIS_LON + 0.03,
+                          'accuracy': CELL_MIN_ACCURACY})
+
+    def test_cell_multiple_lac_lower_range_wins(self):
+        session = self.db_slave_session
+        lat = PARIS_LAT
+        lon = PARIS_LON
+        gsm = RADIO_TYPE['gsm']
+
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        key2 = dict(mcc=FRANCE_MCC, mnc=2, lac=4)
+
+        data = [
+            Cell(lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
+                 cid=CELLID_LAC, range=10000, **key),
+            Cell(lat=lat + 0.2, lon=lon + 0.4, radio=gsm,
+                 cid=4, range=4000, **key),
+            Cell(lat=lat, lon=lon, radio=gsm,
+                 cid=CELLID_LAC, range=20000, **key2),
+            Cell(lat=lat + 0.02, lon=lon + 0.02, radio=gsm,
+                 cid=4, range=2000, **key2),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        # We have two lacs with each one known cell.
+        # The lac with the smallest cell wins.
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [
+                dict(radio="gsm", cid=4, **key),
+                dict(radio="gsm", cid=4, **key2),
+            ]})
+
+        self.assertEqual(result,
+                         {'lat': PARIS_LAT + 0.02,
+                          'lon': PARIS_LON + 0.02,
+                          'accuracy': CELL_MIN_ACCURACY})
+
+    def test_cell_multiple_radio_mixed_cell_lac_hit(self):
+        session = self.db_slave_session
+        lat = PARIS_LAT
+        lon = PARIS_LON
+        gsm = RADIO_TYPE['gsm']
+        lte = RADIO_TYPE['lte']
+
+        key = dict(mcc=FRANCE_MCC, mnc=3, lac=4)
+        key2 = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+
+        data = [
+            Cell(lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
+                 cid=CELLID_LAC, range=3000, **key),
+            Cell(lat=lat + 0.2, lon=lon + 0.4, radio=gsm,
+                 cid=5, range=500, **key),
+            Cell(lat=lat, lon=lon, radio=lte,
+                 cid=CELLID_LAC, range=10000, **key2),
+            Cell(lat=lat + 0.01, lon=lon + 0.02, radio=lte,
+                 cid=4, range=2000, **key2),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        # GSM lac-only hit (cid 9 instead of 5) and a LTE cell hit
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [
+                dict(radio="gsm", cid=9, **key),
+                dict(radio="lte", cid=4, **key2),
+            ]})
+
+        self.assertEqual(result,
+                         {'lat': PARIS_LAT + 0.01,
+                          'lon': PARIS_LON + 0.02,
+                          'accuracy': CELL_MIN_ACCURACY})
+
     def test_wifi_not_found_cell_fallback(self):
         session = self.db_slave_session
         lat = PARIS_LAT

@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #269: Improve search logic when dealing with multiple location areas.
+
 - Correctly deal with multiple country codes per mcc value and don't
   restrict lookups to one arbitrary of those countries.
 

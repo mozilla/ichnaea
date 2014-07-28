@@ -4,6 +4,7 @@ from ichnaea.models import (
     Cell,
     Wifi,
     CELL_MIN_ACCURACY,
+    CELLID_LAC,
     GEOIP_CITY_ACCURACY,
     RADIO_TYPE,
 )
@@ -347,11 +348,23 @@ class TestGeolocateFxOSWorkarounds(TestGeolocate):
             Cell(lat=PARIS_LAT,
                  lon=PARIS_LON,
                  radio=RADIO_TYPE['gsm'],
-                 mcc=FRANCE_MCC, mnc=1, lac=2, cid=3),
+                 mcc=FRANCE_MCC, mnc=1, lac=2, cid=3,
+                 range=10000),
+            Cell(lat=PARIS_LAT,
+                 lon=PARIS_LON,
+                 radio=RADIO_TYPE['gsm'],
+                 mcc=FRANCE_MCC, mnc=1, lac=2, cid=CELLID_LAC,
+                 range=20000),
             Cell(lat=PARIS_LAT + 0.002,
                  lon=PARIS_LON + 0.004,
                  radio=RADIO_TYPE['umts'],
-                 mcc=FRANCE_MCC, mnc=2, lac=3, cid=4),
+                 mcc=FRANCE_MCC, mnc=2, lac=3, cid=4,
+                 range=2000),
+            Cell(lat=PARIS_LAT + 0.002,
+                 lon=PARIS_LON + 0.004,
+                 radio=RADIO_TYPE['umts'],
+                 mcc=FRANCE_MCC, mnc=2, lac=3, cid=CELLID_LAC,
+                 range=15000),
         ]
         session.add_all(cells)
         session.commit()
@@ -379,8 +392,8 @@ class TestGeolocateFxOSWorkarounds(TestGeolocate):
 
         self.assertEqual(res.content_type, 'application/json')
         location = res.json['location']
-        self.assertAlmostEquals(location['lat'], PARIS_LAT + 0.001)
-        self.assertAlmostEquals(location['lng'], PARIS_LON + 0.002)
+        self.assertAlmostEquals(location['lat'], PARIS_LAT + 0.002)
+        self.assertAlmostEquals(location['lng'], PARIS_LON + 0.004)
         self.assertEqual(res.json['accuracy'], CELL_MIN_ACCURACY)
 
 

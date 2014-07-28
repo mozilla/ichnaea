@@ -459,6 +459,8 @@ class Cell(_Model):
             kw['lac'] = -1
         if 'cid' not in kw:
             kw['cid'] = -1
+        if 'range' not in kw:
+            kw['range'] = 0
         if 'new_measures' not in kw:
             kw['new_measures'] = 0
         if 'total_measures' not in kw:

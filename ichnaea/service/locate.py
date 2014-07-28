@@ -123,15 +123,36 @@ def query_cell_networks(session, cell_keys):
         cell_filter.append(and_(*criterion))
 
     # Keep the cid to distinguish cell from lac later on
-    query = session.query(Cell.cid, Cell.lat, Cell.lon, Cell.range).filter(
+    query = session.query(
+        Cell.radio, Cell.mcc, Cell.mnc, Cell.lac, Cell.cid,
+        Cell.lat, Cell.lon, Cell.range).filter(
         or_(*cell_filter)).filter(
         Cell.lat.isnot(None)).filter(
         Cell.lon.isnot(None))
 
+    result = query.all()
+
+    if not result:
+        return []
+
+    # Group all results by location area
+    lacs = defaultdict(list)
+    for cell in result:
+        lacs[cell[:4]].append(cell)
+
+    def sort_lac(v):
+        # use the lac with the most values, or the one with the smallest range
+        return (len(v), -min([e[-1] for e in v]))
+
+    # If we get data from multiple location areas, use the one with the
+    # most data points in it. That way a lac with a cell hit will
+    # have two entries and win over a lac with only the lac entry.
+    lac = sorted(lacs.values(), key=sort_lac, reverse=True)
+
     cells = []
-    for result in query.all():
+    for cell in lac[0]:
         # The first entry is the key, used only to distinguish cell from lac
-        cells.append(Network(*result))
+        cells.append(Network(*cell[4:]))
 
     return cells
 
