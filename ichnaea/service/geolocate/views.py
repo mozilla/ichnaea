@@ -8,7 +8,7 @@ from ichnaea.service.error import (
     preprocess_request,
 )
 from ichnaea.service.base import check_api_key
-from ichnaea.service.search.views import (
+from ichnaea.service.locate import (
     search_all_sources,
     map_data,
 )

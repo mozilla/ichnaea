@@ -17,13 +17,13 @@ from ichnaea.service.geolocate.views import (
     NOT_FOUND,
     geolocate_validator,
 )
-from ichnaea.service.search.views import (
-    search_all_sources,
-    map_data,
-)
 from ichnaea.service.geosubmit.schema import (
     GeoSubmitBatchSchema,
     GeoSubmitSchema,
+)
+from ichnaea.service.locate import (
+    search_all_sources,
+    map_data,
 )
 from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.service.submit.tasks import insert_measures
