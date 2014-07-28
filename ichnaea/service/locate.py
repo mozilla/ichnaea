@@ -51,7 +51,7 @@ def estimate_accuracy(lat, lon, points, minimum):
         accuracy = max([distance(lat, lon, p.lat, p.lon) * 1000
                         for p in points])
     if accuracy is not None:
-        accuracy = round(float(accuracy), DEGREE_DECIMAL_PLACES)
+        accuracy = float(accuracy)
     return max(accuracy, minimum)
 
 
@@ -215,7 +215,7 @@ def search_cell_lac(session, lacs):
     # take the smallest LAC of any the user is inside
     lac = sorted(lacs, key=operator.attrgetter('range'))[0]
     accuracy = max(LAC_MIN_ACCURACY, lac.range)
-    accuracy = round(float(accuracy), DEGREE_DECIMAL_PLACES)
+    accuracy = float(accuracy)
     return {
         'lat': lac.lat,
         'lon': lac.lon,
@@ -454,7 +454,14 @@ def search_all_sources(session, api_name, data,
         stats_client.incr('%s.miss' % api_name)
         return None
 
+    rounded_result = {
+        'lat': round(result['lat'], DEGREE_DECIMAL_PLACES),
+        'lon': round(result['lon'], DEGREE_DECIMAL_PLACES),
+        'accuracy': round(result['accuracy'], DEGREE_DECIMAL_PLACES),
+    }
+
     stats_client.incr('%s.%s_hit' % (api_name, result_metric))
     stats_client.timing('%s.accuracy.%s' % (api_name, result_metric),
-                        result['accuracy'])
-    return result
+                        rounded_result['accuracy'])
+
+    return rounded_result
