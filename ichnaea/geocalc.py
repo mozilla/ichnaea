@@ -40,9 +40,9 @@ def distance(lat1, lon1, lat2, lon2):
     Error is up to 0.55%, which works out to 5m per 1km. This is
     still better than what GPS provides so it should be 'good enough'.
 
-    Reference :
-        http://en.wikipedia.org/wiki/Haversine_formula
-        http://www.movable-type.co.uk/scripts/latlong.html
+    References:
+      * http://en.wikipedia.org/wiki/Haversine_formula
+      * http://www.movable-type.co.uk/scripts/latlong.html
 
     Accuracy: since the earth is not quite a sphere, there are small
     errors in using spherical geometry; the earth is actually roughly

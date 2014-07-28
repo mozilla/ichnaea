@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Added basic setup for documenting internal code API's and use the geocalc
+  and service.locate modules as first examples.
+
 - Initialize the application and outbound connections as part of the
   gunicorn worker startup process, instead of waiting for the first
   request and slowing it down.

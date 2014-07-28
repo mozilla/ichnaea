@@ -36,6 +36,11 @@ Network = namedtuple('Network', ['key', 'lat', 'lon', 'range'])
 
 
 def estimate_accuracy(lat, lon, points, minimum):
+    """
+    Return the maximum range between a position (lat/lon) and a
+    list of secondary positions (points). But at least use the
+    specified minimum value.
+    """
     if len(points) == 1:
         accuracy = points[0].range
     else:
@@ -131,7 +136,8 @@ def query_cell_networks(session, cell_keys):
     return cells
 
 
-def geoip_and_best_guess_country_code(cell_keys, client_addr, api_name, geoip_db):
+def geoip_and_best_guess_country_code(cell_keys, api_name,
+                                      client_addr, geoip_db):
     """
     Return (geoip, alpha2) where geoip is the result of a GeoIP lookup
     and alpha2 is a best-guess ISO 3166 alpha2 country code. The country
@@ -378,7 +384,7 @@ def search_all_sources(session, data, api_name, client_addr, geoip_db):
     # country estimate to filter out bogus requests. We may also use
     # the full GeoIP City-level estimate as well, if all else fails.
     (geoip_res, country) = geoip_and_best_guess_country_code(
-        validated['cell'], client_addr, api_name, geoip_db)
+        validated['cell'], api_name, client_addr, geoip_db)
 
     # First we attempt a "zoom-in" from cell-lac, to cell
     # to wifi, tightening our estimate each step only so
