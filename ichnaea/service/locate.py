@@ -1,4 +1,4 @@
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 import operator
 
 import mobile_codes
@@ -55,24 +55,24 @@ def estimate_accuracy(lat, lon, points, minimum):
     return max(accuracy, minimum)
 
 
-def most_common(ls):
+def most_common_elements(iterable):
     """
-    Return the most commonly-occurring element of an iterable, or
-    None if the iterable is empty.
+    Given an iterable, return a list of elements from that iterable:
+        * If the iterable is empty, return an empty list.
+        * If there is one element that's most common in the iterable,
+          return a list with that element.
+        * If there are multiple elements which occur equally often,
+          return a list with all of those elements.
     """
-    counts = {}
-    for e in ls:
-        if e in counts:
-            counts[e] += 1
-        else:
-            counts[e] = 1
-    m = None
-    n = 0
-    for (e, c) in counts.items():
-        if c > n:
-            n = c
-            m = e
-    return m
+    counts = defaultdict(int)
+    for e in iterable:
+        counts[e] += 1
+
+    if not counts:
+        return []
+
+    max_count = max(counts.values())
+    return [e for e, n in counts.items() if n == max_count]
 
 
 def map_data(data):
@@ -136,8 +136,8 @@ def query_cell_networks(session, cell_keys):
     return cells
 
 
-def geoip_and_best_guess_country_code(cell_keys, api_name,
-                                      client_addr, geoip_db):
+def geoip_and_best_guess_country_codes(cell_keys, api_name,
+                                       client_addr, geoip_db):
     """
     Return (geoip, alpha2) where geoip is the result of a GeoIP lookup
     and alpha2 is a best-guess ISO 3166 alpha2 country code. The country
@@ -178,19 +178,19 @@ def geoip_and_best_guess_country_code(cell_keys, api_name,
             'lon': geoip['longitude'],
             'accuracy': accuracy
         }
-        return (geoip_res, geoip['country_code'])
+        return (geoip_res, [geoip['country_code']])
 
     else:
         stats_client.incr('%s.no_geoip_found' % api_name)
 
-    # Pick the most-commonly-occurring country code if we got any
-    cc = most_common(cell_countries)
+    # Pick the most-commonly-occurring country codes if we got any
+    cc = most_common_elements(cell_countries)
     if cc:
         stats_client.incr('%s.country_from_mcc' % api_name)
         return (None, cc)
 
     stats_client.incr('%s.no_country' % api_name)
-    return (None, None)
+    return (None, [])
 
 
 def search_cell(session, cells):
@@ -385,13 +385,13 @@ def search_all_sources(session, api_name, data,
     # Always do a GeoIP lookup because we at _least_ want to use the
     # country estimate to filter out bogus requests. We may also use
     # the full GeoIP City-level estimate as well, if all else fails.
-    (geoip_res, country) = geoip_and_best_guess_country_code(
+    (geoip_res, countries) = geoip_and_best_guess_country_codes(
         validated['cell'], api_name, client_addr, geoip_db)
 
     # First we attempt a "zoom-in" from cell-lac, to cell
     # to wifi, tightening our estimate each step only so
     # long as it doesn't contradict the existing best-estimate
-    # nor the country of origin.
+    # nor the possible countries of origin.
 
     for (data_field, object_field, metric_name, search_fn) in [
             ('cell_lac', 'cell_lac_network', 'cell_lac', search_cell_lac),
@@ -418,9 +418,14 @@ def search_all_sources(session, api_name, data,
                 stats_client.incr('%s.%s_found' %
                                   (api_name, metric_name))
 
-                # Skip any hit that seems to be in the wrong country.
-                if country and not location_is_in_country(lat, lon,
-                                                          country, 1):
+                # Skip any hit that matches none of the possible countries.
+                country_match = False
+                for country in countries:
+                    if location_is_in_country(lat, lon, country, 1):
+                        country_match = True
+                        break
+
+                if countries and not country_match:
                     stats_client.incr('%s.anomaly.%s_country_mismatch' %
                                       (api_name, metric_name))
 

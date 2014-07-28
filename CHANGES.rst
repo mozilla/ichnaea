@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Correctly deal with multiple country codes per mcc value and don't
+  restrict lookups to one arbitrary of those countries.
+
 - Fix requirement in WiFi lookups to really only require two networks.
 
 - Added basic setup for documenting internal code API's and use the geocalc

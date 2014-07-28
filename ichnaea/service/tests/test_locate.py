@@ -270,6 +270,39 @@ class TestSearchAllSources(DBTestCase):
             ],
         )
 
+    def test_cell_multiple_country_codes_from_mcc(self):
+        session = self.db_slave_session
+        cell_key = {
+            'radio': RADIO_TYPE['gsm'], 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
+        }
+        session.add(Cell(
+            lat=GB_LAT, lon=GB_LON, range=6000, cid=1, **cell_key))
+        session.add(Cell(
+            lat=GB_LAT, lon=GB_LON, range=9000, cid=CELLID_LAC, **cell_key))
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {'cell': [dict(cid=1, **cell_key)]},
+            client_addr=None, geoip_db=self.geoip_db)
+
+        # Without a GeoIP, the mcc results in 4 different equally common
+        # mcc values, GB not being the first one. We need to make sure
+        # that we accept any of the country codes as a possible match
+        # and don't discard otherwise good cell data based on this.
+        self.assertEqual(result,
+                         {'lat': GB_LAT,
+                          'lon': GB_LON,
+                          'accuracy': 6000})
+
+        self.check_stats(
+            counter=[
+                'm.cell_found',
+                'm.cell_hit',
+                'm.cell_lac_found',
+            ],
+        )
+
     def test_wifi(self):
         session = self.db_slave_session
         wifis = [{'key': '001122334455'}, {'key': '112233445566'}]
