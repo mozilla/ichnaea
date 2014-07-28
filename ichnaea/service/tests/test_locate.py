@@ -4,18 +4,29 @@ from ichnaea.geocalc import maximum_country_radius
 from ichnaea.geoip import GeoIPMock
 from ichnaea.models import (
     Cell,
+    CELL_MIN_ACCURACY,
     CELLID_LAC,
     GEOIP_CITY_ACCURACY,
+    LAC_MIN_ACCURACY,
     RADIO_TYPE,
     Wifi,
     WIFI_MIN_ACCURACY,
 )
 from ichnaea.tests.base import (
+    BRAZIL_MCC,
     DBTestCase,
+    FRANCE_MCC,
     FREMONT_IP,
     FREMONT_LAT,
     FREMONT_LON,
+    PARIS_LAT,
+    PARIS_LON,
+    PORTO_ALEGRE_LAT,
+    PORTO_ALEGRE_LON,
+    SAO_PAULO_LAT,
+    SAO_PAULO_LON,
     USA_MCC,
+    VIVO_MNC,
 )
 from ichnaea.service import locate
 
@@ -270,6 +281,139 @@ class TestSearchAllSources(DBTestCase):
             ],
         )
 
+    def test_cell_miss_lac_hit(self):
+        session = self.db_slave_session
+        lat = PARIS_LAT
+        lon = PARIS_LON
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        umts = RADIO_TYPE['umts']
+        data = [
+            Cell(lat=lat, lon=lon, radio=umts, cid=4, **key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=umts, cid=5, **key),
+            Cell(lat=lat + 0.006, lon=lon + 0.006, radio=umts, cid=6, **key),
+            Cell(lat=lat + 0.0026666, lon=lon + 0.0033333,
+                 radio=umts, cid=CELLID_LAC,
+                 range=500000, **key),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [dict(radio="umts", cid=7, **key)]})
+
+        self.assertEqual(result,
+                         {'lat': PARIS_LAT + 0.0026666,
+                          'lon': PARIS_LON + 0.0033333,
+                          'accuracy': 500000})
+
+    def test_cell_hit_ignores_lac(self):
+        session = self.db_slave_session
+        lat = PARIS_LAT
+        lon = PARIS_LON
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        data = [
+            Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=2, cid=5, **key),
+            Cell(lat=lat + 0.006, lon=lon + 0.006, radio=2, cid=6, **key),
+            Cell(lat=lat + 0.0026666,
+                 lon=lon + 0.0033333, radio=2, cid=CELLID_LAC,
+                 range=50000, **key),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [dict(radio="umts", cid=5, **key)]})
+
+        self.assertEqual(result,
+                         {'lat': PARIS_LAT + 0.002,
+                          'lon': PARIS_LON + 0.004,
+                          'accuracy': CELL_MIN_ACCURACY})
+
+    def test_lac_miss(self):
+        session = self.db_slave_session
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        lat = PARIS_LAT
+        lon = PARIS_LON
+        gsm = RADIO_TYPE['gsm']
+        data = [
+            Cell(lat=lat, lon=lon, radio=gsm, cid=4, **key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=gsm, cid=5, **key),
+            Cell(lat=1.006, lon=1.006, radio=gsm, cid=6, **key),
+            Cell(lat=1.0026666, lon=1.0033333, radio=gsm, cid=CELLID_LAC,
+                 range=50000, **key),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [dict(radio="gsm", mcc=FRANCE_MCC, mnc=2, lac=4, cid=5)]})
+
+        self.assertTrue(result is None)
+
+    def test_cell_ignore_invalid_lac_cid(self):
+        session = self.db_slave_session
+        lat = PARIS_LAT
+        lon = PARIS_LON
+        gsm = RADIO_TYPE['gsm']
+        lte = RADIO_TYPE['lte']
+
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        ignored_key = dict(mcc=FRANCE_MCC, mnc=2, lac=-1, cid=-1)
+
+        data = [
+            Cell(lat=lat, lon=lon, radio=gsm, cid=4, **key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=gsm, cid=5, **key),
+            Cell(lat=lat, lon=lon, radio=gsm, **ignored_key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=lte, **ignored_key),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [
+                dict(radio="gsm", cid=4, **key),
+                dict(radio="gsm", cid=5, **key),
+
+                dict(radio="gsm", cid=5, mcc=FRANCE_MCC, mnc=2, lac=-1),
+                dict(radio="gsm", cid=-1, mcc=FRANCE_MCC, mnc=2, lac=3),
+            ]})
+
+        self.assertEqual(result,
+                         {'lat': PARIS_LAT + 0.001,
+                          'lon': PARIS_LON + 0.002,
+                          'accuracy': CELL_MIN_ACCURACY})
+
+    def test_wifi_not_found_cell_fallback(self):
+        session = self.db_slave_session
+        lat = PARIS_LAT
+        lon = PARIS_LON
+        umts = RADIO_TYPE['umts']
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        data = [
+            Wifi(key="abcd", lat=3, lon=3),
+            Cell(lat=lat, lon=lon, radio=umts, cid=4, **key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=umts, cid=5, **key),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [
+                dict(radio="umts", cid=4, **key),
+                dict(radio="umts", cid=5, **key),
+            ], "wifi": [{"key": "abcd"}, {"key": "cdef"}]})
+
+        self.assertEqual(result,
+                         {'lat': PARIS_LAT + 0.001,
+                          'lon': PARIS_LON + 0.002,
+                          'accuracy': CELL_MIN_ACCURACY})
+
     def test_cell_multiple_country_codes_from_mcc(self):
         session = self.db_slave_session
         cell_key = {
@@ -301,6 +445,411 @@ class TestSearchAllSources(DBTestCase):
                 'm.cell_hit',
                 'm.cell_lac_found',
             ],
+        )
+
+    def test_cell_disagrees_with_country(self):
+        # This test checks that when a cell is at a lat/lon that
+        # is not in the country determined by mcc (say) we reject
+        # the query. Really we should start filtering these out
+        # on ingress as well, but this is a double-check.
+
+        session = self.db_slave_session
+        key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
+        data = [
+            Cell(lat=PARIS_LAT,
+                 lon=PARIS_LON,
+                 radio=RADIO_TYPE['gsm'], cid=6789, **key),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [dict(radio="gsm", cid=6789, **key)]})
+
+        self.assertTrue(result is None)
+
+        self.check_stats(
+            counter=[
+                ('m.anomaly.cell_country_mismatch', 1),
+                ('m.country_from_mcc', 1),
+                ('m.cell_found', 1),
+                ('m.no_cell_lac_found', 1),
+            ]
+        )
+
+    def test_lac_disagrees_with_country(self):
+        # This test checks that when a LAC is at a lat/lon that
+        # is not in the country determined by mcc (say) we reject
+        # the query. Really we should start filtering these out
+        # on ingress as well, but this is a double-check.
+
+        session = self.db_slave_session
+        key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
+        data = [
+            Cell(lat=PARIS_LAT,
+                 lon=PARIS_LON,
+                 radio=RADIO_TYPE['gsm'], cid=CELLID_LAC, **key),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [dict(radio="gsm", cid=6789, **key)]})
+
+        self.assertTrue(result is None)
+
+        self.check_stats(
+            counter=[
+                ('m.anomaly.cell_lac_country_mismatch', 1),
+                ('m.country_from_mcc', 1),
+                ('m.no_cell_found', 1),
+                ('m.cell_lac_found', 1),
+            ]
+        )
+
+    def test_wifi_disagrees_with_country(self):
+        # This test checks that when a wifi is at a lat/lon that
+        # is not in the country determined by geoip, we drop back
+        # to the geoip, rejecting the wifi.
+
+        session = self.db_slave_session
+
+        # This lat/lon is Paris, France
+        (lat, lon) = (PARIS_LAT, PARIS_LON)
+
+        wifi1 = dict(key="1234567890ab")
+        wifi2 = dict(key="1234890ab567")
+        wifi3 = dict(key="4321890ab567")
+        data = [
+            Wifi(lat=lat, lon=lon, **wifi1),
+            Wifi(lat=lat, lon=lon, **wifi2),
+            Wifi(lat=lat, lon=lon, **wifi3),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {"wifi": [wifi1, wifi2, wifi3]},
+            client_addr=FREMONT_IP, geoip_db=self.geoip_db
+        )
+
+        self.assertEqual(result,
+                         {'lat': FREMONT_LAT,
+                          'lon': FREMONT_LON,
+                          'accuracy': GEOIP_CITY_ACCURACY})
+
+        self.check_stats(
+            counter=[
+                ('m.anomaly.wifi_country_mismatch', 1),
+                ('m.country_from_geoip', 1),
+                ('m.geoip_city_found', 1),
+                ('m.wifi_found', 1),
+                ('m.geoip_hit', 1),
+            ]
+        )
+
+    def test_cell_disagrees_with_lac(self):
+        # This test checks that when a cell is at a lat/lon that
+        # is not in the LAC associated with it, we drop back
+        # to the LAC. This likely represents some kind of internal
+        # database consistency error, but it might also just be a
+        # new cell that hasn't been integrated yet or something.
+
+        session = self.db_slave_session
+        key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
+        data = [
+            Cell(lat=PORTO_ALEGRE_LAT,
+                 lon=PORTO_ALEGRE_LON,
+                 radio=RADIO_TYPE['gsm'], cid=6789, **key),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
+                 radio=RADIO_TYPE['gsm'], cid=CELLID_LAC, **key),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [dict(radio="gsm", cid=6789, **key)]},
+        )
+
+        self.assertEqual(result,
+                         {'lat': SAO_PAULO_LAT,
+                          'lon': SAO_PAULO_LON,
+                          'accuracy': LAC_MIN_ACCURACY})
+
+        self.check_stats(
+            counter=[
+                ('m.anomaly.cell_cell_lac_mismatch', 1),
+                ('m.country_from_mcc', 1),
+                ('m.cell_lac_found', 1),
+                ('m.cell_found', 1),
+                ('m.cell_lac_hit', 1),
+            ]
+        )
+
+    def test_wifi_disagrees_with_lac(self):
+        # This test checks that when a wifi is at a lat/lon that
+        # is not in the LAC associated with our query, we drop back
+        # to the LAC.
+
+        session = self.db_slave_session
+        key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
+        wifi1 = dict(key="1234567890ab")
+        wifi2 = dict(key="1234890ab567")
+        wifi3 = dict(key="4321890ab567")
+        lat = PORTO_ALEGRE_LAT
+        lon = PORTO_ALEGRE_LON
+        data = [
+            Wifi(lat=lat, lon=lon, **wifi1),
+            Wifi(lat=lat, lon=lon, **wifi2),
+            Wifi(lat=lat, lon=lon, **wifi3),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
+                 radio=RADIO_TYPE['gsm'], cid=CELLID_LAC, **key),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [dict(radio="gsm", cid=6789, **key)],
+             "wifi": [wifi1, wifi2, wifi3]},
+        )
+
+        self.assertEqual(result,
+                         {'lat': SAO_PAULO_LAT,
+                          'lon': SAO_PAULO_LON,
+                          'accuracy': LAC_MIN_ACCURACY})
+
+        self.check_stats(
+            counter=[
+                ('m.anomaly.wifi_cell_lac_mismatch', 1),
+                ('m.country_from_mcc', 1),
+                ('m.cell_lac_found', 1),
+                ('m.wifi_found', 1),
+                ('m.cell_lac_hit', 1),
+            ]
+        )
+
+    def test_wifi_disagrees_with_cell(self):
+        # This test checks that when a wifi is at a lat/lon that
+        # is not in the cell associated with our query, we drop back
+        # to the cell.
+
+        session = self.db_slave_session
+        key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
+        wifi1 = dict(key="1234567890ab")
+        wifi2 = dict(key="1234890ab567")
+        wifi3 = dict(key="4321890ab567")
+        lat = PORTO_ALEGRE_LAT
+        lon = PORTO_ALEGRE_LON
+        data = [
+            Wifi(lat=lat, lon=lon, **wifi1),
+            Wifi(lat=lat, lon=lon, **wifi2),
+            Wifi(lat=lat, lon=lon, **wifi3),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
+                 radio=RADIO_TYPE['gsm'], cid=6789, **key),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [dict(radio="gsm", cid=6789, **key)],
+             "wifi": [wifi1, wifi2, wifi3]},
+        )
+
+        self.assertEqual(result,
+                         {'lat': SAO_PAULO_LAT,
+                          'lon': SAO_PAULO_LON,
+                          'accuracy': CELL_MIN_ACCURACY})
+
+        self.check_stats(
+            counter=[
+                ('m.anomaly.wifi_cell_mismatch', 1),
+                ('m.country_from_mcc', 1),
+                ('m.no_cell_lac_found', 1),
+                ('m.cell_found', 1),
+                ('m.wifi_found', 1),
+                ('m.cell_hit', 1),
+            ]
+        )
+
+    def test_cell_agrees_with_lac(self):
+        # This test checks that when a cell is at a lat/lon that
+        # is inside its enclosing LAC, we accept it and tighten
+        # our accuracy accordingly.
+
+        session = self.db_slave_session
+        key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
+        data = [
+            Cell(lat=SAO_PAULO_LAT + 0.002,
+                 lon=SAO_PAULO_LON + 0.002,
+                 radio=RADIO_TYPE['gsm'], cid=6789, **key),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
+                 radio=RADIO_TYPE['gsm'], cid=CELLID_LAC, **key),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [dict(radio="gsm", cid=6789, **key)]},
+        )
+
+        self.assertEqual(result,
+                         {'lat': SAO_PAULO_LAT + 0.002,
+                          'lon': SAO_PAULO_LON + 0.002,
+                          'accuracy': CELL_MIN_ACCURACY})
+
+        self.check_stats(
+            counter=[
+                ('m.country_from_mcc', 1),
+                ('m.cell_lac_found', 1),
+                ('m.cell_found', 1),
+                ('m.cell_hit', 1),
+            ]
+        )
+
+    def test_wifi_agrees_with_cell(self):
+        # This test checks that when a wifi is at a lat/lon that
+        # is inside its enclosing cell, we accept it and tighten
+        # our accuracy accordingly.
+
+        session = self.db_slave_session
+        key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
+        wifi1 = dict(key="1234567890ab")
+        wifi2 = dict(key="1234890ab567")
+        wifi3 = dict(key="4321890ab567")
+        lat = SAO_PAULO_LAT + 0.002
+        lon = SAO_PAULO_LON + 0.002
+        data = [
+            Wifi(lat=lat, lon=lon, **wifi1),
+            Wifi(lat=lat, lon=lon, **wifi2),
+            Wifi(lat=lat, lon=lon, **wifi3),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
+                 radio=RADIO_TYPE['gsm'], cid=6789, **key),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [dict(radio="gsm", cid=6789, **key)],
+             "wifi": [wifi1, wifi2, wifi3]},
+        )
+
+        self.assertEqual(result,
+                         {'lat': SAO_PAULO_LAT + 0.002,
+                          'lon': SAO_PAULO_LON + 0.002,
+                          'accuracy': WIFI_MIN_ACCURACY})
+
+        self.check_stats(
+            counter=[
+                ('m.country_from_mcc', 1),
+                ('m.no_cell_lac_found', 1),
+                ('m.wifi_found', 1),
+                ('m.cell_found', 1),
+                ('m.wifi_hit', 1),
+            ]
+        )
+
+    def test_wifi_agrees_with_lac(self):
+        # This test checks that when a wifi is at a lat/lon that
+        # is inside its enclosing LAC, we accept it and tighten
+        # our accuracy accordingly.
+
+        session = self.db_slave_session
+        key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
+        wifi1 = dict(key="1234567890ab")
+        wifi2 = dict(key="1234890ab567")
+        wifi3 = dict(key="4321890ab567")
+        lat = SAO_PAULO_LAT + 0.002
+        lon = SAO_PAULO_LON + 0.002
+        data = [
+            Wifi(lat=lat, lon=lon, **wifi1),
+            Wifi(lat=lat, lon=lon, **wifi2),
+            Wifi(lat=lat, lon=lon, **wifi3),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
+                 radio=RADIO_TYPE['gsm'], cid=CELLID_LAC, **key),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [dict(radio="gsm", cid=6789, **key)],
+             "wifi": [wifi1, wifi2, wifi3]},
+        )
+
+        self.assertEqual(result,
+                         {'lat': SAO_PAULO_LAT + 0.002,
+                          'lon': SAO_PAULO_LON + 0.002,
+                          'accuracy': WIFI_MIN_ACCURACY})
+
+        self.check_stats(
+            counter=[
+                ('m.country_from_mcc', 1),
+                ('m.no_cell_found', 1),
+                ('m.wifi_found', 1),
+                ('m.cell_lac_found', 1),
+                ('m.wifi_hit', 1),
+            ]
+        )
+
+    def test_wifi_agrees_with_cell_and_lac(self):
+        # This test checks that when a wifi is at a lat/lon that
+        # is inside its enclosing LAC and cell, we accept it and
+        # tighten our accuracy accordingly.
+
+        session = self.db_slave_session
+        key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
+        wifi1 = dict(key="1234567890ab")
+        wifi2 = dict(key="1234890ab567")
+        wifi3 = dict(key="4321890ab567")
+        lat = SAO_PAULO_LAT + 0.002
+        lon = SAO_PAULO_LON + 0.002
+        data = [
+            Wifi(lat=lat, lon=lon, **wifi1),
+            Wifi(lat=lat, lon=lon, **wifi2),
+            Wifi(lat=lat, lon=lon, **wifi3),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
+                 radio=RADIO_TYPE['gsm'], cid=6789, **key),
+            Cell(lat=SAO_PAULO_LAT,
+                 lon=SAO_PAULO_LON,
+                 radio=RADIO_TYPE['gsm'], cid=CELLID_LAC, **key),
+        ]
+        session.add_all(data)
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {"cell": [dict(radio="gsm", cid=6789, **key)],
+             "wifi": [wifi1, wifi2, wifi3]},
+        )
+
+        self.assertEqual(result,
+                         {'lat': SAO_PAULO_LAT + 0.002,
+                          'lon': SAO_PAULO_LON + 0.002,
+                          'accuracy': WIFI_MIN_ACCURACY})
+
+        self.check_stats(
+            counter=[
+                ('m.country_from_mcc', 1),
+                ('m.wifi_found', 1),
+                ('m.cell_found', 1),
+                ('m.cell_lac_found', 1),
+                ('m.wifi_hit', 1),
+            ]
         )
 
     def test_wifi(self):

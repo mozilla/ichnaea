@@ -3,7 +3,6 @@ from sqlalchemy import text
 from ichnaea.models import (
     Cell,
     Wifi,
-    CELLID_LAC,
     CELL_MIN_ACCURACY,
     GEOIP_CITY_ACCURACY,
     RADIO_TYPE,
@@ -37,7 +36,7 @@ class TestGeolocate(AppTestCase):
         cell = Cell()
         cell.lat = PARIS_LAT
         cell.lon = PARIS_LON
-        cell.radio = 0
+        cell.radio = RADIO_TYPE['gsm']
         cell.mcc = FRANCE_MCC
         cell.mnc = 1
         cell.lac = 2
@@ -121,107 +120,6 @@ class TestGeolocate(AppTestCase):
         )
         self.check_expected_heka_messages(
             sentry=[('msg', RAVEN_ERROR, 0)]
-        )
-
-    def test_cell_miss_lac_hit(self):
-        app = self.app
-        session = self.get_session()
-        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
-        lat = PARIS_LAT
-        lon = PARIS_LON
-        data = [
-            Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
-            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=2, cid=5, **key),
-            Cell(lat=lat + 0.006, lon=lon + 0.006, radio=2, cid=6, **key),
-            Cell(lat=lat + 0.0026666,
-                 lon=lon + 0.0033333,
-                 radio=2, cid=CELLID_LAC,
-                 range=50000, **key),
-        ]
-        session.add_all(data)
-        session.commit()
-
-        res = app.post_json(
-            '%s?key=test' % self.url,
-            {'radioType': 'wcdma',
-             'cellTowers': [
-                 {'cellId': 7,
-                  'mobileCountryCode': FRANCE_MCC,
-                  'mobileNetworkCode': 2,
-                  'locationAreaCode': 3}]},
-            status=200)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {
-            'location': {"lat": PARIS_LAT + 0.0026666,
-                         "lng": PARIS_LON + 0.0033333},
-            'accuracy': 50000.0})
-
-    def test_cell_hit_ignores_lac(self):
-        app = self.app
-        session = self.get_session()
-        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
-        lat = PARIS_LAT
-        lon = PARIS_LON
-        data = [
-            Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
-            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=2, cid=5, **key),
-            Cell(lat=lat + 0.006, lon=lon + 0.006, radio=2, cid=6, **key),
-            Cell(lat=lat + 0.0026666,
-                 lon=lon + 0.0033333,
-                 radio=2, cid=CELLID_LAC,
-                 range=50000, **key),
-        ]
-        session.add_all(data)
-        session.commit()
-
-        res = app.post_json(
-            '%s?key=test' % self.url,
-            {'radioType': 'wcdma',
-             'cellTowers': [
-                 {'cellId': 5,
-                  'mobileCountryCode': FRANCE_MCC,
-                  'mobileNetworkCode': 2,
-                  'locationAreaCode': 3}]},
-            status=200)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {
-            'location': {"lat": PARIS_LAT + 0.002,
-                         "lng": PARIS_LON + 0.004},
-            'accuracy': CELL_MIN_ACCURACY})
-
-    def test_lac_miss(self):
-        app = self.app
-        session = self.get_session()
-        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
-        data = [
-            Cell(lat=1.0, lon=1.0, radio=2, cid=4, **key),
-            Cell(lat=1.002, lon=1.004, radio=2, cid=5, **key),
-            Cell(lat=1.006, lon=1.006, radio=2, cid=6, **key),
-            Cell(lat=1.0026666, lon=1.0033333, radio=2, cid=CELLID_LAC,
-                 range=50000, **key),
-        ]
-        session.add_all(data)
-        session.commit()
-
-        res = app.post_json(
-            '%s?key=test' % self.url,
-            {'radioType': 'wcdma',
-             'cellTowers': [
-                 {'cellId': 5,
-                  'mobileCountryCode': FRANCE_MCC,
-                  'mobileNetworkCode': 2,
-                  'locationAreaCode': 4}]},
-            status=404)
-        self.assertEqual(
-            res.json, {"error": {
-                "errors": [{
-                    "domain": "geolocation",
-                    "reason": "notFound",
-                    "message": "Not found",
-                }],
-                "code": 404,
-                "message": "Not found"
-            }}
         )
 
     def test_cell_mcc_mnc_strings(self):
