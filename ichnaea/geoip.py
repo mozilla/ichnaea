@@ -89,3 +89,24 @@ class GeoIPNull(object):
 
     def geoip_lookup(self, addr_string):
         return None
+
+
+class GeoIPMock(object):
+
+    def __init__(self, data):
+        """
+        Initialize the mock with a dictionary of records. Each record maps
+        one IP address string like '127.0.0.1' to a dictionary of data items.
+        An example data item is:
+
+        {
+            'latitude': 12.34,
+            'longitude': 23.45,
+            'country_code': 'US',
+            'city': True,
+        }
+        """
+        self.data = data
+
+    def geoip_lookup(self, addr_string):
+        return self.data.get(addr_string)

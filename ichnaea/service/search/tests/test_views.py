@@ -496,50 +496,6 @@ class TestSearch(AppTestCase):
                      ('search.country_from_geoip', 1)]
         )
 
-    def test_geoip_disagrees_with_mcc(self):
-        # This test checks that when GeoIP disagrees with MCC,
-        # we go with GeoIP's idea of country, and get a GeoIP hit.
-        app = self.app
-        session = self.db_slave_session
-        key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
-        data = [
-            Cell(lat=SAO_PAULO_LAT,
-                 lon=SAO_PAULO_LON,
-                 radio=0, cid=6789, **key),
-        ]
-        session.add_all(data)
-        session.commit()
-
-        res = app.post_json(
-            '/v1/search?key=test',
-            {"radio": "gsm", "cell": [
-                dict(radio="gsm", cid=6789, **key),
-            ]},
-            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
-            status=200)
-
-        self.check_stats(
-            total=11,
-            timer=[('request.v1.search', 1),
-                   ('search.accuracy.geoip', 1)],
-            counter=[
-                ('search.api_key.test', 1),
-                ('request.v1.search.200', 1),
-                ('search.geoip_city_found', 1),
-                ('search.anomaly.geoip_mcc_mismatch', 1),
-                ('search.country_from_geoip', 1),
-                ('search.no_cell_lac_found', 1),
-                ('search.cell_found', 1),
-                ('search.anomaly.cell_country_mismatch', 1),
-                ('search.geoip_hit', 1),
-            ]
-        )
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"status": "ok",
-                                    "lat": FREMONT_LAT,
-                                    "lon": FREMONT_LON,
-                                    "accuracy": GEOIP_CITY_ACCURACY})
-
     def test_cell_disagrees_with_country(self):
         # This test checks that when a cell is at a lat/lon that
         # is not in the country determined by mcc (say) we reject
