@@ -2,6 +2,7 @@ from ichnaea.geocalc import maximum_country_radius
 from ichnaea.geoip import GeoIPMock
 from ichnaea.models import (
     Cell,
+    CELLID_LAC,
     GEOIP_CITY_ACCURACY,
     RADIO_TYPE,
 )
@@ -230,5 +231,35 @@ class TestSearchAllSources(DBTestCase):
                 'geolocate.country_from_geoip',
                 'geolocate.geoip_country_found',
                 'geolocate.geoip_hit',
+            ],
+        )
+
+    def test_cell(self):
+        session = self.db_slave_session
+        cell_key = {
+            'radio': RADIO_TYPE['gsm'], 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
+        }
+        session.add(Cell(
+            lat=GB_LAT, lon=GB_LON, range=6000, cid=1, **cell_key))
+        session.add(Cell(
+            lat=GB_LAT, lon=GB_LON, range=9000, cid=CELLID_LAC, **cell_key))
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, {'cell': [dict(cid=1, **cell_key)]},
+            'geolocate', GB_IP, self.geoip_db)
+
+        self.assertEqual(result,
+                         {'lat': GB_LAT,
+                          'lon': GB_LON,
+                          'accuracy': 6000})
+
+        self.check_stats(
+            counter=[
+                'geolocate.cell_found',
+                'geolocate.cell_hit',
+                'geolocate.cell_lac_found',
+                'geolocate.country_from_geoip',
+                'geolocate.geoip_country_found',
             ],
         )
