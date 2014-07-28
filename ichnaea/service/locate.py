@@ -148,7 +148,7 @@ def geoip_and_best_guess_country_code(cell_keys, api_name,
     stats_client = get_stats_client()
     geoip = None
 
-    if client_addr:
+    if client_addr and geoip_db is not None:
         geoip = geoip_db.geoip_lookup(client_addr)
 
     cell_countries = []
