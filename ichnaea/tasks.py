@@ -1,7 +1,7 @@
+from collections import defaultdict
 from datetime import timedelta
 
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import func
 
 from ichnaea.async.task import DatabaseTask
 from ichnaea.geocalc import distance, centroid, range_to_points
@@ -56,23 +56,26 @@ def remove_cell(self, cell_keys):
     cells_removed = 0
     try:
         with self.db_session() as session:
+            changed_lacs = set()
+
             for k in cell_keys:
                 key = to_cellkey(k)
                 query = session.query(Cell).filter(*join_cellkey(Cell, key))
                 cells_removed += query.delete()
+                changed_lacs.add(key._replace(cid=CELLID_LAC))
 
+            for key in changed_lacs:
                 # Either schedule an update to the enclosing LAC or, if
                 # we just removed the last cell in the LAC, remove the LAC
                 # entirely.
-                query = session.query(func.count(Cell.id)).filter(
+                query = session.query(Cell).filter(
                     Cell.radio == key.radio,
                     Cell.mcc == key.mcc,
                     Cell.mnc == key.mnc,
                     Cell.lac == key.lac,
                     Cell.cid != CELLID_LAC)
+                n = query.count()
 
-                c = query.first()
-                n = int(c[0])
                 query = session.query(Cell).filter(
                     Cell.radio == key.radio,
                     Cell.mcc == key.mcc,
@@ -82,7 +85,9 @@ def remove_cell(self, cell_keys):
                 if n < 1:
                     query.delete()
                 else:
-                    query.update({'new_measures': '1'})
+                    lac = query.first()
+                    if lac is not None:
+                        lac.new_measures += 1
 
             session.commit()
         return cells_removed
@@ -93,10 +98,10 @@ def remove_cell(self, cell_keys):
         raise self.retry(exc=exc)
 
 
-def calculate_new_position(station, measures, moving_stations,
-                           max_dist_km, backfill=True):
-    # if backfill is true, we work on older measures for which
-    # the new/total counters where never updated
+def calculate_new_position(station, measures, max_dist_km, backfill=True):
+    # Ff backfill is true, we work on older measures for which
+    # the new/total counters where never updated.
+    # This function returns True if the station was found to be moving.
     length = len(measures)
     latitudes = [w[0] for w in measures]
     longitudes = [w[1] for w in measures]
@@ -135,10 +140,9 @@ def calculate_new_position(station, measures, moving_stations,
     if existing_station:
 
         if box_dist > max_dist_km:
-            # add to moving list, return early without updating
-            # station since it will be deleted by caller momentarily
-            moving_stations.add(station)
-            return
+            # Signal a moving station and return early without updating
+            # the station since it will be deleted by caller momentarily
+            return True
 
         if backfill:
             new_total = station.total_measures + length
@@ -176,15 +180,29 @@ def calculate_new_position(station, measures, moving_stations,
     station.range = range_to_points(ctr, points) * 1000.0
 
 
-def update_enclosing_lac(session, cell):
-    now = util.utcnow()
-    stmt = Cell.__table__.insert(
-        on_duplicate='new_measures = new_measures + 1'
-    ).values(
-        radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac,
-        cid=CELLID_LAC, lat=cell.lat, lon=cell.lon, range=cell.range,
-        new_measures=1, total_measures=0, created=now)
-    session.execute(stmt)
+def update_enclosing_lacs(session, lacs, moving_cells, utcnow):
+    moving_cell_ids = set([c.id for c in moving_cells])
+    for lac_key, cells in lacs.items():
+        if len(set([c.id for c in cells]) - moving_cell_ids) == 0:
+            # All new cells are about to be removed, so don't bother
+            # updating the lac
+            continue
+        q = session.query(Cell).filter(*join_cellkey(Cell, lac_key))
+        lac = q.first()
+        if lac is not None:
+            lac.new_measures += 1
+        else:
+            lac = Cell(
+                radio=lac_key.radio,
+                mcc=lac_key.mcc,
+                mnc=lac_key.mnc,
+                lac=lac_key.lac,
+                cid=lac_key.cid,
+                new_measures=1,
+                total_measures=0,
+                created=utcnow,
+            )
+            session.add(lac)
 
 
 def emit_new_measures_metric(stats_client, session, shortname,
@@ -200,8 +218,10 @@ def emit_new_measures_metric(stats_client, session, shortname,
 @celery.task(base=DatabaseTask, bind=True)
 def backfill_cell_location_update(self, new_cell_measures):
     try:
+        utcnow = util.utcnow()
         cells = []
         moving_cells = set()
+        updated_lacs = defaultdict(list)
         new_cell_measures = dict(new_cell_measures)
         with self.db_session() as session:
             for tower_tuple, cell_measure_ids in new_cell_measures.items():
@@ -222,10 +242,18 @@ def backfill_cell_location_update(self, new_cell_measures):
                         CellMeasure.id.in_(cell_measure_ids)).all()
 
                     if measures:
-                        calculate_new_position(cell, measures, moving_cells,
-                                               CELL_MAX_DIST_KM,
-                                               backfill=True)
-                        update_enclosing_lac(session, cell)
+                        moving = calculate_new_position(
+                            cell, measures, CELL_MAX_DIST_KM, backfill=True)
+                        if moving:
+                            moving_cells.add(cell)
+
+                        updated_lacs[CellKey(cell.radio, cell.mcc,
+                                             cell.mnc, cell.lac,
+                                             CELLID_LAC)].append(cell)
+
+            if updated_lacs:
+                update_enclosing_lacs(session, updated_lacs,
+                                      moving_cells, utcnow)
 
             if moving_cells:
                 # some cells found to be moving too much
@@ -243,6 +271,7 @@ def backfill_cell_location_update(self, new_cell_measures):
 @celery.task(base=DatabaseTask, bind=True)
 def cell_location_update(self, min_new=10, max_new=100, batch=10):
     try:
+        utcnow = util.utcnow()
         cells = []
         with self.db_session() as session:
             emit_new_measures_metric(self.stats_client, session,
@@ -256,6 +285,7 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
             if not cells:
                 return 0
             moving_cells = set()
+            updated_lacs = defaultdict(list)
             for cell in cells:
                 # skip cells with a missing lac/cid
                 # or virtual LAC cells
@@ -273,10 +303,18 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
                 measures = query.all()
 
                 if measures:
-                    calculate_new_position(cell, measures, moving_cells,
-                                           CELL_MAX_DIST_KM,
-                                           backfill=False)
-                    update_enclosing_lac(session, cell)
+                    moving = calculate_new_position(
+                        cell, measures, CELL_MAX_DIST_KM, backfill=False)
+                    if moving:
+                        moving_cells.add(cell)
+
+                    updated_lacs[CellKey(cell.radio, cell.mcc,
+                                         cell.mnc, cell.lac,
+                                         CELLID_LAC)].append(cell)
+
+            if updated_lacs:
+                update_enclosing_lacs(session, updated_lacs,
+                                      moving_cells, utcnow)
 
             if moving_cells:
                 # some cells found to be moving too much
@@ -360,8 +398,10 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
                     WifiMeasure.created.desc()).limit(
                     wifi.new_measures).all()
                 if measures:
-                    calculate_new_position(wifi, measures, moving_wifis,
-                                           WIFI_MAX_DIST_KM, backfill=False)
+                    moving = calculate_new_position(
+                        wifi, measures, WIFI_MAX_DIST_KM, backfill=False)
+                    if moving:
+                        moving_wifis.add(wifi)
 
             if moving_wifis:
                 # some wifis found to be moving too much
@@ -457,6 +497,7 @@ def update_lac(self, radio, mcc, mnc, lac):
                        lat=ctr_lat,
                        lon=ctr_lon,
                        range=rng)
+            session.add(lac)
         else:
             lac.new_measures = 0
             lac.lat = ctr_lat

@@ -298,21 +298,29 @@ def blacklisted_station(session, key, blacklist_model,
     return False
 
 
-def create_or_update_station(session, key, station_model, utcnow, num):
+def create_or_update_station(session, key, station_model,
+                             join_key, utcnow, num):
     """
     Creates a station or updates its new/total_measures counts to reflect
     recently-received measures.
     """
-    d = key._asdict()
-    stmt = station_model.__table__.insert(
-        on_duplicate='new_measures = new_measures + %s, '
-                     'total_measures = total_measures + %s' % (num, num)
-    ).values(
-        created=utcnow,
-        new_measures=num,
-        total_measures=num,
-        **d)
-    session.execute(stmt)
+    query = session.query(station_model).filter(
+        *join_key(station_model, key))
+    station = query.first()
+
+    if station is not None:
+        station.new_measures += num
+        station.total_measures += num
+    else:
+        stmt = station_model.__table__.insert(
+            on_duplicate='new_measures = new_measures + %s, '
+                         'total_measures = total_measures + %s' % (num, num)
+        ).values(
+            created=utcnow,
+            new_measures=num,
+            total_measures=num,
+            **key._asdict())
+        session.execute(stmt)
 
 
 def process_station_measures(session, entries, station_type,
@@ -381,7 +389,8 @@ def process_station_measures(session, entries, station_type,
         # Accept incomplete measures, just don't make stations for them.
         # (station creation is a side effect of count-updating)
         if not incomplete and num > 0:
-            create_or_update_station(session, key, station_model, utcnow, num)
+            create_or_update_station(session, key, station_model,
+                                     join_key, utcnow, num)
 
     # Credit the user with discovering any new stations.
     if userid is not None and new_stations > 0:
