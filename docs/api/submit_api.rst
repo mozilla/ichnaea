@@ -83,7 +83,8 @@ Submit results
 On successful submission, you will get a 204 status code back without
 any data in the body.
 
-If an error occurred, you get a 400 HTTP status code and a body of:
+If there was a problem with the client side sent data, you get a 4xx
+HTTP status code and a body of:
 
 .. code-block:: javascript
 
@@ -93,4 +94,9 @@ If an error occurred, you get a 400 HTTP status code and a body of:
 
 The errors mapping contains detailed information about the errors.
 
-Note that the submit API will **not** reject data for invalid API keys.
+You might also get a 5xx HTTP response if there was a service side problem.
+This might happen if the service or some key part of it is unavailable.
+If you encounter a 5xx response, you should retry the request at a later
+time. As a service side problem is unlikely to be resolved immediately,
+you should wait a couple of minutes before retrying the request for the
+first time and a couple of hours later if there's still a problem.

@@ -169,3 +169,10 @@ API endpoint.
 
 For geosubmit uploads where the batch mode is used, the result will
 always be a HTTP 200 response with a body of an empty JSON object.
+
+You might also get a 5xx HTTP response if there was a service side problem.
+This might happen if the service or some key part of it is unavailable.
+If you encounter a 5xx response, you should retry the request at a later
+time. As a service side problem is unlikely to be resolved immediately,
+you should wait a couple of minutes before retrying the request for the
+first time and a couple of hours later if there's still a problem.
