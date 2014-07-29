@@ -32,47 +32,33 @@ def histogram_query(session, model, min_day, max_day):
 
 def add_stat(session, name, day, value):
     stat_key = STAT_TYPE[name]
-    query = session.query(Stat.value).filter(
-        Stat.key == stat_key).filter(
-        Stat.time == day - timedelta(days=1))
-    result = query.first()
-    before = 0
-    if result is not None:
-        before = int(result[0])
+    todays_stat = get_stat(session, stat_key, exact=True, date=day)
+    if todays_stat:
+        return
 
-    # on duplicate key, do a no-op change
-    stmt = Stat.__table__.insert(
-        on_duplicate='time=time').values(
-        key=stat_key, time=day, value=before + int(value))
-    session.execute(stmt)
+    yesterday = day - timedelta(days=1)
+    before = get_stat(session, stat_key, exact=False, date=yesterday)
+    old_value = 0
+    if before is not None:
+        old_value = int(before.value)
+
+    stat = Stat(key=stat_key, time=day, value=old_value + int(value))
+    session.add(stat)
 
 
-def incr_stat(session, name, incr, date=None):
+def get_stat(session, stat_key, exact=True, date=None):
     if date is None:
         date = util.utcnow().date()
-    stat_key = STAT_TYPE[name]
-    cumulative = get_curr_stat(session, name) + incr
-
-    # on duplicate key, update existing
-    stmt = Stat.__table__.insert(
-        on_duplicate='value=value + %s' % incr).values(
-        key=stat_key, time=date, value=cumulative)
-    session.execute(stmt)
-
-
-def get_curr_stat(session, name, date=None):
-    if date is None:
-        date = util.utcnow().date()
-    stat_key = STAT_TYPE[name]
-    query = session.query(Stat.value).filter(
-        Stat.key == stat_key).filter(
-        Stat.time <= date).order_by(
-        Stat.time.desc())
-    result = query.first()
-    if result is not None:
-        return int(result[0])
+    query = session.query(Stat).filter(
+        Stat.key == stat_key)
+    if exact:
+        query = query.filter(Stat.time == date)
     else:
-        return 0
+        query = query.filter(
+            Stat.time <= date).order_by(
+            Stat.time.desc())
+
+    return query.first()
 
 
 @celery.task(base=DatabaseTask, bind=True)

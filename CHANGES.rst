@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Avoid using `on_duplicate` for common update tasks of tables.
+
 - Remove GeoIP country submission filter, as GeoIP has shown to be too
   inaccurate.
 
