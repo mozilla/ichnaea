@@ -190,8 +190,12 @@ def geoip_and_best_guess_country_codes(cell_keys, api_name,
         else:
             stats_client.incr('%s.geoip_country_found' % api_name)
 
-        if cell_countries and geoip['country_code'] not in cell_countries:
-            stats_client.incr('%s.anomaly.geoip_mcc_mismatch' % api_name)
+        if geoip['country_code'] not in cell_countries:
+            if cell_countries:
+                stats_client.incr('%s.anomaly.geoip_mcc_mismatch' % api_name)
+            # Only use the GeoIP country as an additional possible match,
+            # but retain the cell countries as a likely match as well.
+            cell_countries.append(geoip['country_code'])
 
         stats_client.incr('%s.country_from_geoip' % api_name)
         geoip_res = {
@@ -199,7 +203,7 @@ def geoip_and_best_guess_country_codes(cell_keys, api_name,
             'lon': geoip['longitude'],
             'accuracy': accuracy
         }
-        return (geoip_res, [geoip['country_code']])
+        return (geoip_res, most_common_elements(cell_countries))
 
     else:
         stats_client.incr('%s.no_geoip_found' % api_name)

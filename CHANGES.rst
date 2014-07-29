@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #280: Relax the GeoIP country restriction and also trust the mcc derived
+  country codes.
+
 - #269: Improve search logic when dealing with multiple location areas.
 
 - Correctly deal with multiple country codes per mcc value and don't

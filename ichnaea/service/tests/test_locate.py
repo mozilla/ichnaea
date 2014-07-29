@@ -152,19 +152,21 @@ class TestSearchAllSources(DBTestCase):
     def test_geoip_mcc_mismatch(self):
         session = self.db_slave_session
         gsm = RADIO_TYPE['gsm']
-        cell = {'radio': gsm, 'mcc': USA_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
-        session.add(Cell(**cell))
+        key = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
+        key2 = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1, 'cid': CELLID_LAC}
+        session.add(Cell(radio=gsm, lat=FREMONT_LAT, lon=FREMONT_LON, **key))
+        session.add(Cell(radio=gsm, lat=FREMONT_LAT, lon=FREMONT_LON, **key2))
         session.flush()
 
         result = locate.search_all_sources(
             session, 'm',
-            {'cell': [cell]},
+            {'cell': [dict(radio='gsm', **key)]},
             client_addr=GB_IP, geoip_db=self.geoip_db)
 
         self.assertEqual(result,
-                         {'lat': GB_LAT,
-                          'lon': GB_LON,
-                          'accuracy': GB_RADIUS})
+                         {'lat': FREMONT_LAT,
+                          'lon': FREMONT_LON,
+                          'accuracy': CELL_MIN_ACCURACY})
 
         self.check_stats(
             counter=[
