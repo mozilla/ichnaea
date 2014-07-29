@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Remove GeoIP country submission filter, as GeoIP has shown to be too
+  inaccurate.
+
 - #280: Relax the GeoIP country restriction and also trust the mcc derived
   country codes.
 

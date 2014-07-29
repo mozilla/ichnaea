@@ -25,11 +25,6 @@ from ichnaea.customjson import (
 )
 from ichnaea.tests.base import (
     CeleryAppTestCase,
-    FREMONT_IP,
-    FREMONT_LAT,
-    FREMONT_LON,
-    SAO_PAULO_LAT,
-    SAO_PAULO_LON,
     FRANCE_MCC,
     PARIS_LAT,
     PARIS_LON,
@@ -687,57 +682,3 @@ class TestSubmit(CeleryAppTestCase):
         session = self.db_master_session
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 0)
-
-    def test_geoip_match(self):
-        session = self.db_master_session
-        app = self.app
-        data = [{"lat": FREMONT_LAT,
-                 "lon": FREMONT_LON,
-                 "accuracy": 17,
-                 "wifi": [{"key": "00:34:cd:34:cd:34"}]},
-                ]
-        res = app.post_json('/v1/submit', {"items": data},
-                            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
-                            status=204)
-        self.assertEqual(res.body, '')
-        wifi_result = session.query(WifiMeasure).all()
-        self.assertEqual(len(wifi_result), 1)
-
-    def test_geoip_mismatch(self):
-        session = self.db_master_session
-        app = self.app
-        data = [{"lat": FREMONT_LAT,
-                 "lon": FREMONT_LON,
-                 "accuracy": 17,
-                 "wifi": [{"key": "00:34:cd:34:cd:34"}]},
-                {"lat": PARIS_LAT,
-                 "lon": PARIS_LON,
-                 "accuracy": 17,
-                 "wifi": [{"key": "00:34:cd:34:cd:34"}]},
-                {"lat": SAO_PAULO_LAT,
-                 "lon": SAO_PAULO_LON,
-                 "accuracy": 17,
-                 "wifi": [{"key": "00:34:cd:34:cd:34"}]},
-                ]
-        res = app.post_json('/v1/submit', {"items": data},
-                            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
-                            status=204)
-        self.assertEqual(res.body, '')
-        wifi_result = session.query(WifiMeasure).all()
-        self.assertEqual(len(wifi_result), 1)
-        self.check_stats(counter=[('submit.geoip_mismatch', 2)])
-
-    def test_geoip_with_data_error(self):
-        session = self.db_master_session
-        app = self.app
-        data = [{"lat": FREMONT_LAT,
-                 "lon": FREMONT_LON,
-                 "wifi": [{"key": 123}]},
-                ]
-        res = app.post_json('/v1/submit', {"items": data},
-                            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
-                            status=400)
-        self.assertEqual([e['name'] for e in res.json['errors']],
-                         [u'items.0.wifi.0.key'])
-        wifi_result = session.query(WifiMeasure).all()
-        self.assertEqual(len(wifi_result), 0)
