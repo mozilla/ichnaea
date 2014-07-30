@@ -252,7 +252,12 @@ def search_cell_lac(session, lacs):
 
 def filter_bssids_by_similarity(bs):
     # Cluster BSSIDs by "similarity" (hamming or arithmetic distance);
-    # return one BSSID from each cluster.
+    # return one BSSID from each cluster. The distance threshold is
+    # hard-wired to 2, meaning that two BSSIDs are clustered together
+    # if they are within a numeric difference of 2 of one another or
+    # a hamming distance of 2.
+
+    DISTANCE_THRESHOLD = 2
 
     def bytes_of_hex_string(hs):
         return [int(x, 16) for x in re.findall('..', hs)]
@@ -274,7 +279,7 @@ def filter_bssids_by_similarity(bs):
         return sum(hamming_or_arithmetic_byte_difference(a, b) for
                    (a, b) in zip(abytes, bbytes))
 
-    clusters = cluster_elements(bs, bssid_difference, 2)
+    clusters = cluster_elements(bs, bssid_difference, DISTANCE_THRESHOLD)
     return [c[0] for c in clusters]
 
 
