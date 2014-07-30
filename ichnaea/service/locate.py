@@ -24,6 +24,7 @@ from ichnaea.models import (
     DEGREE_DECIMAL_PLACES,
 )
 from ichnaea.stats import get_stats_client
+from ichnaea.util import cluster_elements
 
 # parameters for wifi clustering
 MAX_WIFI_CLUSTER_KM = 0.5
@@ -286,28 +287,10 @@ def search_wifi(session, wifis):
     wifis.sort(lambda a, b: cmp(wifi_signals[b.key],
                                 wifi_signals[a.key]))
 
-    clusters = []
-
-    # The first loop forms a set of clusters by distance,
-    # preferring the cluster with the stronger signal strength
-    # if there's a tie.
-    for w in wifis:
-
-        # Try to assign w to a cluster (but at most one).
-        for c in clusters:
-            for n in c:
-                if distance(n.lat, n.lon,
-                            w.lat, w.lon) <= MAX_WIFI_CLUSTER_KM:
-                    c.append(w)
-                    w = None
-                    break
-
-            if w is None:
-                break
-
-        # If w didn't adhere to any cluster, make a new one.
-        if w is not None:
-            clusters.append([w])
+    clusters = cluster_elements(wifis,
+                                lambda a, b: distance(a.lat, a.lon,
+                                                      b.lat, b.lon),
+                                MAX_WIFI_CLUSTER_KM)
 
     # The second loop selects a cluster and estimates the position of that
     # cluster. The selected cluster is the one with the most points, larger
