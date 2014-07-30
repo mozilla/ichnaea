@@ -125,8 +125,8 @@ class TestSearch(AppTestCase):
         res = app.post_json(
             '/v1/search?key=test',
             {"wifi": [
-                {"key": "Porky"}, {"key": "Piggy"},
-                {"key": "Davis"}, {"key": "McSnappy"},
+                {"key": "a0fffffff0ff"}, {"key": "b1ffff0fffff"},
+                {"key": "c2fffffffff0"}, {"key": "d3fffff0ffff"},
             ]},
             extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
             status=200)

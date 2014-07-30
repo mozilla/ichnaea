@@ -1,5 +1,6 @@
 from collections import defaultdict, namedtuple
 import operator
+import re
 
 import mobile_codes
 from sqlalchemy.sql import and_, or_
@@ -249,6 +250,34 @@ def search_cell_lac(session, lacs):
     }
 
 
+def filter_bssids_by_similarity(bs):
+    # Cluster BSSIDs by "similarity" (hamming or arithmetic distance);
+    # return one BSSID from each cluster.
+
+    def bytes_of_hex_string(hs):
+        return [int(x, 16) for x in re.findall('..', hs)]
+
+    def hamming_distance(a, b):
+        h = 0
+        v = a ^ b
+        while v:
+            h += 1
+            v &= v - 1
+        return h
+
+    def hamming_or_arithmetic_byte_difference(a, b):
+        return min(abs(a - b), hamming_distance(a, b))
+
+    def bssid_difference(a, b):
+        abytes = bytes_of_hex_string(a)
+        bbytes = bytes_of_hex_string(b)
+        return sum(hamming_or_arithmetic_byte_difference(a, b) for
+                   (a, b) in zip(abytes, bbytes))
+
+    clusters = cluster_elements(bs, bssid_difference, 2)
+    return [c[0] for c in clusters]
+
+
 def search_wifi(session, wifis):
     # Estimate signal strength at -100 dBm if none is provided,
     # which is worse than the 99th percentile of wifi dBms we
@@ -268,6 +297,11 @@ def search_wifi(session, wifis):
     if not any(wifi_keys):
         # No valid normalized keys.
         return None
+
+    # Filter out BSSIDs that are numerically very similar, assuming they're
+    # multiple interfaces on the same base station or such.
+    wifi_keys = filter_bssids_by_similarity(wifi_keys)
+
     if len(wifi_keys) < MIN_WIFIS_IN_QUERY:
         # We didn't get enough keys.
         return None

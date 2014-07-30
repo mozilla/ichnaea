@@ -1063,12 +1063,12 @@ class TestSearchAllSources(DBTestCase):
     def test_wifi_prefer_cluster_with_better_signals(self):
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=1.0, lon=1.0),
-            Wifi(key="B2", lat=1.001, lon=1.002),
-            Wifi(key="C3", lat=1.002, lon=1.004),
-            Wifi(key="D4", lat=2.0, lon=2.0),
-            Wifi(key="E5", lat=2.001, lon=2.002),
-            Wifi(key="F6", lat=2.002, lon=2.004),
+            Wifi(key="A1" * 6, lat=1.0, lon=1.0),
+            Wifi(key="B2" * 6, lat=1.001, lon=1.002),
+            Wifi(key="C3" * 6, lat=1.002, lon=1.004),
+            Wifi(key="D4" * 6, lat=2.0, lon=2.0),
+            Wifi(key="E5" * 6, lat=2.001, lon=2.002),
+            Wifi(key="F6" * 6, lat=2.002, lon=2.004),
         ]
         session.add_all(wifis)
         session.flush()
@@ -1076,12 +1076,12 @@ class TestSearchAllSources(DBTestCase):
         result = locate.search_all_sources(
             session, 'm',
             {'wifi': [
-                {"key": "A1", "signal": -100},
-                {"key": "D4", "signal": -80},
-                {"key": "B2", "signal": -100},
-                {"key": "E5", "signal": -90},
-                {"key": "C3", "signal": -100},
-                {"key": "F6", "signal": -54},
+                {"key": "A1" * 6, "signal": -100},
+                {"key": "D4" * 6, "signal": -80},
+                {"key": "B2" * 6, "signal": -100},
+                {"key": "E5" * 6, "signal": -90},
+                {"key": "C3" * 6, "signal": -100},
+                {"key": "F6" * 6, "signal": -54},
             ]})
 
         self.assertEqual(result,
@@ -1091,25 +1091,25 @@ class TestSearchAllSources(DBTestCase):
 
     def test_wifi_prefer_larger_cluster_over_high_signal(self):
         session = self.db_slave_session
-        wifis = [Wifi(key="A%d" % i,
+        wifis = [Wifi(key=("0%X" % i) * 6,
                       lat=1 + i * 0.000010,
                       lon=1 + i * 0.000012)
                  for i in range(5)]
         wifis += [
-            Wifi(key="D4", lat=2.0, lon=2.0),
-            Wifi(key="E5", lat=2.001, lon=2.002),
-            Wifi(key="F6", lat=2.002, lon=2.004),
+            Wifi(key="D4" * 6, lat=2.0, lon=2.0),
+            Wifi(key="E5" * 6, lat=2.001, lon=2.002),
+            Wifi(key="F6" * 6, lat=2.002, lon=2.004),
         ]
         session.add_all(wifis)
         session.flush()
 
-        measures = [dict(key="A%d" % i,
+        measures = [dict(key=("0%X" % i) * 6,
                          signal=-80)
                     for i in range(5)]
         measures += [
-            dict(key="D4", signal=-75),
-            dict(key="E5", signal=-74),
-            dict(key="F6", signal=-73)
+            dict(key="D4" * 6, signal=-75),
+            dict(key="E5" * 6, signal=-74),
+            dict(key="F6" * 6, signal=-73)
         ]
         random.shuffle(measures)
 
@@ -1127,21 +1127,21 @@ class TestSearchAllSources(DBTestCase):
         # all these should wind up in the same cluster since
         # clustering threshold is 500m and the 10 wifis are
         # spaced in increments of (+1m, +1.2m)
-        wifis = [Wifi(key="A%d" % i,
+        wifis = [Wifi(key=("0%X" % i) * 6,
                       lat=1 + i * 0.000010,
                       lon=1 + i * 0.000012)
                  for i in range(10)]
         session.add_all(wifis)
         session.commit()
-        measures = [dict(key="A%d" % i,
+        measures = [dict(key=("0%X" % i) * 6,
                          signal=-80)
                     for i in range(5, 10)]
         measures += [
-            dict(key="A0", signal=-75),
-            dict(key="A1", signal=-74),
-            dict(key="A2", signal=-73),
-            dict(key="A3", signal=-72),
-            dict(key="A4", signal=-71),
+            dict(key="000000000000", signal=-75),
+            dict(key="010101010101", signal=-74),
+            dict(key="020202020202", signal=-73),
+            dict(key="030303030303", signal=-72),
+            dict(key="040404040404", signal=-71),
         ]
         random.shuffle(measures)
 
