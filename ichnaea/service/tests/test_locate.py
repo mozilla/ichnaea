@@ -1086,8 +1086,8 @@ class TestSearchAllSources(DBTestCase):
         wifis = [
             Wifi(key="00000000001f", lat=1.0, lon=1.0),
             Wifi(key="000000000020", lat=1.0, lon=1.0),
-            Wifi(key="000000000058", lat=1.0, lon=1.0),
-            Wifi(key="00000000005c", lat=1.0, lon=1.0),
+            Wifi(key="000000000058", lat=1.00004, lon=1.00004),
+            Wifi(key="00000000005c", lat=1.00004, lon=1.00004),
         ]
         session.add_all(wifis)
         session.flush()
@@ -1100,15 +1100,15 @@ class TestSearchAllSources(DBTestCase):
                       {"key": "00000000005c"}]})
 
         self.assertEqual(result,
-                         {'lat': 1.0,
-                          'lon': 1.0,
+                         {'lat': 1.00002,
+                          'lon': 1.00002,
                           'accuracy': 100.0})
 
     def test_wifi_similar_bssids_but_enough_found_clusters(self):
         session = self.db_slave_session
         wifis = [
             Wifi(key="00000000001f", lat=1.0, lon=1.0),
-            Wifi(key="000000000024", lat=1.0, lon=1.0),
+            Wifi(key="000000000024", lat=1.00004, lon=1.00004),
         ]
         session.add_all(wifis)
         session.flush()
@@ -1123,8 +1123,8 @@ class TestSearchAllSources(DBTestCase):
                       {"key": "000000000024"}]})
 
         self.assertEqual(result,
-                         {'lat': 1.0,
-                          'lon': 1.0,
+                         {'lat': 1.00002,
+                          'lon': 1.00002,
                           'accuracy': 100.0})
 
     def test_wifi_ignore_outlier(self):
