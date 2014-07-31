@@ -311,9 +311,6 @@ def search_wifi(session, wifis):
         Wifi.lat.isnot(None)).filter(
         Wifi.lon.isnot(None))
     wifis = query.all()
-    if len(wifis) < MIN_WIFIS_IN_QUERY:
-        # We didn't get enough matches.
-        return None
 
     # Filter out BSSIDs that are numerically very similar, assuming they're
     # multiple interfaces on the same base station or such.
@@ -322,6 +319,10 @@ def search_wifi(session, wifis):
     wifis = [Network(normalized_wifi_key(w[0]), w[1], w[2], w[3])
              for w in wifis
              if w[0] in dissimilar_keys]
+
+    if len(wifis) < MIN_WIFIS_IN_QUERY:
+        # We didn't get enough matches.
+        return None
 
     # Sort networks by signal strengths in query.
     wifis.sort(lambda a, b: cmp(wifi_signals[b.key],
