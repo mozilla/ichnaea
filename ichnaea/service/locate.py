@@ -303,10 +303,6 @@ def search_wifi(session, wifis):
         # No valid normalized keys.
         return None
 
-    # Filter out BSSIDs that are numerically very similar, assuming they're
-    # multiple interfaces on the same base station or such.
-    wifi_keys = filter_bssids_by_similarity(wifi_keys)
-
     if len(wifi_keys) < MIN_WIFIS_IN_QUERY:
         # We didn't get enough keys.
         return None
@@ -319,8 +315,13 @@ def search_wifi(session, wifis):
         # We didn't get enough matches.
         return None
 
+    # Filter out BSSIDs that are numerically very similar, assuming they're
+    # multiple interfaces on the same base station or such.
+    dissimilar_keys = set(filter_bssids_by_similarity([w[0] for w in wifis]))
+
     wifis = [Network(normalized_wifi_key(w[0]), w[1], w[2], w[3])
-             for w in wifis]
+             for w in wifis
+             if w[0] in dissimilar_keys]
 
     # Sort networks by signal strengths in query.
     wifis.sort(lambda a, b: cmp(wifi_signals[b.key],

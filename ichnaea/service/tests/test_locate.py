@@ -1104,6 +1104,29 @@ class TestSearchAllSources(DBTestCase):
                           'lon': 1.0,
                           'accuracy': 100.0})
 
+    def test_wifi_similar_bssids_but_enough_found_clusters(self):
+        session = self.db_slave_session
+        wifis = [
+            Wifi(key="00000000001f", lat=1.0, lon=1.0),
+            Wifi(key="000000000024", lat=1.0, lon=1.0),
+        ]
+        session.add_all(wifis)
+        session.flush()
+
+        result = locate.search_all_sources(
+            session, 'm',
+            {'wifi': [{"key": "00000000001f"},
+                      {"key": "000000000020"},
+                      {"key": "000000000021"},
+                      {"key": "000000000022"},
+                      {"key": "000000000023"},
+                      {"key": "000000000024"}]})
+
+        self.assertEqual(result,
+                         {'lat': 1.0,
+                          'lon': 1.0,
+                          'accuracy': 100.0})
+
     def test_wifi_ignore_outlier(self):
         session = self.db_slave_session
         wifis = [
