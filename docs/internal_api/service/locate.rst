@@ -15,3 +15,5 @@ Functions
 .. autofunction:: most_common
 
 .. autofunction:: search_all_sources
+
+.. autofunction:: cluster_elements
