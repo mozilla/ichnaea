@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #130: Add a test for syntactic correctness of the beat schedule.
+
 - #27: Require sufficiently different BSSIDs in WiFi lookups.
   This reduces the chance of being able to look up a single device with
   multiple logical networks.
