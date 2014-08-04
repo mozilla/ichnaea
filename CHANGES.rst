@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #72: Always log sentry messages for exceptions inside tasks.
+
 - #53: Document testing approaches.
 
 - #130: Add a test for syntactic correctness of the beat schedule.

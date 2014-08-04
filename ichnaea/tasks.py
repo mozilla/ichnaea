@@ -1,8 +1,6 @@
 from collections import defaultdict
 from datetime import timedelta
 
-from sqlalchemy.exc import IntegrityError
-
 from ichnaea.async.task import DatabaseTask
 from ichnaea.geocalc import distance, centroid, range_to_points
 from ichnaea.models import (
@@ -44,10 +42,8 @@ def remove_wifi(self, wifi_keys):
             wifis = query.delete(synchronize_session=False)
             session.commit()
         return wifis
-    except IntegrityError as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        return 0
     except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
         raise self.retry(exc=exc)
 
 
@@ -91,10 +87,8 @@ def remove_cell(self, cell_keys):
 
             session.commit()
         return cells_removed
-    except IntegrityError as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        return 0
     except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
         raise self.retry(exc=exc)
 
 
@@ -261,10 +255,8 @@ def backfill_cell_location_update(self, new_cell_measures):
 
             session.commit()
         return (len(cells), len(moving_cells))
-    except IntegrityError as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        return 0
     except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
         raise self.retry(exc=exc)
 
 
@@ -323,10 +315,8 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
             session.commit()
 
         return (len(cells), len(moving_cells))
-    except IntegrityError as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        return 0
     except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
         raise self.retry(exc=exc)
 
 
@@ -409,10 +399,8 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
 
             session.commit()
         return (len(wifis), len(moving_wifis))
-    except IntegrityError as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        return 0
     except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
         raise self.retry(exc=exc)
 
 
@@ -437,71 +425,73 @@ def scan_lacs(self, batch=100):
 
 @celery.task(base=DatabaseTask, bind=True)
 def update_lac(self, radio, mcc, mnc, lac):
+    try:
+        with self.db_session() as session:
+            # Select all the cells in this LAC that aren't the virtual
+            # cell itself, and derive a bounding box for them.
 
-    with self.db_session() as session:
+            q = session.query(Cell).filter(
+                Cell.radio == radio).filter(
+                Cell.mcc == mcc).filter(
+                Cell.mnc == mnc).filter(
+                Cell.lac == lac).filter(
+                Cell.cid != CELLID_LAC).filter(
+                Cell.new_measures == 0).filter(
+                Cell.lat.isnot(None)).filter(
+                Cell.lon.isnot(None))
 
-        # Select all the cells in this LAC that aren't the virtual
-        # cell itself, and derive a bounding box for them.
+            cells = q.all()
+            if len(cells) == 0:
+                return
 
-        q = session.query(Cell).filter(
-            Cell.radio == radio).filter(
-            Cell.mcc == mcc).filter(
-            Cell.mnc == mnc).filter(
-            Cell.lac == lac).filter(
-            Cell.cid != CELLID_LAC).filter(
-            Cell.new_measures == 0).filter(
-            Cell.lat.isnot(None)).filter(
-            Cell.lon.isnot(None))
+            points = [(c.lat, c.lon) for c in cells]
+            min_lat = min([c.min_lat for c in cells])
+            min_lon = min([c.min_lon for c in cells])
+            max_lat = max([c.max_lat for c in cells])
+            max_lon = max([c.max_lon for c in cells])
 
-        cells = q.all()
-        if len(cells) == 0:
-            return
+            bbox_points = [(min_lat, min_lon),
+                           (min_lat, max_lon),
+                           (max_lat, min_lon),
+                           (max_lat, max_lon)]
 
-        points = [(c.lat, c.lon) for c in cells]
-        min_lat = min([c.min_lat for c in cells])
-        min_lon = min([c.min_lon for c in cells])
-        max_lat = max([c.max_lat for c in cells])
-        max_lon = max([c.max_lon for c in cells])
+            ctr = centroid(points)
+            rng = range_to_points(ctr, bbox_points)
 
-        bbox_points = [(min_lat, min_lon),
-                       (min_lat, max_lon),
-                       (max_lat, min_lon),
-                       (max_lat, max_lon)]
+            # switch units back to DB preferred centimicrodegres angle
+            # and meters distance.
+            ctr_lat = ctr[0]
+            ctr_lon = ctr[1]
+            rng = int(round(rng * 1000.0))
 
-        ctr = centroid(points)
-        rng = range_to_points(ctr, bbox_points)
+            # Now create or update the LAC virtual cell
 
-        # switch units back to DB preferred centimicrodegres angle
-        # and meters distance.
-        ctr_lat = ctr[0]
-        ctr_lon = ctr[1]
-        rng = int(round(rng * 1000.0))
+            q = session.query(Cell).filter(
+                Cell.radio == radio).filter(
+                Cell.mcc == mcc).filter(
+                Cell.mnc == mnc).filter(
+                Cell.lac == lac).filter(
+                Cell.cid == CELLID_LAC)
 
-        # Now create or update the LAC virtual cell
+            lac = q.first()
 
-        q = session.query(Cell).filter(
-            Cell.radio == radio).filter(
-            Cell.mcc == mcc).filter(
-            Cell.mnc == mnc).filter(
-            Cell.lac == lac).filter(
-            Cell.cid == CELLID_LAC)
+            if lac is None:
+                lac = Cell(radio=radio,
+                           mcc=mcc,
+                           mnc=mnc,
+                           lac=lac,
+                           cid=CELLID_LAC,
+                           lat=ctr_lat,
+                           lon=ctr_lon,
+                           range=rng)
+                session.add(lac)
+            else:
+                lac.new_measures = 0
+                lac.lat = ctr_lat
+                lac.lon = ctr_lon
+                lac.range = rng
 
-        lac = q.first()
-
-        if lac is None:
-            lac = Cell(radio=radio,
-                       mcc=mcc,
-                       mnc=mnc,
-                       lac=lac,
-                       cid=CELLID_LAC,
-                       lat=ctr_lat,
-                       lon=ctr_lon,
-                       range=rng)
-            session.add(lac)
-        else:
-            lac.new_measures = 0
-            lac.lat = ctr_lat
-            lac.lon = ctr_lon
-            lac.range = rng
-
-        session.commit()
+            session.commit()
+    except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
+        raise self.retry(exc=exc)

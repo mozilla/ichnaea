@@ -382,6 +382,7 @@ def wifi_unthrottle_measures(self, max_measures, batch=1000):
                                     batch=batch)
             self.stats_client.incr("items.wifi_unthrottled", n)
     except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
         raise self.retry(exc=exc)
 
 
@@ -398,4 +399,5 @@ def cell_unthrottle_measures(self, max_measures, batch=100):
                                     batch=batch)
             self.stats_client.incr("items.cell_unthrottled", n)
     except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
         raise self.retry(exc=exc)

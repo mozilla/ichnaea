@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
 
 from ichnaea.async.task import DatabaseTask
 from ichnaea.content.models import (
@@ -70,10 +69,8 @@ def cell_histogram(self, ago=1):
             add_stat(session, 'cell', day, value)
             session.commit()
             return 1
-    except IntegrityError as exc:
-        self.heka_client.raven('error')
-        return 0
     except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
         raise self.retry(exc=exc)
 
 
@@ -86,10 +83,8 @@ def wifi_histogram(self, ago=1):
             add_stat(session, 'wifi', day, value)
             session.commit()
             return 1
-    except IntegrityError as exc:
-        self.heka_client.raven('error')
-        return 0
     except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
         raise self.retry(exc=exc)
 
 
@@ -102,10 +97,8 @@ def unique_cell_histogram(self, ago=1):
             add_stat(session, 'unique_cell', day, value)
             session.commit()
             return 1
-    except IntegrityError as exc:
-        self.heka_client.raven('error')
-        return 0
     except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
         raise self.retry(exc=exc)
 
 
@@ -118,8 +111,6 @@ def unique_wifi_histogram(self, ago=1):
             add_stat(session, 'unique_wifi', day, value)
             session.commit()
             return 1
-    except IntegrityError as exc:
-        self.heka_client.raven('error')
-        return 0
     except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
         raise self.retry(exc=exc)

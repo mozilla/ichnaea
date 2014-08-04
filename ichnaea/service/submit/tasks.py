@@ -3,7 +3,6 @@ import datetime
 import uuid
 
 from colander import iso8601
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import and_, or_
 
 from ichnaea.async.task import DatabaseTask
@@ -246,10 +245,8 @@ def insert_measures(self, items=None, nickname=''):
 
             session.commit()
         return length
-    except IntegrityError as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        return 0
     except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
         raise self.retry(exc=exc)
 
 
@@ -496,10 +493,8 @@ def insert_cell_measures(self, entries, userid=None,
                 utcnow=utcnow)
             session.commit()
         return len(cell_measures)
-    except IntegrityError as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        return 0
     except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
         raise self.retry(exc=exc)
 
 
@@ -524,8 +519,6 @@ def insert_wifi_measures(self, entries, userid=None,
                 utcnow=utcnow)
             session.commit()
         return len(wifi_measures)
-    except IntegrityError as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        return 0
     except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
         raise self.retry(exc=exc)
