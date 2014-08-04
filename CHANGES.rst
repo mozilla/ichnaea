@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #53: Document testing approaches.
+
 - #130: Add a test for syntactic correctness of the beat schedule.
 
 - #27: Require sufficiently different BSSIDs in WiFi lookups.
