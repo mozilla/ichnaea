@@ -3,6 +3,7 @@ import os
 from kombu import Queue
 
 from ichnaea.async.schedule import CELERYBEAT_SCHEDULE
+from ichnaea.cache import redis_client
 from ichnaea.config import read_config
 from ichnaea.db import Database
 
@@ -29,6 +30,15 @@ def attach_database(app, settings=None, _db_master=None):
     else:
         db_master = _db_master
     app.db_master = db_master
+
+
+def attach_redis_client(app, settings=None, _redis=None):
+    if _redis is None:
+        app.redis_client = None
+        if 'redis_url' in settings:
+            app.redis_client = redis_client(settings['redis_url'])
+    else:
+        app.redis_client = _redis
 
 
 def configure_s3_backup(app, settings=None):

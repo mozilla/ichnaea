@@ -3,6 +3,7 @@ from celery.signals import worker_process_init
 
 from ichnaea.async.config import (
     attach_database,
+    attach_redis_client,
     configure_s3_backup,
 )
 from ichnaea.config import read_config
@@ -18,6 +19,7 @@ def init_worker_process(signal, sender, **kw):  # pragma: no cover
     conf = read_config()
     settings = conf.get_map('ichnaea')
     attach_database(app, settings=settings)
+    attach_redis_client(app, settings=settings)
     configure_s3_backup(app, settings=settings)
     configure_heka(conf.filename)
     configure_stats(settings.get('statsd_host'))

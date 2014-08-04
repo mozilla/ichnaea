@@ -15,6 +15,7 @@ from webtest import TestApp
 from ichnaea import main
 from ichnaea.async.config import (
     attach_database,
+    attach_redis_client,
     configure_s3_backup,
 )
 from ichnaea.cache import redis_client
@@ -195,6 +196,7 @@ class CeleryIsolation(object):
     @classmethod
     def setup_celery(cls):
         attach_database(celery, _db_master=cls.db_master)
+        attach_redis_client(celery, _redis=cls.redis_client)
         configure_s3_backup(celery, settings={
             's3_backup_bucket': 'localhost.bucket',
         })
@@ -492,17 +494,23 @@ class DBTestCase(TestCase, DBIsolation, HekaIsolation):
         self.teardown_session()
 
 
-class CeleryTestCase(DBTestCase, CeleryIsolation):
+class CeleryTestCase(DBTestCase, RedisIsolation, CeleryIsolation):
 
     @classmethod
     def setUpClass(cls):
         super(CeleryTestCase, cls).setUpClass()
+        super(CeleryTestCase, cls).setup_redis()
         super(CeleryTestCase, cls).setup_celery()
 
     @classmethod
     def tearDownClass(cls):
         super(CeleryTestCase, cls).teardown_celery()
+        super(CeleryTestCase, cls).teardown_redis()
         super(CeleryTestCase, cls).tearDownClass()
+
+    def tearDown(self):
+        self.cleanup_redis()
+        self.teardown_session()
 
 
 class CeleryAppTestCase(AppTestCase, CeleryIsolation):
