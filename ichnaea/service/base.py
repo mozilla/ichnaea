@@ -1,6 +1,7 @@
 from functools import wraps
 
 from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden
+from redis import ConnectionError
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 
@@ -39,14 +40,18 @@ def rate_limit(redis_client, api_key, maxreq=0, expire=86400):
     dstamp = util.utcnow().strftime("%Y%m%d")
     key = "apilimit:%s:%s" % (api_key, dstamp)
 
-    current = redis_client.get(key)
-    if current is None or int(current) < maxreq:
-        pipe = redis_client.pipeline()
-        pipe.incr(key, 1)
-        # Expire keys after 24 hours
-        pipe.expire(key, expire)
-        pipe.execute()
-        return False
+    try:
+        current = redis_client.get(key)
+        if current is None or int(current) < maxreq:
+            pipe = redis_client.pipeline()
+            pipe.incr(key, 1)
+            # Expire keys after 24 hours
+            pipe.expire(key, expire)
+            pipe.execute()
+            return False
+    except ConnectionError:
+        # If we cannot connect to Redis, disable rate limitation.
+        return None
     return True
 
 
@@ -76,12 +81,16 @@ def check_api_key(func_name, error_on_invalidkey=False):
                 if not shortname:
                     shortname = api_key
                 stats_client.incr('%s.api_key.%s' % (func_name, shortname))
-                if rate_limit(request.registry.redis_client,
-                              api_key, maxreq=maxreq):
+                should_limit = rate_limit(request.registry.redis_client,
+                                          api_key, maxreq=maxreq)
+                if should_limit:
                     result = HTTPForbidden()
                     result.content_type = 'application/json'
                     result.body = DAILY_LIMIT
                     return result
+                elif should_limit is None:
+                    # We couldn't connect to Redis
+                    stats_client.incr('%s.redisfailure_skip_limit' % func_name)
             else:
                 stats_client.incr('%s.unknown_api_key' % func_name)
                 if error_on_invalidkey:

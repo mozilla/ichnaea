@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #279: Offer degraded service if Redis is unavailable.
+
 - #72: Always log sentry messages for exceptions inside tasks.
 
 - #53: Document testing approaches.

@@ -1,7 +1,13 @@
 from datetime import datetime
 import time
-from pyramid.httpexceptions import HTTPNotFound, HTTPOk
+
+from pyramid.httpexceptions import (
+    HTTPNotFound,
+    HTTPOk,
+    HTTPServiceUnavailable,
+)
 from pytz import utc
+from redis import ConnectionError
 
 from ichnaea.customjson import dumps
 from ichnaea.service.base import check_api_key
@@ -27,6 +33,8 @@ from ichnaea.service.locate import (
 from ichnaea.service.submit.schema import SubmitSchema
 from ichnaea.service.submit.tasks import insert_measures
 from ichnaea.stats import get_stats_client
+
+SENTINEL = object()
 
 
 def geosubmit_validator(data, errors):
@@ -107,16 +115,19 @@ def process_upload(nickname, items):
 
     if errors:
         # Short circuit on any error in schema validation
-        return validated, errors
+        return errors
 
     for i in range(0, len(batch_list), 100):
         items = dumps(batch_list[i:i + 100])
         # insert measures, expire the task if it wasn't processed
         # after two hours to avoid queue overload
-        insert_measures.apply_async(
-            kwargs={'items': items, 'nickname': nickname},
-            expires=7200)
-    return validated, errors
+        try:
+            insert_measures.apply_async(
+                kwargs={'items': items, 'nickname': nickname},
+                expires=7200)
+        except ConnectionError:
+            return SENTINEL
+    return errors
 
 
 def configure_geosubmit(config):
@@ -154,7 +165,10 @@ def geosubmit_view(request):
 def process_batch(request, data, errors):
     nickname = request.headers.get('X-Nickname', u'')
     upload_items = flatten_items(data)
-    validated, errors = process_upload(nickname, upload_items)
+    errors = process_upload(nickname, upload_items)
+
+    if errors is SENTINEL:
+        return HTTPServiceUnavailable()
 
     if errors:
         get_stats_client().incr('geosubmit.upload.errors', len(errors))
@@ -186,9 +200,9 @@ def process_single(request):
 
     nickname = request.headers.get('X-Nickname', u'')
     upload_items = flatten_items(data)
-    validated, errors = process_upload(nickname, upload_items)
+    errors = process_upload(nickname, upload_items)
 
-    if errors:
+    if errors is not SENTINEL and errors:
         stats_client.incr('geosubmit.upload.errors', len(errors))
 
     first_item = data['items'][0]

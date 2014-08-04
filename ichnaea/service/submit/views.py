@@ -1,4 +1,8 @@
-from pyramid.httpexceptions import HTTPNoContent
+from pyramid.httpexceptions import (
+    HTTPNoContent,
+    HTTPServiceUnavailable,
+)
+from redis import ConnectionError
 
 from ichnaea.customjson import dumps
 from ichnaea.service.error import (
@@ -74,8 +78,11 @@ def submit_view(request):
         items = dumps(items[i:i + 100])
         # insert measures, expire the task if it wasn't processed
         # after two hours to avoid queue overload
-        insert_measures.apply_async(
-            kwargs={'items': items, 'nickname': nickname},
-            expires=7200)
+        try:
+            insert_measures.apply_async(
+                kwargs={'items': items, 'nickname': nickname},
+                expires=7200)
+        except ConnectionError:
+            return HTTPServiceUnavailable()
 
     return HTTPNoContent()
