@@ -206,7 +206,7 @@ def generate(db, bucketname, heka_client, stats_client,
 
         zoom_all_cmd = cmd.format(
             enumerate=datamaps_enumerate,
-            zoom=5,
+            zoom=13,
             shapes=shapes,
             concurrency=concurrency,
             render=datamaps_render,

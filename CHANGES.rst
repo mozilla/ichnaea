@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Fixed image tiles generation to generate up to zoom level 13 again.
+
 - #279: Offer degraded service if Redis is unavailable.
 
 - #72: Always log sentry messages for exceptions inside tasks.
