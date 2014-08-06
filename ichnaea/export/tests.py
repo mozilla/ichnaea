@@ -1,0 +1,63 @@
+import boto
+import os
+import csv
+from contextlib import contextmanager
+from mock import MagicMock, patch
+from ichnaea.tests.base import CeleryTestCase
+from ichnaea.models import Cell
+from ichnaea.export.tasks import (
+    export_modified_cells,
+    write_stations_to_csv,
+    selfdestruct_tempdir,
+    CELL_FIELDS,
+    GzipFile
+)
+
+
+@contextmanager
+def mock_s3():
+    mock_conn = MagicMock()
+    mock_key = MagicMock()
+    with patch.object(boto, 'connect_s3', mock_conn):
+        with patch('boto.s3.key.Key', lambda _: mock_key):
+            yield mock_key
+
+
+class TestExport(CeleryTestCase):
+
+    def test_local_export(self):
+
+        session = self.db_master_session
+        k = dict(mcc=1, mnc=2, lac=4, lat=1.0, lon=1.0, psc=-1)
+        for i in range(100, 200):
+            session.add(Cell(cid=i, **k))
+        session.commit()
+
+        cells = session.query(Cell).all()
+        with selfdestruct_tempdir() as d:
+            path = os.path.join(d, 'export.csv.gz')
+            write_stations_to_csv(path, CELL_FIELDS, cells)
+            with GzipFile(path, "rb") as f:
+                r = csv.DictReader(f, CELL_FIELDS)
+                cid = 100
+                for d in r:
+                    t = dict(cid=cid, **k)
+                    t = dict([(n, str(v)) for (n, v) in t.items()])
+                    self.assertDictEqual(t, d)
+                    cid += 1
+                self.assertEqual(r.line_num, 100)
+
+    def test_full_export(self):
+
+        session = self.db_master_session
+        k = dict(mcc=1, mnc=2, lac=4, lat=1.0, lon=1.0)
+        for i in range(100, 200):
+            session.add(Cell(cid=i, **k))
+        session.commit()
+
+        with mock_s3() as mock_key:
+            export_modified_cells("localhost.bucket")
+            pat = r"MLS-cell-export-\d+-\d+-\d+T\d+\.csv\.gz"
+            self.assertRegexpMatches(mock_key.key, pat)
+            method = mock_key.set_contents_from_filename
+            self.assertRegexpMatches(method.call_args[0][0], pat)

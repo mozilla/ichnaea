@@ -119,6 +119,14 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(hour=2, minute=27),
         'options': {'expires': 43200},
     },
+
+    's3-hourly-cell-export': {
+        'task': 'ichnaea.export.tasks.export_modified_cells',
+        'args': (),
+        'schedule': crontab(minute=0),
+        'options': {'expires': 2700},
+    },
+
     'nightly-cell-unthrottle-messages': {
         'task': 'ichnaea.backup.tasks.cell_unthrottle_measures',
         'schedule': crontab(hour=3, minute=17),
