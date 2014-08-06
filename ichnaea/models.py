@@ -428,6 +428,7 @@ class Cell(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
     created = Column(DateTime)
+    modified = Column(DateTime)
 
     # lat/lon
     lat = Column(Double(asdecimal=False))
@@ -455,6 +456,8 @@ class Cell(_Model):
     def __init__(self, *args, **kw):
         if 'created' not in kw:
             kw['created'] = util.utcnow()
+        if 'modified' not in kw:
+            kw['modified'] = util.utcnow()
         if 'lac' not in kw:
             kw['lac'] = -1
         if 'cid' not in kw:
@@ -586,6 +589,7 @@ class Wifi(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
     created = Column(DateTime)
+    modified = Column(DateTime)
     key = Column(String(12))
 
     # lat/lon
@@ -604,6 +608,8 @@ class Wifi(_Model):
     def __init__(self, *args, **kw):
         if 'created' not in kw:
             kw['created'] = util.utcnow()
+        if 'modified' not in kw:
+            kw['modified'] = util.utcnow()
         if 'new_measures' not in kw:
             kw['new_measures'] = 0
         if 'total_measures' not in kw:
