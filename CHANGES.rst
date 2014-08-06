@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Only retain two days of observation data inside the DB.
+
 - Fixed image tiles generation to generate up to zoom level 13 again.
 
 - #279: Offer degraded service if Redis is unavailable.
