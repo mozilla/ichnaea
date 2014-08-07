@@ -46,8 +46,8 @@ def write_stations_to_s3(path, now, bucketname):
     bucket = conn.get_bucket(bucketname)
     k = boto.s3.key.Key(bucket)
     k.key = now.strftime("export/%Y/%m/") + os.path.split(path)[-1]
-    k.set_acl('public-read')
     k.set_contents_from_filename(path)
+    k.set_acl('public-read')
 
 
 def export_modified_stations(stations, now, filename, bucket):
@@ -60,7 +60,7 @@ def export_modified_stations(stations, now, filename, bucket):
 @celery.task(base=DatabaseTask, bind=True)
 def export_modified_cells(self, bucket=None, since=None):
     if bucket is None:
-        bucket = self.app.s3_settings['s3_assets_bucket'],
+        bucket = self.app.s3_settings['assets_bucket']
     now = util.utcnow()
     if since is None:
         since = now - timedelta(hours=1)
