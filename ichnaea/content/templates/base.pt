@@ -6,6 +6,10 @@
     <meta charset="UTF-8" />
     <meta name='viewport'
           content='width=device-width, initial-scale=1.0, maximum-scale=1.0' />
+    
+    <meta name="msapplication-TileImage" content="/static/images/mls-logo.png"/>
+    <meta name="msapplication-TileColor" content="#dedede"/>
+
     <title>Mozilla Location Service - ${page_title}</title>
 
     <link rel="stylesheet" href="/static/css/base-combined.css" />
