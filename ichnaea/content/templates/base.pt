@@ -7,10 +7,7 @@
     <meta name='viewport'
           content='width=device-width, initial-scale=1.0, maximum-scale=1.0' />
     
-    <meta name="msapplication-TileImage" content="/static/images/mls-logo.png"/>
-    <meta name="msapplication-TileColor" content="#dedede"/>
-
-    <title>Mozilla Location Service - ${page_title}</title>
+    <title>MLS - ${page_title}</title>
 
     <link rel="stylesheet" href="/static/css/base-combined.css" />
     <link href="https://mozorg.cdn.mozilla.net/media/css/tabzilla-min.css" rel="stylesheet" />
@@ -19,6 +16,12 @@
     <script src='/static/js/base-combined.js'></script>
     <script src="https://mozorg.cdn.mozilla.net/en-US/tabzilla/tabzilla.js"></script>
     <tal:slot metal:define-slot="js"></tal:slot>
+
+    <link rel="icon" href="/static/images/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/static/images/apple-touch-icon.png" />
+    <link rel="apple-touch-icon-precomposed" href="/static/images/apple-touch-icon.png" />
+    <meta name="msapplication-TileImage" content="/static/images/tile-image-150.png" />
+    <meta name="msapplication-TileColor" content="#dedede" />
 
     <tal:slot metal:define-slot="head"></tal:slot>
 </head>

@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #285: Update favicon, add touch icon and tile image.
+
 - Only retain two days of observation data inside the DB.
 
 - Fixed image tiles generation to generate up to zoom level 13 again.

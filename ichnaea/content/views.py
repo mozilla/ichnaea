@@ -19,7 +19,9 @@ from ichnaea.content.stats import (
 from ichnaea import util
 
 HERE = os.path.dirname(__file__)
-FAVICON_PATH = os.path.join(HERE, 'static', 'favicon.ico')
+IMAGE_PATH = os.path.join(HERE, 'static', 'images')
+FAVICON_PATH = os.path.join(IMAGE_PATH, 'favicon.ico')
+TOUCHICON_PATH = os.path.join(IMAGE_PATH, 'apple-touch-icon.png')
 # cache year lookup, needs server restart after new year :)
 THIS_YEAR = unicode(util.utcnow().year)
 
@@ -50,6 +52,8 @@ def configure_content(config):
     config.add_view(favicon_view, name='favicon.ico',
                     http_cache=(86400, {'public': True}))
     config.add_view(robotstxt_view, name='robots.txt',
+                    http_cache=(86400, {'public': True}))
+    config.add_view(touchicon_view, name='apple-touch-icon-precomposed.png',
                     http_cache=(86400, {'public': True}))
     config.add_static_view(
         name='static', path='ichnaea.content:static', cache_max_age=3600)
@@ -252,6 +256,10 @@ class ContentViews(Layout):
 
 def favicon_view(request):
     return FileResponse(FAVICON_PATH, request=request)
+
+
+def touchicon_view(request):
+    return FileResponse(TOUCHICON_PATH, request=request)
 
 
 _robots_response = Response(

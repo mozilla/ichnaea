@@ -92,6 +92,9 @@ class TestFunctionalContent(AppTestCase):
     def test_favicon(self):
         self.app.get('/favicon.ico', status=200)
 
+    def test_touchicon(self):
+        self.app.get('/apple-touch-icon-precomposed.png', status=200)
+
     def test_hsts_header(self):
         result = self.app.get('/', status=200)
         self.assertTrue('Strict-Transport-Security' in result.headers)
