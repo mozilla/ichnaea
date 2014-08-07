@@ -1,8 +1,9 @@
 from ichnaea.async.task import DatabaseTask
-from ichnaea.models import (Cell, CELLID_LAC)
+from ichnaea.models import (Cell, CELLID_LAC, RADIO_TYPE_INVERSE)
 from ichnaea.worker import celery
 from ichnaea import util
 from datetime import timedelta
+import time
 import boto
 import csv
 import gzip
@@ -11,8 +12,20 @@ import shutil
 from contextlib import contextmanager
 import os
 
-CELL_FIELDS = ['lat', 'lon', 'mcc', 'mnc', 'lac', 'cid', 'psc']
-
+CELL_FIELDS = ["radio",
+               "mcc",
+               "mnc",  # mnc/sid
+               "lac",  # lac/tac/nid
+               "cid",  # cellid/rnc+cid/bid
+               "psc",  # psc/pci
+               "lon",
+               "lat",
+               "range",
+               "samples",
+               "changeable",
+               "created",
+               "updated",
+               "averageSignal"]
 
 @contextmanager
 def selfdestruct_tempdir():
@@ -34,11 +47,32 @@ class GzipFile(gzip.GzipFile):
         self.close()
 
 
-def write_stations_to_csv(path, fieldnames, stations):
+def make_cell_dict(cell):
+
+    d = dict()
+    for field in CELL_FIELDS:
+        if field in cell.__dict__:
+            d[field] = cell.__dict__[field]
+
+    # Fix up specific entry formatting
+    radio = cell.radio
+    if radio is None:
+        radio = -1
+
+    d['radio'] = RADIO_TYPE_INVERSE[radio].upper()
+    d['created'] = int(time.mktime(cell.created.timetuple()))
+    d['updated'] = int(time.mktime(cell.modified.timetuple()))
+    d['samples'] = cell.total_measures
+    d['changeable'] = 1
+    d['averageSignal'] = ''
+    return d
+
+
+def write_stations_to_csv(path, make_dict, fieldnames, stations):
     with GzipFile(path, 'wb') as f:
         w = csv.DictWriter(f, fieldnames, extrasaction='ignore')
         for s in stations:
-            w.writerow(s.__dict__)
+            w.writerow(make_dict(s))
 
 
 def write_stations_to_s3(path, now, bucketname):
@@ -53,7 +87,7 @@ def write_stations_to_s3(path, now, bucketname):
 def export_modified_stations(stations, now, filename, bucket):
     with selfdestruct_tempdir() as d:
         path = os.path.join(d, filename)
-        write_stations_to_csv(path, CELL_FIELDS, stations)
+        write_stations_to_csv(path, make_cell_dict, CELL_FIELDS, stations)
         write_stations_to_s3(path, now, bucket)
 
 
