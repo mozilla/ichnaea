@@ -13,13 +13,14 @@ down_revision = '2f26a4df27af'
 from alembic import op
 from ichnaea.sa_types import TZDateTime as DateTime
 from ichnaea import util
+from ichnaea.models import encode_datetime
 from sqlalchemy import Column
 
 
 def upgrade():
-    now = util.utcnow()
-    op.add_column('cell', Column('modified', DateTime(), default=now))
-    op.add_column('wifi', Column('modified', DateTime(), default=now))
+    now = encode_datetime(util.utcnow())
+    op.add_column('cell', Column('modified', DateTime(), server_default=now))
+    op.add_column('wifi', Column('modified', DateTime(), server_default=now))
 
 
 def downgrade():

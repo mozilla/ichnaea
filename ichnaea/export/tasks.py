@@ -41,26 +41,26 @@ def write_stations_to_csv(path, fieldnames, stations):
             w.writerow(s.__dict__)
 
 
-def write_stations_to_s3(path, bucketname):
+def write_stations_to_s3(path, now, bucketname):
     conn = boto.connect_s3()
     bucket = conn.get_bucket(bucketname)
     k = boto.s3.key.Key(bucket)
-    k.key = os.path.split(path)[-1]
+    k.key = now.strftime("export/%Y/%m/") + os.path.split(path)[-1]
     k.set_acl('public-read')
     k.set_contents_from_filename(path)
 
 
-def export_modified_stations(stations, filename, bucket):
+def export_modified_stations(stations, now, filename, bucket):
     with selfdestruct_tempdir() as d:
         path = os.path.join(d, filename)
         write_stations_to_csv(path, CELL_FIELDS, stations)
-        write_stations_to_s3(path, bucket)
+        write_stations_to_s3(path, now, bucket)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def export_modified_cells(self, bucket=None, since=None):
     if bucket is None:
-        bucket = self.app.s3_settings['export_bucket'],
+        bucket = self.app.s3_settings['s3_assets_bucket'],
     now = util.utcnow()
     if since is None:
         since = now - timedelta(hours=1)
@@ -70,7 +70,7 @@ def export_modified_cells(self, bucket=None, since=None):
             cells = session.query(Cell).filter(
                 Cell.modified >= since,
                 Cell.cid != CELLID_LAC).all()
-            export_modified_stations(cells, filename, bucket)
+            export_modified_stations(cells, now, filename, bucket)
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')
         raise self.retry(exc=exc)
