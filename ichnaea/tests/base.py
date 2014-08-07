@@ -199,6 +199,7 @@ class CeleryIsolation(object):
         attach_redis_client(celery, _redis=cls.redis_client)
         configure_s3_backup(celery, settings={
             's3_backup_bucket': 'localhost.bucket',
+            's3_assets_bucket': 'localhost.bucket',
         })
 
     @classmethod
