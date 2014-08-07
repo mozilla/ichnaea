@@ -8,6 +8,7 @@ from ichnaea.models import Cell
 from ichnaea.export.tasks import (
     export_modified_cells,
     write_stations_to_csv,
+    make_cell_dict,
     selfdestruct_tempdir,
     CELL_FIELDS,
     GzipFile
@@ -36,14 +37,14 @@ class TestExport(CeleryTestCase):
         cells = session.query(Cell).all()
         with selfdestruct_tempdir() as d:
             path = os.path.join(d, 'export.csv.gz')
-            write_stations_to_csv(path, CELL_FIELDS, cells)
+            write_stations_to_csv(path, make_cell_dict, CELL_FIELDS, cells)
             with GzipFile(path, "rb") as f:
                 r = csv.DictReader(f, CELL_FIELDS)
                 cid = 100
                 for d in r:
                     t = dict(cid=cid, **k)
                     t = dict([(n, str(v)) for (n, v) in t.items()])
-                    self.assertDictEqual(t, d)
+                    self.assertDictContainsSubset(t, d)
                     cid += 1
                 self.assertEqual(r.line_num, 100)
 
