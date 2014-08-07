@@ -1,0 +1,8 @@
+-- Running upgrade 2f26a4df27af -> 4508f02e6cd7
+
+ALTER TABLE cell ADD COLUMN modified DATETIME DEFAULT '2014-08-06T23:07:55.000000';
+
+ALTER TABLE wifi ADD COLUMN modified DATETIME DEFAULT '2014-08-06T23:07:55.000000';
+
+UPDATE alembic_version SET version_num='4508f02e6cd7';
+
