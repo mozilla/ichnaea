@@ -4,26 +4,9 @@ from celery.schedules import crontab
 
 
 CELERYBEAT_SCHEDULE = {
-    'histogram-cell-yesterday': {
-        'task': 'ichnaea.content.tasks.cell_histogram',
-        'schedule': crontab(hour=0, minute=3),
-        'args': (1, ),
-    },
-    'histogram-wifi-yesterday': {
-        'task': 'ichnaea.content.tasks.wifi_histogram',
-        'schedule': crontab(hour=0, minute=4),
-        'args': (1, ),
-    },
-    'histogram-unique-cell-yesterday': {
-        'task': 'ichnaea.content.tasks.unique_cell_histogram',
-        'schedule': crontab(hour=0, minute=5),
-        'args': (1, ),
-    },
-    'histogram-unique-wifi-yesterday': {
-        'task': 'ichnaea.content.tasks.unique_wifi_histogram',
-        'schedule': crontab(hour=0, minute=6),
-        'args': (1, ),
-    },
+
+    # Continuous location update tasks
+
     'cell-location-update-1': {
         'task': 'ichnaea.tasks.cell_location_update',
         'schedule': timedelta(seconds=299),  # 13*23
@@ -67,11 +50,30 @@ CELERYBEAT_SCHEDULE = {
         'options': {'expires': 3511},
     },
 
-    # TODO: start scheduling this once we handled the backlog
-    # 'backfill-celltower-info': {
-    #     'task': 'ichnaea.backfill.tasks.do_backfill',
-    #     'schedule': crontab(hour=0, minute=15),
-    # }
+    # Daily content tasks
+
+    'histogram-cell-yesterday': {
+        'task': 'ichnaea.content.tasks.cell_histogram',
+        'schedule': crontab(hour=0, minute=3),
+        'args': (1, ),
+    },
+    'histogram-wifi-yesterday': {
+        'task': 'ichnaea.content.tasks.wifi_histogram',
+        'schedule': crontab(hour=0, minute=4),
+        'args': (1, ),
+    },
+    'histogram-unique-cell-yesterday': {
+        'task': 'ichnaea.content.tasks.unique_cell_histogram',
+        'schedule': crontab(hour=0, minute=5),
+        'args': (1, ),
+    },
+    'histogram-unique-wifi-yesterday': {
+        'task': 'ichnaea.content.tasks.unique_wifi_histogram',
+        'schedule': crontab(hour=0, minute=6),
+        'args': (1, ),
+    },
+
+    # Daily backup tasks
 
     's3-schedule-cellmeasure-archival': {
         'task': 'ichnaea.backup.tasks.schedule_cellmeasure_archival',
@@ -85,7 +87,6 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(hour=1, minute=7),
         'options': {'expires': 43200},
     },
-
     's3-schedule-wifimeasures-archival': {
         'task': 'ichnaea.backup.tasks.schedule_wifimeasure_archival',
         'args': (100, 1000000),
@@ -98,7 +99,6 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(hour=1, minute=17),
         'options': {'expires': 43200},
     },
-
     's3-delete-wifimeasures': {
         'task': 'ichnaea.backup.tasks.delete_wifimeasure_records',
         'args': (100, 2, 300),
