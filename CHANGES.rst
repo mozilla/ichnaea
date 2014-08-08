@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Make a Redis client available in Celery tasks.
+
 - #285: Update favicon, add touch icon and tile image.
 
 - Only retain two days of observation data inside the DB.
