@@ -1,6 +1,6 @@
 WSGIProxy2==0.4.1
 gevent==1.0.1
-greenlet==0.4.2
+greenlet==0.4.3
 irc==8.9.1
 jaraco.util==10.2
 konfig==0.9

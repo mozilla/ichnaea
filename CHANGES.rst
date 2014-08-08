@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Update to latest version of alembic, boto and statsd.
+
 - Add a monitoring task to record Redis queue length.
 
 - Make a Redis client available in Celery tasks.
