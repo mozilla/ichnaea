@@ -5,6 +5,14 @@ from celery.schedules import crontab
 
 CELERYBEAT_SCHEDULE = {
 
+    # Monitoring tasks
+
+    'monitor-queue-length': {
+        'task': 'ichnaea.monitor.tasks.monitor_queue_length',
+        'schedule': timedelta(seconds=60),
+        'options': {'expires': 57},
+    },
+
     # Continuous location update tasks
 
     'cell-location-update-1': {

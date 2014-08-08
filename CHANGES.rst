@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Add a monitoring task to record Redis queue length.
+
 - Make a Redis client available in Celery tasks.
 
 - #285: Update favicon, add touch icon and tile image.

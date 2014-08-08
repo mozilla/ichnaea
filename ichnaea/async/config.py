@@ -13,6 +13,7 @@ CELERY_IMPORTS = [
     'ichnaea.backup.tasks',
     'ichnaea.content.tasks',
     'ichnaea.backfill.tasks',
+    'ichnaea.monitor.tasks',
     'ichnaea.service.submit.tasks',
 ]
 
@@ -20,7 +21,9 @@ CELERY_QUEUES = (
     Queue('default', routing_key='default'),
     Queue('incoming', routing_key='incoming'),
     Queue('insert', routing_key='insert'),
+    Queue('monitor', routing_key='monitor'),
 )
+CELERY_QUEUE_NAMES = frozenset([q.name for q in CELERY_QUEUES])
 
 
 def attach_database(app, settings=None, _db_master=None):

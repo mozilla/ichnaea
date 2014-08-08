@@ -454,6 +454,14 @@ database tables. Along the way several counters measure the steps involved:
 Gauges
 ------
 
+``queue.default``,
+``queue.incoming``,
+``queue.insert``,
+``queue.monitor``, : gauges
+
+    These gauges measure the number of tasks in each of the Redis queues.
+    They are sampled at an approximate per-minute interval.
+
 ``task.cell_location_update.new_measures_<min>_<max>``,
 ``task.wifi_location_update.new_measures_<min>_<max>``, : gauges
 
