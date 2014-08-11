@@ -92,7 +92,7 @@ def export_modified_stations(stations, now, filename, bucket):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def export_modified_cells(self, bucket=None, since=None):
+def export_modified_cells(self, since=None, bucket=None):
     if bucket is None:
         bucket = self.app.s3_settings['assets_bucket']
     now = util.utcnow()
