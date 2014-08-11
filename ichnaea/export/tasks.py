@@ -59,12 +59,17 @@ def make_cell_dict(cell):
     if radio is None:
         radio = -1
 
+    psc = cell.psc
+    if psc == -1:
+        psc = ''
+
     d['radio'] = RADIO_TYPE_INVERSE[radio].upper()
     d['created'] = int(time.mktime(cell.created.timetuple()))
     d['updated'] = int(time.mktime(cell.modified.timetuple()))
     d['samples'] = cell.total_measures
     d['changeable'] = 1
     d['averageSignal'] = ''
+    d['psc'] = psc
     return d
 
 
