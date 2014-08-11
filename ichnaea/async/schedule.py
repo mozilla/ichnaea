@@ -1,4 +1,5 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
+from pytz import UTC
 
 from celery.schedules import crontab
 
@@ -120,12 +121,21 @@ CELERYBEAT_SCHEDULE = {
         'options': {'expires': 43200},
     },
 
-    's3-hourly-cell-export': {
+    's3-hourly-cell-delta-export': {
         'task': 'ichnaea.export.tasks.export_modified_cells',
         'args': (),
         'schedule': crontab(minute=0),
         'options': {'expires': 2700},
     },
+    's3-hourly-cell-full-export': {
+        'task': 'ichnaea.export.tasks.export_modified_cells',
+        # The 1 billionth unix timestamp was Sept 9 2001, well before we were
+        # collecting any data.
+        'args': (datetime.utcfromtimestamp(1000000000).replace(tzinfo=UTC),),
+        'schedule': crontab(minute=0),
+        'options': {'expires': 2700},
+    },
+
 
     'nightly-cell-unthrottle-messages': {
         'task': 'ichnaea.backup.tasks.cell_unthrottle_measures',
