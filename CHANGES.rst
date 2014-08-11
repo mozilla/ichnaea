@@ -4,7 +4,7 @@ Changelog
 1.1 (unreleased)
 ----------------
 
-- Update to latest version of alembic, boto and statsd.
+- Update to latest version of alembic, boto, simplejson and statsd.
 
 - Add a monitoring task to record Redis queue length.
 

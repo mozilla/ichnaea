@@ -34,7 +34,7 @@ raven==3.4.1  # rq.filter: <3.5.0
 redis==2.10.1
 repoze.lru==0.6
 setproctitle==1.1.8
-simplejson==3.6.0
+simplejson==3.6.2
 six==1.7.3
 statsd==3.0.1
 translationstring==1.1
