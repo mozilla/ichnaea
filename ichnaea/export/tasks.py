@@ -85,8 +85,7 @@ def write_stations_to_s3(path, now, bucketname):
     bucket = conn.get_bucket(bucketname)
     k = boto.s3.key.Key(bucket)
     k.key = now.strftime("export/%Y/%m/") + os.path.split(path)[-1]
-    k.set_contents_from_filename(path)
-    k.set_acl('public-read')
+    k.set_contents_from_filename(path, reduced_redundancy=True)
 
 
 def export_modified_stations(stations, now, filename, bucket):
