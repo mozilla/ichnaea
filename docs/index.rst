@@ -34,6 +34,7 @@ Table of contents
    calculation
    deploy
    metrics
+   import_export
    testing
    internal_api/index.rst
    changelog
