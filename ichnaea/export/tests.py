@@ -29,7 +29,7 @@ class TestExport(CeleryTestCase):
     def test_local_export(self):
 
         session = self.db_master_session
-        k = dict(mcc=1, mnc=2, lac=4, lat=1.0, lon=1.0, psc=-1)
+        k = dict(mcc=1, mnc=2, lac=4, lat=1.0, lon=1.0)
         for i in range(100, 200):
             session.add(Cell(cid=i, **k))
         session.commit()
