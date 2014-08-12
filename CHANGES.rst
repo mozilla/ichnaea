@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+20140812120000
+**************
+
 - Include links to blog and new @MozGeo twitter account.
 
 - Update to latest version of alembic, boto, redis, simplejson and statsd.
