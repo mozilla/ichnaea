@@ -78,9 +78,12 @@
             </div>
 
             <ul class="footer-nav">
+                <li><a href="https://blog.mozilla.org/services/category/location/">
+                    Blog</a>
+                </li>
                 <li><a href="/contact">Contact Us</a></li>
-                <li><a href="/privacy">Privacy Policy</a></li>
                 <li><a href="/optout">Opt-Out</a>
+                <li><a href="/privacy">Privacy Policy</a></li>
                 </li>
             </ul>
 
@@ -90,6 +93,9 @@
                 </li>
                 <li><a href="https://github.com/mozilla/ichnaea/">
                     Source Code</a>
+                </li>
+                <li><a href="https://twitter.com/MozGeo">
+                    Twitter @MozGeo</a>
                 </li>
             </ul>
         </div>

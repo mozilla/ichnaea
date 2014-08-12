@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Include links to blog and new @MozGeo twitter account.
+
 - Update to latest version of alembic, boto, redis, simplejson and statsd.
 
 - Add a monitoring task to record Redis queue length.
