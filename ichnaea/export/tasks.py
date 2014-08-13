@@ -1,8 +1,9 @@
 from ichnaea.async.task import DatabaseTask
-from ichnaea.models import (Cell, CELLID_LAC, RADIO_TYPE_INVERSE)
+from ichnaea.models import (cell_table, CELLID_LAC, RADIO_TYPE_INVERSE)
 from ichnaea.worker import celery
 from ichnaea import util
 from datetime import timedelta
+from sqlalchemy.sql import select, and_
 import time
 import boto
 import csv
@@ -11,6 +12,7 @@ import tempfile
 import shutil
 from contextlib import contextmanager
 import os
+
 
 CELL_FIELDS = ["radio",
                "mcc",
@@ -26,6 +28,16 @@ CELL_FIELDS = ["radio",
                "created",
                "updated",
                "averageSignal"]
+CELL_FIELD_INDICES = dict(
+    [(e, i) for (i, e) in enumerate(CELL_FIELDS)]
+)
+
+
+CELL_COLUMNS = [c.name for c in cell_table.columns]
+CELL_COLUMN_INDICES = dict(
+    [(e, i) for (i, e) in enumerate(CELL_COLUMNS)]
+)
+
 
 @contextmanager
 def selfdestruct_tempdir():
@@ -47,37 +59,48 @@ class GzipFile(gzip.GzipFile):
         self.close()
 
 
-def make_cell_dict(cell):
+def make_cell_dict(row):
 
     d = dict()
+    ix = CELL_COLUMN_INDICES
+
     for field in CELL_FIELDS:
-        if field in cell.__dict__:
-            d[field] = cell.__dict__[field]
+        if field in ix:
+            d[field] = row[ix[field]]
 
     # Fix up specific entry formatting
-    radio = cell.radio
+    radio = row[ix['radio']]
     if radio is None:
         radio = -1
 
-    psc = cell.psc
+    psc = row[ix['psc']]
     if psc == -1:
         psc = ''
 
     d['radio'] = RADIO_TYPE_INVERSE[radio].upper()
-    d['created'] = int(time.mktime(cell.created.timetuple()))
-    d['updated'] = int(time.mktime(cell.modified.timetuple()))
-    d['samples'] = cell.total_measures
+    d['created'] = int(time.mktime(row[ix['created']].timetuple()))
+    d['updated'] = int(time.mktime(row[ix['modified']].timetuple()))
+    d['samples'] = row[ix['total_measures']]
     d['changeable'] = 1
     d['averageSignal'] = ''
     d['psc'] = psc
     return d
 
 
-def write_stations_to_csv(path, make_dict, fieldnames, stations):
+def write_stations_to_csv(sess, table, cond, path, make_dict, fields):
     with GzipFile(path, 'wb') as f:
-        w = csv.DictWriter(f, fieldnames, extrasaction='ignore')
-        for s in stations:
-            w.writerow(make_dict(s))
+        w = csv.DictWriter(f, fields, extrasaction='ignore')
+        limit = 10000
+        offset = 0
+        while True:
+            q = select([table]).where(cond).limit(limit).offset(offset)
+            rows = sess.execute(q).fetchall()
+            if rows:
+                rows = [make_dict(d) for d in rows]
+                w.writerows(rows)
+                offset += limit
+            else:
+                break
 
 
 def write_stations_to_s3(path, now, bucketname):
@@ -88,10 +111,11 @@ def write_stations_to_s3(path, now, bucketname):
     k.set_contents_from_filename(path, reduced_redundancy=True)
 
 
-def export_modified_stations(stations, now, filename, bucket):
+def export_modified_stations(sess, table, cond, now, filename, fields, bucket):
     with selfdestruct_tempdir() as d:
         path = os.path.join(d, filename)
-        write_stations_to_csv(path, make_cell_dict, CELL_FIELDS, stations)
+        write_stations_to_csv(sess, table, cond,
+                              path, make_cell_dict, fields)
         write_stations_to_s3(path, now, bucket)
 
 
@@ -104,11 +128,11 @@ def export_modified_cells(self, since=None, bucket=None):
         since = now - timedelta(hours=1)
     filename = now.strftime('MLS-cell-export-%Y-%m-%dT%H%M%S.csv.gz')
     try:
-        with self.db_session() as session:
-            cells = session.query(Cell).filter(
-                Cell.modified >= since,
-                Cell.cid != CELLID_LAC).all()
-            export_modified_stations(cells, now, filename, bucket)
+        with self.db_session() as sess:
+            cond = and_(cell_table.c.modified >= since,
+                        cell_table.c.cid != CELLID_LAC)
+            export_modified_stations(sess, cell_table, cond, now,
+                                     filename, CELL_FIELDS, bucket)
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')
         raise self.retry(exc=exc)
