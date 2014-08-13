@@ -4,7 +4,7 @@ import csv
 from contextlib import contextmanager
 from mock import MagicMock, patch
 from ichnaea.tests.base import CeleryTestCase
-from ichnaea.models import Cell
+from ichnaea.models import Cell, cell_table, CELLID_LAC
 from ichnaea.export.tasks import (
     export_modified_cells,
     write_stations_to_csv,
@@ -34,10 +34,12 @@ class TestExport(CeleryTestCase):
             session.add(Cell(cid=i, **k))
         session.commit()
 
-        cells = session.query(Cell).all()
+        cond = cell_table.c.cid != CELLID_LAC
+
         with selfdestruct_tempdir() as d:
             path = os.path.join(d, 'export.csv.gz')
-            write_stations_to_csv(path, make_cell_dict, CELL_FIELDS, cells)
+            write_stations_to_csv(session, cell_table, cond,
+                                  path, make_cell_dict, CELL_FIELDS)
             with GzipFile(path, "rb") as f:
                 r = csv.DictReader(f, CELL_FIELDS)
                 cid = 100
@@ -47,6 +49,7 @@ class TestExport(CeleryTestCase):
                     self.assertDictContainsSubset(t, d)
                     cid += 1
                 self.assertEqual(r.line_num, 100)
+                self.assertEqual(cid, 200)
 
     def test_full_export(self):
 
@@ -57,7 +60,7 @@ class TestExport(CeleryTestCase):
         session.commit()
 
         with mock_s3() as mock_key:
-            export_modified_cells("localhost.bucket")
+            export_modified_cells(bucket="localhost.bucket")
             pat = r"MLS-cell-export-\d+-\d+-\d+T\d+\.csv\.gz"
             self.assertRegexpMatches(mock_key.key, pat)
             method = mock_key.set_contents_from_filename
