@@ -120,16 +120,22 @@ def export_modified_stations(sess, table, cond, now, filename, fields, bucket):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def export_modified_cells(self, since=None, bucket=None):
+def export_modified_cells(self, start_time=None, bucket=None):
     if bucket is None:
         bucket = self.app.s3_settings['assets_bucket']
     now = util.utcnow()
-    if since is None:
-        since = now - timedelta(hours=1)
+
+    if start_time is None:
+        end_time = now.replace(minute=0, second=0)
+        start_time = end_time - timedelta(hours=1)
+    else:
+        end_time = now
+
     filename = now.strftime('MLS-cell-export-%Y-%m-%dT%H%M%S.csv.gz')
     try:
         with self.db_session() as sess:
-            cond = and_(cell_table.c.modified >= since,
+            cond = and_(cell_table.c.modified >= start_time,
+                        cell_table.c.modified < end_time,
                         cell_table.c.cid != CELLID_LAC)
             export_modified_stations(sess, cell_table, cond, now,
                                      filename, CELL_FIELDS, bucket)
