@@ -127,13 +127,13 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(minute=0),
         'options': {'expires': 2700},
     },
-    's3-hourly-cell-full-export': {
+    's3-daily-cell-full-export': {
         'task': 'ichnaea.export.tasks.export_modified_cells',
         # The 1 billionth unix timestamp was Sept 9 2001, well before we were
         # collecting any data.
         'args': (datetime.utcfromtimestamp(1000000000).replace(tzinfo=UTC),),
-        'schedule': crontab(minute=0),
-        'options': {'expires': 2700},
+        'schedule': crontab(hour=3, minute=15),
+        'options': {'expires': 39600},
     },
 
 
