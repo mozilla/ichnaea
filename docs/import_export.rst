@@ -40,7 +40,7 @@ Cell Fields
 
     For GSM and LTE networks, this is the Cell ID (CID). For UMTS networks this is the UTRAN Cell ID
     / LCID, which is the concatenation of 2 bytes of Radio Network Controller (RNC) code and 4 bytes
-    of Cell ID. For CDMA networks this is the Billing IDentification number (BID). An integer,
+    of Cell ID. For CDMA networks this is the Base station IDentifier number (BID). An integer,
     for example `32345`
 
 ``unit``
