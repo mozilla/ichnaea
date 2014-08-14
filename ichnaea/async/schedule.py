@@ -124,7 +124,7 @@ CELERYBEAT_SCHEDULE = {
     's3-hourly-cell-delta-export': {
         'task': 'ichnaea.export.tasks.export_modified_cells',
         'args': (),
-        'schedule': crontab(minute=0),
+        'schedule': crontab(minute=5),
         'options': {'expires': 2700},
     },
     's3-daily-cell-full-export': {
