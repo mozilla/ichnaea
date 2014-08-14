@@ -88,5 +88,4 @@ Cell Fields
 
 ``averageSignal``
 
-    Average signal strength for the cell. An integer value, in Arbitrary Strength Units (ASU),
-    which are interpreted in different ways depending on the cell network.
+    Average signal strength for the cell. An integer value, in dBm. For example, `23`.
