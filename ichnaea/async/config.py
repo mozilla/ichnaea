@@ -11,6 +11,7 @@ from ichnaea.db import Database
 CELERY_IMPORTS = [
     'ichnaea.tasks',
     'ichnaea.backup.tasks',
+    'ichnaea.export.tasks',
     'ichnaea.content.tasks',
     'ichnaea.backfill.tasks',
     'ichnaea.monitor.tasks',
@@ -48,6 +49,7 @@ def configure_s3_backup(app, settings=None):
     # called manually during tests
     app.s3_settings = {
         'backup_bucket': settings['s3_backup_bucket'],
+        'assets_bucket': settings['s3_assets_bucket'],
     }
 
 

@@ -172,6 +172,7 @@ def calculate_new_position(station, measures, max_dist_km, backfill=True):
               (max_lat, max_lon)]
 
     station.range = range_to_points(ctr, points) * 1000.0
+    station.modified = util.utcnow()
 
 
 def update_enclosing_lacs(session, lacs, moving_cells, utcnow):
