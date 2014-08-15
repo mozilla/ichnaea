@@ -1,13 +1,14 @@
 .. _import_export:
 
-==================
-Data import/export
-==================
+===========
+Data Export
+===========
 
-Ichaea supports automatic, periodic CSV (comma separated values) import/export
+Ichnaea supports automatic, periodic CSV (comma separated values) export
 of aggregate cell data (position estimates).
 
-Records should be written one record to a line, with `\\n` (0x0A) as line separator.
+Records should be written one record to a line, with `\\n` (0x0A) as line
+separator.
 
 A value should be written as an empty field -- two adjacent commas, for
 example -- rather than being omitted.
@@ -69,7 +70,7 @@ Cell Fields
 
 ``samples``
 
-    Total number of observations used to calculate this aggregate value.
+    Total number of observations used to calculate this aggregate position.
     An integer, for example `1200`.
 
 ``changeable``
