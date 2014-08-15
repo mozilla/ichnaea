@@ -87,44 +87,44 @@ CELERYBEAT_SCHEDULE = {
     's3-schedule-cellmeasure-archival': {
         'task': 'ichnaea.backup.tasks.schedule_cellmeasure_archival',
         'args': (100, 1000000),
-        'schedule': crontab(hour=0, minute=7),
+        'schedule': crontab(hour=1, minute=7),
         'options': {'expires': 43200},
     },
     's3-write-cellbackups': {
         'task': 'ichnaea.backup.tasks.write_cellmeasure_s3_backups',
         'args': (100, 10000, 300),
-        'schedule': crontab(hour=1, minute=7),
+        'schedule': crontab(hour=2, minute=7),
         'options': {'expires': 43200},
     },
     's3-schedule-wifimeasures-archival': {
         'task': 'ichnaea.backup.tasks.schedule_wifimeasure_archival',
         'args': (100, 1000000),
-        'schedule': crontab(hour=0, minute=17),
+        'schedule': crontab(hour=1, minute=17),
         'options': {'expires': 43200},
     },
     's3-write-wifibackups': {
         'task': 'ichnaea.backup.tasks.write_wifimeasure_s3_backups',
         'args': (100, 10000, 300),
-        'schedule': crontab(hour=1, minute=17),
+        'schedule': crontab(hour=2, minute=17),
         'options': {'expires': 43200},
     },
     's3-delete-wifimeasures': {
         'task': 'ichnaea.backup.tasks.delete_wifimeasure_records',
         'args': (100, 2, 300),
-        'schedule': crontab(hour=2, minute=17),
+        'schedule': crontab(hour=3, minute=17),
         'options': {'expires': 43200},
     },
     's3-delete-cellmeasures': {
         'task': 'ichnaea.backup.tasks.delete_cellmeasure_records',
         'args': (100, 2, 300),
-        'schedule': crontab(hour=2, minute=27),
+        'schedule': crontab(hour=3, minute=27),
         'options': {'expires': 43200},
     },
 
     's3-hourly-cell-delta-export': {
         'task': 'ichnaea.export.tasks.export_modified_cells',
-        'args': (),
-        'schedule': crontab(minute=5),
+        'args': (True, ),
+        'schedule': crontab(minute=3),
         'options': {'expires': 2700},
     },
     's3-daily-cell-full-export': {
@@ -132,7 +132,7 @@ CELERYBEAT_SCHEDULE = {
         # The 1 billionth unix timestamp was Sept 9 2001, well before we were
         # collecting any data.
         'args': (datetime.utcfromtimestamp(1000000000).replace(tzinfo=UTC),),
-        'schedule': crontab(hour=3, minute=15),
+        'schedule': crontab(hour=0, minute=13),
         'options': {'expires': 39600},
     },
 
