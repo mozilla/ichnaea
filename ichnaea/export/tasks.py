@@ -131,15 +131,18 @@ def export_modified_cells(self, hourly=True, bucket=None):
     if hourly:
         end_time = now.replace(minute=0, second=0)
         file_time = end_time
+        file_type = 'diff'
         start_time = end_time - timedelta(hours=1)
         cond = and_(cell_table.c.modified >= start_time,
                     cell_table.c.modified < end_time,
                     cell_table.c.cid != CELLID_LAC)
     else:
         file_time = now.replace(hour=0, minute=0, second=0)
+        file_type = 'full'
         cond = cell_table.c.cid != CELLID_LAC
 
-    filename = file_time.strftime('MLS-cell-export-%Y-%m-%dT%H%M%S.csv.gz')
+    filename = 'MLS-%s-cell-export-' % file_type
+    filename = filename + file_time.strftime('%Y-%m-%dT%H0000.csv.gz')
     columns = [cell_table]
     try:
         with self.db_session() as sess:

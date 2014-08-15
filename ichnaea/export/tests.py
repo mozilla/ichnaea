@@ -60,7 +60,7 @@ class TestExport(CeleryTestCase):
 
         with mock_s3() as mock_key:
             export_modified_cells(bucket="localhost.bucket")
-            pat = r"MLS-cell-export-\d+-\d+-\d+T\d+0000\.csv\.gz"
+            pat = r"MLS-diff-cell-export-\d+-\d+-\d+T\d+0000\.csv\.gz"
             self.assertRegexpMatches(mock_key.key, pat)
             method = mock_key.set_contents_from_filename
             self.assertRegexpMatches(method.call_args[0][0], pat)
@@ -74,7 +74,7 @@ class TestExport(CeleryTestCase):
 
         with mock_s3() as mock_key:
             export_modified_cells(bucket="localhost.bucket", hourly=False)
-            pat = r"MLS-cell-export-\d+-\d+-\d+T000000\.csv\.gz"
+            pat = r"MLS-full-cell-export-\d+-\d+-\d+T000000\.csv\.gz"
             self.assertRegexpMatches(mock_key.key, pat)
             method = mock_key.set_contents_from_filename
             self.assertRegexpMatches(method.call_args[0][0], pat)
