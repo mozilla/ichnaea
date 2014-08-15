@@ -121,18 +121,19 @@ CELERYBEAT_SCHEDULE = {
         'options': {'expires': 43200},
     },
 
-    's3-hourly-cell-delta-export': {
-        'task': 'ichnaea.export.tasks.export_modified_cells',
-        'args': (True, ),
-        'schedule': crontab(minute=3),
-        'options': {'expires': 2700},
-    },
-    's3-daily-cell-full-export': {
-        'task': 'ichnaea.export.tasks.export_modified_cells',
-        'args': (False, ),
-        'schedule': crontab(hour=0, minute=13),
-        'options': {'expires': 39600},
-    },
+    # TODO: Disable the export until we get a manual confirmation
+    # 's3-hourly-cell-delta-export': {
+    #     'task': 'ichnaea.export.tasks.export_modified_cells',
+    #     'args': (True, ),
+    #     'schedule': crontab(minute=3),
+    #     'options': {'expires': 2700},
+    # },
+    # 's3-daily-cell-full-export': {
+    #     'task': 'ichnaea.export.tasks.export_modified_cells',
+    #     'args': (False, ),
+    #     'schedule': crontab(hour=0, minute=13),
+    #     'options': {'expires': 39600},
+    # },
 
 
     'nightly-cell-unthrottle-messages': {
