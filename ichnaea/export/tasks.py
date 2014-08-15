@@ -88,13 +88,14 @@ def make_cell_dict(row):
     return d
 
 
-def write_stations_to_csv(sess, table, cond, path, make_dict, fields):
+def write_stations_to_csv(sess, table, columns, cond, path, make_dict, fields):
     with GzipFile(path, 'wb') as f:
         w = csv.DictWriter(f, fields, extrasaction='ignore')
         limit = 10000
         offset = 0
         while True:
-            q = select([table]).where(cond).limit(limit).offset(offset)
+            q = select(columns=columns).where(cond).limit(
+                limit).offset(offset).order_by(table.c.id)
             rows = sess.execute(q).fetchall()
             if rows:
                 rows = [make_dict(d) for d in rows]
@@ -104,7 +105,7 @@ def write_stations_to_csv(sess, table, cond, path, make_dict, fields):
                 break
 
 
-def write_stations_to_s3(path, now, bucketname):
+def write_stations_to_s3(path, bucketname):
     conn = boto.connect_s3()
     bucket = conn.get_bucket(bucketname)
     k = boto.s3.key.Key(bucket)
@@ -112,12 +113,13 @@ def write_stations_to_s3(path, now, bucketname):
     k.set_contents_from_filename(path, reduced_redundancy=True)
 
 
-def export_modified_stations(sess, table, cond, now, filename, fields, bucket):
+def export_modified_stations(sess, table, columns, cond,
+                             filename, fields, bucket):
     with selfdestruct_tempdir() as d:
         path = os.path.join(d, filename)
-        write_stations_to_csv(sess, table, cond,
+        write_stations_to_csv(sess, table, columns, cond,
                               path, make_cell_dict, fields)
-        write_stations_to_s3(path, now, bucket)
+        write_stations_to_s3(path, bucket)
 
 
 @celery.task(base=DatabaseTask, bind=True)
@@ -138,9 +140,10 @@ def export_modified_cells(self, hourly=True, bucket=None):
         cond = cell_table.c.cid != CELLID_LAC
 
     filename = file_time.strftime('MLS-cell-export-%Y-%m-%dT%H%M%S.csv.gz')
+    columns = [cell_table]
     try:
         with self.db_session() as sess:
-            export_modified_stations(sess, cell_table, cond, now,
+            export_modified_stations(sess, cell_table, columns, cond,
                                      filename, CELL_FIELDS, bucket)
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')

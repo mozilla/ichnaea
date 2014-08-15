@@ -38,7 +38,7 @@ class TestExport(CeleryTestCase):
 
         with selfdestruct_tempdir() as d:
             path = os.path.join(d, 'export.csv.gz')
-            write_stations_to_csv(session, cell_table, cond,
+            write_stations_to_csv(session, cell_table, [cell_table], cond,
                                   path, make_cell_dict, CELL_FIELDS)
             with GzipFile(path, "rb") as f:
                 r = csv.DictReader(f, CELL_FIELDS)
