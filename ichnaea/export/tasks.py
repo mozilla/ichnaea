@@ -1,17 +1,18 @@
+import boto
+import csv
+import gzip
+import os
+import shutil
+import tempfile
+import time
+from contextlib import contextmanager
+from datetime import timedelta
+from sqlalchemy.sql import select, and_
+
 from ichnaea.async.task import DatabaseTask
 from ichnaea.models import (cell_table, CELLID_LAC, RADIO_TYPE_INVERSE)
 from ichnaea.worker import celery
 from ichnaea import util
-from datetime import timedelta
-from sqlalchemy.sql import select, and_
-import time
-import boto
-import csv
-import gzip
-import tempfile
-import shutil
-from contextlib import contextmanager
-import os
 
 
 CELL_FIELDS = ["radio",

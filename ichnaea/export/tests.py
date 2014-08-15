@@ -1,10 +1,9 @@
 import boto
-import os
 import csv
+import os
 from contextlib import contextmanager
 from mock import MagicMock, patch
-from ichnaea.tests.base import CeleryTestCase
-from ichnaea.models import Cell, cell_table, CELLID_LAC
+
 from ichnaea.export.tasks import (
     export_modified_cells,
     write_stations_to_csv,
@@ -13,6 +12,8 @@ from ichnaea.export.tasks import (
     CELL_FIELDS,
     GzipFile
 )
+from ichnaea.models import Cell, cell_table, CELLID_LAC
+from ichnaea.tests.base import CeleryTestCase
 
 
 @contextmanager
