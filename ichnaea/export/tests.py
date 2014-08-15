@@ -28,7 +28,6 @@ def mock_s3():
 class TestExport(CeleryTestCase):
 
     def test_local_export(self):
-
         session = self.db_master_session
         k = dict(mcc=1, mnc=2, lac=4, lat=1.0, lon=1.0)
         for i in range(190, 200):
@@ -52,8 +51,7 @@ class TestExport(CeleryTestCase):
                 self.assertEqual(r.line_num, 10)
                 self.assertEqual(cid, 200)
 
-    def test_full_export(self):
-
+    def test_hourly_export(self):
         session = self.db_master_session
         k = dict(mcc=1, mnc=2, lac=4, psc=-1, lat=1.0, lon=1.0)
         for i in range(190, 200):
@@ -62,7 +60,21 @@ class TestExport(CeleryTestCase):
 
         with mock_s3() as mock_key:
             export_modified_cells(bucket="localhost.bucket")
-            pat = r"MLS-cell-export-\d+-\d+-\d+T\d+\.csv\.gz"
+            pat = r"MLS-cell-export-\d+-\d+-\d+T\d+0000\.csv\.gz"
+            self.assertRegexpMatches(mock_key.key, pat)
+            method = mock_key.set_contents_from_filename
+            self.assertRegexpMatches(method.call_args[0][0], pat)
+
+    def test_daily_export(self):
+        session = self.db_master_session
+        k = dict(mcc=1, mnc=2, lac=4, lat=1.0, lon=1.0)
+        for i in range(190, 200):
+            session.add(Cell(cid=i, **k))
+        session.commit()
+
+        with mock_s3() as mock_key:
+            export_modified_cells(bucket="localhost.bucket", hourly=False)
+            pat = r"MLS-cell-export-\d+-\d+-\d+T000000\.csv\.gz"
             self.assertRegexpMatches(mock_key.key, pat)
             method = mock_key.set_contents_from_filename
             self.assertRegexpMatches(method.call_args[0][0], pat)

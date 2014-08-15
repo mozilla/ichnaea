@@ -121,23 +121,25 @@ def export_modified_stations(sess, table, cond, now, filename, fields, bucket):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def export_modified_cells(self, start_time=None, bucket=None):
+def export_modified_cells(self, hourly=True, bucket=None):
     if bucket is None:
         bucket = self.app.s3_settings['assets_bucket']
     now = util.utcnow()
 
-    if start_time is None:
+    if hourly:
         end_time = now.replace(minute=0, second=0)
+        file_time = end_time
         start_time = end_time - timedelta(hours=1)
+        cond = and_(cell_table.c.modified >= start_time,
+                    cell_table.c.modified < end_time,
+                    cell_table.c.cid != CELLID_LAC)
     else:
-        end_time = now
+        file_time = now.replace(hour=0, minute=0, second=0)
+        cond = cell_table.c.cid != CELLID_LAC
 
-    filename = now.strftime('MLS-cell-export-%Y-%m-%dT%H%M%S.csv.gz')
+    filename = file_time.strftime('MLS-cell-export-%Y-%m-%dT%H%M%S.csv.gz')
     try:
         with self.db_session() as sess:
-            cond = and_(cell_table.c.modified >= start_time,
-                        cell_table.c.modified < end_time,
-                        cell_table.c.cid != CELLID_LAC)
             export_modified_stations(sess, cell_table, cond, now,
                                      filename, CELL_FIELDS, bucket)
     except Exception as exc:  # pragma: no cover
