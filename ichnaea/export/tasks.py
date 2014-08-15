@@ -33,11 +33,18 @@ CELL_FIELD_INDICES = dict(
     [(e, i) for (i, e) in enumerate(CELL_FIELDS)]
 )
 
+# The list of cell columns, we actually need for the export
+CELL_COLUMN_NAMES = [
+    'created', 'modified', 'lat', 'lon',
+    'radio', 'mcc', 'mnc', 'lac', 'cid', 'psc',
+    'range', 'total_measures']
 
-CELL_COLUMNS = [c.name for c in cell_table.columns]
-CELL_COLUMN_INDICES = dict(
-    [(e, i) for (i, e) in enumerate(CELL_COLUMNS)]
+CELL_COLUMN_NAME_INDICES = dict(
+    [(e, i) for (i, e) in enumerate(CELL_COLUMN_NAMES)]
 )
+CELL_COLUMNS = []
+for name in CELL_COLUMN_NAMES:
+    CELL_COLUMNS.append(getattr(cell_table.c, name))
 
 
 @contextmanager
@@ -61,9 +68,8 @@ class GzipFile(gzip.GzipFile):
 
 
 def make_cell_dict(row):
-
     d = dict()
-    ix = CELL_COLUMN_INDICES
+    ix = CELL_COLUMN_NAME_INDICES
 
     for field in CELL_FIELDS:
         if field in ix:
@@ -143,10 +149,9 @@ def export_modified_cells(self, hourly=True, bucket=None):
 
     filename = 'MLS-%s-cell-export-' % file_type
     filename = filename + file_time.strftime('%Y-%m-%dT%H0000.csv.gz')
-    columns = [cell_table]
     try:
         with self.db_session() as sess:
-            export_modified_stations(sess, cell_table, columns, cond,
+            export_modified_stations(sess, cell_table, CELL_COLUMNS, cond,
                                      filename, CELL_FIELDS, bucket)
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')
