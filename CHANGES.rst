@@ -4,6 +4,10 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #282: Added code to do exports of cell data, both daily snapshots as
+  well as hourly diffs. Currently the automatic schedule is still disabled.
+  This also adds a new modified column to the cell and wifi tables.
+
 20140812120000
 **************
 
