@@ -13,7 +13,7 @@ from ichnaea.export.tasks import (
     CELL_FIELDS,
     GzipFile
 )
-from ichnaea.models import Cell, cell_table, CELLID_LAC
+from ichnaea.models import Cell, cell_table, CELLID_LAC, RADIO_TYPE
 from ichnaea.tests.base import CeleryTestCase
 
 
@@ -30,9 +30,9 @@ class TestExport(CeleryTestCase):
 
     def test_local_export(self):
         session = self.db_master_session
-        k = dict(mcc=1, mnc=2, lac=4, lat=1.0, lon=1.0)
+        k = dict(mcc=1, mnc=2, lac=4, lat=1.0, lon=2.0)
         for i in range(190, 200):
-            session.add(Cell(cid=i, **k))
+            session.add(Cell(radio=RADIO_TYPE['gsm'], cid=i, **k))
         session.commit()
 
         cond = cell_table.c.cid != CELLID_LAC
@@ -45,7 +45,7 @@ class TestExport(CeleryTestCase):
                 r = csv.DictReader(f, CELL_FIELDS)
                 cid = 190
                 for d in r:
-                    t = dict(cid=cid, **k)
+                    t = dict(radio='GSM', cid=cid, **k)
                     t = dict([(n, str(v)) for (n, v) in t.items()])
                     self.assertDictContainsSubset(t, d)
                     cid += 1
@@ -54,7 +54,8 @@ class TestExport(CeleryTestCase):
 
     def test_hourly_export(self):
         session = self.db_master_session
-        k = dict(mcc=1, mnc=2, lac=4, psc=-1, lat=1.0, lon=1.0)
+        gsm = RADIO_TYPE['gsm']
+        k = dict(radio=gsm, mcc=1, mnc=2, lac=4, psc=-1, lat=1.0, lon=2.0)
         for i in range(190, 200):
             session.add(Cell(cid=i, **k))
         session.commit()
@@ -68,7 +69,8 @@ class TestExport(CeleryTestCase):
 
     def test_daily_export(self):
         session = self.db_master_session
-        k = dict(mcc=1, mnc=2, lac=4, lat=1.0, lon=1.0)
+        gsm = RADIO_TYPE['gsm']
+        k = dict(radio=gsm, mcc=1, mnc=2, lac=4, lat=1.0, lon=2.0)
         for i in range(190, 200):
             session.add(Cell(cid=i, **k))
         session.commit()

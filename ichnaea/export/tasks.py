@@ -81,7 +81,7 @@ def make_cell_dict(row):
         radio = -1
 
     psc = row[ix['psc']]
-    if psc == -1:
+    if psc is None or psc == -1:
         psc = ''
 
     d['radio'] = RADIO_TYPE_INVERSE[radio].upper()
