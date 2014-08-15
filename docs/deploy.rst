@@ -4,8 +4,8 @@
 Installing / Deploying
 ======================
 
-MySQL / RDS
-===========
+MySQL / Amazon RDS
+==================
 
 The application is written and tested against MySQL 5.6.x or Amazon RDS of the
 same version. The default configuration works for the most part. There are
@@ -19,14 +19,28 @@ just three changes you need to do. For example via the my.cnf:
     sql-mode="STRICT_TRANS_TABLES"
 
 
-Redis
-=====
+Redis / Amazon ElastiCache
+==========================
 
 The application uses Redis as a queue for the asynchronous task workers and
 also uses it directly as a cache and to track API key rate limitations.
 
 You can install a standard local Redis for development or production use.
 The application is also compatible with Amazon ElastiCache (Redis).
+
+
+Amazon S3
+=========
+
+The application uses Amazon S3 for various tasks, including backup of
+observations, export of the aggregated cell table and hosting of the
+data map image tiles.
+
+All of these are triggered by asynchronous jobs and you can disable them
+if you are not hosted in an Amazon environment.
+
+If you use Amazon S3 you might want to configure a lifecycle policy to
+delete old export files after a couple of days.
 
 
 Hekad
