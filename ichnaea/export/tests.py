@@ -31,7 +31,7 @@ class TestExport(CeleryTestCase):
 
         session = self.db_master_session
         k = dict(mcc=1, mnc=2, lac=4, lat=1.0, lon=1.0)
-        for i in range(100, 200):
+        for i in range(190, 200):
             session.add(Cell(cid=i, **k))
         session.commit()
 
@@ -43,20 +43,20 @@ class TestExport(CeleryTestCase):
                                   path, make_cell_dict, CELL_FIELDS)
             with GzipFile(path, "rb") as f:
                 r = csv.DictReader(f, CELL_FIELDS)
-                cid = 100
+                cid = 190
                 for d in r:
                     t = dict(cid=cid, **k)
                     t = dict([(n, str(v)) for (n, v) in t.items()])
                     self.assertDictContainsSubset(t, d)
                     cid += 1
-                self.assertEqual(r.line_num, 100)
+                self.assertEqual(r.line_num, 10)
                 self.assertEqual(cid, 200)
 
     def test_full_export(self):
 
         session = self.db_master_session
-        k = dict(mcc=1, mnc=2, lac=4, lat=1.0, lon=1.0)
-        for i in range(100, 200):
+        k = dict(mcc=1, mnc=2, lac=4, psc=-1, lat=1.0, lon=1.0)
+        for i in range(190, 200):
             session.add(Cell(cid=i, **k))
         session.commit()
 
