@@ -15,13 +15,14 @@ import sqlalchemy as sa
 
 
 def upgrade():
-    stmt = "ALTER TABLE %s ADD COLUMN modified DATETIME AFTER created"
+    add_stmt = "ALTER TABLE %s ADD COLUMN modified DATETIME AFTER created"
+    update_stmt = "UPDATE %s SET modified = NOW() WHERE modified IS NULL"
 
-    op.execute(sa.text(stmt % "cell"))
-    op.execute("UPDATE cell SET modified = NOW() WHERE modified IS NULL")
+    op.execute(sa.text(add_stmt % "cell"))
+    op.execute(sa.text(update_stmt % "cell"))
 
-    op.execute(sa.text(stmt % "wifi"))
-    op.execute("UPDATE wifi SET modified = NOW() WHERE modified IS NULL")
+    op.execute(sa.text(add_stmt % "wifi"))
+    op.execute(sa.text(update_stmt % "wifi"))
 
 
 def downgrade():
