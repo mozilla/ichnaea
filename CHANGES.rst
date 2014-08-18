@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Optimized SQL types of mnc, psc, radio and ta columns in cell tables.
+
 - Update to latest versions of gunicorn and redis.
 
 - #282: Added code to do exports of cell data, both daily snapshots as

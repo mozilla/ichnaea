@@ -13,10 +13,12 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.mysql import BIGINT as BigInteger
-from sqlalchemy.dialects.mysql import INTEGER as Integer
-from sqlalchemy.dialects.mysql import DOUBLE as Double
-
+from sqlalchemy.dialects.mysql import (
+    BIGINT as BigInteger,
+    DOUBLE as Double,
+    INTEGER as Integer,
+    TINYINT as TinyInteger,
+)
 from ichnaea import geocalc
 from ichnaea.db import _Model
 from ichnaea.sa_types import TZDateTime as DateTime
@@ -440,15 +442,15 @@ class Cell(_Model):
     min_lon = Column(Double(asdecimal=False))
 
     # mapped via RADIO_TYPE
-    radio = Column(SmallInteger)
+    radio = Column(TinyInteger)
     # int in the range 0-1000
     mcc = Column(SmallInteger)
     # int in the range 0-1000 for gsm
     # int in the range 0-32767 for cdma (system id)
-    mnc = Column(Integer)
+    mnc = Column(SmallInteger)
     lac = Column(Integer)
     cid = Column(Integer)
-    psc = Column(Integer)
+    psc = Column(SmallInteger)
     range = Column(Integer)
     new_measures = Column(Integer(unsigned=True))
     total_measures = Column(Integer(unsigned=True))
@@ -486,9 +488,9 @@ class CellBlacklist(_Model):
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
     time = Column(DateTime)
-    radio = Column(SmallInteger)
+    radio = Column(TinyInteger)
     mcc = Column(SmallInteger)
-    mnc = Column(Integer)
+    mnc = Column(SmallInteger)
     lac = Column(Integer)
     cid = Column(Integer)
     count = Column(Integer)
@@ -555,15 +557,15 @@ class CellMeasure(_Model):
     speed = Column(Float)
 
     # mapped via RADIO_TYPE
-    radio = Column(SmallInteger)
+    radio = Column(TinyInteger)
     mcc = Column(SmallInteger)
-    mnc = Column(Integer)
+    mnc = Column(SmallInteger)
     lac = Column(Integer)
     cid = Column(Integer)
-    psc = Column(Integer)
+    psc = Column(SmallInteger)
     asu = Column(SmallInteger)
     signal = Column(SmallInteger)
-    ta = Column(SmallInteger)
+    ta = Column(TinyInteger)
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
