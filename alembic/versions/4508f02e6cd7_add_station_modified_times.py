@@ -11,16 +11,17 @@ revision = '4508f02e6cd7'
 down_revision = '2f26a4df27af'
 
 from alembic import op
-from ichnaea.sa_types import TZDateTime as DateTime
-from ichnaea import util
-from ichnaea.models import encode_datetime
-from sqlalchemy import Column
+import sqlalchemy as sa
 
 
 def upgrade():
-    now = encode_datetime(util.utcnow())
-    op.add_column('cell', Column('modified', DateTime(), server_default=now))
-    op.add_column('wifi', Column('modified', DateTime(), server_default=now))
+    stmt = "ALTER TABLE %s ADD COLUMN modified DATETIME AFTER created"
+
+    op.execute(sa.text(stmt % "cell"))
+    op.execute("UPDATE cell SET modified = NOW() WHERE modified IS NULL")
+
+    op.execute(sa.text(stmt % "wifi"))
+    op.execute("UPDATE wifi SET modified = NOW() WHERE modified IS NULL")
 
 
 def downgrade():
