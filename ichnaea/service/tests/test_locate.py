@@ -563,72 +563,10 @@ class TestSearchAllSources(DBTestCase):
             ],
         )
 
-    def test_cell_disagrees_with_country(self):
-        # This test checks that when a cell is at a lat/lon that
-        # is not in the country determined by mcc (say) we reject
-        # the query. Really we should start filtering these out
-        # on ingress as well, but this is a double-check.
-
-        session = self.db_slave_session
-        key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
-        data = [
-            Cell(lat=PARIS_LAT,
-                 lon=PARIS_LON,
-                 radio=RADIO_TYPE['gsm'], cid=6789, **key),
-        ]
-        session.add_all(data)
-        session.flush()
-
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [dict(radio="gsm", cid=6789, **key)]})
-
-        self.assertTrue(result is None)
-
-        self.check_stats(
-            counter=[
-                ('m.anomaly.cell_country_mismatch', 1),
-                ('m.country_from_mcc', 1),
-                ('m.cell_found', 1),
-                ('m.no_cell_lac_found', 1),
-            ]
-        )
-
-    def test_lac_disagrees_with_country(self):
-        # This test checks that when a LAC is at a lat/lon that
-        # is not in the country determined by mcc (say) we reject
-        # the query. Really we should start filtering these out
-        # on ingress as well, but this is a double-check.
-
-        session = self.db_slave_session
-        key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
-        data = [
-            Cell(lat=PARIS_LAT,
-                 lon=PARIS_LON,
-                 radio=RADIO_TYPE['gsm'], cid=CELLID_LAC, **key),
-        ]
-        session.add_all(data)
-        session.flush()
-
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [dict(radio="gsm", cid=6789, **key)]})
-
-        self.assertTrue(result is None)
-
-        self.check_stats(
-            counter=[
-                ('m.anomaly.cell_lac_country_mismatch', 1),
-                ('m.country_from_mcc', 1),
-                ('m.no_cell_found', 1),
-                ('m.cell_lac_found', 1),
-            ]
-        )
-
     def test_wifi_disagrees_with_country(self):
         # This test checks that when a wifi is at a lat/lon that
-        # is not in the country determined by geoip, we drop back
-        # to the geoip, rejecting the wifi.
+        # is not in the country determined by geoip, we still
+        # trust the wifi position over the geoip result
 
         session = self.db_slave_session
 
@@ -653,9 +591,9 @@ class TestSearchAllSources(DBTestCase):
         )
 
         self.assertEqual(result,
-                         {'lat': FREMONT_LAT,
-                          'lon': FREMONT_LON,
-                          'accuracy': GEOIP_CITY_ACCURACY})
+                         {'lat': PARIS_LAT,
+                          'lon': PARIS_LON,
+                          'accuracy': WIFI_MIN_ACCURACY})
 
         self.check_stats(
             counter=[
@@ -663,7 +601,7 @@ class TestSearchAllSources(DBTestCase):
                 ('m.country_from_geoip', 1),
                 ('m.geoip_city_found', 1),
                 ('m.wifi_found', 1),
-                ('m.geoip_hit', 1),
+                ('m.wifi_hit', 1),
             ]
         )
 
