@@ -6,7 +6,7 @@ Changelog
 
 - Optimized SQL types of mnc, psc, radio and ta columns in cell tables.
 
-- Update to latest versions of gunicorn and redis.
+- Update to latest versions of country-bounding-boxes, gunicorn and redis.
 
 - #282: Added code to do exports of cell data, both daily snapshots as
   well as hourly diffs. Currently the automatic schedule is still disabled.

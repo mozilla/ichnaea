@@ -14,7 +14,7 @@ boto==2.32.1
 celery==3.1.13
 colander==1.0b1
 configparser==3.3.0r2
-country-bounding-boxes==0.2.1
+country-bounding-boxes==0.2.2
 docopt==0.6.2
 filechunkio==1.5
 gunicorn==19.1.1
