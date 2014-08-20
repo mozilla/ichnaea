@@ -471,8 +471,8 @@ def search_all_sources(session, api_name, data,
         else:
             validated['cell_network'].append(network)
 
-    # Always do a GeoIP lookup because we at _least_ want to use the
-    # country estimate to filter out bogus requests. We may also use
+    # Always do a GeoIP lookup because it is cheap and we want to
+    # report geoip vs. other data mismatches. We may also use
     # the full GeoIP City-level estimate as well, if all else fails.
     (geoip_res, countries) = geoip_and_best_guess_country_codes(
         validated['cell'], api_name, client_addr, geoip_db)
@@ -518,8 +518,8 @@ def search_all_sources(session, api_name, data,
                     stats_client.incr('%s.anomaly.%s_country_mismatch' %
                                       (api_name, metric_name))
 
-                # Otherwise at least accept the first result we get.
-                elif result is None:
+                # Always accept the first result we get.
+                if result is None:
                     result = r
                     result_metric = metric_name
 

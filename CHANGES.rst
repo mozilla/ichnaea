@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #296: Trust WiFi positions over GeoIP results.
+
 - Optimized SQL types of mnc, psc, radio and ta columns in cell tables.
 
 - Update to latest versions of country-bounding-boxes, gunicorn and redis.
