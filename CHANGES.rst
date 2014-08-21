@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #282: Add a header row to the exported CSV files.
+
 20140821114200
 **************
 

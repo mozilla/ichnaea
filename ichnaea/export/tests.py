@@ -36,6 +36,7 @@ class TestExport(CeleryTestCase):
         session.commit()
 
         cond = cell_table.c.cid != CELLID_LAC
+        header_row = dict([(cf, cf) for cf in CELL_FIELDS])
 
         with selfdestruct_tempdir() as d:
             path = os.path.join(d, 'export.csv.gz')
@@ -44,12 +45,15 @@ class TestExport(CeleryTestCase):
             with GzipFile(path, "rb") as f:
                 r = csv.DictReader(f, CELL_FIELDS)
                 cid = 190
-                for d in r:
+                for i, d in enumerate(r):
+                    if i == 0:
+                        self.assertEqual(d, header_row)
+                        continue
                     t = dict(radio='GSM', cid=cid, **k)
                     t = dict([(n, str(v)) for (n, v) in t.items()])
                     self.assertDictContainsSubset(t, d)
                     cid += 1
-                self.assertEqual(r.line_num, 10)
+                self.assertEqual(r.line_num, 11)
                 self.assertEqual(cid, 200)
 
     def test_hourly_export(self):

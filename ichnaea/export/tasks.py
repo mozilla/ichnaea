@@ -99,6 +99,8 @@ def write_stations_to_csv(sess, table, columns, cond, path, make_dict, fields):
         w = csv.DictWriter(f, fields, extrasaction='ignore')
         limit = 10000
         offset = 0
+        # Write header row
+        w.writerow(dict([(field, field) for field in fields]))
         while True:
             q = select(columns=columns).where(cond).limit(
                 limit).offset(offset).order_by(table.c.id)
