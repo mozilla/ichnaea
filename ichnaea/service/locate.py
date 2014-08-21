@@ -11,6 +11,7 @@ from ichnaea.geoip import radius_from_geoip
 from ichnaea.heka_logging import get_heka_client, RAVEN_ERROR
 from ichnaea.models import (
     Cell,
+    OCIDCell,
     normalized_wifi_key,
     normalized_cell_dict,
     RADIO_TYPE,
@@ -112,25 +113,31 @@ def map_data(data):
     return mapped
 
 
-def query_cell_networks(session, cell_keys):
-    if not cell_keys:
-        return []
+def query_cell_table(model, session, cell_keys):
 
     cell_filter = []
     for key in cell_keys:
         # create a list of 'and' criteria for cell keys
-        criterion = join_cellkey(Cell, key)
+        criterion = join_cellkey(model, key)
         cell_filter.append(and_(*criterion))
 
     # Keep the cid to distinguish cell from lac later on
     query = session.query(
-        Cell.radio, Cell.mcc, Cell.mnc, Cell.lac, Cell.cid,
-        Cell.lat, Cell.lon, Cell.range).filter(
+        model.radio, model.mcc, model.mnc, model.lac, model.cid,
+        model.lat, model.lon, model.range).filter(
         or_(*cell_filter)).filter(
-        Cell.lat.isnot(None)).filter(
-        Cell.lon.isnot(None))
+        model.lat.isnot(None)).filter(
+        model.lon.isnot(None))
 
-    result = query.all()
+    return query.all()
+
+
+def query_cell_networks(session, cell_keys):
+    if not cell_keys:
+        return []
+
+    result = query_cell_table(Cell, session, cell_keys)
+    result.extend(query_cell_table(OCIDCell, session, cell_keys))
 
     if not result:
         return []

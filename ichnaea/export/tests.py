@@ -19,9 +19,17 @@ from ichnaea.models import (
     OCIDCell,
     cell_table,
     CELLID_LAC,
-    RADIO_TYPE
+    RADIO_TYPE,
+    CELL_MIN_ACCURACY
 )
-from ichnaea.tests.base import CeleryTestCase
+from ichnaea.tests.base import (
+    CeleryTestCase,
+    CeleryAppTestCase,
+    FRANCE_MCC,
+    VIVENDI_MNC,
+    PARIS_LAT,
+    PARIS_LON,
+)
 
 
 @contextmanager
@@ -94,7 +102,7 @@ class TestExport(CeleryTestCase):
             self.assertRegexpMatches(method.call_args[0][0], pat)
 
 
-class TestImport(CeleryTestCase):
+class TestImport(CeleryAppTestCase):
 
     def test_local_import(self):
         txt = """GSM,302,2,4,190,,2.0,1.0,0,0,1,1408604686,1408604686,
@@ -117,3 +125,38 @@ GSM,302,2,4,199,,2.0,1.0,0,0,1,1408604686,1408604686,
         sess = self.db_master_session
         cells = sess.query(OCIDCell).all()
         self.assertEqual(len(cells), 10)
+
+    def test_local_import_with_query(self):
+        key = dict(mcc=FRANCE_MCC,
+                   mnc=VIVENDI_MNC,
+                   lac=1234)
+
+        lines = [
+            str.format("GSM,{mcc},{mnc},{lac},{cid}," +
+                       ",{lon},{lat},1,1,1,{time},{time},",
+                       cid=i * 1010,
+                       lon=PARIS_LON + i * 0.002,
+                       lat=PARIS_LAT + i * 0.001,
+                       time=1408604686, **key)
+            for i in range(1, 10)]
+        txt = "\n".join(lines)
+
+        with selfdestruct_tempdir() as d:
+            path = os.path.join(d, "import.csv.gz")
+            with GzipFile(path, 'wb') as f:
+                f.write(txt)
+            import_ocid_cells(path, sess=self.db_slave_session)
+
+        res = self.app.post_json(
+            '/v1/search?key=test',
+            {"radio": "gsm", "cell": [
+                dict(cid=3030, **key),
+                dict(cid=4040, **key),
+            ]},
+            status=200)
+
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {"status": "ok",
+                                    "lat": PARIS_LAT + 0.0035,
+                                    "lon": PARIS_LON + 0.007,
+                                    "accuracy": CELL_MIN_ACCURACY})

@@ -216,9 +216,11 @@ def import_stations(sess, table, columns,
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def import_ocid_cells(self, filename=None):
+def import_ocid_cells(self, filename=None, sess=None):
     try:
-        with self.db_session() as sess:
+        with self.db_session() as dbsess:
+            if sess is None:
+                sess = dbsess
             import_stations(sess, ocid_cell_table, CELL_COLUMNS,
                             filename, make_cell_import_dict,
                             CELL_FIELDS)
