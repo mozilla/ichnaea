@@ -475,6 +475,60 @@ class Cell(_Model):
 cell_table = Cell.__table__
 
 
+# Cell record from OpenCellID
+class OCIDCell(_Model):
+    __tablename__ = 'ocid_cell'
+    __table_args__ = (
+        UniqueConstraint(
+            'radio', 'mcc', 'mnc', 'lac', 'cid', name='cell_idx_unique'),
+        Index('cell_created_idx', 'created'),
+        Index('cell_total_measures_idx', 'total_measures'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+        }
+    )
+
+    id = Column(BigInteger(unsigned=True),
+                primary_key=True, autoincrement=True)
+    created = Column(DateTime)
+    modified = Column(DateTime)
+
+    # lat/lon
+    lat = Column(Double(asdecimal=False))
+    lon = Column(Double(asdecimal=False))
+
+    # mapped via RADIO_TYPE
+    radio = Column(TinyInteger)
+    # int in the range 0-1000
+    mcc = Column(SmallInteger)
+    # int in the range 0-1000 for gsm
+    # int in the range 0-32767 for cdma (system id)
+    mnc = Column(SmallInteger)
+    lac = Column(Integer)
+    cid = Column(Integer)
+    psc = Column(SmallInteger)
+    range = Column(Integer)
+    total_measures = Column(Integer(unsigned=True))
+
+    def __init__(self, *args, **kw):
+        if 'created' not in kw:
+            kw['created'] = util.utcnow()
+        if 'modified' not in kw:
+            kw['modified'] = util.utcnow()
+        if 'lac' not in kw:
+            kw['lac'] = -1
+        if 'cid' not in kw:
+            kw['cid'] = -1
+        if 'range' not in kw:
+            kw['range'] = 0
+        if 'total_measures' not in kw:
+            kw['total_measures'] = 0
+        super(OCIDCell, self).__init__(*args, **kw)
+
+ocid_cell_table = OCIDCell.__table__
+
+
 class CellBlacklist(_Model):
     __tablename__ = 'cell_blacklist'
     __table_args__ = (

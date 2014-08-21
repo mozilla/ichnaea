@@ -6,14 +6,21 @@ from mock import MagicMock, patch
 
 from ichnaea.export.tasks import (
     export_modified_cells,
+    import_ocid_cells,
     write_stations_to_csv,
-    make_cell_dict,
+    make_cell_export_dict,
     selfdestruct_tempdir,
     CELL_COLUMNS,
     CELL_FIELDS,
     GzipFile
 )
-from ichnaea.models import Cell, cell_table, CELLID_LAC, RADIO_TYPE
+from ichnaea.models import (
+    Cell,
+    OCIDCell,
+    cell_table,
+    CELLID_LAC,
+    RADIO_TYPE
+)
 from ichnaea.tests.base import CeleryTestCase
 
 
@@ -41,7 +48,7 @@ class TestExport(CeleryTestCase):
         with selfdestruct_tempdir() as d:
             path = os.path.join(d, 'export.csv.gz')
             write_stations_to_csv(session, cell_table, CELL_COLUMNS, cond,
-                                  path, make_cell_dict, CELL_FIELDS)
+                                  path, make_cell_export_dict, CELL_FIELDS)
             with GzipFile(path, "rb") as f:
                 r = csv.DictReader(f, CELL_FIELDS)
                 cid = 190
@@ -85,3 +92,28 @@ class TestExport(CeleryTestCase):
             self.assertRegexpMatches(mock_key.key, pat)
             method = mock_key.set_contents_from_filename
             self.assertRegexpMatches(method.call_args[0][0], pat)
+
+
+class TestImport(CeleryTestCase):
+
+    def test_local_import(self):
+        txt = """GSM,302,2,4,190,,2.0,1.0,0,0,1,1408604686,1408604686,
+GSM,302,2,4,191,,2.0,1.0,0,0,1,1408604686,1408604686,
+GSM,302,2,4,192,,2.0,1.0,0,0,1,1408604686,1408604686,
+GSM,302,2,4,193,,2.0,1.0,0,0,1,1408604686,1408604686,
+GSM,302,2,4,194,,2.0,1.0,0,0,1,1408604686,1408604686,
+GSM,302,2,4,195,,2.0,1.0,0,0,1,1408604686,1408604686,
+GSM,302,2,4,196,,2.0,1.0,0,0,1,1408604686,1408604686,
+GSM,302,2,4,197,,2.0,1.0,0,0,1,1408604686,1408604686,
+GSM,302,2,4,198,,2.0,1.0,0,0,1,1408604686,1408604686,
+GSM,302,2,4,199,,2.0,1.0,0,0,1,1408604686,1408604686,
+"""
+        with selfdestruct_tempdir() as d:
+            path = os.path.join(d, "import.csv.gz")
+            with GzipFile(path, 'wb') as f:
+                f.write(txt)
+            import_ocid_cells(path)
+
+        sess = self.db_master_session
+        cells = sess.query(OCIDCell).all()
+        self.assertEqual(len(cells), 10)

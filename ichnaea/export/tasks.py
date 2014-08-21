@@ -6,11 +6,19 @@ import shutil
 import tempfile
 import time
 from contextlib import contextmanager
-from datetime import timedelta
+from datetime import datetime, timedelta
+from pytz import UTC
 from sqlalchemy.sql import select, and_
 
 from ichnaea.async.task import DatabaseTask
-from ichnaea.models import (cell_table, CELLID_LAC, RADIO_TYPE_INVERSE)
+from ichnaea.models import (
+    cell_table,
+    ocid_cell_table,
+    CELLID_LAC,
+    RADIO_TYPE,
+    RADIO_TYPE_INVERSE,
+    normalized_cell_dict
+)
 from ichnaea.worker import celery
 from ichnaea import util
 
@@ -67,7 +75,7 @@ class GzipFile(gzip.GzipFile):
         self.close()
 
 
-def make_cell_dict(row):
+def make_cell_export_dict(row):
     d = dict()
     ix = CELL_COLUMN_NAME_INDICES
 
@@ -92,6 +100,34 @@ def make_cell_dict(row):
     d['averageSignal'] = ''
     d['psc'] = psc
     return d
+
+
+def make_cell_import_dict(row):
+
+    def val(key, default):
+        if key in row and row[key] != '':
+            return row[key]
+        else:
+            return default
+
+    d = dict()
+
+    d['created'] = datetime.fromtimestamp(
+        int(val('created', -1))).replace(tzinfo=UTC)
+
+    d['modified'] = datetime.fromtimestamp(
+        int(val('updated', -1))).replace(tzinfo=UTC)
+
+    d['lat'] = float(val('lat', -255))
+    d['lon'] = float(val('lon', -255))
+
+    d['radio'] = RADIO_TYPE.get(row['radio'].lower(), -1)
+
+    for k in ['mcc', 'mnc', 'lac', 'cid', 'psc', 'range']:
+        d[k] = int(val(k, -1))
+
+    d['total_measures'] = int(val('samples', -1))
+    return normalized_cell_dict(d)
 
 
 def write_stations_to_csv(sess, table, columns, cond, path, make_dict, fields):
@@ -126,7 +162,7 @@ def export_modified_stations(sess, table, columns, cond,
     with selfdestruct_tempdir() as d:
         path = os.path.join(d, filename)
         write_stations_to_csv(sess, table, columns, cond,
-                              path, make_cell_dict, fields)
+                              path, make_cell_export_dict, fields)
         write_stations_to_s3(path, bucket)
 
 
@@ -155,6 +191,37 @@ def export_modified_cells(self, hourly=True, bucket=None):
         with self.db_session() as sess:
             export_modified_stations(sess, cell_table, CELL_COLUMNS, cond,
                                      filename, CELL_FIELDS, bucket)
+    except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
+        raise self.retry(exc=exc)
+
+
+def import_stations(sess, table, columns,
+                    filename, make_dict, fields):
+
+    with GzipFile(filename, 'rb') as f:
+        w = csv.DictReader(f, fields)
+        batch = 10000
+        rows = []
+        ins = table.insert()
+        for row in w:
+            d = make_dict(row)
+            if d is not None:
+                rows.append(d)
+            if len(rows) == batch:
+                sess.execute(ins, rows)
+                rows = []
+        if rows:
+                sess.execute(ins, rows)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def import_ocid_cells(self, filename=None):
+    try:
+        with self.db_session() as sess:
+            import_stations(sess, ocid_cell_table, CELL_COLUMNS,
+                            filename, make_cell_import_dict,
+                            CELL_FIELDS)
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')
         raise self.retry(exc=exc)
