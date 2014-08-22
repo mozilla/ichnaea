@@ -1,0 +1,33 @@
+<tal:macro xmlns:tal="http://xml.zope.org/namespaces/tal"
+           xmlns:metal="http://xml.zope.org/namespaces/metal"
+           metal:use-macro="view.base_template">
+
+<tal:slot metal:fill-slot="content">
+<section id="main-content">
+
+    <p class="text-justified">
+        This page lists all the raw data files available for download.
+        Please see the
+        <a href="http://mozilla-ichnaea.readthedocs.org/en/latest/import_export.html">
+            file format documentation</a> for the structure of these files.
+        At this point we only make the aggregated cell network data available
+        for download, as all other data collections contain potentially
+        personally identifiable information.
+    </p>
+
+    <h3>Cell Networks</h3>
+
+    <p class="text-justified">
+        We export both a daily snapshot of the entire cell network collection
+        as well as hourly differential updates. File names contain either the
+        word <i>diff</i> or <i>full</i> to specify their type.
+    </p>
+
+    <ul tal:repeat="file files">
+        <li><a href="${file.path}">${file.name}</a> (${file.size} bytes)</li>
+    </ul>
+
+</section>
+</tal:slot>
+
+</tal:macro>

@@ -1,6 +1,8 @@
 import os
 import urlparse
 
+import boto
+from boto.exception import S3ResponseError
 from pyramid.decorator import reify
 from pyramid.events import NewResponse
 from pyramid.events import subscriber
@@ -16,6 +18,7 @@ from ichnaea.content.stats import (
     leaders,
     leaders_weekly,
 )
+from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea import util
 
 HERE = os.path.dirname(__file__)
@@ -85,6 +88,26 @@ def security_headers(event):
         response.headers.add("X-Frame-Options", "DENY")
 
 
+def list_downloads(assets_bucket, assets_url, heka_client):
+    if not assets_url.endswith('/'):
+        assets_url = assets_url + '/'
+
+    conn = boto.connect_s3()
+    bucket = conn.lookup(assets_bucket, validate=False)
+    if bucket is None:
+        return []
+    files = []
+    try:
+        for key in bucket.list(prefix='export/'):
+            name = key.name.split('/')[-1]
+            path = urlparse.urljoin(assets_url, key.name)
+            files.append(dict(name=name, path=path, size=key.size))
+    except S3ResponseError:
+        heka_client.raven(RAVEN_ERROR)
+        return []
+    return sorted(files)
+
+
 class Layout(object):
 
     @reify
@@ -141,6 +164,16 @@ class ContentViews(Layout):
                  name="contact", http_cache=3600)
     def contact_view(self):
         return {'page_title': 'Contact Us'}
+
+    @view_config(renderer='templates/downloads.pt',
+                 name="downloads", http_cache=3600)
+    def downloads_view(self):
+        settings = self.request.registry.settings
+        assets_bucket = settings['s3_assets_bucket']
+        assets_url = settings['assets_url']
+        heka_client = self.request.registry.heka_client
+        files = list_downloads(assets_bucket, assets_url, heka_client)
+        return {'page_title': 'Downloads', 'files': files}
 
     @view_config(renderer='templates/optout.pt',
                  name="optout", http_cache=3600)
