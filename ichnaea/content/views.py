@@ -88,7 +88,7 @@ def security_headers(event):
         response.headers.add("X-Frame-Options", "DENY")
 
 
-def list_downloads(assets_bucket, assets_url, heka_client):
+def s3_list_downloads(assets_bucket, assets_url, heka_client):
     if not assets_url.endswith('/'):
         assets_url = assets_url + '/'
 
@@ -172,7 +172,7 @@ class ContentViews(Layout):
         assets_bucket = settings['s3_assets_bucket']
         assets_url = settings['assets_url']
         heka_client = self.request.registry.heka_client
-        files = list_downloads(assets_bucket, assets_url, heka_client)
+        files = s3_list_downloads(assets_bucket, assets_url, heka_client)
         return {'page_title': 'Downloads', 'files': files}
 
     @view_config(renderer='templates/optout.pt',
