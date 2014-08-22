@@ -75,6 +75,7 @@ class TestFunctionalContent(AppTestCase):
 
     def test_content_pages(self):
         self.app.get('/', status=200)
+        self.app.get('/contact', status=200)
         self.app.get('/leaders', status=200)
         self.app.get('/map', status=200)
         self.app.get('/privacy', status=200)

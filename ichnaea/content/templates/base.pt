@@ -34,11 +34,11 @@
             <nav id="nav-main" role="navigation">
                 <ul id="nav-main-menu">
                     <li class="first"><a href="/">Home</a></li>
-                    <li><a href="/apps">Apps</a></li>
                     <li><a href="/api">API</a></li>
+                    <li><a href="/apps">Apps</a></li>
                     <li><a href="/leaders">Leaderboard</a></li>
-                    <li><a href="/stats">Statistics</a></li>
-                    <li class="last"><a href="/map">Map</a></li>
+                    <li><a href="/map">Map</a></li>
+                    <li class="last"><a href="/stats">Statistics</a></li>
                 </ul>
             </nav>
 
