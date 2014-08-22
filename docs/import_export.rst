@@ -7,6 +7,9 @@ Data Export
 Ichnaea supports automatic, periodic CSV (comma separated values) export
 of aggregate cell data (position estimates).
 
+The export format was created in collaboration with the
+`OpenCellID <http://opencellid.org>`_ project.
+
 Records should be written one record to a line, with `\\n` (0x0A) as line
 separator.
 
