@@ -480,9 +480,9 @@ class OCIDCell(_Model):
     __tablename__ = 'ocid_cell'
     __table_args__ = (
         UniqueConstraint(
-            'radio', 'mcc', 'mnc', 'lac', 'cid', name='cell_idx_unique'),
-        Index('cell_created_idx', 'created'),
-        Index('cell_total_measures_idx', 'total_measures'),
+            'radio', 'mcc', 'mnc', 'lac', 'cid', name='ocid_cell_idx_unique'),
+        Index('ocid_cell_created_idx', 'created'),
+        Index('ocid_cell_total_measures_idx', 'total_measures'),
         {
             'mysql_engine': 'InnoDB',
             'mysql_charset': 'utf8',

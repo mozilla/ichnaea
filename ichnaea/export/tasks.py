@@ -212,7 +212,7 @@ def import_stations(sess, table, columns,
                 sess.execute(ins, rows)
                 rows = []
         if rows:
-                sess.execute(ins, rows)
+            sess.execute(ins, rows)
 
 
 @celery.task(base=DatabaseTask, bind=True)
