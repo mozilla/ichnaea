@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #295: Add a downloads section to the website and enable cell export tasks.
+
 - Clarify api usage policy.
 
 - Update to latest versions of nose and simplejson.
