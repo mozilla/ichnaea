@@ -203,7 +203,12 @@ def import_stations(sess, table, columns,
         w = csv.DictReader(f, fields)
         batch = 10000
         rows = []
-        ins = table.insert()
+        ins = table.insert(
+            on_duplicate=('modified = values(modified), ' +
+                          'total_measures = values(total_measures), ' +
+                          'lat = values(lat), ' +
+                          'lon = values(lon), ' +
+                          '`range` = values(`range`)'))
         for row in w:
             d = make_dict(row)
             if d is not None:

@@ -1,6 +1,8 @@
 import boto
 import csv
 import os
+from datetime import datetime
+from pytz import UTC
 from contextlib import contextmanager
 from mock import MagicMock, patch
 
@@ -127,10 +129,7 @@ GSM,302,2,4,199,,2.0,1.0,0,0,1,1408604686,1408604686,
         cells = sess.query(OCIDCell).all()
         self.assertEqual(len(cells), 10)
 
-    def test_local_import_with_query(self):
-        key = dict(mcc=FRANCE_MCC,
-                   mnc=VIVENDI_MNC,
-                   lac=1234)
+    def do_import_lines(self, lo, hi, key, time=1408604686):
 
         lines = [
             str.format("GSM,{mcc},{mnc},{lac},{cid}," +
@@ -138,8 +137,8 @@ GSM,302,2,4,199,,2.0,1.0,0,0,1,1408604686,1408604686,
                        cid=i * 1010,
                        lon=PARIS_LON + i * 0.002,
                        lat=PARIS_LAT + i * 0.001,
-                       time=1408604686, **key)
-            for i in range(1, 10)]
+                       time=time, **key)
+            for i in range(lo, hi)]
         txt = "\n".join(lines)
 
         with selfdestruct_tempdir() as d:
@@ -147,6 +146,14 @@ GSM,302,2,4,199,,2.0,1.0,0,0,1,1408604686,1408604686,
             with GzipFile(path, 'wb') as f:
                 f.write(txt)
             import_ocid_cells(path, sess=self.db_slave_session)
+
+    def test_local_import_with_query(self):
+
+        key = dict(mcc=FRANCE_MCC,
+                   mnc=VIVENDI_MNC,
+                   lac=1234)
+
+        self.do_import_lines(1, 10, key)
 
         res = self.app.post_json(
             '/v1/search?key=test',
@@ -161,3 +168,29 @@ GSM,302,2,4,199,,2.0,1.0,0,0,1,1408604686,1408604686,
                                     "lat": PARIS_LAT + 0.0035,
                                     "lon": PARIS_LON + 0.007,
                                     "accuracy": CELL_MIN_ACCURACY})
+
+    def test_local_import_delta(self):
+
+        key = dict(mcc=FRANCE_MCC,
+                   mnc=VIVENDI_MNC,
+                   lac=1234)
+
+        sess = self.db_slave_session
+        self.do_import_lines(1, 10, key, time=1407000000)
+        cells = sess.query(OCIDCell).all()
+        sess.commit()
+        self.assertEqual(len(cells), 9)
+
+        # update some entries
+        self.do_import_lines(5, 10, key, time=1408000000)
+        cells = sess.query(OCIDCell).order_by(OCIDCell.modified).all()
+        self.assertEqual(len(cells), 9)
+
+        old = datetime.fromtimestamp(1407000000).replace(tzinfo=UTC)
+        new = datetime.fromtimestamp(1408000000).replace(tzinfo=UTC)
+
+        for i in range(0, 4):
+            self.assertEqual(cells[i].modified, old)
+
+        for i in range(4, 9):
+            self.assertEqual(cells[i].modified, new)
