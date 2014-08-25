@@ -115,6 +115,14 @@ class TestFunctionalContent(AppTestCase):
             self.assertTrue(key_prefix + '130000.csv.gz' in result.text)
             self.assertTrue(key_prefix + '140000.csv.gz' in result.text)
 
+        # calling the page again should use the cache
+        with patch.object(boto, 'connect_s3', mock_conn):
+            result = self.app.get('/downloads', status=200)
+            self.assertTrue(key_prefix + '120000.csv.gz' in result.text)
+
+        # The mock / S3 API was only called once
+        self.assertEqual(len(mock_bucket.list.mock_calls), 1)
+
     def test_favicon(self):
         self.app.get('/favicon.ico', status=200)
 

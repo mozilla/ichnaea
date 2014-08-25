@@ -18,6 +18,7 @@ from ichnaea.content.stats import (
     leaders,
     leaders_weekly,
 )
+from ichnaea.customjson import dumps, loads
 from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea import util
 
@@ -41,6 +42,8 @@ LOCAL_TILES_BASE = 'http://127.0.0.1:7001/static/tiles/'
 TILES_PATTERN = '{z}/{x}/{y}.png'
 LOCAL_TILES = LOCAL_TILES_BASE + TILES_PATTERN
 BASE_MAP_KEY = 'mozilla-webprod.map-05ad0a21'
+
+DOWNLOADS_CACHE_KEY = 'cache_download_files'
 
 
 def map_tiles_url(base_url):
@@ -168,11 +171,18 @@ class ContentViews(Layout):
     @view_config(renderer='templates/downloads.pt',
                  name="downloads", http_cache=3600)
     def downloads_view(self):
-        settings = self.request.registry.settings
-        assets_bucket = settings['s3_assets_bucket']
-        assets_url = settings['assets_url']
-        heka_client = self.request.registry.heka_client
-        files = s3_list_downloads(assets_bucket, assets_url, heka_client)
+        redis_client = self.request.registry.redis_client
+        cached = redis_client.get(DOWNLOADS_CACHE_KEY)
+        if cached:
+            files = loads(cached)
+        else:
+            settings = self.request.registry.settings
+            assets_bucket = settings['s3_assets_bucket']
+            assets_url = settings['assets_url']
+            heka_client = self.request.registry.heka_client
+            files = s3_list_downloads(assets_bucket, assets_url, heka_client)
+            # cache the download files, expire after 10 minutes
+            redis_client.set(DOWNLOADS_CACHE_KEY, dumps(files), ex=600)
         return {'page_title': 'Downloads', 'files': files}
 
     @view_config(renderer='templates/optout.pt',
