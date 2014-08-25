@@ -4,7 +4,7 @@ Changelog
 1.1 (unreleased)
 ----------------
 
-- Update to latest version of simplejson.
+- Update to latest versions of nose and simplejson.
 
 - #282: Add a header row to the exported CSV files.
 
