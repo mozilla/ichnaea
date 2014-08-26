@@ -6,6 +6,8 @@ Changelog
 
 - Clarify api usage policy.
 
+- Monitor api key rate limits and graph them in graphite.
+
 - Update to latest versions of nose and simplejson.
 
 - #282: Add a header row to the exported CSV files.
