@@ -99,3 +99,5 @@ Cell Fields
 
     Average signal strength from all observations for the cell. An integer
     value, in dBm. For example, `-72`.
+
+    This field is only used by the OpenCellID project.
