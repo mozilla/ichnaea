@@ -15,6 +15,28 @@
         personally identifiable information.
     </p>
 
+    <h3>License Note</h3>
+
+    <p xmlns:dct="http://purl.org/dc/terms/"
+       xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
+       class="text-justified">
+        <a rel="license"
+           href="https://creativecommons.org/publicdomain/zero/1.0/">
+            <img src="/static/images/publicdomain.png" alt="CC0" />
+        </a>
+        <br />
+        To the extent possible under law,
+        <a rel="dct:publisher"
+           href="https://location.services.mozilla.com/">
+            <span property="dct:title">Mozilla Corporation</span></a>
+        has waived all copyright and related or neighboring rights to
+        <i><span property="dct:title">MLS Cell Network Export Data</span></i>.
+        This work is published from the
+        <span property="vcard:Country" datatype="dct:ISO3166"
+              content="US" about="https://location.services.mozilla.com/">
+            United States</span>.
+    </p>
+
     <h3>Cell Networks</h3>
 
     <p class="text-justified">
