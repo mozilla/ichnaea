@@ -10,6 +10,7 @@ from sqlalchemy import (
     Float,
     Index,
     SmallInteger,
+    Boolean,
     String,
     UniqueConstraint,
 )
@@ -482,7 +483,6 @@ class OCIDCell(_Model):
         UniqueConstraint(
             'radio', 'mcc', 'mnc', 'lac', 'cid', name='ocid_cell_idx_unique'),
         Index('ocid_cell_created_idx', 'created'),
-        Index('ocid_cell_total_measures_idx', 'total_measures'),
         {
             'mysql_engine': 'InnoDB',
             'mysql_charset': 'utf8',
@@ -510,6 +510,7 @@ class OCIDCell(_Model):
     psc = Column(SmallInteger)
     range = Column(Integer)
     total_measures = Column(Integer(unsigned=True))
+    changeable = Column(Boolean)
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
@@ -524,6 +525,8 @@ class OCIDCell(_Model):
             kw['range'] = 0
         if 'total_measures' not in kw:
             kw['total_measures'] = 0
+        if 'changeable' not in kw:
+            kw['changeable'] = True
         super(OCIDCell, self).__init__(*args, **kw)
 
 ocid_cell_table = OCIDCell.__table__

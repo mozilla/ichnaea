@@ -113,20 +113,23 @@ def make_cell_import_dict(row):
     d = dict()
 
     d['created'] = datetime.fromtimestamp(
-        int(val('created', -1))).replace(tzinfo=UTC)
+        int(val('created', 0))).replace(tzinfo=UTC)
 
     d['modified'] = datetime.fromtimestamp(
-        int(val('updated', -1))).replace(tzinfo=UTC)
+        int(val('updated', 0))).replace(tzinfo=UTC)
 
     d['lat'] = float(val('lat', -255))
     d['lon'] = float(val('lon', -255))
 
     d['radio'] = RADIO_TYPE.get(row['radio'].lower(), -1)
 
-    for k in ['mcc', 'mnc', 'lac', 'cid', 'psc', 'range']:
+    for k in ['mcc', 'mnc', 'lac', 'cid', 'psc']:
         d[k] = int(val(k, -1))
 
+    d['range'] = int(val('range', 0))
+
     d['total_measures'] = int(val('samples', -1))
+    d['changeable'] = bool(val('changeable', True))
     return normalized_cell_dict(d)
 
 
@@ -208,6 +211,7 @@ def import_stations(sess, table, columns,
                           'total_measures = values(total_measures), ' +
                           'lat = values(lat), ' +
                           'lon = values(lon), ' +
+                          'psc = values(psc), ' +
                           '`range` = values(`range`)'))
         for row in w:
             d = make_dict(row)
