@@ -1,6 +1,8 @@
 import os
 import urlparse
 
+import boto
+from boto.exception import S3ResponseError
 from pyramid.decorator import reify
 from pyramid.events import NewResponse
 from pyramid.events import subscriber
@@ -16,6 +18,8 @@ from ichnaea.content.stats import (
     leaders,
     leaders_weekly,
 )
+from ichnaea.customjson import dumps, loads
+from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea import util
 
 HERE = os.path.dirname(__file__)
@@ -38,6 +42,8 @@ LOCAL_TILES_BASE = 'http://127.0.0.1:7001/static/tiles/'
 TILES_PATTERN = '{z}/{x}/{y}.png'
 LOCAL_TILES = LOCAL_TILES_BASE + TILES_PATTERN
 BASE_MAP_KEY = 'mozilla-webprod.map-05ad0a21'
+
+DOWNLOADS_CACHE_KEY = 'cache_download_files'
 
 
 def map_tiles_url(base_url):
@@ -83,6 +89,26 @@ def security_headers(event):
         response.headers.add("X-Content-Type-Options", "nosniff")
         response.headers.add("X-XSS-Protection", "1; mode=block")
         response.headers.add("X-Frame-Options", "DENY")
+
+
+def s3_list_downloads(assets_bucket, assets_url, heka_client):
+    if not assets_url.endswith('/'):
+        assets_url = assets_url + '/'
+
+    conn = boto.connect_s3()
+    bucket = conn.lookup(assets_bucket, validate=False)
+    if bucket is None:
+        return []
+    files = []
+    try:
+        for key in bucket.list(prefix='export/'):
+            name = key.name.split('/')[-1]
+            path = urlparse.urljoin(assets_url, key.name)
+            files.append(dict(name=name, path=path, size=key.size))
+    except S3ResponseError:
+        heka_client.raven(RAVEN_ERROR)
+        return []
+    return sorted(files)
 
 
 class Layout(object):
@@ -141,6 +167,23 @@ class ContentViews(Layout):
                  name="contact", http_cache=3600)
     def contact_view(self):
         return {'page_title': 'Contact Us'}
+
+    @view_config(renderer='templates/downloads.pt',
+                 name="downloads", http_cache=3600)
+    def downloads_view(self):
+        redis_client = self.request.registry.redis_client
+        cached = redis_client.get(DOWNLOADS_CACHE_KEY)
+        if cached:
+            files = loads(cached)
+        else:
+            settings = self.request.registry.settings
+            assets_bucket = settings['s3_assets_bucket']
+            assets_url = settings['assets_url']
+            heka_client = self.request.registry.heka_client
+            files = s3_list_downloads(assets_bucket, assets_url, heka_client)
+            # cache the download files, expire after 10 minutes
+            redis_client.set(DOWNLOADS_CACHE_KEY, dumps(files), ex=600)
+        return {'page_title': 'Downloads', 'files': files}
 
     @view_config(renderer='templates/optout.pt',
                  name="optout", http_cache=3600)

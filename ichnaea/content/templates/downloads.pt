@@ -1,0 +1,55 @@
+<tal:macro xmlns:tal="http://xml.zope.org/namespaces/tal"
+           xmlns:metal="http://xml.zope.org/namespaces/metal"
+           metal:use-macro="view.base_template">
+
+<tal:slot metal:fill-slot="content">
+<section id="main-content">
+
+    <p class="text-justified">
+        This page lists all the raw data files available for download.
+        Please see the
+        <a href="http://mozilla-ichnaea.readthedocs.org/en/latest/import_export.html">
+            file format documentation</a> for the structure of these files.
+        At this point we only make the aggregated cell network data available
+        for download, as all other data collections contain potentially
+        personally identifiable information.
+    </p>
+
+    <h3>License Note</h3>
+
+    <p xmlns:dct="http://purl.org/dc/terms/"
+       xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
+       class="text-justified">
+        <a rel="license"
+           href="https://creativecommons.org/publicdomain/zero/1.0/">
+            <img src="/static/images/publicdomain.png" alt="CC0" />
+        </a>
+        <br />
+        To the extent possible under law,
+        <a rel="dct:publisher"
+           href="https://location.services.mozilla.com/">
+            <span property="dct:title">Mozilla Corporation</span></a>
+        has waived all copyright and related or neighboring rights to
+        <i><span property="dct:title">MLS Cell Network Export Data</span></i>.
+        This work is published from the
+        <span property="vcard:Country" datatype="dct:ISO3166"
+              content="US" about="https://location.services.mozilla.com/">
+            United States</span>.
+    </p>
+
+    <h3>Cell Networks</h3>
+
+    <p class="text-justified">
+        We export both a daily snapshot of the entire cell network collection
+        as well as hourly differential updates. File names contain either the
+        word <i>diff</i> or <i>full</i> to specify their type.
+    </p>
+
+    <ul tal:repeat="file files">
+        <li><a href="${file.path}">${file.name}</a> (${file.size} bytes)</li>
+    </ul>
+
+</section>
+</tal:slot>
+
+</tal:macro>

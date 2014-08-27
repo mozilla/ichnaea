@@ -456,7 +456,11 @@ class AppTestCase(TestCase, DBIsolation,
                             _heka_client=cls.heka_client,
                             _redis=cls.redis_client,
                             _stats_client=cls.stats_client,
-                            _geoip_db=cls.geoip_db)
+                            _geoip_db=cls.geoip_db,
+                            s3_backup_bucket='localhost.bucket',
+                            s3_assets_bucket='localhost.bucket',
+                            assets_url='http://127.0.0.1:7001/static/',
+                            )
 
     @classmethod
     def tearDownClass(cls):

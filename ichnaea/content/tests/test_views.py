@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+import boto
+from mock import MagicMock, patch
 from pyramid.testing import DummyRequest
 from pyramid.testing import setUp
 from pyramid.testing import tearDown
@@ -89,6 +91,37 @@ class TestFunctionalContent(AppTestCase):
         self.assertTrue("'self' https://*.cdn.mozilla.net" in csp)
         # make sure map assets url interpolation worked
         self.assertTrue('127.0.0.1:7001' in csp)
+
+    def test_downloads(self):
+        mock_conn = MagicMock(name='conn')
+        mock_bucket = MagicMock(name='bucket')
+        mock_conn.return_value.lookup.return_value = mock_bucket
+        key_prefix = 'export/MLS-diff-cell-export-2014-08-20T'
+
+        class MockKey(object):
+            size = 1024
+
+            def __init__(self, name):
+                self.name = key_prefix + name
+
+        mock_bucket.list.return_value = [
+            MockKey('120000.csv.gz'),
+            MockKey('130000.csv.gz'),
+            MockKey('140000.csv.gz'),
+        ]
+        with patch.object(boto, 'connect_s3', mock_conn):
+            result = self.app.get('/downloads', status=200)
+            self.assertTrue(key_prefix + '120000.csv.gz' in result.text)
+            self.assertTrue(key_prefix + '130000.csv.gz' in result.text)
+            self.assertTrue(key_prefix + '140000.csv.gz' in result.text)
+
+        # calling the page again should use the cache
+        with patch.object(boto, 'connect_s3', mock_conn):
+            result = self.app.get('/downloads', status=200)
+            self.assertTrue(key_prefix + '120000.csv.gz' in result.text)
+
+        # The mock / S3 API was only called once
+        self.assertEqual(len(mock_bucket.list.mock_calls), 1)
 
     def test_favicon(self):
         self.app.get('/favicon.ico', status=200)

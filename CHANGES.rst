@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #295: Add a downloads section to the website and enable cell export tasks.
+
 - Clarify api usage policy.
 
 - Monitor api key rate limits and graph them in graphite.

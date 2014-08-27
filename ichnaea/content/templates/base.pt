@@ -36,6 +36,7 @@
                     <li class="first"><a href="/">Home</a></li>
                     <li><a href="/api">API</a></li>
                     <li><a href="/apps">Apps</a></li>
+                    <li><a href="/downloads">Downloads</a></li>
                     <li><a href="/leaders">Leaderboard</a></li>
                     <li><a href="/map">Map</a></li>
                     <li class="last"><a href="/stats">Statistics</a></li>
