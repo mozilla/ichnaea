@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Add Redis based caching for SQL queries used in the website.
+
 - #295: Add a downloads section to the website and enable cell export tasks.
 
 - Clarify api usage policy.

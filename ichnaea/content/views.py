@@ -43,7 +43,15 @@ TILES_PATTERN = '{z}/{x}/{y}.png'
 LOCAL_TILES = LOCAL_TILES_BASE + TILES_PATTERN
 BASE_MAP_KEY = 'mozilla-webprod.map-05ad0a21'
 
-DOWNLOADS_CACHE_KEY = 'cache_download_files'
+CACHE_KEYS = {
+    'downloads': 'cache_download_files',
+    'leaders': 'cache_leaders',
+    'leaders_weekly': 'cache_leaders_weekly',
+    'stats': 'cache_stats',
+    'stats_countries': 'cache_stats_countries',
+    'stats_unique_cell_json': 'cache_stats_unique_cell_json',
+    'stats_unique_wifi_json': 'cache_stats_unique_wifi_json',
+}
 
 
 def map_tiles_url(base_url):
@@ -172,18 +180,19 @@ class ContentViews(Layout):
                  name="downloads", http_cache=3600)
     def downloads_view(self):
         redis_client = self.request.registry.redis_client
-        cached = redis_client.get(DOWNLOADS_CACHE_KEY)
+        cache_key = CACHE_KEYS['downloads']
+        cached = redis_client.get(cache_key)
         if cached:
-            files = loads(cached)
+            data = loads(cached)
         else:
             settings = self.request.registry.settings
             assets_bucket = settings['s3_assets_bucket']
             assets_url = settings['assets_url']
             heka_client = self.request.registry.heka_client
-            files = s3_list_downloads(assets_bucket, assets_url, heka_client)
+            data = s3_list_downloads(assets_bucket, assets_url, heka_client)
             # cache the download files, expire after 10 minutes
-            redis_client.set(DOWNLOADS_CACHE_KEY, dumps(files), ex=600)
-        return {'page_title': 'Downloads', 'files': files}
+            redis_client.set(cache_key, dumps(data), ex=600)
+        return {'page_title': 'Downloads', 'files': data}
 
     @view_config(renderer='templates/optout.pt',
                  name="optout", http_cache=3600)
@@ -198,18 +207,27 @@ class ContentViews(Layout):
     @view_config(renderer='templates/leaders.pt',
                  route_name="leaders", http_cache=3600)
     def leaders_view(self):
-        session = self.request.db_slave_session
-        result = list(enumerate(leaders(session)))
-        result = [
-            {
-                'pos': l[0] + 1,
-                'num': l[1]['num'],
-                'nickname': l[1]['nickname'],
-                'anchor': l[1]['nickname'],
-            } for l in result]
-        half = len(result) // 2 + len(result) % 2
-        leaders1 = result[:half]
-        leaders2 = result[half:]
+        redis_client = self.request.registry.redis_client
+        cache_key = CACHE_KEYS['leaders']
+        cached = redis_client.get(cache_key)
+
+        if cached:
+            data = loads(cached)
+        else:
+            session = self.request.db_slave_session
+            data = list(enumerate(leaders(session)))
+            data = [
+                {
+                    'pos': l[0] + 1,
+                    'num': l[1]['num'],
+                    'nickname': l[1]['nickname'],
+                    'anchor': l[1]['nickname'],
+                } for l in data]
+            redis_client.set(cache_key, dumps(data), ex=600)
+
+        half = len(data) // 2 + len(data) % 2
+        leaders1 = data[:half]
+        leaders2 = data[half:]
         return {
             'page_title': 'Leaderboard',
             'leaders1': leaders1,
@@ -219,26 +237,35 @@ class ContentViews(Layout):
     @view_config(renderer='templates/leaders_weekly.pt',
                  route_name="leaders_weekly", http_cache=3600)
     def leaders_weekly_view(self):
-        session = self.request.db_slave_session
-        result = {
-            'new_cell': {'leaders1': [], 'leaders2': []},
-            'new_wifi': {'leaders1': [], 'leaders2': []},
-        }
-        for name, value in leaders_weekly(session).items():
-            value = [
-                {
-                    'pos': l[0] + 1,
-                    'num': l[1]['num'],
-                    'nickname': l[1]['nickname'],
-                } for l in list(enumerate(value))]
-            half = len(value) // 2 + len(value) % 2
-            result[name] = {
-                'leaders1': value[:half],
-                'leaders2': value[half:],
+        redis_client = self.request.registry.redis_client
+        cache_key = CACHE_KEYS['leaders_weekly']
+        cached = redis_client.get(cache_key)
+
+        if cached:
+            data = loads(cached)
+        else:
+            session = self.request.db_slave_session
+            data = {
+                'new_cell': {'leaders1': [], 'leaders2': []},
+                'new_wifi': {'leaders1': [], 'leaders2': []},
             }
+            for name, value in leaders_weekly(session).items():
+                value = [
+                    {
+                        'pos': l[0] + 1,
+                        'num': l[1]['num'],
+                        'nickname': l[1]['nickname'],
+                    } for l in list(enumerate(value))]
+                half = len(value) // 2 + len(value) % 2
+                data[name] = {
+                    'leaders1': value[:half],
+                    'leaders2': value[half:],
+                }
+            redis_client.set(cache_key, dumps(data), ex=3600)
+
         return {
             'page_title': 'Weekly Leaderboard',
-            'scores': result,
+            'scores': data,
         }
 
     @view_config(renderer='templates/map.pt', name="map", http_cache=3600)
@@ -256,45 +283,77 @@ class ContentViews(Layout):
     @view_config(
         renderer='json', name="stats_unique_cell.json", http_cache=3600)
     def stats_unique_cell_json(self):
-        session = self.request.db_slave_session
-        return {'histogram': histogram(session, 'unique_cell')}
+        redis_client = self.request.registry.redis_client
+        cache_key = CACHE_KEYS['stats_unique_cell_json']
+        cached = redis_client.get(cache_key)
+        if cached:
+            data = loads(cached)
+        else:
+            session = self.request.db_slave_session
+            data = histogram(session, 'unique_cell')
+            redis_client.set(cache_key, dumps(data), ex=3600)
+        return {'histogram': data}
 
     @view_config(
         renderer='json', name="stats_unique_wifi.json", http_cache=3600)
     def stats_unique_wifi_json(self):
-        session = self.request.db_slave_session
-        return {'histogram': histogram(session, 'unique_wifi')}
+        redis_client = self.request.registry.redis_client
+        cache_key = CACHE_KEYS['stats_unique_wifi_json']
+        cached = redis_client.get(cache_key)
+        if cached:
+            data = loads(cached)
+        else:
+            session = self.request.db_slave_session
+            data = histogram(session, 'unique_wifi')
+            redis_client.set(cache_key, dumps(data), ex=3600)
+        return {'histogram': data}
 
     @view_config(renderer='templates/stats.pt',
                  route_name="stats", http_cache=3600)
     def stats_view(self):
-        session = self.request.db_slave_session
-        result = {
-            'page_title': 'Statistics',
-            'leaders': [],
-            'metrics1': [],
-            'metrics2': [],
-        }
-        metrics = global_stats(session)
-        metric_names = [
-            ('unique_cell', 'Unique Cells'),
-            ('cell', 'Cell Observations'),
-            ('unique_wifi', 'Unique Wifi Networks'),
-            ('wifi', 'Wifi Observations'),
-        ]
-        for mid, name in metric_names[:2]:
-            result['metrics1'].append({'name': name, 'value': metrics[mid]})
-        for mid, name in metric_names[2:]:
-            result['metrics2'].append({'name': name, 'value': metrics[mid]})
+        redis_client = self.request.registry.redis_client
+        cache_key = CACHE_KEYS['stats']
+        cached = redis_client.get(cache_key)
+        if cached:
+            data = loads(cached)
+        else:
+            session = self.request.db_slave_session
+            data = {
+                'leaders': [],
+                'metrics1': [],
+                'metrics2': [],
+            }
+            metrics = global_stats(session)
+            metric_names = [
+                ('unique_cell', 'Unique Cells'),
+                ('cell', 'Cell Observations'),
+                ('unique_wifi', 'Unique Wifi Networks'),
+                ('wifi', 'Wifi Observations'),
+            ]
+            for mid, name in metric_names[:2]:
+                data['metrics1'].append({'name': name, 'value': metrics[mid]})
+            for mid, name in metric_names[2:]:
+                data['metrics2'].append({'name': name, 'value': metrics[mid]})
+            redis_client.set(cache_key, dumps(data), ex=3600)
+
+        result = {'page_title': 'Statistics'}
+        result.update(data)
         return result
 
     @view_config(renderer='templates/stats_countries.pt',
                  route_name="stats_countries", http_cache=3600)
     def stats_countries_view(self):
-        session = self.request.db_slave_session
-        result = {'page_title': 'Cell Statistics'}
-        result['metrics'] = countries(session)
-        return result
+        redis_client = self.request.registry.redis_client
+        cache_key = CACHE_KEYS['stats_countries']
+        cached = redis_client.get(cache_key)
+        if cached:
+            data = loads(cached)
+        else:
+            session = self.request.db_slave_session
+            data = countries(session)
+            redis_client.set(cache_key, dumps(data), ex=3600)
+
+        return {'page_title': 'Cell Statistics', 'metrics': data}
 
 
 def favicon_view(request):

@@ -184,6 +184,8 @@ class TestFunctionalContent(AppTestCase):
                 {'num': 2, 'day': yesterday},
             ]}
         )
+        second_result = app.get('/stats_unique_cell.json', status=200)
+        self.assertEqual(second_result.json, result.json)
 
     def test_stats_unique_wifi_json(self):
         app = self.app
@@ -201,6 +203,8 @@ class TestFunctionalContent(AppTestCase):
                 {'num': 2, 'day': yesterday},
             ]}
         )
+        second_result = app.get('/stats_unique_wifi.json', status=200)
+        self.assertEqual(second_result.json, result.json)
 
 
 class TestFunctionalContentViews(AppTestCase):
@@ -235,6 +239,7 @@ class TestFunctionalContentViews(AppTestCase):
         session.commit()
         request = DummyRequest()
         request.db_slave_session = self.db_master_session
+        request.registry.redis_client = self.redis_client
         inst = self._make_view(request)
         result = inst.leaders_view()
         self.assertEqual(
@@ -244,6 +249,13 @@ class TestFunctionalContentViews(AppTestCase):
         self.assertEqual(
             result['leaders2'],
             [{'anchor': u'0', 'nickname': u'0', 'num': 1, 'pos': 3}])
+
+        # call the view again, without a working db session, so
+        # we can be sure to use the cached result
+        inst = self._make_view(request)
+        request.db_slave_session = None
+        second_result = inst.leaders_view()
+        self.assertEqual(second_result, result)
 
     def test_leaders_weekly(self):
         session = self.db_master_session
@@ -260,6 +272,7 @@ class TestFunctionalContentViews(AppTestCase):
         session.commit()
         request = DummyRequest()
         request.db_slave_session = self.db_master_session
+        request.registry.redis_client = self.redis_client
         inst = self._make_view(request)
         result = inst.leaders_weekly_view()
         for score_name in ('new_cell', 'new_wifi'):
@@ -270,6 +283,13 @@ class TestFunctionalContentViews(AppTestCase):
             self.assertEqual(
                 result['scores'][score_name]['leaders2'],
                 [{'nickname': u'0', 'num': 0, 'pos': 3}])
+
+        # call the view again, without a working db session, so
+        # we can be sure to use the cached result
+        inst = self._make_view(request)
+        request.db_slave_session = None
+        second_result = inst.leaders_weekly_view()
+        self.assertEqual(second_result, result)
 
     def test_stats(self):
         day = util.utcnow().date() - timedelta(1)
@@ -284,6 +304,7 @@ class TestFunctionalContentViews(AppTestCase):
         session.commit()
         request = DummyRequest()
         request.db_slave_session = self.db_master_session
+        request.registry.redis_client = self.redis_client
         inst = self._make_view(request)
         result = inst.stats_view()
         self.assertEqual(result['page_title'], 'Statistics')
@@ -297,6 +318,28 @@ class TestFunctionalContentViews(AppTestCase):
                 {'name': 'Unique Wifi Networks', 'value': '2.00'},
                 {'name': 'Wifi Observations', 'value': '2.00'},
             ])
+
+        # call the view again, without a working db session, so
+        # we can be sure to use the cached result
+        inst = self._make_view(request)
+        request.db_slave_session = None
+        second_result = inst.stats_view()
+        self.assertEqual(second_result, result)
+
+    def test_stats_countries(self):
+        request = DummyRequest()
+        request.db_slave_session = self.db_master_session
+        request.registry.redis_client = self.redis_client
+        inst = self._make_view(request)
+        result = inst.stats_countries_view()
+        self.assertEqual(result['page_title'], 'Cell Statistics')
+
+        # call the view again, without a working db session, so
+        # we can be sure to use the cached result
+        inst = self._make_view(request)
+        request.db_slave_session = None
+        second_result = inst.stats_countries_view()
+        self.assertEqual(second_result, result)
 
 
 class TestLayout(TestCase):
