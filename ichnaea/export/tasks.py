@@ -213,7 +213,14 @@ def import_stations(sess, table, columns,
                           'lon = values(lon), ' +
                           'psc = values(psc), ' +
                           '`range` = values(`range`)'))
+        first = True
         for row in w:
+
+            # skip any header row
+            if first and 'radio' in row.values():
+                first = False
+                continue
+
             d = make_dict(row)
             if d is not None:
                 rows.append(d)
