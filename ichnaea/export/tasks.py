@@ -226,10 +226,11 @@ def import_stations(sess, table, columns,
                 rows.append(d)
             if len(rows) == batch:
                 sess.execute(ins, rows)
+                sess.commit()
                 rows = []
         if rows:
             sess.execute(ins, rows)
-
+            sess.commit()
 
 @celery.task(base=DatabaseTask, bind=True)
 def import_ocid_cells(self, filename=None, sess=None):
