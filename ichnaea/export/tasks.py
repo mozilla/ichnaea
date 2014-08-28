@@ -126,7 +126,7 @@ def make_cell_import_dict(row):
     for k in ['mcc', 'mnc', 'lac', 'cid', 'psc']:
         d[k] = int(val(k, -1))
 
-    d['range'] = int(val('range', 0))
+    d['range'] = int(float(val('range', 0)))
 
     d['total_measures'] = int(val('samples', -1))
     d['changeable'] = bool(val('changeable', True))
