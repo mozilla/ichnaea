@@ -18,7 +18,7 @@ CREATE TABLE `ocid_cell` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `ocid_cell_idx_unique` (`radio`,`mcc`,`mnc`,`lac`,`cid`),
   KEY `ocid_cell_created_idx` (`created`)
-) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 UPDATE alembic_version SET version_num='294707f1a078';
 
