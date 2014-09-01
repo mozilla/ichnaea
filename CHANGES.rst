@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #283: Added manual logic to trigger OpenCellID imports.
+
 - Add Redis based caching for SQL queries used in the website.
 
 - #295: Add a downloads section to the website and enable cell export tasks.
