@@ -232,6 +232,7 @@ def import_stations(sess, table, columns,
             sess.execute(ins, rows)
             sess.commit()
 
+
 @celery.task(base=DatabaseTask, bind=True)
 def import_ocid_cells(self, filename=None, sess=None):
     try:

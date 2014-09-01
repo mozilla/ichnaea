@@ -1,5 +1,4 @@
-from datetime import timedelta, datetime
-from pytz import UTC
+from datetime import timedelta
 
 from celery.schedules import crontab
 
