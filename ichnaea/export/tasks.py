@@ -247,9 +247,6 @@ def import_ocid_cells(self, filename=None, sess=None):
 @celery.task(base=DatabaseTask, bind=True)
 def import_latest_ocid_cells(self, diff=True, filename=None, sess=None):
     url = self.app.ocid_settings['ocid_url']
-    if not url.endswith:
-        url += '/'
-    url += 'downloads/'
     apikey = self.app.ocid_settings['ocid_apikey']
     if filename is None:
         if diff:

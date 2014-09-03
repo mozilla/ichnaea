@@ -203,7 +203,7 @@ class CeleryIsolation(object):
             's3_assets_bucket': 'localhost.bucket',
         })
         configure_ocid_import(celery, settings={
-            'ocid_url': 'http://opencellid.org/',
+            'ocid_url': 'http://localhost:7001/downloads/',
             'ocid_apikey': 'xxxxxxxx-yyyy-xxxx-yyyy-xxxxxxxxxxxx',
         })
 
