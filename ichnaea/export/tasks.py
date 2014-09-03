@@ -5,7 +5,8 @@ import os
 import shutil
 import tempfile
 import time
-from contextlib import contextmanager
+import requests
+from contextlib import contextmanager, closing
 from datetime import datetime, timedelta
 from pytz import UTC
 from sqlalchemy.sql import select, and_
@@ -101,7 +102,7 @@ def make_cell_export_dict(row):
 def make_cell_import_dict(row):
 
     def val(key, default):
-        if key in row and row[key] != '':
+        if key in row and row[key] != '' and row[key] is not None:
             return row[key]
         else:
             return default
@@ -238,6 +239,43 @@ def import_ocid_cells(self, filename=None, sess=None):
             import_stations(sess, ocid_cell_table, CELL_COLUMNS,
                             filename, make_cell_import_dict,
                             CELL_FIELDS)
+    except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
+        raise self.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def import_latest_ocid_cells(self, diff=True, filename=None, sess=None):
+    url = self.app.ocid_settings['ocid_url']
+    if not url.endswith:
+        url += '/'
+    url += 'downloads/'
+    apikey = self.app.ocid_settings['ocid_apikey']
+    if filename is None:
+        if diff:
+            prev_hour = util.utcnow() - timedelta(hours=1)
+            filename = prev_hour.strftime("cell_towers_diff-%Y%m%d%H.csv.gz")
+        else:
+            filename = "cell_towers.csv.gz"
+    try:
+        with closing(requests.get(url,
+                                  params={"apiKey": apikey,
+                                          "filename": filename},
+                                  stream=True)) as r:
+            with selfdestruct_tempdir() as d:
+                path = os.path.join(d, filename)
+                with open(path, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=2**20):
+                        f.write(chunk)
+                        f.flush()
+
+                with self.db_session() as dbsess:
+                    if sess is None:
+                        sess = dbsess
+                    import_stations(sess, ocid_cell_table, CELL_COLUMNS,
+                                    path, make_cell_import_dict,
+                                    CELL_FIELDS)
+
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')
         raise self.retry(exc=exc)

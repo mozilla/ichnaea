@@ -17,6 +17,7 @@ from ichnaea.async.config import (
     attach_database,
     attach_redis_client,
     configure_s3_backup,
+    configure_ocid_import,
 )
 from ichnaea.cache import redis_client
 from ichnaea.db import _Model
@@ -201,10 +202,15 @@ class CeleryIsolation(object):
             's3_backup_bucket': 'localhost.bucket',
             's3_assets_bucket': 'localhost.bucket',
         })
+        configure_ocid_import(celery, settings={
+            'ocid_url': 'http://opencellid.org/',
+            'ocid_apikey': 'xxxxxxxx-yyyy-xxxx-yyyy-xxxxxxxxxxxx',
+        })
 
     @classmethod
     def teardown_celery(cls):
         del celery.s3_settings
+        del celery.ocid_settings
         del celery.db_master
 
 

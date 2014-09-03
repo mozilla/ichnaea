@@ -1,14 +1,17 @@
 import boto
 import csv
 import os
+import re
 from datetime import datetime
 from pytz import UTC
 from contextlib import contextmanager
 from mock import MagicMock, patch
+import requests_mock
 
 from ichnaea.export.tasks import (
     export_modified_cells,
     import_ocid_cells,
+    import_latest_ocid_cells,
     write_stations_to_csv,
     make_cell_export_dict,
     selfdestruct_tempdir,
@@ -107,7 +110,8 @@ class TestExport(CeleryTestCase):
 
 class TestImport(CeleryAppTestCase):
 
-    def test_local_import(self):
+    @contextmanager
+    def local_test_csv_file(self):
         txt = """\
 GSM,302,2,4,190,,2.0,1.0,0,0,1,1408604686,1408604686,
 GSM,302,2,4,191,,2.0,1.0,0,0,1,1408604686,1408604686,
@@ -124,6 +128,11 @@ GSM,302,2,4,199,,2.0,1.0,0,0,1,1408604686,1408604686,
             path = os.path.join(d, "import.csv.gz")
             with GzipFile(path, 'wb') as f:
                 f.write(txt)
+                f.flush()
+            yield path
+
+    def test_local_import(self):
+        with self.local_test_csv_file() as path:
             import_ocid_cells(path)
 
         sess = self.db_master_session
@@ -195,3 +204,13 @@ GSM,302,2,4,199,,2.0,1.0,0,0,1,1408604686,1408604686,
 
         for i in range(4, 9):
             self.assertEqual(cells[i].modified, new)
+
+    def test_local_import_latest_through_http(self):
+        with self.local_test_csv_file() as path:
+            with open(path, "r") as f:
+                with requests_mock.Mocker() as m:
+                    m.register_uri('GET', re.compile('.*'), body=f)
+                    sess = self.db_slave_session
+                    import_latest_ocid_cells(sess=sess)
+        cells = sess.query(OCIDCell).order_by(OCIDCell.modified).all()
+        self.assertEqual(len(cells), 10)
