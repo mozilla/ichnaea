@@ -14,6 +14,7 @@ from ichnaea.export.tasks import (
     selfdestruct_tempdir,
     CELL_COLUMNS,
     CELL_FIELDS,
+    CELL_HEADER_DICT,
     GzipFile
 )
 from ichnaea.models import (
@@ -52,20 +53,20 @@ class TestExport(CeleryTestCase):
             session.add(Cell(radio=RADIO_TYPE['gsm'], cid=i, **k))
         session.commit()
 
-        cond = cell_table.c.cid != CELLID_LAC
-        header_row = dict([(cf, cf) for cf in CELL_FIELDS])
-
         with selfdestruct_tempdir() as d:
             path = os.path.join(d, 'export.csv.gz')
-            write_stations_to_csv(session, cell_table, CELL_COLUMNS, cond,
+            write_stations_to_csv(session, cell_table, CELL_COLUMNS,
+                                  cell_table.c.cid != CELLID_LAC,
                                   path, make_cell_export_dict, CELL_FIELDS)
             with GzipFile(path, "rb") as f:
                 r = csv.DictReader(f, CELL_FIELDS)
+
+                header = r.next()
+                self.assertTrue('area' in header.values())
+                self.assertEqual(header, CELL_HEADER_DICT)
+
                 cid = 190
-                for i, d in enumerate(r):
-                    if i == 0:
-                        self.assertEqual(d, header_row)
-                        continue
+                for d in r:
                     t = dict(radio='GSM', cid=cid, **k)
                     t = dict([(n, str(v)) for (n, v) in t.items()])
                     self.assertDictContainsSubset(t, d)

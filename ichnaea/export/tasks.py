@@ -23,23 +23,19 @@ from ichnaea.worker import celery
 from ichnaea import util
 
 
-CELL_FIELDS = ["radio",
-               "mcc",
-               "mnc",  # mnc/sid
-               "lac",  # lac/tac/nid
-               "cid",  # cellid/rnc+cid/bid
-               "psc",  # psc/pci
-               "lon",
-               "lat",
-               "range",
-               "samples",
-               "changeable",
-               "created",
-               "updated",
-               "averageSignal"]
+CELL_FIELDS = [
+    "radio", "mcc", "mnc", "lac", "cid", "psc",
+    "lon", "lat", "range", "samples", "changeable",
+    "created", "updated", "averageSignal"]
 CELL_FIELD_INDICES = dict(
     [(e, i) for (i, e) in enumerate(CELL_FIELDS)]
 )
+# Map our internal names to the public export names
+CELL_HEADER_DICT = dict([(field, field) for field in CELL_FIELDS])
+CELL_HEADER_DICT['mnc'] = 'net'
+CELL_HEADER_DICT['lac'] = 'area'
+CELL_HEADER_DICT['cid'] = 'cell'
+CELL_HEADER_DICT['psc'] = 'unit'
 
 # The list of cell columns, we actually need for the export
 CELL_COLUMN_NAMES = [
@@ -139,7 +135,7 @@ def write_stations_to_csv(sess, table, columns, cond, path, make_dict, fields):
         limit = 10000
         offset = 0
         # Write header row
-        w.writerow(dict([(field, field) for field in fields]))
+        w.writerow(CELL_HEADER_DICT)
         while True:
             q = select(columns=columns).where(cond).limit(
                 limit).offset(offset).order_by(table.c.id)

@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Fixed header row in cell export files.
+
 20140901114000
 **************
 
