@@ -7,7 +7,6 @@ konfig==0.9
 loads==0.3
 more-itertools==2.2
 pexpect==3.3
-requests==2.3.0
 ujson==1.33
 waitress==0.8.9
 ws4py==0.3.4

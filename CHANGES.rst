@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #301: Add code to do continuous updates of the OCID data.
+
 20140904094000
 **************
 
@@ -12,7 +14,7 @@ Changelog
 20140901114000
 **************
 
-- #283: Added manual logic to trigger OpenCellID imports.
+- #283: Add manual logic to trigger OpenCellID imports.
 
 - Add Redis based caching for SQL queries used in the website.
 
