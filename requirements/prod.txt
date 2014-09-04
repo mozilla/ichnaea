@@ -6,7 +6,7 @@ PyMySQL==0.6.2
 SQLAlchemy==0.9.7
 WebOb==1.4
 alembic==0.6.6
-amqp==1.4.5
+amqp==1.4.6
 anyjson==0.3.3
 argparse==1.2.1
 billiard==3.3.0.18
@@ -25,7 +25,7 @@ iso3166==0.5
 kombu==3.0.21
 mobile-codes==0.4
 ordereddict==1.1
-protobuf==2.5.0
+protobuf==2.6.0
 pygeoip==0.3.1
 pyramid==1.5.1
 pyramid-chameleon==0.3

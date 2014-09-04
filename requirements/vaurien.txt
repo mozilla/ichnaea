@@ -1,4 +1,4 @@
-cornice==0.16.2
+cornice==0.17
 gevent==1.0.1
 http-parser==0.8.3
 statsd-client==1.0.4
