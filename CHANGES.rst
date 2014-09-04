@@ -11,7 +11,7 @@ Changelog
 20140904094000
 **************
 
-- Fixed header row in cell export files.
+- #308: Fixed header row in cell export files.
 
 20140901114000
 **************
