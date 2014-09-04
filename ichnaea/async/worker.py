@@ -5,6 +5,7 @@ from ichnaea.async.config import (
     attach_database,
     attach_redis_client,
     configure_s3_backup,
+    configure_ocid_import,
 )
 from ichnaea.config import read_config
 from ichnaea.heka_logging import configure_heka
@@ -21,5 +22,6 @@ def init_worker_process(signal, sender, **kw):  # pragma: no cover
     attach_database(app, settings=settings)
     attach_redis_client(app, settings=settings)
     configure_s3_backup(app, settings=settings)
+    configure_ocid_import(app, settings=settings)
     configure_heka(conf.filename)
     configure_stats(settings.get('statsd_host'))

@@ -53,6 +53,14 @@ def configure_s3_backup(app, settings=None):
     }
 
 
+def configure_ocid_import(app, settings=None):
+    # called manually during tests
+    app.ocid_settings = {
+        'ocid_url': settings['ocid_url'],
+        'ocid_apikey': settings['ocid_apikey'],
+    }
+
+
 def configure_celery(celery):
     conf = read_config()
     if conf.has_section('celery'):
