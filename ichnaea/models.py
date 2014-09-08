@@ -9,7 +9,6 @@ from sqlalchemy import (
     Column,
     Float,
     Index,
-    SmallInteger,
     Boolean,
     String,
     UniqueConstraint,
@@ -18,6 +17,7 @@ from sqlalchemy.dialects.mysql import (
     BIGINT as BigInteger,
     DOUBLE as Double,
     INTEGER as Integer,
+    SMALLINT as SmallInteger,
     TINYINT as TinyInteger,
 )
 from ichnaea import geocalc
@@ -480,8 +480,6 @@ cell_table = Cell.__table__
 class OCIDCell(_Model):
     __tablename__ = 'ocid_cell'
     __table_args__ = (
-        UniqueConstraint(
-            'radio', 'mcc', 'mnc', 'lac', 'cid', name='ocid_cell_idx_unique'),
         Index('ocid_cell_created_idx', 'created'),
         {
             'mysql_engine': 'InnoDB',
@@ -489,8 +487,6 @@ class OCIDCell(_Model):
         }
     )
 
-    id = Column(BigInteger(unsigned=True),
-                primary_key=True, autoincrement=True)
     created = Column(DateTime)
     modified = Column(DateTime)
 
@@ -498,15 +494,18 @@ class OCIDCell(_Model):
     lat = Column(Double(asdecimal=False))
     lon = Column(Double(asdecimal=False))
 
-    # mapped via RADIO_TYPE
-    radio = Column(TinyInteger)
-    # int in the range 0-1000
-    mcc = Column(SmallInteger)
-    # int in the range 0-1000 for gsm
-    # int in the range 0-32767 for cdma (system id)
-    mnc = Column(SmallInteger)
-    lac = Column(Integer)
-    cid = Column(Integer)
+    # radio mapped via RADIO_TYPE
+    radio = Column(TinyInteger,
+                   autoincrement=False, primary_key=True)
+    mcc = Column(SmallInteger,
+                 autoincrement=False, primary_key=True)
+    mnc = Column(SmallInteger,
+                 autoincrement=False, primary_key=True)
+    lac = Column(SmallInteger(unsigned=True),
+                 autoincrement=False, primary_key=True)
+    cid = Column(Integer(unsigned=True),
+                 autoincrement=False, primary_key=True)
+
     psc = Column(SmallInteger)
     range = Column(Integer)
     total_measures = Column(Integer(unsigned=True))
