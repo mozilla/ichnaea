@@ -4,7 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
-- Update to latest versions of amqp, cornice and protobuf.
+- Update to latest versions of amqp, configparser, cornice, kombu, protobuf,
+  pytz and Sphinx.
 
 - #301: Add code to do continuous updates of the OCID data.
 

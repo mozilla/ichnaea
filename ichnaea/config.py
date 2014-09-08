@@ -27,4 +27,5 @@ class Config(ConfigParser):
 def read_config(filename=None):
     if filename is None:
         filename = os.environ.get('ICHNAEA_CFG', 'ichnaea.ini')
+        filename = filename.decode('utf-8')
     return Config(filename)
