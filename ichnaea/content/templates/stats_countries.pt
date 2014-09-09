@@ -2,6 +2,14 @@
            xmlns:metal="http://xml.zope.org/namespaces/metal"
            metal:use-macro="view.base_template">
 
+<tal:slot metal:fill-slot="css">
+    <link rel="stylesheet" href="/static/css/stat-countries-combined.css" />
+</tal:slot>
+
+<tal:slot metal:fill-slot="js">
+    <script src='/static/js/stat-countries-combined.js'></script>
+</tal:slot>
+
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
     <p>
@@ -20,7 +28,7 @@
         so they get each listed with the same data.
     </p>
     <div class="separator">
-    <table class="table">
+    <table id="country-stats" class="table">
         <thead>
             <tr>
                 <th>Country</th>
