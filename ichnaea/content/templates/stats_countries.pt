@@ -41,7 +41,7 @@
         </thead>
         <tbody>
             <tr tal:repeat="row metrics">
-                <td>${row.name}<tal:c condition="row.multiple"> *</tal:c></td>
+                <td data-order="${row.order}">${row.name}<tal:c condition="row.multiple"> *</tal:c></td>
                 <td class="text-right">${row.gsm}</td>
                 <td class="text-right">${row.cdma}</td>
                 <td class="text-right">${row.umts}</td>

@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 from datetime import date, timedelta
+from mobile_codes import _countries
 
 from ichnaea.content.models import (
     Score,
@@ -6,18 +8,25 @@ from ichnaea.content.models import (
     Stat,
     STAT_TYPE,
 )
+from ichnaea.content.stats import (
+    countries,
+    global_stats,
+    histogram,
+    leaders,
+    leaders_weekly,
+    transliterate,
+)
 from ichnaea.models import (
     Cell,
     RADIO_TYPE,
 )
-from ichnaea.tests.base import DBTestCase
+from ichnaea.tests.base import DBTestCase, TestCase
 from ichnaea import util
 
 
 class TestStats(DBTestCase):
 
     def test_global_stats(self):
-        from ichnaea.content.stats import global_stats
         session = self.db_master_session
         day = util.utcnow().date() - timedelta(1)
         stats = [
@@ -37,7 +46,6 @@ class TestStats(DBTestCase):
             })
 
     def test_global_stats_missing_today(self):
-        from ichnaea.content.stats import global_stats
         session = self.db_master_session
         day = util.utcnow().date() - timedelta(1)
         yesterday = day - timedelta(days=1)
@@ -58,7 +66,6 @@ class TestStats(DBTestCase):
             })
 
     def test_histogram(self):
-        from ichnaea.content.stats import histogram
         session = self.db_master_session
         today = util.utcnow().date()
         one_day = today - timedelta(days=1)
@@ -88,7 +95,6 @@ class TestStats(DBTestCase):
             {'num': 50, 'day': expected.strftime('%Y-%m-%d')} in result)
 
     def test_histogram_different_stat_name(self):
-        from ichnaea.content.stats import histogram
         session = self.db_master_session
         day = util.utcnow().date() - timedelta(days=1)
         stat = Stat(time=day, value=9)
@@ -99,7 +105,6 @@ class TestStats(DBTestCase):
         self.assertEqual(result, [{'num': 9, 'day': day.strftime('%Y-%m-%d')}])
 
     def test_leaders(self):
-        from ichnaea.content.stats import leaders
         session = self.db_master_session
         test_data = []
         for i in range(20):
@@ -125,7 +130,6 @@ class TestStats(DBTestCase):
         self.assertTrue(lowest in [r['nickname'] for r in result])
 
     def test_leaders_weekly(self):
-        from ichnaea.content.stats import leaders_weekly
         session = self.db_master_session
         test_data = []
         for i in range(1, 11):
@@ -164,7 +168,6 @@ class TestStats(DBTestCase):
         self.assertEqual(scores[-1]['num'], 16)
 
     def test_countries(self):
-        from ichnaea.content.stats import countries
         session = self.db_master_session
         test_data = [
             Cell(radio=RADIO_TYPE[''], mcc=208, mnc=1),
@@ -174,37 +177,52 @@ class TestStats(DBTestCase):
             Cell(radio=RADIO_TYPE['gsm'], mcc=310, mnc=2),
             Cell(radio=RADIO_TYPE['gsm'], mcc=313, mnc=1),
             Cell(radio=RADIO_TYPE['cdma'], mcc=310, mnc=1),
-            Cell(radio=RADIO_TYPE['umts'], mcc=425, mnc=1),
-            Cell(radio=RADIO_TYPE['lte'], mcc=425, mnc=1),
+            Cell(radio=RADIO_TYPE['umts'], mcc=244, mnc=1),
+            Cell(radio=RADIO_TYPE['lte'], mcc=244, mnc=1),
         ]
         session.add_all(test_data)
         session.commit()
 
         # check the result
-        expected = set(['BMU', 'DEU', 'GUM', 'ISR', 'PRI', 'PSE', 'USA'])
+        expected = set(['ALA', 'BMU', 'DEU', 'FIN', 'GUM', 'PRI', 'USA'])
         result = countries(session)
         self.assertEqual(len(result), len(expected))
         self.assertEqual(set([r['code'] for r in result]), expected)
 
-        countries = {}
+        country_results = {}
         for r in result:
             code = r['code']
-            countries[code] = r
-            del countries[code]['code']
-            del countries[code]['name']
+            country_results[code] = r
+            del country_results[code]['code']
+            del country_results[code]['name']
 
         # a simple case with a 1:1 mapping of mcc to ISO country code
-        self.assertEqual(countries['DEU'], {'cdma': 0, 'gsm': 0, 'lte': 1,
-                         'total': 1, 'umts': 0, 'multiple': False})
+        self.assertEqual(country_results['DEU'],
+                         {'cdma': 0, 'gsm': 0, 'lte': 1, 'total': 1,
+                          'umts': 0, 'multiple': False, 'order': 'germany'})
 
         # mcc 310 is valid for both GUM/USA, 313 only for USA
-        self.assertEqual(countries['USA'], {'cdma': 1, 'gsm': 3, 'lte': 0,
-                         'total': 4, 'umts': 0, 'multiple': True})
-        self.assertEqual(countries['GUM'], {'cdma': 1, 'gsm': 2, 'lte': 0,
-                         'total': 3, 'umts': 0, 'multiple': True})
+        self.assertEqual(country_results['USA'],
+                         {'cdma': 1, 'gsm': 3, 'lte': 0, 'total': 4,
+                          'umts': 0, 'multiple': True, 'order': 'united sta'})
+        self.assertEqual(country_results['GUM'],
+                         {'cdma': 1, 'gsm': 2, 'lte': 0, 'total': 3,
+                          'umts': 0, 'multiple': True, 'order': 'guam'})
 
         # These two countries share a mcc, so we report the same data
         # for both of them
-        self.assertEqual(countries['ISR'], {'cdma': 0, 'gsm': 0, 'lte': 1,
-                         'total': 2, 'umts': 1, 'multiple': True})
-        self.assertEqual(countries['ISR'], countries['PSE'])
+        self.assertEqual(country_results['FIN'],
+                         {'cdma': 0, 'gsm': 0, 'lte': 1, 'total': 2,
+                          'umts': 1, 'multiple': True, 'order': 'finland'})
+        self.assertEqual(country_results['ALA'],
+                         {'cdma': 0, 'gsm': 0, 'lte': 1, 'total': 2,
+                          'umts': 1, 'multiple': True, 'order': 'aland isla'})
+
+
+class TestTransliterate(TestCase):
+
+    def test_countries(self):
+        for country in _countries():
+            trans = transliterate(country.name)
+            non_ascii = [c for c in trans if ord(c) > 127]
+            self.assertEqual(len(non_ascii), 0)

@@ -7,6 +7,7 @@ from sqlalchemy import func
 
 from ichnaea.models import (
     Cell,
+    RADIO_TYPE,
     RADIO_TYPE_INVERSE,
 )
 
@@ -18,6 +19,26 @@ from ichnaea.content.models import (
     User,
 )
 from ichnaea import util
+
+transliterate_mapping = {
+    197: 'A', 229: 'a', 231: 'c', 233: 'e', 244: 'o',
+}
+
+
+def transliterate(string):
+    # optimize for the common case of ascii-only
+    non_ascii = any([ord(c) > 127 for c in string])
+    if not non_ascii:
+        return string
+
+    result = []
+    for c in string:
+        if ord(c) > 127:
+            result.append(transliterate_mapping.get(ord(c), c))
+        else:
+            result.append(c)
+
+    return ''.join(result)
 
 
 def global_stats(session):
@@ -143,9 +164,12 @@ def leaders_weekly(session, batch=20):
 
 
 def countries(session):
-    # we group by radio, mcc to take advantage of the index
+    # We group by radio, mcc to take advantage of the index
+    # and explicitly specify a small list of all valid radio values
+    # to get mysql to actually use the index.
+    radios = [v for v in RADIO_TYPE.values() if v >= 0]
     rows = session.query(Cell.radio, Cell.mcc, func.count(Cell.id)).filter(
-        Cell.radio.in_([0, 1, 2, 3])).group_by(Cell.radio, Cell.mcc).all()
+        Cell.radio.in_(radios)).group_by(Cell.radio, Cell.mcc).all()
 
     # reverse grouping by mcc, radio
     codes = defaultdict(dict)
@@ -160,6 +184,7 @@ def countries(session):
             country = {
                 'code': alpha3,
                 'name': name,
+                'order': transliterate(name[:10].lower()),
                 'multiple': multiple,
                 'total': 0,
                 'gsm': 0, 'cdma': 0, 'umts': 0, 'lte': 0,
