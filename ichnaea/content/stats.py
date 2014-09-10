@@ -1,3 +1,4 @@
+from calendar import timegm
 from collections import defaultdict
 from datetime import date, timedelta
 from operator import itemgetter
@@ -100,9 +101,9 @@ def histogram(session, name, days=365):
         if next_month >= today:
             # we restrict dates to be at most yesterday
             next_month = today - timedelta(days=1)
-        day = next_month.strftime('%Y-%m-%d')
-        result.append({'day': day, 'num': num})
-    return result
+        day = timegm(next_month.timetuple()) * 1000
+        result.append([day, num])
+    return [result]
 
 
 def leaders(session):

@@ -1,3 +1,4 @@
+from calendar import timegm
 from datetime import timedelta
 
 import boto
@@ -168,42 +169,42 @@ class TestFunctionalContent(AppTestCase):
     def test_stats_countries(self):
         self.app.get('/stats/countries', status=200)
 
-    def test_stats_unique_cell_json(self):
+    def test_stats_cell_json(self):
         app = self.app
         today = util.utcnow().date()
         yesterday = today - timedelta(1)
-        yesterday = yesterday.strftime('%Y-%m-%d')
         session = self.db_slave_session
         stat = Stat(time=yesterday, value=2)
         stat.name = 'unique_cell'
         session.add(stat)
         session.commit()
-        result = app.get('/stats_unique_cell.json', status=200)
+        result = app.get('/stats_cell.json', status=200)
         self.assertEqual(
-            result.json, {'histogram': [
-                {'num': 2, 'day': yesterday},
+            result.json, {'series': [
+                {'data': [[timegm(yesterday.timetuple()) * 1000, 2]],
+                 'title': 'MLS Cells'},
             ]}
         )
-        second_result = app.get('/stats_unique_cell.json', status=200)
+        second_result = app.get('/stats_cell.json', status=200)
         self.assertEqual(second_result.json, result.json)
 
-    def test_stats_unique_wifi_json(self):
+    def test_stats_wifi_json(self):
         app = self.app
         today = util.utcnow().date()
         yesterday = today - timedelta(1)
-        yesterday = yesterday.strftime('%Y-%m-%d')
         session = self.db_slave_session
         stat = Stat(time=yesterday, value=2)
         stat.name = 'unique_wifi'
         session.add(stat)
         session.commit()
-        result = app.get('/stats_unique_wifi.json', status=200)
+        result = app.get('/stats_wifi.json', status=200)
         self.assertEqual(
-            result.json, {'histogram': [
-                {'num': 2, 'day': yesterday},
+            result.json, {'series': [
+                {'data': [[timegm(yesterday.timetuple()) * 1000, 2]],
+                 'title': 'MLS WiFi'},
             ]}
         )
-        second_result = app.get('/stats_unique_wifi.json', status=200)
+        second_result = app.get('/stats_wifi.json', status=200)
         self.assertEqual(second_result.json, result.json)
 
 

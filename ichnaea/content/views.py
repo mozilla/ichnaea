@@ -49,8 +49,8 @@ CACHE_KEYS = {
     'leaders_weekly': 'cache_leaders_weekly',
     'stats': 'cache_stats',
     'stats_countries': 'cache_stats_countries',
-    'stats_unique_cell_json': 'cache_stats_unique_cell_json',
-    'stats_unique_wifi_json': 'cache_stats_unique_wifi_json',
+    'stats_cell_json': 'cache_stats_cell_json',
+    'stats_wifi_json': 'cache_stats_wifi_json',
 }
 
 
@@ -281,10 +281,10 @@ class ContentViews(Layout):
         return {'tiles_url': base_url}
 
     @view_config(
-        renderer='json', name="stats_unique_cell.json", http_cache=3600)
-    def stats_unique_cell_json(self):
+        renderer='json', name="stats_cell.json", http_cache=3600)
+    def stats_cell_json(self):
         redis_client = self.request.registry.redis_client
-        cache_key = CACHE_KEYS['stats_unique_cell_json']
+        cache_key = CACHE_KEYS['stats_cell_json']
         cached = redis_client.get(cache_key)
         if cached:
             data = loads(cached)
@@ -292,13 +292,13 @@ class ContentViews(Layout):
             session = self.request.db_slave_session
             data = histogram(session, 'unique_cell')
             redis_client.set(cache_key, dumps(data), ex=3600)
-        return {'histogram': data}
+        return {'series': [{'title': 'MLS Cells', 'data': data[0]}]}
 
     @view_config(
-        renderer='json', name="stats_unique_wifi.json", http_cache=3600)
-    def stats_unique_wifi_json(self):
+        renderer='json', name="stats_wifi.json", http_cache=3600)
+    def stats_wifi_json(self):
         redis_client = self.request.registry.redis_client
-        cache_key = CACHE_KEYS['stats_unique_wifi_json']
+        cache_key = CACHE_KEYS['stats_wifi_json']
         cached = redis_client.get(cache_key)
         if cached:
             data = loads(cached)
@@ -306,7 +306,7 @@ class ContentViews(Layout):
             session = self.request.db_slave_session
             data = histogram(session, 'unique_wifi')
             redis_client.set(cache_key, dumps(data), ex=3600)
-        return {'histogram': data}
+        return {'series': [{'title': 'MLS WiFi', 'data': data[0]}]}
 
     @view_config(renderer='templates/stats.pt',
                  route_name="stats", http_cache=3600)

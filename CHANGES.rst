@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Switch from d3.js/rickshaw to flot.js and prepare graphs to plot multiple
+  lines in one graph.
+
 - Make country statistics table sortable.
 
 - Remove auto-increment column from ocid_cell table and make the

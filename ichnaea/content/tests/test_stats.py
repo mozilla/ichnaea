@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from calendar import timegm
 from datetime import date, timedelta
 from mobile_codes import _countries
 
@@ -22,6 +23,10 @@ from ichnaea.models import (
 )
 from ichnaea.tests.base import DBTestCase, TestCase
 from ichnaea import util
+
+
+def unixtime(value):
+    return timegm(value.timetuple()) * 1000
 
 
 class TestStats(DBTestCase):
@@ -85,14 +90,14 @@ class TestStats(DBTestCase):
         session.commit()
         result = histogram(session, 'cell', days=90)
         self.assertTrue(
-            {'num': 80, 'day': one_day.strftime('%Y-%m-%d')} in result)
+            [unixtime(one_day), 80] in result[0])
 
         if two_months.month == 12:
             expected = date(two_months.year + 1, 1, 1)
         else:
             expected = date(two_months.year, two_months.month + 1, 1)
         self.assertTrue(
-            {'num': 50, 'day': expected.strftime('%Y-%m-%d')} in result)
+            [unixtime(expected), 50] in result[0])
 
     def test_histogram_different_stat_name(self):
         session = self.db_master_session
@@ -102,7 +107,7 @@ class TestStats(DBTestCase):
         session.add(stat)
         session.commit()
         result = histogram(session, 'unique_cell')
-        self.assertEqual(result, [{'num': 9, 'day': day.strftime('%Y-%m-%d')}])
+        self.assertEqual(result, [[[unixtime(day), 9]]])
 
     def test_leaders(self):
         session = self.db_master_session

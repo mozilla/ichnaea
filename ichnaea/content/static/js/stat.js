@@ -1,98 +1,29 @@
-var XHover = Rickshaw.Class.create(Rickshaw.Graph.HoverDetail, {
-
-    formatter: function(series, x, y, formattedX, formattedY, d) {
-        return formattedX + ':&nbsp;' + formattedY;
-    },
-
-    render: function(args) {
-
-        var graph = this.graph;
-        var points = args.points;
-        var point = points.filter( function(p) { return p.active; } ).shift();
-
-        if (point.value.y === null) return;
-
-        var formattedXValue = point.formattedXValue;
-        var formattedYValue = point.formattedYValue;
-
-        this.element.innerHTML = '';
-        this.element.style.left = graph.x(point.value.x) + 'px';
-
-        // skipped xLabel block
-
-        var item = document.createElement('div');
-
-        item.className = 'item';
-
-        // invert the scale if this series displays using a scale
-        var series = point.series;
-        var actualY = series.scale ? series.scale.invert(point.value.y) : point.value.y;
-
-        item.innerHTML = this.formatter(series, point.value.x, actualY, formattedXValue, formattedYValue, point);
-        item.style.top = this.graph.y(point.value.y0 + point.value.y) + 'px';
-
-        this.element.appendChild(item);
-
-        var dot = document.createElement('div');
-
-        dot.className = 'dot';
-        dot.style.top = item.style.top;
-        dot.style.borderColor = series.color;
-
-        this.element.appendChild(dot);
-
-        if (point.active) {
-            item.className = 'item active';
-            dot.className = 'dot active';
-        }
-
-        // Assume left alignment until the element has been displayed and
-        // bounding box calculations are possible.
-        var alignables = [item];
-        alignables.forEach(function(el) {
-            el.classList.add('left');
-        });
-
-        this.show();
-
-        // If left-alignment results in any error, try right-alignment.
-        var leftAlignError = this._calcLayoutError(alignables);
-        if (leftAlignError > 0) {
-            alignables.forEach(function(el) {
-                el.classList.remove('left');
-                el.classList.add('right');
-            });
-
-            // If right-alignment is worse than left alignment, switch back.
-            var rightAlignError = this._calcLayoutError(alignables);
-            if (rightAlignError > leftAlignError) {
-                alignables.forEach(function(el) {
-                    el.classList.remove('right');
-                    el.classList.add('left');
-                });
-            }
-        }
-
-        if (typeof this.onRender == 'function') {
-            this.onRender(args);
-        }
-    }
-});
-
 function make_graph(url, graph_id) {
-    var graphWidth = 880;
-    var graphHeight = 120;
-    var graphXScale = 170;
-    var graphYScale = 50;
+
+    function suffixFormatter(val, axis) {
+        if (val > 1000000)
+            return (val / 1000000).toFixed(axis.tickDecimals) + " M";
+        else if (val > 1000)
+            return (val / 1000).toFixed(axis.tickDecimals) + " k";
+        else
+            return val.toFixed(axis.tickDecimals);
+    }
+
+    var graphWidth = 940;
+    var graphHeight = 155;
 
     // adjust graph sizes to match responsive CSS rules
     var screenWidth = screen.width;
     if (screenWidth >= 760 && screenWidth < 1000) {
-        graphWidth = 580;
-        graphXScale = 160;
+        graphWidth = 660;
     } else if (screenWidth < 760) {
-        graphWidth = 220;
+        graphWidth = 260;
     }
+
+    var placeholder = $(graph_id);
+
+    placeholder.css("width", graphWidth + "px");
+    placeholder.css("height", graphHeight + "px");
 
     var result = {};
     $.ajax({
@@ -104,74 +35,57 @@ function make_graph(url, graph_id) {
         }
     });
 
-    var entries = [];
-    var item;
-    var item_day_array;
-    var item_day;
-    for (var i = 0; i < result.histogram.length; i++) {
-        item = result.histogram[i];
-        item_day_array = item.day.split('-');
-        item_day = Date.UTC(
-            parseInt(item_day_array[0], 10),
-            parseInt(item_day_array[1], 10) - 1,
-            parseInt(item_day_array[2], 10));
-        entries.push({x: item_day, y: item.num});
-    }
-
-    var graph = new Rickshaw.Graph( {
-        element: document.querySelector(graph_id + " .chart"),
-        width: graphWidth,
-        height: graphHeight,
-        renderer: 'area',
-        series: [ {
-                data: entries,
-                color: '#0096dd'
-        } ]
-    } );
-
-    function pad(number) {
-        if ( number < 10 ) {
-            return '0' + number;
-        }
-        return number;
-    }
-
-    var format_date = function(n) {
-        var d = new Date(0);
-        d.setUTCMilliseconds(n);
-        return d.getUTCFullYear() +
-            '-' + pad(d.getUTCMonth() + 1) +
-            '-' + pad(d.getUTCDate());
+    var options = {
+        grid: {
+            hoverable: true,
+            borderWidth: {top: 0, right: 0, bottom: 1, left: 1}
+        },
+        legend: { show: false, position: "nw" },
+        series: {
+            lines: {show: true, fill: false},
+            points: {show: true}
+        },
+        xaxis: {mode: "time", timeformat: "%b %Y"},
+        yaxis: {tickDecimals: 1, tickFormatter: suffixFormatter}
     };
 
-    var x_axis = new Rickshaw.Graph.Axis.X( {
-        graph: graph,
-        orientation: 'bottom',
-        element: document.querySelector(graph_id + " .chart_x_axis"),
-        pixelsPerTick: graphXScale,
-        tickFormat: format_date
-    } );
+    var series_0 = result.series[0];
 
-    var y_axis = new Rickshaw.Graph.Axis.Y( {
-        graph: graph,
-        orientation: 'left',
-        element: document.querySelector(graph_id + " .chart_y_axis"),
-        pixelsPerTick: graphYScale,
-        tickFormat: Rickshaw.Fixtures.Number.formatKMBT
-    } );
-
-    var hoverDetail = new XHover( {
-        graph: graph,
-        xFormatter: format_date,
-        yFormatter: function(y) {
-            return y;
+    var plot = $.plot(document.querySelector(graph_id + " .chart"), [
+        {
+            label: series_0.title,
+            data: series_0.data,
+            color: "rgb(0,150,221)"
         }
-    } );
+        // light blue and orange colors from the logo for other data series
+        // {label: "d2", data: [], color: "rgb(184,216,233)"},
+        // {label: "d3", data: [], color: "rgb(240,136,30)"}
+    ], options);
 
-    graph.render();
+    $("<div id='chart_tooltip'></div>").css({
+        position: "absolute",
+        display: "none",
+        border: "1px solid #ddf",
+        padding: "2px",
+        "background-color": "#eef",
+        opacity: 0.80
+    }).appendTo("body");
+
+    placeholder.bind("plothover", function (event, pos, item) {
+        if (item) {
+            var x = item.datapoint[0],
+                y = item.datapoint[1];
+
+            $("#chart_tooltip").html(item.series.label + ": " + y)
+                .css({top: item.pageY + 5, left: item.pageX + 5})
+                .fadeIn(200);
+        } else {
+            $("#chart_tooltip").hide();
+        }
+    });
 }
 
 $(document).ready(function() {
-    make_graph('/stats_unique_cell.json', '#unique_cell_chart');
-    make_graph('/stats_unique_wifi.json', '#unique_wifi_chart');
+    make_graph('/stats_cell.json', '#cell_chart');
+    make_graph('/stats_wifi.json', '#wifi_chart');
 });

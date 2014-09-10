@@ -81,9 +81,6 @@ css: node_modules
 	-o $(HERE)/ichnaea/content/static/css/base-combined.css \
 	$(HERE)/ichnaea/content/static/css/base.css
 	$(HERE)/node_modules/.bin/cleancss -d \
-	-o $(HERE)/ichnaea/content/static/css/stat-combined.css \
-	$(HERE)/ichnaea/content/static/css/rickshaw-1.5.0.min.css
-	$(HERE)/node_modules/.bin/cleancss -d \
 	-o $(HERE)/ichnaea/content/static/css/stat-countries-combined.css \
 	$(HERE)/ichnaea/content/static/css/jquery.datatables.min.css
 	$(HERE)/node_modules/.bin/cleancss -d \
@@ -100,8 +97,8 @@ js_map:
 
 js: node_modules js_map
 	$(HERE)/node_modules/.bin/uglifyjs \
-	$(HERE)/ichnaea/content/static/js/d3-3.4.11.min.js \
-	$(HERE)/ichnaea/content/static/js/rickshaw-1.5.0.min.js \
+	$(HERE)/ichnaea/content/static/js/jquery.flot-0.8.3.js \
+	$(HERE)/ichnaea/content/static/js/jquery.flot.time-0.8.3.js \
 	$(HERE)/ichnaea/content/static/js/stat.js \
 	-o $(HERE)/ichnaea/content/static/js/stat-combined.js \
 	-c --stats

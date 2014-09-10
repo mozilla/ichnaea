@@ -36,7 +36,7 @@ class TestApp(DBTestCase, RedisIsolation):
         self.db_master = app.app.registry.db_master
         self.db_slave = app.app.registry.db_slave
         self.setup_session()
-        app.get('/stats_unique_cell.json', status=200)
+        app.get('/stats_wifi.json', status=200)
 
     def test_db_config(self):
         self.db_master = _make_db()
@@ -48,7 +48,7 @@ class TestApp(DBTestCase, RedisIsolation):
                         _stats_client=self.stats_client,
                         _redis=self.redis_client,
                         )
-        app.get('/stats_unique_cell.json', status=200)
+        app.get('/stats_wifi.json', status=200)
 
     def test_redis_config(self):
         settings = {

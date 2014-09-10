@@ -2,12 +2,8 @@
            xmlns:metal="http://xml.zope.org/namespaces/metal"
            metal:use-macro="view.base_template">
 
-<tal:slot metal:fill-slot="css">
-    <link rel="stylesheet" href="/static/css/stat-combined.css" />
-</tal:slot>
-
 <tal:slot metal:fill-slot="js">
-    <script src='/static/js/stat-combined.js'></script>
+    <script src="/static/js/stat-combined.js"></script>
 </tal:slot>
 
 <tal:slot metal:fill-slot="content">
@@ -52,18 +48,14 @@
 
     <p class="separator">
         <h3>Unique cells</h3>
-        <div id="unique_cell_chart" class="chart_container">
-                <div class="chart_y_axis"></div>
-                <div class="chart"></div>
-                <div class="chart_x_axis"></div>
+        <div id="cell_chart" class="chart_container">
+            <div class="chart"></div>
         </div>
     </p>
     <p class="separator">
         <h3>Unique WiFi networks</h3>
-        <div id="unique_wifi_chart" class="chart_container">
-                <div class="chart_y_axis"></div>
-                <div class="chart"></div>
-                <div class="chart_x_axis"></div>
+        <div id="wifi_chart" class="chart_container">
+            <div class="chart"></div>
         </div>
     </p>
 </section>
