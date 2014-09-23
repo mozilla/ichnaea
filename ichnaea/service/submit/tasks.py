@@ -68,15 +68,15 @@ def process_mapstat(session, utcnow, positions):
             session.execute(stmt)
 
 
-def process_user(nickname, email, session):
+def process_user(nickname, email_digest, session):
     userid = None
 
-    if (len(email) == 40):
+    if (len(email_digest) == 40):
         # automatically create user objects and update email
-        rows = session.query(User).filter(User.email == email)
+        rows = session.query(User).filter(User.email_digest == email_digest)
         old = rows.first()
         if not old:
-            user = User(email=email)
+            user = User(email_digest=email_digest)
             session.add(user)
             session.flush()
             userid = user.id
@@ -93,7 +93,7 @@ def process_user(nickname, email, session):
             userid = user.id
         else:
             userid = old.id
-    return (userid, nickname, email)
+    return (userid, nickname, email_digest)
 
 
 def process_time(measure, utcnow, utcmin):
@@ -242,7 +242,7 @@ def process_measures(items, session, userid=None):
 
 
 @celery.task(base=DatabaseTask, bind=True, queue='incoming')
-def insert_measures(self, items=None, nickname='', email=''):
+def insert_measures(self, items=None, nickname='', email_digest=''):
     if not items:  # pragma: no cover
         return 0
     items = loads(items)
@@ -250,7 +250,9 @@ def insert_measures(self, items=None, nickname='', email=''):
 
     try:
         with self.db_session() as session:
-            userid, nickname, email = process_user(nickname, email, session)
+            userid, nickname, email_digest = process_user(nickname,
+                                                          email_digest,
+                                                          session)
 
             process_measures(items, session, userid=userid)
             self.stats_client.incr("items.uploaded.batches", count=length)

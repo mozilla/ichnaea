@@ -120,7 +120,7 @@ class User(_Model):
     __tablename__ = 'user'
     __table_args__ = (
         UniqueConstraint('nickname', name='user_nickname_unique'),
-        UniqueConstraint('email', name='user_email_unique'),
+        UniqueConstraint('email_digest', name='user_email_unique'),
         {
             'mysql_engine': 'InnoDB',
             'mysql_charset': 'utf8',
@@ -129,6 +129,6 @@ class User(_Model):
     id = Column(Integer(unsigned=True),
                 primary_key=True, autoincrement=True)
     nickname = Column(Unicode(128))
-    email = Column(Unicode(128))
+    email_digest = Column(Unicode(128))
 
 user_table = User.__table__

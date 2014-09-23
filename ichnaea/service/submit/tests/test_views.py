@@ -357,7 +357,7 @@ class TestSubmit(CeleryAppTestCase):
 
         # Expect a 40 character hexdigest
         email = 'riceroni@crankycoder.com'
-        email = hashlib.sha1(email).hexdigest()
+        email_digest = hashlib.sha1(email).hexdigest()
 
         app.post_json(
             '/v1/submit', {"items": [
@@ -371,12 +371,12 @@ class TestSubmit(CeleryAppTestCase):
                  "lon": 10.0,
                  "wifi": [{"key": "invalid"}]},
             ]},
-            headers={'X-Email': email},
+            headers={'X-Email': email_digest},
             status=204)
         session = self.db_master_session
         result = session.query(User).all()
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].email, email)
+        self.assertEqual(result[0].email_digest, email_digest)
         result = session.query(Score).all()
         self.assertEqual(len(result), 2)
         self.assertEqual(set([r.name for r in result]),
@@ -407,11 +407,11 @@ class TestSubmit(CeleryAppTestCase):
         app = self.app
 
         email = 'riceroni@crankycoder.com'
-        email = hashlib.sha1(email).hexdigest()
+        email_digest = hashlib.sha1(email).hexdigest()
 
         utcday = util.utcnow().date()
         session = self.db_master_session
-        user = User(email=email)
+        user = User(email_digest=email_digest)
         session.add(user)
         session.flush()
         session.add(Score(userid=user.id, key=SCORE_TYPE['location'], value=7))
@@ -423,11 +423,11 @@ class TestSubmit(CeleryAppTestCase):
                  "lon": 2.0,
                  "wifi": [{"key": "00AAAAAAAAAA"}]},
             ]},
-            headers={'X-Email': email},
+            headers={'X-Email': email_digest},
             status=204)
         result = session.query(User).all()
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].email, email)
+        self.assertEqual(result[0].email_digest, email_digest)
         result = session.query(Score).all()
         self.assertEqual(len(result), 2)
         self.assertEqual(set([r.name for r in result]),
