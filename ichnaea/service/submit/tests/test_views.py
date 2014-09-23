@@ -1,3 +1,5 @@
+import hashlib
+
 from datetime import (
     date,
     datetime,
@@ -349,6 +351,94 @@ class TestSubmit(CeleryAppTestCase):
                 (3000, 4000, long_ago, stats[2].id),
             ]
         )
+
+    def test_email_header(self):
+        app = self.app
+
+        # Expect a 40 character hexdigest
+        email = 'riceroni@crankycoder.com'
+        email = hashlib.sha1(email).hexdigest()
+
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0,
+                 "lon": 2.0,
+                 "wifi": [{"key": "00aaaaaaaaaa"}]},
+                {"lat": 2.0,
+                 "lon": 3.0,
+                 "wifi": [{"key": "00bbbbbbbbbb"}]},
+                {"lat": 10.0,
+                 "lon": 10.0,
+                 "wifi": [{"key": "invalid"}]},
+            ]},
+            headers={'X-Email': email},
+            status=204)
+        session = self.db_master_session
+        result = session.query(User).all()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].email, email)
+        result = session.query(Score).all()
+        self.assertEqual(len(result), 2)
+        self.assertEqual(set([r.name for r in result]),
+                         set(['location', 'new_wifi']))
+        for r in result:
+            if r.name == 'location':
+                self.assertEqual(r.value, 2)
+            elif r.name == 'new_wifi':
+                self.assertEqual(r.value, 2)
+
+    def test_email_header_error(self):
+        app = self.app
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0,
+                 "lon": 2.0,
+                 "wifi": [{"key": "aaaaaaaaaaaa"}]},
+            ]},
+            headers={'X-Email': "riceroni@crankycoder.com"},
+            status=204)
+        session = self.db_master_session
+        result = session.query(User).all()
+        self.assertEqual(len(result), 0)
+        result = session.query(Score).all()
+        self.assertEqual(len(result), 0)
+
+    def test_email_header_update(self):
+        app = self.app
+
+        email = 'riceroni@crankycoder.com'
+        email = hashlib.sha1(email).hexdigest()
+
+        utcday = util.utcnow().date()
+        session = self.db_master_session
+        user = User(email=email)
+        session.add(user)
+        session.flush()
+        session.add(Score(userid=user.id, key=SCORE_TYPE['location'], value=7))
+        session.add(Score(userid=user.id, key=SCORE_TYPE['new_wifi'], value=3))
+        session.commit()
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0,
+                 "lon": 2.0,
+                 "wifi": [{"key": "00AAAAAAAAAA"}]},
+            ]},
+            headers={'X-Email': email},
+            status=204)
+        result = session.query(User).all()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].email, email)
+        result = session.query(Score).all()
+        self.assertEqual(len(result), 2)
+        self.assertEqual(set([r.name for r in result]),
+                         set(['location', 'new_wifi']))
+        for r in result:
+            if r.name == 'location':
+                self.assertEqual(r.value, 8)
+                self.assertEqual(r.time, utcday)
+            elif r.name == 'new_wifi':
+                self.assertEqual(r.value, 4)
+                self.assertEqual(r.time, utcday)
 
     def test_nickname_header(self):
         app = self.app
