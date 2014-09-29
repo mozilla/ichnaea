@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Ignore more exception types in API key check, to continue degraded service
+  in case of database downtimes.
+
 - Switch from d3.js/rickshaw to flot.js and prepare graphs to plot multiple
   lines in one graph.
 

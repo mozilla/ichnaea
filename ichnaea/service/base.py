@@ -3,9 +3,9 @@ from functools import wraps
 from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden
 from redis import ConnectionError
 from sqlalchemy import text
-from sqlalchemy.exc import OperationalError
 
 from ichnaea.customjson import dumps
+from ichnaea.heka_logging import get_heka_client, RAVEN_ERROR
 from ichnaea.service.error import DAILY_LIMIT
 from ichnaea import util
 
@@ -60,6 +60,7 @@ def check_api_key(func_name, error_on_invalidkey=False):
         @wraps(func)
         def closure(request, *args, **kwargs):
             api_key = request.GET.get('key', None)
+            heka_client = get_heka_client()
             stats_client = request.registry.stats_client
 
             if api_key is None:
@@ -71,8 +72,9 @@ def check_api_key(func_name, error_on_invalidkey=False):
             try:
                 result = session.execute(API_CHECK.bindparams(api_key=api_key))
                 found_key = result.fetchone()
-            except OperationalError:
+            except Exception:
                 # if we cannot connect to backend DB, skip api key check
+                heka_client.raven(RAVEN_ERROR)
                 stats_client.incr('%s.dbfailure_skip_api_key' % func_name)
                 return func(request, *args, **kwargs)
 
