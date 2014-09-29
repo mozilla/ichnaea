@@ -114,8 +114,9 @@ def check_connection(dbapi_con, con_record, con_proxy):
         # dbapi_con.ping() ends up calling mysql_ping()
         # http://dev.mysql.com/doc/refman/5.0/en/mysql-ping.html
         dbapi_con.ping()
-    except exc.OperationalError, ex:
-        if ex.args[0] in (2006,     # MySQL server has gone away
+    except exc.OperationalError as ex:
+        if ex.args[0] in (2003,     # Connection refused
+                          2006,     # MySQL server has gone away
                           2013,     # Lost connection to MySQL server
                                     # during query
                           2055):    # Lost connection to MySQL server at '%s',

@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Extend db ping to retry connections for `2003 connection refused` errors.
+
 - Ignore more exception types in API key check, to continue degraded service
   in case of database downtimes.
 
