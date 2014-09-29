@@ -18,8 +18,9 @@ Changelog
   radio, mcc, mnc, lac, cid combination the primary key. Also optimize the
   column types of the lac and cid fields.
 
-- Update to latest versions of amqp, configparser, cornice, kombu, protobuf,
-  pytz and Sphinx.
+- Update to latest versions of alembic, amqp, celery, configparser, cornice,
+  greenlet, jaraco.util, kombu, protobuf, psutil, pytz, requests, six,
+  Sphinx and WebTest.
 
 - #301: Add code to do continuous updates of the OCID data.
 
