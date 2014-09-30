@@ -10,7 +10,7 @@ from colander import (
     String,
 )
 
-RADIO_TYPE_KEYS = ['gsm', 'cdma', 'wcdma']
+RADIO_TYPE_KEYS = ['gsm', 'cdma', 'wcdma', 'lte']
 
 
 class CellTowerSchema(MappingSchema):

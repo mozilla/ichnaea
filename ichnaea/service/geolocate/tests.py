@@ -267,6 +267,51 @@ class TestGeolocate(AppTestCase):
         self.check_stats(
             counter=[self.metric + '.unknown_api_key'])
 
+    def test_lte_radio(self):
+        app = self.app
+        session = self.get_session()
+        cells = [
+            Cell(lat=PARIS_LAT,
+                 lon=PARIS_LON,
+                 radio=RADIO_TYPE['lte'],
+                 mcc=FRANCE_MCC, mnc=1, lac=2, cid=3,
+                 range=10000),
+            Cell(lat=PARIS_LAT + 0.002,
+                 lon=PARIS_LON + 0.004,
+                 radio=RADIO_TYPE['lte'],
+                 mcc=FRANCE_MCC, mnc=1, lac=2, cid=4,
+                 range=20000),
+        ]
+        session.add_all(cells)
+        session.commit()
+
+        res = app.post_json(
+            '%s?key=test' % self.url, {
+                "radioType": "lte",
+                "cellTowers": [
+                    {"radio": "lte",
+                     "mobileCountryCode": FRANCE_MCC,
+                     "mobileNetworkCode": 1,
+                     "locationAreaCode": 2,
+                     "cellId": 3},
+                    {"radio": "lte",
+                     "mobileCountryCode": FRANCE_MCC,
+                     "mobileNetworkCode": 1,
+                     "locationAreaCode": 2,
+                     "cellId": 4},
+                ]},
+            status=200)
+
+        self.check_stats(
+            counter=[self.metric_url + '.200', self.metric + '.api_key.test']
+        )
+
+        self.assertEqual(res.content_type, 'application/json')
+        location = res.json['location']
+        self.assertAlmostEquals(location['lat'], PARIS_LAT + 0.001)
+        self.assertAlmostEquals(location['lng'], PARIS_LON + 0.002)
+        self.assertEqual(res.json['accuracy'], CELL_MIN_ACCURACY)
+
 
 class TestGeolocateFxOSWorkarounds(TestGeolocate):
 

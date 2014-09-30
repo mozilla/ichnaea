@@ -14,7 +14,7 @@ from colander import (
 )
 from ichnaea.service.geolocate.schema import RADIO_TYPE_KEYS
 
-GEOSUBMIT_RADIO_TYPE_KEYS = list(set(RADIO_TYPE_KEYS + ['lte']))
+GEOSUBMIT_RADIO_TYPE_KEYS = RADIO_TYPE_KEYS
 
 
 class CellTowerSchema(MappingSchema):

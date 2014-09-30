@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Allow a radio type of `lte` for the geolocate API. Relates to
+  https://bugzilla.mozilla.org/show_bug.cgi?id=1010284.
+
 - #315: Add a `show my location` control to the map.
 
 - Reverse ordering of download files to display latest files first.
