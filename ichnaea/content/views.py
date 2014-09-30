@@ -116,7 +116,7 @@ def s3_list_downloads(assets_bucket, assets_url, heka_client):
     except S3ResponseError:
         heka_client.raven(RAVEN_ERROR)
         return []
-    return sorted(files)
+    return sorted(files, reverse=True)
 
 
 class Layout(object):

@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Reverse ordering of download files to display latest files first.
+
 - Extend db ping to retry connections for `2003 connection refused` errors.
 
 - Ignore more exception types in API key check, to continue degraded service
