@@ -33,9 +33,17 @@
 
     <p>
         At this stage the service is open to anyone, who wants to
-        contribute back to the service and applications which are
-        supporting the
+        contribute back to the service and applications supporting the
         <a href="https://www.mozilla.org/mission/">Mozilla mission</a>.
+    </p>
+
+    <p>
+        The service is currently provided as-is, without any guarantee
+        on uptime, availability, accuracy of results or continued existence.
+        We also don't offer have any commercial plans to use the service
+        and have no plans to provide such. You are free to run your own
+        instance of the service using the open-source code and publicly
+        available data from <a href="/downloads">our downloads section</a>.
     </p>
 
     <h3>API Keys</h3>
