@@ -35,6 +35,17 @@ $(document).ready(function() {
         'maxWidth': 200
     }).addTo(map);
 
+    // add location control
+    L.control.locate({
+        follow: false,
+        locateOptions: {
+            enableHighAccuracy: true,
+            maximumAge: 3600000,
+            maxZoom: 12,
+            watch: false
+        }
+    }).addTo(map);
+
     // add tile layer
     var tiles = $('#map').data('tiles');
     L.tileLayer(tiles, {

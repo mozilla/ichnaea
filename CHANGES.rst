@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #315: Add a `show my location` control to the map.
+
 - Reverse ordering of download files to display latest files first.
 
 - Extend db ping to retry connections for `2003 connection refused` errors.
