@@ -24,7 +24,8 @@ Changelog
   greenlet, jaraco.util, kombu, protobuf, psutil, pytz, requests, six,
   Sphinx and WebTest.
 
-- #301: Add code to do continuous updates of the OCID data.
+- #301: Add code to do continuous updates of the OpenCellID data and add
+  license note for OCID data.
 
 20140904094000
 **************
