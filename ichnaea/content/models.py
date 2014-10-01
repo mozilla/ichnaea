@@ -27,6 +27,7 @@ STAT_TYPE = {
     'unique_wifi': 4,
     # 'deleted_cell': 5,
     # 'deleted_wifi': 6,
+    'unique_ocid_cell': 7,
 }
 STAT_TYPE_INVERSE = dict((v, k) for k, v in STAT_TYPE.items())
 

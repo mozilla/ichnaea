@@ -80,9 +80,14 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(hour=0, minute=5),
         'args': (1, ),
     },
+    'histogram-unique-ocid-cell-yesterday': {
+        'task': 'ichnaea.content.tasks.unique_ocid_cell_histogram',
+        'schedule': crontab(hour=0, minute=6),
+        'args': (1, ),
+    },
     'histogram-unique-wifi-yesterday': {
         'task': 'ichnaea.content.tasks.unique_wifi_histogram',
-        'schedule': crontab(hour=0, minute=6),
+        'schedule': crontab(hour=0, minute=7),
         'args': (1, ),
     },
 

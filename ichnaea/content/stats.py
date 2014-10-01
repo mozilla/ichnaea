@@ -45,7 +45,7 @@ def transliterate(string):
 def global_stats(session):
     today = util.utcnow().date()
     yesterday = today - timedelta(1)
-    names = ('cell', 'wifi', 'unique_cell', 'unique_wifi')
+    names = ('cell', 'wifi', 'unique_cell', 'unique_ocid_cell', 'unique_wifi')
     stat_keys = [STAT_TYPE[name] for name in names]
     rows = session.query(Stat.key, Stat.value).filter(
         Stat.key.in_(stat_keys)).filter(

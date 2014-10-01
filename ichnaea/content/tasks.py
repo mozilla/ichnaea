@@ -10,6 +10,7 @@ from ichnaea.content.models import (
 from ichnaea.models import (
     Cell,
     CellMeasure,
+    OCIDCell,
     Wifi,
     WifiMeasure,
     CELLID_LAC,
@@ -20,13 +21,12 @@ from ichnaea.worker import celery
 
 
 def histogram_query(session, model, min_day, max_day):
-    query = session.query(
-        func.count(model.id)).filter(
+    query = session.query(model).filter(
         model.created < max_day).filter(
         model.created >= min_day)
     if isinstance(model, Cell):
         query = query.filter(model.lac != CELLID_LAC)
-    return query.first()[0]
+    return query.count()
 
 
 def add_stat(session, name, day, value):
@@ -95,6 +95,20 @@ def unique_cell_histogram(self, ago=1):
         with self.db_session() as session:
             value = histogram_query(session, Cell, day, max_day)
             add_stat(session, 'unique_cell', day, value)
+            session.commit()
+            return 1
+    except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
+        raise self.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def unique_ocid_cell_histogram(self, ago=1):
+    day, max_day = daily_task_days(ago)
+    try:
+        with self.db_session() as session:
+            value = histogram_query(session, OCIDCell, day, max_day)
+            add_stat(session, 'unique_ocid_cell', day, value)
             session.commit()
             return 1
     except Exception as exc:  # pragma: no cover

@@ -290,9 +290,14 @@ class ContentViews(Layout):
             data = loads(cached)
         else:
             session = self.request.db_slave_session
-            data = histogram(session, 'unique_cell')
+            mls_data = histogram(session, 'unique_cell')
+            ocid_data = histogram(session, 'unique_ocid_cell')
+            data = [
+                {'title': 'MLS Cells', 'data': mls_data[0]},
+                {'title': 'OCID Cells', 'data': ocid_data[0]},
+            ]
             redis_client.set(cache_key, dumps(data), ex=3600)
-        return {'series': [{'title': 'MLS Cells', 'data': data[0]}]}
+        return {'series': data}
 
     @view_config(
         renderer='json', name="stats_wifi.json", http_cache=3600)
@@ -325,14 +330,15 @@ class ContentViews(Layout):
             }
             metrics = global_stats(session)
             metric_names = [
-                ('unique_cell', 'Unique Cells'),
-                ('cell', 'Cell Observations'),
-                ('unique_wifi', 'Unique Wifi Networks'),
+                ('unique_cell', 'MLS Cells'),
+                ('unique_ocid_cell', 'OpenCellID Cells'),
+                ('cell', 'MLS Cell Observations'),
+                ('unique_wifi', 'Wifi Networks'),
                 ('wifi', 'Wifi Observations'),
             ]
-            for mid, name in metric_names[:2]:
+            for mid, name in metric_names[:3]:
                 data['metrics1'].append({'name': name, 'value': metrics[mid]})
-            for mid, name in metric_names[2:]:
+            for mid, name in metric_names[3:]:
                 data['metrics2'].append({'name': name, 'value': metrics[mid]})
             redis_client.set(cache_key, dumps(data), ex=3600)
 

@@ -49,18 +49,19 @@ function make_graph(url, graph_id) {
         yaxis: {tickDecimals: 1, tickFormatter: suffixFormatter}
     };
 
-    var series_0 = result.series[0];
+    var colors = ["rgb(0,150,221)", "rgb(184,216,233)", "rgb(240,136,30)"];
 
-    var plot = $.plot(document.querySelector(graph_id + " .chart"), [
-        {
-            label: series_0.title,
-            data: series_0.data,
-            color: "rgb(0,150,221)"
-        }
-        // light blue and orange colors from the logo for other data series
-        // {label: "d2", data: [], color: "rgb(184,216,233)"},
-        // {label: "d3", data: [], color: "rgb(240,136,30)"}
-    ], options);
+    var series = [];
+    for (var i=0; i < result.series.length; i++) {
+        series.push({
+            label: result.series[i].title,
+            data: result.series[i].data,
+            color: colors[i]
+        });
+    }
+
+    var plot = $.plot(document.querySelector(graph_id + " .chart"),
+                      series, options);
 
     $("<div id='chart_tooltip'></div>").css({
         position: "absolute",

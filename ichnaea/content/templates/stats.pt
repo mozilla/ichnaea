@@ -46,18 +46,31 @@
     </table>
     </div>
 
-    <p class="separator">
-        <h3>Unique cells</h3>
-        <div id="cell_chart" class="chart_container">
-            <div class="chart"></div>
-        </div>
+    <p class="separator"></p>
+
+    <h3>Cells networks</h3>
+
+    <p>
+        Shows data for both Mozilla Location Service (MLS) and
+        OpenCellID (OCID) unique logical cell networks.
     </p>
-    <p class="separator">
-        <h3>Unique WiFi networks</h3>
-        <div id="wifi_chart" class="chart_container">
-            <div class="chart"></div>
-        </div>
+
+    <div id="cell_chart" class="chart_container">
+        <div class="chart"></div>
+    </div>
+
+    <p class="separator"></p>
+
+    <h3>WiFi networks</h3>
+
+    <p>
+        Shows data for Mozilla Location Service (MLS) unique logical WiFi
+        networks.
     </p>
+
+    <div id="wifi_chart" class="chart_container">
+        <div class="chart"></div>
+    </div>
 </section>
 </tal:slot>
 

@@ -177,12 +177,17 @@ class TestFunctionalContent(AppTestCase):
         stat = Stat(time=yesterday, value=2)
         stat.name = 'unique_cell'
         session.add(stat)
+        stat = Stat(time=yesterday, value=5)
+        stat.name = 'unique_ocid_cell'
+        session.add(stat)
         session.commit()
         result = app.get('/stats_cell.json', status=200)
         self.assertEqual(
             result.json, {'series': [
                 {'data': [[timegm(yesterday.timetuple()) * 1000, 2]],
                  'title': 'MLS Cells'},
+                {'data': [[timegm(yesterday.timetuple()) * 1000, 5]],
+                 'title': 'OCID Cells'},
             ]}
         )
         second_result = app.get('/stats_cell.json', status=200)
@@ -299,6 +304,7 @@ class TestFunctionalContentViews(AppTestCase):
             Stat(key=STAT_TYPE['cell'], time=day, value=2000000),
             Stat(key=STAT_TYPE['wifi'], time=day, value=2000000),
             Stat(key=STAT_TYPE['unique_cell'], time=day, value=1000000),
+            Stat(key=STAT_TYPE['unique_ocid_cell'], time=day, value=1500000),
             Stat(key=STAT_TYPE['unique_wifi'], time=day, value=2000000),
         ]
         session.add_all(stats)
@@ -311,12 +317,13 @@ class TestFunctionalContentViews(AppTestCase):
         self.assertEqual(result['page_title'], 'Statistics')
         self.assertEqual(
             result['metrics1'], [
-                {'name': 'Unique Cells', 'value': '1.00'},
-                {'name': 'Cell Observations', 'value': '2.00'},
+                {'name': 'MLS Cells', 'value': '1.00'},
+                {'name': 'OpenCellID Cells', 'value': '1.50'},
+                {'name': 'MLS Cell Observations', 'value': '2.00'},
             ])
         self.assertEqual(
             result['metrics2'], [
-                {'name': 'Unique Wifi Networks', 'value': '2.00'},
+                {'name': 'Wifi Networks', 'value': '2.00'},
                 {'name': 'Wifi Observations', 'value': '2.00'},
             ])
 
