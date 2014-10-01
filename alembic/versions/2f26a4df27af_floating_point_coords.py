@@ -11,7 +11,6 @@ revision = '2f26a4df27af'
 down_revision = '1ac6c3d2ccc4'
 
 from alembic import op
-import sqlalchemy as sa
 
 
 table_cols = [("cell", ["lat", "max_lat", "min_lat",

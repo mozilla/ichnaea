@@ -19,8 +19,10 @@ from ichnaea.sa_types import TZDateTime as DateTime
 
 
 def upgrade():
-    op.alter_column('cell_blacklist', 'created', new_column_name='time', existing_type=DateTime())
-    op.alter_column('wifi_blacklist', 'created', new_column_name='time', existing_type=DateTime())
+    op.alter_column('cell_blacklist', 'created',
+                    new_column_name='time', existing_type=DateTime())
+    op.alter_column('wifi_blacklist', 'created',
+                    new_column_name='time', existing_type=DateTime())
     op.add_column('cell_blacklist', Column('count', Integer()))
     op.add_column('wifi_blacklist', Column('count', Integer()))
     op.execute("UPDATE cell_blacklist SET count = 1 WHERE count IS NULL")

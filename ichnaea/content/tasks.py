@@ -1,7 +1,5 @@
 from datetime import timedelta
 
-from sqlalchemy import func
-
 from ichnaea.async.task import DatabaseTask
 from ichnaea.content.models import (
     Stat,
