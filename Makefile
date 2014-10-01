@@ -45,7 +45,7 @@ node_modules:
 	npm install $(HERE)
 
 $(PYTHON):
-	virtualenv .
+	virtualenv-2.6 .
 	bin/pip install -U pip
 
 install_vaurien_deps:
