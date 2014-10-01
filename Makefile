@@ -45,7 +45,11 @@ node_modules:
 	npm install $(HERE)
 
 $(PYTHON):
+ifeq ($(TRAVIS), true)
+	virtualenv .
+else
 	virtualenv-2.6 .
+endif
 	bin/pip install -U pip
 
 install_vaurien_deps:
