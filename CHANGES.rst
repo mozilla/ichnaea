@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #301: Schedule hourly differential imports of OCID cell data.
+
 20141002103900
 **************
 

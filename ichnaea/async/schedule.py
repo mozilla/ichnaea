@@ -130,6 +130,15 @@ CELERYBEAT_SCHEDULE = {
         'options': {'expires': 43200},
     },
 
+    # OCID cell import task
+
+    'ocid-hourly-cell-delta-import': {
+        'task': 'ichnaea.export.tasks.import_latest_ocid_cells',
+        'args': (True, ),
+        'schedule': crontab(minute=52),
+        'options': {'expires': 2700},
+    },
+
     # Cell export tasks
 
     's3-hourly-cell-delta-export': {
