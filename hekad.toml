@@ -16,14 +16,17 @@ ticker_interval = 5
 
 [CarbonOutput]
 message_matcher = "Type == 'heka.statmetric'"
+address = "127.0.0.1:2003"
+
+[SentryOutput]
+max_sentry_bytes = 100000
+message_matcher = "Type == 'sentry'"
+
+[PayloadEncoder]
 
 # You can comment this block out if you don't want hekad to spew log
 # messages to stdout
 [LogOutput]
+encoder = "PayloadEncoder"
 message_matcher = "TRUE"
 payload_only = false
-
-[SentryOutput]
-max_udp_sockets = 100
-max_sentry_bytes = 100000
-message_matcher = "Type == 'sentry'"
