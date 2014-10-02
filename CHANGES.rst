@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+20141002103900
+**************
+
 - #301: Add OCID cell data to statistics page.
 
 - Allow a radio type of `lte` for the geolocate API. Relates to
