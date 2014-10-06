@@ -70,8 +70,14 @@ def submit_view(request):
 
     items = data['items']
     nickname = request.headers.get('X-Nickname', u'')
+    email_digest = request.headers.get('X-Email', u'')
+
     if isinstance(nickname, str):
         nickname = nickname.decode('utf-8', 'ignore')
+
+    if isinstance(email_digest, str):
+        email_digest = email_digest.decode('utf-8', 'ignore')
+
     # batch incoming data into multiple tasks, in case someone
     # manages to submit us a huge single request
     for i in range(0, len(items), 100):
@@ -79,9 +85,10 @@ def submit_view(request):
         # insert measures, expire the task if it wasn't processed
         # after two hours to avoid queue overload
         try:
-            insert_measures.apply_async(
-                kwargs={'items': items, 'nickname': nickname},
-                expires=7200)
+            insert_measures.apply_async(kwargs={'items': items,
+                                                'nickname': nickname,
+                                                'email_digest': email_digest},
+                                        expires=7200)
         except ConnectionError:
             return HTTPServiceUnavailable()
 
