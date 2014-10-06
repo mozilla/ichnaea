@@ -12,13 +12,13 @@ from pytz import UTC
 from sqlalchemy.sql import select, and_
 
 from ichnaea.async.task import DatabaseTask
+from ichnaea.data.validation import normalized_cell_dict
 from ichnaea.models import (
     cell_table,
     ocid_cell_table,
     CELLID_LAC,
     RADIO_TYPE,
     RADIO_TYPE_INVERSE,
-    normalized_cell_dict
 )
 from ichnaea.worker import celery
 from ichnaea import util

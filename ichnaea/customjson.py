@@ -1,6 +1,25 @@
+from datetime import date, datetime
+
+from colander import iso8601
 import simplejson as json
+
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
-from ichnaea.models import encode_datetime
+from ichnaea import util
+
+
+def encode_datetime(obj):
+    if isinstance(obj, datetime):
+        return obj.strftime('%Y-%m-%dT%H:%M:%S.%f')
+    elif isinstance(obj, date):
+        return obj.strftime('%Y-%m-%d')
+    raise TypeError(repr(obj) + " is not JSON serializable")
+
+
+def decode_datetime(obj):
+    try:
+        return iso8601.parse_date(obj)
+    except (iso8601.ParseError, TypeError):
+        return util.utcnow()
 
 
 def custom_iterencode(value):

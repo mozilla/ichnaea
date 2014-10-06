@@ -11,13 +11,13 @@ from ichnaea.content.models import (
     Score,
     SCORE_TYPE,
 )
+from ichnaea.customjson import encode_datetime
 from ichnaea.data.tasks import (
     cell_location_update,
     wifi_location_update,
 )
 from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
-    encode_datetime,
     Cell,
     CellBlacklist,
     CellMeasure,

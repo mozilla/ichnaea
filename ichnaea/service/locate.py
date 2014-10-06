@@ -10,6 +10,10 @@ from ichnaea.constants import (
     LAC_MIN_ACCURACY,
     WIFI_MIN_ACCURACY,
 )
+from ichnaea.data.validation import (
+    normalized_wifi_key,
+    normalized_cell_dict,
+)
 from ichnaea.geocalc import (
     distance,
     location_is_in_country,
@@ -23,8 +27,6 @@ from ichnaea.logging import (
 from ichnaea.models import (
     Cell,
     OCIDCell,
-    normalized_wifi_key,
-    normalized_cell_dict,
     RADIO_TYPE,
     Wifi,
     CELLID_LAC,

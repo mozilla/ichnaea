@@ -14,13 +14,19 @@ from ichnaea.content.models import (
     MapStat,
     User,
 )
+from ichnaea.customjson import (
+    decode_datetime,
+    encode_datetime,
+)
+from ichnaea.data.validation import (
+    normalized_wifi_measure_dict,
+    normalized_cell_measure_dict,
+)
 from ichnaea.logging import get_stats_client
 from ichnaea.models import (
     Cell,
     CellBlacklist,
     CellMeasure,
-    normalized_wifi_measure_dict,
-    normalized_cell_measure_dict,
     RADIO_TYPE,
     Wifi,
     WifiBlacklist,
@@ -29,8 +35,6 @@ from ichnaea.models import (
     join_wifikey,
     to_cellkey_psc,
     to_wifikey,
-    decode_datetime,
-    encode_datetime,
 )
 from ichnaea.customjson import (
     loads,
