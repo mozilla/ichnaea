@@ -14,7 +14,10 @@ def monitor_api_key_limits(self):
         today = now.strftime("%Y%m%d")
 
         keys = redis_client.keys('apilimit:*:' + today)
-        values = redis_client.mget(keys)
+        if keys:
+            values = redis_client.mget(keys)
+        else:
+            values = []
 
         result = {}
         for k, v in zip(keys, values):

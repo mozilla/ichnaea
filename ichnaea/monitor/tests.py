@@ -10,7 +10,26 @@ from ichnaea import util
 
 class TestMonitorTasks(CeleryTestCase):
 
-    def test_monitor_api_key_limits(self):
+    def test_monitor_api_key_limits_empty(self):
+        result = monitor_api_key_limits.delay().get()
+        self.assertEqual(result, {})
+
+    def test_monitor_api_key_limits_one(self):
+        redis_client = self.redis_client
+        now = util.utcnow()
+        today = now.strftime("%Y%m%d")
+
+        key = "apilimit:no_key_1:" + today
+        redis_client.incr(key, 13)
+
+        result = monitor_api_key_limits.delay().get()
+        self.assertEqual(result, {'no_key_1': 13})
+
+        self.check_stats(
+            gauge=['apilimit.no_key_1'],
+        )
+
+    def test_monitor_api_key_limits_multiple(self):
         redis_client = self.redis_client
         now = util.utcnow()
         today = now.strftime("%Y%m%d")
