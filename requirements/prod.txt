@@ -11,7 +11,7 @@ anyjson==0.3.3
 argparse==1.2.1
 billiard==3.3.0.18
 boto==2.32.1
-celery==3.1.15
+celery==3.1.16
 colander==1.0b1
 configparser==3.5.0b1
 country-bounding-boxes==0.2.2
@@ -21,7 +21,7 @@ gunicorn==19.1.1
 heka-py==0.30.3
 heka-py-raven==0.7
 importlib==1.0.3
-iso3166==0.5
+iso3166==0.6
 kombu==3.0.23
 mobile-codes==0.4
 ordereddict==1.1
@@ -33,9 +33,9 @@ pytz==2014.7
 raven==3.4.1  # rq.filter: <3.5.0
 redis==2.10.3
 repoze.lru==0.6
-requests==2.4.1
+requests==2.4.2
 setproctitle==1.1.8
-simplejson==3.6.3
+simplejson==3.6.4
 six==1.8.0
 statsd==3.0.1
 translationstring==1.1
