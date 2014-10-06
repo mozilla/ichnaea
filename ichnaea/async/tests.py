@@ -24,8 +24,6 @@ class TestBeat(CeleryTestCase):
             scheduler = beat.get_scheduler()
             registered_tasks = set(scheduler._store['entries'].keys())
             configured_tasks = set(schedule.CELERYBEAT_SCHEDULE)
-            # add the internal celery task
-            configured_tasks.add('celery.backend_cleanup')
             self.assertEqual(registered_tasks, configured_tasks)
         finally:
             shutil.rmtree(tmpdir)
@@ -35,7 +33,7 @@ class TestWorkerConfig(TestCase):
 
     def test_config(self):
         self.assertTrue(celery.conf['CELERY_ALWAYS_EAGER'])
-        self.assertEqual(celery.conf['CELERY_RESULT_BACKEND'], 'database')
+        self.assertTrue('redis' in celery.conf['CELERY_RESULT_BACKEND'])
 
 
 class TestWorkerDatabase(DBTestCase):

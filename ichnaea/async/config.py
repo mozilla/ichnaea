@@ -70,31 +70,18 @@ def configure_celery(celery):
         # happens while building docs locally and on rtfd.org
         return
 
-    database_options = {
-        "pool_recycle": 3600,
-        "pool_size": 10,
-        "pool_timeout": 10,
-        "isolation_level": "READ COMMITTED",
-    }
+    # testing settings
+    always_eager = bool(os.environ.get('CELERY_ALWAYS_EAGER', False))
+    redis_uri = os.environ.get('REDIS_URI', 'redis://localhost:6379/1')
 
-    # testing overrides
-    sqluri = os.environ.get('SQLURI', '')
-
-    if sqluri:
-        broker_url = sqluri
-        result_url = sqluri
+    if always_eager and redis_uri:
+        broker_url = redis_uri
+        result_url = redis_uri
     else:  # pragma: no cover
         broker_url = section['broker_url']
         result_url = section['result_url']
 
-    if 'pymysql' in broker_url:
-        broker_url = 'sqla+' + broker_url
-
-    if 'pymysql' in broker_url:
-        broker_connect_args = {"charset": "utf8"}
-        broker_options = database_options.copy()
-        broker_options['connect_args'] = broker_connect_args
-    elif 'redis' in broker_url:
+    if 'redis' in broker_url:
         broker_options = {}
         # Based on celery / redis caveats
         # celery.rtfd.org/en/latest/getting-started/brokers/redis.html#caveats
@@ -102,22 +89,10 @@ def configure_celery(celery):
         broker_options['fanout_prefix'] = True
         broker_options['visibility_timeout'] = 3600
 
-    if 'pymysql' in result_url:
-        result_connect_args = {"charset": "utf8"}
-        result_options = database_options.copy()
-        result_options['connect_args'] = result_connect_args
-        celery.conf.update(
-            CELERY_RESULT_BACKEND='database',
-            CELERY_RESULT_DBURI=result_url,
-            CELERY_RESULT_ENGINE_OPTIONS=result_options,
-        )
-    elif 'redis' in result_url:
+    if 'redis' in result_url:
         celery.conf.update(
             CELERY_RESULT_BACKEND=result_url,
         )
-
-    # testing setting
-    always_eager = bool(os.environ.get('CELERY_ALWAYS_EAGER', False))
 
     celery.conf.update(
         # testing

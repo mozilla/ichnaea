@@ -81,14 +81,13 @@ def db_tween_factory(handler, registry):
 
 class Database(object):
 
-    def __init__(self, uri, echo=False, isolation_level='REPEATABLE READ'):
+    def __init__(self, uri):
         options = {
             'pool_recycle': 3600,
             'pool_size': 10,
             'pool_timeout': 10,
-            'echo': echo,
-            # READ COMMITTED
-            'isolation_level': isolation_level,
+            'echo': False,
+            'isolation_level': 'REPEATABLE READ',
         }
         options['connect_args'] = {'charset': 'utf8'}
         options['execution_options'] = {'autocommit': False}
