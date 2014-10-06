@@ -8,7 +8,11 @@ from ichnaea.geocalc import (
     location_is_in_country,
 )
 from ichnaea.geoip import radius_from_geoip
-from ichnaea.logging import get_heka_client, RAVEN_ERROR
+from ichnaea.logging import (
+    get_heka_client,
+    get_stats_client,
+    RAVEN_ERROR,
+)
 from ichnaea.models import (
     Cell,
     OCIDCell,
@@ -24,7 +28,6 @@ from ichnaea.models import (
     LAC_MIN_ACCURACY,
     DEGREE_DECIMAL_PLACES,
 )
-from ichnaea.stats import get_stats_client
 
 # parameters for wifi clustering
 MAX_WIFI_CLUSTER_KM = 0.5

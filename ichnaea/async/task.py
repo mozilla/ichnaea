@@ -7,9 +7,9 @@ from kombu.serialization import (
 from ichnaea.db import db_worker_session
 from ichnaea.logging import (
     get_heka_client,
+    get_stats_client,
     RAVEN_ERROR,
 )
-from ichnaea.stats import get_stats_client
 
 
 class DatabaseTask(Task):

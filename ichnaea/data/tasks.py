@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from ichnaea.async.task import DatabaseTask
 from ichnaea.geocalc import distance, centroid, range_to_points
+from ichnaea.logging import get_stats_client
 from ichnaea.models import (
     CELLID_LAC,
     Cell,
@@ -17,7 +18,6 @@ from ichnaea.models import (
     to_cellkey,
     to_wifikey,
 )
-from ichnaea.stats import get_stats_client
 from ichnaea import util
 from ichnaea.worker import celery
 

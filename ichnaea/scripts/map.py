@@ -17,7 +17,7 @@ from ichnaea.logging import (
     configure_heka,
     RAVEN_ERROR,
 )
-from ichnaea.stats import configure_stats
+from ichnaea.logging import configure_stats
 from ichnaea import util
 
 IMAGE_HEADERS = {

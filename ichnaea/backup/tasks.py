@@ -2,12 +2,15 @@ from contextlib import contextmanager
 from zipfile import ZipFile, ZIP_DEFLATED
 import csv
 import os
-import pytz
 import shutil
 import tempfile
 
+import pytz
+from sqlalchemy import func
+
 from ichnaea.async.task import DatabaseTask
 from ichnaea.backup.s3 import S3Backend, compute_hash
+from ichnaea.logging import get_stats_client
 from ichnaea.models import (
     Cell,
     CellMeasure,
@@ -19,10 +22,8 @@ from ichnaea.models import (
     Wifi,
     WifiMeasure,
 )
-from ichnaea.stats import get_stats_client
 from ichnaea import util
 from ichnaea.worker import celery
-from sqlalchemy import func
 
 
 @contextmanager

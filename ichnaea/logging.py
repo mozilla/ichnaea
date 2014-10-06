@@ -1,3 +1,4 @@
+from collections import deque
 import time
 
 from heka.config import client_from_stream_config
@@ -9,11 +10,13 @@ from pyramid.httpexceptions import (
     HTTPException,
     HTTPNotFound,
 )
+from statsd.client import StatsClient
 
 from ichnaea.exceptions import BaseJSONError
 
 
 RAVEN_ERROR = 'Unhandled error occurred'
+STATS_CLIENT = None
 
 
 def get_heka_client():
@@ -34,6 +37,32 @@ def configure_heka(heka_config, _heka_client=None):
         with open(heka_config, 'r') as fd:
             client = client_from_stream_config(fd, 'heka', client=client)
     return client
+
+
+def get_stats_client():
+    return STATS_CLIENT
+
+
+def set_stats_client(client):
+    global STATS_CLIENT
+    STATS_CLIENT = client
+    return STATS_CLIENT
+
+
+def configure_stats(config, _client=None):
+    if _client is not None:
+        return set_stats_client(_client)
+
+    if not config:
+        config = 'localhost:8125'
+    parts = config.split(':')
+    host = parts[0]
+    port = 8125
+    if len(parts) > 1:
+        port = int(parts[1])
+
+    client = StatsClient(host=host, port=port)
+    return set_stats_client(client)
 
 
 def quote_statsd_path(path):
@@ -94,3 +123,19 @@ def log_tween_factory(handler, registry):
         return response
 
     return log_tween
+
+
+class DebugStatsClient(StatsClient):
+
+    def __init__(self, host='localhost', port=8125, prefix=None,
+                 maxudpsize=512):
+        self._host = host
+        self._port = port
+        self._addr = None
+        self._sock = None
+        self._prefix = prefix
+        self._maxudpsize = maxudpsize
+        self.msgs = deque(maxlen=100)
+
+    def _send(self, data):
+        self.msgs.append(data)

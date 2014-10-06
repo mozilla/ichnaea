@@ -10,6 +10,7 @@ from ichnaea.content.models import (
     MapStat,
     User,
 )
+from ichnaea.logging import get_stats_client
 from ichnaea.models import (
     Cell,
     CellBlacklist,
@@ -33,7 +34,6 @@ from ichnaea.customjson import (
     loads,
 )
 from ichnaea.service.submit.utils import process_score
-from ichnaea.stats import get_stats_client
 from ichnaea import util
 from ichnaea.worker import celery
 

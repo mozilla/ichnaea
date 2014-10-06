@@ -27,8 +27,8 @@ def main(global_config, heka_config=None, init=False,
 
     from ichnaea.content.views import configure_content
     from ichnaea.logging import configure_heka
+    from ichnaea.logging import configure_stats
     from ichnaea.service import configure_service
-    from ichnaea.stats import configure_stats
 
     configure_content(config)
     configure_service(config)

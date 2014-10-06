@@ -9,7 +9,7 @@ from ichnaea.async.config import (
 )
 from ichnaea.config import read_config
 from ichnaea.logging import configure_heka
-from ichnaea.stats import configure_stats
+from ichnaea.logging import configure_stats
 
 
 @worker_process_init.connect

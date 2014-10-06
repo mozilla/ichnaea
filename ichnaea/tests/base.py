@@ -23,12 +23,12 @@ from ichnaea.cache import redis_client
 from ichnaea.db import _Model
 from ichnaea.db import Database
 from ichnaea.geoip import configure_geoip
-from ichnaea.logging import configure_heka
-from ichnaea.models import ApiKey
-from ichnaea.stats import (
+from ichnaea.logging import (
+    configure_heka,
     configure_stats,
     DebugStatsClient,
 )
+from ichnaea.models import ApiKey
 from ichnaea.worker import (
     celery,
 )
