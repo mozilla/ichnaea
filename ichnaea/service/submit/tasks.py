@@ -6,6 +6,10 @@ from colander import iso8601
 from sqlalchemy.sql import and_, or_
 
 from ichnaea.async.task import DatabaseTask
+from ichnaea.constants import (
+    PERMANENT_BLACKLIST_THRESHOLD,
+    TEMPORARY_BLACKLIST_DURATION,
+)
 from ichnaea.content.models import (
     MapStat,
     User,
@@ -27,8 +31,6 @@ from ichnaea.models import (
     to_wifikey,
     decode_datetime,
     encode_datetime,
-    PERMANENT_BLACKLIST_THRESHOLD,
-    TEMPORARY_BLACKLIST_DURATION,
 )
 from ichnaea.customjson import (
     loads,

@@ -1,9 +1,9 @@
 import os.path
 import tempfile
 
+from ichnaea.constants import GEOIP_CITY_ACCURACY
 from ichnaea import geoip
 from ichnaea.geoip import radius_from_geoip
-from ichnaea.models import GEOIP_CITY_ACCURACY
 from ichnaea.tests.base import (
     TestCase,
     FREMONT_IP,

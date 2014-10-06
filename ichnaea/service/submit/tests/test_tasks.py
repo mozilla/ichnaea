@@ -6,6 +6,7 @@ import zlib
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy import text
 
+from ichnaea.constants import PERMANENT_BLACKLIST_THRESHOLD
 from ichnaea.content.models import (
     Score,
     SCORE_TYPE,
@@ -20,7 +21,6 @@ from ichnaea.models import (
     Cell,
     CellBlacklist,
     CellMeasure,
-    PERMANENT_BLACKLIST_THRESHOLD,
     RADIO_TYPE,
     Wifi,
     WifiBlacklist,

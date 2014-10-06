@@ -1,5 +1,6 @@
 import simplejson as json
-from ichnaea.models import (encode_datetime, DEGREE_DECIMAL_PLACES)
+from ichnaea.constants import DEGREE_DECIMAL_PLACES
+from ichnaea.models import encode_datetime
 
 
 def custom_iterencode(value):

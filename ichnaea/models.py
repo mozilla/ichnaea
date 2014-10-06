@@ -1,6 +1,5 @@
 from collections import namedtuple
-from datetime import date, datetime, timedelta
-import re
+from datetime import date, datetime
 
 from colander import iso8601
 import mobile_codes
@@ -20,16 +19,20 @@ from sqlalchemy.dialects.mysql import (
     SMALLINT as SmallInteger,
     TINYINT as TinyInteger,
 )
+from ichnaea import constants
 from ichnaea import geocalc
 from ichnaea.db import _Model
 from ichnaea.sa_types import TZDateTime as DateTime
 from ichnaea import util
 
-# We return position and accuracy values rounded to 7 decimal places,
-# mostly to make the resulting JSON look prettier.  1E-7 degrees =~ 1.1cm
-# at the equator, so clients of our external APIs will see that as our
-# spatial resolution.
-DEGREE_DECIMAL_PLACES = 7
+# Symbolic constant used in specs passed to normalization functions.
+REQUIRED = object()
+
+MEASURE_TYPE_CODE = {
+    'wifi': 1,
+    'cell': 2,
+}
+MEASURE_TYPE_CODE_INVERSE = dict((v, k) for k, v in MEASURE_TYPE_CODE.items())
 
 RADIO_TYPE = {
     '': -1,
@@ -47,50 +50,8 @@ RADIO_TYPE_INVERSE[2] = 'umts'
 MAX_RADIO_TYPE = max(RADIO_TYPE.values())
 MIN_RADIO_TYPE = min(RADIO_TYPE.values())
 
-# Restrict latitudes to Web Mercator projection
-MAX_LAT = 85.051
-MIN_LAT = -85.051
-
-# Accuracy on land is arbitrarily bounded to [0, 1000km],
-# past which it seems more likely we're looking at bad data.
-MAX_ACCURACY = 1000000
-
-# Challenger Deep, Mariana Trench.
-MIN_ALTITUDE = -10911
-
-# Karman Line, edge of space.
-MAX_ALTITUDE = 100000
-
-MAX_ALTITUDE_ACCURACY = abs(MAX_ALTITUDE - MIN_ALTITUDE)
-
-MAX_HEADING = 360.0
-
-# A bit less than speed of sound, in meters per second
-MAX_SPEED = 300.0
-
-# Empirical 95th percentile accuracy of ichnaea's responses,
-# from feedback testing of measurements as queries.
-WIFI_MIN_ACCURACY = 100
-CELL_MIN_ACCURACY = 5000
-LAC_MIN_ACCURACY = 20000
-
-# Pure guesswork, "size of a city"
-GEOIP_CITY_ACCURACY = 50000
-# Worst case scenario for Russia, rounded down a bit
-# geocalc.distance(60.0, 100.0, 41.199278, 27.351944) == 5220613 meters
-GEOIP_COUNTRY_ACCURACY = 5000000
-
 # Numeric constant used to indicate "virtual cells" for LACs, in db.
 CELLID_LAC = -2
-
-# Symbolic constant used in specs passed to normalization functions.
-REQUIRED = object()
-
-# We use a documentation-only multi-cast address as a test key
-# http://tools.ietf.org/html/rfc7042#section-2.1.1
-WIFI_TEST_KEY = "01005e901000"
-INVALID_WIFI_REGEX = re.compile("(?!(0{12}|f{12}|%s))" % WIFI_TEST_KEY)
-VALID_WIFI_REGEX = re.compile("([0-9a-fA-F]{12})")
 
 ALL_VALID_MCCS = frozenset(
     [int(country.mcc)
@@ -101,16 +62,6 @@ ALL_VALID_MCCS = frozenset(
      if isinstance(country.mcc, tuple)
      for code in country.mcc]
 )
-
-# Time during which each temporary blacklisting (detection of station
-# movement) causes measurements to be dropped on the floor.
-TEMPORARY_BLACKLIST_DURATION = timedelta(days=7)
-
-# Number of temporary blacklistings that result in a permanent
-# blacklisting; in other words, number of times a station can
-# "legitimately" move to a new location before we permanently give
-# up trying to figure out its fixed location.
-PERMANENT_BLACKLIST_THRESHOLD = 6
 
 CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
@@ -133,8 +84,8 @@ def decode_datetime(obj):
 
 
 def valid_wifi_pattern(key):
-    return INVALID_WIFI_REGEX.match(key) and \
-        VALID_WIFI_REGEX.match(key) and len(key) == 12
+    return constants.INVALID_WIFI_REGEX.match(key) and \
+        constants.VALID_WIFI_REGEX.match(key) and len(key) == 12
 
 
 def normalized_wifi_key(key):
@@ -194,13 +145,13 @@ def normalized_measure_dict(d):
     or None if the dict was invalid.
     """
     d = normalized_dict(
-        d, dict(lat=(MIN_LAT, MAX_LAT, REQUIRED),
+        d, dict(lat=(constants.MIN_LAT, constants.MAX_LAT, REQUIRED),
                 lon=(-180.0, 180.0, REQUIRED),
-                heading=(0.0, MAX_HEADING, -1.0),
-                speed=(0, MAX_SPEED, -1.0),
-                altitude=(MIN_ALTITUDE, MAX_ALTITUDE, 0),
-                altitude_accuracy=(0, MAX_ALTITUDE_ACCURACY, 0),
-                accuracy=(0, MAX_ACCURACY, 0)))
+                heading=(0.0, constants.MAX_HEADING, -1.0),
+                speed=(0, constants.MAX_SPEED, -1.0),
+                altitude=(constants.MIN_ALTITUDE, constants.MAX_ALTITUDE, 0),
+                altitude_accuracy=(0, constants.MAX_ALTITUDE_ACCURACY, 0),
+                accuracy=(0, constants.MAX_ACCURACY, 0)))
 
     if d is None:
         return None
@@ -766,12 +717,7 @@ class ApiKey(_Model):
 api_key_table = ApiKey.__table__
 
 
-MEASURE_TYPE_CODE = {
-    'wifi': 1,
-    'cell': 2,
-}
-MEASURE_TYPE_CODE_INVERSE = dict((v, k) for k, v in MEASURE_TYPE_CODE.items())
-
+# Keep at end of file, as it needs to stay below the *Measure models
 MEASURE_TYPE_META = {
     1: {'class': WifiMeasure,
         'csv_name': 'wifi_measure.csv',

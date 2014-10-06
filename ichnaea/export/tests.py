@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from mock import MagicMock, patch
 import requests_mock
 
+from ichnaea.constants import CELL_MIN_ACCURACY
 from ichnaea.export.tasks import (
     export_modified_cells,
     import_ocid_cells,
@@ -26,7 +27,6 @@ from ichnaea.models import (
     cell_table,
     CELLID_LAC,
     RADIO_TYPE,
-    CELL_MIN_ACCURACY
 )
 from ichnaea.tests.base import (
     CeleryTestCase,

@@ -3,12 +3,12 @@ import socket
 import pygeoip
 from pygeoip import GeoIPError
 
-from ichnaea.geocalc import maximum_country_radius
-from ichnaea.models import (
+from ichnaea.constants import (
     DEGREE_DECIMAL_PLACES,
     GEOIP_CITY_ACCURACY,
     GEOIP_COUNTRY_ACCURACY,
 )
+from ichnaea.geocalc import maximum_country_radius
 
 
 def radius_from_geoip(record):

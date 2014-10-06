@@ -1,16 +1,18 @@
 import random
 
+from ichnaea.constants import (
+    CELL_MIN_ACCURACY,
+    GEOIP_CITY_ACCURACY,
+    LAC_MIN_ACCURACY,
+    WIFI_MIN_ACCURACY,
+)
 from ichnaea.geocalc import maximum_country_radius
 from ichnaea.geoip import GeoIPMock
 from ichnaea.models import (
     Cell,
-    CELL_MIN_ACCURACY,
     CELLID_LAC,
-    GEOIP_CITY_ACCURACY,
-    LAC_MIN_ACCURACY,
     RADIO_TYPE,
     Wifi,
-    WIFI_MIN_ACCURACY,
 )
 from ichnaea.tests.base import (
     BRAZIL_MCC,

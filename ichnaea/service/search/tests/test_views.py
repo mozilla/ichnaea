@@ -1,13 +1,15 @@
 from sqlalchemy import text
 from webob.response import gzip_app_iter
 
+from ichnaea.constants import (
+    CELL_MIN_ACCURACY,
+    GEOIP_CITY_ACCURACY,
+)
 from ichnaea.customjson import dumps, loads
 from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
     Cell,
     Wifi,
-    CELL_MIN_ACCURACY,
-    GEOIP_CITY_ACCURACY,
     RADIO_TYPE,
 )
 from ichnaea.tests.base import (

@@ -3,6 +3,13 @@ import operator
 
 import mobile_codes
 from sqlalchemy.sql import and_, or_
+
+from ichnaea.constants import (
+    CELL_MIN_ACCURACY,
+    DEGREE_DECIMAL_PLACES,
+    LAC_MIN_ACCURACY,
+    WIFI_MIN_ACCURACY,
+)
 from ichnaea.geocalc import (
     distance,
     location_is_in_country,
@@ -23,10 +30,6 @@ from ichnaea.models import (
     CELLID_LAC,
     to_cellkey,
     join_cellkey,
-    WIFI_MIN_ACCURACY,
-    CELL_MIN_ACCURACY,
-    LAC_MIN_ACCURACY,
-    DEGREE_DECIMAL_PLACES,
 )
 
 # parameters for wifi clustering
