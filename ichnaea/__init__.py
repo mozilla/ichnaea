@@ -1,5 +1,5 @@
 from ichnaea.app import main
-from ichnaea.config import read_config
+from ichnaea.app_config import read_config
 
 __all__ = ('application', 'main', )
 _APP = None

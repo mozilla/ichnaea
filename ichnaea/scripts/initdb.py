@@ -8,7 +8,7 @@ from alembic import command
 from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 
-from ichnaea.config import read_config
+from ichnaea.app_config import read_config
 # make sure content models are imported
 from ichnaea.content import models  # NOQA
 from ichnaea.db import _Model

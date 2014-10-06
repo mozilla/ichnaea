@@ -11,7 +11,7 @@ import csv
 import datetime
 import sys
 
-from ichnaea.config import read_config
+from ichnaea.app_config import read_config
 from ichnaea.db import Database
 from ichnaea.logging import configure_heka
 from ichnaea.models import (

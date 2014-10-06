@@ -3,7 +3,7 @@ import sys
 
 import mobile_codes
 
-from ichnaea.config import read_config
+from ichnaea.app_config import read_config
 from ichnaea.db import Database
 from ichnaea.geocalc import location_is_in_country
 

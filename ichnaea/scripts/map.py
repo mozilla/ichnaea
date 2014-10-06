@@ -11,7 +11,7 @@ import boto
 from simplejson import dumps
 from sqlalchemy import text
 
-from ichnaea.config import read_config
+from ichnaea.app_config import read_config
 from ichnaea.db import Database
 from ichnaea.logging import (
     configure_heka,

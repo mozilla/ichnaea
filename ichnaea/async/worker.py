@@ -1,13 +1,13 @@
 from celery.app import app_or_default
 from celery.signals import worker_process_init
 
+from ichnaea.app_config import read_config
 from ichnaea.async.config import (
     attach_database,
     attach_redis_client,
     configure_s3_backup,
     configure_ocid_import,
 )
-from ichnaea.config import read_config
 from ichnaea.logging import configure_heka
 from ichnaea.logging import configure_stats
 

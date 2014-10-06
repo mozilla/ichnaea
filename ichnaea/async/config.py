@@ -2,9 +2,9 @@ import os
 
 from kombu import Queue
 
+from ichnaea.app_config import read_config
 from ichnaea.async.schedule import CELERYBEAT_SCHEDULE
 from ichnaea.cache import redis_client
-from ichnaea.config import read_config
 from ichnaea.db import Database
 
 
