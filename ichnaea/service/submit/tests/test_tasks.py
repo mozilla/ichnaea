@@ -13,8 +13,8 @@ from ichnaea.content.models import (
 )
 from ichnaea.customjson import encode_datetime
 from ichnaea.data.tasks import (
-    cell_location_update,
-    wifi_location_update,
+    location_update_cell,
+    location_update_wifi,
 )
 from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
@@ -286,7 +286,7 @@ class TestInsert(CeleryTestCase):
                 [measure], utcnow=time_enc)
 
             # update_result is (num-stations, num-moving-stations)
-            update_result = wifi_location_update.delay(min_new=1)
+            update_result = location_update_wifi.delay(min_new=1)
 
             # Assuming PERMANENT_BLACKLIST_THRESHOLD == 6:
             #
@@ -439,7 +439,7 @@ class TestInsert(CeleryTestCase):
                 [measure], utcnow=time_enc)
 
             # update_result is (num-stations, num-moving-stations)
-            update_result = cell_location_update.delay(min_new=1)
+            update_result = location_update_cell.delay(min_new=1)
 
             # Assuming PERMANENT_BLACKLIST_THRESHOLD == 6:
             #

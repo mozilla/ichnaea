@@ -1,5 +1,4 @@
 from collections import defaultdict
-from datetime import timedelta
 
 from ichnaea.async.task import DatabaseTask
 from ichnaea.geocalc import distance, centroid, range_to_points
@@ -25,71 +24,49 @@ WIFI_MAX_DIST_KM = 5
 CELL_MAX_DIST_KM = 150
 
 
-def daily_task_days(ago):
-    today = util.utcnow().date()
-    day = today - timedelta(days=ago)
-    max_day = day + timedelta(days=1)
-    return day, max_day
+def blacklist_and_remove_moving_stations(session, blacklist_model,
+                                         station_type, to_key, join_key,
+                                         moving_stations, remove_station):
+    moving_keys = []
+    utcnow = util.utcnow()
+    for station in moving_stations:
+        key = to_key(station)
+        query = session.query(blacklist_model).filter(
+            *join_key(blacklist_model, key))
+        b = query.first()
+        d = key._asdict()
+        moving_keys.append(d)
+        if b:
+            b.time = utcnow
+            b.count += 1
+        else:
+            b = blacklist_model(**d)
+            session.add(b)
+
+    if moving_keys:
+        get_stats_client().incr("items.blacklisted.%s_moving" % station_type,
+                                len(moving_keys))
+        remove_station.delay(moving_keys)
 
 
-@celery.task(base=DatabaseTask, bind=True)
-def remove_wifi(self, wifi_keys):
-    wifi_keys = set([w['key'] for w in wifi_keys])
-    try:
-        with self.db_session() as session:
-            query = session.query(Wifi).filter(
-                Wifi.key.in_(wifi_keys))
-            wifis = query.delete(synchronize_session=False)
-            session.commit()
-        return wifis
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+def blacklist_and_remove_moving_cells(session, moving_cells):
+    blacklist_and_remove_moving_stations(session,
+                                         blacklist_model=CellBlacklist,
+                                         station_type="cell",
+                                         to_key=to_cellkey,
+                                         join_key=join_cellkey,
+                                         moving_stations=moving_cells,
+                                         remove_station=remove_cell)
 
 
-@celery.task(base=DatabaseTask, bind=True)
-def remove_cell(self, cell_keys):
-    cells_removed = 0
-    try:
-        with self.db_session() as session:
-            changed_lacs = set()
-
-            for k in cell_keys:
-                key = to_cellkey(k)
-                query = session.query(Cell).filter(*join_cellkey(Cell, key))
-                cells_removed += query.delete()
-                changed_lacs.add(key._replace(cid=CELLID_LAC))
-
-            for key in changed_lacs:
-                # Either schedule an update to the enclosing LAC or, if
-                # we just removed the last cell in the LAC, remove the LAC
-                # entirely.
-                query = session.query(Cell).filter(
-                    Cell.radio == key.radio,
-                    Cell.mcc == key.mcc,
-                    Cell.mnc == key.mnc,
-                    Cell.lac == key.lac,
-                    Cell.cid != CELLID_LAC)
-                n = query.count()
-
-                query = session.query(Cell).filter(
-                    Cell.radio == key.radio,
-                    Cell.mcc == key.mcc,
-                    Cell.mnc == key.mnc,
-                    Cell.lac == key.lac,
-                    Cell.cid == CELLID_LAC)
-                if n < 1:
-                    query.delete()
-                else:
-                    lac = query.first()
-                    if lac is not None:
-                        lac.new_measures += 1
-
-            session.commit()
-        return cells_removed
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+def blacklist_and_remove_moving_wifis(session, moving_wifis):
+    blacklist_and_remove_moving_stations(session,
+                                         blacklist_model=WifiBlacklist,
+                                         station_type="wifi",
+                                         to_key=to_wifikey,
+                                         join_key=join_wifikey,
+                                         moving_stations=moving_wifis,
+                                         remove_station=remove_wifi)
 
 
 def calculate_new_position(station, measures, max_dist_km, backfill=True):
@@ -175,6 +152,16 @@ def calculate_new_position(station, measures, max_dist_km, backfill=True):
     station.modified = util.utcnow()
 
 
+def emit_new_measures_metric(stats_client, session, shortname,
+                             model, min_new, max_new):
+    q = session.query(model).filter(
+        model.new_measures >= min_new,
+        model.new_measures < max_new)
+    n = q.count()
+    stats_client.gauge('task.%s.new_measures_%d_%d' %
+                       (shortname, min_new, max_new), n)
+
+
 def update_enclosing_lacs(session, lacs, moving_cells, utcnow):
     moving_cell_ids = set([c.id for c in moving_cells])
     for lac_key, cells in lacs.items():
@@ -199,70 +186,11 @@ def update_enclosing_lacs(session, lacs, moving_cells, utcnow):
             )
             session.add(lac)
 
-
-def emit_new_measures_metric(stats_client, session, shortname,
-                             model, min_new, max_new):
-    q = session.query(model).filter(
-        model.new_measures >= min_new,
-        model.new_measures < max_new)
-    n = q.count()
-    stats_client.gauge('task.%s.new_measures_%d_%d' %
-                       (shortname, min_new, max_new), n)
+# End helper functions, start tasks
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def backfill_cell_location_update(self, new_cell_measures):
-    try:
-        utcnow = util.utcnow()
-        cells = []
-        moving_cells = set()
-        updated_lacs = defaultdict(list)
-        new_cell_measures = dict(new_cell_measures)
-        with self.db_session() as session:
-            for tower_tuple, cell_measure_ids in new_cell_measures.items():
-                query = session.query(Cell).filter(
-                    *join_cellkey(Cell, CellKey(*tower_tuple)))
-                cells = query.all()
-
-                if not cells:
-                    # This case shouldn't actually occur. The
-                    # backfill_cell_location_update is only called
-                    # when CellMeasure records are matched against
-                    # known Cell records.
-                    continue
-
-                for cell in cells:
-                    measures = session.query(  # NOQA
-                        CellMeasure.lat, CellMeasure.lon).filter(
-                        CellMeasure.id.in_(cell_measure_ids)).all()
-
-                    if measures:
-                        moving = calculate_new_position(
-                            cell, measures, CELL_MAX_DIST_KM, backfill=True)
-                        if moving:
-                            moving_cells.add(cell)
-
-                        updated_lacs[CellKey(cell.radio, cell.mcc,
-                                             cell.mnc, cell.lac,
-                                             CELLID_LAC)].append(cell)
-
-            if updated_lacs:
-                update_enclosing_lacs(session, updated_lacs,
-                                      moving_cells, utcnow)
-
-            if moving_cells:
-                # some cells found to be moving too much
-                blacklist_and_remove_moving_cells(session, moving_cells)
-
-            session.commit()
-        return (len(cells), len(moving_cells))
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
-
-
-@celery.task(base=DatabaseTask, bind=True)
-def cell_location_update(self, min_new=10, max_new=100, batch=10):
+def location_update_cell(self, min_new=10, max_new=100, batch=10):
     try:
         utcnow = util.utcnow()
         cells = []
@@ -321,53 +249,59 @@ def cell_location_update(self, min_new=10, max_new=100, batch=10):
         raise self.retry(exc=exc)
 
 
-def blacklist_and_remove_moving_stations(session, blacklist_model,
-                                         station_type, to_key, join_key,
-                                         moving_stations, remove_station):
-    moving_keys = []
-    utcnow = util.utcnow()
-    for station in moving_stations:
-        key = to_key(station)
-        query = session.query(blacklist_model).filter(
-            *join_key(blacklist_model, key))
-        b = query.first()
-        d = key._asdict()
-        moving_keys.append(d)
-        if b:
-            b.time = utcnow
-            b.count += 1
-        else:
-            b = blacklist_model(**d)
-            session.add(b)
+@celery.task(base=DatabaseTask, bind=True)
+def location_update_cell_backfill(self, new_cell_measures):
+    try:
+        utcnow = util.utcnow()
+        cells = []
+        moving_cells = set()
+        updated_lacs = defaultdict(list)
+        new_cell_measures = dict(new_cell_measures)
+        with self.db_session() as session:
+            for tower_tuple, cell_measure_ids in new_cell_measures.items():
+                query = session.query(Cell).filter(
+                    *join_cellkey(Cell, CellKey(*tower_tuple)))
+                cells = query.all()
 
-    if moving_keys:
-        get_stats_client().incr("items.blacklisted.%s_moving" % station_type,
-                                len(moving_keys))
-        remove_station.delay(moving_keys)
+                if not cells:
+                    # This case shouldn't actually occur. The
+                    # location_update_cell_backfill is only called
+                    # when CellMeasure records are matched against
+                    # known Cell records.
+                    continue
 
+                for cell in cells:
+                    measures = session.query(  # NOQA
+                        CellMeasure.lat, CellMeasure.lon).filter(
+                        CellMeasure.id.in_(cell_measure_ids)).all()
 
-def blacklist_and_remove_moving_wifis(session, moving_wifis):
-    blacklist_and_remove_moving_stations(session,
-                                         blacklist_model=WifiBlacklist,
-                                         station_type="wifi",
-                                         to_key=to_wifikey,
-                                         join_key=join_wifikey,
-                                         moving_stations=moving_wifis,
-                                         remove_station=remove_wifi)
+                    if measures:
+                        moving = calculate_new_position(
+                            cell, measures, CELL_MAX_DIST_KM, backfill=True)
+                        if moving:
+                            moving_cells.add(cell)
 
+                        updated_lacs[CellKey(cell.radio, cell.mcc,
+                                             cell.mnc, cell.lac,
+                                             CELLID_LAC)].append(cell)
 
-def blacklist_and_remove_moving_cells(session, moving_cells):
-    blacklist_and_remove_moving_stations(session,
-                                         blacklist_model=CellBlacklist,
-                                         station_type="cell",
-                                         to_key=to_cellkey,
-                                         join_key=join_cellkey,
-                                         moving_stations=moving_cells,
-                                         remove_station=remove_cell)
+            if updated_lacs:
+                update_enclosing_lacs(session, updated_lacs,
+                                      moving_cells, utcnow)
+
+            if moving_cells:
+                # some cells found to be moving too much
+                blacklist_and_remove_moving_cells(session, moving_cells)
+
+            session.commit()
+        return (len(cells), len(moving_cells))
+    except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
+        raise self.retry(exc=exc)
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def wifi_location_update(self, min_new=10, max_new=100, batch=10):
+def location_update_wifi(self, min_new=10, max_new=100, batch=10):
     try:
         wifis = {}
         with self.db_session() as session:
@@ -400,6 +334,66 @@ def wifi_location_update(self, min_new=10, max_new=100, batch=10):
 
             session.commit()
         return (len(wifis), len(moving_wifis))
+    except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
+        raise self.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def remove_cell(self, cell_keys):
+    cells_removed = 0
+    try:
+        with self.db_session() as session:
+            changed_lacs = set()
+
+            for k in cell_keys:
+                key = to_cellkey(k)
+                query = session.query(Cell).filter(*join_cellkey(Cell, key))
+                cells_removed += query.delete()
+                changed_lacs.add(key._replace(cid=CELLID_LAC))
+
+            for key in changed_lacs:
+                # Either schedule an update to the enclosing LAC or, if
+                # we just removed the last cell in the LAC, remove the LAC
+                # entirely.
+                query = session.query(Cell).filter(
+                    Cell.radio == key.radio,
+                    Cell.mcc == key.mcc,
+                    Cell.mnc == key.mnc,
+                    Cell.lac == key.lac,
+                    Cell.cid != CELLID_LAC)
+                n = query.count()
+
+                query = session.query(Cell).filter(
+                    Cell.radio == key.radio,
+                    Cell.mcc == key.mcc,
+                    Cell.mnc == key.mnc,
+                    Cell.lac == key.lac,
+                    Cell.cid == CELLID_LAC)
+                if n < 1:
+                    query.delete()
+                else:
+                    lac = query.first()
+                    if lac is not None:
+                        lac.new_measures += 1
+
+            session.commit()
+        return cells_removed
+    except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
+        raise self.retry(exc=exc)
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def remove_wifi(self, wifi_keys):
+    wifi_keys = set([w['key'] for w in wifi_keys])
+    try:
+        with self.db_session() as session:
+            query = session.query(Wifi).filter(
+                Wifi.key.in_(wifi_keys))
+            wifis = query.delete(synchronize_session=False)
+            session.commit()
+        return wifis
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')
         raise self.retry(exc=exc)

@@ -20,38 +20,38 @@ CELERYBEAT_SCHEDULE = {
 
     # Continuous location update tasks
 
-    'cell-location-update-1': {
-        'task': 'ichnaea.data.tasks.cell_location_update',
+    'location-update-cell-1': {
+        'task': 'ichnaea.data.tasks.location_update_cell',
         'schedule': timedelta(seconds=299),  # 13*23
         'args': (1, 10, 5000),
         'options': {'expires': 290},
     },
-    'cell-location-update-10': {
-        'task': 'ichnaea.data.tasks.cell_location_update',
+    'location-update-cell-10': {
+        'task': 'ichnaea.data.tasks.location_update_cell',
         'schedule': timedelta(seconds=305),  # 5*61
         'args': (10, 1000, 1000),
         'options': {'expires': 295},
     },
-    'cell-location-update-1000': {
-        'task': 'ichnaea.data.tasks.cell_location_update',
+    'location-update-cell-1000': {
+        'task': 'ichnaea.data.tasks.location_update_cell',
         'schedule': timedelta(seconds=323),  # 17*19
         'args': (1000, 1000000, 100),
         'options': {'expires': 310},
     },
-    'wifi-location-update-1': {
-        'task': 'ichnaea.data.tasks.wifi_location_update',
+    'location-update-wifi-1': {
+        'task': 'ichnaea.data.tasks.location_update_wifi',
         'schedule': timedelta(seconds=301),  # 7*43
         'args': (1, 10, 5000),
         'options': {'expires': 290},
     },
-    'wifi-location-update-10': {
-        'task': 'ichnaea.data.tasks.wifi_location_update',
+    'location-update-wifi-10': {
+        'task': 'ichnaea.data.tasks.location_update_wifi',
         'schedule': timedelta(seconds=319),  # 11*29
         'args': (10, 1000, 1000),
         'options': {'expires': 310},
     },
-    'wifi-location-update-1000': {
-        'task': 'ichnaea.data.tasks.wifi_location_update',
+    'location-update-wifi-1000': {
+        'task': 'ichnaea.data.tasks.location_update_wifi',
         'schedule': timedelta(seconds=329),  # 7*47
         'args': (1000, 1000000, 100),
         'options': {'expires': 320},

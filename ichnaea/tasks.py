@@ -17,18 +17,18 @@ def remove_cell(self, cell_keys):
 
 @celery.task(base=DatabaseTask, bind=True)
 def backfill_cell_location_update(self, new_cell_measures):
-    return data_tasks.backfill_cell_location_update.delay(new_cell_measures)
+    return data_tasks.location_update_cell_backfill.delay(new_cell_measures)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def cell_location_update(self, min_new=10, max_new=100, batch=10):
-    return data_tasks.cell_location_update.delay(
+    return data_tasks.location_update_cell.delay(
         min_new=min_new, max_new=max_new, batch=batch)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def wifi_location_update(self, min_new=10, max_new=100, batch=10):
-    return data_tasks.wifi_location_update.delay(
+    return data_tasks.location_update_wifi.delay(
         min_new=min_new, max_new=max_new, batch=batch)
 
 

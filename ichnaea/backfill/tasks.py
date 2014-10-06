@@ -3,7 +3,7 @@ from collections import defaultdict
 from sqlalchemy import text
 
 from ichnaea.async.task import DatabaseTask
-from ichnaea.data.tasks import backfill_cell_location_update
+from ichnaea.data.tasks import location_update_cell_backfill
 from ichnaea.geocalc import distance
 from ichnaea.models import CELLID_LAC
 from ichnaea.worker import celery
@@ -81,7 +81,7 @@ def update_tower(self, radio, mcc, mnc, psc):
 
         # Update the cell tower locations with the newly backfilled
         # measurements now
-        backfill_cell_location_update.delay(task_arguments)
+        location_update_cell_backfill.delay(task_arguments)
 
     return rows_updated
 
