@@ -17,15 +17,6 @@ from ichnaea import util
 from ichnaea.worker import celery
 
 
-def histogram_query(session, model, min_day, max_day):
-    query = session.query(model).filter(
-        model.created < max_day).filter(
-        model.created >= min_day)
-    if isinstance(model, Cell):
-        query = query.filter(model.lac != CELLID_LAC)
-    return query.count()
-
-
 def daily_task_days(ago):
     today = util.utcnow().date()
     day = today - timedelta(days=ago)
@@ -64,15 +55,28 @@ def get_stat(session, stat_key, exact=True, date=None):
     return query.first()
 
 
+def histogram_query(session, model, min_day, max_day):
+    query = session.query(model).filter(
+        model.created < max_day).filter(
+        model.created >= min_day)
+    if isinstance(model, Cell):
+        query = query.filter(model.lac != CELLID_LAC)
+    return query.count()
+
+
+def histogram_task(db_session, model, statname, ago=1):
+    day, max_day = daily_task_days(ago)
+    with db_session() as session:
+        value = histogram_query(session, model, day, max_day)
+        add_stat(session, statname, day, value)
+        session.commit()
+    return 1
+
+
 @celery.task(base=DatabaseTask, bind=True)
 def cell_histogram(self, ago=1):
-    day, max_day = daily_task_days(ago)
     try:
-        with self.db_session() as session:
-            value = histogram_query(session, CellMeasure, day, max_day)
-            add_stat(session, 'cell', day, value)
-            session.commit()
-            return 1
+        return histogram_task(self.db_session, CellMeasure, 'cell', ago=ago)
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')
         raise self.retry(exc=exc)
@@ -80,13 +84,8 @@ def cell_histogram(self, ago=1):
 
 @celery.task(base=DatabaseTask, bind=True)
 def wifi_histogram(self, ago=1):
-    day, max_day = daily_task_days(ago)
     try:
-        with self.db_session() as session:
-            value = histogram_query(session, WifiMeasure, day, max_day)
-            add_stat(session, 'wifi', day, value)
-            session.commit()
-            return 1
+        return histogram_task(self.db_session, WifiMeasure, 'wifi', ago=ago)
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')
         raise self.retry(exc=exc)
@@ -94,13 +93,8 @@ def wifi_histogram(self, ago=1):
 
 @celery.task(base=DatabaseTask, bind=True)
 def unique_cell_histogram(self, ago=1):
-    day, max_day = daily_task_days(ago)
     try:
-        with self.db_session() as session:
-            value = histogram_query(session, Cell, day, max_day)
-            add_stat(session, 'unique_cell', day, value)
-            session.commit()
-            return 1
+        return histogram_task(self.db_session, Cell, 'unique_cell', ago=ago)
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')
         raise self.retry(exc=exc)
@@ -108,13 +102,9 @@ def unique_cell_histogram(self, ago=1):
 
 @celery.task(base=DatabaseTask, bind=True)
 def unique_ocid_cell_histogram(self, ago=1):
-    day, max_day = daily_task_days(ago)
     try:
-        with self.db_session() as session:
-            value = histogram_query(session, OCIDCell, day, max_day)
-            add_stat(session, 'unique_ocid_cell', day, value)
-            session.commit()
-            return 1
+        return histogram_task(
+            self.db_session, OCIDCell, 'unique_ocid_cell', ago=ago)
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')
         raise self.retry(exc=exc)
@@ -122,13 +112,8 @@ def unique_ocid_cell_histogram(self, ago=1):
 
 @celery.task(base=DatabaseTask, bind=True)
 def unique_wifi_histogram(self, ago=1):
-    day, max_day = daily_task_days(ago)
     try:
-        with self.db_session() as session:
-            value = histogram_query(session, Wifi, day, max_day)
-            add_stat(session, 'unique_wifi', day, value)
-            session.commit()
-            return 1
+        return histogram_task(self.db_session, Wifi, 'unique_wifi', ago=ago)
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')
         raise self.retry(exc=exc)
