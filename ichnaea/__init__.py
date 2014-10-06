@@ -6,6 +6,8 @@ _APP = None
 
 
 def application(environ, start_response):  # pragma: no cover
+    # Actual WSGI application endpoint, used on the command line via:
+    # bin/gunicorn -c ichnaea.gunicorn_config ichnaea:application
     global _APP
 
     if _APP is None:
