@@ -76,12 +76,18 @@ documentation.
 Code
 ====
 
-Run the following commands to install the software:
+Run the following command to get the code:
 
 .. code-block:: bash
 
    git clone https://github.com/mozilla/ichnaea
    cd ichnaea
+
+In order to run the code you need to have Python 2.6 or 2.7 installed
+on your system. The default Makefile also assumes a `virtualenv-2.6`
+command is globally available. If this isn't true for your system,
+please create a virtualenv manually inside the ichnaea folder before
+continuing (``/path/to/virtualenv .``).
 
 Specify the database connection string and run make:
 
