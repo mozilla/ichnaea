@@ -7,13 +7,13 @@ import pytz
 
 from webob.response import gzip_app_iter
 
-from ichnaea.constants import WIFI_TEST_KEY
 from ichnaea.content.models import (
     MapStat,
     Score,
     SCORE_TYPE,
     User,
 )
+from ichnaea.data.validation import WIFI_TEST_KEY
 from ichnaea.models import (
     CellMeasure,
     RADIO_TYPE,
