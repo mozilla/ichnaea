@@ -13,7 +13,6 @@ from ichnaea.models import (
     WifiMeasure,
     CELLID_LAC,
 )
-from ichnaea.tasks import daily_task_days
 from ichnaea import util
 from ichnaea.worker import celery
 
@@ -25,6 +24,13 @@ def histogram_query(session, model, min_day, max_day):
     if isinstance(model, Cell):
         query = query.filter(model.lac != CELLID_LAC)
     return query.count()
+
+
+def daily_task_days(ago):
+    today = util.utcnow().date()
+    day = today - timedelta(days=ago)
+    max_day = day + timedelta(days=1)
+    return day, max_day
 
 
 def add_stat(session, name, day, value):

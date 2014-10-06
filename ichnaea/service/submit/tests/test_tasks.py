@@ -10,6 +10,10 @@ from ichnaea.content.models import (
     Score,
     SCORE_TYPE,
 )
+from ichnaea.data.tasks import (
+    cell_location_update,
+    wifi_location_update,
+)
 from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.models import (
     encode_datetime,
@@ -25,10 +29,6 @@ from ichnaea.models import (
 from ichnaea.service.submit.tasks import (
     insert_cell_measures,
     insert_wifi_measures,
-)
-from ichnaea.tasks import (
-    cell_location_update,
-    wifi_location_update,
 )
 from ichnaea.tests.base import (
     CeleryTestCase,

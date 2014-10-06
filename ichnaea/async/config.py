@@ -11,6 +11,7 @@ from ichnaea.db import Database
 CELERY_IMPORTS = [
     'ichnaea.tasks',
     'ichnaea.backup.tasks',
+    'ichnaea.data.tasks',
     'ichnaea.export.tasks',
     'ichnaea.content.tasks',
     'ichnaea.backfill.tasks',

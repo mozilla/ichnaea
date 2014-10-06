@@ -1,5 +1,13 @@
 from datetime import timedelta
 
+from ichnaea.data.tasks import (
+    backfill_cell_location_update,
+    cell_location_update,
+    remove_cell,
+    remove_wifi,
+    scan_lacs,
+    wifi_location_update,
+)
 from ichnaea.models import (
     Cell,
     CellBlacklist,
@@ -18,7 +26,6 @@ from ichnaea import util
 class TestCellLocationUpdate(CeleryTestCase):
 
     def test_cell_location_update(self):
-        from ichnaea.tasks import cell_location_update
         now = util.utcnow()
         before = now - timedelta(days=1)
         session = self.db_master_session
@@ -51,8 +58,8 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(result.get(), (2, 0))
         self.check_stats(
             total=2,
-            timer=['task.cell_location_update'],
-            gauge=['task.cell_location_update.new_measures_1_100'],
+            timer=['task.data.cell_location_update'],
+            gauge=['task.data.cell_location_update.new_measures_1_100'],
         )
 
         cells = session.query(Cell).filter(Cell.cid != CELLID_LAC).all()
@@ -67,7 +74,6 @@ class TestCellLocationUpdate(CeleryTestCase):
                 self.assertEqual(cell.lon, 2.002)
 
     def test_backfill_cell_location_update(self):
-        from ichnaea.tasks import backfill_cell_location_update
         session = self.db_master_session
         k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
         data = [
@@ -97,7 +103,6 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(cell.total_measures, 3)
 
     def test_cell_max_min_range_update(self):
-        from ichnaea.tasks import cell_location_update
         session = self.db_master_session
 
         k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
@@ -132,7 +137,6 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(cell.range, 556)
 
     def test_blacklist_moving_cells(self):
-        from ichnaea.tasks import cell_location_update
         now = util.utcnow()
         long_ago = now - timedelta(days=40)
         session = self.db_master_session
@@ -202,16 +206,15 @@ class TestCellLocationUpdate(CeleryTestCase):
             total=6,
             timer=[
                 # We made duplicate calls
-                ('task.cell_location_update', 2),
+                ('task.data.cell_location_update', 2),
                 # One of those would've scheduled a remove_cell task
-                ('task.remove_cell', 1)
+                ('task.data.remove_cell', 1)
             ],
             gauge=[
-                ('task.cell_location_update.new_measures_1_100', 2),
+                ('task.data.cell_location_update.new_measures_1_100', 2),
             ])
 
     def add_line_of_cells_and_scan_lac(self):
-        from ichnaea.tasks import cell_location_update, scan_lacs
         session = self.db_master_session
         big = 1.0
         small = big / 10
@@ -264,7 +267,6 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(lac.total_measures, 0)
 
     def test_scan_lacs_race_with_cell_location_update(self):
-        from ichnaea.tasks import cell_location_update, scan_lacs
         session = self.db_master_session
 
         # First batch of cell measurements for CID 1
@@ -306,7 +308,6 @@ class TestCellLocationUpdate(CeleryTestCase):
         scan_lacs.delay()
 
     def test_cell_lac_asymmetric(self):
-        from ichnaea.tasks import cell_location_update, scan_lacs
         session = self.db_master_session
         big = 0.1
         small = big / 10
@@ -352,8 +353,6 @@ class TestCellLocationUpdate(CeleryTestCase):
         self.assertEqual(lac.range, 339540)
 
     def test_cell_removal_updates_lac(self):
-        from ichnaea.tasks import remove_cell, scan_lacs
-
         session = self.db_master_session
         keys = dict(radio=1, mcc=1, mnc=1, lac=1)
 
@@ -412,7 +411,6 @@ class TestCellLocationUpdate(CeleryTestCase):
 class TestWifiLocationUpdate(CeleryTestCase):
 
     def test_wifi_location_update(self):
-        from ichnaea.tasks import wifi_location_update
         now = util.utcnow()
         before = now - timedelta(days=1)
         session = self.db_master_session
@@ -439,8 +437,8 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.assertEqual(result.get(), (2, 0))
         self.check_stats(
             total=2,
-            timer=['task.wifi_location_update'],
-            gauge=['task.wifi_location_update.new_measures_1_100'],
+            timer=['task.data.wifi_location_update'],
+            gauge=['task.data.wifi_location_update.new_measures_1_100'],
         )
 
         wifis = dict(session.query(Wifi.key, Wifi).all())
@@ -455,7 +453,6 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.assertEqual(wifis[k2].new_measures, 0)
 
     def test_wifi_max_min_range_update(self):
-        from ichnaea.tasks import wifi_location_update
         session = self.db_master_session
         k1 = "ab1234567890"
         k2 = "cd1234567890"
@@ -506,7 +503,6 @@ class TestWifiLocationUpdate(CeleryTestCase):
         self.assertEqual(wifis[k2].range, 497)
 
     def test_blacklist_moving_wifis(self):
-        from ichnaea.tasks import wifi_location_update
         now = util.utcnow()
         long_ago = now - timedelta(days=40)
         session = self.db_master_session
@@ -574,16 +570,15 @@ class TestWifiLocationUpdate(CeleryTestCase):
             total=6,
             timer=[
                 # We made duplicate calls
-                ('task.wifi_location_update', 2),
+                ('task.data.wifi_location_update', 2),
                 # One of those would've scheduled a remove_wifi task
-                ('task.remove_wifi', 1)
+                ('task.data.remove_wifi', 1)
             ],
             gauge=[
-                ('task.wifi_location_update.new_measures_1_100', 2),
+                ('task.data.wifi_location_update.new_measures_1_100', 2),
             ])
 
     def test_remove_wifi(self):
-        from ichnaea.tasks import remove_wifi
         session = self.db_master_session
         measures = []
         wifi_keys = [{'key': "a%s1234567890" % i} for i in range(5)]

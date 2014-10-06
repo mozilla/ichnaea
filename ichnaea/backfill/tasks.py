@@ -3,10 +3,10 @@ from collections import defaultdict
 from sqlalchemy import text
 
 from ichnaea.async.task import DatabaseTask
-from ichnaea.tasks import backfill_cell_location_update
-from ichnaea.worker import celery
-from ichnaea.models import CELLID_LAC
+from ichnaea.data.tasks import backfill_cell_location_update
 from ichnaea.geocalc import distance
+from ichnaea.models import CELLID_LAC
+from ichnaea.worker import celery
 
 # Distance in kilometers between towers with no
 # LAC/CID and towers with known LAC/CID
