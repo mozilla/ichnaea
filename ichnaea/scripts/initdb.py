@@ -52,6 +52,9 @@ def add_users(conn, location_cfg):
         if cred.user not in userids:
             conn.execute(create_stmt.bindparams(user=cred.user, pwd=cred.pwd))
             conn.execute(grant_stmt.bindparams(user=cred.user))
+    # create a monitoring user without a password nor grants
+    if "lbcheck" not in userids:
+        conn.execute(text("CREATE USER lbcheck"))
 
 
 def create_schema(engine, alembic_cfg, location_cfg):

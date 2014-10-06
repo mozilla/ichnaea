@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Create a new `lbcheck` MySQL user in the `location_initdb` command.
+
 - Fix `monitor_api_key_limits` task to work without api limit entries.
 
 - #301: Schedule hourly differential imports of OCID cell data.
