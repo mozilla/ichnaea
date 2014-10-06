@@ -13,7 +13,7 @@ from sqlalchemy import text
 
 from ichnaea.config import read_config
 from ichnaea.db import Database
-from ichnaea.heka_logging import (
+from ichnaea.logging import (
     configure_heka,
     RAVEN_ERROR,
 )

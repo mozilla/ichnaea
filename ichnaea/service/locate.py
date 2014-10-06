@@ -8,7 +8,7 @@ from ichnaea.geocalc import (
     location_is_in_country,
 )
 from ichnaea.geoip import radius_from_geoip
-from ichnaea.heka_logging import get_heka_client, RAVEN_ERROR
+from ichnaea.logging import get_heka_client, RAVEN_ERROR
 from ichnaea.models import (
     Cell,
     OCIDCell,

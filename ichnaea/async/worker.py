@@ -8,7 +8,7 @@ from ichnaea.async.config import (
     configure_ocid_import,
 )
 from ichnaea.config import read_config
-from ichnaea.heka_logging import configure_heka
+from ichnaea.logging import configure_heka
 from ichnaea.stats import configure_stats
 
 

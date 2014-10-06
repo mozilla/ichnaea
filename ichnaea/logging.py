@@ -40,7 +40,7 @@ def quote_statsd_path(path):
     return path.replace('/', '.').lstrip('.').replace('@', '-')
 
 
-def heka_tween_factory(handler, registry):
+def log_tween_factory(handler, registry):
 
     VALID_4xx_URLS = [
         '/v1/submit',
@@ -49,7 +49,7 @@ def heka_tween_factory(handler, registry):
         '/v1/geosubmit',
     ]
 
-    def heka_tween(request):
+    def log_tween(request):
         heka_client = registry.heka_client
         stats_client = registry.stats_client
         start = time.time()
@@ -93,4 +93,4 @@ def heka_tween_factory(handler, registry):
 
         return response
 
-    return heka_tween
+    return log_tween

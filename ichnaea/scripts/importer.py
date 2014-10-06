@@ -13,7 +13,7 @@ import sys
 
 from ichnaea.config import read_config
 from ichnaea.db import Database
-from ichnaea.heka_logging import configure_heka
+from ichnaea.logging import configure_heka
 from ichnaea.models import (
     normalized_wifi_key,
     valid_wifi_pattern,

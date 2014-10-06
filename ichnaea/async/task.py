@@ -5,7 +5,7 @@ from kombu.serialization import (
 )
 
 from ichnaea.db import db_worker_session
-from ichnaea.heka_logging import (
+from ichnaea.logging import (
     get_heka_client,
     RAVEN_ERROR,
 )

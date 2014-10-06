@@ -18,7 +18,7 @@ from ichnaea.content.views import (
     LOCAL_TILES,
     LOCAL_TILES_BASE,
 )
-from ichnaea.heka_logging import RAVEN_ERROR
+from ichnaea.logging import RAVEN_ERROR
 from ichnaea.tests.base import AppTestCase
 from ichnaea import util
 

@@ -19,7 +19,7 @@ from ichnaea.content.stats import (
     leaders_weekly,
 )
 from ichnaea.customjson import dumps, loads
-from ichnaea.heka_logging import RAVEN_ERROR
+from ichnaea.logging import RAVEN_ERROR
 from ichnaea import util
 
 HERE = os.path.dirname(__file__)

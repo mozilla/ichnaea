@@ -23,7 +23,7 @@ from ichnaea.cache import redis_client
 from ichnaea.db import _Model
 from ichnaea.db import Database
 from ichnaea.geoip import configure_geoip
-from ichnaea.heka_logging import configure_heka
+from ichnaea.logging import configure_heka
 from ichnaea.models import ApiKey
 from ichnaea.stats import (
     configure_stats,
@@ -214,35 +214,26 @@ class CeleryIsolation(object):
         del celery.db_master
 
 
-class HekaIsolation(object):
+class LogIsolation(object):
 
     @classmethod
-    def setup_heka(cls):
+    def setup_logging(cls):
         # Use a debug configuration
         cls.heka_client = configure_heka(HEKA_TEST_CONFIG)
         cls.stats_client = configure_stats('', DebugStatsClient())
 
     @classmethod
-    def teardown_heka(cls):
+    def teardown_logging(cls):
         del cls.heka_client
         del cls.stats_client
 
-    def clear_heka_messages(self):
+    def clear_log_messages(self):
         self.heka_client.stream.msgs.clear()
         self.stats_client.msgs.clear()
 
     def find_heka_messages(self, *args, **kw):
         msgs = self.heka_client.stream.msgs
         return find_msg(msgs, *args, **kw)
-
-    def print_heka_messages(self):
-        i = 0
-        for m in self.heka_client.stream.msgs:
-            print("Heka Message #%d:" % i)
-            i += 1
-            for field in m.fields:
-                print("    field: %s = %s" %
-                      (field.name, ", ".join(field.value_string)))
 
     def find_stats_messages(self, msg_type, msg_name, msg_value=None):
         data = {
@@ -448,13 +439,13 @@ class GeoIPIsolation(object):
 
 
 class AppTestCase(TestCase, DBIsolation,
-                  RedisIsolation, HekaIsolation, GeoIPIsolation):
+                  RedisIsolation, LogIsolation, GeoIPIsolation):
 
     @classmethod
     def setUpClass(cls):
         super(AppTestCase, cls).setup_engine()
         super(AppTestCase, cls).setup_redis()
-        super(AppTestCase, cls).setup_heka()
+        super(AppTestCase, cls).setup_logging()
         super(AppTestCase, cls).setup_geoip()
 
         cls.app = _make_app(_db_master=cls.db_master,
@@ -473,33 +464,33 @@ class AppTestCase(TestCase, DBIsolation,
         del cls.app
         super(AppTestCase, cls).teardown_engine()
         super(AppTestCase, cls).teardown_redis()
-        super(AppTestCase, cls).teardown_heka()
+        super(AppTestCase, cls).teardown_logging()
         super(AppTestCase, cls).teardown_geoip()
 
     def setUp(self):
         self.setup_session()
-        self.clear_heka_messages()
+        self.clear_log_messages()
 
     def tearDown(self):
         self.cleanup_redis()
         self.teardown_session()
 
 
-class DBTestCase(TestCase, DBIsolation, HekaIsolation):
+class DBTestCase(TestCase, DBIsolation, LogIsolation):
 
     @classmethod
     def setUpClass(cls):
         super(DBTestCase, cls).setup_engine()
-        super(DBTestCase, cls).setup_heka()
+        super(DBTestCase, cls).setup_logging()
 
     @classmethod
     def tearDownClass(cls):
         super(DBTestCase, cls).teardown_engine()
-        super(DBTestCase, cls).teardown_heka()
+        super(DBTestCase, cls).teardown_logging()
 
     def setUp(self):
         self.setup_session()
-        self.clear_heka_messages()
+        self.clear_log_messages()
 
     def tearDown(self):
         self.teardown_session()

@@ -5,7 +5,7 @@ from redis import ConnectionError
 from sqlalchemy import text
 
 from ichnaea.customjson import dumps
-from ichnaea.heka_logging import get_heka_client, RAVEN_ERROR
+from ichnaea.logging import get_heka_client, RAVEN_ERROR
 from ichnaea.service.error import DAILY_LIMIT
 from ichnaea import util
 

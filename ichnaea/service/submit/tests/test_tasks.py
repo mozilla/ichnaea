@@ -14,7 +14,7 @@ from ichnaea.data.tasks import (
     cell_location_update,
     wifi_location_update,
 )
-from ichnaea.heka_logging import RAVEN_ERROR
+from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
     encode_datetime,
     Cell,

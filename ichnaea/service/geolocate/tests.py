@@ -1,5 +1,6 @@
 from sqlalchemy import text
 
+from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
     Cell,
     Wifi,
@@ -8,7 +9,6 @@ from ichnaea.models import (
     GEOIP_CITY_ACCURACY,
     RADIO_TYPE,
 )
-from ichnaea.heka_logging import RAVEN_ERROR
 from ichnaea.tests.base import (
     AppTestCase,
     FRANCE_MCC,

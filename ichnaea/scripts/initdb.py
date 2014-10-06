@@ -13,7 +13,7 @@ from ichnaea.config import read_config
 from ichnaea.content import models  # NOQA
 from ichnaea.db import _Model
 from ichnaea.db import Database
-from ichnaea.heka_logging import configure_heka
+from ichnaea.logging import configure_heka
 
 DBCreds = namedtuple('DBCreds', 'user pwd')
 

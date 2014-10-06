@@ -2,7 +2,7 @@ from sqlalchemy import text
 from webob.response import gzip_app_iter
 
 from ichnaea.customjson import dumps, loads
-from ichnaea.heka_logging import RAVEN_ERROR
+from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
     Cell,
     Wifi,

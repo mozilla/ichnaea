@@ -26,8 +26,8 @@ def main(global_config, heka_config=None, init=False,
     settings = config.registry.settings
 
     from ichnaea.content.views import configure_content
+    from ichnaea.logging import configure_heka
     from ichnaea.service import configure_service
-    from ichnaea.heka_logging import configure_heka
     from ichnaea.stats import configure_stats
 
     configure_content(config)
@@ -61,7 +61,7 @@ def main(global_config, heka_config=None, init=False,
         settings.get('statsd_host'), _client=_stats_client)
 
     config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)
-    config.add_tween('ichnaea.heka_logging.heka_tween_factory', under=EXCVIEW)
+    config.add_tween('ichnaea.logging.log_tween_factory', under=EXCVIEW)
     config.add_request_method(db_master_session, property=True)
     config.add_request_method(db_slave_session, property=True)
 
