@@ -546,8 +546,8 @@ class TestSubmit(CeleryAppTestCase):
                      'items.uploaded.batches',
                      'submit.api_key.test'],
             timer=['request.v1.submit',
-                   'task.service.submit.insert_cell_measures',
-                   'task.service.submit.insert_measures']
+                   'task.data.insert_measures',
+                   'task.data.insert_measures_cell']
         )
 
     def test_unusual_wifi_keys(self):

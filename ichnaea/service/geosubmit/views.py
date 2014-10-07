@@ -10,6 +10,7 @@ from pytz import utc
 from redis import ConnectionError
 
 from ichnaea.customjson import dumps
+from ichnaea.data.tasks import insert_measures
 from ichnaea.logging import get_stats_client
 from ichnaea.service.base import check_api_key
 from ichnaea.service.error import (
@@ -32,7 +33,6 @@ from ichnaea.service.locate import (
     map_data,
 )
 from ichnaea.service.submit.schema import SubmitSchema
-from ichnaea.service.submit.tasks import insert_measures
 
 SENTINEL = object()
 

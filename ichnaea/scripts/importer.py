@@ -16,9 +16,9 @@ from ichnaea.data.validation import (
     normalized_wifi_key,
     valid_wifi_pattern,
 )
+from ichnaea.data.tasks import process_measures
 from ichnaea.db import Database
 from ichnaea.logging import configure_heka
-from ichnaea.service.submit.tasks import process_measures
 from ichnaea import util
 
 

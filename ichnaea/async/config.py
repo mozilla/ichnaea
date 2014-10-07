@@ -9,14 +9,14 @@ from ichnaea.db import Database
 
 
 CELERY_IMPORTS = [
-    'ichnaea.tasks',
+    'ichnaea.tasks',  # BBB
+    'ichnaea.backfill.tasks',
     'ichnaea.backup.tasks',
+    'ichnaea.content.tasks',
     'ichnaea.data.tasks',
     'ichnaea.export.tasks',
-    'ichnaea.content.tasks',
-    'ichnaea.backfill.tasks',
     'ichnaea.monitor.tasks',
-    'ichnaea.service.submit.tasks',
+    'ichnaea.service.submit.tasks',  # BBB
 ]
 
 CELERY_QUEUES = (

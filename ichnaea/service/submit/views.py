@@ -5,11 +5,11 @@ from pyramid.httpexceptions import (
 from redis import ConnectionError
 
 from ichnaea.customjson import dumps
+from ichnaea.data.tasks import insert_measures
 from ichnaea.service.error import (
     preprocess_request,
 )
 from ichnaea.service.submit.schema import SubmitSchema
-from ichnaea.service.submit.tasks import insert_measures
 from ichnaea.service.base import check_api_key
 
 

@@ -315,7 +315,7 @@ def filter_bssids_by_similarity(bs):
     DISTANCE_THRESHOLD = 2
 
     def bytes_of_hex_string(hs):
-        return [int(hs[i:i+2], 16) for i in range(0, len(hs), 2)]
+        return [int(hs[i:i + 2], 16) for i in range(0, len(hs), 2)]
 
     def hamming_distance(a, b):
         h = 0
