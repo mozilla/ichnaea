@@ -118,12 +118,12 @@ def process_upload(nickname, items):
         return errors
 
     for i in range(0, len(batch_list), 100):
-        items = dumps(batch_list[i:i + 100])
+        batch_items = dumps(batch_list[i:i + 100])
         # insert measures, expire the task if it wasn't processed
         # after two hours to avoid queue overload
         try:
             insert_measures.apply_async(
-                kwargs={'items': items, 'nickname': nickname},
+                kwargs={'items': batch_items, 'nickname': nickname},
                 expires=7200)
         except ConnectionError:
             return SENTINEL
