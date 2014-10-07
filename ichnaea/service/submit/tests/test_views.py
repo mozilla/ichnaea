@@ -13,7 +13,6 @@ from ichnaea.content.models import (
     SCORE_TYPE,
     User,
 )
-from ichnaea.data.validation import WIFI_TEST_KEY
 from ichnaea.models import (
     CellMeasure,
     RADIO_TYPE,
@@ -84,50 +83,6 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.lac, 2)
         self.assertEqual(item.cid, 1234)
 
-    def test_ok_cell_radio(self):
-        app = self.app
-        cell_data = [{'radio': 'gsm',
-                      "mcc": FRANCE_MCC,
-                      "mnc": 1,
-                      "lac": 2,
-                      "cid": 1234}]
-        res = app.post_json(
-            '/v1/submit', {"items": [{"lat": PARIS_LAT,
-                                      "lon": PARIS_LON,
-                                      "cell": cell_data}]},
-            status=204)
-        self.assertEqual(res.body, '')
-        session = self.db_master_session
-        cell_result = session.query(CellMeasure).all()
-        self.assertEqual(len(cell_result), 1)
-        item = cell_result[0]
-        self.assertTrue(isinstance(item.report_id, bytes))
-        self.assertEqual(len(item.report_id), 16)
-        self.assertEqual(item.radio, RADIO_TYPE['gsm'])
-
-    def test_ok_cell_asu(self):
-        app = self.app
-        key = {'radio': 'gsm', "mcc": FRANCE_MCC, "mnc": 1, "lac": 2}
-        cell_data = [
-            dict(asu=5, cid=3, **key),
-            dict(signal=-90, cid=4, **key),
-            dict(asu=-95, cid=5, **key),
-            dict(asu=-70, signal=-80, cid=6, **key),
-        ]
-        res = app.post_json(
-            '/v1/submit', {"items": [{"lat": PARIS_LAT,
-                                      "lon": PARIS_LON,
-                                      "cell": cell_data}]},
-            status=204)
-        self.assertEqual(res.body, '')
-        session = self.db_master_session
-        cell_result = session.query(CellMeasure).all()
-        self.assertEqual(len(cell_result), 4)
-        self.assertEqual(set([c.cid for c in cell_result]), set([3, 4, 5, 6]))
-        self.assertEqual(set([c.asu for c in cell_result]), set([-1, 5]))
-        signals = set([c.signal for c in cell_result])
-        self.assertEqual(signals, set([0, -80, -90, -95]))
-
     def test_ok_wifi(self):
         app = self.app
         today = util.utcnow().date()
@@ -171,37 +126,6 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.created.date(), today)
         self.assertEqual(item.lat, 12.3456781)
         self.assertEqual(item.lon, 23.4567892)
-
-    def test_ok_wifi_frequency(self):
-        app = self.app
-        wifi_data = [
-            {"key": "009999999999"},
-            {"key": "00aaaaaaaaaa", "frequency": 2427},
-            {"key": "00bbbbbbbbbb", "channel": 7},
-            {"key": "00cccccccccc", "frequency": 5200},
-            {"key": "00dddddddddd", "frequency": 5700},
-            {"key": "00eeeeeeeeee", "frequency": 3100},
-            {"key": "00fffffffffa", "frequency": 2412, "channel": 9},
-        ]
-        res = app.post_json(
-            '/v1/submit', {"items": [{"lat": 12.345678,
-                                      "lon": 23.456789,
-                                      "wifi": wifi_data}]},
-            status=204)
-        self.assertEqual(res.body, '')
-        session = self.db_master_session
-
-        result = session.query(WifiMeasure).all()
-        self.assertEqual(len(result), 7)
-
-        wifis = dict([(w.key, w.channel) for w in result])
-        self.assertEqual(wifis['009999999999'], 0)
-        self.assertEqual(wifis['00aaaaaaaaaa'], 4)
-        self.assertEqual(wifis['00bbbbbbbbbb'], 7)
-        self.assertEqual(wifis['00cccccccccc'], 40)
-        self.assertEqual(wifis['00dddddddddd'], 140)
-        self.assertEqual(wifis['00eeeeeeeeee'], 0)
-        self.assertEqual(wifis['00fffffffffa'], 9)
 
     def test_batches(self):
         app = self.app
@@ -470,32 +394,6 @@ class TestSubmit(CeleryAppTestCase):
         res = app.post_json('/v1/submit', [1], status=400)
         self.assertTrue('errors' in res.json)
 
-    def test_error_too_short_wifi_key(self):
-        app = self.app
-        wifi_data = [{"key": "ab:12:34:56:78:90"}, {"key": "cd:34"}]
-        app.post_json(
-            '/v1/submit', {"items": [{"lat": 12.3456781,
-                                      "lon": 23.4567892,
-                                      "wifi": wifi_data}]},
-            status=204)
-        session = self.db_master_session
-        result = session.query(WifiMeasure).all()
-        # The too-short key gets rejected, the ok one gets in.
-        self.assertEqual(len(result), 1)
-
-    def test_error_too_long_wifi_key(self):
-        app = self.app
-        wifi_data = [{"key": "ab:12:34:56:78:90"}, {"key": "cd:34" * 10}]
-        app.post_json(
-            '/v1/submit', {"items": [{"lat": 12.3456781,
-                                      "lon": 23.4567892,
-                                      "wifi": wifi_data}]},
-            status=204)
-        session = self.db_master_session
-        result = session.query(WifiMeasure).all()
-        # The too-long key gets rejected, the ok one gets in.
-        self.assertEqual(len(result), 1)
-
     def test_many_errors(self):
         app = self.app
         cell = [{'radio': '0', 'mcc': 1, 'mnc': 2} for i in range(100)]
@@ -549,61 +447,6 @@ class TestSubmit(CeleryAppTestCase):
                    'task.data.insert_measures',
                    'task.data.insert_measures_cell']
         )
-
-    def test_unusual_wifi_keys(self):
-        app = self.app
-        # we ban f{12}
-        wifi_data = [{"key": "FFFFFFFFFFFF"}]
-        app.post_json(
-            '/v1/submit', {"items": [{"lat": 12.3456781,
-                                      "lon": 23.4567892,
-                                      "accuracy": 17,
-                                      "wifi": wifi_data}]},
-            status=204)
-
-        session = self.db_master_session
-        result = session.query(WifiMeasure).all()
-        self.assertEqual(len(result), 0)
-
-        # we ban 0{12}
-        wifi_data = [{"key": "00:00:00:00:00:00"}]
-        app.post_json(
-            '/v1/submit', {"items": [{"lat": 12.3456781,
-                                      "lon": 23.4567892,
-                                      "accuracy": 17,
-                                      "wifi": wifi_data}]},
-            status=204)
-
-        session = self.db_master_session
-        result = session.query(WifiMeasure).all()
-        self.assertEqual(len(result), 0)
-
-        # we ban a WiFi test key
-        wifi_data = [{"key": WIFI_TEST_KEY}]
-        app.post_json(
-            '/v1/submit', {"items": [{"lat": 12.3456781,
-                                      "lon": 23.4567892,
-                                      "accuracy": 17,
-                                      "wifi": wifi_data}]},
-            status=204)
-
-        session = self.db_master_session
-        result = session.query(WifiMeasure).all()
-        self.assertEqual(len(result), 0)
-
-        # we considered but do not ban locally administered wifi keys
-        # based on the U/L bit https://en.wikipedia.org/wiki/MAC_address
-        wifi_data = [{"key": "0a:00:00:00:00:00"}]
-        app.post_json(
-            '/v1/submit', {"items": [{"lat": 12.3456781,
-                                      "lon": 23.4567892,
-                                      "accuracy": 17,
-                                      "wifi": wifi_data}]},
-            status=204)
-
-        session = self.db_master_session
-        result = session.query(WifiMeasure).all()
-        self.assertEqual(len(result), 1)
 
     def test_missing_latlon(self):
         session = self.db_master_session

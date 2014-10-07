@@ -1,6 +1,7 @@
 from ichnaea.data.validation import (
     normalized_cell_measure_dict,
     normalized_wifi_measure_dict,
+    WIFI_TEST_KEY,
 )
 from ichnaea.tests.base import TestCase
 from ichnaea.tests.base import (
@@ -227,18 +228,23 @@ class TestValidation(TestCase):
             ("fffffffffff0", "fffffffffff0"),
             ("f00000000000", "f00000000000"),
             ("000000-a00000", "000000a00000"),
-            ("f1234abcd345", "f1234abcd345")
+            ("f1234abcd345", "f1234abcd345"),
+            # We considered but do not ban locally administered wifi keys
+            # based on the U/L bit https://en.wikipedia.org/wiki/MAC_address
+            ("0a:00:00:00:00:00", "0a0000000000"),
         ]
         invalid_keys = [
+            "ab:cd",
             "ffffffffffff",
             "000000000000",
             "00000000001",
             "00000000000g",
             "12#34:56:78:90:12",
             "[1234.56.78.9012]",
-        ] + [c.join([str.format("{x:02x}", x=x)
-                     for x in range(6)])
-             for c in "!@#$%^&*()_+={}\x01\x02\x03\r\n"]
+        ] + [WIFI_TEST_KEY] + [
+            c.join([str.format("{x:02x}", x=x)
+                    for x in range(6)])
+            for c in "!@#$%^&*()_+={}\x01\x02\x03\r\n"]
 
         valid_signals = [-200, -100, -1]
         invalid_signals = [-300, -201, 0, 10]
