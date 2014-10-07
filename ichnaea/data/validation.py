@@ -211,10 +211,11 @@ def normalized_cell_dict(d, default_radio=-1):
     if d is None:
         return None
 
-    # Tighten the MCC check even more
+    # Check against the list of all known valid mccs
     if d['mcc'] not in ALL_VALID_MCCS:
         return None
 
+    # If a default radio was set, and we don't know, use it as fallback
     if d['radio'] == -1 and default_radio != -1:
         d['radio'] = default_radio
 
@@ -227,7 +228,7 @@ def normalized_cell_dict(d, default_radio=-1):
     if d['lac'] == -1 and d['cid'] == 65535:
         d['cid'] = -1
 
-    # Must have LAC+CID or PSC
+    # Must have (lac and cid) or psc (psc-only to use in backfill)
     if (d['lac'] == -1 or d['cid'] == -1) and d['psc'] == -1:
         return None
 

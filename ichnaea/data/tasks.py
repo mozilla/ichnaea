@@ -604,9 +604,6 @@ def process_time(measure, utcnow, utcmin):
     try:
         measure['time'] = iso8601.parse_date(measure['time'])
     except (iso8601.ParseError, TypeError):
-        if measure['time']:  # pragma: no cover
-            # ignore debug log for empty values
-            pass
         measure['time'] = utcnow
     else:
         # don't accept future time values or

@@ -14,6 +14,10 @@ from ichnaea import util
 
 class TestValidation(TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        cls.time = util.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
+
     def check_normalized_cell(self, measure, cell, expect):
         d = measure.copy()
         d.update(cell)
@@ -26,8 +30,52 @@ class TestValidation(TestCase):
                 self.assertEqual(result[k], v)
         return result
 
-    def test_normalize_cells(self):
+    def check_normalized_wifi(self, measure, wifi, expect):
+        d = measure.copy()
+        d.update(wifi)
+        result = normalized_wifi_measure_dict(d)
 
+        if expect is None:
+            self.assertEqual(result, expect)
+        else:
+            for (k, v) in expect.items():
+                self.assertEqual(result[k], v)
+        return result
+
+    def make_cell_submission(self, **kw):
+        measure = dict(radio='umts',
+                       lat=PARIS_LAT,
+                       lon=PARIS_LON, accuracy=120,
+                       altitude=220, altitude_accuracy=10,
+                       time=self.time)
+        cell = dict(mcc=FRANCE_MCC, mnc=220, lac=12345, cid=34567, psc=-1,
+                    asu=15, signal=-83, ta=5)
+        for (k, v) in kw.items():
+            if k in measure:
+                measure[k] = v
+            else:
+                cell[k] = v
+        return (measure, cell)
+
+    def make_wifi_submission(self, **kw):
+        measure = dict(radio='',
+                       lat=49.25,
+                       lon=123.10, accuracy=120,
+                       altitude=220, altitude_accuracy=10,
+                       time=self.time)
+        wifi = dict(key="12:34:56:78:90:12",
+                    frequency=2442,
+                    channel=7,
+                    signal=-85,
+                    signalToNoiseRatio=37)
+        for (k, v) in kw.items():
+            if k in measure:
+                measure[k] = v
+            else:
+                wifi[k] = v
+        return (measure, wifi)
+
+    def test_normalize_cells(self):
         radio_pairs = [('gsm', 0),
                        ('cdma', 1),
                        ('umts', 2),
@@ -78,33 +126,16 @@ class TestValidation(TestCase):
         valid_signals = [-200, -100, -1]
         invalid_signals = [-300, -201, 0, 10]
 
-        time = util.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
-
-        def make_submission(**kw):
-            measure = dict(radio='umts',
-                           lat=PARIS_LAT,
-                           lon=PARIS_LON, accuracy=120,
-                           altitude=220, altitude_accuracy=10,
-                           time=time)
-            cell = dict(mcc=FRANCE_MCC, mnc=220, lac=12345, cid=34567, psc=-1,
-                        asu=15, signal=-83, ta=5)
-            for (k, v) in kw.items():
-                if k in measure:
-                    measure[k] = v
-                else:
-                    cell[k] = v
-            return (measure, cell)
-
         # Try all radio values
         for (radio, v) in radio_pairs:
-            (measure, cell) = make_submission(radio=radio)
+            (measure, cell) = self.make_cell_submission(radio=radio)
             self.check_normalized_cell(measure, cell, dict(radio=v))
 
         # Try all valid (lat, lon, mcc, mnc) groups
         for (lat, lon, mcc) in valid_lat_lon_mcc_triples:
             for mnc in valid_mncs:
-                (measure, cell) = make_submission(lat=lat, lon=lon,
-                                                  mcc=mcc, mnc=mnc)
+                (measure, cell) = self.make_cell_submission(
+                    lat=lat, lon=lon, mcc=mcc, mnc=mnc)
                 self.check_normalized_cell(measure, cell, dict(lat=lat,
                                                                lon=lon,
                                                                mcc=mcc,
@@ -112,20 +143,20 @@ class TestValidation(TestCase):
 
         # Try all invalid mcc variants individually
         for mcc in invalid_mccs:
-            (measure, cell) = make_submission(mcc=mcc)
+            (measure, cell) = self.make_cell_submission(mcc=mcc)
             self.check_normalized_cell(measure, cell, None)
 
         # Try all invalid mnc variants individually
         for mnc in invalid_mncs:
-            (measure, cell) = make_submission(mnc=mnc)
+            (measure, cell) = self.make_cell_submission(mnc=mnc)
             self.check_normalized_cell(measure, cell, None)
 
         # Try all valid (lac, cid) pairs, with invalid pscs
         for lac in valid_lacs:
             for cid in valid_cids:
                 for psc in invalid_pscs:
-                    (measure, cell) = make_submission(lac=lac, cid=cid,
-                                                      psc=psc)
+                    (measure, cell) = self.make_cell_submission(
+                        lac=lac, cid=cid, psc=psc)
                     self.check_normalized_cell(measure, cell, dict(lac=lac,
                                                                    cid=cid,
                                                                    psc=-1))
@@ -133,37 +164,37 @@ class TestValidation(TestCase):
         # Try all invalid lacs, with an invalid psc
         for lac in invalid_lacs:
             for psc in invalid_pscs:
-                (measure, cell) = make_submission(lac=lac, psc=psc)
+                (measure, cell) = self.make_cell_submission(lac=lac, psc=psc)
                 self.check_normalized_cell(measure, cell, None)
 
         # Try all invalid cids, with an invalid psc
         for cid in invalid_cids:
             for psc in invalid_pscs:
-                (measure, cell) = make_submission(cid=cid, psc=psc)
+                (measure, cell) = self.make_cell_submission(cid=cid, psc=psc)
                 self.check_normalized_cell(measure, cell, None)
 
         # Try all invalid lacs, with a valid psc
         for lac in invalid_lacs:
             for psc in valid_pscs:
-                (measure, cell) = make_submission(lac=lac, psc=psc)
+                (measure, cell) = self.make_cell_submission(lac=lac, psc=psc)
                 self.check_normalized_cell(measure, cell, dict(lac=-1,
                                                                psc=psc))
 
         # Try all invalid cids, with a valid psc
         for cid in invalid_cids:
             for psc in valid_pscs:
-                (measure, cell) = make_submission(cid=cid, psc=psc)
+                (measure, cell) = self.make_cell_submission(cid=cid, psc=psc)
                 self.check_normalized_cell(measure, cell, dict(cid=-1,
                                                                psc=psc))
 
         # Try all invalid latitudes individually
         for lat in invalid_latitudes:
-            (measure, cell) = make_submission(lat=lat)
+            (measure, cell) = self.make_cell_submission(lat=lat)
             self.check_normalized_cell(measure, cell, None)
 
         # Try all invalid longitudes individually
         for lon in invalid_longitudes:
-            (measure, cell) = make_submission(lon=lon)
+            (measure, cell) = self.make_cell_submission(lon=lon)
             self.check_normalized_cell(measure, cell, None)
 
         # Try all 'nice to have' valid fields individually
@@ -174,7 +205,7 @@ class TestValidation(TestCase):
                         ('ta', valid_tas),
                         ('signal', valid_signals)]:
             for v in vs:
-                (measure, cell) = make_submission(**{k: v})
+                (measure, cell) = self.make_cell_submission(**{k: v})
                 self.check_normalized_cell(measure, cell, {k: v})
 
         # Try all 'nice to have' invalid fields individually
@@ -186,23 +217,10 @@ class TestValidation(TestCase):
                            ('ta', invalid_tas, 0),
                            ('signal', invalid_signals, 0)]:
             for v in vs:
-                (measure, cell) = make_submission(**{k: v})
+                (measure, cell) = self.make_cell_submission(**{k: v})
                 self.check_normalized_cell(measure, cell, {k: x})
 
-    def check_normalized_wifi(self, measure, wifi, expect):
-        d = measure.copy()
-        d.update(wifi)
-        result = normalized_wifi_measure_dict(d)
-
-        if expect is None:
-            self.assertEqual(result, expect)
-        else:
-            for (k, v) in expect.items():
-                self.assertEqual(result[k], v)
-        return result
-
     def test_normalize_wifis(self):
-
         valid_channels = [1, 20, 45, 165]
         invalid_channels = [-10, -1, 201, 2500]
 
@@ -252,85 +270,65 @@ class TestValidation(TestCase):
         valid_snrs = [0, 12, 100]
         invalid_snrs = [-1, -50, 101]
 
-        time = util.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
-
-        def make_submission(**kw):
-            measure = dict(radio='',
-                           lat=49.25,
-                           lon=123.10, accuracy=120,
-                           altitude=220, altitude_accuracy=10,
-                           time=time)
-            wifi = dict(key="12:34:56:78:90:12",
-                        frequency=2442,
-                        channel=7,
-                        signal=-85,
-                        signalToNoiseRatio=37)
-            for (k, v) in kw.items():
-                if k in measure:
-                    measure[k] = v
-                else:
-                    wifi[k] = v
-            return (measure, wifi)
-
         # Check valid keys
         for (k1, k2) in valid_key_pairs:
-            (measure, wifi) = make_submission(key=k1)
+            (measure, wifi) = self.make_wifi_submission(key=k1)
             self.check_normalized_wifi(measure, wifi, dict(key=k2))
 
         # Check invalid keys
         for k in invalid_keys:
-            (measure, wifi) = make_submission(key=k)
+            (measure, wifi) = self.make_wifi_submission(key=k)
             self.check_normalized_wifi(measure, wifi, None)
 
         # Check valid frequency/channel pairs together and
         # individually.
         for (f, c) in valid_frequency_channels:
-            (measure, wifi) = make_submission(frequency=f,
-                                              channel=c)
+            (measure, wifi) = self.make_wifi_submission(
+                frequency=f, channel=c)
             wifi = self.check_normalized_wifi(measure, wifi, dict(channel=c))
             self.assertFalse('frequency' in wifi)
 
-            (measure, wifi) = make_submission(frequency=f,
-                                              channel=0)
+            (measure, wifi) = self.make_wifi_submission(
+                frequency=f, channel=0)
             wifi = self.check_normalized_wifi(measure, wifi, dict(channel=c))
             self.assertFalse('frequency' in wifi)
 
-            (measure, wifi) = make_submission(frequency=0,
-                                              channel=c)
+            (measure, wifi) = self.make_wifi_submission(
+                frequency=0, channel=c)
             wifi = self.check_normalized_wifi(measure, wifi, dict(channel=c))
             self.assertFalse('frequency' in wifi)
 
         # Check valid signals
         for s in valid_signals:
-            (measure, wifi) = make_submission(signal=s)
+            (measure, wifi) = self.make_wifi_submission(signal=s)
             self.check_normalized_wifi(measure, wifi, dict(signal=s))
 
         # Check invalid signals
         for s in invalid_signals:
-            (measure, wifi) = make_submission(signal=s)
+            (measure, wifi) = self.make_wifi_submission(signal=s)
             self.check_normalized_wifi(measure, wifi, dict(signal=0))
 
         # Check valid snrs
         for s in valid_snrs:
-            (measure, wifi) = make_submission(signalToNoiseRatio=s)
+            (measure, wifi) = self.make_wifi_submission(signalToNoiseRatio=s)
             self.check_normalized_wifi(
                 measure, wifi, dict(signalToNoiseRatio=s))
 
         # Check invalid snrs
         for s in invalid_snrs:
-            (measure, wifi) = make_submission(signalToNoiseRatio=s)
+            (measure, wifi) = self.make_wifi_submission(signalToNoiseRatio=s)
             self.check_normalized_wifi(
                 measure, wifi, dict(signalToNoiseRatio=0))
 
         # Check valid channels
         for c in valid_channels:
-            (measure, wifi) = make_submission(channel=c)
+            (measure, wifi) = self.make_wifi_submission(channel=c)
             wifi = self.check_normalized_wifi(measure, wifi, dict(channel=c))
             self.assertFalse('frequency' in wifi)
 
         # Check invalid channels are corrected by valid frequency
         for c in invalid_channels:
-            (measure, wifi) = make_submission()
+            (measure, wifi) = self.make_wifi_submission()
             chan = wifi['channel']
             wifi['channel'] = c
             wifi = self.check_normalized_wifi(measure, wifi,
@@ -340,8 +338,61 @@ class TestValidation(TestCase):
         # Check invalid frequencies have no effect and are
         # dropped anyways
         for f in invalid_frequencies:
-            (measure, wifi) = make_submission(frequency=f)
+            (measure, wifi) = self.make_wifi_submission(frequency=f)
             chan = wifi['channel']
             wifi = self.check_normalized_wifi(measure, wifi,
                                               dict(channel=chan))
             self.assertFalse('frequency' in wifi)
+
+    def test_unhelpful_incomplete_cdma_cells(self):
+        # CDMA cell records must have MNC, MCC, LAC and CID filled in
+        entries = [
+            # (data-in, data-out)
+            ({'lac': 3, 'cid': 4}, {'lac': 3, 'cid': 4}),
+            ({'lac': 3, 'cid': -1}, None),
+            ({'lac': -1, 'cid': 4}, None),
+            ({'lac': -1, 'cid': -1, 'psc': 5}, None),
+        ]
+
+        for entry in entries:
+            (measure, cell) = self.make_cell_submission(
+                radio='cdma', **entry[0])
+            self.check_normalized_cell(measure, cell, entry[1])
+
+    def test_unhelpful_incomplete_cells(self):
+        entries = [
+            # These records fail the mcc check
+            {"mcc": 0, "mnc": 2, "lac": 3, "cid": 4},
+            {"mcc": -1, "mnc": 2, "lac": 3, "cid": 4},
+            {"mcc": -2, "mnc": 2, "lac": 3, "cid": 4},
+            {"mcc": 2000, "mnc": 2, "lac": 3, "cid": 4},
+
+            # These records fail the mnc check
+            {"mcc": FRANCE_MCC, "mnc": -1, "lac": 3, "cid": 4},
+            {"mcc": FRANCE_MCC, "mnc": -2, "lac": 3, "cid": 4},
+            {"mcc": FRANCE_MCC, "mnc": 33000, "lac": 3, "cid": 4},
+
+            # These records fail the lac check
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": -1, "cid": 4},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": -2, "cid": 4},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 65536, "cid": 4},
+
+            # These records fail the cid check
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3, "cid": -1},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3, "cid": -2},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3, "cid": 2 ** 28},
+
+            # These records fail the (lac or cid) and psc check
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": -1, "cid": -1},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3, "cid": -1},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": -1, "cid": 4},
+
+            # This fails the check for (unknown lac, cid=65535)
+            # and subsequently the check for missing psc
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 0, "cid": 65535, "psc": -1},
+        ]
+
+        for entry in entries:
+            (measure, cell) = self.make_cell_submission(
+                radio='cdma', **entry)
+            self.check_normalized_cell(measure, cell, None)
