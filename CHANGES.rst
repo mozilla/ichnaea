@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #276: Fix bug in batch processing, when receiving more than 100
+  observations in one submission.
+
 - Refactor some internals and move code around.
 
 - Create a new `lbcheck` MySQL user in the `location_initdb` command.

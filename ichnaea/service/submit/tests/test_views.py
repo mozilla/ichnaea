@@ -129,7 +129,7 @@ class TestSubmit(CeleryAppTestCase):
 
     def test_batches(self):
         app = self.app
-        EXPECTED_RECORDS = 10
+        EXPECTED_RECORDS = 110
         wifi_data = [{"key": "aaaaaaaaaaaa"}]
         items = [{"lat": 12.34, "lon": 23.45 + i, "wifi": wifi_data}
                  for i in range(EXPECTED_RECORDS)]

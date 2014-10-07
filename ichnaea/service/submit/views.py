@@ -75,12 +75,12 @@ def submit_view(request):
     # batch incoming data into multiple tasks, in case someone
     # manages to submit us a huge single request
     for i in range(0, len(items), 100):
-        items = dumps(items[i:i + 100])
+        batch = dumps(items[i:i + 100])
         # insert measures, expire the task if it wasn't processed
         # after two hours to avoid queue overload
         try:
             insert_measures.apply_async(
-                kwargs={'items': items, 'nickname': nickname},
+                kwargs={'items': batch, 'nickname': nickname},
                 expires=7200)
         except ConnectionError:
             return HTTPServiceUnavailable()
