@@ -40,7 +40,7 @@
     <p>
         The service is currently provided as-is, without any guarantee
         on uptime, availability, accuracy of results or continued existence.
-        We also don't offer have any commercial plans to use the service
+        We also don't offer any commercial plans to use the service
         and have no plans to provide such. You are free to run your own
         instance of the service using the open-source code and publicly
         available data from <a href="/downloads">our downloads section</a>.
@@ -55,9 +55,19 @@
     </p>
 
     <p>
-        If you are developing a new application, please
-        <a href="/contact">contact us</a>, describing your use-case
-        and intended usage of the service to obtain an API key.
+        If you are developing a new application, please contact
+        <a href="mailto:Hanno Schlichting %3Chschlichting@mozilla.com%3E">
+            Hanno Schlichting</a> to obtain an API key.
+        Please make sure to describe your use-case and intended use of
+        the service. If you are not planning on contributing back to
+        the service, please make sure to detail why you think your
+        project is tightly aligned with the Mozilla mission and why we
+        should grant you free access.
+    </p>
+
+    <p>
+        We'll try to get back to you in a manner of days, but depending
+        on vacation times it might take longer.
     </p>
 
 </section>
