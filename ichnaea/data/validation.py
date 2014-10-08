@@ -1,5 +1,6 @@
 from datetime import timedelta
 import re
+import uuid
 
 from colander import iso8601
 import mobile_codes
@@ -155,6 +156,9 @@ def normalized_measure_dict(d):
         return None
 
     d['time'] = normalized_time(d.get('time', None))
+
+    if 'report_id' not in d:
+        d['report_id'] = uuid.uuid1().hex
     return d
 
 
@@ -200,6 +204,9 @@ def normalized_wifi_dict(d):
 
     d['channel'] = normalized_wifi_channel(d)
     d.pop('frequency', 0)
+
+    if 'radio' in d:
+        del d['radio']
 
     return d
 

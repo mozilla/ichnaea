@@ -19,6 +19,7 @@ from ichnaea.customjson import (
     loads,
 )
 from ichnaea.data.validation import (
+    normalized_measure_dict,
     normalized_wifi_measure_dict,
     normalized_cell_measure_dict,
 )
@@ -232,58 +233,33 @@ def create_or_update_station(session, key, station_model,
 
 
 def create_cell_measure(utcnow, entry):
+    # creates a dict.copy() avoiding test leaks reusing the same
+    # entries for multiple task calls
     entry = normalized_cell_measure_dict(entry)
     if entry is None:
         return None
-    report_id = entry.get('report_id')
-    if report_id:
-        report_id = uuid.UUID(hex=report_id).bytes
-    return CellMeasure(
-        report_id=report_id,
-        created=utcnow,
-        lat=entry['lat'],
-        lon=entry['lon'],
-        time=entry['time'],
-        accuracy=entry['accuracy'],
-        altitude=entry['altitude'],
-        altitude_accuracy=entry['altitude_accuracy'],
-        radio=entry['radio'],
-        mcc=entry['mcc'],
-        mnc=entry['mnc'],
-        lac=entry['lac'],
-        cid=entry['cid'],
-        psc=entry['psc'],
-        asu=entry['asu'],
-        signal=entry['signal'],
-        ta=entry['ta'],
-        heading=entry['heading'],
-        speed=entry['speed'],
-    )
+    # add creation date
+    entry['created'] = utcnow
+    # decode from JSON compatible format
+    entry['report_id'] = uuid.UUID(hex=entry['report_id']).bytes
+    entry['time'] = decode_datetime(entry['time'])
+    return CellMeasure(**entry)
 
 
 def create_wifi_measure(utcnow, entry):
+    # creates a dict.copy() avoiding test leaks reusing the same
+    # entries for multiple task calls
     entry = normalized_wifi_measure_dict(entry)
     if entry is None:
         return None
-    report_id = entry.get('report_id')
-    if report_id:
-        report_id = uuid.UUID(hex=report_id).bytes
-    return WifiMeasure(
-        report_id=report_id,
-        created=utcnow,
-        lat=entry['lat'],
-        lon=entry['lon'],
-        time=entry['time'],
-        accuracy=entry['accuracy'],
-        altitude=entry['altitude'],
-        altitude_accuracy=entry['altitude_accuracy'],
-        key=entry['key'],
-        channel=entry['channel'],
-        signal=entry['signal'],
-        snr=entry['signalToNoiseRatio'],
-        heading=entry['heading'],
-        speed=entry['speed'],
-    )
+    # add creation date
+    entry['created'] = utcnow
+    # map internal date name to model name
+    entry['snr'] = entry.pop('signalToNoiseRatio')
+    # decode from JSON compatible format
+    entry['report_id'] = uuid.UUID(hex=entry['report_id']).bytes
+    entry['time'] = decode_datetime(entry['time'])
+    return WifiMeasure(**entry)
 
 
 def emit_new_measures_metric(stats_client, session, shortname,
@@ -356,28 +332,25 @@ def process_user(nickname, session):
     return (userid, nickname)
 
 
-def process_measure(report_id, data, session):
+def process_measure(data, session):
     def add_missing_dict_entries(dst, src):
         # x.update(y) overwrites entries in x with those in y;
-        # we want to only add those not already present
+        # We want to only add those not already present.
+        # We also only want to copy the top-level base measure data
+        # and not any nested values like cell or wifi.
         for (k, v) in src.items():
-            if k not in dst:
+            if k != 'radio' and k not in dst \
+               and not isinstance(v, (tuple, list, dict)):
                 dst[k] = v
+
+    measure_data = normalized_measure_dict(data)
+    if measure_data is None:
+        return ([], [])
 
     cell_measures = {}
     wifi_measures = {}
-    measure_data = dict(
-        report_id=report_id,
-        lat=data['lat'],
-        lon=data['lon'],
-        heading=data.get('heading', -1.0),
-        speed=data.get('speed', -1.0),
-        time=data.get('time', ''),
-        accuracy=data.get('accuracy', 0),
-        altitude=data.get('altitude', 0),
-        altitude_accuracy=data.get('altitude_accuracy', 0),
-    )
     measure_radio = RADIO_TYPE.get(data['radio'], -1)
+
     if data.get('cell'):
         # flatten measure / cell data into a single dict
         for c in data['cell']:
@@ -422,8 +395,8 @@ def process_measures(items, session, userid=None):
     cell_measures = []
     wifi_measures = []
     for i, item in enumerate(items):
-        report_id = uuid.uuid1().hex
-        cell, wifi = process_measure(report_id, item, session)
+        item['report_id'] = uuid.uuid1().hex
+        cell, wifi = process_measure(item, session)
         cell_measures.extend(cell)
         wifi_measures.extend(wifi)
         if cell or wifi:
