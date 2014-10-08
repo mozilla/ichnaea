@@ -1,5 +1,14 @@
+from datetime import timedelta
+
+from pytz import UTC
+
+from ichnaea.customjson import (
+    decode_datetime,
+    encode_datetime,
+)
 from ichnaea.data.validation import (
     normalized_cell_measure_dict,
+    normalized_time,
     normalized_wifi_measure_dict,
     WIFI_TEST_KEY,
 )
@@ -343,6 +352,32 @@ class TestValidation(TestCase):
             wifi = self.check_normalized_wifi(measure, wifi,
                                               dict(channel=chan))
             self.assertFalse('frequency' in wifi)
+
+    def test_normalize_time(self):
+        now = util.utcnow()
+        first_args = dict(day=1, hour=0, minute=0, second=0,
+                          microsecond=0, tzinfo=UTC)
+        now_enc = now.replace(**first_args)
+        two_weeks_ago = now - timedelta(14)
+        short_format = now.date().isoformat()
+
+        entries = [
+            ('', now_enc),
+            (now, now_enc),
+            (two_weeks_ago, two_weeks_ago.replace(**first_args)),
+            (short_format, now_enc),
+            ("2011-01-01T11:12:13.456Z", now_enc),
+            ("2070-01-01T11:12:13.456Z", now_enc),
+            ("10-10-10", now_enc),
+            ("2011-10-13T.Z", now_enc),
+        ]
+
+        for entry in entries:
+            in_, expected = entry
+            if not isinstance(in_, str):
+                in_ = encode_datetime(in_)
+            self.assertEqual(
+                decode_datetime(normalized_time(in_)), expected)
 
     def test_unhelpful_incomplete_cdma_cells(self):
         # CDMA cell records must have MNC, MCC, LAC and CID filled in

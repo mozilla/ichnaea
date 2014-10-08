@@ -1,8 +1,6 @@
 from collections import defaultdict
-import datetime
 import uuid
 
-from colander import iso8601
 from sqlalchemy.sql import and_, or_
 
 from ichnaea.async.task import DatabaseTask
@@ -18,7 +16,6 @@ from ichnaea.content.models import (
 )
 from ichnaea.customjson import (
     decode_datetime,
-    encode_datetime,
     loads,
 )
 from ichnaea.data.validation import (
@@ -246,7 +243,7 @@ def create_cell_measure(utcnow, entry):
         created=utcnow,
         lat=entry['lat'],
         lon=entry['lon'],
-        time=decode_datetime(entry.get('time', '')),
+        time=entry['time'],
         accuracy=entry.get('accuracy', 0),
         altitude=entry.get('altitude', 0),
         altitude_accuracy=entry.get('altitude_accuracy', 0),
@@ -276,7 +273,7 @@ def create_wifi_measure(utcnow, entry):
         created=utcnow,
         lat=entry['lat'],
         lon=entry['lon'],
-        time=decode_datetime(entry.get('time', '')),
+        time=entry['time'],
         accuracy=entry.get('accuracy', 0),
         altitude=entry.get('altitude', 0),
         altitude_accuracy=entry.get('altitude_accuracy', 0),
@@ -313,11 +310,11 @@ def incomplete_measure(key):
     return False
 
 
-def process_mapstat(session, utcnow, positions):
+def process_mapstat(session, positions):
     # Scale from floating point degrees to integer counts of thousandths of
     # a degree; 1/1000 degree is about 110m at the equator.
     factor = 1000
-    today = utcnow.date()
+    today = util.utcnow().date()
     tiles = {}
     # aggregate to tiles, according to factor
     for position in positions:
@@ -375,7 +372,7 @@ def process_measure(report_id, data, session):
         lon=data['lon'],
         heading=data.get('heading', -1.0),
         speed=data.get('speed', -1.0),
-        time=encode_datetime(data['time']),
+        time=data.get('time', ''),
         accuracy=data.get('accuracy', 0),
         altitude=data.get('altitude', 0),
         altitude_accuracy=data.get('altitude_accuracy', 0),
@@ -421,14 +418,10 @@ def process_measure(report_id, data, session):
 
 def process_measures(items, session, userid=None):
     stats_client = get_stats_client()
-    utcnow = util.utcnow()
-    utcmin = utcnow - datetime.timedelta(60)
-
     positions = []
     cell_measures = []
     wifi_measures = []
     for i, item in enumerate(items):
-        item = process_time(item, utcnow, utcmin)
         report_id = uuid.uuid1().hex
         cell, wifi = process_measure(report_id, item, session)
         cell_measures.extend(cell)
@@ -483,7 +476,7 @@ def process_measures(items, session, userid=None):
     if userid is not None:
         process_score(userid, len(positions), session)
     if positions:
-        process_mapstat(session, utcnow, positions)
+        process_mapstat(session, positions)
 
 
 def process_score(userid, points, session, key='location'):
@@ -598,21 +591,6 @@ def process_station_measures(session, entries, station_type,
 
     session.add_all(all_measures)
     return all_measures
-
-
-def process_time(measure, utcnow, utcmin):
-    try:
-        measure['time'] = iso8601.parse_date(measure['time'])
-    except (iso8601.ParseError, TypeError):
-        measure['time'] = utcnow
-    else:
-        # don't accept future time values or
-        # time values more than 60 days in the past
-        if measure['time'] > utcnow or measure['time'] < utcmin:
-            measure['time'] = utcnow
-    # cut down the time to a monthly resolution
-    measure['time'] = measure['time'].date().replace(day=1)
-    return measure
 
 
 def update_enclosing_lacs(session, lacs, moving_cells, utcnow):

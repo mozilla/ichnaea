@@ -1,9 +1,10 @@
+from datetime import timedelta
 import re
 
+from colander import iso8601
 import mobile_codes
 
 from ichnaea.customjson import (
-    decode_datetime,
     encode_datetime,
 )
 from ichnaea import geocalc
@@ -12,6 +13,7 @@ from ichnaea.models import (
     MIN_RADIO_TYPE,
     RADIO_TYPE,
 )
+from ichnaea import util
 
 # Symbolic constant used in specs passed to normalization functions.
 REQUIRED = object()
@@ -57,6 +59,31 @@ VALID_WIFI_REGEX = re.compile("([0-9a-fA-F]{12})")
 def valid_wifi_pattern(key):
     return INVALID_WIFI_REGEX.match(key) and \
         VALID_WIFI_REGEX.match(key) and len(key) == 12
+
+
+def normalized_time(time):
+    """
+    Takes a string representation of a time value, validates and parses
+    it and returns a JSON-friendly string representation of the normalized
+    time.
+    """
+    now = util.utcnow()
+    if not time:
+        time = None
+
+    try:
+        time = iso8601.parse_date(time)
+    except (iso8601.ParseError, TypeError):
+        time = now
+    else:
+        # don't accept future time values or
+        # time values more than 60 days in the past
+        min_time = now - timedelta(days=60)
+        if time > now or time < min_time:
+            time = now
+    # cut down the time to a monthly resolution
+    time = time.date().replace(day=1)
+    return encode_datetime(time)
 
 
 def normalized_wifi_key(key):
@@ -127,9 +154,7 @@ def normalized_measure_dict(d):
     if d is None:
         return None
 
-    if 'time' not in d:
-        d['time'] = ''
-    d['time'] = encode_datetime(decode_datetime(d['time']))
+    d['time'] = normalized_time(d.get('time', None))
     return d
 
 
