@@ -470,7 +470,7 @@ Gauges
     constant if Ichnaea is "keeping up with" using new measures to
     update the position estimates of these stations.
 
-``table.cell_measure``, ``table.cell_measure`` : gauges
+``table.cell_measure``, ``table.wifi_measure`` : gauges
 
     These gauges measure the number of database rows in each of the
     measure tables at the time the measure blocks used for backup are
@@ -479,6 +479,13 @@ Gauges
     mark for the number of rows. For performance reasons the gauges are
     based on `max(id) - min(id)`, which might be higher than the actual
     number of rows if not all auto-increment numbers are taken.
+
+``table.ocid_cell_age`` : gauges
+
+    This gauge measures when the last entry was added to the table. It
+    represents this as `now() - max(created)` and converts it to a
+    millisecond value. This metric is useful to see if the ocid_import
+    jobs are run on a regular basis.
 
 
 S3 backup counters

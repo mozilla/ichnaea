@@ -1,8 +1,13 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
-from ichnaea.models import ApiKey
+from ichnaea.models import (
+    ApiKey,
+    OCIDCell,
+    RADIO_TYPE,
+)
 from ichnaea.monitor.tasks import (
     monitor_api_key_limits,
+    monitor_ocid_import,
     monitor_queue_length,
 )
 from ichnaea.tests.base import CeleryTestCase
@@ -68,6 +73,25 @@ class TestMonitorTasks(CeleryTestCase):
         )
         self.assertDictEqual(
             result, {'test': 11, 'shortname_1': 12, 'no_key_2': 15})
+
+    def test_monitor_ocid_import(self):
+        session = self.db_master_session
+        now = util.utcnow()
+        cell_args = dict(radio=RADIO_TYPE['gsm'], mcc=262, mnc=1, lac=1)
+
+        expected = []
+        results = []
+        for i in range(30, 0, -5):
+            created = now - timedelta(hours=i)
+            expected.append(i * 3600000)
+            session.add(OCIDCell(created=created, cid=i, **cell_args))
+            session.flush()
+            results.append(monitor_ocid_import.delay().get())
+
+        self.check_stats(
+            gauge=[('table.ocid_cell_age', len(expected))],
+        )
+        self.assertEqual(results, expected)
 
     def test_monitor_queue_length(self):
         data = {

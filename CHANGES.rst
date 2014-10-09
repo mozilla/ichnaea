@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Add a task to monitor the last import time of OCID cells.
+
 - Change api_key rate limitation monitoring task to use shortnames.
 
 - Small improvements to the manual importer script.
