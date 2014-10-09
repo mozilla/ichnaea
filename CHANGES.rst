@@ -21,7 +21,8 @@ Changelog
 
 - #301: Schedule hourly differential imports of OCID cell data.
 
-- Update to latest versions of celery, iso3166, requests and simplejson.
+- Update to latest versions of boto, celery, iso3166, jaraco.util,
+  requests and simplejson.
 
 20141002103900
 **************

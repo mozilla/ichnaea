@@ -10,7 +10,7 @@ amqp==1.4.6
 anyjson==0.3.3
 argparse==1.2.1
 billiard==3.3.0.18
-boto==2.32.1
+boto==2.33.0
 celery==3.1.16
 colander==1.0b1
 configparser==3.5.0b1
@@ -33,7 +33,7 @@ pytz==2014.7
 raven==3.4.1  # rq.filter: <3.5.0
 redis==2.10.3
 repoze.lru==0.6
-requests==2.4.2
+requests==2.4.3
 setproctitle==1.1.8
 simplejson==3.6.4
 six==1.8.0
