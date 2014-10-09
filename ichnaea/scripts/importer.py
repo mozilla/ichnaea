@@ -18,11 +18,14 @@ from ichnaea.data.validation import (
 )
 from ichnaea.data.tasks import process_measures
 from ichnaea.db import Database
-from ichnaea.logging import configure_heka
+from ichnaea.logging import (
+    configure_heka,
+    configure_stats,
+)
 from ichnaea import util
 
 
-def load_file(session, source_file, batch_size=100, userid=None):
+def load_file(session, source_file, batch_size=1000, userid=None):
     utcnow = util.utcnow()
     utcmin = utcnow - datetime.timedelta(120)
 
@@ -47,9 +50,11 @@ def load_file(session, source_file, batch_size=100, userid=None):
 
                 lat = float(fields[2])
                 lon = float(fields[3])
-                accuracy = int(fields[4])
-                altitude = int(fields[5])
-                altitude_accuracy = int(fields[6])
+                if lat == 0.0 and lon == 0.0:
+                    continue
+                accuracy = int(float(fields[4]))
+                altitude = int(float(fields[5]))
+                altitude_accuracy = int(float(fields[6]))
                 channel = int(fields[7])
                 signal = int(fields[8])
 
@@ -95,7 +100,7 @@ def load_file(session, source_file, batch_size=100, userid=None):
     return counter
 
 
-def main(argv, _db_master=None, _heka_client=None):
+def main(argv, _db_master=None, _heka_client=None, _stats_client=None):
     parser = argparse.ArgumentParser(
         prog=argv[0], description='Location Importer')
 
@@ -111,6 +116,7 @@ def main(argv, _db_master=None, _heka_client=None):
     conf = read_config()
     settings = conf.get_map('ichnaea')
     configure_heka(conf.filename, _heka_client=_heka_client)
+    configure_stats(conf.get('ichnaea', 'statsd_host'), _client=_stats_client)
 
     # configure databases incl. test override hooks
     if _db_master is None:

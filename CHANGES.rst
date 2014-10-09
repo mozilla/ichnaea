@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Small improvements to the manual importer script.
+
 - #276: Fix bug in batch processing, when receiving more than 100
   observations in one submission.
 

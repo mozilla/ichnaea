@@ -15,7 +15,7 @@ from ichnaea.tests.base import CeleryTestCase
 from ichnaea import util
 
 LINE = ("1376952704\tdc:45:17:75:8f:80\t37.871930\t-122.273156\t"
-        "5\t500\t0\t11\t-16\tATT560")
+        "5\t500.0\t0\t11\t-16\tATT560")
 
 
 class TestLoadFile(CeleryTestCase):
