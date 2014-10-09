@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from ichnaea.models import (
     ApiKey,
@@ -91,7 +91,10 @@ class TestMonitorTasks(CeleryTestCase):
         self.check_stats(
             gauge=[('table.ocid_cell_age', len(expected))],
         )
-        self.assertEqual(results, expected)
+        for r, e in zip(results, expected):
+            # The values should be almost equal, ignoring differences
+            # less than 10 seconds (or 9999 milliseconds / 4 places)
+            self.assertAlmostEqual(r, e, -4)
 
     def test_monitor_queue_length(self):
         data = {
