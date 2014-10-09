@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Change api_key rate limitation monitoring task to use shortnames.
+
 - Small improvements to the manual importer script.
 
 - #276: Fix bug in batch processing, when receiving more than 100

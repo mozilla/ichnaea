@@ -1,4 +1,5 @@
 from ichnaea.async.config import CELERY_QUEUE_NAMES
+from ichnaea.models import ApiKey
 from ichnaea.async.task import DatabaseTask
 from ichnaea import util
 from ichnaea.worker import celery
@@ -16,15 +17,25 @@ def monitor_api_key_limits(self):
         keys = redis_client.keys('apilimit:*:' + today)
         if keys:
             values = redis_client.mget(keys)
+            keys = [k.split(':')[1] for k in keys]
         else:
             values = []
 
+        names = {}
+        if keys:
+            with self.db_session() as session:
+                q = session.query(ApiKey.valid_key, ApiKey.shortname).filter(
+                    ApiKey.valid_key.in_(keys))
+                names = dict(q.all())
+
         result = {}
         for k, v in zip(keys, values):
-            api_key = k.split(':')[1]
+            name = names.get(k)
+            if not name:
+                name = k
             value = int(v)
-            result[api_key] = value
-            stats_client.gauge('apilimit.' + api_key, value)
+            result[name] = value
+            stats_client.gauge('apilimit.' + name, value)
     except Exception:  # pragma: no cover
         # Log but ignore the exception
         self.heka_client.raven('error')

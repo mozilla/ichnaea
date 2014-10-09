@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from ichnaea.models import ApiKey
 from ichnaea.monitor.tasks import (
     monitor_api_key_limits,
     monitor_queue_length,
@@ -31,6 +32,7 @@ class TestMonitorTasks(CeleryTestCase):
 
     def test_monitor_api_key_limits_multiple(self):
         redis_client = self.redis_client
+        session = self.db_master_session
         now = util.utcnow()
         today = now.strftime("%Y%m%d")
         yesterday = (now - timedelta(hours=24)).strftime("%Y%m%d")
@@ -45,6 +47,14 @@ class TestMonitorTasks(CeleryTestCase):
             key = "apilimit:%s:%s" % (k, yesterday)
             redis_client.incr(key, v - 10)
 
+        api_keys = [
+            ApiKey(valid_key='no_key_1', shortname='shortname_1'),
+            ApiKey(valid_key='no_key_2'),
+            ApiKey(valid_key='no_key_3', shortname='shortname_3'),
+        ]
+        session.add_all(api_keys)
+        session.flush()
+
         # add some other items into Redis
         redis_client.lpush('default', 1, 2)
         redis_client.set('cache_something', '{}')
@@ -52,9 +62,12 @@ class TestMonitorTasks(CeleryTestCase):
         result = monitor_api_key_limits.delay().get()
 
         self.check_stats(
-            gauge=['apilimit.' + k for k in data.keys()],
+            gauge=['apilimit.test',
+                   'apilimit.shortname_1',
+                   'apilimit.no_key_2'],
         )
-        self.assertEqual(result, data)
+        self.assertDictEqual(
+            result, {'test': 11, 'shortname_1': 12, 'no_key_2': 15})
 
     def test_monitor_queue_length(self):
         data = {
