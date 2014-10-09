@@ -462,8 +462,8 @@ Gauges
     These gauges measure the number of tasks in each of the Redis queues.
     They are sampled at an approximate per-minute interval.
 
-``task.cell_location_update.new_measures_<min>_<max>``,
-``task.wifi_location_update.new_measures_<min>_<max>``, : gauges
+``task.data.location_update_cell.new_measures_<min>_<max>``,
+``task.data.location_update_wifi.new_measures_<min>_<max>``, : gauges
 
     These gauges measure the number of stations which have a new measure
     count within a certain range. These gauges should remain relatively
@@ -548,21 +548,21 @@ system:
   - ``task.backup.write_block_to_s3``
   - ``task.backup.write_cellmeasure_s3_backups``
   - ``task.backup.write_wifimeasure_s3_backups``
-  - ``task.cell_location_update``
-  - ``task.cell_unthrottle_measures``
   - ``task.content.cell_histogram``
   - ``task.content.unique_cell_histogram``
   - ``task.content.unique_wifi_histogram``
   - ``task.content.wifi_histogram``
-  - ``task.remove_cell``
-  - ``task.remove_wifi``
-  - ``task.scan_lacs``
-  - ``task.service.submit.insert_cell_measures``
-  - ``task.service.submit.insert_measures``
-  - ``task.service.submit.insert_wifi_measures``
-  - ``task.update_lac``
-  - ``task.wifi_location_update``
-  - ``task.wifi_unthrottle_measures``
+  - ``task.data.cell_unthrottle_measures``
+  - ``task.data.insert_cell_measures``
+  - ``task.data.insert_measures``
+  - ``task.data.insert_wifi_measures``
+  - ``task.data.location_update_cell``
+  - ``task.data.location_update_wifi``
+  - ``task.data.remove_cell``
+  - ``task.data.remove_wifi``
+  - ``task.data.scan_lacs``
+  - ``task.data.update_lac``
+  - ``task.data.wifi_unthrottle_measures``
 
 
 Datamaps timers

@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Removed task modules retained for backwards compatibility.
+
 20141009121300
 **************
 
