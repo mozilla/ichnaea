@@ -73,6 +73,19 @@ Installation of Graphite and Sentry are outside the scope of this
 documentation.
 
 
+Dependencies
+============
+
+The code includes functionality to render out image tiles for a data map
+of places where observations have been made. This part of the code relies
+on two external projects. One is the
+`datamaps image tile generator <https://github.com/ericfischer/datamaps>`_
+the other is `pngquant <http://pngquant.org/>`_. Make sure to install both
+of them and make their binaries available on your system path. The datamaps
+package includes the `encode`, `enumerate` and `render` tools and the
+pngquant package includes a tool called `pngquant`.
+
+
 Code
 ====
 

@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #326: Quantize data maps image tiles via pngquant.
+
 - Optimized file size of static image assets.
 
 - Removed task modules retained for backwards compatibility.
