@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Optimized file size of static image assets.
+
 - Removed task modules retained for backwards compatibility.
 
 20141009121300
