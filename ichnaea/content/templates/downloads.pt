@@ -58,7 +58,7 @@
     </p>
 
     <ul tal:repeat="file files">
-        <li><a href="${file.path}">${file.name}</a> (${file.size} bytes)</li>
+        <li><a href="${file.path}">${file.name}</a> (${file.size}kB)</li>
     </ul>
 
 </section>

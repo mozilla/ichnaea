@@ -44,7 +44,7 @@ LOCAL_TILES = LOCAL_TILES_BASE + TILES_PATTERN
 BASE_MAP_KEY = 'mozilla-webprod.map-05ad0a21'
 
 CACHE_KEYS = {
-    'downloads': 'cache_download_files',
+    'downloads': 'cache_download_files_2',
     'leaders': 'cache_leaders',
     'leaders_weekly': 'cache_leaders_weekly',
     'stats': 'cache_stats',
@@ -112,7 +112,9 @@ def s3_list_downloads(assets_bucket, assets_url, heka_client):
         for key in bucket.list(prefix='export/'):
             name = key.name.split('/')[-1]
             path = urlparse.urljoin(assets_url, key.name)
-            files.append(dict(name=name, path=path, size=key.size))
+            # round to kilobyte
+            size = int(round(key.size / 1024.0, 0))
+            files.append(dict(name=name, path=path, size=size))
     except S3ResponseError:
         heka_client.raven(RAVEN_ERROR)
         return []

@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Change download page to list files with kilobytes (kB) sizes.
+
 - #326: Quantize data maps image tiles via pngquant.
 
 - Optimized file size of static image assets.

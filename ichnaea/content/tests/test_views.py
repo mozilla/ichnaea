@@ -100,21 +100,24 @@ class TestFunctionalContent(AppTestCase):
         key_prefix = 'export/MLS-diff-cell-export-2014-08-20T'
 
         class MockKey(object):
-            size = 1024
 
-            def __init__(self, name):
+            def __init__(self, name, size):
                 self.name = key_prefix + name
+                self.size = size
 
         mock_bucket.list.return_value = [
-            MockKey('120000.csv.gz'),
-            MockKey('130000.csv.gz'),
-            MockKey('140000.csv.gz'),
+            MockKey('120000.csv.gz', 1024),
+            MockKey('130000.csv.gz', 1000),
+            MockKey('140000.csv.gz', 8192),
         ]
         with patch.object(boto, 'connect_s3', mock_conn):
             result = self.app.get('/downloads', status=200)
             self.assertTrue(key_prefix + '120000.csv.gz' in result.text)
+            self.assertTrue('1kB' in result.text)
             self.assertTrue(key_prefix + '130000.csv.gz' in result.text)
+            self.assertFalse('0kB' in result.text)
             self.assertTrue(key_prefix + '140000.csv.gz' in result.text)
+            self.assertTrue('8kB' in result.text)
 
         # calling the page again should use the cache
         with patch.object(boto, 'connect_s3', mock_conn):
