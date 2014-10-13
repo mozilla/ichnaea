@@ -45,7 +45,7 @@ BASE_MAP_KEY = 'mozilla-webprod.map-05ad0a21'
 
 CACHE_KEYS = {
     'downloads': 'cache_download_files_2',
-    'leaders': 'cache_leaders',
+    'leaders': 'cache_leaders_2',
     'leaders_weekly': 'cache_leaders_weekly',
     'stats': 'cache_stats',
     'stats_countries': 'cache_stats_countries',

@@ -235,7 +235,7 @@ class TestFunctionalContentViews(AppTestCase):
         session = self.db_master_session
         today = util.utcnow().date()
         yesterday = today - timedelta(days=1)
-        for i in range(3):
+        for i in range(7, 1, -1):
             user = User(nickname=unicode(i))
             session.add(user)
             session.flush()
@@ -253,11 +253,11 @@ class TestFunctionalContentViews(AppTestCase):
         result = inst.leaders_view()
         self.assertEqual(
             result['leaders1'],
-            [{'anchor': u'2', 'nickname': u'2', 'num': 5, 'pos': 1},
-             {'anchor': u'1', 'nickname': u'1', 'num': 3, 'pos': 2}])
+            [{'anchor': u'7', 'nickname': u'7', 'num': 15, 'pos': 1},
+             {'anchor': u'6', 'nickname': u'6', 'num': 13, 'pos': 2}])
         self.assertEqual(
             result['leaders2'],
-            [{'anchor': u'0', 'nickname': u'0', 'num': 1, 'pos': 3}])
+            [{'anchor': u'5', 'nickname': u'5', 'num': 11, 'pos': 3}])
 
         # call the view again, without a working db session, so
         # we can be sure to use the cached result

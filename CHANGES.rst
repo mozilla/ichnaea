@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Introduce a 10 point minimum threshold to the leaderboard.
+
 - Change download page to list files with kilobytes (kB) sizes.
 
 - #326: Quantize data maps image tiles via pngquant.

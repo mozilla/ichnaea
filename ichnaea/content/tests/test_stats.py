@@ -116,12 +116,12 @@ class TestStats(DBTestCase):
         session = self.db_master_session
         test_data = []
         for i in range(20):
-            test_data.append((u'nick-%s' % i, 7))
+            test_data.append((u'nick-%s' % i, 30))
         highest = u'nick-high-too-long_'
         highest += (128 - len(highest)) * u'x'
-        test_data.append((highest, 10))
+        test_data.append((highest, 40))
         lowest = u'nick-low'
-        test_data.append((lowest, 5))
+        test_data.append((lowest, 20))
         for nick, value in test_data:
             user = User(nickname=nick)
             session.add(user)
@@ -134,7 +134,7 @@ class TestStats(DBTestCase):
         result = leaders(session)
         self.assertEqual(len(result), 22)
         self.assertEqual(result[0]['nickname'], highest[:24] + u'...')
-        self.assertEqual(result[0]['num'], 10)
+        self.assertEqual(result[0]['num'], 40)
         self.assertTrue(lowest in [r['nickname'] for r in result])
 
     def test_leaders_weekly(self):

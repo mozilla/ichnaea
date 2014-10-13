@@ -110,7 +110,7 @@ def leaders(session):
     score_rows = session.query(
         Score.userid, func.sum(Score.value)).filter(
         Score.key == SCORE_TYPE['location']).group_by(
-        Score.userid).all()
+        Score.userid).having(func.sum(Score.value) >= 10).all()
     # sort descending by value
     score_rows.sort(key=itemgetter(1), reverse=True)
     userids = [s[0] for s in score_rows]
