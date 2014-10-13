@@ -3,7 +3,7 @@ Mako==1.0.0
 MarkupSafe==0.23
 PasteDeploy==1.5.2
 PyMySQL==0.6.2
-SQLAlchemy==0.9.7
+SQLAlchemy==0.9.8
 WebOb==1.4
 alembic==0.6.7
 amqp==1.4.6

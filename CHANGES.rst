@@ -10,9 +10,11 @@ Changelog
 
 - #326: Quantize data maps image tiles via pngquant.
 
-- Optimized file size of static image assets.
+- Optimize file size of static image assets.
 
-- Removed task modules retained for backwards compatibility.
+- Remove task modules retained for backwards compatibility.
+
+- Update to latest version of SQLAlchemy.
 
 20141009121300
 **************
