@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+20141014161400
+**************
+
 - #311: Filter out location areas from unique cell statistics.
 
 - Introduce a 10 point minimum threshold to the leaderboard.
