@@ -472,11 +472,8 @@ Gauges
 
 ``table.cell_measure``, ``table.wifi_measure`` : gauges
 
-    These gauges measure the number of database rows in each of the
-    measure tables at the time the measure blocks used for backup are
-    scheduled and created. Since the backup jobs will archive and delete
-    rows from those tables, these gauges should represent a high-water
-    mark for the number of rows. For performance reasons the gauges are
+    These gauges measure the number of database rows in each of the measure
+    tables at a regular interval. For performance reasons the gauges are
     based on `max(id) - min(id)`, which might be higher than the actual
     number of rows if not all auto-increment numbers are taken.
 

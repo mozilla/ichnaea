@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Move the measure tables gauges to an hourly task.
+
 - Fix initdb script to explicitly import all models.
 
 20141014161400

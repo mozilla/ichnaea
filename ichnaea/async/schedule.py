@@ -12,6 +12,11 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(seconds=60),
         'options': {'expires': 57},
     },
+    'monitor-measures': {
+        'task': 'ichnaea.monitor.tasks.monitor_measures',
+        'schedule': timedelta(seconds=3600),
+        'options': {'expires': 3300},
+    },
     'monitor-ocid-import': {
         'task': 'ichnaea.monitor.tasks.monitor_ocid_import',
         'schedule': timedelta(seconds=600),

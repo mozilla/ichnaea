@@ -2,11 +2,14 @@ from datetime import timedelta
 
 from ichnaea.models import (
     ApiKey,
+    CellMeasure,
     OCIDCell,
     RADIO_TYPE,
+    WifiMeasure,
 )
 from ichnaea.monitor.tasks import (
     monitor_api_key_limits,
+    monitor_measures,
     monitor_ocid_import,
     monitor_queue_length,
 )
@@ -73,6 +76,26 @@ class TestMonitorTasks(CeleryTestCase):
         )
         self.assertDictEqual(
             result, {'test': 11, 'shortname_1': 12, 'no_key_2': 15})
+
+    def test_monitor_measures(self):
+        session = self.db_master_session
+
+        result = monitor_measures.delay().get()
+        self.check_stats(
+            gauge=[('table.cell_measure', 1), ('table.wifi_measure', 1)],
+        )
+        self.assertEqual(result, {'cell_measure': -1, 'wifi_measure': -1})
+
+        # add some measures
+        session.add_all([CellMeasure() for i in range(3)])
+        session.add_all([WifiMeasure() for i in range(5)])
+        session.flush()
+
+        result = monitor_measures.delay().get()
+        self.check_stats(
+            gauge=[('table.cell_measure', 2), ('table.wifi_measure', 2)],
+        )
+        self.assertEqual(result, {'cell_measure': 3, 'wifi_measure': 5})
 
     def test_monitor_ocid_import(self):
         session = self.db_master_session

@@ -10,7 +10,6 @@ from sqlalchemy import func
 
 from ichnaea.async.task import DatabaseTask
 from ichnaea.backup.s3 import S3Backend, compute_hash
-from ichnaea.logging import get_stats_client
 from ichnaea.models import (
     Cell,
     CellMeasure,
@@ -196,7 +195,6 @@ def schedule_measure_archival(self, measure_type, limit=100, batch=1000000):
     blocks = []
     measure_meta = MEASURE_TYPE_META[measure_type]
     measure_cls = measure_meta['class']
-    measure_name = measure_meta['name']
     with self.db_session() as session:
         table_min_id = 0
         table_max_id = 0
@@ -216,10 +214,6 @@ def schedule_measure_archival(self, measure_type, limit=100, batch=1000000):
         if not table_max_id:
             # no data in the table
             return blocks
-
-        # record current number of db rows in *_measure table
-        get_stats_client().gauge(
-            'table.' + measure_name, table_max_id - table_min_id + 1)
 
         query = session.query(MeasureBlock.end_id).filter(
             MeasureBlock.measure_type == measure_type).order_by(

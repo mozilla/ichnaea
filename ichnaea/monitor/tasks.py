@@ -3,7 +3,9 @@ from sqlalchemy import func
 from ichnaea.async.config import CELERY_QUEUE_NAMES
 from ichnaea.models import (
     ApiKey,
+    CellMeasure,
     OCIDCell,
+    WifiMeasure,
 )
 from ichnaea.async.task import DatabaseTask
 from ichnaea import util
@@ -41,6 +43,27 @@ def monitor_api_key_limits(self):
             value = int(v)
             result[name] = value
             stats_client.gauge('apilimit.' + name, value)
+    except Exception:  # pragma: no cover
+        # Log but ignore the exception
+        self.heka_client.raven('error')
+    return result
+
+
+@celery.task(base=DatabaseTask, bind=True, queue='monitor')
+def monitor_measures(self):
+    checks = [('cell_measure', CellMeasure), ('wifi_measure', WifiMeasure)]
+    result = dict([(name, -1) for name, model in checks])
+    try:
+        stats_client = self.stats_client
+        with self.db_session() as session:
+            for name, model in checks:
+                # record current number of db rows in *_measure table
+                q = session.query(func.max(model.id) - func.min(model.id) + 1)
+                num_rows = q.first()[0]
+                if num_rows is None:
+                    num_rows = -1
+                result[name] = num_rows
+                stats_client.gauge('table.' + name, num_rows)
     except Exception:  # pragma: no cover
         # Log but ignore the exception
         self.heka_client.raven('error')

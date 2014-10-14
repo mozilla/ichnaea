@@ -474,9 +474,7 @@ api_key_table = ApiKey.__table__
 # Keep at end of file, as it needs to stay below the *Measure models
 MEASURE_TYPE_META = {
     1: {'class': WifiMeasure,
-        'csv_name': 'wifi_measure.csv',
-        'name': 'wifi_measure'},
+        'csv_name': 'wifi_measure.csv'},
     2: {'class': CellMeasure,
-        'csv_name': 'cell_measure.csv',
-        'name': 'cell_measure'},
+        'csv_name': 'cell_measure.csv'},
 }
