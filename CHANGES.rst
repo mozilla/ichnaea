@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Fix initdb script to explicitly import all models.
+
 20141014161400
 **************
 

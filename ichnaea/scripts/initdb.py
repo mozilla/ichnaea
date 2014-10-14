@@ -9,11 +9,13 @@ from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 
 from ichnaea.app_config import read_config
-# make sure content models are imported
-from ichnaea.content import models  # NOQA
 from ichnaea.db import _Model
 from ichnaea.db import Database
 from ichnaea.logging import configure_heka
+
+# make sure models are imported
+from ichnaea import models  # NOQA
+from ichnaea.content import models  # NOQA
 
 DBCreds = namedtuple('DBCreds', 'user pwd')
 
