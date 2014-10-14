@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #311: Filter out location areas from unique cell statistics.
+
 - Introduce a 10 point minimum threshold to the leaderboard.
 
 - Change download page to list files with kilobytes (kB) sizes.

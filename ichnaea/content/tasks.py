@@ -59,8 +59,8 @@ def histogram_query(session, model, min_day, max_day):
     query = session.query(model).filter(
         model.created < max_day).filter(
         model.created >= min_day)
-    if isinstance(model, Cell):
-        query = query.filter(model.lac != CELLID_LAC)
+    if model is Cell:
+        query = query.filter(model.cid != CELLID_LAC)
     return query.count()
 
 

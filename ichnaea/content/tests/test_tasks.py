@@ -13,6 +13,7 @@ from ichnaea.content.tasks import (
 )
 from ichnaea.models import (
     Cell,
+    CELLID_LAC,
     CellMeasure,
     OCIDCell,
     Wifi,
@@ -81,7 +82,7 @@ class TestStats(CeleryTestCase):
             Cell(created=two_days, radio=2, mcc=1, mnc=2, lac=3, cid=5),
             Cell(created=one_day, radio=0, mcc=2, mnc=2, lac=3, cid=5),
             Cell(created=today, radio=0, mcc=1, mnc=3, lac=3, cid=4),
-            Cell(created=today, radio=0, mcc=1, mnc=2, lac=4, cid=4),
+            Cell(created=today, radio=0, mcc=1, mnc=2, lac=4, cid=CELLID_LAC),
         ]
         session.add_all(cells)
         session.commit()
@@ -112,7 +113,7 @@ class TestStats(CeleryTestCase):
         self.assertEqual(stats[2].time, one_day)
         self.assertEqual(stats[2].value, 4)
         self.assertEqual(stats[3].time, today)
-        self.assertEqual(stats[3].value, 6)
+        self.assertEqual(stats[3].value, 5)
 
     def test_unique_ocid_cell_histogram(self):
         session = self.db_master_session
