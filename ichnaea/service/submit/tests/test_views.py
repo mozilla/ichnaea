@@ -1,7 +1,6 @@
 from datetime import (
     date,
     datetime,
-    timedelta,
 )
 import pytz
 
@@ -18,10 +17,7 @@ from ichnaea.models import (
     RADIO_TYPE,
     WifiMeasure,
 )
-from ichnaea.customjson import (
-    dumps,
-    encode_datetime,
-)
+from ichnaea.customjson import dumps
 from ichnaea.tests.base import (
     CeleryAppTestCase,
     FRANCE_MCC,
