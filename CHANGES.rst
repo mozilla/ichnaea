@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+20141016123300
+**************
+
 - Log gunicorn errors to stderr.
 
 - #327: Add an anchor to the leaderboard table.
