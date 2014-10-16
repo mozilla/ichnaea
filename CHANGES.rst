@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Log gunicorn errors to stderr.
+
 - #327: Add an anchor to the leaderboard table.
 
 - Move the measure tables gauges to an hourly task.

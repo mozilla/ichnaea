@@ -12,6 +12,9 @@ timeout = 60
 # from effecting us
 max_requests = 100000
 
+# Log errors to stderr
+errorlog = "-"
+
 # Avoid too much output on the console
 loglevel = "warning"
 
