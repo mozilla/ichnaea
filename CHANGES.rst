@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #327: Add an anchor to the leaderboard table.
+
 - Move the measure tables gauges to an hourly task.
 
 - Fix initdb script to explicitly import all models.

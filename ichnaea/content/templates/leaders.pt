@@ -18,7 +18,7 @@
         cell and WiFi discoveries is also available.
     </p>
 
-    <div class="half-left">
+    <div class="half-left" id="leaderboard_start">
         <table class="table">
             <thead>
                 <tr>
