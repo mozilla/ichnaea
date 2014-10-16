@@ -13,6 +13,7 @@ emit_in_payload = true
 # For local development and verification ticker_interval is set low.
 # In production you like want to stick with 60 seconds instead.
 ticker_interval = 5
+global_prefix = "stats.location"
 
 [CarbonOutput]
 message_matcher = "Type == 'heka.statmetric'"
