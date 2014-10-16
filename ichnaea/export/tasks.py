@@ -63,6 +63,12 @@ def selfdestruct_tempdir():
 
 # Python 2.6 Gzipfile doesn't have __exit__
 class GzipFile(gzip.GzipFile):
+
+    # Add a default value, as this is used in the __repr__ and only
+    # set in the __init__ on successfully opening the file. Sentry/raven
+    # would bark on this while trying to capture the stack frame locals.
+    fileobj = None
+
     def __enter__(self):
         if self.fileobj is None:
             raise ValueError("I/O operation on closed GzipFile object")
