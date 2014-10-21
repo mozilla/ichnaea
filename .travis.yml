@@ -10,6 +10,7 @@ notifications:
 
 script:
     - make build
+    - make release
     - make test
 
 services:

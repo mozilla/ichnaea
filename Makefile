@@ -142,3 +142,4 @@ docs:  bin/sphinx-build
 release:
 	$(INSTALL) -r requirements/prod.txt
 	$(PYTHON) setup.py install
+	$(PYTHON) compile.py
