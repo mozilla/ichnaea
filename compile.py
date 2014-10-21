@@ -4,9 +4,11 @@ import os
 import os.path
 import sys
 
-EXCLUDES = [
-    'gunicorn/workers/_gaiohttp.py',
+EXCLUDES_27 = [
     'pymysql/_socketio.py',
+]
+EXCLUDES_34 = [
+    'gunicorn/workers/_gaiohttp.py',
 ]
 
 
@@ -15,7 +17,13 @@ def compile_files(path):
 
 
 def remove_python3_files(path):
-    for e in EXCLUDES:
+    excludes = []
+    if sys.version_info < (2, 7):
+        excludes.extend(EXCLUDES_27)
+    if sys.version_info < (3, 4):
+        excludes.extend(EXCLUDES_34)
+
+    for e in excludes:
         fp = os.path.join(path, e)
         for extension in ('', 'c', 'o'):
             name = fp + extension
