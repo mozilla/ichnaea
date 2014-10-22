@@ -6,7 +6,10 @@ Changelog
 
 - #328: Let gunicorn start without a valid geoip database file.
 
-- Update to latest versions of configparser, greenlet and pyzmq.
+- Extend the `make release` step to deal with Python files with
+  incompatible syntax.
+
+- Update to latest versions of configparser, greenlet, irc and pyzmq.
 
 20141016123300
 **************
