@@ -113,6 +113,7 @@ class TestImport(CeleryAppTestCase):
     @contextmanager
     def local_test_csv_file(self):
         txt = """\
+radio,mcc,net,area,cell,unit,lon,lat,range,samples,changeable,created,updated,
 GSM,302,2,4,190,,2.0,1.0,0,0,1,1408604686,1408604686,
 GSM,302,2,4,191,,2.0,1.0,0,0,1,1408604686,1408604686,
 GSM,302,2,4,192,,2.0,1.0,0,0,1,1408604686,1408604686,

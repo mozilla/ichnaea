@@ -95,7 +95,7 @@ class TestValidation(TestCase):
                        ('hspa', -1),
                        ('n/a', -1)]
 
-        invalid_mccs = [-10, 0, 1000, 3456]
+        invalid_mccs = [-10, 0, 101, 1000, 3456]
 
         valid_mncs = [0, 542, 32767]
         invalid_mncs = [-10, -1, 32768, 93870]
@@ -150,6 +150,11 @@ class TestValidation(TestCase):
                                                                mcc=mcc,
                                                                mnc=mnc))
 
+        # Try outside of country lat/lon
+        (measure, cell) = self.make_cell_submission(
+            mcc=USA_MCC, lat=PARIS_LAT, lon=PARIS_LON)
+        self.check_normalized_cell(measure, cell, None)
+
         # Try all invalid mcc variants individually
         for mcc in invalid_mccs:
             (measure, cell) = self.make_cell_submission(mcc=mcc)
@@ -196,6 +201,10 @@ class TestValidation(TestCase):
                 self.check_normalized_cell(measure, cell, dict(cid=-1,
                                                                psc=psc))
 
+        # Try special invalid lac, cid 65535 combination
+        (measure, cell) = self.make_cell_submission(lac=0, cid=65535)
+        self.check_normalized_cell(measure, cell, None)
+
         # Try all invalid latitudes individually
         for lat in invalid_latitudes:
             (measure, cell) = self.make_cell_submission(lat=lat)
@@ -228,6 +237,10 @@ class TestValidation(TestCase):
             for v in vs:
                 (measure, cell) = self.make_cell_submission(**{k: v})
                 self.check_normalized_cell(measure, cell, {k: x})
+
+        # Try asu/signal field mix-up
+        (measure, cell) = self.make_cell_submission(asu=-75, signal=0)
+        self.check_normalized_cell(measure, cell, {'signal': -75})
 
     def test_normalize_wifis(self):
         valid_channels = [1, 20, 45, 165]

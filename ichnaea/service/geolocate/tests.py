@@ -1,3 +1,5 @@
+from uuid import uuid1
+
 from sqlalchemy import text
 
 from ichnaea.constants import (
@@ -6,6 +8,7 @@ from ichnaea.constants import (
 )
 from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
+    ApiKey,
     Cell,
     Wifi,
     CELLID_LAC,
@@ -20,6 +23,7 @@ from ichnaea.tests.base import (
     PARIS_LAT,
     PARIS_LON,
 )
+from ichnaea import util
 
 
 class TestGeolocate(AppTestCase):
@@ -269,6 +273,26 @@ class TestGeolocate(AppTestCase):
         self.check_stats(
             counter=[self.metric + '.unknown_api_key'])
 
+    def test_api_key_limit(self):
+        app = self.app
+        session = self.get_session()
+        api_key = uuid1().hex
+        session.add(ApiKey(valid_key=api_key, maxreq=5, shortname='dis'))
+        session.flush()
+
+        # exhaust today's limit
+        dstamp = util.utcnow().strftime("%Y%m%d")
+        key = "apilimit:%s:%s" % (api_key, dstamp)
+        self.redis_client.incr(key, 10)
+
+        res = app.post_json(
+            '%s?key=%s' % (self.url, api_key), {},
+            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
+            status=403)
+
+        errors = res.json['error']['errors']
+        self.assertEqual(errors[0]['reason'], 'dailyLimitExceeded')
+
     def test_lte_radio(self):
         app = self.app
         session = self.get_session()
@@ -315,7 +339,16 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(res.json['accuracy'], CELL_MIN_ACCURACY)
 
 
-class TestGeolocateFxOSWorkarounds(TestGeolocate):
+class TestGeolocateFxOSWorkarounds(AppTestCase):
+
+    def setUp(self):
+        AppTestCase.setUp(self)
+        self.url = '/v1/geolocate'
+        self.metric = 'geolocate'
+        self.metric_url = 'request.v1.geolocate'
+
+    def get_session(self):
+        return self.db_slave_session
 
     def test_ok_cell_radio_in_celltowers(self):
         # This test covers a bug related to FxOS calling the

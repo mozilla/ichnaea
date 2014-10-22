@@ -3,6 +3,7 @@ import uuid
 
 from sqlalchemy.exc import IntegrityError
 
+from ichnaea.models import RADIO_TYPE
 from ichnaea.tests.base import DBTestCase
 
 
@@ -107,6 +108,36 @@ class TestCellMeasure(DBTestCase):
         self.assertEqual(result.asu, 26)
         self.assertEqual(result.signal, -61)
         self.assertEqual(result.ta, 10)
+
+
+class TestOCIDCell(DBTestCase):
+
+    def _make_one(self, **kw):
+        from ichnaea.models import OCIDCell
+        return OCIDCell(**kw)
+
+    def test_constructor(self):
+        cell = self._make_one()
+        self.assertEqual(cell.total_measures, 0)
+
+    def test_fields(self):
+        cell = self._make_one(
+            radio=RADIO_TYPE['gsm'], mcc=100, mnc=5, lac=1234, cid=23456,
+            lat=1.2345678, lon=2.3456789, total_measures=15,
+        )
+        session = self.db_master_session
+        session.add(cell)
+        session.commit()
+
+        result = session.query(cell.__class__).first()
+        self.assertEqual(result.radio, RADIO_TYPE['gsm'])
+        self.assertEqual(result.mcc, 100)
+        self.assertEqual(result.mnc, 5)
+        self.assertEqual(result.lac, 1234)
+        self.assertEqual(result.cid, 23456)
+        self.assertEqual(result.lat, 1.2345678)
+        self.assertEqual(result.lon, 2.3456789)
+        self.assertEqual(result.total_measures, 15)
 
 
 class TestWifi(DBTestCase):
