@@ -413,13 +413,25 @@ def process_measures(items, session, userid=None):
         for measure in cell_measures:
             cells[to_cellkey_psc(measure)].append(measure)
 
-        for values in cells.values():
+        # Create a task per group of 5 cell keys at a time.
+        # Grouping them helps in avoiding per-task overhead.
+        cells = list(cells.values())
+        batch_size = 5
+        countdown = 0
+        for i in range(0, len(cells), batch_size):
+            values = []
+            for measures in cells[i:i + batch_size]:
+                values.extend(measures)
             # insert measures, expire the task if it wasn't processed
-            # after two hours to avoid queue overload
+            # after two hours to avoid queue overload, also delay
+            # each task by one second more, to get a more even workload
+            # and avoid parallel updates of the same underlying stations
             insert_measures_cell.apply_async(
                 args=[values],
                 kwargs={'userid': userid},
-                expires=7200)
+                expires=7200,
+                countdown=countdown)
+            countdown += 1
 
     if wifi_measures:
         # group by WiFi key

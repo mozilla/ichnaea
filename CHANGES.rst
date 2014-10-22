@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Extend observation task batching logic to apply to cell observations.
+
 - #328: Let gunicorn start without a valid geoip database file.
 
 - Extend the `make release` step to deal with Python files with
