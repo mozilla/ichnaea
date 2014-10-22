@@ -423,13 +423,13 @@ def process_measures(items, session, userid=None):
             for measures in cells[i:i + batch_size]:
                 values.extend(measures)
             # insert measures, expire the task if it wasn't processed
-            # after two hours to avoid queue overload, also delay
+            # after six hours to avoid queue overload, also delay
             # each task by one second more, to get a more even workload
             # and avoid parallel updates of the same underlying stations
             insert_measures_cell.apply_async(
                 args=[values],
                 kwargs={'userid': userid},
-                expires=7200,
+                expires=21600,
                 countdown=countdown)
             countdown += 1
 
@@ -452,11 +452,11 @@ def process_measures(items, session, userid=None):
             for measures in wifis[i:i + batch_size]:
                 values.extend(measures)
             # insert measures, expire the task if it wasn't processed
-            # after two hours to avoid queue overload
+            # after six hours to avoid queue overload
             insert_measures_wifi.apply_async(
                 args=[values],
                 kwargs={'userid': userid},
-                expires=7200)
+                expires=21600)
 
     if userid is not None:
         process_score(userid, len(positions), session)

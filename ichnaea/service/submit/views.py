@@ -77,11 +77,11 @@ def submit_view(request):
     for i in range(0, len(items), 100):
         batch = dumps(items[i:i + 100])
         # insert measures, expire the task if it wasn't processed
-        # after two hours to avoid queue overload
+        # after six hours to avoid queue overload
         try:
             insert_measures.apply_async(
                 kwargs={'items': batch, 'nickname': nickname},
-                expires=7200)
+                expires=21600)
         except ConnectionError:  # pragma: no cover
             return HTTPServiceUnavailable()
 

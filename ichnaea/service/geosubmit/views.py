@@ -120,11 +120,11 @@ def process_upload(nickname, items):
     for i in range(0, len(batch_list), 100):
         batch_items = dumps(batch_list[i:i + 100])
         # insert measures, expire the task if it wasn't processed
-        # after two hours to avoid queue overload
+        # after six hours to avoid queue overload
         try:
             insert_measures.apply_async(
                 kwargs={'items': batch_items, 'nickname': nickname},
-                expires=7200)
+                expires=21600)
         except ConnectionError:  # pragma: no cover
             return SENTINEL
     return errors

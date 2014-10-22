@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Extend queue maximum lifetime for incoming reports to six hours.
+
 - Extend observation task batching logic to apply to cell observations.
 
 - #328: Let gunicorn start without a valid geoip database file.
