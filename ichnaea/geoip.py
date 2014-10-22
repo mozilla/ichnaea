@@ -35,7 +35,7 @@ def radius_from_geoip(record):
     return (accuracy, city)
 
 
-def configure_geoip(registry_settings=None, filename=None):
+def configure_geoip(registry_settings=None, filename=None, heka_client=None):
     if registry_settings is None:
         registry_settings = {}
 
@@ -47,8 +47,9 @@ def configure_geoip(registry_settings=None, filename=None):
         filename = registry_settings.get('geoip_db_path', None)
 
     if filename is None:
-        # No DB file specific in the config, return the dummy object
-        # FIXME Really need to log an info/warn here that we aren't using GeoIP
+        # No DB file specified in the config
+        if heka_client is not None:
+            heka_client.raven('No geoip filename specified.')
         return GeoIPNull()
 
     try:
@@ -57,9 +58,11 @@ def configure_geoip(registry_settings=None, filename=None):
         db = GeoIPWrapper(filename, flags=pygeoip.MEMORY_CACHE, cache=False)
         # Actually initialize the memory cache, by doing one fake look-up
         db.geoip_lookup('127.0.0.1')
-    except IOError as e:
-        raise GeoIPError("Failed to open GeoIP database '%s': %s" % (
-                         filename, e))
+    except (IOError, GeoIPError):
+        # Error opening the database file, maybe it doesn't exist
+        if heka_client is not None:
+            heka_client.raven('Error opening geoip database file.')
+        return GeoIPNull()
 
     return db
 

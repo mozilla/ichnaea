@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- #328: Let gunicorn start without a valid geoip database file.
+
 - Update to latest versions of configparser, greenlet and pyzmq.
 
 20141016123300

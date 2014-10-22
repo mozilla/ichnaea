@@ -50,15 +50,16 @@ def main(global_config, heka_config=None, init=False,
     else:
         config.registry.redis_client = _redis
 
-    config.registry.geoip_db = configure_geoip(config.registry.settings)
-
     if _heka_client is None:  # pragma: no cover
-        config.registry.heka_client = configure_heka(heka_config)
+        config.registry.heka_client = heka_client = configure_heka(heka_config)
     else:
-        config.registry.heka_client = _heka_client
+        config.registry.heka_client = heka_client = _heka_client
 
     config.registry.stats_client = configure_stats(
         settings.get('statsd_host'), _client=_stats_client)
+
+    config.registry.geoip_db = configure_geoip(
+        config.registry.settings, heka_client=heka_client)
 
     config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)
     config.add_tween('ichnaea.logging.log_tween_factory', under=EXCVIEW)

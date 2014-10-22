@@ -5,12 +5,24 @@ from ichnaea.constants import GEOIP_CITY_ACCURACY
 from ichnaea import geoip
 from ichnaea.geoip import radius_from_geoip
 from ichnaea.tests.base import (
-    TestCase,
+    LogIsolation,
     FREMONT_IP,
+    TestCase,
 )
 
 
-class TestGeoIPFallback(TestCase):
+class TestGeoIPFallback(TestCase, LogIsolation):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestCase, cls).setup_logging()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestCase, cls).teardown_logging()
+
+    def setUp(self):
+        self.clear_log_messages()
 
     @property
     def filename(self):
@@ -19,22 +31,30 @@ class TestGeoIPFallback(TestCase):
     def _open_db(self, path=None):
         if path is None:
             path = self.filename
-        return geoip.configure_geoip(filename=path)
-
-    def test_open_fail(self):
-        # FIXME going to fail at this point due to GeoIPNull
-        with self.assertRaises(geoip.GeoIPError):
-            self._open_db('/i/taught/i/taw/a/putty/tat')
-
-        with tempfile.NamedTemporaryFile() as temp:
-            temp.write('Bucephalus')
-            temp.seek(0)
-            with self.assertRaises(geoip.GeoIPError):
-                self._open_db(temp.name)
+        return geoip.configure_geoip(
+            filename=path, heka_client=self.heka_client)
 
     def test_open_ok(self):
         result = self._open_db()
         self.assertIsInstance(result, geoip.GeoIPWrapper)
+
+    def test_open_missing_file(self):
+        db = self._open_db('/i/taught/i/taw/a/putty/tat')
+        self.assertTrue(isinstance(db, geoip.GeoIPNull))
+        self.check_expected_heka_messages(
+            sentry=[('msg', 'Error opening geoip database file.', 1)]
+        )
+
+    def test_open_invalid_file(self):
+        with tempfile.NamedTemporaryFile() as temp:
+            temp.write('Bucephalus')
+            temp.seek(0)
+            db = self._open_db(temp.name)
+            self.assertTrue(isinstance(db, geoip.GeoIPNull))
+
+        self.check_expected_heka_messages(
+            sentry=[('msg', 'Error opening geoip database file.', 1)]
+        )
 
     def test_lookup_ok(self):
         expected = {
