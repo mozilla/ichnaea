@@ -41,7 +41,7 @@ def add_stat(session, name, day, value):
 
 
 def get_stat(session, stat_key, exact=True, date=None):
-    if date is None:
+    if date is None:  # pragma: no cover
         date = util.utcnow().date()
     query = session.query(Stat).filter(
         Stat.key == stat_key)

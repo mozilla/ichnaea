@@ -173,12 +173,13 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
         archive_sha = compute_hash(zip_path)
 
         try:
-            if not s3_backend.backup_archive(s3_key, zip_path):
+            success = s3_backend.backup_archive(s3_key, zip_path)
+            if not success:  # pragma: no cover
                 return
             self.stats_client.incr('s3.backup.%s' % name, (end_id - start_id))
         finally:
             if cleanup_zip:
-                if os.path.exists(zip_path):
+                if os.path.exists(zip_path):  # pragma: no cover
                     zip_dir, zip_file = os.path.split(zip_path)
                     if os.path.exists(zip_dir):
                         shutil.rmtree(zip_dir)

@@ -250,7 +250,7 @@ def create_wifi_measure(utcnow, entry):
     # creates a dict.copy() avoiding test leaks reusing the same
     # entries for multiple task calls
     entry = normalized_wifi_measure_dict(entry)
-    if entry is None:
+    if entry is None:  # pragma: no cover
         return None
     # add creation date
     entry['created'] = utcnow
@@ -356,10 +356,10 @@ def process_measure(data, session):
         for c in data['cell']:
             add_missing_dict_entries(c, measure_data)
             c = normalized_cell_measure_dict(c, measure_radio)
-            if c is None:
+            if c is None:  # pragma: no cover
                 continue
             key = to_cellkey_psc(c)
-            if key in cell_measures:
+            if key in cell_measures:  # pragma: no cover
                 existing = cell_measures[key]
                 if existing['ta'] > c['ta'] or \
                    (existing['signal'] != 0 and
@@ -378,7 +378,7 @@ def process_measure(data, session):
             if w is None:
                 continue
             key = w['key']
-            if key in wifi_measures:
+            if key in wifi_measures:  # pragma: no cover
                 existing = wifi_measures[key]
                 if existing['signal'] != 0 and \
                    existing['signal'] < w['signal']:
@@ -575,7 +575,7 @@ def update_enclosing_lacs(session, lacs, moving_cells, utcnow):
             continue
         q = session.query(Cell).filter(*join_cellkey(Cell, lac_key))
         lac = q.first()
-        if lac is not None:
+        if lac is not None:  # pragma: no cover
             lac.new_measures += 1
         else:
             lac = Cell(
@@ -688,7 +688,7 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
                 # skip cells with a missing lac/cid
                 # or virtual LAC cells
                 if cell.lac == -1 or cell.cid == -1 or \
-                   cell.cid == CELLID_LAC:
+                   cell.cid == CELLID_LAC:  # pragma: no cover
                     continue
 
                 query = session.query(
@@ -740,7 +740,7 @@ def location_update_cell_backfill(self, new_cell_measures):
                     *join_cellkey(Cell, CellKey(*tower_tuple)))
                 cells = query.all()
 
-                if not cells:
+                if not cells:  # pragma: no cover
                     # This case shouldn't actually occur. The
                     # location_update_cell_backfill is only called
                     # when CellMeasure records are matched against
@@ -755,7 +755,7 @@ def location_update_cell_backfill(self, new_cell_measures):
                     if measures:
                         moving = calculate_new_position(
                             cell, measures, CELL_MAX_DIST_KM, backfill=True)
-                        if moving:
+                        if moving:  # pragma: no cover
                             moving_cells.add(cell)
 
                         updated_lacs[CellKey(cell.radio, cell.mcc,
@@ -766,7 +766,7 @@ def location_update_cell_backfill(self, new_cell_measures):
                 update_enclosing_lacs(session, updated_lacs,
                                       moving_cells, utcnow)
 
-            if moving_cells:
+            if moving_cells:  # pragma: no cover
                 # some cells found to be moving too much
                 blacklist_and_remove_moving_cells(session, moving_cells)
 
@@ -913,7 +913,7 @@ def update_lac(self, radio, mcc, mnc, lac):
                 Cell.lon.isnot(None))
 
             cells = q.all()
-            if len(cells) == 0:
+            if len(cells) == 0:  # pragma: no cover
                 return
 
             points = [(c.lat, c.lon) for c in cells]
@@ -947,7 +947,7 @@ def update_lac(self, radio, mcc, mnc, lac):
 
             lac = q.first()
 
-            if lac is None:
+            if lac is None:  # pragma: no cover
                 lac = Cell(radio=radio,
                            mcc=mcc,
                            mnc=mnc,

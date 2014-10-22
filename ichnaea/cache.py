@@ -8,11 +8,11 @@ def redis_client(redis_url):
     host = netloc[0]
     if len(netloc) > 1:
         port = int(netloc[1])
-    else:
+    else:  # pragma: no cover
         port = 6379
     if len(url.path) > 1:
         db = int(url.path[1:])
-    else:
+    else:  # pragma: no cover
         db = 0
     pool = redis.ConnectionPool(
         max_connections=100,

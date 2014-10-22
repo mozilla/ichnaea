@@ -70,7 +70,7 @@ class GzipFile(gzip.GzipFile):
     fileobj = None
 
     def __enter__(self):
-        if self.fileobj is None:
+        if self.fileobj is None:  # pragma: no cover
             raise ValueError("I/O operation on closed GzipFile object")
         return self
 
@@ -88,7 +88,7 @@ def make_cell_export_dict(row):
 
     # Fix up specific entry formatting
     radio = row[ix['radio']]
-    if radio is None:
+    if radio is None:  # pragma: no cover
         radio = -1
 
     psc = row[ix['psc']]
@@ -174,7 +174,7 @@ def export_modified_stations(sess, table, columns, cond,
 
 @celery.task(base=DatabaseTask, bind=True)
 def export_modified_cells(self, hourly=True, bucket=None):
-    if bucket is None:
+    if bucket is None:  # pragma: no cover
         bucket = self.app.s3_settings['assets_bucket']
     now = util.utcnow()
 
@@ -218,7 +218,6 @@ def import_stations(sess, table, columns,
                           '`range` = values(`range`)'))
         first = True
         for row in w:
-
             # skip any header row
             if first and 'radio' in row.values():
                 first = False
@@ -227,7 +226,7 @@ def import_stations(sess, table, columns,
             d = make_dict(row)
             if d is not None:
                 rows.append(d)
-            if len(rows) == batch:
+            if len(rows) == batch:  # pragma: no cover
                 sess.execute(ins, rows)
                 sess.commit()
                 rows = []
@@ -240,7 +239,7 @@ def import_stations(sess, table, columns,
 def import_ocid_cells(self, filename=None, sess=None):
     try:
         with self.db_session() as dbsess:
-            if sess is None:
+            if sess is None:  # pragma: no cover
                 sess = dbsess
             import_stations(sess, ocid_cell_table, CELL_COLUMNS,
                             filename, make_cell_import_dict,
@@ -258,7 +257,7 @@ def import_latest_ocid_cells(self, diff=True, filename=None, sess=None):
         if diff:
             prev_hour = util.utcnow() - timedelta(hours=1)
             filename = prev_hour.strftime("cell_towers_diff-%Y%m%d%H.csv.gz")
-        else:
+        else:  # pragma: no cover
             filename = "cell_towers.csv.gz"
     try:
         with closing(requests.get(url,
@@ -268,12 +267,12 @@ def import_latest_ocid_cells(self, diff=True, filename=None, sess=None):
             with selfdestruct_tempdir() as d:
                 path = os.path.join(d, filename)
                 with open(path, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=2**20):
+                    for chunk in r.iter_content(chunk_size=2 ** 20):
                         f.write(chunk)
                         f.flush()
 
                 with self.db_session() as dbsess:
-                    if sess is None:
+                    if sess is None:  # pragma: no cover
                         sess = dbsess
                     import_stations(sess, ocid_cell_table, CELL_COLUMNS,
                                     path, make_cell_import_dict,

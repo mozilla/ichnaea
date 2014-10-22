@@ -36,7 +36,7 @@ def attach_database(app, settings=None, _db_master=None):
 
 
 def attach_redis_client(app, settings=None, _redis=None):
-    if _redis is None:
+    if _redis is None:  # pragma: no cover
         app.redis_client = None
         if 'redis_url' in settings:
             app.redis_client = redis_client(settings['redis_url'])

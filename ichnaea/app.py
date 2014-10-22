@@ -52,7 +52,7 @@ def main(global_config, heka_config=None, init=False,
 
     config.registry.geoip_db = configure_geoip(config.registry.settings)
 
-    if _heka_client is None:
+    if _heka_client is None:  # pragma: no cover
         config.registry.heka_client = configure_heka(heka_config)
     else:
         config.registry.heka_client = _heka_client
@@ -69,7 +69,7 @@ def main(global_config, heka_config=None, init=False,
     config.add_renderer('json', customjson.Renderer())
 
     # Should we try to initialize and establish the outbound connections?
-    if init:
+    if init:  # pragma: no cover
         # Test the slave DB connection
         with db_worker_session(config.registry.db_slave) as session:
             try:

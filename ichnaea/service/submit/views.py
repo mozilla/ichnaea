@@ -82,7 +82,7 @@ def submit_view(request):
             insert_measures.apply_async(
                 kwargs={'items': batch, 'nickname': nickname},
                 expires=7200)
-        except ConnectionError:
+        except ConnectionError:  # pragma: no cover
             return HTTPServiceUnavailable()
 
     return HTTPNoContent()

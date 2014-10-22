@@ -54,7 +54,7 @@ def geosubmit_validator(data, errors):
 
 
 def process_upload(nickname, items):
-    if isinstance(nickname, str):
+    if isinstance(nickname, str):  # pragma: no cover
         nickname = nickname.decode('utf-8', 'ignore')
 
     batch_list = []
@@ -113,7 +113,7 @@ def process_upload(nickname, items):
     validated = {}
     verify_schema(schema, body, errors, validated)
 
-    if errors:
+    if errors:  # pragma: no cover
         # Short circuit on any error in schema validation
         return errors
 
@@ -125,7 +125,7 @@ def process_upload(nickname, items):
             insert_measures.apply_async(
                 kwargs={'items': batch_items, 'nickname': nickname},
                 expires=7200)
-        except ConnectionError:
+        except ConnectionError:  # pragma: no cover
             return SENTINEL
     return errors
 
@@ -138,7 +138,7 @@ def configure_geosubmit(config):
 def flatten_items(data):
     if any(data.get('items', ())):
         items = data['items']
-    else:
+    else:  # pragma: no cover
         items = [data]
 
     return items
@@ -167,10 +167,10 @@ def process_batch(request, data, errors):
     upload_items = flatten_items(data)
     errors = process_upload(nickname, upload_items)
 
-    if errors is SENTINEL:
+    if errors is SENTINEL:  # pragma: no cover
         return HTTPServiceUnavailable()
 
-    if errors:
+    if errors:  # pragma: no cover
         get_stats_client().incr('geosubmit.upload.errors', len(errors))
 
     result = HTTPOk()
@@ -202,7 +202,7 @@ def process_single(request):
     upload_items = flatten_items(data)
     errors = process_upload(nickname, upload_items)
 
-    if errors is not SENTINEL and errors:
+    if errors is not SENTINEL and errors:  # pragma: no cover
         stats_client.incr('geosubmit.upload.errors', len(errors))
 
     first_item = data['items'][0]

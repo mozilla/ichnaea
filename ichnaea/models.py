@@ -107,9 +107,9 @@ def join_cellkey(model, k):
 
 
 def to_wifikey(obj):
-    if isinstance(obj, dict):
+    if isinstance(obj, dict):  # pragma: no cover
         return WifiKey(key=obj['key'])
-    elif isinstance(obj, basestring):
+    elif isinstance(obj, basestring):  # pragma: no cover
         return WifiKey(key=obj)
     else:
         return WifiKey(key=obj.key)

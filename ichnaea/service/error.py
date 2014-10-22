@@ -70,7 +70,7 @@ def preprocess_request(request, schema, extra_checks=(), response=JSONError,
             # handle gzip request bodies
             try:
                 body = zlib.decompress(body, 16 + zlib.MAX_WBITS)
-            except zlib.error:
+            except zlib.error:  # pragma: no cover
                 errors.append(dict(name=None, description=MSG_GZIP))
 
         if not errors:
@@ -78,7 +78,7 @@ def preprocess_request(request, schema, extra_checks=(), response=JSONError,
                 body = loads(body, encoding=request.charset)
             except ValueError as e:
                 errors.append(dict(name=None, description=e.message))
-    else:
+    else:  # pragma: no cover
         errors.append(dict(name=None, description=MSG_EMPTY))
 
     if accept_empty and body == {}:

@@ -22,7 +22,7 @@ class S3Backend(object):
         self.heka_client = heka_client
         self.backup_bucket = backup_bucket
 
-    def check_archive(self, expected_sha, s3_key):
+    def check_archive(self, expected_sha, s3_key):  # pragma: no cover
         short_fname = os.path.split(s3_key)[-1]
 
         tmpdir = tempfile.mkdtemp()
@@ -56,6 +56,6 @@ class S3Backend(object):
             k.key = 'backups/' + s3_key
             k.set_contents_from_filename(fname)
             return True
-        except Exception:
+        except Exception:  # pragma: no cover
             self.heka_client.error('s3 write error')
             return False

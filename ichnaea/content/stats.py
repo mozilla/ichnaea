@@ -94,7 +94,7 @@ def histogram(session, name, days=365):
     result = []
     for num, year, month in rows.all():
         # use first of August to plot the highest result for July
-        if month == 12:
+        if month == 12:  # pragma: no cover
             next_month = date(year + 1, 1, 1)
         else:
             next_month = date(year, month + 1, 1)
@@ -146,7 +146,7 @@ def leaders_weekly(session, batch=20):
             Score.userid).limit(batch).all()
         userids.update(set([s[0] for s in score_rows[name]]))
 
-    if not userids:
+    if not userids:  # pragma: no cover
         return result
 
     user_rows = session.query(User.id, User.nickname).filter(
@@ -156,7 +156,7 @@ def leaders_weekly(session, batch=20):
     for name, value in score_rows.items():
         for userid, value in value:
             nickname = users.get(userid, 'anonymous')
-            if len(nickname) > 24:
+            if len(nickname) > 24:  # pragma: no cover
                 nickname = nickname[:24] + u'...'
             result[name].append(
                 {'nickname': nickname, 'num': int(value)})

@@ -14,5 +14,5 @@ def configure_heartbeat(config):
 def heartbeat_view(request):
     try:
         return {'status': 'OK', 'hostname': LOCAL_FQDN}
-    except Exception:
+    except Exception:  # pragma: no cover
         return HTTPServiceUnavailable()

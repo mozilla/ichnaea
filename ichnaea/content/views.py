@@ -57,7 +57,7 @@ CACHE_KEYS = {
 def map_tiles_url(base_url):
     if base_url is None:
         return LOCAL_TILES
-    elif not base_url.endswith('/'):
+    elif not base_url.endswith('/'):  # pragma: no cover
         base_url = base_url + '/'
     return urlparse.urljoin(base_url, 'tiles/' + TILES_PATTERN)
 
@@ -100,12 +100,12 @@ def security_headers(event):
 
 
 def s3_list_downloads(assets_bucket, assets_url, heka_client):
-    if not assets_url.endswith('/'):
+    if not assets_url.endswith('/'):  # pragma: no cover
         assets_url = assets_url + '/'
 
     conn = boto.connect_s3()
     bucket = conn.lookup(assets_bucket, validate=False)
-    if bucket is None:
+    if bucket is None:  # pragma: no cover
         return []
     files = []
     try:
@@ -115,7 +115,7 @@ def s3_list_downloads(assets_bucket, assets_url, heka_client):
             # round to kilobyte
             size = int(round(key.size / 1024.0, 0))
             files.append(dict(name=name, path=path, size=size))
-    except S3ResponseError:
+    except S3ResponseError:  # pragma: no cover
         heka_client.raven(RAVEN_ERROR)
         return []
     return sorted(files, reverse=True)

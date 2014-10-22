@@ -11,7 +11,7 @@ class Config(ConfigParser):
         if isinstance(filename, basestring):
             self.filename = filename
             self.read(filename)
-        else:
+        else:  # pragma: no cover
             self.filename = None
             self.read_file(filename)
 

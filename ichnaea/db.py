@@ -24,7 +24,7 @@ def on_duplicate(insert, compiler, **kw):
 # to provide lazy session creation, session closure and automatic
 # rollback in case of errors
 
-def db_master_session(request):
+def db_master_session(request):  # pragma: no cover
     session = getattr(request, '_db_master_session', None)
     if session is None:
         db = request.registry.db_master
@@ -57,9 +57,9 @@ def db_tween_factory(handler, registry):
     def db_tween(request):
         response = handler(request)
         master_session = getattr(request, '_db_master_session', None)
-        if master_session is not None:
+        if master_session is not None:  # pragma: no cover
             # only deal with requests with a session
-            if response.status.startswith(('4', '5')):  # pragma: no cover
+            if response.status.startswith(('4', '5')):
                 # never commit on error
                 master_session.rollback()
             master_session.close()
@@ -113,7 +113,7 @@ def check_connection(dbapi_con, con_record, con_proxy):
         # dbapi_con.ping() ends up calling mysql_ping()
         # http://dev.mysql.com/doc/refman/5.0/en/mysql-ping.html
         dbapi_con.ping()
-    except exc.OperationalError as ex:
+    except exc.OperationalError as ex:  # pragma: no cover
         if ex.args[0] in (2003,     # Connection refused
                           2006,     # MySQL server has gone away
                           2013,     # Lost connection to MySQL server

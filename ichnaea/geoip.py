@@ -21,7 +21,7 @@ def radius_from_geoip(record):
         accuracy = maximum_country_radius(record['country_code3'])
     elif 'country_code' in record and record['country_code']:
         accuracy = maximum_country_radius(record['country_code'])
-    if accuracy is None:
+    if accuracy is None:  # pragma: no cover
         # No country code or no successful radius lookup
         accuracy = GEOIP_COUNTRY_ACCURACY
 

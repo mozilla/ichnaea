@@ -18,7 +18,7 @@ def encode_datetime(obj):
 def decode_datetime(obj):
     try:
         return iso8601.parse_date(obj)
-    except (iso8601.ParseError, TypeError):
+    except (iso8601.ParseError, TypeError):  # pragma: no cover
         return util.utcnow()
 
 
@@ -34,7 +34,8 @@ def custom_iterencode(value):
     j = JSONEncoder()
 
     def floatstr(o, allow_nan=j.allow_nan, ignore_nan=j.ignore_nan,
-                 _repr=FLOAT_REPR, _inf=PosInf, _neginf=-PosInf):
+                 _repr=FLOAT_REPR, _inf=PosInf,
+                 _neginf=-PosInf):  # pragma: no cover
         if o != o:
             text = 'NaN'
         elif o == _inf:

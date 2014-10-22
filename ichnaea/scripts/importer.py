@@ -50,7 +50,7 @@ def load_file(session, source_file, batch_size=1000, userid=None):
 
                 lat = float(fields[2])
                 lon = float(fields[3])
-                if lat == 0.0 and lon == 0.0:
+                if lat == 0.0 and lon == 0.0:  # pragma: no cover
                     continue
                 accuracy = int(float(fields[4]))
                 altitude = int(float(fields[5]))
@@ -79,7 +79,7 @@ def load_file(session, source_file, batch_size=1000, userid=None):
                     heading=-255,
                     speed=-255,
                 )
-            except (ValueError, IndexError):
+            except (ValueError, IndexError):  # pragma: no cover
                 continue
 
             items.append(data)
@@ -119,7 +119,7 @@ def main(argv, _db_master=None, _heka_client=None, _stats_client=None):
     configure_stats(conf.get('ichnaea', 'statsd_host'), _client=_stats_client)
 
     # configure databases incl. test override hooks
-    if _db_master is None:
+    if _db_master is None:  # pragma: no cover
         db = Database(settings['db_master'])
     else:
         db = _db_master

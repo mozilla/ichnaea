@@ -53,7 +53,7 @@ def configure_stats(config, _client=None):
     if _client is not None:
         return set_stats_client(_client)
 
-    if not config:
+    if not config:  # pragma: no cover
         config = 'localhost:8125'
     parts = config.split(':')
     host = parts[0]
@@ -102,7 +102,7 @@ def log_tween_factory(handler, registry):
             timer_send()
             counter_send(400)
             raise
-        except Exception as exc:
+        except Exception as exc:  # pragma: no cover
             timer_send()
             if isinstance(exc, HTTPException):
                 status = exc.status_code

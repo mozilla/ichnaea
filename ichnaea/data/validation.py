@@ -191,10 +191,10 @@ def normalized_wifi_dict(d):
         d, dict(signal=(-200, -1, 0),
                 signalToNoiseRatio=(0, 100, 0)))
 
-    if d is None:
+    if d is None:  # pragma: no cover
         return None
 
-    if 'key' not in d:
+    if 'key' not in d:  # pragma: no cover
         return None
 
     d['key'] = normalized_wifi_key(d['key'])
@@ -225,7 +225,7 @@ def normalized_cell_dict(d, default_radio=-1):
     Returns a normalized copy of the provided cell dict d,
     or None if the dict was invalid.
     """
-    if not isinstance(d, dict):
+    if not isinstance(d, dict):  # pragma: no cover
         return None
 
     d = d.copy()

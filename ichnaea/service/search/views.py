@@ -13,7 +13,7 @@ def configure_search(config):
 
 
 def check_cell_or_wifi(data, errors):
-    if errors:
+    if errors:  # pragma: no cover
         # don't add this error if something else was already wrong
         return
 

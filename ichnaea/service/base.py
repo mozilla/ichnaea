@@ -49,7 +49,7 @@ def rate_limit(redis_client, api_key, maxreq=0, expire=86400):
             pipe.expire(key, expire)
             pipe.execute()
             return False
-    except ConnectionError:
+    except ConnectionError:  # pragma: no cover
         # If we cannot connect to Redis, disable rate limitation.
         return None
     return True
@@ -72,7 +72,7 @@ def check_api_key(func_name, error_on_invalidkey=False):
             try:
                 result = session.execute(API_CHECK.bindparams(api_key=api_key))
                 found_key = result.fetchone()
-            except Exception:
+            except Exception:  # pragma: no cover
                 # if we cannot connect to backend DB, skip api key check
                 heka_client.raven(RAVEN_ERROR)
                 stats_client.incr('%s.dbfailure_skip_api_key' % func_name)
@@ -80,7 +80,7 @@ def check_api_key(func_name, error_on_invalidkey=False):
 
             if found_key is not None:
                 maxreq, shortname = found_key
-                if not shortname:
+                if not shortname:  # pragma: no cover
                     shortname = api_key
                 stats_client.incr('%s.api_key.%s' % (func_name, shortname))
                 should_limit = rate_limit(request.registry.redis_client,
@@ -90,7 +90,7 @@ def check_api_key(func_name, error_on_invalidkey=False):
                     result.content_type = 'application/json'
                     result.body = DAILY_LIMIT
                     return result
-                elif should_limit is None:
+                elif should_limit is None:  # pragma: no cover
                     # We couldn't connect to Redis
                     stats_client.incr('%s.redisfailure_skip_limit' % func_name)
             else:
