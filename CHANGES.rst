@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Update to latest versions of configparser, greenlet and pyzmq.
+
 20141016123300
 **************
 
