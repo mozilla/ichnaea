@@ -441,22 +441,27 @@ def process_measures(items, session, userid=None):
         for measure in wifi_measures:
             wifis[measure['key']].append(measure)
 
-        # Create a task per group of 5 WiFi keys at a time.
+        # Create a task per group of 20 WiFi keys at a time.
         # We tend to get a huge number of unique WiFi networks per
         # batch upload, with one to very few measures per WiFi.
         # Grouping them helps in avoiding per-task overhead.
         wifis = list(wifis.values())
-        batch_size = 5
+        batch_size = 20
+        countdown = 0
         for i in range(0, len(wifis), batch_size):
             values = []
             for measures in wifis[i:i + batch_size]:
                 values.extend(measures)
             # insert measures, expire the task if it wasn't processed
-            # after six hours to avoid queue overload
+            # after six hours to avoid queue overload, also delay
+            # each task by one second more, to get a more even workload
+            # and avoid parallel updates of the same underlying stations
             insert_measures_wifi.apply_async(
                 args=[values],
                 kwargs={'userid': userid},
-                expires=21600)
+                expires=21600,
+                countdown=countdown)
+            countdown += 1
 
     if userid is not None:
         process_score(userid, len(positions), session)

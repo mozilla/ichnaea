@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Increase batch size for `insert_measures_wifi` task.
+
 - Extend queue maximum lifetime for incoming reports to six hours.
 
 - Extend observation task batching logic to apply to cell observations.
