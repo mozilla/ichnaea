@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Updated Fennec link to point to Aurora channel.
+
 - Renamed MozStumbler to Mozilla Stumbler, added new screenshot.
 
 - Increase batch size for `insert_measures_wifi` task.

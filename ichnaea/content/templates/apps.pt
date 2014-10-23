@@ -51,8 +51,8 @@
     <h3 class="separator">Firefox for Android</h3>
 
     <p class="text-justified">
-        Nightly versions of
-        <a href="https://quality.mozilla.org/docs/mobile-firefox/how-to-install-fennec-nightly-builds/">Firefox for Android</a>
+        Aurora versions of
+        <a href="https://www.mozilla.org/aurora">Firefox for Android</a>
         include a way to contribute data and enhance this service. In order
         to enable this, you need to go to the Mozilla settings section and
         look for the contribution option under data choices.
