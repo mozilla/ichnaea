@@ -12,40 +12,40 @@
         merely using this service.
     </p>
 
-    <h3>MozStumbler for Android</h3>
+    <h3>Mozilla Stumbler for Android</h3>
 
-    <div class="map-callout-left text-justified">
+    <div class="app-callout-left text-justified">
         <p >
-            MozStumbler is an open source Android application, which both
+            Mozilla Stumbler is an open source Android application, which both
             collects data to contribute to the service and also includes a
             test mode to show ones location on a map.
         </p>
 
         <p>
             You can find <a href="https://github.com/mozilla/MozStumbler">
-                MozStumbler on Github</a>
+                Mozilla Stumbler on Github</a>
             to download it or to contribute to its development.
         </p>
 
         <p>
             As an alternative you can also
             <a href="https://f-droid.org/wiki/page/org.mozilla.mozstumbler">
-                install MozStumbler from the f-droid catalog</a>.
+                install Mozilla Stumbler from the f-droid catalog</a>.
         </p>
 
         <p>
-            MozStumbler allows you to compete in our
+            Mozilla Stumbler allows you to compete in our
             <a href="/leaders">leaderboards</a> by choosing a nickname
             in its preferences screen.
         </p>
 
     </div>
 
-    <div class="map-callout-right">
+    <div class="app-callout-right">
         <a href="https://github.com/mozilla/MozStumbler">
             <img src="/static/images/mozstumbler.png"
-                 title="MozStumbler on Github"
-                 width="192" height="320" /></a>
+                 title="Mozilla Stumbler on Github"
+                 width="144" height="256" /></a>
     </div>
 
     <h3 class="separator">Firefox for Android</h3>
@@ -77,7 +77,7 @@
 
     <p class="text-justified">
         FxStumbler is an open source Firefox OS application similar in purpose
-        to MozStumbler. It collects data about the radio environment to
+        to Mozilla Stumbler. It collects data about the radio environment to
         enhance the service. To contribute to the development of
         <a href="https://github.com/clochix/FxStumbler">
             FxStumbler visit it on github</a>.

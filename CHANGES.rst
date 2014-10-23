@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Renamed MozStumbler to Mozilla Stumbler, added new screenshot.
+
 - Increase batch size for `insert_measures_wifi` task.
 
 - Extend queue maximum lifetime for incoming reports to six hours.

@@ -419,6 +419,19 @@ img {
     float: right;
 }
 
+/* App callout for apps page */
+
+.app-callout-left {
+    width: 776px;
+    margin-right: 20px;
+    float: left;
+}
+.app-callout-right {
+    width: 144px;
+    margin-left: 20px;
+    float: right;
+}
+
 /* Leaflet locate control */
 
 .leaflet-touch .leaflet-bar-part-single {
@@ -626,12 +639,15 @@ img {
         width: 300px;
         height: 300px;
     }
-    .map-callout-left, .map-callout-right{
+    .map-callout-left, .map-callout-right,
+    .app-callout-left, .app-callout-right {
         width: auto;
         margin: 0;
     }
-    .map-callout-right {
+    .map-callout-right,
+    .app-callout-right {
         float: left;
+        margin-bottom: 10px;
     }
     .map-callout {
         position: relative;
@@ -715,6 +731,14 @@ img {
     }
     .map-callout-right {
         width: 260px;
+        margin-left: 10px;
+    }
+    .app-callout-left {
+        width: 556px;
+        margin-right: 10px;
+    }
+    .app-callout-right {
+        width: 144px;
         margin-left: 10px;
     }
 }
