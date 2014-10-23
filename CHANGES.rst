@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+20141023094000
+**************
+
 - Updated Fennec link to point to Aurora channel.
 
 - Renamed MozStumbler to Mozilla Stumbler, added new screenshot.
