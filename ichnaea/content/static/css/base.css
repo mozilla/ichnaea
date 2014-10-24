@@ -225,6 +225,13 @@ img {
 .text-justified {
     text-align: justify;
 }
+.italic {
+    font-style: italic;
+}
+.bold {
+    font-family: 'Open Sans Light', 'Droid Arabic Naskh', sans-serif;
+    font-weight: bold;
+}
 
 #masthead,
 #main-feature,

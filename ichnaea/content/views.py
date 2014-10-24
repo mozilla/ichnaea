@@ -204,7 +204,7 @@ class ContentViews(Layout):
     @view_config(renderer='templates/privacy.pt',
                  name="privacy", http_cache=3600)
     def privacy_view(self):
-        return {'page_title': 'Privacy Policy'}
+        return {'page_title': 'Privacy Notice'}
 
     @view_config(renderer='templates/leaders.pt',
                  route_name="leaders", http_cache=3600)
