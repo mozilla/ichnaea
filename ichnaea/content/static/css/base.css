@@ -429,12 +429,12 @@ img {
 /* App callout for apps page */
 
 .app-callout-left {
-    width: 776px;
+    width: 770px;
     margin-right: 20px;
     float: left;
 }
 .app-callout-right {
-    width: 144px;
+    width: 150px;
     margin-left: 20px;
     float: right;
 }
@@ -741,11 +741,11 @@ img {
         margin-left: 10px;
     }
     .app-callout-left {
-        width: 556px;
+        width: 550px;
         margin-right: 10px;
     }
     .app-callout-right {
-        width: 144px;
+        width: 150px;
         margin-left: 10px;
     }
 }

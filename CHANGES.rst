@@ -4,6 +4,8 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+- Update Mozilla Stumbler screenshot.
+
 - Update to new privacy policy covering both Fennec and Mozilla Stumbler.
 
 20141023094000
