@@ -84,8 +84,9 @@ class Database(object):
     def __init__(self, uri):
         options = {
             'pool_recycle': 3600,
-            'pool_size': 10,
+            'pool_size': 5,
             'pool_timeout': 10,
+            'max_overflow': 1,
             'echo': False,
             'isolation_level': 'REPEATABLE READ',
         }
