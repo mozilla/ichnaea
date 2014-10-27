@@ -7,24 +7,41 @@ __version__ = '1.1'
 here = os.path.abspath(os.path.dirname(__file__))
 
 requires = [
+    'alembic',
+    'boto',
     'celery',
-    'Chameleon',
     'colander',
     'configparser',
+    'country-bounding-boxes',
+    'filechunkio',
     'gunicorn',
     'heka-py',
+    'heka-py-raven',
+    'iso3166',
+    'mobile-codes',
+    'pygeoip',
     'PyMySQL',
+    'pyramid',
+    'pyramid-chameleon',
+    'pytz',
+    'raven',
+    'redis',
+    'requests',
+    'setproctitle',
+    'simplejson',
+    'statsd',
     'SQLAlchemy',
 ]
 
 if sys.version_info < (2, 7):
     requires.append('argparse')
-    requires.append('unittest2')
 
 test_requires = requires + [
     'beautifulsoup4',
     'coverage',
+    'mock',
     'nose',
+    'requests-mock',
     'unittest2',
     'Webtest',
 ]
@@ -53,7 +70,7 @@ setup(
     ],
     keywords="web services geo location",
     author='Mozilla Cloud Services',
-    author_email='services-dev@mozilla.org',
+    author_email='dev-geolocation@lists.mozilla.org',
     url='https://github.com/mozilla/ichnaea',
     license="Apache 2.0",
     packages=find_packages(),
