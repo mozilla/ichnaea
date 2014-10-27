@@ -4,6 +4,9 @@ Changelog
 1.1 (unreleased)
 ----------------
 
+20141027122000
+**************
+
 - Lower DB pool and overflow sizes.
 
 - Update Mozilla Stumbler screenshot.
