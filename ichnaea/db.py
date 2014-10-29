@@ -105,6 +105,17 @@ class Database(object):
         return self.session_factory()
 
 
+@event.listens_for(Pool, "checkin")
+def clear_result_on_pool_checkin(conn, conn_record):
+    """
+    PyMySQL Connection objects hold a reference to their most recent
+    Result object, which can cause large datasets to remain in memory.
+    Explicitly clear it when returning a connection to the pool.
+    """
+    if conn and conn._result:
+        conn._result = None
+
+
 @event.listens_for(Pool, "checkout")
 def check_connection(dbapi_conn, conn_record, conn_proxy):
     '''
