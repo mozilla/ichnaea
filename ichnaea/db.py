@@ -97,7 +97,6 @@ class Database(object):
         options['connect_args'] = {'charset': 'utf8'}
         options['execution_options'] = {'autocommit': False}
         self.engine = create_engine(uri, **options)
-        event.listen(self.engine, "checkout", check_connection)
 
         self.session_factory = sessionmaker(
             bind=self.engine, autocommit=False, autoflush=False)
@@ -107,17 +106,16 @@ class Database(object):
 
 
 @event.listens_for(Pool, "checkout")
-def check_connection(dbapi_con, con_record, con_proxy):
+def check_connection(dbapi_conn, conn_record, conn_proxy):
     '''
     Listener for Pool checkout events that pings every connection before using.
     Implements pessimistic disconnect handling strategy. See also:
     http://docs.sqlalchemy.org/en/rel_0_9/core/pooling.html#disconnect-handling-pessimistic
     '''
-
     try:
         # dbapi_con.ping() ends up calling mysql_ping()
-        # http://dev.mysql.com/doc/refman/5.0/en/mysql-ping.html
-        dbapi_con.ping()
+        # http://dev.mysql.com/doc/refman/5.6/en/mysql-ping.html
+        dbapi_conn.ping()
     except exc.OperationalError as ex:  # pragma: no cover
         if ex.args[0] in (2003,     # Connection refused
                           2006,     # MySQL server has gone away
