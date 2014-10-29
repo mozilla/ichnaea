@@ -2,11 +2,18 @@
 # http://docs.gunicorn.org/en/latest/settings.html
 # The file is loaded via the -c ichnaea.gunicorn_config command line option
 
-# Be explicit about the worker class
-worker_class = "sync"
+# Use our own Gevent worker
+worker_class = "ichnaea.gunicorn_worker.LocationGeventWorker"
+
+# Maximum number of simultaneous greenlets,
+# limited by number of DB and Redis connections
+worker_connections = 50
 
 # Set timeout to the same value as the default one from Amazon ELB (60 secs).
 timeout = 60
+
+# Disable keep-alive
+keepalive = 0
 
 # Recycle worker processes after 100k requests to prevent memory leaks
 # from effecting us

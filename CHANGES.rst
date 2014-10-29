@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- Switch gunicorn to use a gevent-based worker.
+
 - Clean last database result from connections on pool checkin.
 
 - Close the database connections even if exceptions occurred.

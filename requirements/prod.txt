@@ -17,6 +17,8 @@ configparser==3.5.0b2
 country-bounding-boxes==0.2.2
 docopt==0.6.2
 filechunkio==1.5
+gevent==1.0.1
+greenlet==0.4.5
 gunicorn==19.1.1
 heka-py==0.30.3
 heka-py-raven==0.7
