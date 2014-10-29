@@ -4,6 +4,7 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- Close the database connections even if exceptions occurred.
 
 1.1 (2014-10-27)
 ----------------

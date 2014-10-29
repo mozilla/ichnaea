@@ -55,25 +55,29 @@ def db_worker_session(database):
 def db_tween_factory(handler, registry):
 
     def db_tween(request):
-        response = handler(request)
-        master_session = getattr(request, '_db_master_session', None)
-        if master_session is not None:  # pragma: no cover
-            # only deal with requests with a session
-            if response.status.startswith(('4', '5')):
-                # never commit on error
-                master_session.rollback()
-            master_session.close()
-        slave_session = getattr(request, '_db_slave_session', None)
+        response = None
+        try:
+            response = handler(request)
+        finally:
+            master_session = getattr(request, '_db_master_session', None)
+            if master_session is not None:  # pragma: no cover
+                # only deal with requests with a session
+                if response is not None and \
+                   response.status.startswith(('4', '5')):
+                    # never commit on error
+                    master_session.rollback()
+                master_session.close()
 
-        # The db_master and db_slave will only be the same in the case
-        # where we are running on a single node (dev) or under test
-        if request.registry.db_master != request.registry.db_slave:
+            slave_session = getattr(request, '_db_slave_session', None)
             if slave_session is not None:
                 # always rollback/close the `read-only` slave sessions
-                try:
-                    slave_session.rollback()
-                finally:
-                    slave_session.close()
+                if request.registry.db_master != request.registry.db_slave:
+                    # The db_master and db_slave will only be the same
+                    # during tests.
+                    try:
+                        slave_session.rollback()
+                    finally:
+                        slave_session.close()
         return response
 
     return db_tween
