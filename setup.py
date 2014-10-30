@@ -14,6 +14,7 @@ requires = [
     'configparser',
     'country-bounding-boxes',
     'filechunkio',
+    'gevent',
     'gunicorn',
     'heka-py',
     'heka-py-raven',
@@ -73,13 +74,16 @@ setup(
     author_email='dev-geolocation@lists.mozilla.org',
     url='https://github.com/mozilla/ichnaea',
     license="Apache 2.0",
-    packages=find_packages(),
+    packages=find_packages(exclude=['integration_tests']),
     include_package_data=True,
     zip_safe=False,
     install_requires=requires,
     tests_require=test_requires,
     test_suite="ichnaea",
-    extras_require={'test': test_requires},
+    extras_require={
+        'test': test_requires,
+        ':python_version=="2.6"': ['argparse'],
+    },
     entry_points="""\
     [console_scripts]
     location_import = ichnaea.scripts.importer:console_entry

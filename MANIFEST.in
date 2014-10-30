@@ -1,8 +1,8 @@
 include Makefile
 include *.ini
 include *.rst
-exclude private-*.ini
 
 recursive-include ichnaea *
 recursive-exclude ichnaea *.pyc *.pyo .DS_Store
 recursive-exclude ichnaea/content/static/tiles *
+recursive-exclude integration_tests *
