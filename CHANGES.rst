@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- Add play store link for Mozilla Stumbler to apps page.
+
 - Updated privacy notice style to match general Mozilla style.
 
 - Switch gunicorn to use a gevent-based worker.

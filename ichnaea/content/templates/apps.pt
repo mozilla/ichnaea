@@ -15,28 +15,32 @@
     <h3>Mozilla Stumbler for Android</h3>
 
     <div class="app-callout-left text-justified">
-        <p >
-            Mozilla Stumbler is an open source Android application, which both
-            collects data to contribute to the service and also includes a
-            test mode to show ones location on a map.
+        <p>
+            <a href="https://play.google.com/store/apps/details?id=org.mozilla.mozstumbler">
+                <img title="Get Mozilla Stumbler on Google Play"
+                     src="/static/images/google_play.png" /></a>
+
+            <a href="https://f-droid.org/repository/browse/?fdid=org.mozilla.mozstumbler">
+                <img title="Mozilla Stumbler available on F-Droid"
+                     src="/static/images/f-droid.png" /></a>
         </p>
 
         <p>
-            You can find <a href="https://github.com/mozilla/MozStumbler">
-                Mozilla Stumbler on Github</a>
-            to download it or to contribute to its development.
-        </p>
-
-        <p>
-            As an alternative you can also
-            <a href="https://f-droid.org/wiki/page/org.mozilla.mozstumbler">
-                install Mozilla Stumbler from the f-droid catalog</a>.
+            Mozilla Stumbler is an open-source wireless network scanner that
+            collects GPS and wireless network data for our crowd-sourced
+            location database.
         </p>
 
         <p>
             Mozilla Stumbler allows you to compete in our
             <a href="/leaders">leaderboards</a> by choosing a nickname
             in its preferences screen.
+        </p>
+
+        <p>
+            You can find <a href="https://github.com/mozilla/MozStumbler">
+                Mozilla Stumbler on Github</a>
+            to contribute to its development.
         </p>
 
     </div>
