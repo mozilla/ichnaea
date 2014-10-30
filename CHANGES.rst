@@ -4,6 +4,9 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+20141030113700
+**************
+
 - Add play store link for Mozilla Stumbler to apps page.
 
 - Updated privacy notice style to match general Mozilla style.
