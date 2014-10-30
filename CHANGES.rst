@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- Updated to latest versions of boto, irc, pygeoip, simplejson and unittest.
+
 20141030113700
 **************
 

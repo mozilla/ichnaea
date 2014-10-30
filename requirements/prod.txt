@@ -10,7 +10,7 @@ amqp==1.4.6
 anyjson==0.3.3
 argparse==1.2.1
 billiard==3.3.0.18
-boto==2.33.0
+boto==2.34.0
 celery==3.1.16
 colander==1.0b1
 configparser==3.5.0b2
@@ -28,7 +28,7 @@ kombu==3.0.23
 mobile-codes==0.4
 ordereddict==1.1
 protobuf==2.6.0  # rq.filter: !=2.6.1
-pygeoip==0.3.1
+pygeoip==0.3.2
 pyramid==1.5.1
 pyramid-chameleon==0.3
 pytz==2014.7
@@ -37,11 +37,10 @@ redis==2.10.3
 repoze.lru==0.6
 requests==2.4.3
 setproctitle==1.1.8
-simplejson==3.6.4
+simplejson==3.6.5
 six==1.8.0
 statsd==3.0.1
 translationstring==1.1
-unittest2==0.5.1
 venusian==1.0
 wsgiref==0.1.2
 zope.deprecation==4.1.1
