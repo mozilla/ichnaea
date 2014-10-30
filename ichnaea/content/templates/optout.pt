@@ -7,7 +7,7 @@
 
     <p class="text-justified">
         For general information please have a look at the general
-        <a href="/privacy">Privacy Policy</a>
+        <a href="/privacy">Privacy Notice</a>
         for this service and the client applications developed by Mozilla.
     </p>
 
@@ -26,7 +26,8 @@
         This approach is used by other companies offering similar services.
         We have chosen to follow the example established by others, to make
         sure you do not have to learn about specific ways to opt-out of this
-        service, but can generally signal your desire to do so.
+        service, but can generally signal your desire to do so and have that
+        signal be respected by multiple services.
     </p>
 
 </section>

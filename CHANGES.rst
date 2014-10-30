@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- Updated privacy notice style to match general Mozilla style.
+
 - Switch gunicorn to use a gevent-based worker.
 
 - Clean last database result from connections on pool checkin.

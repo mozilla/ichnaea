@@ -102,6 +102,10 @@ js_map:
 
 js: node_modules js_map
 	$(HERE)/node_modules/.bin/uglifyjs \
+	$(HERE)/ichnaea/content/static/js/privacy.js \
+	-o $(HERE)/ichnaea/content/static/js/privacy-combined.js \
+	-c --stats
+	$(HERE)/node_modules/.bin/uglifyjs \
 	$(HERE)/ichnaea/content/static/js/jquery.flot-0.8.3.js \
 	$(HERE)/ichnaea/content/static/js/jquery.flot.time-0.8.3.js \
 	$(HERE)/ichnaea/content/static/js/stat.js \

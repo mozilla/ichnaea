@@ -228,10 +228,6 @@ img {
 .italic {
     font-style: italic;
 }
-.bold {
-    font-family: 'Open Sans Light', 'Droid Arabic Naskh', sans-serif;
-    font-weight: bold;
-}
 
 #masthead,
 #main-feature,
@@ -359,6 +355,74 @@ img {
 #colophon p {
     margin-bottom: 10px;
 }
+
+/* An arbitrary container for translatable strings to use in scripts */
+#strings {
+    display: none;
+}
+
+/* Tabpanel */
+
+.highlight {
+    margin: 15px 0;
+    padding: 15px;
+    padding-right: 35px;
+    color: #333;
+    background-color: #fcfcfc;
+    box-shadow: 1px 1px 2px #999;
+    line-height: 1.5;
+}
+
+.highlight h2, .highlighth3, .highlight h4 {
+    line-height: 1.3;
+}
+
+.highlight h4 {
+    font-size: 20px;
+}
+
+.highlight hr {
+    margin: 20px auto;
+    border-bottom: 1px solid #ccc;
+    width: 80%;
+}
+
+[tabindex] {
+    outline: 0;
+}
+
+[role="tabpanel"], [role="tabpanel"] p {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+[role="tabpanel"] ul {
+    margin-bottom: 0;
+}
+
+[role="tabpanel"] li {
+    padding-bottom: 0.5em;
+}
+
+[role="tabpanel"] li:last-child {
+    padding-bottom: 0;
+}
+
+[role="tab"] {
+    cursor: pointer;
+    margin-bottom: 10px;
+    font-family: 'Open Sans Light', 'Droid Arabic Naskh', sans-serif;
+    font-weight: bold;
+}
+
+[role="tab"] a {
+    margin: 0 .2em;
+}
+
+[aria-hidden="true"] {
+    display: none;
+}
+
 
 /* Stats, Charts */
 
@@ -747,5 +811,8 @@ img {
     .app-callout-right {
         width: 150px;
         margin-left: 10px;
+    }
+    .highlight {
+        margin: 15px -15px;
     }
 }

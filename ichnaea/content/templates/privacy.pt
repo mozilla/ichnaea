@@ -2,8 +2,17 @@
            xmlns:metal="http://xml.zope.org/namespaces/metal"
            metal:use-macro="view.base_template">
 
+<tal:slot metal:fill-slot="js">
+    <script src="/static/js/privacy-combined.js"></script>
+</tal:slot>
+
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
+
+<div id="strings"
+    data-tabpanel-open-text="Learn More"
+    data-tabpanel-close-text="Show Less"
+></div>
 
 <p class="italic">
     Last updated October 23, 2014
@@ -22,68 +31,121 @@
     to and supervise your participation in our crowd-sourcing project.
 </p>
 
-<h3>Things you should know</h3>
+<section class="highlight accordion" id="things-you-should-know">
+    <header>
+        <h2>Things you should know</h2>
+    </header>
 
-<p class="text-justified bold">
-    Mozilla receives your approximate location when you send us
-    crowd-sourced data or ask us to locate you.
-</p>
+    <div>
+        <p role="tab" id="approximate-location">
+            Mozilla receives your approximate location when you send us
+            crowd-sourced data or ask us to locate you.
+        </p>
+        <ul role="tabpanel">
+            <li>
+                <p class="text-justified">
+                    If you enable Mozilla Location Service on Firefox for
+                    Android, we will receive your location each time you choose
+                    to share your location with another application or website.
+                    If you install one of our Android apps, we will receive
+                    your location each time you turn on the app and have it
+                    running, even if it is running in the background.
+                </p>
+                <ul>
+                    <li class="text-justified">
+                        We receive publicly observable data about WiFi access
+                        points and cell towers around you, your estimated
+                        latitude and longitude, and the date. This information
+                        is stored locally on your device until an Internet
+                        connection is established. The data is then deleted
+                        from your device and sent to Mozilla.
+                    </li>
+                    <li class="text-justified">
+                        If you do not want to report crowd-sourced data to
+                        Mozilla, you should turn off our Android apps or
+                        change your Firefox preference under
+                        Tools/Options/Data Choices.
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <p class="text-justified">
+                    In addition, we may receive certain temporary data such
+                    as your IP address. This data is deleted after being used
+                    as follows:
+                </p>
+                <ul>
+                    <li class="text-justified">
+                        for security purposes to protect against certain types
+                        of attack.
+                    </li>
+                    <li class="text-justified">
+                        to assist in providing you with an approximate
+                        location.
+                    </li>
+                </ul>
+            </li>
+        </ul>
 
-<p class="text-justified">
-    If you enable Mozilla Location Service on Firefox for Android, we will
-    receive your location each time you choose to share your location with
-    another application or website. If you install one of our Android apps,
-    we will receive your location each time you turn on the app and have it
-    running, even if it is running in the background.
+        <hr />
 
-    <ul>
-        <li class="text-justified">
-            We receive publicly observable data about WiFi access points and
-            cell towers around you, your estimated latitude and longitude,
-            and the date. This information is stored locally on your device
-            until an Internet connection is established. The data is then
-            deleted from your device and sent to Mozilla.
-        </li>
-        <li class="text-justified">
-            If you do not want to report crowd-sourced data to Mozilla, you
-            should turn off our Android apps or change your Firefox preference
-            under Tools/Options/Data Choices.
-        </li>
-    </ul>
-</p>
+        <p role="tab" id="data-anonymous">
+            You can send us data anonymously or under a nickname.
+        </p>
+        <ul role="tabpanel">
+            <li class="text-justified">
+                If you participate in our crowd-sourced data project, you
+                can publicly share the quantity of your location
+                contributions by joining our
+                <a href="/leaders">leaderboard</a>.
+                Nicknames on the leaderboard are associated with a number
+                of "points" (for example, 500 points) only and are not
+                correlated with any reported location points.
+            </li>
 
-<p class="text-justified">
-    In addition, we may receive certain temporary data such as your IP
-    address. This data is deleted after being used as follows:
+            <li class="text-justified">
+                Our <a href="/map">data map</a> is updated daily with
+                aggregated location points sent to Mozilla from users
+                around the world. Location points are blurred to promote
+                anonymity.
+            </li>
+        </ul>
 
-    <ul>
-        <li class="text-justified">
-            for security purposes to protect against certain types of attack.
-        </li>
-        <li class="text-justified">
-            to assist in providing you with an approximate location.
-        </li>
-    </ul>
-</p>
+        <hr />
 
-<h4>
-    You can send us data anonymously or under a nickname.
-</h4>
+        <p role="tab" id="crowd-sourced-data">
+            Crowd-sourced data is used by Mozilla and others to improve
+            location services.
+        </p>
+        <ul role="tabpanel">
+            <li class="text-justified">
+                We publish data on public cell tower locations on our
+                website for public use and benefit. You can
+                <a href="/downloads">view the reports here</a>.
+            </li>
+            <li class="text-justified">
+                We do not publicly share WiFi location data, which is more
+                sensitive. This information is used by Mozilla and our
+                partners to improve and provide the Mozilla Location
+                Service.
+            </li>
+        </ul>
 
-<p class="text-justified">
-    If you participate in our crowd-sourced data project, you can publicly
-    share the quantity of your location contributions by joining our
-    <a href="/leaders">leaderboard</a>.
-    Nicknames on the leaderboard are associated with a number of "points"
-    (for example, 500 points) only and are not correlated with any
-    reported location points.
-</p>
+        <hr />
 
-<p class="text-justified">
-    Our <a href="/map">data map</a> is updated daily with aggregated
-    location points sent to Mozilla from users around the world.
-    Location points are blurred to promote anonymity.
-</p>
+        <p role="tab" id="personal-optout">
+            We try to minimize the crowd-sourced data we receive from personal
+            WiFi access points.
+        </p>
+        <ul role="tabpanel">
+            <li class="text-justified">
+                You can prevent a WiFi access point from being reported to
+                Mozilla. See <a href="/optout">our optout page</a> for
+                more information.
+            </li>
+        </ul>
+    </div>
+</section>
 
 </section>
 </tal:slot>
