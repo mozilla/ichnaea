@@ -39,8 +39,7 @@ def tempdir():
         shutil.rmtree(workdir)
 
 
-def export_to_csv(db, filename):
-    session = db.session()
+def export_to_csv(session, filename):
     # Order by id to keep a stable ordering.
     stmt = text('select lat, lon from mapstat '
                 'order by id limit :l offset :o')
@@ -167,7 +166,8 @@ def generate(db, bucketname, heka_client, stats_client,
         csv = os.path.join(workdir, 'map.csv')
 
         with stats_client.timer("datamaps.export_to_csv"):
-            result_rows = export_to_csv(db, csv)
+            with db.session() as session:
+                result_rows = export_to_csv(session, csv)
 
         stats_client.timing('datamaps.csv_rows', result_rows)
 

@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- Close database session early in map tiles generation.
+
 - Close database session early in export task to avoid timeout errors
   while uploading data to S3.
 
