@@ -214,8 +214,7 @@ def export_modified_cells(self, hourly=True, bucket=None):
         raise self.retry(exc=exc)
 
 
-def import_stations(sess, table, columns,
-                    filename, make_dict, fields):
+def import_stations(sess, table, filename, make_dict, fields):
 
     with GzipFile(filename, 'rb') as f:
         w = csv.DictReader(f, fields)
@@ -253,7 +252,7 @@ def import_ocid_cells(self, filename=None, sess=None):
         with self.db_session() as dbsess:
             if sess is None:  # pragma: no cover
                 sess = dbsess
-            import_stations(sess, ocid_cell_table, CELL_COLUMNS,
+            import_stations(sess, ocid_cell_table,
                             filename, make_cell_import_dict,
                             CELL_FIELDS)
     except Exception as exc:  # pragma: no cover
@@ -286,7 +285,7 @@ def import_latest_ocid_cells(self, diff=True, filename=None, sess=None):
                 with self.db_session() as dbsess:
                     if sess is None:  # pragma: no cover
                         sess = dbsess
-                    import_stations(sess, ocid_cell_table, CELL_COLUMNS,
+                    import_stations(sess, ocid_cell_table,
                                     path, make_cell_import_dict,
                                     CELL_FIELDS)
 
