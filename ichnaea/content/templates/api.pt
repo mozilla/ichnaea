@@ -5,12 +5,12 @@
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
 
-    <p>
+    <p class="text-justified">
         Depending on your use-case, you might be able to use one of the
         <a href="/apps">existing client applications</a> using this service.
     </p>
 
-    <p>
+    <p class="text-justified">
         If you are developing a website or a web application (for example
         a Firefox OS application) you don't interact with this location
         service directly. Instead you use the
@@ -21,7 +21,7 @@
         services.
     </p>
 
-    <p>
+    <p class="text-justified">
         If you are developing a native application or library for a desktop
         operating system or Android, you can in principle use this service
         via its HTTPS API. Please refer to the
@@ -31,13 +31,13 @@
         cell and WiFi network information required to call the service API.
     </p>
 
-    <p>
+    <p class="text-justified">
         At this stage the service is open to anyone, who wants to
         contribute back to the service and applications supporting the
         <a href="https://www.mozilla.org/mission/">Mozilla mission</a>.
     </p>
 
-    <p>
+    <p class="text-justified">
         The service is currently provided as-is, without any guarantee
         on uptime, availability, accuracy of results or continued existence.
         We also don't offer any commercial plans to use the service
@@ -48,13 +48,22 @@
 
     <h3>API Keys</h3>
 
-    <p>
+    <p class="text-justified">
         In order to use the service API you need to obtain an API key.
         If you use one of the existing applications, there is a good
         chance those applications already come with an API key included.
     </p>
 
-    <p>
+    <p class="text-justified">
+        We require these API keys as one way to prevent abuse of the
+        service. We are unfortunately the target of constant attacks
+        and need to protect against these. The API keys are not
+        permanently stored with any of the submitted data, but merely
+        act as a way to rate limit the number of incoming requests
+        from any one application.
+    </p>
+
+    <p class="text-justified">
         If you are developing a new application, please contact
         <a href="mailto:Hanno Schlichting %3Chschlichting@mozilla.com%3E">
             Hanno Schlichting</a> to obtain an API key.
@@ -62,12 +71,20 @@
         the service. If you are not planning on contributing back to
         the service, please make sure to detail why you think your
         project is tightly aligned with the Mozilla mission and why we
-        should grant you free access.
+        should grant you free access to this hosted version of the service.
     </p>
 
-    <p>
+    <p class="text-justified">
         We'll try to get back to you in a manner of days, but depending
         on vacation times it might take longer.
+    </p>
+
+    <p class="text-justified">
+        If you do not qualify for free access to this service or need
+        SLA's  you can run your own instance of the service, using the
+        open-source <a href="https://github.com/mozilla/ichnaea">
+            service code call ichnaea</a> and use the available data
+        from the <a href="/downloads">downloads section</a>.
     </p>
 
 </section>

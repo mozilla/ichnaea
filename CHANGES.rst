@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- #330: Expand api keys and download sections.
+
 - Close database session early in map tiles generation.
 
 - Close database session early in export task to avoid timeout errors
