@@ -13,7 +13,8 @@ Changelog
 
 - Add an index on cell.modified to speed up cell export task.
 
-- Updated to latest versions of boto, irc, pygeoip, simplejson and unittest.
+- Updated to latest versions of boto, irc, pygeoip, pytz, pyzmq,
+  simplejson and unittest2.
 
 20141030113700
 **************
