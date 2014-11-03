@@ -1,15 +1,18 @@
-import boto
+from contextlib import contextmanager, closing
 import csv
+from datetime import datetime, timedelta
 import gzip
 import os
 import shutil
 import tempfile
-import time
+
+import boto
 import requests
-from contextlib import contextmanager, closing
-from datetime import datetime, timedelta
 from pytz import UTC
-from sqlalchemy.sql import select, and_
+from sqlalchemy.sql import (
+    and_,
+    select,
+)
 
 from ichnaea.async.task import DatabaseTask
 from ichnaea.data.validation import normalized_cell_dict
