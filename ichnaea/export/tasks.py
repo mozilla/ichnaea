@@ -11,6 +11,7 @@ import requests
 from pytz import UTC
 from sqlalchemy.sql import (
     and_,
+    func,
     select,
 )
 
@@ -52,7 +53,14 @@ CELL_COLUMN_NAME_INDICES = dict(
 )
 CELL_COLUMNS = []
 for name in CELL_COLUMN_NAMES:
-    CELL_COLUMNS.append(getattr(cell_table.c, name))
+    if name in ('created', 'modified'):
+        CELL_COLUMNS.append(func.unix_timestamp(getattr(cell_table.c, name)))
+    else:
+        CELL_COLUMNS.append(getattr(cell_table.c, name))
+
+
+CELL_EXPORT_RADIO_NAMES = dict(
+    [(k, v.upper()) for k, v in RADIO_TYPE_INVERSE.items()])
 
 
 @contextmanager
@@ -82,12 +90,16 @@ class GzipFile(gzip.GzipFile):
 
 
 def make_cell_export_dict(row):
-    d = dict()
+    d = {
+        'changeable': 1,
+        'averageSignal': '',
+    }
     ix = CELL_COLUMN_NAME_INDICES
 
     for field in CELL_FIELDS:
-        if field in ix:
-            d[field] = row[ix[field]]
+        pos = ix.get(field, None)
+        if pos is not None:
+            d[field] = row[pos]
 
     # Fix up specific entry formatting
     radio = row[ix['radio']]
@@ -98,12 +110,10 @@ def make_cell_export_dict(row):
     if psc is None or psc == -1:
         psc = ''
 
-    d['radio'] = RADIO_TYPE_INVERSE[radio].upper()
-    d['created'] = int(time.mktime(row[ix['created']].timetuple()))
-    d['updated'] = int(time.mktime(row[ix['modified']].timetuple()))
+    d['radio'] = CELL_EXPORT_RADIO_NAMES[radio]
+    d['created'] = row[ix['created']]
+    d['updated'] = row[ix['modified']]
     d['samples'] = row[ix['total_measures']]
-    d['changeable'] = 1
-    d['averageSignal'] = ''
     d['psc'] = psc
     return d
 
@@ -151,8 +161,7 @@ def write_stations_to_csv(sess, table, columns, cond, path, make_dict, fields):
                 limit).offset(offset).order_by(table.c.id)
             rows = sess.execute(q).fetchall()
             if rows:
-                rows = [make_dict(d) for d in rows]
-                w.writerows(rows)
+                w.writerows([make_dict(r) for r in rows])
                 offset += limit
             else:
                 break
