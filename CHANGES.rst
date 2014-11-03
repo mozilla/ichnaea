@@ -4,6 +4,9 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- Close database session early in export task to avoid timeout errors
+  while uploading data to S3.
+
 - Optimize cell export task and avoid datetime/unixtime conversions.
 
 - Add an index on cell.modified to speed up cell export task.

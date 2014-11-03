@@ -175,15 +175,6 @@ def write_stations_to_s3(path, bucketname):
     k.set_contents_from_filename(path, reduced_redundancy=True)
 
 
-def export_modified_stations(sess, table, columns, cond,
-                             filename, fields, bucket):
-    with selfdestruct_tempdir() as d:
-        path = os.path.join(d, filename)
-        write_stations_to_csv(sess, table, columns, cond,
-                              path, make_cell_export_dict, fields)
-        write_stations_to_s3(path, bucket)
-
-
 @celery.task(base=DatabaseTask, bind=True)
 def export_modified_cells(self, hourly=True, bucket=None):
     if bucket is None:  # pragma: no cover
@@ -206,9 +197,12 @@ def export_modified_cells(self, hourly=True, bucket=None):
     filename = 'MLS-%s-cell-export-' % file_type
     filename = filename + file_time.strftime('%Y-%m-%dT%H0000.csv.gz')
     try:
-        with self.db_session() as sess:
-            export_modified_stations(sess, cell_table, CELL_COLUMNS, cond,
-                                     filename, CELL_FIELDS, bucket)
+        with selfdestruct_tempdir() as d:
+            path = os.path.join(d, filename)
+            with self.db_session() as sess:
+                write_stations_to_csv(sess, cell_table, CELL_COLUMNS, cond,
+                                      path, make_cell_export_dict, CELL_FIELDS)
+            write_stations_to_s3(path, bucket)
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')
         raise self.retry(exc=exc)
