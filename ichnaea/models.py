@@ -125,6 +125,7 @@ class Cell(_Model):
         UniqueConstraint(
             'radio', 'mcc', 'mnc', 'lac', 'cid', name='cell_idx_unique'),
         Index('cell_created_idx', 'created'),
+        Index('cell_modified_idx', 'modified'),
         Index('cell_new_measures_idx', 'new_measures'),
         Index('cell_total_measures_idx', 'total_measures'),
         {

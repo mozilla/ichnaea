@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- Add an index on cell.modified to speed up cell export task.
+
 - Updated to latest versions of boto, irc, pygeoip, simplejson and unittest.
 
 20141030113700
