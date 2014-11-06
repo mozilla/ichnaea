@@ -12,7 +12,10 @@ from simplejson import dumps
 from sqlalchemy import text
 
 from ichnaea.app_config import read_config
-from ichnaea.db import Database
+from ichnaea.db import (
+    Database,
+    db_worker_session,
+)
 from ichnaea.logging import (
     configure_heka,
     RAVEN_ERROR,
@@ -166,7 +169,7 @@ def generate(db, bucketname, heka_client, stats_client,
         csv = os.path.join(workdir, 'map.csv')
 
         with stats_client.timer("datamaps.export_to_csv"):
-            with db.session() as session:
+            with db_worker_session(db) as session:
                 result_rows = export_to_csv(session, csv)
 
         stats_client.timing('datamaps.csv_rows', result_rows)

@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- #332: Fix session handling in map tiles generation.
+
 20141103125500
 **************
 
