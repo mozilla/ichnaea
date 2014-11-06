@@ -4,6 +4,8 @@ import os
 import shutil
 import tempfile
 
+from ichnaea.logging import RAVEN_ERROR
+
 
 def compute_hash(zip_path):
     sha = hashlib.sha1()
@@ -39,10 +41,7 @@ class S3Backend(object):
             s3_hash = compute_hash(s3_copy)
             return s3_hash == expected_sha
         except Exception:
-            from binascii import hexlify
-            msg = ('S3 verification error: SHA hash [%s]' %
-                   hexlify(expected_sha))
-            self.heka_client.error(msg)
+            self.heka_client.raven(RAVEN_ERROR)
             return False
         finally:
             if os.path.exists(tmpdir):
@@ -57,5 +56,5 @@ class S3Backend(object):
             k.set_contents_from_filename(fname)
             return True
         except Exception:  # pragma: no cover
-            self.heka_client.error('s3 write error')
+            self.heka_client.raven(RAVEN_ERROR)
             return False
