@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- Report errors for malformed data in submit call to sentry.
+
 - Report errors during backup job to sentry.
 
 - #332: Fix session handling in map tiles generation.

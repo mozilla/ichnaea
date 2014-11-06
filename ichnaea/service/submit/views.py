@@ -6,7 +6,9 @@ from redis import ConnectionError
 
 from ichnaea.customjson import dumps
 from ichnaea.data.tasks import insert_measures
+from ichnaea.logging import RAVEN_ERROR
 from ichnaea.service.error import (
+    JSONError,
     preprocess_request,
 )
 from ichnaea.service.submit.schema import SubmitSchema
@@ -62,11 +64,17 @@ def submit_validator(data, errors):
 
 @check_api_key('submit')
 def submit_view(request):
-    data, errors = preprocess_request(
-        request,
-        schema=SubmitSchema(),
-        extra_checks=(submit_validator, ),
-    )
+    try:
+        data, errors = preprocess_request(
+            request,
+            schema=SubmitSchema(),
+            extra_checks=(submit_validator, ),
+            response=JSONError,
+        )
+    except JSONError:
+        # capture JSON exceptions for submit calls
+        request.registry.heka_client.raven(RAVEN_ERROR)
+        raise
 
     items = data['items']
     nickname = request.headers.get('X-Nickname', u'')

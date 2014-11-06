@@ -12,6 +12,7 @@ from ichnaea.content.models import (
     SCORE_TYPE,
     User,
 )
+from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
     CellMeasure,
     RADIO_TYPE,
@@ -273,6 +274,10 @@ class TestSubmit(CeleryAppTestCase):
         self.assertTrue('errors' in res.json)
         self.assertFalse('status' in res.json)
 
+        self.check_expected_heka_messages(
+            sentry=[('msg', RAVEN_ERROR, 1)]
+        )
+
     def test_ignore_unknown_key(self):
         app = self.app
         app.post_json(
@@ -312,6 +317,10 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
         self.assertTrue(len(res.json['errors']) < 10)
+
+        self.check_expected_heka_messages(
+            sentry=[('msg', RAVEN_ERROR, 1)]
+        )
 
     def test_no_json(self):
         app = self.app
