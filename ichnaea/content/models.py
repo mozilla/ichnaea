@@ -46,7 +46,7 @@ class MapStat(_Model):
                 primary_key=True, autoincrement=True)
     # tracks the creation time
     time = Column(Date)
-    # lat/lon * 10000, so 12.3456 is stored as 123456
+    # lat/lon * 1000, so 12.345 is stored as 12345
     lat = Column(Integer)
     lon = Column(Integer)
 

@@ -42,7 +42,12 @@ def tempdir():
         shutil.rmtree(workdir)
 
 
-def export_to_csv(session, filename):
+def system_call(cmd):  # pragma: no cover
+    # testing hook
+    return os.system(cmd)
+
+
+def export_to_csv(session, filename, multiplier=5):
     # Order by id to keep a stable ordering.
     stmt = text('select lat, lon from mapstat '
                 'order by id limit :l offset :o')
@@ -68,7 +73,7 @@ def export_to_csv(session, filename):
             lines = []
             append = lines.append
             for r in rows:
-                for i in xrange(5):
+                for i in xrange(multiplier):
                     lat = (r[0] + random()) / 1000.0
                     lon = (r[1] + random()) / 1000.0
                     append(pattern % (lat, lon))
@@ -79,7 +84,7 @@ def export_to_csv(session, filename):
     return result_rows
 
 
-def upload_to_s3(bucketname, tiles):
+def upload_to_s3(bucketname, tiles):  # pragma: no cover
     tiles = os.path.abspath(tiles)
 
     conn = boto.connect_s3()
@@ -182,7 +187,7 @@ def generate(db, bucketname, heka_client, stats_client,
             input=csv)
 
         with stats_client.timer("datamaps.encode"):
-            os.system(cmd)
+            system_call(cmd)
 
         # render tiles
         if output:
@@ -207,7 +212,7 @@ def generate(db, bucketname, heka_client, stats_client,
             suffix='@2x')
 
         # create high-res version for zoom level 0
-        os.system(zoom_0_cmd)
+        system_call(zoom_0_cmd)
 
         zoom_all_cmd = cmd.format(
             enumerate=datamaps_enumerate,
@@ -220,9 +225,9 @@ def generate(db, bucketname, heka_client, stats_client,
             suffix='')
 
         with stats_client.timer("datamaps.render"):
-            os.system(zoom_all_cmd)
+            system_call(zoom_all_cmd)
 
-        if upload:
+        if upload:  # pragma: no cover
             with stats_client.timer("datamaps.upload_to_s3"):
                 result = upload_to_s3(bucketname, tiles)
 
@@ -230,7 +235,8 @@ def generate(db, bucketname, heka_client, stats_client,
                 stats_client.timing('datamaps.%s' % metric, value)
 
 
-def main(argv, _db_master=None, _heka_client=None, _stats_client=None):
+def main(argv, _db_master=None,
+         _heka_client=None, _stats_client=None):  # pragma: no cover
     # run for example via:
     # bin/location_map --create --upload --datamaps=/path/to/datamaps/ \
     #   --output=ichnaea/content/static/tiles/
