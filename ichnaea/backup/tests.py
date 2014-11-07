@@ -61,7 +61,7 @@ class TestMeasurementsDump(CeleryTestCase):
     def test_schedule_cell_measures(self):
         session = self.db_master_session
 
-        blocks = schedule_cellmeasure_archival(batch=1)
+        blocks = schedule_cellmeasure_archival.delay(batch=1).get()
         self.assertEquals(len(blocks), 0)
 
         measures = []
@@ -71,26 +71,26 @@ class TestMeasurementsDump(CeleryTestCase):
         session.flush()
         start_id = measures[0].id
 
-        blocks = schedule_cellmeasure_archival(batch=15)
+        blocks = schedule_cellmeasure_archival.delay(batch=15).get()
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
         self.assertEquals(block, (start_id, start_id + 15))
 
-        blocks = schedule_cellmeasure_archival(batch=6)
+        blocks = schedule_cellmeasure_archival.delay(batch=6).get()
         self.assertEquals(len(blocks), 0)
 
-        blocks = schedule_cellmeasure_archival(batch=5)
+        blocks = schedule_cellmeasure_archival.delay(batch=5).get()
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
         self.assertEquals(block, (start_id + 15, start_id + 20))
 
-        blocks = schedule_cellmeasure_archival(batch=1)
+        blocks = schedule_cellmeasure_archival.delay(batch=1).get()
         self.assertEquals(len(blocks), 0)
 
     def test_schedule_wifi_measures(self):
         session = self.db_master_session
 
-        blocks = schedule_wifimeasure_archival(batch=1)
+        blocks = schedule_wifimeasure_archival.delay(batch=1).get()
         self.assertEquals(len(blocks), 0)
 
         batch_size = 10
@@ -101,7 +101,7 @@ class TestMeasurementsDump(CeleryTestCase):
         session.flush()
         start_id = measures[0].id
 
-        blocks = schedule_wifimeasure_archival(batch=batch_size)
+        blocks = schedule_wifimeasure_archival.delay(batch=batch_size).get()
         self.assertEquals(len(blocks), 2)
         block = blocks[0]
         self.assertEquals(block,
@@ -111,7 +111,7 @@ class TestMeasurementsDump(CeleryTestCase):
         self.assertEquals(block,
                           (start_id + batch_size, start_id + 2 * batch_size))
 
-        blocks = schedule_wifimeasure_archival(batch=batch_size)
+        blocks = schedule_wifimeasure_archival.delay(batch=batch_size).get()
         self.assertEquals(len(blocks), 0)
 
     def test_backup_cell_to_s3(self):
@@ -124,7 +124,7 @@ class TestMeasurementsDump(CeleryTestCase):
         session.flush()
         start_id = measures[0].id
 
-        blocks = schedule_cellmeasure_archival(batch=batch_size)
+        blocks = schedule_cellmeasure_archival.delay(batch=batch_size).get()
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
         self.assertEquals(block, (start_id, start_id + batch_size))
@@ -132,7 +132,7 @@ class TestMeasurementsDump(CeleryTestCase):
         with mock_s3():
             with patch.object(S3Backend,
                               'backup_archive', lambda x, y, z: True):
-                write_cellmeasure_s3_backups(cleanup_zip=False)
+                write_cellmeasure_s3_backups.delay(cleanup_zip=False).get()
 
                 msgs = self.heka_client.stream.msgs
                 info_msgs = [m for m in msgs if m.type == 'oldstyle']
@@ -171,7 +171,7 @@ class TestMeasurementsDump(CeleryTestCase):
         session.flush()
         start_id = measures[0].id
 
-        blocks = schedule_wifimeasure_archival(batch=batch_size)
+        blocks = schedule_wifimeasure_archival.delay(batch=batch_size).get()
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
         self.assertEquals(block, (start_id, start_id + batch_size))
@@ -179,7 +179,7 @@ class TestMeasurementsDump(CeleryTestCase):
         with mock_s3():
             with patch.object(S3Backend,
                               'backup_archive', lambda x, y, z: True):
-                write_wifimeasure_s3_backups(cleanup_zip=False)
+                write_wifimeasure_s3_backups.delay(cleanup_zip=False).get()
 
                 msgs = self.heka_client.stream.msgs
                 info_msgs = [m for m in msgs if m.type == 'oldstyle']
@@ -308,9 +308,9 @@ class TestMeasurementsDump(CeleryTestCase):
         session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
-            delete_cellmeasure_records()
+            delete_cellmeasure_records.delay(batch=3).get()
 
-        cell_unthrottle_measures(10000, 1000)
+        cell_unthrottle_measures.delay(10000, 1000).get()
 
         cells = session.query(Cell).all()
         self.assertEquals(len(cells), 50)
@@ -340,9 +340,9 @@ class TestMeasurementsDump(CeleryTestCase):
         session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
-            delete_wifimeasure_records()
+            delete_wifimeasure_records.delay(batch=7).get()
 
-        wifi_unthrottle_measures(10000, 1000)
+        wifi_unthrottle_measures.delay(10000, 1000).get()
 
         wifis = session.query(Wifi).all()
         self.assertEquals(len(wifis), 50)
