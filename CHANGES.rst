@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- Re-arrange backup tasks to avoid holding db session open for too long.
+
 - Report errors for malformed data in submit call to sentry.
 
 - Report errors during backup job to sentry.

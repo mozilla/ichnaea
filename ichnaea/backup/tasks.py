@@ -298,19 +298,32 @@ def delete_measure_records(self,
 def dispatch_delete(self, block_id):
     s3_backend = S3Backend(self.app.s3_settings['backup_bucket'],
                            self.heka_client)
+    with self.db_session() as session:
+        block = session.query(MeasureBlock).filter(
+            MeasureBlock.id == block_id).first()
+        archive_sha = block.archive_sha
+        s3_key = block.s3_key
+
+    # Don't hold the DB connection open, while doing S3 work
+    if s3_backend.check_archive(archive_sha, s3_key):
+        verified_delete.apply_async(args=[block_id])
+
+
+@celery.task(base=DatabaseTask, bind=True)
+def verified_delete(self, block_id):
     utcnow = util.utcnow()
     with self.db_session() as session:
         block = session.query(MeasureBlock).filter(
             MeasureBlock.id == block_id).first()
         measure_type = block.measure_type
         measure_cls = MEASURE_TYPE_META[measure_type]['class']
-        if s3_backend.check_archive(block.archive_sha, block.s3_key):
-            q = session.query(measure_cls).filter(
-                measure_cls.id >= block.start_id,
-                measure_cls.id < block.end_id)
-            q.delete()
-            block.archive_date = utcnow
-            session.commit()
+
+        q = session.query(measure_cls).filter(
+            measure_cls.id >= block.start_id,
+            measure_cls.id < block.end_id)
+        q.delete()
+        block.archive_date = utcnow
+        session.commit()
 
 
 @celery.task(base=DatabaseTask, bind=True)
