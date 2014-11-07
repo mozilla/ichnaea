@@ -330,6 +330,7 @@ def verified_delete(self, block_id, batch=10000):
                 measure_cls.id >= start,
                 measure_cls.id < end)
             q.delete()
+            session.flush()
         block.archive_date = utcnow
         session.commit()
 
