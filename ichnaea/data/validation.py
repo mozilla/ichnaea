@@ -256,6 +256,12 @@ def normalized_cell_dict(d, default_radio=-1):
     if d['radio'] == RADIO_TYPE['cdma'] and (d['lac'] < 0 or d['cid'] < 0):
         return None
 
+    # Skip GSM/LTE/UMTS towers with an invalid MNC
+    if (d['radio'] in (
+            RADIO_TYPE['gsm'], RADIO_TYPE['umts'], RADIO_TYPE['lte'])
+            and d['mnc'] > 999):
+        return None
+
     # Treat cid=65535 without a valid lac as an unspecified value
     if d['lac'] == -1 and d['cid'] == 65535:
         d['cid'] = -1

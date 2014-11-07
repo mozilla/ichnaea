@@ -97,7 +97,8 @@ class TestValidation(TestCase):
 
         invalid_mccs = [-10, 0, 101, 1000, 3456]
 
-        valid_mncs = [0, 542, 32767]
+        valid_mncs = [0, 542, 999]
+        valid_cdma_mncs = [0, 542, 32767]
         invalid_mncs = [-10, -1, 32768, 93870]
 
         valid_lacs = [1, 763, 65535]
@@ -145,6 +146,13 @@ class TestValidation(TestCase):
             for mnc in valid_mncs:
                 (measure, cell) = self.make_cell_submission(
                     lat=lat, lon=lon, mcc=mcc, mnc=mnc)
+                self.check_normalized_cell(measure, cell, dict(lat=lat,
+                                                               lon=lon,
+                                                               mcc=mcc,
+                                                               mnc=mnc))
+            for mnc in valid_cdma_mncs:
+                (measure, cell) = self.make_cell_submission(
+                    lat=lat, lon=lon, mcc=mcc, mnc=mnc, radio='cdma')
                 self.check_normalized_cell(measure, cell, dict(lat=lat,
                                                                lon=lon,
                                                                mcc=mcc,
@@ -438,9 +446,14 @@ class TestValidation(TestCase):
             # This fails the check for (unknown lac, cid=65535)
             # and subsequently the check for missing psc
             {"mcc": FRANCE_MCC, "mnc": 2, "lac": 0, "cid": 65535, "psc": -1},
+
+            # This fails because it has an MNC above 1000 for a GSM network
+            {"mcc": FRANCE_MCC, "mnc": 1001, "lac": 3, "cid": 4,
+             "radio": "gsm"},
         ]
 
         for entry in entries:
-            (measure, cell) = self.make_cell_submission(
-                radio='cdma', **entry)
+            if 'radio' not in entry:
+                entry['radio'] = 'cdma'
+            (measure, cell) = self.make_cell_submission(**entry)
             self.check_normalized_cell(measure, cell, None)
