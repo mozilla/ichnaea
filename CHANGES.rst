@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- Delete measures in batches of 10k rows in backup tasks.
+
 - Re-arrange backup tasks to avoid holding db session open for too long.
 
 - Report errors for malformed data in submit call to sentry.

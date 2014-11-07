@@ -266,7 +266,8 @@ def delete_measure_records(self,
                            measure_type,
                            limit=100,
                            days_old=7,
-                           countdown=300):
+                           countdown=300,
+                           batch=10000):
     utcnow = util.utcnow()
 
     with self.db_session() as session:
@@ -290,12 +291,15 @@ def delete_measure_records(self,
                 # enough
                 continue
 
-            dispatch_delete.apply_async(args=[block.id], countdown=c)
+            dispatch_delete.apply_async(
+                args=[block.id],
+                kwargs={'batch': batch},
+                countdown=c)
             c += countdown
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def dispatch_delete(self, block_id):
+def dispatch_delete(self, block_id, batch=10000):
     s3_backend = S3Backend(self.app.s3_settings['backup_bucket'],
                            self.heka_client)
     with self.db_session() as session:
@@ -306,11 +310,13 @@ def dispatch_delete(self, block_id):
 
     # Don't hold the DB connection open, while doing S3 work
     if s3_backend.check_archive(archive_sha, s3_key):
-        verified_delete.apply_async(args=[block_id])
+        verified_delete.apply_async(
+            args=[block_id],
+            kwargs={'batch': batch})
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def verified_delete(self, block_id):
+def verified_delete(self, block_id, batch=10000):
     utcnow = util.utcnow()
     with self.db_session() as session:
         block = session.query(MeasureBlock).filter(
@@ -318,32 +324,38 @@ def verified_delete(self, block_id):
         measure_type = block.measure_type
         measure_cls = MEASURE_TYPE_META[measure_type]['class']
 
-        q = session.query(measure_cls).filter(
-            measure_cls.id >= block.start_id,
-            measure_cls.id < block.end_id)
-        q.delete()
+        for start in range(block.start_id, block.end_id, batch):
+            end = min(block.end_id, start + batch)
+            q = session.query(measure_cls).filter(
+                measure_cls.id >= start,
+                measure_cls.id < end)
+            q.delete()
         block.archive_date = utcnow
         session.commit()
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def delete_cellmeasure_records(self, limit=100, days_old=7, countdown=300):
+def delete_cellmeasure_records(self, limit=100, days_old=7,
+                               countdown=300, batch=10000):
     return delete_measure_records(
         self,
         MEASURE_TYPE_CODE['cell'],
         limit=limit,
         days_old=days_old,
-        countdown=countdown)
+        countdown=countdown,
+        batch=batch)
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def delete_wifimeasure_records(self, limit=100, days_old=7, countdown=300):
+def delete_wifimeasure_records(self, limit=100, days_old=7,
+                               countdown=300, batch=10000):
     return delete_measure_records(
         self,
         MEASURE_TYPE_CODE['wifi'],
         limit=limit,
         days_old=days_old,
-        countdown=countdown)
+        countdown=countdown,
+        batch=batch)
 
 
 def unthrottle_measures(session, station_model, measure_model,

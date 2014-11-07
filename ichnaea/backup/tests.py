@@ -224,7 +224,7 @@ class TestMeasurementsDump(CeleryTestCase):
         session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
-            delete_cellmeasure_records()
+            delete_cellmeasure_records.delay(batch=3).get()
 
         self.assertEquals(session.query(CellMeasure).count(), 30)
         self.assertTrue(block.archive_date is not None)
@@ -245,7 +245,7 @@ class TestMeasurementsDump(CeleryTestCase):
         session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
-            delete_wifimeasure_records()
+            delete_wifimeasure_records.delay(batch=7).get()
 
         self.assertEquals(session.query(WifiMeasure).count(), 30)
         self.assertTrue(block.archive_date is not None)
@@ -269,7 +269,7 @@ class TestMeasurementsDump(CeleryTestCase):
         session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
-            delete_cellmeasure_records()
+            delete_cellmeasure_records.delay(batch=3).get()
 
         self.assertEquals(session.query(CellMeasure).count(), 50)
         # The archive_date should *not* be set as we haven't deleted
@@ -283,7 +283,7 @@ class TestMeasurementsDump(CeleryTestCase):
         session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
-            delete_cellmeasure_records()
+            delete_cellmeasure_records.delay(batch=3).get()
 
         self.assertEquals(session.query(CellMeasure).count(), 30)
         # The archive_date should now be set as the measure records
