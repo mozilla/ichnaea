@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- #305: Stricter range check for mnc values for non-CDMA networks.
+
 - Add a convenience `session.on_post_commit` helper method.
 
 - #17: Remove the unused code for cell backfill.
