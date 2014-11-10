@@ -1,5 +1,5 @@
 WSGIProxy2==0.4.1
-irc==10.0
+irc==10.0.1
 jaraco.util==10.6
 konfig==0.9
 loads==0.3

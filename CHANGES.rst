@@ -20,6 +20,9 @@ Changelog
 
 - #332: Fix session handling in map tiles generation.
 
+- Updated to latest versions of Chameleon, irc, Pygments, pyramid,
+  translationstring and unittest2.
+
 20141103125500
 **************
 
