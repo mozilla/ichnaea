@@ -270,6 +270,10 @@ def normalized_cell_dict(d, default_radio=-1):
     if (d['lac'] == -1 or d['cid'] == -1) and d['psc'] == -1:
         return None
 
+    # If the cell id >= 65536 then it must be a umts tower
+    if d['cid'] >= 65536 and d['radio'] == RADIO_TYPE['gsm']:
+        d['radio'] = RADIO_TYPE['umts']
+
     return d
 
 
