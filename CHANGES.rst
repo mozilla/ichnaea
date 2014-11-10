@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- Add a convenience `session.on_post_commit` helper method.
+
 - #17: Remove the unused code for cell backfill.
 
 - #41: Explicitly allow anonymous data submissions.

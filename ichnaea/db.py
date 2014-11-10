@@ -1,13 +1,16 @@
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine
-from sqlalchemy import exc, event
+from sqlalchemy import (
+    create_engine,
+    exc,
+    event,
+)
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.session import Session
 from sqlalchemy.pool import Pool
 from sqlalchemy.sql.expression import Insert
-
 
 _Model = declarative_base()
 
@@ -99,10 +102,24 @@ class Database(object):
         self.engine = create_engine(uri, **options)
 
         self.session_factory = sessionmaker(
-            bind=self.engine, autocommit=False, autoflush=False)
+            bind=self.engine, class_=HookedSession,
+            autocommit=False, autoflush=False)
 
     def session(self):
         return self.session_factory()
+
+
+class HookedSession(Session):
+
+    def on_post_commit(self, func, *args, **kw):
+        """
+        Register a post commit (after-transaction-end) hook.
+
+        The function will be called with all the arguments and keywords
+        arguments preceded by a single session argument.
+        """
+        wrapper = lambda session, transaction: func(session, *args, **kw)
+        event.listen(self, 'after_transaction_end', wrapper)
 
 
 @event.listens_for(Pool, "checkin")

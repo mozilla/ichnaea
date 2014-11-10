@@ -17,3 +17,14 @@ class TestDatabase(DBTestCase):
         session = self.db_master_session
         result = session.execute('select * from cell;')
         self.assertTrue(result.first() is None)
+
+    def test_session_hook(self):
+        session = self.db_master_session
+        result = []
+
+        def hook(session, value, _result=result, **kw):
+            _result.append((value, kw))
+
+        session.on_post_commit(hook, 123, foo='bar')
+        session.commit()
+        self.assertEqual(result, [(123, {'foo': 'bar'})])
