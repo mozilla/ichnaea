@@ -62,7 +62,7 @@ def submit_validator(data, errors):
         return
 
 
-@check_api_key('submit')
+@check_api_key('submit', error_on_invalidkey=False)
 def submit_view(request):
     try:
         data, errors = preprocess_request(

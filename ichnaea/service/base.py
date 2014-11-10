@@ -55,7 +55,7 @@ def rate_limit(redis_client, api_key, maxreq=0, expire=86400):
     return True
 
 
-def check_api_key(func_name, error_on_invalidkey=False):
+def check_api_key(func_name, error_on_invalidkey=True):
     def c(func):
         @wraps(func)
         def closure(request, *args, **kwargs):

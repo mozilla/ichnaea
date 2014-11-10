@@ -23,7 +23,7 @@ def check_cell_or_wifi(data, errors):
         errors.append(dict(name='body', description=MSG_ONE_OF))
 
 
-@check_api_key('search', True)
+@check_api_key('search')
 def search_view(request):
     data, errors = preprocess_request(
         request,

@@ -44,7 +44,7 @@ def geolocate_validator(data, errors):
         errors.append(dict(name='body', description=MSG_ONE_OF))
 
 
-@check_api_key('geolocate', True)
+@check_api_key('geolocate')
 def geolocate_view(request):
 
     data, errors = preprocess_request(

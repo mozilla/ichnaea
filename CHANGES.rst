@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- #41: Explicitly allow anonymous data submissions.
+
 - #335: Omit incomplete cell records from exports.
 
 - Delete measures in batches of 10k rows in backup tasks.

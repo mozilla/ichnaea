@@ -144,7 +144,7 @@ def flatten_items(data):
     return items
 
 
-@check_api_key('geosubmit', True)
+@check_api_key('geosubmit')
 def geosubmit_view(request):
     # Order matters here.  We need to try the batch mode *before* the
     # single upload mode as classic w3c geolocate calls should behave
