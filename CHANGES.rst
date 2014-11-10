@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- #17: Remove the unused code for cell backfill.
+
 - #41: Explicitly allow anonymous data submissions.
 
 - #335: Omit incomplete cell records from exports.

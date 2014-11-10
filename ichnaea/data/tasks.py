@@ -124,9 +124,7 @@ def blacklisted_station(session, key, blacklist_model,
     return False
 
 
-def calculate_new_position(station, measures, max_dist_km, backfill=True):
-    # Ff backfill is true, we work on older measures for which
-    # the new/total counters where never updated.
+def calculate_new_position(station, measures, max_dist_km):
     # This function returns True if the station was found to be moving.
     length = len(measures)
     latitudes = [w[0] for w in measures]
@@ -170,25 +168,16 @@ def calculate_new_position(station, measures, max_dist_km, backfill=True):
             # the station since it will be deleted by caller momentarily
             return True
 
-        if backfill:
-            new_total = station.total_measures + length
-            old_length = station.total_measures
-            # update total to account for new measures
-            # new counter never got updated to include the measures
-            station.total_measures = new_total
-        else:
-            new_total = station.total_measures
-            old_length = new_total - length
+        new_total = station.total_measures
+        old_length = new_total - length
 
         station.lat = ((station.lat * old_length) +
                        (new_lat * length)) / new_total
         station.lon = ((station.lon * old_length) +
                        (new_lon * length)) / new_total
 
-    if not backfill:
-        # decrease new counter, total is already correct
-        # in the backfill case new counter was never increased
-        station.new_measures = station.new_measures - length
+    # decrease new counter, total is already correct
+    station.new_measures = station.new_measures - length
 
     # update max/min lat/lon columns
     station.min_lat = min_lat
@@ -277,8 +266,7 @@ def incomplete_measure(key):
     Certain incomplete measures we want to store in the database
     even though they should not lead to the creation of a station
     entry; these are cell measures with -1 for LAC and/or CID, and
-    will be inferred from neighbouring cells.
-    See ichnaea.backfill.tasks.
+    will be inferred from neighboring cells.
     """
     if hasattr(key, 'radio') and \
        (key.radio < 0 or key.lac < 0 or key.cid < 0):  # NOQA
@@ -719,7 +707,7 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
 
                 if measures:
                     moving = calculate_new_position(
-                        cell, measures, CELL_MAX_DIST_KM, backfill=False)
+                        cell, measures, CELL_MAX_DIST_KM)
                     if moving:
                         moving_cells.add(cell)
 
@@ -737,57 +725,6 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
 
             session.commit()
 
-        return (len(cells), len(moving_cells))
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
-
-
-@celery.task(base=DatabaseTask, bind=True)
-def location_update_cell_backfill(self, new_cell_measures):
-    try:
-        utcnow = util.utcnow()
-        cells = []
-        moving_cells = set()
-        updated_lacs = defaultdict(list)
-        new_cell_measures = dict(new_cell_measures)
-        with self.db_session() as session:
-            for tower_tuple, cell_measure_ids in new_cell_measures.items():
-                query = session.query(Cell).filter(
-                    *join_cellkey(Cell, CellKey(*tower_tuple)))
-                cells = query.all()
-
-                if not cells:  # pragma: no cover
-                    # This case shouldn't actually occur. The
-                    # location_update_cell_backfill is only called
-                    # when CellMeasure records are matched against
-                    # known Cell records.
-                    continue
-
-                for cell in cells:
-                    measures = session.query(  # NOQA
-                        CellMeasure.lat, CellMeasure.lon).filter(
-                        CellMeasure.id.in_(cell_measure_ids)).all()
-
-                    if measures:
-                        moving = calculate_new_position(
-                            cell, measures, CELL_MAX_DIST_KM, backfill=True)
-                        if moving:  # pragma: no cover
-                            moving_cells.add(cell)
-
-                        updated_lacs[CellKey(cell.radio, cell.mcc,
-                                             cell.mnc, cell.lac,
-                                             CELLID_LAC)].append(cell)
-
-            if updated_lacs:
-                update_enclosing_lacs(session, updated_lacs,
-                                      moving_cells, utcnow)
-
-            if moving_cells:  # pragma: no cover
-                # some cells found to be moving too much
-                blacklist_and_remove_moving_cells(session, moving_cells)
-
-            session.commit()
         return (len(cells), len(moving_cells))
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')
@@ -818,7 +755,7 @@ def location_update_wifi(self, min_new=10, max_new=100, batch=10):
                     wifi.new_measures).all()
                 if measures:
                     moving = calculate_new_position(
-                        wifi, measures, WIFI_MAX_DIST_KM, backfill=False)
+                        wifi, measures, WIFI_MAX_DIST_KM)
                     if moving:
                         moving_wifis.add(wifi)
 

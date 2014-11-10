@@ -14,7 +14,6 @@ from ichnaea.content.models import (
 from ichnaea.customjson import encode_datetime
 from ichnaea.data.tasks import (
     location_update_cell,
-    location_update_cell_backfill,
     location_update_wifi,
     insert_measures_cell,
     insert_measures_wifi,
@@ -483,35 +482,6 @@ class TestCell(CeleryTestCase):
             elif cell.cid == 8:
                 self.assertEqual(cell.lat, 2.001)
                 self.assertEqual(cell.lon, 2.002)
-
-    def test_location_update_cell_backfill(self):
-        session = self.db_master_session
-        k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
-        data = [
-            Cell(lat=1.001, lon=1.001, new_measures=0,
-                 total_measures=1, **k1),
-            CellMeasure(lat=1.0, lon=1.0, **k1),
-            CellMeasure(lat=1.005, lon=1.008, **k1),
-        ]
-        session.add_all(data)
-        session.commit()
-
-        query = session.query(CellMeasure.id)
-        cm_ids = [x[0] for x in query.all()]
-
-        # TODO: refactor this to be constants in the method
-        new_measures = [((1, 1, 2, 3, 4), cm_ids)]
-
-        result = location_update_cell_backfill.delay(new_measures)
-        self.assertEqual(result.get(), (1, 0))
-
-        cells = session.query(Cell).filter(Cell.cid != CELLID_LAC).all()
-        self.assertEqual(len(cells), 1)
-        cell = cells[0]
-        self.assertEqual(cell.lat, 1.002)
-        self.assertEqual(cell.lon, 1.003)
-        self.assertEqual(cell.new_measures, 0)
-        self.assertEqual(cell.total_measures, 3)
 
     def test_max_min_range_update(self):
         session = self.db_master_session
