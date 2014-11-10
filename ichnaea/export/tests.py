@@ -7,6 +7,7 @@ from pytz import UTC
 from contextlib import contextmanager
 from mock import MagicMock, patch
 import requests_mock
+from sqlalchemy.sql import and_
 
 from ichnaea.constants import CELL_MIN_ACCURACY
 from ichnaea.export.tasks import (
@@ -51,15 +52,19 @@ class TestExport(CeleryTestCase):
 
     def test_local_export(self):
         session = self.db_master_session
-        k = dict(mcc=1, mnc=2, lac=4, lat=1.0, lon=2.0)
+        k = dict(mcc=1, mnc=2, lac=4)
+        gsm = RADIO_TYPE['gsm']
         for i in range(190, 200):
-            session.add(Cell(radio=RADIO_TYPE['gsm'], cid=i, **k))
+            session.add(Cell(radio=gsm, cid=i, lat=1.0, lon=2.0, **k))
+        # add one incomplete / unprocessed cell
+        session.add(Cell(cid=210, lat=None, lon=None, **k))
         session.commit()
 
         with selfdestruct_tempdir() as d:
             path = os.path.join(d, 'export.csv.gz')
-            write_stations_to_csv(session, cell_table, CELL_COLUMNS,
-                                  cell_table.c.cid != CELLID_LAC,
+            cond = and_(cell_table.c.cid != CELLID_LAC,
+                        cell_table.c.lat.isnot(None))
+            write_stations_to_csv(session, cell_table, CELL_COLUMNS, cond,
                                   path, make_cell_export_dict, CELL_FIELDS)
             with GzipFile(path, "rb") as f:
                 r = csv.DictReader(f, CELL_FIELDS)
