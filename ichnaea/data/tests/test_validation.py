@@ -457,3 +457,7 @@ class TestValidation(TestCase):
                 entry['radio'] = 'cdma'
             (measure, cell) = self.make_cell_submission(**entry)
             self.check_normalized_cell(measure, cell, None)
+
+    def test_wrong_radio_type_is_corrected_for_large_cid(self):
+        measure, cell = self.make_cell_submission(cid=65536, radio="gsm")
+        self.check_normalized_cell(measure, cell, {'radio': 2})
