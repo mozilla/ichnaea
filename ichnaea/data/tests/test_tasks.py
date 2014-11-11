@@ -204,7 +204,7 @@ class TestCell(CeleryTestCase):
             time = now - timedelta(days=days_ago)
             time_enc = encode_datetime(time)
 
-            measure = dict(id=month, radio=RADIO_TYPE['gsm'],
+            measure = dict(radio=RADIO_TYPE['gsm'],
                            mcc=USA_MCC, mnc=ATT_MNC, lac=456, cid=123,
                            time=time_enc,
                            lat=points[month % 4][0],
@@ -290,7 +290,7 @@ class TestCell(CeleryTestCase):
         session.flush()
 
         measure = dict(
-            id=0, created=encode_datetime(time),
+            created=encode_datetime(time),
             lat=PARIS_LAT,
             lon=PARIS_LON,
             time=encode_datetime(time), accuracy=0, altitude=0,
@@ -352,7 +352,7 @@ class TestCell(CeleryTestCase):
         session.flush()
 
         measure = dict(
-            id=0, created=encode_datetime(time),
+            created=encode_datetime(time),
             lat=PARIS_LAT,
             lon=PARIS_LON,
             time=encode_datetime(time), accuracy=0, altitude=0,
@@ -412,7 +412,7 @@ class TestCell(CeleryTestCase):
         time = util.utcnow() - timedelta(days=1)
 
         measure = dict(
-            id=0, created=encode_datetime(time),
+            created=encode_datetime(time),
             lat=PARIS_LAT,
             lon=PARIS_LON,
             time=encode_datetime(time), accuracy=0, altitude=0,
@@ -689,7 +689,7 @@ class TestWifi(CeleryTestCase):
         black = WifiBlacklist(key=bad_key)
         session.add(black)
         session.flush()
-        measure = dict(id=0, lat=1, lon=2)
+        measure = dict(lat=1, lon=2)
         entries = [{"key": good_key}, {"key": good_key}, {"key": bad_key}]
         for e in entries:
             e.update(measure)
@@ -809,7 +809,7 @@ class TestWifi(CeleryTestCase):
             time = now - timedelta(days=days_ago)
             time_enc = encode_datetime(time)
 
-            measure = dict(id=month, key="ab1234567890",
+            measure = dict(key="ab1234567890",
                            time=time_enc,
                            lat=points[month % 4][0],
                            lon=points[month % 4][1])
@@ -891,7 +891,7 @@ class TestWifi(CeleryTestCase):
         session.flush()
 
         measure = dict(
-            id=0, created=encode_datetime(time), lat=1.0, lon=2.0,
+            created=encode_datetime(time), lat=1.0, lon=2.0,
             time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=-1,
             heading=52.9,
@@ -940,8 +940,7 @@ class TestWifi(CeleryTestCase):
         session = self.db_master_session
         key = "001234567890"
 
-        measures = [dict(id=0,
-                         key=key,
+        measures = [dict(key=key,
                          lat=1.0 + i * 0.0000001,
                          lon=2.0 + i * 0.0000001) for i in range(3)]
 
