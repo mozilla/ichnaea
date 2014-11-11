@@ -127,14 +127,14 @@ class TestValidation(TestCase):
         valid_altitude_accuracies = [0, 1, 100, 1000]
         invalid_altitude_accuracies = [-10, -1, 500000]
 
-        valid_asus = [0, 10, 31]
-        invalid_asus = [-10, -1, 32, 100]
+        valid_asus = [0, 10, 31, 97]
+        invalid_asus = [-10, -1, 99]
 
         valid_tas = [0, 15, 63]
         invalid_tas = [-10, -1, 64, 100]
 
-        valid_signals = [-200, -100, -1]
-        invalid_signals = [-300, -201, 0, 10]
+        valid_signals = [-150, -100, -1]
+        invalid_signals = [-300, -151, 0, 10]
 
         # Try all radio values
         for (radio, v) in radio_pairs:

@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- Accept more ASU values but tighten signal strength validation.
+
 - #305: Stricter range check for mnc values for non-CDMA networks.
 
 - Add a convenience `session.on_post_commit` helper method.

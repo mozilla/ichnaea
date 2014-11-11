@@ -301,6 +301,6 @@ def normalized_cell_measure_dict(d, measure_radio=-1):
             d['asu'] = -1
 
     return normalized_dict(
-        d, dict(asu=(0, 31, -1),
-                signal=(-200, -1, 0),
+        d, dict(asu=(0, 97, -1),
+                signal=(-150, -1, 0),
                 ta=(0, 63, 0)))
