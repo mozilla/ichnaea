@@ -260,6 +260,8 @@ class TestCell(CeleryTestCase):
                     # The station existed and was seen moving,
                     # thereby activating the blacklist and deleting the cell.
                     self.assertEqual(update_result.get(), (1, 1))
+                    # Rescan lacs to delete orphaned lac entry
+                    self.assertEqual(scan_lacs.delay().get(), 1)
                     self.assertEqual(bl.count, ((month + 1) / 2))
                     self.assertEqual(session.query(CellBlacklist).count(), 1)
                     self.assertEqual(session.query(Cell).count(), 0)
@@ -566,7 +568,7 @@ class TestCell(CeleryTestCase):
         result = remove_cell.delay([k])
         self.assertEqual(1, result.get())
         result = scan_lacs.delay()
-        self.assertEqual(0, result.get())
+        self.assertEqual(1, result.get())
         lac = session.query(Cell).filter(
             Cell.lac == 1,
             Cell.cid == CELLID_LAC).first()
@@ -657,6 +659,19 @@ class TestCell(CeleryTestCase):
         # has not had its location updated yet. If there's no
         # exception here, CID 2 is properly ignored.
         scan_lacs.delay()
+
+    def test_scan_lacs_remove(self):
+        session = self.db_master_session
+
+        # create an orphaned lac entry
+        keys = dict(radio=1, mcc=1, mnc=1, lac=1, cid=CELLID_LAC)
+        session.add(Cell(new_measures=1, **keys))
+        session.flush()
+
+        # after scanning the orphaned record gets removed
+        self.assertEqual(scan_lacs.delay().get(), 1)
+        lacs = session.query(Cell).filter(Cell.cid == CELLID_LAC).all()
+        self.assertEqual(lacs, [])
 
     def test_scan_lacs_update(self):
         session = self.db_master_session

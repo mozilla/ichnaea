@@ -784,29 +784,11 @@ def remove_cell(self, cell_keys):
                 changed_lacs.add(key._replace(cid=CELLID_LAC))
 
             for key in changed_lacs:
-                # Either schedule an update to the enclosing LAC or, if
-                # we just removed the last cell in the LAC, remove the LAC
-                # entirely.
-                query = session.query(Cell).filter(
-                    Cell.radio == key.radio,
-                    Cell.mcc == key.mcc,
-                    Cell.mnc == key.mnc,
-                    Cell.lac == key.lac,
-                    Cell.cid != CELLID_LAC)
-                n = query.count()
-
-                query = session.query(Cell).filter(
-                    Cell.radio == key.radio,
-                    Cell.mcc == key.mcc,
-                    Cell.mnc == key.mnc,
-                    Cell.lac == key.lac,
-                    Cell.cid == CELLID_LAC)
-                if n < 1:
-                    query.delete()
-                else:
-                    lac = query.first()
-                    if lac is not None:
-                        lac.new_measures += 1
+                # Schedule an update to the enclosing LAC
+                query = session.query(Cell).filter(*join_cellkey(Cell, key))
+                lac = query.first()
+                if lac is not None:
+                    lac.new_measures += 1
 
             session.commit()
         return cells_removed
@@ -856,7 +838,7 @@ def update_lac(self, radio, mcc, mnc, lac):
             # Select all the cells in this LAC that aren't the virtual
             # cell itself, and derive a bounding box for them.
 
-            q = session.query(Cell).filter(
+            cell_query = session.query(Cell).filter(
                 Cell.radio == radio).filter(
                 Cell.mcc == mcc).filter(
                 Cell.mnc == mnc).filter(
@@ -866,56 +848,60 @@ def update_lac(self, radio, mcc, mnc, lac):
                 Cell.lat.isnot(None)).filter(
                 Cell.lon.isnot(None))
 
-            cells = q.all()
-            if len(cells) == 0:  # pragma: no cover
-                return
+            cells = cell_query.all()
 
-            points = [(c.lat, c.lon) for c in cells]
-            min_lat = min([c.min_lat for c in cells])
-            min_lon = min([c.min_lon for c in cells])
-            max_lat = max([c.max_lat for c in cells])
-            max_lon = max([c.max_lon for c in cells])
-
-            bbox_points = [(min_lat, min_lon),
-                           (min_lat, max_lon),
-                           (max_lat, min_lon),
-                           (max_lat, max_lon)]
-
-            ctr = centroid(points)
-            rng = range_to_points(ctr, bbox_points)
-
-            # switch units back to DB preferred centimicrodegres angle
-            # and meters distance.
-            ctr_lat = ctr[0]
-            ctr_lon = ctr[1]
-            rng = int(round(rng * 1000.0))
-
-            # Now create or update the LAC virtual cell
-
-            q = session.query(Cell).filter(
+            lac_query = session.query(Cell).filter(
                 Cell.radio == radio).filter(
                 Cell.mcc == mcc).filter(
                 Cell.mnc == mnc).filter(
                 Cell.lac == lac).filter(
                 Cell.cid == CELLID_LAC)
 
-            lac = q.first()
-
-            if lac is None:  # pragma: no cover
-                lac = Cell(radio=radio,
-                           mcc=mcc,
-                           mnc=mnc,
-                           lac=lac,
-                           cid=CELLID_LAC,
-                           lat=ctr_lat,
-                           lon=ctr_lon,
-                           range=rng)
-                session.add(lac)
+            if len(cells) == 0:
+                # If there are no more underlying cells, delete the lac entry
+                lac_query.delete()
             else:
-                lac.new_measures = 0
-                lac.lat = ctr_lat
-                lac.lon = ctr_lon
-                lac.range = rng
+                # Otherwise update the lac entry based on all the cells
+                lac = lac_query.first()
+
+                points = [(c.lat, c.lon) for c in cells]
+                min_lat = min([c.min_lat for c in cells])
+                min_lon = min([c.min_lon for c in cells])
+                max_lat = max([c.max_lat for c in cells])
+                max_lon = max([c.max_lon for c in cells])
+
+                bbox_points = [(min_lat, min_lon),
+                               (min_lat, max_lon),
+                               (max_lat, min_lon),
+                               (max_lat, max_lon)]
+
+                ctr = centroid(points)
+                rng = range_to_points(ctr, bbox_points)
+
+                # Switch units back to DB preferred centimicrodegres angle
+                # and meters distance.
+                ctr_lat = ctr[0]
+                ctr_lon = ctr[1]
+                rng = int(round(rng * 1000.0))
+
+                # Now create or update the LAC virtual cell
+                if lac is None:  # pragma: no cover
+                    # This shouldn't happen, as this task is only called
+                    # by scan_lacs, which only finds existing lac entries
+                    lac = Cell(radio=radio,
+                               mcc=mcc,
+                               mnc=mnc,
+                               lac=lac,
+                               cid=CELLID_LAC,
+                               lat=ctr_lat,
+                               lon=ctr_lon,
+                               range=rng)
+                    session.add(lac)
+                else:
+                    lac.new_measures = 0
+                    lac.lat = ctr_lat
+                    lac.lon = ctr_lon
+                    lac.range = rng
 
             session.commit()
     except Exception as exc:  # pragma: no cover

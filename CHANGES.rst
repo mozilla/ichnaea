@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- Move responsibility for lac entry deletion into update_lac task.
+
 - Accept more ASU values but tighten signal strength validation.
 
 - #305: Stricter range check for mnc values for non-CDMA networks.
