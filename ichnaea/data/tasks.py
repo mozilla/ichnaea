@@ -16,6 +16,7 @@ from ichnaea.content.models import (
 )
 from ichnaea.customjson import (
     decode_datetime,
+    dumps,
     loads,
 )
 from ichnaea.data.validation import (
@@ -46,6 +47,37 @@ from ichnaea.worker import celery
 
 WIFI_MAX_DIST_KM = 5
 CELL_MAX_DIST_KM = 150
+
+UPDATE_KEY = {
+    'cell': 'update_cell',
+    'cell_lac': 'update_cell_lac',
+    'wifi': 'update_wifi',
+}
+
+
+def enqueue_lacs(session, redis_client, lac_keys, expire=86400):
+    key = UPDATE_KEY['cell_lac']
+    pipe = redis_client.pipeline()
+    values = []
+    for lac in lac_keys:
+        values.append(dumps(lac._asdict()))
+    for i in range(0, len(values), 100):
+        pipe.lpush(key, *[str(v) for v in values[i:i + 100]])
+    # Expire key after 24 hours
+    pipe.expire(key, expire)
+    pipe.execute()
+
+
+def dequeue_lacs(redis_client, batch=100):
+    key = UPDATE_KEY['cell_lac']
+    pipe = redis_client.pipeline()
+    pipe.multi()
+    pipe.lrange(key, 0, batch - 1)
+    pipe.ltrim(key, batch, -1)
+    result = pipe.execute()
+    items = result[0]
+    items = [loads(i) for i in items]
+    return items
 
 
 def available_station_space(session, key, station_model, join_key,
@@ -571,33 +603,6 @@ def process_station_measures(session, entries, station_type,
     return all_measures
 
 
-def update_enclosing_lacs(session, lacs, moving_cells, utcnow):
-    moving_cell_ids = set([c.id for c in moving_cells])
-    for lac_key, cells in lacs.items():
-        if len(set([c.id for c in cells]) - moving_cell_ids) == 0:
-            # All new cells are about to be removed, so don't bother
-            # updating the lac
-            continue
-        q = session.query(Cell).filter(*join_cellkey(Cell, lac_key))
-        lac = q.first()
-        if lac is not None:  # pragma: no cover
-            lac.new_measures += 1
-        else:
-            lac = Cell(
-                radio=lac_key.radio,
-                mcc=lac_key.mcc,
-                mnc=lac_key.mnc,
-                lac=lac_key.lac,
-                cid=lac_key.cid,
-                new_measures=1,
-                total_measures=0,
-                created=utcnow,
-            )
-            session.add(lac)
-
-# End helper functions, start tasks
-
-
 @celery.task(base=DatabaseTask, bind=True, queue='incoming')
 def insert_measures(self, items=None, nickname=''):
     if not items:  # pragma: no cover
@@ -649,8 +654,8 @@ def insert_measures_cell(self, entries, userid=None,
 def insert_measures_wifi(self, entries, userid=None,
                          max_measures_per_wifi=11000,
                          utcnow=None):
-    wifi_measures = []
     try:
+        wifi_measures = []
         with self.db_session() as session:
             wifi_measures = process_station_measures(
                 session, entries,
@@ -674,8 +679,8 @@ def insert_measures_wifi(self, entries, userid=None,
 @celery.task(base=DatabaseTask, bind=True)
 def location_update_cell(self, min_new=10, max_new=100, batch=10):
     try:
-        utcnow = util.utcnow()
         cells = []
+        redis_client = self.app.redis_client
         with self.db_session() as session:
             emit_new_measures_metric(self.stats_client, session,
                                      self.shortname, Cell,
@@ -688,7 +693,7 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
             if not cells:
                 return 0
             moving_cells = set()
-            updated_lacs = defaultdict(list)
+            updated_lacs = set()
             for cell in cells:
                 # skip cells with a missing lac/cid
                 # or virtual LAC cells
@@ -711,13 +716,13 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
                     if moving:
                         moving_cells.add(cell)
 
-                    updated_lacs[CellKey(cell.radio, cell.mcc,
-                                         cell.mnc, cell.lac,
-                                         CELLID_LAC)].append(cell)
+                    updated_lacs.add(CellKey(cell.radio, cell.mcc,
+                                             cell.mnc, cell.lac,
+                                             CELLID_LAC))
 
             if updated_lacs:
-                update_enclosing_lacs(session, updated_lacs,
-                                      moving_cells, utcnow)
+                session.on_post_commit(enqueue_lacs,
+                                       redis_client, updated_lacs)
 
             if moving_cells:
                 # some cells found to be moving too much
@@ -772,8 +777,9 @@ def location_update_wifi(self, min_new=10, max_new=100, batch=10):
 
 @celery.task(base=DatabaseTask, bind=True)
 def remove_cell(self, cell_keys):
-    cells_removed = 0
     try:
+        cells_removed = 0
+        redis_client = self.app.redis_client
         with self.db_session() as session:
             changed_lacs = set()
 
@@ -783,12 +789,9 @@ def remove_cell(self, cell_keys):
                 cells_removed += query.delete()
                 changed_lacs.add(key._replace(cid=CELLID_LAC))
 
-            for key in changed_lacs:
-                # Schedule an update to the enclosing LAC
-                query = session.query(Cell).filter(*join_cellkey(Cell, key))
-                lac = query.first()
-                if lac is not None:
-                    lac.new_measures += 1
+            if changed_lacs:
+                session.on_post_commit(enqueue_lacs,
+                                       redis_client, changed_lacs)
 
             session.commit()
         return cells_removed
@@ -816,24 +819,37 @@ def remove_wifi(self, wifi_keys):
 def scan_lacs(self, batch=100):
     """
     Find cell LACs that have changed and update the bounding box.
-
+    This includes adding new LAC entries and removing them.
     """
-    with self.db_session() as session:
-        q = session.query(Cell).filter(
-            Cell.cid == CELLID_LAC).filter(
-            Cell.new_measures > 0).limit(batch)
-        lacs = q.all()
-        n = len(lacs)
-        for lac in lacs:
-            update_lac.delay(lac.radio, lac.mcc,
-                             lac.mnc, lac.lac)
-        session.commit()
-        return n
+    try:
+        redis_client = self.app.redis_client
+        with self.db_session() as session:
+            # TODO: db_lacs can go one release after Redis based
+            # lac scheduling was deployed
+            q = session.query(Cell.radio, Cell.mcc, Cell.mnc, Cell.lac).filter(
+                Cell.cid == CELLID_LAC).filter(
+                Cell.new_measures > 0).limit(batch)
+            db_lacs = set([CellKey(cid=-2, *l) for l in q.all()])
+
+            redis_lacs = dequeue_lacs(redis_client, batch=batch)
+            redis_lacs = set([CellKey(**l) for l in redis_lacs])
+
+            lacs = redis_lacs.union(db_lacs)
+            n = len(lacs)
+            for lac in lacs:
+                update_lac.delay(lac.radio, lac.mcc,
+                                 lac.mnc, lac.lac)
+            session.commit()
+            return n
+    except Exception as exc:  # pragma: no cover
+        self.heka_client.raven('error')
+        raise self.retry(exc=exc)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def update_lac(self, radio, mcc, mnc, lac):
     try:
+        utcnow = util.utcnow()
         with self.db_session() as session:
             # Select all the cells in this LAC that aren't the virtual
             # cell itself, and derive a bounding box for them.
@@ -862,7 +878,7 @@ def update_lac(self, radio, mcc, mnc, lac):
                 lac_query.delete()
             else:
                 # Otherwise update the lac entry based on all the cells
-                lac = lac_query.first()
+                lac_obj = lac_query.first()
 
                 points = [(c.lat, c.lon) for c in cells]
                 min_lat = min([c.min_lat for c in cells])
@@ -885,23 +901,27 @@ def update_lac(self, radio, mcc, mnc, lac):
                 rng = int(round(rng * 1000.0))
 
                 # Now create or update the LAC virtual cell
-                if lac is None:  # pragma: no cover
-                    # This shouldn't happen, as this task is only called
-                    # by scan_lacs, which only finds existing lac entries
-                    lac = Cell(radio=radio,
-                               mcc=mcc,
-                               mnc=mnc,
-                               lac=lac,
-                               cid=CELLID_LAC,
-                               lat=ctr_lat,
-                               lon=ctr_lon,
-                               range=rng)
-                    session.add(lac)
+                if lac_obj is None:
+                    lac_obj = Cell(radio=radio,
+                                   mcc=mcc,
+                                   mnc=mnc,
+                                   lac=lac,
+                                   cid=CELLID_LAC,
+                                   lat=ctr_lat,
+                                   lon=ctr_lon,
+                                   created=utcnow,
+                                   modified=utcnow,
+                                   range=rng,
+                                   new_measures=0,
+                                   total_measures=len(cells))
+                    session.add(lac_obj)
                 else:
-                    lac.new_measures = 0
-                    lac.lat = ctr_lat
-                    lac.lon = ctr_lon
-                    lac.range = rng
+                    lac_obj.new_measures = 0
+                    lac_obj.total_measures = len(cells)
+                    lac_obj.lat = ctr_lat
+                    lac_obj.lon = ctr_lon
+                    lac_obj.modified = utcnow
+                    lac_obj.range = rng
 
             session.commit()
     except Exception as exc:  # pragma: no cover

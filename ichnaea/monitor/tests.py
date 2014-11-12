@@ -125,6 +125,9 @@ class TestMonitorTasks(CeleryTestCase):
             'incoming': 3,
             'insert': 5,
             'monitor': 1,
+            'update_cell': 4,
+            'update_cell_lac': 7,
+            'update_wifi': 6,
         }
         for k, v in data.items():
             self.redis_client.lpush(k, *range(v))

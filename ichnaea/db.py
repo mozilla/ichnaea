@@ -118,8 +118,10 @@ class HookedSession(Session):
         The function will be called with all the arguments and keywords
         arguments preceded by a single session argument.
         """
-        wrapper = lambda session, transaction: func(session, *args, **kw)
-        event.listen(self, 'after_transaction_end', wrapper)
+        def wrapper(session, transaction):
+            return func(session, *args, **kw)
+
+        event.listen(self, 'after_transaction_end', wrapper, once=True)
 
 
 @event.listens_for(Pool, "checkin")

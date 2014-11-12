@@ -13,6 +13,7 @@ from ichnaea.content.models import (
 )
 from ichnaea.customjson import encode_datetime
 from ichnaea.data.tasks import (
+    enqueue_lacs,
     location_update_cell,
     location_update_wifi,
     insert_measures_cell,
@@ -254,6 +255,8 @@ class TestCell(CeleryTestCase):
                 if month % 2 == 0:
                     # The station was (re)created.
                     self.assertEqual(update_result.get(), (1, 0))
+                    # Rescan lacs to update entries
+                    self.assertEqual(scan_lacs.delay().get(), 1)
                     # One cell + one cell-LAC record should exist.
                     self.assertEqual(session.query(Cell).count(), 2)
                 else:
@@ -660,13 +663,22 @@ class TestCell(CeleryTestCase):
         # exception here, CID 2 is properly ignored.
         scan_lacs.delay()
 
+    def test_scan_lacs_empty(self):
+        # test tasks with an empty queue
+        self.assertEqual(scan_lacs.delay().get(), 0)
+        self.check_expected_heka_messages(
+            sentry=[('msg', RAVEN_ERROR, 0)]
+        )
+
     def test_scan_lacs_remove(self):
         session = self.db_master_session
+        redis_client = self.redis_client
 
         # create an orphaned lac entry
-        keys = dict(radio=1, mcc=1, mnc=1, lac=1, cid=CELLID_LAC)
-        session.add(Cell(new_measures=1, **keys))
+        key = dict(radio=1, mcc=1, mnc=1, lac=1, cid=CELLID_LAC)
+        session.add(Cell(**key))
         session.flush()
+        enqueue_lacs(session, redis_client, [CellKey(**key)])
 
         # after scanning the orphaned record gets removed
         self.assertEqual(scan_lacs.delay().get(), 1)
@@ -676,6 +688,7 @@ class TestCell(CeleryTestCase):
     def test_scan_lacs_update(self):
         session = self.db_master_session
         self.add_line_of_cells_and_scan_lac()
+        today = util.utcnow().date()
 
         lac = session.query(Cell).filter(
             Cell.lac == 1,
@@ -690,9 +703,10 @@ class TestCell(CeleryTestCase):
         self.assertEqual(lac.lat, 4.5)
         self.assertEqual(lac.lon, 4.5)
         self.assertEqual(lac.range, 723001)
-        self.assertEqual(lac.created.date(), util.utcnow().date())
+        self.assertEqual(lac.created.date(), today)
+        self.assertEqual(lac.modified.date(), today)
         self.assertEqual(lac.new_measures, 0)
-        self.assertEqual(lac.total_measures, 0)
+        self.assertEqual(lac.total_measures, 10)
 
 
 class TestWifi(CeleryTestCase):

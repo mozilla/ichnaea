@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- #287: Move lac update scheduling to Redis based queue.
+
 - #304: Auto-correct radio field of GSM cells with large cid values.
 
 - Move responsibility for lac entry deletion into update_lac task.
