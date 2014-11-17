@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- #304: Auto-correct radio field of GSM cells with large cid values.
+
 - Move responsibility for lac entry deletion into update_lac task.
 
 - Accept more ASU values but tighten signal strength validation.

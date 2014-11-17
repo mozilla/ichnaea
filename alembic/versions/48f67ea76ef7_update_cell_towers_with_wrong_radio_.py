@@ -14,47 +14,6 @@ from alembic import op
 
 
 def upgrade():
-    # Create any missing lac area cells
-    op.execute("""
-        INSERT INTO
-          cell (
-            radio,
-            mcc,
-            mnc,
-            lac,
-            cid,
-            new_measures,
-            total_measures,
-            created,
-            modified
-          )
-        SELECT DISTINCT
-          CELL_ALL.radio,
-          CELL_ALL.mcc,
-          CELL_ALL.mnc,
-          CELL_ALL.lac,
-          -2,
-          1,
-          0,
-          NOW(),
-          NOW()
-        FROM
-          cell CELL_ALL
-        WHERE
-          NOT EXISTS (
-            SELECT
-              *
-            FROM
-              cell CELL_AREA
-            WHERE
-              CELL_AREA.radio = CELL_ALL.radio AND
-              CELL_AREA.mcc = CELL_ALL.mcc AND
-              CELL_AREA.mnc = CELL_ALL.mnc AND
-              CELL_AREA.lac = CELL_ALL.lac AND
-              CELL_AREA.cid = -2
-          );
-    """)
-
     # Mark all affected areas for recomputation
     op.execute("""
         UPDATE
@@ -100,6 +59,62 @@ def upgrade():
           cid > 65535 AND
           radio = 0;
     """)
+
+    # Create any missing lac area cells
+    op.execute("""
+        INSERT INTO
+          cell (
+            radio,
+            mcc,
+            mnc,
+            lac,
+            cid,
+            new_measures,
+            total_measures,
+            created,
+            modified
+          )
+        SELECT DISTINCT
+          CELL_ALL.radio,
+          CELL_ALL.mcc,
+          CELL_ALL.mnc,
+          CELL_ALL.lac,
+          -2,
+          1,
+          0,
+          NOW(),
+          NOW()
+        FROM
+          cell CELL_ALL
+        WHERE
+          NOT EXISTS (
+            SELECT
+              *
+            FROM
+              cell CELL_AREA
+            WHERE
+              CELL_AREA.radio = CELL_ALL.radio AND
+              CELL_AREA.mcc = CELL_ALL.mcc AND
+              CELL_AREA.mnc = CELL_ALL.mnc AND
+              CELL_AREA.lac = CELL_ALL.lac AND
+              CELL_AREA.cid = -2
+          );
+    """)
+
+    # correct the unique cell statistic
+    bind = op.get_bind()
+
+    stmt = 'SELECT count(*) from cell where cid != -2'
+    cell_count = bind.execute(stmt).fetchone()[0]
+
+    stmt = 'SELECT max(time) FROM stat WHERE `key` = 2'
+    max_date = bind.execute(stmt).fetchone()[0]
+
+    stmt = ('UPDATE stat SET value = {value} '
+            'WHERE `key` = 2 AND `time` = \'{max_date}\'').format(
+                value=cell_count,
+                max_date=max_date.strftime('%Y-%m-%d'))
+    bind.execute(stmt)
 
 
 def downgrade():
