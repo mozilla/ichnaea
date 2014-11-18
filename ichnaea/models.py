@@ -461,6 +461,8 @@ class ApiKey(_Model):
 
     # Maximum number of requests per day
     maxreq = Column(Integer)
+    # Extended logging enabled?
+    log = Column(Boolean)
     # A readable short name used in metrics
     shortname = Column(String(40))
     # A contact address

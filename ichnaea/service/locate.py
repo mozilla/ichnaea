@@ -344,7 +344,7 @@ def search_wifi(session, wifis):
     # see in practice (-98).
 
     def signal_strength(w):
-        signal = int(w['signal'])
+        signal = w['signal']
         if signal == 0:
             return -100
         return signal
@@ -355,6 +355,7 @@ def search_wifi(session, wifis):
     if len(wifi_keys) < MIN_WIFIS_IN_QUERY:
         # We didn't get enough keys.
         return None
+
     query = session.query(Wifi.key, Wifi.lat, Wifi.lon, Wifi.range).filter(
         Wifi.key.in_(wifi_keys)).filter(
         Wifi.lat.isnot(None)).filter(
@@ -424,7 +425,8 @@ def search_wifi(session, wifis):
 
 
 def search_all_sources(session, api_name, data,
-                       client_addr=None, geoip_db=None):
+                       client_addr=None, geoip_db=None,
+                       api_key_log=False, api_key_name=None):
     """
     Common code-path for all lookup APIs, using
     WiFi, cell, cell-lac and GeoIP data sources.
@@ -555,6 +557,34 @@ def search_all_sources(session, api_name, data,
     if not result and geoip_res:
         result = geoip_res
         result_metric = 'geoip'
+
+    # Do detailed logging for some api keys
+    if api_key_log and api_key_name:
+        api_log_metric = None
+        wifi_keys = set([w['key'] for w in validated['wifi']])
+        if wifi_keys and \
+           len(filter_bssids_by_similarity(wifi_keys)) >= MIN_WIFIS_IN_QUERY:
+            # Only count requests as WiFi-based if they contain enough
+            # distinct WiFi networks to pass our filters
+            if result_metric == 'wifi':
+                api_log_metric = 'wifi_hit'
+            else:
+                api_log_metric = 'wifi_miss'
+        elif validated['cell']:
+            if result_metric == 'cell':
+                api_log_metric = 'cell_hit'
+            elif result_metric == 'cell_lac':
+                api_log_metric = 'cell_lac_hit'
+            else:
+                api_log_metric = 'cell_miss'
+        else:
+            if geoip_res:
+                api_log_metric = 'geoip_hit'
+            else:
+                api_log_metric = 'geoip_miss'
+        if api_log_metric:
+            stats_client.incr('%s.api_log.%s.%s' % (
+                api_name, api_key_name, api_log_metric))
 
     if not result:
         stats_client.incr('%s.miss' % api_name)

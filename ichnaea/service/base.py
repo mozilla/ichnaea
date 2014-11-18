@@ -9,7 +9,7 @@ from ichnaea.logging import get_heka_client, RAVEN_ERROR
 from ichnaea.service.error import DAILY_LIMIT
 from ichnaea import util
 
-API_CHECK = text('select maxreq, shortname from api_key '
+API_CHECK = text('select maxreq, log, shortname from api_key '
                  'where valid_key = :api_key')
 
 INVALID_API_KEY = {
@@ -79,9 +79,14 @@ def check_api_key(func_name, error_on_invalidkey=True):
                 return func(request, *args, **kwargs)
 
             if found_key is not None:
-                maxreq, shortname = found_key
+                maxreq, api_key_log, shortname = found_key
                 if not shortname:  # pragma: no cover
                     shortname = api_key
+
+                # remember api key and shortname on the request
+                request.api_key_log = bool(api_key_log)
+                request.api_key_name = shortname
+
                 stats_client.incr('%s.api_key.%s' % (func_name, shortname))
                 should_limit = rate_limit(request.registry.redis_client,
                                           api_key, maxreq=maxreq)
@@ -97,6 +102,10 @@ def check_api_key(func_name, error_on_invalidkey=True):
                 stats_client.incr('%s.unknown_api_key' % func_name)
                 if error_on_invalidkey:
                     return invalid_api_key_response()
+
+                # provide the same api log/name attributes
+                request.api_key_log = False
+                request.api_key_name = None
 
             return func(request, *args, **kwargs)
         return closure

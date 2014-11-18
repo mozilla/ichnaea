@@ -55,7 +55,7 @@ class TestSearch(AppTestCase):
                                     "accuracy": CELL_MIN_ACCURACY})
 
         self.check_stats(
-            total=9,
+            total=10,
             timer=[('request.v1.search', 1),
                    ('search.accuracy.cell', 1)],
             counter=[('search.api_key.test', 1),
@@ -64,7 +64,8 @@ class TestSearch(AppTestCase):
                      ('search.cell_found', 1),
                      ('search.no_cell_lac_found', 1),
                      ('search.no_geoip_found', 1),
-                     ('search.country_from_mcc', 1)]
+                     ('search.country_from_mcc', 1),
+                     ('search.api_log.test.cell_hit', 1)]
         )
 
     def test_ok_wifi(self):
@@ -90,7 +91,7 @@ class TestSearch(AppTestCase):
                                     "accuracy": 248.6090897})
 
         self.check_stats(
-            total=8,
+            total=9,
             timer=[('request.v1.search', 1),
                    ('search.accuracy.wifi', 1)],
             counter=[('search.api_key.test', 1),
@@ -98,7 +99,8 @@ class TestSearch(AppTestCase):
                      ('request.v1.search.200', 1),
                      ('search.wifi_found', 1),
                      ('search.no_geoip_found', 1),
-                     ('search.no_country', 1)]
+                     ('search.no_country', 1),
+                     ('search.api_log.test.wifi_hit', 1)]
         )
 
     def test_not_found(self):
@@ -123,7 +125,8 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.json, {"status": "not_found"})
 
         self.check_stats(counter=['search.api_key.test',
-                                  'search.miss'])
+                                  'search.miss',
+                                  'search.api_log.test.wifi_miss'])
 
     def test_geoip_fallback(self):
         app = self.app
@@ -142,7 +145,7 @@ class TestSearch(AppTestCase):
                                     "accuracy": GEOIP_CITY_ACCURACY})
 
         self.check_stats(
-            total=8,
+            total=9,
             timer=[('request.v1.search', 1),
                    ('search.accuracy.geoip', 1)],
             counter=[('search.api_key.test', 1),
@@ -150,7 +153,8 @@ class TestSearch(AppTestCase):
                      ('request.v1.search.200', 1),
                      ('search.no_wifi_found', 1),
                      ('search.geoip_city_found', 1),
-                     ('search.country_from_geoip', 1)]
+                     ('search.country_from_geoip', 1),
+                     ('search.api_log.test.wifi_miss', 1)]
         )
 
     def test_empty_request_means_geoip(self):
@@ -166,14 +170,15 @@ class TestSearch(AppTestCase):
                                     "accuracy": GEOIP_CITY_ACCURACY})
 
         self.check_stats(
-            total=7,
+            total=8,
             timer=[('request.v1.search', 1),
                    ('search.accuracy.geoip', 1)],
             counter=[('search.api_key.test', 1),
                      ('search.geoip_hit', 1),
                      ('request.v1.search.200', 1),
                      ('search.geoip_city_found', 1),
-                     ('search.country_from_geoip', 1)]
+                     ('search.country_from_geoip', 1),
+                     ('search.api_log.test.geoip_hit', 1)]
         )
 
     def test_error(self):

@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- Add api key specific stats to count best data lookup hits/misses.
+
 - Validate WiFi data in location lookups earlier in the process.
 
 - #287: Move lac update scheduling to Redis based queue.

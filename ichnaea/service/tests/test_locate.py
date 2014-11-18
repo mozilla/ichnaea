@@ -81,20 +81,23 @@ class TestSearchAllSources(DBTestCase):
     def test_geoip_unknown(self):
         result = locate.search_all_sources(
             self.db_slave_session, 'm', {},
-            client_addr='127.0.0.1', geoip_db=self.geoip_db)
+            client_addr='127.0.0.1', geoip_db=self.geoip_db,
+            api_key_log=True, api_key_name='test')
         self.assertTrue(result is None)
 
         self.check_stats(
             counter=[
                 'm.no_country',
                 'm.no_geoip_found',
+                'm.api_log.test.geoip_miss',
             ],
         )
 
     def test_geoip_city(self):
         result = locate.search_all_sources(
             self.db_slave_session, 'm', {},
-            client_addr=FREMONT_IP, geoip_db=self.geoip_db)
+            client_addr=FREMONT_IP, geoip_db=self.geoip_db,
+            api_key_log=True, api_key_name='test')
 
         self.assertEqual(result,
                          {'lat': FREMONT_LAT,
@@ -106,13 +109,15 @@ class TestSearchAllSources(DBTestCase):
                 'm.country_from_geoip',
                 'm.geoip_city_found',
                 'm.geoip_hit',
+                'm.api_log.test.geoip_hit',
             ],
         )
 
     def test_geoip_country(self):
         result = locate.search_all_sources(
             self.db_slave_session, 'm', {},
-            client_addr=GB_IP, geoip_db=self.geoip_db)
+            client_addr=GB_IP, geoip_db=self.geoip_db,
+            api_key_log=True, api_key_name='test')
 
         self.assertEqual(result,
                          {'lat': GB_LAT,
@@ -124,6 +129,7 @@ class TestSearchAllSources(DBTestCase):
                 'm.country_from_geoip',
                 'm.geoip_country_found',
                 'm.geoip_hit',
+                'm.api_log.test.geoip_hit',
             ],
         )
 
@@ -270,7 +276,8 @@ class TestSearchAllSources(DBTestCase):
         result = locate.search_all_sources(
             session, 'm',
             {'cell': [dict(cid=1, **cell_key)]},
-            client_addr=GB_IP, geoip_db=self.geoip_db)
+            client_addr=GB_IP, geoip_db=self.geoip_db,
+            api_key_log=True, api_key_name='test')
 
         self.assertEqual(result,
                          {'lat': GB_LAT,
@@ -282,6 +289,7 @@ class TestSearchAllSources(DBTestCase):
                 'm.cell_found',
                 'm.cell_hit',
                 'm.cell_lac_found',
+                'm.api_log.test.cell_hit',
             ],
         )
 
@@ -304,12 +312,22 @@ class TestSearchAllSources(DBTestCase):
 
         result = locate.search_all_sources(
             session, 'm',
-            {"cell": [dict(radio="umts", cid=7, **key)]})
+            {"cell": [dict(radio="umts", cid=7, **key)]},
+            api_key_log=True, api_key_name='test')
 
         self.assertEqual(result,
                          {'lat': PARIS_LAT + 0.0026666,
                           'lon': PARIS_LON + 0.0033333,
                           'accuracy': 500000})
+
+        self.check_stats(
+            counter=[
+                'm.no_cell_found',
+                'm.cell_lac_found',
+                'm.cell_lac_hit',
+                'm.api_log.test.cell_lac_hit',
+            ],
+        )
 
     def test_cell_hit_ignores_lac(self):
         session = self.db_slave_session
@@ -921,7 +939,8 @@ class TestSearchAllSources(DBTestCase):
         result = locate.search_all_sources(
             session, 'm',
             {'wifi': wifis},
-            client_addr=GB_IP, geoip_db=self.geoip_db)
+            client_addr=GB_IP, geoip_db=self.geoip_db,
+            api_key_log=True, api_key_name='test')
 
         self.assertEqual(result,
                          {'lat': GB_LAT,
@@ -932,6 +951,7 @@ class TestSearchAllSources(DBTestCase):
             counter=[
                 'm.wifi_found',
                 'm.wifi_hit',
+                'm.api_log.test.wifi_hit',
             ],
         )
 
@@ -946,13 +966,15 @@ class TestSearchAllSources(DBTestCase):
 
         result = locate.search_all_sources(
             session, 'm',
-            {'wifi': [{"key": "001122334455"}]})
+            {'wifi': [{"key": "001122334455"}]},
+            api_key_log=True, api_key_name='test')
 
         self.assertTrue(result is None)
         self.check_stats(
             counter=[
                 'm.miss',
                 'm.no_wifi_found',
+                'm.api_log.test.geoip_miss',
             ],
         )
 
@@ -990,13 +1012,15 @@ class TestSearchAllSources(DBTestCase):
         result = locate.search_all_sources(
             session, 'm',
             {'wifi': [{"key": "00000000001f"},
-                      {"key": "000000000020"}]})
+                      {"key": "000000000020"}]},
+            api_key_log=True, api_key_name='test')
 
         self.assertTrue(result is None)
         self.check_stats(
             counter=[
                 'm.miss',
                 'm.no_wifi_found',
+                'm.api_log.test.geoip_miss',
             ],
         )
 
@@ -1012,13 +1036,15 @@ class TestSearchAllSources(DBTestCase):
         result = locate.search_all_sources(
             session, 'm',
             {'wifi': [{"key": "000000000058"},
-                      {"key": "00000000005c"}]})
+                      {"key": "00000000005c"}]},
+            api_key_log=True, api_key_name='test')
 
         self.assertTrue(result is None)
         self.check_stats(
             counter=[
                 'm.miss',
                 'm.no_wifi_found',
+                'm.api_log.test.geoip_miss',
             ],
         )
 
@@ -1198,6 +1224,14 @@ class TestSearchAllSources(DBTestCase):
 
         result = locate.search_all_sources(
             session, 'm',
-            {'wifi': [{"key": "101010101010"}, {"key": "303030303030"}]})
+            {'wifi': [{"key": "101010101010"}, {"key": "303030303030"}]},
+            api_key_log=True, api_key_name='test')
 
         self.assertTrue(result is None)
+        self.check_stats(
+            counter=[
+                'm.miss',
+                'm.no_wifi_found',
+                'm.api_log.test.wifi_miss',
+            ],
+        )
