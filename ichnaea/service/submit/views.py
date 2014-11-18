@@ -80,6 +80,11 @@ def submit_view(request):
     nickname = request.headers.get('X-Nickname', u'')
     if isinstance(nickname, str):
         nickname = nickname.decode('utf-8', 'ignore')
+
+    email = request.headers.get('X-Email', u'')
+    if isinstance(email, str):
+        email = email.decode('utf-8', 'ignore')
+
     # batch incoming data into multiple tasks, in case someone
     # manages to submit us a huge single request
     for i in range(0, len(items), 100):
@@ -88,7 +93,11 @@ def submit_view(request):
         # after six hours to avoid queue overload
         try:
             insert_measures.apply_async(
-                kwargs={'items': batch, 'nickname': nickname},
+                kwargs={
+                    'email': email,
+                    'items': batch,
+                    'nickname': nickname,
+                },
                 expires=21600)
         except ConnectionError:  # pragma: no cover
             return HTTPServiceUnavailable()

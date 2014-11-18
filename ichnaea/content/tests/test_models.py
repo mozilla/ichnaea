@@ -111,10 +111,13 @@ class TestUser(DBTestCase):
         self.assertTrue(user.id is None)
 
     def test_fields(self):
-        user = self._make_one(nickname=u"World Traveler")
+        nickname = u'World Tr\xc3\xa4veler'
+        email = u'world_tr\xc3\xa4veler@email.com'
+        user = self._make_one(nickname=nickname, email=email)
         session = self.db_master_session
         session.add(user)
         session.commit()
 
         result = session.query(user.__class__).first()
-        self.assertEqual(result.nickname, u"World Traveler")
+        self.assertEqual(result.nickname, nickname)
+        self.assertEqual(result.email, email)

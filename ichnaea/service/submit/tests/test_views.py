@@ -265,6 +265,80 @@ class TestSubmit(CeleryAppTestCase):
                 self.assertEqual(r.value, 4)
                 self.assertEqual(r.time, utcday)
 
+    def test_email_header(self):
+        app = self.app
+        nickname = 'World Tr\xc3\xa4veler'
+        email = 'world_tr\xc3\xa4veler@email.com'
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0,
+                 "lon": 2.0,
+                 "wifi": [{"key": "00aaaaaaaaaa"}]},
+                {"lat": 2.0,
+                 "lon": 3.0,
+                 "wifi": [{"key": "00bbbbbbbbbb"}]},
+                {"lat": 10.0,
+                 "lon": 10.0,
+                 "wifi": [{"key": "invalid"}]},
+            ]},
+            headers={
+                'X-Nickname': nickname,
+                'X-Email': email,
+            },
+            status=204)
+        session = self.db_master_session
+        result = session.query(User).all()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].email, email.decode('utf-8'))
+
+    def test_email_header_update(self):
+        app = self.app
+        nickname = 'World Tr\xc3\xa4veler'
+        old_email = 'world_tr\xc3\xa4veler@email.com'
+        new_email = 'world_tr\xc3\xa4veler2@email.com'
+        session = self.db_master_session
+        user = User(nickname=nickname, email=old_email.decode('utf-8'))
+        session.add(user)
+        session.flush()
+        session.commit()
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0,
+                 "lon": 2.0,
+                 "wifi": [{"key": "00AAAAAAAAAA"}]},
+            ]},
+            headers={
+                'X-Nickname': nickname,
+                'X-Email': new_email,
+            },
+            status=204)
+        result = session.query(User).all()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].email, new_email.decode('utf-8'))
+
+    def test_email_header_without_nickname(self):
+        app = self.app
+        email = 'world_tr\xc3\xa4veler@email.com'
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0,
+                 "lon": 2.0,
+                 "wifi": [{"key": "00aaaaaaaaaa"}]},
+                {"lat": 2.0,
+                 "lon": 3.0,
+                 "wifi": [{"key": "00bbbbbbbbbb"}]},
+                {"lat": 10.0,
+                 "lon": 10.0,
+                 "wifi": [{"key": "invalid"}]},
+            ]},
+            headers={
+                'X-Email': email,
+            },
+            status=204)
+        session = self.db_master_session
+        result = session.query(User).all()
+        self.assertEqual(len(result), 0)
+
     def test_error(self):
         app = self.app
         res = app.post_json(
