@@ -11,8 +11,8 @@ from ichnaea.constants import (
     WIFI_MIN_ACCURACY,
 )
 from ichnaea.data.validation import (
-    normalized_wifi_key,
     normalized_cell_dict,
+    normalized_wifi_dict,
 )
 from ichnaea.geocalc import (
     distance,
@@ -344,19 +344,13 @@ def search_wifi(session, wifis):
     # see in practice (-98).
 
     def signal_strength(w):
-        if 'signal' in w:
-            return int(w['signal'])
-        else:
+        signal = int(w['signal'])
+        if signal == 0:
             return -100
+        return signal
 
-    wifi_signals = dict([(normalized_wifi_key(w['key']),
-                          signal_strength(w))
-                         for w in wifis])
+    wifi_signals = dict([(w['key'], signal_strength(w)) for w in wifis])
     wifi_keys = set(wifi_signals.keys())
-
-    if not any(wifi_keys):
-        # No valid normalized keys.
-        return None
 
     if len(wifi_keys) < MIN_WIFIS_IN_QUERY:
         # We didn't get enough keys.
@@ -371,7 +365,7 @@ def search_wifi(session, wifis):
     # multiple interfaces on the same base station or such.
     dissimilar_keys = set(filter_bssids_by_similarity([w[0] for w in wifis]))
 
-    wifis = [Network(normalized_wifi_key(w[0]), w[1], w[2], w[3])
+    wifis = [Network(w[0], w[1], w[2], w[3])
              for w in wifis
              if w[0] in dissimilar_keys]
 
@@ -456,8 +450,11 @@ def search_all_sources(session, api_name, data,
         'cell_lac_network': [],
     }
 
-    # Pass-through wifi data
-    validated['wifi'] = data.get('wifi', [])
+    # Pre-process wifi data
+    for wifi in data.get('wifi', ()):
+        wifi = normalized_wifi_dict(wifi)
+        if wifi:
+            validated['wifi'].append(wifi)
 
     # Pre-process cell data
     radio = RADIO_TYPE.get(data.get('radio', ''), -1)

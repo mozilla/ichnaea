@@ -71,15 +71,17 @@ class TestSearch(AppTestCase):
         app = self.app
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=1.0, lon=1.0),
-            Wifi(key="B2", lat=1.002, lon=1.004),
-            Wifi(key="C3", lat=None, lon=None),
+            Wifi(key="101010101010", lat=1.0, lon=1.0),
+            Wifi(key="202020202020", lat=1.002, lon=1.004),
+            Wifi(key="303030303030", lat=None, lon=None),
         ]
         session.add_all(wifis)
         session.commit()
         res = app.post_json('/v1/search?key=test',
                             {"wifi": [
-                                {"key": "A1"}, {"key": "B2"}, {"key": "C3"},
+                                {"key": "101010101010"},
+                                {"key": "202020202020"},
+                                {"key": "303030303030"},
                             ]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
@@ -114,7 +116,8 @@ class TestSearch(AppTestCase):
     def test_wifi_not_found(self):
         app = self.app
         res = app.post_json('/v1/search?key=test', {"wifi": [
-                            {"key": "abcd"}, {"key": "cdef"}]},
+                            {"key": "101010101010"},
+                            {"key": "202020202020"}]},
                             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "not_found"})
@@ -274,8 +277,10 @@ class TestSearchErrors(AppTestCase):
         res = app.post_json(
             '/v1/search?key=test',
             {"wifi": [
-                {"key": "A1"}, {"key": "B2"},
-                {"key": "C3"}, {"key": "D4"},
+                {"key": "101010101010"},
+                {"key": "202020202020"},
+                {"key": "303030303030"},
+                {"key": "404040404040"},
             ]},
             extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
         )

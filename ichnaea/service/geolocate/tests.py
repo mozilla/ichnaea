@@ -75,20 +75,20 @@ class TestGeolocate(AppTestCase):
         app = self.app
         session = self.get_session()
         wifis = [
-            Wifi(key="a1", lat=1.0, lon=1.0),
-            Wifi(key="b2", lat=1.001, lon=1.002),
-            Wifi(key="c3", lat=1.002, lon=1.004),
-            Wifi(key="d4", lat=None, lon=None),
+            Wifi(key="101010101010", lat=1.0, lon=1.0),
+            Wifi(key="202020202020", lat=1.001, lon=1.002),
+            Wifi(key="303030303030", lat=1.002, lon=1.004),
+            Wifi(key="404040404040", lat=None, lon=None),
         ]
         session.add_all(wifis)
         session.commit()
         res = app.post_json(
             '%s?key=test' % self.url, {
                 "wifiAccessPoints": [
-                    {"macAddress": "a1"},
-                    {"macAddress": "b2"},
-                    {"macAddress": "c3"},
-                    {"macAddress": "d4"},
+                    {"macAddress": "101010101010"},
+                    {"macAddress": "202020202020"},
+                    {"macAddress": "303030303030"},
+                    {"macAddress": "404040404040"},
                 ]},
             status=200)
         self.check_stats(
@@ -103,7 +103,8 @@ class TestGeolocate(AppTestCase):
         res = app.post_json(
             '%s?key=test' % self.url, {
                 "wifiAccessPoints": [
-                    {"macAddress": "abcd"}, {"macAddress": "cdef"},
+                    {"macAddress": "101010101010"},
+                    {"macAddress": "202020202020"},
                 ]},
             status=404)
         self.assertEqual(res.content_type, 'application/json')
@@ -164,8 +165,10 @@ class TestGeolocate(AppTestCase):
         res = app.post_json(
             '%s?key=test' % self.url,
             {"wifiAccessPoints": [
-                {"macAddress": "Porky"}, {"macAddress": "Piggy"},
-                {"macAddress": "Davis"}, {"macAddress": "McSnappy"},
+                {"macAddress": "101010101010"},
+                {"macAddress": "202020202020"},
+                {"macAddress": "303030303030"},
+                {"macAddress": "404040404040"},
             ]},
             extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
             status=200)
@@ -502,8 +505,8 @@ class TestGeolocateErrors(AppTestCase):
                      "cellId": 1234},
                 ],
                 "wifiAccessPoints": [
-                    {"macAddress": "a1"},
-                    {"macAddress": "b2"},
+                    {"macAddress": "101010101010"},
+                    {"macAddress": "202020202020"},
                 ]},
             extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
             status=200)
