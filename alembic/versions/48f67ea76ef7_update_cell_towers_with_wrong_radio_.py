@@ -11,6 +11,7 @@ revision = '48f67ea76ef7'
 down_revision = '4c7e55213558'
 
 from alembic import op
+from datetime import timedelta
 
 
 def upgrade():
@@ -104,11 +105,14 @@ def upgrade():
     # correct the unique cell statistic
     bind = op.get_bind()
 
-    stmt = 'SELECT count(*) from cell where cid != -2'
-    cell_count = bind.execute(stmt).fetchone()[0]
-
     stmt = 'SELECT max(time) FROM stat WHERE `key` = 2'
     max_date = bind.execute(stmt).fetchone()[0]
+    today = max_date + timedelta(days=1)
+
+    stmt = ('SELECT count(*) from cell where cid != -2 and '
+            'created < \'{today}\'').format(
+                today=today.strftime('%Y-%m-%d'))
+    cell_count = bind.execute(stmt).fetchone()[0]
 
     stmt = ('UPDATE stat SET value = {value} '
             'WHERE `key` = 2 AND `time` = \'{max_date}\'').format(
