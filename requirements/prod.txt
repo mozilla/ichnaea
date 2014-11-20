@@ -8,7 +8,7 @@ WebOb==1.4
 alembic==0.6.7
 amqp==1.4.6
 anyjson==0.3.3
-argparse==1.2.1
+argparse==1.2.2
 billiard==3.3.0.18
 boto==2.34.0
 celery==3.1.16

@@ -2,7 +2,7 @@ HERE = $(shell pwd)
 BIN = $(HERE)/bin
 PYTHON = $(BIN)/python
 PIP = $(BIN)/pip
-INSTALL = $(PIP) install --no-deps --allow-external=argparse
+INSTALL = $(PIP) install --no-deps
 NOSE = $(BIN)/nosetests
 
 TRAVIS ?= false
@@ -18,7 +18,7 @@ ifeq ($(TRAVIS), true)
 
 	PYTHON = python
 	PIP = pip
-	INSTALL = $(PIP) install --no-deps --allow-external=argparse
+	INSTALL = $(PIP) install --no-deps
 	NOSE = nosetests
 else
 	MYSQL_USER ?= root
