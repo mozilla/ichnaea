@@ -4,6 +4,9 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+20141120130000
+**************
+
 - Add api key specific stats to count best data lookup hits/misses.
 
 - Validate WiFi data in location lookups earlier in the process.
