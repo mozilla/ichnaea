@@ -11,8 +11,8 @@ from ichnaea.constants import (
     WIFI_MIN_ACCURACY,
 )
 from ichnaea.data.validation import (
-    normalized_wifi_key,
     normalized_cell_dict,
+    normalized_wifi_dict,
 )
 from ichnaea.geocalc import (
     distance,
@@ -344,23 +344,18 @@ def search_wifi(session, wifis):
     # see in practice (-98).
 
     def signal_strength(w):
-        if 'signal' in w:
-            return int(w['signal'])
-        else:
+        signal = w['signal']
+        if signal == 0:
             return -100
+        return signal
 
-    wifi_signals = dict([(normalized_wifi_key(w['key']),
-                          signal_strength(w))
-                         for w in wifis])
+    wifi_signals = dict([(w['key'], signal_strength(w)) for w in wifis])
     wifi_keys = set(wifi_signals.keys())
-
-    if not any(wifi_keys):
-        # No valid normalized keys.
-        return None
 
     if len(wifi_keys) < MIN_WIFIS_IN_QUERY:
         # We didn't get enough keys.
         return None
+
     query = session.query(Wifi.key, Wifi.lat, Wifi.lon, Wifi.range).filter(
         Wifi.key.in_(wifi_keys)).filter(
         Wifi.lat.isnot(None)).filter(
@@ -369,11 +364,11 @@ def search_wifi(session, wifis):
 
     # Filter out BSSIDs that are numerically very similar, assuming they're
     # multiple interfaces on the same base station or such.
-    dissimilar_keys = set(filter_bssids_by_similarity([w[0] for w in wifis]))
+    dissimilar_keys = set(filter_bssids_by_similarity([w.key for w in wifis]))
 
-    wifis = [Network(normalized_wifi_key(w[0]), w[1], w[2], w[3])
+    wifis = [Network(w.key, w.lat, w.lon, w.range)
              for w in wifis
-             if w[0] in dissimilar_keys]
+             if w.key in dissimilar_keys]
 
     if len(wifis) < MIN_WIFIS_IN_QUERY:
         # We didn't get enough matches.
@@ -430,7 +425,8 @@ def search_wifi(session, wifis):
 
 
 def search_all_sources(session, api_name, data,
-                       client_addr=None, geoip_db=None):
+                       client_addr=None, geoip_db=None,
+                       api_key_log=False, api_key_name=None):
     """
     Common code-path for all lookup APIs, using
     WiFi, cell, cell-lac and GeoIP data sources.
@@ -456,8 +452,11 @@ def search_all_sources(session, api_name, data,
         'cell_lac_network': [],
     }
 
-    # Pass-through wifi data
-    validated['wifi'] = data.get('wifi', [])
+    # Pre-process wifi data
+    for wifi in data.get('wifi', ()):
+        wifi = normalized_wifi_dict(wifi)
+        if wifi:
+            validated['wifi'].append(wifi)
 
     # Pre-process cell data
     radio = RADIO_TYPE.get(data.get('radio', ''), -1)
@@ -558,6 +557,34 @@ def search_all_sources(session, api_name, data,
     if not result and geoip_res:
         result = geoip_res
         result_metric = 'geoip'
+
+    # Do detailed logging for some api keys
+    if api_key_log and api_key_name:
+        api_log_metric = None
+        wifi_keys = set([w['key'] for w in validated['wifi']])
+        if wifi_keys and \
+           len(filter_bssids_by_similarity(wifi_keys)) >= MIN_WIFIS_IN_QUERY:
+            # Only count requests as WiFi-based if they contain enough
+            # distinct WiFi networks to pass our filters
+            if result_metric == 'wifi':
+                api_log_metric = 'wifi_hit'
+            else:
+                api_log_metric = 'wifi_miss'
+        elif validated['cell']:
+            if result_metric == 'cell':
+                api_log_metric = 'cell_hit'
+            elif result_metric == 'cell_lac':
+                api_log_metric = 'cell_lac_hit'
+            else:
+                api_log_metric = 'cell_miss'
+        else:
+            if geoip_res:
+                api_log_metric = 'geoip_hit'
+            else:
+                api_log_metric = 'geoip_miss'
+        if api_log_metric:
+            stats_client.incr('%s.api_log.%s.%s' % (
+                api_name, api_key_name, api_log_metric))
 
     if not result:
         stats_client.incr('%s.miss' % api_name)

@@ -60,7 +60,9 @@ def geolocate_view(request):
     result = search_all_sources(
         session, 'geolocate', data,
         client_addr=request.client_addr,
-        geoip_db=request.registry.geoip_db)
+        geoip_db=request.registry.geoip_db,
+        api_key_log=getattr(request, 'api_key_log', False),
+        api_key_name=getattr(request, 'api_key_name', None))
 
     if not result:
         result = HTTPNotFound()

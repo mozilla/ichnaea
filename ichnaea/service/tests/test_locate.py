@@ -81,20 +81,23 @@ class TestSearchAllSources(DBTestCase):
     def test_geoip_unknown(self):
         result = locate.search_all_sources(
             self.db_slave_session, 'm', {},
-            client_addr='127.0.0.1', geoip_db=self.geoip_db)
+            client_addr='127.0.0.1', geoip_db=self.geoip_db,
+            api_key_log=True, api_key_name='test')
         self.assertTrue(result is None)
 
         self.check_stats(
             counter=[
                 'm.no_country',
                 'm.no_geoip_found',
+                'm.api_log.test.geoip_miss',
             ],
         )
 
     def test_geoip_city(self):
         result = locate.search_all_sources(
             self.db_slave_session, 'm', {},
-            client_addr=FREMONT_IP, geoip_db=self.geoip_db)
+            client_addr=FREMONT_IP, geoip_db=self.geoip_db,
+            api_key_log=True, api_key_name='test')
 
         self.assertEqual(result,
                          {'lat': FREMONT_LAT,
@@ -106,13 +109,15 @@ class TestSearchAllSources(DBTestCase):
                 'm.country_from_geoip',
                 'm.geoip_city_found',
                 'm.geoip_hit',
+                'm.api_log.test.geoip_hit',
             ],
         )
 
     def test_geoip_country(self):
         result = locate.search_all_sources(
             self.db_slave_session, 'm', {},
-            client_addr=GB_IP, geoip_db=self.geoip_db)
+            client_addr=GB_IP, geoip_db=self.geoip_db,
+            api_key_log=True, api_key_name='test')
 
         self.assertEqual(result,
                          {'lat': GB_LAT,
@@ -124,6 +129,7 @@ class TestSearchAllSources(DBTestCase):
                 'm.country_from_geoip',
                 'm.geoip_country_found',
                 'm.geoip_hit',
+                'm.api_log.test.geoip_hit',
             ],
         )
 
@@ -270,7 +276,8 @@ class TestSearchAllSources(DBTestCase):
         result = locate.search_all_sources(
             session, 'm',
             {'cell': [dict(cid=1, **cell_key)]},
-            client_addr=GB_IP, geoip_db=self.geoip_db)
+            client_addr=GB_IP, geoip_db=self.geoip_db,
+            api_key_log=True, api_key_name='test')
 
         self.assertEqual(result,
                          {'lat': GB_LAT,
@@ -282,6 +289,7 @@ class TestSearchAllSources(DBTestCase):
                 'm.cell_found',
                 'm.cell_hit',
                 'm.cell_lac_found',
+                'm.api_log.test.cell_hit',
             ],
         )
 
@@ -304,12 +312,22 @@ class TestSearchAllSources(DBTestCase):
 
         result = locate.search_all_sources(
             session, 'm',
-            {"cell": [dict(radio="umts", cid=7, **key)]})
+            {"cell": [dict(radio="umts", cid=7, **key)]},
+            api_key_log=True, api_key_name='test')
 
         self.assertEqual(result,
                          {'lat': PARIS_LAT + 0.0026666,
                           'lon': PARIS_LON + 0.0033333,
                           'accuracy': 500000})
+
+        self.check_stats(
+            counter=[
+                'm.no_cell_found',
+                'm.cell_lac_found',
+                'm.cell_lac_hit',
+                'm.api_log.test.cell_lac_hit',
+            ],
+        )
 
     def test_cell_hit_ignores_lac(self):
         session = self.db_slave_session
@@ -513,7 +531,7 @@ class TestSearchAllSources(DBTestCase):
         umts = RADIO_TYPE['umts']
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
-            Wifi(key="abcd", lat=3, lon=3),
+            Wifi(key="a0a0a0a0a0a0", lat=3, lon=3),
             Cell(lat=lat, lon=lon, radio=umts, cid=4, **key),
             Cell(lat=lat + 0.002, lon=lon + 0.004, radio=umts, cid=5, **key),
         ]
@@ -525,7 +543,8 @@ class TestSearchAllSources(DBTestCase):
             {"cell": [
                 dict(radio="umts", cid=4, **key),
                 dict(radio="umts", cid=5, **key),
-            ], "wifi": [{"key": "abcd"}, {"key": "cdef"}]})
+            ], "wifi": [{"key": "101010101010"},
+                        {"key": "202020202020"}]})
 
         self.assertEqual(result,
                          {'lat': PARIS_LAT + 0.001,
@@ -920,7 +939,8 @@ class TestSearchAllSources(DBTestCase):
         result = locate.search_all_sources(
             session, 'm',
             {'wifi': wifis},
-            client_addr=GB_IP, geoip_db=self.geoip_db)
+            client_addr=GB_IP, geoip_db=self.geoip_db,
+            api_key_log=True, api_key_name='test')
 
         self.assertEqual(result,
                          {'lat': GB_LAT,
@@ -931,6 +951,7 @@ class TestSearchAllSources(DBTestCase):
             counter=[
                 'm.wifi_found',
                 'm.wifi_hit',
+                'm.api_log.test.wifi_hit',
             ],
         )
 
@@ -945,13 +966,15 @@ class TestSearchAllSources(DBTestCase):
 
         result = locate.search_all_sources(
             session, 'm',
-            {'wifi': [{"key": "001122334455"}]})
+            {'wifi': [{"key": "001122334455"}]},
+            api_key_log=True, api_key_name='test')
 
         self.assertTrue(result is None)
         self.check_stats(
             counter=[
                 'm.miss',
                 'm.no_wifi_found',
+                'm.api_log.test.geoip_miss',
             ],
         )
 
@@ -989,13 +1012,15 @@ class TestSearchAllSources(DBTestCase):
         result = locate.search_all_sources(
             session, 'm',
             {'wifi': [{"key": "00000000001f"},
-                      {"key": "000000000020"}]})
+                      {"key": "000000000020"}]},
+            api_key_log=True, api_key_name='test')
 
         self.assertTrue(result is None)
         self.check_stats(
             counter=[
                 'm.miss',
                 'm.no_wifi_found',
+                'm.api_log.test.geoip_miss',
             ],
         )
 
@@ -1011,13 +1036,15 @@ class TestSearchAllSources(DBTestCase):
         result = locate.search_all_sources(
             session, 'm',
             {'wifi': [{"key": "000000000058"},
-                      {"key": "00000000005c"}]})
+                      {"key": "00000000005c"}]},
+            api_key_log=True, api_key_name='test')
 
         self.assertTrue(result is None)
         self.check_stats(
             counter=[
                 'm.miss',
                 'm.no_wifi_found',
+                'm.api_log.test.geoip_miss',
             ],
         )
 
@@ -1093,12 +1120,12 @@ class TestSearchAllSources(DBTestCase):
     def test_wifi_prefer_cluster_with_better_signals(self):
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1" * 6, lat=1.0, lon=1.0),
-            Wifi(key="B2" * 6, lat=1.001, lon=1.002),
-            Wifi(key="C3" * 6, lat=1.002, lon=1.004),
-            Wifi(key="D4" * 6, lat=2.0, lon=2.0),
-            Wifi(key="E5" * 6, lat=2.001, lon=2.002),
-            Wifi(key="F6" * 6, lat=2.002, lon=2.004),
+            Wifi(key="a1" * 6, lat=1.0, lon=1.0),
+            Wifi(key="b2" * 6, lat=1.001, lon=1.002),
+            Wifi(key="c3" * 6, lat=1.002, lon=1.004),
+            Wifi(key="d4" * 6, lat=2.0, lon=2.0),
+            Wifi(key="e5" * 6, lat=2.001, lon=2.002),
+            Wifi(key="f6" * 6, lat=2.002, lon=2.004),
         ]
         session.add_all(wifis)
         session.flush()
@@ -1121,21 +1148,21 @@ class TestSearchAllSources(DBTestCase):
 
     def test_wifi_prefer_larger_cluster_over_high_signal(self):
         session = self.db_slave_session
-        wifis = [Wifi(key=("0%X" % i) * 6,
+        wifis = [Wifi(key=("0%X" % i).lower() * 6,
                       lat=1 + i * 0.000010,
                       lon=1 + i * 0.000012)
-                 for i in range(5)]
+                 for i in range(1, 6)]
         wifis += [
-            Wifi(key="D4" * 6, lat=2.0, lon=2.0),
-            Wifi(key="E5" * 6, lat=2.001, lon=2.002),
-            Wifi(key="F6" * 6, lat=2.002, lon=2.004),
+            Wifi(key="d4" * 6, lat=2.0, lon=2.0),
+            Wifi(key="e5" * 6, lat=2.001, lon=2.002),
+            Wifi(key="f6" * 6, lat=2.002, lon=2.004),
         ]
         session.add_all(wifis)
         session.flush()
 
         measures = [dict(key=("0%X" % i) * 6,
                          signal=-80)
-                    for i in range(5)]
+                    for i in range(1, 6)]
         measures += [
             dict(key="D4" * 6, signal=-75),
             dict(key="E5" * 6, signal=-74),
@@ -1148,8 +1175,8 @@ class TestSearchAllSources(DBTestCase):
             {'wifi': measures})
 
         self.assertEqual(result,
-                         {'lat': 1.00002,
-                          'lon': 1.000024,
+                         {'lat': 1.00003,
+                          'lon': 1.000036,
                           'accuracy': WIFI_MIN_ACCURACY})
 
     def test_wifi_only_use_top_five_signals_in_noisy_cluster(self):
@@ -1157,21 +1184,21 @@ class TestSearchAllSources(DBTestCase):
         # all these should wind up in the same cluster since
         # clustering threshold is 500m and the 10 wifis are
         # spaced in increments of (+1m, +1.2m)
-        wifis = [Wifi(key=("0%X" % i) * 6,
+        wifis = [Wifi(key=("0%X".lower() % i) * 6,
                       lat=1 + i * 0.000010,
                       lon=1 + i * 0.000012)
-                 for i in range(10)]
+                 for i in range(1, 11)]
         session.add_all(wifis)
         session.commit()
         measures = [dict(key=("0%X" % i) * 6,
                          signal=-80)
-                    for i in range(5, 10)]
+                    for i in range(6, 11)]
         measures += [
-            dict(key="000000000000", signal=-75),
-            dict(key="010101010101", signal=-74),
-            dict(key="020202020202", signal=-73),
-            dict(key="030303030303", signal=-72),
-            dict(key="040404040404", signal=-71),
+            dict(key="010101010101", signal=-75),
+            dict(key="020202020202", signal=-74),
+            dict(key="030303030303", signal=-73),
+            dict(key="040404040404", signal=-72),
+            dict(key="050505050505", signal=-71),
         ]
         random.shuffle(measures)
 
@@ -1180,23 +1207,31 @@ class TestSearchAllSources(DBTestCase):
             {'wifi': measures})
 
         self.assertEqual(result,
-                         {'lat': 1.00002,
-                          'lon': 1.000024,
+                         {'lat': 1.00003,
+                          'lon': 1.000036,
                           'accuracy': WIFI_MIN_ACCURACY})
 
     def test_wifi_not_closeby(self):
         session = self.db_slave_session
         wifis = [
-            Wifi(key="A1", lat=1.0, lon=1.0),
-            Wifi(key="B2", lat=1.001, lon=1.002),
-            Wifi(key="C3", lat=2.002, lon=2.004),
-            Wifi(key="D4", lat=2.0, lon=2.0),
+            Wifi(key="101010101010", lat=1.0, lon=1.0),
+            Wifi(key="202020202020", lat=1.001, lon=1.002),
+            Wifi(key="303030303030", lat=2.002, lon=2.004),
+            Wifi(key="404040404040", lat=2.0, lon=2.0),
         ]
         session.add_all(wifis)
         session.flush()
 
         result = locate.search_all_sources(
             session, 'm',
-            {'wifi': [{"key": "A1"}, {"key": "C3"}]})
+            {'wifi': [{"key": "101010101010"}, {"key": "303030303030"}]},
+            api_key_log=True, api_key_name='test')
 
         self.assertTrue(result is None)
+        self.check_stats(
+            counter=[
+                'm.miss',
+                'm.no_wifi_found',
+                'm.api_log.test.wifi_miss',
+            ],
+        )

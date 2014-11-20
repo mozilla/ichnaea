@@ -241,45 +241,45 @@ For the ``geolocate`` API, the following counters are emitted:
 
 
 In addition to ``geolocate`` response-type counters, equivalent counters
-exist for the ``search`` and ``geosubmit`` API endpoints. These are named:
+exist for the ``search`` and ``geosubmit`` API endpoints.
 
 
-  - ``search.cell_found``
-  - ``search.no_cell_found``
-  - ``search.cell_hit``
-  - ``search.cell_lac_found``
-  - ``search.no_cell_lac_found``
-  - ``search.cell_lac_hit``
-  - ``search.wifi_found``
-  - ``search.no_wifi_found``
-  - ``search.wifi_hit``
-  - ``search.geoip_city_found``
-  - ``search.geoip_country_found``
-  - ``search.no_geoip_found``
-  - ``search.geoip_hit``
-  - ``search.country_from_geoip``
-  - ``search.country_from_mcc``
-  - ``search.miss``
-  - ``geosubmit.cell_found``
-  - ``geosubmit.no_cell_found``
-  - ``geosubmit.cell_hit``
-  - ``geosubmit.cell_lac_found``
-  - ``geosubmit.no_cell_lac_found``
-  - ``geosubmit.cell_lac_hit``
-  - ``geosubmit.wifi_found``
-  - ``geosubmit.no_wifi_found``
-  - ``geosubmit.wifi_hit``
-  - ``geosubmit.geoip_city_found``
-  - ``geosubmit.geoip_country_found``
-  - ``geosubmit.no_geoip_found``
-  - ``geosubmit.geoip_hit``
-  - ``geosubmit.country_from_geoip``
-  - ``geosubmit.country_from_mcc``
-  - ``geosubmit.miss``
+Response type API key specific counters
+---------------------------------------
+
+In addition to the above mentioned response type counters, additional
+extended stats are provided for some API keys. These counters track if
+the best possible response was given for each query. Exactly one counter
+is used per response. For example if WiFi information was provided in the
+request and the service did not respond with a WiFi based result, a
+"wifi_miss" metric is emitted, independent of whether a cell based or geoip
+based response was provided instead.
+
+``geolocate.api_log.<api_shortname>.wifi_hit``,
+``geolocate.api_log.<api_shortname>.wifi_miss``, : counter
+
+    Counts the number of requests that did contain WiFi data and were
+    responded to with a WiFi based result (hit) and those that did not
+    (miss).
+
+``geolocate.api_log.<api_shortname>.cell_hit``,
+``geolocate.api_log.<api_shortname>.cell_lac_hit``,
+``geolocate.api_log.<api_shortname>.cell_miss``, : counter
+
+    Counts the number of requests that did contain cell data and were
+    responded to with a cell (hit) or a cell location area (lac_hit) result
+    and those that were not answered with any cell based data (miss).
+
+``geolocate.api_log.<api_shortname>.geoip_hit``,
+``geolocate.api_log.<api_shortname>.geoip_miss``, : counter
+
+    Counts the number of requests that did contain neither cell nor WiFi
+    data and were successfully answered with a geoip result (hit) and
+    those were no position estimate could be given (miss).
 
 
-Their meanings are identical to those specified above for the ``geolocate``
-API.
+In addition to ``geolocate`` response-type counters, equivalent counters
+exist for the ``search`` and ``geosubmit`` API endpoints.
 
 
 Query anomaly counters
@@ -328,21 +328,7 @@ lower.
     happen somewhat frequently in border areas.
 
 In addition to geolocate anomaly counters, equivalent counters exist for
-the ``search`` and ``geosubmit`` API endpoints. These are named:
-
-  - ``search.anomaly.cell_lac_country_mismatch``
-  - ``search.anomaly.geoip_mcc_mismatch``
-  - ``search.anomaly.wifi_cell_lac_mismatch``
-  - ``search.anomaly.wifi_cell_lac_mismatch``
-  - ``search.anomaly.multiple_mccs``
-  - ``geosubmit.anomaly.cell_lac_country_mismatch``
-  - ``geosubmit.anomaly.geoip_mcc_mismatch``
-  - ``geosubmit.anomaly.wifi_cell_lac_mismatch``
-  - ``geosubmit.anomaly.wifi_cell_lac_mismatch``
-  - ``geosubmit.anomaly.multiple_mccs``
-
-Their meanings are identical to those specified above for the ``geolocate``
-API.
+the ``search`` and ``geosubmit`` API endpoints.
 
 
 Accuracy pseudo-timers
@@ -461,6 +447,14 @@ Gauges
 
     These gauges measure the number of tasks in each of the Redis queues.
     They are sampled at an approximate per-minute interval.
+
+``queue.update_cell``,
+``queue.update_cell_lac``,
+``queue.update_wifi``, : gauges
+
+    These gauges measure the number of items in the Redis update queues.
+    These queues are used to keep track of which measures still need to
+    be acted upon and integrated into the aggregate station data.
 
 ``task.data.location_update_cell.new_measures_<min>_<max>``,
 ``task.data.location_update_wifi.new_measures_<min>_<max>``, : gauges

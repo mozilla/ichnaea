@@ -130,10 +130,10 @@ class TestGeoSubmit(CeleryAppTestCase):
         app = self.app
         session = self.db_master_session
         wifis = [
-            Wifi(key="0000000000a1", lat=1.0, lon=1.0),
-            Wifi(key="0000000000b2", lat=1.001, lon=1.002),
-            Wifi(key="0000000000c3", lat=1.002, lon=1.004),
-            Wifi(key="0000000000d4", lat=None, lon=None),
+            Wifi(key="101010101010", lat=1.0, lon=1.0),
+            Wifi(key="202020202020", lat=1.001, lon=1.002),
+            Wifi(key="303030303030", lat=1.002, lon=1.004),
+            Wifi(key="404040404040", lat=None, lon=None),
         ]
         session.add_all(wifis)
         session.commit()
@@ -144,11 +144,11 @@ class TestGeoSubmit(CeleryAppTestCase):
                 "accuracy": 12.4,
                 "radioType": "gsm",
                 "wifiAccessPoints": [
-                    {"macAddress": "0000000000a1"},
-                    {"macAddress": "0000000000b2"},
-                    {"macAddress": "0000000000c3"},
-                    {"macAddress": "0000000000d4"},
-                    {"macAddress": "0000000000e5"},
+                    {"macAddress": "101010101010"},
+                    {"macAddress": "202020202020"},
+                    {"macAddress": "303030303030"},
+                    {"macAddress": "404040404040"},
+                    {"macAddress": "505050505050"},
                 ]},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
@@ -156,9 +156,9 @@ class TestGeoSubmit(CeleryAppTestCase):
                                                  "lng": 23.45678},
                                     "accuracy": 12.4})
 
-        # Check that e5 exists
+        # Check that 505050505050 exists
         query = session.query(Wifi)
-        count = query.filter(Wifi.key == "0000000000e5").count()
+        count = query.filter(Wifi.key == "505050505050").count()
         self.assertEquals(1, count)
 
         # check that WifiMeasure records are created
@@ -175,7 +175,7 @@ class TestGeoSubmit(CeleryAppTestCase):
                 "accuracy": 12.4,
                 "radioType": "gsm",
                 "wifiAccessPoints": [{
-                    "macAddress": "0000000000e5",
+                    "macAddress": "505050505050",
                     "age": 3,
                     "channel": 6,
                     "frequency": 2437,
@@ -189,9 +189,9 @@ class TestGeoSubmit(CeleryAppTestCase):
                                                  "lng": PARIS_LON},
                                     "accuracy": 12.4})
 
-        # Check that e5 exists
+        # Check that 505050505050 exists
         query = session.query(Wifi)
-        count = query.filter(Wifi.key == "0000000000e5").count()
+        count = query.filter(Wifi.key == "505050505050").count()
         self.assertEquals(count, 1)
 
         # check that WifiMeasure records are created
