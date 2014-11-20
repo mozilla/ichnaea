@@ -53,9 +53,12 @@ def geosubmit_validator(data, errors):
             errors.append(dict(name='body', description=MSG_ONE_OF))
 
 
-def process_upload(nickname, items):
+def process_upload(nickname, email, items):
     if isinstance(nickname, str):  # pragma: no cover
         nickname = nickname.decode('utf-8', 'ignore')
+
+    if isinstance(email, str):  # pragma: no cover
+        email = email.decode('utf-8', 'ignore')
 
     batch_list = []
     for batch in items:
@@ -123,7 +126,11 @@ def process_upload(nickname, items):
         # after six hours to avoid queue overload
         try:
             insert_measures.apply_async(
-                kwargs={'items': batch_items, 'nickname': nickname},
+                kwargs={
+                    'email': email,
+                    'items': batch_items,
+                    'nickname': nickname,
+                },
                 expires=21600)
         except ConnectionError:  # pragma: no cover
             return SENTINEL
@@ -164,8 +171,9 @@ def geosubmit_view(request):
 
 def process_batch(request, data, errors):
     nickname = request.headers.get('X-Nickname', u'')
+    email = request.headers.get('X-Email', u'')
     upload_items = flatten_items(data)
-    errors = process_upload(nickname, upload_items)
+    errors = process_upload(nickname, email, upload_items)
 
     if errors is SENTINEL:  # pragma: no cover
         return HTTPServiceUnavailable()
@@ -199,8 +207,9 @@ def process_single(request):
     data = {'items': [data]}
 
     nickname = request.headers.get('X-Nickname', u'')
+    email = request.headers.get('X-Email', u'')
     upload_items = flatten_items(data)
-    errors = process_upload(nickname, upload_items)
+    errors = process_upload(nickname, email, upload_items)
 
     if errors is not SENTINEL and errors:  # pragma: no cover
         stats_client.incr('geosubmit.upload.errors', len(errors))

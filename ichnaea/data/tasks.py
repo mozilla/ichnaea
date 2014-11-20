@@ -336,20 +336,29 @@ def process_mapstat(session, positions):
             session.execute(stmt)
 
 
-def process_user(nickname, session):
+def process_user(nickname, email, session):
     userid = None
+    if len(email) > 255:
+        email = None
     if (2 <= len(nickname) <= 128):
         # automatically create user objects and update nickname
         rows = session.query(User).filter(User.nickname == nickname)
         old = rows.first()
         if not old:
-            user = User(nickname=nickname)
+            user = User(
+                nickname=nickname,
+                email=email
+            )
             session.add(user)
             session.flush()
             userid = user.id
         else:
             userid = old.id
-    return (userid, nickname)
+
+            if old.email != email:
+                old.email = email
+
+    return (userid, nickname, email)
 
 
 def process_measure(data, session):
@@ -604,7 +613,7 @@ def process_station_measures(session, entries, station_type,
 
 
 @celery.task(base=DatabaseTask, bind=True, queue='incoming')
-def insert_measures(self, items=None, nickname=''):
+def insert_measures(self, items=None, nickname='', email=''):
     if not items:  # pragma: no cover
         return 0
     items = loads(items)
@@ -612,7 +621,7 @@ def insert_measures(self, items=None, nickname=''):
 
     try:
         with self.db_session() as session:
-            userid, nickname = process_user(nickname, session)
+            userid, nickname, email = process_user(nickname, email, session)
 
             process_measures(items, session, userid=userid)
             self.stats_client.incr("items.uploaded.batches", count=length)

@@ -35,6 +35,8 @@ Changelog
 - Updated to latest versions of Chameleon, irc, Pygments, pyramid,
   translationstring and unittest2.
 
+- #312: Add email field to User model
+
 20141103125500
 **************
 
