@@ -339,7 +339,7 @@ def process_mapstat(session, positions):
 def process_user(nickname, email, session):
     userid = None
     if len(email) > 255:
-        email = None
+        email = ''
     if (2 <= len(nickname) <= 128):
         # automatically create user objects and update nickname
         rows = session.query(User).filter(User.nickname == nickname)
@@ -354,7 +354,7 @@ def process_user(nickname, email, session):
             userid = user.id
         else:
             userid = old.id
-
+            # update email column on existing user
             if old.email != email:
                 old.email = email
 

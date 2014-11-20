@@ -274,12 +274,6 @@ class TestSubmit(CeleryAppTestCase):
                 {"lat": 1.0,
                  "lon": 2.0,
                  "wifi": [{"key": "00aaaaaaaaaa"}]},
-                {"lat": 2.0,
-                 "lon": 3.0,
-                 "wifi": [{"key": "00bbbbbbbbbb"}]},
-                {"lat": 10.0,
-                 "lon": 10.0,
-                 "wifi": [{"key": "invalid"}]},
             ]},
             headers={
                 'X-Nickname': nickname,
@@ -316,6 +310,26 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].email, new_email.decode('utf-8'))
 
+    def test_email_header_too_long(self):
+        app = self.app
+        nickname = 'World Tr\xc3\xa4veler'
+        email = 'a' * 255 + '@email.com'
+        app.post_json(
+            '/v1/submit', {"items": [
+                {"lat": 1.0,
+                 "lon": 2.0,
+                 "wifi": [{"key": "00aaaaaaaaaa"}]},
+            ]},
+            headers={
+                'X-Nickname': nickname,
+                'X-Email': email,
+            },
+            status=204)
+        session = self.db_master_session
+        result = session.query(User).all()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].email, '')
+
     def test_email_header_without_nickname(self):
         app = self.app
         email = 'world_tr\xc3\xa4veler@email.com'
@@ -324,12 +338,6 @@ class TestSubmit(CeleryAppTestCase):
                 {"lat": 1.0,
                  "lon": 2.0,
                  "wifi": [{"key": "00aaaaaaaaaa"}]},
-                {"lat": 2.0,
-                 "lon": 3.0,
-                 "wifi": [{"key": "00bbbbbbbbbb"}]},
-                {"lat": 10.0,
-                 "lon": 10.0,
-                 "wifi": [{"key": "invalid"}]},
             ]},
             headers={
                 'X-Email': email,

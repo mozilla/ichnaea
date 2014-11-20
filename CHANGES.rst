@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- #312: Add email field to User model.
+
 - #287: Move lac update scheduling to Redis based queue.
 
 - #304: Auto-correct radio field of GSM cells with large cid values.
@@ -34,8 +36,6 @@ Changelog
 
 - Updated to latest versions of Chameleon, irc, Pygments, pyramid,
   translationstring and unittest2.
-
-- #312: Add email field to User model
 
 20141103125500
 **************

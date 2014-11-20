@@ -130,6 +130,6 @@ class User(_Model):
     id = Column(Integer(unsigned=True),
                 primary_key=True, autoincrement=True)
     nickname = Column(Unicode(128))
-    email = Column(Unicode(128))
+    email = Column(Unicode(255))
 
 user_table = User.__table__

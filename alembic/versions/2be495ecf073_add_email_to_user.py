@@ -1,4 +1,4 @@
-"""add email to user
+"""Add email column to user model.
 
 Revision ID: 2be495ecf073
 Revises: 48f67ea76ef7
