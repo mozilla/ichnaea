@@ -4,6 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+- #354: Remove scan_lacs fallback code looking at new_measures.
+
 20141120130000
 **************
 

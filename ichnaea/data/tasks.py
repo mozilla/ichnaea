@@ -832,24 +832,12 @@ def scan_lacs(self, batch=100):
     """
     try:
         redis_client = self.app.redis_client
-        with self.db_session() as session:
-            # TODO: db_lacs can go one release after Redis based
-            # lac scheduling was deployed
-            q = session.query(Cell.radio, Cell.mcc, Cell.mnc, Cell.lac).filter(
-                Cell.cid == CELLID_LAC).filter(
-                Cell.new_measures > 0).limit(batch)
-            db_lacs = set([CellKey(cid=-2, *l) for l in q.all()])
+        redis_lacs = dequeue_lacs(redis_client, batch=batch)
+        lacs = set([CellKey(**l) for l in redis_lacs])
 
-            redis_lacs = dequeue_lacs(redis_client, batch=batch)
-            redis_lacs = set([CellKey(**l) for l in redis_lacs])
-
-            lacs = redis_lacs.union(db_lacs)
-            n = len(lacs)
-            for lac in lacs:
-                update_lac.delay(lac.radio, lac.mcc,
-                                 lac.mnc, lac.lac)
-            session.commit()
-            return n
+        for lac in lacs:
+            update_lac.delay(lac.radio, lac.mcc, lac.mnc, lac.lac)
+        return len(lacs)
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')
         raise self.retry(exc=exc)
@@ -869,7 +857,6 @@ def update_lac(self, radio, mcc, mnc, lac):
                 Cell.mnc == mnc).filter(
                 Cell.lac == lac).filter(
                 Cell.cid != CELLID_LAC).filter(
-                Cell.new_measures == 0).filter(
                 Cell.lat.isnot(None)).filter(
                 Cell.lon.isnot(None))
 
@@ -921,11 +908,9 @@ def update_lac(self, radio, mcc, mnc, lac):
                                    created=utcnow,
                                    modified=utcnow,
                                    range=rng,
-                                   new_measures=0,
                                    total_measures=len(cells))
                     session.add(lac_obj)
                 else:
-                    lac_obj.new_measures = 0
                     lac_obj.total_measures = len(cells)
                     lac_obj.lat = ctr_lat
                     lac_obj.lon = ctr_lon

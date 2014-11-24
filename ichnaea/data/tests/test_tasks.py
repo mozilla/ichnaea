@@ -705,7 +705,6 @@ class TestCell(CeleryTestCase):
         self.assertEqual(lac.range, 723001)
         self.assertEqual(lac.created.date(), today)
         self.assertEqual(lac.modified.date(), today)
-        self.assertEqual(lac.new_measures, 0)
         self.assertEqual(lac.total_measures, 10)
 
 
