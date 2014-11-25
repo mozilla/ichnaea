@@ -103,8 +103,6 @@ def configure_celery(celery):
         CELERY_QUEUES=CELERY_QUEUES,
         # tasks
         CELERY_IMPORTS=CELERY_IMPORTS,
-        # forward compatibility
-        CELERYD_FORCE_EXECV=True,
         # optimization
         CELERYD_PREFETCH_MULTIPLIER=8,
         CELERY_DISABLE_RATE_LIMITS=True,

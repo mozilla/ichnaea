@@ -6,6 +6,8 @@ Changelog
 
 - #354: Remove scan_lacs fallback code looking at new_measures.
 
+- Updated to latest versions of alembic, billiard, celery and kombu.
+
 20141120130000
 **************
 

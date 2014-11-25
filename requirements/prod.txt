@@ -5,13 +5,13 @@ PasteDeploy==1.5.2
 PyMySQL==0.6.2
 SQLAlchemy==0.9.8
 WebOb==1.4
-alembic==0.6.7
+alembic==0.7.0
 amqp==1.4.6
 anyjson==0.3.3
 argparse==1.2.2
-billiard==3.3.0.18
+billiard==3.3.0.19
 boto==2.34.0
-celery==3.1.16
+celery==3.1.17
 colander==1.0b1
 configparser==3.5.0b2
 country-bounding-boxes==0.2.2
@@ -24,7 +24,7 @@ heka-py==0.30.3
 heka-py-raven==0.7
 importlib==1.0.3
 iso3166==0.6
-kombu==3.0.23
+kombu==3.0.24
 mobile-codes==0.4
 ordereddict==1.1
 protobuf==2.6.0  # rq.filter: !=2.6.1
