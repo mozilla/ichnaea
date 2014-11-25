@@ -16,7 +16,7 @@ from ichnaea.worker import celery
 MONITOR_QUEUE_NAMES = set(CELERY_QUEUE_NAMES).union(set(UPDATE_KEY.values()))
 
 
-@celery.task(base=DatabaseTask, bind=True, queue='monitor')
+@celery.task(base=DatabaseTask, bind=True, queue='celery_monitor')
 def monitor_api_key_limits(self):
     result = {}
     try:
@@ -53,7 +53,7 @@ def monitor_api_key_limits(self):
     return result
 
 
-@celery.task(base=DatabaseTask, bind=True, queue='monitor')
+@celery.task(base=DatabaseTask, bind=True, queue='celery_monitor')
 def monitor_measures(self):
     checks = [('cell_measure', CellMeasure), ('wifi_measure', WifiMeasure)]
     result = dict([(name, -1) for name, model in checks])
@@ -74,7 +74,7 @@ def monitor_measures(self):
     return result
 
 
-@celery.task(base=DatabaseTask, bind=True, queue='monitor')
+@celery.task(base=DatabaseTask, bind=True, queue='celery_monitor')
 def monitor_ocid_import(self):
     result = -1
     try:
@@ -95,7 +95,7 @@ def monitor_ocid_import(self):
     return result
 
 
-@celery.task(base=DatabaseTask, bind=True, queue='monitor')
+@celery.task(base=DatabaseTask, bind=True, queue='celery_monitor')
 def monitor_queue_length(self):
     result = {}
     try:

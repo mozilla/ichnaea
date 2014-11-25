@@ -17,10 +17,15 @@ CELERY_IMPORTS = [
 ]
 
 CELERY_QUEUES = (
-    Queue('default', routing_key='default'),
-    Queue('incoming', routing_key='incoming'),
-    Queue('insert', routing_key='insert'),
-    Queue('monitor', routing_key='monitor'),
+    Queue('celery_default', routing_key='celery_default'),
+    Queue('celery_incoming', routing_key='celery_incoming'),
+    Queue('celery_insert', routing_key='celery_insert'),
+    Queue('celery_monitor', routing_key='celery_monitor'),
+    # BBB
+    Queue('default', routing_key='old_default'),
+    Queue('incoming', routing_key='old_incoming'),
+    Queue('insert', routing_key='old_insert'),
+    Queue('monitor', routing_key='old_monitor'),
 )
 CELERY_QUEUE_NAMES = frozenset([q.name for q in CELERY_QUEUES])
 
@@ -99,7 +104,7 @@ def configure_celery(celery):
         BROKER_URL=broker_url,
         BROKER_TRANSPORT_OPTIONS=broker_options,
         # queues
-        CELERY_DEFAULT_QUEUE='default',
+        CELERY_DEFAULT_QUEUE='celery_default',
         CELERY_QUEUES=CELERY_QUEUES,
         # tasks
         CELERY_IMPORTS=CELERY_IMPORTS,

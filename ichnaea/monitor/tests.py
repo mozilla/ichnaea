@@ -121,16 +121,19 @@ class TestMonitorTasks(CeleryTestCase):
 
     def test_monitor_queue_length(self):
         data = {
-            'default': 2,
-            'incoming': 3,
-            'insert': 5,
-            'monitor': 1,
+            'celery_default': 2,
+            'celery_incoming': 3,
+            'celery_insert': 5,
+            'celery_monitor': 1,
             'update_cell': 4,
             'update_cell_lac': 7,
             'update_wifi': 6,
         }
         for k, v in data.items():
             self.redis_client.lpush(k, *range(v))
+        # BBB
+        for name in ('default', 'incoming', 'insert', 'monitor'):
+            data[name] = 0
 
         result = monitor_queue_length.delay().get()
 

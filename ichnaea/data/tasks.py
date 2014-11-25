@@ -612,7 +612,7 @@ def process_station_measures(session, entries, station_type,
     return all_measures
 
 
-@celery.task(base=DatabaseTask, bind=True, queue='incoming')
+@celery.task(base=DatabaseTask, bind=True, queue='celery_incoming')
 def insert_measures(self, items=None, nickname='', email=''):
     if not items:  # pragma: no cover
         return 0
@@ -633,7 +633,7 @@ def insert_measures(self, items=None, nickname='', email=''):
         raise self.retry(exc=exc)
 
 
-@celery.task(base=DatabaseTask, bind=True, queue='insert')
+@celery.task(base=DatabaseTask, bind=True, queue='celery_insert')
 def insert_measures_cell(self, entries, userid=None,
                          max_measures_per_cell=11000,
                          utcnow=None):
@@ -659,7 +659,7 @@ def insert_measures_cell(self, entries, userid=None,
         raise self.retry(exc=exc)
 
 
-@celery.task(base=DatabaseTask, bind=True, queue='insert')
+@celery.task(base=DatabaseTask, bind=True, queue='celery_insert')
 def insert_measures_wifi(self, entries, userid=None,
                          max_measures_per_wifi=11000,
                          utcnow=None):
