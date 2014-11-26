@@ -25,15 +25,16 @@ from ichnaea.data.tasks import (
 from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
     Cell,
+    CellArea,
+    CellAreaKey,
     CellBlacklist,
-    CELLID_LAC,
     CellKey,
     CellMeasure,
     RADIO_TYPE,
-    to_cellkey,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
+    to_cellkey,
 )
 from ichnaea.tests.base import (
     CeleryTestCase,
@@ -258,7 +259,8 @@ class TestCell(CeleryTestCase):
                     # Rescan lacs to update entries
                     self.assertEqual(scan_lacs.delay().get(), 1)
                     # One cell + one cell-LAC record should exist.
-                    self.assertEqual(session.query(Cell).count(), 2)
+                    self.assertEqual(session.query(Cell).count(), 1)
+                    self.assertEqual(session.query(CellArea).count(), 1)
                 else:
                     # The station existed and was seen moving,
                     # thereby activating the blacklist and deleting the cell.
@@ -477,7 +479,7 @@ class TestCell(CeleryTestCase):
             gauge=['task.data.location_update_cell.new_measures_1_100'],
         )
 
-        cells = session.query(Cell).filter(Cell.cid != CELLID_LAC).all()
+        cells = session.query(Cell).all()
         self.assertEqual(len(cells), 2)
         self.assertEqual([c.new_measures for c in cells], [0, 0])
         for cell in cells:
@@ -506,7 +508,7 @@ class TestCell(CeleryTestCase):
         result = location_update_cell.delay(min_new=1)
         self.assertEqual(result.get(), (1, 0))
 
-        cells = session.query(Cell).filter(Cell.cid != CELLID_LAC).all()
+        cells = session.query(Cell).all()
         self.assertEqual(len(cells), 1)
         cell = cells[0]
         self.assertEqual(cell.lat, 1.002)
@@ -530,9 +532,7 @@ class TestCell(CeleryTestCase):
         self.add_line_of_cells_and_scan_lac()
 
         # confirm we got one
-        lac = session.query(Cell).filter(
-            Cell.lac == 1,
-            Cell.cid == CELLID_LAC).first()
+        lac = session.query(CellArea).filter(CellArea.lac == 1).first()
 
         self.assertEqual(lac.lat, 4.5)
         self.assertEqual(lac.lon, 4.5)
@@ -558,9 +558,7 @@ class TestCell(CeleryTestCase):
             self.assertEqual(1, result.get())
             result = scan_lacs.delay()
             self.assertEqual(1, result.get())
-            lac = session.query(Cell).filter(
-                Cell.lac == 1,
-                Cell.cid == CELLID_LAC).first()
+            lac = session.query(CellArea).filter(CellArea.lac == 1).first()
 
             self.assertEqual(lac.lat, steps[i][0][0])
             self.assertEqual(lac.lon, steps[i][0][1])
@@ -572,9 +570,7 @@ class TestCell(CeleryTestCase):
         self.assertEqual(1, result.get())
         result = scan_lacs.delay()
         self.assertEqual(1, result.get())
-        lac = session.query(Cell).filter(
-            Cell.lac == 1,
-            Cell.cid == CELLID_LAC).first()
+        lac = session.query(CellArea).filter(CellArea.lac == 1).first()
         self.assertEqual(lac, None)
 
     def test_scan_lacs_asymmetric(self):
@@ -607,9 +603,7 @@ class TestCell(CeleryTestCase):
                                             batch=len(measures))
         self.assertEqual(result.get(), (len(cells), 0))
         scan_lacs.delay()
-        lac = session.query(Cell).filter(
-            Cell.lac == 1,
-            Cell.cid == CELLID_LAC).first()
+        lac = session.query(CellArea).filter(CellArea.lac == 1).first()
 
         # We produced a sequence of 0.02-degree-on-a-side
         # cell bounding boxes centered at
@@ -675,14 +669,14 @@ class TestCell(CeleryTestCase):
         redis_client = self.redis_client
 
         # create an orphaned lac entry
-        key = dict(radio=1, mcc=1, mnc=1, lac=1, cid=CELLID_LAC)
-        session.add(Cell(**key))
+        key = dict(radio=1, mcc=1, mnc=1, lac=1)
+        session.add(CellArea(**key))
         session.flush()
-        enqueue_lacs(session, redis_client, [CellKey(**key)])
+        enqueue_lacs(session, redis_client, [CellAreaKey(**key)])
 
         # after scanning the orphaned record gets removed
         self.assertEqual(scan_lacs.delay().get(), 1)
-        lacs = session.query(Cell).filter(Cell.cid == CELLID_LAC).all()
+        lacs = session.query(CellArea).all()
         self.assertEqual(lacs, [])
 
     def test_scan_lacs_update(self):
@@ -690,9 +684,7 @@ class TestCell(CeleryTestCase):
         self.add_line_of_cells_and_scan_lac()
         today = util.utcnow().date()
 
-        lac = session.query(Cell).filter(
-            Cell.lac == 1,
-            Cell.cid == CELLID_LAC).first()
+        lac = session.query(CellArea).filter(Cell.lac == 1).first()
 
         # We produced a sequence of 0.2-degree-on-a-side
         # cell bounding boxes centered at [0, 1, 2, ..., 9]
@@ -705,7 +697,7 @@ class TestCell(CeleryTestCase):
         self.assertEqual(lac.range, 723001)
         self.assertEqual(lac.created.date(), today)
         self.assertEqual(lac.modified.date(), today)
-        self.assertEqual(lac.total_measures, 10)
+        self.assertEqual(lac.num_cells, 10)
 
 
 class TestWifi(CeleryTestCase):

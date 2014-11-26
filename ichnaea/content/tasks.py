@@ -11,7 +11,6 @@ from ichnaea.models import (
     OCIDCell,
     Wifi,
     WifiMeasure,
-    CELLID_LAC,
 )
 from ichnaea import util
 from ichnaea.worker import celery
@@ -56,12 +55,10 @@ def get_stat(session, stat_key, exact=True, date=None):
 
 
 def histogram_query(session, model, min_day, max_day):
-    query = session.query(model).filter(
-        model.created < max_day).filter(
-        model.created >= min_day)
-    if model is Cell:
-        query = query.filter(model.cid != CELLID_LAC)
-    return query.count()
+    return (session.query(model)
+                   .filter(model.created < max_day)
+                   .filter(model.created >= min_day)
+                   .count())
 
 
 def histogram_task(db_session, model, statname, ago=1):

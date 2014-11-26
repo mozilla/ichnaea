@@ -47,6 +47,7 @@ CELLID_LAC = -2
 
 CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
+CellAreaKey = namedtuple('CellAreaKey', 'radio mcc mnc lac')
 WifiKey = namedtuple('WifiKey', 'key')
 
 
@@ -97,12 +98,14 @@ def join_cellkey(model, k):
     criterion = (model.radio == k.radio,
                  model.mcc == k.mcc,
                  model.mnc == k.mnc,
-                 model.lac == k.lac,
-                 model.cid == k.cid)
+                 model.lac == k.lac)
+    # if the model has a psc column, and we get a CellKeyPsc,
+    # add it to the criterion
     if isinstance(k, CellKeyPsc) and getattr(model, 'psc', None) is not None:
-        # if the model has a psc column, and we get a CellKeyPsc,
-        # add it to the criterion
         criterion += (model.psc == k.psc, )
+
+    if hasattr(model, 'cid') and hasattr(k, 'cid'):
+        criterion += (model.cid == k.cid, )
     return criterion
 
 
@@ -235,6 +238,47 @@ class OCIDCell(_Model):
         super(OCIDCell, self).__init__(*args, **kw)
 
 ocid_cell_table = OCIDCell.__table__
+
+
+# Cell area record
+class CellArea(_Model):
+    __tablename__ = 'cell_area'
+
+    created = Column(DateTime)
+    modified = Column(DateTime)
+
+    # lat/lon
+    lat = Column(Double(asdecimal=False))
+    lon = Column(Double(asdecimal=False))
+
+    # radio mapped via RADIO_TYPE
+    radio = Column(TinyInteger,
+                   autoincrement=False, primary_key=True)
+    mcc = Column(SmallInteger,
+                 autoincrement=False, primary_key=True)
+    mnc = Column(SmallInteger,
+                 autoincrement=False, primary_key=True)
+    lac = Column(SmallInteger(unsigned=True),
+                 autoincrement=False, primary_key=True)
+
+    range = Column(Integer)
+    avg_cell_range = Column(Integer)
+    num_cells = Column(Integer(unsigned=True))
+
+    def __init__(self, *args, **kw):
+        if 'created' not in kw:
+            kw['created'] = util.utcnow()
+        if 'modified' not in kw:
+            kw['modified'] = util.utcnow()
+        if 'range' not in kw:
+            kw['range'] = 0
+        if 'avg_cell_range' not in kw:
+            kw['avg_cell_range'] = 0
+        if 'num_cells' not in kw:
+            kw['num_cells'] = 0
+        super(CellArea, self).__init__(*args, **kw)
+
+cell_area_table = CellArea.__table__
 
 
 class CellBlacklist(_Model):

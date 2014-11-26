@@ -11,7 +11,6 @@ from ichnaea.models import (
     ApiKey,
     Cell,
     Wifi,
-    CELLID_LAC,
     RADIO_TYPE,
 )
 from ichnaea.tests.base import (
@@ -437,21 +436,11 @@ class TestGeolocateFxOSWorkarounds(AppTestCase):
                  radio=RADIO_TYPE['gsm'],
                  mcc=FRANCE_MCC, mnc=1, lac=2, cid=3,
                  range=10000),
-            Cell(lat=PARIS_LAT,
-                 lon=PARIS_LON,
-                 radio=RADIO_TYPE['gsm'],
-                 mcc=FRANCE_MCC, mnc=1, lac=2, cid=CELLID_LAC,
-                 range=20000),
             Cell(lat=PARIS_LAT + 0.002,
                  lon=PARIS_LON + 0.004,
                  radio=RADIO_TYPE['umts'],
                  mcc=FRANCE_MCC, mnc=2, lac=3, cid=4,
                  range=2000),
-            Cell(lat=PARIS_LAT + 0.002,
-                 lon=PARIS_LON + 0.004,
-                 radio=RADIO_TYPE['umts'],
-                 mcc=FRANCE_MCC, mnc=2, lac=3, cid=CELLID_LAC,
-                 range=15000),
         ]
         session.add_all(cells)
         session.commit()

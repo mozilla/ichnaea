@@ -27,10 +27,10 @@ from ichnaea.data.validation import (
 from ichnaea.geocalc import distance, centroid, range_to_points
 from ichnaea.logging import get_stats_client
 from ichnaea.models import (
-    CELLID_LAC,
     Cell,
+    CellArea,
     CellBlacklist,
-    CellKey,
+    CellAreaKey,
     CellMeasure,
     RADIO_TYPE,
     Wifi,
@@ -694,10 +694,10 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
             emit_new_measures_metric(self.stats_client, session,
                                      self.shortname, Cell,
                                      min_new, max_new)
-            query = session.query(Cell).filter(
-                Cell.new_measures >= min_new).filter(
-                Cell.new_measures < max_new).filter(
-                Cell.cid != CELLID_LAC).limit(batch)
+            query = (session.query(Cell)
+                            .filter(Cell.new_measures >= min_new)
+                            .filter(Cell.new_measures < max_new)
+                            .limit(batch))
             cells = query.all()
             if not cells:
                 return 0
@@ -706,8 +706,7 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
             for cell in cells:
                 # skip cells with a missing lac/cid
                 # or virtual LAC cells
-                if cell.lac == -1 or cell.cid == -1 or \
-                   cell.cid == CELLID_LAC:  # pragma: no cover
+                if cell.lac == -1 or cell.cid == -1:  # pragma: no cover
                     continue
 
                 query = session.query(
@@ -725,9 +724,12 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
                     if moving:
                         moving_cells.add(cell)
 
-                    updated_lacs.add(CellKey(cell.radio, cell.mcc,
-                                             cell.mnc, cell.lac,
-                                             CELLID_LAC))
+                    updated_lacs.add(
+                        CellAreaKey(
+                            cell.radio,
+                            cell.mcc,
+                            cell.mnc,
+                            cell.lac))
 
             if updated_lacs:
                 session.on_post_commit(enqueue_lacs,
@@ -796,7 +798,12 @@ def remove_cell(self, cell_keys):
                 key = to_cellkey(k)
                 query = session.query(Cell).filter(*join_cellkey(Cell, key))
                 cells_removed += query.delete()
-                changed_lacs.add(key._replace(cid=CELLID_LAC))
+                changed_lacs.add(CellAreaKey(
+                    radio=key.radio,
+                    mcc=key.mcc,
+                    mnc=key.mnc,
+                    lac=key.lac,
+                ))
 
             if changed_lacs:
                 session.on_post_commit(enqueue_lacs,
@@ -833,7 +840,12 @@ def scan_lacs(self, batch=100):
     try:
         redis_client = self.app.redis_client
         redis_lacs = dequeue_lacs(redis_client, batch=batch)
-        lacs = set([CellKey(**l) for l in redis_lacs])
+        lacs = set([CellAreaKey(
+            radio=lac['radio'],
+            mcc=lac['mcc'],
+            mnc=lac['mnc'],
+            lac=lac['lac'],
+        ) for lac in redis_lacs])
 
         for lac in lacs:
             update_lac.delay(lac.radio, lac.mcc, lac.mnc, lac.lac)
@@ -851,23 +863,21 @@ def update_lac(self, radio, mcc, mnc, lac):
             # Select all the cells in this LAC that aren't the virtual
             # cell itself, and derive a bounding box for them.
 
-            cell_query = session.query(Cell).filter(
-                Cell.radio == radio).filter(
-                Cell.mcc == mcc).filter(
-                Cell.mnc == mnc).filter(
-                Cell.lac == lac).filter(
-                Cell.cid != CELLID_LAC).filter(
-                Cell.lat.isnot(None)).filter(
-                Cell.lon.isnot(None))
+            cell_query = (session.query(Cell)
+                                 .filter(Cell.radio == radio)
+                                 .filter(Cell.mcc == mcc)
+                                 .filter(Cell.mnc == mnc)
+                                 .filter(Cell.lac == lac)
+                                 .filter(Cell.lat.isnot(None))
+                                 .filter(Cell.lon.isnot(None)))
 
             cells = cell_query.all()
 
-            lac_query = session.query(Cell).filter(
-                Cell.radio == radio).filter(
-                Cell.mcc == mcc).filter(
-                Cell.mnc == mnc).filter(
-                Cell.lac == lac).filter(
-                Cell.cid == CELLID_LAC)
+            lac_query = (session.query(CellArea)
+                                .filter(CellArea.radio == radio)
+                                .filter(CellArea.mcc == mcc)
+                                .filter(CellArea.mnc == mnc)
+                                .filter(CellArea.lac == lac))
 
             if len(cells) == 0:
                 # If there are no more underlying cells, delete the lac entry
@@ -897,21 +907,26 @@ def update_lac(self, radio, mcc, mnc, lac):
                 rng = int(round(rng * 1000.0))
 
                 # Now create or update the LAC virtual cell
+                num_cells = len(cells)
                 if lac_obj is None:
-                    lac_obj = Cell(radio=radio,
-                                   mcc=mcc,
-                                   mnc=mnc,
-                                   lac=lac,
-                                   cid=CELLID_LAC,
-                                   lat=ctr_lat,
-                                   lon=ctr_lon,
-                                   created=utcnow,
-                                   modified=utcnow,
-                                   range=rng,
-                                   total_measures=len(cells))
+                    avg_cell_range = int(sum(
+                        [cell.range for cell in cells])/float(num_cells))
+                    lac_obj = CellArea(
+                        created=utcnow,
+                        modified=utcnow,
+                        radio=radio,
+                        mcc=mcc,
+                        mnc=mnc,
+                        lac=lac,
+                        lat=ctr_lat,
+                        lon=ctr_lon,
+                        range=rng,
+                        avg_cell_range=avg_cell_range,
+                        num_cells=num_cells,
+                    )
                     session.add(lac_obj)
                 else:
-                    lac_obj.total_measures = len(cells)
+                    lac_obj.num_cells = num_cells
                     lac_obj.lat = ctr_lat
                     lac_obj.lon = ctr_lon
                     lac_obj.modified = utcnow

@@ -10,7 +10,7 @@ from ichnaea.geocalc import maximum_country_radius
 from ichnaea.geoip import GeoIPMock
 from ichnaea.models import (
     Cell,
-    CELLID_LAC,
+    CellArea,
     RADIO_TYPE,
     Wifi,
 )
@@ -161,9 +161,10 @@ class TestSearchAllSources(DBTestCase):
         session = self.db_slave_session
         gsm = RADIO_TYPE['gsm']
         key = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
-        key2 = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1, 'cid': CELLID_LAC}
+        key2 = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1, }
         session.add(Cell(radio=gsm, lat=FREMONT_LAT, lon=FREMONT_LON, **key))
-        session.add(Cell(radio=gsm, lat=FREMONT_LAT, lon=FREMONT_LON, **key2))
+        session.add(CellArea(radio=gsm, lat=FREMONT_LAT,
+                             lon=FREMONT_LON, **key2))
         session.flush()
 
         result = locate.search_all_sources(
@@ -269,8 +270,8 @@ class TestSearchAllSources(DBTestCase):
         }
         session.add(Cell(
             lat=GB_LAT, lon=GB_LON, range=6000, cid=1, **cell_key))
-        session.add(Cell(
-            lat=GB_LAT, lon=GB_LON, range=9000, cid=CELLID_LAC, **cell_key))
+        session.add(CellArea(
+            lat=GB_LAT, lon=GB_LON, range=9000, **cell_key))
         session.flush()
 
         result = locate.search_all_sources(
@@ -303,9 +304,9 @@ class TestSearchAllSources(DBTestCase):
             Cell(lat=lat, lon=lon, radio=umts, cid=4, **key),
             Cell(lat=lat + 0.002, lon=lon + 0.004, radio=umts, cid=5, **key),
             Cell(lat=lat + 0.006, lon=lon + 0.006, radio=umts, cid=6, **key),
-            Cell(lat=lat + 0.0026666, lon=lon + 0.0033333,
-                 radio=umts, cid=CELLID_LAC,
-                 range=500000, **key),
+            CellArea(lat=lat + 0.0026666, lon=lon + 0.0033333,
+                     radio=umts,
+                     range=500000, **key),
         ]
         session.add_all(data)
         session.flush()
@@ -338,9 +339,9 @@ class TestSearchAllSources(DBTestCase):
             Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
             Cell(lat=lat + 0.002, lon=lon + 0.004, radio=2, cid=5, **key),
             Cell(lat=lat + 0.006, lon=lon + 0.006, radio=2, cid=6, **key),
-            Cell(lat=lat + 0.0026666,
-                 lon=lon + 0.0033333, radio=2, cid=CELLID_LAC,
-                 range=50000, **key),
+            CellArea(lat=lat + 0.0026666,
+                     lon=lon + 0.0033333, radio=2,
+                     range=50000, **key),
         ]
         session.add_all(data)
         session.flush()
@@ -364,8 +365,8 @@ class TestSearchAllSources(DBTestCase):
             Cell(lat=lat, lon=lon, radio=gsm, cid=4, **key),
             Cell(lat=lat + 0.002, lon=lon + 0.004, radio=gsm, cid=5, **key),
             Cell(lat=1.006, lon=1.006, radio=gsm, cid=6, **key),
-            Cell(lat=1.0026666, lon=1.0033333, radio=gsm, cid=CELLID_LAC,
-                 range=50000, **key),
+            CellArea(lat=1.0026666, lon=1.0033333, radio=gsm,
+                     range=50000, **key),
         ]
         session.add_all(data)
         session.flush()
@@ -420,12 +421,12 @@ class TestSearchAllSources(DBTestCase):
         key2 = dict(mcc=FRANCE_MCC, mnc=2, lac=4)
 
         data = [
-            Cell(lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
-                 cid=CELLID_LAC, range=20000, **key),
+            CellArea(lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
+                     range=20000, **key),
             Cell(lat=lat + 0.2, lon=lon + 0.4, radio=gsm,
                  cid=5, range=1000, **key),
-            Cell(lat=lat, lon=lon, radio=gsm,
-                 cid=CELLID_LAC, range=30000, **key2),
+            CellArea(lat=lat, lon=lon, radio=gsm,
+                     range=30000, **key2),
             Cell(lat=lat + 0.02, lon=lon + 0.02, radio=gsm,
                  cid=4, range=2000, **key2),
             Cell(lat=lat + 0.04, lon=lon + 0.04, radio=gsm,
@@ -462,12 +463,12 @@ class TestSearchAllSources(DBTestCase):
         key2 = dict(mcc=FRANCE_MCC, mnc=2, lac=4)
 
         data = [
-            Cell(lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
-                 cid=CELLID_LAC, range=10000, **key),
+            CellArea(lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
+                     range=10000, **key),
             Cell(lat=lat + 0.2, lon=lon + 0.4, radio=gsm,
                  cid=4, range=4000, **key),
-            Cell(lat=lat, lon=lon, radio=gsm,
-                 cid=CELLID_LAC, range=20000, **key2),
+            CellArea(lat=lat, lon=lon, radio=gsm,
+                     range=20000, **key2),
             Cell(lat=lat + 0.02, lon=lon + 0.02, radio=gsm,
                  cid=4, range=2000, **key2),
         ]
@@ -499,12 +500,12 @@ class TestSearchAllSources(DBTestCase):
         key2 = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
 
         data = [
-            Cell(lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
-                 cid=CELLID_LAC, range=3000, **key),
+            CellArea(lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
+                     range=3000, **key),
             Cell(lat=lat + 0.2, lon=lon + 0.4, radio=gsm,
                  cid=5, range=500, **key),
-            Cell(lat=lat, lon=lon, radio=lte,
-                 cid=CELLID_LAC, range=10000, **key2),
+            CellArea(lat=lat, lon=lon, radio=lte,
+                     range=10000, **key2),
             Cell(lat=lat + 0.01, lon=lon + 0.02, radio=lte,
                  cid=4, range=2000, **key2),
         ]
@@ -558,8 +559,8 @@ class TestSearchAllSources(DBTestCase):
         }
         session.add(Cell(
             lat=GB_LAT, lon=GB_LON, range=6000, cid=1, **cell_key))
-        session.add(Cell(
-            lat=GB_LAT, lon=GB_LON, range=9000, cid=CELLID_LAC, **cell_key))
+        session.add(CellArea(
+            lat=GB_LAT, lon=GB_LON, range=9000, **cell_key))
         session.flush()
 
         result = locate.search_all_sources(
@@ -639,9 +640,9 @@ class TestSearchAllSources(DBTestCase):
             Cell(lat=PORTO_ALEGRE_LAT,
                  lon=PORTO_ALEGRE_LON,
                  radio=RADIO_TYPE['gsm'], cid=6789, **key),
-            Cell(lat=SAO_PAULO_LAT,
-                 lon=SAO_PAULO_LON,
-                 radio=RADIO_TYPE['gsm'], cid=CELLID_LAC, **key),
+            CellArea(lat=SAO_PAULO_LAT,
+                     lon=SAO_PAULO_LON,
+                     radio=RADIO_TYPE['gsm'], **key),
         ]
         session.add_all(data)
         session.flush()
@@ -682,9 +683,9 @@ class TestSearchAllSources(DBTestCase):
             Wifi(lat=lat, lon=lon, **wifi1),
             Wifi(lat=lat, lon=lon, **wifi2),
             Wifi(lat=lat, lon=lon, **wifi3),
-            Cell(lat=SAO_PAULO_LAT,
-                 lon=SAO_PAULO_LON,
-                 radio=RADIO_TYPE['gsm'], cid=CELLID_LAC, **key),
+            CellArea(lat=SAO_PAULO_LAT,
+                     lon=SAO_PAULO_LON,
+                     radio=RADIO_TYPE['gsm'], **key),
         ]
         session.add_all(data)
         session.flush()
@@ -766,9 +767,9 @@ class TestSearchAllSources(DBTestCase):
             Cell(lat=SAO_PAULO_LAT + 0.002,
                  lon=SAO_PAULO_LON + 0.002,
                  radio=RADIO_TYPE['gsm'], cid=6789, **key),
-            Cell(lat=SAO_PAULO_LAT,
-                 lon=SAO_PAULO_LON,
-                 radio=RADIO_TYPE['gsm'], cid=CELLID_LAC, **key),
+            CellArea(lat=SAO_PAULO_LAT,
+                     lon=SAO_PAULO_LON,
+                     radio=RADIO_TYPE['gsm'], **key),
         ]
         session.add_all(data)
         session.flush()
@@ -852,9 +853,9 @@ class TestSearchAllSources(DBTestCase):
             Wifi(lat=lat, lon=lon, **wifi1),
             Wifi(lat=lat, lon=lon, **wifi2),
             Wifi(lat=lat, lon=lon, **wifi3),
-            Cell(lat=SAO_PAULO_LAT,
-                 lon=SAO_PAULO_LON,
-                 radio=RADIO_TYPE['gsm'], cid=CELLID_LAC, **key),
+            CellArea(lat=SAO_PAULO_LAT,
+                     lon=SAO_PAULO_LON,
+                     radio=RADIO_TYPE['gsm'], **key),
         ]
         session.add_all(data)
         session.flush()
@@ -899,9 +900,9 @@ class TestSearchAllSources(DBTestCase):
             Cell(lat=SAO_PAULO_LAT,
                  lon=SAO_PAULO_LON,
                  radio=RADIO_TYPE['gsm'], cid=6789, **key),
-            Cell(lat=SAO_PAULO_LAT,
-                 lon=SAO_PAULO_LON,
-                 radio=RADIO_TYPE['gsm'], cid=CELLID_LAC, **key),
+            CellArea(lat=SAO_PAULO_LAT,
+                     lon=SAO_PAULO_LON,
+                     radio=RADIO_TYPE['gsm'], **key),
         ]
         session.add_all(data)
         session.flush()
