@@ -20,7 +20,6 @@ from ichnaea.data.validation import normalized_cell_dict
 from ichnaea.models import (
     cell_table,
     ocid_cell_table,
-    CELLID_LAC,
     RADIO_TYPE,
     RADIO_TYPE_INVERSE,
 )
@@ -188,13 +187,11 @@ def export_modified_cells(self, hourly=True, bucket=None):
         start_time = end_time - timedelta(hours=1)
         cond = and_(cell_table.c.modified >= start_time,
                     cell_table.c.modified < end_time,
-                    cell_table.c.cid != CELLID_LAC,
                     cell_table.c.lat.isnot(None))
     else:
         file_time = now.replace(hour=0, minute=0, second=0)
         file_type = 'full'
-        cond = and_(cell_table.c.cid != CELLID_LAC,
-                    cell_table.c.lat.isnot(None))
+        cond = cell_table.c.lat.isnot(None)
 
     filename = 'MLS-%s-cell-export-' % file_type
     filename = filename + file_time.strftime('%Y-%m-%dT%H0000.csv.gz')

@@ -66,6 +66,46 @@ class TestCell(DBTestCase):
         self.assertEqual(result.total_measures, 15)
 
 
+class TestCellArea(DBTestCase):
+
+    def _make_one(self, **kw):
+        from ichnaea.models import CellArea
+        return CellArea(**kw)
+
+    def test_constructor(self):
+        cell = self._make_one()
+        self.assertEqual(cell.range, 0)
+        self.assertEqual(cell.avg_cell_range, 0)
+        self.assertEqual(cell.num_cells, 0)
+
+    def test_fields(self):
+        cell = self._make_one(
+            range=10,
+            avg_cell_range=10,
+            radio=1,
+            lac=1234,
+            lat=1.2345678,
+            lon=2.3456789,
+            mcc=100,
+            mnc=5,
+            num_cells=15,
+        )
+        session = self.db_master_session
+        session.add(cell)
+        session.commit()
+
+        result = session.query(cell.__class__).first()
+        self.assertEqual(result.range, 10)
+        self.assertEqual(result.avg_cell_range, 10)
+        self.assertEqual(result.radio, 1)
+        self.assertEqual(result.lac, 1234)
+        self.assertEqual(result.lat, 1.2345678)
+        self.assertEqual(result.lon, 2.3456789)
+        self.assertEqual(result.mcc, 100)
+        self.assertEqual(result.mnc, 5)
+        self.assertEqual(result.num_cells, 15)
+
+
 class TestCellMeasure(DBTestCase):
 
     def _make_one(self, **kw):

@@ -3,6 +3,7 @@ import operator
 
 import mobile_codes
 from sqlalchemy.sql import and_, or_
+from sqlalchemy.orm import load_only
 
 from ichnaea.constants import (
     CELL_MIN_ACCURACY,
@@ -26,10 +27,10 @@ from ichnaea.logging import (
 )
 from ichnaea.models import (
     Cell,
+    CellArea,
     OCIDCell,
     RADIO_TYPE,
     Wifi,
-    CELLID_LAC,
     to_cellkey,
     join_cellkey,
 )
@@ -119,57 +120,6 @@ def map_data(data):
         } for wifi in data['wifiAccessPoints']]
 
     return mapped
-
-
-def query_cell_table(model, session, cell_keys):
-
-    cell_filter = []
-    for key in cell_keys:
-        # create a list of 'and' criteria for cell keys
-        criterion = join_cellkey(model, key)
-        cell_filter.append(and_(*criterion))
-
-    # Keep the cid to distinguish cell from lac later on
-    query = session.query(
-        model.radio, model.mcc, model.mnc, model.lac, model.cid,
-        model.lat, model.lon, model.range).filter(
-        or_(*cell_filter)).filter(
-        model.lat.isnot(None)).filter(
-        model.lon.isnot(None))
-
-    return query.all()
-
-
-def query_cell_networks(session, cell_keys):
-    if not cell_keys:
-        return []
-
-    result = query_cell_table(Cell, session, cell_keys)
-    result.extend(query_cell_table(OCIDCell, session, cell_keys))
-
-    if not result:
-        return []
-
-    # Group all results by location area
-    lacs = defaultdict(list)
-    for cell in result:
-        lacs[cell[:4]].append(cell)
-
-    def sort_lac(v):
-        # use the lac with the most values, or the one with the smallest range
-        return (len(v), -min([e[-1] for e in v]))
-
-    # If we get data from multiple location areas, use the one with the
-    # most data points in it. That way a lac with a cell hit will
-    # have two entries and win over a lac with only the lac entry.
-    lac = sorted(lacs.values(), key=sort_lac, reverse=True)
-
-    cells = []
-    for cell in lac[0]:
-        # The first entry is the key, used only to distinguish cell from lac
-        cells.append(Network(*cell[4:]))
-
-    return cells
 
 
 def geoip_and_best_guess_country_codes(cell_keys, api_name,
@@ -465,25 +415,60 @@ def search_all_sources(session, api_name, data,
         if cell:
             cell_key = to_cellkey(cell)
             validated['cell'].append(cell_key)
-            validated['cell_lac'].add(cell_key._replace(cid=CELLID_LAC))
+            validated['cell_lac'].add(cell_key)
 
-    # Merge all possible cell and lac keys into one list
-    all_cell_keys = []
-    all_cell_keys.extend(validated['cell'])
-    for key in validated['cell_lac']:
-        all_cell_keys.append(key)
+    found_cells = []
 
-    # Do a single query for all cells and lacs at the same time
-    try:
-        all_networks = query_cell_networks(session, all_cell_keys)
-    except Exception:
-        heka_client.raven(RAVEN_ERROR)
-        all_networks = []
-    for network in all_networks:
-        if network.key == CELLID_LAC:
-            validated['cell_lac_network'].append(network)
-        else:
-            validated['cell_network'].append(network)
+    # Query all cells and OCID cells
+    for model in Cell, OCIDCell, CellArea:
+        cell_filter = []
+        for key in validated['cell']:
+            # create a list of 'and' criteria for cell keys
+            criterion = join_cellkey(model, key)
+            cell_filter.append(and_(*criterion))
+
+        # Keep the cid to distinguish cell from lac later on
+        query = (session.query(model).options(load_only('radio', 'mcc', 'mnc',
+                                                        'lac', 'lat',
+                                                        'lon', 'range'))
+                        .filter(or_(*cell_filter))
+                        .filter(model.lat.isnot(None))
+                        .filter(model.lon.isnot(None)))
+
+        try:
+            found_cells.extend(query.all())
+        except Exception:
+            heka_client.raven(RAVEN_ERROR)
+
+    if found_cells:
+        # Group all found_cellss by location area
+        lacs = defaultdict(list)
+        for cell in found_cells:
+            cellarea_key = (cell.radio, cell.mcc, cell.mnc, cell.lac)
+            lacs[cellarea_key].append(cell)
+
+        def sort_lac(v):
+            # use the lac with the most values,
+            # or the one with the smallest range
+            return (len(v), -min([e.range for e in v]))
+
+        # If we get data from multiple location areas, use the one with the
+        # most data points in it. That way a lac with a cell hit will
+        # have two entries and win over a lac with only the lac entry.
+        lac = sorted(lacs.values(), key=sort_lac, reverse=True)
+
+        for cell in lac[0]:
+            # The first entry is the key,
+            # used only to distinguish cell from lac
+            network = Network(
+                key=None,
+                lat=cell.lat,
+                lon=cell.lon,
+                range=cell.range)
+            if type(cell) is CellArea:
+                validated['cell_lac_network'].append(network)
+            else:
+                validated['cell_network'].append(network)
 
     # Always do a GeoIP lookup because it is cheap and we want to
     # report geoip vs. other data mismatches. We may also use

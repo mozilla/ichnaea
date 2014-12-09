@@ -333,7 +333,8 @@ class LogIsolation(object):
                                     % type(p))
                 msgs = self.find_stats_messages(msg_type, name, value)
                 if isinstance(match, int):
-                    self.assertEqual(match, len(msgs))
+                    self.assertEqual(match, len(msgs),
+                                     msg='%s %s not found' % (msg_type, name))
 
     def check_expected_heka_messages(self, total=None, **kw):
         """Checks a partial specification of messages to be found in

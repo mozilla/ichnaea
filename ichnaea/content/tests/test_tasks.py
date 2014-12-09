@@ -13,7 +13,6 @@ from ichnaea.content.tasks import (
 )
 from ichnaea.models import (
     Cell,
-    CELLID_LAC,
     CellMeasure,
     OCIDCell,
     Wifi,
@@ -82,7 +81,6 @@ class TestStats(CeleryTestCase):
             Cell(created=two_days, radio=2, mcc=1, mnc=2, lac=3, cid=5),
             Cell(created=one_day, radio=0, mcc=2, mnc=2, lac=3, cid=5),
             Cell(created=today, radio=0, mcc=1, mnc=3, lac=3, cid=4),
-            Cell(created=today, radio=0, mcc=1, mnc=2, lac=4, cid=CELLID_LAC),
         ]
         session.add_all(cells)
         session.commit()
