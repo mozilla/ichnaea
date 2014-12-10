@@ -910,7 +910,7 @@ def update_lac(self, radio, mcc, mnc, lac):
                 num_cells = len(cells)
                 if lac_obj is None:
                     avg_cell_range = int(sum(
-                        [cell.range for cell in cells])/float(num_cells))
+                        [cell.range for cell in cells]) / float(num_cells))
                     lac_obj = CellArea(
                         created=utcnow,
                         modified=utcnow,

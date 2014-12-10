@@ -243,6 +243,10 @@ ocid_cell_table = OCIDCell.__table__
 # Cell area record
 class CellArea(_Model):
     __tablename__ = 'cell_area'
+    __table_args__ = {
+        'mysql_engine': 'InnoDB',
+        'mysql_charset': 'utf8',
+    }
 
     created = Column(DateTime)
     modified = Column(DateTime)
