@@ -2,17 +2,17 @@ Chameleon==2.18
 Mako==1.0.0
 MarkupSafe==0.23
 PasteDeploy==1.5.2
-PyMySQL==0.6.2
+PyMySQL==0.6.3
 SQLAlchemy==0.9.8
 WebOb==1.4
-alembic==0.7.0
+alembic==0.7.1
 amqp==1.4.6
 anyjson==0.3.3
 argparse==1.2.2
 billiard==3.3.0.19
 boto==2.34.0
 celery==3.1.17
-colander==1.0b1
+colander==1.0
 configparser==3.5.0b2
 country-bounding-boxes==0.2.2
 docopt==0.6.2
@@ -24,6 +24,7 @@ heka-py==0.30.3
 heka-py-raven==0.7
 importlib==1.0.3
 iso3166==0.6
+iso8601==0.1.10
 kombu==3.0.24
 mobile-codes==0.4
 ordereddict==1.1
@@ -31,11 +32,11 @@ protobuf==2.6.0  # rq.filter: !=2.6.1
 pygeoip==0.3.2
 pyramid==1.5.2
 pyramid-chameleon==0.3
-pytz==2014.9
+pytz==2014.10
 raven==3.4.1  # rq.filter: <3.5.0
 redis==2.10.3
 repoze.lru==0.6
-requests==2.4.3
+requests==2.5.0
 setproctitle==1.1.8
 simplejson==3.6.5
 six==1.8.0
