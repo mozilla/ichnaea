@@ -4,6 +4,17 @@ Changelog
 1.2 (unreleased)
 ----------------
 
+Untagged
+********
+
+Migrations
+~~~~~~~~~~
+
+- 48ab8d41fb83: Move cell areas into separate table.
+
+Changes
+~~~~~~~
+
 - #349/#350: Move cell areas into new table.
 
 - Give all celery queues a prefix to better distinguish them in Redis.
