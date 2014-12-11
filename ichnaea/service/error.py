@@ -12,7 +12,6 @@ from ichnaea.customjson import (
 
 MSG_EMPTY = 'No JSON body was provided.'
 MSG_GZIP = 'Error decompressing gzip data stream.'
-MSG_ONE_OF = 'You need to provide a mapping with least one cell or wifi entry.'
 MSG_BAD_RADIO = 'Radio fields were not consistent in the cellTower data.'
 
 

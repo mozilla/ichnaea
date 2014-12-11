@@ -4,7 +4,6 @@ from ichnaea.customjson import dumps
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.error import (
     JSONParseError,
-    MSG_ONE_OF,
     preprocess_request,
 )
 from ichnaea.service.base import check_api_key
@@ -33,24 +32,12 @@ def configure_geolocate(config):
     config.add_view(geolocate_view, route_name='v1_geolocate', renderer='json')
 
 
-def geolocate_validator(data, errors):
-    if errors:
-        # don't add this error if something else was already wrong
-        return
-    cell = data.get('cellTowers', ())
-    wifi = data.get('wifiAccessPoints', ())
-
-    if not any(wifi) and not any(cell):
-        errors.append(dict(name='body', description=MSG_ONE_OF))
-
-
 @check_api_key('geolocate')
 def geolocate_view(request):
 
     data, errors = preprocess_request(
         request,
         schema=GeoLocateSchema(),
-        extra_checks=(geolocate_validator, ),
         response=JSONParseError,
         accept_empty=True,
     )

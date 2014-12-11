@@ -57,10 +57,6 @@ def submit_validator(data, errors):
     for idx in skips:
         del data['items'][idx]
 
-    if errors:
-        # don't add this error if something else was already wrong
-        return
-
 
 @check_api_key('submit', error_on_invalidkey=False)
 def submit_view(request):

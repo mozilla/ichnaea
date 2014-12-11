@@ -15,15 +15,11 @@ from ichnaea.logging import get_stats_client
 from ichnaea.service.base import check_api_key
 from ichnaea.service.error import (
     JSONParseError,
-    MSG_ONE_OF,
     preprocess_request,
     verify_schema,
 )
 from ichnaea.service.geolocate.schema import GeoLocateSchema
-from ichnaea.service.geolocate.views import (
-    NOT_FOUND,
-    geolocate_validator,
-)
+from ichnaea.service.geolocate.views import NOT_FOUND
 from ichnaea.service.geosubmit.schema import (
     GeoSubmitBatchSchema,
     GeoSubmitSchema,
@@ -35,22 +31,6 @@ from ichnaea.service.locate import (
 from ichnaea.service.submit.schema import SubmitSchema
 
 SENTINEL = object()
-
-
-def geosubmit_validator(data, errors):
-    if errors:
-        # don't add this error if something else was already wrong
-        return
-    if 'items' in data:
-        chunk_list = data['items']
-    else:
-        chunk_list = [data]
-    for chunk in chunk_list:
-        cell = chunk.get('cellTowers', ())
-        wifi = chunk.get('wifiAccessPoints', ())
-
-        if not any(wifi) and not any(cell):
-            errors.append(dict(name='body', description=MSG_ONE_OF))
 
 
 def process_upload(nickname, email, items):
@@ -159,7 +139,6 @@ def geosubmit_view(request):
     data, errors = preprocess_request(
         request,
         schema=GeoSubmitBatchSchema(),
-        extra_checks=(geosubmit_validator,),
         response=None,
     )
 
@@ -193,7 +172,6 @@ def process_single(request):
     locate_data, locate_errors = preprocess_request(
         request,
         schema=GeoLocateSchema(),
-        extra_checks=(geolocate_validator, ),
         response=JSONParseError,
         accept_empty=True,
     )
@@ -201,7 +179,6 @@ def process_single(request):
     data, errors = preprocess_request(
         request,
         schema=GeoSubmitSchema(),
-        extra_checks=(geosubmit_validator,),
         response=None,
     )
     data = {'items': [data]}
