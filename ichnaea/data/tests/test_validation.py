@@ -10,8 +10,8 @@ from ichnaea.data.validation import (
     normalized_cell_measure_dict,
     normalized_time,
     normalized_wifi_measure_dict,
-    WIFI_TEST_KEY,
 )
+from ichnaea.data.constants import WIFI_TEST_KEY
 from ichnaea.tests.base import TestCase
 from ichnaea.tests.base import (
     FREMONT_LAT, FREMONT_LON, USA_MCC,

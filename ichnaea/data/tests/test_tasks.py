@@ -13,6 +13,7 @@ from ichnaea.content.models import (
 )
 from ichnaea.customjson import encode_datetime
 from ichnaea.data.tasks import (
+    UPDATE_KEY,
     enqueue_lacs,
     location_update_cell,
     location_update_wifi,
@@ -257,7 +258,8 @@ class TestCell(CeleryTestCase):
                     # The station was (re)created.
                     self.assertEqual(update_result.get(), (1, 0))
                     # Rescan lacs to update entries
-                    self.assertEqual(scan_lacs.delay().get(), 1)
+                    self.assertEqual(
+                        scan_lacs.delay().get(), 1)
                     # One cell + one cell-LAC record should exist.
                     self.assertEqual(session.query(Cell).count(), 1)
                     self.assertEqual(session.query(CellArea).count(), 1)
@@ -266,7 +268,8 @@ class TestCell(CeleryTestCase):
                     # thereby activating the blacklist and deleting the cell.
                     self.assertEqual(update_result.get(), (1, 1))
                     # Rescan lacs to delete orphaned lac entry
-                    self.assertEqual(scan_lacs.delay().get(), 1)
+                    self.assertEqual(
+                        scan_lacs.delay().get(), 1)
                     self.assertEqual(bl.count, ((month + 1) / 2))
                     self.assertEqual(session.query(CellBlacklist).count(), 1)
                     self.assertEqual(session.query(Cell).count(), 0)
@@ -672,7 +675,8 @@ class TestCell(CeleryTestCase):
         key = dict(radio=1, mcc=1, mnc=1, lac=1)
         session.add(CellArea(**key))
         session.flush()
-        enqueue_lacs(session, redis_client, [CellAreaKey(**key)])
+        enqueue_lacs(session, redis_client,
+                     [CellAreaKey(**key)], UPDATE_KEY['cell_lac'])
 
         # after scanning the orphaned record gets removed
         self.assertEqual(scan_lacs.delay().get(), 1)

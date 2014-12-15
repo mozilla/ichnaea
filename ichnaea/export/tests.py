@@ -24,6 +24,7 @@ from ichnaea.export.tasks import (
 from ichnaea.models import (
     Cell,
     OCIDCell,
+    OCIDCellArea,
     cell_table,
     RADIO_TYPE,
 )
@@ -50,7 +51,7 @@ class TestExport(CeleryTestCase):
 
     def test_local_export(self):
         session = self.db_master_session
-        k = dict(mcc=1, mnc=2, lac=4)
+        k = {'mcc': 1, 'mnc': 2, 'lac': 4}
         gsm = RADIO_TYPE['gsm']
         for i in range(190, 200):
             session.add(Cell(radio=gsm, cid=i, lat=1.0, lon=2.0, **k))
@@ -63,7 +64,7 @@ class TestExport(CeleryTestCase):
             cond = cell_table.c.lat.isnot(None)
             write_stations_to_csv(session, cell_table, CELL_COLUMNS, cond,
                                   path, make_cell_export_dict, CELL_FIELDS)
-            with GzipFile(path, "rb") as f:
+            with GzipFile(path, 'rb') as f:
                 r = csv.DictReader(f, CELL_FIELDS)
 
                 header = r.next()
@@ -82,14 +83,15 @@ class TestExport(CeleryTestCase):
     def test_hourly_export(self):
         session = self.db_master_session
         gsm = RADIO_TYPE['gsm']
-        k = dict(radio=gsm, mcc=1, mnc=2, lac=4, psc=-1, lat=1.0, lon=2.0)
+        k = {'radio': gsm, 'mcc': 1, 'mnc': 2, 'lac': 4,
+             'psc': -1, 'lat': 1.0, 'lon': 2.0}
         for i in range(190, 200):
             session.add(Cell(cid=i, **k))
         session.commit()
 
         with mock_s3() as mock_key:
-            export_modified_cells(bucket="localhost.bucket")
-            pat = r"MLS-diff-cell-export-\d+-\d+-\d+T\d+0000\.csv\.gz"
+            export_modified_cells(bucket='localhost.bucket')
+            pat = r'MLS-diff-cell-export-\d+-\d+-\d+T\d+0000\.csv\.gz'
             self.assertRegexpMatches(mock_key.key, pat)
             method = mock_key.set_contents_from_filename
             self.assertRegexpMatches(method.call_args[0][0], pat)
@@ -97,123 +99,131 @@ class TestExport(CeleryTestCase):
     def test_daily_export(self):
         session = self.db_master_session
         gsm = RADIO_TYPE['gsm']
-        k = dict(radio=gsm, mcc=1, mnc=2, lac=4, lat=1.0, lon=2.0)
+        k = {'radio': gsm, 'mcc': 1, 'mnc': 2, 'lac': 4,
+             'lat': 1.0, 'lon': 2.0}
         for i in range(190, 200):
             session.add(Cell(cid=i, **k))
         session.commit()
 
         with mock_s3() as mock_key:
-            export_modified_cells(bucket="localhost.bucket", hourly=False)
-            pat = r"MLS-full-cell-export-\d+-\d+-\d+T000000\.csv\.gz"
+            export_modified_cells(bucket='localhost.bucket', hourly=False)
+            pat = r'MLS-full-cell-export-\d+-\d+-\d+T000000\.csv\.gz'
             self.assertRegexpMatches(mock_key.key, pat)
             method = mock_key.set_contents_from_filename
             self.assertRegexpMatches(method.call_args[0][0], pat)
 
 
 class TestImport(CeleryAppTestCase):
+    KEY = {
+        'mcc': FRANCE_MCC,
+        'mnc': VIVENDI_MNC,
+        'lac': 1234,
+    }
 
     @contextmanager
-    def local_test_csv_file(self):
-        txt = """\
-radio,mcc,net,area,cell,unit,lon,lat,range,samples,changeable,created,updated,
-GSM,302,2,4,190,,2.0,1.0,0,0,1,1408604686,1408604686,
-GSM,302,2,4,191,,2.0,1.0,0,0,1,1408604686,1408604686,
-GSM,302,2,4,192,,2.0,1.0,0,0,1,1408604686,1408604686,
-GSM,302,2,4,193,,2.0,1.0,0,0,1,1408604686,1408604686,
-GSM,302,2,4,194,,2.0,1.0,0,0,1,1408604686,1408604686,
-GSM,302,2,4,195,,2.0,1.0,0,0,1,1408604686,1408604686,
-GSM,302,2,4,196,,2.0,1.0,0,0,1,1408604686,1408604686,
-GSM,302,2,4,197,,2.0,1.0,0,0,1,1408604686,1408604686,
-GSM,302,2,4,198,,2.0,1.0,0,0,1,1408604686,1408604686,
-GSM,302,2,4,199,,2.0,1.0,0,0,1,1408604686,1408604686,
-"""
+    def get_test_csv(self, lo=1, hi=10, time=1408604686):
+        line_template = ('GSM,{mcc},{mnc},{lac},{cid},,{lon},'
+                         '{lat},1,1,1,{time},{time},')
+        lines = [line_template.format(
+            cid=i * 1010,
+            lon=PARIS_LON + i * 0.002,
+            lat=PARIS_LAT + i * 0.001,
+            time=time,
+            **self.KEY)
+            for i in range(lo, hi)]
+        txt = '\n'.join(lines)
+
         with selfdestruct_tempdir() as d:
-            path = os.path.join(d, "import.csv.gz")
+            path = os.path.join(d, 'import.csv.gz')
             with GzipFile(path, 'wb') as f:
                 f.write(txt)
-                f.flush()
             yield path
 
+    def import_test_csv(self, lo=1, hi=10, time=1408604686, session=None):
+        session = session or self.db_master_session
+        with self.get_test_csv(lo=lo, hi=hi, time=time) as path:
+            import_ocid_cells(path, session=session)
+
     def test_local_import(self):
-        with self.local_test_csv_file() as path:
-            import_ocid_cells(path)
+        self.import_test_csv()
+        cells = self.db_master_session.query(OCIDCell).all()
+        self.assertEqual(len(cells), 9)
 
-        sess = self.db_master_session
-        cells = sess.query(OCIDCell).all()
-        self.assertEqual(len(cells), 10)
-
-    def do_import_lines(self, lo, hi, key, time=1408604686):
-
-        lines = [
-            str.format("GSM,{mcc},{mnc},{lac},{cid}," +
-                       ",{lon},{lat},1,1,1,{time},{time},",
-                       cid=i * 1010,
-                       lon=PARIS_LON + i * 0.002,
-                       lat=PARIS_LAT + i * 0.001,
-                       time=time, **key)
-            for i in range(lo, hi)]
-        txt = "\n".join(lines)
-
-        with selfdestruct_tempdir() as d:
-            path = os.path.join(d, "import.csv.gz")
-            with GzipFile(path, 'wb') as f:
-                f.write(txt)
-            import_ocid_cells(path, sess=self.db_slave_session)
+        lacs = set([
+            (cell.radio, cell.mcc, cell.mnc, cell.lac) for cell in cells])
+        self.assertEqual(
+            self.db_master_session.query(OCIDCellArea).count(), len(lacs))
 
     def test_local_import_with_query(self):
-
-        key = dict(mcc=FRANCE_MCC,
-                   mnc=VIVENDI_MNC,
-                   lac=1234)
-
-        self.do_import_lines(1, 10, key)
+        self.import_test_csv(session=self.db_slave_session)
 
         res = self.app.post_json(
             '/v1/search?key=test',
-            {"radio": "gsm", "cell": [
-                dict(cid=3030, **key),
-                dict(cid=4040, **key),
-            ]},
+            {
+                'radio': 'gsm',
+                'cell': [
+                    dict(cid=3030, **self.KEY),
+                    dict(cid=4040, **self.KEY),
+                ]
+            },
             status=200)
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"status": "ok",
-                                    "lat": PARIS_LAT + 0.0035,
-                                    "lon": PARIS_LON + 0.007,
-                                    "accuracy": CELL_MIN_ACCURACY})
+        self.assertEqual(
+            res.json,
+            {
+                'status': 'ok',
+                'lat': PARIS_LAT + 0.0035,
+                'lon': PARIS_LON + 0.007,
+                'accuracy': CELL_MIN_ACCURACY
+            })
 
     def test_local_import_delta(self):
+        old_time = 1407000000
+        new_time = 1408000000
+        old_date = datetime.fromtimestamp(old_time).replace(tzinfo=UTC)
+        new_date = datetime.fromtimestamp(new_time).replace(tzinfo=UTC)
 
-        key = dict(mcc=FRANCE_MCC,
-                   mnc=VIVENDI_MNC,
-                   lac=1234)
-
-        sess = self.db_slave_session
-        self.do_import_lines(1, 10, key, time=1407000000)
-        cells = sess.query(OCIDCell).all()
-        sess.commit()
+        self.import_test_csv(time=old_time)
+        cells = self.db_master_session.query(OCIDCell).all()
         self.assertEqual(len(cells), 9)
+
+        lacs = set([
+            (cell.radio, cell.mcc, cell.mnc, cell.lac) for cell in cells])
+        self.assertEqual(
+            self.db_master_session.query(OCIDCellArea).count(), len(lacs))
 
         # update some entries
-        self.do_import_lines(5, 10, key, time=1408000000)
-        cells = sess.query(OCIDCell).order_by(OCIDCell.modified).all()
+        self.import_test_csv(
+            lo=5, hi=10, time=new_time)
+
+        cells = (self.db_master_session.query(OCIDCell)
+                                       .order_by(OCIDCell.modified).all())
         self.assertEqual(len(cells), 9)
 
-        old = datetime.fromtimestamp(1407000000).replace(tzinfo=UTC)
-        new = datetime.fromtimestamp(1408000000).replace(tzinfo=UTC)
-
         for i in range(0, 4):
-            self.assertEqual(cells[i].modified, old)
+            self.assertEqual(cells[i].modified, old_date)
 
         for i in range(4, 9):
-            self.assertEqual(cells[i].modified, new)
+            self.assertEqual(cells[i].modified, new_date)
+
+        lacs = set([
+            (cell.radio, cell.mcc, cell.mnc, cell.lac) for cell in cells])
+        self.assertEqual(
+            self.db_master_session.query(OCIDCellArea).count(), len(lacs))
 
     def test_local_import_latest_through_http(self):
-        with self.local_test_csv_file() as path:
-            with open(path, "r") as f:
+        with self.get_test_csv() as path:
+            with open(path, 'r') as f:
                 with requests_mock.Mocker() as m:
                     m.register_uri('GET', re.compile('.*'), body=f)
-                    sess = self.db_slave_session
-                    import_latest_ocid_cells(sess=sess)
-        cells = sess.query(OCIDCell).order_by(OCIDCell.modified).all()
-        self.assertEqual(len(cells), 10)
+                    import_latest_ocid_cells()
+
+        cells = (self.db_master_session.query(OCIDCell)
+                                       .order_by(OCIDCell.modified).all())
+        self.assertEqual(len(cells), 9)
+
+        lacs = set([
+            (cell.radio, cell.mcc, cell.mnc, cell.lac) for cell in cells])
+        self.assertEqual(
+            self.db_master_session.query(OCIDCellArea).count(), len(lacs))
