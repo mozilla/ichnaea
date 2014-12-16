@@ -59,7 +59,9 @@ mnc **(required)**
     The mobile network code. An integer in the range of 0 to 999.
 
 lac **(required)**
-    The location area code. An integer in the range of 0 to 65535.
+    The location area code. An integer in the range of 1 to 65533.
+    According to `TS 24.008 10.5.3 <http://www.etsi.org/deliver/etsi_ts/124000_124099/124008/12.07.00_60/ts_124008v120700p.pdf#page=431>`_ both 0 and 65534 are reserved
+    values indicating a deleted state.
 
 cid **(required)**
     The cell id. An integer in the range of 0 to 65535.
@@ -111,7 +113,10 @@ mnc **(required)**
     The mobile network code. An integer in the range of 0 to 999.
 
 lac **(required)**
-    The location area code. An integer in the range of 0 to 65535.
+    The location area code. An integer in the range of 1 to 65533.
+    According to `TS 24.008 10.5.3 <http://www.etsi.org/deliver/etsi_ts/124000_124099/124008/12.07.00_60/ts_124008v120700p.pdf#page=431>`_ both 0 and 65534 are reserved
+    values indicating a deleted state.
+
 
 cid **(required)**
     The cell id. An integer in the range of 0 to 268435455.
@@ -164,7 +169,9 @@ mnc **(required)**
     The mobile network code. An integer in the range of 0 to 999.
 
 lac **(required)**
-    The tracking area code. An integer in the range of 0 to 65535.
+    The tracking area code. An integer in the range of 1 to 65533.
+    According to `TS 24.301 9.9.3.32 <http://www.etsi.org/deliver/etsi_ts/124300_124399/124301/12.06.00_60/ts_124301v120600p.pdf#page=286>`_ both 0 and 65534 are reserved
+    values indicating a deleted state.
 
 cid **(required)**
     The cell identity. An integer in the range of 0 to 268435455.
@@ -221,10 +228,13 @@ mcc **(required)**
     The mobile country code. An integer in the range of 0 to 999.
 
 mnc **(required)**
-    The system identifier. An integer in the range of 0 to 32767.
+    The system identifier. An integer in the range of 1 to 32767.
+    Zero is a reserved value.
 
 lac **(required)**
-    The network id. An integer in the range of 0 to 65535.
+    The network id. An integer in the range of 1 to 65534.
+    Zero is a reserved value indicating base stations not belonging to
+    a network. 65535 is a reserved value used in roaming detection.
 
 cid **(required)**
     The base station id. An integer in the range of 0 to 65535.
