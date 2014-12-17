@@ -28,7 +28,6 @@ from ichnaea.geocalc import distance, centroid, range_to_points
 from ichnaea.logging import get_stats_client
 from ichnaea.models import (
     Cell,
-    CellArea,
     CellBlacklist,
     CellAreaKey,
     CellMeasure,
@@ -41,6 +40,7 @@ from ichnaea.models import (
     to_cellkey,
     to_cellkey_psc,
     to_wifikey,
+    MODEL_KEYS,
 )
 from ichnaea import util
 from ichnaea.worker import celery
@@ -55,29 +55,26 @@ UPDATE_KEY = {
 }
 
 
-def enqueue_lacs(session, redis_client, lac_keys, expire=86400):
-    key = UPDATE_KEY['cell_lac']
+def enqueue_lacs(session, redis_client, lac_keys,
+                 pipeline_key, expire=86400, batch=100):
     pipe = redis_client.pipeline()
-    values = []
-    for lac in lac_keys:
-        values.append(dumps(lac._asdict()))
-    for i in range(0, len(values), 100):
-        pipe.lpush(key, *[str(v) for v in values[i:i + 100]])
+    lac_json = [str(dumps(lac._asdict())) for lac in lac_keys]
+
+    while lac_json:
+        pipe.lpush(pipeline_key, *lac_json[:batch])
+        lac_json = lac_json[batch:]
+
     # Expire key after 24 hours
-    pipe.expire(key, expire)
+    pipe.expire(pipeline_key, expire)
     pipe.execute()
 
 
-def dequeue_lacs(redis_client, batch=100):
-    key = UPDATE_KEY['cell_lac']
+def dequeue_lacs(redis_client, pipeline_key, batch=100):
     pipe = redis_client.pipeline()
     pipe.multi()
-    pipe.lrange(key, 0, batch - 1)
-    pipe.ltrim(key, batch, -1)
-    result = pipe.execute()
-    items = result[0]
-    items = [loads(i) for i in items]
-    return items
+    pipe.lrange(pipeline_key, 0, batch - 1)
+    pipe.ltrim(pipeline_key, batch, -1)
+    return [loads(item) for item in pipe.execute()[0]]
 
 
 def available_station_space(session, key, station_model, join_key,
@@ -732,8 +729,11 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
                             cell.lac))
 
             if updated_lacs:
-                session.on_post_commit(enqueue_lacs,
-                                       redis_client, updated_lacs)
+                session.on_post_commit(
+                    enqueue_lacs,
+                    redis_client,
+                    updated_lacs,
+                    UPDATE_KEY['cell_lac'])
 
             if moving_cells:
                 # some cells found to be moving too much
@@ -806,8 +806,11 @@ def remove_cell(self, cell_keys):
                 ))
 
             if changed_lacs:
-                session.on_post_commit(enqueue_lacs,
-                                       redis_client, changed_lacs)
+                session.on_post_commit(
+                    enqueue_lacs,
+                    redis_client,
+                    changed_lacs,
+                    UPDATE_KEY['cell_lac'])
 
             session.commit()
         return cells_removed
@@ -839,7 +842,8 @@ def scan_lacs(self, batch=100):
     """
     try:
         redis_client = self.app.redis_client
-        redis_lacs = dequeue_lacs(redis_client, batch=batch)
+        redis_lacs = dequeue_lacs(
+            redis_client, UPDATE_KEY['cell_lac'], batch=batch)
         lacs = set([CellAreaKey(
             radio=lac['radio'],
             mcc=lac['mcc'],
@@ -848,7 +852,13 @@ def scan_lacs(self, batch=100):
         ) for lac in redis_lacs])
 
         for lac in lacs:
-            update_lac.delay(lac.radio, lac.mcc, lac.mnc, lac.lac)
+            update_lac.delay(
+                lac.radio,
+                lac.mcc,
+                lac.mnc,
+                lac.lac,
+                cell_model_key='cell',
+                cell_area_model_key='cell_area')
         return len(lacs)
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')
@@ -856,28 +866,31 @@ def scan_lacs(self, batch=100):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def update_lac(self, radio, mcc, mnc, lac):
+def update_lac(self, radio, mcc, mnc, lac,
+               cell_model_key='cell', cell_area_model_key='cell_area'):
     try:
         utcnow = util.utcnow()
         with self.db_session() as session:
             # Select all the cells in this LAC that aren't the virtual
             # cell itself, and derive a bounding box for them.
 
-            cell_query = (session.query(Cell)
-                                 .filter(Cell.radio == radio)
-                                 .filter(Cell.mcc == mcc)
-                                 .filter(Cell.mnc == mnc)
-                                 .filter(Cell.lac == lac)
-                                 .filter(Cell.lat.isnot(None))
-                                 .filter(Cell.lon.isnot(None)))
+            cell_model = MODEL_KEYS[cell_model_key]
+            cell_query = (session.query(cell_model)
+                                 .filter(cell_model.radio == radio)
+                                 .filter(cell_model.mcc == mcc)
+                                 .filter(cell_model.mnc == mnc)
+                                 .filter(cell_model.lac == lac)
+                                 .filter(cell_model.lat.isnot(None))
+                                 .filter(cell_model.lon.isnot(None)))
 
             cells = cell_query.all()
 
-            lac_query = (session.query(CellArea)
-                                .filter(CellArea.radio == radio)
-                                .filter(CellArea.mcc == mcc)
-                                .filter(CellArea.mnc == mnc)
-                                .filter(CellArea.lac == lac))
+            cell_area_model = MODEL_KEYS[cell_area_model_key]
+            lac_query = (session.query(cell_area_model)
+                                .filter(cell_area_model.radio == radio)
+                                .filter(cell_area_model.mcc == mcc)
+                                .filter(cell_area_model.mnc == mnc)
+                                .filter(cell_area_model.lac == lac))
 
             if len(cells) == 0:
                 # If there are no more underlying cells, delete the lac entry
@@ -908,10 +921,10 @@ def update_lac(self, radio, mcc, mnc, lac):
 
                 # Now create or update the LAC virtual cell
                 num_cells = len(cells)
+                avg_cell_range = int(sum(
+                    [cell.range for cell in cells])/float(num_cells))
                 if lac_obj is None:
-                    avg_cell_range = int(sum(
-                        [cell.range for cell in cells]) / float(num_cells))
-                    lac_obj = CellArea(
+                    lac_obj = cell_area_model(
                         created=utcnow,
                         modified=utcnow,
                         radio=radio,
@@ -926,11 +939,12 @@ def update_lac(self, radio, mcc, mnc, lac):
                     )
                     session.add(lac_obj)
                 else:
-                    lac_obj.num_cells = num_cells
+                    lac_obj.modified = utcnow
                     lac_obj.lat = ctr_lat
                     lac_obj.lon = ctr_lon
-                    lac_obj.modified = utcnow
                     lac_obj.range = rng
+                    lac_obj.avg_cell_range = avg_cell_range
+                    lac_obj.num_cells = num_cells
 
             session.commit()
     except Exception as exc:  # pragma: no cover

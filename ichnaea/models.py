@@ -237,6 +237,22 @@ class OCIDCell(_Model):
             kw['changeable'] = True
         super(OCIDCell, self).__init__(*args, **kw)
 
+    @property
+    def min_lat(self):
+        return util.add_meters_to_latitude(self.lat, -self.range)
+
+    @property
+    def max_lat(self):
+        return util.add_meters_to_latitude(self.lat, self.range)
+
+    @property
+    def min_lon(self):
+        return util.add_meters_to_longitude(self.lat, self.lon, -self.range)
+
+    @property
+    def max_lon(self):
+        return util.add_meters_to_longitude(self.lat, self.lon, self.range)
+
 ocid_cell_table = OCIDCell.__table__
 
 
@@ -283,6 +299,47 @@ class CellArea(_Model):
         super(CellArea, self).__init__(*args, **kw)
 
 cell_area_table = CellArea.__table__
+
+
+# Cell record from OpenCellID
+class OCIDCellArea(_Model):
+    __tablename__ = 'ocid_cell_area'
+
+    created = Column(DateTime)
+    modified = Column(DateTime)
+
+    # lat/lon
+    lat = Column(Double(asdecimal=False))
+    lon = Column(Double(asdecimal=False))
+
+    # radio mapped via RADIO_TYPE
+    radio = Column(TinyInteger,
+                   autoincrement=False, primary_key=True)
+    mcc = Column(SmallInteger,
+                 autoincrement=False, primary_key=True)
+    mnc = Column(SmallInteger,
+                 autoincrement=False, primary_key=True)
+    lac = Column(SmallInteger(unsigned=True),
+                 autoincrement=False, primary_key=True)
+
+    range = Column(Integer)
+    avg_cell_range = Column(Integer)
+    num_cells = Column(Integer(unsigned=True))
+
+    def __init__(self, *args, **kw):
+        if 'created' not in kw:
+            kw['created'] = util.utcnow()
+        if 'modified' not in kw:
+            kw['modified'] = util.utcnow()
+        if 'range' not in kw:
+            kw['range'] = 0
+        if 'avg_cell_range' not in kw:
+            kw['avg_cell_range'] = 0
+        if 'num_cells' not in kw:
+            kw['num_cells'] = 0
+        super(OCIDCellArea, self).__init__(*args, **kw)
+
+ocid_cell_area_table = OCIDCellArea.__table__
 
 
 class CellBlacklist(_Model):
@@ -528,4 +585,12 @@ MEASURE_TYPE_META = {
         'csv_name': 'wifi_measure.csv'},
     2: {'class': CellMeasure,
         'csv_name': 'cell_measure.csv'},
+}
+
+
+MODEL_KEYS = {
+    'cell': Cell,
+    'cell_area': CellArea,
+    'ocid_cell': OCIDCell,
+    'ocid_cell_area': OCIDCellArea,
 }

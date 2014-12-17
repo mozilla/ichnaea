@@ -20,17 +20,19 @@ from ichnaea.data.validation import normalized_cell_dict
 from ichnaea.models import (
     cell_table,
     ocid_cell_table,
+    CellAreaKey,
     RADIO_TYPE,
     RADIO_TYPE_INVERSE,
 )
+from ichnaea.data.tasks import update_lac
 from ichnaea.worker import celery
 from ichnaea import util
 
 
 CELL_FIELDS = [
-    "radio", "mcc", "mnc", "lac", "cid", "psc",
-    "lon", "lat", "range", "samples", "changeable",
-    "created", "updated", "averageSignal"]
+    'radio', 'mcc', 'mnc', 'lac', 'cid', 'psc',
+    'lon', 'lat', 'range', 'samples', 'changeable',
+    'created', 'updated', 'averageSignal']
 CELL_FIELD_INDICES = dict(
     [(e, i) for (i, e) in enumerate(CELL_FIELDS)]
 )
@@ -81,7 +83,7 @@ class GzipFile(gzip.GzipFile):
 
     def __enter__(self):
         if self.fileobj is None:  # pragma: no cover
-            raise ValueError("I/O operation on closed GzipFile object")
+            raise ValueError('I/O operation on closed GzipFile object')
         return self
 
     def __exit__(self, *args):
@@ -148,7 +150,8 @@ def make_cell_import_dict(row):
     return normalized_cell_dict(d)
 
 
-def write_stations_to_csv(sess, table, columns, cond, path, make_dict, fields):
+def write_stations_to_csv(session, table, columns,
+                          cond, path, make_dict, fields):
     with GzipFile(path, 'wb') as f:
         w = csv.DictWriter(f, fields, extrasaction='ignore')
         limit = 10000
@@ -158,7 +161,7 @@ def write_stations_to_csv(sess, table, columns, cond, path, make_dict, fields):
         while True:
             q = select(columns=columns).where(cond).limit(
                 limit).offset(offset).order_by(table.c.id)
-            rows = sess.execute(q).fetchall()
+            rows = session.execute(q).fetchall()
             if rows:
                 w.writerows([make_dict(r) for r in rows])
                 offset += limit
@@ -170,7 +173,7 @@ def write_stations_to_s3(path, bucketname):
     conn = boto.connect_s3()
     bucket = conn.get_bucket(bucketname)
     k = boto.s3.key.Key(bucket)
-    k.key = "export/" + os.path.split(path)[-1]
+    k.key = 'export/' + os.path.split(path)[-1]
     k.set_contents_from_filename(path, reduced_redundancy=True)
 
 
@@ -198,8 +201,8 @@ def export_modified_cells(self, hourly=True, bucket=None):
     try:
         with selfdestruct_tempdir() as d:
             path = os.path.join(d, filename)
-            with self.db_session() as sess:
-                write_stations_to_csv(sess, cell_table, CELL_COLUMNS, cond,
+            with self.db_session() as session:
+                write_stations_to_csv(session, cell_table, CELL_COLUMNS, cond,
                                       path, make_cell_export_dict, CELL_FIELDS)
             write_stations_to_s3(path, bucket)
     except Exception as exc:  # pragma: no cover
@@ -207,46 +210,62 @@ def export_modified_cells(self, hourly=True, bucket=None):
         raise self.retry(exc=exc)
 
 
-def import_stations(sess, table, filename, make_dict, fields):
-
-    with GzipFile(filename, 'rb') as f:
-        w = csv.DictReader(f, fields)
+def import_stations(session, filename, fields):
+    with GzipFile(filename, 'rb') as zip_file:
+        csv_reader = csv.DictReader(zip_file, fields)
         batch = 10000
         rows = []
-        ins = table.insert(
-            on_duplicate=('modified = values(modified), ' +
-                          'total_measures = values(total_measures), ' +
-                          'lat = values(lat), ' +
-                          'lon = values(lon), ' +
-                          'psc = values(psc), ' +
-                          '`range` = values(`range`)'))
-        first = True
-        for row in w:
+        lacs = set()
+        ins = ocid_cell_table.insert(
+            on_duplicate=((
+                'modified = values(modified), '
+                'total_measures = values(total_measures), '
+                'lat = values(lat), '
+                'lon = values(lon), '
+                'psc = values(psc), '
+                '`range` = values(`range`)')))
+
+        for row in csv_reader:
             # skip any header row
-            if first and 'radio' in row.values():
-                first = False
+            if csv_reader.line_num == 1 and 'radio' in row.values():
                 continue
 
-            d = make_dict(row)
-            if d is not None:
-                rows.append(d)
+            data = make_cell_import_dict(row)
+            if data is not None:
+                rows.append(data)
+                lacs.add(CellAreaKey(
+                    radio=data['radio'],
+                    mcc=data['mcc'],
+                    mnc=data['mnc'],
+                    lac=data['lac']))
+
             if len(rows) == batch:  # pragma: no cover
-                sess.execute(ins, rows)
-                sess.commit()
+                session.execute(ins, rows)
+                session.commit()
                 rows = []
+
         if rows:
-            sess.execute(ins, rows)
-            sess.commit()
+            session.execute(ins, rows)
+            session.commit()
+
+        for lac in lacs:
+            update_lac.delay(
+                lac.radio,
+                lac.mcc,
+                lac.mnc,
+                lac.lac,
+                cell_model_key='ocid_cell',
+                cell_area_model_key='ocid_cell_area')
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def import_ocid_cells(self, filename=None, sess=None):
+def import_ocid_cells(self, filename=None, session=None):
     try:
-        with self.db_session() as dbsess:
-            if sess is None:  # pragma: no cover
-                sess = dbsess
-            import_stations(sess, ocid_cell_table,
-                            filename, make_cell_import_dict,
+        with self.db_session() as dbsession:
+            if session is None:  # pragma: no cover
+                session = dbsession
+            import_stations(session,
+                            filename,
                             CELL_FIELDS)
     except Exception as exc:  # pragma: no cover
         self.heka_client.raven('error')
@@ -254,32 +273,32 @@ def import_ocid_cells(self, filename=None, sess=None):
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def import_latest_ocid_cells(self, diff=True, filename=None, sess=None):
+def import_latest_ocid_cells(self, diff=True, filename=None, session=None):
     url = self.app.ocid_settings['ocid_url']
     apikey = self.app.ocid_settings['ocid_apikey']
     if filename is None:
         if diff:
             prev_hour = util.utcnow() - timedelta(hours=1)
-            filename = prev_hour.strftime("cell_towers_diff-%Y%m%d%H.csv.gz")
+            filename = prev_hour.strftime('cell_towers_diff-%Y%m%d%H.csv.gz')
         else:  # pragma: no cover
-            filename = "cell_towers.csv.gz"
+            filename = 'cell_towers.csv.gz'
     try:
         with closing(requests.get(url,
-                                  params={"apiKey": apikey,
-                                          "filename": filename},
+                                  params={'apiKey': apikey,
+                                          'filename': filename},
                                   stream=True)) as r:
             with selfdestruct_tempdir() as d:
                 path = os.path.join(d, filename)
-                with open(path, "wb") as f:
+                with open(path, 'wb') as f:
                     for chunk in r.iter_content(chunk_size=2 ** 20):
                         f.write(chunk)
                         f.flush()
 
-                with self.db_session() as dbsess:
-                    if sess is None:  # pragma: no cover
-                        sess = dbsess
-                    import_stations(sess, ocid_cell_table,
-                                    path, make_cell_import_dict,
+                with self.db_session() as dbsession:
+                    if session is None:  # pragma: no cover
+                        session = dbsession
+                    import_stations(session,
+                                    path,
                                     CELL_FIELDS)
 
     except Exception as exc:  # pragma: no cover
