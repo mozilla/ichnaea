@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #343: Fall back to GeoIP for incomplete search requests.
+
 - #349/#350: Move cell areas into new table.
 
 - Give all celery queues a prefix to better distinguish them in Redis.

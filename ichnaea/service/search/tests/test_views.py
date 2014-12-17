@@ -183,22 +183,22 @@ class TestSearch(AppTestCase):
 
     def test_error(self):
         app = self.app
-        res = app.post_json('/v1/search?key=test', {"cell": []}, status=400)
+        res = app.post_json('/v1/search?key=test', {"cell": 1}, status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
         self.assertFalse('status' in res.json)
 
     def test_error_unknown_key(self):
         app = self.app
-        res = app.post_json('/v1/search?key=test', {"foo": 0}, status=400)
+        res = app.post_json('/v1/search?key=test', {"foo": 0}, status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertTrue('errors' in res.json)
+        self.assertEqual(res.json, {"status": "not_found"})
 
     def test_error_no_mapping(self):
         app = self.app
-        res = app.post_json('/v1/search?key=test', [1], status=400)
+        res = app.post_json('/v1/search?key=test', [1], status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertTrue('errors' in res.json)
+        self.assertEqual(res.json, {"status": "not_found"})
 
     def test_no_valid_keys(self):
         app = self.app

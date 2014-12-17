@@ -191,6 +191,17 @@ class TestGeolocate(AppTestCase):
                                                  "lng": -121.96},
                                     "accuracy": GEOIP_CITY_ACCURACY})
 
+    def test_incomplete_request_means_geoip(self):
+        app = self.app
+        res = app.post_json(
+            '%s?key=test' % self.url, {"wifiAccessPoints": []},
+            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
+            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {"location": {"lat": 37.5079,
+                                                 "lng": -121.96},
+                                    "accuracy": GEOIP_CITY_ACCURACY})
+
     def test_parse_error(self):
         app = self.app
         res = app.post_json(
@@ -215,13 +226,6 @@ class TestGeolocate(AppTestCase):
         self.check_stats(
             counter=[self.metric + '.api_key.test']
         )
-
-    def test_no_data(self):
-        app = self.app
-        res = app.post_json(
-            '%s?key=test' % self.url, {"wifiAccessPoints": []},
-            status=400)
-        self.assertEqual(res.content_type, 'application/json')
 
     def test_no_api_key(self):
         app = self.app

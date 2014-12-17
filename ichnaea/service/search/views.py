@@ -1,9 +1,6 @@
 from ichnaea.service.base import check_api_key
+from ichnaea.service.error import preprocess_request
 from ichnaea.service.locate import search_all_sources
-from ichnaea.service.error import (
-    MSG_ONE_OF,
-    preprocess_request,
-)
 from ichnaea.service.search.schema import SearchSchema
 
 
@@ -12,23 +9,11 @@ def configure_search(config):
     config.add_view(search_view, route_name='v1_search', renderer='json')
 
 
-def check_cell_or_wifi(data, errors):
-    if errors:  # pragma: no cover
-        # don't add this error if something else was already wrong
-        return
-
-    cell = data.get('cell', ())
-    wifi = data.get('wifi', ())
-    if not any(wifi) and not any(cell):
-        errors.append(dict(name='body', description=MSG_ONE_OF))
-
-
 @check_api_key('search')
 def search_view(request):
     data, errors = preprocess_request(
         request,
         schema=SearchSchema(),
-        extra_checks=(check_cell_or_wifi, ),
         accept_empty=True,
     )
 
