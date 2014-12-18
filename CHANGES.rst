@@ -4,8 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
-untagged
-********
+20141218093500
+**************
 
 - #371: Add new country API.
 
