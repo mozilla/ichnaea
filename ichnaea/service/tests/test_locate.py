@@ -65,10 +65,19 @@ class TestSearchAllSources(DBTestCase):
         del cls.geoip_db
         DBTestCase.tearDownClass()
 
+    def _make_query(self, data=None, client_addr=None,
+                    api_key_log=False, api_key_name='test',
+                    result_type='position'):
+        if data is None:
+            data = {}
+        return locate.search_all_sources(
+            self.db_slave_session, 'm', data,
+            client_addr=client_addr, geoip_db=self.geoip_db,
+            api_key_log=api_key_log, api_key_name=api_key_name,
+            result_type=result_type)
+
     def test_no_data(self):
-        result = locate.search_all_sources(
-            self.db_slave_session, 'm', {},
-            client_addr=None, geoip_db=self.geoip_db)
+        result = self._make_query()
         self.assertTrue(result is None)
 
         self.check_stats(
@@ -80,15 +89,10 @@ class TestSearchAllSources(DBTestCase):
 
     def test_invalid_result_type(self):
         self.assertRaises(ValueError,
-                          locate.search_all_sources,
-                          self.db_slave_session, 'm', {},
-                          result_type='invalid')
+                          self._make_query, result_type='invalid')
 
     def test_geoip_unknown(self):
-        result = locate.search_all_sources(
-            self.db_slave_session, 'm', {},
-            client_addr='127.0.0.1', geoip_db=self.geoip_db,
-            api_key_log=True, api_key_name='test')
+        result = self._make_query(client_addr='127.0.0.1', api_key_log=True)
         self.assertTrue(result is None)
 
         self.check_stats(
@@ -100,11 +104,7 @@ class TestSearchAllSources(DBTestCase):
         )
 
     def test_geoip_city(self):
-        result = locate.search_all_sources(
-            self.db_slave_session, 'm', {},
-            client_addr=FREMONT_IP, geoip_db=self.geoip_db,
-            api_key_log=True, api_key_name='test')
-
+        result = self._make_query(client_addr=FREMONT_IP, api_key_log=True)
         self.assertEqual(result,
                          {'lat': FREMONT_LAT,
                           'lon': FREMONT_LON,
@@ -120,11 +120,7 @@ class TestSearchAllSources(DBTestCase):
         )
 
     def test_geoip_country(self):
-        result = locate.search_all_sources(
-            self.db_slave_session, 'm', {},
-            client_addr=GB_IP, geoip_db=self.geoip_db,
-            api_key_log=True, api_key_name='test')
-
+        result = self._make_query(client_addr=GB_IP, api_key_log=True)
         self.assertEqual(result,
                          {'lat': GB_LAT,
                           'lon': GB_LON,
@@ -146,11 +142,7 @@ class TestSearchAllSources(DBTestCase):
         session.add(Cell(**cell))
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'cell': [cell]},
-            client_addr=GB_IP, geoip_db=self.geoip_db)
-
+        result = self._make_query(data={'cell': [cell]}, client_addr=GB_IP)
         self.assertEqual(result,
                          {'lat': GB_LAT,
                           'lon': GB_LON,
@@ -173,11 +165,8 @@ class TestSearchAllSources(DBTestCase):
                              lon=FREMONT_LON, **key2))
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'cell': [dict(radio='gsm', **key)]},
-            client_addr=GB_IP, geoip_db=self.geoip_db)
-
+        result = self._make_query(data={'cell': [dict(radio='gsm', **key)]},
+                                  client_addr=GB_IP)
         self.assertEqual(result,
                          {'lat': FREMONT_LAT,
                           'lon': FREMONT_LON,
@@ -190,16 +179,11 @@ class TestSearchAllSources(DBTestCase):
         )
 
     def test_geoip_mcc_mismatch_unknown_cell(self):
-        session = self.db_slave_session
         gsm = RADIO_TYPE['gsm']
         # We do not add the cell to the DB on purpose
         cell = {'radio': gsm, 'mcc': USA_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'cell': [cell]},
-            client_addr=GB_IP, geoip_db=self.geoip_db)
-
+        result = self._make_query(data={'cell': [cell]}, client_addr=GB_IP)
         self.assertEqual(result,
                          {'lat': GB_LAT,
                           'lon': GB_LON,
@@ -223,11 +207,7 @@ class TestSearchAllSources(DBTestCase):
             session.add(Cell(**cell))
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'cell': cells},
-            client_addr=GB_IP, geoip_db=self.geoip_db)
-
+        result = self._make_query(data={'cell': cells}, client_addr=GB_IP)
         self.assertEqual(result,
                          {'lat': GB_LAT,
                           'lon': GB_LON,
@@ -252,11 +232,7 @@ class TestSearchAllSources(DBTestCase):
         session.add(Cell(**cells[0]))
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'cell': cells},
-            client_addr=GB_IP, geoip_db=self.geoip_db)
-
+        result = self._make_query(data={'cell': cells}, client_addr=GB_IP)
         self.assertEqual(result,
                          {'lat': GB_LAT,
                           'lon': GB_LON,
@@ -280,12 +256,8 @@ class TestSearchAllSources(DBTestCase):
             lat=GB_LAT, lon=GB_LON, range=9000, **cell_key))
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'cell': [dict(cid=1, **cell_key)]},
-            client_addr=GB_IP, geoip_db=self.geoip_db,
-            api_key_log=True, api_key_name='test')
-
+        result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]},
+                                  client_addr=GB_IP, api_key_log=True)
         self.assertEqual(result,
                          {'lat': GB_LAT,
                           'lon': GB_LON,
@@ -317,11 +289,9 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(data)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [dict(radio="umts", cid=7, **key)]},
-            api_key_log=True, api_key_name='test')
-
+        result = self._make_query(
+            data={"cell": [dict(radio="umts", cid=7, **key)]},
+            api_key_log=True)
         self.assertEqual(result,
                          {'lat': PARIS_LAT + 0.0026666,
                           'lon': PARIS_LON + 0.0033333,
@@ -352,10 +322,8 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(data)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [dict(radio="umts", cid=5, **key)]})
-
+        result = self._make_query(
+            data={"cell": [dict(radio="umts", cid=5, **key)]})
         self.assertEqual(result,
                          {'lat': PARIS_LAT + 0.002,
                           'lon': PARIS_LON + 0.004,
@@ -377,10 +345,9 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(data)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [dict(radio="gsm", mcc=FRANCE_MCC, mnc=2, lac=4, cid=5)]})
-
+        result = self._make_query(
+            data={"cell": [dict(radio="gsm", mcc=FRANCE_MCC,
+                                mnc=2, lac=4, cid=5)]})
         self.assertTrue(result is None)
 
     def test_cell_ignore_invalid_lac_cid(self):
@@ -402,16 +369,15 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(data)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [
+        result = self._make_query(data={
+            "cell": [
                 dict(radio="gsm", cid=4, **key),
                 dict(radio="gsm", cid=5, **key),
 
                 dict(radio="gsm", cid=5, mcc=FRANCE_MCC, mnc=2, lac=-1),
                 dict(radio="gsm", cid=-1, mcc=FRANCE_MCC, mnc=2, lac=3),
-            ]})
-
+            ]
+        })
         self.assertEqual(result,
                          {'lat': PARIS_LAT + 0.001,
                           'lon': PARIS_LON + 0.002,
@@ -445,15 +411,14 @@ class TestSearchAllSources(DBTestCase):
         # one cell in one of them and two in the other.
         # The lac with two known cells wins and we use both their
         # positions to calculate the final result.
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [
+        result = self._make_query(data={
+            "cell": [
                 dict(radio="gsm", cid=4, **key),
                 dict(radio="gsm", cid=9, **key),
                 dict(radio="gsm", cid=4, **key2),
                 dict(radio="gsm", cid=5, **key2),
-            ]})
-
+            ]
+        })
         self.assertEqual(result,
                          {'lat': PARIS_LAT + 0.03,
                           'lon': PARIS_LON + 0.03,
@@ -483,13 +448,12 @@ class TestSearchAllSources(DBTestCase):
 
         # We have two lacs with each one known cell.
         # The lac with the smallest cell wins.
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [
+        result = self._make_query(data={
+            "cell": [
                 dict(radio="gsm", cid=4, **key),
                 dict(radio="gsm", cid=4, **key2),
-            ]})
-
+            ]
+        })
         self.assertEqual(result,
                          {'lat': PARIS_LAT + 0.02,
                           'lon': PARIS_LON + 0.02,
@@ -519,13 +483,12 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         # GSM lac-only hit (cid 9 instead of 5) and a LTE cell hit
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [
+        result = self._make_query(data={
+            "cell": [
                 dict(radio="gsm", cid=9, **key),
                 dict(radio="lte", cid=4, **key2),
-            ]})
-
+            ]
+        })
         self.assertEqual(result,
                          {'lat': PARIS_LAT + 0.01,
                           'lon': PARIS_LON + 0.02,
@@ -545,14 +508,16 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(data)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [
+        result = self._make_query(data={
+            "cell": [
                 dict(radio="umts", cid=4, **key),
                 dict(radio="umts", cid=5, **key),
-            ], "wifi": [{"key": "101010101010"},
-                        {"key": "202020202020"}]})
-
+            ],
+            "wifi": [
+                {"key": "101010101010"},
+                {"key": "202020202020"},
+            ],
+        })
         self.assertEqual(result,
                          {'lat': PARIS_LAT + 0.001,
                           'lon': PARIS_LON + 0.002,
@@ -569,15 +534,11 @@ class TestSearchAllSources(DBTestCase):
             lat=GB_LAT, lon=GB_LON, range=9000, **cell_key))
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'cell': [dict(cid=1, **cell_key)]},
-            client_addr=None, geoip_db=self.geoip_db)
-
         # Without a GeoIP, the mcc results in 4 different equally common
         # mcc values, GB not being the first one. We need to make sure
         # that we accept any of the country codes as a possible match
         # and don't discard otherwise good cell data based on this.
+        result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]})
         self.assertEqual(result,
                          {'lat': GB_LAT,
                           'lon': GB_LON,
@@ -612,12 +573,8 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(data)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {"wifi": [wifi1, wifi2, wifi3]},
-            client_addr=FREMONT_IP, geoip_db=self.geoip_db
-        )
-
+        result = self._make_query(data={"wifi": [wifi1, wifi2, wifi3]},
+                                  client_addr=FREMONT_IP)
         self.assertEqual(result,
                          {'lat': PARIS_LAT,
                           'lon': PARIS_LON,
@@ -653,11 +610,8 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(data)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [dict(radio="gsm", cid=6789, **key)]},
-        )
-
+        result = self._make_query(
+            data={"cell": [dict(radio="gsm", cid=6789, **key)]})
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT,
                           'lon': SAO_PAULO_LON,
@@ -696,12 +650,10 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(data)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [dict(radio="gsm", cid=6789, **key)],
-             "wifi": [wifi1, wifi2, wifi3]},
-        )
-
+        result = self._make_query(data={
+            "cell": [dict(radio="gsm", cid=6789, **key)],
+            "wifi": [wifi1, wifi2, wifi3],
+        })
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT,
                           'lon': SAO_PAULO_LON,
@@ -740,12 +692,10 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(data)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [dict(radio="gsm", cid=6789, **key)],
-             "wifi": [wifi1, wifi2, wifi3]},
-        )
-
+        result = self._make_query(data={
+            "cell": [dict(radio="gsm", cid=6789, **key)],
+            "wifi": [wifi1, wifi2, wifi3],
+        })
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT,
                           'lon': SAO_PAULO_LON,
@@ -780,11 +730,8 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(data)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [dict(radio="gsm", cid=6789, **key)]},
-        )
-
+        result = self._make_query(data={
+            "cell": [dict(radio="gsm", cid=6789, **key)]})
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT + 0.002,
                           'lon': SAO_PAULO_LON + 0.002,
@@ -822,12 +769,9 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(data)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [dict(radio="gsm", cid=6789, **key)],
-             "wifi": [wifi1, wifi2, wifi3]},
-        )
-
+        result = self._make_query(data={
+            "cell": [dict(radio="gsm", cid=6789, **key)],
+            "wifi": [wifi1, wifi2, wifi3]})
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT + 0.002,
                           'lon': SAO_PAULO_LON + 0.002,
@@ -866,12 +810,9 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(data)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [dict(radio="gsm", cid=6789, **key)],
-             "wifi": [wifi1, wifi2, wifi3]},
-        )
-
+        result = self._make_query(data={
+            "cell": [dict(radio="gsm", cid=6789, **key)],
+            "wifi": [wifi1, wifi2, wifi3]})
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT + 0.002,
                           'lon': SAO_PAULO_LON + 0.002,
@@ -913,12 +854,9 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(data)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {"cell": [dict(radio="gsm", cid=6789, **key)],
-             "wifi": [wifi1, wifi2, wifi3]},
-        )
-
+        result = self._make_query(data={
+            "cell": [dict(radio="gsm", cid=6789, **key)],
+            "wifi": [wifi1, wifi2, wifi3]})
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT + 0.002,
                           'lon': SAO_PAULO_LON + 0.002,
@@ -943,12 +881,8 @@ class TestSearchAllSources(DBTestCase):
             key=wifis[1]['key'], lat=GB_LAT, lon=GB_LON + 0.00001, range=300))
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'wifi': wifis},
-            client_addr=GB_IP, geoip_db=self.geoip_db,
-            api_key_log=True, api_key_name='test')
-
+        result = self._make_query(
+            data={'wifi': wifis}, client_addr=GB_IP, api_key_log=True)
         self.assertEqual(result,
                          {'lat': GB_LAT,
                           'lon': GB_LON + 0.000005,
@@ -971,11 +905,8 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(wifis)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'wifi': [{"key": "001122334455"}]},
-            api_key_log=True, api_key_name='test')
-
+        result = self._make_query(
+            data={'wifi': [{"key": "001122334455"}]}, api_key_log=True)
         self.assertTrue(result is None)
         self.check_stats(
             counter=[
@@ -995,10 +926,8 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(wifis)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'wifi': [{"key": "001122334455"}, {"key": "223344556677"}]})
-
+        result = self._make_query(
+            data={'wifi': [{"key": "001122334455"}, {"key": "223344556677"}]})
         self.assertTrue(result is None)
         self.check_stats(
             counter=[
@@ -1016,12 +945,10 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(wifis)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'wifi': [{"key": "00000000001f"},
-                      {"key": "000000000020"}]},
-            api_key_log=True, api_key_name='test')
-
+        result = self._make_query(
+            data={'wifi': [{"key": "00000000001f"},
+                           {"key": "000000000020"}]},
+            api_key_log=True)
         self.assertTrue(result is None)
         self.check_stats(
             counter=[
@@ -1040,12 +967,10 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(wifis)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'wifi': [{"key": "000000000058"},
-                      {"key": "00000000005c"}]},
-            api_key_log=True, api_key_name='test')
-
+        result = self._make_query(
+            data={'wifi': [{"key": "000000000058"},
+                           {"key": "00000000005c"}]},
+            api_key_log=True)
         self.assertTrue(result is None)
         self.check_stats(
             counter=[
@@ -1066,13 +991,11 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(wifis)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'wifi': [{"key": "00000000001f"},
-                      {"key": "000000000020"},
-                      {"key": "000000000058"},
-                      {"key": "00000000005c"}]})
-
+        result = self._make_query(
+            data={'wifi': [{"key": "00000000001f"},
+                           {"key": "000000000020"},
+                           {"key": "000000000058"},
+                           {"key": "00000000005c"}]})
         self.assertEqual(result,
                          {'lat': 1.00002,
                           'lon': 1.00002,
@@ -1087,15 +1010,13 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(wifis)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'wifi': [{"key": "00000000001f"},
-                      {"key": "000000000020"},
-                      {"key": "000000000021"},
-                      {"key": "000000000022"},
-                      {"key": "000000000023"},
-                      {"key": "000000000024"}]})
-
+        result = self._make_query(
+            data={'wifi': [{"key": "00000000001f"},
+                           {"key": "000000000020"},
+                           {"key": "000000000021"},
+                           {"key": "000000000022"},
+                           {"key": "000000000023"},
+                           {"key": "000000000024"}]})
         self.assertEqual(result,
                          {'lat': 1.00002,
                           'lon': 1.00002,
@@ -1112,13 +1033,11 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(wifis)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'wifi': [
+        result = self._make_query(data={
+            'wifi': [
                 {"key": "001122334455"}, {"key": "112233445566"},
                 {"key": "223344556677"}, {"key": "334455667788"},
             ]})
-
         self.assertEqual(result,
                          {'lat': 1.001,
                           'lon': 1.002,
@@ -1137,9 +1056,8 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(wifis)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'wifi': [
+        result = self._make_query(data={
+            'wifi': [
                 {"key": "A1" * 6, "signal": -100},
                 {"key": "D4" * 6, "signal": -80},
                 {"key": "B2" * 6, "signal": -100},
@@ -1147,7 +1065,6 @@ class TestSearchAllSources(DBTestCase):
                 {"key": "C3" * 6, "signal": -100},
                 {"key": "F6" * 6, "signal": -54},
             ]})
-
         self.assertEqual(result,
                          {'lat': 2.001,
                           'lon': 2.002,
@@ -1177,10 +1094,7 @@ class TestSearchAllSources(DBTestCase):
         ]
         random.shuffle(measures)
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'wifi': measures})
-
+        result = self._make_query(data={'wifi': measures})
         self.assertEqual(result,
                          {'lat': 1.00003,
                           'lon': 1.000036,
@@ -1209,10 +1123,7 @@ class TestSearchAllSources(DBTestCase):
         ]
         random.shuffle(measures)
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'wifi': measures})
-
+        result = self._make_query(data={'wifi': measures})
         self.assertEqual(result,
                          {'lat': 1.00003,
                           'lon': 1.000036,
@@ -1229,11 +1140,9 @@ class TestSearchAllSources(DBTestCase):
         session.add_all(wifis)
         session.flush()
 
-        result = locate.search_all_sources(
-            session, 'm',
-            {'wifi': [{"key": "101010101010"}, {"key": "303030303030"}]},
-            api_key_log=True, api_key_name='test')
-
+        result = self._make_query(
+            data={'wifi': [{"key": "101010101010"}, {"key": "303030303030"}]},
+            api_key_log=True)
         self.assertTrue(result is None)
         self.check_stats(
             counter=[
