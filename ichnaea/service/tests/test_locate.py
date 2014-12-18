@@ -91,6 +91,27 @@ class TestSearchAllSources(DBTestCase):
         self.assertRaises(ValueError,
                           self._make_query, result_type='invalid')
 
+    def test_country_geoip(self):
+        result = self._make_query(client_addr=GB_IP, api_key_log=True,
+                                  result_type='country')
+        self.assertEqual(result,
+                         {'country_code': 'GB',
+                          'country_name': 'United Kingdom'})
+
+        self.check_stats(
+            counter=[
+                'm.country_from_geoip',
+                'm.geoip_country_found',
+                'm.geoip_hit',
+                'm.api_log.test.geoip_hit',
+            ],
+        )
+
+    def test_country_geoip_unknown(self):
+        result = self._make_query(client_addr='127.0.0.1',
+                                  result_type='country')
+        self.assertTrue(result is None)
+
     def test_geoip_unknown(self):
         result = self._make_query(client_addr='127.0.0.1', api_key_log=True)
         self.assertTrue(result is None)
