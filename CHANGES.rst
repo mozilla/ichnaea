@@ -26,6 +26,11 @@ Changes
 - Updated to latest versions of alembic, billiard, celery, colander,
   iso8601, kombu, PyMySQL, pytz and requests.
 
+20141218093500
+**************
+
+- #371: Add new country API.
+
 20141120130000
 **************
 

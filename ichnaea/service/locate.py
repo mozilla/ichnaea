@@ -1,6 +1,7 @@
 from collections import defaultdict, namedtuple
 import operator
 
+import iso3166
 import mobile_codes
 from sqlalchemy.sql import and_, or_
 from sqlalchemy.orm import load_only
@@ -376,7 +377,8 @@ def search_wifi(session, wifis):
 
 def search_all_sources(session, api_name, data,
                        client_addr=None, geoip_db=None,
-                       api_key_log=False, api_key_name=None):
+                       api_key_log=False, api_key_name=None,
+                       result_type='position'):
     """
     Common code-path for all lookup APIs, using
     WiFi, cell, cell-lac and GeoIP data sources.
@@ -386,7 +388,15 @@ def search_all_sources(session, api_name, data,
     :param data: A dict conforming to the search API.
     :param client_addr: The IP address the request came from.
     :param geoip_db: The geoip database.
+    :param api_key_log: Enable additional api key specific logging?
+    :param api_key_name: The metric friendly api key name.
+    :param result_type: What kind of result to return, either a lat/lon
+                        position or a country estimate.
     """
+
+    if result_type not in ('country', 'position'):
+        raise ValueError('Invalid result_type, must be one of '
+                         'position or country')
 
     stats_client = get_stats_client()
     heka_client = get_heka_client()
@@ -427,18 +437,20 @@ def search_all_sources(session, api_name, data,
             criterion = join_cellkey(model, key)
             cell_filter.append(and_(*criterion))
 
-        # Keep the cid to distinguish cell from lac later on
-        query = (session.query(model).options(load_only('radio', 'mcc', 'mnc',
-                                                        'lac', 'lat',
-                                                        'lon', 'range'))
-                        .filter(or_(*cell_filter))
-                        .filter(model.lat.isnot(None))
-                        .filter(model.lon.isnot(None)))
+        if cell_filter:
+            # only do a query if we have cell results, or this will match
+            # all rows in the table
+            query = (session.query(model).options(load_only('radio', 'mcc', 'mnc',
+                                                            'lac', 'lat',
+                                                            'lon', 'range'))
+                            .filter(or_(*cell_filter))
+                            .filter(model.lat.isnot(None))
+                            .filter(model.lon.isnot(None)))
 
-        try:
-            found_cells.extend(query.all())
-        except Exception:
-            heka_client.raven(RAVEN_ERROR)
+            try:
+                found_cells.extend(query.all())
+            except Exception:
+                heka_client.raven(RAVEN_ERROR)
 
     if found_cells:
         # Group all found_cellss by location area
@@ -575,14 +587,19 @@ def search_all_sources(session, api_name, data,
         stats_client.incr('%s.miss' % api_name)
         return None
 
-    rounded_result = {
-        'lat': round(result['lat'], DEGREE_DECIMAL_PLACES),
-        'lon': round(result['lon'], DEGREE_DECIMAL_PLACES),
-        'accuracy': round(result['accuracy'], DEGREE_DECIMAL_PLACES),
-    }
-
     stats_client.incr('%s.%s_hit' % (api_name, result_metric))
-    stats_client.timing('%s.accuracy.%s' % (api_name, result_metric),
-                        rounded_result['accuracy'])
 
-    return rounded_result
+    if result_type == 'position':
+        rounded_result = {
+            'lat': round(result['lat'], DEGREE_DECIMAL_PLACES),
+            'lon': round(result['lon'], DEGREE_DECIMAL_PLACES),
+            'accuracy': round(result['accuracy'], DEGREE_DECIMAL_PLACES),
+        }
+        stats_client.timing('%s.accuracy.%s' % (api_name, result_metric),
+                            rounded_result['accuracy'])
+        return rounded_result
+    elif result_type == 'country':
+        if countries:
+            country = iso3166.countries.get(countries[0])
+            return {'country_name': country.name,
+                    'country_code': country.alpha2}

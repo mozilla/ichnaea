@@ -78,6 +78,12 @@ class TestSearchAllSources(DBTestCase):
             ],
         )
 
+    def test_invalid_result_type(self):
+        self.assertRaises(ValueError,
+                          locate.search_all_sources,
+                          self.db_slave_session, 'm', {},
+                          result_type='invalid')
+
     def test_geoip_unknown(self):
         result = locate.search_all_sources(
             self.db_slave_session, 'm', {},
