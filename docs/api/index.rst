@@ -47,3 +47,5 @@ to allow an unlimited number of requests per day.
 .. include:: search_api.rst
 
 .. include:: submit_api.rst
+
+.. include:: country_api.rst

@@ -71,6 +71,12 @@ PARIS_IP = '146.0.66.11'
 PARIS_LAT = 48.8568
 PARIS_LON = 2.3508
 
+IP_MAPPING = {
+    FREMONT_IP: {'lat': FREMONT_LAT, 'lon': FREMONT_LON},
+    SAO_PAULO_IP: {'lat': SAO_PAULO_LAT, 'lon': SAO_PAULO_LON},
+    PARIS_IP: {'lat': PARIS_LAT, 'lon': PARIS_LON},
+}
+
 
 def _make_db(uri=SQLURI):
     return Database(uri)
