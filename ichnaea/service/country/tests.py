@@ -93,5 +93,5 @@ class TestCountryErrors(AppTestCase, CountryBase):
             counter=['request.v1.country.200', 'country.geoip_hit'],
         )
         self.check_expected_heka_messages(
-            sentry=[('msg', RAVEN_ERROR, 1)]
+            sentry=[('msg', RAVEN_ERROR, 0)]
         )

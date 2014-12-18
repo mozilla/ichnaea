@@ -616,5 +616,3 @@ def search_all_sources(session, api_name, data,
             country = iso3166.countries.get(countries[0])
             return {'country_name': country.name,
                     'country_code': country.alpha2}
-        # No country could be found
-        return None
