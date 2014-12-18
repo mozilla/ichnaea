@@ -1,12 +1,9 @@
 from sqlalchemy import text
 
-from ichnaea.constants import GEOIP_CITY_ACCURACY
 from ichnaea.logging import RAVEN_ERROR
 from ichnaea.tests.base import (
     AppTestCase,
     FREMONT_IP,
-    FREMONT_LAT,
-    FREMONT_LON,
 )
 
 
