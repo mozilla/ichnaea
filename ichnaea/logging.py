@@ -71,6 +71,10 @@ def quote_statsd_path(path):
 
 def log_tween_factory(handler, registry):
 
+    SKIP_LOGGING_URLS = [
+        '/v1/country',
+    ]
+
     VALID_4xx_URLS = [
         '/v1/submit',
         '/v1/search',
@@ -82,14 +86,15 @@ def log_tween_factory(handler, registry):
         heka_client = registry.heka_client
         stats_client = registry.stats_client
         start = time.time()
+        request_path = request.path
 
         def timer_send():
             duration = int(round((time.time() - start) * 1000))
-            path = quote_statsd_path(request.path)
+            path = quote_statsd_path(request_path)
             stats_client.timing('request.' + path, duration)
 
         def counter_send(status_code):
-            path = quote_statsd_path(request.path)
+            path = quote_statsd_path(request_path)
             stats_client.incr('request.%s.%s' % (path, status_code))
 
         try:
@@ -112,12 +117,13 @@ def log_tween_factory(handler, registry):
             heka_client.raven(RAVEN_ERROR)
             raise
         else:
-            timer_send()
+            if request_path not in SKIP_LOGGING_URLS:
+                timer_send()
 
         # deal with non-exception 4xx responses
         resp_prefix = str(response.status_code)[0]
-        if (resp_prefix == '4' and request.path in VALID_4xx_URLS) or \
-           (resp_prefix != '4'):
+        if (resp_prefix == '4' and request_path in VALID_4xx_URLS) or \
+           (resp_prefix != '4' and request_path not in SKIP_LOGGING_URLS):
             counter_send(response.status_code)
 
         return response
