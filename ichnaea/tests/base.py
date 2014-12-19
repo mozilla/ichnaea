@@ -1,9 +1,13 @@
+from contextlib import contextmanager
 import os
 import os.path
 
 from alembic.config import Config
 from alembic import command
-from sqlalchemy import inspect
+from sqlalchemy import (
+    event,
+    inspect,
+)
 from sqlalchemy.schema import (
     DropTable,
     MetaData,
@@ -99,9 +103,59 @@ def find_msg(msgs, msg_type, field_value, field_name='name'):
              f.value_string == [field_value]]]
 
 
+def scoped_conn_event_handler(calls):
+    def conn_event_handler(**kw):
+        calls.append((kw['statement'], kw['parameters']))
+    return conn_event_handler
+
+
 class DBIsolation(object):
     # Inspired by a blog post:
     # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
+
+    track_connection_events = False
+
+    @contextmanager
+    def db_call_checker(self):
+        try:
+            self.setup_db_event_tracking()
+            yield self.check_db_calls
+        finally:
+            self.teardown_db_event_tracking()
+
+    def check_db_calls(self, master=None, slave=None):
+        if master is not None:
+            events = self.db_events['master']['calls']
+            self.assertEqual(len(events), master, events)
+        if slave is not None:
+            events = self.db_events['slave']['calls']
+            self.assertEqual(len(events), slave, events)
+
+    def reset_db_event_tracking(self):
+        self.db_events = {
+            'master': {'calls': [], 'handler': None},
+            'slave': {'calls': [], 'handler': None},
+        }
+
+    def setup_db_event_tracking(self):
+        self.reset_db_event_tracking()
+
+        self.db_events['master']['handler'] = handler = \
+            scoped_conn_event_handler(self.db_events['master']['calls'])
+        event.listen(self.master_conn, 'before_cursor_execute',
+                     handler, named=True)
+
+        self.db_events['slave']['handler'] = handler = \
+            scoped_conn_event_handler(self.db_events['slave']['calls'])
+        event.listen(self.slave_conn, 'before_cursor_execute',
+                     handler, named=True)
+
+    def teardown_db_event_tracking(self):
+        event.remove(self.slave_conn, 'before_cursor_execute',
+                     self.db_events['slave']['handler'])
+        event.remove(self.master_conn, 'before_cursor_execute',
+                     self.db_events['master']['handler'])
+        self.reset_db_event_tracking()
 
     def setup_session(self):
         self.master_conn = self.db_master.engine.connect()
@@ -113,7 +167,13 @@ class DBIsolation(object):
         self.db_slave.session_factory.configure(bind=self.slave_conn)
         self.db_slave_session = self.db_slave.session()
 
+        if self.track_connection_events:
+            self.setup_db_event_tracking()
+
     def teardown_session(self):
+        if self.track_connection_events:
+            self.teardown_db_event_tracking()
+
         self.slave_trans.rollback()
         self.db_slave_session.close()
         del self.db_slave_session

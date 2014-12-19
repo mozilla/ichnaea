@@ -41,9 +41,12 @@ class CountryBase(object):
 
 class TestCountry(AppTestCase, CountryBase):
 
+    track_connection_events = True
+
     def test_geoip(self):
         result = self._make_geoip_query(status=200)
         self._check_geoip_result(result, status=200)
+        self.check_db_calls(master=0, slave=1)
         self.check_stats(
             timer=['request.v1.country'],
             counter=['country.api_key.test', 'country.geoip_hit'])
@@ -51,24 +54,28 @@ class TestCountry(AppTestCase, CountryBase):
     def test_geoip_miss(self):
         result = self._make_geoip_query(ip=None, status=404)
         self._check_geoip_result(result, status=404)
+        self.check_db_calls(master=0, slave=1)
         self.check_stats(
             counter=['country.api_key.test', 'country.miss'])
 
     def test_incomplete_request_means_geoip(self):
         result = self._make_geoip_query(data={"wifiAccessPoints": []})
         self._check_geoip_result(result, status=200)
+        self.check_db_calls(master=0, slave=1)
         self.check_stats(
             counter=['country.api_key.test', 'country.geoip_hit'])
 
     def test_no_api_key(self):
         result = self._make_geoip_query(api_key=None, status=400)
         self._check_geoip_result(result, status=400)
+        self.check_db_calls(master=0, slave=0)
         self.check_stats(
             counter=['country.no_api_key'])
 
     def test_unknown_api_key(self):
         result = self._make_geoip_query(api_key='unknown_key', status=400)
         self._check_geoip_result(result, status=400)
+        self.check_db_calls(master=0, slave=1)
         self.check_stats(
             counter=['country.unknown_api_key'])
 

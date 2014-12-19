@@ -77,9 +77,11 @@ class TestSearchAllSources(DBTestCase):
             result_type=result_type)
 
     def test_no_data(self):
-        result = self._make_query()
-        self.assertTrue(result is None)
+        with self.db_call_checker() as check_db_calls:
+            result = self._make_query()
+            check_db_calls(master=0, slave=0)
 
+        self.assertTrue(result is None)
         self.check_stats(
             counter=[
                 'm.no_country',
