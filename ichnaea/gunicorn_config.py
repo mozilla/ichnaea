@@ -15,9 +15,9 @@ timeout = 60
 # Disable keep-alive
 keepalive = 0
 
-# Recycle worker processes after 100k requests to prevent memory leaks
-# from effecting us
-max_requests = 100000
+# Recycle worker processes after 10m requests to prevent memory leaks
+# from effecting us, at 1000 req/s this means recycle every 2.8 hours
+max_requests = 10000000
 
 # Log errors to stderr
 errorlog = "-"
