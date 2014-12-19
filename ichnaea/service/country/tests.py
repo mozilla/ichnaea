@@ -23,7 +23,6 @@ class CountryBase(object):
             url, data,
             extra_environ=extra_environ,
             status=status)
-        self._check_geoip_result(result, status=status)
         return result
 
     def _check_geoip_result(self, result, status=200):
@@ -43,28 +42,33 @@ class CountryBase(object):
 class TestCountry(AppTestCase, CountryBase):
 
     def test_geoip(self):
-        self._make_geoip_query()
+        result = self._make_geoip_query(status=200)
+        self._check_geoip_result(result, status=200)
         self.check_stats(
             timer=['request.v1.country'],
             counter=['country.api_key.test', 'country.geoip_hit'])
 
     def test_geoip_miss(self):
-        self._make_geoip_query(ip=None, status=404)
+        result = self._make_geoip_query(ip=None, status=404)
+        self._check_geoip_result(result, status=404)
         self.check_stats(
             counter=['country.api_key.test', 'country.miss'])
 
     def test_incomplete_request_means_geoip(self):
-        self._make_geoip_query(data={"wifiAccessPoints": []})
+        result = self._make_geoip_query(data={"wifiAccessPoints": []})
+        self._check_geoip_result(result, status=200)
         self.check_stats(
             counter=['country.api_key.test', 'country.geoip_hit'])
 
     def test_no_api_key(self):
-        self._make_geoip_query(api_key=None, status=400)
+        result = self._make_geoip_query(api_key=None, status=400)
+        self._check_geoip_result(result, status=400)
         self.check_stats(
             counter=['country.no_api_key'])
 
     def test_unknown_api_key(self):
-        self._make_geoip_query(api_key='unknown_key', status=400)
+        result = self._make_geoip_query(api_key='unknown_key', status=400)
+        self._check_geoip_result(result, status=400)
         self.check_stats(
             counter=['country.unknown_api_key'])
 
@@ -78,13 +82,13 @@ class TestCountryErrors(AppTestCase, CountryBase):
 
     def test_database_error(self):
         session = self.db_slave_session
-        stmt = text("drop table wifi;")
-        session.execute(stmt)
-        stmt = text("drop table cell;")
-        session.execute(stmt)
+        for tablename in ('wifi', 'cell', 'cell_area',
+                          'ocid_cell', 'ocid_cell_area'):
+            stmt = text("drop table %s;" % tablename)
+            session.execute(stmt)
 
-        self._make_geoip_query()
-
+        result = self._make_geoip_query(status=200)
+        self._check_geoip_result(result, status=200)
         self.check_stats(
             timer=['request.v1.country'],
             counter=['request.v1.country.200', 'country.geoip_hit'],
