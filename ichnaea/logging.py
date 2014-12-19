@@ -87,6 +87,7 @@ def log_tween_factory(handler, registry):
         stats_client = registry.stats_client
         start = time.time()
         request_path = request.path
+        skip_log = request_path in SKIP_LOGGING_URLS
 
         def timer_send():
             duration = int(round((time.time() - start) * 1000))
@@ -114,17 +115,19 @@ def log_tween_factory(handler, registry):
             else:
                 status = 500
             counter_send(status)
-            heka_client.raven(RAVEN_ERROR)
+            if not skip_log:
+                heka_client.raven(RAVEN_ERROR)
             raise
         else:
-            if request_path not in SKIP_LOGGING_URLS:
+            if not skip_log:
                 timer_send()
 
-        # deal with non-exception 4xx responses
-        resp_prefix = str(response.status_code)[0]
-        if (resp_prefix == '4' and request_path in VALID_4xx_URLS) or \
-           (resp_prefix != '4' and request_path not in SKIP_LOGGING_URLS):
-            counter_send(response.status_code)
+        if not skip_log:
+            # deal with non-exception 4xx responses
+            resp_prefix = str(response.status_code)[0]
+            if (resp_prefix == '4' and request_path in VALID_4xx_URLS) or \
+               (resp_prefix != '4'):
+                counter_send(response.status_code)
 
         return response
 

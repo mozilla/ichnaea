@@ -55,16 +55,6 @@ class TestCountry(AppTestCase, CountryBase):
         self.check_db_calls(master=0, slave=0)
         self.check_stats(total=0)
 
-    def test_incomplete_request_means_geoip(self):
-        result = self._make_geoip_query(data={"wifiAccessPoints": []})
-        self._check_geoip_result(result, status=200)
-        self.check_db_calls(master=0, slave=0)
-        self.check_stats(
-            total=3,
-            counter=['country.geoip_city_found',
-                     'country.country_from_geoip',
-                     'country.geoip_hit'])
-
     def test_no_api_key(self):
         result = self._make_geoip_query(api_key=None, status=200)
         self._check_geoip_result(result, status=200)
@@ -76,6 +66,30 @@ class TestCountry(AppTestCase, CountryBase):
         self._check_geoip_result(result, status=200)
         self.check_db_calls(master=0, slave=0)
         self.check_stats(total=0)
+
+    def test_incomplete_request_means_geoip(self):
+        result = self._make_geoip_query(data={"wifiAccessPoints": []})
+        self._check_geoip_result(result, status=200)
+        self.check_db_calls(master=0, slave=0)
+        self.check_stats(
+            total=3,
+            counter=['country.geoip_city_found',
+                     'country.country_from_geoip',
+                     'country.geoip_hit'])
+
+    def test_no_wifi(self):
+        result = self._make_geoip_query(
+            ip='127.0.0.1',
+            data={"wifiAccessPoints": [{"macAddress": "ab:cd:ef:12:34:56"}]},
+            status=404)
+        self._check_geoip_result(result, status=404)
+        self.check_db_calls(master=0, slave=0)
+        self.check_stats(
+            total=4,
+            counter=['country.no_geoip_found',
+                     'country.no_country',
+                     'country.no_wifi_found',
+                     'country.miss'])
 
 
 class TestCountryErrors(AppTestCase, CountryBase):

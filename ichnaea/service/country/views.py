@@ -1,5 +1,8 @@
 from iso3166 import countries as iso3166_countries
-from pyramid.httpexceptions import HTTPNotFound
+from pyramid.httpexceptions import (
+    HTTPNotFound,
+    HTTPOk,
+)
 
 from ichnaea.service.error import (
     JSONParseError,
@@ -31,8 +34,11 @@ def country_view(request):
         geoip_result = geoip_db.geoip_lookup(client_addr)
         if geoip_result:
             country = iso3166_countries.get(geoip_result['country_code'])
-            return {'country_name': country.name,
-                    'country_code': country.alpha2}
+            result = HTTPOk()
+            result.content_type = 'application/json'
+            result.text = '{"country_name": "%s", "country_code": "%s"}' % (
+                country.name, country.alpha2)
+            return result
         else:
             result = HTTPNotFound()
             result.content_type = 'application/json'
