@@ -45,7 +45,7 @@ class TestSearchAllSources(DBTestCase):
     @classmethod
     def setUpClass(cls):
         DBTestCase.setUpClass()
-        cls.geoip_db = GeoIPMock({
+        cls.geoip_db = GeoIPMock(ip_data={
             FREMONT_IP: {
                 'latitude': FREMONT_LAT,
                 'longitude': FREMONT_LON,
@@ -58,6 +58,9 @@ class TestSearchAllSources(DBTestCase):
                 'country_code': 'GB',
                 'city': False,
             },
+        }, country_data={
+            FREMONT_IP: 'US',
+            GB_IP: 'GB',
         })
 
     @classmethod

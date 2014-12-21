@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Introduce new internal `GeoIPWrapper.country_lookup` API.
+
 - #343: Fall back to GeoIP for incomplete search requests.
 
 - #349/#350: Move cell areas into new table.

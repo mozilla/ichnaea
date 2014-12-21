@@ -11,15 +11,15 @@ from ichnaea.tests.base import (
 )
 
 
-class TestGeoIPFallback(TestCase, LogIsolation):
+class GeoIPBaseTest(LogIsolation):
 
     @classmethod
     def setUpClass(cls):
-        super(TestCase, cls).setup_logging()
+        super(GeoIPBaseTest, cls).setup_logging()
 
     @classmethod
     def tearDownClass(cls):
-        super(TestCase, cls).teardown_logging()
+        super(GeoIPBaseTest, cls).teardown_logging()
 
     def setUp(self):
         self.clear_log_messages()
@@ -33,6 +33,9 @@ class TestGeoIPFallback(TestCase, LogIsolation):
             path = self.filename
         return geoip.configure_geoip(
             filename=path, heka_client=self.heka_client)
+
+
+class TestDatabase(GeoIPBaseTest, TestCase):
 
     def test_open_ok(self):
         result = self._open_db()
@@ -56,7 +59,17 @@ class TestGeoIPFallback(TestCase, LogIsolation):
             sentry=[('msg', 'Error opening geoip database file.', 1)]
         )
 
-    def test_lookup_ok(self):
+    def test_ascii_country_names(self):
+        # iterate over all the available country names and make sure
+        # they are all ascii-only
+        from pygeoip.const import COUNTRY_NAMES
+        for country in COUNTRY_NAMES:
+            self.assertEqual(str(country), country.decode('utf-8'))
+
+
+class TestGeoIPLookup(GeoIPBaseTest, TestCase):
+
+    def test_ok(self):
         expected = {
             'area_code': 510,
             'city': 'Fremont',
@@ -82,16 +95,36 @@ class TestGeoIPFallback(TestCase, LogIsolation):
             else:
                 self.assertEqual(expected[i], r[i])
 
-    def test_lookup_fail(self):
+    def test_fail(self):
         db = self._open_db()
         self.assertIsNone(db.geoip_lookup('127.0.0.1'))
 
-    def test_lookup_fail_bad_ip(self):
+    def test_fail_bad_ip(self):
         db = self._open_db()
         self.assertIsNone(db.geoip_lookup('546.839.319.-1'))
 
-    def test_lookup_with_dummy_db(self):
+    def test_with_dummy_db(self):
         self.assertIsNone(geoip.GeoIPNull().geoip_lookup('200'))
+
+
+class TestCountryLookup(GeoIPBaseTest, TestCase):
+
+    def test_ok(self):
+        db = self._open_db()
+        # Known good value in the wee sample DB we're using
+        code = db.country_lookup(FREMONT_IP)
+        self.assertEqual(code, ('US', 'United States'))
+
+    def test_fail(self):
+        db = self._open_db()
+        self.assertIsNone(db.country_lookup('127.0.0.1'))
+
+    def test_fail_bad_ip(self):
+        db = self._open_db()
+        self.assertIsNone(db.country_lookup('546.839.319.-1'))
+
+    def test_with_dummy_db(self):
+        self.assertIsNone(geoip.GeoIPNull().country_lookup('200'))
 
 
 class TestGuessRadius(TestCase):

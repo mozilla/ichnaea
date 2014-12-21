@@ -1,4 +1,3 @@
-from iso3166 import countries as iso3166_countries
 from pyramid.httpexceptions import (
     HTTPNotFound,
     HTTPOk,
@@ -31,13 +30,12 @@ def country_view(request):
 
     if request.body == EMPTY_REQUEST and client_addr and geoip_db is not None:
         # Optimize common case of geoip-only request
-        geoip_result = geoip_db.geoip_lookup(client_addr)
-        if geoip_result:
-            country = iso3166_countries.get(geoip_result['country_code'])
+        country = geoip_db.country_lookup(client_addr)
+        if country:
             result = HTTPOk()
             result.content_type = 'application/json'
-            result.text = '{"country_name": "%s", "country_code": "%s"}' % (
-                country.name, country.alpha2)
+            result.body = '{"country_code": "%s", "country_name": "%s"}' % (
+                country.code, country.name)
             return result
         else:
             result = HTTPNotFound()
