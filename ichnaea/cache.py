@@ -15,7 +15,7 @@ def redis_client(redis_url):
     else:  # pragma: no cover
         db = 0
     pool = redis.ConnectionPool(
-        max_connections=50,
+        max_connections=20,
         host=host,
         port=port,
         db=db,

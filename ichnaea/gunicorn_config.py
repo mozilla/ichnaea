@@ -7,7 +7,7 @@ worker_class = "ichnaea.gunicorn_worker.LocationGeventWorker"
 
 # Maximum number of simultaneous greenlets,
 # limited by number of DB and Redis connections
-worker_connections = 50
+worker_connections = 20
 
 # Set timeout to the same value as the default one from Amazon ELB (60 secs).
 timeout = 60
