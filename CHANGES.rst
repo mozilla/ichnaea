@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Prevent non-countries from being returned by the country API.
+
 - #368: Add per API key metrics for uploaded batches, reports and observations.
 
 - Clarify metric names related to batches/reports/observations,

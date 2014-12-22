@@ -66,6 +66,11 @@ class TestDatabase(GeoIPBaseTest, TestCase):
         for country in COUNTRY_NAMES:
             self.assertEqual(str(country), country.decode('utf-8'))
 
+    def test_invalid_countries(self):
+        db = self._open_db()
+        for code in ('A1', 'A2', 'EU'):
+            self.assertTrue(code in db.invalid_countries)
+
 
 class TestGeoIPLookup(GeoIPBaseTest, TestCase):
 
@@ -125,6 +130,11 @@ class TestCountryLookup(GeoIPBaseTest, TestCase):
 
     def test_with_dummy_db(self):
         self.assertIsNone(geoip.GeoIPNull().country_lookup('200'))
+
+    def test_invalid_country(self):
+        db = self._open_db()
+        db.invalid_countries = frozenset(['', 'US'])
+        self.assertIsNone(db.country_lookup(FREMONT_IP))
 
 
 class TestGuessRadius(TestCase):

@@ -1,10 +1,12 @@
 from collections import namedtuple
 import socket
 
+import iso3166
 import pygeoip
 from pygeoip import GeoIPError
 from pygeoip.const import (
     CITY_EDITIONS,
+    COUNTRY_CODES,
     MEMORY_CACHE,
     STANDARD,
 )
@@ -90,6 +92,11 @@ class GeoIPWrapper(pygeoip.GeoIP):
             message = 'Invalid database type, expected City'
             raise GeoIPError(message)
 
+        # build a list of invalid country codes present in the GeoIP data
+        iso_countries = set(iso3166.countries_by_alpha2.keys())
+        ip_countries = set(COUNTRY_CODES)
+        self.invalid_countries = frozenset(ip_countries - iso_countries)
+
     def _ip2long(self, addr):
         try:
             ipnum = ip2long(addr)
@@ -142,7 +149,12 @@ class GeoIPWrapper(pygeoip.GeoIP):
         if not record:
             return None
 
-        return Country(record['country_code'].upper(), record['country_name'])
+        country_code = record['country_code'].upper()
+        if country_code in self.invalid_countries:
+            # filter out non-countries like EU, A1, O1
+            return None
+
+        return Country(country_code, record['country_name'])
 
 
 class GeoIPNull(object):
