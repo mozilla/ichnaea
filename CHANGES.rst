@@ -15,6 +15,10 @@ Migrations
 Changes
 ~~~~~~~
 
+- Clarify metric names related to batches/reports/observations,
+  add new `items.uploaded.batch_size` pseudo-timer and
+  `items.uploaded.reports` counter.
+
 - Introduce new internal `GeoIPWrapper.country_lookup` API.
 
 - #343: Fall back to GeoIP for incomplete search requests.

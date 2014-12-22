@@ -33,7 +33,8 @@ from ichnaea.service.submit.schema import SubmitSchema
 SENTINEL = object()
 
 
-def process_upload(nickname, email, items):
+def process_upload(nickname, email, items, stats_client,
+                   api_key_log=False, api_key_name=None):
     if isinstance(nickname, str):  # pragma: no cover
         nickname = nickname.decode('utf-8', 'ignore')
 
@@ -100,7 +101,13 @@ def process_upload(nickname, email, items):
         # Short circuit on any error in schema validation
         return errors
 
-    for i in range(0, len(batch_list), 100):
+    # count the number of batches and emit a pseudo-timer to capture
+    # the number of reports per batch
+    length = len(batch_list)
+    stats_client.incr('items.uploaded.batches', 1)
+    stats_client.timing('items.uploaded.batch_size', length)
+
+    for i in range(0, length, 100):
         batch_items = dumps(batch_list[i:i + 100])
         # insert measures, expire the task if it wasn't processed
         # after six hours to avoid queue overload
@@ -110,6 +117,8 @@ def process_upload(nickname, email, items):
                     'email': email,
                     'items': batch_items,
                     'nickname': nickname,
+                    'api_key_log': api_key_log,
+                    'api_key_name': api_key_name,
                 },
                 expires=21600)
         except ConnectionError:  # pragma: no cover
@@ -149,16 +158,22 @@ def geosubmit_view(request):
 
 
 def process_batch(request, data, errors):
+    stats_client = request.registry.stats_client
+
     nickname = request.headers.get('X-Nickname', u'')
     email = request.headers.get('X-Email', u'')
     upload_items = flatten_items(data)
-    errors = process_upload(nickname, email, upload_items)
+    errors = process_upload(
+        nickname, email, upload_items, stats_client,
+        api_key_log=getattr(request, 'api_key_log', False),
+        api_key_name=getattr(request, 'api_key_name', None),
+    )
 
     if errors is SENTINEL:  # pragma: no cover
         return HTTPServiceUnavailable()
 
     if errors:  # pragma: no cover
-        get_stats_client().incr('geosubmit.upload.errors', len(errors))
+        stats_client.incr('geosubmit.upload.errors', len(errors))
 
     result = HTTPOk()
     result.content_type = 'application/json'
@@ -167,7 +182,7 @@ def process_batch(request, data, errors):
 
 
 def process_single(request):
-    stats_client = get_stats_client()
+    stats_client = request.registry.stats_client
 
     locate_data, locate_errors = preprocess_request(
         request,
@@ -186,7 +201,11 @@ def process_single(request):
     nickname = request.headers.get('X-Nickname', u'')
     email = request.headers.get('X-Email', u'')
     upload_items = flatten_items(data)
-    errors = process_upload(nickname, email, upload_items)
+    errors = process_upload(
+        nickname, email, upload_items, stats_client,
+        api_key_log=getattr(request, 'api_key_log', False),
+        api_key_name=getattr(request, 'api_key_name', None),
+    )
 
     if errors is not SENTINEL and errors:  # pragma: no cover
         stats_client.incr('geosubmit.upload.errors', len(errors))

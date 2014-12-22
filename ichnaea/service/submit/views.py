@@ -60,6 +60,8 @@ def submit_validator(data, errors):
 
 @check_api_key('submit', error_on_invalidkey=False)
 def submit_view(request):
+    stats_client = request.registry.stats_client
+
     try:
         data, errors = preprocess_request(
             request,
@@ -81,9 +83,15 @@ def submit_view(request):
     if isinstance(email, str):
         email = email.decode('utf-8', 'ignore')
 
+    # count the number of batches and emit a pseudo-timer to capture
+    # the number of reports per batch
+    length = len(items)
+    stats_client.incr('items.uploaded.batches', 1)
+    stats_client.timing('items.uploaded.batch_size', length)
+
     # batch incoming data into multiple tasks, in case someone
     # manages to submit us a huge single request
-    for i in range(0, len(items), 100):
+    for i in range(0, length, 100):
         batch = dumps(items[i:i + 100])
         # insert measures, expire the task if it wasn't processed
         # after six hours to avoid queue overload
@@ -93,6 +101,8 @@ def submit_view(request):
                     'email': email,
                     'items': batch,
                     'nickname': nickname,
+                    'api_key_log': getattr(request, 'api_key_log', False),
+                    'api_key_name': getattr(request, 'api_key_name', None),
                 },
                 expires=21600)
         except ConnectionError:  # pragma: no cover

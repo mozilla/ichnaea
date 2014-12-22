@@ -362,78 +362,86 @@ cell, cell LAC, GeoIP and wifi-based responses:
   - ``search.accuracy.wifi``
 
 
-Fine-grained ingress counters
------------------------------
+Fine-grained ingress stats
+--------------------------
 
-When a set of measurements is accepted at one of the submission API
+When a batch of reports is accepted at one of the submission API
 endpoints, it is decomposed into a number of "items" -- wifi or cell
-measurements -- each of which then works its way through a process of
+observations -- each of which then works its way through a process of
 normalization, consistency-checking, rate limiting and eventually
 (possibly) integration into aggregate station estimates held in the main
 database tables. Along the way several counters measure the steps involved:
 
 ``items.uploaded.batches`` : counter
 
-    Counts the number of "batches" of measures accepted to the
-    item-processing pipeline by an API endpoint. A batch generally
+    Counts the number of "batches" of reports accepted to the data
+    processing pipeline by an API endpoint. A batch generally
     corresponds to the set of items uploaded in a single HTTP POST to the
-    ``submit`` or ``geosubmit`` APIs, but if an exceptionally large POST is
-    made it may be broken into multiple batches to make further processing
-    more granular. In other words this metric counts "submissions that make
-    it past coarse-grained checks" such as API-key, JSON schema validity
-    and GeoIP checking.
+    ``submit`` or ``geosubmit`` APIs. In other words this metric counts
+    "submissions that make it past coarse-grained checks" such as API-key
+    and JSON schema validity checking.
 
-``items.uploaded.cell_measures``, ``items.uploaded.wifi_measures`` : counters
+``items.uploaded.batch_size`` : timer
 
-    Count the number of cell or wifi measures entering the item-processing
+    Pseudo-timer counting the number of reports per uploaded batch.
+    Typically client software like Mozilla Stumbler uploads 50 reports
+    per batch.
+
+``items.uploaded.reports`` : counter
+
+    Counts the number of reports accepted to the data processing pipeline.
+
+``items.uploaded.cell_observations``, ``items.uploaded.wifi_observations`` : counters
+
+    Count the number of cell or wifi observations entering the data processing
     pipeline; before normalization, blacklist processing and rate limiting
     have been applied. In other words this metric counts "total cell or wifi
-    measurements inside each submitted batch", as each batch is decomposed
-    into individual measurements.
+    observations inside each submitted batch", as each batch is decomposed
+    into individual observations.
 
 ``items.dropped.cell_ingress_malformed``, ``items.dropped.wifi_ingress_malformed`` : counters
 
-    Count incoming cell or wifi measurements that were discarded before
+    Count incoming cell or wifi observations that were discarded before
     integration due to some internal consistency, range or
     validity-condition error encountered while attempting to normalize the
-    measurement.
+    observation.
 
 ``items.dropped.cell_ingress_overflow``, ``items.dropped.wifi_ingress_overflow`` : counters
 
-    Count incoming cell or wifi measurements that were discarded before
+    Count incoming cell or wifi observations that were discarded before
     integration due to the rate of arrival of new records exceeding a
     threshold of new records per period of time. The rate limiting is done
-    per-station, in other words only those measurements pertaining to a
-    cell or wifi that already has "too many" recent measurements are
-    discarded, and only the newest measurements are discarded.
+    per-station, in other words only those observations pertaining to a
+    cell or wifi that already has "too many" recent observations are
+    discarded, and only the newest observations are discarded.
 
 ``items.dropped.cell_ingress_blacklisted``, ``items.dropped.wifi_ingress_blacklisted`` : counters
 
-    Count incoming cell or wifi measurements that were discarded before
+    Count incoming cell or wifi observations that were discarded before
     integration due to the presence of a blacklist record for the station
     (see next metric).
 
 ``items.blacklisted.cell_moving``, ``items.blacklisted.wifi_moving`` : counters
 
     Count any cell or wifi that is blacklisted due to the acceptance of
-    multiple measurements at sufficiently different locations. In these
+    multiple observations at sufficiently different locations. In these
     cases, Ichnaea decides that the station is "moving" (such as a picocell
     or mobile hotspot on a public transit vehicle) and blacklists it, to
     avoid estimating query positions using the station.
 
-``items.inserted.cell_measures``, ``items.inserted.wifi_measures`` : counters
+``items.inserted.cell_observations``, ``items.inserted.wifi_observations`` : counters
 
-    Count cell or wifi measurements that are successfully normalized and
+    Count cell or wifi observations that are successfully normalized and
     integrated, not discarded due to rate limits or consistency errors.
 
 ``items.cell_unthrottled``, ``items.wifi_unthrottled`` : counters
 
-    Count space made for new measures in the wifi and cell measure tables
+    Count space made for new observations in the wifi and cell measure tables
     due to periodic backup and trimming of old records. Specifically: for
     cell or wifi stations that were previously rate-limited, count the
-    amount of new space for measures of those stations freed up after each
+    amount of new space for observations of those stations freed up after each
     backup and trim task runs. This is not the same as the number of
-    measures backed up; it's *only* a count of the cumulative space freed
+    observations backed up; it's *only* a count of the cumulative space freed
     for previously rate-limited stations.
 
 

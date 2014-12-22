@@ -55,9 +55,12 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(res.body, '')
 
         self.check_stats(
-            counter=['request.v1.submit.204',
+            counter=['items.uploaded.batches',
+                     'items.uploaded.reports',
+                     'request.v1.submit.204',
                      'submit.api_key.test'],
-            timer=['request.v1.submit'],
+            timer=['items.uploaded.batch_size',
+                   'request.v1.submit'],
         )
 
         session = self.db_master_session

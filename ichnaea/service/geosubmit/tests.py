@@ -68,6 +68,15 @@ class TestGeoSubmit(CeleryAppTestCase):
         # check that one new CellMeasure record is created
         self.assertEquals(1, session.query(CellMeasure).count())
 
+        self.check_stats(
+            counter=['geosubmit.api_key.test',
+                     'items.uploaded.batches',
+                     'items.uploaded.reports',
+                     'request.v1.geosubmit.200',
+                     ],
+            timer=['items.uploaded.batch_size',
+                   'request.v1.geosubmit'])
+
     def test_ok_no_existing_cell(self):
         app = self.app
         session = self.db_master_session
@@ -291,6 +300,13 @@ class TestGeoSubmitBatch(CeleryAppTestCase):
             CellMeasure.cid == 2234).count()
         self.assertEquals(1, cm1)
         self.assertEquals(1, cm2)
+
+        self.check_stats(
+            counter=['geosubmit.api_key.test',
+                     'items.uploaded.batches',
+                     'items.uploaded.reports',
+                     ],
+            timer=['items.uploaded.batch_size'])
 
     def test_geoip_match(self):
         app = self.app

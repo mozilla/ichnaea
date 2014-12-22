@@ -433,7 +433,7 @@ def process_measures(items, session, userid=None):
 
     if cell_measures:
         # group by and create task per cell key
-        stats_client.incr("items.uploaded.cell_measures",
+        stats_client.incr('items.uploaded.cell_observations',
                           len(cell_measures))
         cells = defaultdict(list)
         for measure in cell_measures:
@@ -461,7 +461,7 @@ def process_measures(items, session, userid=None):
 
     if wifi_measures:
         # group by WiFi key
-        stats_client.incr("items.uploaded.wifi_measures",
+        stats_client.incr('items.uploaded.wifi_observations',
                           len(wifi_measures))
         wifis = defaultdict(list)
         for measure in wifi_measures:
@@ -588,21 +588,21 @@ def process_station_measures(session, entries, station_type,
 
     if dropped_blacklisted != 0:
         stats_client.incr(
-            "items.dropped.%s_ingress_blacklisted" % station_type,
+            'items.dropped.%s_ingress_blacklisted' % station_type,
             count=dropped_blacklisted)
 
     if dropped_malformed != 0:
         stats_client.incr(
-            "items.dropped.%s_ingress_malformed" % station_type,
+            'items.dropped.%s_ingress_malformed' % station_type,
             count=dropped_malformed)
 
     if dropped_overflow != 0:
         stats_client.incr(
-            "items.dropped.%s_ingress_overflow" % station_type,
+            'items.dropped.%s_ingress_overflow' % station_type,
             count=dropped_overflow)
 
     stats_client.incr(
-        "items.inserted.%s_measures" % station_type,
+        'items.inserted.%s_observations' % station_type,
         count=len(all_measures))
 
     session.add_all(all_measures)
@@ -610,18 +610,20 @@ def process_station_measures(session, entries, station_type,
 
 
 @celery.task(base=DatabaseTask, bind=True, queue='celery_incoming')
-def insert_measures(self, items=None, nickname='', email=''):
+def insert_measures(self, items=None, nickname='', email='',
+                    api_key_log=False, api_key_name=None):
     if not items:  # pragma: no cover
         return 0
-    items = loads(items)
-    length = len(items)
 
     try:
+        items = loads(items)
+        length = len(items)
+
         with self.db_session() as session:
             userid, nickname, email = process_user(nickname, email, session)
 
             process_measures(items, session, userid=userid)
-            self.stats_client.incr("items.uploaded.batches", count=length)
+            self.stats_client.incr('items.uploaded.reports', length)
 
             session.commit()
         return length
