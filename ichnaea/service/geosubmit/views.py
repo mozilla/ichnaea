@@ -11,7 +11,6 @@ from redis import ConnectionError
 
 from ichnaea.customjson import dumps
 from ichnaea.data.tasks import insert_measures
-from ichnaea.logging import get_stats_client
 from ichnaea.service.base import check_api_key
 from ichnaea.service.error import (
     JSONParseError,
@@ -104,8 +103,14 @@ def process_upload(nickname, email, items, stats_client,
     # count the number of batches and emit a pseudo-timer to capture
     # the number of reports per batch
     length = len(batch_list)
-    stats_client.incr('items.uploaded.batches', 1)
+    stats_client.incr('items.uploaded.batches')
     stats_client.timing('items.uploaded.batch_size', length)
+
+    if api_key_log:
+        stats_client.incr(
+            'items.api_log.%s.uploaded.batches' % api_key_name)
+        stats_client.timing(
+            'items.api_log.%s.uploaded.batch_size' % api_key_name, length)
 
     for i in range(0, length, 100):
         batch_items = dumps(batch_list[i:i + 100])

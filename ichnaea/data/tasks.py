@@ -415,7 +415,8 @@ def process_measure(data, session):
     return (cell_measures, wifi_measures)
 
 
-def process_measures(items, session, userid=None):
+def process_measures(items, session, userid=None,
+                     api_key_log=False, api_key_name=None):
     stats_client = get_stats_client()
     positions = []
     cell_measures = []
@@ -435,6 +436,11 @@ def process_measures(items, session, userid=None):
         # group by and create task per cell key
         stats_client.incr('items.uploaded.cell_observations',
                           len(cell_measures))
+        if api_key_log:
+            stats_client.incr(
+                'items.api_log.%s.uploaded.cell_observations' % api_key_name,
+                len(cell_measures))
+
         cells = defaultdict(list)
         for measure in cell_measures:
             cells[to_cellkey_psc(measure)].append(measure)
@@ -463,6 +469,11 @@ def process_measures(items, session, userid=None):
         # group by WiFi key
         stats_client.incr('items.uploaded.wifi_observations',
                           len(wifi_measures))
+        if api_key_log:
+            stats_client.incr(
+                'items.api_log.%s.uploaded.wifi_observations' % api_key_name,
+                len(wifi_measures))
+
         wifis = defaultdict(list)
         for measure in wifi_measures:
             wifis[measure['key']].append(measure)
@@ -618,12 +629,19 @@ def insert_measures(self, items=None, nickname='', email='',
     try:
         items = loads(items)
         length = len(items)
+        stats_client = self.stats_client
 
         with self.db_session() as session:
             userid, nickname, email = process_user(nickname, email, session)
 
-            process_measures(items, session, userid=userid)
-            self.stats_client.incr('items.uploaded.reports', length)
+            process_measures(items, session,
+                             userid=userid,
+                             api_key_log=api_key_log,
+                             api_key_name=api_key_name)
+            stats_client.incr('items.uploaded.reports', length)
+            if api_key_log:
+                stats_client.incr(
+                    'items.api_log.%s.uploaded.reports' % api_key_name)
 
             session.commit()
         return length

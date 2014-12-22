@@ -61,6 +61,8 @@ def submit_validator(data, errors):
 @check_api_key('submit', error_on_invalidkey=False)
 def submit_view(request):
     stats_client = request.registry.stats_client
+    api_key_log = getattr(request, 'api_key_log', False)
+    api_key_name = getattr(request, 'api_key_name', None)
 
     try:
         data, errors = preprocess_request(
@@ -86,8 +88,14 @@ def submit_view(request):
     # count the number of batches and emit a pseudo-timer to capture
     # the number of reports per batch
     length = len(items)
-    stats_client.incr('items.uploaded.batches', 1)
+    stats_client.incr('items.uploaded.batches')
     stats_client.timing('items.uploaded.batch_size', length)
+
+    if api_key_log:
+        stats_client.incr(
+            'items.api_log.%s.uploaded.batches' % api_key_name)
+        stats_client.timing(
+            'items.api_log.%s.uploaded.batch_size' % api_key_name, length)
 
     # batch incoming data into multiple tasks, in case someone
     # manages to submit us a huge single request
@@ -101,8 +109,8 @@ def submit_view(request):
                     'email': email,
                     'items': batch,
                     'nickname': nickname,
-                    'api_key_log': getattr(request, 'api_key_log', False),
-                    'api_key_name': getattr(request, 'api_key_name', None),
+                    'api_key_log': api_key_log,
+                    'api_key_name': api_key_name,
                 },
                 expires=21600)
         except ConnectionError:  # pragma: no cover

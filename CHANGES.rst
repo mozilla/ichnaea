@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #368: Add per API key metrics for uploaded batches, reports and observations.
+
 - Clarify metric names related to batches/reports/observations,
   add new `items.uploaded.batch_size` pseudo-timer and
   `items.uploaded.reports` counter.

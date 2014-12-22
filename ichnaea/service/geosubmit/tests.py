@@ -70,11 +70,16 @@ class TestGeoSubmit(CeleryAppTestCase):
 
         self.check_stats(
             counter=['geosubmit.api_key.test',
+                     'items.api_log.test.uploaded.batches',
+                     'items.api_log.test.uploaded.reports',
+                     'items.api_log.test.uploaded.cell_observations',
+                     'items.uploaded.cell_observations',
                      'items.uploaded.batches',
                      'items.uploaded.reports',
                      'request.v1.geosubmit.200',
                      ],
-            timer=['items.uploaded.batch_size',
+            timer=['items.api_log.test.uploaded.batch_size',
+                   'items.uploaded.batch_size',
                    'request.v1.geosubmit'])
 
     def test_ok_no_existing_cell(self):
@@ -172,6 +177,14 @@ class TestGeoSubmit(CeleryAppTestCase):
 
         # check that WifiMeasure records are created
         self.assertEquals(5, session.query(WifiMeasure).count())
+
+        self.check_stats(
+            counter=['items.api_log.test.uploaded.batches',
+                     'items.api_log.test.uploaded.reports',
+                     'items.api_log.test.uploaded.wifi_observations',
+                     'items.uploaded.wifi_observations',
+                     ],
+            timer=['items.api_log.test.uploaded.batch_size'])
 
     def test_ok_no_existing_wifi(self):
         app = self.app

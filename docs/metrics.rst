@@ -444,6 +444,22 @@ database tables. Along the way several counters measure the steps involved:
     observations backed up; it's *only* a count of the cumulative space freed
     for previously rate-limited stations.
 
+In addition to these global stats on the data processing pipeline,
+we also have a number of per API key stats for uploaded data.
+
+``items.api_log.<api_shortname>.uploaded.batches``,
+``items.api_log.<api_shortname>.uploaded.reports`` : counters
+
+    Count the number of batches and reports for this API key.
+
+``items.api_log.<api_shortname>.uploaded.batch_size`` : timer
+
+    Count the batch size for submissions for this API key.
+
+``items.api_log.<api_shortname>.uploaded.cell_observations``,
+``items.api_log.<api_shortname>.uploaded.wifi_observations`` : counters
+
+    Count the number of uploaded cell and wifi observations for this API key.
 
 Gauges
 ------

@@ -54,15 +54,6 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
 
-        self.check_stats(
-            counter=['items.uploaded.batches',
-                     'items.uploaded.reports',
-                     'request.v1.submit.204',
-                     'submit.api_key.test'],
-            timer=['items.uploaded.batch_size',
-                   'request.v1.submit'],
-        )
-
         session = self.db_master_session
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 1)
@@ -430,6 +421,7 @@ class TestSubmit(CeleryAppTestCase):
         cell_data = [
             {"radio": "umts", "mcc": FRANCE_MCC,
              "mnc": 1, "lac": 2, "cid": 1234}]
+        wifi_data = [{"key": "00:34:cd:34:cd:34"}]
         res = app.post_json(
             '/v1/submit?key=test',
             {"items": [{"lat": PARIS_LAT,
@@ -438,15 +430,26 @@ class TestSubmit(CeleryAppTestCase):
                         "altitude": 123,
                         "altitude_accuracy": 7,
                         "radio": "gsm",
-                        "cell": cell_data}]},
+                        "cell": cell_data,
+                        "wifi": wifi_data,
+                        }]},
             status=204)
         self.assertEqual(res.body, '')
 
         self.check_stats(
-            counter=['request.v1.submit.204',
+            counter=['items.api_log.test.uploaded.batches',
+                     'items.api_log.test.uploaded.reports',
+                     'items.api_log.test.uploaded.cell_observations',
+                     'items.api_log.test.uploaded.wifi_observations',
                      'items.uploaded.batches',
-                     'submit.api_key.test'],
-            timer=['request.v1.submit',
+                     'items.uploaded.reports',
+                     'items.uploaded.cell_observations',
+                     'items.uploaded.wifi_observations',
+                     'submit.api_key.test',
+                     'request.v1.submit.204'],
+            timer=['items.api_log.test.uploaded.batch_size',
+                   'items.uploaded.batch_size',
+                   'request.v1.submit',
                    'task.data.insert_measures',
                    'task.data.insert_measures_cell']
         )
