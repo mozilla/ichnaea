@@ -33,8 +33,9 @@ Changes
 
 - #354: Remove scan_lacs fallback code looking at new_measures.
 
-- Updated to latest versions of alembic, billiard, celery, colander,
-  iso8601, kombu, PyMySQL, pytz and requests.
+- Updated to latest versions of alembic, argparse, billiard, celery, colander,
+  filechunkio, iso8601, kombu, PyMySQL, pytz, requests, six,
+  WebTest and zope.interface.
 
 20141218093500
 **************
