@@ -372,7 +372,8 @@ class LogIsolation(object):
            'name':'items.uploaded.batches'.
         """
         if total is not None:
-            self.assertEqual(total, len(self.stats_client.msgs))
+            self.assertEqual(total, len(self.stats_client.msgs),
+                             self.stats_client.msgs)
 
         for (msg_type, pred) in kw.items():
             for p in pred:

@@ -47,32 +47,47 @@ class TestCountry(AppTestCase, CountryBase):
         result = self._make_geoip_query(status=200)
         self._check_geoip_result(result, status=200)
         self.check_db_calls(master=0, slave=0)
-        self.check_stats(total=0)
+        self.check_stats(
+            total=2,
+            counter=['request.v1.country.200'],
+            timer=['request.v1.country'],
+        )
 
     def test_geoip_miss(self):
         result = self._make_geoip_query(ip='127.0.0.1', status=404)
         self._check_geoip_result(result, status=404)
         self.check_db_calls(master=0, slave=0)
-        self.check_stats(total=0)
+        self.check_stats(
+            total=2,
+            counter=['request.v1.country.404'],
+            timer=['request.v1.country'],
+        )
 
     def test_no_api_key(self):
         result = self._make_geoip_query(api_key=None, status=200)
         self._check_geoip_result(result, status=200)
         self.check_db_calls(master=0, slave=0)
-        self.check_stats(total=0)
+        self.check_stats(
+            total=2,
+            counter=['request.v1.country.200'],
+            timer=['request.v1.country'],
+        )
 
     def test_unknown_api_key(self):
         result = self._make_geoip_query(api_key='unknown_key', status=200)
         self._check_geoip_result(result, status=200)
         self.check_db_calls(master=0, slave=0)
-        self.check_stats(total=0)
+        self.check_stats(
+            total=2,
+            counter=['request.v1.country.200'],
+            timer=['request.v1.country'],
+        )
 
     def test_incomplete_request_means_geoip(self):
         result = self._make_geoip_query(data={"wifiAccessPoints": []})
         self._check_geoip_result(result, status=200)
         self.check_db_calls(master=0, slave=0)
         self.check_stats(
-            total=3,
             counter=['country.geoip_city_found',
                      'country.country_from_geoip',
                      'country.geoip_hit'])
@@ -85,7 +100,6 @@ class TestCountry(AppTestCase, CountryBase):
         self._check_geoip_result(result, status=404)
         self.check_db_calls(master=0, slave=0)
         self.check_stats(
-            total=4,
             counter=['country.no_geoip_found',
                      'country.no_country',
                      'country.no_wifi_found',
@@ -108,7 +122,11 @@ class TestCountryErrors(AppTestCase, CountryBase):
 
         result = self._make_geoip_query(status=200)
         self._check_geoip_result(result, status=200)
-        self.check_stats(total=0)
+        self.check_stats(
+            total=2,
+            counter=['request.v1.country.200'],
+            timer=['request.v1.country'],
+        )
         self.check_expected_heka_messages(
             sentry=[('msg', RAVEN_ERROR, 0)]
         )

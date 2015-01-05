@@ -72,10 +72,11 @@ def quote_statsd_path(path):
 def log_tween_factory(handler, registry):
 
     SKIP_LOGGING_URLS = [
-        '/v1/country',
+        # none yet
     ]
 
     VALID_4xx_URLS = [
+        '/v1/country',
         '/v1/submit',
         '/v1/search',
         '/v1/geolocate',
