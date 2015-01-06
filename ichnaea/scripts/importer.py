@@ -11,11 +11,10 @@ import csv
 import datetime
 import sys
 
+from colander import Invalid, String
+
 from ichnaea.app_config import read_config
-from ichnaea.data.validation import (
-    normalized_wifi_key,
-    valid_wifi_pattern,
-)
+from ichnaea.data.schema import WifiKeyNode
 from ichnaea.data.tasks import process_measures
 from ichnaea.db import Database
 from ichnaea.logging import (
@@ -44,8 +43,9 @@ def load_file(session, source_file, batch_size=1000, userid=None):
                     # convert from unixtime to utc
                     time = datetime.datetime.utcfromtimestamp(time)
 
-                key = normalized_wifi_key(str(fields[1]))
-                if not valid_wifi_pattern(key):  # pragma: no cover
+                try:
+                    key = WifiKeyNode(String()).deserialize(str(fields[1]))
+                except Invalid:
                     continue
 
                 lat = float(fields[2])

@@ -21,7 +21,7 @@ from ichnaea.customjson import (
 )
 from ichnaea.data.validation import (
     normalized_measure_dict,
-    normalized_wifi_measure_dict,
+    normalized_wifi_dict,
     normalized_cell_measure_dict,
 )
 from ichnaea.geocalc import distance, centroid, range_to_points
@@ -267,7 +267,7 @@ def create_cell_measure(utcnow, entry):
 def create_wifi_measure(utcnow, entry):
     # creates a dict.copy() avoiding test leaks reusing the same
     # entries for multiple task calls
-    entry = normalized_wifi_measure_dict(entry)
+    entry = normalized_wifi_dict(entry)
     if entry is None:  # pragma: no cover
         return None
     # add creation date
@@ -400,7 +400,7 @@ def process_measure(data, session):
     if data.get('wifi'):
         for w in data['wifi']:
             add_missing_dict_entries(w, measure_data)
-            w = normalized_wifi_measure_dict(w)
+            w = normalized_wifi_dict(w)
             if w is None:
                 continue
             key = w['key']

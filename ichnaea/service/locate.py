@@ -440,9 +440,9 @@ def search_all_sources(session, api_name, data,
         if cell_filter:
             # only do a query if we have cell results, or this will match
             # all rows in the table
-            query = (session.query(model).options(load_only('radio', 'mcc', 'mnc',
-                                                            'lac', 'lat',
-                                                            'lon', 'range'))
+            load_fields = ('radio', 'mcc', 'mnc', 'lac', 'lat', 'lon', 'range')
+            query = (session.query(model)
+                            .options(load_only(*load_fields))
                             .filter(or_(*cell_filter))
                             .filter(model.lat.isnot(None))
                             .filter(model.lon.isnot(None)))
