@@ -1,17 +1,3 @@
-"""
-This script is used as part of the "make release" command used as part of
-building an rpm of this entire virtualenv.
-
-The rpm building process compiles all *.py files found anywhere in the
-source tree, independent of whether or not these would actually be used.
-It finds some Python files which aren't meant for the specific Python
-version being build this way and would abort the build process.
-
-We therefor specifically remove files from our site-packages directory,
-which aren't meant for the current Python version and include incompatible
-Python syntax.
-"""
-
 from compileall import compile_dir
 from distutils.sysconfig import get_python_lib
 import os
