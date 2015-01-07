@@ -1,16 +1,11 @@
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
-PYTHON = $(BIN)/python
-PIP = $(BIN)/pip
-INSTALL = $(PIP) install --no-deps
-NOSE = $(BIN)/nosetests
-
-TRAVIS ?= false
-
 BUILD_DIRS = bin build dist include lib lib64 man node_modules share
+TRAVIS ?= false
 
 MYSQL_DB = location
 MYSQL_TEST_DB = test_location
+
 ifeq ($(TRAVIS), true)
 	MYSQL_USER ?= travis
 	MYSQL_PWD ?=
@@ -18,13 +13,21 @@ ifeq ($(TRAVIS), true)
 
 	PYTHON = python
 	PIP = pip
-	INSTALL = $(PIP) install --no-deps
 	NOSE = nosetests
 else
 	MYSQL_USER ?= root
 	MYSQL_PWD ?= mysql
 	SQLURI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@localhost/$(MYSQL_TEST_DB)
+
+	PYTHON = $(BIN)/python
+	PIP = $(BIN)/pip
+	NOSE = $(BIN)/nosetests
 endif
+
+PIP_WHEEL_DIR ?= $(HERE)/wheelhouse
+INSTALL = $(PIP) install --no-deps -f $(PIP_WHEEL_DIR)
+WHEEL = $(PIP) wheel --no-deps -w $(PIP_WHEEL_DIR)
+
 
 .PHONY: all js mysql init_db css js_map js test clean shell docs release
 
@@ -76,6 +79,12 @@ build: $(PYTHON) mysql
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/test.txt
 	$(PYTHON) setup.py develop
+
+wheel:
+	$(INSTALL) wheel
+	[ ! -f $(PIP_WHEEL_DIR)/gevent-1.0.1-* ] \
+		&& $(WHEEL) gevent==1.0.1 \
+		|| echo "gevent wheel already exists"
 
 init_db:
 	$(BIN)/location_initdb --initdb
