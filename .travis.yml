@@ -1,4 +1,12 @@
+# new container based environment
 sudo: false
+
+# use a download cache for pip
+env:
+    - PIP_DOWNLOAD_CACHE=$HOME/.pipcache
+cache:
+  directories:
+    - $HOME/.pipcache/
 
 language: python
 python:
@@ -8,7 +16,6 @@ python:
 notifications:
   email:
     - hschlichting@mozilla.com
-
 
 script:
     - make build
