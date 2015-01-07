@@ -1,12 +1,13 @@
 # new container based environment
 sudo: false
 
-# use a download cache for pip
+# use a download cache for pip and wheel
 env:
-    - PIP_DOWNLOAD_CACHE=$HOME/.pipcache
+    - PIP_DOWNLOAD_CACHE=$HOME/.pipcache PIP_WHEEL_DIR=$HOME/.wheelhouse
 cache:
   directories:
     - $HOME/.pipcache/
+    - $HOME/.wheelhouse/
 
 language: python
 python:
@@ -19,7 +20,8 @@ notifications:
 
 script:
     - make build
-    - make release
+    - make wheel
+    - make release_compile
     - make test
 
 # mysql is started automatically
