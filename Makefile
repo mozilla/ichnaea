@@ -82,12 +82,8 @@ build: $(PYTHON) mysql
 
 wheel:
 	$(INSTALL) wheel
-	[ ! -f $(PIP_WHEEL_DIR)/gevent-1.0.1-* ] \
-		&& $(WHEEL) gevent==1.0.1 \
-		|| echo "gevent wheel already exists"
-	[ ! -f $(PIP_WHEEL_DIR)/protobuf-2.6.0-* ] \
-		&& $(WHEEL) protobuf==2.6.0 \
-		|| echo "profobuf wheel already exists"
+	$(PYTHON) compile_wheels.py -c "$(WHEEL)" -w $(PIP_WHEEL_DIR) \
+		-f requirements/prod-c.txt -f requirements/test-c.txt
 
 init_db:
 	$(BIN)/location_initdb --initdb
