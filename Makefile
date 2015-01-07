@@ -57,8 +57,6 @@ endif
 
 install_vaurien_deps:
 	$(INSTALL) -r requirements/vaurien.txt
-	$(INSTALL) -r requirements/prod.txt
-	$(INSTALL) -r requirements/test.txt
 	$(INSTALL) -r requirements/loads.txt
 
 # Start vaurien for MySQL with REST API enabled on port 8080
@@ -76,7 +74,9 @@ automate_vaurien:
 	SQLURI=$(SQLURI) nosetests -sv integration_tests/test_integration.py
 
 build: $(PYTHON) mysql
+	$(INSTALL) -r requirements/prod-c.txt
 	$(INSTALL) -r requirements/prod.txt
+	$(INSTALL) -r requirements/test-c.txt
 	$(INSTALL) -r requirements/test.txt
 	$(PYTHON) setup.py develop
 
@@ -156,6 +156,7 @@ docs:  bin/sphinx-build
 	cd docs; make html
 
 release:
+	$(INSTALL) -r requirements/prod-c.txt
 	$(INSTALL) -r requirements/prod.txt
 	$(PYTHON) setup.py install
 	$(PYTHON) compile.py
