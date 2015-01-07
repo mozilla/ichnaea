@@ -1,16 +1,11 @@
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
-PYTHON = $(BIN)/python
-PIP = $(BIN)/pip
-INSTALL = $(PIP) install --no-deps
-NOSE = $(BIN)/nosetests
-
-TRAVIS ?= false
-
 BUILD_DIRS = bin build dist include lib lib64 man node_modules share
+TRAVIS ?= false
 
 MYSQL_DB = location
 MYSQL_TEST_DB = test_location
+
 ifeq ($(TRAVIS), true)
 	MYSQL_USER ?= travis
 	MYSQL_PWD ?=
@@ -18,15 +13,24 @@ ifeq ($(TRAVIS), true)
 
 	PYTHON = python
 	PIP = pip
-	INSTALL = $(PIP) install --no-deps
 	NOSE = nosetests
 else
 	MYSQL_USER ?= root
 	MYSQL_PWD ?= mysql
 	SQLURI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@localhost/$(MYSQL_TEST_DB)
+
+	PYTHON = $(BIN)/python
+	PIP = $(BIN)/pip
+	NOSE = $(BIN)/nosetests
 endif
 
-.PHONY: all js mysql init_db css js_map js test clean shell docs release
+PIP_WHEEL_DIR ?= $(HERE)/wheelhouse
+INSTALL = $(PIP) install --no-deps -f $(PIP_WHEEL_DIR)
+WHEEL = $(PIP) wheel --no-deps -w $(PIP_WHEEL_DIR)
+
+
+.PHONY: all js mysql init_db css js_map js test clean shell docs \
+	build wheel release release_install release_compile
 
 all: build init_db
 
@@ -54,8 +58,6 @@ endif
 
 install_vaurien_deps:
 	$(INSTALL) -r requirements/vaurien.txt
-	$(INSTALL) -r requirements/prod.txt
-	$(INSTALL) -r requirements/test.txt
 	$(INSTALL) -r requirements/loads.txt
 
 # Start vaurien for MySQL with REST API enabled on port 8080
@@ -73,9 +75,16 @@ automate_vaurien:
 	SQLURI=$(SQLURI) nosetests -sv integration_tests/test_integration.py
 
 build: $(PYTHON) mysql
+	$(INSTALL) -r requirements/prod-c.txt
 	$(INSTALL) -r requirements/prod.txt
+	$(INSTALL) -r requirements/test-c.txt
 	$(INSTALL) -r requirements/test.txt
 	$(PYTHON) setup.py develop
+
+wheel:
+	$(INSTALL) wheel
+	$(PYTHON) compile_wheels.py -c "$(WHEEL)" -w $(PIP_WHEEL_DIR) \
+		-f requirements/prod-c.txt -f requirements/test-c.txt
 
 init_db:
 	$(BIN)/location_initdb --initdb
@@ -143,7 +152,12 @@ docs:  bin/sphinx-build
 	git submodule update --recursive --init
 	cd docs; make html
 
-release:
+release_install:
+	$(INSTALL) -r requirements/prod-c.txt
 	$(INSTALL) -r requirements/prod.txt
 	$(PYTHON) setup.py install
+
+release_compile:
 	$(PYTHON) compile.py
+
+release: release_install release_compile
