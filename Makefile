@@ -29,7 +29,8 @@ INSTALL = $(PIP) install --no-deps -f $(PIP_WHEEL_DIR)
 WHEEL = $(PIP) wheel --no-deps -w $(PIP_WHEEL_DIR)
 
 
-.PHONY: all js mysql init_db css js_map js test clean shell docs release
+.PHONY: all js mysql init_db css js_map js test clean shell docs \
+	build wheel release release_install release_compile
 
 all: build init_db
 
@@ -151,8 +152,12 @@ docs:  bin/sphinx-build
 	git submodule update --recursive --init
 	cd docs; make html
 
-release:
+release_install:
 	$(INSTALL) -r requirements/prod-c.txt
 	$(INSTALL) -r requirements/prod.txt
 	$(PYTHON) setup.py install
+
+release_compile:
 	$(PYTHON) compile.py
+
+release: release_install release_compile

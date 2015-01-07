@@ -21,7 +21,7 @@ notifications:
 script:
     - make build
     - make wheel
-    - make release
+    - make release_compile
     - make test
 
 # mysql is started automatically
