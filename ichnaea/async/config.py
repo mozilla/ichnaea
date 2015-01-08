@@ -23,9 +23,6 @@ CELERY_QUEUES = (
     Queue('celery_monitor', routing_key='celery_monitor'),
     # BBB
     Queue('default', routing_key='old_default'),
-    Queue('incoming', routing_key='old_incoming'),
-    Queue('insert', routing_key='old_insert'),
-    Queue('monitor', routing_key='old_monitor'),
 )
 CELERY_QUEUE_NAMES = frozenset([q.name for q in CELERY_QUEUES])
 

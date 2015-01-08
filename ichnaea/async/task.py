@@ -17,7 +17,6 @@ class DatabaseTask(Task):
     acks_late = False
     ignore_result = True
     max_retries = 3
-    queue = 'default'
 
     _shortname = None
 

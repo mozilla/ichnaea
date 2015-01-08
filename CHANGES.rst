@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove explicit queue declaration from celery base task.
 
 20150105140000
 **************
