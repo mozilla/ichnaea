@@ -55,11 +55,11 @@
     <h3 class="separator">Firefox for Android</h3>
 
     <p class="text-justified">
-        Aurora versions of
-        <a href="https://www.mozilla.org/aurora">Firefox for Android</a>
-        include a way to contribute data and enhance this service. In order
-        to enable this, you need to go to the Mozilla settings section and
-        look for the contribution option under data choices.
+        <a href="https://www.mozilla.org/firefox/android/">
+            Firefox for Android</a> includes a way to contribute data
+        and enhance this service. Enable this feature by opening the
+        Settings menu and in the Mozilla section under Data Choices
+        check the Mozilla Location Services option.
     </p>
 
     <h3>Firefox OS</h3>
