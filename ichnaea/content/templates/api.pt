@@ -68,10 +68,11 @@
         <a href="mailto:Hanno Schlichting %3Chschlichting@mozilla.com%3E">
             Hanno Schlichting</a> to obtain an API key.
         Please make sure to describe your use-case and intended use of
-        the service. If you are not planning on contributing back to
-        the service, please make sure to detail why you think your
-        project is tightly aligned with the Mozilla mission and why we
-        should grant you free access to this hosted version of the service.
+        the service. If you merely want to test out the service for a
+        small experiment, please use the literal "test" API key. We'll
+        switch to providing rotating public UUID based API keys soon,
+        so do not depend on this key for anything outside of initial
+        experiments.
     </p>
 
     <p class="text-justified">
