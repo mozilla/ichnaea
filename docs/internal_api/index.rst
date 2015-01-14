@@ -17,4 +17,5 @@ Modules
    :maxdepth: 1
 
    geocalc
+   geoip
    service/locate

@@ -2,10 +2,7 @@ from uuid import uuid1
 
 from sqlalchemy import text
 
-from ichnaea.constants import (
-    CELL_MIN_ACCURACY,
-    GEOIP_CITY_ACCURACY,
-)
+from ichnaea.constants import CELL_MIN_ACCURACY
 from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
     ApiKey,
@@ -16,9 +13,6 @@ from ichnaea.models import (
 from ichnaea.tests.base import (
     AppTestCase,
     FRANCE_MCC,
-    FREMONT_IP,
-    FREMONT_LAT,
-    FREMONT_LON,
     PARIS_LAT,
     PARIS_LON,
 )
@@ -165,6 +159,7 @@ class TestGeolocate(AppTestCase):
 
     def test_geoip_fallback(self):
         app = self.app
+        london = self.geoip_data['London']
         res = app.post_json(
             '%s?key=test' % self.url,
             {"wifiAccessPoints": [
@@ -173,34 +168,36 @@ class TestGeolocate(AppTestCase):
                 {"macAddress": "303030303030"},
                 {"macAddress": "404040404040"},
             ]},
-            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
+            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 37.5079,
-                                                 "lng": -121.96},
-                                    "accuracy": GEOIP_CITY_ACCURACY})
+        self.assertEqual(res.json, {"location": {"lat": london['latitude'],
+                                                 "lng": london['longitude']},
+                                    "accuracy": london['accuracy']})
 
     def test_empty_request_means_geoip(self):
         app = self.app
+        london = self.geoip_data['London']
         res = app.post_json(
             '%s?key=test' % self.url, {},
-            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
+            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 37.5079,
-                                                 "lng": -121.96},
-                                    "accuracy": GEOIP_CITY_ACCURACY})
+        self.assertEqual(res.json, {"location": {"lat": london['latitude'],
+                                                 "lng": london['longitude']},
+                                    "accuracy": london['accuracy']})
 
     def test_incomplete_request_means_geoip(self):
         app = self.app
+        london = self.geoip_data['London']
         res = app.post_json(
             '%s?key=test' % self.url, {"wifiAccessPoints": []},
-            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
+            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 37.5079,
-                                                 "lng": -121.96},
-                                    "accuracy": GEOIP_CITY_ACCURACY})
+        self.assertEqual(res.json, {"location": {"lat": london['latitude'],
+                                                 "lng": london['longitude']},
+                                    "accuracy": london['accuracy']})
 
     def test_parse_error(self):
         app = self.app
@@ -285,6 +282,7 @@ class TestGeolocate(AppTestCase):
 
     def test_api_key_limit(self):
         app = self.app
+        london = self.geoip_data['London']
         session = self.get_session()
         api_key = uuid1().hex
         session.add(ApiKey(valid_key=api_key, maxreq=5, shortname='dis'))
@@ -297,7 +295,7 @@ class TestGeolocate(AppTestCase):
 
         res = app.post_json(
             '%s?key=%s' % (self.url, api_key), {},
-            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
+            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
             status=403)
 
         errors = res.json['error']['errors']
@@ -486,6 +484,7 @@ class TestGeolocateErrors(AppTestCase):
 
     def test_database_error(self):
         app = self.app
+        london = self.geoip_data['London']
         session = self.db_slave_session
         stmt = text("drop table wifi;")
         session.execute(stmt)
@@ -505,13 +504,13 @@ class TestGeolocateErrors(AppTestCase):
                     {"macAddress": "101010101010"},
                     {"macAddress": "202020202020"},
                 ]},
-            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
+            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
             status=200)
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": FREMONT_LAT,
-                                                 "lng": FREMONT_LON},
-                                    "accuracy": GEOIP_CITY_ACCURACY})
+        self.assertEqual(res.json, {"location": {"lat": london['latitude'],
+                                                 "lng": london['longitude']},
+                                    "accuracy": london['accuracy']})
 
         self.check_stats(
             timer=['request.v1.geolocate'],

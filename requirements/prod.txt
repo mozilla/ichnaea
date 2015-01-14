@@ -14,16 +14,18 @@ configparser==3.5.0b2
 country-bounding-boxes==0.2.2
 docopt==0.6.2
 filechunkio==1.6
+geoip2==2.1.0
 gunicorn==19.1.1
 heka-py==0.30.3
 heka-py-raven==0.7
 importlib==1.0.3
+ipaddr==2.1.11
 iso3166==0.6
 iso8601==0.1.10
 kombu==3.0.24
+maxminddb==1.1.1  # optional C extension, version also in Makefile
 mobile-codes==0.4
 ordereddict==1.1
-pygeoip==0.3.2
 pyramid==1.5.2
 pyramid-chameleon==0.3
 pytz==2014.10

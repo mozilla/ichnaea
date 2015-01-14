@@ -2,12 +2,9 @@ import random
 
 from ichnaea.constants import (
     CELL_MIN_ACCURACY,
-    GEOIP_CITY_ACCURACY,
     LAC_MIN_ACCURACY,
     WIFI_MIN_ACCURACY,
 )
-from ichnaea.geocalc import maximum_country_radius
-from ichnaea.geoip import GeoIPMock
 from ichnaea.models import (
     Cell,
     CellArea,
@@ -18,9 +15,12 @@ from ichnaea.tests.base import (
     BRAZIL_MCC,
     DBTestCase,
     FRANCE_MCC,
-    FREMONT_IP,
     FREMONT_LAT,
     FREMONT_LON,
+    GB_LAT,
+    GB_LON,
+    GB_MCC,
+    GeoIPIsolation,
     PARIS_LAT,
     PARIS_LON,
     PORTO_ALEGRE_LAT,
@@ -33,39 +33,16 @@ from ichnaea.tests.base import (
 from ichnaea.service import locate
 
 
-GB_IP = '192.168.0.1'
-GB_LAT = 51.5
-GB_LON = -0.1
-GB_MCC = 234
-GB_RADIUS = maximum_country_radius('GB')
-
-
-class TestSearchAllSources(DBTestCase):
+class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
     @classmethod
     def setUpClass(cls):
         DBTestCase.setUpClass()
-        cls.geoip_db = GeoIPMock(ip_data={
-            FREMONT_IP: {
-                'latitude': FREMONT_LAT,
-                'longitude': FREMONT_LON,
-                'country_code': 'US',
-                'city': True,
-            },
-            GB_IP: {
-                'latitude': GB_LAT,
-                'longitude': GB_LON,
-                'country_code': 'GB',
-                'city': False,
-            },
-        }, country_data={
-            FREMONT_IP: 'US',
-            GB_IP: 'GB',
-        })
+        GeoIPIsolation.setup_geoip(heka_client=cls.heka_client)
 
     @classmethod
     def tearDownClass(cls):
-        del cls.geoip_db
+        GeoIPIsolation.teardown_geoip()
         DBTestCase.tearDownClass()
 
     def _make_query(self, data=None, client_addr=None,
@@ -97,11 +74,12 @@ class TestSearchAllSources(DBTestCase):
                           self._make_query, result_type='invalid')
 
     def test_country_geoip(self):
-        result = self._make_query(client_addr=GB_IP, api_key_log=True,
+        bhutan = self.geoip_data['Bhutan']
+        result = self._make_query(client_addr=bhutan['ip'], api_key_log=True,
                                   result_type='country')
         self.assertEqual(result,
-                         {'country_code': 'GB',
-                          'country_name': 'United Kingdom'})
+                         {'country_code': bhutan['country_code'],
+                          'country_name': bhutan['country_name']})
 
         self.check_stats(
             counter=[
@@ -130,11 +108,12 @@ class TestSearchAllSources(DBTestCase):
         )
 
     def test_geoip_city(self):
-        result = self._make_query(client_addr=FREMONT_IP, api_key_log=True)
+        london = self.geoip_data['London']
+        result = self._make_query(client_addr=london['ip'], api_key_log=True)
         self.assertEqual(result,
-                         {'lat': FREMONT_LAT,
-                          'lon': FREMONT_LON,
-                          'accuracy': GEOIP_CITY_ACCURACY})
+                         {'lat': london['latitude'],
+                          'lon': london['longitude'],
+                          'accuracy': london['accuracy']})
 
         self.check_stats(
             counter=[
@@ -146,11 +125,12 @@ class TestSearchAllSources(DBTestCase):
         )
 
     def test_geoip_country(self):
-        result = self._make_query(client_addr=GB_IP, api_key_log=True)
+        bhutan = self.geoip_data['Bhutan']
+        result = self._make_query(client_addr=bhutan['ip'], api_key_log=True)
         self.assertEqual(result,
-                         {'lat': GB_LAT,
-                          'lon': GB_LON,
-                          'accuracy': GB_RADIUS})
+                         {'lat': bhutan['latitude'],
+                          'lon': bhutan['longitude'],
+                          'accuracy': bhutan['accuracy']})
 
         self.check_stats(
             counter=[
@@ -164,26 +144,29 @@ class TestSearchAllSources(DBTestCase):
     def test_geoip_mcc_match(self):
         session = self.db_slave_session
         gsm = RADIO_TYPE['gsm']
+        london = self.geoip_data['London']
         cell = {'radio': gsm, 'mcc': GB_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
         session.add(Cell(**cell))
         session.flush()
 
-        result = self._make_query(data={'cell': [cell]}, client_addr=GB_IP)
+        result = self._make_query(data={'cell': [cell]},
+                                  client_addr=london['ip'])
         self.assertEqual(result,
-                         {'lat': GB_LAT,
-                          'lon': GB_LON,
-                          'accuracy': GB_RADIUS})
+                         {'lat': london['latitude'],
+                          'lon': london['longitude'],
+                          'accuracy': london['accuracy']})
 
         self.check_stats(
             counter=[
                 'm.country_from_geoip',
-                'm.geoip_country_found',
+                'm.geoip_city_found',
             ],
         )
 
     def test_geoip_mcc_mismatch(self):
         session = self.db_slave_session
         gsm = RADIO_TYPE['gsm']
+        bhutan = self.geoip_data['Bhutan']
         key = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
         key2 = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1, }
         session.add(Cell(radio=gsm, lat=FREMONT_LAT, lon=FREMONT_LON, **key))
@@ -192,7 +175,7 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = self._make_query(data={'cell': [dict(radio='gsm', **key)]},
-                                  client_addr=GB_IP)
+                                  client_addr=bhutan['ip'])
         self.assertEqual(result,
                          {'lat': FREMONT_LAT,
                           'lon': FREMONT_LON,
@@ -206,14 +189,16 @@ class TestSearchAllSources(DBTestCase):
 
     def test_geoip_mcc_mismatch_unknown_cell(self):
         gsm = RADIO_TYPE['gsm']
+        london = self.geoip_data['London']
         # We do not add the cell to the DB on purpose
         cell = {'radio': gsm, 'mcc': USA_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
 
-        result = self._make_query(data={'cell': [cell]}, client_addr=GB_IP)
+        result = self._make_query(data={'cell': [cell]},
+                                  client_addr=london['ip'])
         self.assertEqual(result,
-                         {'lat': GB_LAT,
-                          'lon': GB_LON,
-                          'accuracy': GB_RADIUS})
+                         {'lat': london['latitude'],
+                          'lon': london['longitude'],
+                          'accuracy': london['accuracy']})
 
         self.check_stats(
             counter=[
@@ -224,6 +209,7 @@ class TestSearchAllSources(DBTestCase):
     def test_geoip_mcc_multiple(self):
         session = self.db_slave_session
         gsm = RADIO_TYPE['gsm']
+        london = self.geoip_data['London']
         cell_key = {'radio': gsm, 'mnc': 1, 'lac': 1, 'cid': 1}
         cells = [
             dict(mcc=GB_MCC, **cell_key),
@@ -233,11 +219,12 @@ class TestSearchAllSources(DBTestCase):
             session.add(Cell(**cell))
         session.flush()
 
-        result = self._make_query(data={'cell': cells}, client_addr=GB_IP)
+        result = self._make_query(data={'cell': cells},
+                                  client_addr=london['ip'])
         self.assertEqual(result,
-                         {'lat': GB_LAT,
-                          'lon': GB_LON,
-                          'accuracy': GB_RADIUS})
+                         {'lat': london['latitude'],
+                          'lon': london['longitude'],
+                          'accuracy': london['accuracy']})
 
         self.check_stats(
             counter=[
@@ -249,6 +236,7 @@ class TestSearchAllSources(DBTestCase):
     def test_geoip_mcc_multiple_unknown_mismatching_cell(self):
         session = self.db_slave_session
         gsm = RADIO_TYPE['gsm']
+        london = self.geoip_data['London']
         cell_key = {'radio': gsm, 'mnc': 1, 'lac': 1, 'cid': 1}
         cells = [
             dict(mcc=GB_MCC, **cell_key),
@@ -258,11 +246,12 @@ class TestSearchAllSources(DBTestCase):
         session.add(Cell(**cells[0]))
         session.flush()
 
-        result = self._make_query(data={'cell': cells}, client_addr=GB_IP)
+        result = self._make_query(data={'cell': cells},
+                                  client_addr=london['ip'])
         self.assertEqual(result,
-                         {'lat': GB_LAT,
-                          'lon': GB_LON,
-                          'accuracy': GB_RADIUS})
+                         {'lat': london['latitude'],
+                          'lon': london['longitude'],
+                          'accuracy': london['accuracy']})
 
         self.check_stats(
             counter=[
@@ -273,6 +262,7 @@ class TestSearchAllSources(DBTestCase):
 
     def test_cell(self):
         session = self.db_slave_session
+        london = self.geoip_data['London']
         cell_key = {
             'radio': RADIO_TYPE['gsm'], 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
         }
@@ -283,7 +273,7 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]},
-                                  client_addr=GB_IP, api_key_log=True)
+                                  client_addr=london['ip'], api_key_log=True)
         self.assertEqual(result,
                          {'lat': GB_LAT,
                           'lon': GB_LON,
@@ -584,6 +574,7 @@ class TestSearchAllSources(DBTestCase):
         # trust the wifi position over the geoip result
 
         session = self.db_slave_session
+        london = self.geoip_data['London']
 
         # This lat/lon is Paris, France
         (lat, lon) = (PARIS_LAT, PARIS_LON)
@@ -600,7 +591,7 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = self._make_query(data={"wifi": [wifi1, wifi2, wifi3]},
-                                  client_addr=FREMONT_IP)
+                                  client_addr=london['ip'])
         self.assertEqual(result,
                          {'lat': PARIS_LAT,
                           'lon': PARIS_LON,
@@ -900,6 +891,7 @@ class TestSearchAllSources(DBTestCase):
 
     def test_wifi(self):
         session = self.db_slave_session
+        london = self.geoip_data['London']
         wifis = [{'key': '001122334455'}, {'key': '112233445566'}]
         session.add(Wifi(
             key=wifis[0]['key'], lat=GB_LAT, lon=GB_LON, range=200))
@@ -908,7 +900,7 @@ class TestSearchAllSources(DBTestCase):
         session.flush()
 
         result = self._make_query(
-            data={'wifi': wifis}, client_addr=GB_IP, api_key_log=True)
+            data={'wifi': wifis}, client_addr=london['ip'], api_key_log=True)
         self.assertEqual(result,
                          {'lat': GB_LAT,
                           'lon': GB_LON + 0.000005,

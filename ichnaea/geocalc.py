@@ -11,7 +11,7 @@ def maximum_country_radius(country):
     Return the maximum radius of a circle encompassing the largest
     country subunit in meters, rounded to 1 km increments.
     """
-    if not isinstance(country, str):
+    if not isinstance(country, basestring):
         return None
     country = country.upper()
     if len(country) not in (2, 3):

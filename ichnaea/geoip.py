@@ -1,16 +1,14 @@
 from collections import namedtuple
-import socket
+import time
 
 import iso3166
-import pygeoip
-from pygeoip import GeoIPError
-from pygeoip.const import (
-    CITY_EDITIONS,
-    COUNTRY_CODES,
-    MEMORY_CACHE,
-    STANDARD,
+from geoip2.database import Reader
+from geoip2.errors import (
+    AddressNotFoundError,
+    GeoIP2Error,
 )
-from pygeoip.util import ip2long
+from maxminddb import InvalidDatabaseError
+from maxminddb.const import MODE_AUTO
 
 from ichnaea.constants import (
     DEGREE_DECIMAL_PLACES,
@@ -21,33 +19,21 @@ from ichnaea.geocalc import maximum_country_radius
 
 
 Country = namedtuple('Country', 'code name')
+"""
+A named tuple consisting of a country code and name.
+"""
+VALID_COUNTRIES = frozenset(iso3166.countries_by_alpha2.keys())
 
 
-def radius_from_geoip(record):
+def configure_geoip(registry_settings=None, filename=None,
+                    mode=MODE_AUTO, heka_client=None):
     """
-    Returns the best accuracy guess in meters for the given GeoIP record
-    and whether or not the record included city data.
+    Configures and returns a :class:`~ichnaea.geoip.GeoIPWrapper` instance.
+
+    If no geoip database file of the correct type can be found, returns
+    a :class:`~ichnaea.geoip.GeoIPNull` dummy implementation instead.
     """
-    accuracy = None
-    if 'country_code3' in record and record['country_code3']:
-        accuracy = maximum_country_radius(record['country_code3'])
-    elif 'country_code' in record and record['country_code']:
-        accuracy = maximum_country_radius(record['country_code'])
-    if accuracy is None:  # pragma: no cover
-        # No country code or no successful radius lookup
-        accuracy = GEOIP_COUNTRY_ACCURACY
 
-    city = False
-    if 'city' in record and record['city']:
-        # Use country radius as an upper bound for city radius
-        # for really small countries
-        accuracy = min(GEOIP_CITY_ACCURACY, accuracy)
-        city = True
-
-    return (accuracy, city)
-
-
-def configure_geoip(registry_settings=None, filename=None, heka_client=None):
     if registry_settings is None:
         registry_settings = {}
 
@@ -58,19 +44,25 @@ def configure_geoip(registry_settings=None, filename=None, heka_client=None):
     if filename is None:
         filename = registry_settings.get('geoip_db_path', None)
 
-    if filename is None:
+    if not filename:
         # No DB file specified in the config
         if heka_client is not None:
-            heka_client.raven('No geoip filename specified.')
+            try:
+                raise IOError()
+            except IOError:
+                heka_client.raven('No geoip filename specified.')
         return GeoIPNull()
 
     try:
-        # Use a memory cache to avoid changes to the underlying files from
-        # causing errors. Also disable class level caching.
-        db = GeoIPWrapper(filename, flags=MEMORY_CACHE, cache=False)
+        db = GeoIPWrapper(filename, mode=mode)
+        if not db.check_extension() and heka_client is not None:
+            try:
+                raise RuntimeError()
+            except RuntimeError:
+                heka_client.raven('Maxmind C extension not installed.')
         # Actually initialize the memory cache, by doing one fake look-up
         db.geoip_lookup('127.0.0.1')
-    except (IOError, GeoIPError):
+    except (InvalidDatabaseError, IOError, ValueError):
         # Error opening the database file, maybe it doesn't exist
         if heka_client is not None:
             heka_client.raven('Error opening geoip database file.')
@@ -79,120 +71,147 @@ def configure_geoip(registry_settings=None, filename=None, heka_client=None):
     return db
 
 
-class GeoIPWrapper(pygeoip.GeoIP):
+def geoip_accuracy(country_code, city=False):
+    """
+    Returns the best accuracy guess for the given GeoIP record.
 
-    def __init__(self, filename, flags=STANDARD, cache=True):
-        """
-        A wrapper around the pygeoip.GeoIP class with two lookup functions
-        which return `None` instead of raising errors.
-        """
-        super(GeoIPWrapper, self).__init__(filename, flags=flags, cache=cache)
+    :param country_code: A two-letter ISO country code.
+    :param city: A boolean indicating whether or not we have a city record.
+    :returns: An accuracy guess in meters.
+    :rtype: int
+    """
+    accuracy = None
+    if country_code:
+        accuracy = maximum_country_radius(country_code)
+    if accuracy is None:
+        # No country code or no successful radius lookup
+        accuracy = GEOIP_COUNTRY_ACCURACY
 
-        if self._databaseType not in CITY_EDITIONS:
+    if city:
+        # Use country radius as an upper bound for city radius
+        # for really small countries
+        accuracy = min(GEOIP_CITY_ACCURACY, accuracy)
+
+    return accuracy
+
+
+class GeoIPWrapper(Reader):
+    """
+    A wrapper around the geoip2.Reader class with two lookup functions
+    which return `None` instead of raising errors.
+    """
+
+    lookup_exceptions = (
+        AddressNotFoundError, GeoIP2Error, InvalidDatabaseError, ValueError)
+    valid_countries = VALID_COUNTRIES
+
+    def __init__(self, filename, mode=MODE_AUTO):
+        """
+        Takes the absolute path to a geoip database on the local filesystem
+        and an additional mode, which defaults to `MODE_AUTO`.
+
+        :raises: :exc:`maxminddb.InvalidDatabaseError`
+        """
+        super(GeoIPWrapper, self).__init__(filename, mode=mode)
+
+        if self.metadata().database_type != 'GeoIP2-City':
             message = 'Invalid database type, expected City'
-            raise GeoIPError(message)
+            raise InvalidDatabaseError(message)
 
-        # build a list of invalid country codes present in the GeoIP data
-        iso_countries = set(iso3166.countries_by_alpha2.keys())
-        ip_countries = set(COUNTRY_CODES)
-        self.invalid_countries = frozenset(ip_countries - iso_countries)
-
-    def _ip2long(self, addr):
-        try:
-            ipnum = ip2long(addr)
-        except socket.error:
-            # socket.error: Almost certainly an invalid IP address
-            return None
-        return ipnum
-
-    def geoip_lookup(self, addr):
+    @property
+    def age(self):
         """
-        Returns a dictionary with city data, same as the `record_by_addr`
-        method.
+        :returns: The age of the database file in days.
+        :rtype: int
+        """
+        build_epoch = self.metadata().build_epoch
+        return int(round((time.time() - build_epoch) / 86400, 0))
+
+    def check_extension(self):
+        for instance in (self.metadata(), self._db_reader):
+            if type(instance).__module__ != '__builtin__':
+                return False
+        return True
+
+    def city_lookup(self, addr):
+        """
+        Returns a geoip city record.
 
         This method returns `None` instead of throwing exceptions in
         case of invalid or unknown addresses.
 
-        :arg addr: IP address (e.g. 203.0.113.30)
+        :param addr: IP address (e.g. '203.0.113.30')
+        :rtype: :class:`geoip2.models.City`
         """
-        ipnum = self._ip2long(addr)
-        if not ipnum:
-            # invalid IP address
-            return None
-
         try:
-            record = self._get_record(ipnum)
-        except AttributeError:  # pragma: no cover
-            # AttributeError: The GeoIP database has no data for that IP
+            record = self.city(addr)
+        except self.lookup_exceptions:
+            # The GeoIP database has no data for this IP or is broken.
             return None
-
-        # Translate "no data found" in the unlikely case that it's returned by
-        # pygeoip
-        if not record:
-            return None
-
-        # Round lat/lon to a standard maximum precision
-        for i in ('latitude', 'longitude'):
-            record[i] = round(record[i], DEGREE_DECIMAL_PLACES)
 
         return record
 
-    def country_lookup(self, addr):
+    def geoip_lookup(self, addr):
         """
-        Returns a country code and name for an IP address.
+        Looks up information for the given IP address.
 
-        Returns `None` for invalid or unknown addresses.
-
-        :arg addr: IP address (e.g. 203.0.113.30)
+        :param addr: IP address (e.g. '203.0.113.30')
+        :returns: A dictionary with city, country data and location data.
+        :rtype: dict
         """
-        record = self.geoip_lookup(addr)
+        record = self.city_lookup(addr)
         if not record:
             return None
 
-        country_code = record['country_code'].upper()
-        if country_code in self.invalid_countries:
-            # filter out non-countries like EU, A1, O1
+        country = record.country
+        city = bool(record.city.name)
+        location = record.location
+        return {
+            # Round lat/lon to a standard maximum precision
+            'latitude': round(location.latitude, DEGREE_DECIMAL_PLACES),
+            'longitude': round(location.longitude, DEGREE_DECIMAL_PLACES),
+            'country_code': country.iso_code,
+            'country_name': country.name,
+            'city': city,
+            'accuracy': geoip_accuracy(country.iso_code, city=city),
+        }
+
+    def country_lookup(self, addr):
+        """
+        Looks up a country code and name for the given IP address.
+
+        :param addr: IP address (e.g. 203.0.113.30)
+        :returns: A country object or `None` for invalid or unknown addresses.
+        :rtype: :class:`~ichnaea.geoip.Country`
+        """
+        record = self.city_lookup(addr)
+        if not record:
             return None
 
-        return Country(country_code, record['country_name'])
+        country = record.country
+        country_code = country.iso_code.upper()
+        if country_code not in self.valid_countries:
+            # filter out non-countries
+            return None
+
+        return Country(country_code, country.name)
 
 
 class GeoIPNull(object):
+    """
+    A dummy implementation of the :class:`~ichnaea.geoip.GeoIPWrapper` API.
+    """
+
+    valid_countries = VALID_COUNTRIES
 
     def geoip_lookup(self, addr):
+        """
+        :returns: None
+        """
         return None
 
     def country_lookup(self, addr):
+        """
+        :returns: None
+        """
         return None
-
-
-class GeoIPMock(object):
-
-    def __init__(self, ip_data=None, country_data=None):
-        """
-        Initialize the mock with a dictionary of records. Each ip record maps
-        one IP address string like '127.0.0.1' to a dictionary of data items.
-        An example data item is:
-
-        {'127.0.0.1':
-            {
-                'latitude': 12.34,
-                'longitude': 23.45,
-                'country_code': 'US',
-                'city': True,
-            }
-        }
-
-        Each country record maps one IP address to a country code and name
-        tuple, for example:
-
-        {'127.0.0.1': ('US', 'United States')}
-        """
-        self.ip_data = ip_data
-        self.country_data = country_data
-
-    def geoip_lookup(self, addr_string):
-        return self.ip_data.get(addr_string)
-
-    def country_lookup(self, addr_string):  # pragma: no cover
-        return self.country_data.get(addr_string)

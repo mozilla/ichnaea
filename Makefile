@@ -1,8 +1,9 @@
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
-BUILD_DIRS = bin build dist include lib lib64 man node_modules share
+BUILD_DIRS = bin build dist include lib lib64 libmaxminddb man node_modules share
 TRAVIS ?= false
 
+MAXMINDDB_VERSION = 1.1.1
 MYSQL_DB = location
 MYSQL_TEST_DB = test_location
 
@@ -56,6 +57,19 @@ else
 endif
 	bin/pip install -U pip
 
+libmaxminddb/bootstrap:
+	git clone --recursive git://github.com/maxmind/libmaxminddb
+	cd libmaxminddb; git checkout 1.0.4
+	cd libmaxminddb; git submodule update --init --recursive
+
+libmaxminddb/Makefile:
+	cd libmaxminddb; ./bootstrap
+	cd libmaxminddb; ./configure --prefix=$(HERE)
+
+lib/libmaxminddb.0.dylib: libmaxminddb/bootstrap libmaxminddb/Makefile
+	cd libmaxminddb; make
+	cd libmaxminddb; make install
+
 install_vaurien_deps:
 	$(INSTALL) -r requirements/vaurien.txt
 	$(INSTALL) -r requirements/loads.txt
@@ -74,7 +88,9 @@ start_ichnaea:
 automate_vaurien:
 	SQLURI=$(SQLURI) nosetests -sv integration_tests/test_integration.py
 
-build: $(PYTHON) mysql
+build: $(PYTHON) mysql lib/libmaxminddb.0.dylib
+	CFLAGS=-I$(HERE)/include LDFLAGS=-L$(HERE)/lib \
+		$(INSTALL) maxminddb==$(MAXMINDDB_VERSION)
 	$(INSTALL) -r requirements/prod-c.txt
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/test-c.txt
@@ -139,16 +155,20 @@ clean:
 	rm -rf $(HERE)/ichnaea.egg-info
 
 test: mysql
+ifeq ($(TRAVIS), false)
+	$(BIN)/coverage erase
+endif
 	SQLURI=$(SQLURI) CELERY_ALWAYS_EAGER=true \
+	LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(HERE)/lib \
 	$(NOSE) -s -d -v --with-coverage --cover-package ichnaea ichnaea
 
-bin/sphinx-build:
+$(BIN)/sphinx-build:
 	$(INSTALL) -r requirements/docs.txt
 
 shell:
 	SQLURI=$(SQLURI) $(PYTHON) scripts/start_ipython.py
 
-docs:  bin/sphinx-build
+docs: $(BIN)/sphinx-build
 	git submodule update --recursive --init
 	cd docs; make html
 

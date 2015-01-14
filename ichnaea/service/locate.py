@@ -20,7 +20,6 @@ from ichnaea.geocalc import (
     distance,
     location_is_in_country,
 )
-from ichnaea.geoip import radius_from_geoip
 from ichnaea.logging import (
     get_heka_client,
     get_stats_client,
@@ -150,8 +149,7 @@ def geoip_and_best_guess_country_codes(cell_keys, api_name,
 
     if geoip:
         # GeoIP always wins if we have it.
-        accuracy, city = radius_from_geoip(geoip)
-        if city:
+        if geoip['city']:
             stats_client.incr('%s.geoip_city_found' % api_name)
         else:
             stats_client.incr('%s.geoip_country_found' % api_name)
@@ -167,7 +165,7 @@ def geoip_and_best_guess_country_codes(cell_keys, api_name,
         geoip_res = {
             'lat': geoip['latitude'],
             'lon': geoip['longitude'],
-            'accuracy': accuracy
+            'accuracy': geoip['accuracy'],
         }
         return (geoip_res, most_common_elements(cell_countries))
 

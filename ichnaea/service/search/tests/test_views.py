@@ -1,10 +1,7 @@
 from sqlalchemy import text
 from webob.response import gzip_app_iter
 
-from ichnaea.constants import (
-    CELL_MIN_ACCURACY,
-    GEOIP_CITY_ACCURACY,
-)
+from ichnaea.constants import CELL_MIN_ACCURACY
 from ichnaea.customjson import dumps, loads
 from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
@@ -15,9 +12,6 @@ from ichnaea.models import (
 from ichnaea.tests.base import (
     AppTestCase,
     FRANCE_MCC,
-    FREMONT_IP,
-    FREMONT_LAT,
-    FREMONT_LON,
     PARIS_LAT,
     PARIS_LON,
 )
@@ -130,19 +124,20 @@ class TestSearch(AppTestCase):
 
     def test_geoip_fallback(self):
         app = self.app
+        london = self.geoip_data['London']
         res = app.post_json(
             '/v1/search?key=test',
             {"wifi": [
                 {"key": "a0fffffff0ff"}, {"key": "b1ffff0fffff"},
                 {"key": "c2fffffffff0"}, {"key": "d3fffff0ffff"},
             ]},
-            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
+            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": FREMONT_LAT,
-                                    "lon": FREMONT_LON,
-                                    "accuracy": GEOIP_CITY_ACCURACY})
+                                    "lat": london['latitude'],
+                                    "lon": london['longitude'],
+                                    "accuracy": london['accuracy']})
 
         self.check_stats(
             total=9,
@@ -159,15 +154,16 @@ class TestSearch(AppTestCase):
 
     def test_empty_request_means_geoip(self):
         app = self.app
+        london = self.geoip_data['London']
         res = app.post_json(
             '/v1/search?key=test', {},
-            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
+            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": FREMONT_LAT,
-                                    "lon": FREMONT_LON,
-                                    "accuracy": GEOIP_CITY_ACCURACY})
+                                    "lat": london['latitude'],
+                                    "lon": london['longitude'],
+                                    "accuracy": london['accuracy']})
 
         self.check_stats(
             total=8,
@@ -275,6 +271,7 @@ class TestSearchErrors(AppTestCase):
 
     def test_database_error(self):
         app = self.app
+        london = self.geoip_data['London']
         session = self.db_slave_session
         stmt = text("drop table wifi;")
         session.execute(stmt)
@@ -287,13 +284,13 @@ class TestSearchErrors(AppTestCase):
                 {"key": "303030303030"},
                 {"key": "404040404040"},
             ]},
-            extra_environ={'HTTP_X_FORWARDED_FOR': FREMONT_IP},
+            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
         )
 
         self.assertEqual(res.json, {"status": "ok",
-                                    "lat": FREMONT_LAT,
-                                    "lon": FREMONT_LON,
-                                    "accuracy": GEOIP_CITY_ACCURACY})
+                                    "lat": london['latitude'],
+                                    "lon": london['longitude'],
+                                    "accuracy": london['accuracy']})
 
         self.check_stats(
             timer=['request.v1.search'],

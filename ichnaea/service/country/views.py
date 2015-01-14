@@ -34,7 +34,7 @@ def country_view(request):
         if country:
             result = HTTPOk()
             result.content_type = 'application/json'
-            result.body = '{"country_code": "%s", "country_name": "%s"}' % (
+            result.text = '{"country_code": "%s", "country_name": "%s"}' % (
                 country.code, country.name)
             return result
         else:

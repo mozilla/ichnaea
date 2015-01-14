@@ -4,6 +4,7 @@ import os.path
 
 from alembic.config import Config
 from alembic import command
+from maxminddb.const import MODE_AUTO
 from sqlalchemy import (
     event,
     inspect,
@@ -24,8 +25,10 @@ from ichnaea.async.config import (
     configure_ocid_import,
 )
 from ichnaea.cache import redis_client
+from ichnaea.constants import GEOIP_CITY_ACCURACY
 from ichnaea.db import _Model
 from ichnaea.db import Database
+from ichnaea.geocalc import maximum_country_radius
 from ichnaea.geoip import configure_geoip
 from ichnaea.logging import (
     configure_heka,
@@ -45,35 +48,57 @@ except ImportError:
 
 TEST_DIRECTORY = os.path.dirname(__file__)
 HEKA_TEST_CONFIG = os.path.join(TEST_DIRECTORY, 'heka.ini')
+DATA_DIRECTORY = os.path.join(TEST_DIRECTORY, 'data')
+GEOIP_TEST_FILE = os.path.join(DATA_DIRECTORY, 'GeoIP2-City-Test.mmdb')
+GEOIP_BAD_FILE = os.path.join(
+    DATA_DIRECTORY, 'GeoIP2-Connection-Type-Test.mmdb')
 
 SQLURI = os.environ.get('SQLURI')
 REDIS_URI = os.environ.get('REDIS_URI', 'redis://localhost:6379/1')
 
 # Some test-data constants
 
+GEOIP_DATA = {
+    'London': {
+        'city': True,
+        'country_code': 'GB',
+        'country_name': 'United Kingdom',
+        'ip': '81.2.69.192',
+        'latitude': 51.5142,
+        'longitude': -0.0931,
+        'accuracy': GEOIP_CITY_ACCURACY,
+    },
+    'Bhutan': {
+        'city': False,
+        'country_code': 'BT',
+        'country_name': 'Bhutan',
+        'ip': '67.43.156.1',
+        'latitude': 27.5,
+        'longitude': 90.5,
+        'accuracy': maximum_country_radius('BT'),
+    },
+}
+
 USA_MCC = 310
 ATT_MNC = 150
-
-FREMONT_IP = '66.92.181.240'
 FREMONT_LAT = 37.5079
 FREMONT_LON = -121.96
 
 BRAZIL_MCC = 724
 VIVO_MNC = 11
-
-SAO_PAULO_IP = '200.153.101.58'
 SAO_PAULO_LAT = -23.54
 SAO_PAULO_LON = -46.64
-
 PORTO_ALEGRE_LAT = -30.032
 PORTO_ALEGRE_LON = -51.22
 
 FRANCE_MCC = 208
 VIVENDI_MNC = 10
-
-PARIS_IP = '146.0.66.11'
 PARIS_LAT = 48.8568
 PARIS_LON = 2.3508
+
+GB_MCC = 234
+GB_LAT = 51.5
+GB_LON = -0.1
 
 
 def _make_db(uri=SQLURI):
@@ -490,10 +515,18 @@ class LogIsolation(object):
 
 class GeoIPIsolation(object):
 
+    geoip_data = GEOIP_DATA
+
     @classmethod
-    def setup_geoip(cls):
-        filename = os.path.join(os.path.dirname(__file__), 'GeoIPCity.dat')
-        cls.geoip_db = configure_geoip(filename=filename)
+    def configure_geoip(cls, filename=None, mode=MODE_AUTO, heka_client=None):
+        if filename is None:
+            filename = GEOIP_TEST_FILE
+        return configure_geoip(filename=filename, mode=mode,
+                               heka_client=heka_client)
+
+    @classmethod
+    def setup_geoip(cls, heka_client=None):
+        cls.geoip_db = cls.configure_geoip(heka_client=heka_client)
 
     @classmethod
     def teardown_geoip(cls):
