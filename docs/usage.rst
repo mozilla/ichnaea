@@ -15,24 +15,13 @@ You can use the :ref:`service_api` directly via a command line client
 like curl or via any programming language allowing you to do HTTP calls.
 
 
-MozStumbler for Android
------------------------
+Apps
+----
 
-MozStumbler is an open source Android application, which both collects data to
-enhance the service and also includes a test mode to show ones location on a
-map.
-
-You can find `MozStumbler on github <https://github.com/mozilla/MozStumbler>`_
-to download it or to contribute to its development.
-
-
-Firefox for Android
--------------------
-
-Nightly versions of Firefox for Android include a way to contribute data and
-enhance this service. In order to enable this, you need to go to the
-Mozilla settings section and look for the contribution option under
-data choices.
+A number of apps with different capabilities exist that allow you to use
+or contribute to the service. Please have a look at the
+`Apps listing <https://location.services.mozilla.com/apps>`_ on the service
+website to learn more.
 
 
 Firefox Desktop
@@ -55,34 +44,3 @@ Geolocation API. If you reset the settings value it should have been::
     https://www.googleapis.com/geolocation/v1/geolocate?key=%GOOGLE_API_KEY%
 
 If you see a different value, please update to Firefox 24 or later.
-
-
-Firefox OS
-----------
-
-Integration of this service into Firefox OS is an ongoing process. If the
-specific Firefox OS device uses this service depends on a number of factors
-including which chipset is used in the device, which manufacturer built
-the device and via what partner and channel it was sold or given out.
-
-In general client side code to talk to this service appeared in Firefox OS
-version 1.3T and 1.4.
-
-
-FxStumbler
-----------
-
-FxStumbler is an open source Firefox OS application similar in purpose to
-MozStumbler. It collects data about the radio environment to enhance the
-service.
-
-To contribute to the development of `FxStumbler visit it on github
-<https://github.com/clochix/FxStumbler>`_.
-
-
-Geoclue
--------
-
-Geoclue is a D-Bus service that provides location information. It has
-integrated this service as a location provider. You can find out more about
-`geoclue on its homepage <http://www.freedesktop.org/wiki/Software/GeoClue/>`_.
