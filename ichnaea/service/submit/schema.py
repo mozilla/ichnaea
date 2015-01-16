@@ -33,7 +33,7 @@ class WifisSchema(SequenceSchema):
     wifi = WifiSchema()
 
 
-class MeasureSchema(MappingSchema):
+class BaseMeasureSchema(MappingSchema):
     # lat/lon being set to -255 indicates that this measure should be
     # skipped.  Other fields can be filled in with defaults
     lat = SchemaNode(Float(), missing=-255)
@@ -49,6 +49,8 @@ class MeasureSchema(MappingSchema):
     heading = SchemaNode(Float(), missing=-1.0)
     speed = SchemaNode(Float(), missing=-1.0)
 
+
+class MeasureSchema(BaseMeasureSchema):
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())
 
