@@ -14,24 +14,12 @@ from colander import (
     Range,
     SchemaNode,
     String,
-    iso8601
+    iso8601,
 )
 
 from ichnaea import geocalc
 from ichnaea.customjson import encode_datetime
-from ichnaea.data.constants import (
-    ALL_VALID_MCCS,
-    INVALID_WIFI_REGEX,
-    MAX_ACCURACY,
-    MAX_ALTITUDE,
-    MAX_ALTITUDE_ACCURACY,
-    MAX_HEADING,
-    MAX_LAT,
-    MAX_SPEED,
-    MIN_ALTITUDE,
-    MIN_LAT,
-    VALID_WIFI_REGEX,
-)
+from ichnaea.data import constants
 from ichnaea.models import (
     MAX_RADIO_TYPE,
     MIN_RADIO_TYPE,
@@ -47,6 +35,11 @@ def normalized_time(time):
     Takes a string representation of a time value, validates and parses
     it and returns a JSON-friendly string representation of the normalized
     time.
+
+    It rounds down a date to the first of the month.
+
+    It takes any date greater than 60 days into the past
+    or in the future and sets it to the current date.
     """
     now = util.utcnow()
     if not time:
@@ -81,8 +74,8 @@ def valid_wifi_pattern(key):
     Return True if a wifi key matches our valid regex,
     our invalid regex, and has length 12.
     """
-    return INVALID_WIFI_REGEX.match(key) and \
-        VALID_WIFI_REGEX.match(key) and len(key) == 12
+    return constants.INVALID_WIFI_REGEX.match(key) and \
+        constants.VALID_WIFI_REGEX.match(key) and len(key) == 12
 
 
 # Custom Types
@@ -140,7 +133,7 @@ class WifiKeyNode(SchemaNode):
             raise Invalid(node, 'Invalid wifi key')
 
 
-class ReportNode(SchemaNode):
+class ReportIDNode(SchemaNode):
     """
     A node containing a valid report_id.
     ex: 489cc8dc9d3d11e4a87d02442b52e5a0
@@ -150,17 +143,17 @@ class ReportNode(SchemaNode):
         return cstruct or uuid.uuid1().hex
 
 
-class TimeNode(SchemaNode):
+class RoundToMonthDateNode(SchemaNode):
     """
-    A node containing a valid date.
+    A node which takes a string date and
+    rounds it to the first of the month.
     ex: 2015-01-01
     """
 
     def preparer(self, cstruct):
-        if cstruct:
-            return normalized_time(cstruct)
-        else:
-            return datetime.date.today().strftime('%Y-%m-%d')
+        if not cstruct:
+            cstruct = datetime.date.today().strftime('%Y-%m-%d')
+        return normalized_time(cstruct)
 
 
 # Schemas
@@ -195,35 +188,45 @@ class ValidMeasureSchema(FieldSchema, CopyingSchema):
     A Schema which validates the fields present in a measurement,
     regardless of whether it is a Cell or Wifi measurement.
     """
-    lat = SchemaNode(Float(), missing=0.0, validator=Range(MIN_LAT, MAX_LAT))
+    lat = SchemaNode(Float(), missing=0.0, validator=Range(
+        constants.MIN_LAT, constants.MAX_LAT))
     lon = SchemaNode(Float(), missing=0.0, validator=Range(-180, 180))
     accuracy = DefaultNode(
-        Float(), missing=0, validator=Range(0, MAX_ACCURACY))
+        Float(), missing=0, validator=Range(0, constants.MAX_ACCURACY))
     altitude = DefaultNode(
-        Float(), missing=0, validator=Range(MIN_ALTITUDE, MAX_ALTITUDE))
+        Float(), missing=0, validator=Range(
+            constants.MIN_ALTITUDE, constants.MAX_ALTITUDE))
     altitude_accuracy = DefaultNode(
-        Float(), missing=0, validator=Range(0, MAX_ALTITUDE_ACCURACY))
-    heading = DefaultNode(Float(), missing=-1, validator=Range(0, MAX_HEADING))
-    speed = DefaultNode(Float(), missing=-1, validator=Range(0, MAX_SPEED))
-    report_id = ReportNode(String(), missing='')
-    time = TimeNode(DateTimeToString(), missing=None)
+        Float(), missing=0, validator=Range(
+            0, constants.MAX_ALTITUDE_ACCURACY))
+    heading = DefaultNode(
+        Float(), missing=-1, validator=Range(0, constants.MAX_HEADING))
+    speed = DefaultNode(
+        Float(), missing=-1, validator=Range(0, constants.MAX_SPEED))
+    report_id = ReportIDNode(String(), missing='')
+    time = RoundToMonthDateNode(DateTimeToString(), missing=None)
 
 
 class ValidWifiSchema(ValidMeasureSchema):
     """
     A Schema which validates the fields present in a a wifi measurement.
     """
-    signal = DefaultNode(Integer(), missing=0, validator=Range(-200, -1))
+    channel = SchemaNode(Integer(), missing=0, validator=Range(
+        constants.MIN_WIFI_CHANNEL, constants.MAX_WIFI_CHANNEL))
+    key = WifiKeyNode(String())
+    signal = DefaultNode(Integer(), missing=0, validator=Range(
+        constants.MIN_WIFI_SIGNAL, constants.MAX_WIFI_SIGNAL))
     signalToNoiseRatio = DefaultNode(
         Integer(), missing=0, validator=Range(0, 100))
-    key = WifiKeyNode(String())
-    channel = SchemaNode(Integer(), validator=Range(0, 166))
 
     def deserialize(self, data):
         if data:
             channel = int(data.get('channel', 0))
 
-            if not 0 < channel < 166:
+            if not (
+                    constants.MIN_WIFI_CHANNEL
+                    < channel
+                    < constants.MAX_WIFI_CHANNEL):
                 # if no explicit channel was given, calculate
                 freq = data.get('frequency', 0)
 
@@ -236,10 +239,7 @@ class ValidWifiSchema(ValidMeasureSchema):
                     data['channel'] = (freq - 5000) // 5
 
                 else:
-                    data['channel'] = 0
-
-            data.pop('frequency', None)
-            data.pop('radio', None)
+                    data['channel'] = self.fields['channel'].missing
 
         return super(ValidWifiSchema, self).deserialize(data)
 
@@ -292,7 +292,7 @@ class ValidCellBaseSchema(ValidMeasureSchema):
         lac_missing = self.is_missing(data, 'lac')
         cid_missing = self.is_missing(data, 'cid')
 
-        if data['mcc'] not in ALL_VALID_MCCS:
+        if data['mcc'] not in constants.ALL_VALID_MCCS:
             raise Invalid(
                 schema, 'Check against the list of all known valid mccs')
 
@@ -302,7 +302,11 @@ class ValidCellBaseSchema(ValidMeasureSchema):
                 'Skip CDMA towers missing lac or cid '
                 '(no psc on CDMA exists to backfill using inference)'))
 
-        radio_types = RADIO_TYPE['gsm'], RADIO_TYPE['umts'], RADIO_TYPE['lte']
+        radio_types = (
+            RADIO_TYPE['gsm'],
+            RADIO_TYPE['umts'],
+            RADIO_TYPE['lte'],
+        )
         if data['radio'] in radio_types and data['mnc'] > 999:
             raise Invalid(
                 schema, 'Skip GSM/LTE/UMTS towers with an invalid MNC')
@@ -342,35 +346,14 @@ class ValidCellMeasureSchema(ValidCellBaseSchema):
         return super(ValidCellMeasureSchema, self).deserialize(data)
 
     def validator(self, schema, data):
-        lac_missing = self.is_missing(data, 'lac')
-        cid_missing = self.is_missing(data, 'cid')
+        super(ValidCellMeasureSchema, self).validator(schema, data)
 
-        if ((lac_missing or cid_missing)
-                and self.is_missing(data, 'psc')):
-            raise Invalid(schema, (
-                'Must have (lac and cid) or '
-                'psc (psc-only to use in backfill)'))
-
-        in_country = [
-            geocalc.location_is_in_country(
+        in_country = False
+        for code in mobile_codes.mcc(str(data['mcc'])):
+            in_country = in_country or geocalc.location_is_in_country(
                 data['lat'], data['lon'], code.alpha2, 1)
-            for code in mobile_codes.mcc(str(data['mcc']))
-        ]
 
-        if not any(in_country):
+        if not in_country:
             raise Invalid(schema, (
                 'Lat/lon must be inside one of '
                 'the bounding boxes for the MCC'))
-
-        radio_types = RADIO_TYPE['gsm'], RADIO_TYPE['umts'], RADIO_TYPE['lte']
-        if data['radio'] in radio_types and data['mnc'] > 999:
-            raise Invalid(
-                schema,
-                '{radio} can not have an MNC > 999'.format(
-                    radio=data['radio']))
-
-        if (data['radio'] == RADIO_TYPE['cdma']
-                and (lac_missing or cid_missing)):
-            raise Invalid(schema, (
-                'CDMA towers  must have lac or cid (no psc '
-                'on CDMA exists to backfill using inference)'))
