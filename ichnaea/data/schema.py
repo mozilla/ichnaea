@@ -223,8 +223,7 @@ class ValidWifiSchema(ValidMeasureSchema):
         if data:
             channel = int(data.get('channel', 0))
 
-            if not (
-                    constants.MIN_WIFI_CHANNEL
+            if not (constants.MIN_WIFI_CHANNEL
                     < channel
                     < constants.MAX_WIFI_CHANNEL):
                 # if no explicit channel was given, calculate
@@ -334,6 +333,7 @@ class ValidCellMeasureSchema(ValidCellBaseSchema):
     A Schema which validates the fields present in
     all Cell measurements.
     """
+    # pass through created without bothering to validate or decode it again
     created = SchemaNode(String(), missing=None)
 
     def deserialize(self, data):

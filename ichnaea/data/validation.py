@@ -10,7 +10,7 @@ from ichnaea.data.schema import (
 def normalized_measure_dict(data):
     try:
         validated = ValidMeasureSchema().deserialize(data)
-    except Exception:
+    except Invalid:
         validated = None
     return validated
 
@@ -22,7 +22,7 @@ def normalized_wifi_dict(data):
     """
     try:
         validated = ValidWifiSchema().deserialize(data)
-    except Exception:
+    except Invalid:
         validated = None
     return validated
 

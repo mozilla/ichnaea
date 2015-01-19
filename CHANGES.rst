@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #378: Use colander for internal data validation.
+
 - Remove explicit queue declaration from celery base task.
 
 20150105140000
