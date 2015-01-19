@@ -21,7 +21,7 @@ importlib==1.0.3
 iso3166==0.6
 iso8601==0.1.10
 kombu==3.0.24
-mobile-codes==0.4
+mobile-codes==0.7
 ordereddict==1.1
 pygeoip==0.3.2
 pyramid==1.5.2

@@ -30,10 +30,10 @@ MAX_SPEED = 300.0
 ALL_VALID_MCCS = frozenset(
     [int(country.mcc)
      for country in mobile_codes._countries()
-     if isinstance(country.mcc, str)] +
+     if isinstance(country.mcc, basestring)] +
     [int(code)
      for country in mobile_codes._countries()
-     if isinstance(country.mcc, tuple)
+     if isinstance(country.mcc, (tuple, list))
      for code in country.mcc]
 )
 
