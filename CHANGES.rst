@@ -18,6 +18,9 @@ Changes
 
 - Remove explicit queue declaration from celery base task.
 
+- Updated to latest versions of alembic, boto, Chameleon, jaraco.util,
+  psutil, requests-mock, WSGIProxy2 and zope.deprecation.
+
 20150105140000
 **************
 

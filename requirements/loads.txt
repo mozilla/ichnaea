@@ -1,6 +1,6 @@
-WSGIProxy2==0.4.1
+WSGIProxy2==0.4.2
 irc==9.0  # rq.filter: <10.0
-jaraco.util==10.6
+jaraco.util==10.7.1
 konfig==0.9
 loads==0.3
 more-itertools==2.2
