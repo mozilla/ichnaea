@@ -227,7 +227,8 @@ def import_stations(session, filename, fields):
 
         for row in csv_reader:
             # skip any header row
-            if csv_reader.line_num == 1 and 'radio' in row.values():
+            if csv_reader.line_num == 1 and \
+               'radio' in row.values():  # pragma: no cover
                 continue
 
             data = make_cell_import_dict(row)
