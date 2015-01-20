@@ -6,6 +6,7 @@ from ichnaea.constants import (
     LAC_MIN_ACCURACY,
     WIFI_MIN_ACCURACY,
 )
+from ichnaea.data.schema import ValidCellBaseSchema
 from ichnaea.geocalc import maximum_country_radius
 from ichnaea.geoip import GeoIPMock
 from ichnaea.models import (
@@ -377,6 +378,7 @@ class TestSearchAllSources(DBTestCase):
         self.assertTrue(result is None)
 
     def test_cell_ignore_invalid_lac_cid(self):
+        schema = ValidCellBaseSchema()
         session = self.db_slave_session
         lat = PARIS_LAT
         lon = PARIS_LON
@@ -384,7 +386,10 @@ class TestSearchAllSources(DBTestCase):
         lte = RADIO_TYPE['lte']
 
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
-        ignored_key = dict(mcc=FRANCE_MCC, mnc=2, lac=-1, cid=-1)
+        ignored_key = dict(
+            mcc=FRANCE_MCC, mnc=2,
+            lac=schema.fields['lac'].missing,
+            cid=schema.fields['cid'].missing)
 
         data = [
             Cell(lat=lat, lon=lon, radio=gsm, cid=4, **key),

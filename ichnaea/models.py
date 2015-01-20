@@ -42,9 +42,6 @@ RADIO_TYPE_INVERSE[2] = 'umts'
 MAX_RADIO_TYPE = max(RADIO_TYPE.values())
 MIN_RADIO_TYPE = min(RADIO_TYPE.values())
 
-# Numeric constant used to indicate "virtual cells" for LACs, in db.
-CELLID_LAC = -2
-
 CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
 CellAreaKey = namedtuple('CellAreaKey', 'radio mcc mnc lac')
@@ -158,8 +155,8 @@ class Cell(_Model):
     # int in the range 0-1000 for gsm
     # int in the range 0-32767 for cdma (system id)
     mnc = Column(SmallInteger)
-    lac = Column(Integer)
-    cid = Column(Integer)
+    lac = Column(SmallInteger(unsigned=True))
+    cid = Column(Integer(unsigned=True))
     psc = Column(SmallInteger)
     range = Column(Integer)
     new_measures = Column(Integer(unsigned=True))
@@ -171,9 +168,9 @@ class Cell(_Model):
         if 'modified' not in kw:
             kw['modified'] = util.utcnow()
         if 'lac' not in kw:
-            kw['lac'] = -1
+            kw['lac'] = 0
         if 'cid' not in kw:
-            kw['cid'] = -1
+            kw['cid'] = 0
         if 'range' not in kw:
             kw['range'] = 0
         if 'new_measures' not in kw:

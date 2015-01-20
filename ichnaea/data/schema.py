@@ -249,8 +249,10 @@ class ValidCellBaseSchema(ValidMeasureSchema):
     all Cell and Cell measurements.
     """
     asu = DefaultNode(Integer(), missing=-1, validator=Range(0, 97))
-    cid = DefaultNode(Integer(), missing=-1, validator=Range(1, 268435455))
-    lac = DefaultNode(Integer(), missing=-1, validator=Range(1, 65535))
+    cid = DefaultNode(
+        Integer(), missing=0, validator=Range(1, constants.MAX_ALL_CID))
+    lac = DefaultNode(
+        Integer(), missing=0, validator=Range(1, constants.MAX_LAC))
     mcc = SchemaNode(Integer(), validator=Range(1, 999))
     mnc = SchemaNode(Integer(), validator=Range(0, 32767))
     psc = DefaultNode(Integer(), missing=-1, validator=Range(0, 512))
@@ -314,6 +316,14 @@ class ValidCellBaseSchema(ValidMeasureSchema):
             raise Invalid(schema, (
                 'Must have (lac and cid) or '
                 'psc (psc-only to use in backfill)'))
+
+        if (data['radio'] == RADIO_TYPE['cdma']
+                and data['cid'] > constants.MAX_CDMA_CID):
+            raise Invalid(schema, ('CID is out of range for CDMA.'))
+
+        if (data['radio'] == RADIO_TYPE['lte']
+                and data['cid'] > constants.MAX_LTE_CID):
+            raise Invalid(schema, ('CID is out of range for LTE.'))
 
 
 class ValidCellSchema(ValidCellBaseSchema):

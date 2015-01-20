@@ -8,6 +8,10 @@ from ichnaea.data.schema import (
 
 
 def normalized_measure_dict(data):
+    """
+    Returns a normalized copy of the provided measure dict data,
+    or None if the dict was invalid.
+    """
     try:
         validated = ValidMeasureSchema().deserialize(data)
     except Invalid:

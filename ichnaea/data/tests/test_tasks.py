@@ -15,6 +15,8 @@ from ichnaea.content.models import (
     SCORE_TYPE,
 )
 from ichnaea.customjson import encode_datetime
+from ichnaea.data import constants
+from ichnaea.data.schema import ValidCellBaseSchema
 from ichnaea.data.tasks import (
     UPDATE_KEY,
     enqueue_lacs,
@@ -379,6 +381,7 @@ class TestCell(CeleryTestCase):
 
     def test_insert_measures_invalid_lac(self):
         session = self.db_master_session
+        schema = ValidCellBaseSchema()
         time = util.utcnow() - timedelta(days=1)
 
         session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=FRANCE_MCC, mnc=2,
@@ -393,10 +396,10 @@ class TestCell(CeleryTestCase):
             time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=RADIO_TYPE['gsm'])
         entries = [
-            {"mcc": FRANCE_MCC, "mnc": 2, "lac": 3147483647, "cid": 2147483647,
-             "psc": 5, "asu": 8},
-            {"mcc": FRANCE_MCC, "mnc": 2, "lac": -1, "cid": -1,
-             "psc": 5, "asu": 8},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": constants.MAX_LAC + 1,
+             "cid": constants.MAX_ALL_CID + 1, "psc": 5, "asu": 8},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": schema.fields['lac'].missing,
+             "cid": schema.fields['cid'].missing, "psc": 5, "asu": 8},
         ]
         for e in entries:
             e.update(measure)
@@ -406,8 +409,12 @@ class TestCell(CeleryTestCase):
 
         measures = session.query(CellMeasure).all()
         self.assertEqual(len(measures), 2)
-        self.assertEqual(set([m.lac for m in measures]), set([-1]))
-        self.assertEqual(set([m.cid for m in measures]), set([-1]))
+        self.assertEqual(
+            set([m.lac for m in measures]),
+            set([schema.fields['lac'].missing]))
+        self.assertEqual(
+            set([m.cid for m in measures]),
+            set([schema.fields['cid'].missing]))
 
         # Nothing should change in the initially created Cell record
         cells = session.query(Cell).all()

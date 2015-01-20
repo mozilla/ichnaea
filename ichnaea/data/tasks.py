@@ -20,6 +20,7 @@ from ichnaea.customjson import (
     dumps,
     loads,
 )
+from ichnaea.data.schema import ValidCellBaseSchema
 from ichnaea.data.validation import (
     normalized_measure_dict,
     normalized_wifi_dict,
@@ -305,10 +306,10 @@ def incomplete_measure(key):
     entry; these are cell measures with -1 for LAC and/or CID, and
     will be inferred from neighboring cells.
     """
-    if hasattr(key, 'radio') and \
-       (key.radio < 0 or key.lac < 0 or key.cid < 0):  # NOQA
-        return True
-    return False
+    schema = ValidCellBaseSchema()
+    for field in ('radio', 'lac', 'cid'):
+        if getattr(key, field, None) == schema.fields[field].missing:
+            return True
 
 
 def process_mapstat(session, positions):

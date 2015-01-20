@@ -6,12 +6,12 @@ from ichnaea.customjson import (
     decode_datetime,
     encode_datetime,
 )
+from ichnaea.data import constants
+from ichnaea.data.schema import normalized_time, ValidCellBaseSchema
 from ichnaea.data.validation import (
     normalized_cell_measure_dict,
     normalized_wifi_dict,
 )
-from ichnaea.data.schema import normalized_time
-from ichnaea.data.constants import WIFI_TEST_KEY
 from ichnaea.models import RADIO_TYPE
 from ichnaea.tests.base import TestCase
 from ichnaea.tests.base import (
@@ -50,8 +50,8 @@ class ValidationTest(TestCase):
 class TestCellValidation(ValidationTest):
 
     def setUp(self):
-        self.invalid_lacs = [-2, -1, 0, -10, 65536, 987347]
-        self.invalid_cids = [-10, -1, 0, 268435456, 498169872]
+        self.invalid_lacs = [-2, -1, 0, -10, constants.MAX_LAC + 1]
+        self.invalid_cids = [-10, -1, 0, constants.MAX_ALL_CID + 1]
 
         self.valid_pscs = [0, 120, 512]
         self.invalid_pscs = [-1, 513, 4456]
@@ -161,11 +161,13 @@ class TestCellValidation(ValidationTest):
                 self.check_normalized_cell(measure, cell, None)
 
     def test_invalid_lac_with_a_valid_psc(self):
+        schema = ValidCellBaseSchema()
         for lac in self.invalid_lacs:
             for psc in self.valid_pscs:
                 measure, cell = self.get_sample_measure_cell(lac=lac, psc=psc)
                 self.check_normalized_cell(
-                    measure, cell, dict(lac=-1, psc=psc))
+                    measure, cell, dict(
+                        lac=schema.fields['lac'].missing, psc=psc))
 
     def test_invalid_cid_with_an_invalid_psc(self):
         for cid in self.invalid_cids:
@@ -174,11 +176,13 @@ class TestCellValidation(ValidationTest):
                 self.check_normalized_cell(measure, cell, None)
 
     def test_invalid_cid_with_a_valid_psc(self):
+        schema = ValidCellBaseSchema()
         for cid in self.invalid_cids:
             for psc in self.valid_pscs:
                 measure, cell = self.get_sample_measure_cell(cid=cid, psc=psc)
                 self.check_normalized_cell(
-                    measure, cell, dict(cid=-1, psc=psc))
+                    measure, cell, dict(
+                        cid=schema.fields['cid'].missing, psc=psc))
 
     def test_invalid_latitude(self):
         invalid_latitudes = [-100.0, -85.0511, 85.0511, 100.0]
@@ -273,8 +277,11 @@ class TestCellValidation(ValidationTest):
         self.check_normalized_cell(measure, cell, {'signal': -75})
 
     def test_cid_65535_without_a_valid_lac_sets_cid_to_invalid(self):
-        measure, cell = self.get_sample_measure_cell(lac=-1, cid=65535, psc=1)
-        self.check_normalized_cell(measure, cell, {'cid': -1})
+        schema = ValidCellBaseSchema()
+        measure, cell = self.get_sample_measure_cell(
+            lac=schema.fields['lac'].missing, cid=65535, psc=1)
+        self.check_normalized_cell(
+            measure, cell, {'cid': schema.fields['cid'].missing})
 
     def test_unknown_lac_cid_is_65535_and_missing_psc(self):
         measure, cell = self.get_sample_measure_cell(lac=0, cid=65535, psc=-1)
@@ -313,6 +320,42 @@ class TestCellValidation(ValidationTest):
         measure, cell = self.get_sample_measure_cell(radio='gsm', cid=65536)
         self.check_normalized_cell(
             measure, cell, {'radio': RADIO_TYPE['umts']})
+
+    def test_valid_umts_cid_is_32_bit(self):
+        valid_cid = constants.MAX_ALL_CID
+        measure, cell = self.get_sample_measure_cell(
+            radio='umts', cid=valid_cid)
+        self.check_normalized_cell(measure, cell, {'cid': valid_cid})
+
+    def test_invalid_umts_cid_is_not_32_bit(self):
+        invalid_cid = constants.MAX_ALL_CID + 1
+        measure, cell = self.get_sample_measure_cell(
+            radio='umts', cid=invalid_cid)
+        self.check_normalized_cell(measure, cell, None)
+
+    def test_valid_cdma_cid_is_16_bit(self):
+        valid_cid = constants.MAX_CDMA_CID
+        measure, cell = self.get_sample_measure_cell(
+            radio='cdma', cid=valid_cid)
+        self.check_normalized_cell(measure, cell, {'cid': valid_cid})
+
+    def test_invalid_cdma_cid_is_not_16_bit(self):
+        invalid_cid = constants.MAX_CDMA_CID + 1
+        measure, cell = self.get_sample_measure_cell(
+            radio='cdma', cid=invalid_cid)
+        self.check_normalized_cell(measure, cell, None)
+
+    def test_valid_lte_cid_is_28_bit(self):
+        valid_cid = constants.MAX_LTE_CID
+        measure, cell = self.get_sample_measure_cell(
+            radio='lte', cid=valid_cid)
+        self.check_normalized_cell(measure, cell, {'cid': valid_cid})
+
+    def test_invalid_lte_cid_is_not_28_bit(self):
+        invalid_cid = constants.MAX_LTE_CID + 1
+        measure, cell = self.get_sample_measure_cell(
+            radio='lte', cid=invalid_cid)
+        self.check_normalized_cell(measure, cell, None)
 
 
 class TestWifiValidation(ValidationTest):
@@ -376,7 +419,7 @@ class TestWifiValidation(ValidationTest):
             '00000000000g',
             '12#34:56:78:90:12',
             '[1234.56.78.9012]',
-        ] + [WIFI_TEST_KEY] + [
+        ] + [constants.WIFI_TEST_KEY] + [
             c.join([str.format('{x:02x}', x=x)
                     for x in range(6)])
             for c in '!@#$%^&*()_+={}\x01\x02\x03\r\n']
