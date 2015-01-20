@@ -1,4 +1,5 @@
 from collections import deque
+import socket
 import time
 
 from heka.config import client_from_stream_config
@@ -61,7 +62,7 @@ def configure_stats(config, _client=None):
     if len(parts) > 1:
         port = int(parts[1])
 
-    client = StatsClient(host=host, port=port)
+    client = PingableStatsClient(host=host, port=port)
     return set_stats_client(client)
 
 
@@ -135,7 +136,20 @@ def log_tween_factory(handler, registry):
     return log_tween
 
 
-class DebugStatsClient(StatsClient):
+class PingableStatsClient(StatsClient):
+
+    def ping(self):
+        stat = 'monitor.ping:1c'
+        if self._prefix:  # pragma: no cover
+            stat = '%s.%s' % (self._prefix, stat)
+        try:
+            self._sock.sendto(stat.encode('ascii'), self._addr)
+        except socket.error:
+            return False
+        return True  # pragma: no cover
+
+
+class DebugStatsClient(PingableStatsClient):
 
     def __init__(self, host='localhost', port=8125, prefix=None,
                  maxudpsize=512):
@@ -149,3 +163,6 @@ class DebugStatsClient(StatsClient):
 
     def _send(self, data):
         self.msgs.append(data)
+
+    def ping(self):
+        return True
