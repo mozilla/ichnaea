@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #311: On station creation optionally use previous blacklist time.
+
 - #378: Use colander for internal data validation.
 
 - Remove explicit queue declaration from celery base task.

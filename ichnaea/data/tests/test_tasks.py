@@ -6,7 +6,10 @@ import zlib
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy import text
 
-from ichnaea.constants import PERMANENT_BLACKLIST_THRESHOLD
+from ichnaea.constants import (
+    PERMANENT_BLACKLIST_THRESHOLD,
+    TEMPORARY_BLACKLIST_DURATION,
+)
 from ichnaea.content.models import (
     Score,
     SCORE_TYPE,
@@ -287,6 +290,28 @@ class TestCell(CeleryTestCase):
                 # so no measures accepted, no stations seen.
                 self.assertEqual(insert_result.get(), 0)
                 self.assertEqual(update_result.get(), 0)
+
+    def test_blacklist_time_used_as_creation_time(self):
+        now = util.utcnow()
+        last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
+        session = self.db_master_session
+
+        cell_key = {'radio': RADIO_TYPE['gsm'], 'mcc': FRANCE_MCC,
+                    'mnc': 2, 'lac': 3, 'cid': 1}
+
+        session.add(CellBlacklist(time=last_week, **cell_key))
+        session.flush()
+
+        # add a new entry for the previously blacklisted cell
+        measure = dict(lat=PARIS_LAT, lon=PARIS_LON, **cell_key)
+        insert_measures_cell.delay([measure]).get()
+
+        # the cell was inserted again
+        cells = session.query(Cell).all()
+        self.assertEqual(len(cells), 1)
+
+        # and the creation date was set to the date of the blacklist entry
+        self.assertEqual(cells[0].created, last_week)
 
     def test_insert_measures(self):
         session = self.db_master_session
@@ -905,6 +930,27 @@ class TestWifi(CeleryTestCase):
                 # so no measures accepted, no stations seen.
                 self.assertEqual(insert_result.get(), 0)
                 self.assertEqual(update_result.get(), 0)
+
+    def test_blacklist_time_used_as_creation_time(self):
+        now = util.utcnow()
+        last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
+        session = self.db_master_session
+
+        wifi_key = "ab1234567890"
+
+        session.add(WifiBlacklist(time=last_week, key=wifi_key))
+        session.flush()
+
+        # add a new entry for the previously blacklisted wifi
+        measure = dict(lat=PARIS_LAT, lon=PARIS_LON, key=wifi_key)
+        insert_measures_wifi.delay([measure]).get()
+
+        # the wifi was inserted again
+        wifis = session.query(Wifi).all()
+        self.assertEqual(len(wifis), 1)
+
+        # and the creation date was set to the date of the blacklist entry
+        self.assertEqual(wifis[0].created, last_week)
 
     def test_insert_measures(self):
         session = self.db_master_session

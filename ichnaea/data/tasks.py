@@ -1,6 +1,7 @@
 from collections import defaultdict
 import uuid
 
+from sqlalchemy.orm import load_only
 from sqlalchemy.sql import and_, or_
 
 from ichnaea.async.task import DatabaseTask
@@ -141,16 +142,18 @@ def blacklist_and_remove_moving_wifis(session, moving_wifis):
 def blacklisted_station(session, key, blacklist_model,
                         join_key, utcnow):
 
-    query = session.query(blacklist_model).filter(
-        *join_key(blacklist_model, key))
-    b = query.first()
-    if b is not None:
-        age = utcnow - b.time
+    query = (session.query(blacklist_model)
+                    .options(load_only('count', 'time'))
+                    .filter(*join_key(blacklist_model, key)))
+    black = query.first()
+    if black is not None:
+        age = utcnow - black.time
         temporarily_blacklisted = age < TEMPORARY_BLACKLIST_DURATION
-        permanently_blacklisted = b.count >= PERMANENT_BLACKLIST_THRESHOLD
+        permanently_blacklisted = black.count >= PERMANENT_BLACKLIST_THRESHOLD
         if temporarily_blacklisted or permanently_blacklisted:
-            return True
-    return False
+            return (True, black.time)
+        return (False, black.time)
+    return (False, None)
 
 
 def calculate_new_position(station, measures, max_dist_km):
@@ -226,24 +229,29 @@ def calculate_new_position(station, measures, max_dist_km):
 
 
 def create_or_update_station(session, key, station_model,
-                             join_key, utcnow, num):
+                             join_key, utcnow, num, first_blacklisted):
     """
     Creates a station or updates its new/total_measures counts to reflect
     recently-received measures.
     """
-    query = session.query(station_model).filter(
-        *join_key(station_model, key))
+    query = (session.query(station_model)
+                    .filter(*join_key(station_model, key)))
     station = query.first()
 
     if station is not None:
         station.new_measures += num
         station.total_measures += num
     else:
+        created = utcnow
+        if first_blacklisted:
+            # if the station did previously exist, retain at least the
+            # time it was first put on a blacklist as the creation date
+            created = first_blacklisted
         stmt = station_model.__table__.insert(
             on_duplicate='new_measures = new_measures + %s, '
                          'total_measures = total_measures + %s' % (num, num)
         ).values(
-            created=utcnow,
+            created=created,
             new_measures=num,
             total_measures=num,
             **key._asdict())
@@ -554,6 +562,7 @@ def process_station_measures(session, entries, station_type,
     # Process measures one station at a time
     for key, measures in station_measures.items():
 
+        first_blacklisted = None
         incomplete = False
         is_new_station = False
 
@@ -566,8 +575,9 @@ def process_station_measures(session, entries, station_type,
 
         if is_new_station:
             # Drop measures for blacklisted stations.
-            if blacklisted_station(session, key, blacklist_model,
-                                   join_key, utcnow):
+            blacklisted, first_blacklisted = blacklisted_station(
+                session, key, blacklist_model, join_key, utcnow)
+            if blacklisted:
                 dropped_blacklisted += len(measures)
                 continue
 
@@ -590,7 +600,8 @@ def process_station_measures(session, entries, station_type,
         # (station creation is a side effect of count-updating)
         if not incomplete and num > 0:
             create_or_update_station(session, key, station_model,
-                                     join_key, utcnow, num)
+                                     join_key, utcnow, num,
+                                     first_blacklisted)
 
     # Credit the user with discovering any new stations.
     if userid is not None and new_stations > 0:
