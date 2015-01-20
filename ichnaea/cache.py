@@ -1,5 +1,20 @@
-import redis
 import urlparse
+
+import redis
+from redis.exceptions import ConnectionError
+
+
+class RedisClient(redis.StrictRedis):
+
+    def ping(self):
+        """
+        Ping the Redis server, but also catch exceptions.
+        """
+        try:
+            self.execute_command('PING')
+        except ConnectionError:
+            return False
+        return True
 
 
 def redis_client(redis_url):
@@ -23,4 +38,4 @@ def redis_client(redis_url):
         socket_connect_timeout=30.0,
         socket_keepalive=True,
     )
-    return redis.StrictRedis(connection_pool=pool)
+    return RedisClient(connection_pool=pool)

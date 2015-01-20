@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #274: Add a new `__monitor__` endpoint.
+
 - #291: Allow 32bit UMTS cell ids, tighten checks for CDMA and LTE.
 
 - #311: On station creation optionally use previous blacklist time.
