@@ -14,8 +14,8 @@ CELERYBEAT_SCHEDULE = {
     },
     'monitor-measures': {
         'task': 'ichnaea.monitor.tasks.monitor_measures',
-        'schedule': timedelta(seconds=3600),
-        'options': {'expires': 3300},
+        'schedule': timedelta(seconds=900),
+        'options': {'expires': 990},
     },
     'monitor-ocid-import': {
         'task': 'ichnaea.monitor.tasks.monitor_ocid_import',
@@ -32,45 +32,45 @@ CELERYBEAT_SCHEDULE = {
 
     'location-update-cell-1': {
         'task': 'ichnaea.data.tasks.location_update_cell',
-        'schedule': timedelta(seconds=299),  # 13*23
-        'args': (1, 10, 5000),
-        'options': {'expires': 290},
+        'schedule': timedelta(seconds=29),
+        'args': (1, 10, 4000),
+        'options': {'expires': 25},
     },
     'location-update-cell-10': {
         'task': 'ichnaea.data.tasks.location_update_cell',
-        'schedule': timedelta(seconds=305),  # 5*61
+        'schedule': timedelta(seconds=149),
         'args': (10, 1000, 1000),
-        'options': {'expires': 295},
+        'options': {'expires': 120},
     },
     'location-update-cell-1000': {
         'task': 'ichnaea.data.tasks.location_update_cell',
-        'schedule': timedelta(seconds=323),  # 17*19
+        'schedule': timedelta(seconds=311),
         'args': (1000, 1000000, 100),
-        'options': {'expires': 310},
+        'options': {'expires': 300},
     },
     'location-update-wifi-1': {
         'task': 'ichnaea.data.tasks.location_update_wifi',
-        'schedule': timedelta(seconds=301),  # 7*43
-        'args': (1, 10, 5000),
-        'options': {'expires': 290},
+        'schedule': timedelta(seconds=31),
+        'args': (1, 10, 4000),
+        'options': {'expires': 25},
     },
     'location-update-wifi-10': {
         'task': 'ichnaea.data.tasks.location_update_wifi',
-        'schedule': timedelta(seconds=319),  # 11*29
+        'schedule': timedelta(seconds=151),
         'args': (10, 1000, 1000),
-        'options': {'expires': 310},
+        'options': {'expires': 120},
     },
     'location-update-wifi-1000': {
         'task': 'ichnaea.data.tasks.location_update_wifi',
-        'schedule': timedelta(seconds=329),  # 7*47
+        'schedule': timedelta(seconds=313),
         'args': (1000, 1000000, 100),
-        'options': {'expires': 320},
+        'options': {'expires': 300},
     },
     'continuous-cell-scan-lacs': {
         'task': 'ichnaea.data.tasks.scan_lacs',
-        'schedule': timedelta(seconds=367),  # prime
+        'schedule': timedelta(seconds=331),
         'args': (500, ),
-        'options': {'expires': 350},
+        'options': {'expires': 300},
     },
 
     # Daily content tasks
