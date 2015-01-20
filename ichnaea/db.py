@@ -10,6 +10,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 from sqlalchemy.pool import Pool
+from sqlalchemy.sql import func, select
 from sqlalchemy.sql.expression import Insert
 
 _Model = declarative_base()
@@ -105,13 +106,18 @@ class Database(object):
             bind=self.engine, class_=HookedSession,
             autocommit=False, autoflush=False)
 
+    def ping(self):  # pragma: no cover
+        with db_worker_session(self) as session:
+            success = session.ping()
+        return success
+
     def session(self):
         return self.session_factory()
 
 
 class HookedSession(Session):
 
-    def on_post_commit(self, func, *args, **kw):
+    def on_post_commit(self, function, *args, **kw):
         """
         Register a post commit (after-transaction-end) hook.
 
@@ -119,9 +125,16 @@ class HookedSession(Session):
         arguments preceded by a single session argument.
         """
         def wrapper(session, transaction):
-            return func(session, *args, **kw)
+            return function(session, *args, **kw)
 
         event.listen(self, 'after_transaction_end', wrapper, once=True)
+
+    def ping(self):
+        try:
+            self.execute(select([func.now()])).first()
+        except exc.OperationalError:
+            return False
+        return True
 
 
 @event.listens_for(Pool, "checkin")

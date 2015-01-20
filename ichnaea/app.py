@@ -1,8 +1,5 @@
 from pyramid.config import Configurator
 from pyramid.tweens import EXCVIEW
-from redis.exceptions import ConnectionError
-from sqlalchemy.exc import OperationalError
-from sqlalchemy.sql import func, select
 
 from ichnaea import customjson
 from ichnaea.cache import redis_client
@@ -71,21 +68,9 @@ def main(global_config, heka_config=None, init=False,
 
     # Should we try to initialize and establish the outbound connections?
     if init:  # pragma: no cover
-        # Test the slave DB connection
-        with db_worker_session(config.registry.db_slave) as session:
-            try:
-                session.execute(select([func.now()])).first()
-            except OperationalError:
-                # Let the instance start, so it can recover / reconnect
-                # to the DB later, but provide degraded service in the
-                # meantime.
-                pass
-
-        # Test the redis connection
-        try:
-            config.registry.redis_client.ping()
-        except ConnectionError:
-            # Same as for the DB, continue with degraded service.
-            pass
+        registry = config.registry
+        registry.db_slave.ping()
+        registry.redis_client.ping()
+        registry.stats_client.ping()
 
     return config.make_wsgi_app()

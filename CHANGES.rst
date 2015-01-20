@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #274: Add a new `__monitor__` endpoint.
+
 - #311: On station creation optionally use previous blacklist time.
 
 - #378: Use colander for internal data validation.
