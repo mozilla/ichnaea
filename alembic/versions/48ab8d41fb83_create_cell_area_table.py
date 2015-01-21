@@ -22,10 +22,14 @@ def upgrade():
         sa.Column('modified', sa.DateTime),
         sa.Column('lat', sa.dialects.mysql.DOUBLE(asdecimal=False)),
         sa.Column('lon', sa.dialects.mysql.DOUBLE(asdecimal=False)),
-        sa.Column('radio', sa.dialects.mysql.TINYINT, autoincrement=False, primary_key=True),
-        sa.Column('mcc', sa.dialects.mysql.SMALLINT, autoincrement=False, primary_key=True),
-        sa.Column('mnc', sa.dialects.mysql.SMALLINT, autoincrement=False, primary_key=True),
-        sa.Column('lac', sa.dialects.mysql.SMALLINT(unsigned=True), autoincrement=False, primary_key=True),
+        sa.Column('radio', sa.dialects.mysql.TINYINT,
+                  autoincrement=False, primary_key=True),
+        sa.Column('mcc', sa.dialects.mysql.SMALLINT,
+                  autoincrement=False, primary_key=True),
+        sa.Column('mnc', sa.dialects.mysql.SMALLINT,
+                  autoincrement=False, primary_key=True),
+        sa.Column('lac', sa.dialects.mysql.SMALLINT(unsigned=True),
+                  autoincrement=False, primary_key=True),
         sa.Column('range', sa.dialects.mysql.INTEGER),
         sa.Column('avg_cell_range', sa.dialects.mysql.INTEGER),
         sa.Column('num_cells', sa.dialects.mysql.INTEGER(unsigned=True)),
@@ -33,7 +37,8 @@ def upgrade():
         mysql_charset='utf8',
     )
 
-    #Add a migration to copy over all area records from the cell table to the new cell_area table
+    # Add a migration to copy over all area records from the cell table
+    # to the new cell_area table
     op.execute("""
         INSERT INTO
             cell_area
@@ -102,6 +107,7 @@ def upgrade():
 
     # Remove the existing LACs from the Cell table
     op.execute('DELETE FROM cell WHERE cid=-2')
+
 
 def downgrade():
     op.drop_table('cell_area')
