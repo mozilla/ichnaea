@@ -1,6 +1,9 @@
 import math
 from country_bounding_boxes import country_subunits_by_iso_code
 
+from ichnaea.data.constants import MIN_LAT, MAX_LAT
+
+
 EARTH_RADIUS = 6371  # radius of earth in km
 
 _radius_cache = {}
@@ -106,3 +109,41 @@ def location_is_in_country(lat, lon, country, margin=0):
            lat1 - margin <= lat and lat <= lat2 + margin:
             return True
     return False
+
+
+def bound(low, value, high):
+    """
+    If value is between low and high, return value.
+    If value is below low, return low.
+    If value is above high, return high.
+    If low is below high, raise an exception.
+    """
+    assert low <= high
+    return max(low, min(value, high))
+
+
+def add_meters_to_latitude(lat, distance):
+    """
+    Return a latitude in degrees which is shifted by
+    distance in meters.
+
+    The new latitude is bounded by our globally defined
+    MIN_LAT and MAX_LAT.
+    """
+    # A suitable estimate for surface level calculations is
+    # 111,111m = 1 degree latitude
+    new_lat = lat + (distance/111111.0)
+    return bound(MIN_LAT, new_lat, MAX_LAT)
+
+
+def add_meters_to_longitude(lat, lon, distance):
+    """
+    Return a longitude in degrees which is shifted by
+    distance in meters.
+
+    The new latitude is bounded by -180 and 180.
+    """
+    # A suitable estimate for surface level calculations is
+    # 111,111m = 1 degree latitude
+    new_lon = lon + (distance/(math.cos(lat) * 111111.0))
+    return bound(-180, new_lon, 180)
