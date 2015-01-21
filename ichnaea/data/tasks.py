@@ -309,7 +309,8 @@ def incomplete_measure(station_type, key):
     if station_type == 'cell':
         schema = ValidCellBaseSchema()
         for field in ('radio', 'lac', 'cid'):
-            if getattr(key, field, None) == schema.fields[field].missing:
+            # BBB change <= to == one release after #291 got deployed
+            if getattr(key, field, None) <= schema.fields[field].missing:
                 return True
     return False
 
