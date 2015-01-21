@@ -480,10 +480,14 @@ class TestCell(CeleryTestCase):
     def test_location_update_cell(self):
         now = util.utcnow()
         before = now - timedelta(days=1)
+        schema = ValidCellBaseSchema()
         session = self.db_master_session
+
         k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
         k2 = dict(radio=1, mcc=1, mnc=2, lac=6, cid=8)
-        k3 = dict(radio=1, mcc=1, mnc=2, lac=-1, cid=-1)
+        k3 = dict(radio=1, mcc=1, mnc=2,
+                  lac=schema.fields['lac'].missing,
+                  cid=schema.fields['cid'].missing)
         data = [
             Cell(new_measures=3, total_measures=5, **k1),
             CellMeasure(lat=1.0, lon=1.0, **k1),

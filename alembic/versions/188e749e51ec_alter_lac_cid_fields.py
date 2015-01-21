@@ -11,7 +11,7 @@ revision = '188e749e51ec'
 down_revision = '1a116bcd0851'
 
 from alembic import op
-import sqlalchemy as sa
+
 
 def upgrade():
     op.execute('UPDATE cell SET cid = 0 WHERE cid < 0')

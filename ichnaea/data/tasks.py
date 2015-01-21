@@ -299,17 +299,19 @@ def emit_new_measures_metric(stats_client, session, shortname,
                        (shortname, min_new, max_new), n)
 
 
-def incomplete_measure(key):
+def incomplete_measure(station_type, key):
     """
     Certain incomplete measures we want to store in the database
     even though they should not lead to the creation of a station
-    entry; these are cell measures with -1 for LAC and/or CID, and
-    will be inferred from neighboring cells.
+    entry; these are cell measures with a missing value for
+    LAC and/or CID, and will be inferred from neighboring cells.
     """
-    schema = ValidCellBaseSchema()
-    for field in ('radio', 'lac', 'cid'):
-        if getattr(key, field, None) == schema.fields[field].missing:
-            return True
+    if station_type == 'cell':
+        schema = ValidCellBaseSchema()
+        for field in ('radio', 'lac', 'cid'):
+            if getattr(key, field, None) == schema.fields[field].missing:
+                return True
+    return False
 
 
 def process_mapstat(session, positions):
@@ -582,7 +584,7 @@ def process_station_measures(session, entries, station_type,
                 dropped_blacklisted += len(measures)
                 continue
 
-            incomplete = incomplete_measure(key)
+            incomplete = incomplete_measure(station_type, key)
             if not incomplete:
                 # We discovered an actual new complete station.
                 new_stations += 1
@@ -733,11 +735,6 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
             moving_cells = set()
             updated_lacs = set()
             for cell in cells:
-                # skip cells with a missing lac/cid
-                # or virtual LAC cells
-                if cell.lac == -1 or cell.cid == -1:  # pragma: no cover
-                    continue
-
                 query = session.query(
                     CellMeasure.lat, CellMeasure.lon, CellMeasure.id).filter(
                     *join_cellkey(CellMeasure, cell))

@@ -10,9 +10,12 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 188e749e51ec: Change lac/cid columns to signed integers.
 
 Changes
 ~~~~~~~
+
+- #291: Allow 32bit UMTS cell ids, tighten checks for CDMA and LTE.
 
 - #311: On station creation optionally use previous blacklist time.
 
