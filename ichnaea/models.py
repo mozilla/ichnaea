@@ -167,9 +167,9 @@ class Cell(_Model):
             kw['created'] = util.utcnow()
         if 'modified' not in kw:
             kw['modified'] = util.utcnow()
-        if 'lac' not in kw:
+        if 'lac' not in kw or not kw['lac']:
             kw['lac'] = 0
-        if 'cid' not in kw:
+        if 'cid' not in kw or not kw['cid']:
             kw['cid'] = 0
         if 'range' not in kw:
             kw['range'] = 0
@@ -222,10 +222,10 @@ class OCIDCell(_Model):
             kw['created'] = util.utcnow()
         if 'modified' not in kw:
             kw['modified'] = util.utcnow()
-        if 'lac' not in kw:
-            kw['lac'] = -1
-        if 'cid' not in kw:
-            kw['cid'] = -1
+        if 'lac' not in kw or not kw['lac']:
+            kw['lac'] = 0
+        if 'cid' not in kw or not kw['cid']:
+            kw['cid'] = 0
         if 'range' not in kw:
             kw['range'] = 0
         if 'total_measures' not in kw:
