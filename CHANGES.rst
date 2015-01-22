@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #352: Switch to new maxmind v2 database format and libraries.
+
 - #274: Add a new `__monitor__` endpoint.
 
 - #291: Allow 32bit UMTS cell ids, tighten checks for CDMA and LTE.

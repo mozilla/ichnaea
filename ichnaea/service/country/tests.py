@@ -1,22 +1,26 @@
 from sqlalchemy import text
 
 from ichnaea.logging import RAVEN_ERROR
-from ichnaea.tests.base import (
-    AppTestCase,
-    FREMONT_IP,
-)
+from ichnaea.tests.base import AppTestCase
 
 
 class CountryBase(object):
 
+    @property
+    def test_ip(self):
+        # accesses data defined in GeoIPIsolation
+        return self.geoip_data['London']['ip']
+
     def _make_geoip_query(self, api_key='test', data=None,
-                          ip=FREMONT_IP, status=200):
+                          ip=None, status=200):
         url = '/v1/country'
         if api_key:
             url = url + '?key=' + api_key
         if data is None:
             data = {}
         extra_environ = None
+        if ip is None:
+            ip = self.test_ip
         if ip:
             extra_environ = {'HTTP_X_FORWARDED_FOR': ip}
         result = self.app.post_json(
@@ -27,10 +31,11 @@ class CountryBase(object):
 
     def _check_geoip_result(self, result, status=200):
         self.assertEqual(result.content_type, 'application/json')
+        self.assertEqual(result.charset, 'UTF-8')
         if status == 200:
             self.assertEqual(result.json,
-                             {"country_name": "United States",
-                              "country_code": "US"})
+                             {"country_name": "United Kingdom",
+                              "country_code": "GB"})
         elif status == 400:
             self.assertEqual(result.json['error']['message'],
                              'Invalid API key')
