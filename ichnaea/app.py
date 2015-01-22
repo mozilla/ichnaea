@@ -7,7 +7,6 @@ from ichnaea.db import (
     Database,
     db_master_session,
     db_slave_session,
-    db_worker_session,
 )
 from ichnaea.geoip import configure_geoip
 

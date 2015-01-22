@@ -169,7 +169,7 @@ def countries(session):
     # and explicitly specify a small list of all valid radio values
     # to get mysql to actually use the index.
     radios = [v for v in RADIO_TYPE.values() if v >= 0]
-    rows = session.query(Cell.radio, Cell.mcc, func.count(Cell.id)).filter(
+    rows = session.query(Cell.radio, Cell.mcc, func.count()).filter(
         Cell.radio.in_(radios)).group_by(Cell.radio, Cell.mcc).all()
 
     # reverse grouping by mcc, radio
