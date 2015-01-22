@@ -18,6 +18,7 @@ from sqlalchemy.dialects.mysql import (
 )
 from ichnaea.db import _Model
 from ichnaea.sa_types import TZDateTime as DateTime
+from ichnaea import geocalc
 from ichnaea import util
 
 MEASURE_TYPE_CODE = {
@@ -236,19 +237,19 @@ class OCIDCell(_Model):
 
     @property
     def min_lat(self):
-        return util.add_meters_to_latitude(self.lat, -self.range)
+        return geocalc.add_meters_to_latitude(self.lat, -self.range)
 
     @property
     def max_lat(self):
-        return util.add_meters_to_latitude(self.lat, self.range)
+        return geocalc.add_meters_to_latitude(self.lat, self.range)
 
     @property
     def min_lon(self):
-        return util.add_meters_to_longitude(self.lat, self.lon, -self.range)
+        return geocalc.add_meters_to_longitude(self.lat, self.lon, -self.range)
 
     @property
     def max_lon(self):
-        return util.add_meters_to_longitude(self.lat, self.lon, self.range)
+        return geocalc.add_meters_to_longitude(self.lat, self.lon, self.range)
 
 ocid_cell_table = OCIDCell.__table__
 
