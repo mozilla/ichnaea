@@ -26,7 +26,7 @@ else
 endif
 
 PIP_WHEEL_DIR ?= $(HERE)/wheelhouse
-INSTALL = $(PIP) install --no-deps -f $(PIP_WHEEL_DIR)
+INSTALL = $(PIP) install --no-deps -f file://$(PIP_WHEEL_DIR)
 WHEEL = $(PIP) wheel --no-deps -w $(PIP_WHEEL_DIR)
 
 
