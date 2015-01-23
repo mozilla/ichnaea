@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add additional stats to judge quality of WiFi based queries.
+
 - #390: Remove command line importer script.
 
 20150122140000

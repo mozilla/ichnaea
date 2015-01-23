@@ -917,6 +917,9 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
                 'm.wifi_hit',
                 'm.api_log.test.wifi_hit',
             ],
+            timer=[
+                'm.wifi.provided',
+            ],
         )
 
     def test_wifi_too_few_candidates(self):
@@ -936,6 +939,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
                 'm.miss',
                 'm.no_wifi_found',
                 'm.api_log.test.geoip_miss',
+                'm.wifi.provided_too_few',
             ],
         )
 
@@ -956,6 +960,11 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
             counter=[
                 'm.miss',
                 'm.no_wifi_found',
+                'm.wifi.found_too_few',
+                'm.wifi.partial_match',
+            ],
+            timer=[
+                'm.wifi.provided_not_known',
             ],
         )
 
@@ -979,6 +988,9 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
                 'm.no_wifi_found',
                 'm.api_log.test.geoip_miss',
             ],
+            timer=[
+                'm.wifi.provided_too_similar',
+            ],
         )
 
     def test_wifi_too_similar_bssids_by_hamming_distance(self):
@@ -1000,6 +1012,9 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
                 'm.miss',
                 'm.no_wifi_found',
                 'm.api_log.test.geoip_miss',
+            ],
+            timer=[
+                'm.wifi.provided_too_similar',
             ],
         )
 

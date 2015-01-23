@@ -122,16 +122,14 @@ def map_data(data):
     return mapped
 
 
-def geoip_and_best_guess_country_codes(cell_keys, api_name,
-                                       client_addr, geoip_db):
+def geoip_and_best_guess_country_codes(cell_keys, api_name, client_addr,
+                                       geoip_db, stats_client):
     """
     Return (geoip, alpha2) where geoip is the result of a GeoIP lookup
     and alpha2 is a best-guess ISO 3166 alpha2 country code. The country
     code guess uses both GeoIP and cell MCCs, preferring GeoIP. Return
     None for either field if no data is available.
     """
-
-    stats_client = get_stats_client()
     geoip = None
 
     if client_addr and geoip_db is not None:
@@ -182,7 +180,7 @@ def geoip_and_best_guess_country_codes(cell_keys, api_name,
     return (None, [])
 
 
-def search_cell(session, cells):
+def search_cell(session, cells, stats_client, api_name):
     if not cells:
         return
 
@@ -197,7 +195,7 @@ def search_cell(session, cells):
     }
 
 
-def search_cell_lac(session, lacs):
+def search_cell_lac(session, lacs, stats_client, api_name):
     if not lacs:
         return
 
@@ -287,7 +285,7 @@ def filter_bssids_by_similarity(bs):
     return [c[0] for c in clusters]
 
 
-def search_wifi(session, wifis):
+def search_wifi(session, wifis, stats_client, api_name):
     # Estimate signal strength at -100 dBm if none is provided,
     # which is worse than the 99th percentile of wifi dBms we
     # see in practice (-98).
@@ -303,7 +301,11 @@ def search_wifi(session, wifis):
 
     if len(wifi_keys) < MIN_WIFIS_IN_QUERY:
         # We didn't get enough keys.
+        if len(wifi_keys) >= 1:
+            stats_client.incr('%s.wifi.provided_too_few' % api_name)
         return None
+
+    stats_client.timing('%s.wifi.provided' % api_name, len(wifi_keys))
 
     query = session.query(Wifi.key, Wifi.lat, Wifi.lon, Wifi.range).filter(
         Wifi.key.in_(wifi_keys)).filter(
@@ -311,9 +313,18 @@ def search_wifi(session, wifis):
         Wifi.lon.isnot(None))
     wifis = query.all()
 
+    if len(wifis) < len(wifi_keys):
+        stats_client.incr('%s.wifi.partial_match' % api_name)
+        stats_client.timing('%s.wifi.provided_not_known' % api_name,
+                            len(wifi_keys) - len(wifis))
+
     # Filter out BSSIDs that are numerically very similar, assuming they're
     # multiple interfaces on the same base station or such.
     dissimilar_keys = set(filter_bssids_by_similarity([w.key for w in wifis]))
+
+    if len(dissimilar_keys) < len(wifis):
+        stats_client.timing('%s.wifi.provided_too_similar' % api_name,
+                            len(wifis) - len(dissimilar_keys))
 
     wifis = [Network(w.key, w.lat, w.lon, w.range)
              for w in wifis
@@ -321,6 +332,7 @@ def search_wifi(session, wifis):
 
     if len(wifis) < MIN_WIFIS_IN_QUERY:
         # We didn't get enough matches.
+        stats_client.incr('%s.wifi.found_too_few' % api_name)
         return None
 
     # Sort networks by signal strengths in query.
@@ -357,6 +369,7 @@ def search_wifi(session, wifis):
     clusters = [c for c in clusters if len(c) >= MIN_WIFIS_IN_CLUSTER]
 
     if len(clusters) == 0:
+        stats_client.incr('%s.wifi.found_no_cluster' % api_name)
         return None
 
     clusters.sort(lambda a, b: cmp(len(b), len(a)))
@@ -484,7 +497,7 @@ def search_all_sources(session, api_name, data,
     # report geoip vs. other data mismatches. We may also use
     # the full GeoIP City-level estimate as well, if all else fails.
     (geoip_res, countries) = geoip_and_best_guess_country_codes(
-        validated['cell'], api_name, client_addr, geoip_db)
+        validated['cell'], api_name, client_addr, geoip_db, stats_client)
 
     # First we attempt a "zoom-in" from cell-lac, to cell
     # to wifi, tightening our estimate each step only so
@@ -499,7 +512,8 @@ def search_all_sources(session, api_name, data,
         if validated[data_field]:
             r = None
             try:
-                r = search_fn(session, validated[object_field])
+                r = search_fn(session, validated[object_field],
+                              stats_client, api_name)
             except Exception:
                 heka_client.raven(RAVEN_ERROR)
                 stats_client.incr('%s.%s_error' %

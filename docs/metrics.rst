@@ -282,6 +282,53 @@ In addition to ``geolocate`` response-type counters, equivalent counters
 exist for the ``search`` and ``geosubmit`` API endpoints.
 
 
+WiFi query characteristics
+--------------------------
+
+Specifically for WiFi based queries, we collect a number of additional
+metrics.
+
+``geolocate.wifi.provided_too_few`` : counter
+
+    Counts the number of times we get requests with exactly one WiFi
+    network in them.
+
+``geolocate.wifi.provided`` : timer
+
+    Provides a pseudo-timer counting the number of WiFi networks in
+    request. Only applies to requests with at least two WiFi networks.
+
+``geolocate.wifi.partial_match`` : counter
+
+    Counts the number of requests where we have WiFi records for some
+    but not all of the provided networks.
+
+``geolocate.wifi.provided_not_known`` : timer
+
+    Provides a pseudo-timer counting the number of additional WiFi
+    networks in a request, for which we did not have a record.
+
+``geolocate.wifi.provided_too_similar`` : timer
+
+    Provides a pseudo-timer counting the number of WiFi networks, which
+    where too similar to each other. Only applies to requests where at
+    least one WiFi network was detected as being too similar.
+
+``geolocate.wifi.found_too_few`` : counter
+
+    Counts the number of requests where we found less than two WiFi
+    records after filtering them for similarity.
+
+``geolocate.wifi.found_no_cluster`` : counter
+
+    Counts the number of requests where we found no cluster of nearby
+    WiFi networks which included at least two networks.
+
+
+These counters and timers also exist for the ``search``
+and ``geosubmit`` API endpoints.
+
+
 Query anomaly counters
 ----------------------
 
@@ -346,20 +393,14 @@ idiom in metric reporting pipelines, in order to measure the min, max, mean
 and 90th-percentile aggregate functions.
 
 Therefore the following "pseudo-timers" exist, reporting the accuracy of
-cell, cell LAC, GeoIP and wifi-based responses:
+cell, cell LAC, GeoIP and WiFi-based responses:
 
   - ``geolocate.accuracy.cell``
   - ``geolocate.accuracy.cell_lac``
   - ``geolocate.accuracy.geoip``
   - ``geolocate.accuracy.wifi``
-  - ``geosubmit.accuracy.cell``
-  - ``geosubmit.accuracy.cell_lac``
-  - ``geosubmit.accuracy.geoip``
-  - ``geosubmit.accuracy.wifi``
-  - ``search.accuracy.cell``
-  - ``search.accuracy.cell_lac``
-  - ``search.accuracy.geoip``
-  - ``search.accuracy.wifi``
+
+These timers also exist for the ``search`` and ``geosubmit`` API endpoints.
 
 
 Fine-grained ingress stats
@@ -464,10 +505,10 @@ we also have a number of per API key stats for uploaded data.
 Gauges
 ------
 
-``queue.default``,
-``queue.incoming``,
-``queue.insert``,
-``queue.monitor``, : gauges
+``queue.celery_default``,
+``queue.celery_incoming``,
+``queue.celery_insert``,
+``queue.celery_monitor``, : gauges
 
     These gauges measure the number of tasks in each of the Redis queues.
     They are sampled at an approximate per-minute interval.

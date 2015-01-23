@@ -85,7 +85,6 @@ class TestSearch(AppTestCase):
                                     "accuracy": 248.6090897})
 
         self.check_stats(
-            total=9,
             timer=[('request.v1.search', 1),
                    ('search.accuracy.wifi', 1)],
             counter=[('search.api_key.test', 1),
@@ -140,7 +139,6 @@ class TestSearch(AppTestCase):
                                     "accuracy": london['accuracy']})
 
         self.check_stats(
-            total=9,
             timer=[('request.v1.search', 1),
                    ('search.accuracy.geoip', 1)],
             counter=[('search.api_key.test', 1),
