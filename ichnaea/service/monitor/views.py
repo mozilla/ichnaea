@@ -1,8 +1,6 @@
 import time
 
 from pyramid.view import view_config
-from sqlalchemy.exc import OperationalError
-from sqlalchemy.sql import func, select
 
 
 def configure_monitor(config):
