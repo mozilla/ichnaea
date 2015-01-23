@@ -1,4 +1,4 @@
-from ichnaea.data.constants import MIN_LAT, MAX_LAT
+from ichnaea.data.constants import MIN_LAT, MAX_LAT, MIN_LON, MAX_LON
 from ichnaea.geocalc import (
     _radius_cache,
     distance,
@@ -133,17 +133,18 @@ class TestAddMetersToLatitude(TestCase):
         self.assertEqual(add_meters_to_latitude(1.0, 10**10), MAX_LAT)
 
     def test_adds_meters_to_latitude(self):
-        self.assertEqual(add_meters_to_latitude(1.0, 1000), 1.009000009000009)
+        self.assertAlmostEqual(add_meters_to_latitude(1.0, 1000),
+                               1.009000009, 9)
 
 
 class TestAddMetersToLongitude(TestCase):
 
     def test_returns_min_lon(self):
-        self.assertEqual(add_meters_to_longitude(1.0, 1.0, -(10**10)), -180)
+        self.assertEqual(add_meters_to_longitude(1.0, 1.0, -(10**10)), MIN_LON)
 
     def test_returns_max_lon(self):
-        self.assertEqual(add_meters_to_longitude(1.0, 1.0, 10**10), 180)
+        self.assertEqual(add_meters_to_longitude(1.0, 1.0, 10**10), MAX_LON)
 
     def test_adds_meters_to_longitude(self):
-        self.assertEqual(add_meters_to_longitude(1.0, 1.0, 1000),
-                         1.0166573581164864)
+        self.assertAlmostEqual(add_meters_to_longitude(1.0, 1.0, 1000),
+                               1.0166573581, 9)

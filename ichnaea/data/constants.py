@@ -6,9 +6,11 @@ import mobile_codes
 # Symbolic constant used in specs passed to normalization functions.
 REQUIRED = object()
 
-# Restrict latitudes to Web Mercator projection
-MAX_LAT = 85.051
-MIN_LAT = -85.051
+MAX_LAT = 85.051  #: Maximum latitude in Web Mercator projection.
+MIN_LAT = -85.051  #: Minimum latitude in Web Mercator projection.
+
+MAX_LON = 180.0  #: Maximum unrestricted longitude.
+MIN_LON = -180.0  #: Minimum unrestricted longitude.
 
 # Accuracy on land is arbitrarily bounded to [0, 1000km],
 # past which it seems more likely we're looking at bad data.

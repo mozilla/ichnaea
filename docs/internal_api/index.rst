@@ -16,6 +16,7 @@ Modules
 .. toctree::
    :maxdepth: 1
 
+   data/constants
    geocalc
    geoip
    service/locate

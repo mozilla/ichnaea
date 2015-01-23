@@ -190,7 +190,8 @@ class ValidMeasureSchema(FieldSchema, CopyingSchema):
     """
     lat = SchemaNode(Float(), missing=0.0, validator=Range(
         constants.MIN_LAT, constants.MAX_LAT))
-    lon = SchemaNode(Float(), missing=0.0, validator=Range(-180, 180))
+    lon = SchemaNode(Float(), missing=0.0, validator=Range(
+        constants.MIN_LON, constants.MAX_LON))
     accuracy = DefaultNode(
         Float(), missing=0, validator=Range(0, constants.MAX_ACCURACY))
     altitude = DefaultNode(

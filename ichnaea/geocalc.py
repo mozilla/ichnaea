@@ -1,7 +1,7 @@
 import math
 from country_bounding_boxes import country_subunits_by_iso_code
 
-from ichnaea.data.constants import MIN_LAT, MAX_LAT
+from ichnaea.data.constants import MIN_LAT, MAX_LAT, MIN_LON, MAX_LON
 
 
 EARTH_RADIUS = 6371  # radius of earth in km
@@ -128,7 +128,8 @@ def add_meters_to_latitude(lat, distance):
     distance in meters.
 
     The new latitude is bounded by our globally defined
-    MIN_LAT and MAX_LAT.
+    :data:`~ichnaea.data.constants.MIN_LAT` and
+    :data:`~ichnaea.data.constants.MAX_LAT`.
     """
     # A suitable estimate for surface level calculations is
     # 111,111m = 1 degree latitude
@@ -141,9 +142,11 @@ def add_meters_to_longitude(lat, lon, distance):
     Return a longitude in degrees which is shifted by
     distance in meters.
 
-    The new latitude is bounded by -180 and 180.
+    The new longitude is bounded by our globally defined
+    :data:`~ichnaea.data.constants.MIN_LON` and
+    :data:`~ichnaea.data.constants.MAX_LON`.
     """
     # A suitable estimate for surface level calculations is
     # 111,111m = 1 degree latitude
     new_lon = lon + (distance/(math.cos(lat) * 111111.0))
-    return bound(-180, new_lon, 180)
+    return bound(MIN_LON, new_lon, MAX_LON)

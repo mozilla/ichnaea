@@ -20,8 +20,6 @@ Functions
 
 .. autofunction:: location_is_in_country
 
-.. autofunction:: math
-
 .. autofunction:: maximum_country_radius
 
 .. autofunction:: range_to_points

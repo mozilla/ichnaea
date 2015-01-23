@@ -185,13 +185,13 @@ class TestCellValidation(ValidationTest):
                         cid=schema.fields['cid'].missing, psc=psc))
 
     def test_invalid_latitude(self):
-        invalid_latitudes = [-100.0, -85.0511, 85.0511, 100.0]
+        invalid_latitudes = [constants.MIN_LAT - 0.1, constants.MAX_LAT + 0.1]
         for lat in invalid_latitudes:
             measure, cell = self.get_sample_measure_cell(lat=lat)
             self.check_normalized_cell(measure, cell, None)
 
     def test_invalid_longitude(self):
-        invalid_longitudes = [-190.0, -180.1, 180.1, 190]
+        invalid_longitudes = [constants.MIN_LON - 0.1, constants.MAX_LON + 0.1]
         for lon in invalid_longitudes:
             measure, cell = self.get_sample_measure_cell(lon=lon)
             self.check_normalized_cell(measure, cell, None)
