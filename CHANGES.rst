@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- #390: Remove command line importer script.
 
 20150122140000
 **************
