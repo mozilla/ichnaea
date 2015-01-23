@@ -50,11 +50,11 @@ def set_stats_client(client):
     return STATS_CLIENT
 
 
-def configure_stats(config, _client=None):
+def configure_stats(config, _client=None):  # pragma: no cover
     if _client is not None:
         return set_stats_client(_client)
 
-    if not config:  # pragma: no cover
+    if not config:
         config = 'localhost:8125'
     parts = config.split(':')
     host = parts[0]

@@ -94,7 +94,7 @@ class DateTimeFromString(DateTime):
 
 class DateTimeToString(String):
     """
-    A DateTimeToString will return a string respresentation of a date
+    A DateTimeToString will return a string representation of a date
     from either a datetime object or a string.
     """
 

@@ -236,7 +236,7 @@ def generate(db, bucketname, heka_client, stats_client,
 
 
 def main(argv, _db_master=None,
-         _heka_client=None, _stats_client=None):  # pragma: no cover
+         _heka_client=None, _stats_client=None):
     # run for example via:
     # bin/location_map --create --upload --datamaps=/path/to/datamaps/ \
     #   --output=ichnaea/content/static/tiles/
@@ -259,14 +259,17 @@ def main(argv, _db_master=None,
 
     if args.create:
         conf = read_config()
-        db = Database(conf.get('ichnaea', 'db_master'))
+        if _db_master:
+            db = _db_master
+        else:  # pragma: no cover
+            db = Database(conf.get('ichnaea', 'db_master'))
         bucketname = conf.get('ichnaea', 's3_assets_bucket').strip('/')
         heka_client = configure_heka(conf.filename, _heka_client=_heka_client)
         stats_client = configure_stats(
             conf.get('ichnaea', 'statsd_host'), _client=_stats_client)
 
         upload = False
-        if args.upload:
+        if args.upload:  # pragma: no cover
             upload = bool(args.upload)
 
         concurrency = 2
@@ -288,10 +291,10 @@ def main(argv, _db_master=None,
                          concurrency=concurrency,
                          datamaps=datamaps,
                          output=output)
-        except Exception:
+        except Exception:  # pragma: no cover
             heka_client.raven(RAVEN_ERROR)
             raise
-    else:
+    else:  # pragma: no cover
         parser.print_help()
 
 

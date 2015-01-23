@@ -9,6 +9,7 @@ from ichnaea.scripts import map as scripts_map
 from ichnaea.scripts.map import (
     export_to_csv,
     generate,
+    main,
     tempdir,
 )
 from ichnaea.tests.base import CeleryTestCase
@@ -67,5 +68,22 @@ class TestMap(CeleryTestCase):
                          self.heka_client, self.stats_client,
                          upload=False, concurrency=1,
                          datamaps='', output=temp_dir)
+                mock_calls = mock_system.mock_calls
+                self.assertEqual(len(mock_calls), 3)
+
+    def test_main(self):
+        with tempdir() as temp_dir:
+            with mock_system_call() as mock_system:
+                argv = [
+                    'bin/location_map',
+                    '--create',
+                    '--concurrency=1',
+                    '--datamaps=%s' % temp_dir,
+                    '--output=%s' % temp_dir,
+                ]
+                main(argv,
+                     _db_master=self.db_master,
+                     _heka_client=self.heka_client,
+                     _stats_client=self.stats_client)
                 mock_calls = mock_system.mock_calls
                 self.assertEqual(len(mock_calls), 3)

@@ -234,6 +234,12 @@ class TestCellValidation(ValidationTest):
             measure, cell = self.get_sample_measure_cell(signal=signal)
             self.check_normalized_cell(measure, cell, {'signal': signal})
 
+    def test_valid_time(self):
+        now = util.utcnow()
+        first_of_month = now.date().replace(day=1).strftime('%Y-%m-%d')
+        measure, cell = self.get_sample_measure_cell(time=now)
+        self.check_normalized_cell(measure, cell, {'time': first_of_month})
+
     def test_invalid_accuracy(self):
         invalid_accuracies = [-10, -1, 5000000]
         for accuracy in invalid_accuracies:
