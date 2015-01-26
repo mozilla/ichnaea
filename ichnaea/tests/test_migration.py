@@ -1,0 +1,96 @@
+from alembic import command as alembic_command
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+from sqlalchemy import inspect
+from sqlalchemy.schema import (
+    MetaData,
+    Table,
+)
+
+# make sure all models are imported
+from ichnaea import models  # NOQA
+from ichnaea.content import models  # NOQA
+
+from ichnaea.tests.base import (
+    _make_db,
+    DBIsolation,
+    setup_package,
+    SQL_BASE_STRUCTURE,
+    TestCase,
+)
+
+
+class TestMigration(TestCase):
+
+    def setUp(self):
+        self.db = _make_db()
+        # capture state of fresh database
+        self.head_tables = self.inspect_tables()
+        DBIsolation.cleanup_tables(self.db.engine)
+
+    def tearDown(self):
+        self.db.engine.pool.dispose()
+        del self.db
+        # setup normal database schema again
+        setup_package(None)
+
+    def alembic_config(self):
+        alembic_cfg = Config()
+        alembic_cfg.set_section_option(
+            'alembic', 'script_location', 'alembic')
+        alembic_cfg.set_section_option(
+            'alembic', 'sqlalchemy.url', str(self.db.engine.url))
+        return alembic_cfg
+
+    def alembic_script(self):
+        return ScriptDirectory.from_config(self.alembic_config())
+
+    def current_db_revision(self):
+        with self.db.engine.connect() as conn:
+            result = conn.execute('select version_num from alembic_version')
+            alembic_rev = result.first()
+        if alembic_rev is None:
+            return None
+        return alembic_rev[0]
+
+    def inspect_tables(self):
+        metadata = MetaData()
+        inspector = inspect(self.db.engine)
+        tables = {}
+        for name in inspector.get_table_names():
+            tables[name] = Table(name, metadata)
+        return tables
+
+    def setup_base_db(self):
+        with open(SQL_BASE_STRUCTURE) as fd:
+            sql_text = fd.read()
+        with self.db.engine.connect() as conn:
+            conn.execute(sql_text)
+
+    def run_migration(self, target='head'):
+        engine = self.db.engine
+        with engine.connect() as conn:
+            trans = conn.begin()
+            alembic_command.upgrade(self.alembic_config(), target)
+            trans.commit()
+
+    def test_migration(self):
+        self.setup_base_db()
+        # we have no alembic base revision
+        self.assertTrue(self.current_db_revision() is None)
+
+        self.run_migration()
+        # after the migration, the DB is stamped
+        db_revision = self.current_db_revision()
+        self.assertTrue(db_revision is not None)
+
+        # db revision matches latest alembic revision
+        alembic_head = self.alembic_script().get_current_head()
+        self.assertEqual(db_revision, alembic_head)
+
+        # compare the tables from a migrated database to those
+        # created fresh from the model definitions
+        migrated_tables = self.inspect_tables()
+        head_tables = self.head_tables
+        self.assertEqual(set(head_tables.keys()),
+                         set(migrated_tables.keys()))
