@@ -396,8 +396,8 @@ class TestCell(CeleryTestCase):
             time=encode_datetime(time), accuracy=0, altitude=0,
             altitude_accuracy=0, radio=RADIO_TYPE['gsm'])
         entries = [
-            {"mcc": FRANCE_MCC, "mnc": 2, "lac": constants.MAX_LAC + 1,
-             "cid": constants.MAX_ALL_CID + 1, "psc": 5, "asu": 8},
+            {"mcc": FRANCE_MCC, "mnc": 2, "lac": constants.MAX_LAC_ALL + 1,
+             "cid": constants.MAX_CID_ALL + 1, "psc": 5, "asu": 8},
             {"mcc": FRANCE_MCC, "mnc": 2, "lac": schema.fields['lac'].missing,
              "cid": schema.fields['cid'].missing, "psc": 5, "asu": 8},
         ]

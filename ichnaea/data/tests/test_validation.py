@@ -50,8 +50,8 @@ class ValidationTest(TestCase):
 class TestCellValidation(ValidationTest):
 
     def setUp(self):
-        self.invalid_lacs = [-2, -1, 0, -10, constants.MAX_LAC + 1]
-        self.invalid_cids = [-10, -1, 0, constants.MAX_ALL_CID + 1]
+        self.invalid_lacs = [constants.MIN_LAC - 1, constants.MAX_LAC_ALL + 1]
+        self.invalid_cids = [constants.MIN_CID - 1, constants.MAX_CID_ALL + 1]
 
         self.valid_pscs = [0, 120, 512]
         self.invalid_pscs = [-1, 513, 4456]
@@ -144,8 +144,8 @@ class TestCellValidation(ValidationTest):
             self.check_normalized_cell(measure, cell, None)
 
     def test_valid_lac_cid_pairs_with_invalid_psc(self):
-        valid_lacs = [1, 763, 65535]
-        valid_cids = [1, 12345, 268435455]
+        valid_lacs = [constants.MIN_LAC, constants.MAX_LAC_GSM_UMTS_LTE]
+        valid_cids = [constants.MIN_CID, constants.MAX_CID_ALL]
         for lac in valid_lacs:
             for cid in valid_cids:
                 for psc in self.invalid_pscs:
@@ -328,39 +328,65 @@ class TestCellValidation(ValidationTest):
             measure, cell, {'radio': RADIO_TYPE['umts']})
 
     def test_valid_umts_cid_is_32_bit(self):
-        valid_cid = constants.MAX_ALL_CID
+        valid_cid = constants.MAX_CID_ALL
         measure, cell = self.get_sample_measure_cell(
             radio='umts', cid=valid_cid)
         self.check_normalized_cell(measure, cell, {'cid': valid_cid})
 
     def test_invalid_umts_cid_is_not_32_bit(self):
-        invalid_cid = constants.MAX_ALL_CID + 1
+        invalid_cid = constants.MAX_CID_ALL + 1
         measure, cell = self.get_sample_measure_cell(
             radio='umts', cid=invalid_cid)
         self.check_normalized_cell(measure, cell, None)
 
     def test_valid_cdma_cid_is_16_bit(self):
-        valid_cid = constants.MAX_CDMA_CID
+        valid_cid = constants.MAX_CID_CDMA
         measure, cell = self.get_sample_measure_cell(
             radio='cdma', cid=valid_cid)
         self.check_normalized_cell(measure, cell, {'cid': valid_cid})
 
     def test_invalid_cdma_cid_is_not_16_bit(self):
-        invalid_cid = constants.MAX_CDMA_CID + 1
+        invalid_cid = constants.MAX_CID_CDMA + 1
         measure, cell = self.get_sample_measure_cell(
             radio='cdma', cid=invalid_cid)
         self.check_normalized_cell(measure, cell, None)
 
     def test_valid_lte_cid_is_28_bit(self):
-        valid_cid = constants.MAX_LTE_CID
+        valid_cid = constants.MAX_CID_LTE
         measure, cell = self.get_sample_measure_cell(
             radio='lte', cid=valid_cid)
         self.check_normalized_cell(measure, cell, {'cid': valid_cid})
 
     def test_invalid_lte_cid_is_not_28_bit(self):
-        invalid_cid = constants.MAX_LTE_CID + 1
+        invalid_cid = constants.MAX_CID_LTE + 1
         measure, cell = self.get_sample_measure_cell(
             radio='lte', cid=invalid_cid)
+        self.check_normalized_cell(measure, cell, None)
+
+    def test_valid_lac_for_gsm_umts_lte_is_less_or_equal_to_65533(self):
+        valid_lac = constants.MAX_LAC_GSM_UMTS_LTE
+        for radio in 'gsm', 'umts', 'lte':
+            measure, cell = self.get_sample_measure_cell(
+                radio=radio, lac=valid_lac)
+            self.check_normalized_cell(measure, cell, {'lac': valid_lac})
+
+    def test_invalid_lac_for_gsm_umts_lte_is_greater_than_65533(self):
+        invalid_lac = constants.MAX_LAC_GSM_UMTS_LTE + 1
+        for radio in 'gsm', 'umts', 'lte':
+            measure, cell = self.get_sample_measure_cell(
+                radio=radio, lac=invalid_lac)
+            self.check_normalized_cell(measure, cell, None)
+
+    def test_valid_lac_for_cdma_is_less_or_equal_to_65534(self):
+        valid_lac = constants.MAX_LAC_ALL
+        measure, cell = self.get_sample_measure_cell(
+            radio='cdma', lac=valid_lac)
+        self.check_normalized_cell(measure, cell, {'lac': valid_lac})
+
+    def test_invalid_lac_for_cdma_is_greater_than_65534(self):
+        invalid_lac = constants.MAX_LAC_ALL + 1
+        measure, cell = self.get_sample_measure_cell(
+            radio='cdma', lac=invalid_lac)
         self.check_normalized_cell(measure, cell, None)
 
 

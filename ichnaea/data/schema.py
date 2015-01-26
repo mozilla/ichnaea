@@ -251,9 +251,11 @@ class ValidCellBaseSchema(ValidMeasureSchema):
     """
     asu = DefaultNode(Integer(), missing=-1, validator=Range(0, 97))
     cid = DefaultNode(
-        Integer(), missing=0, validator=Range(1, constants.MAX_ALL_CID))
+        Integer(), missing=0, validator=Range(
+            constants.MIN_CID, constants.MAX_CID_ALL))
     lac = DefaultNode(
-        Integer(), missing=0, validator=Range(1, constants.MAX_LAC))
+        Integer(), missing=0, validator=Range(
+            constants.MIN_LAC, constants.MAX_LAC_ALL))
     mcc = SchemaNode(Integer(), validator=Range(1, 999))
     mnc = SchemaNode(Integer(), validator=Range(0, 32767))
     psc = DefaultNode(Integer(), missing=-1, validator=Range(0, 512))
@@ -319,12 +321,16 @@ class ValidCellBaseSchema(ValidMeasureSchema):
                 'psc (psc-only to use in backfill)'))
 
         if (data['radio'] == RADIO_TYPE['cdma']
-                and data['cid'] > constants.MAX_CDMA_CID):
+                and data['cid'] > constants.MAX_CID_CDMA):
             raise Invalid(schema, ('CID is out of range for CDMA.'))
 
         if (data['radio'] == RADIO_TYPE['lte']
-                and data['cid'] > constants.MAX_LTE_CID):
+                and data['cid'] > constants.MAX_CID_LTE):
             raise Invalid(schema, ('CID is out of range for LTE.'))
+
+        if (data['radio'] in radio_types
+                and data['lac'] > constants.MAX_LAC_GSM_UMTS_LTE):
+            raise Invalid(schema, ('LAC is out of range for GSM/UMTS/LTE.'))
 
 
 class ValidCellSchema(ValidCellBaseSchema):
