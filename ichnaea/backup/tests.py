@@ -301,7 +301,7 @@ class TestMeasurementsDump(CeleryTestCase):
         block.archive_date = None
         session.add(block)
 
-        k = dict(mcc=1, mnc=2, lac=4, lat=1.0, lon=1.0)
+        k = dict(radio=1, mcc=1, mnc=2, lac=4, lat=1.0, lon=1.0)
         for i in range(100, 150):
             session.add(CellMeasure(id=i, cid=i, created=self.really_old, **k))
             session.add(Cell(total_measures=11000, cid=i, **k))

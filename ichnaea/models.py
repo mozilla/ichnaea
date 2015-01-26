@@ -123,8 +123,6 @@ def join_wifikey(model, k):
 class Cell(_Model):
     __tablename__ = 'cell'
     __table_args__ = (
-        UniqueConstraint(
-            'radio', 'mcc', 'mnc', 'lac', 'cid', name='cell_idx_unique'),
         Index('cell_created_idx', 'created'),
         Index('cell_modified_idx', 'modified'),
         Index('cell_new_measures_idx', 'new_measures'),
@@ -135,8 +133,6 @@ class Cell(_Model):
         }
     )
 
-    id = Column(BigInteger(unsigned=True),
-                primary_key=True, autoincrement=True)
     created = Column(DateTime)
     modified = Column(DateTime)
 
@@ -150,14 +146,15 @@ class Cell(_Model):
     min_lon = Column(Double(asdecimal=False))
 
     # mapped via RADIO_TYPE
-    radio = Column(TinyInteger)
+    radio = Column(TinyInteger, autoincrement=False, primary_key=True)
     # int in the range 0-1000
-    mcc = Column(SmallInteger)
+    mcc = Column(SmallInteger, autoincrement=False, primary_key=True)
     # int in the range 0-1000 for gsm
     # int in the range 0-32767 for cdma (system id)
-    mnc = Column(SmallInteger)
-    lac = Column(SmallInteger(unsigned=True))
-    cid = Column(Integer(unsigned=True))
+    mnc = Column(SmallInteger, autoincrement=False, primary_key=True)
+    lac = Column(
+        SmallInteger(unsigned=True), autoincrement=False, primary_key=True)
+    cid = Column(Integer(unsigned=True), autoincrement=False, primary_key=True)
     psc = Column(SmallInteger)
     range = Column(Integer)
     new_measures = Column(Integer(unsigned=True))
@@ -342,22 +339,16 @@ ocid_cell_area_table = OCIDCellArea.__table__
 
 class CellBlacklist(_Model):
     __tablename__ = 'cell_blacklist'
-    __table_args__ = (
-        UniqueConstraint('radio', 'mcc', 'mnc', 'lac', 'cid',
-                         name='cell_blacklist_idx_unique'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
-    )
-    id = Column(BigInteger(unsigned=True),
-                primary_key=True, autoincrement=True)
+    __table_args__ = ({
+        'mysql_engine': 'InnoDB',
+        'mysql_charset': 'utf8',
+    })
     time = Column(DateTime)
-    radio = Column(TinyInteger)
-    mcc = Column(SmallInteger)
-    mnc = Column(SmallInteger)
-    lac = Column(Integer)
-    cid = Column(Integer)
+    radio = Column(TinyInteger, autoincrement=False, primary_key=True)
+    mcc = Column(SmallInteger, autoincrement=False, primary_key=True)
+    mnc = Column(SmallInteger, autoincrement=False, primary_key=True)
+    lac = Column(Integer, autoincrement=False, primary_key=True)
+    cid = Column(Integer, autoincrement=False, primary_key=True)
     count = Column(Integer)
 
     def __init__(self, *args, **kw):

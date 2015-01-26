@@ -159,9 +159,11 @@ def write_stations_to_csv(session, table, columns,
         # Write header row
         w.writerow(CELL_HEADER_DICT)
         while True:
-            q = select(columns=columns).where(cond).limit(
-                limit).offset(offset).order_by(table.c.id)
-            rows = session.execute(q).fetchall()
+            query = (select(columns=columns).where(cond)
+                                            .limit(limit)
+                                            .offset(offset)
+                                            .order_by(table.c.created))
+            rows = session.execute(query).fetchall()
             if rows:
                 w.writerows([make_dict(r) for r in rows])
                 offset += limit

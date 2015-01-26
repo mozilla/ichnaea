@@ -51,34 +51,49 @@ class TestExport(CeleryTestCase):
 
     def test_local_export(self):
         session = self.db_master_session
-        k = {'mcc': 1, 'mnc': 2, 'lac': 4}
-        gsm = RADIO_TYPE['gsm']
-        for i in range(190, 200):
-            session.add(Cell(radio=gsm, cid=i, lat=1.0, lon=2.0, **k))
+        cell_fixture_fields = (
+            'radio', 'cid', 'lat', 'lon', 'mnc', 'mcc', 'lac')
+        cell_key = {'radio': RADIO_TYPE['gsm'], 'mcc': 1, 'mnc': 2, 'lac': 4}
+        cells = set()
+
+        for cid in range(190, 200):
+            cell = dict(cid=cid, lat=1.0, lon=2.0, **cell_key)
+            session.add(Cell(**cell))
+
+            cell['radio'] = 'GSM'
+            cell_strings = [
+                (field, str(value)) for (field, value) in cell.items()]
+            cell_tuple = tuple(sorted(cell_strings))
+            cells.add(cell_tuple)
+
         # add one incomplete / unprocessed cell
-        session.add(Cell(cid=210, lat=None, lon=None, **k))
+        session.add(Cell(cid=210, lat=None, lon=None, **cell_key))
         session.commit()
 
-        with selfdestruct_tempdir() as d:
-            path = os.path.join(d, 'export.csv.gz')
+        with selfdestruct_tempdir() as temp_dir:
+            path = os.path.join(temp_dir, 'export.csv.gz')
             cond = cell_table.c.lat.isnot(None)
-            write_stations_to_csv(session, cell_table, CELL_COLUMNS, cond,
-                                  path, make_cell_export_dict, CELL_FIELDS)
-            with GzipFile(path, 'rb') as f:
-                r = csv.DictReader(f, CELL_FIELDS)
+            write_stations_to_csv(
+                session, cell_table, CELL_COLUMNS, cond,
+                path, make_cell_export_dict, CELL_FIELDS)
 
-                header = r.next()
+            with GzipFile(path, 'rb') as gzip_file:
+                reader = csv.DictReader(gzip_file, CELL_FIELDS)
+
+                header = reader.next()
                 self.assertTrue('area' in header.values())
                 self.assertEqual(header, CELL_HEADER_DICT)
 
-                cid = 190
-                for d in r:
-                    t = dict(radio='GSM', cid=cid, **k)
-                    t = dict([(n, str(v)) for (n, v) in t.items()])
-                    self.assertDictContainsSubset(t, d)
-                    cid += 1
-                self.assertEqual(r.line_num, 11)
-                self.assertEqual(cid, 200)
+                exported_cells = set()
+                for exported_cell in reader:
+                    exported_cell_filtered = [
+                        (field, value) for (field, value)
+                        in exported_cell.items()
+                        if field in cell_fixture_fields]
+                    exported_cell = tuple(sorted(exported_cell_filtered))
+                    exported_cells.add(exported_cell)
+
+                self.assertEqual(cells, exported_cells)
 
     def test_hourly_export(self):
         session = self.db_master_session

@@ -35,6 +35,5 @@ def upgrade():
     stmt = "ALTER TABLE ocid_cell DROP COLUMN `id`"
     op.execute(sa.text(stmt))
 
-
 def downgrade():
     pass

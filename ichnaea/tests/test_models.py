@@ -42,15 +42,13 @@ class TestCell(DBTestCase):
 
     def test_constructor(self):
         cell = self._make_one()
-        self.assertTrue(cell.id is None)
         self.assertEqual(cell.new_measures, 0)
         self.assertEqual(cell.total_measures, 0)
 
     def test_fields(self):
         cell = self._make_one(
-            lat=1.2345678, lon=2.3456789, mcc=100, mnc=5, lac=1234, cid=23456,
-            new_measures=2, total_measures=15,
-        )
+            radio=1, lat=1.2345678, lon=2.3456789, mcc=100, mnc=5,
+            lac=1234, cid=23456, new_measures=2, total_measures=15)
         session = self.db_master_session
         session.add(cell)
         session.commit()
@@ -153,8 +151,7 @@ class TestCellMeasure(DBTestCase):
         return CellMeasure(**kw)
 
     def test_constructor(self):
-        cell = self._make_one()
-        self.assertTrue(cell.id is None)
+        self._make_one()
 
     def test_fields(self):
         report_id = uuid.uuid1().bytes
