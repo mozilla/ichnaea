@@ -1,11 +1,11 @@
 from alembic import command as alembic_command
+from alembic.autogenerate import compare_metadata
 from alembic.config import Config
+from alembic.ddl.impl import _type_comparators
+from alembic.migration import MigrationContext
 from alembic.script import ScriptDirectory
-from sqlalchemy import inspect
-from sqlalchemy.schema import (
-    MetaData,
-    Table,
-)
+from sqlalchemy.schema import MetaData
+from sqlalchemy.sql import sqltypes
 
 # make sure all models are imported
 from ichnaea import models  # NOQA
@@ -19,13 +19,46 @@ from ichnaea.tests.base import (
     TestCase,
 )
 
+_compare_attrs = {
+    sqltypes._Binary: ('length', ),
+    sqltypes.Date: (),
+    sqltypes.DateTime: ('fsp', 'timezone'),
+    sqltypes.Integer: ('display_width', 'unsigned', 'zerofill'),
+    sqltypes.String: ('binary', 'charset', 'collation', 'length', 'unicode'),
+}
+
+
+def db_compare_type(context, inspected_column,
+                    metadata_column, inspected_type, metadata_type):
+    # return True if the types are different, False if not, or None
+    # to allow the default implementation to compare these types
+    expected = metadata_column.type
+    migrated = inspected_column.type
+
+    # this extends the logic in alembic.ddl.impl.DefaultImpl.compare_type
+    type_affinity = migrated._type_affinity
+    compare_attrs = _compare_attrs.get(type_affinity, None)
+    if compare_attrs is not None:
+        if type(expected) != type(migrated):
+            return True
+        for attr in compare_attrs:
+            if getattr(expected, attr, None) != getattr(migrated, attr, None):
+                return True
+        return False
+
+    # fall back to limited alembic type comparison
+    comparator = _type_comparators.get(type_affinity, None)
+    if comparator is not None:
+        return comparator(expected, migrated)
+    raise AssertionError('Unsupported DB type comparison.')
+
 
 class TestMigration(TestCase):
 
     def setUp(self):
         self.db = _make_db()
         # capture state of fresh database
-        self.head_tables = self.inspect_tables()
+        self.head_metadata = self.inspect_db()
         DBIsolation.cleanup_tables(self.db.engine)
 
     def tearDown(self):
@@ -53,13 +86,10 @@ class TestMigration(TestCase):
             return None
         return alembic_rev[0]
 
-    def inspect_tables(self):
+    def inspect_db(self):
         metadata = MetaData()
-        inspector = inspect(self.db.engine)
-        tables = {}
-        for name in inspector.get_table_names():
-            tables[name] = Table(name, metadata)
-        return tables
+        metadata.reflect(bind=self.db.engine)
+        return metadata
 
     def setup_base_db(self):
         with open(SQL_BASE_STRUCTURE) as fd:
@@ -79,8 +109,8 @@ class TestMigration(TestCase):
         # we have no alembic base revision
         self.assertTrue(self.current_db_revision() is None)
 
+        # run the migration, afterwards the DB is stamped
         self.run_migration()
-        # after the migration, the DB is stamped
         db_revision = self.current_db_revision()
         self.assertTrue(db_revision is not None)
 
@@ -88,9 +118,22 @@ class TestMigration(TestCase):
         alembic_head = self.alembic_script().get_current_head()
         self.assertEqual(db_revision, alembic_head)
 
-        # compare the tables from a migrated database to those
-        # created fresh from the model definitions
-        migrated_tables = self.inspect_tables()
-        head_tables = self.head_tables
-        self.assertEqual(set(head_tables.keys()),
-                         set(migrated_tables.keys()))
+        # compare the db schema from a migrated database to
+        # one created fresh from the model definitions
+        opts = {
+            'compare_type': db_compare_type,
+            'compare_server_default': True,
+        }
+        with self.db.engine.connect() as conn:
+            context = MigrationContext.configure(connection=conn, opts=opts)
+            metadata_diff = compare_metadata(context, self.head_metadata)
+
+        # BBB until #353 is done, we have a minor expected difference
+        filtered_diff = []
+        for entry in metadata_diff:
+            if entry[0] == 'remove_column' and \
+               entry[2] in ('cell', 'cell_blacklist') and \
+               entry[3].name == 'id':
+                continue
+            filtered_diff.append(entry)
+        self.assertEqual(filtered_diff, [])
