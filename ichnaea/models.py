@@ -347,8 +347,9 @@ class CellBlacklist(_Model):
     radio = Column(TinyInteger, autoincrement=False, primary_key=True)
     mcc = Column(SmallInteger, autoincrement=False, primary_key=True)
     mnc = Column(SmallInteger, autoincrement=False, primary_key=True)
-    lac = Column(Integer, autoincrement=False, primary_key=True)
-    cid = Column(Integer, autoincrement=False, primary_key=True)
+    lac = Column(
+        SmallInteger(unsigned=True), autoincrement=False, primary_key=True)
+    cid = Column(Integer(unsigned=True), autoincrement=False, primary_key=True)
     count = Column(Integer)
 
     def __init__(self, *args, **kw):
@@ -416,8 +417,8 @@ class CellMeasure(_Model):
     radio = Column(TinyInteger)
     mcc = Column(SmallInteger)
     mnc = Column(SmallInteger)
-    lac = Column(Integer)
-    cid = Column(Integer)
+    lac = Column(SmallInteger(unsigned=True))
+    cid = Column(Integer(unsigned=True))
     psc = Column(SmallInteger)
     asu = Column(SmallInteger)
     signal = Column(SmallInteger)
