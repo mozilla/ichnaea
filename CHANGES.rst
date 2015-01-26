@@ -10,9 +10,12 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- fe2cfea89f5: Change cell/_blacklist tables primary keys.
 
 Changes
 ~~~~~~~
+
+- #353: Remove auto-inc id column from cell/_blacklist tables.
 
 - Add additional stats to judge quality of WiFi based queries.
 

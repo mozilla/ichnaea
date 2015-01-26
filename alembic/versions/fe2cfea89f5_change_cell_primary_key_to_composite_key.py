@@ -10,11 +10,16 @@ Create Date: 2015-01-22 21:02:26.187970
 revision = 'fe2cfea89f5'
 down_revision = '188e749e51ec'
 
+import logging
+
 from alembic import op
 import sqlalchemy as sa
 
+log = logging.getLogger('alembic.migration')
+
 
 def upgrade():
+    log.info('Altering cell table')
     stmt = ("ALTER TABLE cell "
             "DROP PRIMARY KEY, "
             "CHANGE COLUMN `id` `id` bigint(20) unsigned, "
@@ -22,7 +27,7 @@ def upgrade():
             "DROP KEY cell_idx_unique")
     op.execute(sa.text(stmt))
 
-
+    log.info('Altering cell_blacklist table')
     stmt = ("ALTER TABLE cell_blacklist "
             "DROP PRIMARY KEY, "
             "CHANGE COLUMN `id` `id` bigint(20) unsigned, "

@@ -151,7 +151,8 @@ class TestCellMeasure(DBTestCase):
         return CellMeasure(**kw)
 
     def test_constructor(self):
-        self._make_one()
+        cell = self._make_one()
+        self.assertTrue(isinstance(cell.created, datetime.datetime))
 
     def test_fields(self):
         report_id = uuid.uuid1().bytes
