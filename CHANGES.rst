@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove alembic migrations before the 1.0 PyPi release.
+
 - #353: Remove auto-inc id column from cell/_blacklist tables.
 
 - Add additional stats to judge quality of WiFi based queries.

@@ -1,9 +1,0 @@
--- Running upgrade 4508f02e6cd7 -> 5aa7d2b976eb
-
-ALTER TABLE cell CHANGE COLUMN radio radio TINYINT, CHANGE COLUMN mnc mnc SMALLINT, CHANGE COLUMN psc psc SMALLINT;
-
-ALTER TABLE cell_blacklist CHANGE COLUMN radio radio TINYINT, CHANGE COLUMN mnc mnc SMALLINT;
-
-ALTER TABLE cell_measure CHANGE COLUMN radio radio TINYINT, CHANGE COLUMN mnc mnc SMALLINT, CHANGE COLUMN psc psc SMALLINT, CHANGE COLUMN ta ta TINYINT;
-
-UPDATE alembic_version SET version_num='5aa7d2b976eb';

@@ -1,14 +1,14 @@
 """add station modified times
 
 Revision ID: 4508f02e6cd7
-Revises: 2f26a4df27af
+Revises: None
 Create Date: 2014-08-05 11:30:35.100320
 
 """
 
 # revision identifiers, used by Alembic.
 revision = '4508f02e6cd7'
-down_revision = '2f26a4df27af'
+down_revision = None
 
 from alembic import op
 import sqlalchemy as sa

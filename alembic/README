@@ -28,22 +28,9 @@ alembic revision -m "your database revision comment here"
 That will generate a script to do upgrades and downgrades of the
 database.
 
-Generating a DDL diff:
-
-Executing `alembic upgrade head --sql` will generate all the DDL up to
-the head for every version managed in alembic's history.
-
-To get just the new DDL, you need to pass in two version numbers, or
-you can run the script in alembic/generate_diff.sh.
-
-When committing a new migration, it's handy to save the actual DDL
-into a .sql file in alembic/versions to make it easier to review the
-database upgrade change.
-
-
 ---
 
-Stamping the database as 'current'.  If you generate the database
+Stamping the database as 'current'. If you generate the database
 directly from the models, you can use `alembic stamp head` to just
-force alembic to assume that everything is in sync.  Subsequent
+force alembic to assume that everything is in sync. Subsequent
 database migrations will work correctly.

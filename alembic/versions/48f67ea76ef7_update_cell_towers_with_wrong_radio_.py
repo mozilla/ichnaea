@@ -107,6 +107,10 @@ def upgrade():
 
     stmt = 'SELECT max(time) FROM stat WHERE `key` = 2'
     max_date = bind.execute(stmt).fetchone()[0]
+
+    if max_date is None:
+        return
+
     today = max_date + timedelta(days=1)
 
     stmt = ('SELECT count(*) from cell where cid != -2 and '
