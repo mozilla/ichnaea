@@ -10,10 +10,14 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 10542c592089: Remove invalid lac values.
+
 - fe2cfea89f5: Change cell/_blacklist tables primary keys.
 
 Changes
 ~~~~~~~
+
+- #367: Tighten lac filtering to exclude 65534 (gsm) and 65535 (all).
 
 - Remove alembic migrations before the 1.0 PyPi release.
 

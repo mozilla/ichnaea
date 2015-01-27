@@ -306,12 +306,12 @@ class ValidCellBaseSchema(ValidMeasureSchema):
                 'Skip CDMA towers missing lac or cid '
                 '(no psc on CDMA exists to backfill using inference)'))
 
-        radio_types = (
+        gsm_family = (
             RADIO_TYPE['gsm'],
             RADIO_TYPE['umts'],
             RADIO_TYPE['lte'],
         )
-        if data['radio'] in radio_types and data['mnc'] > 999:
+        if data['radio'] in gsm_family and data['mnc'] > 999:
             raise Invalid(
                 schema, 'Skip GSM/LTE/UMTS towers with an invalid MNC')
 
@@ -328,7 +328,7 @@ class ValidCellBaseSchema(ValidMeasureSchema):
                 and data['cid'] > constants.MAX_CID_LTE):
             raise Invalid(schema, ('CID is out of range for LTE.'))
 
-        if (data['radio'] in radio_types
+        if (data['radio'] in gsm_family
                 and data['lac'] > constants.MAX_LAC_GSM_UMTS_LTE):
             raise Invalid(schema, ('LAC is out of range for GSM/UMTS/LTE.'))
 

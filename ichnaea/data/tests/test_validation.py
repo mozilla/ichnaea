@@ -365,14 +365,14 @@ class TestCellValidation(ValidationTest):
 
     def test_valid_lac_for_gsm_umts_lte_is_less_or_equal_to_65533(self):
         valid_lac = constants.MAX_LAC_GSM_UMTS_LTE
-        for radio in 'gsm', 'umts', 'lte':
+        for radio in ('gsm', 'umts', 'lte'):
             measure, cell = self.get_sample_measure_cell(
                 radio=radio, lac=valid_lac)
             self.check_normalized_cell(measure, cell, {'lac': valid_lac})
 
     def test_invalid_lac_for_gsm_umts_lte_is_greater_than_65533(self):
         invalid_lac = constants.MAX_LAC_GSM_UMTS_LTE + 1
-        for radio in 'gsm', 'umts', 'lte':
+        for radio in ('gsm', 'umts', 'lte'):
             measure, cell = self.get_sample_measure_cell(
                 radio=radio, lac=invalid_lac)
             self.check_normalized_cell(measure, cell, None)

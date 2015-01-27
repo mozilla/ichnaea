@@ -20,6 +20,8 @@ def upgrade():
     # correct the unique cell statistic
     bind = op.get_bind()
 
+    gsm_family = (RADIO_TYPE['gsm'], RADIO_TYPE['umts'], RADIO_TYPE['lte'])
+
     for table, stat in (
             ('cell', STAT_TYPE['unique_cell']),
             ('ocid_cell', STAT_TYPE['unique_ocid_cell'])):
@@ -29,30 +31,25 @@ def upgrade():
 
         if not max_date:
             continue
+        max_date = max_date.strftime('%Y-%m-%d')
 
-        stmt = ('SELECT count(*) FROM {table} where lac = 65535').format(
-            table=table)
+        stmt = ('SELECT count(*) FROM {table} WHERE '
+                '(lac = 65535 OR (lac = 65534 AND radio IN {radios})) '
+                'AND created < \'{max_date}\'').format(
+                    table=table, radios=gsm_family, max_date=max_date)
         cell_count = bind.execute(stmt).fetchone()[0]
 
-        stmt = ('UPDATE stat SET `value` = `value` - {count} WHERE `key` = 2 '
-                'AND `time` = \'{max_date}\'').format(
-                    count=cell_count, max_date=max_date.strftime('%Y-%m-%d'))
+        stmt = ('UPDATE stat SET `value` = `value` - {count} '
+                'WHERE `key` = {stat} AND `time` = \'{max_date}\'').format(
+                    count=cell_count, stat=stat, max_date=max_date)
         bind.execute(stmt)
 
     for table in (
             'cell', 'cell_blacklist', 'cell_area',
             'ocid_cell', 'ocid_cell_area'):
-        stmt = ('DELETE FROM {table} WHERE lac > 65534 '
-                'AND radio = {radio}').format(
-                    table=table, radio=RADIO_TYPE['cdma'])
-        bind.execute(stmt)
-
-        stmt = ('DELETE FROM {table} WHERE lac > 65533 '
-                'AND radio IN {radios}').format(
-                    table=table, radios=(
-                        RADIO_TYPE['gsm'],
-                        RADIO_TYPE['umts'],
-                        RADIO_TYPE['lte']))
+        stmt = ('DELETE FROM {table} WHERE lac = 65535 OR '
+                '(lac = 65534 AND radio IN {radios})').format(
+                    table=table, radios=gsm_family)
         bind.execute(stmt)
 
 
