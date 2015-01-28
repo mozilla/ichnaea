@@ -70,9 +70,11 @@ lib/libmaxminddb.0.dylib: libmaxminddb/bootstrap libmaxminddb/Makefile
 	cd libmaxminddb; make
 	cd libmaxminddb; make install
 
-install_vaurien_deps:
-	$(INSTALL) -r requirements/vaurien.txt
+loads:
 	$(INSTALL) -r requirements/loads.txt
+
+install_vaurien_deps: loads
+	$(INSTALL) -r requirements/vaurien.txt
 
 # Start vaurien for MySQL with REST API enabled on port 8080
 mysql_vaurien:
