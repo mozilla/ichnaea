@@ -57,8 +57,7 @@ class TestGeolocate(AppTestCase):
 
         self.check_stats(
             counter=[self.metric_url + '.200',
-                     self.metric + '.api_key.test',
-                     self.metric + '.api_log.test.cell_hit']
+                     self.metric + '.api_key.test']
         )
 
         self.assertEqual(res.content_type, 'application/json')
@@ -87,8 +86,7 @@ class TestGeolocate(AppTestCase):
                 ]},
             status=200)
         self.check_stats(
-            counter=[self.metric + '.api_key.test',
-                     self.metric + '.api_log.test.wifi_hit'])
+            counter=[self.metric + '.api_key.test'])
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"location": {"lat": 1.001,
                                                  "lng": 1.002},
@@ -119,7 +117,6 @@ class TestGeolocate(AppTestCase):
         # Make sure to get two counters, a timer, and no traceback
         self.check_stats(
             counter=[self.metric + '.api_key.test',
-                     self.metric + '.api_log.test.wifi_miss',
                      self.metric_url + '.404'],
             timer=[self.metric_url],
         )

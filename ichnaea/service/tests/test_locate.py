@@ -9,6 +9,7 @@ from ichnaea.data.schema import ValidCellBaseSchema
 from ichnaea.models import (
     Cell,
     CellArea,
+    OCIDCell,
     RADIO_TYPE,
     Wifi,
 )
@@ -71,7 +72,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         )
 
     def test_invalid_result_type(self):
-        self.assertRaises(ValueError,
+        self.assertRaises(KeyError,
                           self._make_query, result_type='invalid')
 
     def test_country_geoip(self):
@@ -182,12 +183,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
                           'lon': FREMONT_LON,
                           'accuracy': CELL_MIN_ACCURACY})
 
-        self.check_stats(
-            counter=[
-                'm.anomaly.geoip_mcc_mismatch',
-            ],
-        )
-
     def test_geoip_mcc_mismatch_unknown_cell(self):
         gsm = RADIO_TYPE['gsm']
         london = self.geoip_data['London']
@@ -200,12 +195,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
                          {'lat': london['latitude'],
                           'lon': london['longitude'],
                           'accuracy': london['accuracy']})
-
-        self.check_stats(
-            counter=[
-                'm.anomaly.geoip_mcc_mismatch',
-            ],
-        )
 
     def test_geoip_mcc_multiple(self):
         session = self.db_slave_session
@@ -229,7 +218,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                'm.anomaly.multiple_mccs',
                 'm.country_from_geoip',
             ],
         )
@@ -256,7 +244,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                'm.anomaly.multiple_mccs',
                 'm.country_from_geoip',
             ],
         )
@@ -289,6 +276,25 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
             ],
         )
 
+    def test_ocid_cell(self):
+        session = self.db_slave_session
+        london = self.geoip_data['London']
+        cell_key = {
+            'radio': RADIO_TYPE['gsm'], 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
+        }
+        session.add(OCIDCell(
+            lat=GB_LAT, lon=GB_LON, range=6000, cid=1, **cell_key))
+        session.add(CellArea(
+            lat=GB_LAT, lon=GB_LON, range=9000, **cell_key))
+        session.flush()
+
+        result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]},
+                                  client_addr=london['ip'], api_key_log=True)
+        self.assertEqual(result,
+                         {'lat': GB_LAT,
+                          'lon': GB_LON,
+                          'accuracy': 6000})
+
     def test_cell_miss_lac_hit(self):
         session = self.db_slave_session
         lat = PARIS_LAT
@@ -316,7 +322,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                'm.no_cell_found',
                 'm.cell_lac_found',
                 'm.cell_lac_hit',
                 'm.api_log.test.cell_lac_hit',
@@ -413,17 +418,20 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         key2 = dict(mcc=FRANCE_MCC, mnc=2, lac=4)
 
+        expected_lac = CellArea(
+            lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
+            range=20000, **key)
+
         data = [
-            CellArea(lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
-                     range=20000, **key),
-            Cell(lat=lat + 0.2, lon=lon + 0.4, radio=gsm,
-                 cid=5, range=1000, **key),
-            CellArea(lat=lat, lon=lon, radio=gsm,
-                     range=30000, **key2),
             Cell(lat=lat + 0.02, lon=lon + 0.02, radio=gsm,
                  cid=4, range=2000, **key2),
             Cell(lat=lat + 0.04, lon=lon + 0.04, radio=gsm,
                  cid=5, range=3000, **key2),
+            Cell(lat=lat + 0.2, lon=lon + 0.4, radio=gsm,
+                 cid=5, range=1000, **key),
+            CellArea(lat=lat, lon=lon, radio=gsm,
+                     range=30000, **key2),
+            expected_lac,
         ]
         session.add_all(data)
         session.flush()
@@ -441,9 +449,9 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
             ]
         })
         self.assertEqual(result,
-                         {'lat': PARIS_LAT + 0.03,
-                          'lon': PARIS_LON + 0.03,
-                          'accuracy': CELL_MIN_ACCURACY})
+                         {'lat': expected_lac.lat,
+                          'lon': expected_lac.lon,
+                          'accuracy': expected_lac.range})
 
     def test_cell_multiple_lac_lower_range_wins(self):
         session = self.db_slave_session
@@ -454,16 +462,20 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         key2 = dict(mcc=FRANCE_MCC, mnc=2, lac=4)
 
+        expected_lac = CellArea(
+            lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
+            range=10000, **key)
+
         data = [
-            CellArea(lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
-                     range=10000, **key),
+            Cell(lat=lat + 0.02, lon=lon + 0.02, radio=gsm,
+                 cid=4, range=2000, **key2),
             Cell(lat=lat + 0.2, lon=lon + 0.4, radio=gsm,
                  cid=4, range=4000, **key),
             CellArea(lat=lat, lon=lon, radio=gsm,
                      range=20000, **key2),
-            Cell(lat=lat + 0.02, lon=lon + 0.02, radio=gsm,
-                 cid=4, range=2000, **key2),
+            expected_lac,
         ]
+
         session.add_all(data)
         session.flush()
 
@@ -476,11 +488,11 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
             ]
         })
         self.assertEqual(result,
-                         {'lat': PARIS_LAT + 0.02,
-                          'lon': PARIS_LON + 0.02,
-                          'accuracy': CELL_MIN_ACCURACY})
+                         {'lat': expected_lac.lat,
+                          'lon': expected_lac.lon,
+                          'accuracy': LAC_MIN_ACCURACY})
 
-    def test_cell_multiple_radio_mixed_cell_lac_hit(self):
+    def test_cell_multiple_radio_lac_hit_with_min_lac_accuracy(self):
         session = self.db_slave_session
         lat = PARIS_LAT
         lon = PARIS_LON
@@ -490,15 +502,18 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         key = dict(mcc=FRANCE_MCC, mnc=3, lac=4)
         key2 = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
 
+        expected_lac = CellArea(
+            lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
+            range=3000, **key)
+
         data = [
-            CellArea(lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
-                     range=3000, **key),
+            Cell(lat=lat + 0.01, lon=lon + 0.02, radio=lte,
+                 cid=4, range=2000, **key2),
             Cell(lat=lat + 0.2, lon=lon + 0.4, radio=gsm,
                  cid=5, range=500, **key),
             CellArea(lat=lat, lon=lon, radio=lte,
                      range=10000, **key2),
-            Cell(lat=lat + 0.01, lon=lon + 0.02, radio=lte,
-                 cid=4, range=2000, **key2),
+            expected_lac,
         ]
         session.add_all(data)
         session.flush()
@@ -511,9 +526,9 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
             ]
         })
         self.assertEqual(result,
-                         {'lat': PARIS_LAT + 0.01,
-                          'lon': PARIS_LON + 0.02,
-                          'accuracy': CELL_MIN_ACCURACY})
+                         {'lat': expected_lac.lat,
+                          'lon': expected_lac.lon,
+                          'accuracy': LAC_MIN_ACCURACY})
 
     def test_wifi_not_found_cell_fallback(self):
         session = self.db_slave_session
@@ -604,7 +619,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                ('m.anomaly.wifi_country_mismatch', 1),
                 ('m.country_from_geoip', 1),
                 ('m.geoip_city_found', 1),
                 ('m.wifi_found', 1),
@@ -641,8 +655,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                ('m.anomaly.cell_cell_lac_mismatch', 1),
-                ('m.country_from_mcc', 1),
                 ('m.cell_lac_found', 1),
                 ('m.cell_found', 1),
                 ('m.cell_lac_hit', 1),
@@ -683,8 +695,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                ('m.anomaly.wifi_cell_lac_mismatch', 1),
-                ('m.country_from_mcc', 1),
                 ('m.cell_lac_found', 1),
                 ('m.wifi_found', 1),
                 ('m.cell_lac_hit', 1),
@@ -725,9 +735,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                ('m.anomaly.wifi_cell_mismatch', 1),
-                ('m.country_from_mcc', 1),
-                ('m.no_cell_lac_found', 1),
                 ('m.cell_found', 1),
                 ('m.wifi_found', 1),
                 ('m.cell_hit', 1),
@@ -761,7 +768,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                ('m.country_from_mcc', 1),
                 ('m.cell_lac_found', 1),
                 ('m.cell_found', 1),
                 ('m.cell_hit', 1),
@@ -801,8 +807,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                ('m.country_from_mcc', 1),
-                ('m.no_cell_lac_found', 1),
                 ('m.wifi_found', 1),
                 ('m.cell_found', 1),
                 ('m.wifi_hit', 1),
@@ -842,8 +846,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                ('m.country_from_mcc', 1),
-                ('m.no_cell_found', 1),
                 ('m.wifi_found', 1),
                 ('m.cell_lac_found', 1),
                 ('m.wifi_hit', 1),
@@ -886,7 +888,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                ('m.country_from_mcc', 1),
                 ('m.wifi_found', 1),
                 ('m.cell_found', 1),
                 ('m.cell_lac_found', 1),
@@ -938,8 +939,8 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
             counter=[
                 'm.miss',
                 'm.no_wifi_found',
-                'm.api_log.test.geoip_miss',
                 'm.wifi.provided_too_few',
+                'm.api_log.test.geoip_miss',
             ],
         )
 

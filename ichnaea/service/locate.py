@@ -2,7 +2,6 @@ from collections import defaultdict, namedtuple
 import operator
 
 import iso3166
-import mobile_codes
 from sqlalchemy.sql import and_, or_
 from sqlalchemy.orm import load_only
 
@@ -18,11 +17,10 @@ from ichnaea.data.validation import (
 )
 from ichnaea.geocalc import (
     distance,
-    location_is_in_country,
 )
 from ichnaea.logging import (
-    get_heka_client,
     get_stats_client,
+    get_heka_client,
     RAVEN_ERROR,
 )
 from ichnaea.models import (
@@ -65,26 +63,6 @@ def estimate_accuracy(lat, lon, points, minimum):
     return max(accuracy, minimum)
 
 
-def most_common_elements(iterable):
-    """
-    Given an iterable, return a list of elements from that iterable:
-        * If the iterable is empty, return an empty list.
-        * If there is one element that's most common in the iterable,
-          return a list with that element.
-        * If there are multiple elements which occur equally often,
-          return a list with all of those elements.
-    """
-    counts = defaultdict(int)
-    for e in iterable:
-        counts[e] += 1
-
-    if not counts:
-        return []
-
-    max_count = max(counts.values())
-    return [e for e, n in counts.items() if n == max_count]
-
-
 def map_data(data):
     """
     Transform a geolocate API dictionary to an equivalent search API
@@ -122,496 +100,536 @@ def map_data(data):
     return mapped
 
 
-def geoip_and_best_guess_country_codes(cell_keys, api_name, client_addr,
-                                       geoip_db, stats_client):
-    """
-    Return (geoip, alpha2) where geoip is the result of a GeoIP lookup
-    and alpha2 is a best-guess ISO 3166 alpha2 country code. The country
-    code guess uses both GeoIP and cell MCCs, preferring GeoIP. Return
-    None for either field if no data is available.
-    """
-    geoip = None
+class StatsLogger(object):
 
-    if client_addr and geoip_db is not None:
-        geoip = geoip_db.geoip_lookup(client_addr)
+    def __init__(self, api_key_name, api_key_log, api_name):
+        self.api_key_name = api_key_name
+        self.api_key_log = api_key_log
+        self.api_name = api_name
+        self.stats_client = get_stats_client()
 
-    cell_countries = []
-    cell_mccs = set()
-    for cell_key in cell_keys:
-        for c in mobile_codes.mcc(str(cell_key.mcc)):
-            cell_countries.append(c.alpha2)
-            cell_mccs.add(cell_key.mcc)
+    def stat_count(self, stat):
+        self.stats_client.incr('{api}.{stat}'.format(
+            api=self.api_name, stat=stat))
 
-    if len(cell_mccs) > 1:
-        stats_client.incr('%s.anomaly.multiple_mccs' % api_name)
+    def stat_time(self, stat, count):
+        self.stats_client.timing('{api}.{stat}'.format(
+            api=self.api_name, stat=stat), count)
 
-    if geoip:
-        # GeoIP always wins if we have it.
-        if geoip['city']:
-            stats_client.incr('%s.geoip_city_found' % api_name)
-        else:
-            stats_client.incr('%s.geoip_country_found' % api_name)
+    def log_used(self):
+        if self.api_key_log:
+            self.stat_count('api_log.{key}.{metric}_hit'.format(
+                key=self.api_key_name, metric=self.log_name))
 
-        if geoip['country_code'] not in cell_countries:
-            if cell_countries:
-                stats_client.incr('%s.anomaly.geoip_mcc_mismatch' % api_name)
-            # Only use the GeoIP country as an additional possible match,
-            # but retain the cell countries as a likely match as well.
-            cell_countries.append(geoip['country_code'])
+    def log_unused(self):
+        if self.api_key_log:
+            self.stat_count('api_log.{key}.{metric}_miss'.format(
+                key=self.api_key_name, metric=self.log_name))
 
-        stats_client.incr('%s.country_from_geoip' % api_name)
-        geoip_res = {
-            'lat': geoip['latitude'],
-            'lon': geoip['longitude'],
-            'accuracy': geoip['accuracy'],
+
+class AbstractLocationProvider(StatsLogger):
+
+    def __init__(self, session, *args, **kwargs):
+        self.session = session
+        self.heka_client = get_heka_client()
+        super(AbstractLocationProvider, self).__init__(*args, **kwargs)
+
+    def locate(self, data):
+        raise NotImplementedError()
+
+
+class AbstractCellLocationProvider(AbstractLocationProvider):
+
+    def clean_cell_keys(self, data):
+        # Pre-process cell data
+        radio = RADIO_TYPE.get(data.get('radio', ''), -1)
+        cell_keys = []
+        for cell in data.get('cell', ()):
+            cell = normalized_cell_dict(cell, default_radio=radio)
+            if cell:
+                cell_key = to_cellkey(cell)
+                cell_keys.append(cell_key)
+
+        return cell_keys
+
+    def query_database(self, cell_keys):
+        # Query all cells and OCID cells
+        queried_objects = []
+        for model in self.models:
+            found_cells = []
+
+            cell_filter = []
+            for key in cell_keys:
+                # create a list of 'and' criteria for cell keys
+                criterion = join_cellkey(model, key)
+                cell_filter.append(and_(*criterion))
+
+            if cell_filter:
+                # only do a query if we have cell results, or this will match
+                # all rows in the table
+                load_fields = (
+                    'radio', 'mcc', 'mnc', 'lac', 'lat', 'lon', 'range')
+                query = (self.session.query(model)
+                                     .options(load_only(*load_fields))
+                                     .filter(or_(*cell_filter))
+                                     .filter(model.lat.isnot(None))
+                                     .filter(model.lon.isnot(None)))
+
+                try:
+                    found_cells.extend(query.all())
+                except Exception:
+                    self.heka_client.raven(RAVEN_ERROR)
+
+            if found_cells:
+                # Group all found_cellss by location area
+                lacs = defaultdict(list)
+                for cell in found_cells:
+                    cellarea_key = (cell.radio, cell.mcc, cell.mnc, cell.lac)
+                    lacs[cellarea_key].append(cell)
+
+                def sort_lac(v):
+                    # use the lac with the most values,
+                    # or the one with the smallest range
+                    return (len(v), -min([e.range for e in v]))
+
+                # If we get data from multiple location areas, use the one
+                # with the most data points in it. That way a lac with a cell
+                # hit will have two entries and win over a lac with only the
+                # lac entry.
+                lac = sorted(lacs.values(), key=sort_lac, reverse=True)
+
+                for cell in lac[0]:
+                    # The first entry is the key,
+                    # used only to distinguish cell from lac
+                    network = Network(
+                        key=None,
+                        lat=cell.lat,
+                        lon=cell.lon,
+                        range=cell.range)
+                    queried_objects.append(network)
+
+        return queried_objects
+
+    def locate(self, data):
+        cell_keys = self.clean_cell_keys(data)
+        queried_objects = self.query_database(cell_keys)
+        if queried_objects:
+            return self.prepare_location(queried_objects)
+
+
+class CellLocationProvider(AbstractCellLocationProvider):
+    models = [Cell, OCIDCell]
+    log_name = 'cell'
+
+    def prepare_location(self, queried_objects):
+        self.stat_count('cell_found')
+        self.stat_count('cell_hit')
+        length = len(queried_objects)
+        avg_lat = sum([c.lat for c in queried_objects]) / length
+        avg_lon = sum([c.lon for c in queried_objects]) / length
+        return {
+            'lat': avg_lat,
+            'lon': avg_lon,
+            'accuracy': estimate_accuracy(
+                avg_lat, avg_lon, queried_objects, CELL_MIN_ACCURACY),
         }
-        return (geoip_res, most_common_elements(cell_countries))
-
-    else:
-        stats_client.incr('%s.no_geoip_found' % api_name)
-
-    # Pick the most-commonly-occurring country codes if we got any
-    cc = most_common_elements(cell_countries)
-    if cc:
-        stats_client.incr('%s.country_from_mcc' % api_name)
-        return (None, cc)
-
-    stats_client.incr('%s.no_country' % api_name)
-    return (None, [])
 
 
-def search_cell(session, cells, stats_client, api_name):
-    if not cells:
-        return
+class CellAreaLocationProvider(AbstractCellLocationProvider):
+    models = [CellArea]
+    log_name = 'cell_lac'
 
-    length = len(cells)
-    avg_lat = sum([c.lat for c in cells]) / length
-    avg_lon = sum([c.lon for c in cells]) / length
-    return {
-        'lat': avg_lat,
-        'lon': avg_lon,
-        'accuracy': estimate_accuracy(avg_lat, avg_lon,
-                                      cells, CELL_MIN_ACCURACY),
-    }
-
-
-def search_cell_lac(session, lacs, stats_client, api_name):
-    if not lacs:
-        return
-
-    # take the smallest LAC of any the user is inside
-    lac = sorted(lacs, key=operator.attrgetter('range'))[0]
-    accuracy = max(LAC_MIN_ACCURACY, lac.range)
-    accuracy = float(accuracy)
-    return {
-        'lat': lac.lat,
-        'lon': lac.lon,
-        'accuracy': accuracy,
-    }
+    def prepare_location(self, queried_objects):
+        self.stat_count('cell_lac_found')
+        self.stat_count('cell_lac_hit')
+        # take the smallest LAC of any the user is inside
+        lac = sorted(queried_objects, key=operator.attrgetter('range'))[0]
+        accuracy = max(LAC_MIN_ACCURACY, lac.range)
+        accuracy = float(accuracy)
+        return {
+            'lat': lac.lat,
+            'lon': lac.lon,
+            'accuracy': accuracy,
+        }
 
 
-def cluster_elements(elts, dist, thresh):
-    """
-    Generic pairwise clustering routine.
+class WifiLocationProvider(AbstractLocationProvider):
+    log_name = 'wifi'
 
-    :param elts: A list of elemenets to cluster.
-    :param dist: A pairwise distance function over elements.
-    :param thresh: A numeric threshold for clustering;
-                   clusters P, Q will be joined if dist(a,b) <= thresh,
-                   for any a in P, b in Q.
+    def cluster_elements(self, items, distance_fn, threshold):
+        """
+        Generic pairwise clustering routine.
 
-    :returns: A list of lists of elements, each sub-list being a cluster.
-    """
-    elts = list(elts)
-    distance_matrix = [[dist(a, b) for a in elts] for b in elts]
-    n = len(elts)
-    clusters = [[i] for i in range(n)]
+        :param items: A list of elemenets to cluster.
+        :param distance_fn: A pairwise distance_fnance function over elements.
+        :param threshold: A numeric thresholdold for clustering;
+                          clusters P, Q will be joined if
+                          distance_fn(a,b) <= threshold,
+                          for any a in P, b in Q.
 
-    def cluster_distance(a, b):
-        return min([distance_matrix[i][j] for i in a for j in b])
+        :returns: A list of lists of elements, each sub-list being a cluster.
+        """
+        distance_matrix = [[distance_fn(a, b) for a in items] for b in items]
+        clusters = [[i] for i in range(len(items))]
 
-    merged_one = True
-    while merged_one:
-        merged_one = False
-        m = len(clusters)
-        for i in range(m):
-            if merged_one:
-                break
-            for j in range(m):
+        def cluster_distance(a, b):
+            return min([distance_matrix[i][j] for i in a for j in b])
+
+        merged_one = True
+        while merged_one:
+            merged_one = False
+            for i in range(len(clusters)):
                 if merged_one:
                     break
-                if i == j:
-                    continue
-                a = clusters[i]
-                b = clusters[j]
-                if cluster_distance(a, b) <= thresh:
-                    clusters.pop(j)
-                    a.extend(b)
-                    merged_one = True
+                for j in range(len(clusters)):
+                    if merged_one:
+                        break
+                    if i == j:
+                        continue
+                    a = clusters[i]
+                    b = clusters[j]
+                    if cluster_distance(a, b) <= threshold:
+                        clusters.pop(j)
+                        a.extend(b)
+                        merged_one = True
 
-    return [[elts[i] for i in c] for c in clusters]
+        return [[items[i] for i in c] for c in clusters]
+
+    def filter_bssids_by_similarity(self, bs):
+        # Cluster BSSIDs by "similarity" (hamming or arithmetic distance);
+        # return one BSSID from each cluster. The distance threshold is
+        # hard-wired to 2, meaning that two BSSIDs are clustered together
+        # if they are within a numeric difference of 2 of one another or
+        # a hamming distance of 2.
+
+        DISTANCE_THRESHOLD = 2
+
+        def bytes_of_hex_string(hs):
+            return [int(hs[i:i + 2], 16) for i in range(0, len(hs), 2)]
+
+        def hamming_distance(a, b):
+            h = 0
+            v = a ^ b
+            while v:
+                h += 1
+                v &= v - 1
+            return h
+
+        def hamming_or_arithmetic_byte_difference(a, b):
+            return min(abs(a - b), hamming_distance(a, b))
+
+        def bssid_difference(a, b):
+            abytes = bytes_of_hex_string(a)
+            bbytes = bytes_of_hex_string(b)
+            return sum(hamming_or_arithmetic_byte_difference(a, b) for
+                       (a, b) in zip(abytes, bbytes))
+
+        clusters = self.cluster_elements(
+            bs, bssid_difference, DISTANCE_THRESHOLD)
+        return [c[0] for c in clusters]
+
+    def get_clean_wifi_keys(self, data):
+        wifis = []
+
+        # Pre-process wifi data
+        for wifi in data.get('wifi', ()):
+            wifi = normalized_wifi_dict(wifi)
+            if wifi:
+                wifis.append(wifi)
+
+        # Estimate signal strength at -100 dBm if none is provided,
+        # which is worse than the 99th percentile of wifi dBms we
+        # see in practice (-98).
+
+        wifi_signals = dict([(w['key'], w['signal'] or -100) for w in wifis])
+        wifi_keys = set(wifi_signals.keys())
+
+        return wifis, wifi_signals, wifi_keys
+
+    def query_database(self, wifi_keys):
+        queried_wifis = []
+        try:
+            queried_wifis = (self.session.query(Wifi.key, Wifi.lat,
+                                                Wifi.lon, Wifi.range)
+                                         .filter(Wifi.key.in_(wifi_keys))
+                                         .filter(Wifi.lat.isnot(None))
+                                         .filter(Wifi.lon.isnot(None))
+                                         .all())
+        except Exception:
+            self.heka_client.raven(RAVEN_ERROR)
+            self.stat_count('wifi_error')
+
+        return queried_wifis
+
+    def get_clusters(self, wifi_signals, queried_wifis):
+        # Filter out BSSIDs that are numerically very similar, assuming they're
+        # multiple interfaces on the same base station or such.
+        dissimilar_keys = set(self.filter_bssids_by_similarity(
+            [w.key for w in queried_wifis]))
+
+        if len(dissimilar_keys) < len(queried_wifis):
+            self.stat_time(
+                'wifi.provided_too_similar',
+                len(queried_wifis) - len(dissimilar_keys))
+
+        wifi_networks = [
+            Network(w.key, w.lat, w.lon, w.range)
+            for w in queried_wifis if w.key in dissimilar_keys]
+
+        if len(wifi_networks) < MIN_WIFIS_IN_QUERY:
+            # We didn't get enough matches.
+            self.stat_count('wifi.found_too_few')
+
+        # Sort networks by signal strengths in query.
+        wifi_networks.sort(
+            lambda a, b: cmp(wifi_signals[b.key], wifi_signals[a.key]))
+
+        clusters = self.cluster_elements(
+            wifi_networks,
+            lambda a, b: distance(a.lat, a.lon, b.lat, b.lon),
+            MAX_WIFI_CLUSTER_KM)
+
+        # The second loop selects a cluster and estimates the position of that
+        # cluster. The selected cluster is the one with the most points, larger
+        # than MIN_WIFIS_IN_CLUSTER; its position is estimated taking up-to
+        # MAX_WIFIS_IN_CLUSTER worth of points from the cluster, which is
+        # pre-sorted in signal-strength order due to the way we built the
+        # clusters.
+        #
+        # The reasoning here is that if we have >1 cluster at all, we probably
+        # have some bad data -- likely an AP or set of APs associated with a
+        # single antenna that moved -- since a user shouldn't be able to hear
+        # multiple groups 500m apart.
+        #
+        # So we're trying to select a cluster that's most-likely good data,
+        # which we assume to be the one with the most points in it.
+        #
+        # The reason we take a subset of those points when estimating location
+        # is that we're doing a (non-weighted) centroid calculation, which is
+        # itself unbalanced by distant elements. Even if we did a weighted
+        # centroid here, using radio intensity as a proxy for distance has an
+        # error that increases significantly with distance, so we'd have to
+        # underweight pretty heavily.
+
+        return [c for c in clusters if len(c) >= MIN_WIFIS_IN_CLUSTER]
+
+    def prepare_location(self, clusters):
+        clusters.sort(lambda a, b: cmp(len(b), len(a)))
+        cluster = clusters[0]
+        sample = cluster[:min(len(cluster), MAX_WIFIS_IN_CLUSTER)]
+        length = len(sample)
+        avg_lat = sum([n.lat for n in sample]) / length
+        avg_lon = sum([n.lon for n in sample]) / length
+        return {
+            'lat': avg_lat,
+            'lon': avg_lon,
+            'accuracy': estimate_accuracy(avg_lat, avg_lon,
+                                          sample, WIFI_MIN_ACCURACY),
+        }
+
+    def locate(self, data):
+        location = None
+
+        wifis, wifi_signals, wifi_keys = self.get_clean_wifi_keys(data)
+
+        if len(wifi_keys) < MIN_WIFIS_IN_QUERY:
+            # We didn't get enough keys.
+            if len(wifi_keys) >= 1:
+                self.stat_count('wifi.provided_too_few')
+        else:
+            self.stat_time('wifi.provided', len(wifi_keys))
+
+            queried_wifis = self.query_database(wifi_keys)
+
+            if len(queried_wifis) < len(wifi_keys):
+                self.stat_count('wifi.partial_match')
+                self.stats_client.timing(
+                    '{api}.wifi.provided_not_known'.format(api=self.api_name),
+                    len(wifi_keys) - len(queried_wifis))
+
+            clusters = self.get_clusters(wifi_signals, queried_wifis)
+
+            if len(clusters) == 0:
+                self.stat_count('wifi.found_no_cluster')
+            else:
+                self.stat_count('wifi_found')
+                self.stat_count('wifi_hit')
+                location = self.prepare_location(clusters)
+
+        if not location:
+            self.stat_count('no_wifi_found')
+
+        return location
 
 
-def filter_bssids_by_similarity(bs):
-    # Cluster BSSIDs by "similarity" (hamming or arithmetic distance);
-    # return one BSSID from each cluster. The distance threshold is
-    # hard-wired to 2, meaning that two BSSIDs are clustered together
-    # if they are within a numeric difference of 2 of one another or
-    # a hamming distance of 2.
+class GeoIPLocationProvider(AbstractLocationProvider):
+    log_name = 'geoip'
 
-    DISTANCE_THRESHOLD = 2
+    def __init__(self, geoip_db, *args, **kwargs):
+        self.geoip_db = geoip_db
+        super(GeoIPLocationProvider, self).__init__(*args, **kwargs)
 
-    def bytes_of_hex_string(hs):
-        return [int(hs[i:i + 2], 16) for i in range(0, len(hs), 2)]
+    def locate(self, client_addr):
+        """
+        Return (geoip, alpha2) where geoip is the result of a GeoIP lookup
+        and alpha2 is a best-guess ISO 3166 alpha2 country code. The country
+        code guess uses both GeoIP and cell MCCs, preferring GeoIP. Return
+        None for either field if no data is available.
+        """
+        location = None
+        country = None
 
-    def hamming_distance(a, b):
-        h = 0
-        v = a ^ b
-        while v:
-            h += 1
-            v &= v - 1
-        return h
+        if client_addr and self.geoip_db is not None:
+            geoip = self.geoip_db.geoip_lookup(client_addr)
 
-    def hamming_or_arithmetic_byte_difference(a, b):
-        return min(abs(a - b), hamming_distance(a, b))
+            if geoip:
+                if geoip['city']:
+                    self.stat_count('geoip_city_found')
+                else:
+                    self.stat_count('geoip_country_found')
+                self.stat_count('country_from_geoip')
+                self.stat_count('geoip_hit')
 
-    def bssid_difference(a, b):
-        abytes = bytes_of_hex_string(a)
-        bbytes = bytes_of_hex_string(b)
-        return sum(hamming_or_arithmetic_byte_difference(a, b) for
-                   (a, b) in zip(abytes, bbytes))
+                # Only use the GeoIP country as an additional possible match,
+                # but retain the cell countries as a likely match as well.
+                country = geoip['country_code']
+                location = {
+                    'lat': geoip['latitude'],
+                    'lon': geoip['longitude'],
+                    'accuracy': geoip['accuracy'],
+                }
 
-    clusters = cluster_elements(bs, bssid_difference, DISTANCE_THRESHOLD)
-    return [c[0] for c in clusters]
+        if not (location or country):
+            self.stat_count('no_country')
+            self.stat_count('no_geoip_found')
+
+        return location, country
 
 
-def search_wifi(session, wifis, stats_client, api_name):
-    # Estimate signal strength at -100 dBm if none is provided,
-    # which is worse than the 99th percentile of wifi dBms we
-    # see in practice (-98).
+class AbstractLocationSearcher(StatsLogger):
+    # First we attempt a "zoom-in" from cell-lac, to cell
+    # to wifi, tightening our estimate each step only so
+    # long as it doesn't contradict the existing best-estimate
+    # nor the possible country of origin.
+    LOCATION_PROVIDER_CLASSES = (
+        CellAreaLocationProvider,
+        CellLocationProvider,
+        WifiLocationProvider,
+    )
 
-    def signal_strength(w):
-        signal = w['signal']
-        if signal == 0:
-            return -100
-        return signal
+    def __init__(self, session, geoip_db, *args, **kwargs):
+        super(AbstractLocationSearcher, self).__init__(*args, **kwargs)
+        self.session = session
+        self.geoip_provider = GeoIPLocationProvider(
+            api_key_log=self.api_key_log,
+            api_key_name=self.api_key_name,
+            api_name=self.api_name,
+            geoip_db=geoip_db,
+            session=self.session,
+        )
+        self.heka_client = get_heka_client()
 
-    wifi_signals = dict([(w['key'], signal_strength(w)) for w in wifis])
-    wifi_keys = set(wifi_signals.keys())
+        self.location_providers = [
+            cls(
+                api_key_log=self.api_key_log,
+                api_key_name=self.api_key_name,
+                api_name=self.api_name,
+                session=self.session
+            ) for cls in self.LOCATION_PROVIDER_CLASSES]
 
-    if len(wifi_keys) < MIN_WIFIS_IN_QUERY:
-        # We didn't get enough keys.
-        if len(wifi_keys) >= 1:
-            stats_client.incr('%s.wifi.provided_too_few' % api_name)
-        return None
+    def search_location(self, data, client_addr):
+        location = None
+        location_provider_used = None
 
-    stats_client.timing('%s.wifi.provided' % api_name, len(wifi_keys))
+        # Always do a GeoIP lookup because it is cheap and we want to
+        # report geoip vs. other data mismatches. We may also use
+        # the full GeoIP City-level estimate as well, if all else fails.
+        geoip_location, country = self.geoip_provider.locate(client_addr)
 
-    query = session.query(Wifi.key, Wifi.lat, Wifi.lon, Wifi.range).filter(
-        Wifi.key.in_(wifi_keys)).filter(
-        Wifi.lat.isnot(None)).filter(
-        Wifi.lon.isnot(None))
-    wifis = query.all()
+        for location_provider in self.location_providers:
+            provider_location = location_provider.locate(data)
 
-    if len(wifis) < len(wifi_keys):
-        stats_client.incr('%s.wifi.partial_match' % api_name)
-        stats_client.timing('%s.wifi.provided_not_known' % api_name,
-                            len(wifi_keys) - len(wifis))
+            if provider_location:
+                if location is None:
+                    # If this is our first hit, then we use it.
+                    location = provider_location
+                    location_provider_used = location_provider
+                else:
+                    # If this location is more accurate than our previous one,
+                    # we'll use it.
+                    provider_distance = distance(
+                        location['lat'],
+                        location['lon'],
+                        provider_location['lat'],
+                        provider_location['lon']
+                    ) * 1000
+                    if provider_distance <= location['accuracy']:
+                        location = provider_location
+                        location_provider_used = location_provider
 
-    # Filter out BSSIDs that are numerically very similar, assuming they're
-    # multiple interfaces on the same base station or such.
-    dissimilar_keys = set(filter_bssids_by_similarity([w.key for w in wifis]))
+        # Fall back to GeoIP if nothing has worked yet. We do not
+        # include this in the "zoom-in" loop because GeoIP is
+        # frequently _wrong_ at the city level; we only want to
+        # accept that estimate if we got nothing better from cell
+        # or wifi.
+        if not location and geoip_location:
+            location = geoip_location
+            location_provider_used = self.geoip_provider
 
-    if len(dissimilar_keys) < len(wifis):
-        stats_client.timing('%s.wifi.provided_too_similar' % api_name,
-                            len(wifis) - len(dissimilar_keys))
+        if not location:
+            self.stat_count('miss')
 
-    wifis = [Network(w.key, w.lat, w.lon, w.range)
-             for w in wifis
-             if w.key in dissimilar_keys]
+        for location_provider in\
+                self.location_providers + [self.geoip_provider]:
+            if location_provider is location_provider_used:
+                location_provider.log_used()
+            else:
+                location_provider.log_unused()
 
-    if len(wifis) < MIN_WIFIS_IN_QUERY:
-        # We didn't get enough matches.
-        stats_client.incr('%s.wifi.found_too_few' % api_name)
-        return None
+        return country, location
 
-    # Sort networks by signal strengths in query.
-    wifis.sort(lambda a, b: cmp(wifi_signals[b.key],
-                                wifi_signals[a.key]))
+    def prepare_location(self, country, location):
+        raise NotImplementedError()
 
-    clusters = cluster_elements(wifis,
-                                lambda a, b: distance(a.lat, a.lon,
-                                                      b.lat, b.lon),
-                                MAX_WIFI_CLUSTER_KM)
+    def search(self, data, client_addr):
+        country, location = self.search_location(data, client_addr)
+        if location or country:
+            return self.prepare_location(country, location)
 
-    # The second loop selects a cluster and estimates the position of that
-    # cluster. The selected cluster is the one with the most points, larger
-    # than MIN_WIFIS_IN_CLUSTER; its position is estimated taking up-to
-    # MAX_WIFIS_IN_CLUSTER worth of points from the cluster, which is
-    # pre-sorted in signal-strength order due to the way we built the
-    # clusters.
-    #
-    # The reasoning here is that if we have >1 cluster at all, we probably
-    # have some bad data -- likely an AP or set of APs associated with a
-    # single antenna that moved -- since a user shouldn't be able to hear
-    # multiple groups 500m apart.
-    #
-    # So we're trying to select a cluster that's most-likely good data,
-    # which we assume to be the one with the most points in it.
-    #
-    # The reason we take a subset of those points when estimating location
-    # is that we're doing a (non-weighted) centroid calculation, which is
-    # itself unbalanced by distant elements. Even if we did a weighted
-    # centroid here, using radio intensity as a proxy for distance has an
-    # error that increases significantly with distance, so we'd have to
-    # underweight pretty heavily.
 
-    clusters = [c for c in clusters if len(c) >= MIN_WIFIS_IN_CLUSTER]
+class PositionLocationSearcher(AbstractLocationSearcher):
 
-    if len(clusters) == 0:
-        stats_client.incr('%s.wifi.found_no_cluster' % api_name)
-        return None
+    def prepare_location(self, country, location):
+        return {
+            'lat': round(location['lat'], DEGREE_DECIMAL_PLACES),
+            'lon': round(location['lon'], DEGREE_DECIMAL_PLACES),
+            'accuracy': round(location['accuracy'], DEGREE_DECIMAL_PLACES),
+        }
 
-    clusters.sort(lambda a, b: cmp(len(b), len(a)))
-    cluster = clusters[0]
-    sample = cluster[:min(len(cluster), MAX_WIFIS_IN_CLUSTER)]
-    length = len(sample)
-    avg_lat = sum([n.lat for n in sample]) / length
-    avg_lon = sum([n.lon for n in sample]) / length
-    return {
-        'lat': avg_lat,
-        'lon': avg_lon,
-        'accuracy': estimate_accuracy(avg_lat, avg_lon,
-                                      sample, WIFI_MIN_ACCURACY),
-    }
+
+class CountryLocationSearcher(AbstractLocationSearcher):
+
+    def prepare_location(self, country_code, location):
+        country = iso3166.countries.get(country_code)
+        return {
+            'country_name': country.name,
+            'country_code': country.alpha2,
+        }
 
 
 def search_all_sources(session, api_name, data,
                        client_addr=None, geoip_db=None,
                        api_key_log=False, api_key_name=None,
                        result_type='position'):
-    """
-    Common code-path for all lookup APIs, using
-    WiFi, cell, cell-lac and GeoIP data sources.
 
-    :param session: A database session for queries.
-    :param api_name: A string to use in metrics (for example "geolocate").
-    :param data: A dict conforming to the search API.
-    :param client_addr: The IP address the request came from.
-    :param geoip_db: The geoip database.
-    :param api_key_log: Enable additional api key specific logging?
-    :param api_key_name: The metric friendly api key name.
-    :param result_type: What kind of result to return, either a lat/lon
-                        position or a country estimate.
-    """
-
-    if result_type not in ('country', 'position'):
-        raise ValueError('Invalid result_type, must be one of '
-                         'position or country')
-
-    stats_client = get_stats_client()
-    heka_client = get_heka_client()
-
-    result = None
-    result_metric = None
-
-    validated = {
-        'wifi': [],
-        'cell': [],
-        'cell_lac': set(),
-        'cell_network': [],
-        'cell_lac_network': [],
+    searchers = {
+        'position': PositionLocationSearcher,
+        'country': CountryLocationSearcher,
     }
-
-    # Pre-process wifi data
-    for wifi in data.get('wifi', ()):
-        wifi = normalized_wifi_dict(wifi)
-        if wifi:
-            validated['wifi'].append(wifi)
-
-    # Pre-process cell data
-    radio = RADIO_TYPE.get(data.get('radio', ''), -1)
-    for cell in data.get('cell', ()):
-        cell = normalized_cell_dict(cell, default_radio=radio)
-        if cell:
-            cell_key = to_cellkey(cell)
-            validated['cell'].append(cell_key)
-            validated['cell_lac'].add(cell_key)
-
-    found_cells = []
-
-    # Query all cells and OCID cells
-    for model in Cell, OCIDCell, CellArea:
-        cell_filter = []
-        for key in validated['cell']:
-            # create a list of 'and' criteria for cell keys
-            criterion = join_cellkey(model, key)
-            cell_filter.append(and_(*criterion))
-
-        if cell_filter:
-            # only do a query if we have cell results, or this will match
-            # all rows in the table
-            load_fields = ('radio', 'mcc', 'mnc', 'lac', 'lat', 'lon', 'range')
-            query = (session.query(model)
-                            .options(load_only(*load_fields))
-                            .filter(or_(*cell_filter))
-                            .filter(model.lat.isnot(None))
-                            .filter(model.lon.isnot(None)))
-
-            try:
-                found_cells.extend(query.all())
-            except Exception:
-                heka_client.raven(RAVEN_ERROR)
-
-    if found_cells:
-        # Group all found_cellss by location area
-        lacs = defaultdict(list)
-        for cell in found_cells:
-            cellarea_key = (cell.radio, cell.mcc, cell.mnc, cell.lac)
-            lacs[cellarea_key].append(cell)
-
-        def sort_lac(v):
-            # use the lac with the most values,
-            # or the one with the smallest range
-            return (len(v), -min([e.range for e in v]))
-
-        # If we get data from multiple location areas, use the one with the
-        # most data points in it. That way a lac with a cell hit will
-        # have two entries and win over a lac with only the lac entry.
-        lac = sorted(lacs.values(), key=sort_lac, reverse=True)
-
-        for cell in lac[0]:
-            # The first entry is the key,
-            # used only to distinguish cell from lac
-            network = Network(
-                key=None,
-                lat=cell.lat,
-                lon=cell.lon,
-                range=cell.range)
-            if type(cell) is CellArea:
-                validated['cell_lac_network'].append(network)
-            else:
-                validated['cell_network'].append(network)
-
-    # Always do a GeoIP lookup because it is cheap and we want to
-    # report geoip vs. other data mismatches. We may also use
-    # the full GeoIP City-level estimate as well, if all else fails.
-    (geoip_res, countries) = geoip_and_best_guess_country_codes(
-        validated['cell'], api_name, client_addr, geoip_db, stats_client)
-
-    # First we attempt a "zoom-in" from cell-lac, to cell
-    # to wifi, tightening our estimate each step only so
-    # long as it doesn't contradict the existing best-estimate
-    # nor the possible countries of origin.
-
-    for (data_field, object_field, metric_name, search_fn) in [
-            ('cell_lac', 'cell_lac_network', 'cell_lac', search_cell_lac),
-            ('cell', 'cell_network', 'cell', search_cell),
-            ('wifi', 'wifi', 'wifi', search_wifi)]:
-
-        if validated[data_field]:
-            r = None
-            try:
-                r = search_fn(session, validated[object_field],
-                              stats_client, api_name)
-            except Exception:
-                heka_client.raven(RAVEN_ERROR)
-                stats_client.incr('%s.%s_error' %
-                                  (api_name, metric_name))
-
-            if r is None:
-                stats_client.incr('%s.no_%s_found' %
-                                  (api_name, metric_name))
-
-            else:
-                lat = float(r['lat'])
-                lon = float(r['lon'])
-
-                stats_client.incr('%s.%s_found' %
-                                  (api_name, metric_name))
-
-                # Skip any hit that matches none of the possible countries.
-                country_match = False
-                for country in countries:
-                    if location_is_in_country(lat, lon, country, 1):
-                        country_match = True
-                        break
-
-                if countries and not country_match:
-                    stats_client.incr('%s.anomaly.%s_country_mismatch' %
-                                      (api_name, metric_name))
-
-                # Always accept the first result we get.
-                if result is None:
-                    result = r
-                    result_metric = metric_name
-
-                # Or any result that appears to be an improvement over the
-                # existing best guess.
-                elif (distance(float(result['lat']),
-                               float(result['lon']), lat, lon) * 1000
-                      <= result['accuracy']):
-                    result = r
-                    result_metric = metric_name
-
-                else:
-                    stats_client.incr('%s.anomaly.%s_%s_mismatch' %
-                                      (api_name, metric_name, result_metric))
-
-    # Fall back to GeoIP if nothing has worked yet. We do not
-    # include this in the "zoom-in" loop because GeoIP is
-    # frequently _wrong_ at the city level; we only want to
-    # accept that estimate if we got nothing better from cell
-    # or wifi.
-    if not result and geoip_res:
-        result = geoip_res
-        result_metric = 'geoip'
-
-    # Do detailed logging for some api keys
-    if api_key_log and api_key_name:
-        api_log_metric = None
-        wifi_keys = set([w['key'] for w in validated['wifi']])
-        if wifi_keys and \
-           len(filter_bssids_by_similarity(wifi_keys)) >= MIN_WIFIS_IN_QUERY:
-            # Only count requests as WiFi-based if they contain enough
-            # distinct WiFi networks to pass our filters
-            if result_metric == 'wifi':
-                api_log_metric = 'wifi_hit'
-            else:
-                api_log_metric = 'wifi_miss'
-        elif validated['cell']:
-            if result_metric == 'cell':
-                api_log_metric = 'cell_hit'
-            elif result_metric == 'cell_lac':
-                api_log_metric = 'cell_lac_hit'
-            else:
-                api_log_metric = 'cell_miss'
-        else:
-            if geoip_res:
-                api_log_metric = 'geoip_hit'
-            else:
-                api_log_metric = 'geoip_miss'
-        if api_log_metric:
-            stats_client.incr('%s.api_log.%s.%s' % (
-                api_name, api_key_name, api_log_metric))
-
-    if not result:
-        stats_client.incr('%s.miss' % api_name)
-        return None
-
-    stats_client.incr('%s.%s_hit' % (api_name, result_metric))
-
-    if result_type == 'position':
-        rounded_result = {
-            'lat': round(result['lat'], DEGREE_DECIMAL_PLACES),
-            'lon': round(result['lon'], DEGREE_DECIMAL_PLACES),
-            'accuracy': round(result['accuracy'], DEGREE_DECIMAL_PLACES),
-        }
-        stats_client.timing('%s.accuracy.%s' % (api_name, result_metric),
-                            rounded_result['accuracy'])
-        return rounded_result
-    elif result_type == 'country':
-        if countries:
-            country = iso3166.countries.get(countries[0])
-            return {'country_name': country.name,
-                    'country_code': country.alpha2}
+    return searchers[result_type](
+        api_key_log=api_key_log,
+        api_key_name=api_key_name,
+        api_name=api_name,
+        session=session,
+        geoip_db=geoip_db
+    ).search(data, client_addr=client_addr)
