@@ -127,6 +127,13 @@ class GeoIPWrapper(Reader):
         build_epoch = self.metadata().build_epoch
         return int(round((time.time() - build_epoch) / 86400, 0))
 
+    def ping(self):
+        """
+        :returns: True if this is a real database with a valid db file.
+        :rtype: bool
+        """
+        return True
+
     def check_extension(self):
         for instance in (self.metadata(), self._db_reader):
             if type(instance).__module__ != '__builtin__':
@@ -215,3 +222,16 @@ class GeoIPNull(object):
         :returns: None
         """
         return None
+
+    @property
+    def age(self):
+        """
+        :returns: -1
+        """
+        return -1
+
+    def ping(self):
+        """
+        :returns: False
+        """
+        return False

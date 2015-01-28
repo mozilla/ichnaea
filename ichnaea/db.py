@@ -158,7 +158,7 @@ def check_connection(dbapi_conn, conn_record, conn_proxy):
     try:
         # dbapi_con.ping() ends up calling mysql_ping()
         # http://dev.mysql.com/doc/refman/5.6/en/mysql-ping.html
-        dbapi_conn.ping()
+        dbapi_conn.ping(reconnect=False)
     except exc.OperationalError as ex:  # pragma: no cover
         if ex.args[0] in (2003,     # Connection refused
                           2006,     # MySQL server has gone away
