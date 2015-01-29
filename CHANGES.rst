@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Fix geoip country lookup for entries without countries.
+
 - #274: Extend monitor view to include geoip db status.
 
 20150127130000

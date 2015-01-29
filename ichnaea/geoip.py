@@ -196,6 +196,9 @@ class GeoIPWrapper(Reader):
             return None
 
         country = record.country
+        if not country.iso_code:  # pragma: no cover
+            return None
+
         country_code = country.iso_code.upper()
         if country_code not in self.valid_countries:
             # filter out non-countries
