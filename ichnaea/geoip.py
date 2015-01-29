@@ -173,6 +173,11 @@ class GeoIPWrapper(Reader):
         country = record.country
         city = bool(record.city.name)
         location = record.location
+        if not (location.latitude and
+                location.longitude and
+                country.iso_code):  # pragma: no cover
+            return None
+
         return {
             # Round lat/lon to a standard maximum precision
             'latitude': round(location.latitude, DEGREE_DECIMAL_PLACES),
