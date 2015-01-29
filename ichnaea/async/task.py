@@ -18,6 +18,7 @@ class DatabaseTask(Task):
     ignore_result = True
     max_retries = 3
 
+    _auto_retry = True
     _shortname = None
 
     @property
@@ -34,9 +35,11 @@ class DatabaseTask(Task):
         with self.stats_client.timer("task." + self.shortname):
             try:
                 result = super(DatabaseTask, self).__call__(*args, **kw)
-            except Exception:
+            except Exception as exc:
                 self.heka_client.raven(RAVEN_ERROR)
-                raise
+                if self._auto_retry:
+                    raise self.retry(exc=exc)
+                raise  # pragma: no cover
         return result
 
     def apply(self, *args, **kw):

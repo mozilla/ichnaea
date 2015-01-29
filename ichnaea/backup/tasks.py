@@ -67,17 +67,13 @@ def write_cellmeasure_s3_backups(self,
                                  batch=10000,
                                  countdown=300,
                                  cleanup_zip=True):
-    try:
-        measure_type = MEASURE_TYPE_CODE['cell']
-        return write_measure_s3_backups(self,
-                                        measure_type,
-                                        limit=limit,
-                                        batch=batch,
-                                        countdown=countdown,
-                                        cleanup_zip=cleanup_zip)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    measure_type = MEASURE_TYPE_CODE['cell']
+    return write_measure_s3_backups(self,
+                                    measure_type,
+                                    limit=limit,
+                                    batch=batch,
+                                    countdown=countdown,
+                                    cleanup_zip=cleanup_zip)
 
 
 @celery.task(base=DatabaseTask, bind=True)
@@ -86,17 +82,13 @@ def write_wifimeasure_s3_backups(self,
                                  batch=10000,
                                  countdown=300,
                                  cleanup_zip=True):
-    try:
-        measure_type = MEASURE_TYPE_CODE['wifi']
-        return write_measure_s3_backups(self,
-                                        measure_type,
-                                        limit=limit,
-                                        batch=batch,
-                                        countdown=countdown,
-                                        cleanup_zip=cleanup_zip)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    measure_type = MEASURE_TYPE_CODE['wifi']
+    return write_measure_s3_backups(self,
+                                    measure_type,
+                                    limit=limit,
+                                    batch=batch,
+                                    countdown=countdown,
+                                    cleanup_zip=cleanup_zip)
 
 
 def write_measure_s3_backups(self,
@@ -127,81 +119,77 @@ def write_measure_s3_backups(self,
 
 @celery.task(base=DatabaseTask, bind=True)
 def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
-    try:
-        with self.db_session() as session:
-            block = session.query(MeasureBlock).filter(
-                MeasureBlock.id == block_id).first()
+    with self.db_session() as session:
+        block = session.query(MeasureBlock).filter(
+            MeasureBlock.id == block_id).first()
 
-            measure_type = block.measure_type
-            measure_cls = MEASURE_TYPE_META[measure_type]['class']
-            csv_name = MEASURE_TYPE_META[measure_type]['csv_name']
-            name = MEASURE_TYPE_CODE_INVERSE[measure_type]
+        measure_type = block.measure_type
+        measure_cls = MEASURE_TYPE_META[measure_type]['class']
+        csv_name = MEASURE_TYPE_META[measure_type]['csv_name']
+        name = MEASURE_TYPE_CODE_INVERSE[measure_type]
 
-            start_id = block.start_id
-            end_id = block.end_id
+        start_id = block.start_id
+        end_id = block.end_id
 
-            rset = session.execute("select version_num from alembic_version")
-            alembic_rev = rset.first()[0]
+        rset = session.execute("select version_num from alembic_version")
+        alembic_rev = rset.first()[0]
 
-            s3_backend = S3Backend(
-                self.app.s3_settings['backup_bucket'],
-                self.heka_client)
+        s3_backend = S3Backend(
+            self.app.s3_settings['backup_bucket'],
+            self.heka_client)
 
-            utcnow = util.utcnow()
-            s3_key = '%s/%s_%d_%d.zip' % (utcnow.strftime("%Y%m"),
-                                          name,
-                                          start_id,
-                                          end_id)
+        utcnow = util.utcnow()
+        s3_key = '%s/%s_%d_%d.zip' % (utcnow.strftime("%Y%m"),
+                                      name,
+                                      start_id,
+                                      end_id)
 
-            with selfdestruct_tempdir(s3_key) as (tmp_path, zip_path):
-                with open(os.path.join(tmp_path,
-                                       'alembic_revision.txt'), 'w') as f:
-                    f.write('%s\n' % alembic_rev)
+        with selfdestruct_tempdir(s3_key) as (tmp_path, zip_path):
+            with open(os.path.join(tmp_path,
+                                   'alembic_revision.txt'), 'w') as f:
+                f.write('%s\n' % alembic_rev)
 
-                # avoid ORM session overhead
-                table = measure_cls.__table__
+            # avoid ORM session overhead
+            table = measure_cls.__table__
 
-                cm_fname = os.path.join(tmp_path, csv_name)
-                with open(cm_fname, 'w') as f:
-                    csv_out = csv.writer(f, dialect='excel')
-                    columns = table.c.keys()
-                    csv_out.writerow(columns)
-                    for this_start in range(start_id,
-                                            end_id,
-                                            batch):
-                        this_end = min(this_start + batch, end_id)
+            cm_fname = os.path.join(tmp_path, csv_name)
+            with open(cm_fname, 'w') as f:
+                csv_out = csv.writer(f, dialect='excel')
+                columns = table.c.keys()
+                csv_out.writerow(columns)
+                for this_start in range(start_id,
+                                        end_id,
+                                        batch):
+                    this_end = min(this_start + batch, end_id)
 
-                        query = table.select().where(
-                            table.c.id >= this_start).where(
-                            table.c.id < this_end)
+                    query = table.select().where(
+                        table.c.id >= this_start).where(
+                        table.c.id < this_end)
 
-                        rproxy = session.execute(query)
-                        csv_out.writerows(rproxy)
+                    rproxy = session.execute(query)
+                    csv_out.writerows(rproxy)
 
-            archive_sha = compute_hash(zip_path)
+        archive_sha = compute_hash(zip_path)
 
-            try:
-                success = s3_backend.backup_archive(s3_key, zip_path)
-                if not success:  # pragma: no cover
-                    return
-                self.stats_client.incr('s3.backup.%s' % name,
-                                       (end_id - start_id))
-            finally:
-                if cleanup_zip:
-                    if os.path.exists(zip_path):  # pragma: no cover
-                        zip_dir, zip_file = os.path.split(zip_path)
-                        if os.path.exists(zip_dir):
-                            shutil.rmtree(zip_dir)
-                else:
-                    self.heka_client.debug("s3.backup:%s" % zip_path)
+        try:
+            success = s3_backend.backup_archive(s3_key, zip_path)
+            if not success:  # pragma: no cover
+                return
+            self.stats_client.incr('s3.backup.%s' % name,
+                                   (end_id - start_id))
+        finally:
+            if cleanup_zip:
+                if os.path.exists(zip_path):  # pragma: no cover
+                    zip_dir, zip_file = os.path.split(zip_path)
+                    if os.path.exists(zip_dir):
+                        shutil.rmtree(zip_dir)
+            else:
+                self.heka_client.debug("s3.backup:%s" % zip_path)
 
-            # only set archive_sha / s3_key if upload was successful
-            block.archive_sha = archive_sha
-            block.s3_key = s3_key
-            session.commit()
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+        # only set archive_sha / s3_key if upload was successful
+        block.archive_sha = archive_sha
+        block.s3_key = s3_key
+        session.commit()
 
 
 def schedule_measure_archival(self, measure_type, limit=100, batch=1000000):
@@ -264,22 +252,14 @@ def schedule_measure_archival(self, measure_type, limit=100, batch=1000000):
 
 @celery.task(base=DatabaseTask, bind=True)
 def schedule_cellmeasure_archival(self, limit=100, batch=1000000):
-    try:
-        return schedule_measure_archival(
-            self, MEASURE_TYPE_CODE['cell'], limit=limit, batch=batch)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    return schedule_measure_archival(
+        self, MEASURE_TYPE_CODE['cell'], limit=limit, batch=batch)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def schedule_wifimeasure_archival(self, limit=100, batch=1000000):
-    try:
-        return schedule_measure_archival(
-            self, MEASURE_TYPE_CODE['wifi'], limit=limit, batch=batch)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    return schedule_measure_archival(
+        self, MEASURE_TYPE_CODE['wifi'], limit=limit, batch=batch)
 
 
 def delete_measure_records(self,
@@ -320,79 +300,63 @@ def delete_measure_records(self,
 
 @celery.task(base=DatabaseTask, bind=True)
 def dispatch_delete(self, block_id, batch=10000):
-    try:
-        s3_backend = S3Backend(self.app.s3_settings['backup_bucket'],
-                               self.heka_client)
-        with self.db_session() as session:
-            block = session.query(MeasureBlock).filter(
-                MeasureBlock.id == block_id).first()
-            archive_sha = block.archive_sha
-            s3_key = block.s3_key
+    s3_backend = S3Backend(self.app.s3_settings['backup_bucket'],
+                           self.heka_client)
+    with self.db_session() as session:
+        block = session.query(MeasureBlock).filter(
+            MeasureBlock.id == block_id).first()
+        archive_sha = block.archive_sha
+        s3_key = block.s3_key
 
-        # Don't hold the DB connection open, while doing S3 work
-        if s3_backend.check_archive(archive_sha, s3_key):
-            verified_delete.apply_async(
-                args=[block_id],
-                kwargs={'batch': batch})
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    # Don't hold the DB connection open, while doing S3 work
+    if s3_backend.check_archive(archive_sha, s3_key):
+        verified_delete.apply_async(
+            args=[block_id],
+            kwargs={'batch': batch})
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def verified_delete(self, block_id, batch=10000):
-    try:
-        utcnow = util.utcnow()
-        with self.db_session() as session:
-            block = session.query(MeasureBlock).filter(
-                MeasureBlock.id == block_id).first()
-            measure_type = block.measure_type
-            measure_cls = MEASURE_TYPE_META[measure_type]['class']
+    utcnow = util.utcnow()
+    with self.db_session() as session:
+        block = session.query(MeasureBlock).filter(
+            MeasureBlock.id == block_id).first()
+        measure_type = block.measure_type
+        measure_cls = MEASURE_TYPE_META[measure_type]['class']
 
-            for start in range(block.start_id, block.end_id, batch):
-                end = min(block.end_id, start + batch)
-                q = session.query(measure_cls).filter(
-                    measure_cls.id >= start,
-                    measure_cls.id < end)
-                q.delete()
-                session.flush()
-            block.archive_date = utcnow
-            session.commit()
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+        for start in range(block.start_id, block.end_id, batch):
+            end = min(block.end_id, start + batch)
+            q = session.query(measure_cls).filter(
+                measure_cls.id >= start,
+                measure_cls.id < end)
+            q.delete()
+            session.flush()
+        block.archive_date = utcnow
+        session.commit()
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def delete_cellmeasure_records(self, limit=100, days_old=7,
                                countdown=300, batch=10000):
-    try:
-        return delete_measure_records(
-            self,
-            MEASURE_TYPE_CODE['cell'],
-            limit=limit,
-            days_old=days_old,
-            countdown=countdown,
-            batch=batch)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    return delete_measure_records(
+        self,
+        MEASURE_TYPE_CODE['cell'],
+        limit=limit,
+        days_old=days_old,
+        countdown=countdown,
+        batch=batch)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def delete_wifimeasure_records(self, limit=100, days_old=7,
                                countdown=300, batch=10000):
-    try:
-        return delete_measure_records(
-            self,
-            MEASURE_TYPE_CODE['wifi'],
-            limit=limit,
-            days_old=days_old,
-            countdown=countdown,
-            batch=batch)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    return delete_measure_records(
+        self,
+        MEASURE_TYPE_CODE['wifi'],
+        limit=limit,
+        days_old=days_old,
+        countdown=countdown,
+        batch=batch)
 
 
 def unthrottle_measures(session, station_model, measure_model,
@@ -429,33 +393,25 @@ def unthrottle_measures(session, station_model, measure_model,
 
 @celery.task(base=DatabaseTask, bind=True)
 def wifi_unthrottle_measures(self, max_measures, batch=1000):
-    try:
-        with self.db_session() as session:
-            join_measure = lambda u: (WifiMeasure.key == u.key, )
-            n = unthrottle_measures(session=session,
-                                    station_model=Wifi,
-                                    measure_model=WifiMeasure,
-                                    join_measure=join_measure,
-                                    max_measures=max_measures,
-                                    batch=batch)
-            self.stats_client.incr("items.wifi_unthrottled", n)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    with self.db_session() as session:
+        join_measure = lambda u: (WifiMeasure.key == u.key, )
+        n = unthrottle_measures(session=session,
+                                station_model=Wifi,
+                                measure_model=WifiMeasure,
+                                join_measure=join_measure,
+                                max_measures=max_measures,
+                                batch=batch)
+        self.stats_client.incr("items.wifi_unthrottled", n)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def cell_unthrottle_measures(self, max_measures, batch=100):
-    try:
-        with self.db_session() as session:
-            join_measure = lambda u: join_cellkey(CellMeasure, u)
-            n = unthrottle_measures(session=session,
-                                    station_model=Cell,
-                                    measure_model=CellMeasure,
-                                    join_measure=join_measure,
-                                    max_measures=max_measures,
-                                    batch=batch)
-            self.stats_client.incr("items.cell_unthrottled", n)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    with self.db_session() as session:
+        join_measure = lambda u: join_cellkey(CellMeasure, u)
+        n = unthrottle_measures(session=session,
+                                station_model=Cell,
+                                measure_model=CellMeasure,
+                                join_measure=join_measure,
+                                max_measures=max_measures,
+                                batch=batch)
+        self.stats_client.incr("items.cell_unthrottled", n)

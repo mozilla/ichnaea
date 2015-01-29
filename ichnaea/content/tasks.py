@@ -72,45 +72,25 @@ def histogram_task(db_session, model, statname, ago=1):
 
 @celery.task(base=DatabaseTask, bind=True)
 def cell_histogram(self, ago=1):
-    try:
-        return histogram_task(self.db_session, CellMeasure, 'cell', ago=ago)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    return histogram_task(self.db_session, CellMeasure, 'cell', ago=ago)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def wifi_histogram(self, ago=1):
-    try:
-        return histogram_task(self.db_session, WifiMeasure, 'wifi', ago=ago)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    return histogram_task(self.db_session, WifiMeasure, 'wifi', ago=ago)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def unique_cell_histogram(self, ago=1):
-    try:
-        return histogram_task(self.db_session, Cell, 'unique_cell', ago=ago)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    return histogram_task(self.db_session, Cell, 'unique_cell', ago=ago)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def unique_ocid_cell_histogram(self, ago=1):
-    try:
-        return histogram_task(
-            self.db_session, OCIDCell, 'unique_ocid_cell', ago=ago)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    return histogram_task(
+        self.db_session, OCIDCell, 'unique_ocid_cell', ago=ago)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def unique_wifi_histogram(self, ago=1):
-    try:
-        return histogram_task(self.db_session, Wifi, 'unique_wifi', ago=ago)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    return histogram_task(self.db_session, Wifi, 'unique_wifi', ago=ago)

@@ -200,16 +200,13 @@ def export_modified_cells(self, hourly=True, bucket=None):
 
     filename = 'MLS-%s-cell-export-' % file_type
     filename = filename + file_time.strftime('%Y-%m-%dT%H0000.csv.gz')
-    try:
-        with selfdestruct_tempdir() as d:
-            path = os.path.join(d, filename)
-            with self.db_session() as session:
-                write_stations_to_csv(session, cell_table, CELL_COLUMNS, cond,
-                                      path, make_cell_export_dict, CELL_FIELDS)
-            write_stations_to_s3(path, bucket)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+
+    with selfdestruct_tempdir() as d:
+        path = os.path.join(d, filename)
+        with self.db_session() as session:
+            write_stations_to_csv(session, cell_table, CELL_COLUMNS, cond,
+                                  path, make_cell_export_dict, CELL_FIELDS)
+        write_stations_to_s3(path, bucket)
 
 
 def import_stations(session, filename, fields):
@@ -263,16 +260,12 @@ def import_stations(session, filename, fields):
 
 @celery.task(base=DatabaseTask, bind=True)
 def import_ocid_cells(self, filename=None, session=None):
-    try:
-        with self.db_session() as dbsession:
-            if session is None:  # pragma: no cover
-                session = dbsession
-            import_stations(session,
-                            filename,
-                            CELL_FIELDS)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    with self.db_session() as dbsession:
+        if session is None:  # pragma: no cover
+            session = dbsession
+        import_stations(session,
+                        filename,
+                        CELL_FIELDS)
 
 
 @celery.task(base=DatabaseTask, bind=True)
@@ -285,25 +278,21 @@ def import_latest_ocid_cells(self, diff=True, filename=None, session=None):
             filename = prev_hour.strftime('cell_towers_diff-%Y%m%d%H.csv.gz')
         else:  # pragma: no cover
             filename = 'cell_towers.csv.gz'
-    try:
-        with closing(requests.get(url,
-                                  params={'apiKey': apikey,
-                                          'filename': filename},
-                                  stream=True)) as r:
-            with selfdestruct_tempdir() as d:
-                path = os.path.join(d, filename)
-                with open(path, 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=2 ** 20):
-                        f.write(chunk)
-                        f.flush()
 
-                with self.db_session() as dbsession:
-                    if session is None:  # pragma: no cover
-                        session = dbsession
-                    import_stations(session,
-                                    path,
-                                    CELL_FIELDS)
+    with closing(requests.get(url,
+                              params={'apiKey': apikey,
+                                      'filename': filename},
+                              stream=True)) as r:
+        with selfdestruct_tempdir() as d:
+            path = os.path.join(d, filename)
+            with open(path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=2 ** 20):
+                    f.write(chunk)
+                    f.flush()
 
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+            with self.db_session() as dbsession:
+                if session is None:  # pragma: no cover
+                    session = dbsession
+                import_stations(session,
+                                path,
+                                CELL_FIELDS)

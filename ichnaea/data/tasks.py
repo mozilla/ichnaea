@@ -641,227 +641,199 @@ def insert_measures(self, items=None, nickname='', email='',
     if not items:  # pragma: no cover
         return 0
 
-    try:
-        items = loads(items)
-        length = len(items)
-        stats_client = self.stats_client
+    items = loads(items)
+    length = len(items)
+    stats_client = self.stats_client
 
-        with self.db_session() as session:
-            userid, nickname, email = process_user(nickname, email, session)
+    with self.db_session() as session:
+        userid, nickname, email = process_user(nickname, email, session)
 
-            process_measures(items, session,
-                             userid=userid,
-                             api_key_log=api_key_log,
-                             api_key_name=api_key_name)
-            stats_client.incr('items.uploaded.reports', length)
-            if api_key_log:
-                stats_client.incr(
-                    'items.api_log.%s.uploaded.reports' % api_key_name)
+        process_measures(items, session,
+                         userid=userid,
+                         api_key_log=api_key_log,
+                         api_key_name=api_key_name)
+        stats_client.incr('items.uploaded.reports', length)
+        if api_key_log:
+            stats_client.incr(
+                'items.api_log.%s.uploaded.reports' % api_key_name)
 
-            session.commit()
-        return length
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+        session.commit()
+    return length
 
 
 @celery.task(base=DatabaseTask, bind=True, queue='celery_insert')
 def insert_measures_cell(self, entries, userid=None,
                          max_measures_per_cell=11000,
                          utcnow=None):
-    try:
-        cell_measures = []
-        with self.db_session() as session:
-            cell_measures = process_station_measures(
-                session, entries,
-                station_type="cell",
-                station_model=Cell,
-                measure_model=CellMeasure,
-                blacklist_model=CellBlacklist,
-                create_measure=create_cell_measure,
-                create_key=to_cellkey_psc,
-                join_key=join_cellkey,
-                userid=userid,
-                max_measures_per_station=max_measures_per_cell,
-                utcnow=utcnow)
-            session.commit()
-        return len(cell_measures)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    cell_measures = []
+    with self.db_session() as session:
+        cell_measures = process_station_measures(
+            session, entries,
+            station_type="cell",
+            station_model=Cell,
+            measure_model=CellMeasure,
+            blacklist_model=CellBlacklist,
+            create_measure=create_cell_measure,
+            create_key=to_cellkey_psc,
+            join_key=join_cellkey,
+            userid=userid,
+            max_measures_per_station=max_measures_per_cell,
+            utcnow=utcnow)
+        session.commit()
+    return len(cell_measures)
 
 
 @celery.task(base=DatabaseTask, bind=True, queue='celery_insert')
 def insert_measures_wifi(self, entries, userid=None,
                          max_measures_per_wifi=11000,
                          utcnow=None):
-    try:
-        wifi_measures = []
-        with self.db_session() as session:
-            wifi_measures = process_station_measures(
-                session, entries,
-                station_type="wifi",
-                station_model=Wifi,
-                measure_model=WifiMeasure,
-                blacklist_model=WifiBlacklist,
-                create_measure=create_wifi_measure,
-                create_key=to_wifikey,
-                join_key=join_wifikey,
-                userid=userid,
-                max_measures_per_station=max_measures_per_wifi,
-                utcnow=utcnow)
-            session.commit()
-        return len(wifi_measures)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    wifi_measures = []
+    with self.db_session() as session:
+        wifi_measures = process_station_measures(
+            session, entries,
+            station_type="wifi",
+            station_model=Wifi,
+            measure_model=WifiMeasure,
+            blacklist_model=WifiBlacklist,
+            create_measure=create_wifi_measure,
+            create_key=to_wifikey,
+            join_key=join_wifikey,
+            userid=userid,
+            max_measures_per_station=max_measures_per_wifi,
+            utcnow=utcnow)
+        session.commit()
+    return len(wifi_measures)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def location_update_cell(self, min_new=10, max_new=100, batch=10):
-    try:
-        cells = []
-        redis_client = self.app.redis_client
-        with self.db_session() as session:
-            emit_new_measures_metric(self.stats_client, session,
-                                     self.shortname, Cell,
-                                     min_new, max_new)
-            query = (session.query(Cell)
-                            .filter(Cell.new_measures >= min_new)
-                            .filter(Cell.new_measures < max_new)
-                            .limit(batch))
-            cells = query.all()
-            if not cells:
-                return 0
-            moving_cells = set()
-            updated_lacs = set()
-            for cell in cells:
-                query = session.query(
-                    CellMeasure.lat, CellMeasure.lon, CellMeasure.id).filter(
-                    *join_cellkey(CellMeasure, cell))
-                # only take the last X new_measures
-                query = query.order_by(
-                    CellMeasure.created.desc()).limit(
-                    cell.new_measures)
-                measures = query.all()
+    cells = []
+    redis_client = self.app.redis_client
+    with self.db_session() as session:
+        emit_new_measures_metric(self.stats_client, session,
+                                 self.shortname, Cell,
+                                 min_new, max_new)
+        query = (session.query(Cell)
+                        .filter(Cell.new_measures >= min_new)
+                        .filter(Cell.new_measures < max_new)
+                        .limit(batch))
+        cells = query.all()
+        if not cells:
+            return 0
+        moving_cells = set()
+        updated_lacs = set()
+        for cell in cells:
+            query = session.query(
+                CellMeasure.lat, CellMeasure.lon, CellMeasure.id).filter(
+                *join_cellkey(CellMeasure, cell))
+            # only take the last X new_measures
+            query = query.order_by(
+                CellMeasure.created.desc()).limit(
+                cell.new_measures)
+            measures = query.all()
 
-                if measures:
-                    moving = calculate_new_position(
-                        cell, measures, CELL_MAX_DIST_KM)
-                    if moving:
-                        moving_cells.add(cell)
+            if measures:
+                moving = calculate_new_position(
+                    cell, measures, CELL_MAX_DIST_KM)
+                if moving:
+                    moving_cells.add(cell)
 
-                    updated_lacs.add(
-                        CellAreaKey(
-                            cell.radio,
-                            cell.mcc,
-                            cell.mnc,
-                            cell.lac))
+                updated_lacs.add(
+                    CellAreaKey(
+                        cell.radio,
+                        cell.mcc,
+                        cell.mnc,
+                        cell.lac))
 
-            if updated_lacs:
-                session.on_post_commit(
-                    enqueue_lacs,
-                    redis_client,
-                    updated_lacs,
-                    UPDATE_KEY['cell_lac'])
+        if updated_lacs:
+            session.on_post_commit(
+                enqueue_lacs,
+                redis_client,
+                updated_lacs,
+                UPDATE_KEY['cell_lac'])
 
-            if moving_cells:
-                # some cells found to be moving too much
-                blacklist_and_remove_moving_cells(session, moving_cells)
+        if moving_cells:
+            # some cells found to be moving too much
+            blacklist_and_remove_moving_cells(session, moving_cells)
 
-            session.commit()
+        session.commit()
 
-        return (len(cells), len(moving_cells))
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    return (len(cells), len(moving_cells))
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def location_update_wifi(self, min_new=10, max_new=100, batch=10):
-    try:
-        wifis = {}
-        with self.db_session() as session:
-            emit_new_measures_metric(self.stats_client, session,
-                                     self.shortname, Wifi,
-                                     min_new, max_new)
-            query = session.query(Wifi.key, Wifi).filter(
-                Wifi.new_measures >= min_new).filter(
-                Wifi.new_measures < max_new).limit(batch)
-            wifis = dict(query.all())
-            if not wifis:
-                return 0
-            moving_wifis = set()
-            for wifi_key, wifi in wifis.items():
-                # only take the last X new_measures
-                measures = session.query(
-                    WifiMeasure.lat, WifiMeasure.lon).filter(
-                    WifiMeasure.key == wifi_key).order_by(
-                    WifiMeasure.created.desc()).limit(
-                    wifi.new_measures).all()
-                if measures:
-                    moving = calculate_new_position(
-                        wifi, measures, WIFI_MAX_DIST_KM)
-                    if moving:
-                        moving_wifis.add(wifi)
+    wifis = {}
+    with self.db_session() as session:
+        emit_new_measures_metric(self.stats_client, session,
+                                 self.shortname, Wifi,
+                                 min_new, max_new)
+        query = session.query(Wifi.key, Wifi).filter(
+            Wifi.new_measures >= min_new).filter(
+            Wifi.new_measures < max_new).limit(batch)
+        wifis = dict(query.all())
+        if not wifis:
+            return 0
+        moving_wifis = set()
+        for wifi_key, wifi in wifis.items():
+            # only take the last X new_measures
+            measures = session.query(
+                WifiMeasure.lat, WifiMeasure.lon).filter(
+                WifiMeasure.key == wifi_key).order_by(
+                WifiMeasure.created.desc()).limit(
+                wifi.new_measures).all()
+            if measures:
+                moving = calculate_new_position(
+                    wifi, measures, WIFI_MAX_DIST_KM)
+                if moving:
+                    moving_wifis.add(wifi)
 
-            if moving_wifis:
-                # some wifis found to be moving too much
-                blacklist_and_remove_moving_wifis(session, moving_wifis)
+        if moving_wifis:
+            # some wifis found to be moving too much
+            blacklist_and_remove_moving_wifis(session, moving_wifis)
 
-            session.commit()
-        return (len(wifis), len(moving_wifis))
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+        session.commit()
+    return (len(wifis), len(moving_wifis))
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def remove_cell(self, cell_keys):
-    try:
-        cells_removed = 0
-        redis_client = self.app.redis_client
-        with self.db_session() as session:
-            changed_lacs = set()
+    cells_removed = 0
+    redis_client = self.app.redis_client
+    with self.db_session() as session:
+        changed_lacs = set()
 
-            for k in cell_keys:
-                key = to_cellkey(k)
-                query = session.query(Cell).filter(*join_cellkey(Cell, key))
-                cells_removed += query.delete()
-                changed_lacs.add(CellAreaKey(
-                    radio=key.radio,
-                    mcc=key.mcc,
-                    mnc=key.mnc,
-                    lac=key.lac,
-                ))
+        for k in cell_keys:
+            key = to_cellkey(k)
+            query = session.query(Cell).filter(*join_cellkey(Cell, key))
+            cells_removed += query.delete()
+            changed_lacs.add(CellAreaKey(
+                radio=key.radio,
+                mcc=key.mcc,
+                mnc=key.mnc,
+                lac=key.lac,
+            ))
 
-            if changed_lacs:
-                session.on_post_commit(
-                    enqueue_lacs,
-                    redis_client,
-                    changed_lacs,
-                    UPDATE_KEY['cell_lac'])
+        if changed_lacs:
+            session.on_post_commit(
+                enqueue_lacs,
+                redis_client,
+                changed_lacs,
+                UPDATE_KEY['cell_lac'])
 
-            session.commit()
-        return cells_removed
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+        session.commit()
+    return cells_removed
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def remove_wifi(self, wifi_keys):
     wifi_keys = set([w['key'] for w in wifi_keys])
-    try:
-        with self.db_session() as session:
-            query = session.query(Wifi).filter(
-                Wifi.key.in_(wifi_keys))
-            wifis = query.delete(synchronize_session=False)
-            session.commit()
-        return wifis
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    with self.db_session() as session:
+        query = session.query(Wifi).filter(
+            Wifi.key.in_(wifi_keys))
+        wifis = query.delete(synchronize_session=False)
+        session.commit()
+    return wifis
 
 
 @celery.task(base=DatabaseTask, bind=True)
@@ -870,113 +842,105 @@ def scan_lacs(self, batch=100):
     Find cell LACs that have changed and update the bounding box.
     This includes adding new LAC entries and removing them.
     """
-    try:
-        redis_client = self.app.redis_client
-        redis_lacs = dequeue_lacs(
-            redis_client, UPDATE_KEY['cell_lac'], batch=batch)
-        lacs = set([CellAreaKey(
-            radio=lac['radio'],
-            mcc=lac['mcc'],
-            mnc=lac['mnc'],
-            lac=lac['lac'],
-        ) for lac in redis_lacs])
+    redis_client = self.app.redis_client
+    redis_lacs = dequeue_lacs(
+        redis_client, UPDATE_KEY['cell_lac'], batch=batch)
+    lacs = set([CellAreaKey(
+        radio=lac['radio'],
+        mcc=lac['mcc'],
+        mnc=lac['mnc'],
+        lac=lac['lac'],
+    ) for lac in redis_lacs])
 
-        for lac in lacs:
-            update_lac.delay(
-                lac.radio,
-                lac.mcc,
-                lac.mnc,
-                lac.lac,
-                cell_model_key='cell',
-                cell_area_model_key='cell_area')
-        return len(lacs)
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+    for lac in lacs:
+        update_lac.delay(
+            lac.radio,
+            lac.mcc,
+            lac.mnc,
+            lac.lac,
+            cell_model_key='cell',
+            cell_area_model_key='cell_area')
+    return len(lacs)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def update_lac(self, radio, mcc, mnc, lac,
                cell_model_key='cell', cell_area_model_key='cell_area'):
-    try:
-        utcnow = util.utcnow()
-        with self.db_session() as session:
-            # Select all the cells in this LAC that aren't the virtual
-            # cell itself, and derive a bounding box for them.
+    utcnow = util.utcnow()
+    with self.db_session() as session:
+        # Select all the cells in this LAC that aren't the virtual
+        # cell itself, and derive a bounding box for them.
 
-            cell_model = MODEL_KEYS[cell_model_key]
-            cell_query = (session.query(cell_model)
-                                 .filter(cell_model.radio == radio)
-                                 .filter(cell_model.mcc == mcc)
-                                 .filter(cell_model.mnc == mnc)
-                                 .filter(cell_model.lac == lac)
-                                 .filter(cell_model.lat.isnot(None))
-                                 .filter(cell_model.lon.isnot(None)))
+        cell_model = MODEL_KEYS[cell_model_key]
+        cell_query = (session.query(cell_model)
+                             .filter(cell_model.radio == radio)
+                             .filter(cell_model.mcc == mcc)
+                             .filter(cell_model.mnc == mnc)
+                             .filter(cell_model.lac == lac)
+                             .filter(cell_model.lat.isnot(None))
+                             .filter(cell_model.lon.isnot(None)))
 
-            cells = cell_query.all()
+        cells = cell_query.all()
 
-            cell_area_model = MODEL_KEYS[cell_area_model_key]
-            lac_query = (session.query(cell_area_model)
-                                .filter(cell_area_model.radio == radio)
-                                .filter(cell_area_model.mcc == mcc)
-                                .filter(cell_area_model.mnc == mnc)
-                                .filter(cell_area_model.lac == lac))
+        cell_area_model = MODEL_KEYS[cell_area_model_key]
+        lac_query = (session.query(cell_area_model)
+                            .filter(cell_area_model.radio == radio)
+                            .filter(cell_area_model.mcc == mcc)
+                            .filter(cell_area_model.mnc == mnc)
+                            .filter(cell_area_model.lac == lac))
 
-            if len(cells) == 0:
-                # If there are no more underlying cells, delete the lac entry
-                lac_query.delete()
+        if len(cells) == 0:
+            # If there are no more underlying cells, delete the lac entry
+            lac_query.delete()
+        else:
+            # Otherwise update the lac entry based on all the cells
+            lac_obj = lac_query.first()
+
+            points = [(c.lat, c.lon) for c in cells]
+            min_lat = min([c.min_lat for c in cells])
+            min_lon = min([c.min_lon for c in cells])
+            max_lat = max([c.max_lat for c in cells])
+            max_lon = max([c.max_lon for c in cells])
+
+            bbox_points = [(min_lat, min_lon),
+                           (min_lat, max_lon),
+                           (max_lat, min_lon),
+                           (max_lat, max_lon)]
+
+            ctr = centroid(points)
+            rng = range_to_points(ctr, bbox_points)
+
+            # Switch units back to DB preferred centimicrodegres angle
+            # and meters distance.
+            ctr_lat = ctr[0]
+            ctr_lon = ctr[1]
+            rng = int(round(rng * 1000.0))
+
+            # Now create or update the LAC virtual cell
+            num_cells = len(cells)
+            avg_cell_range = int(sum(
+                [cell.range for cell in cells])/float(num_cells))
+            if lac_obj is None:
+                lac_obj = cell_area_model(
+                    created=utcnow,
+                    modified=utcnow,
+                    radio=radio,
+                    mcc=mcc,
+                    mnc=mnc,
+                    lac=lac,
+                    lat=ctr_lat,
+                    lon=ctr_lon,
+                    range=rng,
+                    avg_cell_range=avg_cell_range,
+                    num_cells=num_cells,
+                )
+                session.add(lac_obj)
             else:
-                # Otherwise update the lac entry based on all the cells
-                lac_obj = lac_query.first()
+                lac_obj.modified = utcnow
+                lac_obj.lat = ctr_lat
+                lac_obj.lon = ctr_lon
+                lac_obj.range = rng
+                lac_obj.avg_cell_range = avg_cell_range
+                lac_obj.num_cells = num_cells
 
-                points = [(c.lat, c.lon) for c in cells]
-                min_lat = min([c.min_lat for c in cells])
-                min_lon = min([c.min_lon for c in cells])
-                max_lat = max([c.max_lat for c in cells])
-                max_lon = max([c.max_lon for c in cells])
-
-                bbox_points = [(min_lat, min_lon),
-                               (min_lat, max_lon),
-                               (max_lat, min_lon),
-                               (max_lat, max_lon)]
-
-                ctr = centroid(points)
-                rng = range_to_points(ctr, bbox_points)
-
-                # Switch units back to DB preferred centimicrodegres angle
-                # and meters distance.
-                ctr_lat = ctr[0]
-                ctr_lon = ctr[1]
-                rng = int(round(rng * 1000.0))
-
-                # Now create or update the LAC virtual cell
-                num_cells = len(cells)
-                avg_cell_range = int(sum(
-                    [cell.range for cell in cells])/float(num_cells))
-                if lac_obj is None:
-                    lac_obj = cell_area_model(
-                        created=utcnow,
-                        modified=utcnow,
-                        radio=radio,
-                        mcc=mcc,
-                        mnc=mnc,
-                        lac=lac,
-                        lat=ctr_lat,
-                        lon=ctr_lon,
-                        range=rng,
-                        avg_cell_range=avg_cell_range,
-                        num_cells=num_cells,
-                    )
-                    session.add(lac_obj)
-                else:
-                    lac_obj.modified = utcnow
-                    lac_obj.lat = ctr_lat
-                    lac_obj.lon = ctr_lon
-                    lac_obj.range = rng
-                    lac_obj.avg_cell_range = avg_cell_range
-                    lac_obj.num_cells = num_cells
-
-            session.commit()
-    except Exception as exc:  # pragma: no cover
-        self.heka_client.raven('error')
-        raise self.retry(exc=exc)
+        session.commit()

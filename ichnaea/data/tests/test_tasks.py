@@ -1199,7 +1199,7 @@ class TestSubmitErrors(CeleryTestCase):
 
         find_msg = self.find_heka_messages
         messages = find_msg('sentry', RAVEN_ERROR, field_name='msg')
-        self.assertEquals(len(messages), 1)
+        self.assertEquals(len(messages), 4)
 
         payload = messages[0].payload
         # duplicate raven.base.RavenClient.decode
