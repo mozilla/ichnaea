@@ -62,7 +62,7 @@ def configure_stats(config, _client=None):  # pragma: no cover
     if len(parts) > 1:
         port = int(parts[1])
 
-    client = PingableStatsClient(host=host, port=port)
+    client = PingableStatsClient(host=host, port=port, prefix='location')
     return set_stats_client(client)
 
 

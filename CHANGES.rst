@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Specify statsd prefix in application code instead of heka config.
+
 - Fix geoip country lookup for entries without countries.
 
 - #274: Extend monitor view to include geoip db status.
