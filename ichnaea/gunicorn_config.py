@@ -18,6 +18,8 @@ keepalive = 0
 # Recycle worker processes after 10m requests to prevent memory leaks
 # from effecting us, at 1000 req/s this means recycle every 2.8 hours
 max_requests = 10000000
+# Use some jitter to prevent all workers from restarting at once.
+max_requests_jitter = 100000
 
 # Log errors to stderr
 errorlog = "-"
@@ -26,13 +28,17 @@ errorlog = "-"
 loglevel = "warning"
 
 
+def _statsd_host():
+    from ichnaea.app_config import read_config
+    conf = read_config()
+    return conf.get_map('ichnaea').get('statsd_host', None)
+
+# Set host and prefix for gunicorn's own statsd messages
+statsd_host = _statsd_host()
+statsd_prefix = 'location'
+del _statsd_host
+
+
 def post_worker_init(worker):
-    from random import randint
-
-    # Use 10% jitter, to prevent all workers from restarting at once,
-    # as they get an almost equal number of requests
-    jitter = randint(0, max_requests // 10)
-    worker.max_requests += jitter
-
     # Actually initialize the application
     worker.wsgi(None, None)

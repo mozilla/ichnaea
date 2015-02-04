@@ -14,8 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
-- Updated to latest versions of boto, jaraco.util, Mako, psutil, Pygments
-  and pyzmq.
+- Updated to latest versions of boto, gunicorn, jaraco.util, Mako, psutil,
+  Pygments and pyzmq.
 
 
 20150203093000
