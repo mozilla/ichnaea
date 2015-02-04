@@ -1,4 +1,4 @@
 Jinja2==2.7.3
-Pygments==2.0.1
+Pygments==2.0.2
 Sphinx==1.2.3
 docutils==0.12

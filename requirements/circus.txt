@@ -1,6 +1,6 @@
 backports.ssl-match-hostname==3.4.0.2
 circus==0.11.1
 iowait==0.2
-psutil==2.2.0
-pyzmq==14.4.1
+psutil==2.2.1
+pyzmq==14.5.0
 tornado==3.2.2  # rq.filter: <4.0

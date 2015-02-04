@@ -1,13 +1,13 @@
 WSGIProxy2==0.4.2
 irc==9.0  # rq.filter: <10.0
 jaraco.timing==1.1
-jaraco.util==10.7.1
+jaraco.util==10.8
 konfig==0.9
 loads==0.3
 more-itertools==2.2
 pexpect==3.3
-psutil==2.2.0
-pyzmq==14.4.1
+psutil==2.2.1
+pyzmq==14.5.0
 ujson==1.33
 waitress==0.8.9
 ws4py==0.3.4
