@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Backup/delete all observation data except for the current day.
+
 - Updated to latest versions of boto, Chameleon, gunicorn, jaraco.util, Mako,
   psutil, Pygments, pyzmq and WebTest.
 

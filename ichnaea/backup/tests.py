@@ -1,11 +1,12 @@
-import boto
 from contextlib import contextmanager
-from mock import MagicMock, patch
 import datetime
+from datetime import timedelta
 import hashlib
-import pytz
-
 from zipfile import ZipFile
+
+import boto
+from mock import MagicMock, patch
+import pytz
 
 from ichnaea.backup.s3 import S3Backend
 from ichnaea.backup.tasks import (
@@ -253,43 +254,63 @@ class TestMeasurementsDump(CeleryTestCase):
 
     def test_skip_delete_new_blocks(self):
         now = util.utcnow()
+        today_0000 = now.replace(hour=0, minute=0, second=0, tzinfo=pytz.UTC)
+        yesterday_0000 = today_0000 - timedelta(days=1)
+        yesterday_2359 = today_0000 - timedelta(seconds=1)
+        old = now - timedelta(days=5)
         session = self.db_master_session
-        block = MeasureBlock()
-        block.measure_type = MEASURE_TYPE_CODE['cell']
-        block.start_id = 120
-        block.end_id = 140
-        block.s3_key = 'fake_key'
-        block.archive_sha = 'fake_sha'
-        block.archive_date = None
-        session.add(block)
+
+        for i in range(100, 150, 10):
+            block = MeasureBlock()
+            block.measure_type = MEASURE_TYPE_CODE['cell']
+            block.start_id = i
+            block.end_id = i + 10
+            block.s3_key = 'fake_key'
+            block.archive_sha = 'fake_sha'
+            block.archive_date = None
+            session.add(block)
 
         measures = []
-        for i in range(100, 150):
+        for i in range(100, 110):
+            measures.append(CellMeasure(id=i, created=old))
+        for i in range(110, 120):
+            measures.append(CellMeasure(id=i, created=yesterday_0000))
+        for i in range(120, 130):
+            measures.append(CellMeasure(id=i, created=yesterday_2359))
+        for i in range(130, 140):
+            measures.append(CellMeasure(id=i, created=today_0000))
+        for i in range(140, 150):
             measures.append(CellMeasure(id=i, created=now))
+
         session.add_all(measures)
         session.commit()
 
-        with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
-            delete_cellmeasure_records.delay(batch=3).get()
+        def _archived_blocks():
+            blocks = session.query(MeasureBlock).all()
+            return len([b for b in blocks if b.archive_date is not None])
 
+        def _delete(days=7):
+            with patch.object(S3Backend,
+                              'check_archive',
+                              lambda x, y, z: True):
+                delete_cellmeasure_records.delay(days_old=days).get()
+            session.commit()
+
+        _delete(days=7)
         self.assertEquals(session.query(CellMeasure).count(), 50)
-        # The archive_date should *not* be set as we haven't deleted
-        # the actual records yet
-        self.assertTrue(block.archive_date is None)
+        self.assertEqual(_archived_blocks(), 0)
 
-        # Update all the create dates to be far in the past
-        for m in measures:
-            m.created = self.really_old
-        session.add_all(measures)
-        session.commit()
+        _delete(days=2)
+        self.assertEquals(session.query(CellMeasure).count(), 40)
+        self.assertEqual(_archived_blocks(), 1)
 
-        with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
-            delete_cellmeasure_records.delay(batch=3).get()
+        _delete(days=1)
+        self.assertEquals(session.query(CellMeasure).count(), 20)
+        self.assertEqual(_archived_blocks(), 3)
 
-        self.assertEquals(session.query(CellMeasure).count(), 30)
-        # The archive_date should now be set as the measure records
-        # have been deleted.
-        self.assertTrue(block.archive_date is not None)
+        _delete(days=0)
+        self.assertEquals(session.query(CellMeasure).count(), 0)
+        self.assertEqual(_archived_blocks(), 5)
 
     def test_unthrottle_cell_measures(self):
         session = self.db_master_session

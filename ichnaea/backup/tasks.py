@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from datetime import timedelta
 from zipfile import ZipFile, ZIP_DEFLATED
 import csv
 import os
@@ -268,7 +269,9 @@ def delete_measure_records(self,
                            days_old=7,
                            countdown=300,
                            batch=10000):
-    utcnow = util.utcnow()
+    # days_old = 1 means do not delete data from the current day
+    today = util.utcnow().date()
+    min_age = today - timedelta(days_old)
 
     with self.db_session() as session:
         query = session.query(MeasureBlock).filter(
@@ -285,8 +288,8 @@ def delete_measure_records(self,
             tbl = measure_cls.__table__
             qry = session.query(func.max(tbl.c.created)).filter(
                 tbl.c.id < block.end_id)
-            max_created = qry.first()[0].replace(tzinfo=pytz.UTC)
-            if (utcnow - max_created).days < days_old:
+            max_created = qry.first()[0].replace(tzinfo=pytz.UTC).date()
+            if min_age < max_created:
                 # Skip this block from deletion, it's not old
                 # enough
                 continue
