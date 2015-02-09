@@ -24,7 +24,6 @@ Changes
 - Updated to latest versions of boto, Chameleon, gunicorn, jaraco.util, Mako,
   psutil, Pygments, pyzmq and WebTest.
 
-
 20150203093000
 **************
 
