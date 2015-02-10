@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Reestablish database connections on connection failures.
+
 20150209110000
 **************
 
