@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Updated to latest version of iso3166.
+
 20150211113000
 **************
 

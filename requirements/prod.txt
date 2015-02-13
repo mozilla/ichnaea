@@ -20,7 +20,7 @@ heka-py==0.30.3
 heka-py-raven==0.7
 importlib==1.0.3
 ipaddr==2.1.11
-iso3166==0.6
+iso3166==0.7
 iso8601==0.1.10
 kombu==3.0.24
 maxminddb==1.1.1  # optional C extension, version also in Makefile
