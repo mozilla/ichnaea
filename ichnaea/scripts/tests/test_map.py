@@ -4,7 +4,7 @@ from tempfile import mkstemp
 
 from mock import MagicMock, patch
 
-from ichnaea.content.models import MapStat
+from ichnaea.models.content import MapStat
 from ichnaea.scripts import map as scripts_map
 from ichnaea.scripts.map import (
     export_to_csv,

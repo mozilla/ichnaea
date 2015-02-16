@@ -6,14 +6,11 @@ from sqlalchemy import (
     event,
 )
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 from sqlalchemy.pool import Pool
 from sqlalchemy.sql import func, select
 from sqlalchemy.sql.expression import Insert
-
-_Model = declarative_base()
 
 
 @compiles(Insert)

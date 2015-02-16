@@ -8,8 +8,7 @@ from sqlalchemy.schema import MetaData
 from sqlalchemy.sql import sqltypes
 
 # make sure all models are imported
-from ichnaea import models  # NOQA
-from ichnaea.content import models  # NOQA
+from ichnaea.models import _Model  # NOQA
 
 from ichnaea.tests.base import (
     _make_db,

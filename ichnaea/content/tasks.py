@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from ichnaea.async.task import DatabaseTask
-from ichnaea.content.models import (
+from ichnaea.models.content import (
     Stat,
     STAT_TYPE,
 )

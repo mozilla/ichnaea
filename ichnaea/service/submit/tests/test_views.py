@@ -6,7 +6,7 @@ import pytz
 
 from webob.response import gzip_app_iter
 
-from ichnaea.content.models import (
+from ichnaea.models.content import (
     MapStat,
     Score,
     SCORE_TYPE,

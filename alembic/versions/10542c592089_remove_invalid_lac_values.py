@@ -12,8 +12,16 @@ down_revision = 'fe2cfea89f5'
 
 from alembic import op
 
-from ichnaea.models import RADIO_TYPE
-from ichnaea.content.models import STAT_TYPE
+RADIO_TYPE = {
+    'gsm': 0,
+    'cdma': 1,
+    'umts': 2,
+    'lte': 3,
+}
+STAT_TYPE = {
+    'unique_cell': 2,
+    'unique_ocid_cell': 7,
+}
 
 
 def upgrade():

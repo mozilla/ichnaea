@@ -26,7 +26,6 @@ from ichnaea.async.config import (
 )
 from ichnaea.cache import redis_client
 from ichnaea.constants import GEOIP_CITY_ACCURACY
-from ichnaea.db import _Model
 from ichnaea.db import Database
 from ichnaea.geocalc import maximum_country_radius
 from ichnaea.geoip import configure_geoip
@@ -35,10 +34,8 @@ from ichnaea.logging import (
     configure_stats,
     DebugStatsClient,
 )
-from ichnaea.models import ApiKey
-from ichnaea.worker import (
-    celery,
-)
+from ichnaea.models import _Model, ApiKey
+from ichnaea.worker import celery
 
 # make new unittest API's available under Python 2.6
 try:
@@ -626,8 +623,8 @@ class CeleryAppTestCase(AppTestCase, CeleryIsolation):
 
 def setup_package(module):
     # make sure all models are imported
-    from ichnaea import models  # NOQA
-    from ichnaea.content import models  # NOQA
+    from ichnaea.models import base  # NOQA
+    from ichnaea.models import content  # NOQA
     db = _make_db()
     engine = db.engine
     DBIsolation.cleanup_tables(engine)

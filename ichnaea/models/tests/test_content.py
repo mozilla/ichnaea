@@ -5,7 +5,7 @@ from ichnaea import util
 class TestScore(DBTestCase):
 
     def _make_one(self, **kw):
-        from ichnaea.content.models import Score
+        from ichnaea.models.content import Score
         return Score(**kw)
 
     def test_constructor(self):
@@ -42,7 +42,7 @@ class TestScore(DBTestCase):
 class TestStat(DBTestCase):
 
     def _make_one(self, **kw):
-        from ichnaea.content.models import Stat
+        from ichnaea.models.content import Stat
         return Stat(**kw)
 
     def test_constructor(self):
@@ -78,7 +78,7 @@ class TestStat(DBTestCase):
 class TestMapStat(DBTestCase):
 
     def _make_one(self, **kw):
-        from ichnaea.content.models import MapStat
+        from ichnaea.models.content import MapStat
         return MapStat(**kw)
 
     def test_constructor(self):
@@ -103,7 +103,7 @@ class TestMapStat(DBTestCase):
 class TestUser(DBTestCase):
 
     def _make_one(self, **kw):
-        from ichnaea.content.models import User
+        from ichnaea.models.content import User
         return User(**kw)
 
     def test_constructor(self):

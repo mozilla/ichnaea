@@ -8,7 +8,7 @@ from pyramid.testing import setUp
 from pyramid.testing import tearDown
 from unittest2 import TestCase
 
-from ichnaea.content.models import (
+from ichnaea.models.content import (
     Score,
     Stat,
     STAT_TYPE,

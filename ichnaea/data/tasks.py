@@ -9,7 +9,7 @@ from ichnaea.constants import (
     PERMANENT_BLACKLIST_THRESHOLD,
     TEMPORARY_BLACKLIST_DURATION,
 )
-from ichnaea.content.models import (
+from ichnaea.models.content import (
     MapStat,
     Score,
     SCORE_TYPE,
@@ -30,8 +30,9 @@ from ichnaea.geocalc import distance, centroid, range_to_points
 from ichnaea.logging import get_stats_client
 from ichnaea.models import (
     Cell,
-    CellBlacklist,
+    CELL_MODEL_KEYS,
     CellAreaKey,
+    CellBlacklist,
     CellMeasure,
     RADIO_TYPE,
     Wifi,
@@ -42,7 +43,6 @@ from ichnaea.models import (
     to_cellkey,
     to_cellkey_psc,
     to_wifikey,
-    MODEL_KEYS,
 )
 from ichnaea import util
 from ichnaea.worker import celery
@@ -871,7 +871,7 @@ def update_lac(self, radio, mcc, mnc, lac,
         # Select all the cells in this LAC that aren't the virtual
         # cell itself, and derive a bounding box for them.
 
-        cell_model = MODEL_KEYS[cell_model_key]
+        cell_model = CELL_MODEL_KEYS[cell_model_key]
         cell_query = (session.query(cell_model)
                              .filter(cell_model.radio == radio)
                              .filter(cell_model.mcc == mcc)
@@ -882,7 +882,7 @@ def update_lac(self, radio, mcc, mnc, lac,
 
         cells = cell_query.all()
 
-        cell_area_model = MODEL_KEYS[cell_area_model_key]
+        cell_area_model = CELL_MODEL_KEYS[cell_area_model_key]
         lac_query = (session.query(cell_area_model)
                             .filter(cell_area_model.radio == radio)
                             .filter(cell_area_model.mcc == mcc)

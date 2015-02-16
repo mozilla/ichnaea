@@ -12,7 +12,7 @@ from ichnaea.models import (
     RADIO_TYPE_INVERSE,
 )
 
-from ichnaea.content.models import (
+from ichnaea.models.content import (
     Score,
     SCORE_TYPE,
     Stat,

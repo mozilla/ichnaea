@@ -7,7 +7,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.mysql import INTEGER as Integer
 
-from ichnaea.db import _Model
+from ichnaea.models.base import _Model
 from ichnaea import util
 
 SCORE_TYPE = {

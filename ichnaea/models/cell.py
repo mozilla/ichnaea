@@ -1,31 +1,21 @@
 from collections import namedtuple
 
 from sqlalchemy import (
-    BINARY,
     Column,
-    Float,
     Index,
     Boolean,
-    String,
-    UniqueConstraint,
 )
 from sqlalchemy.dialects.mysql import (
-    BIGINT as BigInteger,
     DOUBLE as Double,
     INTEGER as Integer,
     SMALLINT as SmallInteger,
     TINYINT as TinyInteger,
 )
-from ichnaea.db import _Model
-from ichnaea.sa_types import TZDateTime as DateTime
-from ichnaea import geocalc
-from ichnaea import util
 
-MEASURE_TYPE_CODE = {
-    'wifi': 1,
-    'cell': 2,
-}
-MEASURE_TYPE_CODE_INVERSE = dict((v, k) for k, v in MEASURE_TYPE_CODE.items())
+from ichnaea import geocalc
+from ichnaea.models.base import _Model
+from ichnaea.models.sa_types import TZDateTime as DateTime
+from ichnaea import util
 
 RADIO_TYPE = {
     '': -1,
@@ -46,7 +36,6 @@ MIN_RADIO_TYPE = min(RADIO_TYPE.values())
 CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
 CellAreaKey = namedtuple('CellAreaKey', 'radio mcc mnc lac')
-WifiKey = namedtuple('WifiKey', 'key')
 
 
 def to_cellkey(obj):
@@ -105,19 +94,6 @@ def join_cellkey(model, k):
     if hasattr(model, 'cid') and hasattr(k, 'cid'):
         criterion += (model.cid == k.cid, )
     return criterion
-
-
-def to_wifikey(obj):
-    if isinstance(obj, dict):  # pragma: no cover
-        return WifiKey(key=obj['key'])
-    elif isinstance(obj, basestring):  # pragma: no cover
-        return WifiKey(key=obj)
-    else:
-        return WifiKey(key=obj.key)
-
-
-def join_wifikey(model, k):
-    return (model.key == k.key,)
 
 
 class Cell(_Model):
@@ -360,225 +336,7 @@ class CellBlacklist(_Model):
         super(CellBlacklist, self).__init__(*args, **kw)
 
 
-class MeasureBlock(_Model):
-    __tablename__ = 'measure_block'
-    __table_args__ = (
-        Index('idx_measure_block_archive_date', 'archive_date'),
-        Index('idx_measure_block_s3_key', 's3_key'),
-        Index('idx_measure_block_end_id', 'end_id'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-            'mysql_row_format': 'compressed',
-            'mysql_key_block_size': '4',
-        }
-    )
-    id = Column(BigInteger(unsigned=True),
-                primary_key=True,
-                autoincrement=True)
-    measure_type = Column(SmallInteger)
-    s3_key = Column(String(80))
-    archive_date = Column(DateTime)
-    archive_sha = Column(BINARY(length=20))
-    start_id = Column(BigInteger(unsigned=True))
-    end_id = Column(BigInteger(unsigned=True))
-
-
-class CellMeasure(_Model):
-    __tablename__ = 'cell_measure'
-    __table_args__ = (
-        Index('cell_measure_created_idx', 'created'),
-        Index('cell_measure_key_idx', 'radio', 'mcc', 'mnc', 'lac', 'cid'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
-    )
-
-    id = Column(BigInteger(unsigned=True),
-                primary_key=True, autoincrement=True)
-    report_id = Column(BINARY(length=16))
-    created = Column(DateTime)  # the insert time of the record into the DB
-    # lat/lon
-    lat = Column(Double(asdecimal=False))
-    lon = Column(Double(asdecimal=False))
-    time = Column(DateTime)  # the time of observation of this data
-    accuracy = Column(Integer)
-    altitude = Column(Integer)
-    altitude_accuracy = Column(Integer)
-
-    # http://dev.w3.org/geo/api/spec-source.html#heading
-    heading = Column(Float)
-
-    # http://dev.w3.org/geo/api/spec-source.html#speed
-    speed = Column(Float)
-
-    # mapped via RADIO_TYPE
-    radio = Column(TinyInteger)
-    mcc = Column(SmallInteger)
-    mnc = Column(SmallInteger)
-    lac = Column(SmallInteger(unsigned=True))
-    cid = Column(Integer(unsigned=True))
-    psc = Column(SmallInteger)
-    asu = Column(SmallInteger)
-    signal = Column(SmallInteger)
-    ta = Column(TinyInteger)
-
-    def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = util.utcnow()
-        super(CellMeasure, self).__init__(*args, **kw)
-
-cell_measure_table = CellMeasure.__table__
-
-
-class Wifi(_Model):
-    __tablename__ = 'wifi'
-    __table_args__ = (
-        UniqueConstraint('key', name='wifi_key_unique'),
-        Index('wifi_created_idx', 'created'),
-        Index('wifi_new_measures_idx', 'new_measures'),
-        Index('wifi_total_measures_idx', 'total_measures'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
-    )
-
-    id = Column(BigInteger(unsigned=True),
-                primary_key=True, autoincrement=True)
-    created = Column(DateTime)
-    modified = Column(DateTime)
-    key = Column(String(12))
-
-    # lat/lon
-    lat = Column(Double(asdecimal=False))
-    max_lat = Column(Double(asdecimal=False))
-    min_lat = Column(Double(asdecimal=False))
-
-    lon = Column(Double(asdecimal=False))
-    max_lon = Column(Double(asdecimal=False))
-    min_lon = Column(Double(asdecimal=False))
-
-    range = Column(Integer)
-    new_measures = Column(Integer(unsigned=True))
-    total_measures = Column(Integer(unsigned=True))
-
-    def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = util.utcnow()
-        if 'modified' not in kw:
-            kw['modified'] = util.utcnow()
-        if 'new_measures' not in kw:
-            kw['new_measures'] = 0
-        if 'total_measures' not in kw:
-            kw['total_measures'] = 0
-        super(Wifi, self).__init__(*args, **kw)
-
-wifi_table = Wifi.__table__
-
-
-class WifiBlacklist(_Model):
-    __tablename__ = 'wifi_blacklist'
-    __table_args__ = (
-        UniqueConstraint('key', name='wifi_blacklist_key_unique'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
-    )
-    id = Column(BigInteger(unsigned=True),
-                primary_key=True, autoincrement=True)
-    time = Column(DateTime)
-    key = Column(String(12))
-    count = Column(Integer)
-
-    def __init__(self, *args, **kw):
-        if 'time' not in kw:
-            kw['time'] = util.utcnow()
-        if 'count' not in kw:
-            kw['count'] = 1
-        super(WifiBlacklist, self).__init__(*args, **kw)
-
-
-class WifiMeasure(_Model):
-    __tablename__ = 'wifi_measure'
-    __table_args__ = (
-        Index('wifi_measure_created_idx', 'created'),
-        Index('wifi_measure_key_idx', 'key'),
-        Index('wifi_measure_key_created_idx', 'key', 'created'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
-    )
-
-    id = Column(BigInteger(unsigned=True),
-                primary_key=True, autoincrement=True)
-    report_id = Column(BINARY(length=16))
-    created = Column(DateTime)  # the insert time of the record into the DB
-    # lat/lon
-    lat = Column(Double(asdecimal=False))
-    lon = Column(Double(asdecimal=False))
-    time = Column(DateTime)  # the time of observation of this data
-    accuracy = Column(Integer)
-    altitude = Column(Integer)
-    altitude_accuracy = Column(Integer)
-
-    # http://dev.w3.org/geo/api/spec-source.html#heading
-    heading = Column(Float)
-
-    # http://dev.w3.org/geo/api/spec-source.html#speed
-    speed = Column(Float)
-
-    key = Column(String(12))
-    channel = Column(SmallInteger)
-    signal = Column(SmallInteger)
-    snr = Column(SmallInteger)
-
-    def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = util.utcnow()
-        super(WifiMeasure, self).__init__(*args, **kw)
-
-wifi_measure_table = WifiMeasure.__table__
-
-
-class ApiKey(_Model):
-    __tablename__ = 'api_key'
-    __table_args__ = {
-        'mysql_engine': 'InnoDB',
-        'mysql_charset': 'utf8',
-    }
-
-    valid_key = Column(String(40),
-                       primary_key=True)
-
-    # Maximum number of requests per day
-    maxreq = Column(Integer)
-    # Extended logging enabled?
-    log = Column(Boolean)
-    # A readable short name used in metrics
-    shortname = Column(String(40))
-    # A contact address
-    email = Column(String(255))
-    # Some free form context / description
-    description = Column(String(255))
-
-
-api_key_table = ApiKey.__table__
-
-
-# Keep at end of file, as it needs to stay below the *Measure models
-MEASURE_TYPE_META = {
-    1: {'class': WifiMeasure,
-        'csv_name': 'wifi_measure.csv'},
-    2: {'class': CellMeasure,
-        'csv_name': 'cell_measure.csv'},
-}
-
-
-MODEL_KEYS = {
+CELL_MODEL_KEYS = {
     'cell': Cell,
     'cell_area': CellArea,
     'ocid_cell': OCIDCell,

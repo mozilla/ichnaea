@@ -3,7 +3,7 @@ from calendar import timegm
 from datetime import date, timedelta
 from mobile_codes import _countries
 
-from ichnaea.content.models import (
+from ichnaea.models.content import (
     Score,
     User,
     Stat,

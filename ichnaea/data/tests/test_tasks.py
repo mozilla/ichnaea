@@ -10,7 +10,7 @@ from ichnaea.constants import (
     PERMANENT_BLACKLIST_THRESHOLD,
     TEMPORARY_BLACKLIST_DURATION,
 )
-from ichnaea.content.models import (
+from ichnaea.models.content import (
     Score,
     SCORE_TYPE,
 )
