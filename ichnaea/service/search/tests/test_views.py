@@ -53,7 +53,6 @@ class TestSearch(AppTestCase):
             counter=[('search.api_key.test', 1),
                      ('search.cell_hit', 1),
                      ('request.v1.search.200', 1),
-                     ('search.cell_found', 1),
                      ('search.no_geoip_found', 1)],
         )
 
@@ -84,7 +83,6 @@ class TestSearch(AppTestCase):
             counter=[('search.api_key.test', 1),
                      ('search.wifi_hit', 1),
                      ('request.v1.search.200', 1),
-                     ('search.wifi_found', 1),
                      ('search.no_geoip_found', 1),
                      ('search.no_country', 1)],
         )

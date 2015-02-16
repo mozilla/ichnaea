@@ -19,9 +19,9 @@ from ichnaea.geocalc import (
     distance,
 )
 from ichnaea.logging import (
-    get_stats_client,
-    get_heka_client,
     RAVEN_ERROR,
+    get_heka_client,
+    get_stats_client,
 )
 from ichnaea.models import (
     Cell,
@@ -29,8 +29,8 @@ from ichnaea.models import (
     OCIDCell,
     RADIO_TYPE,
     Wifi,
-    to_cellkey,
     join_cellkey,
+    to_cellkey,
 )
 
 # parameters for wifi clustering
@@ -101,6 +101,10 @@ def map_data(data):
 
 
 class StatsLogger(object):
+    """
+    A StatsLogger sends counted and timed named statistics to
+    a statistic aggregator client.
+    """
 
     def __init__(self, api_key_name, api_key_log, api_name):
         self.api_key_name = api_key_name
@@ -116,6 +120,26 @@ class StatsLogger(object):
         self.stats_client.timing('{api}.{stat}'.format(
             api=self.api_name, stat=stat), count)
 
+
+class AbstractLocationProvider(StatsLogger):
+    """
+    An AbstractLocationProvider provides an interface for a class
+    which will provide a location given a set of query data.
+    """
+    # The key to look for in the query data
+    data_field = None
+
+    # The name to use in logging statements
+    log_name = None
+
+    def __init__(self, session, *args, **kwargs):
+        self.session = session
+        self.heka_client = get_heka_client()
+        super(AbstractLocationProvider, self).__init__(*args, **kwargs)
+
+    def locate(self, data):
+        raise NotImplementedError()
+
     def log_used(self):
         if self.api_key_log:
             self.stat_count('api_log.{key}.{metric}_hit'.format(
@@ -126,25 +150,26 @@ class StatsLogger(object):
             self.stat_count('api_log.{key}.{metric}_miss'.format(
                 key=self.api_key_name, metric=self.log_name))
 
-
-class AbstractLocationProvider(StatsLogger):
-
-    def __init__(self, session, *args, **kwargs):
-        self.session = session
-        self.heka_client = get_heka_client()
-        super(AbstractLocationProvider, self).__init__(*args, **kwargs)
-
-    def locate(self, data):
-        raise NotImplementedError()
+    def has_data(self, data):
+        return self.data_field in data
 
 
 class AbstractCellLocationProvider(AbstractLocationProvider):
+    """
+    An AbstractCellLocationProvider provides an interface and
+    partial implementation of a location search using a set of
+    models which have a Cell-like set of fields.
+    """
+    # A list of models which have a Cell interface to be used
+    # in the location search.
+    models = []
+    data_field = 'cell'
 
     def clean_cell_keys(self, data):
         # Pre-process cell data
         radio = RADIO_TYPE.get(data.get('radio', ''), -1)
         cell_keys = []
-        for cell in data.get('cell', ()):
+        for cell in data.get(self.data_field, ()):
             cell = normalized_cell_dict(cell, default_radio=radio)
             if cell:
                 cell_key = to_cellkey(cell)
@@ -210,6 +235,9 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
 
         return queried_objects
 
+    def prepare_location(self, queried_objects):
+        raise NotImplementedError
+
     def locate(self, data):
         cell_keys = self.clean_cell_keys(data)
         queried_objects = self.query_database(cell_keys)
@@ -218,11 +246,14 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
 
 
 class CellLocationProvider(AbstractCellLocationProvider):
+    """
+    A CellLocationProvider implements a cell location search using
+    the Cell and OCID Cell models.
+    """
     models = [Cell, OCIDCell]
     log_name = 'cell'
 
     def prepare_location(self, queried_objects):
-        self.stat_count('cell_found')
         self.stat_count('cell_hit')
         length = len(queried_objects)
         avg_lat = sum([c.lat for c in queried_objects]) / length
@@ -236,11 +267,14 @@ class CellLocationProvider(AbstractCellLocationProvider):
 
 
 class CellAreaLocationProvider(AbstractCellLocationProvider):
+    """
+    A CellAreaLocationProvider implements a cell location search
+    using the CellArea model.
+    """
     models = [CellArea]
     log_name = 'cell_lac'
 
     def prepare_location(self, queried_objects):
-        self.stat_count('cell_lac_found')
         self.stat_count('cell_lac_hit')
         # take the smallest LAC of any the user is inside
         lac = sorted(queried_objects, key=operator.attrgetter('range'))[0]
@@ -254,6 +288,11 @@ class CellAreaLocationProvider(AbstractCellLocationProvider):
 
 
 class WifiLocationProvider(AbstractLocationProvider):
+    """
+    A WifiLocationProvider implements a location search using
+    the WiFi models and a series of clustering algorithms.
+    """
+    data_field = 'wifi'
     log_name = 'wifi'
 
     def cluster_elements(self, items, distance_fn, threshold):
@@ -332,7 +371,7 @@ class WifiLocationProvider(AbstractLocationProvider):
         wifis = []
 
         # Pre-process wifi data
-        for wifi in data.get('wifi', ()):
+        for wifi in data.get(self.data_field, ()):
             wifi = normalized_wifi_dict(wifi)
             if wifi:
                 wifis.append(wifi)
@@ -344,20 +383,21 @@ class WifiLocationProvider(AbstractLocationProvider):
         wifi_signals = dict([(w['key'], w['signal'] or -100) for w in wifis])
         wifi_keys = set(wifi_signals.keys())
 
-        return wifis, wifi_signals, wifi_keys
+        return (wifis, wifi_signals, wifi_keys)
 
     def query_database(self, wifi_keys):
         queried_wifis = []
-        try:
-            queried_wifis = (self.session.query(Wifi.key, Wifi.lat,
-                                                Wifi.lon, Wifi.range)
-                                         .filter(Wifi.key.in_(wifi_keys))
-                                         .filter(Wifi.lat.isnot(None))
-                                         .filter(Wifi.lon.isnot(None))
-                                         .all())
-        except Exception:
-            self.heka_client.raven(RAVEN_ERROR)
-            self.stat_count('wifi_error')
+        if len(wifi_keys) >= MIN_WIFIS_IN_QUERY:
+            try:
+                queried_wifis = (self.session.query(Wifi.key, Wifi.lat,
+                                                    Wifi.lon, Wifi.range)
+                                             .filter(Wifi.key.in_(wifi_keys))
+                                             .filter(Wifi.lat.isnot(None))
+                                             .filter(Wifi.lon.isnot(None))
+                                             .all())
+            except Exception:
+                self.heka_client.raven(RAVEN_ERROR)
+                self.stat_count('wifi_error')
 
         return queried_wifis
 
@@ -427,6 +467,16 @@ class WifiLocationProvider(AbstractLocationProvider):
                                           sample, WIFI_MIN_ACCURACY),
         }
 
+    def has_data(self, data):
+        if super(WifiLocationProvider, self).has_data(data):
+            wifis, wifi_signals, wifi_keys = self.get_clean_wifi_keys(data)
+            return (
+                wifi_keys and
+                len(
+                    self.filter_bssids_by_similarity(list(wifi_keys))
+                ) >= MIN_WIFIS_IN_QUERY
+            )
+
     def locate(self, data):
         location = None
 
@@ -452,7 +502,6 @@ class WifiLocationProvider(AbstractLocationProvider):
             if len(clusters) == 0:
                 self.stat_count('wifi.found_no_cluster')
             else:
-                self.stat_count('wifi_found')
                 self.stat_count('wifi_hit')
                 location = self.prepare_location(clusters)
 
@@ -463,11 +512,18 @@ class WifiLocationProvider(AbstractLocationProvider):
 
 
 class GeoIPLocationProvider(AbstractLocationProvider):
+    """
+    A GeoIPLocationProvider implements a location search using a
+    GeoIP client service lookup.
+    """
     log_name = 'geoip'
 
     def __init__(self, geoip_db, *args, **kwargs):
         self.geoip_db = geoip_db
         super(GeoIPLocationProvider, self).__init__(*args, **kwargs)
+
+    def has_data(self, data):
+        return True
 
     def locate(self, client_addr):
         """
@@ -503,10 +559,15 @@ class GeoIPLocationProvider(AbstractLocationProvider):
             self.stat_count('no_country')
             self.stat_count('no_geoip_found')
 
-        return location, country
+        return (location, country)
 
 
 class AbstractLocationSearcher(StatsLogger):
+    """
+    An AbstractLocationSearcher will use a collection of LocationProvider
+    classes to attempt to identify a user's location.  It will loop over them
+    in the order they are specified and use the most accurate result.
+    """
     # First we attempt a "zoom-in" from cell-lac, to cell
     # to wifi, tightening our estimate each step only so
     # long as it doesn't contradict the existing best-estimate
@@ -529,13 +590,16 @@ class AbstractLocationSearcher(StatsLogger):
         )
         self.heka_client = get_heka_client()
 
-        self.location_providers = [
+        self.search_location_providers = [
             cls(
                 api_key_log=self.api_key_log,
                 api_key_name=self.api_key_name,
                 api_name=self.api_name,
                 session=self.session
             ) for cls in self.LOCATION_PROVIDER_CLASSES]
+
+        self.all_location_providers = (
+            [self.geoip_provider] + self.search_location_providers)
 
     def search_location(self, data, client_addr):
         location = None
@@ -546,7 +610,7 @@ class AbstractLocationSearcher(StatsLogger):
         # the full GeoIP City-level estimate as well, if all else fails.
         geoip_location, country = self.geoip_provider.locate(client_addr)
 
-        for location_provider in self.location_providers:
+        for location_provider in self.search_location_providers:
             provider_location = location_provider.locate(data)
 
             if provider_location:
@@ -579,12 +643,13 @@ class AbstractLocationSearcher(StatsLogger):
         if not location:
             self.stat_count('miss')
 
-        for location_provider in\
-                self.location_providers + [self.geoip_provider]:
-            if location_provider is location_provider_used:
-                location_provider.log_used()
-            else:
-                location_provider.log_unused()
+        for location_provider in reversed(self.all_location_providers):
+            if location_provider.has_data(data):
+                if location_provider is location_provider_used:
+                    location_provider.log_used()
+                else:
+                    location_provider.log_unused()
+                break
 
         return country, location
 
@@ -598,6 +663,11 @@ class AbstractLocationSearcher(StatsLogger):
 
 
 class PositionLocationSearcher(AbstractLocationSearcher):
+    """
+    A PositionLocationSearcher will return a location search query
+    in the form of a position defined by a latitude, a longitude, and
+    an accuracy in meters.
+    """
 
     def prepare_location(self, country, location):
         return {
@@ -608,6 +678,10 @@ class PositionLocationSearcher(AbstractLocationSearcher):
 
 
 class CountryLocationSearcher(AbstractLocationSearcher):
+    """
+    A CountryLocationSearcher will return a location search query
+    in the form of the name and code of the queried country.
+    """
 
     def prepare_location(self, country_code, location):
         country = iso3166.countries.get(country_code)

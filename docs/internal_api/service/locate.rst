@@ -6,14 +6,22 @@
 Functions
 +++++++++
 
-.. autofunction:: cluster_elements
+.. autoclass:: StatsLogger
 
-.. autofunction:: estimate_accuracy
+.. autoclass:: AbstractLocationProvider
 
-.. autofunction:: geoip_and_best_guess_country_codes
+.. autoclass:: AbstractCellLocationProvider
 
-.. autofunction:: map_data
+.. autoclass:: CellLocationProvider
 
-.. autofunction:: most_common_elements
+.. autoclass:: CellAreaLocationProvider
 
-.. autofunction:: search_all_sources
+.. autoclass:: WifiLocationProvider
+
+.. autoclass:: GeoIPLocationProvider
+
+.. autoclass:: AbstractLocationSearcher
+
+.. autoclass:: CountryLocationSearcher
+
+.. autoclass:: PositionLocationSearcher

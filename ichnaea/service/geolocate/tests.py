@@ -57,7 +57,8 @@ class TestGeolocate(AppTestCase):
 
         self.check_stats(
             counter=[self.metric_url + '.200',
-                     self.metric + '.api_key.test']
+                     self.metric + '.api_key.test',
+                     self.metric + '.api_log.test.cell_hit']
         )
 
         self.assertEqual(res.content_type, 'application/json')
