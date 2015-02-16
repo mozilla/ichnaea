@@ -12,7 +12,7 @@ from ichnaea.constants import (
 )
 from ichnaea.models.content import (
     Score,
-    SCORE_TYPE,
+    ScoreKey,
 )
 from ichnaea.customjson import encode_datetime
 from ichnaea.data import constants
@@ -323,7 +323,7 @@ class TestCell(CeleryTestCase):
         session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=mcc, mnc=2, lac=3,
                          cid=4, psc=5, new_measures=2,
                          total_measures=5))
-        session.add(Score(userid=1, key=SCORE_TYPE['new_cell'], value=7))
+        session.add(Score(userid=1, key=ScoreKey.new_cell, value=7))
         session.flush()
 
         measure = dict(
@@ -369,7 +369,7 @@ class TestCell(CeleryTestCase):
 
         scores = session.query(Score).all()
         self.assertEqual(len(scores), 1)
-        self.assertEqual(scores[0].key, SCORE_TYPE['new_cell'])
+        self.assertEqual(scores[0].key, ScoreKey.new_cell)
         self.assertEqual(scores[0].value, 8)
 
         # test duplicate execution
@@ -386,7 +386,7 @@ class TestCell(CeleryTestCase):
 
         session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=FRANCE_MCC, mnc=2,
                          lac=3, cid=4, new_measures=2, total_measures=5))
-        session.add(Score(userid=1, key=SCORE_TYPE['new_cell'], value=7))
+        session.add(Score(userid=1, key=ScoreKey.new_cell, value=7))
         session.flush()
 
         measure = dict(
@@ -968,7 +968,7 @@ class TestWifi(CeleryTestCase):
         time = util.utcnow() - timedelta(days=1)
 
         session.add(Wifi(key="ab1234567890"))
-        session.add(Score(userid=1, key=SCORE_TYPE['new_wifi'], value=7))
+        session.add(Score(userid=1, key=ScoreKey.new_wifi, value=7))
         session.flush()
 
         measure = dict(
@@ -1007,7 +1007,7 @@ class TestWifi(CeleryTestCase):
 
         scores = session.query(Score).all()
         self.assertEqual(len(scores), 1)
-        self.assertEqual(scores[0].key, SCORE_TYPE['new_wifi'])
+        self.assertEqual(scores[0].key, ScoreKey.new_wifi)
         self.assertEqual(scores[0].value, 8)
 
         # test duplicate execution

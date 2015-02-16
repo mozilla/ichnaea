@@ -23,7 +23,7 @@ from ichnaea.models import (
     Cell,
     CellMeasure,
     MeasureBlock,
-    MEASURE_TYPE_CODE,
+    MeasureType,
     RADIO_TYPE,
     Wifi,
     WifiMeasure,
@@ -213,7 +213,7 @@ class TestMeasurementsDump(CeleryTestCase):
     def test_delete_cell_measures(self):
         session = self.db_master_session
         block = MeasureBlock()
-        block.measure_type = MEASURE_TYPE_CODE['cell']
+        block.measure_type = MeasureType.cell
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'
@@ -234,7 +234,7 @@ class TestMeasurementsDump(CeleryTestCase):
     def test_delete_wifi_measures(self):
         session = self.db_master_session
         block = MeasureBlock()
-        block.measure_type = MEASURE_TYPE_CODE['wifi']
+        block.measure_type = MeasureType.wifi
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'
@@ -262,7 +262,7 @@ class TestMeasurementsDump(CeleryTestCase):
 
         for i in range(100, 150, 10):
             block = MeasureBlock()
-            block.measure_type = MEASURE_TYPE_CODE['cell']
+            block.measure_type = MeasureType.cell
             block.start_id = i
             block.end_id = i + 10
             block.s3_key = 'fake_key'
@@ -315,7 +315,7 @@ class TestMeasurementsDump(CeleryTestCase):
     def test_unthrottle_cell_measures(self):
         session = self.db_master_session
         block = MeasureBlock()
-        block.measure_type = MEASURE_TYPE_CODE['cell']
+        block.measure_type = MeasureType.cell
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'
@@ -348,7 +348,7 @@ class TestMeasurementsDump(CeleryTestCase):
     def test_unthrottle_wifi_measures(self):
         session = self.db_master_session
         block = MeasureBlock()
-        block.measure_type = MEASURE_TYPE_CODE['wifi']
+        block.measure_type = MeasureType.wifi
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'

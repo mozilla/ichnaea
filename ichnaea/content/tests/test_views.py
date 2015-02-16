@@ -10,8 +10,9 @@ from unittest2 import TestCase
 
 from ichnaea.models.content import (
     Score,
+    ScoreKey,
     Stat,
-    STAT_TYPE,
+    StatKey,
     User,
 )
 from ichnaea.content.views import (
@@ -177,11 +178,9 @@ class TestFunctionalContent(AppTestCase):
         today = util.utcnow().date()
         yesterday = today - timedelta(1)
         session = self.db_slave_session
-        stat = Stat(time=yesterday, value=2)
-        stat.name = 'unique_cell'
+        stat = Stat(key=StatKey.unique_cell, time=yesterday, value=2)
         session.add(stat)
-        stat = Stat(time=yesterday, value=5)
-        stat.name = 'unique_ocid_cell'
+        stat = Stat(key=StatKey.unique_ocid_cell, time=yesterday, value=5)
         session.add(stat)
         session.commit()
         result = app.get('/stats_cell.json', status=200)
@@ -201,8 +200,7 @@ class TestFunctionalContent(AppTestCase):
         today = util.utcnow().date()
         yesterday = today - timedelta(1)
         session = self.db_slave_session
-        stat = Stat(time=yesterday, value=2)
-        stat.name = 'unique_wifi'
+        stat = Stat(key=StatKey.unique_wifi, time=yesterday, value=2)
         session.add(stat)
         session.commit()
         result = app.get('/stats_wifi.json', status=200)
@@ -239,11 +237,11 @@ class TestFunctionalContentViews(AppTestCase):
             user = User(nickname=unicode(i))
             session.add(user)
             session.flush()
-            score1 = Score(userid=user.id, time=today, value=i)
-            score1.name = 'location'
+            score1 = Score(key=ScoreKey.location,
+                           userid=user.id, time=today, value=i)
             session.add(score1)
-            score2 = Score(userid=user.id, time=yesterday, value=i + 1)
-            score2.name = 'location'
+            score2 = Score(key=ScoreKey.location,
+                           userid=user.id, time=yesterday, value=i + 1)
             session.add(score2)
         session.commit()
         request = DummyRequest()
@@ -272,11 +270,9 @@ class TestFunctionalContentViews(AppTestCase):
             user = User(nickname=unicode(i))
             session.add(user)
             session.flush()
-            score1 = Score(userid=user.id, value=i)
-            score1.name = 'new_cell'
+            score1 = Score(key=ScoreKey.new_cell, userid=user.id, value=i)
             session.add(score1)
-            score2 = Score(userid=user.id, value=i)
-            score2.name = 'new_wifi'
+            score2 = Score(key=ScoreKey.new_wifi, userid=user.id, value=i)
             session.add(score2)
         session.commit()
         request = DummyRequest()
@@ -304,11 +300,11 @@ class TestFunctionalContentViews(AppTestCase):
         day = util.utcnow().date() - timedelta(1)
         session = self.db_master_session
         stats = [
-            Stat(key=STAT_TYPE['cell'], time=day, value=2000000),
-            Stat(key=STAT_TYPE['wifi'], time=day, value=2000000),
-            Stat(key=STAT_TYPE['unique_cell'], time=day, value=1000000),
-            Stat(key=STAT_TYPE['unique_ocid_cell'], time=day, value=1500000),
-            Stat(key=STAT_TYPE['unique_wifi'], time=day, value=2000000),
+            Stat(key=StatKey.cell, time=day, value=2000000),
+            Stat(key=StatKey.wifi, time=day, value=2000000),
+            Stat(key=StatKey.unique_cell, time=day, value=1000000),
+            Stat(key=StatKey.unique_ocid_cell, time=day, value=1500000),
+            Stat(key=StatKey.unique_wifi, time=day, value=2000000),
         ]
         session.add_all(stats)
         session.commit()

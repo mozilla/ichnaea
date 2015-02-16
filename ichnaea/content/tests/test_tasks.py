@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from ichnaea.models.content import (
     Stat,
-    STAT_TYPE,
+    StatKey,
 )
 from ichnaea.content.tasks import (
     cell_histogram,
@@ -46,7 +46,7 @@ class TestStats(CeleryTestCase):
 
         stats = session.query(Stat).order_by(Stat.time).all()
         self.assertEqual(len(stats), 1)
-        self.assertEqual(stats[0].key, STAT_TYPE['cell'])
+        self.assertEqual(stats[0].key, StatKey.cell)
         self.assertEqual(stats[0].time, long_ago)
         self.assertEqual(stats[0].value, 1)
 
@@ -90,7 +90,7 @@ class TestStats(CeleryTestCase):
 
         stats = session.query(Stat).order_by(Stat.time).all()
         self.assertEqual(len(stats), 1)
-        self.assertEqual(stats[0].key, STAT_TYPE['unique_cell'])
+        self.assertEqual(stats[0].key, StatKey.unique_cell)
         self.assertEqual(stats[0].time, long_ago)
         self.assertEqual(stats[0].value, 1)
 
@@ -135,7 +135,7 @@ class TestStats(CeleryTestCase):
 
         stats = session.query(Stat).order_by(Stat.time).all()
         self.assertEqual(len(stats), 1)
-        self.assertEqual(stats[0].key, STAT_TYPE['unique_ocid_cell'])
+        self.assertEqual(stats[0].key, StatKey.unique_ocid_cell)
         self.assertEqual(stats[0].time, long_ago)
         self.assertEqual(stats[0].value, 1)
 
@@ -180,7 +180,7 @@ class TestStats(CeleryTestCase):
 
         stats = session.query(Stat).order_by(Stat.time).all()
         self.assertEqual(len(stats), 1)
-        self.assertEqual(stats[0].key, STAT_TYPE['wifi'])
+        self.assertEqual(stats[0].key, StatKey.wifi)
         self.assertEqual(stats[0].time, long_ago)
         self.assertEqual(stats[0].value, 1)
 
@@ -230,7 +230,7 @@ class TestStats(CeleryTestCase):
 
         stats = session.query(Stat).order_by(Stat.time).all()
         self.assertEqual(len(stats), 1)
-        self.assertEqual(stats[0].key, STAT_TYPE['unique_wifi'])
+        self.assertEqual(stats[0].key, StatKey.unique_wifi)
         self.assertEqual(stats[0].time, long_ago)
         self.assertEqual(stats[0].value, 1)
 

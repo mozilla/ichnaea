@@ -14,9 +14,9 @@ from ichnaea.models import (
 
 from ichnaea.models.content import (
     Score,
-    SCORE_TYPE,
+    ScoreKey,
     Stat,
-    STAT_TYPE,
+    StatKey,
     User,
 )
 from ichnaea import util
@@ -45,8 +45,13 @@ def transliterate(string):
 def global_stats(session):
     today = util.utcnow().date()
     yesterday = today - timedelta(1)
-    names = ('cell', 'wifi', 'unique_cell', 'unique_ocid_cell', 'unique_wifi')
-    stat_keys = [STAT_TYPE[name] for name in names]
+    stat_keys = (
+        StatKey.cell,
+        StatKey.wifi,
+        StatKey.unique_cell,
+        StatKey.unique_ocid_cell,
+        StatKey.unique_wifi,
+    )
     rows = session.query(Stat.key, Stat.value).filter(
         Stat.key.in_(stat_keys)).filter(
         Stat.time == yesterday)
@@ -57,8 +62,8 @@ def global_stats(session):
             stats[row[0]] = int(row[1])
 
     result = {}
-    for name in names:
-        stat_key = STAT_TYPE[name]
+    for stat_key in stat_keys:
+        name = stat_key.name
         try:
             result[name] = stats[stat_key]
         except KeyError:
@@ -79,10 +84,9 @@ def global_stats(session):
     return result
 
 
-def histogram(session, name, days=365):
+def histogram(session, stat_key, days=365):
     today = util.utcnow().date()
     start = today - timedelta(days=days)
-    stat_key = STAT_TYPE[name]
     month_key = (func.year(Stat.time), func.month(Stat.time))
     rows = session.query(func.max(Stat.value), *month_key).filter(
         Stat.key == stat_key).filter(
@@ -109,7 +113,7 @@ def histogram(session, name, days=365):
 def leaders(session):
     score_rows = session.query(
         Score.userid, func.sum(Score.value)).filter(
-        Score.key == SCORE_TYPE['location']).group_by(
+        Score.key == ScoreKey.location).group_by(
         Score.userid).having(func.sum(Score.value) >= 10).all()
     # sort descending by value
     score_rows.sort(key=itemgetter(1), reverse=True)
@@ -140,7 +144,7 @@ def leaders_weekly(session, batch=20):
     for name in ('new_cell', 'new_wifi'):
         score_rows[name] = session.query(
             Score.userid, func.sum(Score.value)).filter(
-            Score.key == SCORE_TYPE[name]).filter(
+            Score.key == ScoreKey[name]).filter(
             Score.time >= one_week).order_by(
             func.sum(Score.value).desc()).group_by(
             Score.userid).limit(batch).all()

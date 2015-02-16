@@ -5,9 +5,10 @@ from mobile_codes import _countries
 
 from ichnaea.models.content import (
     Score,
+    ScoreKey,
     User,
     Stat,
-    STAT_TYPE,
+    StatKey,
 )
 from ichnaea.content.stats import (
     countries,
@@ -35,11 +36,11 @@ class TestStats(DBTestCase):
         session = self.db_master_session
         day = util.utcnow().date() - timedelta(1)
         stats = [
-            Stat(key=STAT_TYPE['cell'], time=day, value=6100000),
-            Stat(key=STAT_TYPE['wifi'], time=day, value=3212000),
-            Stat(key=STAT_TYPE['unique_cell'], time=day, value=3289900),
-            Stat(key=STAT_TYPE['unique_ocid_cell'], time=day, value=1523000),
-            Stat(key=STAT_TYPE['unique_wifi'], time=day, value=2009000),
+            Stat(key=StatKey.cell, time=day, value=6100000),
+            Stat(key=StatKey.wifi, time=day, value=3212000),
+            Stat(key=StatKey.unique_cell, time=day, value=3289900),
+            Stat(key=StatKey.unique_ocid_cell, time=day, value=1523000),
+            Stat(key=StatKey.unique_wifi, time=day, value=2009000),
         ]
         session.add_all(stats)
         session.commit()
@@ -57,10 +58,10 @@ class TestStats(DBTestCase):
         day = util.utcnow().date() - timedelta(1)
         yesterday = day - timedelta(days=1)
         stats = [
-            Stat(key=STAT_TYPE['cell'], time=yesterday, value=5000000),
-            Stat(key=STAT_TYPE['cell'], time=day, value=6000000),
-            Stat(key=STAT_TYPE['wifi'], time=day, value=3000000),
-            Stat(key=STAT_TYPE['unique_cell'], time=yesterday, value=4000000),
+            Stat(key=StatKey.cell, time=yesterday, value=5000000),
+            Stat(key=StatKey.cell, time=day, value=6000000),
+            Stat(key=StatKey.wifi, time=day, value=3000000),
+            Stat(key=StatKey.unique_cell, time=yesterday, value=4000000),
         ]
         session.add_all(stats)
         session.commit()
@@ -82,16 +83,16 @@ class TestStats(DBTestCase):
         two_months = today - timedelta(days=70)
         long_ago = today - timedelta(days=100)
         stats = [
-            Stat(name='cell', time=long_ago, value=40),
-            Stat(name='cell', time=two_months, value=50),
-            Stat(name='cell', time=one_month, value=60),
-            Stat(name='cell', time=two_days, value=70),
-            Stat(name='cell', time=one_day, value=80),
-            Stat(name='cell', time=today, value=90),
+            Stat(key=StatKey.cell, time=long_ago, value=40),
+            Stat(key=StatKey.cell, time=two_months, value=50),
+            Stat(key=StatKey.cell, time=one_month, value=60),
+            Stat(key=StatKey.cell, time=two_days, value=70),
+            Stat(key=StatKey.cell, time=one_day, value=80),
+            Stat(key=StatKey.cell, time=today, value=90),
         ]
         session.add_all(stats)
         session.commit()
-        result = histogram(session, 'cell', days=90)
+        result = histogram(session, StatKey.cell, days=90)
         self.assertTrue(
             [unixtime(one_day), 80] in result[0])
 
@@ -105,11 +106,10 @@ class TestStats(DBTestCase):
     def test_histogram_different_stat_name(self):
         session = self.db_master_session
         day = util.utcnow().date() - timedelta(days=1)
-        stat = Stat(time=day, value=9)
-        stat.name = 'unique_cell'
+        stat = Stat(key=StatKey.unique_cell, time=day, value=9)
         session.add(stat)
         session.commit()
-        result = histogram(session, 'unique_cell')
+        result = histogram(session, StatKey.unique_cell)
         self.assertEqual(result, [[[unixtime(day), 9]]])
 
     def test_leaders(self):
@@ -126,8 +126,7 @@ class TestStats(DBTestCase):
             user = User(nickname=nick)
             session.add(user)
             session.flush()
-            score = Score(userid=user.id, value=value)
-            score.name = 'location'
+            score = Score(key=ScoreKey.location, userid=user.id, value=value)
             session.add(score)
         session.commit()
         # check the result
@@ -146,11 +145,11 @@ class TestStats(DBTestCase):
             user = User(nickname=nick)
             session.add(user)
             session.flush()
-            score = Score(userid=user.id, value=value)
-            score.name = 'new_cell'
+            score = Score(key=ScoreKey.new_cell,
+                          userid=user.id, value=value)
             session.add(score)
-            score = Score(userid=user.id, value=21 - value)
-            score.name = 'new_wifi'
+            score = Score(key=ScoreKey.new_wifi,
+                          userid=user.id, value=21 - value)
             session.add(score)
         session.commit()
 

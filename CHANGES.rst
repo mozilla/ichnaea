@@ -10,8 +10,12 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 3b8d52a9eac4: Change score, stat and measure_block enum columns to tinyint.
+
 Changes
 ~~~~~~~
+
+- Change MEASURE_TYPE_CODE, SCORE_TYPE, STAT_TYPE into IntEnums.
 
 - Updated to latest version of iso3166.
 

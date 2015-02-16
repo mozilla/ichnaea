@@ -3,7 +3,7 @@ from datetime import timedelta
 from ichnaea.async.task import DatabaseTask
 from ichnaea.models.content import (
     Stat,
-    STAT_TYPE,
+    StatKey,
 )
 from ichnaea.models import (
     Cell,
@@ -23,8 +23,7 @@ def daily_task_days(ago):
     return day, max_day
 
 
-def add_stat(session, name, day, value):
-    stat_key = STAT_TYPE[name]
+def add_stat(session, stat_key, day, value):
     todays_stat = get_stat(session, stat_key, exact=True, date=day)
     if todays_stat:
         return
@@ -61,36 +60,40 @@ def histogram_query(session, model, min_day, max_day):
                    .count())
 
 
-def histogram_task(db_session, model, statname, ago=1):
+def histogram_task(db_session, model, stat_key, ago=1):
     day, max_day = daily_task_days(ago)
     with db_session() as session:
         value = histogram_query(session, model, day, max_day)
-        add_stat(session, statname, day, value)
+        add_stat(session, stat_key, day, value)
         session.commit()
     return 1
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def cell_histogram(self, ago=1):
-    return histogram_task(self.db_session, CellMeasure, 'cell', ago=ago)
+    return histogram_task(
+        self.db_session, CellMeasure, StatKey.cell, ago=ago)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def wifi_histogram(self, ago=1):
-    return histogram_task(self.db_session, WifiMeasure, 'wifi', ago=ago)
+    return histogram_task(
+        self.db_session, WifiMeasure, StatKey.wifi, ago=ago)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def unique_cell_histogram(self, ago=1):
-    return histogram_task(self.db_session, Cell, 'unique_cell', ago=ago)
+    return histogram_task(
+        self.db_session, Cell, StatKey.unique_cell, ago=ago)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def unique_ocid_cell_histogram(self, ago=1):
     return histogram_task(
-        self.db_session, OCIDCell, 'unique_ocid_cell', ago=ago)
+        self.db_session, OCIDCell, StatKey.unique_ocid_cell, ago=ago)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def unique_wifi_histogram(self, ago=1):
-    return histogram_task(self.db_session, Wifi, 'unique_wifi', ago=ago)
+    return histogram_task(
+        self.db_session, Wifi, StatKey.unique_wifi, ago=ago)

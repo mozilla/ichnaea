@@ -1,19 +1,16 @@
+from ichnaea.models.api import ApiKey
 from ichnaea.tests.base import DBTestCase
 
 
 class TestApiKey(DBTestCase):
 
-    def _make_one(self, **kw):
-        from ichnaea.models import ApiKey
-        return ApiKey(**kw)
-
     def test_constructor(self):
-        key = self._make_one(valid_key='foo')
+        key = ApiKey(valid_key='foo')
         self.assertEqual(key.valid_key, 'foo')
         self.assertEqual(key.maxreq, None)
 
     def test_fields(self):
-        key = self._make_one(
+        key = ApiKey(
             valid_key='foo-bar', maxreq=10, shortname='foo',
             email='Test <test@test.com>', description='A longer text.',
         )

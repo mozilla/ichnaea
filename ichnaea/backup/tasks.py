@@ -15,10 +15,9 @@ from ichnaea.models import (
     Cell,
     CellMeasure,
     join_cellkey,
-    MEASURE_TYPE_CODE,
-    MEASURE_TYPE_CODE_INVERSE,
     MEASURE_TYPE_META,
     MeasureBlock,
+    MeasureType,
     Wifi,
     WifiMeasure,
 )
@@ -68,9 +67,8 @@ def write_cellmeasure_s3_backups(self,
                                  batch=10000,
                                  countdown=300,
                                  cleanup_zip=True):
-    measure_type = MEASURE_TYPE_CODE['cell']
     return write_measure_s3_backups(self,
-                                    measure_type,
+                                    MeasureType.cell,
                                     limit=limit,
                                     batch=batch,
                                     countdown=countdown,
@@ -83,9 +81,8 @@ def write_wifimeasure_s3_backups(self,
                                  batch=10000,
                                  countdown=300,
                                  cleanup_zip=True):
-    measure_type = MEASURE_TYPE_CODE['wifi']
     return write_measure_s3_backups(self,
-                                    measure_type,
+                                    MeasureType.wifi,
                                     limit=limit,
                                     batch=batch,
                                     countdown=countdown,
@@ -127,7 +124,6 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
         measure_type = block.measure_type
         measure_cls = MEASURE_TYPE_META[measure_type]['class']
         csv_name = MEASURE_TYPE_META[measure_type]['csv_name']
-        name = MEASURE_TYPE_CODE_INVERSE[measure_type]
 
         start_id = block.start_id
         end_id = block.end_id
@@ -141,7 +137,7 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
 
         utcnow = util.utcnow()
         s3_key = '%s/%s_%d_%d.zip' % (utcnow.strftime("%Y%m"),
-                                      name,
+                                      measure_type.name,
                                       start_id,
                                       end_id)
 
@@ -176,7 +172,7 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
             success = s3_backend.backup_archive(s3_key, zip_path)
             if not success:  # pragma: no cover
                 return
-            self.stats_client.incr('s3.backup.%s' % name,
+            self.stats_client.incr('s3.backup.%s' % measure_type.name,
                                    (end_id - start_id))
         finally:
             if cleanup_zip:
@@ -254,13 +250,13 @@ def schedule_measure_archival(self, measure_type, limit=100, batch=1000000):
 @celery.task(base=DatabaseTask, bind=True)
 def schedule_cellmeasure_archival(self, limit=100, batch=1000000):
     return schedule_measure_archival(
-        self, MEASURE_TYPE_CODE['cell'], limit=limit, batch=batch)
+        self, MeasureType.cell, limit=limit, batch=batch)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def schedule_wifimeasure_archival(self, limit=100, batch=1000000):
     return schedule_measure_archival(
-        self, MEASURE_TYPE_CODE['wifi'], limit=limit, batch=batch)
+        self, MeasureType.wifi, limit=limit, batch=batch)
 
 
 def delete_measure_records(self,
@@ -343,7 +339,7 @@ def delete_cellmeasure_records(self, limit=100, days_old=7,
                                countdown=300, batch=10000):
     return delete_measure_records(
         self,
-        MEASURE_TYPE_CODE['cell'],
+        MeasureType.cell,
         limit=limit,
         days_old=days_old,
         countdown=countdown,
@@ -355,7 +351,7 @@ def delete_wifimeasure_records(self, limit=100, days_old=7,
                                countdown=300, batch=10000):
     return delete_measure_records(
         self,
-        MEASURE_TYPE_CODE['wifi'],
+        MeasureType.wifi,
         limit=limit,
         days_old=days_old,
         countdown=countdown,

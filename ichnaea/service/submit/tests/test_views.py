@@ -9,7 +9,7 @@ from webob.response import gzip_app_iter
 from ichnaea.models.content import (
     MapStat,
     Score,
-    SCORE_TYPE,
+    ScoreKey,
     User,
 )
 from ichnaea.logging import RAVEN_ERROR
@@ -201,12 +201,12 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
         result = session.query(Score).all()
         self.assertEqual(len(result), 2)
-        self.assertEqual(set([r.name for r in result]),
+        self.assertEqual(set([r.key.name for r in result]),
                          set(['location', 'new_wifi']))
         for r in result:
-            if r.name == 'location':
+            if r.key.name == 'location':
                 self.assertEqual(r.value, 2)
-            elif r.name == 'new_wifi':
+            elif r.key.name == 'new_wifi':
                 self.assertEqual(r.value, 2)
 
     def test_nickname_header_error(self):
@@ -233,8 +233,8 @@ class TestSubmit(CeleryAppTestCase):
         user = User(nickname=nickname.decode('utf-8'))
         session.add(user)
         session.flush()
-        session.add(Score(userid=user.id, key=SCORE_TYPE['location'], value=7))
-        session.add(Score(userid=user.id, key=SCORE_TYPE['new_wifi'], value=3))
+        session.add(Score(userid=user.id, key=ScoreKey.location, value=7))
+        session.add(Score(userid=user.id, key=ScoreKey.new_wifi, value=3))
         session.commit()
         app.post_json(
             '/v1/submit', {"items": [
@@ -249,13 +249,13 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
         result = session.query(Score).all()
         self.assertEqual(len(result), 2)
-        self.assertEqual(set([r.name for r in result]),
+        self.assertEqual(set([r.key.name for r in result]),
                          set(['location', 'new_wifi']))
         for r in result:
-            if r.name == 'location':
+            if r.key.name == 'location':
                 self.assertEqual(r.value, 8)
                 self.assertEqual(r.time, utcday)
-            elif r.name == 'new_wifi':
+            elif r.key.name == 'new_wifi':
                 self.assertEqual(r.value, 4)
                 self.assertEqual(r.time, utcday)
 

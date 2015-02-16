@@ -20,6 +20,7 @@ from ichnaea.content.stats import (
 )
 from ichnaea.customjson import dumps, loads
 from ichnaea.logging import RAVEN_ERROR
+from ichnaea.models.content import StatKey
 from ichnaea import util
 
 HERE = os.path.dirname(__file__)
@@ -292,8 +293,8 @@ class ContentViews(Layout):
             data = loads(cached)
         else:
             session = self.request.db_slave_session
-            mls_data = histogram(session, 'unique_cell')
-            ocid_data = histogram(session, 'unique_ocid_cell')
+            mls_data = histogram(session, StatKey.unique_cell)
+            ocid_data = histogram(session, StatKey.unique_ocid_cell)
             data = [
                 {'title': 'MLS Cells', 'data': mls_data[0]},
                 {'title': 'OCID Cells', 'data': ocid_data[0]},
@@ -311,7 +312,7 @@ class ContentViews(Layout):
             data = loads(cached)
         else:
             session = self.request.db_slave_session
-            data = histogram(session, 'unique_wifi')
+            data = histogram(session, StatKey.unique_wifi)
             redis_client.set(cache_key, dumps(data), ex=3600)
         return {'series': [{'title': 'MLS WiFi', 'data': data[0]}]}
 
@@ -332,11 +333,11 @@ class ContentViews(Layout):
             }
             metrics = global_stats(session)
             metric_names = [
-                ('unique_cell', 'MLS Cells'),
-                ('unique_ocid_cell', 'OpenCellID Cells'),
-                ('cell', 'MLS Cell Observations'),
-                ('unique_wifi', 'Wifi Networks'),
-                ('wifi', 'Wifi Observations'),
+                (StatKey.unique_cell.name, 'MLS Cells'),
+                (StatKey.unique_ocid_cell.name, 'OpenCellID Cells'),
+                (StatKey.cell.name, 'MLS Cell Observations'),
+                (StatKey.unique_wifi.name, 'Wifi Networks'),
+                (StatKey.wifi.name, 'Wifi Observations'),
             ]
             for mid, name in metric_names[:3]:
                 data['metrics1'].append({'name': name, 'value': metrics[mid]})

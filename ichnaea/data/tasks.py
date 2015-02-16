@@ -12,7 +12,7 @@ from ichnaea.constants import (
 from ichnaea.models.content import (
     MapStat,
     Score,
-    SCORE_TYPE,
+    ScoreKey,
     User,
 )
 from ichnaea.customjson import (
@@ -522,7 +522,7 @@ def process_score(userid, points, session, key='location'):
     utcday = util.utcnow().date()
     query = session.query(Score).filter(
         Score.userid == userid).filter(
-        Score.key == SCORE_TYPE[key]).filter(
+        Score.key == ScoreKey[key]).filter(
         Score.time == utcday)
     score = query.first()
     if score is not None:
@@ -530,7 +530,7 @@ def process_score(userid, points, session, key='location'):
     else:
         stmt = Score.__table__.insert(
             on_duplicate='value = value + %s' % int(points)).values(
-            userid=userid, key=SCORE_TYPE[key], time=utcday, value=points)
+            userid=userid, key=ScoreKey[key], time=utcday, value=points)
         session.execute(stmt)
     return points
 

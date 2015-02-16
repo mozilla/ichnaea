@@ -1,26 +1,27 @@
 import datetime
 import uuid
 
+from ichnaea.models.constants import RADIO_TYPE
+from ichnaea.models.observation import (
+    CellMeasure,
+    WifiMeasure,
+)
 from ichnaea.tests.base import DBTestCase
 
 
 class TestCellMeasure(DBTestCase):
 
-    def _make_one(self, **kw):
-        from ichnaea.models import CellMeasure
-        return CellMeasure(**kw)
-
     def test_constructor(self):
-        cell = self._make_one()
+        cell = CellMeasure()
         self.assertTrue(isinstance(cell.created, datetime.datetime))
 
     def test_fields(self):
         report_id = uuid.uuid1().bytes
-        cell = self._make_one(
+        cell = CellMeasure(
             lat=1.2345678,
             lon=2.3456789,
             report_id=report_id,
-            radio=0,
+            radio=RADIO_TYPE['gsm'],
             mcc=100,
             mnc=5,
             lac=12345,
@@ -33,12 +34,12 @@ class TestCellMeasure(DBTestCase):
         session.add(cell)
         session.commit()
 
-        result = session.query(cell.__class__).first()
+        result = session.query(CellMeasure).first()
         self.assertEqual(result.report_id, report_id)
         self.assertTrue(isinstance(result.created, datetime.datetime))
         self.assertEqual(result.lat, 1.2345678)
         self.assertEqual(result.lon, 2.3456789)
-        self.assertEqual(result.radio, 0)
+        self.assertEqual(result.radio, RADIO_TYPE['gsm'])
         self.assertEqual(result.mcc, 100)
         self.assertEqual(result.mnc, 5)
         self.assertEqual(result.lac, 12345)
@@ -50,18 +51,14 @@ class TestCellMeasure(DBTestCase):
 
 class TestWifiMeasure(DBTestCase):
 
-    def _make_one(self, **kw):
-        from ichnaea.models import WifiMeasure
-        return WifiMeasure(**kw)
-
     def test_constructor(self):
-        wifi = self._make_one()
+        wifi = WifiMeasure()
         self.assertTrue(wifi.id is None)
 
     def test_fields(self):
         key = "3680873e9b83"
         report_id = uuid.uuid1().bytes
-        wifi = self._make_one(
+        wifi = WifiMeasure(
             lat=1.2345678,
             lon=2.3456789,
             report_id=report_id,
@@ -73,7 +70,7 @@ class TestWifiMeasure(DBTestCase):
         session.add(wifi)
         session.commit()
 
-        result = session.query(wifi.__class__).first()
+        result = session.query(WifiMeasure).first()
         self.assertEqual(result.report_id, report_id)
         self.assertTrue(isinstance(result.created, datetime.datetime))
         self.assertEqual(result.lat, 1.2345678)
