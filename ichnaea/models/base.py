@@ -4,17 +4,27 @@ from sqlalchemy.dialects.mysql import (
     DOUBLE as Double,
     INTEGER as Integer,
 )
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.declarative import (
+    declared_attr,
+    declarative_base,
+)
 
 from ichnaea.models.sa_types import TZDateTime as DateTime
+
+MYSQL_SETTINGS = {
+    'mysql_engine': 'InnoDB',
+    'mysql_charset': 'utf8',
+}
 
 
 class BaseModel(object):
 
-    __table_args__ = {
-        'mysql_engine': 'InnoDB',
-        'mysql_charset': 'utf8',
-    }
+    _indices = ()
+    _settings = MYSQL_SETTINGS
+
+    @declared_attr
+    def __table_args__(cls):  # NOQA
+        return cls._indices + (cls._settings, )
 
 
 _Model = declarative_base(cls=BaseModel)

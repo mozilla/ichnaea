@@ -46,13 +46,10 @@ class ObservationMixin(BigIdMixin, ReportMixin):
 
 class CellMeasure(ObservationMixin, CellKeyPscMixin, _Model):
     __tablename__ = 'cell_measure'
-    __table_args__ = (
+
+    _indices = (
         Index('cell_measure_created_idx', 'created'),
         Index('cell_measure_key_idx', 'radio', 'mcc', 'mnc', 'lac', 'cid'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
     )
 
     asu = Column(SmallInteger)
@@ -66,14 +63,11 @@ class CellMeasure(ObservationMixin, CellKeyPscMixin, _Model):
 
 class WifiMeasure(ObservationMixin, WifiKeyMixin, _Model):
     __tablename__ = 'wifi_measure'
-    __table_args__ = (
+
+    _indices = (
         Index('wifi_measure_created_idx', 'created'),
         Index('wifi_measure_key_idx', 'key'),
         Index('wifi_measure_key_created_idx', 'key', 'created'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
     )
 
     channel = Column(SmallInteger)

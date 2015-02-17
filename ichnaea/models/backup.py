@@ -38,17 +38,18 @@ MEASURE_TYPE_META = {
 
 class MeasureBlock(BigIdMixin, _Model):
     __tablename__ = 'measure_block'
-    __table_args__ = (
+
+    _indices = (
         Index('idx_measure_block_archive_date', 'archive_date'),
         Index('idx_measure_block_s3_key', 's3_key'),
         Index('idx_measure_block_end_id', 'end_id'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-            'mysql_row_format': 'compressed',
-            'mysql_key_block_size': '4',
-        }
     )
+    _settings = {
+        'mysql_engine': 'InnoDB',
+        'mysql_charset': 'utf8',
+        'mysql_row_format': 'compressed',
+        'mysql_key_block_size': '4',
+    }
 
     measure_type = Column(TinyIntEnum(MeasureType))
     s3_key = Column(String(80))

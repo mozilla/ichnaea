@@ -35,13 +35,9 @@ class StatKey(IntEnum):
 
 class MapStat(IdMixin, _Model):
     __tablename__ = 'mapstat'
-    __table_args__ = (
-        UniqueConstraint('lat', 'lon',
-                         name='mapstat_lat_lon_unique'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
+
+    _indices = (
+        UniqueConstraint('lat', 'lon', name='mapstat_lat_lon_unique'),
     )
 
     # tracks the creation time
@@ -53,13 +49,10 @@ class MapStat(IdMixin, _Model):
 
 class Score(IdMixin, _Model):
     __tablename__ = 'score'
-    __table_args__ = (
+
+    _indices = (
         UniqueConstraint('userid', 'key', 'time',
                          name='score_userid_key_time_unique'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
     )
 
     userid = Column(Integer(unsigned=True), index=True)
@@ -75,12 +68,9 @@ class Score(IdMixin, _Model):
 
 class Stat(IdMixin, _Model):
     __tablename__ = 'stat'
-    __table_args__ = (
+
+    _indices = (
         UniqueConstraint('key', 'time', name='stat_key_time_unique'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
     )
 
     key = Column(TinyIntEnum(StatKey))
@@ -90,12 +80,9 @@ class Stat(IdMixin, _Model):
 
 class User(IdMixin, _Model):
     __tablename__ = 'user'
-    __table_args__ = (
+
+    _indices = (
         UniqueConstraint('nickname', name='user_nickname_unique'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
     )
 
     nickname = Column(Unicode(128))

@@ -120,16 +120,13 @@ class CellMixin(CellKeyPscMixin):
 
 class Cell(CellMixin, StationMixin, _Model):
     __tablename__ = 'cell'
-    __table_args__ = (
+
+    _indices = (
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
         Index('cell_created_idx', 'created'),
         Index('cell_modified_idx', 'modified'),
         Index('cell_new_measures_idx', 'new_measures'),
         Index('cell_total_measures_idx', 'total_measures'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
     )
 
     def __init__(self, *args, **kw):
@@ -152,13 +149,10 @@ class Cell(CellMixin, StationMixin, _Model):
 
 class OCIDCell(CellMixin, BaseStationMixin, _Model):
     __tablename__ = 'ocid_cell'
-    __table_args__ = (
+
+    _indices = (
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
         Index('ocid_cell_created_idx', 'created'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
     )
 
     changeable = Column(Boolean)
@@ -199,12 +193,9 @@ class OCIDCell(CellMixin, BaseStationMixin, _Model):
 
 class CellArea(CellAreaMixin, _Model):
     __tablename__ = 'cell_area'
-    __table_args__ = (
+
+    _indices = (
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
     )
 
     def __init__(self, *args, **kw):
@@ -223,12 +214,9 @@ class CellArea(CellAreaMixin, _Model):
 
 class OCIDCellArea(CellAreaMixin, _Model):
     __tablename__ = 'ocid_cell_area'
-    __table_args__ = (
+
+    _indices = (
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
     )
 
     def __init__(self, *args, **kw):
@@ -247,12 +235,9 @@ class OCIDCellArea(CellAreaMixin, _Model):
 
 class CellBlacklist(CellKeyMixin, StationBlacklistMixin, _Model):
     __tablename__ = 'cell_blacklist'
-    __table_args__ = (
+
+    _indices = (
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
     )
 
     def __init__(self, *args, **kw):

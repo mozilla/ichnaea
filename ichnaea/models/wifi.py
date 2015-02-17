@@ -45,15 +45,12 @@ class WifiMixin(BigIdMixin, WifiKeyMixin):
 
 class Wifi(WifiMixin, StationMixin, _Model):
     __tablename__ = 'wifi'
-    __table_args__ = (
+
+    _indices = (
         UniqueConstraint('key', name='wifi_key_unique'),
         Index('wifi_created_idx', 'created'),
         Index('wifi_new_measures_idx', 'new_measures'),
         Index('wifi_total_measures_idx', 'total_measures'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
     )
 
     def __init__(self, *args, **kw):
@@ -70,12 +67,9 @@ class Wifi(WifiMixin, StationMixin, _Model):
 
 class WifiBlacklist(WifiMixin, StationBlacklistMixin, _Model):
     __tablename__ = 'wifi_blacklist'
-    __table_args__ = (
+
+    _indices = (
         UniqueConstraint('key', name='wifi_blacklist_key_unique'),
-        {
-            'mysql_engine': 'InnoDB',
-            'mysql_charset': 'utf8',
-        }
     )
 
     def __init__(self, *args, **kw):
