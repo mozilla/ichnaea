@@ -137,10 +137,7 @@ class Cell(_Model):
             kw['total_measures'] = 0
         super(Cell, self).__init__(*args, **kw)
 
-cell_table = Cell.__table__
 
-
-# Cell record from OpenCellID
 class OCIDCell(_Model):
     __tablename__ = 'ocid_cell'
     __table_args__ = (
@@ -208,10 +205,7 @@ class OCIDCell(_Model):
     def max_lon(self):
         return geocalc.add_meters_to_longitude(self.lat, self.lon, self.range)
 
-ocid_cell_table = OCIDCell.__table__
 
-
-# Cell area record
 class CellArea(_Model):
     __tablename__ = 'cell_area'
     __table_args__ = {
@@ -253,10 +247,7 @@ class CellArea(_Model):
             kw['num_cells'] = 0
         super(CellArea, self).__init__(*args, **kw)
 
-cell_area_table = CellArea.__table__
 
-
-# Cell record from OpenCellID
 class OCIDCellArea(_Model):
     __tablename__ = 'ocid_cell_area'
 
@@ -293,8 +284,6 @@ class OCIDCellArea(_Model):
         if 'num_cells' not in kw:
             kw['num_cells'] = 0
         super(OCIDCellArea, self).__init__(*args, **kw)
-
-ocid_cell_area_table = OCIDCellArea.__table__
 
 
 class CellBlacklist(_Model):

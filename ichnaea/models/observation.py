@@ -63,8 +63,6 @@ class CellMeasure(_Model):
             kw['created'] = util.utcnow()
         super(CellMeasure, self).__init__(*args, **kw)
 
-cell_measure_table = CellMeasure.__table__
-
 
 class WifiMeasure(_Model):
     __tablename__ = 'wifi_measure'
@@ -105,5 +103,3 @@ class WifiMeasure(_Model):
         if 'created' not in kw:
             kw['created'] = util.utcnow()
         super(WifiMeasure, self).__init__(*args, **kw)
-
-wifi_measure_table = WifiMeasure.__table__

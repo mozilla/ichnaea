@@ -76,8 +76,6 @@ class Wifi(_Model):
             kw['total_measures'] = 0
         super(Wifi, self).__init__(*args, **kw)
 
-wifi_table = Wifi.__table__
-
 
 class WifiBlacklist(_Model):
     __tablename__ = 'wifi_blacklist'

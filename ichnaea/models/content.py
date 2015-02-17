@@ -48,8 +48,6 @@ class MapStat(_Model):
     lat = Column(Integer)
     lon = Column(Integer)
 
-mapstat_table = MapStat.__table__
-
 
 class Score(_Model):
     __tablename__ = 'score'
@@ -74,8 +72,6 @@ class Score(_Model):
             kw['time'] = util.utcnow().date()
         super(Score, self).__init__(*args, **kw)
 
-score_table = Score.__table__
-
 
 class Stat(_Model):
     __tablename__ = 'stat'
@@ -94,9 +90,6 @@ class Stat(_Model):
     value = Column(Integer(unsigned=True))
 
 
-stat_table = Stat.__table__
-
-
 class User(_Model):
     __tablename__ = 'user'
     __table_args__ = (
@@ -111,5 +104,3 @@ class User(_Model):
                 primary_key=True, autoincrement=True)
     nickname = Column(Unicode(128))
     email = Column(Unicode(255))
-
-user_table = User.__table__

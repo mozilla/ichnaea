@@ -18,11 +18,11 @@ from sqlalchemy.sql import (
 from ichnaea.async.task import DatabaseTask
 from ichnaea.data.validation import normalized_cell_dict
 from ichnaea.models import (
-    cell_table,
-    ocid_cell_table,
+    Cell,
     CellAreaKey,
     RADIO_TYPE,
     RADIO_TYPE_INVERSE,
+    OCIDCell,
 )
 from ichnaea.data.tasks import update_lac
 from ichnaea.worker import celery
@@ -55,9 +55,10 @@ CELL_COLUMN_NAME_INDICES = dict(
 CELL_COLUMNS = []
 for name in CELL_COLUMN_NAMES:
     if name in ('created', 'modified'):
-        CELL_COLUMNS.append(func.unix_timestamp(getattr(cell_table.c, name)))
+        CELL_COLUMNS.append(
+            func.unix_timestamp(getattr(Cell.__table__.c, name)))
     else:
-        CELL_COLUMNS.append(getattr(cell_table.c, name))
+        CELL_COLUMNS.append(getattr(Cell.__table__.c, name))
 
 
 CELL_EXPORT_RADIO_NAMES = dict(
@@ -190,13 +191,13 @@ def export_modified_cells(self, hourly=True, bucket=None):
         file_time = end_time
         file_type = 'diff'
         start_time = end_time - timedelta(hours=1)
-        cond = and_(cell_table.c.modified >= start_time,
-                    cell_table.c.modified < end_time,
-                    cell_table.c.lat.isnot(None))
+        cond = and_(Cell.__table__.c.modified >= start_time,
+                    Cell.__table__.c.modified < end_time,
+                    Cell.__table__.c.lat.isnot(None))
     else:
         file_time = now.replace(hour=0, minute=0, second=0)
         file_type = 'full'
-        cond = cell_table.c.lat.isnot(None)
+        cond = Cell.__table__.c.lat.isnot(None)
 
     filename = 'MLS-%s-cell-export-' % file_type
     filename = filename + file_time.strftime('%Y-%m-%dT%H0000.csv.gz')
@@ -204,7 +205,7 @@ def export_modified_cells(self, hourly=True, bucket=None):
     with selfdestruct_tempdir() as d:
         path = os.path.join(d, filename)
         with self.db_session() as session:
-            write_stations_to_csv(session, cell_table, CELL_COLUMNS, cond,
+            write_stations_to_csv(session, Cell.__table__, CELL_COLUMNS, cond,
                                   path, make_cell_export_dict, CELL_FIELDS)
         write_stations_to_s3(path, bucket)
 
@@ -215,7 +216,7 @@ def import_stations(session, filename, fields):
         batch = 10000
         rows = []
         lacs = set()
-        ins = ocid_cell_table.insert(
+        ins = OCIDCell.__table__.insert(
             on_duplicate=((
                 'modified = values(modified), '
                 'total_measures = values(total_measures), '

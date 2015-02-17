@@ -30,6 +30,3 @@ class ApiKey(_Model):
     email = Column(String(255))
     # Some free form context / description
     description = Column(String(255))
-
-
-api_key_table = ApiKey.__table__

@@ -25,7 +25,6 @@ from ichnaea.models import (
     Cell,
     OCIDCell,
     OCIDCellArea,
-    cell_table,
     RADIO_TYPE,
 )
 from ichnaea.tests.base import (
@@ -72,9 +71,9 @@ class TestExport(CeleryTestCase):
 
         with selfdestruct_tempdir() as temp_dir:
             path = os.path.join(temp_dir, 'export.csv.gz')
-            cond = cell_table.c.lat.isnot(None)
+            cond = Cell.__table__.c.lat.isnot(None)
             write_stations_to_csv(
-                session, cell_table, CELL_COLUMNS, cond,
+                session, Cell.__table__, CELL_COLUMNS, cond,
                 path, make_cell_export_dict, CELL_FIELDS)
 
             with GzipFile(path, 'rb') as gzip_file:
