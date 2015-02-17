@@ -7,7 +7,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.mysql import INTEGER as Integer
 
-from ichnaea.models.base import _Model
+from ichnaea.models.base import (
+    _Model,
+    IdMixin,
+)
 from ichnaea.models.sa_types import TinyIntEnum
 from ichnaea import util
 
@@ -30,7 +33,7 @@ class StatKey(IntEnum):
     unique_ocid_cell = 7
 
 
-class MapStat(_Model):
+class MapStat(IdMixin, _Model):
     __tablename__ = 'mapstat'
     __table_args__ = (
         UniqueConstraint('lat', 'lon',
@@ -40,8 +43,7 @@ class MapStat(_Model):
             'mysql_charset': 'utf8',
         }
     )
-    id = Column(Integer(unsigned=True),
-                primary_key=True, autoincrement=True)
+
     # tracks the creation time
     time = Column(Date)
     # lat/lon * 1000, so 12.345 is stored as 12345
@@ -49,7 +51,7 @@ class MapStat(_Model):
     lon = Column(Integer)
 
 
-class Score(_Model):
+class Score(IdMixin, _Model):
     __tablename__ = 'score'
     __table_args__ = (
         UniqueConstraint('userid', 'key', 'time',
@@ -60,8 +62,6 @@ class Score(_Model):
         }
     )
 
-    id = Column(Integer(unsigned=True),
-                primary_key=True, autoincrement=True)
     userid = Column(Integer(unsigned=True), index=True)
     key = Column(TinyIntEnum(ScoreKey))
     time = Column(Date)
@@ -73,7 +73,7 @@ class Score(_Model):
         super(Score, self).__init__(*args, **kw)
 
 
-class Stat(_Model):
+class Stat(IdMixin, _Model):
     __tablename__ = 'stat'
     __table_args__ = (
         UniqueConstraint('key', 'time', name='stat_key_time_unique'),
@@ -83,14 +83,12 @@ class Stat(_Model):
         }
     )
 
-    id = Column(Integer(unsigned=True),
-                primary_key=True, autoincrement=True)
     key = Column(TinyIntEnum(StatKey))
     time = Column(Date)
     value = Column(Integer(unsigned=True))
 
 
-class User(_Model):
+class User(IdMixin, _Model):
     __tablename__ = 'user'
     __table_args__ = (
         UniqueConstraint('nickname', name='user_nickname_unique'),
@@ -100,7 +98,5 @@ class User(_Model):
         }
     )
 
-    id = Column(Integer(unsigned=True),
-                primary_key=True, autoincrement=True)
     nickname = Column(Unicode(128))
     email = Column(Unicode(255))

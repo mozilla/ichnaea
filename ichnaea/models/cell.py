@@ -4,17 +4,25 @@ from sqlalchemy import (
     Column,
     Index,
     Boolean,
+    PrimaryKeyConstraint,
 )
 from sqlalchemy.dialects.mysql import (
-    DOUBLE as Double,
     INTEGER as Integer,
     SMALLINT as SmallInteger,
     TINYINT as TinyInteger,
 )
 
 from ichnaea import geocalc
-from ichnaea.models.base import _Model
-from ichnaea.models.sa_types import TZDateTime as DateTime
+from ichnaea.models.base import (
+    _Model,
+    PositionMixin,
+    TimeTrackingMixin,
+)
+from ichnaea.models.station import (
+    BaseStationMixin,
+    StationMixin,
+    StationBlacklistMixin,
+)
 from ichnaea import util
 
 CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
@@ -80,9 +88,40 @@ def join_cellkey(model, k):
     return criterion
 
 
-class Cell(_Model):
+class CellAreaKeyMixin(object):
+
+    # mapped via RADIO_TYPE
+    radio = Column(TinyInteger, autoincrement=False)
+    mcc = Column(SmallInteger, autoincrement=False)
+    mnc = Column(SmallInteger, autoincrement=False)
+    lac = Column(SmallInteger(unsigned=True), autoincrement=False)
+
+
+class CellAreaMixin(CellAreaKeyMixin, TimeTrackingMixin, PositionMixin):
+
+    range = Column(Integer)
+    avg_cell_range = Column(Integer)
+    num_cells = Column(Integer(unsigned=True))
+
+
+class CellKeyMixin(CellAreaKeyMixin):
+
+    cid = Column(Integer(unsigned=True), autoincrement=False)
+
+
+class CellKeyPscMixin(CellKeyMixin):
+
+    psc = Column(SmallInteger, autoincrement=False)
+
+
+class CellMixin(CellKeyPscMixin):
+    pass
+
+
+class Cell(CellMixin, StationMixin, _Model):
     __tablename__ = 'cell'
     __table_args__ = (
+        PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
         Index('cell_created_idx', 'created'),
         Index('cell_modified_idx', 'modified'),
         Index('cell_new_measures_idx', 'new_measures'),
@@ -92,33 +131,6 @@ class Cell(_Model):
             'mysql_charset': 'utf8',
         }
     )
-
-    created = Column(DateTime)
-    modified = Column(DateTime)
-
-    # lat/lon
-    lat = Column(Double(asdecimal=False))
-    max_lat = Column(Double(asdecimal=False))
-    min_lat = Column(Double(asdecimal=False))
-
-    lon = Column(Double(asdecimal=False))
-    max_lon = Column(Double(asdecimal=False))
-    min_lon = Column(Double(asdecimal=False))
-
-    # mapped via RADIO_TYPE
-    radio = Column(TinyInteger, autoincrement=False, primary_key=True)
-    # int in the range 0-1000
-    mcc = Column(SmallInteger, autoincrement=False, primary_key=True)
-    # int in the range 0-1000 for gsm
-    # int in the range 0-32767 for cdma (system id)
-    mnc = Column(SmallInteger, autoincrement=False, primary_key=True)
-    lac = Column(
-        SmallInteger(unsigned=True), autoincrement=False, primary_key=True)
-    cid = Column(Integer(unsigned=True), autoincrement=False, primary_key=True)
-    psc = Column(SmallInteger)
-    range = Column(Integer)
-    new_measures = Column(Integer(unsigned=True))
-    total_measures = Column(Integer(unsigned=True))
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
@@ -138,9 +150,10 @@ class Cell(_Model):
         super(Cell, self).__init__(*args, **kw)
 
 
-class OCIDCell(_Model):
+class OCIDCell(CellMixin, BaseStationMixin, _Model):
     __tablename__ = 'ocid_cell'
     __table_args__ = (
+        PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
         Index('ocid_cell_created_idx', 'created'),
         {
             'mysql_engine': 'InnoDB',
@@ -148,28 +161,6 @@ class OCIDCell(_Model):
         }
     )
 
-    created = Column(DateTime)
-    modified = Column(DateTime)
-
-    # lat/lon
-    lat = Column(Double(asdecimal=False))
-    lon = Column(Double(asdecimal=False))
-
-    # radio mapped via RADIO_TYPE
-    radio = Column(TinyInteger,
-                   autoincrement=False, primary_key=True)
-    mcc = Column(SmallInteger,
-                 autoincrement=False, primary_key=True)
-    mnc = Column(SmallInteger,
-                 autoincrement=False, primary_key=True)
-    lac = Column(SmallInteger(unsigned=True),
-                 autoincrement=False, primary_key=True)
-    cid = Column(Integer(unsigned=True),
-                 autoincrement=False, primary_key=True)
-
-    psc = Column(SmallInteger)
-    range = Column(Integer)
-    total_measures = Column(Integer(unsigned=True))
     changeable = Column(Boolean)
 
     def __init__(self, *args, **kw):
@@ -206,29 +197,15 @@ class OCIDCell(_Model):
         return geocalc.add_meters_to_longitude(self.lat, self.lon, self.range)
 
 
-class CellArea(_Model):
+class CellArea(CellAreaMixin, _Model):
     __tablename__ = 'cell_area'
-
-    created = Column(DateTime)
-    modified = Column(DateTime)
-
-    # lat/lon
-    lat = Column(Double(asdecimal=False))
-    lon = Column(Double(asdecimal=False))
-
-    # radio mapped via RADIO_TYPE
-    radio = Column(TinyInteger,
-                   autoincrement=False, primary_key=True)
-    mcc = Column(SmallInteger,
-                 autoincrement=False, primary_key=True)
-    mnc = Column(SmallInteger,
-                 autoincrement=False, primary_key=True)
-    lac = Column(SmallInteger(unsigned=True),
-                 autoincrement=False, primary_key=True)
-
-    range = Column(Integer)
-    avg_cell_range = Column(Integer)
-    num_cells = Column(Integer(unsigned=True))
+    __table_args__ = (
+        PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+        }
+    )
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
@@ -244,29 +221,15 @@ class CellArea(_Model):
         super(CellArea, self).__init__(*args, **kw)
 
 
-class OCIDCellArea(_Model):
+class OCIDCellArea(CellAreaMixin, _Model):
     __tablename__ = 'ocid_cell_area'
-
-    created = Column(DateTime)
-    modified = Column(DateTime)
-
-    # lat/lon
-    lat = Column(Double(asdecimal=False))
-    lon = Column(Double(asdecimal=False))
-
-    # radio mapped via RADIO_TYPE
-    radio = Column(TinyInteger,
-                   autoincrement=False, primary_key=True)
-    mcc = Column(SmallInteger,
-                 autoincrement=False, primary_key=True)
-    mnc = Column(SmallInteger,
-                 autoincrement=False, primary_key=True)
-    lac = Column(SmallInteger(unsigned=True),
-                 autoincrement=False, primary_key=True)
-
-    range = Column(Integer)
-    avg_cell_range = Column(Integer)
-    num_cells = Column(Integer(unsigned=True))
+    __table_args__ = (
+        PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+        }
+    )
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
@@ -282,17 +245,15 @@ class OCIDCellArea(_Model):
         super(OCIDCellArea, self).__init__(*args, **kw)
 
 
-class CellBlacklist(_Model):
+class CellBlacklist(CellKeyMixin, StationBlacklistMixin, _Model):
     __tablename__ = 'cell_blacklist'
-
-    time = Column(DateTime)
-    radio = Column(TinyInteger, autoincrement=False, primary_key=True)
-    mcc = Column(SmallInteger, autoincrement=False, primary_key=True)
-    mnc = Column(SmallInteger, autoincrement=False, primary_key=True)
-    lac = Column(
-        SmallInteger(unsigned=True), autoincrement=False, primary_key=True)
-    cid = Column(Integer(unsigned=True), autoincrement=False, primary_key=True)
-    count = Column(Integer)
+    __table_args__ = (
+        PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
+        {
+            'mysql_engine': 'InnoDB',
+            'mysql_charset': 'utf8',
+        }
+    )
 
     def __init__(self, *args, **kw):
         if 'time' not in kw:

@@ -6,16 +6,17 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.mysql import (
-    BIGINT as BigInteger,
-    DOUBLE as Double,
-    INTEGER as Integer,
-)
 
-from ichnaea.models.sa_types import TZDateTime as DateTime
+from ichnaea.models.base import (
+    _Model,
+    BigIdMixin,
+)
+from ichnaea.models.station import (
+    StationMixin,
+    StationBlacklistMixin,
+)
 from ichnaea import util
 
-from ichnaea.models.base import _Model
 
 WifiKey = namedtuple('WifiKey', 'key')
 
@@ -33,7 +34,16 @@ def join_wifikey(model, k):
     return (model.key == k.key,)
 
 
-class Wifi(_Model):
+class WifiKeyMixin(object):
+
+    key = Column(String(12))
+
+
+class WifiMixin(BigIdMixin, WifiKeyMixin):
+    pass
+
+
+class Wifi(WifiMixin, StationMixin, _Model):
     __tablename__ = 'wifi'
     __table_args__ = (
         UniqueConstraint('key', name='wifi_key_unique'),
@@ -45,25 +55,6 @@ class Wifi(_Model):
             'mysql_charset': 'utf8',
         }
     )
-
-    id = Column(BigInteger(unsigned=True),
-                primary_key=True, autoincrement=True)
-    created = Column(DateTime)
-    modified = Column(DateTime)
-    key = Column(String(12))
-
-    # lat/lon
-    lat = Column(Double(asdecimal=False))
-    max_lat = Column(Double(asdecimal=False))
-    min_lat = Column(Double(asdecimal=False))
-
-    lon = Column(Double(asdecimal=False))
-    max_lon = Column(Double(asdecimal=False))
-    min_lon = Column(Double(asdecimal=False))
-
-    range = Column(Integer)
-    new_measures = Column(Integer(unsigned=True))
-    total_measures = Column(Integer(unsigned=True))
 
     def __init__(self, *args, **kw):
         if 'created' not in kw:
@@ -77,7 +68,7 @@ class Wifi(_Model):
         super(Wifi, self).__init__(*args, **kw)
 
 
-class WifiBlacklist(_Model):
+class WifiBlacklist(WifiMixin, StationBlacklistMixin, _Model):
     __tablename__ = 'wifi_blacklist'
     __table_args__ = (
         UniqueConstraint('key', name='wifi_blacklist_key_unique'),
@@ -86,11 +77,6 @@ class WifiBlacklist(_Model):
             'mysql_charset': 'utf8',
         }
     )
-    id = Column(BigInteger(unsigned=True),
-                primary_key=True, autoincrement=True)
-    time = Column(DateTime)
-    key = Column(String(12))
-    count = Column(Integer)
 
     def __init__(self, *args, **kw):
         if 'time' not in kw:

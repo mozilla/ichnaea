@@ -7,7 +7,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.mysql import BIGINT as BigInteger
 
-from ichnaea.models.base import _Model
+from ichnaea.models.base import (
+    _Model,
+    BigIdMixin,
+)
 from ichnaea.models.observation import (
     CellMeasure,
     WifiMeasure,
@@ -33,7 +36,7 @@ MEASURE_TYPE_META = {
 }
 
 
-class MeasureBlock(_Model):
+class MeasureBlock(BigIdMixin, _Model):
     __tablename__ = 'measure_block'
     __table_args__ = (
         Index('idx_measure_block_archive_date', 'archive_date'),
@@ -46,9 +49,7 @@ class MeasureBlock(_Model):
             'mysql_key_block_size': '4',
         }
     )
-    id = Column(BigInteger(unsigned=True),
-                primary_key=True,
-                autoincrement=True)
+
     measure_type = Column(TinyIntEnum(MeasureType))
     s3_key = Column(String(80))
     archive_date = Column(DateTime)
