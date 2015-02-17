@@ -41,6 +41,7 @@ class TestGeolocate(AppTestCase):
         cell.mnc = 1
         cell.lac = 2
         cell.cid = 1234
+        cell.range = 1000
         session.add(cell)
         session.commit()
 
@@ -136,7 +137,7 @@ class TestGeolocate(AppTestCase):
         app = self.app
         session = self.get_session()
         cell = Cell(
-            lat=PARIS_LAT, lon=PARIS_LON,
+            lat=PARIS_LAT, lon=PARIS_LON, range=1000,
             radio=RADIO_TYPE['gsm'], mcc=FRANCE_MCC, mnc=1, lac=2, cid=3)
         session.add(cell)
         session.commit()
@@ -231,6 +232,7 @@ class TestGeolocate(AppTestCase):
         session.add(Cell(
             lat=PARIS_LAT,
             lon=PARIS_LON,
+            range=1000,
             radio=RADIO_TYPE['gsm'], **key)
         )
         session.commit()
@@ -259,6 +261,7 @@ class TestGeolocate(AppTestCase):
         session.add(Cell(
             lat=PARIS_LAT,
             lon=PARIS_LON,
+            range=1000,
             radio=RADIO_TYPE['gsm'], **key)
         )
         session.commit()
@@ -371,6 +374,7 @@ class TestGeolocateFxOSWorkarounds(AppTestCase):
         cell.mnc = 1
         cell.lac = 2
         cell.cid = 1234
+        cell.range = 1000
         session.add(cell)
         session.commit()
 
@@ -407,6 +411,7 @@ class TestGeolocateFxOSWorkarounds(AppTestCase):
         cell.mnc = 1
         cell.lac = 2
         cell.cid = 1234
+        cell.range = 1000
         session.add(cell)
         session.commit()
         res = app.post_json(

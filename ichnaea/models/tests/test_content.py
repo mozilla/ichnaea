@@ -12,12 +12,6 @@ from ichnaea import util
 
 class TestMapStat(DBTestCase):
 
-    def test_constructor(self):
-        stat = MapStat()
-        self.assertTrue(stat.time is None)
-        self.assertTrue(stat.lat is None)
-        self.assertTrue(stat.lon is None)
-
     def test_fields(self):
         today = util.utcnow().date()
         stat = MapStat(lat=12345, lon=-23456, time=today)
@@ -32,12 +26,6 @@ class TestMapStat(DBTestCase):
 
 
 class TestScore(DBTestCase):
-
-    def test_constructor(self):
-        utcday = util.utcnow().date()
-        score = Score()
-        self.assertTrue(score.id is None)
-        self.assertEqual(score.time, utcday)
 
     def test_fields(self):
         utcday = util.utcnow().date()
@@ -66,10 +54,6 @@ class TestScore(DBTestCase):
 
 class TestStat(DBTestCase):
 
-    def test_constructor(self):
-        stat = Stat()
-        self.assertTrue(stat.id is None)
-
     def test_fields(self):
         utcday = util.utcnow().date()
         stat = Stat(key=StatKey.cell, time=utcday, value=13)
@@ -95,10 +79,6 @@ class TestStat(DBTestCase):
 
 
 class TestUser(DBTestCase):
-
-    def test_constructor(self):
-        user = User()
-        self.assertTrue(user.id is None)
 
     def test_fields(self):
         nickname = u'World Tr\xc3\xa4veler'

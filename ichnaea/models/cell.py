@@ -23,7 +23,6 @@ from ichnaea.models.station import (
     StationMixin,
     StationBlacklistMixin,
 )
-from ichnaea import util
 
 CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
 CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
@@ -130,16 +129,6 @@ class Cell(CellMixin, StationMixin, _Model):
     )
 
     def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = util.utcnow()
-        if 'modified' not in kw:
-            kw['modified'] = util.utcnow()
-        if 'lac' not in kw or not kw['lac']:
-            kw['lac'] = 0
-        if 'cid' not in kw or not kw['cid']:
-            kw['cid'] = 0
-        if 'range' not in kw:
-            kw['range'] = 0
         if 'new_measures' not in kw:
             kw['new_measures'] = 0
         if 'total_measures' not in kw:
@@ -156,23 +145,6 @@ class OCIDCell(CellMixin, BaseStationMixin, _Model):
     )
 
     changeable = Column(Boolean)
-
-    def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = util.utcnow()
-        if 'modified' not in kw:
-            kw['modified'] = util.utcnow()
-        if 'lac' not in kw or not kw['lac']:
-            kw['lac'] = 0
-        if 'cid' not in kw or not kw['cid']:
-            kw['cid'] = 0
-        if 'range' not in kw:
-            kw['range'] = 0
-        if 'total_measures' not in kw:
-            kw['total_measures'] = 0
-        if 'changeable' not in kw:
-            kw['changeable'] = True
-        super(OCIDCell, self).__init__(*args, **kw)
 
     @property
     def min_lat(self):
@@ -198,19 +170,6 @@ class CellArea(CellAreaMixin, _Model):
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac'),
     )
 
-    def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = util.utcnow()
-        if 'modified' not in kw:
-            kw['modified'] = util.utcnow()
-        if 'range' not in kw:
-            kw['range'] = 0
-        if 'avg_cell_range' not in kw:
-            kw['avg_cell_range'] = 0
-        if 'num_cells' not in kw:
-            kw['num_cells'] = 0
-        super(CellArea, self).__init__(*args, **kw)
-
 
 class OCIDCellArea(CellAreaMixin, _Model):
     __tablename__ = 'ocid_cell_area'
@@ -219,19 +178,6 @@ class OCIDCellArea(CellAreaMixin, _Model):
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac'),
     )
 
-    def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = util.utcnow()
-        if 'modified' not in kw:
-            kw['modified'] = util.utcnow()
-        if 'range' not in kw:
-            kw['range'] = 0
-        if 'avg_cell_range' not in kw:
-            kw['avg_cell_range'] = 0
-        if 'num_cells' not in kw:
-            kw['num_cells'] = 0
-        super(OCIDCellArea, self).__init__(*args, **kw)
-
 
 class CellBlacklist(CellKeyMixin, StationBlacklistMixin, _Model):
     __tablename__ = 'cell_blacklist'
@@ -239,13 +185,6 @@ class CellBlacklist(CellKeyMixin, StationBlacklistMixin, _Model):
     _indices = (
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
     )
-
-    def __init__(self, *args, **kw):
-        if 'time' not in kw:
-            kw['time'] = util.utcnow()
-        if 'count' not in kw:
-            kw['count'] = 1
-        super(CellBlacklist, self).__init__(*args, **kw)
 
 
 CELL_MODEL_KEYS = {

@@ -35,6 +35,7 @@ class TestGeoSubmit(CeleryAppTestCase):
         cell.mnc = 1
         cell.lac = 2
         cell.cid = 1234
+        cell.range = 10000
         cell.total_measures = 1
         cell.new_measures = 0
 
@@ -273,6 +274,7 @@ class TestGeoSubmitBatch(CeleryAppTestCase):
         cell.mnc = 1
         cell.lac = 2
         cell.cid = 1234
+        cell.range = 10000
         cell.total_measures = 1
         cell.new_measures = 0
 
@@ -334,6 +336,7 @@ class TestGeoSubmitBatch(CeleryAppTestCase):
         cell.mnc = 1
         cell.lac = 2
         cell.cid = 1234
+        cell.range = 10000
         cell.total_measures = 1
         cell.new_measures = 0
 

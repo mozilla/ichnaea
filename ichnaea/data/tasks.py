@@ -104,15 +104,18 @@ def blacklist_and_remove_moving_stations(session, blacklist_model,
         key = to_key(station)
         query = session.query(blacklist_model).filter(
             *join_key(blacklist_model, key))
-        b = query.first()
-        d = key._asdict()
-        moving_keys.append(d)
-        if b:
-            b.time = utcnow
-            b.count += 1
+        blacklisted_station = query.first()
+        station_key = key._asdict()
+        moving_keys.append(station_key)
+        if blacklisted_station:
+            blacklisted_station.time = utcnow
+            blacklisted_station.count += 1
         else:
-            b = blacklist_model(**d)
-            session.add(b)
+            blacklisted_station = blacklist_model(
+                time=utcnow,
+                count=1,
+                **station_key)
+            session.add(blacklisted_station)
 
     if moving_keys:
         get_stats_client().incr("items.blacklisted.%s_moving" % station_type,
@@ -253,6 +256,8 @@ def create_or_update_station(session, key, station_model,
                          'total_measures = total_measures + %s' % (num, num)
         ).values(
             created=created,
+            modified=utcnow,
+            range=0,
             new_measures=num,
             total_measures=num,
             **key._asdict())

@@ -18,7 +18,6 @@ from ichnaea.models.base import (
 from ichnaea.models.cell import CellKeyPscMixin
 from ichnaea.models.wifi import WifiKeyMixin
 from ichnaea.models.sa_types import TZDateTime as DateTime
-from ichnaea import util
 
 
 class ReportMixin(PositionMixin):
@@ -55,11 +54,6 @@ class CellMeasure(ObservationMixin, CellKeyPscMixin, _Model):
     asu = Column(SmallInteger)
     ta = Column(TinyInteger)
 
-    def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = util.utcnow()
-        super(CellMeasure, self).__init__(*args, **kw)
-
 
 class WifiMeasure(ObservationMixin, WifiKeyMixin, _Model):
     __tablename__ = 'wifi_measure'
@@ -72,8 +66,3 @@ class WifiMeasure(ObservationMixin, WifiKeyMixin, _Model):
 
     channel = Column(SmallInteger)
     snr = Column(SmallInteger)
-
-    def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = util.utcnow()
-        super(WifiMeasure, self).__init__(*args, **kw)

@@ -84,6 +84,7 @@ class TestCell(CeleryTestCase):
         scan_lacs.delay()
 
     def test_blacklist(self):
+        now = util.utcnow()
         session = self.db_master_session
 
         measures = [dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=i, psc=5,
@@ -93,7 +94,7 @@ class TestCell(CeleryTestCase):
 
         black = CellBlacklist(
             mcc=FRANCE_MCC, mnc=2, lac=3, cid=1,
-            radio=RADIO_TYPE['gsm'],
+            radio=RADIO_TYPE['gsm'], time=now, count=1,
         )
         session.add(black)
         session.flush()
@@ -144,7 +145,7 @@ class TestCell(CeleryTestCase):
             CellMeasure(lat=-4.0, lon=4.0, **k4),
             CellMeasure(lat=-6.0, lon=4.0, **k4),
             # an already blacklisted cell
-            CellBlacklist(**k5),
+            CellBlacklist(time=now, count=1, **k5),
             CellMeasure(lat=5.0, lon=5.0, **k5),
             CellMeasure(lat=8.0, lon=5.0, **k5),
             # a cell with an old different record we ignore, position
@@ -301,7 +302,7 @@ class TestCell(CeleryTestCase):
         cell_key = {'radio': RADIO_TYPE['gsm'], 'mcc': FRANCE_MCC,
                     'mnc': 2, 'lac': 3, 'cid': 1}
 
-        session.add(CellBlacklist(time=last_week, **cell_key))
+        session.add(CellBlacklist(time=last_week, count=1, **cell_key))
         session.flush()
 
         # add a new entry for the previously blacklisted cell
@@ -318,12 +319,14 @@ class TestCell(CeleryTestCase):
     def test_insert_measures(self):
         session = self.db_master_session
         time = util.utcnow() - timedelta(days=1)
+        today = util.utcnow().date()
         mcc = FRANCE_MCC
 
         session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=mcc, mnc=2, lac=3,
                          cid=4, psc=5, new_measures=2,
                          total_measures=5))
-        session.add(Score(userid=1, key=ScoreKey.new_cell, value=7))
+        session.add(Score(key=ScoreKey.new_cell,
+                          userid=1, time=today, value=7))
         session.flush()
 
         measure = dict(
@@ -383,10 +386,12 @@ class TestCell(CeleryTestCase):
         session = self.db_master_session
         schema = ValidCellBaseSchema()
         time = util.utcnow() - timedelta(days=1)
+        today = util.utcnow().date()
 
         session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=FRANCE_MCC, mnc=2,
                          lac=3, cid=4, new_measures=2, total_measures=5))
-        session.add(Score(userid=1, key=ScoreKey.new_cell, value=7))
+        session.add(Score(key=ScoreKey.new_cell,
+                          userid=1, time=today, value=7))
         session.flush()
 
         measure = dict(
@@ -490,12 +495,12 @@ class TestCell(CeleryTestCase):
                   cid=schema.fields['cid'].missing)
         data = [
             Cell(new_measures=3, total_measures=5, **k1),
-            CellMeasure(lat=1.0, lon=1.0, **k1),
-            CellMeasure(lat=1.002, lon=1.003, **k1),
-            CellMeasure(lat=1.004, lon=1.006, **k1),
+            CellMeasure(lat=1.0, lon=1.0, created=now, **k1),
+            CellMeasure(lat=1.002, lon=1.003, created=now, **k1),
+            CellMeasure(lat=1.004, lon=1.006, created=now, **k1),
             # The lac, cid are invalid and should be skipped
-            CellMeasure(lat=1.5, lon=1.5, **k3),
-            CellMeasure(lat=1.502, lon=1.503, **k3),
+            CellMeasure(lat=1.5, lon=1.5, created=now, **k3),
+            CellMeasure(lat=1.502, lon=1.503, created=now, **k3),
 
             Cell(lat=2.0, lon=2.0,
                  new_measures=2, total_measures=4, **k2),
@@ -503,8 +508,8 @@ class TestCell(CeleryTestCase):
             # to make sure old measures are skipped
             CellMeasure(lat=-1.0, lon=-1.0, created=before, **k2),
             CellMeasure(lat=-1.0, lon=-1.0, created=before, **k2),
-            CellMeasure(lat=2.002, lon=2.004, **k2),
-            CellMeasure(lat=2.002, lon=2.004, **k2),
+            CellMeasure(lat=2.002, lon=2.004, created=now, **k2),
+            CellMeasure(lat=2.002, lon=2.004, created=now, **k2),
 
         ]
         session.add_all(data)
@@ -743,10 +748,11 @@ class TestCell(CeleryTestCase):
 class TestWifi(CeleryTestCase):
 
     def test_blacklist(self):
+        utcnow = util.utcnow()
         session = self.db_master_session
         bad_key = "ab1234567890"
         good_key = "cd1234567890"
-        black = WifiBlacklist(key=bad_key)
+        black = WifiBlacklist(time=utcnow, count=1, key=bad_key)
         session.add(black)
         session.flush()
         measure = dict(lat=1, lon=2)
@@ -802,7 +808,7 @@ class TestWifi(CeleryTestCase):
             WifiMeasure(lat=-4.1, lon=4, key=k4),
             WifiMeasure(lat=-4.16, lon=4, key=k4),
             # an already blacklisted wifi
-            WifiBlacklist(key=k5),
+            WifiBlacklist(key=k5, time=now, count=1),
             WifiMeasure(lat=5.0, lon=5.0, key=k5),
             WifiMeasure(lat=5.1, lon=5.0, key=k5),
             # a wifi with an old different record we ignore, position
@@ -949,7 +955,7 @@ class TestWifi(CeleryTestCase):
 
         wifi_key = "ab1234567890"
 
-        session.add(WifiBlacklist(time=last_week, key=wifi_key))
+        session.add(WifiBlacklist(time=last_week, count=1, key=wifi_key))
         session.flush()
 
         # add a new entry for the previously blacklisted wifi
@@ -966,9 +972,12 @@ class TestWifi(CeleryTestCase):
     def test_insert_measures(self):
         session = self.db_master_session
         time = util.utcnow() - timedelta(days=1)
+        today = util.utcnow().date()
 
-        session.add(Wifi(key="ab1234567890"))
-        session.add(Score(userid=1, key=ScoreKey.new_wifi, value=7))
+        session.add(Wifi(key="ab1234567890",
+                         new_measures=0, total_measures=0))
+        session.add(Score(key=ScoreKey.new_wifi,
+                          userid=1, time=today, value=7))
         session.flush()
 
         measure = dict(
@@ -1052,9 +1061,9 @@ class TestWifi(CeleryTestCase):
         k2 = "cd1234567890"
         data = [
             Wifi(key=k1, new_measures=3, total_measures=3),
-            WifiMeasure(lat=1.0, lon=1.0, key=k1),
-            WifiMeasure(lat=1.002, lon=1.003, key=k1),
-            WifiMeasure(lat=1.004, lon=1.006, key=k1),
+            WifiMeasure(lat=1.0, lon=1.0, key=k1, created=now),
+            WifiMeasure(lat=1.002, lon=1.003, key=k1, created=now),
+            WifiMeasure(lat=1.004, lon=1.006, key=k1, created=now),
             Wifi(key=k2, lat=2.0, lon=2.0,
                  new_measures=2, total_measures=4),
             # the lat/lon is bogus and mismatches the line above on purpose

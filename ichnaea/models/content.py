@@ -12,7 +12,6 @@ from ichnaea.models.base import (
     IdMixin,
 )
 from ichnaea.models.sa_types import TinyIntEnum
-from ichnaea import util
 
 
 class ScoreKey(IntEnum):
@@ -59,11 +58,6 @@ class Score(IdMixin, _Model):
     key = Column(TinyIntEnum(ScoreKey))
     time = Column(Date)
     value = Column(Integer)
-
-    def __init__(self, *args, **kw):
-        if 'time' not in kw:
-            kw['time'] = util.utcnow().date()
-        super(Score, self).__init__(*args, **kw)
 
 
 class Stat(IdMixin, _Model):

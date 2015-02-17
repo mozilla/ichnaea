@@ -11,11 +11,6 @@ from ichnaea.tests.base import DBTestCase
 
 class TestCell(DBTestCase):
 
-    def test_constructor(self):
-        cell = Cell()
-        self.assertEqual(cell.new_measures, 0)
-        self.assertEqual(cell.total_measures, 0)
-
     def test_fields(self):
         cell = Cell(
             radio=RADIO_TYPE['gsm'], mcc=100, mnc=5, lac=1234, cid=23456,
@@ -37,12 +32,6 @@ class TestCell(DBTestCase):
 
 
 class TestCellArea(DBTestCase):
-
-    def test_constructor(self):
-        cell = CellArea()
-        self.assertEqual(cell.range, 0)
-        self.assertEqual(cell.avg_cell_range, 0)
-        self.assertEqual(cell.num_cells, 0)
 
     def test_fields(self):
         cell = CellArea(
@@ -68,10 +57,6 @@ class TestCellArea(DBTestCase):
 
 class TestCellBlacklist(DBTestCase):
 
-    def test_constructor(self):
-        cell = CellBlacklist()
-        self.assertEqual(cell.count, 1)
-
     def test_fields(self):
         cell = CellBlacklist(
             radio=RADIO_TYPE['lte'], mcc=100, mnc=5, lac=1234, cid=23456,
@@ -90,10 +75,6 @@ class TestCellBlacklist(DBTestCase):
 
 
 class TestOCIDCell(DBTestCase):
-
-    def test_constructor(self):
-        cell = OCIDCell()
-        self.assertEqual(cell.total_measures, 0)
 
     def test_fields(self):
         cell = OCIDCell(
@@ -120,12 +101,6 @@ class TestOCIDCell(DBTestCase):
 
 
 class TestOCIDCellArea(DBTestCase):
-
-    def test_constructor(self):
-        cell = OCIDCellArea()
-        self.assertEqual(cell.range, 0)
-        self.assertEqual(cell.avg_cell_range, 0)
-        self.assertEqual(cell.num_cells, 0)
 
     def test_fields(self):
         cell = OCIDCellArea(

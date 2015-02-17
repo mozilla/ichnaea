@@ -233,8 +233,10 @@ class TestSubmit(CeleryAppTestCase):
         user = User(nickname=nickname.decode('utf-8'))
         session.add(user)
         session.flush()
-        session.add(Score(userid=user.id, key=ScoreKey.location, value=7))
-        session.add(Score(userid=user.id, key=ScoreKey.new_wifi, value=3))
+        session.add(Score(key=ScoreKey.location,
+                          userid=user.id, time=utcday, value=7))
+        session.add(Score(key=ScoreKey.new_wifi,
+                          userid=user.id, time=utcday, value=3))
         session.commit()
         app.post_json(
             '/v1/submit', {"items": [

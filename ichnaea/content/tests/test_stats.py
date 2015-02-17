@@ -114,6 +114,7 @@ class TestStats(DBTestCase):
 
     def test_leaders(self):
         session = self.db_master_session
+        today = util.utcnow().date()
         test_data = []
         for i in range(20):
             test_data.append((u'nick-%s' % i, 30))
@@ -126,7 +127,8 @@ class TestStats(DBTestCase):
             user = User(nickname=nick)
             session.add(user)
             session.flush()
-            score = Score(key=ScoreKey.location, userid=user.id, value=value)
+            score = Score(key=ScoreKey.location,
+                          userid=user.id, time=today, value=value)
             session.add(score)
         session.commit()
         # check the result
@@ -138,6 +140,7 @@ class TestStats(DBTestCase):
 
     def test_leaders_weekly(self):
         session = self.db_master_session
+        today = util.utcnow().date()
         test_data = []
         for i in range(1, 11):
             test_data.append((u'nick-%s' % i, i))
@@ -146,10 +149,10 @@ class TestStats(DBTestCase):
             session.add(user)
             session.flush()
             score = Score(key=ScoreKey.new_cell,
-                          userid=user.id, value=value)
+                          userid=user.id, time=today, value=value)
             session.add(score)
             score = Score(key=ScoreKey.new_wifi,
-                          userid=user.id, value=21 - value)
+                          userid=user.id, time=today, value=21 - value)
             session.add(score)
         session.commit()
 
@@ -176,16 +179,17 @@ class TestStats(DBTestCase):
 
     def test_countries(self):
         session = self.db_master_session
+        cell_key = {'lac': 1, 'cid': 1}
         test_data = [
-            Cell(radio=RADIO_TYPE[''], mcc=208, mnc=1),
-            Cell(radio=RADIO_TYPE['gsm'], mcc=1, mnc=1),
-            Cell(radio=RADIO_TYPE['lte'], mcc=262, mnc=1),
-            Cell(radio=RADIO_TYPE['gsm'], mcc=310, mnc=1),
-            Cell(radio=RADIO_TYPE['gsm'], mcc=310, mnc=2),
-            Cell(radio=RADIO_TYPE['gsm'], mcc=313, mnc=1),
-            Cell(radio=RADIO_TYPE['cdma'], mcc=310, mnc=1),
-            Cell(radio=RADIO_TYPE['umts'], mcc=244, mnc=1),
-            Cell(radio=RADIO_TYPE['lte'], mcc=244, mnc=1),
+            Cell(radio=RADIO_TYPE[''], mcc=208, mnc=1, **cell_key),
+            Cell(radio=RADIO_TYPE['gsm'], mcc=1, mnc=1, **cell_key),
+            Cell(radio=RADIO_TYPE['lte'], mcc=262, mnc=1, **cell_key),
+            Cell(radio=RADIO_TYPE['gsm'], mcc=310, mnc=1, **cell_key),
+            Cell(radio=RADIO_TYPE['gsm'], mcc=310, mnc=2, **cell_key),
+            Cell(radio=RADIO_TYPE['gsm'], mcc=313, mnc=1, **cell_key),
+            Cell(radio=RADIO_TYPE['cdma'], mcc=310, mnc=1, **cell_key),
+            Cell(radio=RADIO_TYPE['umts'], mcc=244, mnc=1, **cell_key),
+            Cell(radio=RADIO_TYPE['lte'], mcc=244, mnc=1, **cell_key),
         ]
         session.add_all(test_data)
         session.commit()

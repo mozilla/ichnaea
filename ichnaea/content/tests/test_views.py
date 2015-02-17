@@ -266,13 +266,16 @@ class TestFunctionalContentViews(AppTestCase):
 
     def test_leaders_weekly(self):
         session = self.db_master_session
+        today = util.utcnow().date()
         for i in range(3):
             user = User(nickname=unicode(i))
             session.add(user)
             session.flush()
-            score1 = Score(key=ScoreKey.new_cell, userid=user.id, value=i)
+            score1 = Score(key=ScoreKey.new_cell,
+                           userid=user.id, time=today, value=i)
             session.add(score1)
-            score2 = Score(key=ScoreKey.new_wifi, userid=user.id, value=i)
+            score2 = Score(key=ScoreKey.new_wifi,
+                           userid=user.id, time=today, value=i)
             session.add(score2)
         session.commit()
         request = DummyRequest()

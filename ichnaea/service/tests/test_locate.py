@@ -147,7 +147,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         gsm = RADIO_TYPE['gsm']
         london = self.geoip_data['London']
         cell = {'radio': gsm, 'mcc': GB_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
-        session.add(Cell(**cell))
+        session.add(Cell(range=1000, **cell))
         session.flush()
 
         result = self._make_query(data={'cell': [cell]},
@@ -170,9 +170,10 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         bhutan = self.geoip_data['Bhutan']
         key = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
         key2 = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1, }
-        session.add(Cell(radio=gsm, lat=FREMONT_LAT, lon=FREMONT_LON, **key))
+        session.add(Cell(radio=gsm, lat=FREMONT_LAT, lon=FREMONT_LON,
+                         range=1000, **key))
         session.add(CellArea(radio=gsm, lat=FREMONT_LAT,
-                             lon=FREMONT_LON, **key2))
+                             lon=FREMONT_LON, range=10000, **key2))
         session.flush()
 
         result = self._make_query(data={'cell': [dict(radio='gsm', **key)]},
@@ -217,7 +218,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
             dict(mcc=USA_MCC, **cell_key),
         ]
         for cell in cells:
-            session.add(Cell(**cell))
+            session.add(Cell(range=1000, **cell))
         session.flush()
 
         result = self._make_query(data={'cell': cells},
@@ -244,7 +245,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
             dict(mcc=USA_MCC, **cell_key),
         ]
         # Only add the matching cell to the DB
-        session.add(Cell(**cells[0]))
+        session.add(Cell(range=1000, **cells[0]))
         session.flush()
 
         result = self._make_query(data={'cell': cells},
@@ -329,9 +330,12 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         lon = PARIS_LON
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
-            Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
-            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=2, cid=5, **key),
-            Cell(lat=lat + 0.006, lon=lon + 0.006, radio=2, cid=6, **key),
+            Cell(lat=lat, lon=lon, range=1000,
+                 radio=2, cid=4, **key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, range=1000,
+                 radio=2, cid=5, **key),
+            Cell(lat=lat + 0.006, lon=lon + 0.006, range=1000,
+                 radio=2, cid=6, **key),
             CellArea(lat=lat + 0.0026666,
                      lon=lon + 0.0033333, radio=2,
                      range=50000, **key),
@@ -382,10 +386,14 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
             cid=schema.fields['cid'].missing)
 
         data = [
-            Cell(lat=lat, lon=lon, radio=gsm, cid=4, **key),
-            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=gsm, cid=5, **key),
-            Cell(lat=lat, lon=lon, radio=gsm, **ignored_key),
-            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=lte, **ignored_key),
+            Cell(lat=lat, lon=lon, range=1000,
+                 radio=gsm, cid=4, **key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, range=1000,
+                 radio=gsm, cid=5, **key),
+            Cell(lat=lat, lon=lon, range=1000,
+                 radio=gsm, **ignored_key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, range=1000,
+                 radio=lte, **ignored_key),
         ]
         session.add_all(data)
         session.flush()
@@ -523,8 +531,10 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
             Wifi(key="a0a0a0a0a0a0", lat=3, lon=3),
-            Cell(lat=lat, lon=lon, radio=umts, cid=4, **key),
-            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=umts, cid=5, **key),
+            Cell(lat=lat, lon=lon, range=1000,
+                 radio=umts, cid=4, **key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, range=1000,
+                 radio=umts, cid=5, **key),
         ]
         session.add_all(data)
         session.flush()
@@ -624,9 +634,11 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         data = [
             Cell(lat=PORTO_ALEGRE_LAT,
                  lon=PORTO_ALEGRE_LON,
+                 range=1000,
                  radio=RADIO_TYPE['gsm'], cid=6789, **key),
             CellArea(lat=SAO_PAULO_LAT,
                      lon=SAO_PAULO_LON,
+                     range=10000,
                      radio=RADIO_TYPE['gsm'], **key),
         ]
         session.add_all(data)
@@ -667,6 +679,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
             Wifi(lat=lat, lon=lon, **wifi3),
             CellArea(lat=SAO_PAULO_LAT,
                      lon=SAO_PAULO_LON,
+                     range=10000,
                      radio=RADIO_TYPE['gsm'], **key),
         ]
         session.add_all(data)
@@ -709,6 +722,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
             Wifi(lat=lat, lon=lon, **wifi3),
             Cell(lat=SAO_PAULO_LAT,
                  lon=SAO_PAULO_LON,
+                 range=1000,
                  radio=RADIO_TYPE['gsm'], cid=6789, **key),
         ]
         session.add_all(data)
@@ -744,9 +758,11 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         data = [
             Cell(lat=SAO_PAULO_LAT + 0.002,
                  lon=SAO_PAULO_LON + 0.002,
+                 range=1000,
                  radio=RADIO_TYPE['gsm'], cid=6789, **key),
             CellArea(lat=SAO_PAULO_LAT,
                      lon=SAO_PAULO_LON,
+                     range=10000,
                      radio=RADIO_TYPE['gsm'], **key),
         ]
         session.add_all(data)
@@ -786,6 +802,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
             Wifi(lat=lat, lon=lon, **wifi3),
             Cell(lat=SAO_PAULO_LAT,
                  lon=SAO_PAULO_LON,
+                 range=1000,
                  radio=RADIO_TYPE['gsm'], cid=6789, **key),
         ]
         session.add_all(data)
@@ -827,6 +844,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
             Wifi(lat=lat, lon=lon, **wifi3),
             CellArea(lat=SAO_PAULO_LAT,
                      lon=SAO_PAULO_LON,
+                     range=10000,
                      radio=RADIO_TYPE['gsm'], **key),
         ]
         session.add_all(data)
@@ -868,9 +886,11 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
             Wifi(lat=lat, lon=lon, **wifi3),
             Cell(lat=SAO_PAULO_LAT,
                  lon=SAO_PAULO_LON,
+                 range=1000,
                  radio=RADIO_TYPE['gsm'], cid=6789, **key),
             CellArea(lat=SAO_PAULO_LAT,
                      lon=SAO_PAULO_LON,
+                     range=10000,
                      radio=RADIO_TYPE['gsm'], **key),
         ]
         session.add_all(data)

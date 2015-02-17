@@ -28,8 +28,10 @@ class TestSearch(AppTestCase):
         lat = PARIS_LAT
         lon = PARIS_LON
         data = [
-            Cell(lat=lat, lon=lon, radio=2, cid=4, **key),
-            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=2, cid=5, **key),
+            Cell(lat=lat, lon=lon, range=1000,
+                 radio=2, cid=4, **key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, range=1000,
+                 radio=2, cid=5, **key),
         ]
         session.add_all(data)
         session.commit()
@@ -226,6 +228,7 @@ class TestSearch(AppTestCase):
         session.add(Cell(
             lat=PARIS_LAT,
             lon=PARIS_LON,
+            range=1000,
             radio=RADIO_TYPE['umts'], **key)
         )
         session.commit()
@@ -246,6 +249,7 @@ class TestSearch(AppTestCase):
         session.add(Cell(
             lat=PARIS_LAT,
             lon=PARIS_LON,
+            range=1000,
             radio=RADIO_TYPE['umts'], **key)
         )
         session.commit()

@@ -1,5 +1,3 @@
-import datetime
-
 from sqlalchemy.exc import IntegrityError
 
 from ichnaea.models.wifi import (
@@ -10,12 +8,6 @@ from ichnaea.tests.base import DBTestCase
 
 
 class TestWifi(DBTestCase):
-
-    def test_constructor(self):
-        wifi = Wifi()
-        self.assertTrue(wifi.key is None)
-        self.assertEqual(wifi.new_measures, 0)
-        self.assertEqual(wifi.total_measures, 0)
 
     def test_fields(self):
         key = "3680873e9b83"
@@ -38,23 +30,16 @@ class TestWifi(DBTestCase):
 
 class TestWifiBlacklist(DBTestCase):
 
-    def test_constructor(self):
-        wifi = WifiBlacklist()
-        self.assertTrue(wifi.key is None)
-        self.assertTrue(wifi.time is not None)
-        self.assertTrue(wifi.count is not None)
-
     def test_fields(self):
         key = "3680873e9b83"
-        wifi = WifiBlacklist(key=key)
+        wifi = WifiBlacklist(key=key, count=2)
         session = self.db_master_session
         session.add(wifi)
         session.commit()
 
         result = session.query(wifi.__class__).first()
         self.assertEqual(result.key, key)
-        self.assertTrue(isinstance(result.time, datetime.datetime))
-        self.assertTrue(isinstance(result.count, int))
+        self.assertEqual(result.count, 2)
 
     def test_unique_key(self):
         key = "3680873e9b83"

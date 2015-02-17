@@ -4,11 +4,6 @@ from ichnaea.tests.base import DBTestCase
 
 class TestApiKey(DBTestCase):
 
-    def test_constructor(self):
-        key = ApiKey(valid_key='foo')
-        self.assertEqual(key.valid_key, 'foo')
-        self.assertEqual(key.maxreq, None)
-
     def test_fields(self):
         key = ApiKey(
             valid_key='foo-bar', maxreq=10, shortname='foo',

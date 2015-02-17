@@ -1,4 +1,3 @@
-import datetime
 import uuid
 
 from ichnaea.models.constants import RADIO_TYPE
@@ -10,10 +9,6 @@ from ichnaea.tests.base import DBTestCase
 
 
 class TestCellMeasure(DBTestCase):
-
-    def test_constructor(self):
-        cell = CellMeasure()
-        self.assertTrue(isinstance(cell.created, datetime.datetime))
 
     def test_fields(self):
         report_id = uuid.uuid1().bytes
@@ -36,7 +31,6 @@ class TestCellMeasure(DBTestCase):
 
         result = session.query(CellMeasure).first()
         self.assertEqual(result.report_id, report_id)
-        self.assertTrue(isinstance(result.created, datetime.datetime))
         self.assertEqual(result.lat, 1.2345678)
         self.assertEqual(result.lon, 2.3456789)
         self.assertEqual(result.radio, RADIO_TYPE['gsm'])
@@ -50,10 +44,6 @@ class TestCellMeasure(DBTestCase):
 
 
 class TestWifiMeasure(DBTestCase):
-
-    def test_constructor(self):
-        wifi = WifiMeasure()
-        self.assertTrue(wifi.id is None)
 
     def test_fields(self):
         key = "3680873e9b83"
@@ -72,7 +62,6 @@ class TestWifiMeasure(DBTestCase):
 
         result = session.query(WifiMeasure).first()
         self.assertEqual(result.report_id, report_id)
-        self.assertTrue(isinstance(result.created, datetime.datetime))
         self.assertEqual(result.lat, 1.2345678)
         self.assertEqual(result.lon, 2.3456789)
         self.assertEqual(result.key, key)

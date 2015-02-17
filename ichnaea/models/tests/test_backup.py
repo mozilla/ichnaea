@@ -10,10 +10,6 @@ from ichnaea import util
 
 class TestMeasureBlock(DBTestCase):
 
-    def test_constructor(self):
-        block = MeasureBlock()
-        self.assertTrue(block.id is None)
-
     def test_fiels(self):
         archive_sha = sha1().digest()
         now = util.utcnow()

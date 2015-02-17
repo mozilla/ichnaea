@@ -218,6 +218,7 @@ def import_stations(session, filename, fields):
         lacs = set()
         ins = OCIDCell.__table__.insert(
             on_duplicate=((
+                'changeable = values(changeable), '
                 'modified = values(modified), '
                 'total_measures = values(total_measures), '
                 'lat = values(lat), '

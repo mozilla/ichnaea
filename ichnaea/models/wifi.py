@@ -15,8 +15,6 @@ from ichnaea.models.station import (
     StationMixin,
     StationBlacklistMixin,
 )
-from ichnaea import util
-
 
 WifiKey = namedtuple('WifiKey', 'key')
 
@@ -54,10 +52,6 @@ class Wifi(WifiMixin, StationMixin, _Model):
     )
 
     def __init__(self, *args, **kw):
-        if 'created' not in kw:
-            kw['created'] = util.utcnow()
-        if 'modified' not in kw:
-            kw['modified'] = util.utcnow()
         if 'new_measures' not in kw:
             kw['new_measures'] = 0
         if 'total_measures' not in kw:
@@ -71,10 +65,3 @@ class WifiBlacklist(WifiMixin, StationBlacklistMixin, _Model):
     _indices = (
         UniqueConstraint('key', name='wifi_blacklist_key_unique'),
     )
-
-    def __init__(self, *args, **kw):
-        if 'time' not in kw:
-            kw['time'] = util.utcnow()
-        if 'count' not in kw:
-            kw['count'] = 1
-        super(WifiBlacklist, self).__init__(*args, **kw)
