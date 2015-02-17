@@ -12,10 +12,6 @@ from ichnaea.models.base import _Model
 
 class ApiKey(_Model):
     __tablename__ = 'api_key'
-    __table_args__ = {
-        'mysql_engine': 'InnoDB',
-        'mysql_charset': 'utf8',
-    }
 
     valid_key = Column(String(40),
                        primary_key=True)

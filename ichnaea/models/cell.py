@@ -208,10 +208,6 @@ class OCIDCell(_Model):
 
 class CellArea(_Model):
     __tablename__ = 'cell_area'
-    __table_args__ = {
-        'mysql_engine': 'InnoDB',
-        'mysql_charset': 'utf8',
-    }
 
     created = Column(DateTime)
     modified = Column(DateTime)
@@ -288,10 +284,7 @@ class OCIDCellArea(_Model):
 
 class CellBlacklist(_Model):
     __tablename__ = 'cell_blacklist'
-    __table_args__ = ({
-        'mysql_engine': 'InnoDB',
-        'mysql_charset': 'utf8',
-    })
+
     time = Column(DateTime)
     radio = Column(TinyInteger, autoincrement=False, primary_key=True)
     mcc = Column(SmallInteger, autoincrement=False, primary_key=True)
