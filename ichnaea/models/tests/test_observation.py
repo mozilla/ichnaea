@@ -1,6 +1,6 @@
 import uuid
 
-from ichnaea.models.constants import RADIO_TYPE
+from ichnaea.models.cell import RADIO_TYPE
 from ichnaea.models.observation import (
     CellMeasure,
     WifiMeasure,

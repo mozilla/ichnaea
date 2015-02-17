@@ -20,6 +20,11 @@ from ichnaea.models.cell import (  # NOQA
     CELL_MODEL_KEYS,
     OCIDCell,
     OCIDCellArea,
+    RADIO_TYPE,
+    RADIO_TYPE_KEYS,
+    RADIO_TYPE_INVERSE,
+    MAX_RADIO_TYPE,
+    MIN_RADIO_TYPE,
 )
 from ichnaea.models.content import (  # NOQA
     MapStat,
@@ -28,13 +33,6 @@ from ichnaea.models.content import (  # NOQA
     Stat,
     StatKey,
     User,
-)
-from ichnaea.models.constants import (  # NOQA
-    RADIO_TYPE,
-    RADIO_TYPE_KEYS,
-    RADIO_TYPE_INVERSE,
-    MAX_RADIO_TYPE,
-    MIN_RADIO_TYPE,
 )
 from ichnaea.models.observation import (  # NOQA
     CellMeasure,

@@ -1,10 +1,10 @@
-from ichnaea.models.constants import RADIO_TYPE
 from ichnaea.models.cell import (
     Cell,
     CellArea,
     CellBlacklist,
     OCIDCell,
     OCIDCellArea,
+    RADIO_TYPE,
 )
 from ichnaea.tests.base import DBTestCase
 
