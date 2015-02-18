@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use custom JSON encoding for kombu transport to support date/time objects.
+
 - Change MEASURE_TYPE_CODE, SCORE_TYPE, STAT_TYPE into IntEnums.
 
 - Updated to latest version of iso3166.

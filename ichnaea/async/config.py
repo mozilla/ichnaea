@@ -1,10 +1,12 @@
 import os
 
 from kombu import Queue
+from kombu.serialization import register
 
 from ichnaea.app_config import read_config
 from ichnaea.async.schedule import CELERYBEAT_SCHEDULE
 from ichnaea.cache import redis_client
+from ichnaea import customjson
 from ichnaea.db import Database
 
 
@@ -25,6 +27,11 @@ CELERY_QUEUES = (
     Queue('default', routing_key='old_default'),
 )
 CELERY_QUEUE_NAMES = frozenset([q.name for q in CELERY_QUEUES])
+
+
+register('internal_json', customjson.kombu_dumps, customjson.kombu_loads,
+         content_type='application/x-internaljson',
+         content_encoding='utf-8')
 
 
 def attach_database(app, settings=None, _db_master=None):
@@ -110,9 +117,9 @@ def configure_celery(celery):
         CELERY_DISABLE_RATE_LIMITS=True,
         CELERY_MESSAGE_COMPRESSION='gzip',
         # security
-        CELERY_ACCEPT_CONTENT=['json'],
-        CELERY_RESULT_SERIALIZER='json',
-        CELERY_TASK_SERIALIZER='json',
+        CELERY_ACCEPT_CONTENT=['json', 'internal_json'],
+        CELERY_RESULT_SERIALIZER='internal_json',
+        CELERY_TASK_SERIALIZER='internal_json',
         # schedule
         CELERYBEAT_LOG_LEVEL="WARNING",
         CELERYBEAT_SCHEDULE=CELERYBEAT_SCHEDULE,

@@ -54,12 +54,9 @@ class DatabaseTask(Task):
 
             # We feed the task arguments through the de/serialization process
             # to make sure the arguments can indeed be serialized.
-            # It's easy enough to put datetime, set or other
-            # non-serializable objects into the task arguments
-            task_args = isinstance(args, tuple) and args or tuple(args)
             serializer = self.app.conf.CELERY_TASK_SERIALIZER
-            content_type, encoding, data = kombu_dumps(task_args, serializer)
-            kombu_loads(data, content_type, encoding)
+            content_type, encoding, data = kombu_dumps(args, serializer)
+            args = kombu_loads(data, content_type, encoding)
 
         return super(DatabaseTask, self).apply(*args, **kw)
 

@@ -1,6 +1,8 @@
+from calendar import timegm
 from datetime import date, datetime
 
 from colander import iso8601
+from pytz import UTC
 import simplejson as json
 
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
@@ -132,3 +134,32 @@ class Renderer(object):
                 request.response.content_type = 'application/json'
             return dumps(value)
         return _render
+
+
+def kombu_default(obj):
+    if isinstance(obj, datetime):
+        if obj.utcoffset() is not None:
+            obj = obj - obj.utcoffset()
+        millis = int(timegm(obj.timetuple()) * 1000 + obj.microsecond / 1000)
+        return {'__datetime__': millis}
+    elif isinstance(obj, date):
+        return {'__date__': [obj.year, obj.month, obj.day]}
+    raise TypeError("%r is not JSON serializable" % obj)  # pragma: no cover
+
+
+def kombu_object_hook(dct):
+    if '__datetime__' in dct:
+        secs = float(dct['__datetime__']) / 1000.0
+        return datetime.utcfromtimestamp(secs).replace(tzinfo=UTC)
+    elif '__date__' in dct:
+        return date(*dct['__date__'])
+    return dct
+
+
+def kombu_dumps(value):
+    return json.dumps(value, default=kombu_default,
+                      namedtuple_as_object=True, separators=(',', ':'))
+
+
+def kombu_loads(value):
+    return json.loads(value, object_hook=kombu_object_hook)
