@@ -19,8 +19,7 @@ from ichnaea.customjson import (
     dumps,
     loads,
 )
-from ichnaea.data.schema import ValidCellBaseSchema
-from ichnaea.data.validation import normalized_measure_dict
+from ichnaea.data.schema import ValidCellKeySchema
 from ichnaea.geocalc import distance, centroid, range_to_points
 from ichnaea.logging import get_stats_client
 from ichnaea.models import (
@@ -38,6 +37,7 @@ from ichnaea.models import (
     to_cellkey_psc,
     to_wifikey,
 )
+from ichnaea.models.observation import ReportMixin
 from ichnaea import util
 from ichnaea.worker import celery
 
@@ -276,7 +276,7 @@ def incomplete_measure(station_type, key):
     LAC and/or CID, and will be inferred from neighboring cells.
     """
     if station_type == 'cell':
-        schema = ValidCellBaseSchema()
+        schema = ValidCellKeySchema()
         for field in ('radio', 'lac', 'cid'):
             # BBB change <= to == one release after #291 got deployed
             if getattr(key, field, None) <= schema.fields[field].missing:
@@ -350,7 +350,7 @@ def process_measure(data, session):
                and not isinstance(v, (tuple, list, dict)):
                 dst[k] = v
 
-    measure_data = normalized_measure_dict(data)
+    measure_data = ReportMixin.validate(data)
     if measure_data is None:
         return ([], [])
 

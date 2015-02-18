@@ -16,7 +16,6 @@ from sqlalchemy.sql import (
 )
 
 from ichnaea.async.task import DatabaseTask
-from ichnaea.data.validation import normalized_cell_dict
 from ichnaea.models import (
     Cell,
     CellAreaKey,
@@ -120,7 +119,7 @@ def make_cell_export_dict(row):
     return d
 
 
-def make_cell_import_dict(row):
+def make_ocid_cell_import_dict(row):
 
     def val(key, default):
         if key in row and row[key] != '' and row[key] is not None:
@@ -148,7 +147,7 @@ def make_cell_import_dict(row):
 
     d['total_measures'] = int(val('samples', -1))
     d['changeable'] = bool(val('changeable', True))
-    return normalized_cell_dict(d)
+    return OCIDCell.validate(d)
 
 
 def write_stations_to_csv(session, table, columns,
@@ -232,7 +231,7 @@ def import_stations(session, filename, fields):
                'radio' in row.values():  # pragma: no cover
                 continue
 
-            data = make_cell_import_dict(row)
+            data = make_ocid_cell_import_dict(row)
             if data is not None:
                 rows.append(data)
                 lacs.add(CellAreaKey(

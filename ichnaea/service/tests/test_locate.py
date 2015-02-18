@@ -5,7 +5,7 @@ from ichnaea.constants import (
     LAC_MIN_ACCURACY,
     WIFI_MIN_ACCURACY,
 )
-from ichnaea.data.schema import ValidCellBaseSchema
+from ichnaea.data.schema import ValidCellKeySchema
 from ichnaea.models import (
     Cell,
     CellArea,
@@ -372,7 +372,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         self.assertTrue(result is None)
 
     def test_cell_ignore_invalid_lac_cid(self):
-        schema = ValidCellBaseSchema()
+        schema = ValidCellKeySchema()
         session = self.db_slave_session
         lat = PARIS_LAT
         lon = PARIS_LON

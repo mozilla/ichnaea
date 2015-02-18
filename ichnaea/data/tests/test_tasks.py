@@ -15,7 +15,7 @@ from ichnaea.models.content import (
     ScoreKey,
 )
 from ichnaea.data import constants
-from ichnaea.data.schema import ValidCellBaseSchema
+from ichnaea.data.schema import ValidCellKeySchema
 from ichnaea.data.tasks import (
     UPDATE_KEY,
     enqueue_lacs,
@@ -382,7 +382,7 @@ class TestCell(CeleryTestCase):
 
     def test_insert_measures_invalid_lac(self):
         session = self.db_master_session
-        schema = ValidCellBaseSchema()
+        schema = ValidCellKeySchema()
         time = util.utcnow() - timedelta(days=1)
         today = util.utcnow().date()
 
@@ -483,7 +483,7 @@ class TestCell(CeleryTestCase):
     def test_location_update_cell(self):
         now = util.utcnow()
         before = now - timedelta(days=1)
-        schema = ValidCellBaseSchema()
+        schema = ValidCellKeySchema()
         session = self.db_master_session
 
         k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)

@@ -187,15 +187,25 @@ class FieldSchema(MappingSchema):
         return data_value == missing_value
 
 
-class ValidMeasureSchema(FieldSchema, CopyingSchema):
-    """
-    A Schema which validates the fields present in a measurement,
-    regardless of whether it is a Cell or Wifi measurement.
-    """
+class ValidPositionSchema(FieldSchema, CopyingSchema):
+    """A schema which validates the fields present in a position."""
+
     lat = SchemaNode(Float(), missing=0.0, validator=Range(
         constants.MIN_LAT, constants.MAX_LAT))
     lon = SchemaNode(Float(), missing=0.0, validator=Range(
         constants.MIN_LON, constants.MAX_LON))
+
+
+class ValidStationSchema(ValidPositionSchema):
+    """A schema which validates the fields present in a station."""
+
+    total_measures = SchemaNode(Integer(), missing=0)
+    range = SchemaNode(Integer(), missing=0)
+
+
+class ValidReportSchema(ValidPositionSchema):
+    """A schema which validates the fields present in a report."""
+
     accuracy = DefaultNode(
         Float(), missing=0, validator=Range(0, constants.MAX_ACCURACY))
     altitude = DefaultNode(
@@ -213,10 +223,9 @@ class ValidMeasureSchema(FieldSchema, CopyingSchema):
     time = RoundToMonthDateNode(DateTimeFromString(), missing=None)
 
 
-class ValidWifiSchema(ValidMeasureSchema):
-    """
-    A Schema which validates the fields present in a a wifi measurement.
-    """
+class ValidWifiKeySchema(FieldSchema, CopyingSchema):
+    """A schema which validates the fields present in a a wifi key."""
+
     channel = SchemaNode(Integer(), missing=0, validator=Range(
         constants.MIN_WIFI_CHANNEL, constants.MAX_WIFI_CHANNEL))
     key = WifiKeyNode(String())
@@ -249,14 +258,20 @@ class ValidWifiSchema(ValidMeasureSchema):
             if data.get('snr', None) is None:
                 data['snr'] = data.get('signalToNoiseRatio', 0)
 
-        return super(ValidWifiSchema, self).deserialize(data)
+        return super(ValidWifiKeySchema, self).deserialize(data)
 
 
-class ValidCellBaseSchema(ValidMeasureSchema):
-    """
-    A Schema which validates the fields present in
-    all Cell and Cell measurements.
-    """
+class ValidWifiSchema(ValidWifiKeySchema, ValidStationSchema):
+    """A schema which validates the fields in wifi."""
+
+
+class ValidWifiObservationSchema(ValidWifiKeySchema, ValidReportSchema):
+    """A schema which validates the fields in wifi observation."""
+
+
+class ValidCellKeySchema(FieldSchema, CopyingSchema):
+    """A schema which validates the fields present in a cell key."""
+
     asu = DefaultNode(Integer(), missing=-1, validator=Range(0, 97))
     cid = DefaultNode(
         Integer(), missing=0, validator=Range(
@@ -298,7 +313,12 @@ class ValidCellBaseSchema(ValidMeasureSchema):
                     and data.get('cid', None) == 65535):
                 data['cid'] = self.fields['cid'].missing
 
-        return super(ValidCellBaseSchema, self).deserialize(data)
+            # Sometimes the asu and signal fields are swapped
+            if data.get('asu', 0) < -1 and data.get('signal', None) == 0:
+                data['signal'] = data['asu']
+                data['asu'] = self.fields['asu'].missing
+
+        return super(ValidCellKeySchema, self).deserialize(data)
 
     def validator(self, schema, data):
         lac_missing = self.is_missing(data, 'lac')
@@ -341,34 +361,22 @@ class ValidCellBaseSchema(ValidMeasureSchema):
             raise Invalid(schema, ('LAC is out of range for GSM/UMTS/LTE.'))
 
 
-class ValidCellSchema(ValidCellBaseSchema):
-    """
-    A Schema which validates the fields present in
-    all Cells.
-    """
+class ValidCellSchema(ValidCellKeySchema, ValidStationSchema):
+    """A schema which validates the fields in cell."""
+
+
+class ValidOCIDCellSchema(ValidCellSchema):
+    """A schema which validates the fields present in a OCID cell."""
+
     modified = SchemaNode(DateTimeFromString(), missing=None)
     changeable = SchemaNode(Boolean(), missing=True)
-    total_measures = SchemaNode(Integer(), missing=0)
-    range = SchemaNode(Integer(), missing=0)
 
 
-class ValidCellMeasureSchema(ValidCellBaseSchema):
-    """
-    A Schema which validates the fields present in
-    all Cell measurements.
-    """
-
-    def deserialize(self, data):
-        if data:
-            # Sometimes the asu and signal fields are swapped
-            if data.get('asu', 0) < -1 and data.get('signal', None) == 0:
-                data['signal'] = data['asu']
-                data['asu'] = self.fields['asu'].missing
-
-        return super(ValidCellMeasureSchema, self).deserialize(data)
+class ValidCellObservationSchema(ValidCellKeySchema, ValidReportSchema):
+    """A schema which validates the fields present in a cell observation."""
 
     def validator(self, schema, data):
-        super(ValidCellMeasureSchema, self).validator(schema, data)
+        super(ValidCellObservationSchema, self).validator(schema, data)
 
         in_country = False
         for code in mobile_codes.mcc(str(data['mcc'])):

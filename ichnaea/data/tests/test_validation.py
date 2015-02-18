@@ -4,7 +4,7 @@ import uuid
 from pytz import UTC
 
 from ichnaea.data import constants
-from ichnaea.data.schema import normalized_time, ValidCellBaseSchema
+from ichnaea.data.schema import normalized_time, ValidCellKeySchema
 from ichnaea.models import (
     RADIO_TYPE,
     CellMeasure,
@@ -185,7 +185,7 @@ class TestCellValidation(ValidationTest):
                 self.check_normalized_cell(measure, cell, None)
 
     def test_invalid_lac_with_a_valid_psc(self):
-        schema = ValidCellBaseSchema()
+        schema = ValidCellKeySchema()
         for lac in self.invalid_lacs:
             for psc in self.valid_pscs:
                 measure, cell = self.get_sample_measure_cell(lac=lac, psc=psc)
@@ -200,7 +200,7 @@ class TestCellValidation(ValidationTest):
                 self.check_normalized_cell(measure, cell, None)
 
     def test_invalid_cid_with_a_valid_psc(self):
-        schema = ValidCellBaseSchema()
+        schema = ValidCellKeySchema()
         for cid in self.invalid_cids:
             for psc in self.valid_pscs:
                 measure, cell = self.get_sample_measure_cell(cid=cid, psc=psc)
@@ -307,7 +307,7 @@ class TestCellValidation(ValidationTest):
         self.check_normalized_cell(measure, cell, {'signal': -75})
 
     def test_cid_65535_without_a_valid_lac_sets_cid_to_invalid(self):
-        schema = ValidCellBaseSchema()
+        schema = ValidCellKeySchema()
         measure, cell = self.get_sample_measure_cell(
             lac=schema.fields['lac'].missing, cid=65535, psc=1)
         self.check_normalized_cell(

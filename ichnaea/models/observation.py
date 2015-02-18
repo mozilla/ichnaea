@@ -1,4 +1,3 @@
-from colander import Invalid
 from sqlalchemy import (
     Column,
     Float,
@@ -15,6 +14,7 @@ from ichnaea.models.base import (
     _Model,
     BigIdMixin,
     PositionMixin,
+    ValidationMixin,
 )
 from ichnaea.models.cell import CellKeyPscMixin
 from ichnaea.models.wifi import WifiKeyMixin
@@ -24,7 +24,7 @@ from ichnaea.models.sa_types import (
 )
 
 
-class ReportMixin(PositionMixin):
+class ReportMixin(PositionMixin, ValidationMixin):
 
     report_id = Column(UUIDColumn(length=16))
 
@@ -41,18 +41,15 @@ class ReportMixin(PositionMixin):
     # http://dev.w3.org/geo/api/spec-source.html#speed
     speed = Column(Float)
 
+    @classmethod
+    def valid_schema(cls):
+        from ichnaea.data.schema import ValidReportSchema
+        return ValidReportSchema
+
 
 class ObservationMixin(BigIdMixin, ReportMixin):
 
     signal = Column(SmallInteger)
-
-    @classmethod
-    def validate(cls, entry):
-        try:
-            validated = cls.valid_schema()().deserialize(entry)
-        except Invalid:
-            validated = None
-        return validated
 
     @classmethod
     def create(cls, entry):
@@ -74,9 +71,8 @@ class CellMeasure(ObservationMixin, CellKeyPscMixin, _Model):
 
     @classmethod
     def valid_schema(cls):
-        # avoid import problems, this should be a class property
-        from ichnaea.data.schema import ValidCellMeasureSchema
-        return ValidCellMeasureSchema
+        from ichnaea.data.schema import ValidCellObservationSchema
+        return ValidCellObservationSchema
 
     asu = Column(SmallInteger)
     ta = Column(TinyInteger)
@@ -93,9 +89,8 @@ class WifiMeasure(ObservationMixin, WifiKeyMixin, _Model):
 
     @classmethod
     def valid_schema(cls):
-        # avoid import problems, this should be a class property
-        from ichnaea.data.schema import ValidWifiSchema
-        return ValidWifiSchema
+        from ichnaea.data.schema import ValidWifiObservationSchema
+        return ValidWifiObservationSchema
 
     channel = Column(SmallInteger)
     snr = Column(SmallInteger)

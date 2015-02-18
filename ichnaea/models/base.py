@@ -1,3 +1,4 @@
+from colander import Invalid
 from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import (
     BIGINT as BigInteger,
@@ -28,6 +29,21 @@ class BaseModel(object):
 
 
 _Model = declarative_base(cls=BaseModel)
+
+
+class ValidationMixin(object):
+
+    @classmethod
+    def valid_schema(cls):  # pragma: no cover
+        raise NotImplementedError
+
+    @classmethod
+    def validate(cls, entry):
+        try:
+            validated = cls.valid_schema()().deserialize(entry)
+        except Invalid:
+            validated = None
+        return validated
 
 
 class BigIdMixin(object):

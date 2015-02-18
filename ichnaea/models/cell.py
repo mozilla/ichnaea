@@ -17,6 +17,7 @@ from ichnaea.models.base import (
     _Model,
     PositionMixin,
     TimeTrackingMixin,
+    ValidationMixin,
 )
 from ichnaea.models.station import (
     BaseStationMixin,
@@ -152,7 +153,7 @@ class Cell(CellMixin, StationMixin, _Model):
         super(Cell, self).__init__(*args, **kw)
 
 
-class OCIDCell(CellMixin, BaseStationMixin, _Model):
+class OCIDCell(CellMixin, BaseStationMixin, ValidationMixin, _Model):
     __tablename__ = 'ocid_cell'
 
     _indices = (
@@ -161,6 +162,11 @@ class OCIDCell(CellMixin, BaseStationMixin, _Model):
     )
 
     changeable = Column(Boolean)
+
+    @classmethod
+    def valid_schema(cls):
+        from ichnaea.data.schema import ValidOCIDCellSchema
+        return ValidOCIDCellSchema
 
     @property
     def min_lat(self):
