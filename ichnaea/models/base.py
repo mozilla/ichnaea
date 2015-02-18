@@ -38,9 +38,9 @@ class ValidationMixin(object):
         raise NotImplementedError
 
     @classmethod
-    def validate(cls, entry):
+    def validate(cls, entry, **kw):
         try:
-            validated = cls.valid_schema()().deserialize(entry)
+            validated = cls.valid_schema()().deserialize(entry, **kw)
         except Invalid:
             validated = None
         return validated

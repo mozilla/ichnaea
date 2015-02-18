@@ -10,6 +10,7 @@ from sqlalchemy import (
 from ichnaea.models.base import (
     _Model,
     BigIdMixin,
+    ValidationMixin,
 )
 from ichnaea.models.station import (
     StationMixin,
@@ -32,9 +33,14 @@ def join_wifikey(model, k):
     return (model.key == k.key,)
 
 
-class WifiKeyMixin(object):
+class WifiKeyMixin(ValidationMixin):
 
     key = Column(String(12))
+
+    @classmethod
+    def valid_schema(cls):
+        from ichnaea.data.schema import ValidWifiKeySchema
+        return ValidWifiKeySchema
 
 
 class WifiMixin(BigIdMixin, WifiKeyMixin):

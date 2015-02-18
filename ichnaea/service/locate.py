@@ -12,10 +12,6 @@ from ichnaea.constants import (
     LAC_MIN_ACCURACY,
     WIFI_MIN_ACCURACY,
 )
-from ichnaea.data.validation import (
-    normalized_cell_dict,
-    normalized_wifi_dict,
-)
 from ichnaea.geocalc import (
     distance,
     location_is_in_country,
@@ -34,6 +30,8 @@ from ichnaea.models import (
     to_cellkey,
     join_cellkey,
 )
+from ichnaea.models.cell import CellKeyMixin
+from ichnaea.models.wifi import WifiKeyMixin
 
 # parameters for wifi clustering
 MAX_WIFI_CLUSTER_KM = 0.5
@@ -425,14 +423,14 @@ def search_all_sources(session, api_name, data,
 
     # Pre-process wifi data
     for wifi in data.get('wifi', ()):
-        wifi = normalized_wifi_dict(wifi)
+        wifi = WifiKeyMixin.validate(wifi)
         if wifi:
             validated['wifi'].append(wifi)
 
     # Pre-process cell data
     radio = RADIO_TYPE.get(data.get('radio', ''), -1)
     for cell in data.get('cell', ()):
-        cell = normalized_cell_dict(cell, default_radio=radio)
+        cell = CellKeyMixin.validate(cell, default_radio=radio)
         if cell:
             cell_key = to_cellkey(cell)
             validated['cell'].append(cell_key)
