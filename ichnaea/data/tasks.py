@@ -272,8 +272,8 @@ def create_cell_measure(utcnow, entry):
         return None
     # add creation date
     entry['created'] = utcnow
-    # decode from JSON compatible format
-    entry['report_id'] = uuid.UUID(hex=entry['report_id']).bytes
+    # encode into db format
+    entry['report_id'] = entry['report_id'].bytes
     # BBB: no longer required, internaljson format decodes to datetime
     entry['time'] = decode_datetime(entry['time'])
     return CellMeasure(**entry)
@@ -289,8 +289,8 @@ def create_wifi_measure(utcnow, entry):
     entry['created'] = utcnow
     # map internal date name to model name
     entry['snr'] = entry.pop('signalToNoiseRatio')
-    # decode from JSON compatible format
-    entry['report_id'] = uuid.UUID(hex=entry['report_id']).bytes
+    # encode into db format
+    entry['report_id'] = entry['report_id'].bytes
     # BBB: no longer required, internaljson format decodes to datetime
     entry['time'] = decode_datetime(entry['time'])
     return WifiMeasure(**entry)
@@ -441,7 +441,7 @@ def process_measures(items, session, userid=None,
     cell_measures = []
     wifi_measures = []
     for i, item in enumerate(items):
-        item['report_id'] = uuid.uuid1().hex
+        item['report_id'] = uuid.uuid1()
         cell, wifi = process_measure(item, session)
         cell_measures.extend(cell)
         wifi_measures.extend(wifi)

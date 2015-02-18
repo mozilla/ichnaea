@@ -10,11 +10,12 @@ from colander import (
     Integer,
     Invalid,
     MappingSchema,
+    null,
     Range,
     SchemaNode,
     String,
-    iso8601,
 )
+import iso8601
 from pytz import UTC
 
 from ichnaea import geocalc
@@ -92,6 +93,23 @@ class DateTimeFromString(DateTime):
         return super(DateTimeFromString, self).deserialize(schema, cstruct)
 
 
+class UUIDType(String):
+    """
+    A UUIDType will return a uuid object from either a uuid or a string.
+    """
+
+    def deserialize(self, node, cstruct):
+        if not cstruct:
+            return null
+        if isinstance(cstruct, uuid.UUID):
+            return cstruct
+        try:
+            cstruct = uuid.UUID(hex=cstruct)
+        except (AttributeError, TypeError, ValueError):
+            raise Invalid(node, '%r is not a valid hex uuid' % cstruct)
+        return cstruct
+
+
 # Custom Nodes
 
 class DefaultNode(SchemaNode):
@@ -128,7 +146,7 @@ class ReportIDNode(SchemaNode):
     """
 
     def preparer(self, cstruct):
-        return cstruct or uuid.uuid1().hex
+        return cstruct or uuid.uuid1()
 
 
 class RoundToMonthDateNode(SchemaNode):
@@ -190,7 +208,7 @@ class ValidMeasureSchema(FieldSchema, CopyingSchema):
         Float(), missing=-1, validator=Range(0, constants.MAX_HEADING))
     speed = DefaultNode(
         Float(), missing=-1, validator=Range(0, constants.MAX_SPEED))
-    report_id = ReportIDNode(String(), missing='')
+    report_id = ReportIDNode(UUIDType())
     time = RoundToMonthDateNode(DateTimeFromString(), missing=None)
 
 
