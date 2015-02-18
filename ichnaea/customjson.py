@@ -1,5 +1,6 @@
 from calendar import timegm
 from datetime import date, datetime
+from uuid import UUID
 
 from colander import iso8601
 from pytz import UTC
@@ -142,6 +143,8 @@ def kombu_default(obj):
         return {'__datetime__': millis}
     elif isinstance(obj, date):
         return {'__date__': [obj.year, obj.month, obj.day]}
+    elif isinstance(obj, UUID):
+        return {'__uuid__': obj.hex}
     raise TypeError("%r is not JSON serializable" % obj)  # pragma: no cover
 
 
@@ -151,6 +154,8 @@ def kombu_object_hook(dct):
         return datetime.utcfromtimestamp(secs).replace(tzinfo=UTC)
     elif '__date__' in dct:
         return date(*dct['__date__'])
+    elif '__uuid__' in dct:
+        return UUID(hex=dct['__uuid__'])
     return dct
 
 

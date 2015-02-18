@@ -1,6 +1,7 @@
 from collections import namedtuple
 from datetime import date, datetime, timedelta
 import sys
+import uuid
 
 import pytz
 
@@ -89,3 +90,23 @@ class TestKombuJson(TestCase):
         Named = namedtuple('Named', 'one two')
         data = kombu_loads(kombu_dumps({'d': Named(one=1, two=[2])}))
         self.assertEqual(data['d'], {'one': 1, 'two': [2]})
+
+    def test_uuid1(self):
+        data = kombu_dumps({'d': uuid.uuid1()})
+        self.assertTrue('__uuid__' in data)
+
+    def test_uuid4(self):
+        data = kombu_dumps({'d': uuid.uuid4()})
+        self.assertTrue('__uuid__' in data)
+
+    def test_uuid1_roundtrip(self):
+        test_uuid = uuid.uuid1()
+        data = kombu_loads(kombu_dumps({'d': test_uuid}))
+        self.assertEqual(data['d'], test_uuid)
+        self.assertEqual(data['d'].version, 1)
+
+    def test_uuid4_roundtrip(self):
+        test_uuid = uuid.uuid4()
+        data = kombu_loads(kombu_dumps({'d': test_uuid}))
+        self.assertEqual(data['d'], test_uuid)
+        self.assertEqual(data['d'].version, 4)
