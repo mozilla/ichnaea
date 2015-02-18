@@ -1,5 +1,4 @@
 from sqlalchemy import (
-    BINARY,
     Column,
     Float,
     Index,
@@ -17,12 +16,15 @@ from ichnaea.models.base import (
 )
 from ichnaea.models.cell import CellKeyPscMixin
 from ichnaea.models.wifi import WifiKeyMixin
-from ichnaea.models.sa_types import TZDateTime as DateTime
+from ichnaea.models.sa_types import (
+    TZDateTime as DateTime,
+    UUIDColumn,
+)
 
 
 class ReportMixin(PositionMixin):
 
-    report_id = Column(BINARY(length=16))
+    report_id = Column(UUIDColumn(length=16))
 
     created = Column(DateTime)  # the insert time of the record into the DB
     time = Column(DateTime)  # the time of observation of this data

@@ -272,8 +272,6 @@ def create_cell_measure(utcnow, entry):
         return None
     # add creation date
     entry['created'] = utcnow
-    # encode into db format
-    entry['report_id'] = entry['report_id'].bytes
     # BBB: no longer required, internaljson format decodes to datetime
     entry['time'] = decode_datetime(entry['time'])
     return CellMeasure(**entry)
@@ -289,8 +287,6 @@ def create_wifi_measure(utcnow, entry):
     entry['created'] = utcnow
     # map internal date name to model name
     entry['snr'] = entry.pop('signalToNoiseRatio')
-    # encode into db format
-    entry['report_id'] = entry['report_id'].bytes
     # BBB: no longer required, internaljson format decodes to datetime
     entry['time'] = decode_datetime(entry['time'])
     return WifiMeasure(**entry)

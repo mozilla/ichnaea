@@ -1,4 +1,5 @@
 from datetime import date
+import uuid
 
 from webob.response import gzip_app_iter
 
@@ -51,8 +52,7 @@ class TestSubmit(CeleryAppTestCase):
         cell_result = session.query(CellMeasure).all()
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
-        self.assertTrue(isinstance(item.report_id, bytes))
-        self.assertEqual(len(item.report_id), 16)
+        self.assertTrue(isinstance(item.report_id, uuid.UUID))
         self.assertEqual(item.created.date(), today)
 
         self.assertEqual(item.time, first_of_month)
@@ -90,8 +90,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(wifi_result), 2)
         item = wifi_result[0]
         report_id = item.report_id
-        self.assertTrue(isinstance(report_id, bytes))
-        self.assertEqual(len(report_id), 16)
+        self.assertTrue(isinstance(report_id, uuid.UUID))
         self.assertEqual(item.created.date(), today)
         self.assertEqual(item.time, first_of_month)
         self.assertEqual(item.lat, 12.3456781)

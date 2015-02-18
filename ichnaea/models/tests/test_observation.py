@@ -11,7 +11,7 @@ from ichnaea.tests.base import DBTestCase
 class TestCellMeasure(DBTestCase):
 
     def test_fields(self):
-        report_id = uuid.uuid1().bytes
+        report_id = uuid.uuid1()
         cell = CellMeasure(
             lat=1.2345678,
             lon=2.3456789,
@@ -47,7 +47,7 @@ class TestWifiMeasure(DBTestCase):
 
     def test_fields(self):
         key = "3680873e9b83"
-        report_id = uuid.uuid1().bytes
+        report_id = uuid.uuid1()
         wifi = WifiMeasure(
             lat=1.2345678,
             lon=2.3456789,
