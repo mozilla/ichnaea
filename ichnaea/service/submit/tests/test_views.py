@@ -1,8 +1,4 @@
-from datetime import (
-    date,
-    datetime,
-)
-import pytz
+from datetime import date
 
 from webob.response import gzip_app_iter
 
@@ -32,12 +28,9 @@ class TestSubmit(CeleryAppTestCase):
 
     def test_ok_cell(self):
         app = self.app
-        today = util.utcnow().date()
-        month_rounded_today = today.replace(day=1)
-        month_rounded_dt = datetime(month_rounded_today.year,
-                                    month_rounded_today.month,
-                                    month_rounded_today.day)
-        month_rounded_dt = month_rounded_dt.replace(tzinfo=pytz.UTC)
+        now = util.utcnow()
+        today = now.date()
+        first_of_month = now.replace(day=1, hour=0, minute=0, second=0)
 
         cell_data = [
             {"radio": "umts", "mcc": FRANCE_MCC,
@@ -62,7 +55,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(item.report_id), 16)
         self.assertEqual(item.created.date(), today)
 
-        self.assertEqual(item.time, month_rounded_dt)
+        self.assertEqual(item.time, first_of_month)
         self.assertEqual(item.lat, PARIS_LAT)
         self.assertEqual(item.lon, PARIS_LON)
         self.assertEqual(item.accuracy, 10)
@@ -76,16 +69,14 @@ class TestSubmit(CeleryAppTestCase):
 
     def test_ok_wifi(self):
         app = self.app
-        today = util.utcnow().date()
+        now = util.utcnow()
+        today = now.date()
+        first_of_month = now.replace(day=1, hour=0, minute=0, second=0)
+
         wifi_data = [{"key": "0012AB12AB12",
                       "signalToNoiseRatio": 5},
                      {"key": "00:34:cd:34:cd:34",
                       "signalToNoiseRatio": 5}]
-        month_rounded_today = today.replace(day=1)
-        month_rounded_dt = datetime(month_rounded_today.year,
-                                    month_rounded_today.month,
-                                    month_rounded_today.day)
-        month_rounded_dt = month_rounded_dt.replace(tzinfo=pytz.UTC)
 
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3456781,
@@ -102,7 +93,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertTrue(isinstance(report_id, bytes))
         self.assertEqual(len(report_id), 16)
         self.assertEqual(item.created.date(), today)
-        self.assertEqual(item.time, month_rounded_dt)
+        self.assertEqual(item.time, first_of_month)
         self.assertEqual(item.lat, 12.3456781)
         self.assertEqual(item.lon, 23.4567892)
         self.assertEqual(item.accuracy, 17)

@@ -1,7 +1,6 @@
 import copy
-import datetime
+from datetime import date, datetime, timedelta
 import uuid
-from datetime import timedelta
 
 import mobile_codes
 from colander import (
@@ -16,9 +15,9 @@ from colander import (
     String,
     iso8601,
 )
+from pytz import UTC
 
 from ichnaea import geocalc
-from ichnaea.customjson import encode_datetime
 from ichnaea.data import constants
 from ichnaea.models import (
     MAX_RADIO_TYPE,
@@ -32,9 +31,8 @@ from ichnaea import util
 
 def normalized_time(time):
     """
-    Takes a string representation of a time value, validates and parses
-    it and returns a JSON-friendly string representation of the normalized
-    time.
+    Takes a string representation of a time value or a date and converts
+    it into a datetime.
 
     It rounds down a date to the first of the month.
 
@@ -43,21 +41,23 @@ def normalized_time(time):
     """
     now = util.utcnow()
     if not time:
-        time = None
-
-    try:
-        time = iso8601.parse_date(time)
-    except (iso8601.ParseError, TypeError):
         time = now
-    else:
-        # don't accept future time values or
-        # time values more than 60 days in the past
-        min_time = now - timedelta(days=60)
-        if time > now or time < min_time:
+    elif isinstance(time, (str, unicode, date)):
+        try:
+            time = iso8601.parse_date(time)
+        except (iso8601.ParseError, TypeError):
             time = now
+
+    # don't accept future time values or
+    # time values more than 60 days in the past
+    min_time = now - timedelta(days=60)
+    if time > now or time < min_time:
+        time = now
+
     # cut down the time to a monthly resolution
-    time = time.date().replace(day=1)
-    return encode_datetime(time)
+    time = time.replace(day=1, hour=0, minute=0, second=0,
+                        microsecond=0, tzinfo=UTC)
+    return time
 
 
 def normalized_wifi_key(key):
@@ -87,21 +87,9 @@ class DateTimeFromString(DateTime):
     """
 
     def deserialize(self, schema, cstruct):
-        if type(cstruct) == datetime.datetime:
+        if type(cstruct) == datetime:
             return cstruct
         return super(DateTimeFromString, self).deserialize(schema, cstruct)
-
-
-class DateTimeToString(String):
-    """
-    A DateTimeToString will return a string representation of a date
-    from either a datetime object or a string.
-    """
-
-    def deserialize(self, schema, cstruct):
-        if type(cstruct) == datetime.datetime:
-            cstruct = cstruct.strftime('%Y-%m-%d')
-        return super(DateTimeToString, self).deserialize(schema, cstruct)
 
 
 # Custom Nodes
@@ -145,14 +133,12 @@ class ReportIDNode(SchemaNode):
 
 class RoundToMonthDateNode(SchemaNode):
     """
-    A node which takes a string date and
+    A node which takes a string date or date and
     rounds it to the first of the month.
     ex: 2015-01-01
     """
 
     def preparer(self, cstruct):
-        if not cstruct:
-            cstruct = datetime.date.today().strftime('%Y-%m-%d')
         return normalized_time(cstruct)
 
 
@@ -205,7 +191,7 @@ class ValidMeasureSchema(FieldSchema, CopyingSchema):
     speed = DefaultNode(
         Float(), missing=-1, validator=Range(0, constants.MAX_SPEED))
     report_id = ReportIDNode(String(), missing='')
-    time = RoundToMonthDateNode(DateTimeToString(), missing=None)
+    time = RoundToMonthDateNode(DateTimeFromString(), missing=None)
 
 
 class ValidWifiSchema(ValidMeasureSchema):
@@ -351,7 +337,7 @@ class ValidCellMeasureSchema(ValidCellBaseSchema):
     all Cell measurements.
     """
     # pass through created without bothering to validate or decode it again
-    created = SchemaNode(String(), missing=None)
+    created = SchemaNode(DateTimeFromString(), missing=None)
 
     def deserialize(self, data):
         if data:

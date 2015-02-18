@@ -274,6 +274,7 @@ def create_cell_measure(utcnow, entry):
     entry['created'] = utcnow
     # decode from JSON compatible format
     entry['report_id'] = uuid.UUID(hex=entry['report_id']).bytes
+    # BBB: no longer required, internaljson format decodes to datetime
     entry['time'] = decode_datetime(entry['time'])
     return CellMeasure(**entry)
 
@@ -290,6 +291,7 @@ def create_wifi_measure(utcnow, entry):
     entry['snr'] = entry.pop('signalToNoiseRatio')
     # decode from JSON compatible format
     entry['report_id'] = uuid.UUID(hex=entry['report_id']).bytes
+    # BBB: no longer required, internaljson format decodes to datetime
     entry['time'] = decode_datetime(entry['time'])
     return WifiMeasure(**entry)
 
@@ -554,8 +556,6 @@ def process_station_measures(session, entries, station_type,
     new_stations = 0
     if utcnow is None:
         utcnow = util.utcnow()
-    elif isinstance(utcnow, basestring):
-        utcnow = decode_datetime(utcnow)
 
     # Process entries and group by validated station key
     station_measures = defaultdict(list)

@@ -2,10 +2,6 @@ from datetime import timedelta
 
 from pytz import UTC
 
-from ichnaea.customjson import (
-    decode_datetime,
-    encode_datetime,
-)
 from ichnaea.data import constants
 from ichnaea.data.schema import normalized_time, ValidCellBaseSchema
 from ichnaea.data.validation import (
@@ -26,7 +22,7 @@ class ValidationTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.time = util.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
+        cls.time = util.utcnow()
 
     def check_normalized(self, validator, measure, extra, expect):
         measure = measure.copy()
@@ -236,7 +232,7 @@ class TestCellValidation(ValidationTest):
 
     def test_valid_time(self):
         now = util.utcnow()
-        first_of_month = now.date().replace(day=1).strftime('%Y-%m-%d')
+        first_of_month = now.replace(day=1, hour=0, minute=0, second=0)
         measure, cell = self.get_sample_measure_cell(time=now)
         self.check_normalized_cell(measure, cell, {'time': first_of_month})
 
@@ -570,7 +566,4 @@ class TestWifiValidation(ValidationTest):
 
         for entry in entries:
             in_, expected = entry
-            if not isinstance(in_, str):
-                in_ = encode_datetime(in_)
-            self.assertEqual(
-                decode_datetime(normalized_time(in_)), expected)
+            self.assertEqual(normalized_time(in_), expected)

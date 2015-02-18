@@ -17,10 +17,12 @@ def encode_datetime(obj):
     raise TypeError(repr(obj) + " is not JSON serializable")
 
 
-def decode_datetime(obj):
+def decode_datetime(obj):  # pragma: no cover
+    if isinstance(obj, datetime):
+        return obj
     try:
         return iso8601.parse_date(obj)
-    except (iso8601.ParseError, TypeError):  # pragma: no cover
+    except (iso8601.ParseError, TypeError):
         return util.utcnow()
 
 
@@ -71,7 +73,6 @@ def custom_iterencode(value):
 
 
 def dumps(value):
-
     if isinstance(value, dict) \
        and 'accuracy' in value: \
 
@@ -113,11 +114,8 @@ def dumps(value):
         # This behavior is preserved in python3, and made "more uniform" merely
         # by causing str() to do the same thing. So we explicitly round in the
         # custom_iterencode routine.
-
         return u''.join(custom_iterencode(value))
-
     else:
-
         return json.dumps(value, default=encode_datetime)
 
 

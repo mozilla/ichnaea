@@ -14,7 +14,6 @@ from ichnaea.models.content import (
     Score,
     ScoreKey,
 )
-from ichnaea.customjson import encode_datetime
 from ichnaea.data import constants
 from ichnaea.data.schema import ValidCellBaseSchema
 from ichnaea.data.tasks import (
@@ -211,18 +210,17 @@ class TestCell(CeleryTestCase):
         for month in range(0, N):
             days_ago = (N - (month + 1)) * 30
             time = now - timedelta(days=days_ago)
-            time_enc = encode_datetime(time)
 
             measure = dict(radio=RADIO_TYPE['gsm'],
                            mcc=USA_MCC, mnc=ATT_MNC, lac=456, cid=123,
-                           time=time_enc,
+                           time=time,
                            lat=points[month % 4][0],
                            lon=points[month % 4][1])
 
             # insert_result is num-accepted-measures, override
             # utcnow to set creation date
             insert_result = insert_measures_cell.delay(
-                [measure], utcnow=time_enc)
+                [measure], utcnow=time)
 
             # update_result is (num-stations, num-moving-stations)
             update_result = location_update_cell.delay(min_new=1)
@@ -282,7 +280,7 @@ class TestCell(CeleryTestCase):
 
                     # Try adding one more measurement 1 day later
                     # to be sure it is dropped by the now-active blacklist.
-                    next_day = encode_datetime(time + timedelta(days=1))
+                    next_day = time + timedelta(days=1)
                     measure['time'] = next_day
                     self.assertEqual(
                         0, insert_measures_cell.delay([measure],
@@ -330,10 +328,10 @@ class TestCell(CeleryTestCase):
         session.flush()
 
         measure = dict(
-            created=encode_datetime(time),
+            created=time,
             lat=PARIS_LAT,
             lon=PARIS_LON,
-            time=encode_datetime(time), accuracy=0, altitude=0,
+            time=time, accuracy=0, altitude=0,
             altitude_accuracy=0, radio=RADIO_TYPE['gsm'],
         )
         entries = [
@@ -395,10 +393,10 @@ class TestCell(CeleryTestCase):
         session.flush()
 
         measure = dict(
-            created=encode_datetime(time),
+            created=time,
             lat=PARIS_LAT,
             lon=PARIS_LON,
-            time=encode_datetime(time), accuracy=0, altitude=0,
+            time=time, accuracy=0, altitude=0,
             altitude_accuracy=0, radio=RADIO_TYPE['gsm'])
         entries = [
             {"mcc": FRANCE_MCC, "mnc": 2, "lac": constants.MAX_LAC_ALL + 1,
@@ -459,10 +457,10 @@ class TestCell(CeleryTestCase):
         time = util.utcnow() - timedelta(days=1)
 
         measure = dict(
-            created=encode_datetime(time),
+            created=time,
             lat=PARIS_LAT,
             lon=PARIS_LON,
-            time=encode_datetime(time), accuracy=0, altitude=0,
+            time=time, accuracy=0, altitude=0,
             altitude_accuracy=0, radio=RADIO_TYPE['gsm'], mcc=FRANCE_MCC,
             mnc=2, lac=3, cid=4)
         entries = [
@@ -873,17 +871,16 @@ class TestWifi(CeleryTestCase):
         for month in range(0, N):
             days_ago = (N - (month + 1)) * 30
             time = now - timedelta(days=days_ago)
-            time_enc = encode_datetime(time)
 
             measure = dict(key="ab1234567890",
-                           time=time_enc,
+                           time=time,
                            lat=points[month % 4][0],
                            lon=points[month % 4][1])
 
             # insert_result is num-accepted-measures, override
             # utcnow to set creation date
             insert_result = insert_measures_wifi.delay(
-                [measure], utcnow=time_enc)
+                [measure], utcnow=time)
 
             # update_result is (num-stations, num-moving-stations)
             update_result = location_update_wifi.delay(min_new=1)
@@ -936,7 +933,7 @@ class TestWifi(CeleryTestCase):
 
                     # Try adding one more measurement 1 day later
                     # to be sure it is dropped by the now-active blacklist.
-                    next_day = encode_datetime(time + timedelta(days=1))
+                    next_day = time + timedelta(days=1)
                     measure['time'] = next_day
                     self.assertEqual(
                         0, insert_measures_wifi.delay([measure],
@@ -981,8 +978,8 @@ class TestWifi(CeleryTestCase):
         session.flush()
 
         measure = dict(
-            created=encode_datetime(time), lat=1.0, lon=2.0,
-            time=encode_datetime(time), accuracy=0, altitude=0,
+            created=time, lat=1.0, lon=2.0,
+            time=time, accuracy=0, altitude=0,
             altitude_accuracy=0, radio=-1,
             heading=52.9,
             speed=158.5,
