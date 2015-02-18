@@ -5,11 +5,11 @@ from pytz import UTC
 
 from ichnaea.data import constants
 from ichnaea.data.schema import normalized_time, ValidCellBaseSchema
-from ichnaea.data.validation import (
-    normalized_cell_measure_dict,
-    normalized_wifi_dict,
+from ichnaea.models import (
+    RADIO_TYPE,
+    CellMeasure,
+    WifiMeasure,
 )
-from ichnaea.models import RADIO_TYPE
 from ichnaea.tests.base import TestCase
 from ichnaea.tests.base import (
     FREMONT_LAT, FREMONT_LON, USA_MCC,
@@ -55,7 +55,7 @@ class TestCellValidation(ValidationTest):
 
     def check_normalized_cell(self, measure, cell, expect):
         return self.check_normalized(
-            normalized_cell_measure_dict,
+            CellMeasure.validate,
             measure, cell, expect)
 
     def get_sample_measure_cell(self, **kwargs):
@@ -418,7 +418,7 @@ class TestWifiValidation(ValidationTest):
 
     def check_normalized_wifi(self, measure, wifi, expect):
         return self.check_normalized(
-            normalized_wifi_dict,
+            WifiMeasure.validate,
             measure, wifi, expect)
 
     def get_sample_measure_wifi(self, **kwargs):
@@ -436,7 +436,7 @@ class TestWifiValidation(ValidationTest):
             'frequency': 2442,
             'channel': 7,
             'signal': -85,
-            'signalToNoiseRatio': 37,
+            'snr': 37,
         }
         for (k, v) in kwargs.items():
             if k in measure:
@@ -529,19 +529,15 @@ class TestWifiValidation(ValidationTest):
         valid_snrs = [0, 12, 100]
 
         for snr in valid_snrs:
-            measure, wifi = self.get_sample_measure_wifi(
-                signalToNoiseRatio=snr)
-            self.check_normalized_wifi(
-                measure, wifi, dict(signalToNoiseRatio=snr))
+            measure, wifi = self.get_sample_measure_wifi(snr=snr)
+            self.check_normalized_wifi(measure, wifi, dict(snr=snr))
 
     def test_invalid_snr(self):
         invalid_snrs = [-1, -50, 101]
 
         for snr in invalid_snrs:
-            measure, wifi = self.get_sample_measure_wifi(
-                signalToNoiseRatio=snr)
-            self.check_normalized_wifi(
-                measure, wifi, dict(signalToNoiseRatio=0))
+            measure, wifi = self.get_sample_measure_wifi(snr=snr)
+            self.check_normalized_wifi(measure, wifi, dict(snr=0))
 
     def test_valid_channel(self):
         valid_channels = [1, 20, 45, 165]

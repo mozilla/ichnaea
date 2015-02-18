@@ -16,16 +16,11 @@ from ichnaea.models.content import (
     User,
 )
 from ichnaea.customjson import (
-    decode_datetime,
     dumps,
     loads,
 )
 from ichnaea.data.schema import ValidCellBaseSchema
-from ichnaea.data.validation import (
-    normalized_measure_dict,
-    normalized_wifi_dict,
-    normalized_cell_measure_dict,
-)
+from ichnaea.data.validation import normalized_measure_dict
 from ichnaea.geocalc import distance, centroid, range_to_points
 from ichnaea.logging import get_stats_client
 from ichnaea.models import (
@@ -34,7 +29,6 @@ from ichnaea.models import (
     CellAreaKey,
     CellBlacklist,
     CellMeasure,
-    RADIO_TYPE,
     Wifi,
     WifiBlacklist,
     WifiMeasure,
@@ -264,34 +258,6 @@ def create_or_update_station(session, key, station_model,
         session.execute(stmt)
 
 
-def create_cell_measure(utcnow, entry):
-    # creates a dict.copy() avoiding test leaks reusing the same
-    # entries for multiple task calls
-    entry = normalized_cell_measure_dict(entry)
-    if entry is None:
-        return None
-    # add creation date
-    entry['created'] = utcnow
-    # BBB: no longer required, internaljson format decodes to datetime
-    entry['time'] = decode_datetime(entry['time'])
-    return CellMeasure(**entry)
-
-
-def create_wifi_measure(utcnow, entry):
-    # creates a dict.copy() avoiding test leaks reusing the same
-    # entries for multiple task calls
-    entry = normalized_wifi_dict(entry)
-    if entry is None:  # pragma: no cover
-        return None
-    # add creation date
-    entry['created'] = utcnow
-    # map internal date name to model name
-    entry['snr'] = entry.pop('signalToNoiseRatio')
-    # BBB: no longer required, internaljson format decodes to datetime
-    entry['time'] = decode_datetime(entry['time'])
-    return WifiMeasure(**entry)
-
-
 def emit_new_measures_metric(stats_client, session, shortname,
                              model, min_new, max_new):
     q = session.query(model).filter(
@@ -390,13 +356,12 @@ def process_measure(data, session):
 
     cell_measures = {}
     wifi_measures = {}
-    measure_radio = RADIO_TYPE.get(data['radio'], -1)
 
     if data.get('cell'):
         # flatten measure / cell data into a single dict
         for c in data['cell']:
             add_missing_dict_entries(c, measure_data)
-            c = normalized_cell_measure_dict(c, measure_radio)
+            c = CellMeasure.validate(c)
             if c is None:  # pragma: no cover
                 continue
             key = to_cellkey_psc(c)
@@ -415,7 +380,7 @@ def process_measure(data, session):
     if data.get('wifi'):
         for w in data['wifi']:
             add_missing_dict_entries(w, measure_data)
-            w = normalized_wifi_dict(w)
+            w = WifiMeasure.validate(w)
             if w is None:
                 continue
             key = w['key']
@@ -540,7 +505,7 @@ def process_score(userid, points, session, key='location'):
 
 def process_station_measures(session, entries, station_type,
                              station_model, measure_model, blacklist_model,
-                             create_measure, create_key, join_key,
+                             create_key, join_key,
                              userid=None, max_measures_per_station=11000,
                              utcnow=None):
 
@@ -556,7 +521,8 @@ def process_station_measures(session, entries, station_type,
     # Process entries and group by validated station key
     station_measures = defaultdict(list)
     for entry in entries:
-        measure = create_measure(utcnow, entry)
+        entry['created'] = utcnow
+        measure = measure_model.create(entry)
 
         if not measure:
             dropped_malformed += 1
@@ -674,7 +640,6 @@ def insert_measures_cell(self, entries, userid=None,
             station_model=Cell,
             measure_model=CellMeasure,
             blacklist_model=CellBlacklist,
-            create_measure=create_cell_measure,
             create_key=to_cellkey_psc,
             join_key=join_cellkey,
             userid=userid,
@@ -696,7 +661,6 @@ def insert_measures_wifi(self, entries, userid=None,
             station_model=Wifi,
             measure_model=WifiMeasure,
             blacklist_model=WifiBlacklist,
-            create_measure=create_wifi_measure,
             create_key=to_wifikey,
             join_key=join_wifikey,
             userid=userid,

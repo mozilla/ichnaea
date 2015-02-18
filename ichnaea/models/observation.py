@@ -1,3 +1,4 @@
+from colander import Invalid
 from sqlalchemy import (
     Column,
     Float,
@@ -9,6 +10,7 @@ from sqlalchemy.dialects.mysql import (
     TINYINT as TinyInteger,
 )
 
+from ichnaea.customjson import decode_datetime
 from ichnaea.models.base import (
     _Model,
     BigIdMixin,
@@ -44,6 +46,23 @@ class ObservationMixin(BigIdMixin, ReportMixin):
 
     signal = Column(SmallInteger)
 
+    @classmethod
+    def validate(cls, entry):
+        try:
+            validated = cls.valid_schema()().deserialize(entry)
+        except Invalid:
+            validated = None
+        return validated
+
+    @classmethod
+    def create(cls, entry):
+        entry = cls.validate(entry)
+        if entry is None:  # pragma: no cover
+            return None
+        # BBB: no longer required, internaljson format decodes to datetime
+        entry['time'] = decode_datetime(entry['time'])
+        return cls(**entry)
+
 
 class CellMeasure(ObservationMixin, CellKeyPscMixin, _Model):
     __tablename__ = 'cell_measure'
@@ -52,6 +71,12 @@ class CellMeasure(ObservationMixin, CellKeyPscMixin, _Model):
         Index('cell_measure_created_idx', 'created'),
         Index('cell_measure_key_idx', 'radio', 'mcc', 'mnc', 'lac', 'cid'),
     )
+
+    @classmethod
+    def valid_schema(cls):
+        # avoid import problems, this should be a class property
+        from ichnaea.data.schema import ValidCellMeasureSchema
+        return ValidCellMeasureSchema
 
     asu = Column(SmallInteger)
     ta = Column(TinyInteger)
@@ -65,6 +90,12 @@ class WifiMeasure(ObservationMixin, WifiKeyMixin, _Model):
         Index('wifi_measure_key_idx', 'key'),
         Index('wifi_measure_key_created_idx', 'key', 'created'),
     )
+
+    @classmethod
+    def valid_schema(cls):
+        # avoid import problems, this should be a class property
+        from ichnaea.data.schema import ValidWifiSchema
+        return ValidWifiSchema
 
     channel = Column(SmallInteger)
     snr = Column(SmallInteger)

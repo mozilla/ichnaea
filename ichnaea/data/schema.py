@@ -209,6 +209,7 @@ class ValidMeasureSchema(FieldSchema, CopyingSchema):
     speed = DefaultNode(
         Float(), missing=-1, validator=Range(0, constants.MAX_SPEED))
     report_id = ReportIDNode(UUIDType())
+    created = SchemaNode(DateTimeFromString(), missing=None)
     time = RoundToMonthDateNode(DateTimeFromString(), missing=None)
 
 
@@ -221,8 +222,7 @@ class ValidWifiSchema(ValidMeasureSchema):
     key = WifiKeyNode(String())
     signal = DefaultNode(Integer(), missing=0, validator=Range(
         constants.MIN_WIFI_SIGNAL, constants.MAX_WIFI_SIGNAL))
-    signalToNoiseRatio = DefaultNode(
-        Integer(), missing=0, validator=Range(0, 100))
+    snr = DefaultNode(Integer(), missing=0, validator=Range(0, 100))
 
     def deserialize(self, data):
         if data:
@@ -244,6 +244,10 @@ class ValidWifiSchema(ValidMeasureSchema):
 
                 else:
                     data['channel'] = self.fields['channel'].missing
+
+            # map external name to internal
+            if data.get('snr', None) is None:
+                data['snr'] = data.get('signalToNoiseRatio', 0)
 
         return super(ValidWifiSchema, self).deserialize(data)
 
@@ -342,7 +346,6 @@ class ValidCellSchema(ValidCellBaseSchema):
     A Schema which validates the fields present in
     all Cells.
     """
-    created = SchemaNode(DateTimeFromString(), missing=None)
     modified = SchemaNode(DateTimeFromString(), missing=None)
     changeable = SchemaNode(Boolean(), missing=True)
     total_measures = SchemaNode(Integer(), missing=0)
@@ -354,8 +357,6 @@ class ValidCellMeasureSchema(ValidCellBaseSchema):
     A Schema which validates the fields present in
     all Cell measurements.
     """
-    # pass through created without bothering to validate or decode it again
-    created = SchemaNode(DateTimeFromString(), missing=None)
 
     def deserialize(self, data):
         if data:
