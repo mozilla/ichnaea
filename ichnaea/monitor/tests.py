@@ -131,8 +131,6 @@ class TestMonitorTasks(CeleryTestCase):
         }
         for k, v in data.items():
             self.redis_client.lpush(k, *range(v))
-        # BBB
-        data['default'] = 0
 
         result = monitor_queue_length.delay().get()
 
