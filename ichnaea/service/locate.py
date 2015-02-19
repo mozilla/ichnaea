@@ -120,13 +120,8 @@ class AbstractResult(object):
     def found(self):  # pragma: no cover
         raise NotImplementedError
 
-    def more_accurate(self, result):
-        """
-        Are we more accurate than the passed in result and fit into
-        the claimed result range?
-        """
-        dist = distance(result.lat, result.lon, self.lat, self.lon) * 1000
-        return dist <= result.accuracy
+    def more_accurate(self, result):  # pragma: no cover
+        raise NotImplementedError
 
 
 class PositionResult(AbstractResult):
@@ -135,12 +130,31 @@ class PositionResult(AbstractResult):
     def found(self):
         return self.lat is not None and self.lon is not None
 
+    def more_accurate(self, result):
+        """
+        Are we more accurate than the passed in result and fit into
+        the claimed result range?
+        """
+        if not self.found():
+            return False
+        if not result.found():
+            return True
+        dist = distance(result.lat, result.lon, self.lat, self.lon) * 1000
+        return dist <= result.accuracy
+
 
 class CountryResult(AbstractResult):
     """The result of a country query."""
 
     def found(self):
         return self.country_code is not None and self.country_name is not None
+
+    def more_accurate(self, result):
+        if not self.found():
+            return False
+        if not result.found():
+            return True
+        return False  # pragma: no cover
 
 
 class StatsLogger(object):
@@ -700,14 +714,10 @@ class AbstractLocationSearcher(StatsLogger):
             all_results[location_provider.log_group].appendleft(
                 provider_result)
 
-            if provider_result.found():
-                if not result.found():
-                    # If this is our first hit, then we use it.
-                    result = provider_result
-                elif provider_result.more_accurate(result):
-                    # If this location is more accurate than our previous one,
-                    # we'll use it.
-                    result = provider_result
+            if provider_result.more_accurate(result):
+                # If this location is more accurate than our previous one,
+                # we'll use it.
+                result = provider_result
 
         # Fall back to GeoIP if nothing has worked yet. We do not
         # include this in the "zoom-in" loop because GeoIP is
