@@ -483,7 +483,6 @@ class WifiLocationProvider(AbstractLocationProvider):
                                              .all())
             except Exception:
                 self.heka_client.raven(RAVEN_ERROR)
-                self.stat_count('wifi_error')
 
         return queried_wifis
 

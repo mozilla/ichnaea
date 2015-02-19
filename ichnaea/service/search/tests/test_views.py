@@ -279,7 +279,6 @@ class TestSearchErrors(AppTestCase):
             counter=[
                 'request.v1.search.200',
                 'search.geoip_hit',
-                'search.wifi_error',
             ],
         )
         self.check_expected_heka_messages(

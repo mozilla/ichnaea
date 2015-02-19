@@ -517,7 +517,6 @@ class TestGeolocateErrors(AppTestCase):
             counter=[
                 'request.v1.geolocate.200',
                 'geolocate.geoip_hit',
-                'geolocate.wifi_error',
             ],
         )
         self.check_expected_heka_messages(
