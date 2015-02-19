@@ -103,13 +103,13 @@ def map_data(data):
 class AbstractResult(object):
     """The result of a location provider query."""
 
-    def __init__(self, lat=None, lon=None, accuracy=None,
+    def __init__(self, provider, lat=None, lon=None, accuracy=None,
                  country_code=None, country_name=None,
                  query_data=True, log_name=None):
+        self.provider = provider
         self.lat = self._round(lat)
         self.lon = self._round(lon)
         self.accuracy = self._round(accuracy)
-        self.log_name = log_name
         self.country_code = country_code
         self.country_name = country_name
         self.query_data = query_data
@@ -195,7 +195,7 @@ class AbstractLocationProvider(StatsLogger):
 
     def __init__(self, session, result_type, *args, **kwargs):
         self.session = session
-        self.result_type = partial(result_type, log_name=self.log_name)
+        self.result_type = partial(result_type, self)
         self.heka_client = get_heka_client()
         super(AbstractLocationProvider, self).__init__(*args, **kwargs)
 
@@ -584,7 +584,7 @@ class GeoIPLocationProvider(AbstractLocationProvider):
 
     def __init__(self, geoip_db, result_type, *args, **kwargs):
         self.geoip_db = geoip_db
-        self.result_type = partial(result_type, log_name=self.log_name)
+        self.result_type = partial(result_type, self)
         super(GeoIPLocationProvider, self).__init__(None, result_type,
                                                     *args, **kwargs)
 
@@ -659,28 +659,26 @@ class AbstractLocationSearcher(StatsLogger):
             [self.geoip_provider] + self.search_location_providers)
 
     def search_location(self, data, client_addr):
-        result = self.result_type(query_data=False)
+        result = self.result_type(None, query_data=False)
         all_results = deque()
 
-        # Always do a GeoIP lookup because it is cheap and we want to
-        # report geoip vs. other data mismatches. We may also use
-        # the full GeoIP City-level estimate as well, if all else fails.
+        # Always do a GeoIP lookup because it is cheap and we may want to
+        # use the full GeoIP City-level estimate, if all else fails.
         geoip_result = self.geoip_provider.locate(client_addr)
-        all_results.append((self.geoip_provider, geoip_result))
+        all_results.append(geoip_result)
 
         for location_provider in self.search_location_providers:
             provider_result = location_provider.locate(data)
-            all_results.appendleft((location_provider, provider_result))
+            all_results.appendleft(provider_result)
 
             if provider_result.found():
                 if not result.found():
                     # If this is our first hit, then we use it.
                     result = provider_result
-                else:
+                elif provider_result.more_accurate(result):
                     # If this location is more accurate than our previous one,
                     # we'll use it.
-                    if provider_result.more_accurate(result):
-                        result = provider_result
+                    result = provider_result
 
         # Fall back to GeoIP if nothing has worked yet. We do not
         # include this in the "zoom-in" loop because GeoIP is
@@ -695,12 +693,12 @@ class AbstractLocationSearcher(StatsLogger):
 
         # Log a hit/miss metric for the first data source for
         # which the user provided sufficient data
-        for provider, provider_result in all_results:
-            if provider_result.query_data:
-                if provider_result.found():
-                    provider.log_used()
+        for res in all_results:
+            if res.query_data:
+                if res.found():
+                    res.provider.log_used()
                 else:
-                    provider.log_unused()
+                    res.provider.log_unused()
                 break
 
         return result
