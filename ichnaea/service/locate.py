@@ -243,8 +243,9 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
         A list of models which have a Cell interface to be used
         in the location search.
     """
-    models = []
+    models = ()
     data_field = 'cell'
+    log_name = 'cell'
     log_group = 'cell'
 
     def clean_cell_keys(self, data):
@@ -341,8 +342,7 @@ class CellLocationProvider(AbstractCellLocationProvider):
     A CellLocationProvider implements a cell location search using
     the Cell and OCID Cell models.
     """
-    models = [Cell, OCIDCell]
-    log_name = 'cell'
+    models = (Cell, OCIDCell)
 
     def prepare_location(self, queried_objects):
         length = len(queried_objects)
@@ -358,7 +358,7 @@ class CellAreaLocationProvider(AbstractCellLocationProvider):
     A CellAreaLocationProvider implements a cell location search
     using the CellArea model.
     """
-    models = [CellArea]
+    models = (CellArea, )
     log_name = 'cell_lac'
 
     def prepare_location(self, queried_objects):
