@@ -251,7 +251,9 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         self.check_stats(
             counter=[
                 'm.cell_hit',
+                ('m.geoip_hit', 0),
                 'm.api_log.test.cell_hit',
+                ('m.api_log.test.geoip_hit', 0),
             ],
         )
 
@@ -301,13 +303,11 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                # TODO: In the current strategy there is no way to
-                # disambiguate between a cell hit and a cell lac hit
-                # because they both use the same data field.
-                # We need to find a way to differentiate those two for
-                # this logging to work correctly.
-                # 'm.cell_lac_hit',
+                # TODO
+                'm.cell_lac_hit',
                 # 'm.api_log.test.cell_lac_hit',
+                ('m.api_log.test.cell_hit', 0),
+                # ('m.api_log.test.cell_miss', 0),
             ],
         )
 
@@ -601,6 +601,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         self.check_stats(
             counter=[
                 ('m.geoip_city_found', 1),
+                ('m.geoip_hit', 0),
                 ('m.wifi_hit', 1),
             ]
         )
@@ -672,6 +673,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
+                ('m.wifi_hit', 0),
                 ('m.cell_lac_hit', 1),
             ]
         )
@@ -710,6 +712,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
+                ('m.wifi_hit', 0),
                 ('m.cell_hit', 1),
             ]
         )
@@ -741,6 +744,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
+                ('m.cell_lac_hit', 0),
                 ('m.cell_hit', 1),
             ]
         )
@@ -778,6 +782,9 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
+                ('m.geoip_hit', 0),
+                ('m.cell_lac_hit', 0),
+                ('m.cell_hit', 0),
                 ('m.wifi_hit', 1),
             ]
         )
@@ -815,6 +822,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
+                ('m.cell_lac_hit', 0),
                 ('m.wifi_hit', 1),
             ]
         )
@@ -903,6 +911,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
                 'm.miss',
                 'm.wifi.provided_too_few',
                 'm.api_log.test.geoip_miss',
+                ('m.api_log.test.wifi_miss', 0),
             ],
         )
 
