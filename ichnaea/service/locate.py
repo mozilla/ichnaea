@@ -102,9 +102,10 @@ def map_data(data):
 class AbstractResult(object):
     """The result of a location provider query."""
 
-    def __init__(self, provider, lat=None, lon=None, accuracy=None,
+    def __init__(self, provider, priority, lat=None, lon=None, accuracy=None,
                  country_code=None, country_name=None, query_data=True):
         self.provider = provider
+        self.priority = priority
         self.lat = self._round(lat)
         self.lon = self._round(lon)
         self.accuracy = self._round(accuracy)
@@ -118,9 +119,11 @@ class AbstractResult(object):
         return value
 
     def found(self):  # pragma: no cover
+        """Does this result include any location data?"""
         raise NotImplementedError
 
     def more_accurate(self, result):  # pragma: no cover
+        """Is this result better than the passed in result?"""
         raise NotImplementedError
 
 
@@ -139,6 +142,8 @@ class PositionResult(AbstractResult):
             return False
         if not result.found():
             return True
+        if self.priority > result.priority:
+            return True
         dist = distance(result.lat, result.lon, self.lat, self.lon) * 1000
         return dist <= result.accuracy
 
@@ -153,6 +158,8 @@ class CountryResult(AbstractResult):
         if not self.found():
             return False
         if not result.found():
+            return True
+        if self.priority > result.priority:
             return True
         return False  # pragma: no cover
 
@@ -213,7 +220,7 @@ class AbstractLocationProvider(StatsLogger):
 
     def __init__(self, session, result_type, *args, **kwargs):
         self.session = session
-        self.result_type = partial(result_type, self)
+        self.result_type = partial(result_type, self, 1)
         self.heka_client = get_heka_client()
         super(AbstractLocationProvider, self).__init__(*args, **kwargs)
 
@@ -626,16 +633,17 @@ class GeoIPLocationProvider(AbstractLocationProvider):
     A GeoIPLocationProvider implements a location search using a
     GeoIP client service lookup.
     """
+    data_field = 'geoip'
     log_name = 'geoip'
     log_group = 'geoip'
 
     def __init__(self, geoip_db, result_type, *args, **kwargs):
         self.geoip_db = geoip_db
-        self.result_type = partial(result_type, self)
-        super(GeoIPLocationProvider, self).__init__(None, result_type,
-                                                    *args, **kwargs)
+        self.heka_client = get_heka_client()
+        self.result_type = partial(result_type, self, 0)
+        StatsLogger.__init__(self, *args, **kwargs)
 
-    def locate(self, client_addr):
+    def locate(self, data):
         """Provide a location given the provided client IP address.
 
         :rtype: :class:`~ichnaea.service.locate.AbstractResult`
@@ -643,6 +651,7 @@ class GeoIPLocationProvider(AbstractLocationProvider):
         # Always consider there to be GeoIP data, even if no client_addr
         # was provided
         location = self.result_type(query_data=True)
+        client_addr = data.get(self.data_field, None)
 
         if client_addr and self.geoip_db is not None:
             geoip = self.geoip_db.geoip_lookup(client_addr)
@@ -679,16 +688,16 @@ class AbstractLocationSearcher(StatsLogger):
     def __init__(self, session, geoip_db, *args, **kwargs):
         super(AbstractLocationSearcher, self).__init__(*args, **kwargs)
         self.session = session
-        self.geoip_provider = GeoIPLocationProvider(
+        self.heka_client = get_heka_client()
+
+        geoip_provider = GeoIPLocationProvider(
             geoip_db,
             self.result_type,
             api_key_log=self.api_key_log,
             api_key_name=self.api_key_name,
             api_name=self.api_name,
         )
-        self.heka_client = get_heka_client()
-
-        self.search_location_providers = [
+        search_providers = [
             cls(
                 session,
                 self.result_type,
@@ -697,19 +706,13 @@ class AbstractLocationSearcher(StatsLogger):
                 api_name=self.api_name,
             ) for cls in self.provider_classes]
 
-        self.all_location_providers = (
-            [self.geoip_provider] + self.search_location_providers)
+        self.all_providers = [geoip_provider] + search_providers
 
-    def search_location(self, data, client_addr):
-        result = self.result_type(None, query_data=False)
+    def search_location(self, data):
+        result = self.result_type(None, -1, query_data=False)
         all_results = defaultdict(deque)
 
-        # Always do a GeoIP lookup because it is cheap and we may want to
-        # use the full GeoIP City-level estimate, if all else fails.
-        geoip_result = self.geoip_provider.locate(client_addr)
-        all_results[self.geoip_provider.log_group].append(geoip_result)
-
-        for location_provider in self.search_location_providers:
+        for location_provider in self.all_providers:
             provider_result = location_provider.locate(data)
             all_results[location_provider.log_group].appendleft(
                 provider_result)
@@ -718,14 +721,6 @@ class AbstractLocationSearcher(StatsLogger):
                 # If this location is more accurate than our previous one,
                 # we'll use it.
                 result = provider_result
-
-        # Fall back to GeoIP if nothing has worked yet. We do not
-        # include this in the "zoom-in" loop because GeoIP is
-        # frequently _wrong_ at the city level; we only want to
-        # accept that estimate if we got nothing better from cell
-        # or wifi.
-        if not result.found() and geoip_result.found():
-            result = geoip_result
 
         if not result.found():
             self.stat_count('miss')
@@ -758,7 +753,8 @@ class AbstractLocationSearcher(StatsLogger):
 
     def search(self, data, client_addr):
         """Provide a type specific search result or return None."""
-        result = self.search_location(data, client_addr)
+        data['geoip'] = client_addr
+        result = self.search_location(data)
         if result.found():
             return self.prepare_location(result)
         return None

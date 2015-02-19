@@ -7,10 +7,13 @@ Classes
 +++++++
 
 .. autoclass:: AbstractResult
+    :members:
 
 .. autoclass:: PositionResult
+    :members:
 
 .. autoclass:: CountryResult
+    :members:
 
 .. autoclass:: StatsLogger
     :members:
