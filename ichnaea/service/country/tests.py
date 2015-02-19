@@ -110,6 +110,14 @@ class TestCountry(AppTestCase, CountryBase):
                      'country.no_wifi_found',
                      'country.miss'])
 
+    def test_get_fallback(self):
+        result = self.app.get(
+            '/v1/country?key=test',
+            extra_environ={'HTTP_X_FORWARDED_FOR': self.test_ip},
+            status=200)
+        self._check_geoip_result(result)
+        self.check_db_calls(master=0, slave=0)
+
 
 class TestCountryErrors(AppTestCase, CountryBase):
     # this is a standalone class to ensure DB isolation for dropping tables

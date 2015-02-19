@@ -14,7 +14,7 @@ from ichnaea.service.locate import (
     map_data,
 )
 
-EMPTY_REQUEST = '{}'
+EMPTY = ('{}', '')
 
 
 def configure_country(config):
@@ -28,7 +28,7 @@ def country_view(request):
     client_addr = request.client_addr
     geoip_db = request.registry.geoip_db
 
-    if request.body == EMPTY_REQUEST and client_addr and geoip_db is not None:
+    if request.body in EMPTY and client_addr and geoip_db is not None:
         # Optimize common case of geoip-only request
         country = geoip_db.country_lookup(client_addr)
         if country:
