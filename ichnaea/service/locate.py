@@ -1,4 +1,4 @@
-from collections import defaultdict, namedtuple
+from collections import defaultdict, deque, namedtuple
 from functools import partial
 import operator
 
@@ -105,13 +105,14 @@ class AbstractResult(object):
 
     def __init__(self, lat=None, lon=None, accuracy=None,
                  country_code=None, country_name=None,
-                 log_name=None):
+                 query_data=True, log_name=None):
         self.lat = self._round(lat)
         self.lon = self._round(lon)
         self.accuracy = self._round(accuracy)
         self.log_name = log_name
         self.country_code = country_code
         self.country_name = country_name
+        self.query_data = query_data
 
     def _round(self, value):
         if value is not None:
@@ -217,15 +218,6 @@ class AbstractLocationProvider(StatsLogger):
             self.stat_count('api_log.{key}.{metric}_miss'.format(
                 key=self.api_key_name, metric=self.log_name))
 
-    def has_data(self, data):
-        """
-        Does the query data (dict) contain information specific
-        to this provider?
-
-        :rtype: bool
-        """
-        return self.data_field in data
-
 
 class AbstractCellLocationProvider(AbstractLocationProvider):
     """
@@ -320,8 +312,10 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
         raise NotImplementedError
 
     def locate(self, data):
-        location = self.result_type()
+        location = self.result_type(query_data=False)
         cell_keys = self.clean_cell_keys(data)
+        if cell_keys:
+            location.query_data = True
         queried_objects = self.query_database(cell_keys)
         if queried_objects:
             location = self.prepare_location(queried_objects)
@@ -543,18 +537,12 @@ class WifiLocationProvider(AbstractLocationProvider):
                                      sample, WIFI_MIN_ACCURACY)
         return self.result_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
-    def has_data(self, data):
-        if super(WifiLocationProvider, self).has_data(data):
-            wifis, wifi_signals, wifi_keys = self.get_clean_wifi_keys(data)
-            return (
-                wifi_keys and
-                len(
-                    self.filter_bssids_by_similarity(list(wifi_keys))
-                ) >= MIN_WIFIS_IN_QUERY
-            )
+    def sufficient_data(self, wifi_keys):
+        return (len(self.filter_bssids_by_similarity(list(wifi_keys))) >=
+                MIN_WIFIS_IN_QUERY)
 
     def locate(self, data):
-        location = self.result_type()
+        location = self.result_type(query_data=False)
 
         wifis, wifi_signals, wifi_keys = self.get_clean_wifi_keys(data)
 
@@ -564,6 +552,9 @@ class WifiLocationProvider(AbstractLocationProvider):
                 self.stat_count('wifi.provided_too_few')
         else:
             self.stat_time('wifi.provided', len(wifi_keys))
+
+            if self.sufficient_data(wifi_keys):
+                location.query_data = True
 
             queried_wifis = self.query_database(wifi_keys)
 
@@ -597,18 +588,16 @@ class GeoIPLocationProvider(AbstractLocationProvider):
         super(GeoIPLocationProvider, self).__init__(None, result_type,
                                                     *args, **kwargs)
 
-    def has_data(self, data):
-        return True
-
     def locate(self, client_addr):
         """Provide a location given the provided client IP address.
 
         :rtype: :class:`~ichnaea.service.locate.AbstractResult`
         """
-        location = self.result_type()
+        location = self.result_type(query_data=True)
 
         if client_addr and self.geoip_db is not None:
             geoip = self.geoip_db.geoip_lookup(client_addr)
+            location.query_data = True
 
             if geoip:
                 if geoip['city']:
@@ -670,28 +659,28 @@ class AbstractLocationSearcher(StatsLogger):
             [self.geoip_provider] + self.search_location_providers)
 
     def search_location(self, data, client_addr):
-        result = self.result_type()
-        location_provider_used = None
+        result = self.result_type(query_data=False)
+        all_results = deque()
 
         # Always do a GeoIP lookup because it is cheap and we want to
         # report geoip vs. other data mismatches. We may also use
         # the full GeoIP City-level estimate as well, if all else fails.
         geoip_result = self.geoip_provider.locate(client_addr)
+        all_results.append((self.geoip_provider, geoip_result))
 
         for location_provider in self.search_location_providers:
             provider_result = location_provider.locate(data)
+            all_results.appendleft((location_provider, provider_result))
 
             if provider_result.found():
                 if not result.found():
                     # If this is our first hit, then we use it.
                     result = provider_result
-                    location_provider_used = location_provider
                 else:
                     # If this location is more accurate than our previous one,
                     # we'll use it.
                     if provider_result.more_accurate(result):
                         result = provider_result
-                        location_provider_used = location_provider
 
         # Fall back to GeoIP if nothing has worked yet. We do not
         # include this in the "zoom-in" loop because GeoIP is
@@ -700,17 +689,18 @@ class AbstractLocationSearcher(StatsLogger):
         # or wifi.
         if not result.found() and geoip_result.found():
             result = geoip_result
-            location_provider_used = self.geoip_provider
 
         if not result.found():
             self.stat_count('miss')
 
-        for location_provider in reversed(self.all_location_providers):
-            if location_provider.has_data(data):
-                if location_provider is location_provider_used:
-                    location_provider.log_used()
+        # Log a hit/miss metric for the first data source for
+        # which the user provided sufficient data
+        for provider, provider_result in all_results:
+            if provider_result.query_data:
+                if provider_result.found():
+                    provider.log_used()
                 else:
-                    location_provider.log_unused()
+                    provider.log_unused()
                 break
 
         return result
