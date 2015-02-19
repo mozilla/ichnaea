@@ -104,8 +104,7 @@ class AbstractResult(object):
     """The result of a location provider query."""
 
     def __init__(self, provider, lat=None, lon=None, accuracy=None,
-                 country_code=None, country_name=None,
-                 query_data=True, log_name=None):
+                 country_code=None, country_name=None, query_data=True):
         self.provider = provider
         self.lat = self._round(lat)
         self.lon = self._round(lon)
@@ -187,10 +186,16 @@ class AbstractLocationProvider(StatsLogger):
     .. attribute:: log_name
 
         The name to use in logging statements, for example 'cell_lac'
+
+    .. attribute:: log_group
+
+        The name of the logging group, for example 'cell' for both
+        cell and cell location area providers.
     """
 
     data_field = None
     log_name = None
+    log_group = None
     result_type = None
 
     def __init__(self, session, result_type, *args, **kwargs):
@@ -242,6 +247,7 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
     """
     models = []
     data_field = 'cell'
+    log_group = 'cell'
 
     def clean_cell_keys(self, data):
         """Pre-process cell data."""
@@ -371,6 +377,7 @@ class WifiLocationProvider(AbstractLocationProvider):
     """
     data_field = 'wifi'
     log_name = 'wifi'
+    log_group = 'wifi'
 
     def cluster_elements(self, items, distance_fn, threshold):
         """
@@ -588,6 +595,7 @@ class GeoIPLocationProvider(AbstractLocationProvider):
     GeoIP client service lookup.
     """
     log_name = 'geoip'
+    log_group = 'geoip'
 
     def __init__(self, geoip_db, result_type, *args, **kwargs):
         self.geoip_db = geoip_db
@@ -666,16 +674,17 @@ class AbstractLocationSearcher(StatsLogger):
 
     def search_location(self, data, client_addr):
         result = self.result_type(None, query_data=False)
-        all_results = deque()
+        all_results = defaultdict(deque)
 
         # Always do a GeoIP lookup because it is cheap and we may want to
         # use the full GeoIP City-level estimate, if all else fails.
         geoip_result = self.geoip_provider.locate(client_addr)
-        all_results.append(geoip_result)
+        all_results[self.geoip_provider.log_group].append(geoip_result)
 
         for location_provider in self.search_location_providers:
             provider_result = location_provider.locate(data)
-            all_results.appendleft(provider_result)
+            all_results[location_provider.log_group].appendleft(
+                provider_result)
 
             if provider_result.found():
                 if not result.found():
@@ -701,12 +710,21 @@ class AbstractLocationSearcher(StatsLogger):
 
         # Log a hit/miss metric for the first data source for
         # which the user provided sufficient data
-        for res in all_results:
-            if res.query_data:
-                if res.found():
-                    res.provider.log_success()
+        for log_group in ('wifi', 'cell', 'geoip'):
+            results = all_results[log_group]
+            if any([r.query_data for r in results]):
+                # Claim a success if at least one result for a logging
+                # group was a success.
+                first_result = results[0]
+                found_result = None
+                for res in results:
+                    if res.found():
+                        found_result = res
+                        break
+                if found_result is not None:
+                    found_result.provider.log_success()
                 else:
-                    res.provider.log_failure()
+                    first_result.provider.log_failure()
                 break
 
         return result

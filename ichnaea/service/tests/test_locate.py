@@ -303,11 +303,10 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                # TODO
                 'm.cell_lac_hit',
-                # 'm.api_log.test.cell_lac_hit',
+                'm.api_log.test.cell_lac_hit',
                 ('m.api_log.test.cell_hit', 0),
-                # ('m.api_log.test.cell_miss', 0),
+                ('m.api_log.test.cell_miss', 0),
             ],
         )
 
