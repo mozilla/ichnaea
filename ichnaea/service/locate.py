@@ -126,6 +126,10 @@ class AbstractResult(object):
         """Does this result include any location data?"""
         raise NotImplementedError
 
+    def accurate_enough(self):  # pragma: no cover
+        """Is this result accurate enough to return it?"""
+        raise NotImplementedError
+
     def more_accurate(self, result):  # pragma: no cover
         """Is this result better than the passed in result?"""
         raise NotImplementedError
@@ -136,6 +140,10 @@ class PositionResult(AbstractResult):
 
     def found(self):
         return self.lat is not None and self.lon is not None
+
+    def accurate_enough(self):
+        # For position data we currently always want to continue.
+        return False
 
     def more_accurate(self, result):
         """
@@ -158,12 +166,17 @@ class CountryResult(AbstractResult):
     def found(self):
         return self.country_code is not None and self.country_name is not None
 
+    def accurate_enough(self):
+        if self.found():
+            return True
+        return False
+
     def more_accurate(self, result):
         if not self.found():
             return False
         if not result.found():
             return True
-        if self.priority > result.priority:
+        if self.priority > result.priority:  # pragma: no cover
             return True
         return False  # pragma: no cover
 
@@ -713,6 +726,10 @@ class AbstractLocationSearcher(StatsLogger):
                 # we'll use it.
                 result = provider_result
 
+            if result.accurate_enough():
+                # Stop the loop, if we have a good quality result.
+                break
+
         if not result.found():
             self.stat_count('miss')
         else:
@@ -778,8 +795,8 @@ class CountrySearcher(AbstractLocationSearcher):
     """
 
     provider_classes = (
-        GeoIPLocationProvider,
         CellCountryProvider,
+        GeoIPLocationProvider,
     )
     result_type = CountryResult
 
