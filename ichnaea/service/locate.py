@@ -206,14 +206,24 @@ class AbstractLocationProvider(StatsLogger):
         """
         raise NotImplementedError()
 
-    def log_used(self):
+    def log_hit(self):
         """Log a stat metric for a successful provider lookup."""
+        self.stat_count('{metric}_hit'.format(metric=self.log_name))
+
+    def log_success(self):
+        """
+        Log a stat metric for a request in which the user provided
+        relevant data for this provider and the lookup was successful.
+        """
         if self.api_key_log:
             self.stat_count('api_log.{key}.{metric}_hit'.format(
                 key=self.api_key_name, metric=self.log_name))
 
-    def log_unused(self):
-        """Log a stat metric for an unsuccessful provider lookup."""
+    def log_failure(self):
+        """
+        Log a stat metric for a request in which the user provided
+        relevant data for this provider and the lookup failed.
+        """
         if self.api_key_log:
             self.stat_count('api_log.{key}.{metric}_miss'.format(
                 key=self.api_key_name, metric=self.log_name))
@@ -331,7 +341,6 @@ class CellLocationProvider(AbstractCellLocationProvider):
     log_name = 'cell'
 
     def prepare_location(self, queried_objects):
-        self.stat_count('cell_hit')
         length = len(queried_objects)
         avg_lat = sum([c.lat for c in queried_objects]) / length
         avg_lon = sum([c.lon for c in queried_objects]) / length
@@ -349,7 +358,6 @@ class CellAreaLocationProvider(AbstractCellLocationProvider):
     log_name = 'cell_lac'
 
     def prepare_location(self, queried_objects):
-        self.stat_count('cell_lac_hit')
         # take the smallest LAC of any the user is inside
         lac = sorted(queried_objects, key=operator.attrgetter('range'))[0]
         accuracy = float(max(LAC_MIN_ACCURACY, lac.range))
@@ -569,7 +577,6 @@ class WifiLocationProvider(AbstractLocationProvider):
             if len(clusters) == 0:
                 self.stat_count('wifi.found_no_cluster')
             else:
-                self.stat_count('wifi_hit')
                 location = self.prepare_location(clusters)
 
         return location
@@ -604,7 +611,6 @@ class GeoIPLocationProvider(AbstractLocationProvider):
                     self.stat_count('geoip_city_found')
                 else:
                     self.stat_count('geoip_country_found')
-                self.stat_count('geoip_hit')
 
                 location = self.result_type(
                     lat=geoip['latitude'],
@@ -690,15 +696,17 @@ class AbstractLocationSearcher(StatsLogger):
 
         if not result.found():
             self.stat_count('miss')
+        else:
+            result.provider.log_hit()
 
         # Log a hit/miss metric for the first data source for
         # which the user provided sufficient data
         for res in all_results:
             if res.query_data:
                 if res.found():
-                    res.provider.log_used()
+                    res.provider.log_success()
                 else:
-                    res.provider.log_unused()
+                    res.provider.log_failure()
                 break
 
         return result
