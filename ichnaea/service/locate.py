@@ -152,7 +152,7 @@ class AbstractLocationProvider(StatsLogger):
         self.heka_client = get_heka_client()
         super(AbstractLocationProvider, self).__init__(*args, **kwargs)
 
-    def locate(self, data):
+    def locate(self, data):  # pragma: no cover
         """Provide a location given the provided query data (dict)."""
         raise NotImplementedError()
 
@@ -262,7 +262,7 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
 
         return queried_objects
 
-    def prepare_location(self, queried_objects):
+    def prepare_location(self, queried_objects):  # pragma: no cover
         """Combine the queried_objects into an estimated location."""
         raise NotImplementedError
 
@@ -676,7 +676,7 @@ class AbstractLocationSearcher(StatsLogger):
 
         return country, location
 
-    def prepare_location(self, country, location):
+    def prepare_location(self, country, location):  # pragma: no cover
         raise NotImplementedError()
 
     def search(self, data, client_addr):
