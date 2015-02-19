@@ -600,12 +600,12 @@ class GeoIPLocationProvider(AbstractLocationProvider):
 
         :rtype: :class:`~ichnaea.service.locate.AbstractResult`
         """
+        # Always consider there to be GeoIP data, even if no client_addr
+        # was provided
         location = self.result_type(query_data=True)
 
         if client_addr and self.geoip_db is not None:
             geoip = self.geoip_db.geoip_lookup(client_addr)
-            location.query_data = True
-
             if geoip:
                 if geoip['city']:
                     self.stat_count('geoip_city_found')
