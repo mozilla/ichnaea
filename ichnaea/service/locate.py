@@ -638,11 +638,7 @@ class AbstractLocationSearcher(StatsLogger):
     # to wifi, tightening our estimate each step only so
     # long as it doesn't contradict the existing best-estimate.
 
-    LOCATION_PROVIDER_CLASSES = (
-        CellAreaLocationProvider,
-        CellLocationProvider,
-        WifiLocationProvider,
-    )
+    provider_classes = ()
     result_type = None
 
     def __init__(self, session, geoip_db, *args, **kwargs):
@@ -664,7 +660,7 @@ class AbstractLocationSearcher(StatsLogger):
                 api_key_log=self.api_key_log,
                 api_key_name=self.api_key_name,
                 api_name=self.api_name,
-            ) for cls in self.LOCATION_PROVIDER_CLASSES]
+            ) for cls in self.provider_classes]
 
         self.all_location_providers = (
             [self.geoip_provider] + self.search_location_providers)
@@ -743,6 +739,11 @@ class PositionSearcher(AbstractLocationSearcher):
     a longitude and an accuracy in meters.
     """
 
+    provider_classes = (
+        CellAreaLocationProvider,
+        CellLocationProvider,
+        WifiLocationProvider,
+    )
     result_type = PositionResult
 
     def prepare_location(self, location):
@@ -758,6 +759,10 @@ class CountrySearcher(AbstractLocationSearcher):
     A CountrySearcher will return a country name and code.
     """
 
+    provider_classes = (
+        CellAreaLocationProvider,
+        CellLocationProvider,
+    )
     result_type = CountryResult
 
     def prepare_location(self, location):

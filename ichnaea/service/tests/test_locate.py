@@ -1183,3 +1183,22 @@ class TestCountrySearcher(BaseLocateTest):
     def test_country_geoip_unknown(self):
         result = self._make_query(client_addr='127.0.0.1')
         self.assertTrue(result is None)
+
+    def test_no_wifi_provider(self):
+        session = self.db_slave_session
+        london = self.geoip_data['London']
+        wifis = [{'key': '001122334455'}, {'key': '112233445566'}]
+        session.add(Wifi(
+            key=wifis[0]['key'], lat=GB_LAT, lon=GB_LON, range=200))
+        session.add(Wifi(
+            key=wifis[1]['key'], lat=GB_LAT, lon=GB_LON + 0.00001, range=300))
+        session.flush()
+
+        with self.db_call_checker() as check_db_calls:
+            result = self._make_query(
+                data={'wifi': wifis}, client_addr=london['ip'])
+            check_db_calls(master=0, slave=0)
+
+        self.assertEqual(result,
+                         {'country_code': london['country_code'],
+                          'country_name': london['country_name']})
