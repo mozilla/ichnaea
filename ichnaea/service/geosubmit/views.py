@@ -24,7 +24,7 @@ from ichnaea.service.geosubmit.schema import (
     GeoSubmitSchema,
 )
 from ichnaea.service.locate import (
-    PositionLocationSearcher,
+    PositionSearcher,
     map_data,
 )
 from ichnaea.service.submit.schema import SubmitSchema
@@ -219,7 +219,7 @@ def process_single(request):
     if first_item['latitude'] == -255 or first_item['longitude'] == -255:
         data = map_data(data['items'][0])
         session = request.db_slave_session
-        result = PositionLocationSearcher(
+        result = PositionSearcher(
             api_key_log=getattr(request, 'api_key_log', False),
             api_key_name=getattr(request, 'api_key_name', None),
             api_name='geosubmit',

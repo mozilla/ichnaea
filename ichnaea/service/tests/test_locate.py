@@ -64,7 +64,7 @@ class BaseLocateTest(DBTestCase, GeoIPIsolation):
 
 class TestPositionSearcher(BaseLocateTest):
 
-    searcher = locate.PositionLocationSearcher
+    searcher = locate.PositionSearcher
 
     def test_no_data(self):
         with self.db_call_checker() as check_db_calls:
@@ -1163,7 +1163,7 @@ class TestPositionSearcher(BaseLocateTest):
 
 class TestCountrySearcher(BaseLocateTest):
 
-    searcher = locate.CountryLocationSearcher
+    searcher = locate.CountrySearcher
 
     def test_country_geoip(self):
         bhutan = self.geoip_data['Bhutan']

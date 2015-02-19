@@ -38,8 +38,8 @@ Classes
 .. autoclass:: AbstractLocationSearcher
     :members:
 
-.. autoclass:: CountryLocationSearcher
+.. autoclass:: CountrySearcher
     :members:
 
-.. autoclass:: PositionLocationSearcher
+.. autoclass:: PositionSearcher
     :members:

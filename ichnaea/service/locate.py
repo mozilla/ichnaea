@@ -737,11 +737,10 @@ class AbstractLocationSearcher(StatsLogger):
         return None
 
 
-class PositionLocationSearcher(AbstractLocationSearcher):
+class PositionSearcher(AbstractLocationSearcher):
     """
-    A PositionLocationSearcher will return a location search query
-    in the form of a position defined by a latitude, a longitude, and
-    an accuracy in meters.
+    A PositionSearcher will return a position defined by a latitude,
+    a longitude and an accuracy in meters.
     """
 
     result_type = PositionResult
@@ -754,10 +753,9 @@ class PositionLocationSearcher(AbstractLocationSearcher):
         }
 
 
-class CountryLocationSearcher(AbstractLocationSearcher):
+class CountrySearcher(AbstractLocationSearcher):
     """
-    A CountryLocationSearcher will return a location search query
-    in the form of the name and code of the queried country.
+    A CountrySearcher will return a country name and code.
     """
 
     result_type = CountryResult

@@ -8,7 +8,7 @@ from ichnaea.service.error import (
 )
 from ichnaea.service.base import check_api_key
 from ichnaea.service.locate import (
-    PositionLocationSearcher,
+    PositionSearcher,
     map_data,
 )
 
@@ -44,7 +44,7 @@ def geolocate_view(request):
 
     data = map_data(data)
     session = request.db_slave_session
-    result = PositionLocationSearcher(
+    result = PositionSearcher(
         api_key_log=getattr(request, 'api_key_log', False),
         api_key_name=getattr(request, 'api_key_name', None),
         api_name='geolocate',
