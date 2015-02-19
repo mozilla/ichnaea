@@ -537,9 +537,6 @@ class WifiLocationProvider(AbstractLocationProvider):
                 self.stat_count('wifi_hit')
                 location = self.prepare_location(clusters)
 
-        if not location:
-            self.stat_count('no_wifi_found')
-
         return location
 
 
@@ -574,7 +571,6 @@ class GeoIPLocationProvider(AbstractLocationProvider):
                     self.stat_count('geoip_city_found')
                 else:
                     self.stat_count('geoip_country_found')
-                self.stat_count('country_from_geoip')
                 self.stat_count('geoip_hit')
 
                 # Only use the GeoIP country as an additional possible match,
@@ -585,10 +581,6 @@ class GeoIPLocationProvider(AbstractLocationProvider):
                     'lon': geoip['longitude'],
                     'accuracy': geoip['accuracy'],
                 }
-
-        if not (location or country):
-            self.stat_count('no_country')
-            self.stat_count('no_geoip_found')
 
         return (location, country)
 

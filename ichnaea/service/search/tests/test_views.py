@@ -53,7 +53,7 @@ class TestSearch(AppTestCase):
             counter=[('search.api_key.test', 1),
                      ('search.cell_hit', 1),
                      ('request.v1.search.200', 1),
-                     ('search.no_geoip_found', 1)],
+                     ('search.api_log.test.cell_hit', 1)],
         )
 
     def test_ok_wifi(self):
@@ -83,8 +83,7 @@ class TestSearch(AppTestCase):
             counter=[('search.api_key.test', 1),
                      ('search.wifi_hit', 1),
                      ('request.v1.search.200', 1),
-                     ('search.no_geoip_found', 1),
-                     ('search.no_country', 1)],
+                     ('search.api_log.test.wifi_hit', 1)],
         )
 
     def test_not_found(self):
@@ -109,7 +108,8 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.json, {"status": "not_found"})
 
         self.check_stats(counter=['search.api_key.test',
-                                  'search.miss'])
+                                  'search.miss',
+                                  'search.api_log.test.wifi_miss'])
 
     def test_geoip_fallback(self):
         app = self.app
@@ -133,9 +133,8 @@ class TestSearch(AppTestCase):
             counter=[('search.api_key.test', 1),
                      ('search.geoip_hit', 1),
                      ('request.v1.search.200', 1),
-                     ('search.no_wifi_found', 1),
                      ('search.geoip_city_found', 1),
-                     ('search.country_from_geoip', 1)]
+                     ('search.api_log.test.wifi_miss', 1)],
         )
 
     def test_empty_request_means_geoip(self):
@@ -157,7 +156,7 @@ class TestSearch(AppTestCase):
                      ('search.geoip_hit', 1),
                      ('request.v1.search.200', 1),
                      ('search.geoip_city_found', 1),
-                     ('search.country_from_geoip', 1)]
+                     ('search.api_log.test.geoip_hit', 1)],
         )
 
     def test_error(self):
@@ -280,7 +279,6 @@ class TestSearchErrors(AppTestCase):
             counter=[
                 'request.v1.search.200',
                 'search.geoip_hit',
-                'search.no_wifi_found',
                 'search.wifi_error',
             ],
         )

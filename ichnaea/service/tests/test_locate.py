@@ -66,8 +66,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         self.assertTrue(result is None)
         self.check_stats(
             counter=[
-                'm.no_country',
-                'm.no_geoip_found',
+                'm.miss',
             ],
         )
 
@@ -85,7 +84,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                'm.country_from_geoip',
                 'm.geoip_country_found',
                 'm.geoip_hit',
                 'm.api_log.test.geoip_hit',
@@ -103,8 +101,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                'm.no_country',
-                'm.no_geoip_found',
                 'm.api_log.test.geoip_miss',
             ],
         )
@@ -119,7 +115,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                'm.country_from_geoip',
                 'm.geoip_city_found',
                 'm.geoip_hit',
                 'm.api_log.test.geoip_hit',
@@ -136,7 +131,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                'm.country_from_geoip',
                 'm.geoip_country_found',
                 'm.geoip_hit',
                 'm.api_log.test.geoip_hit',
@@ -160,7 +154,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                'm.country_from_geoip',
                 'm.geoip_city_found',
             ],
         )
@@ -216,12 +209,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
                           'lon': london['longitude'],
                           'accuracy': london['accuracy']})
 
-        self.check_stats(
-            counter=[
-                'm.country_from_geoip',
-            ],
-        )
-
     def test_geoip_mcc_multiple_unknown_mismatching_cell(self):
         session = self.db_slave_session
         gsm = RADIO_TYPE['gsm']
@@ -241,12 +228,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
                          {'lat': london['latitude'],
                           'lon': london['longitude'],
                           'accuracy': london['accuracy']})
-
-        self.check_stats(
-            counter=[
-                'm.country_from_geoip',
-            ],
-        )
 
     def test_cell(self):
         session = self.db_slave_session
@@ -322,7 +303,7 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
             counter=[
                 # TODO: In the current strategy there is no way to
                 # disambiguate between a cell hit and a cell lac hit
-                # becuase they both use the same data field.
+                # because they both use the same data field.
                 # We need to find a way to differentiate those two for
                 # this logging to work correctly.
                 # 'm.cell_lac_hit',
@@ -619,7 +600,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
 
         self.check_stats(
             counter=[
-                ('m.country_from_geoip', 1),
                 ('m.geoip_city_found', 1),
                 ('m.wifi_hit', 1),
             ]
@@ -921,7 +901,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         self.check_stats(
             counter=[
                 'm.miss',
-                'm.no_wifi_found',
                 'm.wifi.provided_too_few',
                 'm.api_log.test.geoip_miss',
             ],
@@ -943,7 +922,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         self.check_stats(
             counter=[
                 'm.miss',
-                'm.no_wifi_found',
                 'm.wifi.found_too_few',
                 'm.wifi.partial_match',
             ],
@@ -969,7 +947,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         self.check_stats(
             counter=[
                 'm.miss',
-                'm.no_wifi_found',
                 'm.api_log.test.geoip_miss',
             ],
             timer=[
@@ -994,7 +971,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         self.check_stats(
             counter=[
                 'm.miss',
-                'm.no_wifi_found',
                 'm.api_log.test.geoip_miss',
             ],
             timer=[
@@ -1169,7 +1145,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         self.check_stats(
             counter=[
                 'm.miss',
-                'm.no_wifi_found',
                 'm.api_log.test.wifi_miss',
             ],
         )
