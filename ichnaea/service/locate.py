@@ -62,19 +62,22 @@ def estimate_accuracy(lat, lon, points, minimum):
     return max(accuracy, minimum)
 
 
-def map_data(data):
+def map_data(data, client_addr=None):
     """
     Transform a geolocate API dictionary to an equivalent search API
     dictionary.
     """
-    if not data:
-        return data
-
     mapped = {
-        'radio': data['radioType'],
+        'geoip': None,
+        'radio': data.get('radioType', None),
         'cell': [],
         'wifi': [],
     }
+    if client_addr:
+        mapped['geoip'] = client_addr
+
+    if not data:
+        return mapped
 
     if 'cellTowers' in data:
         for cell in data['cellTowers']:
@@ -102,7 +105,8 @@ def map_data(data):
 class AbstractResult(object):
     """The result of a location provider query."""
 
-    def __init__(self, provider, priority, lat=None, lon=None, accuracy=None,
+    def __init__(self, provider, priority=-1,
+                 lat=None, lon=None, accuracy=None,
                  country_code=None, country_name=None, query_data=True):
         self.provider = provider
         self.priority = priority
@@ -183,6 +187,7 @@ class StatsLogger(object):
         self.api_key_name = api_key_name
         self.api_key_log = api_key_log
         self.api_name = api_name
+        self.heka_client = get_heka_client()
         self.stats_client = get_stats_client()
 
     def stat_count(self, stat):
@@ -213,15 +218,16 @@ class AbstractLocationProvider(StatsLogger):
         cell and cell location area providers.
     """
 
+    db_source_field = 'session'
     data_field = None
     log_name = None
     log_group = None
+    priority = 1
     result_type = None
 
-    def __init__(self, session, result_type, *args, **kwargs):
-        self.session = session
-        self.result_type = partial(result_type, self, 1)
-        self.heka_client = get_heka_client()
+    def __init__(self, db_source, result_type, *args, **kwargs):
+        self.db_source = db_source
+        self.result_type = partial(result_type, self, priority=self.priority)
         super(AbstractLocationProvider, self).__init__(*args, **kwargs)
 
     def locate(self, data):  # pragma: no cover
@@ -299,11 +305,11 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
                 # all rows in the table
                 load_fields = (
                     'radio', 'mcc', 'mnc', 'lac', 'lat', 'lon', 'range')
-                query = (self.session.query(model)
-                                     .options(load_only(*load_fields))
-                                     .filter(or_(*cell_filter))
-                                     .filter(model.lat.isnot(None))
-                                     .filter(model.lon.isnot(None)))
+                query = (self.db_source.query(model)
+                                       .options(load_only(*load_fields))
+                                       .filter(or_(*cell_filter))
+                                       .filter(model.lat.isnot(None))
+                                       .filter(model.lon.isnot(None)))
 
                 try:
                     found_cells.extend(query.all())
@@ -515,12 +521,12 @@ class WifiLocationProvider(AbstractLocationProvider):
         queried_wifis = []
         if len(wifi_keys) >= MIN_WIFIS_IN_QUERY:
             try:
-                queried_wifis = (self.session.query(Wifi.key, Wifi.lat,
-                                                    Wifi.lon, Wifi.range)
-                                             .filter(Wifi.key.in_(wifi_keys))
-                                             .filter(Wifi.lat.isnot(None))
-                                             .filter(Wifi.lon.isnot(None))
-                                             .all())
+                queried_wifis = (self.db_source.query(Wifi.key, Wifi.lat,
+                                                      Wifi.lon, Wifi.range)
+                                               .filter(Wifi.key.in_(wifi_keys))
+                                               .filter(Wifi.lat.isnot(None))
+                                               .filter(Wifi.lon.isnot(None))
+                                               .all())
             except Exception:
                 self.heka_client.raven(RAVEN_ERROR)
 
@@ -633,15 +639,11 @@ class GeoIPLocationProvider(AbstractLocationProvider):
     A GeoIPLocationProvider implements a location search using a
     GeoIP client service lookup.
     """
+    db_source_field = 'geoip'
     data_field = 'geoip'
     log_name = 'geoip'
     log_group = 'geoip'
-
-    def __init__(self, geoip_db, result_type, *args, **kwargs):
-        self.geoip_db = geoip_db
-        self.heka_client = get_heka_client()
-        self.result_type = partial(result_type, self, 0)
-        StatsLogger.__init__(self, *args, **kwargs)
+    priority = 0
 
     def locate(self, data):
         """Provide a location given the provided client IP address.
@@ -653,8 +655,8 @@ class GeoIPLocationProvider(AbstractLocationProvider):
         location = self.result_type(query_data=True)
         client_addr = data.get(self.data_field, None)
 
-        if client_addr and self.geoip_db is not None:
-            geoip = self.geoip_db.geoip_lookup(client_addr)
+        if client_addr and self.db_source is not None:
+            geoip = self.db_source.geoip_lookup(client_addr)
             if geoip:
                 if geoip['city']:
                     self.stat_count('geoip_city_found')
@@ -685,31 +687,20 @@ class AbstractLocationSearcher(StatsLogger):
     provider_classes = ()
     result_type = None
 
-    def __init__(self, session, geoip_db, *args, **kwargs):
+    def __init__(self, db_sources, *args, **kwargs):
         super(AbstractLocationSearcher, self).__init__(*args, **kwargs)
-        self.session = session
-        self.heka_client = get_heka_client()
 
-        geoip_provider = GeoIPLocationProvider(
-            geoip_db,
-            self.result_type,
-            api_key_log=self.api_key_log,
-            api_key_name=self.api_key_name,
-            api_name=self.api_name,
-        )
-        search_providers = [
+        self.all_providers = [
             cls(
-                session,
+                db_sources[cls.db_source_field],
                 self.result_type,
                 api_key_log=self.api_key_log,
                 api_key_name=self.api_key_name,
                 api_name=self.api_name,
             ) for cls in self.provider_classes]
 
-        self.all_providers = [geoip_provider] + search_providers
-
     def search_location(self, data):
-        result = self.result_type(None, -1, query_data=False)
+        result = self.result_type(None, query_data=False)
         all_results = defaultdict(deque)
 
         for location_provider in self.all_providers:
@@ -751,9 +742,8 @@ class AbstractLocationSearcher(StatsLogger):
     def prepare_location(self, country, location):  # pragma: no cover
         raise NotImplementedError()
 
-    def search(self, data, client_addr):
+    def search(self, data):
         """Provide a type specific search result or return None."""
-        data['geoip'] = client_addr
         result = self.search_location(data)
         if result.found():
             return self.prepare_location(result)
@@ -767,6 +757,7 @@ class PositionSearcher(AbstractLocationSearcher):
     """
 
     provider_classes = (
+        GeoIPLocationProvider,
         CellAreaLocationProvider,
         CellLocationProvider,
         WifiLocationProvider,
@@ -787,6 +778,7 @@ class CountrySearcher(AbstractLocationSearcher):
     """
 
     provider_classes = (
+        GeoIPLocationProvider,
         CellCountryProvider,
     )
     result_type = CountryResult

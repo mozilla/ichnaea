@@ -49,16 +49,15 @@ def country_view(request):
         response=JSONParseError,
         accept_empty=True,
     )
-    data = map_data(data)
+    data = map_data(data, client_addr=client_addr)
 
     session = request.db_slave_session
     result = CountrySearcher(
+        {'geoip': geoip_db, 'session': session},
         api_key_log=False,
         api_key_name=None,
         api_name='country',
-        session=session,
-        geoip_db=geoip_db,
-    ).search(data, client_addr=client_addr)
+    ).search(data)
 
     if not result:
         result = HTTPNotFound()

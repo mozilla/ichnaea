@@ -217,15 +217,14 @@ def process_single(request):
 
     first_item = data['items'][0]
     if first_item['latitude'] == -255 or first_item['longitude'] == -255:
-        data = map_data(data['items'][0])
+        data = map_data(data['items'][0], client_addr=request.client_addr)
         session = request.db_slave_session
         result = PositionSearcher(
+            {'geoip': request.registry.geoip_db, 'session': session},
             api_key_log=getattr(request, 'api_key_log', False),
             api_key_name=getattr(request, 'api_key_name', None),
             api_name='geosubmit',
-            session=session,
-            geoip_db=request.registry.geoip_db
-        ).search(data, client_addr=request.client_addr)
+        ).search(data)
     else:
         result = {'lat': first_item['latitude'],
                   'lon': first_item['longitude'],

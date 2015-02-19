@@ -53,14 +53,15 @@ class BaseLocateTest(DBTestCase, GeoIPIsolation):
     def _make_query(self, data=None, client_addr=None,
                     api_key_log=False, api_key_name='test'):
         if data is None:
-            data = {}
+            data = {'geoip': None, 'cell': [], 'wifi': []}
+        if client_addr:
+            data['geoip'] = client_addr
         return self.searcher(
+            {'geoip': self.geoip_db, 'session': self.db_slave_session},
             api_key_log=api_key_log,
             api_key_name=api_key_name,
             api_name='m',
-            session=self.db_slave_session,
-            geoip_db=self.geoip_db,
-        ).search(data, client_addr=client_addr)
+        ).search(data)
 
 
 class TestPositionSearcher(BaseLocateTest):

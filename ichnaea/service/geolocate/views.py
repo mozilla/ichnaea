@@ -42,15 +42,14 @@ def geolocate_view(request):
         accept_empty=True,
     )
 
-    data = map_data(data)
+    data = map_data(data, client_addr=request.client_addr)
     session = request.db_slave_session
     result = PositionSearcher(
+        {'geoip': request.registry.geoip_db, 'session': session},
         api_key_log=getattr(request, 'api_key_log', False),
         api_key_name=getattr(request, 'api_key_name', None),
         api_name='geolocate',
-        session=session,
-        geoip_db=request.registry.geoip_db
-    ).search(data, client_addr=request.client_addr)
+    ).search(data)
 
     if not result:
         result = HTTPNotFound()
