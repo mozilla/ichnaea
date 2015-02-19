@@ -6,6 +6,12 @@
 Classes
 +++++++
 
+.. autoclass:: AbstractResult
+
+.. autoclass:: PositionResult
+
+.. autoclass:: CountryResult
+
 .. autoclass:: StatsLogger
     :members:
 

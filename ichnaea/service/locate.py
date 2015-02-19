@@ -1,7 +1,7 @@
 from collections import defaultdict, namedtuple
+from functools import partial
 import operator
 
-import iso3166
 from sqlalchemy.sql import and_, or_
 from sqlalchemy.orm import load_only
 
@@ -100,6 +100,50 @@ def map_data(data):
     return mapped
 
 
+class AbstractResult(object):
+    """The result of a location provider query."""
+
+    def __init__(self, lat=None, lon=None, accuracy=None,
+                 country_code=None, country_name=None,
+                 log_name=None):
+        self.lat = self._round(lat)
+        self.lon = self._round(lon)
+        self.accuracy = self._round(accuracy)
+        self.log_name = log_name
+        self.country_code = country_code
+        self.country_name = country_name
+
+    def _round(self, value):
+        if value is not None:
+            value = round(value, DEGREE_DECIMAL_PLACES)
+        return value
+
+    def found(self):  # pragma: no cover
+        raise NotImplementedError
+
+    def more_accurate(self, result):
+        """
+        Are we more accurate than the passed in result and fit into
+        the claimed result range?
+        """
+        dist = distance(result.lat, result.lon, self.lat, self.lon) * 1000
+        return dist <= result.accuracy
+
+
+class PositionResult(AbstractResult):
+    """The result of a position query."""
+
+    def found(self):
+        return self.lat is not None and self.lon is not None
+
+
+class CountryResult(AbstractResult):
+    """The result of a country query."""
+
+    def found(self):
+        return self.country_code is not None and self.country_name is not None
+
+
 class StatsLogger(object):
 
     def __init__(self, api_key_name, api_key_log, api_name):
@@ -146,14 +190,19 @@ class AbstractLocationProvider(StatsLogger):
 
     data_field = None
     log_name = None
+    result_type = None
 
-    def __init__(self, session, *args, **kwargs):
+    def __init__(self, session, result_type, *args, **kwargs):
         self.session = session
+        self.result_type = partial(result_type, log_name=self.log_name)
         self.heka_client = get_heka_client()
         super(AbstractLocationProvider, self).__init__(*args, **kwargs)
 
     def locate(self, data):  # pragma: no cover
-        """Provide a location given the provided query data (dict)."""
+        """Provide a location given the provided query data (dict).
+
+        :rtype: :class:`~ichnaea.service.locate.AbstractResult`
+        """
         raise NotImplementedError()
 
     def log_used(self):
@@ -263,14 +312,20 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
         return queried_objects
 
     def prepare_location(self, queried_objects):  # pragma: no cover
-        """Combine the queried_objects into an estimated location."""
+        """
+        Combine the queried_objects into an estimated location.
+
+        :rtype: :class:`~ichnaea.service.locate.AbstractResult`
+        """
         raise NotImplementedError
 
     def locate(self, data):
+        location = self.result_type()
         cell_keys = self.clean_cell_keys(data)
         queried_objects = self.query_database(cell_keys)
         if queried_objects:
-            return self.prepare_location(queried_objects)
+            location = self.prepare_location(queried_objects)
+        return location
 
 
 class CellLocationProvider(AbstractCellLocationProvider):
@@ -286,12 +341,9 @@ class CellLocationProvider(AbstractCellLocationProvider):
         length = len(queried_objects)
         avg_lat = sum([c.lat for c in queried_objects]) / length
         avg_lon = sum([c.lon for c in queried_objects]) / length
-        return {
-            'lat': avg_lat,
-            'lon': avg_lon,
-            'accuracy': estimate_accuracy(
-                avg_lat, avg_lon, queried_objects, CELL_MIN_ACCURACY),
-        }
+        accuracy = estimate_accuracy(
+            avg_lat, avg_lon, queried_objects, CELL_MIN_ACCURACY)
+        return self.result_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
 
 class CellAreaLocationProvider(AbstractCellLocationProvider):
@@ -306,13 +358,8 @@ class CellAreaLocationProvider(AbstractCellLocationProvider):
         self.stat_count('cell_lac_hit')
         # take the smallest LAC of any the user is inside
         lac = sorted(queried_objects, key=operator.attrgetter('range'))[0]
-        accuracy = max(LAC_MIN_ACCURACY, lac.range)
-        accuracy = float(accuracy)
-        return {
-            'lat': lac.lat,
-            'lon': lac.lon,
-            'accuracy': accuracy,
-        }
+        accuracy = float(max(LAC_MIN_ACCURACY, lac.range))
+        return self.result_type(lat=lac.lat, lon=lac.lon, accuracy=accuracy)
 
 
 class WifiLocationProvider(AbstractLocationProvider):
@@ -492,12 +539,9 @@ class WifiLocationProvider(AbstractLocationProvider):
         length = len(sample)
         avg_lat = sum([n.lat for n in sample]) / length
         avg_lon = sum([n.lon for n in sample]) / length
-        return {
-            'lat': avg_lat,
-            'lon': avg_lon,
-            'accuracy': estimate_accuracy(avg_lat, avg_lon,
-                                          sample, WIFI_MIN_ACCURACY),
-        }
+        accuracy = estimate_accuracy(avg_lat, avg_lon,
+                                     sample, WIFI_MIN_ACCURACY)
+        return self.result_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
     def has_data(self, data):
         if super(WifiLocationProvider, self).has_data(data):
@@ -510,7 +554,7 @@ class WifiLocationProvider(AbstractLocationProvider):
             )
 
     def locate(self, data):
-        location = None
+        location = self.result_type()
 
         wifis, wifi_signals, wifi_keys = self.get_clean_wifi_keys(data)
 
@@ -547,21 +591,21 @@ class GeoIPLocationProvider(AbstractLocationProvider):
     """
     log_name = 'geoip'
 
-    def __init__(self, geoip_db, *args, **kwargs):
+    def __init__(self, geoip_db, result_type, *args, **kwargs):
         self.geoip_db = geoip_db
-        super(GeoIPLocationProvider, self).__init__(*args, **kwargs)
+        self.result_type = partial(result_type, log_name=self.log_name)
+        super(GeoIPLocationProvider, self).__init__(None, result_type,
+                                                    *args, **kwargs)
 
     def has_data(self, data):
         return True
 
     def locate(self, client_addr):
+        """Provide a location given the provided client IP address.
+
+        :rtype: :class:`~ichnaea.service.locate.AbstractResult`
         """
-        Return (geoip, alpha2) where geoip is the result of a GeoIP lookup
-        and alpha2 is a best-guess ISO 3166 alpha2 country code. Return
-        None for either field if no data is available.
-        """
-        location = None
-        country = None
+        location = self.result_type()
 
         if client_addr and self.geoip_db is not None:
             geoip = self.geoip_db.geoip_lookup(client_addr)
@@ -573,16 +617,15 @@ class GeoIPLocationProvider(AbstractLocationProvider):
                     self.stat_count('geoip_country_found')
                 self.stat_count('geoip_hit')
 
-                # Only use the GeoIP country as an additional possible match,
-                # but retain the cell countries as a likely match as well.
-                country = geoip['country_code']
-                location = {
-                    'lat': geoip['latitude'],
-                    'lon': geoip['longitude'],
-                    'accuracy': geoip['accuracy'],
-                }
+                location = self.result_type(
+                    lat=geoip['latitude'],
+                    lon=geoip['longitude'],
+                    accuracy=geoip['accuracy'],
+                    country_code=geoip['country_code'],
+                    country_name=geoip['country_name'],
+                )
 
-        return (location, country)
+        return location
 
 
 class AbstractLocationSearcher(StatsLogger):
@@ -600,58 +643,54 @@ class AbstractLocationSearcher(StatsLogger):
         CellLocationProvider,
         WifiLocationProvider,
     )
+    result_type = None
 
     def __init__(self, session, geoip_db, *args, **kwargs):
         super(AbstractLocationSearcher, self).__init__(*args, **kwargs)
         self.session = session
         self.geoip_provider = GeoIPLocationProvider(
+            geoip_db,
+            self.result_type,
             api_key_log=self.api_key_log,
             api_key_name=self.api_key_name,
             api_name=self.api_name,
-            geoip_db=geoip_db,
-            session=self.session,
         )
         self.heka_client = get_heka_client()
 
         self.search_location_providers = [
             cls(
+                session,
+                self.result_type,
                 api_key_log=self.api_key_log,
                 api_key_name=self.api_key_name,
                 api_name=self.api_name,
-                session=self.session
             ) for cls in self.LOCATION_PROVIDER_CLASSES]
 
         self.all_location_providers = (
             [self.geoip_provider] + self.search_location_providers)
 
     def search_location(self, data, client_addr):
-        location = None
+        result = self.result_type()
         location_provider_used = None
 
         # Always do a GeoIP lookup because it is cheap and we want to
         # report geoip vs. other data mismatches. We may also use
         # the full GeoIP City-level estimate as well, if all else fails.
-        geoip_location, country = self.geoip_provider.locate(client_addr)
+        geoip_result = self.geoip_provider.locate(client_addr)
 
         for location_provider in self.search_location_providers:
-            provider_location = location_provider.locate(data)
+            provider_result = location_provider.locate(data)
 
-            if provider_location:
-                if location is None:
+            if provider_result.found():
+                if not result.found():
                     # If this is our first hit, then we use it.
-                    location = provider_location
+                    result = provider_result
                     location_provider_used = location_provider
                 else:
                     # If this location is more accurate than our previous one,
                     # we'll use it.
-                    provider_distance = distance(
-                        location['lat'],
-                        location['lon'],
-                        provider_location['lat'],
-                        provider_location['lon']
-                    ) * 1000
-                    if provider_distance <= location['accuracy']:
-                        location = provider_location
+                    if provider_result.more_accurate(result):
+                        result = provider_result
                         location_provider_used = location_provider
 
         # Fall back to GeoIP if nothing has worked yet. We do not
@@ -659,11 +698,11 @@ class AbstractLocationSearcher(StatsLogger):
         # frequently _wrong_ at the city level; we only want to
         # accept that estimate if we got nothing better from cell
         # or wifi.
-        if not location and geoip_location:
-            location = geoip_location
+        if not result.found() and geoip_result.found():
+            result = geoip_result
             location_provider_used = self.geoip_provider
 
-        if not location:
+        if not result.found():
             self.stat_count('miss')
 
         for location_provider in reversed(self.all_location_providers):
@@ -674,15 +713,17 @@ class AbstractLocationSearcher(StatsLogger):
                     location_provider.log_unused()
                 break
 
-        return country, location
+        return result
 
     def prepare_location(self, country, location):  # pragma: no cover
         raise NotImplementedError()
 
     def search(self, data, client_addr):
-        country, location = self.search_location(data, client_addr)
-        if location or country:
-            return self.prepare_location(country, location)
+        """Provide a type specific search result or return None."""
+        result = self.search_location(data, client_addr)
+        if result.found():
+            return self.prepare_location(result)
+        return None
 
 
 class PositionLocationSearcher(AbstractLocationSearcher):
@@ -692,11 +733,13 @@ class PositionLocationSearcher(AbstractLocationSearcher):
     an accuracy in meters.
     """
 
-    def prepare_location(self, country, location):
+    result_type = PositionResult
+
+    def prepare_location(self, location):
         return {
-            'lat': round(location['lat'], DEGREE_DECIMAL_PLACES),
-            'lon': round(location['lon'], DEGREE_DECIMAL_PLACES),
-            'accuracy': round(location['accuracy'], DEGREE_DECIMAL_PLACES),
+            'lat': location.lat,
+            'lon': location.lon,
+            'accuracy': location.accuracy,
         }
 
 
@@ -706,11 +749,12 @@ class CountryLocationSearcher(AbstractLocationSearcher):
     in the form of the name and code of the queried country.
     """
 
-    def prepare_location(self, country_code, location):
-        country = iso3166.countries.get(country_code)
+    result_type = CountryResult
+
+    def prepare_location(self, location):
         return {
-            'country_name': country.name,
-            'country_code': country.alpha2,
+            'country_name': location.country_name,
+            'country_code': location.country_code,
         }
 
 
