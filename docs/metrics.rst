@@ -120,28 +120,14 @@ Response-type counters
 
 For each API endpoint, and for each type of location datum that can be
 found in response to a query (``cell``, ``cell_lac``, ``wifi`` and
-``geoip``) a set of counters is produced to track how often a query finds,
-fails to find, or commits to using ("hits") the given type of data on the
-given API.
+``geoip``) a set of counters is produced to track how often a query commits
+to using ("hits") the given type of data on the given API.
 
 Some of these counters are "mutually exclusive" with respect to one
 another; which is to say that for every query *exactly one* of them will be
 incremented.
 
 For the ``geolocate`` API, the following counters are emitted:
-
-``geolocate.cell_found`` : counter
-
-    Counts any geolocation query that included a cell that the database has
-    information about, whether or not that information was used in the
-    response. This counter is mutually exclusive with
-    ``geolocate.no_cell_found``.
-
-``geolocate.no_cell_found`` : counter
-
-    Counts any geolocation query that *did not* include any cell that the
-    database has information about. This counter is mutually exclusive with
-    ``geolocate.cell_found``.
 
 ``geolocate.cell_hit`` : counter
 
@@ -150,38 +136,12 @@ For the ``geolocate`` API, the following counters are emitted:
     ``geolocate.wifi_hit``, ``geolocate.cell_lac_hit``, and
     ``geolocate.geoip_hit``.
 
-``geolocate.cell_lac_found`` : counter
-
-    Counts any geolocation query that included a cell that the database has
-    information about the corresponding LAC of, whether or not that
-    information was used in the response. This counter is mutually
-    exclusive with ``geolocate.no_cell_lac_found``.
-
-``geolocate.no_cell_lac_found`` : counter
-
-    Counts any geolocation query that *did not* include any cell that the
-    database has information about the corresponding LAC of. This counter
-    is mutually exclusive with ``geolocate.cell_lac_found``.
-
 ``geolocate.cell_lac_hit`` : counter
 
     Counts any geolocation query response that was based primarily on a
     cell LAC record. This counter is mutually exclusive with
     ``geolocate.wifi_hit``, ``geolocate.cell_hit``, and
     ``geolocate.geoip_hit``.
-
-``geolocate.wifi_found`` : counter
-
-    Counts any geolocation query that included at least two physically
-    adjacent wifi networks that the database has information about, whether
-    or not that information was used in the response. This counter is
-    mutually exclusive with ``geolocate.no_wifi_found``.
-
-``geolocate.no_wifi_found`` : counter
-
-    Counts any geolocation query that included too few adjacent wifis, or
-    no wifis at all, that the database has information about. This counter
-    is mutually exclusive with ``geolocate.wifi_found``.
 
 ``geolocate.wifi_hit`` : counter
 
@@ -195,20 +155,14 @@ For the ``geolocate`` API, the following counters are emitted:
     Counts any geolocation query for which GeoIP lookup of the query
     source produced a city-level record, whether or not that city was
     used in the response. This counter is mutually exclusive with
-    ``geolocate.geoip_country_found`` and ``geolocate.no_geoip_found``.
+    ``geolocate.geoip_country_found``.
 
 ``geolocate.geoip_country_found`` : counter
 
     Counts any geolocation query for which GeoIP lookup of the query source
     produced only a country-level record, whether or not that country was
     used in the response. This counter is mutually exclusive with
-    ``geolocate.geoip_city_found`` and ``geolocate.no_geoip_found``.
-
-``geolocate.no_geoip_found`` : counter
-
-    Counts any geolocation query for which GeoIP lookup returned no
-    information. This counter is mutually exclusive with
-    ``geolocate.geoip_city_found`` and ``geolocate.geoip_country_found``.
+    ``geolocate.geoip_city_found``.
 
 ``geolocate.geoip_hit`` : counter
 
@@ -216,22 +170,6 @@ For the ``geolocate`` API, the following counters are emitted:
     GeoIP record. This counter is mutually exclusive with
     ``geolocate.cell_hit``, ``geolocate.cell_lac_hit``, and
     ``geolocate.wifi_hit``.
-
-``geolocate.country_from_geoip`` : counter
-
-    Counts any geolocation query from which the "source country" of the
-    query was inferred from GeoIP information. This counter is mutually
-    exclusive with ``geolocate.country_from_mcc``. Source countries are
-    used in consistency checking; see counters below such as
-    ``geolocate.anomaly.wifi_country_mismatch``.
-
-``geolocate.country_from_mcc`` : counter
-
-    Counts any geolocation query from which the "source country" of the
-    query was inferred from the query's cell MCC number(s). This counter is
-    mutually exclusive with ``geolocate.country_from_geoip``. Source
-    countries are used in consistency checking; see counters below such as
-    ``geolocate.anomaly.wifi_country_mismatch``.
 
 ``geolocate.miss`` : counter
 
@@ -327,80 +265,6 @@ metrics.
 
 These counters and timers also exist for the ``search``
 and ``geosubmit`` API endpoints.
-
-
-Query anomaly counters
-----------------------
-
-These count semantic data inconsistencies detected either in a query or in
-the data retrieved in response to a query. In some cases they will cause
-the query to be rejected outright, in other cases simply degrade the
-quality of the query.
-
-These inconsistencies are generally not automatically correctable as it's
-not clear which data is correct or incorrect, merely that two data points
-disagree on some fact that they "should" agree on. The corrective measure
-taken is usually to reduce the estimated accuracy of the result, or discard
-the data that suggests higher accuracy in favor of that which suggests
-lower.
-
-``geolocate.anomaly.cell_lac_country_mismatch`` : counter
-
-    Counts any cell-based geolocation query where the cell LAC stored in
-    the database was located outside the country inferred from the query's
-    GeoIP and/or cell MCC.
-
-``geolocate.anomaly.geoip_mcc_mismatch`` : counter
-
-    Counts any cell-based geolocation query where the country inferred from
-    an observed cell's MCC did not match the country code inferred from the
-    query GeoIP.
-
-``geolocate.anomaly.wifi_cell_lac_mismatch`` : counter
-
-    Counts any cell-and-wifi geolocation query where the wifi stored in the
-    database was located outside the cell's LAC bounding box, also as
-    stored in the database.
-
-``geolocate.anomaly.wifi_country_mismatch`` : counter
-
-    Counts any wifi-based geolocation query where the wifi stored in the
-    database was located outside the country inferred from GeoIP and/or
-    cell MCC.
-
-``geolocate.anomaly.multiple_mccs`` : counter
-
-    Counts any cell-based geolocation query where multiple cells were
-    measured and the cells appear in more than a single MCC. This may
-    happen somewhat frequently in border areas.
-
-In addition to geolocate anomaly counters, equivalent counters exist for
-the ``search`` and ``geosubmit`` API endpoints.
-
-
-Accuracy pseudo-timers
-----------------------
-
-Each query sent to a location-search API endpoint -- ``search``,
-``geolocate`` or ``geosubmit`` -- results in a location and an estimated
-*accuracy*, measuring an approximate radius (in meters) around the location
-in which Ichnaea thinks the user is located.
-
-These accuracy values are emitted as *timer metrics*, despite not actually
-representing an elapsed time value. This overloading of the concept of
-"timer" to convey some other scalar quantity like "meters" is a common
-idiom in metric reporting pipelines, in order to measure the min, max, mean
-and 90th-percentile aggregate functions.
-
-Therefore the following "pseudo-timers" exist, reporting the accuracy of
-cell, cell LAC, GeoIP and WiFi-based responses:
-
-  - ``geolocate.accuracy.cell``
-  - ``geolocate.accuracy.cell_lac``
-  - ``geolocate.accuracy.geoip``
-  - ``geolocate.accuracy.wifi``
-
-These timers also exist for the ``search`` and ``geosubmit`` API endpoints.
 
 
 Fine-grained ingress stats
@@ -591,34 +455,10 @@ Ichnaea's ingress and data-maintenance actions are managed by a Celery
 queue of *tasks*. These tasks are executed asynchronously, and each task
 emits a timer indicating its execution time.
 
-The following timers exist for tasks, but in general they are of less
-interest than user-facing timers or counters; they merely indicate the
-internal pauses and work-granularity of asynchronous processing within the
-system:
+For example:
 
-  - ``task.backup.delete_cellmeasure_records``
-  - ``task.backup.delete_wifimeasure_records``
-  - ``task.backup.dispatch_delete``
-  - ``task.backup.schedule_cellmeasure_archival``
-  - ``task.backup.schedule_wifimeasure_archival``
-  - ``task.backup.write_block_to_s3``
-  - ``task.backup.write_cellmeasure_s3_backups``
-  - ``task.backup.write_wifimeasure_s3_backups``
   - ``task.content.cell_histogram``
-  - ``task.content.unique_cell_histogram``
-  - ``task.content.unique_wifi_histogram``
-  - ``task.content.wifi_histogram``
-  - ``task.data.cell_unthrottle_measures``
-  - ``task.data.insert_cell_measures``
   - ``task.data.insert_measures``
-  - ``task.data.insert_wifi_measures``
-  - ``task.data.location_update_cell``
-  - ``task.data.location_update_wifi``
-  - ``task.data.remove_cell``
-  - ``task.data.remove_wifi``
-  - ``task.data.scan_lacs``
-  - ``task.data.update_lac``
-  - ``task.data.wifi_unthrottle_measures``
 
 
 Datamaps timers

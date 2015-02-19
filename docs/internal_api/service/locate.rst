@@ -3,17 +3,43 @@
 
 .. automodule:: ichnaea.service.locate
 
-Functions
-+++++++++
+Classes
++++++++
 
-.. autofunction:: cluster_elements
+.. autoclass:: AbstractResult
 
-.. autofunction:: estimate_accuracy
+.. autoclass:: PositionResult
 
-.. autofunction:: geoip_and_best_guess_country_codes
+.. autoclass:: CountryResult
 
-.. autofunction:: map_data
+.. autoclass:: StatsLogger
+    :members:
 
-.. autofunction:: most_common_elements
+    .. automethod:: __init__
 
-.. autofunction:: search_all_sources
+.. autoclass:: AbstractLocationProvider
+    :members:
+
+.. autoclass:: AbstractCellLocationProvider
+    :members:
+
+.. autoclass:: CellLocationProvider
+    :members:
+
+.. autoclass:: CellAreaLocationProvider
+    :members:
+
+.. autoclass:: WifiLocationProvider
+    :members:
+
+.. autoclass:: GeoIPLocationProvider
+    :members:
+
+.. autoclass:: AbstractLocationSearcher
+    :members:
+
+.. autoclass:: CountryLocationSearcher
+    :members:
+
+.. autoclass:: PositionLocationSearcher
+    :members:
