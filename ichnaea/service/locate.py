@@ -101,12 +101,21 @@ def map_data(data):
 
 
 class StatsLogger(object):
-    """
-    A StatsLogger sends counted and timed named statistics to
-    a statistic aggregator client.
-    """
 
     def __init__(self, api_key_name, api_key_log, api_name):
+        """
+        A StatsLogger sends counted and timed named statistics to
+        a statistic aggregator client.
+
+        :param api_key_name: Human readable API key name
+            (for example 'test_1')
+        :type api_key_name: str
+        :param api_key_log: Gather additional API key specific stats?
+        :type api_key_log: bool
+        :param api_name: Name of the API, used as stats prefix
+            (for example 'geolocate')
+        :type api_name: str
+        """
         self.api_key_name = api_key_name
         self.api_key_log = api_key_log
         self.api_name = api_name
@@ -125,11 +134,17 @@ class AbstractLocationProvider(StatsLogger):
     """
     An AbstractLocationProvider provides an interface for a class
     which will provide a location given a set of query data.
-    """
-    # The key to look for in the query data
-    data_field = None
 
-    # The name to use in logging statements
+    .. attribute:: data_field
+
+        The key to look for in the query data, for example 'cell'
+
+    .. attribute:: log_name
+
+        The name to use in logging statements, for example 'cell_lac'
+    """
+
+    data_field = None
     log_name = None
 
     def __init__(self, session, *args, **kwargs):
@@ -138,19 +153,28 @@ class AbstractLocationProvider(StatsLogger):
         super(AbstractLocationProvider, self).__init__(*args, **kwargs)
 
     def locate(self, data):
+        """Provide a location given the provided query data (dict)."""
         raise NotImplementedError()
 
     def log_used(self):
+        """Log a stat metric for a successful provider lookup."""
         if self.api_key_log:
             self.stat_count('api_log.{key}.{metric}_hit'.format(
                 key=self.api_key_name, metric=self.log_name))
 
     def log_unused(self):
+        """Log a stat metric for an unsuccessful provider lookup."""
         if self.api_key_log:
             self.stat_count('api_log.{key}.{metric}_miss'.format(
                 key=self.api_key_name, metric=self.log_name))
 
     def has_data(self, data):
+        """
+        Does the query data (dict) contain information specific
+        to this provider?
+
+        :rtype: bool
+        """
         return self.data_field in data
 
 
@@ -159,14 +183,17 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
     An AbstractCellLocationProvider provides an interface and
     partial implementation of a location search using a set of
     models which have a Cell-like set of fields.
+
+    .. attribute:: models
+
+        A list of models which have a Cell interface to be used
+        in the location search.
     """
-    # A list of models which have a Cell interface to be used
-    # in the location search.
     models = []
     data_field = 'cell'
 
     def clean_cell_keys(self, data):
-        # Pre-process cell data
+        """Pre-process cell data."""
         radio = RADIO_TYPE.get(data.get('radio', ''), -1)
         cell_keys = []
         for cell in data.get(self.data_field, ()):
@@ -178,7 +205,7 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
         return cell_keys
 
     def query_database(self, cell_keys):
-        # Query all cells and OCID cells
+        """Query all cell models."""
         queried_objects = []
         for model in self.models:
             found_cells = []
@@ -236,6 +263,7 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
         return queried_objects
 
     def prepare_location(self, queried_objects):
+        """Combine the queried_objects into an estimated location."""
         raise NotImplementedError
 
     def locate(self, data):
@@ -299,9 +327,9 @@ class WifiLocationProvider(AbstractLocationProvider):
         """
         Generic pairwise clustering routine.
 
-        :param items: A list of elemenets to cluster.
+        :param items: A list of elements to cluster.
         :param distance_fn: A pairwise distance_fnance function over elements.
-        :param threshold: A numeric thresholdold for clustering;
+        :param threshold: A numeric threshold for clustering;
                           clusters P, Q will be joined if
                           distance_fn(a,b) <= threshold,
                           for any a in P, b in Q.
@@ -335,11 +363,13 @@ class WifiLocationProvider(AbstractLocationProvider):
         return [[items[i] for i in c] for c in clusters]
 
     def filter_bssids_by_similarity(self, bs):
-        # Cluster BSSIDs by "similarity" (hamming or arithmetic distance);
-        # return one BSSID from each cluster. The distance threshold is
-        # hard-wired to 2, meaning that two BSSIDs are clustered together
-        # if they are within a numeric difference of 2 of one another or
-        # a hamming distance of 2.
+        """
+        Cluster BSSIDs by "similarity" (hamming or arithmetic distance);
+        return one BSSID from each cluster. The distance threshold is
+        hard-wired to 2, meaning that two BSSIDs are clustered together
+        if they are within a numeric difference of 2 of one another or
+        a hamming distance of 2.
+        """
 
         DISTANCE_THRESHOLD = 2
 
@@ -402,8 +432,10 @@ class WifiLocationProvider(AbstractLocationProvider):
         return queried_wifis
 
     def get_clusters(self, wifi_signals, queried_wifis):
-        # Filter out BSSIDs that are numerically very similar, assuming they're
-        # multiple interfaces on the same base station or such.
+        """
+        Filter out BSSIDs that are numerically very similar, assuming they're
+        multiple interfaces on the same base station or such.
+        """
         dissimilar_keys = set(self.filter_bssids_by_similarity(
             [w.key for w in queried_wifis]))
 
@@ -528,8 +560,7 @@ class GeoIPLocationProvider(AbstractLocationProvider):
     def locate(self, client_addr):
         """
         Return (geoip, alpha2) where geoip is the result of a GeoIP lookup
-        and alpha2 is a best-guess ISO 3166 alpha2 country code. The country
-        code guess uses both GeoIP and cell MCCs, preferring GeoIP. Return
+        and alpha2 is a best-guess ISO 3166 alpha2 country code. Return
         None for either field if no data is available.
         """
         location = None
@@ -565,13 +596,13 @@ class GeoIPLocationProvider(AbstractLocationProvider):
 class AbstractLocationSearcher(StatsLogger):
     """
     An AbstractLocationSearcher will use a collection of LocationProvider
-    classes to attempt to identify a user's location.  It will loop over them
+    classes to attempt to identify a user's location. It will loop over them
     in the order they are specified and use the most accurate result.
     """
     # First we attempt a "zoom-in" from cell-lac, to cell
     # to wifi, tightening our estimate each step only so
-    # long as it doesn't contradict the existing best-estimate
-    # nor the possible country of origin.
+    # long as it doesn't contradict the existing best-estimate.
+
     LOCATION_PROVIDER_CLASSES = (
         CellAreaLocationProvider,
         CellLocationProvider,
