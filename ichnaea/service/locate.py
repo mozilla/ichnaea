@@ -767,21 +767,3 @@ class CountryLocationSearcher(AbstractLocationSearcher):
             'country_name': location.country_name,
             'country_code': location.country_code,
         }
-
-
-def search_all_sources(session, api_name, data,
-                       client_addr=None, geoip_db=None,
-                       api_key_log=False, api_key_name=None,
-                       result_type='position'):
-
-    searchers = {
-        'position': PositionLocationSearcher,
-        'country': CountryLocationSearcher,
-    }
-    return searchers[result_type](
-        api_key_log=api_key_log,
-        api_key_name=api_key_name,
-        api_name=api_name,
-        session=session,
-        geoip_db=geoip_db
-    ).search(data, client_addr=client_addr)

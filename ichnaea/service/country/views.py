@@ -10,7 +10,7 @@ from ichnaea.service.error import (
 from ichnaea.service.geolocate.views import NOT_FOUND
 from ichnaea.service.geolocate.schema import GeoLocateSchema
 from ichnaea.service.locate import (
-    search_all_sources,
+    CountryLocationSearcher,
     map_data,
 )
 
@@ -52,13 +52,13 @@ def country_view(request):
     data = map_data(data)
 
     session = request.db_slave_session
-    result = search_all_sources(
-        session, 'country', data,
-        client_addr=client_addr,
-        geoip_db=geoip_db,
+    result = CountryLocationSearcher(
         api_key_log=False,
         api_key_name=None,
-        result_type='country')
+        api_name='country',
+        session=session,
+        geoip_db=geoip_db,
+    ).search(data, client_addr=client_addr)
 
     if not result:
         result = HTTPNotFound()

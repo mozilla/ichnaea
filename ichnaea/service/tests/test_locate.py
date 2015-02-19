@@ -35,7 +35,9 @@ from ichnaea.tests.base import (
 from ichnaea.service import locate
 
 
-class TestSearchAllSources(DBTestCase, GeoIPIsolation):
+class BaseLocateTest(DBTestCase, GeoIPIsolation):
+
+    searcher = None
 
     @classmethod
     def setUpClass(cls):
@@ -48,15 +50,21 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
         DBTestCase.tearDownClass()
 
     def _make_query(self, data=None, client_addr=None,
-                    api_key_log=False, api_key_name='test',
-                    result_type='position'):
+                    api_key_log=False, api_key_name='test'):
         if data is None:
             data = {}
-        return locate.search_all_sources(
-            self.db_slave_session, 'm', data,
-            client_addr=client_addr, geoip_db=self.geoip_db,
-            api_key_log=api_key_log, api_key_name=api_key_name,
-            result_type=result_type)
+        return self.searcher(
+            api_key_log=api_key_log,
+            api_key_name=api_key_name,
+            api_name='m',
+            session=self.db_slave_session,
+            geoip_db=self.geoip_db,
+        ).search(data, client_addr=client_addr)
+
+
+class TestPositionSearcher(BaseLocateTest):
+
+    searcher = locate.PositionLocationSearcher
 
     def test_no_data(self):
         with self.db_call_checker() as check_db_calls:
@@ -69,31 +77,6 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
                 'm.miss',
             ],
         )
-
-    def test_invalid_result_type(self):
-        self.assertRaises(KeyError,
-                          self._make_query, result_type='invalid')
-
-    def test_country_geoip(self):
-        bhutan = self.geoip_data['Bhutan']
-        result = self._make_query(client_addr=bhutan['ip'], api_key_log=True,
-                                  result_type='country')
-        self.assertEqual(result,
-                         {'country_code': bhutan['country_code'],
-                          'country_name': bhutan['country_name']})
-
-        self.check_stats(
-            counter=[
-                'm.geoip_country_found',
-                'm.geoip_hit',
-                'm.api_log.test.geoip_hit',
-            ],
-        )
-
-    def test_country_geoip_unknown(self):
-        result = self._make_query(client_addr='127.0.0.1',
-                                  result_type='country')
-        self.assertTrue(result is None)
 
     def test_geoip_unknown(self):
         result = self._make_query(client_addr='127.0.0.1', api_key_log=True)
@@ -1176,3 +1159,27 @@ class TestSearchAllSources(DBTestCase, GeoIPIsolation):
                 'm.api_log.test.wifi_miss',
             ],
         )
+
+
+class TestCountrySearcher(BaseLocateTest):
+
+    searcher = locate.CountryLocationSearcher
+
+    def test_country_geoip(self):
+        bhutan = self.geoip_data['Bhutan']
+        result = self._make_query(client_addr=bhutan['ip'], api_key_log=True)
+        self.assertEqual(result,
+                         {'country_code': bhutan['country_code'],
+                          'country_name': bhutan['country_name']})
+
+        self.check_stats(
+            counter=[
+                'm.geoip_country_found',
+                'm.geoip_hit',
+                'm.api_log.test.geoip_hit',
+            ],
+        )
+
+    def test_country_geoip_unknown(self):
+        result = self._make_query(client_addr='127.0.0.1')
+        self.assertTrue(result is None)
