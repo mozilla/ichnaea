@@ -2,6 +2,7 @@ from collections import defaultdict, deque, namedtuple
 from functools import partial
 import operator
 
+import mobile_codes
 from sqlalchemy.sql import and_, or_
 from sqlalchemy.orm import load_only
 
@@ -366,6 +367,26 @@ class CellAreaLocationProvider(AbstractCellLocationProvider):
         lac = sorted(queried_objects, key=operator.attrgetter('range'))[0]
         accuracy = float(max(LAC_MIN_ACCURACY, lac.range))
         return self.result_type(lat=lac.lat, lon=lac.lon, accuracy=accuracy)
+
+
+class CellCountryProvider(AbstractCellLocationProvider):
+    """
+    A CellCountryProvider implements a cell country search without
+    using any DB models.
+    """
+
+    def query_database(self, cell_keys):
+        countries = []
+        for key in cell_keys:
+            countries.extend(mobile_codes.mcc(str(key.mcc)))
+        if len(set([c.alpha2 for c in countries])) != 1:
+            # refuse to guess country if there are multiple choices
+            return []
+        return countries[0]
+
+    def prepare_location(self, obj):
+        return self.result_type(country_code=obj.alpha2,
+                                country_name=obj.name)
 
 
 class WifiLocationProvider(AbstractLocationProvider):
@@ -760,8 +781,7 @@ class CountrySearcher(AbstractLocationSearcher):
     """
 
     provider_classes = (
-        CellAreaLocationProvider,
-        CellLocationProvider,
+        CellCountryProvider,
     )
     result_type = CountryResult
 

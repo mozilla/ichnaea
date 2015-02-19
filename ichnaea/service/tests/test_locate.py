@@ -15,6 +15,7 @@ from ichnaea.models import (
 )
 from ichnaea.tests.base import (
     BRAZIL_MCC,
+    BHUTAN_MCC,
     DBTestCase,
     FRANCE_MCC,
     FREMONT_LAT,
@@ -1202,3 +1203,34 @@ class TestCountrySearcher(BaseLocateTest):
         self.assertEqual(result,
                          {'country_code': london['country_code'],
                           'country_name': london['country_name']})
+
+    def test_prefer_mcc_over_geoip(self):
+        bhutan = self.geoip_data['Bhutan']
+        london = self.geoip_data['London']
+        cell_key = {
+            'radio': RADIO_TYPE['gsm'], 'mcc': BHUTAN_MCC, 'mnc': 1, 'lac': 1,
+        }
+
+        with self.db_call_checker() as check_db_calls:
+            result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]},
+                                      client_addr=london['ip'])
+            check_db_calls(master=0, slave=0)
+
+        self.assertEqual(result,
+                         {'country_code': bhutan['country_code'],
+                          'country_name': bhutan['country_name']})
+
+    def test_refuse_guessing_multiple_cell_countries(self):
+        bhutan = self.geoip_data['Bhutan']
+        cell_key = {
+            'radio': RADIO_TYPE['gsm'], 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
+        }
+
+        with self.db_call_checker() as check_db_calls:
+            result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]},
+                                      client_addr=bhutan['ip'])
+            check_db_calls(master=0, slave=0)
+
+        self.assertEqual(result,
+                         {'country_code': bhutan['country_code'],
+                          'country_name': bhutan['country_name']})
