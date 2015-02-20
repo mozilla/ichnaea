@@ -352,7 +352,7 @@ def process_observation(data, session):
                 dst[key] = value
 
     report_data = ReportMixin.validate(data)
-    if report_data is None:
+    if report_data is None:  # pragma: no cover
         return ([], [])
 
     cell_observations = {}

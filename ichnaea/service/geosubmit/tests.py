@@ -13,24 +13,18 @@ from ichnaea.tests.base import (
     GB_LON,
     GB_MCC,
 )
-from ichnaea.service.geolocate.tests import \
-    TestGeolocate as GeolocateRegressionTest
 from ichnaea.util import utcnow
 
 
 class TestGeoSubmit(CeleryAppTestCase):
 
-    def setUp(self):
-        CeleryAppTestCase.setUp(self)
-        self.app.app.registry.db_slave = self.db_master
-
     def test_ok_cell(self):
         app = self.app
         session = self.db_master_session
         cell = Cell()
-        cell.lat = GB_LAT + 0.1
-        cell.lon = GB_LON + 0.1
-        cell.radio = 0
+        cell.lat = GB_LAT
+        cell.lon = GB_LON
+        cell.radio = RADIO_TYPE['cdma']
         cell.mcc = GB_MCC
         cell.mnc = 1
         cell.lac = 2
@@ -42,31 +36,42 @@ class TestGeoSubmit(CeleryAppTestCase):
         session.add(cell)
         session.commit()
 
-        res = app.post_json('/v1/geosubmit?key=test', {
-                            "latitude": GB_LAT,
-                            "longitude": GB_LON,
-                            "accuracy": 12.4,
-                            "radioType": "gsm",
-                            "cellTowers": [{
-                                "cellId": 1234,
-                                "locationAreaCode": 2,
-                                "mobileCountryCode": GB_MCC,
-                                "mobileNetworkCode": 1,
-                            }]},
-                            status=200)
+        res = app.post_json(
+            '/v1/geosubmit?key=test',
+            {"items": [
+                {"latitude": GB_LAT + 0.1,
+                 "longitude": GB_LON + 0.1,
+                 "accuracy": 12.4,
+                 "radioType": "cdma",
+                 "cellTowers": [{
+                     "cellId": 1234,
+                     "locationAreaCode": 2,
+                     "mobileCountryCode": GB_MCC,
+                     "mobileNetworkCode": 1,
+                 }]},
+                {"latitude": GB_LAT - 0.1,
+                 "longitude": GB_LON - 0.1,
+                 "accuracy": 22.4,
+                 "cellTowers": [{
+                     "radioType": "wcdma",
+                     "cellId": 2234,
+                     "locationAreaCode": 22,
+                     "mobileCountryCode": GB_MCC,
+                     "mobileNetworkCode": 2,
+                 }]},
+            ]},
+            status=200)
 
-        # check that we get back a location
+        # check that we get an empty response
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": GB_LAT,
-                                                 "lng": GB_LON},
-                                    "accuracy": 12.4})
+        self.assertEqual(res.json, {})
 
-        cell = session.query(Cell).first()
-        self.assertEqual(2, cell.total_measures)
-        self.assertEqual(1, cell.new_measures)
+        self.assertEqual(session.query(Cell).count(), 2)
 
-        # check that one new CellObservation record is created
-        self.assertEquals(1, session.query(CellObservation).count())
+        observations = session.query(CellObservation).all()
+        self.assertEqual(len(observations), 2)
+        radios = set([obs.radio for obs in observations])
+        self.assertEqual(radios, set([RADIO_TYPE['cdma'], RADIO_TYPE['umts']]))
 
         self.check_stats(
             counter=['geosubmit.api_key.test',
@@ -88,37 +93,39 @@ class TestGeoSubmit(CeleryAppTestCase):
         now_ms = int(time.time() * 1000)
         first_of_month = utcnow().replace(day=1, hour=0, minute=0, second=0)
 
-        res = app.post_json('/v1/geosubmit?key=test', {
-                            "latitude": GB_LAT,
-                            "longitude": GB_LON,
-                            "accuracy": 12.4,
-                            "altitude": 100.1,
-                            "altitudeAccuracy": 23.7,
-                            "heading": 45.0,
-                            "speed": 3.6,
-                            "timestamp": now_ms,
-                            "radioType": "gsm",
-                            "cellTowers": [{
-                                "cellId": 1234,
-                                "locationAreaCode": 2,
-                                "mobileCountryCode": GB_MCC,
-                                "mobileNetworkCode": 1,
-                                "age": 3,
-                                "asu": 31,
-                                "psc": 15,
-                                "signalStrength": -51,
-                                "timingAdvance": 1,
-                            }]},
-                            status=200)
+        res = app.post_json(
+            '/v1/geosubmit?key=test',
+            {"items": [
+                {"latitude": GB_LAT,
+                 "longitude": GB_LON,
+                 "accuracy": 12.4,
+                 "altitude": 100.1,
+                 "altitudeAccuracy": 23.7,
+                 "heading": 45.0,
+                 "speed": 3.6,
+                 "timestamp": now_ms,
+                 "radioType": "gsm",
+                 "cellTowers": [{
+                     "radioType": "lte",
+                     "cellId": 1234,
+                     "locationAreaCode": 2,
+                     "mobileCountryCode": GB_MCC,
+                     "mobileNetworkCode": 1,
+                     "age": 3,
+                     "asu": 31,
+                     "psc": 15,
+                     "signalStrength": -51,
+                     "timingAdvance": 1,
+                 }]},
+            ]},
+            status=200)
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": GB_LAT,
-                                                 "lng": GB_LON},
-                                    "accuracy": 12.4})
+        self.assertEqual(res.json, {})
 
         self.assertEquals(session.query(Cell).count(), 1)
 
-        # check that one new CellObservation record is created
+        # check that one new observation was created
         result = session.query(CellObservation).all()
         self.assertEquals(len(result), 1)
         obs = result[0]
@@ -130,7 +137,7 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEqual(obs.heading, 45.0)
         self.assertEqual(obs.speed, 3.6)
         self.assertEqual(obs.time, first_of_month)
-        self.assertEqual(obs.radio, RADIO_TYPE['gsm'])
+        self.assertEqual(obs.radio, RADIO_TYPE['lte'])
         self.assertEqual(obs.mcc, GB_MCC)
         self.assertEqual(obs.mnc, 1)
         self.assertEqual(obs.lac, 2)
@@ -152,23 +159,24 @@ class TestGeoSubmit(CeleryAppTestCase):
         session.add_all(wifis)
         session.commit()
         res = app.post_json(
-            '/v1/geosubmit?key=test', {
-                "latitude": 12.34567,
-                "longitude": 23.45678,
-                "accuracy": 12.4,
-                "radioType": "gsm",
-                "wifiAccessPoints": [
-                    {"macAddress": "101010101010"},
-                    {"macAddress": "202020202020"},
-                    {"macAddress": "303030303030"},
-                    {"macAddress": "404040404040"},
-                    {"macAddress": "505050505050"},
-                ]},
+            '/v1/geosubmit?key=test',
+            {"items": [
+                {"latitude": 12.34567,
+                 "longitude": 23.45678,
+                 "accuracy": 12.4,
+                 "radioType": "gsm",
+                 "wifiAccessPoints": [
+                     {"macAddress": "101010101010"},
+                     {"macAddress": "202020202020"},
+                     {"macAddress": "303030303030"},
+                     {"macAddress": "404040404040"},
+                     {"macAddress": "505050505050"},
+                 ]},
+            ]},
             status=200)
+
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": 12.34567,
-                                                 "lng": 23.45678},
-                                    "accuracy": 12.4})
+        self.assertEqual(res.json, {})
 
         # Check that 505050505050 exists
         query = session.query(Wifi)
@@ -191,25 +199,25 @@ class TestGeoSubmit(CeleryAppTestCase):
         session = self.db_master_session
 
         res = app.post_json(
-            '/v1/geosubmit?key=test', {
-                "latitude": GB_LAT,
-                "longitude": GB_LON,
-                "accuracy": 12.4,
-                "radioType": "gsm",
-                "wifiAccessPoints": [{
-                    "macAddress": "505050505050",
-                    "age": 3,
-                    "channel": 6,
-                    "frequency": 2437,
-                    "signalToNoiseRatio": 13,
-                    "signalStrength": -77,
-                }]},
+            '/v1/geosubmit?key=test',
+            {"items": [
+                {"latitude": GB_LAT,
+                 "longitude": GB_LON,
+                 "accuracy": 12.4,
+                 "radioType": "gsm",
+                 "wifiAccessPoints": [{
+                     "macAddress": "505050505050",
+                     "age": 3,
+                     "channel": 6,
+                     "frequency": 2437,
+                     "signalToNoiseRatio": 13,
+                     "signalStrength": -77,
+                 }]},
+            ]},
             status=200)
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": GB_LAT,
-                                                 "lng": GB_LON},
-                                    "accuracy": 12.4})
+        self.assertEqual(res.json, {})
 
         # Check that 505050505050 exists
         query = session.query(Wifi)
@@ -225,172 +233,3 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEqual(obs.channel, 6)
         self.assertEqual(obs.signal, -77)
         self.assertEqual(obs.snr, 13)
-
-    def test_geoip_match(self):
-        app = self.app
-        london = self.geoip_data['London']
-        session = self.db_master_session
-
-        res = app.post_json(
-            '/v1/geosubmit?key=test', {
-                "latitude": GB_LAT,
-                "longitude": GB_LON,
-                "accuracy": 12.4,
-                "radioType": "gsm",
-                "cellTowers": [{
-                    "cellId": 1234,
-                    "locationAreaCode": 2,
-                    "mobileCountryCode": GB_MCC,
-                    "mobileNetworkCode": 1,
-                }]},
-            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
-            status=200)
-
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": GB_LAT,
-                                                 "lng": GB_LON},
-                                    "accuracy": 12.4})
-
-        self.assertEquals(1, session.query(Cell).count())
-
-        # check that one new CellObservation record is created
-        self.assertEquals(1, session.query(CellObservation).count())
-
-
-class TestGeoSubmitBatch(CeleryAppTestCase):
-
-    def setUp(self):
-        CeleryAppTestCase.setUp(self)
-        self.app.app.registry.db_slave = self.db_master
-
-    def test_ok_cell(self):
-        app = self.app
-        session = self.db_master_session
-        cell = Cell()
-        cell.lat = GB_LAT
-        cell.lon = GB_LON
-        cell.radio = 0
-        cell.mcc = GB_MCC
-        cell.mnc = 1
-        cell.lac = 2
-        cell.cid = 1234
-        cell.range = 10000
-        cell.total_measures = 1
-        cell.new_measures = 0
-
-        session.add(cell)
-        session.commit()
-
-        res = app.post_json('/v1/geosubmit?key=test',
-                            {'items': [{"latitude": GB_LAT + 0.1,
-                                        "longitude": GB_LON + 0.1,
-                                        "accuracy": 12.4,
-                                        "radioType": "gsm",
-                                        "cellTowers": [{
-                                            "cellId": 1234,
-                                            "locationAreaCode": 2,
-                                            "mobileCountryCode": GB_MCC,
-                                            "mobileNetworkCode": 1,
-                                        }]},
-                                       {"latitude": GB_LAT - 0.1,
-                                        "longitude": GB_LON - 0.1,
-                                        "accuracy": 22.4,
-                                        "radioType": "gsm",
-                                        "cellTowers": [{
-                                            "cellId": 2234,
-                                            "locationAreaCode": 22,
-                                            "mobileCountryCode": GB_MCC,
-                                            "mobileNetworkCode": 2,
-                                        }]}]},
-                            status=200)
-
-        # check that we get an empty response
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {})
-
-        # check that two new CellObservation records are created
-        self.assertEquals(2, session.query(CellObservation).count())
-        cm1 = session.query(CellObservation).filter(
-            CellObservation.cid == 1234).count()
-        cm2 = session.query(CellObservation).filter(
-            CellObservation.cid == 2234).count()
-        self.assertEquals(1, cm1)
-        self.assertEquals(1, cm2)
-
-        self.check_stats(
-            counter=['geosubmit.api_key.test',
-                     'items.uploaded.batches',
-                     'items.uploaded.reports',
-                     ],
-            timer=['items.uploaded.batch_size'])
-
-    def test_geoip_match(self):
-        app = self.app
-        london = self.geoip_data['London']
-        session = self.db_master_session
-        cell = Cell()
-        cell.lat = GB_LAT
-        cell.lon = GB_LON
-        cell.radio = 0
-        cell.mcc = GB_MCC
-        cell.mnc = 1
-        cell.lac = 2
-        cell.cid = 1234
-        cell.range = 10000
-        cell.total_measures = 1
-        cell.new_measures = 0
-
-        session.add(cell)
-        session.commit()
-
-        res = app.post_json(
-            '/v1/geosubmit?key=test',
-            {'items': [{"latitude": GB_LAT + 0.1,
-                        "longitude": GB_LON + 0.1,
-                        "accuracy": 12.4,
-                        "radioType": "gsm",
-                        "cellTowers": [{
-                            "cellId": 1234,
-                            "locationAreaCode": 2,
-                            "mobileCountryCode": GB_MCC,
-                            "mobileNetworkCode": 1,
-                        }]},
-                       {"latitude": GB_LAT - 0.1,
-                        "longitude": GB_LON - 0.1,
-                        "accuracy": 22.4,
-                        "radioType": "gsm",
-                        "cellTowers": [{
-                            "cellId": 2234,
-                            "locationAreaCode": 22,
-                            "mobileCountryCode": GB_MCC,
-                            "mobileNetworkCode": 2,
-                        }]}]},
-            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
-            status=200)
-
-        # check that we get an empty response
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {})
-
-        # check that two new CellObservation records are created
-        self.assertEquals(2, session.query(CellObservation).count())
-        cm1 = session.query(CellObservation).filter(
-            CellObservation.cid == 1234).count()
-        cm2 = session.query(CellObservation).filter(
-            CellObservation.cid == 2234).count()
-        self.assertEquals(1, cm1)
-        self.assertEquals(1, cm2)
-
-
-class TestGeolocateRegression(GeolocateRegressionTest, CeleryAppTestCase):
-
-    def setUp(self):
-        CeleryAppTestCase.setUp(self)
-        self.app.app.registry.db_slave = self.db_master
-
-        self.url = '/v1/geosubmit'
-        self.metric = 'geosubmit'
-        self.metric_url = 'request.v1.geosubmit'
-
-    def get_session(self):
-        return self.db_master_session

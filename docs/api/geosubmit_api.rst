@@ -4,13 +4,7 @@ Geosubmit
 =========
 
 Purpose
-    Determine the current location based on provided data about nearby
-    cell or WiFi networks. This is a fully backwards compatible
-    extension to the :ref:`api_geolocate` API.
-
-    The extensions that geosubmit implement allow clients to submit
-    additional location data to the geosubmit API that will be added to
-    the service.
+    Submit data about nearby cell and WiFi networks.
 
 Geosubmit requests are submitted using a POST request to the URL::
 
@@ -25,6 +19,7 @@ body:
 
 .. code-block:: javascript
 
+    {"items": [
        {
         "latitude": -22.7539192,
         "longitude": -43.4371081,
@@ -34,9 +29,9 @@ body:
         "timestamp": 1405602028568,
         "heading": 45.0,
         "speed": 3.6,
-        "radioType": "gsm",
         "cellTowers": [
             {
+                "radioType": "gsm",
                 "cellId": 12345,
                 "locationAreaCode": 2,
                 "mobileCountryCode": 208,
@@ -61,11 +56,13 @@ body:
             }
         ]
        }
+    ]}
 
 Record definition
 -----------------
 
-Requests must contain at least one entry in the `cellTowers` array or
+Requests always need to contain a batch of reports. Each report
+must contain at least one entry in the `cellTowers` array or
 two entries in the `wifiAccessPoints` array.
 
 Most of the fields are optional. For WiFi records only the `macAddress` field
@@ -125,50 +122,15 @@ speed
     If the device cannot provide speed information, the field should be
     omitted.
 
-Batch uploads where multiple sets of latitude/longitude pairs and WiFi
-and cell data are supported by using an 'items' at the top level of the
-JSON object:
-
-.. code-block:: javascript
-
-    {"items": [
-        {
-            "latitude": -22.7,
-            "longitude": -43.4,
-            "wifi": [
-                {
-                    "macAddress": "01:23:45:67:89:ab",
-                },
-                {
-                    "macAddress": "23:45:67:89:ab:cd"
-                }
-            ]
-        },
-        {
-            "latitude": -22.6,
-            "longitude": -43.4,
-            "radioType": "gsm",
-            "cellTowers": [
-                {
-                    "cellId": 12345,
-                    "locationAreaCode": 2,
-                    "mobileCountryCode": 208,
-                    "mobileNetworkCode": 1,
-                    "age": 3
-                }
-            ]
-        }
-    ]}
 
 Geosubmit results
 -----------------
 
-If a standard geolocate call is made to the geosubmit API, the result
-will always be identical to the same call made on the :ref:`api_geolocate`
-API endpoint.
+Successful requests return a HTTP 200 response with a body of an empty
+JSON object.
 
-For geosubmit uploads where the batch mode is used, the result will
-always be a HTTP 200 response with a body of an empty JSON object.
+Geosubmit results can return the same error results as those used by the
+:ref:`api_geolocate` API endpoint.
 
 You might also get a 5xx HTTP response if there was a service side problem.
 This might happen if the service or some key part of it is unavailable.

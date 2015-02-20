@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Removed the mixed locate/submit mode from the geosubmit API.
+
 - #402: Avoid multiple validation of common report data fields.
 
 - Add a new CellCountryProvider to allow country searches based on cell data.

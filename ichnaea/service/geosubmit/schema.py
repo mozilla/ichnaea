@@ -18,6 +18,10 @@ GEOSUBMIT_RADIO_TYPE_KEYS = RADIO_TYPE_KEYS
 
 
 class CellTowerSchema(MappingSchema):
+    # mapped to 'radio' for submit
+    radioType = SchemaNode(String(),
+                           validator=OneOf(GEOSUBMIT_RADIO_TYPE_KEYS),
+                           missing='')
     # mapped to 'cid' for submit
     cellId = SchemaNode(Integer())
     # mapped to 'lac' for submit
@@ -64,9 +68,7 @@ class WifiAccessPointsSchema(SequenceSchema):
 
 
 class GeoSubmitSchema(MappingSchema):
-    # The first portion of the GeoSubmitSchema is identical to the
-    # Gelocate schema with the exception that the radioType validator
-    # can accept one more radioType (lte)
+
     homeMobileCountryCode = SchemaNode(
         Integer(), missing=-1)
     homeMobileNetworkCode = SchemaNode(
