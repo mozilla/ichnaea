@@ -88,18 +88,18 @@ def geosubmit_view(request):
             schema=GeoSubmitBatchSchema(),
             response=JSONParseError,
         )
-    except JSONParseError:  # pragma: no cover
+    except JSONParseError:
         # capture JSON exceptions for submit calls
         request.registry.heka_client.raven(RAVEN_ERROR)
         raise
 
     items = map_items(data['items'])
     nickname = request.headers.get('X-Nickname', u'')
-    if isinstance(nickname, str):  # pragma: no cover
+    if isinstance(nickname, str):
         nickname = nickname.decode('utf-8', 'ignore')
 
     email = request.headers.get('X-Email', u'')
-    if isinstance(email, str):  # pragma: no cover
+    if isinstance(email, str):
         email = email.decode('utf-8', 'ignore')
 
     # count the number of batches and emit a pseudo-timer to capture

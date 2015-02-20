@@ -352,7 +352,7 @@ def process_observation(data, session):
                 dst[key] = value
 
     report_data = ReportMixin.validate(data)
-    if report_data is None:  # pragma: no cover
+    if report_data is None:
         return ([], [])
 
     cell_observations = {}
@@ -363,11 +363,11 @@ def process_observation(data, session):
         for cell in data['cell']:
             # only validate the additional fields
             cell = CellKeyPscMixin.validate(cell)
-            if cell is None:  # pragma: no cover
+            if cell is None:
                 continue
             add_missing_dict_entries(cell, report_data)
             cell_key = to_cellkey_psc(cell)
-            if cell_key in cell_observations:  # pragma: no cover
+            if cell_key in cell_observations:
                 existing = cell_observations[cell_key]
                 if existing['ta'] > cell['ta'] or \
                    (existing['signal'] != 0 and
@@ -387,7 +387,7 @@ def process_observation(data, session):
                 continue
             add_missing_dict_entries(wifi, report_data)
             wifi_key = wifi['key']
-            if wifi_key in wifi_observations:  # pragma: no cover
+            if wifi_key in wifi_observations:
                 existing = wifi_observations[wifi_key]
                 if existing['signal'] != 0 and \
                    existing['signal'] < wifi['signal']:

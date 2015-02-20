@@ -4,6 +4,7 @@ from ichnaea.models import (
     Cell,
     CellObservation,
     RADIO_TYPE,
+    User,
     Wifi,
     WifiObservation,
 )
@@ -233,3 +234,138 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEqual(obs.channel, 6)
         self.assertEqual(obs.signal, -77)
         self.assertEqual(obs.snr, 13)
+
+    def test_invalid_json(self):
+        session = self.db_master_session
+        self.app.post_json(
+            '/v1/geosubmit?key=test',
+            {"items": [
+                {"latitude": GB_LAT,
+                 "longitude": GB_LON,
+                 "wifiAccessPoints": [{
+                     "macAddress": 10,
+                 }]},
+            ]},
+            status=400)
+        self.assertEquals(session.query(WifiObservation).count(), 0)
+
+    def test_invalid_latitude(self):
+        session = self.db_master_session
+        self.app.post_json(
+            '/v1/geosubmit?key=test',
+            {"items": [
+                {"latitude": 12345.0,
+                 "longitude": GB_LON,
+                 "wifiAccessPoints": [{
+                     "macAddress": "505050505050",
+                 }]},
+            ]},
+            status=200)
+        self.assertEquals(session.query(WifiObservation).count(), 0)
+
+    def test_invalid_cell(self):
+        session = self.db_master_session
+        self.app.post_json(
+            '/v1/geosubmit?key=test',
+            {"items": [
+                {"latitude": GB_LAT,
+                 "longitude": GB_LON,
+                 "cellTowers": [{
+                     "radioType": "gsm",
+                     "cellId": 12,
+                     "locationAreaCode": 34,
+                     "mobileCountryCode": GB_MCC,
+                     "mobileNetworkCode": 2000,
+                 }]},
+            ]},
+            status=200)
+        self.assertEquals(session.query(CellObservation).count(), 0)
+
+    def test_duplicated_cell_observations(self):
+        session = self.db_master_session
+        self.app.post_json(
+            '/v1/geosubmit?key=test',
+            {"items": [
+                {"latitude": GB_LAT,
+                 "longitude": GB_LON,
+                 "cellTowers": [
+                     {"radioType": "gsm",
+                      "cellId": 12,
+                      "locationAreaCode": 34,
+                      "mobileCountryCode": GB_MCC,
+                      "mobileNetworkCode": 5,
+                      "asu": 10},
+                     {"radioType": "gsm",
+                      "cellId": 12,
+                      "locationAreaCode": 34,
+                      "mobileCountryCode": GB_MCC,
+                      "mobileNetworkCode": 5,
+                      "asu": 16},
+                 ]},
+            ]},
+            status=200)
+        self.assertEquals(session.query(CellObservation).count(), 1)
+
+    def test_duplicated_wifi_observations(self):
+        session = self.db_master_session
+        self.app.post_json(
+            '/v1/geosubmit?key=test',
+            {"items": [
+                {"latitude": GB_LAT,
+                 "longitude": GB_LON,
+                 "wifiAccessPoints": [
+                     {"macAddress": "101010101010",
+                      "signalStrength": -92},
+                     {"macAddress": "101010101010",
+                      "signalStrength": -77},
+                 ]},
+            ]},
+            status=200)
+        self.assertEquals(session.query(WifiObservation).count(), 1)
+
+    def test_email_header(self):
+        nickname = 'World Tr\xc3\xa4veler'
+        email = 'world_tr\xc3\xa4veler@email.com'
+        session = self.db_master_session
+        self.app.post_json(
+            '/v1/geosubmit?key=test',
+            {"items": [
+                {"latitude": 12.34567,
+                 "longitude": 23.45678,
+                 "accuracy": 12.4,
+                 "radioType": "gsm",
+                 "wifiAccessPoints": [
+                     {"macAddress": "101010101010"},
+                     {"macAddress": "202020202020"},
+                     {"macAddress": "303030303030"},
+                     {"macAddress": "404040404040"},
+                     {"macAddress": "505050505050"},
+                 ]},
+            ]},
+            headers={
+                'X-Nickname': nickname,
+                'X-Email': email,
+            },
+            status=200)
+
+        session = self.db_master_session
+        result = session.query(User).all()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].email, email.decode('utf-8'))
+
+    def test_batches(self):
+        session = self.db_master_session
+        EXPECTED_RECORDS = 110
+        wifi_data = [{"macAddress": "101010101010"}]
+        items = [{"latitude": GB_LAT,
+                  "longitude": GB_LON + (i / 10000.0),
+                  "wifiAccessPoints": wifi_data}
+                 for i in range(EXPECTED_RECORDS)]
+
+        # let's add a bad one, this will just be skipped
+        items.append({'lat': 10, 'lon': 10, 'whatever': 'xx'})
+        self.app.post_json('/v1/geosubmit?key=test',
+                           {"items": items}, status=200)
+
+        result = session.query(WifiObservation).all()
+        self.assertEqual(len(result), EXPECTED_RECORDS)
