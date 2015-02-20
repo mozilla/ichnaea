@@ -16,8 +16,8 @@ from ichnaea.models.content import (
     User,
 )
 from ichnaea.customjson import (
-    dumps,
-    loads,
+    kombu_dumps,
+    kombu_loads,
 )
 from ichnaea.data.schema import ValidCellKeySchema
 from ichnaea.geocalc import distance, centroid, range_to_points
@@ -56,7 +56,7 @@ UPDATE_KEY = {
 def enqueue_lacs(session, redis_client, lac_keys,
                  pipeline_key, expire=86400, batch=100):
     pipe = redis_client.pipeline()
-    lac_json = [str(dumps(lac._asdict())) for lac in lac_keys]
+    lac_json = [str(kombu_dumps(lac)) for lac in lac_keys]
 
     while lac_json:
         pipe.lpush(pipeline_key, *lac_json[:batch])
@@ -72,7 +72,7 @@ def dequeue_lacs(redis_client, pipeline_key, batch=100):
     pipe.multi()
     pipe.lrange(pipeline_key, 0, batch - 1)
     pipe.ltrim(pipeline_key, batch, -1)
-    return [loads(item) for item in pipe.execute()[0]]
+    return [kombu_loads(item) for item in pipe.execute()[0]]
 
 
 def available_station_space(session, key, station_model, join_key,
@@ -612,7 +612,7 @@ def insert_measures(self, items=None, nickname='', email='',
     if not items:  # pragma: no cover
         return 0
 
-    items = loads(items)
+    items = kombu_loads(items)
     length = len(items)
     stats_client = self.stats_client
 

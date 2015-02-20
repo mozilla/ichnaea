@@ -9,7 +9,7 @@ from pyramid.httpexceptions import (
 from pytz import utc
 from redis import ConnectionError
 
-from ichnaea.customjson import dumps
+from ichnaea.customjson import kombu_dumps
 from ichnaea.data.tasks import insert_measures
 from ichnaea.service.base import check_api_key
 from ichnaea.service.error import (
@@ -113,7 +113,7 @@ def process_upload(nickname, email, items, stats_client,
             'items.api_log.%s.uploaded.batch_size' % api_key_name, length)
 
     for i in range(0, length, 100):
-        batch_items = dumps(batch_list[i:i + 100])
+        batch_items = kombu_dumps(batch_list[i:i + 100])
         # insert observations, expire the task if it wasn't processed
         # after six hours to avoid queue overload
         try:

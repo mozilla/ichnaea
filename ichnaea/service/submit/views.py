@@ -4,7 +4,7 @@ from pyramid.httpexceptions import (
 )
 from redis import ConnectionError
 
-from ichnaea.customjson import dumps
+from ichnaea.customjson import kombu_dumps
 from ichnaea.data.tasks import insert_measures
 from ichnaea.logging import RAVEN_ERROR
 from ichnaea.service.error import (
@@ -100,7 +100,7 @@ def submit_view(request):
     # batch incoming data into multiple tasks, in case someone
     # manages to submit us a huge single request
     for i in range(0, length, 100):
-        batch = dumps(items[i:i + 100])
+        batch = kombu_dumps(items[i:i + 100])
         # insert observations, expire the task if it wasn't processed
         # after six hours to avoid queue overload
         try:
