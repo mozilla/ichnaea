@@ -11,9 +11,9 @@ from ichnaea.models.content import (
 )
 from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
-    CellMeasure,
+    CellObservation,
     RADIO_TYPE,
-    WifiMeasure,
+    WifiObservation,
 )
 from ichnaea.customjson import dumps
 from ichnaea.tests.base import (
@@ -49,7 +49,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(res.body, '')
 
         session = self.db_master_session
-        cell_result = session.query(CellMeasure).all()
+        cell_result = session.query(CellObservation).all()
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
         self.assertTrue(isinstance(item.report_id, uuid.UUID))
@@ -86,7 +86,7 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        wifi_result = session.query(WifiMeasure).all()
+        wifi_result = session.query(WifiObservation).all()
         self.assertEqual(len(wifi_result), 2)
         item = wifi_result[0]
         report_id = item.report_id
@@ -121,7 +121,7 @@ class TestSubmit(CeleryAppTestCase):
 
         session = self.db_master_session
 
-        result = session.query(WifiMeasure).all()
+        result = session.query(WifiObservation).all()
         self.assertEqual(len(result), EXPECTED_RECORDS)
 
     def test_mapstat(self):
@@ -461,9 +461,9 @@ class TestSubmit(CeleryAppTestCase):
         res = app.post_json('/v1/submit', {"items": data}, status=204)
         self.assertEqual(res.body, '')
 
-        cell_result = session.query(CellMeasure).all()
+        cell_result = session.query(CellObservation).all()
         self.assertEqual(len(cell_result), 0)
-        wifi_result = session.query(WifiMeasure).all()
+        wifi_result = session.query(WifiObservation).all()
         self.assertEqual(len(wifi_result), 1)
 
     def test_completely_empty(self):
@@ -473,7 +473,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertTrue('errors' in res.json)
         self.assertTrue(len(res.json['errors']) == 0)
 
-    def test_missing_radio_in_measure(self):
+    def test_missing_radio_in_observation(self):
         app = self.app
         cell_data = [{"mcc": FRANCE_MCC, "mnc": 1, "lac": 2, "cid": 1234}]
         res = app.post_json(
@@ -484,7 +484,7 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        cell_result = session.query(CellMeasure).all()
+        cell_result = session.query(CellObservation).all()
         self.assertEqual(len(cell_result), 0)
 
         cell_data = [{"mcc": FRANCE_MCC, "mnc": 1, "lac": 2, "cid": 1234},
@@ -501,7 +501,7 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        cell_result = session.query(CellMeasure).all()
+        cell_result = session.query(CellObservation).all()
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
         self.assertEqual(item.radio, RADIO_TYPE['gsm'])
@@ -521,5 +521,5 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
         session = self.db_master_session
-        cell_result = session.query(CellMeasure).all()
+        cell_result = session.query(CellObservation).all()
         self.assertEqual(len(cell_result), 0)

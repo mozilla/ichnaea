@@ -341,9 +341,9 @@ database tables. Along the way several counters measure the steps involved:
 
 ``items.cell_unthrottled``, ``items.wifi_unthrottled`` : counters
 
-    Count space made for new observations in the wifi and cell measure tables
-    due to periodic backup and trimming of old records. Specifically: for
-    cell or wifi stations that were previously rate-limited, count the
+    Count space made for new observations in the wifi and cell observation
+    tables due to periodic backup and trimming of old records. Specifically:
+    for cell or wifi stations that were previously rate-limited, count the
     amount of new space for observations of those stations freed up after each
     backup and trim task runs. This is not the same as the number of
     observations backed up; it's *only* a count of the cumulative space freed
@@ -382,20 +382,20 @@ Gauges
 ``queue.update_wifi``, : gauges
 
     These gauges measure the number of items in the Redis update queues.
-    These queues are used to keep track of which measures still need to
+    These queues are used to keep track of which observations still need to
     be acted upon and integrated into the aggregate station data.
 
 ``task.data.location_update_cell.new_measures_<min>_<max>``,
 ``task.data.location_update_wifi.new_measures_<min>_<max>``, : gauges
 
-    These gauges measure the number of stations which have a new measure
+    These gauges measure the number of stations which have a new observation
     count within a certain range. These gauges should remain relatively
-    constant if Ichnaea is "keeping up with" using new measures to
+    constant if Ichnaea is "keeping up with" using new observations to
     update the position estimates of these stations.
 
 ``table.cell_measure``, ``table.wifi_measure`` : gauges
 
-    These gauges measure the number of database rows in each of the measure
+    These gauges measure the number of database rows in each of the observation
     tables at a regular interval. For performance reasons the gauges are
     based on `max(id) - min(id)`, which might be higher than the actual
     number of rows if not all auto-increment numbers are taken.
@@ -412,12 +412,12 @@ S3 backup counters
 ------------------
 
 Ichnaea contains logic for backing up and optionally trimming large
-measurement tables to S3 or similar bulk storage systems. When such backup
+observation tables to S3 or similar bulk storage systems. When such backup
 events occur, some associated counters are emitted:
 
 ``s3.backup.cell``, ``s3.backup.wifi`` : counters
 
-    Counts the number of cell or wifi measures that have been backed up.
+    Counts the number of cell or wifi observations that have been backed up.
 
 
 HTTP counters

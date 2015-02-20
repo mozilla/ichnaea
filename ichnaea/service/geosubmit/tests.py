@@ -2,10 +2,10 @@ import time
 
 from ichnaea.models import (
     Cell,
-    CellMeasure,
+    CellObservation,
     RADIO_TYPE,
     Wifi,
-    WifiMeasure,
+    WifiObservation,
 )
 from ichnaea.tests.base import (
     CeleryAppTestCase,
@@ -65,8 +65,8 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEqual(2, cell.total_measures)
         self.assertEqual(1, cell.new_measures)
 
-        # check that one new CellMeasure record is created
-        self.assertEquals(1, session.query(CellMeasure).count())
+        # check that one new CellObservation record is created
+        self.assertEquals(1, session.query(CellObservation).count())
 
         self.check_stats(
             counter=['geosubmit.api_key.test',
@@ -118,27 +118,27 @@ class TestGeoSubmit(CeleryAppTestCase):
 
         self.assertEquals(session.query(Cell).count(), 1)
 
-        # check that one new CellMeasure record is created
-        result = session.query(CellMeasure).all()
+        # check that one new CellObservation record is created
+        result = session.query(CellObservation).all()
         self.assertEquals(len(result), 1)
-        measure = result[0]
-        self.assertEqual(measure.lat, GB_LAT)
-        self.assertEqual(measure.lon, GB_LON)
-        self.assertEqual(measure.accuracy, 12)
-        self.assertEqual(measure.altitude, 100)
-        self.assertEqual(measure.altitude_accuracy, 24)
-        self.assertEqual(measure.heading, 45.0)
-        self.assertEqual(measure.speed, 3.6)
-        self.assertEqual(measure.time, first_of_month)
-        self.assertEqual(measure.radio, RADIO_TYPE['gsm'])
-        self.assertEqual(measure.mcc, GB_MCC)
-        self.assertEqual(measure.mnc, 1)
-        self.assertEqual(measure.lac, 2)
-        self.assertEqual(measure.cid, 1234)
-        self.assertEqual(measure.psc, 15)
-        self.assertEqual(measure.asu, 31)
-        self.assertEqual(measure.signal, -51)
-        self.assertEqual(measure.ta, 1)
+        obs = result[0]
+        self.assertEqual(obs.lat, GB_LAT)
+        self.assertEqual(obs.lon, GB_LON)
+        self.assertEqual(obs.accuracy, 12)
+        self.assertEqual(obs.altitude, 100)
+        self.assertEqual(obs.altitude_accuracy, 24)
+        self.assertEqual(obs.heading, 45.0)
+        self.assertEqual(obs.speed, 3.6)
+        self.assertEqual(obs.time, first_of_month)
+        self.assertEqual(obs.radio, RADIO_TYPE['gsm'])
+        self.assertEqual(obs.mcc, GB_MCC)
+        self.assertEqual(obs.mnc, 1)
+        self.assertEqual(obs.lac, 2)
+        self.assertEqual(obs.cid, 1234)
+        self.assertEqual(obs.psc, 15)
+        self.assertEqual(obs.asu, 31)
+        self.assertEqual(obs.signal, -51)
+        self.assertEqual(obs.ta, 1)
 
     def test_ok_wifi(self):
         app = self.app
@@ -175,8 +175,8 @@ class TestGeoSubmit(CeleryAppTestCase):
         count = query.filter(Wifi.key == "505050505050").count()
         self.assertEquals(1, count)
 
-        # check that WifiMeasure records are created
-        self.assertEquals(5, session.query(WifiMeasure).count())
+        # check that WifiObservation records are created
+        self.assertEquals(5, session.query(WifiObservation).count())
 
         self.check_stats(
             counter=['items.api_log.test.uploaded.batches',
@@ -216,15 +216,15 @@ class TestGeoSubmit(CeleryAppTestCase):
         count = query.filter(Wifi.key == "505050505050").count()
         self.assertEquals(count, 1)
 
-        # check that WifiMeasure records are created
-        result = session.query(WifiMeasure).all()
+        # check that WifiObservation records are created
+        result = session.query(WifiObservation).all()
         self.assertEquals(len(result), 1)
-        measure = result[0]
-        self.assertEqual(measure.lat, GB_LAT)
-        self.assertEqual(measure.lon, GB_LON)
-        self.assertEqual(measure.channel, 6)
-        self.assertEqual(measure.signal, -77)
-        self.assertEqual(measure.snr, 13)
+        obs = result[0]
+        self.assertEqual(obs.lat, GB_LAT)
+        self.assertEqual(obs.lon, GB_LON)
+        self.assertEqual(obs.channel, 6)
+        self.assertEqual(obs.signal, -77)
+        self.assertEqual(obs.snr, 13)
 
     def test_geoip_match(self):
         app = self.app
@@ -253,8 +253,8 @@ class TestGeoSubmit(CeleryAppTestCase):
 
         self.assertEquals(1, session.query(Cell).count())
 
-        # check that one new CellMeasure record is created
-        self.assertEquals(1, session.query(CellMeasure).count())
+        # check that one new CellObservation record is created
+        self.assertEquals(1, session.query(CellObservation).count())
 
 
 class TestGeoSubmitBatch(CeleryAppTestCase):
@@ -308,12 +308,12 @@ class TestGeoSubmitBatch(CeleryAppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {})
 
-        # check that two new CellMeasure records are created
-        self.assertEquals(2, session.query(CellMeasure).count())
-        cm1 = session.query(CellMeasure).filter(
-            CellMeasure.cid == 1234).count()
-        cm2 = session.query(CellMeasure).filter(
-            CellMeasure.cid == 2234).count()
+        # check that two new CellObservation records are created
+        self.assertEquals(2, session.query(CellObservation).count())
+        cm1 = session.query(CellObservation).filter(
+            CellObservation.cid == 1234).count()
+        cm2 = session.query(CellObservation).filter(
+            CellObservation.cid == 2234).count()
         self.assertEquals(1, cm1)
         self.assertEquals(1, cm2)
 
@@ -372,12 +372,12 @@ class TestGeoSubmitBatch(CeleryAppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {})
 
-        # check that two new CellMeasure records are created
-        self.assertEquals(2, session.query(CellMeasure).count())
-        cm1 = session.query(CellMeasure).filter(
-            CellMeasure.cid == 1234).count()
-        cm2 = session.query(CellMeasure).filter(
-            CellMeasure.cid == 2234).count()
+        # check that two new CellObservation records are created
+        self.assertEquals(2, session.query(CellObservation).count())
+        cm1 = session.query(CellObservation).filter(
+            CellObservation.cid == 1234).count()
+        cm2 = session.query(CellObservation).filter(
+            CellObservation.cid == 2234).count()
         self.assertEquals(1, cm1)
         self.assertEquals(1, cm2)
 

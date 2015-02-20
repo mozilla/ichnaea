@@ -1095,17 +1095,17 @@ class TestPositionSearcher(BaseLocateTest):
         session.add_all(wifis)
         session.flush()
 
-        measures = [dict(key=("0%X" % i) * 6,
-                         signal=-80)
-                    for i in range(1, 6)]
-        measures += [
+        observations = [dict(key=("0%X" % i) * 6,
+                             signal=-80)
+                        for i in range(1, 6)]
+        observations += [
             dict(key="D4" * 6, signal=-75),
             dict(key="E5" * 6, signal=-74),
             dict(key="F6" * 6, signal=-73)
         ]
-        random.shuffle(measures)
+        random.shuffle(observations)
 
-        result = self._make_query(data={'wifi': measures})
+        result = self._make_query(data={'wifi': observations})
         self.assertEqual(result,
                          {'lat': 1.00003,
                           'lon': 1.000036,
@@ -1122,19 +1122,19 @@ class TestPositionSearcher(BaseLocateTest):
                  for i in range(1, 11)]
         session.add_all(wifis)
         session.commit()
-        measures = [dict(key=("0%X" % i) * 6,
-                         signal=-80)
-                    for i in range(6, 11)]
-        measures += [
+        observations = [dict(key=("0%X" % i) * 6,
+                             signal=-80)
+                        for i in range(6, 11)]
+        observations += [
             dict(key="010101010101", signal=-75),
             dict(key="020202020202", signal=-74),
             dict(key="030303030303", signal=-73),
             dict(key="040404040404", signal=-72),
             dict(key="050505050505", signal=-71),
         ]
-        random.shuffle(measures)
+        random.shuffle(observations)
 
-        result = self._make_query(data={'wifi': measures})
+        result = self._make_query(data={'wifi': observations})
         self.assertEqual(result,
                          {'lat': 1.00003,
                           'lon': 1.000036,

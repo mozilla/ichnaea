@@ -33,8 +33,8 @@ class WifisSchema(SequenceSchema):
     wifi = WifiSchema()
 
 
-class BaseMeasureSchema(MappingSchema):
-    # lat/lon being set to -255 indicates that this measure should be
+class BaseReportSchema(MappingSchema):
+    # lat/lon being set to -255 indicates that this report should be
     # skipped.  Other fields can be filled in with defaults
     lat = SchemaNode(Float(), missing=-255)
     lon = SchemaNode(Float(), missing=-255)
@@ -50,14 +50,14 @@ class BaseMeasureSchema(MappingSchema):
     speed = SchemaNode(Float(), missing=-1.0)
 
 
-class MeasureSchema(BaseMeasureSchema):
+class ReportSchema(BaseReportSchema):
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())
 
 
-class MeasuresSchema(SequenceSchema):
-    measure = MeasureSchema()
+class ReportsSchema(SequenceSchema):
+    report = ReportSchema()
 
 
 class SubmitSchema(MappingSchema):
-    items = MeasuresSchema()
+    items = ReportsSchema()

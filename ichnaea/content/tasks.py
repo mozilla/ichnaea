@@ -7,10 +7,10 @@ from ichnaea.models.content import (
 )
 from ichnaea.models import (
     Cell,
-    CellMeasure,
+    CellObservation,
     OCIDCell,
     Wifi,
-    WifiMeasure,
+    WifiObservation,
 )
 from ichnaea import util
 from ichnaea.worker import celery
@@ -72,13 +72,13 @@ def histogram_task(db_session, model, stat_key, ago=1):
 @celery.task(base=DatabaseTask, bind=True)
 def cell_histogram(self, ago=1):
     return histogram_task(
-        self.db_session, CellMeasure, StatKey.cell, ago=ago)
+        self.db_session, CellObservation, StatKey.cell, ago=ago)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def wifi_histogram(self, ago=1):
     return histogram_task(
-        self.db_session, WifiMeasure, StatKey.wifi, ago=ago)
+        self.db_session, WifiObservation, StatKey.wifi, ago=ago)
 
 
 @celery.task(base=DatabaseTask, bind=True)

@@ -28,12 +28,12 @@ from ichnaea.models import (
     CellAreaKey,
     CellBlacklist,
     CellKeyPscMixin,
-    CellMeasure,
+    CellObservation,
     ReportMixin,
     Wifi,
     WifiBlacklist,
     WifiKeyMixin,
-    WifiMeasure,
+    WifiObservation,
     join_cellkey,
     join_wifikey,
     to_cellkey,
@@ -76,16 +76,16 @@ def dequeue_lacs(redis_client, pipeline_key, batch=100):
 
 
 def available_station_space(session, key, station_model, join_key,
-                            max_measures_per_station):
-    # check if there's space for new measurements within per-station maximum
-    # old measures are gradually backed up, so this is an intake-rate limit
+                            max_observations_per_station):
+    # check if there's space for new observations within per-station maximum
+    # old observations are gradually backed up, so this is an intake-rate limit
 
     query = session.query(station_model.total_measures).filter(
         *join_key(station_model, key))
     curr = query.first()
 
     if curr is not None:
-        return max_measures_per_station - curr[0]
+        return max_observations_per_station - curr[0]
 
     # Return None to signal no station record was found.
     return None
@@ -156,11 +156,11 @@ def blacklisted_station(session, key, blacklist_model,
     return (False, None)
 
 
-def calculate_new_position(station, measures, max_dist_km):
+def calculate_new_position(station, observations, max_dist_km):
     # This function returns True if the station was found to be moving.
-    length = len(measures)
-    latitudes = [w[0] for w in measures]
-    longitudes = [w[1] for w in measures]
+    length = len(observations)
+    latitudes = [obs[0] for obs in observations]
+    longitudes = [obs[1] for obs in observations]
     new_lat = sum(latitudes) / length
     new_lon = sum(longitudes) / length
 
@@ -173,7 +173,7 @@ def calculate_new_position(station, measures, max_dist_km):
         station.lon = new_lon
         existing_station = False
 
-    # calculate extremes of measures, existing location estimate
+    # calculate extremes of observations, existing location estimate
     # and existing extreme values
     def extreme(vals, attr, function):
         new = function(vals)
@@ -190,7 +190,7 @@ def calculate_new_position(station, measures, max_dist_km):
 
     # calculate sphere-distance from opposite corners of
     # bounding box containing current location estimate
-    # and new measurements; if too big, station is moving
+    # and new observations; if too big, station is moving
     box_dist = distance(min_lat, min_lon, max_lat, max_lon)
 
     if existing_station:
@@ -232,7 +232,7 @@ def create_or_update_station(session, key, station_model,
                              join_key, utcnow, num, first_blacklisted):
     """
     Creates a station or updates its new/total_measures counts to reflect
-    recently-received measures.
+    recently-received observations.
     """
     query = (session.query(station_model)
                     .filter(*join_key(station_model, key)))
@@ -260,8 +260,8 @@ def create_or_update_station(session, key, station_model,
         session.execute(stmt)
 
 
-def emit_new_measures_metric(stats_client, session, shortname,
-                             model, min_new, max_new):
+def emit_new_observation_metric(stats_client, session, shortname,
+                                model, min_new, max_new):
     q = session.query(model).filter(
         model.new_measures >= min_new,
         model.new_measures < max_new)
@@ -270,11 +270,11 @@ def emit_new_measures_metric(stats_client, session, shortname,
                        (shortname, min_new, max_new), n)
 
 
-def incomplete_measure(station_type, key):
+def incomplete_observation(station_type, key):
     """
-    Certain incomplete measures we want to store in the database
+    Certain incomplete observations we want to store in the database
     even though they should not lead to the creation of a station
-    entry; these are cell measures with a missing value for
+    entry; these are cell observations with a missing value for
     LAC and/or CID, and will be inferred from neighboring cells.
     """
     if station_type == 'cell':
@@ -340,93 +340,93 @@ def process_user(nickname, email, session):
     return (userid, nickname, email)
 
 
-def process_measure(data, session):
+def process_observation(data, session):
     def add_missing_dict_entries(dst, src):
         # x.update(y) overwrites entries in x with those in y;
         # We want to only add those not already present.
-        # We also only want to copy the top-level base measure data
+        # We also only want to copy the top-level base report data
         # and not any nested values like cell or wifi.
-        for (k, v) in src.items():
-            if k != 'radio' and k not in dst \
-               and not isinstance(v, (tuple, list, dict)):
-                dst[k] = v
+        for (key, value) in src.items():
+            if key != 'radio' and key not in dst \
+               and not isinstance(value, (tuple, list, dict)):
+                dst[key] = value
 
     report_data = ReportMixin.validate(data)
     if report_data is None:
         return ([], [])
 
-    cell_measures = {}
-    wifi_measures = {}
+    cell_observations = {}
+    wifi_observations = {}
 
     if data.get('cell'):
-        # flatten measure / cell data into a single dict
-        for c in data['cell']:
+        # flatten report / cell data into a single dict
+        for cell in data['cell']:
             # only validate the additional fields
-            c = CellKeyPscMixin.validate(c)
-            if c is None:  # pragma: no cover
+            cell = CellKeyPscMixin.validate(cell)
+            if cell is None:  # pragma: no cover
                 continue
-            add_missing_dict_entries(c, report_data)
-            key = to_cellkey_psc(c)
-            if key in cell_measures:  # pragma: no cover
-                existing = cell_measures[key]
-                if existing['ta'] > c['ta'] or \
+            add_missing_dict_entries(cell, report_data)
+            cell_key = to_cellkey_psc(cell)
+            if cell_key in cell_observations:  # pragma: no cover
+                existing = cell_observations[cell_key]
+                if existing['ta'] > cell['ta'] or \
                    (existing['signal'] != 0 and
-                    existing['signal'] < c['signal']) or \
-                   existing['asu'] < c['asu']:
-                    cell_measures[key] = c
+                    existing['signal'] < cell['signal']) or \
+                   existing['asu'] < cell['asu']:
+                    cell_observations[cell_key] = cell
             else:
-                cell_measures[key] = c
-    cell_measures = cell_measures.values()
+                cell_observations[cell_key] = cell
+    cell_observations = cell_observations.values()
 
-    # flatten measure / wifi data into a single dict
+    # flatten report / wifi data into a single dict
     if data.get('wifi'):
-        for w in data['wifi']:
+        for wifi in data['wifi']:
             # only validate the additional fields
-            w = WifiKeyMixin.validate(w)
-            if w is None:
+            wifi = WifiKeyMixin.validate(wifi)
+            if wifi is None:
                 continue
-            add_missing_dict_entries(w, report_data)
-            key = w['key']
-            if key in wifi_measures:  # pragma: no cover
-                existing = wifi_measures[key]
+            add_missing_dict_entries(wifi, report_data)
+            wifi_key = wifi['key']
+            if wifi_key in wifi_observations:  # pragma: no cover
+                existing = wifi_observations[wifi_key]
                 if existing['signal'] != 0 and \
-                   existing['signal'] < w['signal']:
-                    wifi_measures[key] = w
+                   existing['signal'] < wifi['signal']:
+                    wifi_observations[wifi_key] = wifi
             else:
-                wifi_measures[key] = w
-        wifi_measures = wifi_measures.values()
-    return (cell_measures, wifi_measures)
+                wifi_observations[wifi_key] = wifi
+        wifi_observations = wifi_observations.values()
+    return (cell_observations, wifi_observations)
 
 
-def process_measures(items, session, userid=None,
-                     api_key_log=False, api_key_name=None):
+def process_observations(observations, session, userid=None,
+                         api_key_log=False, api_key_name=None):
     stats_client = get_stats_client()
     positions = []
-    cell_measures = []
-    wifi_measures = []
-    for i, item in enumerate(items):
-        item['report_id'] = uuid.uuid1()
-        cell, wifi = process_measure(item, session)
-        cell_measures.extend(cell)
-        wifi_measures.extend(wifi)
+    cell_observations = []
+    wifi_observations = []
+    for i, obs in enumerate(observations):
+        obs['report_id'] = uuid.uuid1()
+        cell, wifi = process_observation(obs, session)
+        cell_observations.extend(cell)
+        wifi_observations.extend(wifi)
         if cell or wifi:
             positions.append({
-                'lat': item['lat'],
-                'lon': item['lon'],
+                'lat': obs['lat'],
+                'lon': obs['lon'],
             })
 
-    if cell_measures:
+    if cell_observations:
         # group by and create task per cell key
         stats_client.incr('items.uploaded.cell_observations',
-                          len(cell_measures))
+                          len(cell_observations))
         if api_key_log:
             stats_client.incr(
                 'items.api_log.%s.uploaded.cell_observations' % api_key_name,
-                len(cell_measures))
+                len(cell_observations))
 
         cells = defaultdict(list)
-        for measure in cell_measures:
-            cells[to_cellkey_psc(measure)].append(measure)
+        for obs in cell_observations:
+            cells[to_cellkey_psc(obs)].append(obs)
 
         # Create a task per group of 5 cell keys at a time.
         # Grouping them helps in avoiding per-task overhead.
@@ -435,9 +435,9 @@ def process_measures(items, session, userid=None,
         countdown = 0
         for i in range(0, len(cells), batch_size):
             values = []
-            for measures in cells[i:i + batch_size]:
-                values.extend(measures)
-            # insert measures, expire the task if it wasn't processed
+            for observations in cells[i:i + batch_size]:
+                values.extend(observations)
+            # insert observations, expire the task if it wasn't processed
             # after six hours to avoid queue overload, also delay
             # each task by one second more, to get a more even workload
             # and avoid parallel updates of the same underlying stations
@@ -448,31 +448,31 @@ def process_measures(items, session, userid=None,
                 countdown=countdown)
             countdown += 1
 
-    if wifi_measures:
+    if wifi_observations:
         # group by WiFi key
         stats_client.incr('items.uploaded.wifi_observations',
-                          len(wifi_measures))
+                          len(wifi_observations))
         if api_key_log:
             stats_client.incr(
                 'items.api_log.%s.uploaded.wifi_observations' % api_key_name,
-                len(wifi_measures))
+                len(wifi_observations))
 
         wifis = defaultdict(list)
-        for measure in wifi_measures:
-            wifis[measure['key']].append(measure)
+        for obs in wifi_observations:
+            wifis[obs['key']].append(obs)
 
         # Create a task per group of 20 WiFi keys at a time.
         # We tend to get a huge number of unique WiFi networks per
-        # batch upload, with one to very few measures per WiFi.
+        # batch upload, with one to very few observations per WiFi.
         # Grouping them helps in avoiding per-task overhead.
         wifis = list(wifis.values())
         batch_size = 20
         countdown = 0
         for i in range(0, len(wifis), batch_size):
             values = []
-            for measures in wifis[i:i + batch_size]:
-                values.extend(measures)
-            # insert measures, expire the task if it wasn't processed
+            for observations in wifis[i:i + batch_size]:
+                values.extend(observations)
+            # insert observations, expire the task if it wasn't processed
             # after six hours to avoid queue overload, also delay
             # each task by one second more, to get a more even workload
             # and avoid parallel updates of the same underlying stations
@@ -506,13 +506,14 @@ def process_score(userid, points, session, key='location'):
     return points
 
 
-def process_station_measures(session, entries, station_type,
-                             station_model, measure_model, blacklist_model,
-                             create_key, join_key,
-                             userid=None, max_measures_per_station=11000,
-                             utcnow=None):
+def process_station_observations(session, entries, station_type,
+                                 station_model, observation_model,
+                                 blacklist_model, create_key, join_key,
+                                 userid=None,
+                                 max_observations_per_station=11000,
+                                 utcnow=None):
 
-    all_measures = []
+    all_observations = []
     dropped_blacklisted = 0
     dropped_malformed = 0
     dropped_overflow = 0
@@ -522,19 +523,19 @@ def process_station_measures(session, entries, station_type,
         utcnow = util.utcnow()
 
     # Process entries and group by validated station key
-    station_measures = defaultdict(list)
+    station_observations = defaultdict(list)
     for entry in entries:
         entry['created'] = utcnow
-        measure = measure_model.create(entry)
+        obs = observation_model.create(entry)
 
-        if not measure:
+        if not obs:
             dropped_malformed += 1
             continue
 
-        station_measures[create_key(measure)].append(measure)
+        station_observations[create_key(obs)].append(obs)
 
-    # Process measures one station at a time
-    for key, measures in station_measures.items():
+    # Process observations one station at a time
+    for key, observations in station_observations.items():
 
         first_blacklisted = None
         incomplete = False
@@ -542,35 +543,35 @@ def process_station_measures(session, entries, station_type,
 
         # Figure out how much space is left for this station.
         free = available_station_space(session, key, station_model,
-                                       join_key, max_measures_per_station)
+                                       join_key, max_observations_per_station)
         if free is None:
             is_new_station = True
-            free = max_measures_per_station
+            free = max_observations_per_station
 
         if is_new_station:
-            # Drop measures for blacklisted stations.
+            # Drop observations for blacklisted stations.
             blacklisted, first_blacklisted = blacklisted_station(
                 session, key, blacklist_model, join_key, utcnow)
             if blacklisted:
-                dropped_blacklisted += len(measures)
+                dropped_blacklisted += len(observations)
                 continue
 
-            incomplete = incomplete_measure(station_type, key)
+            incomplete = incomplete_observation(station_type, key)
             if not incomplete:
                 # We discovered an actual new complete station.
                 new_stations += 1
 
-        # Accept measures up to input-throttling limit, then drop.
+        # Accept observations up to input-throttling limit, then drop.
         num = 0
-        for measure in measures:
+        for obs in observations:
             if free <= 0:
                 dropped_overflow += 1
                 continue
-            all_measures.append(measure)
+            all_observations.append(obs)
             free -= 1
             num += 1
 
-        # Accept incomplete measures, just don't make stations for them.
+        # Accept incomplete observations, just don't make stations for them.
         # (station creation is a side effect of count-updating)
         if not incomplete and num > 0:
             create_or_update_station(session, key, station_model,
@@ -599,10 +600,10 @@ def process_station_measures(session, entries, station_type,
 
     stats_client.incr(
         'items.inserted.%s_observations' % station_type,
-        count=len(all_measures))
+        count=len(all_observations))
 
-    session.add_all(all_measures)
-    return all_measures
+    session.add_all(all_observations)
+    return all_observations
 
 
 @celery.task(base=DatabaseTask, bind=True, queue='celery_incoming')
@@ -618,10 +619,10 @@ def insert_measures(self, items=None, nickname='', email='',
     with self.db_session() as session:
         userid, nickname, email = process_user(nickname, email, session)
 
-        process_measures(items, session,
-                         userid=userid,
-                         api_key_log=api_key_log,
-                         api_key_name=api_key_name)
+        process_observations(items, session,
+                             userid=userid,
+                             api_key_log=api_key_log,
+                             api_key_name=api_key_name)
         stats_client.incr('items.uploaded.reports', length)
         if api_key_log:
             stats_client.incr(
@@ -633,44 +634,44 @@ def insert_measures(self, items=None, nickname='', email='',
 
 @celery.task(base=DatabaseTask, bind=True, queue='celery_insert')
 def insert_measures_cell(self, entries, userid=None,
-                         max_measures_per_cell=11000,
+                         max_observations_per_cell=11000,
                          utcnow=None):
-    cell_measures = []
+    cell_observations = []
     with self.db_session() as session:
-        cell_measures = process_station_measures(
+        cell_observations = process_station_observations(
             session, entries,
             station_type="cell",
             station_model=Cell,
-            measure_model=CellMeasure,
+            observation_model=CellObservation,
             blacklist_model=CellBlacklist,
             create_key=to_cellkey_psc,
             join_key=join_cellkey,
             userid=userid,
-            max_measures_per_station=max_measures_per_cell,
+            max_observations_per_station=max_observations_per_cell,
             utcnow=utcnow)
         session.commit()
-    return len(cell_measures)
+    return len(cell_observations)
 
 
 @celery.task(base=DatabaseTask, bind=True, queue='celery_insert')
 def insert_measures_wifi(self, entries, userid=None,
-                         max_measures_per_wifi=11000,
+                         max_observations_per_wifi=11000,
                          utcnow=None):
-    wifi_measures = []
+    wifi_observations = []
     with self.db_session() as session:
-        wifi_measures = process_station_measures(
+        wifi_observations = process_station_observations(
             session, entries,
             station_type="wifi",
             station_model=Wifi,
-            measure_model=WifiMeasure,
+            observation_model=WifiObservation,
             blacklist_model=WifiBlacklist,
             create_key=to_wifikey,
             join_key=join_wifikey,
             userid=userid,
-            max_measures_per_station=max_measures_per_wifi,
+            max_observations_per_station=max_observations_per_wifi,
             utcnow=utcnow)
         session.commit()
-    return len(wifi_measures)
+    return len(wifi_observations)
 
 
 @celery.task(base=DatabaseTask, bind=True)
@@ -678,9 +679,9 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
     cells = []
     redis_client = self.app.redis_client
     with self.db_session() as session:
-        emit_new_measures_metric(self.stats_client, session,
-                                 self.shortname, Cell,
-                                 min_new, max_new)
+        emit_new_observation_metric(self.stats_client, session,
+                                    self.shortname, Cell,
+                                    min_new, max_new)
         query = (session.query(Cell)
                         .filter(Cell.new_measures >= min_new)
                         .filter(Cell.new_measures < max_new)
@@ -692,17 +693,19 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
         updated_lacs = set()
         for cell in cells:
             query = session.query(
-                CellMeasure.lat, CellMeasure.lon, CellMeasure.id).filter(
-                *join_cellkey(CellMeasure, cell))
+                CellObservation.lat,
+                CellObservation.lon,
+                CellObservation.id).filter(
+                    *join_cellkey(CellObservation, cell))
             # only take the last X new_measures
             query = query.order_by(
-                CellMeasure.created.desc()).limit(
+                CellObservation.created.desc()).limit(
                 cell.new_measures)
-            measures = query.all()
+            observations = query.all()
 
-            if measures:
+            if observations:
                 moving = calculate_new_position(
-                    cell, measures, CELL_MAX_DIST_KM)
+                    cell, observations, CELL_MAX_DIST_KM)
                 if moving:
                     moving_cells.add(cell)
 
@@ -733,9 +736,9 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
 def location_update_wifi(self, min_new=10, max_new=100, batch=10):
     wifis = {}
     with self.db_session() as session:
-        emit_new_measures_metric(self.stats_client, session,
-                                 self.shortname, Wifi,
-                                 min_new, max_new)
+        emit_new_observation_metric(self.stats_client, session,
+                                    self.shortname, Wifi,
+                                    min_new, max_new)
         query = session.query(Wifi.key, Wifi).filter(
             Wifi.new_measures >= min_new).filter(
             Wifi.new_measures < max_new).limit(batch)
@@ -745,14 +748,14 @@ def location_update_wifi(self, min_new=10, max_new=100, batch=10):
         moving_wifis = set()
         for wifi_key, wifi in wifis.items():
             # only take the last X new_measures
-            measures = session.query(
-                WifiMeasure.lat, WifiMeasure.lon).filter(
-                WifiMeasure.key == wifi_key).order_by(
-                WifiMeasure.created.desc()).limit(
+            observations = session.query(
+                WifiObservation.lat, WifiObservation.lon).filter(
+                WifiObservation.key == wifi_key).order_by(
+                WifiObservation.created.desc()).limit(
                 wifi.new_measures).all()
-            if measures:
+            if observations:
                 moving = calculate_new_position(
-                    wifi, measures, WIFI_MAX_DIST_KM)
+                    wifi, observations, WIFI_MAX_DIST_KM)
                 if moving:
                     moving_wifis.add(wifi)
 

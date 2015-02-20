@@ -2,17 +2,17 @@ import uuid
 
 from ichnaea.models.cell import RADIO_TYPE
 from ichnaea.models.observation import (
-    CellMeasure,
-    WifiMeasure,
+    CellObservation,
+    WifiObservation,
 )
 from ichnaea.tests.base import DBTestCase
 
 
-class TestCellMeasure(DBTestCase):
+class TestCellObservation(DBTestCase):
 
     def test_fields(self):
         report_id = uuid.uuid1()
-        cell = CellMeasure(
+        cell = CellObservation(
             lat=1.2345678,
             lon=2.3456789,
             report_id=report_id,
@@ -29,7 +29,7 @@ class TestCellMeasure(DBTestCase):
         session.add(cell)
         session.commit()
 
-        result = session.query(CellMeasure).first()
+        result = session.query(CellObservation).first()
         self.assertEqual(result.report_id, report_id)
         self.assertEqual(result.lat, 1.2345678)
         self.assertEqual(result.lon, 2.3456789)
@@ -43,12 +43,12 @@ class TestCellMeasure(DBTestCase):
         self.assertEqual(result.ta, 10)
 
 
-class TestWifiMeasure(DBTestCase):
+class TestWifiObservation(DBTestCase):
 
     def test_fields(self):
         key = "3680873e9b83"
         report_id = uuid.uuid1()
-        wifi = WifiMeasure(
+        wifi = WifiObservation(
             lat=1.2345678,
             lon=2.3456789,
             report_id=report_id,
@@ -60,7 +60,7 @@ class TestWifiMeasure(DBTestCase):
         session.add(wifi)
         session.commit()
 
-        result = session.query(WifiMeasure).first()
+        result = session.query(WifiObservation).first()
         self.assertEqual(result.report_id, report_id)
         self.assertEqual(result.lat, 1.2345678)
         self.assertEqual(result.lon, 2.3456789)

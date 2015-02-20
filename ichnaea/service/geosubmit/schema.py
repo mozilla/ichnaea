@@ -109,7 +109,7 @@ class GeoSubmitSchema(MappingSchema):
 
 
 class GeoSubmitListSchema(SequenceSchema):
-    measure = GeoSubmitSchema()
+    report = GeoSubmitSchema()
 
 
 class GeoSubmitBatchSchema(MappingSchema):

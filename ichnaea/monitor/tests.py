@@ -2,10 +2,10 @@ from datetime import timedelta
 
 from ichnaea.models import (
     ApiKey,
-    CellMeasure,
+    CellObservation,
     OCIDCell,
     RADIO_TYPE,
-    WifiMeasure,
+    WifiObservation,
 )
 from ichnaea.monitor.tasks import (
     monitor_api_key_limits,
@@ -86,9 +86,9 @@ class TestMonitorTasks(CeleryTestCase):
         )
         self.assertEqual(result, {'cell_measure': -1, 'wifi_measure': -1})
 
-        # add some measures
-        session.add_all([CellMeasure() for i in range(3)])
-        session.add_all([WifiMeasure() for i in range(5)])
+        # add some observations
+        session.add_all([CellObservation() for i in range(3)])
+        session.add_all([WifiObservation() for i in range(5)])
         session.flush()
 
         result = monitor_measures.delay().get()

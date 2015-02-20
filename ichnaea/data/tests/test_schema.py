@@ -7,8 +7,8 @@ from ichnaea.data import constants
 from ichnaea.data.schema import normalized_time, ValidCellKeySchema
 from ichnaea.models import (
     RADIO_TYPE,
-    CellMeasure,
-    WifiMeasure,
+    CellObservation,
+    WifiObservation,
 )
 from ichnaea.tests.base import TestCase
 from ichnaea.tests.base import (
@@ -25,10 +25,10 @@ class ValidationTest(TestCase):
     def setUpClass(cls):
         cls.time = util.utcnow()
 
-    def check_normalized(self, validator, measure, extra, expect):
-        measure = measure.copy()
-        measure.update(extra)
-        result = validator(measure)
+    def check_normalized(self, validator, observation, extra, expect):
+        observation = observation.copy()
+        observation.update(extra)
+        result = validator(observation)
 
         if expect is None:
             self.assertEqual(result, expect)
@@ -53,13 +53,13 @@ class TestCellValidation(ValidationTest):
         self.valid_pscs = [0, 120, 512]
         self.invalid_pscs = [-1, 513, 4456]
 
-    def check_normalized_cell(self, measure, cell, expect):
+    def check_normalized_cell(self, observation, cell, expect):
         return self.check_normalized(
-            CellMeasure.validate,
-            measure, cell, expect)
+            CellObservation.validate,
+            observation, cell, expect)
 
-    def get_sample_measure_cell(self, **kwargs):
-        measure = {
+    def get_sample(self, **kwargs):
+        obs = {
             'accuracy': 120,
             'altitude': 220,
             'altitude_accuracy': 10,
@@ -80,37 +80,37 @@ class TestCellValidation(ValidationTest):
             'ta': 5,
         }
         for (k, v) in kwargs.items():
-            if k in measure:
-                measure[k] = v
+            if k in obs:
+                obs[k] = v
             else:
                 cell[k] = v
-        return (measure, cell)
+        return (obs, cell)
 
     def test_report_empty(self):
-        measure, cell = self.get_sample_measure_cell(report_id='')
-        result = self.check_normalized_cell(measure, cell, {})
+        obs, cell = self.get_sample(report_id='')
+        result = self.check_normalized_cell(obs, cell, {})
         self.assertTrue(isinstance(result['report_id'], uuid.UUID))
         self.assertEqual(result['report_id'].version, 1)
 
     def test_report_none(self):
-        measure, cell = self.get_sample_measure_cell(report_id=None)
-        result = self.check_normalized_cell(measure, cell, {})
+        obs, cell = self.get_sample(report_id=None)
+        result = self.check_normalized_cell(obs, cell, {})
         self.assertTrue(isinstance(result['report_id'], uuid.UUID))
         self.assertEqual(result['report_id'].version, 1)
 
     def test_report_id(self):
         report_id = uuid.uuid1()
-        measure, cell = self.get_sample_measure_cell(report_id=report_id)
-        self.check_normalized_cell(measure, cell, dict(report_id=report_id))
+        obs, cell = self.get_sample(report_id=report_id)
+        self.check_normalized_cell(obs, cell, dict(report_id=report_id))
 
     def test_report_id_string(self):
         report_id = uuid.uuid1()
-        measure, cell = self.get_sample_measure_cell(report_id=report_id.hex)
-        self.check_normalized_cell(measure, cell, dict(report_id=report_id))
+        obs, cell = self.get_sample(report_id=report_id.hex)
+        self.check_normalized_cell(obs, cell, dict(report_id=report_id))
 
     def test_report_id_number(self):
-        measure, cell = self.get_sample_measure_cell(report_id=12)
-        self.check_normalized_cell(measure, cell, None)
+        obs, cell = self.get_sample(report_id=12)
+        self.check_normalized_cell(obs, cell, None)
 
     def test_all_radio_values(self):
         radio_pairs = [
@@ -126,8 +126,8 @@ class TestCellValidation(ValidationTest):
         ]
 
         for (radio, v) in radio_pairs:
-            measure, cell = self.get_sample_measure_cell(radio=radio)
-            self.check_normalized_cell(measure, cell, dict(radio=v))
+            obs, cell = self.get_sample(radio=radio)
+            self.check_normalized_cell(obs, cell, dict(radio=v))
 
     def test_all_valid_lat_lon_mcc_mnc_groups(self):
         valid_lat_lon_mcc_triples = [
@@ -140,32 +140,32 @@ class TestCellValidation(ValidationTest):
 
         for (lat, lon, mcc) in valid_lat_lon_mcc_triples:
             for mnc in valid_mncs:
-                measure, cell = self.get_sample_measure_cell(
+                obs, cell = self.get_sample(
                     lat=lat, lon=lon, mcc=mcc, mnc=mnc)
                 self.check_normalized_cell(
-                    measure, cell, dict(lat=lat, lon=lon, mcc=mcc, mnc=mnc))
+                    obs, cell, dict(lat=lat, lon=lon, mcc=mcc, mnc=mnc))
             for mnc in valid_cdma_mncs:
-                measure, cell = self.get_sample_measure_cell(
+                obs, cell = self.get_sample(
                     lat=lat, lon=lon, mcc=mcc, mnc=mnc, radio='cdma')
                 self.check_normalized_cell(
-                    measure, cell, dict(lat=lat, lon=lon, mcc=mcc, mnc=mnc))
+                    obs, cell, dict(lat=lat, lon=lon, mcc=mcc, mnc=mnc))
 
     def test_outside_of_country_lat_lon(self):
-        measure, cell = self.get_sample_measure_cell(
+        obs, cell = self.get_sample(
             mcc=USA_MCC, lat=PARIS_LAT, lon=PARIS_LON)
-        self.check_normalized_cell(measure, cell, None)
+        self.check_normalized_cell(obs, cell, None)
 
     def test_invalid_mcc(self):
         invalid_mccs = [-10, -1, 0, 101, 1000, 3456]
         for mcc in invalid_mccs:
-            measure, cell = self.get_sample_measure_cell(mcc=mcc)
-            self.check_normalized_cell(measure, cell, None)
+            obs, cell = self.get_sample(mcc=mcc)
+            self.check_normalized_cell(obs, cell, None)
 
     def test_invalid_mnc(self):
         invalid_mncs = [-10, -1, 32768, 93870]
         for mnc in invalid_mncs:
-            measure, cell = self.get_sample_measure_cell(mnc=mnc)
-            self.check_normalized_cell(measure, cell, None)
+            obs, cell = self.get_sample(mnc=mnc)
+            self.check_normalized_cell(obs, cell, None)
 
     def test_valid_lac_cid_pairs_with_invalid_psc(self):
         valid_lacs = [constants.MIN_LAC, constants.MAX_LAC_GSM_UMTS_LTE]
@@ -173,149 +173,149 @@ class TestCellValidation(ValidationTest):
         for lac in valid_lacs:
             for cid in valid_cids:
                 for psc in self.invalid_pscs:
-                    measure, cell = self.get_sample_measure_cell(
+                    obs, cell = self.get_sample(
                         lac=lac, cid=cid, psc=psc)
                     self.check_normalized_cell(
-                        measure, cell, dict(lac=lac, cid=cid, psc=-1))
+                        obs, cell, dict(lac=lac, cid=cid, psc=-1))
 
     def test_invalid_lac_with_an_invalid_psc(self):
         for lac in self.invalid_lacs:
             for psc in self.invalid_pscs:
-                measure, cell = self.get_sample_measure_cell(lac=lac, psc=psc)
-                self.check_normalized_cell(measure, cell, None)
+                obs, cell = self.get_sample(lac=lac, psc=psc)
+                self.check_normalized_cell(obs, cell, None)
 
     def test_invalid_lac_with_a_valid_psc(self):
         schema = ValidCellKeySchema()
         for lac in self.invalid_lacs:
             for psc in self.valid_pscs:
-                measure, cell = self.get_sample_measure_cell(lac=lac, psc=psc)
+                obs, cell = self.get_sample(lac=lac, psc=psc)
                 self.check_normalized_cell(
-                    measure, cell, dict(
+                    obs, cell, dict(
                         lac=schema.fields['lac'].missing, psc=psc))
 
     def test_invalid_cid_with_an_invalid_psc(self):
         for cid in self.invalid_cids:
             for psc in self.invalid_pscs:
-                measure, cell = self.get_sample_measure_cell(cid=cid, psc=psc)
-                self.check_normalized_cell(measure, cell, None)
+                obs, cell = self.get_sample(cid=cid, psc=psc)
+                self.check_normalized_cell(obs, cell, None)
 
     def test_invalid_cid_with_a_valid_psc(self):
         schema = ValidCellKeySchema()
         for cid in self.invalid_cids:
             for psc in self.valid_pscs:
-                measure, cell = self.get_sample_measure_cell(cid=cid, psc=psc)
+                obs, cell = self.get_sample(cid=cid, psc=psc)
                 self.check_normalized_cell(
-                    measure, cell, dict(
+                    obs, cell, dict(
                         cid=schema.fields['cid'].missing, psc=psc))
 
     def test_invalid_latitude(self):
         invalid_latitudes = [constants.MIN_LAT - 0.1, constants.MAX_LAT + 0.1]
         for lat in invalid_latitudes:
-            measure, cell = self.get_sample_measure_cell(lat=lat)
-            self.check_normalized_cell(measure, cell, None)
+            obs, cell = self.get_sample(lat=lat)
+            self.check_normalized_cell(obs, cell, None)
 
     def test_invalid_longitude(self):
         invalid_longitudes = [constants.MIN_LON - 0.1, constants.MAX_LON + 0.1]
         for lon in invalid_longitudes:
-            measure, cell = self.get_sample_measure_cell(lon=lon)
-            self.check_normalized_cell(measure, cell, None)
+            obs, cell = self.get_sample(lon=lon)
+            self.check_normalized_cell(obs, cell, None)
 
     def test_valid_accuracy(self):
         valid_accuracies = [0, 1, 100, 10000]
         for accuracy in valid_accuracies:
-            measure, cell = self.get_sample_measure_cell(accuracy=accuracy)
-            self.check_normalized_cell(measure, cell, {'accuracy': accuracy})
+            obs, cell = self.get_sample(accuracy=accuracy)
+            self.check_normalized_cell(obs, cell, {'accuracy': accuracy})
 
     def test_valid_altitude(self):
         valid_altitudes = [-100, -1, 0, 10, 100]
         for altitude in valid_altitudes:
-            measure, cell = self.get_sample_measure_cell(altitude=altitude)
-            self.check_normalized_cell(measure, cell, {'altitude': altitude})
+            obs, cell = self.get_sample(altitude=altitude)
+            self.check_normalized_cell(obs, cell, {'altitude': altitude})
 
     def test_valid_altitude_accuracy(self):
         valid_altitude_accuracies = [0, 1, 100, 1000]
         for altitude_accuracy in valid_altitude_accuracies:
-            measure, cell = self.get_sample_measure_cell(
+            obs, cell = self.get_sample(
                 altitude_accuracy=altitude_accuracy)
             self.check_normalized_cell(
-                measure, cell, {'altitude_accuracy': altitude_accuracy})
+                obs, cell, {'altitude_accuracy': altitude_accuracy})
 
     def test_valid_asu(self):
         valid_asus = [0, 10, 31, 97]
         for asu in valid_asus:
-            measure, cell = self.get_sample_measure_cell(asu=asu)
-            self.check_normalized_cell(measure, cell, {'asu': asu})
+            obs, cell = self.get_sample(asu=asu)
+            self.check_normalized_cell(obs, cell, {'asu': asu})
 
     def test_valid_ta(self):
         valid_tas = [0, 15, 63]
         for ta in valid_tas:
-            measure, cell = self.get_sample_measure_cell(ta=ta)
-            self.check_normalized_cell(measure, cell, {'ta': ta})
+            obs, cell = self.get_sample(ta=ta)
+            self.check_normalized_cell(obs, cell, {'ta': ta})
 
     def test_valid_signal(self):
         valid_signals = [-150, -100, -1]
         for signal in valid_signals:
-            measure, cell = self.get_sample_measure_cell(signal=signal)
-            self.check_normalized_cell(measure, cell, {'signal': signal})
+            obs, cell = self.get_sample(signal=signal)
+            self.check_normalized_cell(obs, cell, {'signal': signal})
 
     def test_valid_time(self):
         now = util.utcnow()
         first_of_month = now.replace(day=1, hour=0, minute=0, second=0)
-        measure, cell = self.get_sample_measure_cell(time=now)
-        self.check_normalized_cell(measure, cell, {'time': first_of_month})
+        obs, cell = self.get_sample(time=now)
+        self.check_normalized_cell(obs, cell, {'time': first_of_month})
 
     def test_invalid_accuracy(self):
         invalid_accuracies = [-10, -1, 5000000]
         for accuracy in invalid_accuracies:
-            measure, cell = self.get_sample_measure_cell(accuracy=accuracy)
-            self.check_normalized_cell(measure, cell, {'accuracy': 0})
+            obs, cell = self.get_sample(accuracy=accuracy)
+            self.check_normalized_cell(obs, cell, {'accuracy': 0})
 
     def test_invalid_altitude(self):
         invalid_altitudes = [-20000, 200000]
         for altitude in invalid_altitudes:
-            measure, cell = self.get_sample_measure_cell(altitude=altitude)
-            self.check_normalized_cell(measure, cell, {'altitude': 0})
+            obs, cell = self.get_sample(altitude=altitude)
+            self.check_normalized_cell(obs, cell, {'altitude': 0})
 
     def test_invalid_altitude_accuracy(self):
         invalid_altitude_accuracies = [-10, -1, 500000]
         for altitude_accuracy in invalid_altitude_accuracies:
-            measure, cell = self.get_sample_measure_cell(
+            obs, cell = self.get_sample(
                 altitude_accuracy=altitude_accuracy)
             self.check_normalized_cell(
-                measure, cell, {'altitude_accuracy': 0})
+                obs, cell, {'altitude_accuracy': 0})
 
     def test_invalid_asu(self):
         invalid_asus = [-10, -1, 99]
         for asu in invalid_asus:
-            measure, cell = self.get_sample_measure_cell(asu=asu)
-            self.check_normalized_cell(measure, cell, {'asu': -1})
+            obs, cell = self.get_sample(asu=asu)
+            self.check_normalized_cell(obs, cell, {'asu': -1})
 
     def test_invalid_ta(self):
         invalid_tas = [-10, -1, 64, 100]
         for ta in invalid_tas:
-            measure, cell = self.get_sample_measure_cell(ta=ta)
-            self.check_normalized_cell(measure, cell, {'ta': 0})
+            obs, cell = self.get_sample(ta=ta)
+            self.check_normalized_cell(obs, cell, {'ta': 0})
 
     def test_invalid_signal(self):
         invalid_signals = [-300, -151, 0, 10]
         for signal in invalid_signals:
-            measure, cell = self.get_sample_measure_cell(signal=signal)
-            self.check_normalized_cell(measure, cell, {'signal': 0})
+            obs, cell = self.get_sample(signal=signal)
+            self.check_normalized_cell(obs, cell, {'signal': 0})
 
     def test_asu_signal_field_mix_up(self):
-        measure, cell = self.get_sample_measure_cell(asu=-75, signal=0)
-        self.check_normalized_cell(measure, cell, {'signal': -75})
+        obs, cell = self.get_sample(asu=-75, signal=0)
+        self.check_normalized_cell(obs, cell, {'signal': -75})
 
     def test_cid_65535_without_a_valid_lac_sets_cid_to_invalid(self):
         schema = ValidCellKeySchema()
-        measure, cell = self.get_sample_measure_cell(
+        obs, cell = self.get_sample(
             lac=schema.fields['lac'].missing, cid=65535, psc=1)
         self.check_normalized_cell(
-            measure, cell, {'cid': schema.fields['cid'].missing})
+            obs, cell, {'cid': schema.fields['cid'].missing})
 
     def test_unknown_lac_cid_is_65535_and_missing_psc(self):
-        measure, cell = self.get_sample_measure_cell(lac=0, cid=65535, psc=-1)
-        self.check_normalized_cell(measure, cell, None)
+        obs, cell = self.get_sample(lac=0, cid=65535, psc=-1)
+        self.check_normalized_cell(obs, cell, None)
 
     def test_cdma_cell_records_must_have_full_cell_id(self):
         entries = [
@@ -327,9 +327,9 @@ class TestCellValidation(ValidationTest):
         ]
 
         for entry in entries:
-            measure, cell = self.get_sample_measure_cell(
+            obs, cell = self.get_sample(
                 radio='cdma', **entry[0])
-            self.check_normalized_cell(measure, cell, entry[1])
+            self.check_normalized_cell(obs, cell, entry[1])
 
     def test_records_fail_the_lac_or_cid_and_psc_check(self):
         entries = [
@@ -339,90 +339,90 @@ class TestCellValidation(ValidationTest):
         ]
 
         for entry in entries:
-            measure, cell = self.get_sample_measure_cell(**entry)
-            self.check_normalized_cell(measure, cell, None)
+            obs, cell = self.get_sample(**entry)
+            self.check_normalized_cell(obs, cell, None)
 
     def test_mnc_above_1000_for_a_gsm_network(self):
-        measure, cell = self.get_sample_measure_cell(radio='gsm', mnc=1001)
-        self.check_normalized_cell(measure, cell, None)
+        obs, cell = self.get_sample(radio='gsm', mnc=1001)
+        self.check_normalized_cell(obs, cell, None)
 
     def test_wrong_gsm_radio_type_is_corrected_for_large_cid(self):
-        measure, cell = self.get_sample_measure_cell(radio='gsm', cid=65536)
+        obs, cell = self.get_sample(radio='gsm', cid=65536)
         self.check_normalized_cell(
-            measure, cell, {'radio': RADIO_TYPE['umts']})
+            obs, cell, {'radio': RADIO_TYPE['umts']})
 
     def test_valid_umts_cid_is_32_bit(self):
         valid_cid = constants.MAX_CID_ALL
-        measure, cell = self.get_sample_measure_cell(
+        obs, cell = self.get_sample(
             radio='umts', cid=valid_cid)
-        self.check_normalized_cell(measure, cell, {'cid': valid_cid})
+        self.check_normalized_cell(obs, cell, {'cid': valid_cid})
 
     def test_invalid_umts_cid_is_not_32_bit(self):
         invalid_cid = constants.MAX_CID_ALL + 1
-        measure, cell = self.get_sample_measure_cell(
+        obs, cell = self.get_sample(
             radio='umts', cid=invalid_cid)
-        self.check_normalized_cell(measure, cell, None)
+        self.check_normalized_cell(obs, cell, None)
 
     def test_valid_cdma_cid_is_16_bit(self):
         valid_cid = constants.MAX_CID_CDMA
-        measure, cell = self.get_sample_measure_cell(
+        obs, cell = self.get_sample(
             radio='cdma', cid=valid_cid)
-        self.check_normalized_cell(measure, cell, {'cid': valid_cid})
+        self.check_normalized_cell(obs, cell, {'cid': valid_cid})
 
     def test_invalid_cdma_cid_is_not_16_bit(self):
         invalid_cid = constants.MAX_CID_CDMA + 1
-        measure, cell = self.get_sample_measure_cell(
+        obs, cell = self.get_sample(
             radio='cdma', cid=invalid_cid)
-        self.check_normalized_cell(measure, cell, None)
+        self.check_normalized_cell(obs, cell, None)
 
     def test_valid_lte_cid_is_28_bit(self):
         valid_cid = constants.MAX_CID_LTE
-        measure, cell = self.get_sample_measure_cell(
+        obs, cell = self.get_sample(
             radio='lte', cid=valid_cid)
-        self.check_normalized_cell(measure, cell, {'cid': valid_cid})
+        self.check_normalized_cell(obs, cell, {'cid': valid_cid})
 
     def test_invalid_lte_cid_is_not_28_bit(self):
         invalid_cid = constants.MAX_CID_LTE + 1
-        measure, cell = self.get_sample_measure_cell(
+        obs, cell = self.get_sample(
             radio='lte', cid=invalid_cid)
-        self.check_normalized_cell(measure, cell, None)
+        self.check_normalized_cell(obs, cell, None)
 
     def test_valid_lac_for_gsm_umts_lte_is_less_or_equal_to_65533(self):
         valid_lac = constants.MAX_LAC_GSM_UMTS_LTE
         for radio in ('gsm', 'umts', 'lte'):
-            measure, cell = self.get_sample_measure_cell(
+            obs, cell = self.get_sample(
                 radio=radio, lac=valid_lac)
-            self.check_normalized_cell(measure, cell, {'lac': valid_lac})
+            self.check_normalized_cell(obs, cell, {'lac': valid_lac})
 
     def test_invalid_lac_for_gsm_umts_lte_is_greater_than_65533(self):
         invalid_lac = constants.MAX_LAC_GSM_UMTS_LTE + 1
         for radio in ('gsm', 'umts', 'lte'):
-            measure, cell = self.get_sample_measure_cell(
+            obs, cell = self.get_sample(
                 radio=radio, lac=invalid_lac)
-            self.check_normalized_cell(measure, cell, None)
+            self.check_normalized_cell(obs, cell, None)
 
     def test_valid_lac_for_cdma_is_less_or_equal_to_65534(self):
         valid_lac = constants.MAX_LAC_ALL
-        measure, cell = self.get_sample_measure_cell(
+        obs, cell = self.get_sample(
             radio='cdma', lac=valid_lac)
-        self.check_normalized_cell(measure, cell, {'lac': valid_lac})
+        self.check_normalized_cell(obs, cell, {'lac': valid_lac})
 
     def test_invalid_lac_for_cdma_is_greater_than_65534(self):
         invalid_lac = constants.MAX_LAC_ALL + 1
-        measure, cell = self.get_sample_measure_cell(
+        obs, cell = self.get_sample(
             radio='cdma', lac=invalid_lac)
-        self.check_normalized_cell(measure, cell, None)
+        self.check_normalized_cell(obs, cell, None)
 
 
 class TestWifiValidation(ValidationTest):
 
-    def check_normalized_wifi(self, measure, wifi, expect):
+    def check_normalized_wifi(self, obs, wifi, expect):
         return self.check_normalized(
-            WifiMeasure.validate,
-            measure, wifi, expect)
+            WifiObservation.validate,
+            obs, wifi, expect)
 
-    def get_sample_measure_wifi(self, **kwargs):
-        measure = {
+    def get_sample(self, **kwargs):
+        obs = {
             'accuracy': 120,
             'altitude': 220,
             'altitude_accuracy': 10,
@@ -439,11 +439,11 @@ class TestWifiValidation(ValidationTest):
             'snr': 37,
         }
         for (k, v) in kwargs.items():
-            if k in measure:
-                measure[k] = v
+            if k in obs:
+                obs[k] = v
             else:
                 wifi[k] = v
-        return (measure, wifi)
+        return (obs, wifi)
 
     def test_valid_key(self):
         valid_key_pairs = [
@@ -463,8 +463,8 @@ class TestWifiValidation(ValidationTest):
         ]
 
         for (in_, out) in valid_key_pairs:
-            measure, wifi = self.get_sample_measure_wifi(key=in_)
-            self.check_normalized_wifi(measure, wifi, dict(key=out))
+            obs, wifi = self.get_sample(key=in_)
+            self.check_normalized_wifi(obs, wifi, dict(key=out))
 
     def test_invalid_key(self):
         invalid_keys = [
@@ -481,8 +481,8 @@ class TestWifiValidation(ValidationTest):
             for c in '!@#$%^&*()_+={}\x01\x02\x03\r\n']
 
         for key in invalid_keys:
-            measure, wifi = self.get_sample_measure_wifi(key=key)
-            self.check_normalized_wifi(measure, wifi, None)
+            obs, wifi = self.get_sample(key=key)
+            self.check_normalized_wifi(obs, wifi, None)
 
     def test_valid_frequency_channel_pairs(self):
         valid_frequency_channels = [
@@ -496,66 +496,66 @@ class TestWifiValidation(ValidationTest):
         ]
 
         for (f, c) in valid_frequency_channels:
-            measure, wifi = self.get_sample_measure_wifi(
+            obs, wifi = self.get_sample(
                 frequency=f, channel=c)
-            wifi = self.check_normalized_wifi(measure, wifi, dict(channel=c))
+            wifi = self.check_normalized_wifi(obs, wifi, dict(channel=c))
             self.assertFalse('frequency' in wifi)
 
-            measure, wifi = self.get_sample_measure_wifi(
+            obs, wifi = self.get_sample(
                 frequency=f, channel=0)
-            wifi = self.check_normalized_wifi(measure, wifi, dict(channel=c))
+            wifi = self.check_normalized_wifi(obs, wifi, dict(channel=c))
             self.assertFalse('frequency' in wifi)
 
-            measure, wifi = self.get_sample_measure_wifi(
+            obs, wifi = self.get_sample(
                 frequency=0, channel=c)
-            wifi = self.check_normalized_wifi(measure, wifi, dict(channel=c))
+            wifi = self.check_normalized_wifi(obs, wifi, dict(channel=c))
             self.assertFalse('frequency' in wifi)
 
     def test_valid_signal(self):
         valid_signals = [-200, -100, -1]
 
         for signal in valid_signals:
-            measure, wifi = self.get_sample_measure_wifi(signal=signal)
-            self.check_normalized_wifi(measure, wifi, dict(signal=signal))
+            obs, wifi = self.get_sample(signal=signal)
+            self.check_normalized_wifi(obs, wifi, dict(signal=signal))
 
     def test_invalid_signal(self):
         invalid_signals = [-300, -201, 0, 10]
 
         for signal in invalid_signals:
-            measure, wifi = self.get_sample_measure_wifi(signal=signal)
-            self.check_normalized_wifi(measure, wifi, dict(signal=0))
+            obs, wifi = self.get_sample(signal=signal)
+            self.check_normalized_wifi(obs, wifi, dict(signal=0))
 
     def test_valid_snr(self):
         valid_snrs = [0, 12, 100]
 
         for snr in valid_snrs:
-            measure, wifi = self.get_sample_measure_wifi(snr=snr)
-            self.check_normalized_wifi(measure, wifi, dict(snr=snr))
+            obs, wifi = self.get_sample(snr=snr)
+            self.check_normalized_wifi(obs, wifi, dict(snr=snr))
 
     def test_invalid_snr(self):
         invalid_snrs = [-1, -50, 101]
 
         for snr in invalid_snrs:
-            measure, wifi = self.get_sample_measure_wifi(snr=snr)
-            self.check_normalized_wifi(measure, wifi, dict(snr=0))
+            obs, wifi = self.get_sample(snr=snr)
+            self.check_normalized_wifi(obs, wifi, dict(snr=0))
 
     def test_valid_channel(self):
         valid_channels = [1, 20, 45, 165]
 
         for channel in valid_channels:
-            measure, wifi = self.get_sample_measure_wifi(channel=channel)
+            obs, wifi = self.get_sample(channel=channel)
             wifi = self.check_normalized_wifi(
-                measure, wifi, dict(channel=channel))
+                obs, wifi, dict(channel=channel))
             self.assertFalse('frequency' in wifi)
 
     def test_invalid_channel_is_corrected_by_valid_frequency(self):
         invalid_channels = [-10, -1, 201, 2500]
 
         for c in invalid_channels:
-            measure, wifi = self.get_sample_measure_wifi()
+            obs, wifi = self.get_sample()
             chan = wifi['channel']
             wifi['channel'] = c
-            wifi = self.check_normalized_wifi(measure, wifi,
+            wifi = self.check_normalized_wifi(obs, wifi,
                                               dict(channel=chan))
             self.assertFalse('frequency' in wifi)
 
@@ -563,9 +563,9 @@ class TestWifiValidation(ValidationTest):
         invalid_frequencies = [-1, 2000, 2411, 2473, 5168, 5826, 6000]
 
         for frequency in invalid_frequencies:
-            measure, wifi = self.get_sample_measure_wifi(frequency=frequency)
+            obs, wifi = self.get_sample(frequency=frequency)
             chan = wifi['channel']
-            wifi = self.check_normalized_wifi(measure, wifi,
+            wifi = self.check_normalized_wifi(obs, wifi,
                                               dict(channel=chan))
             self.assertFalse('frequency' in wifi)
 

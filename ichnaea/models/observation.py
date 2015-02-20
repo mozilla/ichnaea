@@ -61,7 +61,7 @@ class ObservationMixin(BigIdMixin, ReportMixin):
         return cls(**entry)
 
 
-class CellMeasure(ObservationMixin, CellKeyPscMixin, _Model):
+class CellObservation(ObservationMixin, CellKeyPscMixin, _Model):
     __tablename__ = 'cell_measure'
 
     _indices = (
@@ -78,7 +78,7 @@ class CellMeasure(ObservationMixin, CellKeyPscMixin, _Model):
     ta = Column(TinyInteger)
 
 
-class WifiMeasure(ObservationMixin, WifiKeyMixin, _Model):
+class WifiObservation(ObservationMixin, WifiKeyMixin, _Model):
     __tablename__ = 'wifi_measure'
 
     _indices = (

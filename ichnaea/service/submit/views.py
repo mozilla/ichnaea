@@ -42,7 +42,7 @@ def check_cell_or_wifi(data, errors):
 
 
 def submit_validator(data, errors):
-    # for each of the measurements, if the lat or lon is -255
+    # for each of the observations, if the lat or lon is -255
     # drop the node
     skips = set()
     for idx, item in enumerate(data.get('items', ())):
@@ -101,7 +101,7 @@ def submit_view(request):
     # manages to submit us a huge single request
     for i in range(0, length, 100):
         batch = dumps(items[i:i + 100])
-        # insert measures, expire the task if it wasn't processed
+        # insert observations, expire the task if it wasn't processed
         # after six hours to avoid queue overload
         try:
             insert_measures.apply_async(

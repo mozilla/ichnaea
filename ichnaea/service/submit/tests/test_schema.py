@@ -5,11 +5,11 @@ from pyramid.testing import DummyRequest
 from ichnaea.service.error import preprocess_request
 
 
-class TestMeasureSchema(TestCase):
+class TestReportSchema(TestCase):
 
     def _make_schema(self):
-        from ichnaea.service.submit.schema import MeasureSchema
-        return MeasureSchema()
+        from ichnaea.service.submit.schema import ReportSchema
+        return ReportSchema()
 
     def _make_request(self, body):
         request = DummyRequest()

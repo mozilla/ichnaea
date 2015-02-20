@@ -13,10 +13,10 @@ from ichnaea.content.tasks import (
 )
 from ichnaea.models import (
     Cell,
-    CellMeasure,
+    CellObservation,
     OCIDCell,
     Wifi,
-    WifiMeasure,
+    WifiObservation,
 )
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea import util
@@ -30,16 +30,16 @@ class TestStats(CeleryTestCase):
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
-        measures = [
-            CellMeasure(lat=1.0, lon=2.0, created=today),
-            CellMeasure(lat=1.0, lon=2.0, created=today),
-            CellMeasure(lat=1.0, lon=2.0, created=yesterday),
-            CellMeasure(lat=1.0, lon=2.0, created=two_days),
-            CellMeasure(lat=1.0, lon=2.0, created=two_days),
-            CellMeasure(lat=1.0, lon=2.0, created=two_days),
-            CellMeasure(lat=1.0, lon=2.0, created=long_ago),
+        observations = [
+            CellObservation(lat=1.0, lon=2.0, created=today),
+            CellObservation(lat=1.0, lon=2.0, created=today),
+            CellObservation(lat=1.0, lon=2.0, created=yesterday),
+            CellObservation(lat=1.0, lon=2.0, created=two_days),
+            CellObservation(lat=1.0, lon=2.0, created=two_days),
+            CellObservation(lat=1.0, lon=2.0, created=two_days),
+            CellObservation(lat=1.0, lon=2.0, created=long_ago),
         ]
-        session.add_all(measures)
+        session.add_all(observations)
         session.commit()
 
         cell_histogram.delay(ago=3).get()
@@ -164,16 +164,16 @@ class TestStats(CeleryTestCase):
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
-        measures = [
-            WifiMeasure(lat=1.0, lon=2.0, created=today),
-            WifiMeasure(lat=1.0, lon=2.0, created=today),
-            WifiMeasure(lat=1.0, lon=2.0, created=yesterday),
-            WifiMeasure(lat=1.0, lon=2.0, created=two_days),
-            WifiMeasure(lat=1.0, lon=2.0, created=two_days),
-            WifiMeasure(lat=1.0, lon=2.0, created=two_days),
-            WifiMeasure(lat=1.0, lon=2.0, created=long_ago),
+        observations = [
+            WifiObservation(lat=1.0, lon=2.0, created=today),
+            WifiObservation(lat=1.0, lon=2.0, created=today),
+            WifiObservation(lat=1.0, lon=2.0, created=yesterday),
+            WifiObservation(lat=1.0, lon=2.0, created=two_days),
+            WifiObservation(lat=1.0, lon=2.0, created=two_days),
+            WifiObservation(lat=1.0, lon=2.0, created=two_days),
+            WifiObservation(lat=1.0, lon=2.0, created=long_ago),
         ]
-        session.add_all(measures)
+        session.add_all(observations)
         session.commit()
 
         wifi_histogram.delay(ago=3).get()

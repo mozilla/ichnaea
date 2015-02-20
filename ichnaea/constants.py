@@ -7,7 +7,7 @@ from datetime import timedelta
 DEGREE_DECIMAL_PLACES = 7
 
 # Empirical 95th percentile accuracy of ichnaea's responses,
-# from feedback testing of measurements as queries.
+# from feedback testing of observations as queries.
 WIFI_MIN_ACCURACY = 100
 CELL_MIN_ACCURACY = 5000
 LAC_MIN_ACCURACY = 20000
@@ -19,7 +19,7 @@ GEOIP_CITY_ACCURACY = 50000
 GEOIP_COUNTRY_ACCURACY = 5000000
 
 # Time during which each temporary blacklisting (detection of station
-# movement) causes measurements to be dropped on the floor.
+# movement) causes observations to be dropped on the floor.
 TEMPORARY_BLACKLIST_DURATION = timedelta(days=7)
 
 # Number of temporary blacklistings that result in a permanent

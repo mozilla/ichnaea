@@ -21,12 +21,12 @@ from ichnaea.backup.tasks import (
 )
 from ichnaea.models import (
     Cell,
-    CellMeasure,
-    MeasureBlock,
-    MeasureType,
+    CellObservation,
+    ObservationBlock,
+    ObservationType,
     RADIO_TYPE,
     Wifi,
-    WifiMeasure,
+    WifiObservation,
 )
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea import util
@@ -53,25 +53,25 @@ class TestBackup(CeleryTestCase):
                               '/tmp/not_a_real_file.zip')
 
 
-class TestMeasurementsDump(CeleryTestCase):
+class TestObservationsDump(CeleryTestCase):
 
     def setUp(self):
         CeleryTestCase.setUp(self)
         self.really_old = datetime.datetime(1980, 1, 1).replace(
             tzinfo=pytz.UTC)
 
-    def test_schedule_cell_measures(self):
+    def test_schedule_cell_observations(self):
         session = self.db_master_session
 
         blocks = schedule_cellmeasure_archival.delay(batch=1).get()
         self.assertEquals(len(blocks), 0)
 
-        measures = []
+        observations = []
         for i in range(20):
-            measures.append(CellMeasure(created=self.really_old))
-        session.add_all(measures)
+            observations.append(CellObservation(created=self.really_old))
+        session.add_all(observations)
         session.flush()
-        start_id = measures[0].id
+        start_id = observations[0].id
 
         blocks = schedule_cellmeasure_archival.delay(batch=15).get()
         self.assertEquals(len(blocks), 1)
@@ -89,19 +89,19 @@ class TestMeasurementsDump(CeleryTestCase):
         blocks = schedule_cellmeasure_archival.delay(batch=1).get()
         self.assertEquals(len(blocks), 0)
 
-    def test_schedule_wifi_measures(self):
+    def test_schedule_wifi_observations(self):
         session = self.db_master_session
 
         blocks = schedule_wifimeasure_archival.delay(batch=1).get()
         self.assertEquals(len(blocks), 0)
 
         batch_size = 10
-        measures = []
+        observations = []
         for i in range(batch_size * 2):
-            measures.append(WifiMeasure(created=self.really_old))
-        session.add_all(measures)
+            observations.append(WifiObservation(created=self.really_old))
+        session.add_all(observations)
         session.flush()
-        start_id = measures[0].id
+        start_id = observations[0].id
 
         blocks = schedule_wifimeasure_archival.delay(batch=batch_size).get()
         self.assertEquals(len(blocks), 2)
@@ -119,12 +119,12 @@ class TestMeasurementsDump(CeleryTestCase):
     def test_backup_cell_to_s3(self):
         session = self.db_master_session
         batch_size = 10
-        measures = []
+        observations = []
         for i in range(batch_size):
-            measures.append(CellMeasure(created=self.really_old))
-        session.add_all(measures)
+            observations.append(CellObservation(created=self.really_old))
+        session.add_all(observations)
         session.flush()
-        start_id = measures[0].id
+        start_id = observations[0].id
 
         blocks = schedule_cellmeasure_archival.delay(batch=batch_size).get()
         self.assertEquals(len(blocks), 1)
@@ -151,7 +151,7 @@ class TestMeasurementsDump(CeleryTestCase):
                 finally:
                     myzip.close()
 
-        blocks = session.query(MeasureBlock).all()
+        blocks = session.query(ObservationBlock).all()
 
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
@@ -166,12 +166,12 @@ class TestMeasurementsDump(CeleryTestCase):
     def test_backup_wifi_to_s3(self):
         session = self.db_master_session
         batch_size = 10
-        measures = []
+        observations = []
         for i in range(batch_size):
-            measures.append(WifiMeasure(created=self.really_old))
-        session.add_all(measures)
+            observations.append(WifiObservation(created=self.really_old))
+        session.add_all(observations)
         session.flush()
-        start_id = measures[0].id
+        start_id = observations[0].id
 
         blocks = schedule_wifimeasure_archival.delay(batch=batch_size).get()
         self.assertEquals(len(blocks), 1)
@@ -198,7 +198,7 @@ class TestMeasurementsDump(CeleryTestCase):
                 finally:
                     myzip.close()
 
-        blocks = session.query(MeasureBlock).all()
+        blocks = session.query(ObservationBlock).all()
 
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
@@ -210,10 +210,10 @@ class TestMeasurementsDump(CeleryTestCase):
         self.assertTrue('/wifi_' in block.s3_key)
         self.assertTrue(block.archive_date is None)
 
-    def test_delete_cell_measures(self):
+    def test_delete_cell_observations(self):
         session = self.db_master_session
-        block = MeasureBlock()
-        block.measure_type = MeasureType.cell
+        block = ObservationBlock()
+        block.measure_type = ObservationType.cell
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'
@@ -222,19 +222,19 @@ class TestMeasurementsDump(CeleryTestCase):
         session.add(block)
 
         for i in range(100, 150):
-            session.add(CellMeasure(id=i, created=self.really_old))
+            session.add(CellObservation(id=i, created=self.really_old))
         session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_cellmeasure_records.delay(batch=3).get()
 
-        self.assertEquals(session.query(CellMeasure).count(), 30)
+        self.assertEquals(session.query(CellObservation).count(), 30)
         self.assertTrue(block.archive_date is not None)
 
-    def test_delete_wifi_measures(self):
+    def test_delete_wifi_observations(self):
         session = self.db_master_session
-        block = MeasureBlock()
-        block.measure_type = MeasureType.wifi
+        block = ObservationBlock()
+        block.measure_type = ObservationType.wifi
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'
@@ -243,13 +243,13 @@ class TestMeasurementsDump(CeleryTestCase):
         session.add(block)
 
         for i in range(100, 150):
-            session.add(WifiMeasure(id=i, created=self.really_old))
+            session.add(WifiObservation(id=i, created=self.really_old))
         session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_wifimeasure_records.delay(batch=7).get()
 
-        self.assertEquals(session.query(WifiMeasure).count(), 30)
+        self.assertEquals(session.query(WifiObservation).count(), 30)
         self.assertTrue(block.archive_date is not None)
 
     def test_skip_delete_new_blocks(self):
@@ -261,8 +261,8 @@ class TestMeasurementsDump(CeleryTestCase):
         session = self.db_master_session
 
         for i in range(100, 150, 10):
-            block = MeasureBlock()
-            block.measure_type = MeasureType.cell
+            block = ObservationBlock()
+            block.measure_type = ObservationType.cell
             block.start_id = i
             block.end_id = i + 10
             block.s3_key = 'fake_key'
@@ -270,23 +270,23 @@ class TestMeasurementsDump(CeleryTestCase):
             block.archive_date = None
             session.add(block)
 
-        measures = []
+        observations = []
         for i in range(100, 110):
-            measures.append(CellMeasure(id=i, created=old))
+            observations.append(CellObservation(id=i, created=old))
         for i in range(110, 120):
-            measures.append(CellMeasure(id=i, created=yesterday_0000))
+            observations.append(CellObservation(id=i, created=yesterday_0000))
         for i in range(120, 130):
-            measures.append(CellMeasure(id=i, created=yesterday_2359))
+            observations.append(CellObservation(id=i, created=yesterday_2359))
         for i in range(130, 140):
-            measures.append(CellMeasure(id=i, created=today_0000))
+            observations.append(CellObservation(id=i, created=today_0000))
         for i in range(140, 150):
-            measures.append(CellMeasure(id=i, created=now))
+            observations.append(CellObservation(id=i, created=now))
 
-        session.add_all(measures)
+        session.add_all(observations)
         session.commit()
 
         def _archived_blocks():
-            blocks = session.query(MeasureBlock).all()
+            blocks = session.query(ObservationBlock).all()
             return len([b for b in blocks if b.archive_date is not None])
 
         def _delete(days=7):
@@ -297,25 +297,25 @@ class TestMeasurementsDump(CeleryTestCase):
             session.commit()
 
         _delete(days=7)
-        self.assertEquals(session.query(CellMeasure).count(), 50)
+        self.assertEquals(session.query(CellObservation).count(), 50)
         self.assertEqual(_archived_blocks(), 0)
 
         _delete(days=2)
-        self.assertEquals(session.query(CellMeasure).count(), 40)
+        self.assertEquals(session.query(CellObservation).count(), 40)
         self.assertEqual(_archived_blocks(), 1)
 
         _delete(days=1)
-        self.assertEquals(session.query(CellMeasure).count(), 20)
+        self.assertEquals(session.query(CellObservation).count(), 20)
         self.assertEqual(_archived_blocks(), 3)
 
         _delete(days=0)
-        self.assertEquals(session.query(CellMeasure).count(), 0)
+        self.assertEquals(session.query(CellObservation).count(), 0)
         self.assertEqual(_archived_blocks(), 5)
 
-    def test_unthrottle_cell_measures(self):
+    def test_unthrottle_cell_observations(self):
         session = self.db_master_session
-        block = MeasureBlock()
-        block.measure_type = MeasureType.cell
+        block = ObservationBlock()
+        block.measure_type = ObservationType.cell
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'
@@ -326,7 +326,8 @@ class TestMeasurementsDump(CeleryTestCase):
         gsm = RADIO_TYPE['gsm']
         k = dict(radio=gsm, mcc=1, mnc=2, lac=4, lat=1.0, lon=1.0)
         for i in range(100, 150):
-            session.add(CellMeasure(id=i, cid=i, created=self.really_old, **k))
+            session.add(
+                CellObservation(id=i, cid=i, created=self.really_old, **k))
             session.add(Cell(total_measures=11000, cid=i, **k))
         session.commit()
 
@@ -345,10 +346,10 @@ class TestMeasurementsDump(CeleryTestCase):
 
         self.check_stats(counter=['items.cell_unthrottled'])
 
-    def test_unthrottle_wifi_measures(self):
+    def test_unthrottle_wifi_observations(self):
         session = self.db_master_session
-        block = MeasureBlock()
-        block.measure_type = MeasureType.wifi
+        block = ObservationBlock()
+        block.measure_type = ObservationType.wifi
         block.start_id = 120
         block.end_id = 140
         block.s3_key = 'fake_key'
@@ -358,7 +359,8 @@ class TestMeasurementsDump(CeleryTestCase):
 
         k = dict(lat=1.0, lon=1.0)
         for i in range(100, 150):
-            session.add(WifiMeasure(id=i, key=str(i), created=self.really_old))
+            session.add(
+                WifiObservation(id=i, key=str(i), created=self.really_old))
             session.add(Wifi(total_measures=11000, key=str(i), **k))
         session.commit()
 

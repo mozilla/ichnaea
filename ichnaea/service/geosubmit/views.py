@@ -114,7 +114,7 @@ def process_upload(nickname, email, items, stats_client,
 
     for i in range(0, length, 100):
         batch_items = dumps(batch_list[i:i + 100])
-        # insert measures, expire the task if it wasn't processed
+        # insert observations, expire the task if it wasn't processed
         # after six hours to avoid queue overload
         try:
             insert_measures.apply_async(

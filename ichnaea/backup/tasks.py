@@ -13,13 +13,13 @@ from ichnaea.async.task import DatabaseTask
 from ichnaea.backup.s3 import S3Backend, compute_hash
 from ichnaea.models import (
     Cell,
-    CellMeasure,
+    CellObservation,
     join_cellkey,
-    MEASURE_TYPE_META,
-    MeasureBlock,
-    MeasureType,
+    OBSERVATION_TYPE_META,
+    ObservationBlock,
+    ObservationType,
     Wifi,
-    WifiMeasure,
+    WifiObservation,
 )
 from ichnaea import util
 from ichnaea.worker import celery
@@ -67,12 +67,12 @@ def write_cellmeasure_s3_backups(self,
                                  batch=10000,
                                  countdown=300,
                                  cleanup_zip=True):
-    return write_measure_s3_backups(self,
-                                    MeasureType.cell,
-                                    limit=limit,
-                                    batch=batch,
-                                    countdown=countdown,
-                                    cleanup_zip=cleanup_zip)
+    return write_observation_s3_backups(self,
+                                        ObservationType.cell,
+                                        limit=limit,
+                                        batch=batch,
+                                        countdown=countdown,
+                                        cleanup_zip=cleanup_zip)
 
 
 @celery.task(base=DatabaseTask, bind=True)
@@ -81,30 +81,30 @@ def write_wifimeasure_s3_backups(self,
                                  batch=10000,
                                  countdown=300,
                                  cleanup_zip=True):
-    return write_measure_s3_backups(self,
-                                    MeasureType.wifi,
-                                    limit=limit,
-                                    batch=batch,
-                                    countdown=countdown,
-                                    cleanup_zip=cleanup_zip)
+    return write_observation_s3_backups(self,
+                                        ObservationType.wifi,
+                                        limit=limit,
+                                        batch=batch,
+                                        countdown=countdown,
+                                        cleanup_zip=cleanup_zip)
 
 
-def write_measure_s3_backups(self,
-                             measure_type,
-                             limit=100,
-                             batch=10000,
-                             countdown=300,
-                             cleanup_zip=True):
+def write_observation_s3_backups(self,
+                                 observation_type,
+                                 limit=100,
+                                 batch=10000,
+                                 countdown=300,
+                                 cleanup_zip=True):
     """
-    Iterate over each of the measure block records that aren't
+    Iterate over each of the observation block records that aren't
     backed up yet and back them up.
     """
     with self.db_session() as session:
 
-        query = session.query(MeasureBlock).filter(
-            MeasureBlock.measure_type == measure_type).filter(
-            MeasureBlock.s3_key.is_(None)).order_by(
-            MeasureBlock.end_id).limit(limit)
+        query = session.query(ObservationBlock).filter(
+            ObservationBlock.measure_type == observation_type).filter(
+            ObservationBlock.s3_key.is_(None)).order_by(
+            ObservationBlock.end_id).limit(limit)
 
         c = 0
         for block in query:
@@ -118,12 +118,12 @@ def write_measure_s3_backups(self,
 @celery.task(base=DatabaseTask, bind=True)
 def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
     with self.db_session() as session:
-        block = session.query(MeasureBlock).filter(
-            MeasureBlock.id == block_id).first()
+        block = session.query(ObservationBlock).filter(
+            ObservationBlock.id == block_id).first()
 
-        measure_type = block.measure_type
-        measure_cls = MEASURE_TYPE_META[measure_type]['class']
-        csv_name = MEASURE_TYPE_META[measure_type]['csv_name']
+        observation_type = block.measure_type
+        obs_cls = OBSERVATION_TYPE_META[observation_type]['class']
+        csv_name = OBSERVATION_TYPE_META[observation_type]['csv_name']
 
         start_id = block.start_id
         end_id = block.end_id
@@ -137,7 +137,7 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
 
         utcnow = util.utcnow()
         s3_key = '%s/%s_%d_%d.zip' % (utcnow.strftime("%Y%m"),
-                                      measure_type.name,
+                                      observation_type.name,
                                       start_id,
                                       end_id)
 
@@ -147,7 +147,7 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
                 f.write('%s\n' % alembic_rev)
 
             # avoid ORM session overhead
-            table = measure_cls.__table__
+            table = obs_cls.__table__
 
             cm_fname = os.path.join(tmp_path, csv_name)
             with open(cm_fname, 'w') as f:
@@ -172,7 +172,7 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
             success = s3_backend.backup_archive(s3_key, zip_path)
             if not success:  # pragma: no cover
                 return
-            self.stats_client.incr('s3.backup.%s' % measure_type.name,
+            self.stats_client.incr('s3.backup.%s' % observation_type.name,
                                    (end_id - start_id))
         finally:
             if cleanup_zip:
@@ -189,22 +189,23 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
         session.commit()
 
 
-def schedule_measure_archival(self, measure_type, limit=100, batch=1000000):
+def schedule_observation_archival(self, observation_type,
+                                  limit=100, batch=1000000):
     blocks = []
-    measure_meta = MEASURE_TYPE_META[measure_type]
-    measure_cls = measure_meta['class']
+    obs_meta = OBSERVATION_TYPE_META[observation_type]
+    obs_cls = obs_meta['class']
     with self.db_session() as session:
         table_min_id = 0
         table_max_id = 0
 
-        query = session.query(measure_cls.id).order_by(
-            measure_cls.id.asc())
+        query = session.query(obs_cls.id).order_by(
+            obs_cls.id.asc())
         record = query.first()
         if record is not None:
             table_min_id = record[0]
 
-        query = session.query(measure_cls.id).order_by(
-            measure_cls.id.desc())
+        query = session.query(obs_cls.id).order_by(
+            obs_cls.id.desc())
         record = query.first()
         if record is not None:
             table_max_id = record[0]
@@ -213,9 +214,9 @@ def schedule_measure_archival(self, measure_type, limit=100, batch=1000000):
             # no data in the table
             return blocks
 
-        query = session.query(MeasureBlock.end_id).filter(
-            MeasureBlock.measure_type == measure_type).order_by(
-            MeasureBlock.end_id.desc())
+        query = session.query(ObservationBlock.end_id).filter(
+            ObservationBlock.measure_type == observation_type).order_by(
+            ObservationBlock.end_id.desc())
         record = query.first()
         if record is not None:
             min_id = record[0]
@@ -234,9 +235,9 @@ def schedule_measure_archival(self, measure_type, limit=100, batch=1000000):
 
         i = 0
         while i < limit and (this_max_id - min_id) == batch:
-            cm_blk = MeasureBlock(start_id=min_id,
-                                  end_id=this_max_id,
-                                  measure_type=measure_type)
+            cm_blk = ObservationBlock(start_id=min_id,
+                                      end_id=this_max_id,
+                                      measure_type=observation_type)
             blocks.append((cm_blk.start_id, cm_blk.end_id))
             session.add(cm_blk)
 
@@ -249,39 +250,39 @@ def schedule_measure_archival(self, measure_type, limit=100, batch=1000000):
 
 @celery.task(base=DatabaseTask, bind=True)
 def schedule_cellmeasure_archival(self, limit=100, batch=1000000):
-    return schedule_measure_archival(
-        self, MeasureType.cell, limit=limit, batch=batch)
+    return schedule_observation_archival(
+        self, ObservationType.cell, limit=limit, batch=batch)
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def schedule_wifimeasure_archival(self, limit=100, batch=1000000):
-    return schedule_measure_archival(
-        self, MeasureType.wifi, limit=limit, batch=batch)
+    return schedule_observation_archival(
+        self, ObservationType.wifi, limit=limit, batch=batch)
 
 
-def delete_measure_records(self,
-                           measure_type,
-                           limit=100,
-                           days_old=7,
-                           countdown=300,
-                           batch=10000):
+def delete_observation_records(self,
+                               observation_type,
+                               limit=100,
+                               days_old=7,
+                               countdown=300,
+                               batch=10000):
     # days_old = 1 means do not delete data from the current day
     today = util.utcnow().date()
     min_age = today - timedelta(days_old)
 
     with self.db_session() as session:
-        query = session.query(MeasureBlock).filter(
-            MeasureBlock.measure_type == measure_type).filter(
-            MeasureBlock.s3_key.isnot(None)).filter(
-            MeasureBlock.archive_sha.isnot(None)).filter(
-            MeasureBlock.archive_date.is_(None)).order_by(
-            MeasureBlock.end_id.asc()).limit(limit)
+        query = session.query(ObservationBlock).filter(
+            ObservationBlock.measure_type == observation_type).filter(
+            ObservationBlock.s3_key.isnot(None)).filter(
+            ObservationBlock.archive_sha.isnot(None)).filter(
+            ObservationBlock.archive_date.is_(None)).order_by(
+            ObservationBlock.end_id.asc()).limit(limit)
         c = 0
         for block in query.all():
-            # Note that 'created' is indexed for both CellMeasure
-            # and WifiMeasure
-            measure_cls = MEASURE_TYPE_META[measure_type]['class']
-            tbl = measure_cls.__table__
+            # Note that 'created' is indexed for both CellObservation
+            # and WifiObservation
+            obs_cls = OBSERVATION_TYPE_META[observation_type]['class']
+            tbl = obs_cls.__table__
             qry = session.query(func.max(tbl.c.created)).filter(
                 tbl.c.id < block.end_id)
             max_created = qry.first()[0].replace(tzinfo=pytz.UTC).date()
@@ -302,8 +303,8 @@ def dispatch_delete(self, block_id, batch=10000):
     s3_backend = S3Backend(self.app.s3_settings['backup_bucket'],
                            self.heka_client)
     with self.db_session() as session:
-        block = session.query(MeasureBlock).filter(
-            MeasureBlock.id == block_id).first()
+        block = session.query(ObservationBlock).filter(
+            ObservationBlock.id == block_id).first()
         archive_sha = block.archive_sha
         s3_key = block.s3_key
 
@@ -318,16 +319,16 @@ def dispatch_delete(self, block_id, batch=10000):
 def verified_delete(self, block_id, batch=10000):
     utcnow = util.utcnow()
     with self.db_session() as session:
-        block = session.query(MeasureBlock).filter(
-            MeasureBlock.id == block_id).first()
-        measure_type = block.measure_type
-        measure_cls = MEASURE_TYPE_META[measure_type]['class']
+        block = session.query(ObservationBlock).filter(
+            ObservationBlock.id == block_id).first()
+        observation_type = block.measure_type
+        obs_cls = OBSERVATION_TYPE_META[observation_type]['class']
 
         for start in range(block.start_id, block.end_id, batch):
             end = min(block.end_id, start + batch)
-            q = session.query(measure_cls).filter(
-                measure_cls.id >= start,
-                measure_cls.id < end)
+            q = session.query(obs_cls).filter(
+                obs_cls.id >= start,
+                obs_cls.id < end)
             q.delete()
             session.flush()
         block.archive_date = utcnow
@@ -337,9 +338,9 @@ def verified_delete(self, block_id, batch=10000):
 @celery.task(base=DatabaseTask, bind=True)
 def delete_cellmeasure_records(self, limit=100, days_old=7,
                                countdown=300, batch=10000):
-    return delete_measure_records(
+    return delete_observation_records(
         self,
-        MeasureType.cell,
+        ObservationType.cell,
         limit=limit,
         days_old=days_old,
         countdown=countdown,
@@ -349,36 +350,36 @@ def delete_cellmeasure_records(self, limit=100, days_old=7,
 @celery.task(base=DatabaseTask, bind=True)
 def delete_wifimeasure_records(self, limit=100, days_old=7,
                                countdown=300, batch=10000):
-    return delete_measure_records(
+    return delete_observation_records(
         self,
-        MeasureType.wifi,
+        ObservationType.wifi,
         limit=limit,
         days_old=days_old,
         countdown=countdown,
         batch=batch)
 
 
-def unthrottle_measures(session, station_model, measure_model,
-                        join_measure, max_measures, batch):
+def unthrottle_observations(session, station_model, obs_model,
+                            join_obs, max_observations, batch):
     """
     Periodically recalculate the total_measures value for any 'throttled'
-    station, that is, one with total_measures >= max_measures, which is
-    therefore dropping additional incoming measures on the floor. This
+    station, that is, one with total_measures >= max_observations, which is
+    therefore dropping additional incoming observations on the floor. This
     recalculation (potentially, temporarily) 'un-throttles' the rate, due
-    to the fact that every night, a day worth of measures is backed up and
-    purged from the measures table, so some new room may be made in the
-    measure tables for new measures to be absorbed. Once a station's
-    total_measures count gets back up to max_measures, it will be throttled
+    to the fact that every night, a day worth of observations is backed up and
+    purged from the observation table, so some new room may be made in the
+    observation tables for new observations to be absorbed. Once a station's
+    total_measures count gets back up to max_observations, it will be throttled
     again.
 
     """
     q = session.query(station_model).filter(
-        station_model.total_measures > max_measures).limit(batch)
+        station_model.total_measures > max_observations).limit(batch)
 
     unthrottled = 0
     for station in q.all():
-        q = session.query(func.count(measure_model.id)).filter(
-            *join_measure(station))
+        q = session.query(func.count(obs_model.id)).filter(
+            *join_obs(station))
         c = q.first()
         n = int(c[0])
         assert n <= station.total_measures
@@ -391,26 +392,26 @@ def unthrottle_measures(session, station_model, measure_model,
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def wifi_unthrottle_measures(self, max_measures, batch=1000):
+def wifi_unthrottle_measures(self, max_observations, batch=1000):
     with self.db_session() as session:
-        join_measure = lambda u: (WifiMeasure.key == u.key, )
-        n = unthrottle_measures(session=session,
-                                station_model=Wifi,
-                                measure_model=WifiMeasure,
-                                join_measure=join_measure,
-                                max_measures=max_measures,
-                                batch=batch)
+        join_obs = lambda u: (WifiObservation.key == u.key, )
+        n = unthrottle_observations(session=session,
+                                    station_model=Wifi,
+                                    obs_model=WifiObservation,
+                                    join_obs=join_obs,
+                                    max_observations=max_observations,
+                                    batch=batch)
         self.stats_client.incr("items.wifi_unthrottled", n)
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def cell_unthrottle_measures(self, max_measures, batch=100):
+def cell_unthrottle_measures(self, max_observations, batch=100):
     with self.db_session() as session:
-        join_measure = lambda u: join_cellkey(CellMeasure, u)
-        n = unthrottle_measures(session=session,
-                                station_model=Cell,
-                                measure_model=CellMeasure,
-                                join_measure=join_measure,
-                                max_measures=max_measures,
-                                batch=batch)
+        join_obs = lambda u: join_cellkey(CellObservation, u)
+        n = unthrottle_observations(session=session,
+                                    station_model=Cell,
+                                    obs_model=CellObservation,
+                                    join_obs=join_obs,
+                                    max_observations=max_observations,
+                                    batch=batch)
         self.stats_client.incr("items.cell_unthrottled", n)

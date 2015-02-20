@@ -12,8 +12,8 @@ from ichnaea.models.base import (
     BigIdMixin,
 )
 from ichnaea.models.observation import (
-    CellMeasure,
-    WifiMeasure,
+    CellObservation,
+    WifiObservation,
 )
 from ichnaea.models.sa_types import (
     TinyIntEnum,
@@ -21,22 +21,22 @@ from ichnaea.models.sa_types import (
 )
 
 
-class MeasureType(IntEnum):
+class ObservationType(IntEnum):
     wifi = 1
     cell = 2
 
 
-MEASURE_TYPE_META = {
-    MeasureType.wifi: {
-        'class': WifiMeasure,
+OBSERVATION_TYPE_META = {
+    ObservationType.wifi: {
+        'class': WifiObservation,
         'csv_name': 'wifi_measure.csv'},
-    MeasureType.cell: {
-        'class': CellMeasure,
+    ObservationType.cell: {
+        'class': CellObservation,
         'csv_name': 'cell_measure.csv'},
 }
 
 
-class MeasureBlock(BigIdMixin, _Model):
+class ObservationBlock(BigIdMixin, _Model):
     __tablename__ = 'measure_block'
 
     _indices = (
@@ -51,7 +51,7 @@ class MeasureBlock(BigIdMixin, _Model):
         'mysql_key_block_size': '4',
     }
 
-    measure_type = Column(TinyIntEnum(MeasureType))
+    measure_type = Column(TinyIntEnum(ObservationType))
     s3_key = Column(String(80))
     archive_date = Column(DateTime)
     archive_sha = Column(BINARY(length=20))

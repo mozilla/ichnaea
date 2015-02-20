@@ -5,9 +5,9 @@ from ichnaea.async.task import DatabaseTask
 from ichnaea.data.tasks import UPDATE_KEY
 from ichnaea.models import (
     ApiKey,
-    CellMeasure,
+    CellObservation,
     OCIDCell,
-    WifiMeasure,
+    WifiObservation,
 )
 from ichnaea import util
 from ichnaea.worker import celery
@@ -55,7 +55,8 @@ def monitor_api_key_limits(self):
 
 @celery.task(base=DatabaseTask, bind=True, queue='celery_monitor')
 def monitor_measures(self):
-    checks = [('cell_measure', CellMeasure), ('wifi_measure', WifiMeasure)]
+    checks = [('cell_measure', CellObservation),
+              ('wifi_measure', WifiObservation)]
     result = dict([(name, -1) for name, model in checks])
     try:
         stats_client = self.stats_client

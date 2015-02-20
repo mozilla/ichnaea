@@ -67,12 +67,12 @@ def distance(lat1, lon1, lat2, lon2):
     return d
 
 
-CellMeasure = namedtuple("CellMeasure",
-                         "report_id lat lon mcc mnc lac cid radio")
+CellObservation = namedtuple("CellObservation",
+                             "report_id lat lon mcc mnc lac cid radio")
 
 
-WifiMeasure = namedtuple("WifiMeasure",
-                         "report_id lat lon key channel")
+WifiObservation = namedtuple("WifiObservation",
+                             "report_id lat lon key channel")
 
 TestQuery = namedtuple("TestQuery",
                        "lat lon cells wifis")
@@ -258,14 +258,14 @@ def plot_distance_and_accuracy(da, percentiles, pct_lim, label):
 
 
 def damage_cid(cid, cell):
-    return CellMeasure(report_id=cell.report_id,
-                       lat=cell.lat,
-                       lon=cell.lon,
-                       mcc=cell.mcc,
-                       mnc=cell.mnc,
-                       lac=cell.lac,
-                       cid=cid,
-                       radio=cell.radio)
+    return CellObservation(report_id=cell.report_id,
+                           lat=cell.lat,
+                           lon=cell.lon,
+                           mcc=cell.mcc,
+                           mnc=cell.mnc,
+                           lac=cell.lac,
+                           cid=cid,
+                           radio=cell.radio)
 
 MLS_URL = "https://location.services.mozilla.com/v1"
 MLS_GEO_URL = MLS_URL + "/geolocate?key=test"
@@ -372,12 +372,12 @@ def main():
     cell_measures = defaultdict(list)
     wifi_measures = defaultdict(list)
 
-    for cell in load_named_tuples_from_csv(CellMeasure, args.cell_measure):
+    for cell in load_named_tuples_from_csv(CellObservation, args.cell_measure):
         if cell.radio == args.exclude_radio:
             continue
         cell_measures[cell.report_id].append(cell)
 
-    for wifi in load_named_tuples_from_csv(WifiMeasure, args.wifi_measure):
+    for wifi in load_named_tuples_from_csv(WifiObservation, args.wifi_measure):
         wifi_measures[wifi.report_id].append(wifi)
 
     wifi_measures = dict([(k, v)
