@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #402: Avoid multiple validation of common report data fields.
+
 - Add a new CellCountryProvider to allow country searches based on cell data.
 
 - #406: Allow access to the country API via empty GET requests.

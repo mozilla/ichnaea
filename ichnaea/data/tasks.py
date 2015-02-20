@@ -27,9 +27,12 @@ from ichnaea.models import (
     CELL_MODEL_KEYS,
     CellAreaKey,
     CellBlacklist,
+    CellKeyPscMixin,
     CellMeasure,
+    ReportMixin,
     Wifi,
     WifiBlacklist,
+    WifiKeyMixin,
     WifiMeasure,
     join_cellkey,
     join_wifikey,
@@ -37,7 +40,6 @@ from ichnaea.models import (
     to_cellkey_psc,
     to_wifikey,
 )
-from ichnaea.models.observation import ReportMixin
 from ichnaea import util
 from ichnaea.worker import celery
 
@@ -349,8 +351,8 @@ def process_measure(data, session):
                and not isinstance(v, (tuple, list, dict)):
                 dst[k] = v
 
-    measure_data = ReportMixin.validate(data)
-    if measure_data is None:
+    report_data = ReportMixin.validate(data)
+    if report_data is None:
         return ([], [])
 
     cell_measures = {}
@@ -359,10 +361,11 @@ def process_measure(data, session):
     if data.get('cell'):
         # flatten measure / cell data into a single dict
         for c in data['cell']:
-            add_missing_dict_entries(c, measure_data)
-            c = CellMeasure.validate(c)
+            # only validate the additional fields
+            c = CellKeyPscMixin.validate(c)
             if c is None:  # pragma: no cover
                 continue
+            add_missing_dict_entries(c, report_data)
             key = to_cellkey_psc(c)
             if key in cell_measures:  # pragma: no cover
                 existing = cell_measures[key]
@@ -378,10 +381,11 @@ def process_measure(data, session):
     # flatten measure / wifi data into a single dict
     if data.get('wifi'):
         for w in data['wifi']:
-            add_missing_dict_entries(w, measure_data)
-            w = WifiMeasure.validate(w)
+            # only validate the additional fields
+            w = WifiKeyMixin.validate(w)
             if w is None:
                 continue
+            add_missing_dict_entries(w, report_data)
             key = w['key']
             if key in wifi_measures:  # pragma: no cover
                 existing = wifi_measures[key]

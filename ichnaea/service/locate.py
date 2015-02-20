@@ -23,14 +23,14 @@ from ichnaea.logging import (
 from ichnaea.models import (
     Cell,
     CellArea,
+    CellKeyMixin,
     OCIDCell,
     RADIO_TYPE,
     Wifi,
+    WifiKeyMixin,
     join_cellkey,
     to_cellkey,
 )
-from ichnaea.models.cell import CellKeyMixin
-from ichnaea.models.wifi import WifiKeyMixin
 
 # parameters for wifi clustering
 MAX_WIFI_CLUSTER_KM = 0.5
