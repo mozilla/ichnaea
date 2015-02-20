@@ -126,6 +126,10 @@ class AbstractResult(object):
         """Does this result include any location data?"""
         raise NotImplementedError
 
+    def agrees_with(self, result):  # pragma: no cover
+        """Does this result match the position of the other result?"""
+        raise NotImplementedError
+
     def accurate_enough(self):  # pragma: no cover
         """Is this result accurate enough to return it?"""
         raise NotImplementedError
@@ -140,6 +144,10 @@ class PositionResult(AbstractResult):
 
     def found(self):
         return self.lat is not None and self.lon is not None
+
+    def agrees_with(self, result):
+        dist = distance(result.lat, result.lon, self.lat, self.lon) * 1000
+        return dist <= result.accuracy
 
     def accurate_enough(self):
         # For position data we currently always want to continue.
@@ -156,8 +164,7 @@ class PositionResult(AbstractResult):
             return True
         if self.priority > result.priority:
             return True
-        dist = distance(result.lat, result.lon, self.lat, self.lon) * 1000
-        return dist <= result.accuracy
+        return self.agrees_with(result) and self.accuracy < result.accuracy
 
 
 class CountryResult(AbstractResult):
@@ -165,6 +172,9 @@ class CountryResult(AbstractResult):
 
     def found(self):
         return self.country_code is not None and self.country_name is not None
+
+    def agrees_with(self, result):  # pragma: no cover
+        return self.country_code == result.country_code
 
     def accurate_enough(self):
         if self.found():
