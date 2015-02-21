@@ -9,6 +9,7 @@ from ichnaea.models.base import (
     _Model,
     BigIdMixin,
     HashKey,
+    HashKeyMixin,
     ValidationMixin,
 )
 from ichnaea.models.station import (
@@ -22,20 +23,13 @@ class WifiKey(HashKey):
     _fields = ('key', )
 
 
-def to_wifikey(obj):
-    if isinstance(obj, dict):  # pragma: no cover
-        return WifiKey(key=obj['key'])
-    elif isinstance(obj, basestring):  # pragma: no cover
-        return WifiKey(key=obj)
-    else:
-        return WifiKey(key=obj.key)
-
-
 def join_wifikey(model, k):
     return (model.key == k.key,)
 
 
-class WifiKeyMixin(ValidationMixin):
+class WifiKeyMixin(HashKeyMixin, ValidationMixin):
+
+    _hashkey_cls = WifiKey
 
     key = Column(String(12))
 

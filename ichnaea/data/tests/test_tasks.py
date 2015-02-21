@@ -31,15 +31,12 @@ from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
     Cell,
     CellArea,
-    CellAreaKey,
     CellBlacklist,
-    CellKey,
     CellObservation,
     RADIO_TYPE,
     Wifi,
     WifiBlacklist,
     WifiObservation,
-    to_cellkey,
 )
 from ichnaea.tests.base import (
     CeleryTestCase,
@@ -120,8 +117,6 @@ class TestCell(CeleryTestCase):
         k5 = dict(radio=1, mcc=1, mnc=2, lac=15, cid=20)
         k6 = dict(radio=1, mcc=1, mnc=2, lac=18, cid=24)
 
-        keys = set([CellKey(**k) for k in [k1, k2, k3, k4, k5, k6]])
-
         # keys k2, k3 and k4 are expected to be detected as moving
         data = [
             # a cell with an entry but no prior position
@@ -162,13 +157,16 @@ class TestCell(CeleryTestCase):
         result = location_update_cell.delay(min_new=1)
         self.assertEqual(result.get(), (5, 3))
 
+        moving = [k2, k3, k4, k5]
         black = session.query(CellBlacklist).all()
-        self.assertEqual(set([to_cellkey(b) for b in black]),
-                         set([CellKey(**k) for k in [k2, k3, k4, k5]]))
+        self.assertEqual(set([b.hashkey() for b in black]),
+                         set([CellBlacklist.to_hashkey(k) for k in moving]))
 
+        keys = [k1, k2, k3, k4, k5, k6]
         observations = session.query(CellObservation).all()
         self.assertEqual(len(observations), 14)
-        self.assertEqual(set([to_cellkey(obs) for obs in observations]), keys)
+        self.assertEqual(set([obs.hashkey() for obs in observations]),
+                         set([CellObservation.to_hashkey(k) for k in keys]))
 
         # test duplicate call
         result = location_update_cell.delay(min_new=1)
@@ -600,7 +598,7 @@ class TestCell(CeleryTestCase):
         ]
         for i in range(9):
             session.expire(lac)
-            k = CellKey(cid=i, **keys)
+            k = Cell.to_hashkey(cid=i, **keys)
             result = remove_cell.delay([k])
             self.assertEqual(1, result.get())
             result = scan_lacs.delay()
@@ -612,7 +610,7 @@ class TestCell(CeleryTestCase):
             self.assertEqual(lac.range, steps[i][1])
 
         # Remove final cell, check LAC is gone
-        k = CellKey(cid=9, **keys)
+        k = Cell.to_hashkey(cid=9, **keys)
         result = remove_cell.delay([k])
         self.assertEqual(1, result.get())
         result = scan_lacs.delay()
@@ -720,7 +718,7 @@ class TestCell(CeleryTestCase):
         session.add(CellArea(**key))
         session.flush()
         enqueue_lacs(session, redis_client,
-                     [CellAreaKey(**key)], UPDATE_KEY['cell_lac'])
+                     [CellArea.to_hashkey(key)], UPDATE_KEY['cell_lac'])
 
         # after scanning the orphaned record gets removed
         self.assertEqual(scan_lacs.delay().get(), 1)

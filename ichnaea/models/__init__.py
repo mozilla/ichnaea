@@ -9,11 +9,8 @@ from ichnaea.models.backup import (  # NOQA
 )
 from ichnaea.models.cell import (  # NOQA
     join_cellkey,
-    to_cellkey,
-    to_cellkey_psc,
     Cell,
     CellArea,
-    CellAreaKey,
     CellBlacklist,
     CellKey,
     CellKeyMixin,
@@ -43,7 +40,6 @@ from ichnaea.models.observation import (  # NOQA
 )
 from ichnaea.models.wifi import (  # NOQA
     join_wifikey,
-    to_wifikey,
     Wifi,
     WifiBlacklist,
     WifiKey,

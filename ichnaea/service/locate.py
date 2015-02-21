@@ -29,7 +29,6 @@ from ichnaea.models import (
     Wifi,
     WifiKeyMixin,
     join_cellkey,
-    to_cellkey,
 )
 
 # parameters for wifi clustering
@@ -306,7 +305,7 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
         for cell in data.get(self.data_field, ()):
             cell = CellKeyMixin.validate(cell, default_radio=radio)
             if cell:
-                cell_key = to_cellkey(cell)
+                cell_key = CellKeyMixin.to_hashkey(cell)
                 cell_keys.append(cell_key)
 
         return cell_keys

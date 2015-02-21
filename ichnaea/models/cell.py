@@ -14,6 +14,7 @@ from ichnaea import geocalc
 from ichnaea.models.base import (
     _Model,
     HashKey,
+    HashKeyMixin,
     PositionMixin,
     TimeTrackingMixin,
     ValidationMixin,
@@ -56,44 +57,6 @@ class CellKeyPsc(HashKey):
     _fields = ('radio', 'mcc', 'mnc', 'lac', 'cid', 'psc')
 
 
-def to_cellkey(obj):
-    """
-    Construct a CellKey from any object with the requisite 5 fields.
-    """
-    if isinstance(obj, dict):
-        return CellKey(radio=obj['radio'],
-                       mcc=obj['mcc'],
-                       mnc=obj['mnc'],
-                       lac=obj['lac'],
-                       cid=obj['cid'])
-    else:
-        return CellKey(radio=obj.radio,
-                       mcc=obj.mcc,
-                       mnc=obj.mnc,
-                       lac=obj.lac,
-                       cid=obj.cid)
-
-
-def to_cellkey_psc(obj):
-    """
-    Construct a CellKeyPsc from any object with the requisite 6 fields.
-    """
-    if isinstance(obj, dict):
-        return CellKeyPsc(radio=obj['radio'],
-                          mcc=obj['mcc'],
-                          mnc=obj['mnc'],
-                          lac=obj['lac'],
-                          cid=obj['cid'],
-                          psc=obj['psc'])
-    else:
-        return CellKeyPsc(radio=obj.radio,
-                          mcc=obj.mcc,
-                          mnc=obj.mnc,
-                          lac=obj.lac,
-                          cid=obj.cid,
-                          psc=obj.psc)
-
-
 def join_cellkey(model, k):
     """
     Return an sqlalchemy equality criterion for joining on the cell n-tuple.
@@ -114,7 +77,9 @@ def join_cellkey(model, k):
     return criterion
 
 
-class CellAreaKeyMixin(object):
+class CellAreaKeyMixin(HashKeyMixin):
+
+    _hashkey_cls = CellAreaKey
 
     # mapped via RADIO_TYPE
     radio = Column(TinyInteger, autoincrement=False)
@@ -132,6 +97,8 @@ class CellAreaMixin(CellAreaKeyMixin, TimeTrackingMixin, PositionMixin):
 
 class CellKeyMixin(CellAreaKeyMixin, ValidationMixin):
 
+    _hashkey_cls = CellKey
+
     cid = Column(Integer(unsigned=True), autoincrement=False)
 
     @classmethod
@@ -142,11 +109,14 @@ class CellKeyMixin(CellAreaKeyMixin, ValidationMixin):
 
 class CellKeyPscMixin(CellKeyMixin):
 
+    _hashkey_cls = CellKeyPsc
+
     psc = Column(SmallInteger, autoincrement=False)
 
 
 class CellMixin(CellKeyPscMixin):
-    pass
+
+    _hashkey_cls = CellKey
 
 
 class Cell(CellMixin, StationMixin, _Model):

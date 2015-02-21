@@ -25,7 +25,7 @@ from ichnaea.logging import get_stats_client
 from ichnaea.models import (
     Cell,
     CELL_MODEL_KEYS,
-    CellAreaKey,
+    CellArea,
     CellBlacklist,
     CellKeyPscMixin,
     CellObservation,
@@ -36,9 +36,6 @@ from ichnaea.models import (
     WifiObservation,
     join_cellkey,
     join_wifikey,
-    to_cellkey,
-    to_cellkey_psc,
-    to_wifikey,
 )
 from ichnaea import util
 from ichnaea.worker import celery
@@ -122,7 +119,7 @@ def blacklist_and_remove_moving_cells(session, moving_cells):
     blacklist_and_remove_moving_stations(session,
                                          blacklist_model=CellBlacklist,
                                          station_type="cell",
-                                         to_key=to_cellkey,
+                                         to_key=Cell.to_hashkey,
                                          join_key=join_cellkey,
                                          moving_stations=moving_cells,
                                          remove_station=remove_cell)
@@ -132,7 +129,7 @@ def blacklist_and_remove_moving_wifis(session, moving_wifis):
     blacklist_and_remove_moving_stations(session,
                                          blacklist_model=WifiBlacklist,
                                          station_type="wifi",
-                                         to_key=to_wifikey,
+                                         to_key=Wifi.to_hashkey,
                                          join_key=join_wifikey,
                                          moving_stations=moving_wifis,
                                          remove_station=remove_wifi)
@@ -365,7 +362,7 @@ def process_observation(data, session):
             if cell is None:
                 continue
             add_missing_dict_entries(cell, report_data)
-            cell_key = to_cellkey_psc(cell)
+            cell_key = CellObservation.to_hashkey(cell)
             if cell_key in cell_observations:
                 existing = cell_observations[cell_key]
                 if existing['ta'] > cell['ta'] or \
@@ -385,7 +382,7 @@ def process_observation(data, session):
             if wifi is None:
                 continue
             add_missing_dict_entries(wifi, report_data)
-            wifi_key = wifi['key']
+            wifi_key = WifiObservation.to_hashkey(wifi)
             if wifi_key in wifi_observations:
                 existing = wifi_observations[wifi_key]
                 if existing['signal'] != 0 and \
@@ -425,7 +422,7 @@ def process_observations(observations, session, userid=None,
 
         cells = defaultdict(list)
         for obs in cell_observations:
-            cells[to_cellkey_psc(obs)].append(obs)
+            cells[CellObservation.to_hashkey(obs)].append(obs)
 
         # Create a task per group of 5 cell keys at a time.
         # Grouping them helps in avoiding per-task overhead.
@@ -458,7 +455,7 @@ def process_observations(observations, session, userid=None,
 
         wifis = defaultdict(list)
         for obs in wifi_observations:
-            wifis[obs['key']].append(obs)
+            wifis[WifiObservation.to_hashkey(obs)].append(obs)
 
         # Create a task per group of 20 WiFi keys at a time.
         # We tend to get a huge number of unique WiFi networks per
@@ -643,7 +640,7 @@ def insert_measures_cell(self, entries, userid=None,
             station_model=Cell,
             observation_model=CellObservation,
             blacklist_model=CellBlacklist,
-            create_key=to_cellkey_psc,
+            create_key=CellObservation.to_hashkey,
             join_key=join_cellkey,
             userid=userid,
             max_observations_per_station=max_observations_per_cell,
@@ -664,7 +661,7 @@ def insert_measures_wifi(self, entries, userid=None,
             station_model=Wifi,
             observation_model=WifiObservation,
             blacklist_model=WifiBlacklist,
-            create_key=to_wifikey,
+            create_key=WifiObservation.to_hashkey,
             join_key=join_wifikey,
             userid=userid,
             max_observations_per_station=max_observations_per_wifi,
@@ -708,12 +705,7 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
                 if moving:
                     moving_cells.add(cell)
 
-                updated_lacs.add(
-                    CellAreaKey(
-                        cell.radio,
-                        cell.mcc,
-                        cell.mnc,
-                        cell.lac))
+                updated_lacs.add(CellArea.to_hashkey(cell))
 
         if updated_lacs:
             session.on_post_commit(
@@ -774,15 +766,10 @@ def remove_cell(self, cell_keys):
         changed_lacs = set()
 
         for k in cell_keys:
-            key = to_cellkey(k)
+            key = Cell.to_hashkey(k)
             query = session.query(Cell).filter(*join_cellkey(Cell, key))
             cells_removed += query.delete()
-            changed_lacs.add(CellAreaKey(
-                radio=key.radio,
-                mcc=key.mcc,
-                mnc=key.mnc,
-                lac=key.lac,
-            ))
+            changed_lacs.add(CellArea.to_hashkey(key))
 
         if changed_lacs:
             session.on_post_commit(
@@ -815,12 +802,7 @@ def scan_lacs(self, batch=100):
     redis_client = self.app.redis_client
     redis_lacs = dequeue_lacs(
         redis_client, UPDATE_KEY['cell_lac'], batch=batch)
-    lacs = set([CellAreaKey(
-        radio=lac['radio'],
-        mcc=lac['mcc'],
-        mnc=lac['mnc'],
-        lac=lac['lac'],
-    ) for lac in redis_lacs])
+    lacs = set([CellArea.to_hashkey(lac) for lac in redis_lacs])
 
     for lac in lacs:
         update_lac.delay(

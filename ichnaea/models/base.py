@@ -73,6 +73,34 @@ class HashKey(object):
         return '{cls}: {data}'.format(cls=self._dottedname, data=self.__dict__)
 
 
+class HashKeyMixin(object):
+
+    _hashkey_cls = None
+
+    @classmethod
+    def _to_hashkey(cls, *args, **kw):
+        if args:
+            obj = args[0]
+        else:
+            obj = kw
+        if isinstance(obj, cls._hashkey_cls):
+            return obj
+        fields = cls._hashkey_cls._fields
+        if isinstance(obj, dict):
+            return cls._hashkey_cls(**obj)
+        values = {}
+        for field in fields:
+            values[field] = getattr(obj, field, None)
+        return cls._hashkey_cls(**values)
+
+    @classmethod
+    def to_hashkey(cls, *args, **kw):
+        return cls._to_hashkey(*args, **kw)
+
+    def hashkey(self):
+        return self._to_hashkey(self)
+
+
 class ValidationMixin(object):
 
     @classmethod

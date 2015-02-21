@@ -18,7 +18,7 @@ from sqlalchemy.sql import (
 from ichnaea.async.task import DatabaseTask
 from ichnaea.models import (
     Cell,
-    CellAreaKey,
+    CellArea,
     RADIO_TYPE,
     RADIO_TYPE_INVERSE,
     OCIDCell,
@@ -234,11 +234,7 @@ def import_stations(session, filename, fields):
             data = make_ocid_cell_import_dict(row)
             if data is not None:
                 rows.append(data)
-                lacs.add(CellAreaKey(
-                    radio=data['radio'],
-                    mcc=data['mcc'],
-                    mnc=data['mnc'],
-                    lac=data['lac']))
+                lacs.add(CellArea.to_hashkey(data))
 
             if len(rows) == batch:  # pragma: no cover
                 session.execute(ins, rows)
