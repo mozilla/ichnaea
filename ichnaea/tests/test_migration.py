@@ -127,12 +127,4 @@ class TestMigration(TestCase):
             context = MigrationContext.configure(connection=conn, opts=opts)
             metadata_diff = compare_metadata(context, self.head_metadata)
 
-        # BBB until #353 is done, we have a minor expected difference
-        filtered_diff = []
-        for entry in metadata_diff:
-            if entry[0] == 'remove_column' and \
-               entry[2] in ('cell', 'cell_blacklist') and \
-               entry[3].name == 'id':
-                continue
-            filtered_diff.append(entry)
-        self.assertEqual(filtered_diff, [])
+        self.assertEqual(metadata_diff, [])
