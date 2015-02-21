@@ -104,7 +104,7 @@ Example:
     ]
 
 radio **(required)**
-    The string `utms`.
+    The string `umts`.
 
 mcc **(required)**
     The mobile country code. An integer in the range of 0 to 999.
