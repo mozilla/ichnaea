@@ -8,7 +8,6 @@ from ichnaea.models.backup import (  # NOQA
     OBSERVATION_TYPE_META,
 )
 from ichnaea.models.cell import (  # NOQA
-    join_cellkey,
     Cell,
     CellArea,
     CellBlacklist,
@@ -39,7 +38,6 @@ from ichnaea.models.observation import (  # NOQA
     WifiObservation,
 )
 from ichnaea.models.wifi import (  # NOQA
-    join_wifikey,
     Wifi,
     WifiBlacklist,
     WifiKey,

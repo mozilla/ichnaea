@@ -23,10 +23,6 @@ class WifiKey(HashKey):
     _fields = ('key', )
 
 
-def join_wifikey(model, k):
-    return (model.key == k.key,)
-
-
 class WifiKeyMixin(HashKeyMixin, ValidationMixin):
 
     _hashkey_cls = WifiKey

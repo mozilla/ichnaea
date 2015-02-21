@@ -14,7 +14,6 @@ from ichnaea.backup.s3 import S3Backend, compute_hash
 from ichnaea.models import (
     Cell,
     CellObservation,
-    join_cellkey,
     OBSERVATION_TYPE_META,
     ObservationBlock,
     ObservationType,
@@ -360,7 +359,7 @@ def delete_wifimeasure_records(self, limit=100, days_old=7,
 
 
 def unthrottle_observations(session, station_model, obs_model,
-                            join_obs, max_observations, batch):
+                            max_observations, batch):
     """
     Periodically recalculate the total_measures value for any 'throttled'
     station, that is, one with total_measures >= max_observations, which is
@@ -379,7 +378,7 @@ def unthrottle_observations(session, station_model, obs_model,
     unthrottled = 0
     for station in q.all():
         q = session.query(func.count(obs_model.id)).filter(
-            *join_obs(station))
+            *obs_model.joinkey(obs_model.to_hashkey(station)))
         c = q.first()
         n = int(c[0])
         assert n <= station.total_measures
@@ -394,11 +393,9 @@ def unthrottle_observations(session, station_model, obs_model,
 @celery.task(base=DatabaseTask, bind=True)
 def wifi_unthrottle_measures(self, max_observations, batch=1000):
     with self.db_session() as session:
-        join_obs = lambda u: (WifiObservation.key == u.key, )
         n = unthrottle_observations(session=session,
                                     station_model=Wifi,
                                     obs_model=WifiObservation,
-                                    join_obs=join_obs,
                                     max_observations=max_observations,
                                     batch=batch)
         self.stats_client.incr("items.wifi_unthrottled", n)
@@ -407,11 +404,9 @@ def wifi_unthrottle_measures(self, max_observations, batch=1000):
 @celery.task(base=DatabaseTask, bind=True)
 def cell_unthrottle_measures(self, max_observations, batch=100):
     with self.db_session() as session:
-        join_obs = lambda u: join_cellkey(CellObservation, u)
         n = unthrottle_observations(session=session,
                                     station_model=Cell,
                                     obs_model=CellObservation,
-                                    join_obs=join_obs,
                                     max_observations=max_observations,
                                     batch=batch)
         self.stats_client.incr("items.cell_unthrottled", n)

@@ -100,6 +100,13 @@ class HashKeyMixin(object):
     def hashkey(self):
         return self._to_hashkey(self)
 
+    @classmethod
+    def joinkey(cls, key):
+        criterion = ()
+        for field in cls._hashkey_cls._fields:
+            criterion += (getattr(cls, field) == getattr(key, field), )
+        return criterion
+
 
 class ValidationMixin(object):
 

@@ -57,26 +57,6 @@ class CellKeyPsc(HashKey):
     _fields = ('radio', 'mcc', 'mnc', 'lac', 'cid', 'psc')
 
 
-def join_cellkey(model, k):
-    """
-    Return an sqlalchemy equality criterion for joining on the cell n-tuple.
-    Should be spliced into a query filter call like so:
-    ``session.query(Cell).filter(*join_cellkey(Cell, k))``
-    """
-    criterion = (model.radio == k.radio,
-                 model.mcc == k.mcc,
-                 model.mnc == k.mnc,
-                 model.lac == k.lac)
-    # if the model has a psc column, and we get a CellKeyPsc,
-    # add it to the criterion
-    if isinstance(k, CellKeyPsc) and getattr(model, 'psc', None) is not None:
-        criterion += (model.psc == k.psc, )
-
-    if hasattr(model, 'cid') and hasattr(k, 'cid'):
-        criterion += (model.cid == k.cid, )
-    return criterion
-
-
 class CellAreaKeyMixin(HashKeyMixin):
 
     _hashkey_cls = CellAreaKey

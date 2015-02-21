@@ -28,7 +28,6 @@ from ichnaea.models import (
     RADIO_TYPE,
     Wifi,
     WifiKeyMixin,
-    join_cellkey,
 )
 
 # parameters for wifi clustering
@@ -319,7 +318,7 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
             cell_filter = []
             for key in cell_keys:
                 # create a list of 'and' criteria for cell keys
-                criterion = join_cellkey(model, key)
+                criterion = model.joinkey(key)
                 cell_filter.append(and_(*criterion))
 
             if cell_filter:

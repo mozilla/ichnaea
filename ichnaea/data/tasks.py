@@ -34,8 +34,6 @@ from ichnaea.models import (
     WifiBlacklist,
     WifiKeyMixin,
     WifiObservation,
-    join_cellkey,
-    join_wifikey,
 )
 from ichnaea import util
 from ichnaea.worker import celery
@@ -72,13 +70,13 @@ def dequeue_lacs(redis_client, pipeline_key, batch=100):
     return [kombu_loads(item) for item in pipe.execute()[0]]
 
 
-def available_station_space(session, key, station_model, join_key,
+def available_station_space(session, key, station_model,
                             max_observations_per_station):
     # check if there's space for new observations within per-station maximum
     # old observations are gradually backed up, so this is an intake-rate limit
 
     query = session.query(station_model.total_measures).filter(
-        *join_key(station_model, key))
+        *station_model.joinkey(key))
     curr = query.first()
 
     if curr is not None:
@@ -89,14 +87,14 @@ def available_station_space(session, key, station_model, join_key,
 
 
 def blacklist_and_remove_moving_stations(session, blacklist_model,
-                                         station_type, to_key, join_key,
+                                         station_type,
                                          moving_stations, remove_station):
     moving_keys = []
     utcnow = util.utcnow()
     for station in moving_stations:
-        station_key = to_key(station)
+        station_key = blacklist_model.to_hashkey(station)
         query = session.query(blacklist_model).filter(
-            *join_key(blacklist_model, station_key))
+            *blacklist_model.joinkey(station_key))
         blacklisted_station = query.first()
         moving_keys.append(station_key)
         if blacklisted_station:
@@ -119,8 +117,6 @@ def blacklist_and_remove_moving_cells(session, moving_cells):
     blacklist_and_remove_moving_stations(session,
                                          blacklist_model=CellBlacklist,
                                          station_type="cell",
-                                         to_key=Cell.to_hashkey,
-                                         join_key=join_cellkey,
                                          moving_stations=moving_cells,
                                          remove_station=remove_cell)
 
@@ -129,18 +125,14 @@ def blacklist_and_remove_moving_wifis(session, moving_wifis):
     blacklist_and_remove_moving_stations(session,
                                          blacklist_model=WifiBlacklist,
                                          station_type="wifi",
-                                         to_key=Wifi.to_hashkey,
-                                         join_key=join_wifikey,
                                          moving_stations=moving_wifis,
                                          remove_station=remove_wifi)
 
 
-def blacklisted_station(session, key, blacklist_model,
-                        join_key, utcnow):
-
+def blacklisted_station(session, key, blacklist_model, utcnow):
     query = (session.query(blacklist_model)
                     .options(load_only('count', 'time'))
-                    .filter(*join_key(blacklist_model, key)))
+                    .filter(*blacklist_model.joinkey(key)))
     black = query.first()
     if black is not None:
         age = utcnow - black.time
@@ -225,13 +217,13 @@ def calculate_new_position(station, observations, max_dist_km):
 
 
 def create_or_update_station(session, key, station_model,
-                             join_key, utcnow, num, first_blacklisted):
+                             utcnow, num, first_blacklisted):
     """
     Creates a station or updates its new/total_measures counts to reflect
     recently-received observations.
     """
     query = (session.query(station_model)
-                    .filter(*join_key(station_model, key)))
+                    .filter(*station_model.joinkey(key)))
     station = query.first()
 
     if station is not None:
@@ -504,8 +496,7 @@ def process_score(userid, points, session, key='location'):
 
 def process_station_observations(session, entries, station_type,
                                  station_model, observation_model,
-                                 blacklist_model, create_key, join_key,
-                                 userid=None,
+                                 blacklist_model, userid=None,
                                  max_observations_per_station=11000,
                                  utcnow=None):
 
@@ -528,7 +519,7 @@ def process_station_observations(session, entries, station_type,
             dropped_malformed += 1
             continue
 
-        station_observations[create_key(obs)].append(obs)
+        station_observations[obs.hashkey()].append(obs)
 
     # Process observations one station at a time
     for key, observations in station_observations.items():
@@ -539,7 +530,7 @@ def process_station_observations(session, entries, station_type,
 
         # Figure out how much space is left for this station.
         free = available_station_space(session, key, station_model,
-                                       join_key, max_observations_per_station)
+                                       max_observations_per_station)
         if free is None:
             is_new_station = True
             free = max_observations_per_station
@@ -547,7 +538,7 @@ def process_station_observations(session, entries, station_type,
         if is_new_station:
             # Drop observations for blacklisted stations.
             blacklisted, first_blacklisted = blacklisted_station(
-                session, key, blacklist_model, join_key, utcnow)
+                session, key, blacklist_model, utcnow)
             if blacklisted:
                 dropped_blacklisted += len(observations)
                 continue
@@ -571,8 +562,7 @@ def process_station_observations(session, entries, station_type,
         # (station creation is a side effect of count-updating)
         if not incomplete and num > 0:
             create_or_update_station(session, key, station_model,
-                                     join_key, utcnow, num,
-                                     first_blacklisted)
+                                     utcnow, num, first_blacklisted)
 
     # Credit the user with discovering any new stations.
     if userid is not None and new_stations > 0:
@@ -640,8 +630,6 @@ def insert_measures_cell(self, entries, userid=None,
             station_model=Cell,
             observation_model=CellObservation,
             blacklist_model=CellBlacklist,
-            create_key=CellObservation.to_hashkey,
-            join_key=join_cellkey,
             userid=userid,
             max_observations_per_station=max_observations_per_cell,
             utcnow=utcnow)
@@ -661,8 +649,6 @@ def insert_measures_wifi(self, entries, userid=None,
             station_model=Wifi,
             observation_model=WifiObservation,
             blacklist_model=WifiBlacklist,
-            create_key=WifiObservation.to_hashkey,
-            join_key=join_wifikey,
             userid=userid,
             max_observations_per_station=max_observations_per_wifi,
             utcnow=utcnow)
@@ -692,7 +678,7 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
                 CellObservation.lat,
                 CellObservation.lon,
                 CellObservation.id).filter(
-                    *join_cellkey(CellObservation, cell))
+                    *CellObservation.joinkey(cell))
             # only take the last X new_measures
             query = query.order_by(
                 CellObservation.created.desc()).limit(
@@ -767,7 +753,7 @@ def remove_cell(self, cell_keys):
 
         for k in cell_keys:
             key = Cell.to_hashkey(k)
-            query = session.query(Cell).filter(*join_cellkey(Cell, key))
+            query = session.query(Cell).filter(*Cell.joinkey(key))
             cells_removed += query.delete()
             changed_lacs.add(CellArea.to_hashkey(key))
 
