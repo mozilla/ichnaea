@@ -70,13 +70,17 @@ is required. For cell records, the `radioType`, `mobileCountryCode`,
 `mobileNetworkCode`, `locationAreaCode` and `cellId` fields are required.
 
 The cell record has been extended over the geolocate schema to include
-two more optional fields:
+three more optional fields:
 
-psc
-    The physical cell id as an integer in the range of 0 to 503 (optional).
+age
+    The number of milliseconds since this cell was primary.
+    If age is 0, the cell id represents a current observation.
 
 asu
     The arbitrary strength unit. An integer in the range of 0 to 95 (optional).
+
+psc
+    The physical cell id as an integer in the range of 0 to 503 (optional).
 
 The WiFi record has been extended with one extra optional field
 `frequency`.  Either `frequency` or `channel` maybe submitted to the
