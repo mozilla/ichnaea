@@ -1,5 +1,3 @@
-from collections import namedtuple
-
 from sqlalchemy import (
     Column,
     Index,
@@ -15,6 +13,7 @@ from sqlalchemy.dialects.mysql import (
 from ichnaea import geocalc
 from ichnaea.models.base import (
     _Model,
+    HashKey,
     PositionMixin,
     TimeTrackingMixin,
     ValidationMixin,
@@ -41,9 +40,20 @@ RADIO_TYPE_INVERSE[2] = 'umts'
 MAX_RADIO_TYPE = max(RADIO_TYPE.values())
 MIN_RADIO_TYPE = min(RADIO_TYPE.values())
 
-CellKey = namedtuple('CellKey', 'radio mcc mnc lac cid')
-CellKeyPsc = namedtuple('CellKey', 'radio mcc mnc lac cid psc')
-CellAreaKey = namedtuple('CellAreaKey', 'radio mcc mnc lac')
+
+class CellAreaKey(HashKey):
+
+    _fields = ('radio', 'mcc', 'mnc', 'lac')
+
+
+class CellKey(HashKey):
+
+    _fields = ('radio', 'mcc', 'mnc', 'lac', 'cid')
+
+
+class CellKeyPsc(HashKey):
+
+    _fields = ('radio', 'mcc', 'mnc', 'lac', 'cid', 'psc')
 
 
 def to_cellkey(obj):

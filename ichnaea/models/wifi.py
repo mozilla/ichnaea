@@ -1,5 +1,3 @@
-from collections import namedtuple
-
 from sqlalchemy import (
     Column,
     Index,
@@ -10,6 +8,7 @@ from sqlalchemy import (
 from ichnaea.models.base import (
     _Model,
     BigIdMixin,
+    HashKey,
     ValidationMixin,
 )
 from ichnaea.models.station import (
@@ -17,7 +16,10 @@ from ichnaea.models.station import (
     StationBlacklistMixin,
 )
 
-WifiKey = namedtuple('WifiKey', 'key')
+
+class WifiKey(HashKey):
+
+    _fields = ('key', )
 
 
 def to_wifikey(obj):

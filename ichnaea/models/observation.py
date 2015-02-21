@@ -1,3 +1,6 @@
+from datetime import datetime
+
+import iso8601
 from sqlalchemy import (
     Column,
     Float,
@@ -9,7 +12,6 @@ from sqlalchemy.dialects.mysql import (
     TINYINT as TinyInteger,
 )
 
-from ichnaea.customjson import decode_datetime
 from ichnaea.models.base import (
     _Model,
     BigIdMixin,
@@ -22,6 +24,16 @@ from ichnaea.models.sa_types import (
     TZDateTime as DateTime,
     UUIDColumn,
 )
+from ichnaea import util
+
+
+def decode_datetime(obj):  # pragma: no cover
+    if isinstance(obj, datetime):
+        return obj
+    try:
+        return iso8601.parse_date(obj)
+    except (iso8601.ParseError, TypeError):
+        return util.utcnow()
 
 
 class ReportMixin(PositionMixin, ValidationMixin):

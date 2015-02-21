@@ -2,12 +2,14 @@ from calendar import timegm
 from datetime import date, datetime
 from uuid import UUID
 
-from colander import iso8601
+from pyramid.path import DottedNameResolver
 from pytz import UTC
 import simplejson as json
 
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
-from ichnaea import util
+from ichnaea.models.base import HashKey
+
+RESOLVER = DottedNameResolver('ichnaea')
 
 
 def encode_datetime(obj):
@@ -16,15 +18,6 @@ def encode_datetime(obj):
     elif isinstance(obj, date):
         return obj.strftime('%Y-%m-%d')
     raise TypeError(repr(obj) + " is not JSON serializable")
-
-
-def decode_datetime(obj):  # pragma: no cover
-    if isinstance(obj, datetime):
-        return obj
-    try:
-        return iso8601.parse_date(obj)
-    except (iso8601.ParseError, TypeError):
-        return util.utcnow()
 
 
 def custom_iterencode(value):
@@ -145,6 +138,11 @@ def kombu_default(obj):
         return {'__date__': [obj.year, obj.month, obj.day]}
     elif isinstance(obj, UUID):
         return {'__uuid__': obj.hex}
+    elif isinstance(obj, HashKey):
+        return {'__hashkey__': {
+            'name': obj._dottedname,
+            'value': obj.__dict__,
+        }}
     raise TypeError("%r is not JSON serializable" % obj)  # pragma: no cover
 
 
@@ -156,6 +154,10 @@ def kombu_object_hook(dct):
         return date(*dct['__date__'])
     elif '__uuid__' in dct:
         return UUID(hex=dct['__uuid__'])
+    elif '__hashkey__' in dct:
+        hashkey = dct['__hashkey__']
+        klass = RESOLVER.resolve(hashkey['name'])
+        return klass(**hashkey['value'])
     return dct
 
 

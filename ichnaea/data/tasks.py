@@ -97,11 +97,10 @@ def blacklist_and_remove_moving_stations(session, blacklist_model,
     moving_keys = []
     utcnow = util.utcnow()
     for station in moving_stations:
-        key = to_key(station)
+        station_key = to_key(station)
         query = session.query(blacklist_model).filter(
-            *join_key(blacklist_model, key))
+            *join_key(blacklist_model, station_key))
         blacklisted_station = query.first()
-        station_key = key._asdict()
         moving_keys.append(station_key)
         if blacklisted_station:
             blacklisted_station.time = utcnow
@@ -110,7 +109,7 @@ def blacklist_and_remove_moving_stations(session, blacklist_model,
             blacklisted_station = blacklist_model(
                 time=utcnow,
                 count=1,
-                **station_key)
+                **station_key.__dict__)
             session.add(blacklisted_station)
 
     if moving_keys:
@@ -256,7 +255,7 @@ def create_or_update_station(session, key, station_model,
             range=0,
             new_measures=num,
             total_measures=num,
-            **key._asdict())
+            **key.__dict__)
         session.execute(stmt)
 
 

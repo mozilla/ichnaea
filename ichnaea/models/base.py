@@ -31,6 +31,48 @@ class BaseModel(object):
 _Model = declarative_base(cls=BaseModel)
 
 
+class HashKey(object):
+
+    _fields = ()
+
+    def __init__(self, *args, **kw):
+        values = {}
+        for i, value in enumerate(args):  # pragma: no cover
+            values[self._fields[i]] = value
+        for field in self._fields:
+            if field in kw:
+                values[field] = kw[field]
+            else:
+                values[field] = None
+        for key, value in values.items():
+            setattr(self, key, value)
+
+    @property
+    def _dottedname(self):
+        klass = self.__class__
+        return '%s:%s' % (klass.__module__, klass.__name__)
+
+    def __eq__(self, other):
+        if isinstance(other, HashKey):
+            return self.__dict__ == other.__dict__
+        return False  # pragma: no cover
+
+    def __getitem__(self, key):
+        if key in self._fields:
+            return getattr(self, key, None)
+        raise IndexError  # pragma: no cover
+
+    def __hash__(self):
+        # emulate a tuple hash
+        value = ()
+        for field in self._fields:
+            value += (getattr(self, field, None), )
+        return hash(value)
+
+    def __repr__(self):
+        return '{cls}: {data}'.format(cls=self._dottedname, data=self.__dict__)
+
+
 class ValidationMixin(object):
 
     @classmethod
