@@ -4,6 +4,7 @@ from ichnaea.data.area import (
     enqueue_lacs,
     UPDATE_KEY,
 )
+from ichnaea.data.base import DataTask
 from ichnaea.geocalc import (
     distance,
     range_to_points,
@@ -20,13 +21,10 @@ from ichnaea.models import (
 from ichnaea import util
 
 
-class StationRemover(object):
+class StationRemover(DataTask):
 
     def __init__(self, task, session):
-        self.task = task
-        self.session = session
-        self.redis_client = task.app.redis_client
-        self.stats_client = task.stats_client
+        DataTask.__init__(self, task, session)
 
 
 class CellRemover(StationRemover):
@@ -61,24 +59,20 @@ class WifiRemover(StationRemover):
         return length
 
 
-class StationUpdater(object):
+class StationUpdater(DataTask):
 
     def __init__(self, task, session,
                  min_new=10, max_new=100, remove_task=None):
-        self.task = task
-        self.session = session
+        DataTask.__init__(self, task, session)
         self.min_new = min_new
         self.max_new = max_new
         self.remove_task = remove_task
-        self.shortname = task.shortname
-        self.redis_client = task.app.redis_client
-        self.stats_client = task.stats_client
 
     def emit_new_observation_metric(self):
         num = self.station_query().count()
         self.stats_client.gauge(
             'task.%s.new_measures_%d_%d' % (
-                self.shortname, self.min_new, self.max_new),
+                self.task_shortname, self.min_new, self.max_new),
             num)
 
     def station_query(self):

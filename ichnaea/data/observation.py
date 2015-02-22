@@ -6,6 +6,7 @@ from ichnaea.constants import (
     PERMANENT_BLACKLIST_THRESHOLD,
     TEMPORARY_BLACKLIST_DURATION,
 )
+from ichnaea.data.base import DataTask
 from ichnaea.data.report import process_score
 from ichnaea.data.schema import ValidCellKeySchema
 from ichnaea.models import (
@@ -19,12 +20,10 @@ from ichnaea.models import (
 from ichnaea import util
 
 
-class ObservationQueue(object):
+class ObservationQueue(DataTask):
 
     def __init__(self, task, session, utcnow=None, max_observations=11000):
-        self.task = task
-        self.session = session
-        self.stats_client = task.stats_client
+        DataTask.__init__(self, task, session)
         self.max_observations = max_observations
         if utcnow is None:
             utcnow = util.utcnow()

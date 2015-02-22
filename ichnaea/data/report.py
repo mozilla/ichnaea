@@ -3,6 +3,7 @@ import uuid
 
 from sqlalchemy.sql import and_, or_
 
+from ichnaea.data.base import DataTask
 from ichnaea.models import (
     CellObservation,
     CellReport,
@@ -34,14 +35,12 @@ def process_score(session, userid, points, scorekey):
     return points
 
 
-class ReportQueue(object):
+class ReportQueue(DataTask):
 
     def __init__(self, task, session,
                  api_key_log=False, api_key_name=None,
                  insert_cell_task=None, insert_wifi_task=None):
-        self.task = task
-        self.session = session
-        self.stats_client = self.task.stats_client
+        DataTask.__init__(self, task, session)
         self.api_key_log = api_key_log
         self.api_key_name = api_key_name
         self.insert_cell_task = insert_cell_task

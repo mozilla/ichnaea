@@ -2,6 +2,7 @@ from ichnaea.customjson import (
     kombu_dumps,
     kombu_loads,
 )
+from ichnaea.data.base import DataTask
 from ichnaea.geocalc import centroid, range_to_points
 from ichnaea.models import (
     CELL_MODEL_KEYS,
@@ -38,19 +39,16 @@ def dequeue_lacs(redis_client, pipeline_key, batch=100):
     return [kombu_loads(item) for item in pipe.execute()[0]]
 
 
-class CellAreaUpdater(object):
+class CellAreaUpdater(DataTask):
 
     def __init__(self, task, session,
                  cell_model_key='cell',
                  cell_area_model_key='cell_area'):
-        self.task = task
-        self.session = session
+        DataTask.__init__(self, task, session)
         self.cell_model_key = cell_model_key
         self.cell_model = CELL_MODEL_KEYS[cell_model_key]
         self.cell_area_model_key = cell_area_model_key
         self.cell_area_model = CELL_MODEL_KEYS[cell_area_model_key]
-        self.redis_client = task.app.redis_client
-        self.stats_client = task.stats_client
         self.utcnow = util.utcnow()
 
     def scan(self, update_task, batch=100):
