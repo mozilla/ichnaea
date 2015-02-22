@@ -1,23 +1,16 @@
 from ichnaea.async.task import DatabaseTask
 from ichnaea.customjson import kombu_loads
-from ichnaea.data.area import (
-    enqueue_lacs,
-    CellAreaUpdater,
-    UPDATE_KEY,
-)
+from ichnaea.data.area import CellAreaUpdater
 from ichnaea.data.observation import (
     CellObservationQueue,
     WifiObservationQueue,
 )
 from ichnaea.data.report import ReportQueue
 from ichnaea.data.station import (
-    CellStationUpdater,
-    WifiStationUpdater,
-)
-from ichnaea.models import (
-    Cell,
-    CellArea,
-    Wifi,
+    CellRemover,
+    CellUpdater,
+    WifiRemover,
+    WifiUpdater,
 )
 from ichnaea.worker import celery
 
@@ -71,7 +64,7 @@ def insert_measures_wifi(self, entries, userid=None,
 @celery.task(base=DatabaseTask, bind=True)
 def location_update_cell(self, min_new=10, max_new=100, batch=10):
     with self.db_session() as session:
-        updater = CellStationUpdater(
+        updater = CellUpdater(
             self, session,
             min_new=min_new,
             max_new=max_new,
@@ -84,7 +77,7 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
 @celery.task(base=DatabaseTask, bind=True)
 def location_update_wifi(self, min_new=10, max_new=100, batch=10):
     with self.db_session() as session:
-        updater = WifiStationUpdater(
+        updater = WifiUpdater(
             self, session,
             min_new=min_new,
             max_new=max_new,
@@ -96,37 +89,18 @@ def location_update_wifi(self, min_new=10, max_new=100, batch=10):
 
 @celery.task(base=DatabaseTask, bind=True)
 def remove_cell(self, cell_keys):
-    cells_removed = 0
-    redis_client = self.app.redis_client
     with self.db_session() as session:
-        changed_lacs = set()
-
-        for key in cell_keys:
-            query = Cell.querykey(session, key)
-            cells_removed += query.delete()
-            changed_lacs.add(CellArea.to_hashkey(key))
-
-        if changed_lacs:
-            session.on_post_commit(
-                enqueue_lacs,
-                redis_client,
-                changed_lacs,
-                UPDATE_KEY['cell_lac'])
-
+        length = CellRemover(self, session).remove(cell_keys)
         session.commit()
-    return cells_removed
+    return length
 
 
 @celery.task(base=DatabaseTask, bind=True)
 def remove_wifi(self, wifi_keys):
-    # BBB this might still get namedtuples encoded as a dicts for
-    # one release, afterwards it'll get wifi hashkeys
-    keys = [Wifi.to_hashkey(key=wifi['key']) for wifi in wifi_keys]
     with self.db_session() as session:
-        query = Wifi.querykeys(session, keys)
-        wifis = query.delete(synchronize_session=False)
+        length = WifiRemover(self, session).remove(wifi_keys)
         session.commit()
-    return wifis
+    return length
 
 
 @celery.task(base=DatabaseTask, bind=True)

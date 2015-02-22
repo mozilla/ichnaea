@@ -20,6 +20,47 @@ from ichnaea.models import (
 from ichnaea import util
 
 
+class StationRemover(object):
+
+    def __init__(self, task, session):
+        self.task = task
+        self.session = session
+        self.redis_client = task.app.redis_client
+        self.stats_client = task.stats_client
+
+
+class CellRemover(StationRemover):
+
+    def remove(self, cell_keys):
+        cells_removed = 0
+        changed_areas = set()
+
+        for key in cell_keys:
+            query = Cell.querykey(self.session, key)
+            cells_removed += query.delete()
+            changed_areas.add(CellArea.to_hashkey(key))
+
+        if changed_areas:
+            self.session.on_post_commit(
+                enqueue_lacs,
+                self.redis_client,
+                changed_areas,
+                UPDATE_KEY['cell_lac'])
+
+        return cells_removed
+
+
+class WifiRemover(StationRemover):
+
+    def remove(self, wifi_keys):
+        # BBB this might still get namedtuples encoded as a dicts for
+        # one release, afterwards it'll get wifi hashkeys
+        keys = [Wifi.to_hashkey(key=wifi['key']) for wifi in wifi_keys]
+        query = Wifi.querykeys(self.session, keys)
+        length = query.delete(synchronize_session=False)
+        return length
+
+
 class StationUpdater(object):
 
     def __init__(self, task, session,
@@ -184,7 +225,7 @@ class StationUpdater(object):
         return (len(stations), len(moving_stations))
 
 
-class CellStationUpdater(StationUpdater):
+class CellUpdater(StationUpdater):
 
     area_model = CellArea
     area_enqueue = staticmethod(enqueue_lacs)
@@ -196,7 +237,7 @@ class CellStationUpdater(StationUpdater):
     station_type = 'cell'
 
 
-class WifiStationUpdater(StationUpdater):
+class WifiUpdater(StationUpdater):
 
     area_model = None
     area_enqueue = None
