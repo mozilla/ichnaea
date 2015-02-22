@@ -1,24 +1,15 @@
-from collections import defaultdict
-
 from sqlalchemy.orm import load_only
 
 from ichnaea.async.task import DatabaseTask
-from ichnaea.constants import (
-    PERMANENT_BLACKLIST_THRESHOLD,
-    TEMPORARY_BLACKLIST_DURATION,
-)
-from ichnaea.models.content import (
-    Score,
-    ScoreKey,
-)
 from ichnaea.customjson import (
     kombu_dumps,
     kombu_loads,
 )
-from ichnaea.data.report import (
-    ReportQueue,
+from ichnaea.data.observation import (
+    CellObservationQueue,
+    WifiObservationQueue,
 )
-from ichnaea.data.schema import ValidCellKeySchema
+from ichnaea.data.report import ReportQueue
 from ichnaea.geocalc import distance, centroid, range_to_points
 from ichnaea.logging import get_stats_client
 from ichnaea.models import (
@@ -66,21 +57,6 @@ def dequeue_lacs(redis_client, pipeline_key, batch=100):
     return [kombu_loads(item) for item in pipe.execute()[0]]
 
 
-def available_station_space(session, key, station_model,
-                            max_observations_per_station):
-    # check if there's space for new observations within per-station maximum
-    # old observations are gradually backed up, so this is an intake-rate limit
-    query = (station_model.querykey(session, key)
-                          .options(load_only('total_measures')))
-    curr = query.first()
-
-    if curr is not None:
-        return max_observations_per_station - curr.total_measures
-
-    # Return None to signal no station record was found.
-    return None
-
-
 def blacklist_and_remove_moving_stations(session, blacklist_model,
                                          station_type,
                                          moving_stations, remove_station):
@@ -121,20 +97,6 @@ def blacklist_and_remove_moving_wifis(session, moving_wifis):
                                          station_type="wifi",
                                          moving_stations=moving_wifis,
                                          remove_station=remove_wifi)
-
-
-def blacklisted_station(session, key, blacklist_model, utcnow):
-    query = (blacklist_model.querykey(session, key)
-                            .options(load_only('count', 'time')))
-    black = query.first()
-    if black is not None:
-        age = utcnow - black.time
-        temporarily_blacklisted = age < TEMPORARY_BLACKLIST_DURATION
-        permanently_blacklisted = black.count >= PERMANENT_BLACKLIST_THRESHOLD
-        if temporarily_blacklisted or permanently_blacklisted:
-            return (True, black.time)
-        return (False, black.time)
-    return (False, None)
 
 
 def calculate_new_position(station, observations, max_dist_km):
@@ -209,37 +171,6 @@ def calculate_new_position(station, observations, max_dist_km):
     station.modified = util.utcnow()
 
 
-def create_or_update_station(session, key, station_model,
-                             utcnow, num, first_blacklisted):
-    """
-    Creates a station or updates its new/total_measures counts to reflect
-    recently-received observations.
-    """
-    query = station_model.querykey(session, key)
-    station = query.first()
-
-    if station is not None:
-        station.new_measures += num
-        station.total_measures += num
-    else:
-        created = utcnow
-        if first_blacklisted:
-            # if the station did previously exist, retain at least the
-            # time it was first put on a blacklist as the creation date
-            created = first_blacklisted
-        stmt = station_model.__table__.insert(
-            on_duplicate='new_measures = new_measures + %s, '
-                         'total_measures = total_measures + %s' % (num, num)
-        ).values(
-            created=created,
-            modified=utcnow,
-            range=0,
-            new_measures=num,
-            total_measures=num,
-            **key.__dict__)
-        session.execute(stmt)
-
-
 def emit_new_observation_metric(stats_client, session, shortname,
                                 model, min_new, max_new):
     q = session.query(model).filter(
@@ -248,136 +179,6 @@ def emit_new_observation_metric(stats_client, session, shortname,
     n = q.count()
     stats_client.gauge('task.%s.new_measures_%d_%d' %
                        (shortname, min_new, max_new), n)
-
-
-def incomplete_observation(station_type, key):
-    """
-    Certain incomplete observations we want to store in the database
-    even though they should not lead to the creation of a station
-    entry; these are cell observations with a missing value for
-    LAC and/or CID, and will be inferred from neighboring cells.
-    """
-    if station_type == 'cell':
-        schema = ValidCellKeySchema()
-        for field in ('radio', 'lac', 'cid'):
-            if getattr(key, field, None) == schema.fields[field].missing:
-                return True
-    return False
-
-
-def process_score(userid, points, session, key='location'):
-    utcday = util.utcnow().date()
-    query = session.query(Score).filter(
-        Score.userid == userid).filter(
-        Score.key == ScoreKey[key]).filter(
-        Score.time == utcday)
-    score = query.first()
-    if score is not None:
-        score.value += int(points)
-    else:
-        stmt = Score.__table__.insert(
-            on_duplicate='value = value + %s' % int(points)).values(
-            userid=userid, key=ScoreKey[key], time=utcday, value=points)
-        session.execute(stmt)
-    return points
-
-
-def process_station_observations(session, entries, station_type,
-                                 station_model, observation_model,
-                                 blacklist_model, userid=None,
-                                 max_observations_per_station=11000,
-                                 utcnow=None):
-
-    all_observations = []
-    dropped_blacklisted = 0
-    dropped_malformed = 0
-    dropped_overflow = 0
-    stats_client = get_stats_client()
-    new_stations = 0
-    if utcnow is None:
-        utcnow = util.utcnow()
-
-    # Process entries and group by validated station key
-    station_observations = defaultdict(list)
-    for entry in entries:
-        entry['created'] = utcnow
-        obs = observation_model.create(entry)
-
-        if not obs:
-            dropped_malformed += 1
-            continue
-
-        station_observations[obs.hashkey()].append(obs)
-
-    # Process observations one station at a time
-    for key, observations in station_observations.items():
-
-        first_blacklisted = None
-        incomplete = False
-        is_new_station = False
-
-        # Figure out how much space is left for this station.
-        free = available_station_space(session, key, station_model,
-                                       max_observations_per_station)
-        if free is None:
-            is_new_station = True
-            free = max_observations_per_station
-
-        if is_new_station:
-            # Drop observations for blacklisted stations.
-            blacklisted, first_blacklisted = blacklisted_station(
-                session, key, blacklist_model, utcnow)
-            if blacklisted:
-                dropped_blacklisted += len(observations)
-                continue
-
-            incomplete = incomplete_observation(station_type, key)
-            if not incomplete:
-                # We discovered an actual new complete station.
-                new_stations += 1
-
-        # Accept observations up to input-throttling limit, then drop.
-        num = 0
-        for obs in observations:
-            if free <= 0:
-                dropped_overflow += 1
-                continue
-            all_observations.append(obs)
-            free -= 1
-            num += 1
-
-        # Accept incomplete observations, just don't make stations for them.
-        # (station creation is a side effect of count-updating)
-        if not incomplete and num > 0:
-            create_or_update_station(session, key, station_model,
-                                     utcnow, num, first_blacklisted)
-
-    # Credit the user with discovering any new stations.
-    if userid is not None and new_stations > 0:
-        process_score(userid, new_stations, session,
-                      key='new_' + station_type)
-
-    if dropped_blacklisted != 0:
-        stats_client.incr(
-            'items.dropped.%s_ingress_blacklisted' % station_type,
-            count=dropped_blacklisted)
-
-    if dropped_malformed != 0:
-        stats_client.incr(
-            'items.dropped.%s_ingress_malformed' % station_type,
-            count=dropped_malformed)
-
-    if dropped_overflow != 0:
-        stats_client.incr(
-            'items.dropped.%s_ingress_overflow' % station_type,
-            count=dropped_overflow)
-
-    stats_client.incr(
-        'items.inserted.%s_observations' % station_type,
-        count=len(all_observations))
-
-    session.add_all(all_observations)
-    return all_observations
 
 
 @celery.task(base=DatabaseTask, bind=True, queue='celery_incoming')
@@ -402,38 +203,28 @@ def insert_measures(self, items=None, nickname='', email='',
 def insert_measures_cell(self, entries, userid=None,
                          max_observations_per_cell=11000,
                          utcnow=None):
-    cell_observations = []
+
     with self.db_session() as session:
-        cell_observations = process_station_observations(
-            session, entries,
-            station_type="cell",
-            station_model=Cell,
-            observation_model=CellObservation,
-            blacklist_model=CellBlacklist,
-            userid=userid,
-            max_observations_per_station=max_observations_per_cell,
-            utcnow=utcnow)
+        queue = CellObservationQueue(
+            self, session, utcnow=utcnow,
+            max_observations=max_observations_per_cell)
+        length = queue.insert(entries, userid=userid)
         session.commit()
-    return len(cell_observations)
+    return length
 
 
 @celery.task(base=DatabaseTask, bind=True, queue='celery_insert')
 def insert_measures_wifi(self, entries, userid=None,
                          max_observations_per_wifi=11000,
                          utcnow=None):
-    wifi_observations = []
+
     with self.db_session() as session:
-        wifi_observations = process_station_observations(
-            session, entries,
-            station_type="wifi",
-            station_model=Wifi,
-            observation_model=WifiObservation,
-            blacklist_model=WifiBlacklist,
-            userid=userid,
-            max_observations_per_station=max_observations_per_wifi,
-            utcnow=utcnow)
+        queue = WifiObservationQueue(
+            self, session, utcnow=utcnow,
+            max_observations=max_observations_per_wifi)
+        length = queue.insert(entries, userid=userid)
         session.commit()
-    return len(wifi_observations)
+    return length
 
 
 @celery.task(base=DatabaseTask, bind=True)
