@@ -762,10 +762,11 @@ def remove_cell(self, cell_keys):
 
 @celery.task(base=DatabaseTask, bind=True)
 def remove_wifi(self, wifi_keys):
-    wifi_keys = set([w['key'] for w in wifi_keys])
+    # BBB this might still get namedtuples encoded as a dicts for
+    # one release, afterwards it'll get wifi hashkeys
+    keys = [Wifi.to_hashkey(key=wifi['key']) for wifi in wifi_keys]
     with self.db_session() as session:
-        query = session.query(Wifi).filter(
-            Wifi.key.in_(wifi_keys))
+        query = Wifi.querykeys(session, keys)
         wifis = query.delete(synchronize_session=False)
         session.commit()
     return wifis

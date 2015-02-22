@@ -9,6 +9,7 @@ from sqlalchemy.ext.declarative import (
     declared_attr,
     declarative_base,
 )
+from sqlalchemy.sql import and_, or_
 
 from ichnaea.models.sa_types import TZDateTime as DateTime
 
@@ -112,6 +113,27 @@ class HashKeyMixin(object):
     @classmethod
     def querykey(cls, session, key):
         return session.query(cls).filter(*cls.joinkey(key))
+
+    @classmethod
+    def querykeys(cls, session, keys):
+        if not keys:  # pragma: no cover
+            # prevent construction of queries without a key restriction
+            raise ValueError('Model.querykeys called with empty keys.')
+
+        if len(cls._hashkey_cls._fields) == 1:
+            # optimize queries for hashkeys with single fields to use
+            # a 'WHERE model.somefield IN (:key_1, :key_2)' query
+            field = cls._hashkey_cls._fields[0]
+            key_list = []
+            for key in keys:
+                key_list.append(getattr(key, field))
+            return session.query(cls).filter(getattr(cls, field).in_(key_list))
+
+        key_filters = []
+        for key in keys:
+            # create a list of 'and' criteria for each hash key component
+            key_filters.append(and_(*cls.joinkey(key)))
+        return session.query(cls).filter(or_(*key_filters))
 
 
 class ValidationMixin(object):

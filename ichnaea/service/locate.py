@@ -3,7 +3,6 @@ from functools import partial
 import operator
 
 import mobile_codes
-from sqlalchemy.sql import and_, or_
 from sqlalchemy.orm import load_only
 
 from ichnaea.constants import (
@@ -315,22 +314,16 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
         for model in self.models:
             found_cells = []
 
-            cell_filter = []
-            for key in cell_keys:
-                # create a list of 'and' criteria for cell keys
-                criterion = model.joinkey(key)
-                cell_filter.append(and_(*criterion))
+            load_fields = (
+                'radio', 'mcc', 'mnc', 'lac', 'lat', 'lon', 'range')
 
-            if cell_filter:
+            if cell_keys:
                 # only do a query if we have cell results, or this will match
                 # all rows in the table
-                load_fields = (
-                    'radio', 'mcc', 'mnc', 'lac', 'lat', 'lon', 'range')
-                query = (self.db_source.query(model)
-                                       .options(load_only(*load_fields))
-                                       .filter(or_(*cell_filter))
-                                       .filter(model.lat.isnot(None))
-                                       .filter(model.lon.isnot(None)))
+                query = (model.querykeys(self.db_source, cell_keys)
+                              .options(load_only(*load_fields))
+                              .filter(model.lat.isnot(None))
+                              .filter(model.lon.isnot(None)))
 
                 try:
                     found_cells.extend(query.all())
@@ -541,13 +534,14 @@ class WifiLocationProvider(AbstractLocationProvider):
     def query_database(self, wifi_keys):
         queried_wifis = []
         if len(wifi_keys) >= MIN_WIFIS_IN_QUERY:
+            keys = [Wifi.to_hashkey(key=key) for key in wifi_keys]
             try:
-                queried_wifis = (self.db_source.query(Wifi.key, Wifi.lat,
-                                                      Wifi.lon, Wifi.range)
-                                               .filter(Wifi.key.in_(wifi_keys))
-                                               .filter(Wifi.lat.isnot(None))
-                                               .filter(Wifi.lon.isnot(None))
-                                               .all())
+                load_fields = ('key', 'lat', 'lon', 'range')
+                query = (Wifi.querykeys(self.db_source, keys)
+                             .options(load_only(*load_fields))
+                             .filter(Wifi.lat.isnot(None))
+                             .filter(Wifi.lon.isnot(None)))
+                queried_wifis = query.all()
             except Exception:
                 self.heka_client.raven(RAVEN_ERROR)
 
