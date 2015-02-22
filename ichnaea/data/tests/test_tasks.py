@@ -17,7 +17,7 @@ from ichnaea.models.content import (
 from ichnaea.data import constants
 from ichnaea.data.schema import ValidCellKeySchema
 from ichnaea.data.area import (
-    enqueue_lacs,
+    enqueue_areas,
     UPDATE_KEY,
 )
 from ichnaea.data.tasks import (
@@ -27,7 +27,7 @@ from ichnaea.data.tasks import (
     location_update_wifi,
     remove_cell,
     remove_wifi,
-    scan_lacs,
+    scan_areas,
 )
 from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
@@ -79,7 +79,7 @@ class TestCell(CeleryTestCase):
                                             max_new=9999,
                                             batch=len(observations))
         self.assertEqual(result.get(), (len(cells), 0))
-        scan_lacs.delay()
+        scan_areas.delay()
 
     def test_blacklist(self):
         now = util.utcnow()
@@ -265,7 +265,7 @@ class TestCell(CeleryTestCase):
                     self.assertEqual(update_result.get(), (1, 0))
                     # Rescan lacs to update entries
                     self.assertEqual(
-                        scan_lacs.delay().get(), 1)
+                        scan_areas.delay().get(), 1)
                     # One cell + one cell-LAC record should exist.
                     self.assertEqual(session.query(Cell).count(), 1)
                     self.assertEqual(session.query(CellArea).count(), 1)
@@ -275,7 +275,7 @@ class TestCell(CeleryTestCase):
                     self.assertEqual(update_result.get(), (1, 1))
                     # Rescan lacs to delete orphaned lac entry
                     self.assertEqual(
-                        scan_lacs.delay().get(), 1)
+                        scan_areas.delay().get(), 1)
                     self.assertEqual(bl.count, ((month + 1) / 2))
                     self.assertEqual(session.query(CellBlacklist).count(), 1)
                     self.assertEqual(session.query(Cell).count(), 0)
@@ -603,7 +603,7 @@ class TestCell(CeleryTestCase):
             k = Cell.to_hashkey(cid=i, **keys)
             result = remove_cell.delay([k])
             self.assertEqual(1, result.get())
-            result = scan_lacs.delay()
+            result = scan_areas.delay()
             self.assertEqual(1, result.get())
             lac = session.query(CellArea).filter(CellArea.lac == 1).first()
 
@@ -615,12 +615,12 @@ class TestCell(CeleryTestCase):
         k = Cell.to_hashkey(cid=9, **keys)
         result = remove_cell.delay([k])
         self.assertEqual(1, result.get())
-        result = scan_lacs.delay()
+        result = scan_areas.delay()
         self.assertEqual(1, result.get())
         lac = session.query(CellArea).filter(CellArea.lac == 1).first()
         self.assertEqual(lac, None)
 
-    def test_scan_lacs_asymmetric(self):
+    def test_scan_areas_asymmetric(self):
         session = self.db_master_session
         big = 0.1
         small = big / 10
@@ -649,7 +649,7 @@ class TestCell(CeleryTestCase):
                                             max_new=9999,
                                             batch=len(observations))
         self.assertEqual(result.get(), (len(cells), 0))
-        scan_lacs.delay()
+        scan_areas.delay()
         lac = session.query(CellArea).filter(CellArea.lac == 1).first()
 
         # We produced a sequence of 0.02-degree-on-a-side
@@ -663,7 +663,7 @@ class TestCell(CeleryTestCase):
         self.assertEqual(lac.lon, 1.05)
         self.assertEqual(lac.range, 339540)
 
-    def test_scan_lacs_race_with_location_update(self):
+    def test_scan_areas_race_with_location_update(self):
         session = self.db_master_session
 
         # First batch of cell observations for CID 1
@@ -702,16 +702,16 @@ class TestCell(CeleryTestCase):
         # accidentally pick up CID 2, but it should not since it
         # has not had its location updated yet. If there's no
         # exception here, CID 2 is properly ignored.
-        scan_lacs.delay()
+        scan_areas.delay()
 
-    def test_scan_lacs_empty(self):
+    def test_scan_areas_empty(self):
         # test tasks with an empty queue
-        self.assertEqual(scan_lacs.delay().get(), 0)
+        self.assertEqual(scan_areas.delay().get(), 0)
         self.check_expected_heka_messages(
             sentry=[('msg', RAVEN_ERROR, 0)]
         )
 
-    def test_scan_lacs_remove(self):
+    def test_scan_areas_remove(self):
         session = self.db_master_session
         redis_client = self.redis_client
 
@@ -719,15 +719,15 @@ class TestCell(CeleryTestCase):
         key = dict(radio=1, mcc=1, mnc=1, lac=1)
         session.add(CellArea(**key))
         session.flush()
-        enqueue_lacs(session, redis_client,
-                     [CellArea.to_hashkey(key)], UPDATE_KEY['cell_lac'])
+        enqueue_areas(session, redis_client,
+                      [CellArea.to_hashkey(key)], UPDATE_KEY['cell_lac'])
 
         # after scanning the orphaned record gets removed
-        self.assertEqual(scan_lacs.delay().get(), 1)
+        self.assertEqual(scan_areas.delay().get(), 1)
         lacs = session.query(CellArea).all()
         self.assertEqual(lacs, [])
 
-    def test_scan_lacs_update(self):
+    def test_scan_areas_update(self):
         session = self.db_master_session
         self.add_line_of_cells_and_scan_lac()
         today = util.utcnow().date()

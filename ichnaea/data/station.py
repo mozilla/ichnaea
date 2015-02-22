@@ -1,7 +1,7 @@
 from sqlalchemy.orm import load_only
 
 from ichnaea.data.area import (
-    enqueue_lacs,
+    enqueue_areas,
     UPDATE_KEY,
 )
 from ichnaea.data.base import DataTask
@@ -40,7 +40,7 @@ class CellRemover(StationRemover):
 
         if changed_areas:
             self.session.on_post_commit(
-                enqueue_lacs,
+                enqueue_areas,
                 self.redis_client,
                 changed_areas,
                 UPDATE_KEY['cell_lac'])
@@ -222,7 +222,7 @@ class StationUpdater(DataTask):
 class CellUpdater(StationUpdater):
 
     area_model = CellArea
-    area_enqueue = staticmethod(enqueue_lacs)
+    area_enqueue = staticmethod(enqueue_areas)
     area_update_key = UPDATE_KEY['cell_lac']
     blacklist_model = CellBlacklist
     max_dist_km = 150

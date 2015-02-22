@@ -11,7 +11,6 @@ from ichnaea.models.cell import (  # NOQA
     Cell,
     CellArea,
     CellBlacklist,
-    CELL_MODEL_KEYS,
     OCIDCell,
     OCIDCellArea,
     RADIO_TYPE,

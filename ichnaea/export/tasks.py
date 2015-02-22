@@ -23,7 +23,7 @@ from ichnaea.models import (
     RADIO_TYPE_INVERSE,
     OCIDCell,
 )
-from ichnaea.data.tasks import update_lac
+from ichnaea.data.tasks import update_area
 from ichnaea.worker import celery
 from ichnaea import util
 
@@ -214,7 +214,7 @@ def import_stations(session, filename, fields):
         csv_reader = csv.DictReader(zip_file, fields)
         batch = 10000
         rows = []
-        lacs = set()
+        area_keys = set()
         ins = OCIDCell.__table__.insert(
             on_duplicate=((
                 'changeable = values(changeable), '
@@ -234,7 +234,7 @@ def import_stations(session, filename, fields):
             data = make_ocid_cell_import_dict(row)
             if data is not None:
                 rows.append(data)
-                lacs.add(CellArea.to_hashkey(data))
+                area_keys.add(CellArea.to_hashkey(data))
 
             if len(rows) == batch:  # pragma: no cover
                 session.execute(ins, rows)
@@ -245,14 +245,8 @@ def import_stations(session, filename, fields):
             session.execute(ins, rows)
             session.commit()
 
-        for lac in lacs:
-            update_lac.delay(
-                lac.radio,
-                lac.mcc,
-                lac.mnc,
-                lac.lac,
-                cell_model_key='ocid_cell',
-                cell_area_model_key='ocid_cell_area')
+        for area_key in area_keys:
+            update_area.delay(area_key, cell_type='ocid')
 
 
 @celery.task(base=DatabaseTask, bind=True)

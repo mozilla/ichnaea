@@ -167,11 +167,3 @@ class CellBlacklist(CellKeyMixin, StationBlacklistMixin, _Model):
     _indices = (
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
     )
-
-
-CELL_MODEL_KEYS = {
-    'cell': Cell,
-    'cell_area': CellArea,
-    'ocid_cell': OCIDCell,
-    'ocid_cell_area': OCIDCellArea,
-}

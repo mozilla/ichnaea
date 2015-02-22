@@ -107,7 +107,9 @@ class HashKeyMixin(object):
             key = cls.to_hashkey(key)
         criterion = ()
         for field in cls._hashkey_cls._fields:
-            criterion += (getattr(cls, field) == getattr(key, field), )
+            value = getattr(key, field, None)
+            if value is not None:
+                criterion += (getattr(cls, field) == value, )
         return criterion
 
     @classmethod

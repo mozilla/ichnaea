@@ -5,8 +5,10 @@ from ichnaea.customjson import (
 from ichnaea.data.base import DataTask
 from ichnaea.geocalc import centroid, range_to_points
 from ichnaea.models import (
-    CELL_MODEL_KEYS,
+    Cell,
     CellArea,
+    OCIDCell,
+    OCIDCellArea,
 )
 from ichnaea import util
 
@@ -17,21 +19,21 @@ UPDATE_KEY = {
 }
 
 
-def enqueue_lacs(session, redis_client, lac_keys,
-                 pipeline_key, expire=86400, batch=100):
+def enqueue_areas(session, redis_client, area_keys,
+                  pipeline_key, expire=86400, batch=100):
     pipe = redis_client.pipeline()
-    lac_json = [str(kombu_dumps(lac)) for lac in lac_keys]
+    area_json = [str(kombu_dumps(area)) for area in area_keys]
 
-    while lac_json:
-        pipe.lpush(pipeline_key, *lac_json[:batch])
-        lac_json = lac_json[batch:]
+    while area_json:
+        pipe.lpush(pipeline_key, *area_json[:batch])
+        area_json = area_json[batch:]
 
     # Expire key after 24 hours
     pipe.expire(pipeline_key, expire)
     pipe.execute()
 
 
-def dequeue_lacs(redis_client, pipeline_key, batch=100):
+def dequeue_areas(redis_client, pipeline_key, batch=100):
     pipe = redis_client.pipeline()
     pipe.multi()
     pipe.lrange(pipeline_key, 0, batch - 1)
@@ -41,49 +43,34 @@ def dequeue_lacs(redis_client, pipeline_key, batch=100):
 
 class CellAreaUpdater(DataTask):
 
-    def __init__(self, task, session,
-                 cell_model_key='cell',
-                 cell_area_model_key='cell_area'):
+    cell_model = Cell
+    cell_area_model = CellArea
+
+    def __init__(self, task, session):
         DataTask.__init__(self, task, session)
-        self.cell_model_key = cell_model_key
-        self.cell_model = CELL_MODEL_KEYS[cell_model_key]
-        self.cell_area_model_key = cell_area_model_key
-        self.cell_area_model = CELL_MODEL_KEYS[cell_area_model_key]
         self.utcnow = util.utcnow()
 
     def scan(self, update_task, batch=100):
-        redis_areas = dequeue_lacs(
+        redis_areas = dequeue_areas(
             self.redis_client, UPDATE_KEY['cell_lac'], batch=batch)
-        areas = set([CellArea.to_hashkey(area) for area in redis_areas])
 
-        for area in areas:
-            update_task.delay(
-                area.radio,
-                area.mcc,
-                area.mnc,
-                area.lac,
-                cell_model_key=self.cell_model_key,
-                cell_area_model_key=self.cell_area_model_key)
-        return len(areas)
+        # BBB conversion from dicts can go after one release
+        area_keys = set()
+        for redis_area in redis_areas:
+            area_keys.add(self.cell_area_model.to_hashkey(redis_area))
 
-    def update(self, radio, mcc, mnc, lac):
+        for area_key in area_keys:
+            update_task.delay(area_key)
+        return len(area_keys)
+
+    def update(self, area_key):
         # Select all cells in this area and derive a bounding box for them
-        cell_query = (self.session.query(self.cell_model)
-                                  .filter(self.cell_model.radio == radio)
-                                  .filter(self.cell_model.mcc == mcc)
-                                  .filter(self.cell_model.mnc == mnc)
-                                  .filter(self.cell_model.lac == lac)
-                                  .filter(self.cell_model.lat.isnot(None))
-                                  .filter(self.cell_model.lon.isnot(None)))
-
+        cell_query = (self.cell_model.querykey(self.session, area_key)
+                                     .filter(self.cell_model.lat.isnot(None))
+                                     .filter(self.cell_model.lon.isnot(None)))
         cells = cell_query.all()
 
-        area_query = (self.session.query(self.cell_area_model)
-                                  .filter(self.cell_area_model.radio == radio)
-                                  .filter(self.cell_area_model.mcc == mcc)
-                                  .filter(self.cell_area_model.mnc == mnc)
-                                  .filter(self.cell_area_model.lac == lac))
-
+        area_query = self.cell_area_model.querykey(self.session, area_key)
         if len(cells) == 0:
             # If there are no more underlying cells, delete the area entry
             area_query.delete()
@@ -118,16 +105,12 @@ class CellAreaUpdater(DataTask):
                 area = self.cell_area_model(
                     created=self.utcnow,
                     modified=self.utcnow,
-                    radio=radio,
-                    mcc=mcc,
-                    mnc=mnc,
-                    lac=lac,
                     lat=ctr_lat,
                     lon=ctr_lon,
                     range=rng,
                     avg_cell_range=avg_cell_range,
                     num_cells=num_cells,
-                )
+                    **area_key.__dict__)
                 self.session.add(area)
             else:
                 area.modified = self.utcnow
@@ -136,3 +119,9 @@ class CellAreaUpdater(DataTask):
                 area.range = rng
                 area.avg_cell_range = avg_cell_range
                 area.num_cells = num_cells
+
+
+class OCIDCellAreaUpdater(CellAreaUpdater):
+
+    cell_model = OCIDCell
+    cell_area_model = OCIDCellArea
