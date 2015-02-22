@@ -18,7 +18,10 @@ from ichnaea.models.base import (
     PositionMixin,
     ValidationMixin,
 )
-from ichnaea.models.cell import CellKeyPscMixin
+from ichnaea.models.cell import (
+    CellKey,
+    CellKeyPscMixin,
+)
 from ichnaea.models.wifi import WifiKeyMixin
 from ichnaea.models.sa_types import (
     TZDateTime as DateTime,
@@ -36,7 +39,7 @@ def decode_datetime(obj):  # pragma: no cover
         return util.utcnow()
 
 
-class ReportMixin(PositionMixin, ValidationMixin):
+class Report(PositionMixin, ValidationMixin):
 
     report_id = Column(UUIDColumn(length=16))
 
@@ -59,9 +62,7 @@ class ReportMixin(PositionMixin, ValidationMixin):
         return ValidReportSchema
 
 
-class ObservationMixin(BigIdMixin, ReportMixin):
-
-    signal = Column(SmallInteger)
+class ObservationMixin(BigIdMixin, Report):
 
     @classmethod
     def create(cls, entry):
@@ -73,7 +74,29 @@ class ObservationMixin(BigIdMixin, ReportMixin):
         return cls(**entry)
 
 
-class CellObservation(ObservationMixin, CellKeyPscMixin, _Model):
+class CellReport(CellKeyPscMixin, ValidationMixin):
+
+    asu = Column(SmallInteger)
+    signal = Column(SmallInteger)
+    ta = Column(TinyInteger)
+
+    @classmethod
+    def valid_schema(cls):
+        from ichnaea.data.schema import ValidCellReportSchema
+        return ValidCellReportSchema
+
+
+class CellLookup(CellReport):
+
+    _hashkey_cls = CellKey
+
+    @classmethod
+    def valid_schema(cls):
+        from ichnaea.data.schema import ValidCellLookupSchema
+        return ValidCellLookupSchema
+
+
+class CellObservation(ObservationMixin, CellReport, _Model):
     __tablename__ = 'cell_measure'
 
     _indices = (
@@ -86,11 +109,28 @@ class CellObservation(ObservationMixin, CellKeyPscMixin, _Model):
         from ichnaea.data.schema import ValidCellObservationSchema
         return ValidCellObservationSchema
 
-    asu = Column(SmallInteger)
-    ta = Column(TinyInteger)
+
+class WifiReport(WifiKeyMixin, ValidationMixin):
+
+    channel = Column(SmallInteger)
+    signal = Column(SmallInteger)
+    snr = Column(SmallInteger)
+
+    @classmethod
+    def valid_schema(cls):
+        from ichnaea.data.schema import ValidWifiReportSchema
+        return ValidWifiReportSchema
 
 
-class WifiObservation(ObservationMixin, WifiKeyMixin, _Model):
+class WifiLookup(WifiReport):
+
+    @classmethod
+    def valid_schema(cls):
+        from ichnaea.data.schema import ValidWifiLookupSchema
+        return ValidWifiLookupSchema
+
+
+class WifiObservation(ObservationMixin, WifiReport, _Model):
     __tablename__ = 'wifi_measure'
 
     _indices = (
@@ -103,6 +143,3 @@ class WifiObservation(ObservationMixin, WifiKeyMixin, _Model):
     def valid_schema(cls):
         from ichnaea.data.schema import ValidWifiObservationSchema
         return ValidWifiObservationSchema
-
-    channel = Column(SmallInteger)
-    snr = Column(SmallInteger)

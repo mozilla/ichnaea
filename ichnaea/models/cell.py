@@ -75,16 +75,11 @@ class CellAreaMixin(CellAreaKeyMixin, TimeTrackingMixin, PositionMixin):
     num_cells = Column(Integer(unsigned=True))
 
 
-class CellKeyMixin(CellAreaKeyMixin, ValidationMixin):
+class CellKeyMixin(CellAreaKeyMixin):
 
     _hashkey_cls = CellKey
 
     cid = Column(Integer(unsigned=True), autoincrement=False)
-
-    @classmethod
-    def valid_schema(cls):
-        from ichnaea.data.schema import ValidCellKeySchema
-        return ValidCellKeySchema
 
 
 class CellKeyPscMixin(CellKeyMixin):

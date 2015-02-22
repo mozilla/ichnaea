@@ -11,10 +11,6 @@ from ichnaea.models.cell import (  # NOQA
     Cell,
     CellArea,
     CellBlacklist,
-    CellKey,
-    CellKeyMixin,
-    CellKeyPsc,
-    CellKeyPscMixin,
     CELL_MODEL_KEYS,
     OCIDCell,
     OCIDCellArea,
@@ -33,15 +29,17 @@ from ichnaea.models.content import (  # NOQA
     User,
 )
 from ichnaea.models.observation import (  # NOQA
+    CellLookup,
     CellObservation,
-    ReportMixin,
+    CellReport,
+    Report,
+    WifiLookup,
     WifiObservation,
+    WifiReport,
 )
 from ichnaea.models.wifi import (  # NOQA
     Wifi,
     WifiBlacklist,
-    WifiKey,
-    WifiKeyMixin,
 )
 
 __all__ = (_Model, )

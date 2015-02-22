@@ -10,7 +10,6 @@ from ichnaea.models.base import (
     BigIdMixin,
     HashKey,
     HashKeyMixin,
-    ValidationMixin,
 )
 from ichnaea.models.station import (
     StationMixin,
@@ -23,16 +22,11 @@ class WifiKey(HashKey):
     _fields = ('key', )
 
 
-class WifiKeyMixin(HashKeyMixin, ValidationMixin):
+class WifiKeyMixin(HashKeyMixin):
 
     _hashkey_cls = WifiKey
 
     key = Column(String(12))
-
-    @classmethod
-    def valid_schema(cls):
-        from ichnaea.data.schema import ValidWifiKeySchema
-        return ValidWifiKeySchema
 
 
 class WifiMixin(BigIdMixin, WifiKeyMixin):

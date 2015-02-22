@@ -226,9 +226,18 @@ class ValidReportSchema(ValidPositionSchema):
 class ValidWifiKeySchema(FieldSchema, CopyingSchema):
     """A schema which validates the fields present in a a wifi key."""
 
+    key = WifiKeyNode(String())
+
+
+class ValidWifiSchema(ValidWifiKeySchema, ValidStationSchema):
+    """A schema which validates the fields in wifi."""
+
+
+class ValidWifiLookupSchema(ValidWifiKeySchema):
+    """A schema which validates the fields in a wifi lookup."""
+
     channel = SchemaNode(Integer(), missing=0, validator=Range(
         constants.MIN_WIFI_CHANNEL, constants.MAX_WIFI_CHANNEL))
-    key = WifiKeyNode(String())
     signal = DefaultNode(Integer(), missing=0, validator=Range(
         constants.MIN_WIFI_SIGNAL, constants.MAX_WIFI_SIGNAL))
     snr = DefaultNode(Integer(), missing=0, validator=Range(0, 100))
@@ -261,18 +270,17 @@ class ValidWifiKeySchema(FieldSchema, CopyingSchema):
         return super(ValidWifiKeySchema, self).deserialize(data)
 
 
-class ValidWifiSchema(ValidWifiKeySchema, ValidStationSchema):
-    """A schema which validates the fields in wifi."""
-
-
-class ValidWifiObservationSchema(ValidWifiKeySchema, ValidReportSchema):
+class ValidWifiObservationSchema(ValidWifiLookupSchema, ValidReportSchema):
     """A schema which validates the fields in wifi observation."""
+
+
+class ValidWifiReportSchema(ValidWifiLookupSchema):
+    """A schema which validates the wifi specific fields in a report."""
 
 
 class ValidCellKeySchema(FieldSchema, CopyingSchema):
     """A schema which validates the fields present in a cell key."""
 
-    asu = DefaultNode(Integer(), missing=-1, validator=Range(0, 97))
     cid = DefaultNode(
         Integer(), missing=0, validator=Range(
             constants.MIN_CID, constants.MAX_CID_ALL))
@@ -284,8 +292,6 @@ class ValidCellKeySchema(FieldSchema, CopyingSchema):
     psc = DefaultNode(Integer(), missing=-1, validator=Range(0, 512))
     radio = DefaultNode(
         Integer(), missing=-1, validator=Range(MIN_RADIO_TYPE, MAX_RADIO_TYPE))
-    signal = DefaultNode(Integer(), missing=0, validator=Range(-150, -1))
-    ta = DefaultNode(Integer(), missing=0, validator=Range(0, 63))
 
     def deserialize(self, data, default_radio=None):
         if data:
@@ -312,11 +318,6 @@ class ValidCellKeySchema(FieldSchema, CopyingSchema):
             if (self.is_missing(data, 'lac')
                     and data.get('cid', None) == 65535):
                 data['cid'] = self.fields['cid'].missing
-
-            # Sometimes the asu and signal fields are swapped
-            if data.get('asu', 0) < -1 and data.get('signal', None) == 0:
-                data['signal'] = data['asu']
-                data['asu'] = self.fields['asu'].missing
 
         return super(ValidCellKeySchema, self).deserialize(data)
 
@@ -372,7 +373,28 @@ class ValidOCIDCellSchema(ValidCellSchema):
     changeable = SchemaNode(Boolean(), missing=True)
 
 
-class ValidCellObservationSchema(ValidCellKeySchema, ValidReportSchema):
+class ValidCellLookupSchema(ValidCellKeySchema):
+    """A schema which validates the fields in a cell lookup."""
+
+    asu = DefaultNode(Integer(), missing=-1, validator=Range(0, 97))
+    signal = DefaultNode(Integer(), missing=0, validator=Range(-150, -1))
+    ta = DefaultNode(Integer(), missing=0, validator=Range(0, 63))
+
+    def deserialize(self, data, default_radio=None):
+        if data:
+            # Sometimes the asu and signal fields are swapped
+            if data.get('asu', 0) < -1 and data.get('signal', None) == 0:
+                data['signal'] = data['asu']
+                data['asu'] = self.fields['asu'].missing
+        return super(ValidCellLookupSchema, self).deserialize(
+            data, default_radio=default_radio)
+
+
+class ValidCellReportSchema(ValidCellLookupSchema):
+    """A schema which validates the cell specific fields in a report."""
+
+
+class ValidCellObservationSchema(ValidCellLookupSchema, ValidReportSchema):
     """A schema which validates the fields present in a cell observation."""
 
     def validator(self, schema, data):

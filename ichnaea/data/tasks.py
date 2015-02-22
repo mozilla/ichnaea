@@ -27,13 +27,13 @@ from ichnaea.models import (
     CELL_MODEL_KEYS,
     CellArea,
     CellBlacklist,
-    CellKeyPscMixin,
     CellObservation,
-    ReportMixin,
+    CellReport,
+    Report,
     Wifi,
     WifiBlacklist,
-    WifiKeyMixin,
     WifiObservation,
+    WifiReport,
 )
 from ichnaea import util
 from ichnaea.worker import celery
@@ -339,7 +339,7 @@ def process_observation(data, session):
                and not isinstance(value, (tuple, list, dict)):
                 dst[key] = value
 
-    report_data = ReportMixin.validate(data)
+    report_data = Report.validate(data)
     if report_data is None:
         return ([], [])
 
@@ -350,7 +350,7 @@ def process_observation(data, session):
         # flatten report / cell data into a single dict
         for cell in data['cell']:
             # only validate the additional fields
-            cell = CellKeyPscMixin.validate(cell)
+            cell = CellReport.validate(cell)
             if cell is None:
                 continue
             add_missing_dict_entries(cell, report_data)
@@ -370,7 +370,7 @@ def process_observation(data, session):
     if data.get('wifi'):
         for wifi in data['wifi']:
             # only validate the additional fields
-            wifi = WifiKeyMixin.validate(wifi)
+            wifi = WifiReport.validate(wifi)
             if wifi is None:
                 continue
             add_missing_dict_entries(wifi, report_data)

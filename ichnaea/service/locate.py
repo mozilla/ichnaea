@@ -23,11 +23,11 @@ from ichnaea.logging import (
 from ichnaea.models import (
     Cell,
     CellArea,
-    CellKeyMixin,
+    CellLookup,
     OCIDCell,
     RADIO_TYPE,
     Wifi,
-    WifiKeyMixin,
+    WifiLookup,
 )
 
 # parameters for wifi clustering
@@ -302,9 +302,9 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
         radio = RADIO_TYPE.get(data.get('radio', ''), -1)
         cell_keys = []
         for cell in data.get(self.data_field, ()):
-            cell = CellKeyMixin.validate(cell, default_radio=radio)
+            cell = CellLookup.validate(cell, default_radio=radio)
             if cell:
-                cell_key = CellKeyMixin.to_hashkey(cell)
+                cell_key = CellLookup.to_hashkey(cell)
                 cell_keys.append(cell_key)
 
         return cell_keys
@@ -525,7 +525,7 @@ class WifiLocationProvider(AbstractLocationProvider):
 
         # Pre-process wifi data
         for wifi in data.get(self.data_field, ()):
-            wifi = WifiKeyMixin.validate(wifi)
+            wifi = WifiLookup.validate(wifi)
             if wifi:
                 wifis.append(wifi)
 
