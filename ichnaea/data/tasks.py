@@ -1,8 +1,6 @@
 from collections import defaultdict
-import uuid
 
 from sqlalchemy.orm import load_only
-from sqlalchemy.sql import and_, or_
 
 from ichnaea.async.task import DatabaseTask
 from ichnaea.constants import (
@@ -10,14 +8,15 @@ from ichnaea.constants import (
     TEMPORARY_BLACKLIST_DURATION,
 )
 from ichnaea.models.content import (
-    MapStat,
     Score,
     ScoreKey,
-    User,
 )
 from ichnaea.customjson import (
     kombu_dumps,
     kombu_loads,
+)
+from ichnaea.data.report import (
+    ReportQueue,
 )
 from ichnaea.data.schema import ValidCellKeySchema
 from ichnaea.geocalc import distance, centroid, range_to_points
@@ -28,12 +27,9 @@ from ichnaea.models import (
     CellArea,
     CellBlacklist,
     CellObservation,
-    CellReport,
-    Report,
     Wifi,
     WifiBlacklist,
     WifiObservation,
-    WifiReport,
 )
 from ichnaea import util
 from ichnaea.worker import celery
@@ -269,210 +265,6 @@ def incomplete_observation(station_type, key):
     return False
 
 
-def process_mapstat(session, positions):
-    # Scale from floating point degrees to integer counts of thousandths of
-    # a degree; 1/1000 degree is about 110m at the equator.
-    factor = 1000
-    today = util.utcnow().date()
-    tiles = {}
-    # aggregate to tiles, according to factor
-    for position in positions:
-        tiles[(int(position['lat'] * factor),
-               int(position['lon'] * factor))] = True
-    query = session.query(MapStat.lat, MapStat.lon)
-    # dynamically construct a (lat, lon) in (list of tuples) filter
-    # as MySQL isn't able to use indexes on such in queries
-    lat_lon = []
-    for (lat, lon) in tiles.keys():
-        lat_lon.append(and_((MapStat.lat == lat), (MapStat.lon == lon)))
-    query = query.filter(or_(*lat_lon))
-    result = query.all()
-    prior = {}
-    for r in result:
-        prior[(r[0], r[1])] = True
-    for (lat, lon) in tiles.keys():
-        old = prior.get((lat, lon), False)
-        if not old:
-            stmt = MapStat.__table__.insert(
-                on_duplicate='id = id').values(
-                time=today, lat=lat, lon=lon)
-            session.execute(stmt)
-
-
-def process_user(nickname, email, session):
-    userid = None
-    if len(email) > 255:
-        email = ''
-    if (2 <= len(nickname) <= 128):
-        # automatically create user objects and update nickname
-        rows = session.query(User).filter(User.nickname == nickname)
-        old = rows.first()
-        if not old:
-            user = User(
-                nickname=nickname,
-                email=email
-            )
-            session.add(user)
-            session.flush()
-            userid = user.id
-        else:
-            userid = old.id
-            # update email column on existing user
-            if old.email != email:
-                old.email = email
-
-    return (userid, nickname, email)
-
-
-def process_observation(data, session):
-    def add_missing_dict_entries(dst, src):
-        # x.update(y) overwrites entries in x with those in y;
-        # We want to only add those not already present.
-        # We also only want to copy the top-level base report data
-        # and not any nested values like cell or wifi.
-        for (key, value) in src.items():
-            if key != 'radio' and key not in dst \
-               and not isinstance(value, (tuple, list, dict)):
-                dst[key] = value
-
-    report_data = Report.validate(data)
-    if report_data is None:
-        return ([], [])
-
-    cell_observations = {}
-    wifi_observations = {}
-
-    if data.get('cell'):
-        # flatten report / cell data into a single dict
-        for cell in data['cell']:
-            # only validate the additional fields
-            cell = CellReport.validate(cell)
-            if cell is None:
-                continue
-            add_missing_dict_entries(cell, report_data)
-            cell_key = CellObservation.to_hashkey(cell)
-            if cell_key in cell_observations:
-                existing = cell_observations[cell_key]
-                if existing['ta'] > cell['ta'] or \
-                   (existing['signal'] != 0 and
-                    existing['signal'] < cell['signal']) or \
-                   existing['asu'] < cell['asu']:
-                    cell_observations[cell_key] = cell
-            else:
-                cell_observations[cell_key] = cell
-    cell_observations = cell_observations.values()
-
-    # flatten report / wifi data into a single dict
-    if data.get('wifi'):
-        for wifi in data['wifi']:
-            # only validate the additional fields
-            wifi = WifiReport.validate(wifi)
-            if wifi is None:
-                continue
-            add_missing_dict_entries(wifi, report_data)
-            wifi_key = WifiObservation.to_hashkey(wifi)
-            if wifi_key in wifi_observations:
-                existing = wifi_observations[wifi_key]
-                if existing['signal'] != 0 and \
-                   existing['signal'] < wifi['signal']:
-                    wifi_observations[wifi_key] = wifi
-            else:
-                wifi_observations[wifi_key] = wifi
-        wifi_observations = wifi_observations.values()
-    return (cell_observations, wifi_observations)
-
-
-def process_observations(observations, session, userid=None,
-                         api_key_log=False, api_key_name=None):
-    stats_client = get_stats_client()
-    positions = []
-    cell_observations = []
-    wifi_observations = []
-    for i, obs in enumerate(observations):
-        obs['report_id'] = uuid.uuid1()
-        cell, wifi = process_observation(obs, session)
-        cell_observations.extend(cell)
-        wifi_observations.extend(wifi)
-        if cell or wifi:
-            positions.append({
-                'lat': obs['lat'],
-                'lon': obs['lon'],
-            })
-
-    if cell_observations:
-        # group by and create task per cell key
-        stats_client.incr('items.uploaded.cell_observations',
-                          len(cell_observations))
-        if api_key_log:
-            stats_client.incr(
-                'items.api_log.%s.uploaded.cell_observations' % api_key_name,
-                len(cell_observations))
-
-        cells = defaultdict(list)
-        for obs in cell_observations:
-            cells[CellObservation.to_hashkey(obs)].append(obs)
-
-        # Create a task per group of 5 cell keys at a time.
-        # Grouping them helps in avoiding per-task overhead.
-        cells = list(cells.values())
-        batch_size = 5
-        countdown = 0
-        for i in range(0, len(cells), batch_size):
-            values = []
-            for observations in cells[i:i + batch_size]:
-                values.extend(observations)
-            # insert observations, expire the task if it wasn't processed
-            # after six hours to avoid queue overload, also delay
-            # each task by one second more, to get a more even workload
-            # and avoid parallel updates of the same underlying stations
-            insert_measures_cell.apply_async(
-                args=[values],
-                kwargs={'userid': userid},
-                expires=21600,
-                countdown=countdown)
-            countdown += 1
-
-    if wifi_observations:
-        # group by WiFi key
-        stats_client.incr('items.uploaded.wifi_observations',
-                          len(wifi_observations))
-        if api_key_log:
-            stats_client.incr(
-                'items.api_log.%s.uploaded.wifi_observations' % api_key_name,
-                len(wifi_observations))
-
-        wifis = defaultdict(list)
-        for obs in wifi_observations:
-            wifis[WifiObservation.to_hashkey(obs)].append(obs)
-
-        # Create a task per group of 20 WiFi keys at a time.
-        # We tend to get a huge number of unique WiFi networks per
-        # batch upload, with one to very few observations per WiFi.
-        # Grouping them helps in avoiding per-task overhead.
-        wifis = list(wifis.values())
-        batch_size = 20
-        countdown = 0
-        for i in range(0, len(wifis), batch_size):
-            values = []
-            for observations in wifis[i:i + batch_size]:
-                values.extend(observations)
-            # insert observations, expire the task if it wasn't processed
-            # after six hours to avoid queue overload, also delay
-            # each task by one second more, to get a more even workload
-            # and avoid parallel updates of the same underlying stations
-            insert_measures_wifi.apply_async(
-                args=[values],
-                kwargs={'userid': userid},
-                expires=21600,
-                countdown=countdown)
-            countdown += 1
-
-    if userid is not None:
-        process_score(userid, len(positions), session)
-    if positions:
-        process_mapstat(session, positions)
-
-
 def process_score(userid, points, session, key='location'):
     utcday = util.utcnow().date()
     query = session.query(Score).filter(
@@ -594,22 +386,14 @@ def insert_measures(self, items=None, nickname='', email='',
     if not items:  # pragma: no cover
         return 0
 
-    items = kombu_loads(items)
-    length = len(items)
-    stats_client = self.stats_client
-
+    reports = kombu_loads(items)
     with self.db_session() as session:
-        userid, nickname, email = process_user(nickname, email, session)
-
-        process_observations(items, session,
-                             userid=userid,
-                             api_key_log=api_key_log,
-                             api_key_name=api_key_name)
-        stats_client.incr('items.uploaded.reports', length)
-        if api_key_log:
-            stats_client.incr(
-                'items.api_log.%s.uploaded.reports' % api_key_name)
-
+        queue = ReportQueue(self, session,
+                            api_key_log=api_key_log,
+                            api_key_name=api_key_name,
+                            insert_cell_task=insert_measures_cell,
+                            insert_wifi_task=insert_measures_wifi)
+        length = queue.insert(reports, nickname=nickname, email=email)
         session.commit()
     return length
 
