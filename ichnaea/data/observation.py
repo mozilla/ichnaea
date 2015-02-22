@@ -30,30 +30,37 @@ class ObservationQueue(object):
             utcnow = util.utcnow()
         self.utcnow = utcnow
 
-    def insert(self, entries, userid=None):
+    def stat_count(self, action, what, count):
+        if count != 0:
+            self.stats_client.incr(
+                'items.{action}.{station_type}_{what}'.format(
+                    action=action, station_type=self.station_type, what=what),
+                count)
 
+    def emit_stats(self, added, dropped):
+        self.stat_count('inserted', 'observations', added)
+        for name, count in dropped.items():
+            self.stat_count('dropped', 'ingress_' + name, dropped[name])
+
+    def insert(self, entries, userid=None):
         all_observations = []
-        dropped_blacklisted = 0
-        dropped_malformed = 0
-        dropped_overflow = 0
-        stats_client = self.stats_client
+        drop_counter = defaultdict(int)
         new_stations = 0
 
         # Process entries and group by validated station key
         station_observations = defaultdict(list)
         for entry in entries:
             entry['created'] = self.utcnow
-            obs = self.observation_model.create(entry)
 
+            obs = self.observation_model.create(entry)
             if not obs:
-                dropped_malformed += 1
+                drop_counter['malformed'] += 1
                 continue
 
             station_observations[obs.hashkey()].append(obs)
 
         # Process observations one station at a time
         for key, observations in station_observations.items():
-
             first_blacklisted = None
             incomplete = False
             is_new_station = False
@@ -68,7 +75,7 @@ class ObservationQueue(object):
                 # Drop observations for blacklisted stations.
                 blacklisted, first_blacklisted = self.blacklisted_station(key)
                 if blacklisted:
-                    dropped_blacklisted += len(observations)
+                    drop_counter['blacklisted'] += len(observations)
                     continue
 
                 incomplete = self.incomplete_observation(key)
@@ -80,7 +87,7 @@ class ObservationQueue(object):
             num = 0
             for obs in observations:
                 if free <= 0:
-                    dropped_overflow += 1
+                    drop_counter['overflow'] += 1
                     continue
                 all_observations.append(obs)
                 free -= 1
@@ -96,27 +103,11 @@ class ObservationQueue(object):
             process_score(self.session, userid, new_stations,
                           'new_' + self.station_type)
 
-        if dropped_blacklisted != 0:
-            stats_client.incr(
-                'items.dropped.%s_ingress_blacklisted' % self.station_type,
-                count=dropped_blacklisted)
-
-        if dropped_malformed != 0:
-            stats_client.incr(
-                'items.dropped.%s_ingress_malformed' % self.station_type,
-                count=dropped_malformed)
-
-        if dropped_overflow != 0:
-            stats_client.incr(
-                'items.dropped.%s_ingress_overflow' % self.station_type,
-                count=dropped_overflow)
-
-        stats_client.incr(
-            'items.inserted.%s_observations' % self.station_type,
-            count=len(all_observations))
+        added = len(all_observations)
+        self.emit_stats(added, drop_counter)
 
         self.session.add_all(all_observations)
-        return len(all_observations)
+        return added
 
     def available_station_space(self, key):
         # check if there's space for new observations within per-station
@@ -125,7 +116,6 @@ class ObservationQueue(object):
         query = (self.station_model.querykey(self.session, key)
                                    .options(load_only('total_measures')))
         curr = query.first()
-
         if curr is not None:
             return self.max_observations - curr.total_measures
 
@@ -146,24 +136,11 @@ class ObservationQueue(object):
         return (False, None)
 
     def incomplete_observation(self, key):
-        """
-        Certain incomplete observations we want to store in the database
-        even though they should not lead to the creation of a station
-        entry; these are cell observations with a missing value for
-        LAC and/or CID, and will be inferred from neighboring cells.
-        """
-        if self.station_type == 'cell':
-            schema = ValidCellKeySchema()
-            for field in ('radio', 'lac', 'cid'):
-                if getattr(key, field, None) == schema.fields[field].missing:
-                    return True
         return False
 
     def create_or_update_station(self, key, num, first_blacklisted):
-        """
-        Creates a station or updates its new/total_measures counts to reflect
-        recently-received observations.
-        """
+        # Creates a station or updates its new/total_measures counts to
+        # reflect recently-received observations.
         query = self.station_model.querykey(self.session, key)
         station = query.first()
 
@@ -178,7 +155,8 @@ class ObservationQueue(object):
                 created = first_blacklisted
             stmt = self.station_model.__table__.insert(
                 on_duplicate='new_measures = new_measures + %s, '
-                             'total_measures = total_measures + %s' % (num, num)
+                             'total_measures = total_measures + %s' % (
+                                 num, num)
             ).values(
                 created=created,
                 modified=self.utcnow,
@@ -195,6 +173,17 @@ class CellObservationQueue(ObservationQueue):
     station_model = Cell
     observation_model = CellObservation
     blacklist_model = CellBlacklist
+
+    def incomplete_observation(self, key):
+        # We want to store certain incomplete observations in the database
+        # even though they should not lead to the creation of a station
+        # entry; these are cell observations with a missing value for
+        # LAC and/or CID, and will be inferred from neighboring cells.
+        schema = ValidCellKeySchema()
+        for field in ('radio', 'lac', 'cid'):
+            if getattr(key, field, None) == schema.fields[field].missing:
+                return True
+        return False
 
 
 class WifiObservationQueue(ObservationQueue):
