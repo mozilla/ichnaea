@@ -170,7 +170,7 @@ class TestCell(CeleryTestCase):
 
         # test duplicate call
         result = location_update_cell.delay(min_new=1)
-        self.assertEqual(result.get(), 0)
+        self.assertEqual(result.get(), (0, 0))
 
         self.check_stats(
             total=6,
@@ -290,7 +290,7 @@ class TestCell(CeleryTestCase):
                 # Blacklist has exceeded threshold, gone to "permanent" mode,
                 # so no observation accepted, no stations seen.
                 self.assertEqual(insert_result.get(), 0)
-                self.assertEqual(update_result.get(), 0)
+                self.assertEqual(update_result.get(), (0, 0))
 
     def test_blacklist_time_used_as_creation_time(self):
         now = util.utcnow()
@@ -835,7 +835,7 @@ class TestWifi(CeleryTestCase):
 
         # test duplicate call
         result = location_update_wifi.delay(min_new=1)
-        self.assertEqual(result.get(), 0)
+        self.assertEqual(result.get(), (0, 0))
 
         self.check_stats(
             total=6,
@@ -947,7 +947,7 @@ class TestWifi(CeleryTestCase):
                 # Blacklist has exceeded threshold, gone to "permanent" mode,
                 # so no observation accepted, no stations seen.
                 self.assertEqual(insert_result.get(), 0)
-                self.assertEqual(update_result.get(), 0)
+                self.assertEqual(update_result.get(), (0, 0))
 
     def test_blacklist_time_used_as_creation_time(self):
         now = util.utcnow()
