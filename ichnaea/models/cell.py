@@ -1,3 +1,4 @@
+from enum import IntEnum
 from sqlalchemy import (
     Column,
     Index,
@@ -7,7 +8,6 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import (
     INTEGER as Integer,
     SMALLINT as SmallInteger,
-    TINYINT as TinyInteger,
 )
 
 from ichnaea import geocalc
@@ -19,6 +19,7 @@ from ichnaea.models.base import (
     TimeTrackingMixin,
     ValidationMixin,
 )
+from ichnaea.models.sa_types import TinyIntEnum
 from ichnaea.models.station import (
     BaseStationMixin,
     StationMixin,
@@ -26,33 +27,59 @@ from ichnaea.models.station import (
 )
 
 RADIO_TYPE = {
-    '': -1,
     'gsm': 0,
     'cdma': 1,
     'umts': 2,
-    'wcdma': 2,  # WCDMA is the main air interface for UMTS,
-                 # but is the value the Google Geolocation API
-                 # uses to refer to this radio family.
+    'wcdma': 2,
     'lte': 3,
 }
-RADIO_TYPE_KEYS = list(RADIO_TYPE.keys())
 RADIO_TYPE_INVERSE = dict((v, k) for k, v in RADIO_TYPE.items() if v != 2)
 RADIO_TYPE_INVERSE[2] = 'umts'
-MAX_RADIO_TYPE = max(RADIO_TYPE.values())
-MIN_RADIO_TYPE = min(RADIO_TYPE.values())
 
 
-class CellAreaKey(HashKey):
+class Radio(IntEnum):
+    __order__ = 'gsm cdma umts wcdma lte'
+
+    gsm = 0
+    cdma = 1
+    umts = 2
+    wcdma = 2
+    lte = 3
+
+    @classmethod
+    def _max(cls):
+        return max([int(value) for value in cls])
+
+    @classmethod
+    def _min(cls):
+        return min([int(value) for value in cls])
+
+
+class CellHashKey(HashKey):
+
+    @classmethod
+    def _from_json_value(cls, value):
+        data = value.copy()
+        data['radio'] = Radio(data['radio'])
+        return cls(**data)
+
+    def _to_json_value(self):
+        value = self.__dict__.copy()
+        value['radio'] = int(value['radio'])
+        return value
+
+
+class CellAreaKey(CellHashKey):
 
     _fields = ('radio', 'mcc', 'mnc', 'lac')
 
 
-class CellKey(HashKey):
+class CellKey(CellHashKey):
 
     _fields = ('radio', 'mcc', 'mnc', 'lac', 'cid')
 
 
-class CellKeyPsc(HashKey):
+class CellKeyPsc(CellHashKey):
 
     _fields = ('radio', 'mcc', 'mnc', 'lac', 'cid', 'psc')
 
@@ -62,7 +89,7 @@ class CellAreaKeyMixin(HashKeyMixin):
     _hashkey_cls = CellAreaKey
 
     # mapped via RADIO_TYPE
-    radio = Column(TinyInteger, autoincrement=False)
+    radio = Column(TinyIntEnum(Radio), autoincrement=False)
     mcc = Column(SmallInteger, autoincrement=False)
     mnc = Column(SmallInteger, autoincrement=False)
     lac = Column(SmallInteger(unsigned=True), autoincrement=False)

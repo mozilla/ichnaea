@@ -181,7 +181,6 @@ class TestStats(DBTestCase):
         session = self.db_master_session
         cell_key = {'lac': 1, 'cid': 1}
         test_data = [
-            Cell(radio=RADIO_TYPE[''], mcc=208, mnc=1, **cell_key),
             Cell(radio=RADIO_TYPE['gsm'], mcc=1, mnc=1, **cell_key),
             Cell(radio=RADIO_TYPE['lte'], mcc=262, mnc=1, **cell_key),
             Cell(radio=RADIO_TYPE['gsm'], mcc=310, mnc=1, **cell_key),

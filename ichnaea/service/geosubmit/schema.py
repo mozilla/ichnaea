@@ -12,15 +12,14 @@ from colander import (
     SequenceSchema,
     String,
 )
-from ichnaea.service.geolocate.schema import RADIO_TYPE_KEYS
 
-GEOSUBMIT_RADIO_TYPE_KEYS = RADIO_TYPE_KEYS
+RADIO_TYPE_KEYS = ['gsm', 'cdma', 'wcdma', 'lte']
 
 
 class CellTowerSchema(MappingSchema):
     # mapped to 'radio' for submit
     radioType = SchemaNode(String(),
-                           validator=OneOf(GEOSUBMIT_RADIO_TYPE_KEYS),
+                           validator=OneOf(RADIO_TYPE_KEYS),
                            missing='')
     # mapped to 'cid' for submit
     cellId = SchemaNode(Integer())
@@ -76,7 +75,7 @@ class GeoSubmitSchema(MappingSchema):
 
     # mapped to 'radio' for submit
     radioType = SchemaNode(String(),
-                           validator=OneOf(GEOSUBMIT_RADIO_TYPE_KEYS),
+                           validator=OneOf(RADIO_TYPE_KEYS),
                            missing='')
     carrier = SchemaNode(String(), missing='')
     cellTowers = CellTowersSchema(missing=())

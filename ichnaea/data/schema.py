@@ -21,8 +21,7 @@ from pytz import UTC
 from ichnaea import geocalc
 from ichnaea.data import constants
 from ichnaea.models import (
-    MAX_RADIO_TYPE,
-    MIN_RADIO_TYPE,
+    Radio,
     RADIO_TYPE,
 )
 from ichnaea import util
@@ -291,7 +290,7 @@ class ValidCellKeySchema(FieldSchema, CopyingSchema):
     mnc = SchemaNode(Integer(), validator=Range(0, 32767))
     psc = DefaultNode(Integer(), missing=-1, validator=Range(0, 512))
     radio = DefaultNode(
-        Integer(), missing=-1, validator=Range(MIN_RADIO_TYPE, MAX_RADIO_TYPE))
+        Integer(), missing=-1, validator=Range(Radio._min(), Radio._max()))
 
     def deserialize(self, data, default_radio=None):
         if data:

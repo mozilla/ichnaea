@@ -1,7 +1,7 @@
 from colander import MappingSchema, SchemaNode, SequenceSchema
 from colander import Integer, String, OneOf
 
-from ichnaea.models import RADIO_TYPE_KEYS
+RADIO_TYPE_KEYS = ['gsm', 'cdma', 'umts', 'wcdma', 'lte']
 
 
 class CellSchema(MappingSchema):
