@@ -1,16 +1,18 @@
 from ichnaea.async.task import DatabaseTask
 from ichnaea.customjson import kombu_loads
-from ichnaea.data.area import CellAreaUpdater
+from ichnaea.data.area import (
+    enqueue_lacs,
+    CellAreaUpdater,
+    UPDATE_KEY,
+)
 from ichnaea.data.observation import (
     CellObservationQueue,
     WifiObservationQueue,
 )
 from ichnaea.data.report import ReportQueue
 from ichnaea.data.station import (
-    enqueue_lacs,
     CellStationUpdater,
     WifiStationUpdater,
-    UPDATE_KEY,
 )
 from ichnaea.models import (
     Cell,

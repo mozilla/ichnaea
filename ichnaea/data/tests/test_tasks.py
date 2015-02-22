@@ -16,13 +16,15 @@ from ichnaea.models.content import (
 )
 from ichnaea.data import constants
 from ichnaea.data.schema import ValidCellKeySchema
-from ichnaea.data.tasks import (
-    UPDATE_KEY,
+from ichnaea.data.area import (
     enqueue_lacs,
-    location_update_cell,
-    location_update_wifi,
+    UPDATE_KEY,
+)
+from ichnaea.data.tasks import (
     insert_measures_cell,
     insert_measures_wifi,
+    location_update_cell,
+    location_update_wifi,
     remove_cell,
     remove_wifi,
     scan_lacs,

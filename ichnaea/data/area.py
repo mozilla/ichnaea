@@ -1,6 +1,6 @@
-from ichnaea.data.station import (
-    dequeue_lacs,
-    UPDATE_KEY,
+from ichnaea.customjson import (
+    kombu_dumps,
+    kombu_loads,
 )
 from ichnaea.geocalc import centroid, range_to_points
 from ichnaea.models import (
@@ -8,6 +8,34 @@ from ichnaea.models import (
     CellArea,
 )
 from ichnaea import util
+
+UPDATE_KEY = {
+    'cell': 'update_cell',
+    'cell_lac': 'update_cell_lac',
+    'wifi': 'update_wifi',
+}
+
+
+def enqueue_lacs(session, redis_client, lac_keys,
+                 pipeline_key, expire=86400, batch=100):
+    pipe = redis_client.pipeline()
+    lac_json = [str(kombu_dumps(lac)) for lac in lac_keys]
+
+    while lac_json:
+        pipe.lpush(pipeline_key, *lac_json[:batch])
+        lac_json = lac_json[batch:]
+
+    # Expire key after 24 hours
+    pipe.expire(pipeline_key, expire)
+    pipe.execute()
+
+
+def dequeue_lacs(redis_client, pipeline_key, batch=100):
+    pipe = redis_client.pipeline()
+    pipe.multi()
+    pipe.lrange(pipeline_key, 0, batch - 1)
+    pipe.ltrim(pipeline_key, batch, -1)
+    return [kombu_loads(item) for item in pipe.execute()[0]]
 
 
 class CellAreaUpdater(object):

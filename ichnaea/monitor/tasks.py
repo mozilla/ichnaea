@@ -2,7 +2,7 @@ from sqlalchemy import func
 
 from ichnaea.async.config import CELERY_QUEUE_NAMES
 from ichnaea.async.task import DatabaseTask
-from ichnaea.data.tasks import UPDATE_KEY
+from ichnaea.data.area import UPDATE_KEY
 from ichnaea.models import (
     ApiKey,
     CellObservation,
