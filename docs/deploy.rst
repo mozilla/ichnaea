@@ -137,7 +137,7 @@ To install circus and its dependencies call:
 
 .. code-block:: bash
 
-    bin/pip install --no-deps -r requirements/circus.ini
+    bin/pip install --no-deps -r requirements/circus.txt
 
 And then start circus via our example config:
 
