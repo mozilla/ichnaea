@@ -141,6 +141,8 @@ To install circus and its dependencies call:
 
 And then start circus via our example config:
 
+.. code-block:: bash
+
     bin/circusd --daemon circus.ini
 
 You can interact with a daemonized circus via circusctl. Have a look at
