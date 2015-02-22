@@ -74,13 +74,12 @@ def available_station_space(session, key, station_model,
                             max_observations_per_station):
     # check if there's space for new observations within per-station maximum
     # old observations are gradually backed up, so this is an intake-rate limit
-
-    query = session.query(station_model.total_measures).filter(
-        *station_model.joinkey(key))
+    query = (station_model.querykey(session, key)
+                          .options(load_only('total_measures')))
     curr = query.first()
 
     if curr is not None:
-        return max_observations_per_station - curr[0]
+        return max_observations_per_station - curr.total_measures
 
     # Return None to signal no station record was found.
     return None
@@ -93,8 +92,7 @@ def blacklist_and_remove_moving_stations(session, blacklist_model,
     utcnow = util.utcnow()
     for station in moving_stations:
         station_key = blacklist_model.to_hashkey(station)
-        query = session.query(blacklist_model).filter(
-            *blacklist_model.joinkey(station_key))
+        query = blacklist_model.querykey(session, station_key)
         blacklisted_station = query.first()
         moving_keys.append(station_key)
         if blacklisted_station:
@@ -130,9 +128,8 @@ def blacklist_and_remove_moving_wifis(session, moving_wifis):
 
 
 def blacklisted_station(session, key, blacklist_model, utcnow):
-    query = (session.query(blacklist_model)
-                    .options(load_only('count', 'time'))
-                    .filter(*blacklist_model.joinkey(key)))
+    query = (blacklist_model.querykey(session, key)
+                            .options(load_only('count', 'time')))
     black = query.first()
     if black is not None:
         age = utcnow - black.time
@@ -147,8 +144,8 @@ def blacklisted_station(session, key, blacklist_model, utcnow):
 def calculate_new_position(station, observations, max_dist_km):
     # This function returns True if the station was found to be moving.
     length = len(observations)
-    latitudes = [obs[0] for obs in observations]
-    longitudes = [obs[1] for obs in observations]
+    latitudes = [obs.lat for obs in observations]
+    longitudes = [obs.lon for obs in observations]
     new_lat = sum(latitudes) / length
     new_lon = sum(longitudes) / length
 
@@ -222,8 +219,7 @@ def create_or_update_station(session, key, station_model,
     Creates a station or updates its new/total_measures counts to reflect
     recently-received observations.
     """
-    query = (session.query(station_model)
-                    .filter(*station_model.joinkey(key)))
+    query = station_model.querykey(session, key)
     station = query.first()
 
     if station is not None:
@@ -674,15 +670,11 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
         moving_cells = set()
         updated_lacs = set()
         for cell in cells:
-            query = session.query(
-                CellObservation.lat,
-                CellObservation.lon,
-                CellObservation.id).filter(
-                    *CellObservation.joinkey(cell))
             # only take the last X new_measures
-            query = query.order_by(
-                CellObservation.created.desc()).limit(
-                cell.new_measures)
+            query = (CellObservation.querykey(session, cell)
+                                    .options(load_only('lat', 'lon'))
+                                    .order_by(CellObservation.created.desc())
+                                    .limit(cell.new_measures))
             observations = query.all()
 
             if observations:
@@ -716,20 +708,21 @@ def location_update_wifi(self, min_new=10, max_new=100, batch=10):
         emit_new_observation_metric(self.stats_client, session,
                                     self.shortname, Wifi,
                                     min_new, max_new)
-        query = session.query(Wifi.key, Wifi).filter(
+        query = session.query(Wifi).filter(
             Wifi.new_measures >= min_new).filter(
             Wifi.new_measures < max_new).limit(batch)
-        wifis = dict(query.all())
+        wifis = query.all()
         if not wifis:
             return 0
         moving_wifis = set()
-        for wifi_key, wifi in wifis.items():
+        for wifi in wifis:
             # only take the last X new_measures
-            observations = session.query(
-                WifiObservation.lat, WifiObservation.lon).filter(
-                WifiObservation.key == wifi_key).order_by(
-                WifiObservation.created.desc()).limit(
-                wifi.new_measures).all()
+            query = (WifiObservation.querykey(session, wifi)
+                                    .options(load_only('lat', 'lon'))
+                                    .order_by(WifiObservation.created.desc())
+                                    .limit(wifi.new_measures))
+            observations = query.all()
+
             if observations:
                 moving = calculate_new_position(
                     wifi, observations, WIFI_MAX_DIST_KM)
@@ -751,9 +744,8 @@ def remove_cell(self, cell_keys):
     with self.db_session() as session:
         changed_lacs = set()
 
-        for k in cell_keys:
-            key = Cell.to_hashkey(k)
-            query = session.query(Cell).filter(*Cell.joinkey(key))
+        for key in cell_keys:
+            query = Cell.querykey(session, key)
             cells_removed += query.delete()
             changed_lacs.add(CellArea.to_hashkey(key))
 

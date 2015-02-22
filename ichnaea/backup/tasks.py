@@ -372,19 +372,15 @@ def unthrottle_observations(session, station_model, obs_model,
     again.
 
     """
-    q = session.query(station_model).filter(
+    station_query = session.query(station_model).filter(
         station_model.total_measures > max_observations).limit(batch)
 
     unthrottled = 0
-    for station in q.all():
-        q = session.query(func.count(obs_model.id)).filter(
-            *obs_model.joinkey(obs_model.to_hashkey(station)))
-        c = q.first()
-        n = int(c[0])
-        assert n <= station.total_measures
-        unthrottled += station.total_measures - n
-        station.total_measures = n
-        station.new_measures = min(station.new_measures, n)
+    for station in station_query.all():
+        num = obs_model.querykey(session, station).count()
+        unthrottled += station.total_measures - num
+        station.total_measures = num
+        station.new_measures = min(station.new_measures, num)
 
     session.commit()
     return unthrottled

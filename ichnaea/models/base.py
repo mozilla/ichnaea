@@ -102,10 +102,16 @@ class HashKeyMixin(object):
 
     @classmethod
     def joinkey(cls, key):
+        if not isinstance(key, HashKey):
+            key = cls.to_hashkey(key)
         criterion = ()
         for field in cls._hashkey_cls._fields:
             criterion += (getattr(cls, field) == getattr(key, field), )
         return criterion
+
+    @classmethod
+    def querykey(cls, session, key):
+        return session.query(cls).filter(*cls.joinkey(key))
 
 
 class ValidationMixin(object):
