@@ -19,9 +19,6 @@ from ichnaea.models import (
 )
 from ichnaea import util
 
-CELL_MAX_DIST_KM = 150
-WIFI_MAX_DIST_KM = 5
-
 UPDATE_KEY = {
     'cell': 'update_cell',
     'cell_lac': 'update_cell_lac',
@@ -53,24 +50,41 @@ def dequeue_lacs(redis_client, pipeline_key, batch=100):
 
 class StationUpdater(object):
 
-    def __init__(self, task, session, remove_task=None):
+    def __init__(self, task, session,
+                 min_new=10, max_new=100, remove_task=None):
         self.task = task
         self.session = session
+        self.min_new = min_new
+        self.max_new = max_new
         self.remove_task = remove_task
         self.shortname = task.shortname
         self.redis_client = task.app.redis_client
         self.stats_client = task.stats_client
 
-    def emit_new_observation_metric(self, shortname,
-                                    model, min_new, max_new):
-        q = self.session.query(model).filter(
-            model.new_measures >= min_new,
-            model.new_measures < max_new)
-        n = q.count()
-        self.stats_client.gauge('task.%s.new_measures_%d_%d' %
-                                (shortname, min_new, max_new), n)
+    def emit_new_observation_metric(self):
+        num = self.station_query().count()
+        self.stats_client.gauge(
+            'task.%s.new_measures_%d_%d' % (
+                self.shortname, self.min_new, self.max_new),
+            num)
 
-    def calculate_new_position(self, station, observations, max_dist_km):
+    def station_query(self):
+        model = self.station_model
+        query = (self.session.query(model)
+                             .filter(model.new_measures >= self.min_new)
+                             .filter(model.new_measures < self.max_new))
+        return query
+
+    def observation_query(self, station):
+        # only take the last X new_measures
+        model = self.observation_model
+        query = (model.querykey(self.session, station)
+                      .options(load_only('lat', 'lon'))
+                      .order_by(model.created.desc())
+                      .limit(station.new_measures))
+        return query
+
+    def calculate_new_position(self, station, observations):
         # This function returns True if the station was found to be moving.
         length = len(observations)
         latitudes = [obs.lat for obs in observations]
@@ -109,7 +123,7 @@ class StationUpdater(object):
 
         if existing_station:
 
-            if box_dist > max_dist_km:
+            if box_dist > self.max_dist_km:
                 # Signal a moving station and return early without updating
                 # the station since it will be deleted by caller momentarily
                 return True
@@ -141,21 +155,19 @@ class StationUpdater(object):
         station.range = range_to_points(ctr, points) * 1000.0
         station.modified = util.utcnow()
 
-    def blacklist_and_remove_moving_stations(self, blacklist_model,
-                                             station_type,
-                                             moving_stations, remove_station):
+    def blacklist_stations(self, stations):
         moving_keys = []
         utcnow = util.utcnow()
-        for station in moving_stations:
-            station_key = blacklist_model.to_hashkey(station)
-            query = blacklist_model.querykey(self.session, station_key)
+        for station in stations:
+            station_key = self.blacklist_model.to_hashkey(station)
+            query = self.blacklist_model.querykey(self.session, station_key)
             blacklisted_station = query.first()
             moving_keys.append(station_key)
             if blacklisted_station:
                 blacklisted_station.time = utcnow
                 blacklisted_station.count += 1
             else:
-                blacklisted_station = blacklist_model(
+                blacklisted_station = self.blacklist_model(
                     time=utcnow,
                     count=1,
                     **station_key.__dict__)
@@ -163,102 +175,62 @@ class StationUpdater(object):
 
         if moving_keys:
             self.stats_client.incr(
-                "items.blacklisted.%s_moving" % station_type, len(moving_keys))
-            remove_station.delay(moving_keys)
+                "items.blacklisted.%s_moving" % self.station_type,
+                len(moving_keys))
+            self.remove_task.delay(moving_keys)
+
+    def update(self, batch=10):
+        moving_stations = set()
+        updated_areas = set()
+
+        self.emit_new_observation_metric()
+
+        stations = self.station_query().limit(batch).all()
+        if not stations:
+            return (0, 0)
+
+        for station in stations:
+            observations = self.observation_query(station).all()
+            if observations:
+                moving = self.calculate_new_position(station, observations)
+                if moving:
+                    moving_stations.add(station)
+
+                if self.area_model:
+                    updated_areas.add(self.area_model.to_hashkey(station))
+
+        if updated_areas and self.area_enqueue:
+            self.session.on_post_commit(
+                self.area_enqueue,
+                self.redis_client,
+                updated_areas,
+                self.area_update_key)
+
+        if moving_stations:
+            self.blacklist_stations(moving_stations)
+
+        return (len(stations), len(moving_stations))
 
 
 class CellStationUpdater(StationUpdater):
 
-    def update(self, min_new=10, max_new=100, batch=10):
-        cells = []
-        moving_cells = set()
-        updated_lacs = set()
-
-        self.emit_new_observation_metric(self.shortname, Cell,
-                                         min_new, max_new)
-        query = (self.session.query(Cell)
-                             .filter(Cell.new_measures >= min_new)
-                             .filter(Cell.new_measures < max_new)
-                             .limit(batch))
-        cells = query.all()
-        if not cells:
-            return (0, 0)
-
-        for cell in cells:
-            # only take the last X new_measures
-            query = (CellObservation.querykey(self.session, cell)
-                                    .options(load_only('lat', 'lon'))
-                                    .order_by(CellObservation.created.desc())
-                                    .limit(cell.new_measures))
-            observations = query.all()
-
-            if observations:
-                moving = self.calculate_new_position(
-                    cell, observations, CELL_MAX_DIST_KM)
-                if moving:
-                    moving_cells.add(cell)
-
-                updated_lacs.add(CellArea.to_hashkey(cell))
-
-        if updated_lacs:
-            self.session.on_post_commit(
-                enqueue_lacs,
-                self.redis_client,
-                updated_lacs,
-                UPDATE_KEY['cell_lac'])
-
-        if moving_cells:
-            # some cells found to be moving too much
-            self.blacklist_and_remove_moving_cells(moving_cells)
-
-        return (len(cells), len(moving_cells))
-
-    def blacklist_and_remove_moving_cells(self, moving_cells):
-        self.blacklist_and_remove_moving_stations(
-            blacklist_model=CellBlacklist,
-            station_type="cell",
-            moving_stations=moving_cells,
-            remove_station=self.remove_task)
+    area_model = CellArea
+    area_enqueue = staticmethod(enqueue_lacs)
+    area_update_key = UPDATE_KEY['cell_lac']
+    blacklist_model = CellBlacklist
+    max_dist_km = 150
+    observation_model = CellObservation
+    station_model = Cell
+    station_type = 'cell'
 
 
 class WifiStationUpdater(StationUpdater):
 
-    def update(self, min_new=10, max_new=100, batch=10):
-        wifis = {}
-        moving_wifis = set()
-
-        self.emit_new_observation_metric(self.shortname, Wifi,
-                                         min_new, max_new)
-        query = self.session.query(Wifi).filter(
-            Wifi.new_measures >= min_new).filter(
-            Wifi.new_measures < max_new).limit(batch)
-        wifis = query.all()
-        if not wifis:
-            return (0, 0)
-
-        for wifi in wifis:
-            # only take the last X new_measures
-            query = (WifiObservation.querykey(self.session, wifi)
-                                    .options(load_only('lat', 'lon'))
-                                    .order_by(WifiObservation.created.desc())
-                                    .limit(wifi.new_measures))
-            observations = query.all()
-
-            if observations:
-                moving = self.calculate_new_position(
-                    wifi, observations, WIFI_MAX_DIST_KM)
-                if moving:
-                    moving_wifis.add(wifi)
-
-        if moving_wifis:
-            # some wifis found to be moving too much
-            self.blacklist_and_remove_moving_wifis(moving_wifis)
-
-        return (len(wifis), len(moving_wifis))
-
-    def blacklist_and_remove_moving_wifis(self, moving_wifis):
-        self.blacklist_and_remove_moving_stations(
-            blacklist_model=WifiBlacklist,
-            station_type="wifi",
-            moving_stations=moving_wifis,
-            remove_station=self.remove_task)
+    area_model = None
+    area_enqueue = None
+    area_update_key = None
+    blacklist_model = WifiBlacklist
+    max_dist_km = 5
+    observation_model = WifiObservation
+    station_model = Wifi
+    station_type = 'wifi'

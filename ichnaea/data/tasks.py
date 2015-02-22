@@ -72,10 +72,12 @@ def insert_measures_wifi(self, entries, userid=None,
 @celery.task(base=DatabaseTask, bind=True)
 def location_update_cell(self, min_new=10, max_new=100, batch=10):
     with self.db_session() as session:
-        updater = CellStationUpdater(self, session,
-                                     remove_task=remove_cell)
-        cells, moving = updater.update(
-            min_new=min_new, max_new=max_new, batch=batch)
+        updater = CellStationUpdater(
+            self, session,
+            min_new=min_new,
+            max_new=max_new,
+            remove_task=remove_cell)
+        cells, moving = updater.update(batch=batch)
         session.commit()
     return (cells, moving)
 
@@ -83,10 +85,12 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
 @celery.task(base=DatabaseTask, bind=True)
 def location_update_wifi(self, min_new=10, max_new=100, batch=10):
     with self.db_session() as session:
-        updater = WifiStationUpdater(self, session,
-                                     remove_task=remove_wifi)
-        wifis, moving = updater.update(
-            min_new=min_new, max_new=max_new, batch=batch)
+        updater = WifiStationUpdater(
+            self, session,
+            min_new=min_new,
+            max_new=max_new,
+            remove_task=remove_wifi)
+        wifis, moving = updater.update(batch=batch)
         session.commit()
     return (wifis, moving)
 
