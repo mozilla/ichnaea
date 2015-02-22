@@ -2,14 +2,11 @@ from calendar import timegm
 from datetime import date, datetime
 from uuid import UUID
 
-from pyramid.path import DottedNameResolver
 from pytz import UTC
 import simplejson as json
 
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 from ichnaea.models.base import HashKey
-
-RESOLVER = DottedNameResolver('ichnaea')
 
 
 def encode_datetime(obj):
@@ -139,10 +136,7 @@ def kombu_default(obj):
     elif isinstance(obj, UUID):
         return {'__uuid__': obj.hex}
     elif isinstance(obj, HashKey):
-        return {'__hashkey__': {
-            'name': obj._dottedname,
-            'value': obj.__dict__,
-        }}
+        return obj._to_json()
     raise TypeError("%r is not JSON serializable" % obj)  # pragma: no cover
 
 
@@ -155,9 +149,7 @@ def kombu_object_hook(dct):
     elif '__uuid__' in dct:
         return UUID(hex=dct['__uuid__'])
     elif '__hashkey__' in dct:
-        hashkey = dct['__hashkey__']
-        klass = RESOLVER.resolve(hashkey['name'])
-        return klass(**hashkey['value'])
+        return HashKey._from_json(dct)
     return dct
 
 

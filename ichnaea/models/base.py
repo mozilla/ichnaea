@@ -1,4 +1,5 @@
 from colander import Invalid
+from pyramid.path import DottedNameResolver
 from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import (
     BIGINT as BigInteger,
@@ -13,6 +14,7 @@ from sqlalchemy.sql import and_, or_
 
 from ichnaea.models.sa_types import TZDateTime as DateTime
 
+RESOLVER = DottedNameResolver('ichnaea')
 MYSQL_SETTINGS = {
     'mysql_engine': 'InnoDB',
     'mysql_charset': 'utf8',
@@ -52,6 +54,25 @@ class HashKey(object):
     def _dottedname(self):
         klass = self.__class__
         return '%s:%s' % (klass.__module__, klass.__name__)
+
+    @staticmethod
+    def _from_json(value):
+        hashkey = value['__hashkey__']
+        klass = RESOLVER.resolve(hashkey['name'])
+        return klass._from_json_value(hashkey['value'])
+
+    @classmethod
+    def _from_json_value(cls, value):
+        return cls(**value)
+
+    def _to_json(self):
+        return {'__hashkey__': {
+            'name': self._dottedname,
+            'value': self._to_json_value(),
+        }}
+
+    def _to_json_value(self):
+        return self.__dict__
 
     def __eq__(self, other):
         if isinstance(other, HashKey):
