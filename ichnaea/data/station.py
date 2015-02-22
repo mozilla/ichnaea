@@ -67,6 +67,7 @@ class StationUpdater(DataTask):
         self.min_new = min_new
         self.max_new = max_new
         self.remove_task = remove_task
+        self.updated_areas = set()
 
     def emit_new_observation_metric(self):
         num = self.station_query().count()
@@ -186,16 +187,20 @@ class StationUpdater(DataTask):
                 len(moving_keys))
             self.remove_task.delay(moving_keys)
 
-    def update(self, batch=10):
-        moving_stations = set()
-        updated_areas = set()
+    def add_area_update(self, station):
+        pass
 
+    def queue_area_updates(self):
+        pass
+
+    def update(self, batch=10):
         self.emit_new_observation_metric()
 
         stations = self.station_query().limit(batch).all()
         if not stations:
             return (0, 0)
 
+        moving_stations = set()
         for station in stations:
             observations = self.observation_query(station).all()
             if observations:
@@ -203,15 +208,10 @@ class StationUpdater(DataTask):
                 if moving:
                     moving_stations.add(station)
 
-                if self.area_model:
-                    updated_areas.add(self.area_model.to_hashkey(station))
+                # track potential updates to dependent areas
+                self.add_area_update(station)
 
-        if updated_areas and self.area_enqueue:
-            self.session.on_post_commit(
-                self.area_enqueue,
-                self.redis_client,
-                updated_areas,
-                self.area_update_key)
+        self.queue_area_updates()
 
         if moving_stations:
             self.blacklist_stations(moving_stations)
@@ -221,21 +221,26 @@ class StationUpdater(DataTask):
 
 class CellUpdater(StationUpdater):
 
-    area_model = CellArea
-    area_enqueue = staticmethod(enqueue_areas)
-    area_update_key = UPDATE_KEY['cell_lac']
     blacklist_model = CellBlacklist
     max_dist_km = 150
     observation_model = CellObservation
     station_model = Cell
     station_type = 'cell'
 
+    def add_area_update(self, station):
+        self.updated_areas.add(CellArea.to_hashkey(station))
+
+    def queue_area_updates(self):
+        if self.updated_areas:
+            self.session.on_post_commit(
+                enqueue_areas,
+                self.redis_client,
+                self.updated_areas,
+                UPDATE_KEY['cell_lac'])
+
 
 class WifiUpdater(StationUpdater):
 
-    area_model = None
-    area_enqueue = None
-    area_update_key = None
     blacklist_model = WifiBlacklist
     max_dist_km = 5
     observation_model = WifiObservation
