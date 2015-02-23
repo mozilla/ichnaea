@@ -58,9 +58,6 @@ for name in CELL_COLUMN_NAMES:
     else:
         CELL_COLUMNS.append(getattr(Cell.__table__.c, name))
 
-CELL_EXPORT_RADIO_NAMES = dict(
-    [(int(radio), radio.name.upper()) for radio in Radio])
-
 
 @contextmanager
 def selfdestruct_tempdir():
@@ -102,14 +99,12 @@ def make_cell_export_dict(row):
 
     # Fix up specific entry formatting
     radio = row[ix['radio']]
-    if radio is None:  # pragma: no cover
-        radio = -1
 
     psc = row[ix['psc']]
     if psc is None or psc == -1:
         psc = ''
 
-    d['radio'] = CELL_EXPORT_RADIO_NAMES[radio]
+    d['radio'] = radio.name.upper()
     d['created'] = row[ix['created']]
     d['updated'] = row[ix['modified']]
     d['samples'] = row[ix['total_measures']]

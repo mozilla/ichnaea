@@ -15,6 +15,7 @@ from ichnaea.models import (
     Cell,
     CellObservation,
     OCIDCell,
+    Radio,
     Wifi,
     WifiObservation,
 )
@@ -75,12 +76,14 @@ class TestStats(CeleryTestCase):
         one_day = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
+        gsm = Radio.gsm
+        umts = Radio.umts
         cells = [
-            Cell(created=long_ago, radio=0, mcc=1, mnc=2, lac=3, cid=4),
-            Cell(created=two_days, radio=2, mcc=1, mnc=2, lac=3, cid=4),
-            Cell(created=two_days, radio=2, mcc=1, mnc=2, lac=3, cid=5),
-            Cell(created=one_day, radio=0, mcc=2, mnc=2, lac=3, cid=5),
-            Cell(created=today, radio=0, mcc=1, mnc=3, lac=3, cid=4),
+            Cell(created=long_ago, radio=gsm, mcc=1, mnc=2, lac=3, cid=4),
+            Cell(created=two_days, radio=umts, mcc=1, mnc=2, lac=3, cid=4),
+            Cell(created=two_days, radio=umts, mcc=1, mnc=2, lac=3, cid=5),
+            Cell(created=one_day, radio=gsm, mcc=2, mnc=2, lac=3, cid=5),
+            Cell(created=today, radio=gsm, mcc=1, mnc=3, lac=3, cid=4),
         ]
         session.add_all(cells)
         session.commit()
@@ -119,13 +122,15 @@ class TestStats(CeleryTestCase):
         one_day = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
+        gsm = Radio.gsm
+        umts = Radio.umts
         cells = [
-            OCIDCell(created=long_ago, radio=0, mcc=1, mnc=2, lac=3, cid=4),
-            OCIDCell(created=two_days, radio=2, mcc=1, mnc=2, lac=3, cid=4),
-            OCIDCell(created=two_days, radio=2, mcc=1, mnc=2, lac=3, cid=5),
-            OCIDCell(created=one_day, radio=0, mcc=2, mnc=2, lac=3, cid=5),
-            OCIDCell(created=today, radio=0, mcc=1, mnc=3, lac=3, cid=4),
-            OCIDCell(created=today, radio=0, mcc=1, mnc=2, lac=4, cid=4),
+            OCIDCell(created=long_ago, radio=gsm, mcc=1, mnc=2, lac=3, cid=4),
+            OCIDCell(created=two_days, radio=umts, mcc=1, mnc=2, lac=3, cid=4),
+            OCIDCell(created=two_days, radio=umts, mcc=1, mnc=2, lac=3, cid=5),
+            OCIDCell(created=one_day, radio=gsm, mcc=2, mnc=2, lac=3, cid=5),
+            OCIDCell(created=today, radio=gsm, mcc=1, mnc=3, lac=3, cid=4),
+            OCIDCell(created=today, radio=gsm, mcc=1, mnc=2, lac=4, cid=4),
         ]
         session.add_all(cells)
         session.commit()

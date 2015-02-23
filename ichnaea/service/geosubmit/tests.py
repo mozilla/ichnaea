@@ -43,7 +43,7 @@ class TestGeoSubmit(CeleryAppTestCase):
                 {"latitude": GB_LAT + 0.1,
                  "longitude": GB_LON + 0.1,
                  "accuracy": 12.4,
-                 "radioType": "cdma",
+                 "radioType": Radio.cdma.name,
                  "cellTowers": [{
                      "cellId": 1234,
                      "locationAreaCode": 2,
@@ -105,9 +105,9 @@ class TestGeoSubmit(CeleryAppTestCase):
                  "heading": 45.0,
                  "speed": 3.6,
                  "timestamp": now_ms,
-                 "radioType": "gsm",
+                 "radioType": Radio.gsm.name,
                  "cellTowers": [{
-                     "radioType": "lte",
+                     "radioType": Radio.lte.name,
                      "cellId": 1234,
                      "locationAreaCode": 2,
                      "mobileCountryCode": GB_MCC,
@@ -165,7 +165,7 @@ class TestGeoSubmit(CeleryAppTestCase):
                 {"latitude": 12.34567,
                  "longitude": 23.45678,
                  "accuracy": 12.4,
-                 "radioType": "gsm",
+                 "radioType": Radio.gsm.name,
                  "wifiAccessPoints": [
                      {"macAddress": "101010101010"},
                      {"macAddress": "202020202020"},
@@ -205,7 +205,7 @@ class TestGeoSubmit(CeleryAppTestCase):
                 {"latitude": GB_LAT,
                  "longitude": GB_LON,
                  "accuracy": 12.4,
-                 "radioType": "gsm",
+                 "radioType": Radio.gsm.name,
                  "wifiAccessPoints": [{
                      "macAddress": "505050505050",
                      "age": 3,
@@ -271,7 +271,7 @@ class TestGeoSubmit(CeleryAppTestCase):
                 {"latitude": GB_LAT,
                  "longitude": GB_LON,
                  "cellTowers": [{
-                     "radioType": "gsm",
+                     "radioType": Radio.gsm.name,
                      "cellId": 12,
                      "locationAreaCode": 34,
                      "mobileCountryCode": GB_MCC,
@@ -289,13 +289,13 @@ class TestGeoSubmit(CeleryAppTestCase):
                 {"latitude": GB_LAT,
                  "longitude": GB_LON,
                  "cellTowers": [
-                     {"radioType": "gsm",
+                     {"radioType": Radio.gsm.name,
                       "cellId": 12,
                       "locationAreaCode": 34,
                       "mobileCountryCode": GB_MCC,
                       "mobileNetworkCode": 5,
                       "asu": 10},
-                     {"radioType": "gsm",
+                     {"radioType": Radio.gsm.name,
                       "cellId": 12,
                       "locationAreaCode": 34,
                       "mobileCountryCode": GB_MCC,
@@ -333,7 +333,7 @@ class TestGeoSubmit(CeleryAppTestCase):
                 {"latitude": 12.34567,
                  "longitude": 23.45678,
                  "accuracy": 12.4,
-                 "radioType": "gsm",
+                 "radioType": Radio.gsm.name,
                  "wifiAccessPoints": [
                      {"macAddress": "101010101010"},
                      {"macAddress": "202020202020"},

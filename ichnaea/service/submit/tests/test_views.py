@@ -34,7 +34,7 @@ class TestSubmit(CeleryAppTestCase):
         first_of_month = now.replace(day=1, hour=0, minute=0, second=0)
 
         cell_data = [
-            {"radio": "umts", "mcc": FRANCE_MCC,
+            {"radio": Radio.umts.name, "mcc": FRANCE_MCC,
              "mnc": 1, "lac": 2, "cid": 1234}]
         res = app.post_json(
             '/v1/submit?key=test',
@@ -43,7 +43,7 @@ class TestSubmit(CeleryAppTestCase):
                         "accuracy": 10,
                         "altitude": 123,
                         "altitude_accuracy": 7,
-                        "radio": "gsm",
+                        "radio": Radio.gsm.name,
                         "cell": cell_data}]},
             status=204)
         self.assertEqual(res.body, '')
@@ -411,7 +411,7 @@ class TestSubmit(CeleryAppTestCase):
     def test_stats(self):
         app = self.app
         cell_data = [
-            {"radio": "umts", "mcc": FRANCE_MCC,
+            {"radio": Radio.umts.name, "mcc": FRANCE_MCC,
              "mnc": 1, "lac": 2, "cid": 1234}]
         wifi_data = [{"key": "00:34:cd:34:cd:34"}]
         res = app.post_json(
@@ -421,7 +421,7 @@ class TestSubmit(CeleryAppTestCase):
                         "accuracy": 10,
                         "altitude": 123,
                         "altitude_accuracy": 7,
-                        "radio": "gsm",
+                        "radio": Radio.gsm.name,
                         "cell": cell_data,
                         "wifi": wifi_data,
                         }]},
@@ -479,7 +479,7 @@ class TestSubmit(CeleryAppTestCase):
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": PARIS_LAT,
                                       "lon": PARIS_LON,
-                                      "radio": "gsm",
+                                      "radio": Radio.gsm.name,
                                       "cell": cell_data}]},
             status=204)
         self.assertEqual(res.body, '')
@@ -499,7 +499,7 @@ class TestSubmit(CeleryAppTestCase):
         res = app.post_json(
             '/v1/submit', {"items": [{"lat": 12.3456781,
                                       "lon": 23.4567892,
-                                      "radio": "gsm",
+                                      "radio": Radio.gsm.name,
                                       "cell": cell_data}]},
             status=204)
         self.assertEqual(res.body, '')

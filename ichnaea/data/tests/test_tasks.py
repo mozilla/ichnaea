@@ -52,7 +52,7 @@ class TestCell(CeleryTestCase):
         session = self.db_master_session
         big = 1.0
         small = big / 10
-        keys = dict(radio=1, mcc=1, mnc=1, lac=1)
+        keys = dict(radio=Radio.cdma, mcc=1, mnc=1, lac=1)
         observations = [
             CellObservation(lat=ctr + xd, lon=ctr + yd, cid=cell, **keys)
             for cell in range(10)
@@ -110,12 +110,12 @@ class TestCell(CeleryTestCase):
         long_ago = now - timedelta(days=40)
         session = self.db_master_session
 
-        k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
-        k2 = dict(radio=1, mcc=1, mnc=2, lac=6, cid=8)
-        k3 = dict(radio=1, mcc=1, mnc=2, lac=9, cid=12)
-        k4 = dict(radio=1, mcc=1, mnc=2, lac=12, cid=16)
-        k5 = dict(radio=1, mcc=1, mnc=2, lac=15, cid=20)
-        k6 = dict(radio=1, mcc=1, mnc=2, lac=18, cid=24)
+        k1 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=3, cid=4)
+        k2 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=6, cid=8)
+        k3 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=9, cid=12)
+        k4 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=12, cid=16)
+        k5 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=15, cid=20)
+        k6 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=18, cid=24)
 
         # keys k2, k3 and k4 are expected to be detected as moving
         data = [
@@ -297,14 +297,15 @@ class TestCell(CeleryTestCase):
         last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
         session = self.db_master_session
 
-        cell_key = {'radio': int(Radio.gsm), 'mcc': FRANCE_MCC,
-                    'mnc': 2, 'lac': 3, 'cid': 1}
+        cell_key = {'mcc': FRANCE_MCC, 'mnc': 2, 'lac': 3, 'cid': 1}
 
-        session.add(CellBlacklist(time=last_week, count=1, **cell_key))
+        session.add(CellBlacklist(time=last_week, count=1,
+                                  radio=Radio.gsm, **cell_key))
         session.flush()
 
         # add a new entry for the previously blacklisted cell
-        obs = dict(lat=PARIS_LAT, lon=PARIS_LON, **cell_key)
+        obs = dict(lat=PARIS_LAT, lon=PARIS_LON,
+                   radio=int(Radio.gsm), **cell_key)
         insert_measures_cell.delay([obs]).get()
 
         # the cell was inserted again
@@ -489,9 +490,9 @@ class TestCell(CeleryTestCase):
         schema = ValidCellKeySchema()
         session = self.db_master_session
 
-        k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
-        k2 = dict(radio=1, mcc=1, mnc=2, lac=6, cid=8)
-        k3 = dict(radio=1, mcc=1, mnc=2,
+        k1 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=3, cid=4)
+        k2 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=6, cid=8)
+        k3 = dict(radio=Radio.cdma, mcc=1, mnc=2,
                   lac=schema.fields['lac'].missing,
                   cid=schema.fields['cid'].missing)
         data = [
@@ -538,7 +539,7 @@ class TestCell(CeleryTestCase):
     def test_max_min_range_update(self):
         session = self.db_master_session
 
-        k1 = dict(radio=1, mcc=1, mnc=2, lac=3, cid=4)
+        k1 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=3, cid=4)
         data = [
             Cell(lat=1.001, lon=-1.001,
                  max_lat=1.002, min_lat=1.0,
@@ -571,7 +572,7 @@ class TestCell(CeleryTestCase):
 
     def test_removal_updates_lac(self):
         session = self.db_master_session
-        keys = dict(radio=1, mcc=1, mnc=1, lac=1)
+        keys = dict(radio=Radio.cdma, mcc=1, mnc=1, lac=1)
 
         # setup: build LAC as above
         self.add_line_of_cells_and_scan_lac()
@@ -622,7 +623,7 @@ class TestCell(CeleryTestCase):
         session = self.db_master_session
         big = 0.1
         small = big / 10
-        keys = dict(radio=1, mcc=1, mnc=1, lac=1)
+        keys = dict(radio=Radio.cdma, mcc=1, mnc=1, lac=1)
         observations = [
             CellObservation(lat=ctr + xd, lon=ctr + yd, cid=cell, **keys)
             for cell in range(6)
@@ -665,7 +666,7 @@ class TestCell(CeleryTestCase):
         session = self.db_master_session
 
         # First batch of cell observations for CID 1
-        keys = dict(radio=1, mcc=1, mnc=1, lac=1, cid=1)
+        keys = dict(radio=Radio.cdma, mcc=1, mnc=1, lac=1, cid=1)
         cell = Cell(new_measures=4, total_measures=1, **keys)
         observations = [
             CellObservation(lat=1.0, lon=1.0, **keys),
@@ -714,7 +715,7 @@ class TestCell(CeleryTestCase):
         redis_client = self.redis_client
 
         # create an orphaned lac entry
-        key = dict(radio=1, mcc=1, mnc=1, lac=1)
+        key = dict(radio=Radio.cdma, mcc=1, mnc=1, lac=1)
         session.add(CellArea(**key))
         session.flush()
         enqueue_areas(session, redis_client,

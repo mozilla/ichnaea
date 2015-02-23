@@ -40,14 +40,6 @@ class Radio(IntEnum):
     def _gsm_family(cls):
         return (cls.gsm, cls.umts, cls.lte)
 
-    @classmethod
-    def _max(cls):
-        return max([int(value) for value in cls])
-
-    @classmethod
-    def _min(cls):
-        return min([int(value) for value in cls])
-
 
 class CellHashKey(HashKey):
 

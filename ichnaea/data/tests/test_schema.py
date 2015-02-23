@@ -65,7 +65,7 @@ class TestCellValidation(ValidationTest):
             'altitude_accuracy': 10,
             'lat': PARIS_LAT,
             'lon': PARIS_LON,
-            'radio': 'gsm',
+            'radio': Radio.gsm.name,
             'time': self.time,
             'report_id': None,
         }
@@ -115,6 +115,7 @@ class TestCellValidation(ValidationTest):
     def test_all_radio_values(self):
         radio_pairs = [
             ('gsm', Radio.gsm),
+            (Radio.gsm.name, Radio.gsm),
             ('cdma', Radio.cdma),
             ('umts', Radio.umts),
             ('wcdma', Radio.wcdma),
@@ -146,7 +147,7 @@ class TestCellValidation(ValidationTest):
                     obs, cell, dict(lat=lat, lon=lon, mcc=mcc, mnc=mnc))
             for mnc in valid_cdma_mncs:
                 obs, cell = self.get_sample(
-                    lat=lat, lon=lon, mcc=mcc, mnc=mnc, radio='cdma')
+                    lat=lat, lon=lon, mcc=mcc, mnc=mnc, radio=Radio.cdma.name)
                 self.check_normalized_cell(
                     obs, cell, dict(lat=lat, lon=lon, mcc=mcc, mnc=mnc))
 
@@ -328,7 +329,7 @@ class TestCellValidation(ValidationTest):
 
         for entry in entries:
             obs, cell = self.get_sample(
-                radio='cdma', **entry[0])
+                radio=Radio.cdma.name, **entry[0])
             self.check_normalized_cell(obs, cell, entry[1])
 
     def test_records_fail_the_lac_or_cid_and_psc_check(self):
@@ -343,74 +344,74 @@ class TestCellValidation(ValidationTest):
             self.check_normalized_cell(obs, cell, None)
 
     def test_mnc_above_1000_for_a_gsm_network(self):
-        obs, cell = self.get_sample(radio='gsm', mnc=1001)
+        obs, cell = self.get_sample(radio=Radio.gsm.name, mnc=1001)
         self.check_normalized_cell(obs, cell, None)
 
     def test_wrong_gsm_radio_type_is_corrected_for_large_cid(self):
-        obs, cell = self.get_sample(radio='gsm', cid=65536)
+        obs, cell = self.get_sample(radio=Radio.gsm.name, cid=65536)
         self.check_normalized_cell(
             obs, cell, {'radio': Radio.umts})
 
     def test_valid_umts_cid_is_32_bit(self):
         valid_cid = constants.MAX_CID_ALL
         obs, cell = self.get_sample(
-            radio='umts', cid=valid_cid)
+            radio=Radio.umts.name, cid=valid_cid)
         self.check_normalized_cell(obs, cell, {'cid': valid_cid})
 
     def test_invalid_umts_cid_is_not_32_bit(self):
         invalid_cid = constants.MAX_CID_ALL + 1
         obs, cell = self.get_sample(
-            radio='umts', cid=invalid_cid)
+            radio=Radio.umts.name, cid=invalid_cid)
         self.check_normalized_cell(obs, cell, None)
 
     def test_valid_cdma_cid_is_16_bit(self):
         valid_cid = constants.MAX_CID_CDMA
         obs, cell = self.get_sample(
-            radio='cdma', cid=valid_cid)
+            radio=Radio.cdma.name, cid=valid_cid)
         self.check_normalized_cell(obs, cell, {'cid': valid_cid})
 
     def test_invalid_cdma_cid_is_not_16_bit(self):
         invalid_cid = constants.MAX_CID_CDMA + 1
         obs, cell = self.get_sample(
-            radio='cdma', cid=invalid_cid)
+            radio=Radio.cdma.name, cid=invalid_cid)
         self.check_normalized_cell(obs, cell, None)
 
     def test_valid_lte_cid_is_28_bit(self):
         valid_cid = constants.MAX_CID_LTE
         obs, cell = self.get_sample(
-            radio='lte', cid=valid_cid)
+            radio=Radio.lte.name, cid=valid_cid)
         self.check_normalized_cell(obs, cell, {'cid': valid_cid})
 
     def test_invalid_lte_cid_is_not_28_bit(self):
         invalid_cid = constants.MAX_CID_LTE + 1
         obs, cell = self.get_sample(
-            radio='lte', cid=invalid_cid)
+            radio=Radio.lte.name, cid=invalid_cid)
         self.check_normalized_cell(obs, cell, None)
 
-    def test_valid_lac_for_gsm_umts_lte_is_less_or_equal_to_65533(self):
+    def test_valid_lac_for_gsm_family_is_less_or_equal_to_65533(self):
         valid_lac = constants.MAX_LAC_GSM_UMTS_LTE
-        for radio in ('gsm', 'umts', 'lte'):
+        for radio in Radio._gsm_family():
             obs, cell = self.get_sample(
-                radio=radio, lac=valid_lac)
+                radio=radio.name, lac=valid_lac)
             self.check_normalized_cell(obs, cell, {'lac': valid_lac})
 
-    def test_invalid_lac_for_gsm_umts_lte_is_greater_than_65533(self):
+    def test_invalid_lac_for_gsm_family_is_greater_than_65533(self):
         invalid_lac = constants.MAX_LAC_GSM_UMTS_LTE + 1
-        for radio in ('gsm', 'umts', 'lte'):
+        for radio in Radio._gsm_family():
             obs, cell = self.get_sample(
-                radio=radio, lac=invalid_lac)
+                radio=radio.name, lac=invalid_lac)
             self.check_normalized_cell(obs, cell, None)
 
     def test_valid_lac_for_cdma_is_less_or_equal_to_65534(self):
         valid_lac = constants.MAX_LAC_ALL
         obs, cell = self.get_sample(
-            radio='cdma', lac=valid_lac)
+            radio=Radio.cdma.name, lac=valid_lac)
         self.check_normalized_cell(obs, cell, {'lac': valid_lac})
 
     def test_invalid_lac_for_cdma_is_greater_than_65534(self):
         invalid_lac = constants.MAX_LAC_ALL + 1
         obs, cell = self.get_sample(
-            radio='cdma', lac=invalid_lac)
+            radio=Radio.cdma.name, lac=invalid_lac)
         self.check_normalized_cell(obs, cell, None)
 
 

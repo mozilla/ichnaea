@@ -124,14 +124,14 @@ class TestPositionSearcher(BaseLocateTest):
 
     def test_geoip_mcc_match(self):
         session = self.db_slave_session
-        gsm = int(Radio.gsm)
         london = self.geoip_data['London']
-        cell = {'radio': gsm, 'mcc': GB_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
-        session.add(Cell(range=1000, **cell))
+        cell = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
+        session.add(Cell(range=1000, radio=Radio.gsm, **cell))
         session.flush()
 
-        result = self._make_query(data={'cell': [cell]},
-                                  client_addr=london['ip'])
+        result = self._make_query(
+            data={'cell': [dict(radio=Radio.gsm.name, **cell)]},
+            client_addr=london['ip'])
         self.assertEqual(result,
                          {'lat': london['latitude'],
                           'lon': london['longitude'],
@@ -162,10 +162,10 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': CELL_MIN_ACCURACY})
 
     def test_geoip_mcc_mismatch_unknown_cell(self):
-        gsm = int(Radio.gsm)
         london = self.geoip_data['London']
         # We do not add the cell to the DB on purpose
-        cell = {'radio': gsm, 'mcc': USA_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
+        cell = {'radio': Radio.gsm.name, 'mcc': USA_MCC, 'mnc': 1,
+                'lac': 1, 'cid': 1}
 
         result = self._make_query(data={'cell': [cell]},
                                   client_addr=london['ip'])
@@ -176,19 +176,20 @@ class TestPositionSearcher(BaseLocateTest):
 
     def test_geoip_mcc_multiple(self):
         session = self.db_slave_session
-        gsm = int(Radio.gsm)
         london = self.geoip_data['London']
-        cell_key = {'radio': gsm, 'mnc': 1, 'lac': 1, 'cid': 1}
+        cell_key = {'mnc': 1, 'lac': 1, 'cid': 1}
         cells = [
             dict(mcc=GB_MCC, **cell_key),
             dict(mcc=USA_MCC, **cell_key),
         ]
+        gsm = Radio.gsm
         for cell in cells:
-            session.add(Cell(range=1000, **cell))
+            session.add(Cell(range=1000, radio=gsm, **cell))
         session.flush()
 
-        result = self._make_query(data={'cell': cells},
-                                  client_addr=london['ip'])
+        result = self._make_query(
+            data={'cell': [dict(radio=gsm.name, **cell) for cell in cells]},
+            client_addr=london['ip'])
         self.assertEqual(result,
                          {'lat': london['latitude'],
                           'lon': london['longitude'],
@@ -196,19 +197,20 @@ class TestPositionSearcher(BaseLocateTest):
 
     def test_geoip_mcc_multiple_unknown_mismatching_cell(self):
         session = self.db_slave_session
-        gsm = int(Radio.gsm)
         london = self.geoip_data['London']
-        cell_key = {'radio': gsm, 'mnc': 1, 'lac': 1, 'cid': 1}
+        cell_key = {'mnc': 1, 'lac': 1, 'cid': 1}
         cells = [
             dict(mcc=GB_MCC, **cell_key),
             dict(mcc=USA_MCC, **cell_key),
         ]
         # Only add the matching cell to the DB
-        session.add(Cell(range=1000, **cells[0]))
+        session.add(Cell(range=1000, radio=Radio.gsm, **cells[0]))
         session.flush()
 
-        result = self._make_query(data={'cell': cells},
-                                  client_addr=london['ip'])
+        gsm = Radio.gsm
+        result = self._make_query(
+            data={'cell': [dict(radio=gsm.name, **cell) for cell in cells]},
+            client_addr=london['ip'])
         self.assertEqual(result,
                          {'lat': london['latitude'],
                           'lon': london['longitude'],
@@ -217,17 +219,16 @@ class TestPositionSearcher(BaseLocateTest):
     def test_cell(self):
         session = self.db_slave_session
         london = self.geoip_data['London']
-        cell_key = {
-            'radio': int(Radio.gsm), 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
-        }
-        session.add(Cell(
-            lat=GB_LAT, lon=GB_LON, range=6000, cid=1, **cell_key))
-        session.add(CellArea(
-            lat=GB_LAT, lon=GB_LON, range=9000, **cell_key))
+        cell_key = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1}
+        session.add(Cell(lat=GB_LAT, lon=GB_LON, range=6000,
+                         radio=Radio.gsm, cid=1, **cell_key))
+        session.add(CellArea(lat=GB_LAT, lon=GB_LON, range=9000,
+                             radio=Radio.gsm, **cell_key))
         session.flush()
 
-        result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]},
-                                  client_addr=london['ip'], api_key_log=True)
+        result = self._make_query(
+            data={'cell': [dict(cid=1, radio=Radio.gsm.name, **cell_key)]},
+            client_addr=london['ip'], api_key_log=True)
         self.assertEqual(result,
                          {'lat': GB_LAT,
                           'lon': GB_LON,
@@ -245,17 +246,16 @@ class TestPositionSearcher(BaseLocateTest):
     def test_ocid_cell(self):
         session = self.db_slave_session
         london = self.geoip_data['London']
-        cell_key = {
-            'radio': int(Radio.gsm), 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
-        }
-        session.add(OCIDCell(
-            lat=GB_LAT, lon=GB_LON, range=6000, cid=1, **cell_key))
-        session.add(CellArea(
-            lat=GB_LAT, lon=GB_LON, range=9000, **cell_key))
+        cell_key = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1}
+        session.add(OCIDCell(lat=GB_LAT, lon=GB_LON, range=6000,
+                             radio=Radio.gsm, cid=1, **cell_key))
+        session.add(CellArea(lat=GB_LAT, lon=GB_LON, range=9000,
+                             radio=Radio.gsm, **cell_key))
         session.flush()
 
-        result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]},
-                                  client_addr=london['ip'], api_key_log=True)
+        result = self._make_query(
+            data={'cell': [dict(cid=1, radio=Radio.gsm.name, **cell_key)]},
+            client_addr=london['ip'], api_key_log=True)
         self.assertEqual(result,
                          {'lat': GB_LAT,
                           'lon': GB_LON,
@@ -279,7 +279,7 @@ class TestPositionSearcher(BaseLocateTest):
         session.flush()
 
         result = self._make_query(
-            data={"cell": [dict(radio="umts", cid=7, **key)]},
+            data={"cell": [dict(radio=Radio.umts.name, cid=7, **key)]},
             api_key_log=True)
         self.assertEqual(result,
                          {'lat': PARIS_LAT + 0.0026666,
@@ -302,20 +302,20 @@ class TestPositionSearcher(BaseLocateTest):
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
             Cell(lat=lat, lon=lon, range=1000,
-                 radio=2, cid=4, **key),
+                 radio=Radio.umts, cid=4, **key),
             Cell(lat=lat + 0.002, lon=lon + 0.004, range=1000,
-                 radio=2, cid=5, **key),
+                 radio=Radio.umts, cid=5, **key),
             Cell(lat=lat + 0.006, lon=lon + 0.006, range=1000,
-                 radio=2, cid=6, **key),
+                 radio=Radio.umts, cid=6, **key),
             CellArea(lat=lat + 0.0026666,
-                     lon=lon + 0.0033333, radio=2,
+                     lon=lon + 0.0033333, radio=Radio.umts,
                      range=50000, **key),
         ]
         session.add_all(data)
         session.flush()
 
         result = self._make_query(
-            data={"cell": [dict(radio="umts", cid=5, **key)]})
+            data={"cell": [dict(radio=Radio.umts.name, cid=5, **key)]})
         self.assertEqual(result,
                          {'lat': PARIS_LAT + 0.002,
                           'lon': PARIS_LON + 0.004,
@@ -338,7 +338,7 @@ class TestPositionSearcher(BaseLocateTest):
         session.flush()
 
         result = self._make_query(
-            data={"cell": [dict(radio="gsm", mcc=FRANCE_MCC,
+            data={"cell": [dict(radio=Radio.gsm.name, mcc=FRANCE_MCC,
                                 mnc=2, lac=4, cid=5)]})
         self.assertTrue(result is None)
 
@@ -369,11 +369,13 @@ class TestPositionSearcher(BaseLocateTest):
 
         result = self._make_query(data={
             "cell": [
-                dict(radio="gsm", cid=4, **key),
-                dict(radio="gsm", cid=5, **key),
+                dict(radio=Radio.gsm.name, cid=4, **key),
+                dict(radio=Radio.gsm.name, cid=5, **key),
 
-                dict(radio="gsm", cid=5, mcc=FRANCE_MCC, mnc=2, lac=-1),
-                dict(radio="gsm", cid=-1, mcc=FRANCE_MCC, mnc=2, lac=3),
+                dict(radio=Radio.gsm.name, cid=5,
+                     mcc=FRANCE_MCC, mnc=2, lac=-1),
+                dict(radio=Radio.gsm.name, cid=-1,
+                     mcc=FRANCE_MCC, mnc=2, lac=3),
             ]
         })
         self.assertEqual(result,
@@ -413,10 +415,10 @@ class TestPositionSearcher(BaseLocateTest):
         # positions to calculate the final result.
         result = self._make_query(data={
             "cell": [
-                dict(radio="gsm", cid=4, **key),
-                dict(radio="gsm", cid=9, **key),
-                dict(radio="gsm", cid=4, **key2),
-                dict(radio="gsm", cid=5, **key2),
+                dict(radio=Radio.gsm.name, cid=4, **key),
+                dict(radio=Radio.gsm.name, cid=9, **key),
+                dict(radio=Radio.gsm.name, cid=4, **key2),
+                dict(radio=Radio.gsm.name, cid=5, **key2),
             ]
         })
         self.assertEqual(result,
@@ -453,8 +455,8 @@ class TestPositionSearcher(BaseLocateTest):
         # The lac with the smallest cell wins.
         result = self._make_query(data={
             "cell": [
-                dict(radio="gsm", cid=4, **key),
-                dict(radio="gsm", cid=4, **key2),
+                dict(radio=Radio.gsm.name, cid=4, **key),
+                dict(radio=Radio.gsm.name, cid=4, **key2),
             ]
         })
         self.assertEqual(result,
@@ -489,8 +491,8 @@ class TestPositionSearcher(BaseLocateTest):
         # GSM lac-only hit (cid 9 instead of 5) and a LTE cell hit
         result = self._make_query(data={
             "cell": [
-                dict(radio="gsm", cid=9, **key),
-                dict(radio="lte", cid=4, **key2),
+                dict(radio=Radio.gsm.name, cid=9, **key),
+                dict(radio=Radio.lte.name, cid=4, **key2),
             ]
         })
         self.assertEqual(result,
@@ -515,8 +517,8 @@ class TestPositionSearcher(BaseLocateTest):
 
         result = self._make_query(data={
             "cell": [
-                dict(radio="umts", cid=4, **key),
-                dict(radio="umts", cid=5, **key),
+                dict(radio=Radio.umts.name, cid=4, **key),
+                dict(radio=Radio.umts.name, cid=5, **key),
             ],
             "wifi": [
                 {"key": "101010101010"},
@@ -530,20 +532,19 @@ class TestPositionSearcher(BaseLocateTest):
 
     def test_cell_multiple_country_codes_from_mcc(self):
         session = self.db_slave_session
-        cell_key = {
-            'radio': int(Radio.gsm), 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
-        }
-        session.add(Cell(
-            lat=GB_LAT, lon=GB_LON, range=6000, cid=1, **cell_key))
-        session.add(CellArea(
-            lat=GB_LAT, lon=GB_LON, range=9000, **cell_key))
+        cell_key = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1}
+        session.add(Cell(lat=GB_LAT, lon=GB_LON, range=6000,
+                         radio=Radio.gsm, cid=1, **cell_key))
+        session.add(CellArea(lat=GB_LAT, lon=GB_LON, range=9000,
+                             radio=Radio.gsm, **cell_key))
         session.flush()
 
         # Without a GeoIP, the mcc results in 4 different equally common
         # mcc values, GB not being the first one. We need to make sure
         # that we accept any of the country codes as a possible match
         # and don't discard otherwise good cell data based on this.
-        result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]})
+        result = self._make_query(
+            data={'cell': [dict(cid=1, radio=Radio.gsm.name, **cell_key)]})
         self.assertEqual(result,
                          {'lat': GB_LAT,
                           'lon': GB_LON,
@@ -615,7 +616,7 @@ class TestPositionSearcher(BaseLocateTest):
         session.flush()
 
         result = self._make_query(
-            data={"cell": [dict(radio="gsm", cid=6789, **key)]})
+            data={"cell": [dict(radio=Radio.gsm.name, cid=6789, **key)]})
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT,
                           'lon': SAO_PAULO_LON,
@@ -652,7 +653,7 @@ class TestPositionSearcher(BaseLocateTest):
         session.flush()
 
         result = self._make_query(data={
-            "cell": [dict(radio="gsm", cid=6789, **key)],
+            "cell": [dict(radio=Radio.gsm.name, cid=6789, **key)],
             "wifi": [wifi1, wifi2, wifi3],
         })
         self.assertEqual(result,
@@ -692,7 +693,7 @@ class TestPositionSearcher(BaseLocateTest):
         session.flush()
 
         result = self._make_query(data={
-            "cell": [dict(radio="gsm", cid=6789, **key)],
+            "cell": [dict(radio=Radio.gsm.name, cid=6789, **key)],
             "wifi": [wifi1, wifi2, wifi3],
         })
         self.assertEqual(result,
@@ -728,7 +729,7 @@ class TestPositionSearcher(BaseLocateTest):
         session.flush()
 
         result = self._make_query(data={
-            "cell": [dict(radio="gsm", cid=6789, **key)]})
+            "cell": [dict(radio=Radio.gsm.name, cid=6789, **key)]})
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT + 0.002,
                           'lon': SAO_PAULO_LON + 0.002,
@@ -766,7 +767,7 @@ class TestPositionSearcher(BaseLocateTest):
         session.flush()
 
         result = self._make_query(data={
-            "cell": [dict(radio="gsm", cid=6789, **key)],
+            "cell": [dict(radio=Radio.gsm.name, cid=6789, **key)],
             "wifi": [wifi1, wifi2, wifi3]})
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT + 0.002,
@@ -807,7 +808,7 @@ class TestPositionSearcher(BaseLocateTest):
         session.flush()
 
         result = self._make_query(data={
-            "cell": [dict(radio="gsm", cid=6789, **key)],
+            "cell": [dict(radio=Radio.gsm.name, cid=6789, **key)],
             "wifi": [wifi1, wifi2, wifi3]})
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT + 0.002,
@@ -850,7 +851,7 @@ class TestPositionSearcher(BaseLocateTest):
         session.flush()
 
         result = self._make_query(data={
-            "cell": [dict(radio="gsm", cid=6789, **key)],
+            "cell": [dict(radio=Radio.gsm.name, cid=6789, **key)],
             "wifi": [wifi1, wifi2, wifi3]})
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT + 0.002,
@@ -1200,8 +1201,7 @@ class TestCountrySearcher(BaseLocateTest):
     def test_mcc_without_geoip(self):
         bhutan = self.geoip_data['Bhutan']
         cell_key = {
-            'radio': int(Radio.gsm), 'mcc': BHUTAN_MCC, 'mnc': 1, 'lac': 1,
-        }
+            'radio': Radio.gsm.name, 'mcc': BHUTAN_MCC, 'mnc': 1, 'lac': 1}
 
         with self.db_call_checker() as check_db_calls:
             result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]},
@@ -1216,8 +1216,7 @@ class TestCountrySearcher(BaseLocateTest):
         bhutan = self.geoip_data['Bhutan']
         london = self.geoip_data['London']
         cell_key = {
-            'radio': int(Radio.gsm), 'mcc': BHUTAN_MCC, 'mnc': 1, 'lac': 1,
-        }
+            'radio': Radio.gsm.name, 'mcc': BHUTAN_MCC, 'mnc': 1, 'lac': 1}
 
         with self.db_call_checker() as check_db_calls:
             result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]},
@@ -1231,8 +1230,7 @@ class TestCountrySearcher(BaseLocateTest):
     def test_refuse_guessing_multiple_cell_countries(self):
         bhutan = self.geoip_data['Bhutan']
         cell_key = {
-            'radio': int(Radio.gsm), 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
-        }
+            'radio': Radio.gsm.name, 'mcc': GB_MCC, 'mnc': 1, 'lac': 1}
 
         with self.db_call_checker() as check_db_calls:
             result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]},
@@ -1245,8 +1243,7 @@ class TestCountrySearcher(BaseLocateTest):
 
     def test_neither_mcc_nor_geoip(self):
         cell_key = {
-            'radio': int(Radio.gsm), 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
-        }
+            'radio': Radio.gsm.name, 'mcc': GB_MCC, 'mnc': 1, 'lac': 1}
 
         with self.db_call_checker() as check_db_calls:
             result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]},

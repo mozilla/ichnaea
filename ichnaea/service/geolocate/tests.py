@@ -44,7 +44,7 @@ class TestGeolocate(AppTestCase):
 
         res = app.post_json(
             '%s?key=test' % self.url, {
-                "radioType": "gsm",
+                "radioType": Radio.gsm.name,
                 "cellTowers": [
                     {"mobileCountryCode": FRANCE_MCC,
                      "mobileNetworkCode": 1,
@@ -141,7 +141,7 @@ class TestGeolocate(AppTestCase):
 
         res = app.post_json(
             '%s?key=test' % self.url, {
-                "radioType": "gsm",
+                "radioType": Radio.gsm.name,
                 "cellTowers": [
                     {"mobileCountryCode": str(FRANCE_MCC),
                      "mobileNetworkCode": "01",
@@ -236,7 +236,7 @@ class TestGeolocate(AppTestCase):
 
         res = app.post_json(
             self.url, {
-                "radioType": "gsm",
+                "radioType": Radio.gsm.name,
                 "cellTowers": [
                     {"mobileCountryCode": FRANCE_MCC,
                      "mobileNetworkCode": 2,
@@ -265,7 +265,7 @@ class TestGeolocate(AppTestCase):
 
         res = app.post_json(
             '%s?key=unknown_key' % self.url, {
-                "radioType": "gsm",
+                "radioType": Radio.gsm.name,
                 "cellTowers": [
                     {"mobileCountryCode": FRANCE_MCC,
                      "mobileNetworkCode": 2,
@@ -321,14 +321,14 @@ class TestGeolocate(AppTestCase):
 
         res = app.post_json(
             '%s?key=test' % self.url, {
-                "radioType": "lte",
+                "radioType": Radio.lte.name,
                 "cellTowers": [
-                    {"radio": "lte",
+                    {"radio": Radio.lte.name,
                      "mobileCountryCode": FRANCE_MCC,
                      "mobileNetworkCode": 1,
                      "locationAreaCode": 2,
                      "cellId": 3},
-                    {"radio": "lte",
+                    {"radio": Radio.lte.name,
                      "mobileCountryCode": FRANCE_MCC,
                      "mobileNetworkCode": 1,
                      "locationAreaCode": 2,
@@ -366,7 +366,7 @@ class TestGeolocateFxOSWorkarounds(AppTestCase):
         cell = Cell()
         cell.lat = PARIS_LAT
         cell.lon = PARIS_LON
-        cell.radio = 0
+        cell.radio = Radio.gsm
         cell.mcc = FRANCE_MCC
         cell.mnc = 1
         cell.lac = 2
@@ -378,7 +378,7 @@ class TestGeolocateFxOSWorkarounds(AppTestCase):
         res = app.post_json(
             '%s?key=test' % self.url, {
                 "cellTowers": [
-                    {"radio": "gsm",
+                    {"radio": Radio.gsm.name,
                      "mobileCountryCode": FRANCE_MCC,
                      "mobileNetworkCode": 1,
                      "locationAreaCode": 2,
@@ -403,7 +403,7 @@ class TestGeolocateFxOSWorkarounds(AppTestCase):
         cell = Cell()
         cell.lat = PARIS_LAT
         cell.lon = PARIS_LON
-        cell.radio = 0
+        cell.radio = Radio.gsm
         cell.mcc = FRANCE_MCC
         cell.mnc = 1
         cell.lac = 2
@@ -414,12 +414,12 @@ class TestGeolocateFxOSWorkarounds(AppTestCase):
         res = app.post_json(
             '%s?key=test' % self.url, {
                 "cellTowers": [
-                    {"radio": "gsm",
+                    {"radio": Radio.gsm.name,
                      "mobileCountryCode": FRANCE_MCC,
                      "mobileNetworkCode": 1,
                      "locationAreaCode": 2,
                      "cellId": 1234},
-                    {"radio": "gsm",
+                    {"radio": Radio.gsm.name,
                      "mobileCountryCode": FRANCE_MCC,
                      "mobileNetworkCode": 1,
                      "locationAreaCode": 2,
@@ -451,9 +451,9 @@ class TestGeolocateFxOSWorkarounds(AppTestCase):
 
         res = app.post_json(
             '%s?key=test' % self.url, {
-                "radioType": "cdma",
+                "radioType": Radio.cdma.name,
                 "cellTowers": [
-                    {"radio": "gsm",
+                    {"radio": Radio.gsm.name,
                      "mobileCountryCode": FRANCE_MCC,
                      "mobileNetworkCode": 1,
                      "locationAreaCode": 2,
@@ -495,7 +495,7 @@ class TestGeolocateErrors(AppTestCase):
 
         res = app.post_json(
             '/v1/geolocate?key=test', {
-                "radioType": "gsm",
+                "radioType": Radio.gsm.name,
                 "cellTowers": [
                     {"mobileCountryCode": FRANCE_MCC,
                      "mobileNetworkCode": 1,

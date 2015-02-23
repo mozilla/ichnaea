@@ -29,18 +29,18 @@ class TestSearch(AppTestCase):
         lon = PARIS_LON
         data = [
             Cell(lat=lat, lon=lon, range=1000,
-                 radio=2, cid=4, **key),
+                 radio=Radio.umts, cid=4, **key),
             Cell(lat=lat + 0.002, lon=lon + 0.004, range=1000,
-                 radio=2, cid=5, **key),
+                 radio=Radio.umts, cid=5, **key),
         ]
         session.add_all(data)
         session.commit()
 
         res = app.post_json(
             '/v1/search?key=test',
-            {"radio": "gsm", "cell": [
-                dict(radio="umts", cid=4, **key),
-                dict(radio="umts", cid=5, **key),
+            {"radio": Radio.gsm.name, "cell": [
+                dict(radio=Radio.umts.name, cid=4, **key),
+                dict(radio=Radio.umts.name, cid=5, **key),
             ]},
             status=200)
 
@@ -219,8 +219,8 @@ class TestSearch(AppTestCase):
 
         res = app.post_json(
             '/v1/search',
-            {"radio": "gsm", "cell": [
-                dict(radio="umts", **key),
+            {"radio": Radio.gsm.name, "cell": [
+                dict(radio=Radio.umts.name, **key),
             ]},
             status=400)
         self.assertEqual(res.json, loads(INVALID_API_KEY))
@@ -240,8 +240,8 @@ class TestSearch(AppTestCase):
 
         res = app.post_json(
             '/v1/search?key=unknown_key',
-            {"radio": "gsm", "cell": [
-                dict(radio="umts", **key),
+            {"radio": Radio.gsm.name, "cell": [
+                dict(radio=Radio.umts.name, **key),
             ]},
             status=400)
         self.assertEqual(res.json, loads(INVALID_API_KEY))

@@ -171,7 +171,7 @@ def countries(session):
     # We group by radio, mcc to take advantage of the index
     # and explicitly specify a small list of all valid radio values
     # to get mysql to actually use the index.
-    radios = set([int(radio) for radio in Radio])
+    radios = set([radio for radio in Radio])
     rows = session.query(Cell.radio, Cell.mcc, func.count()).filter(
         Cell.radio.in_(radios)).group_by(Cell.radio, Cell.mcc).all()
 

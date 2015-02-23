@@ -155,6 +155,19 @@ class WifiKeyNode(SchemaNode):
             raise Invalid(node, 'Invalid wifi key')
 
 
+class RadioNode(DefaultNode):
+    """
+    A node containing a valid radio enum.
+    """
+
+    def validator(self, node, cstruct):
+        if type(cstruct) == Radio:
+            return True
+        if cstruct is None or cstruct is null:  # pragma: no cover
+            return True
+        raise Invalid(node, 'Invalid radio type')  # pragma: no cover
+
+
 class ReportIDNode(SchemaNode):
     """
     A node containing a valid report_id.
@@ -306,8 +319,7 @@ class ValidCellKeySchema(FieldSchema, CopyingSchema):
     mcc = SchemaNode(Integer(), validator=Range(1, 999))
     mnc = SchemaNode(Integer(), validator=Range(0, 32767))
     psc = DefaultNode(Integer(), missing=-1, validator=Range(0, 512))
-    radio = DefaultNode(
-        RadioType(), missing=None, validator=Range(Radio._min(), Radio._max()))
+    radio = RadioNode(RadioType(), missing=None)
 
     def deserialize(self, data, default_radio=None):
         if data:
