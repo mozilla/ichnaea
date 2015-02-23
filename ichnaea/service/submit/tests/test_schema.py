@@ -24,8 +24,8 @@ class TestReportSchema(TestCase):
         # missing lat and lon will default to -255 and be stripped out
         # instead of causing colander to drop the entire batch of
         # records
-        self.assertEquals(data['lat'], -255)
-        self.assertEquals(data['lon'], -255)
+        self.assertEquals(data['lat'], None)
+        self.assertEquals(data['lon'], None)
 
         self.assertFalse(errors)
 

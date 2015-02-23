@@ -135,8 +135,8 @@ def make_ocid_cell_import_dict(row):
     d['modified'] = datetime.fromtimestamp(
         int(val('updated', 0))).replace(tzinfo=UTC)
 
-    d['lat'] = float(val('lat', -255))
-    d['lon'] = float(val('lon', -255))
+    d['lat'] = float(val('lat', None))
+    d['lon'] = float(val('lon', None))
 
     d['radio'] = RADIO_TYPE.get(row['radio'].lower(), -1)
 

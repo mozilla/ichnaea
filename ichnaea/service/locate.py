@@ -298,7 +298,9 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
 
     def clean_cell_keys(self, data):
         """Pre-process cell data."""
-        radio = RADIO_TYPE.get(data.get('radio', ''), -1)
+        radio = data.get('radio')
+        if radio is not None:
+            radio = RADIO_TYPE.get(radio)
         cell_keys = []
         for cell in data.get(self.data_field, ()):
             cell = CellLookup.validate(cell, default_radio=radio)

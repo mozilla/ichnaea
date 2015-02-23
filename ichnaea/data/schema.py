@@ -290,28 +290,24 @@ class ValidCellKeySchema(FieldSchema, CopyingSchema):
     mnc = SchemaNode(Integer(), validator=Range(0, 32767))
     psc = DefaultNode(Integer(), missing=-1, validator=Range(0, 512))
     radio = DefaultNode(
-        Integer(), missing=-1, validator=Range(Radio._min(), Radio._max()))
+        Integer(), missing=None, validator=Range(Radio._min(), Radio._max()))
 
     def deserialize(self, data, default_radio=None):
         if data:
-            if 'radio' in data:
-                if isinstance(data['radio'], basestring):
-                    data['radio'] = RADIO_TYPE.get(
-                        data['radio'], self.fields['radio'].missing)
+            if isinstance(data['radio'], basestring):
+                data['radio'] = RADIO_TYPE.get(
+                    data['radio'], self.fields['radio'].missing)
 
-                # If a default radio was set,
-                # and we don't know, use it as fallback
-                if (self.is_missing(data, 'radio')
-                        and default_radio is not None):
-                    data['radio'] = default_radio
-
-                # If the cell id >= 65536 then it must be a umts tower
-                if (data.get('cid', 0) >= 65536
-                        and data['radio'] == RADIO_TYPE['gsm']):
-                    data['radio'] = RADIO_TYPE['umts']
-
-            else:
+            # If a default radio was set,
+            # and we don't know, use it as fallback
+            if (self.is_missing(data, 'radio')
+                    and default_radio is not None):
                 data['radio'] = default_radio
+
+            # If the cell id >= 65536 then it must be a umts tower
+            if (data.get('cid', 0) >= 65536
+                    and data['radio'] == RADIO_TYPE['gsm']):
+                data['radio'] = RADIO_TYPE['umts']
 
             # Treat cid=65535 without a valid lac as an unspecified value
             if (self.is_missing(data, 'lac')

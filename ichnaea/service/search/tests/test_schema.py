@@ -22,7 +22,7 @@ class TestSearchSchema(TestCase):
         data, errors = preprocess_request(request, schema, response=None)
         self.assertEqual(errors, [])
         self.assertEqual(data,
-                         {'cell': (), 'wifi': (), 'radio': ''})
+                         {'cell': (), 'wifi': (), 'radio': None})
 
     def test_empty_cell_entry(self):
         schema = self._make_schema()

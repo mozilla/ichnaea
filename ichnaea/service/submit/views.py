@@ -27,7 +27,7 @@ def check_cell_or_wifi(data, errors):
     # Clean up the cell data
     skips = set()
     for idx, c in enumerate(cell):
-        if c['radio'] == '':
+        if c['radio'] is None:
             skips.add(idx)
 
     skips = list(skips)
@@ -42,11 +42,9 @@ def check_cell_or_wifi(data, errors):
 
 
 def submit_validator(data, errors):
-    # for each of the observations, if the lat or lon is -255
-    # drop the node
     skips = set()
     for idx, item in enumerate(data.get('items', ())):
-        if item['lat'] == -255 or item['lon'] == -255:
+        if item['lat'] is None or item['lon'] is None:
             skips.add(idx)
 
         if not check_cell_or_wifi(item, errors):

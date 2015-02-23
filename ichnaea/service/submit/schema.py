@@ -6,7 +6,7 @@ RADIO_TYPE_KEYS = ['gsm', 'cdma', 'umts', 'wcdma', 'lte']
 
 class CellSchema(MappingSchema):
     radio = SchemaNode(String(),
-                       validator=OneOf(RADIO_TYPE_KEYS), missing='')
+                       validator=OneOf(RADIO_TYPE_KEYS), missing=None)
     mcc = SchemaNode(Integer(), missing=-1)
     mnc = SchemaNode(Integer(), missing=-1)
     lac = SchemaNode(Integer(), missing=-1)
@@ -34,17 +34,15 @@ class WifisSchema(SequenceSchema):
 
 
 class BaseReportSchema(MappingSchema):
-    # lat/lon being set to -255 indicates that this report should be
-    # skipped.  Other fields can be filled in with defaults
-    lat = SchemaNode(Float(), missing=-255)
-    lon = SchemaNode(Float(), missing=-255)
+    lat = SchemaNode(Float(), missing=None)
+    lon = SchemaNode(Float(), missing=None)
 
     time = SchemaNode(String(), missing='')
     accuracy = SchemaNode(Integer(), missing=0)
     altitude = SchemaNode(Integer(), missing=0)
     altitude_accuracy = SchemaNode(Integer(), missing=0)
     radio = SchemaNode(String(),
-                       validator=OneOf(RADIO_TYPE_KEYS), missing='')
+                       validator=OneOf(RADIO_TYPE_KEYS), missing=None)
 
     heading = SchemaNode(Float(), missing=-1.0)
     speed = SchemaNode(Float(), missing=-1.0)

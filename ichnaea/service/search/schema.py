@@ -6,7 +6,7 @@ RADIO_TYPE_KEYS = ['gsm', 'cdma', 'umts', 'wcdma', 'lte']
 
 class CellSchema(MappingSchema):
     radio = SchemaNode(String(),
-                       validator=OneOf(RADIO_TYPE_KEYS), missing='')
+                       validator=OneOf(RADIO_TYPE_KEYS), missing=None)
     mcc = SchemaNode(Integer(), missing=-1)
     mnc = SchemaNode(Integer(), missing=-1)
     lac = SchemaNode(Integer(), missing=-1)
@@ -35,6 +35,6 @@ class WifisSchema(SequenceSchema):
 
 class SearchSchema(MappingSchema):
     radio = SchemaNode(String(),
-                       validator=OneOf(RADIO_TYPE_KEYS), missing='')
+                       validator=OneOf(RADIO_TYPE_KEYS), missing=None)
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())

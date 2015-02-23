@@ -20,7 +20,7 @@ class CellTowerSchema(MappingSchema):
     # mapped to 'radio' for submit
     radioType = SchemaNode(String(),
                            validator=OneOf(RADIO_TYPE_KEYS),
-                           missing='')
+                           missing=None)
     # mapped to 'cid' for submit
     cellId = SchemaNode(Integer())
     # mapped to 'lac' for submit
@@ -69,14 +69,14 @@ class WifiAccessPointsSchema(SequenceSchema):
 class GeoSubmitSchema(MappingSchema):
 
     homeMobileCountryCode = SchemaNode(
-        Integer(), missing=-1)
+        Integer(), missing=None)
     homeMobileNetworkCode = SchemaNode(
-        Integer(), missing=-1)
+        Integer(), missing=None)
 
     # mapped to 'radio' for submit
     radioType = SchemaNode(String(),
                            validator=OneOf(RADIO_TYPE_KEYS),
-                           missing='')
+                           missing=None)
     carrier = SchemaNode(String(), missing='')
     cellTowers = CellTowersSchema(missing=())
     wifiAccessPoints = WifiAccessPointsSchema(missing=())
@@ -85,10 +85,10 @@ class GeoSubmitSchema(MappingSchema):
     # geolocate API, but are part of the submit schema
 
     # mapped to 'lat' for submit
-    latitude = SchemaNode(Float(), missing=-255)
+    latitude = SchemaNode(Float(), missing=None)
 
     # mapped to 'lon' for submit
-    longitude = SchemaNode(Float(), missing=-255)
+    longitude = SchemaNode(Float(), missing=None)
 
     # parsed and mapped to 'time' for submit
     timestamp = SchemaNode(Integer(), missing=0)

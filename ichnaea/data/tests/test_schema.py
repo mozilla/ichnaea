@@ -119,10 +119,10 @@ class TestCellValidation(ValidationTest):
             ('umts', RADIO_TYPE['umts']),
             ('wcdma', RADIO_TYPE['wcdma']),
             ('lte', RADIO_TYPE['lte']),
-            ('wimax', -1),
-            ('', -1),
-            ('hspa', -1),
-            ('n/a', -1),
+            ('wimax', None),
+            ('', None),
+            ('hspa', None),
+            ('n/a', None),
         ]
 
         for (radio, v) in radio_pairs:
