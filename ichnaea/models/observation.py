@@ -15,6 +15,7 @@ from sqlalchemy.dialects.mysql import (
 from ichnaea.models.base import (
     _Model,
     BigIdMixin,
+    CreationMixin,
     PositionMixin,
     ValidationMixin,
 )
@@ -62,16 +63,16 @@ class Report(PositionMixin, ValidationMixin):
         return ValidReportSchema
 
 
-class ObservationMixin(BigIdMixin, Report):
+class ObservationMixin(CreationMixin, BigIdMixin, Report):
 
     @classmethod
-    def create(cls, entry):
-        entry = cls.validate(entry)
-        if entry is None:  # pragma: no cover
+    def create(cls, _raise_invalid=False, **kw):
+        validated = cls.validate(kw, _raise_invalid=_raise_invalid)
+        if validated is None:  # pragma: no cover
             return None
         # BBB: no longer required, internaljson format decodes to datetime
-        entry['time'] = decode_datetime(entry['time'])
-        return cls(**entry)
+        validated['time'] = decode_datetime(validated['time'])
+        return cls(**validated)
 
 
 class CellReport(CellKeyPscMixin, ValidationMixin):

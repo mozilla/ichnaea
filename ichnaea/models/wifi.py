@@ -8,6 +8,7 @@ from sqlalchemy import (
 from ichnaea.models.base import (
     _Model,
     BigIdMixin,
+    CreationMixin,
     HashKey,
     HashKeyMixin,
 )
@@ -33,7 +34,7 @@ class WifiMixin(BigIdMixin, WifiKeyMixin):
     pass
 
 
-class Wifi(WifiMixin, StationMixin, _Model):
+class Wifi(WifiMixin, StationMixin, CreationMixin, _Model):
     __tablename__ = 'wifi'
 
     _indices = (
@@ -49,6 +50,11 @@ class Wifi(WifiMixin, StationMixin, _Model):
         if 'total_measures' not in kw:
             kw['total_measures'] = 0
         super(Wifi, self).__init__(*args, **kw)
+
+    @classmethod
+    def valid_schema(cls):
+        from ichnaea.data.schema import ValidWifiSchema
+        return ValidWifiSchema
 
 
 class WifiBlacklist(WifiMixin, StationBlacklistMixin, _Model):

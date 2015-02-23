@@ -5,22 +5,27 @@ from ichnaea.models import (
     Radio,
     WifiObservation,
 )
-from ichnaea.tests.base import DBTestCase
+from ichnaea.tests.base import (
+    DBTestCase,
+    GB_LAT,
+    GB_LON,
+    GB_MCC,
+)
 
 
 class TestCellObservation(DBTestCase):
 
     def test_fields(self):
         report_id = uuid.uuid1()
-        cell = CellObservation(
-            lat=1.2345678,
-            lon=2.3456789,
+        cell = CellObservation.create(
+            lat=GB_LAT,
+            lon=GB_LON,
             report_id=report_id,
             radio=Radio.gsm,
-            mcc=100,
+            mcc=GB_MCC,
             mnc=5,
             lac=12345,
-            cid=234567,
+            cid=23456,
             asu=26,
             signal=-61,
             ta=10,
@@ -31,13 +36,13 @@ class TestCellObservation(DBTestCase):
 
         result = session.query(CellObservation).first()
         self.assertEqual(result.report_id, report_id)
-        self.assertEqual(result.lat, 1.2345678)
-        self.assertEqual(result.lon, 2.3456789)
+        self.assertEqual(result.lat, GB_LAT)
+        self.assertEqual(result.lon, GB_LON)
         self.assertEqual(result.radio, Radio.gsm)
-        self.assertEqual(result.mcc, 100)
+        self.assertEqual(result.mcc, GB_MCC)
         self.assertEqual(result.mnc, 5)
         self.assertEqual(result.lac, 12345)
-        self.assertEqual(result.cid, 234567)
+        self.assertEqual(result.cid, 23456)
         self.assertEqual(result.asu, 26)
         self.assertEqual(result.signal, -61)
         self.assertEqual(result.ta, 10)
@@ -48,12 +53,12 @@ class TestWifiObservation(DBTestCase):
     def test_fields(self):
         key = "3680873e9b83"
         report_id = uuid.uuid1()
-        wifi = WifiObservation(
-            lat=1.2345678,
-            lon=2.3456789,
+        wifi = WifiObservation.create(
+            lat=GB_LAT,
+            lon=GB_LON,
             report_id=report_id,
             key=key,
-            channel=2412,
+            channel=5,
             signal=-45,
         )
         session = self.db_master_session
@@ -62,8 +67,8 @@ class TestWifiObservation(DBTestCase):
 
         result = session.query(WifiObservation).first()
         self.assertEqual(result.report_id, report_id)
-        self.assertEqual(result.lat, 1.2345678)
-        self.assertEqual(result.lon, 2.3456789)
+        self.assertEqual(result.lat, GB_LAT)
+        self.assertEqual(result.lon, GB_LON)
         self.assertEqual(result.key, key)
-        self.assertEqual(result.channel, 2412)
+        self.assertEqual(result.channel, 5)
         self.assertEqual(result.signal, -45)

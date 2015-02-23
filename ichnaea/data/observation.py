@@ -55,7 +55,7 @@ class ObservationQueue(DataTask):
         for entry in entries:
             self.pre_process_entry(entry)
 
-            obs = self.observation_model.create(entry)
+            obs = self.observation_model.create(**entry)
             if not obs:
                 drop_counter['malformed'] += 1
                 continue

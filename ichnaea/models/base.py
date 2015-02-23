@@ -166,12 +166,24 @@ class ValidationMixin(object):
         raise NotImplementedError
 
     @classmethod
-    def validate(cls, entry, **kw):
+    def validate(cls, entry, _raise_invalid=False, **kw):
         try:
             validated = cls.valid_schema()().deserialize(entry, **kw)
         except Invalid:
+            if _raise_invalid:  # pragma: no cover
+                raise
             validated = None
         return validated
+
+
+class CreationMixin(ValidationMixin):
+
+    @classmethod
+    def create(cls, _raise_invalid=False, **kw):
+        validated = cls.validate(kw, _raise_invalid=_raise_invalid)
+        if validated is None:  # pragma: no cover
+            return None
+        return cls(**validated)
 
 
 class BigIdMixin(object):

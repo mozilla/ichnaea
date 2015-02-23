@@ -1,12 +1,7 @@
 from datetime import timedelta
+from functools import partial
 
-from ichnaea.models import (
-    ApiKey,
-    CellObservation,
-    OCIDCell,
-    Radio,
-    WifiObservation,
-)
+from ichnaea.models import ApiKey
 from ichnaea.monitor.tasks import (
     monitor_api_key_limits,
     monitor_measures,
@@ -14,6 +9,11 @@ from ichnaea.monitor.tasks import (
     monitor_queue_length,
 )
 from ichnaea.tests.base import CeleryTestCase
+from ichnaea.tests.factories import (
+    CellObservationFactory,
+    OCIDCellFactory,
+    WifiObservationFactory,
+)
 from ichnaea import util
 
 
@@ -87,8 +87,12 @@ class TestMonitorTasks(CeleryTestCase):
         self.assertEqual(result, {'cell_measure': -1, 'wifi_measure': -1})
 
         # add some observations
-        session.add_all([CellObservation() for i in range(3)])
-        session.add_all([WifiObservation() for i in range(5)])
+        cell_factory = partial(CellObservationFactory.create, _session=session)
+        for i in range(3):
+            cell_factory()
+        wifi_factory = partial(WifiObservationFactory.create, _session=session)
+        for i in range(5):
+            wifi_factory()
         session.flush()
 
         result = monitor_measures.delay().get()
@@ -100,14 +104,15 @@ class TestMonitorTasks(CeleryTestCase):
     def test_monitor_ocid_import(self):
         session = self.db_master_session
         now = util.utcnow()
-        cell_args = dict(radio=Radio.gsm, mcc=262, mnc=1, lac=1)
+
+        ocid_factory = partial(OCIDCellFactory.create, _session=session)
 
         expected = []
         results = []
-        for i in range(30, 0, -5):
+        for i in range(35, 5, -5):
             created = now - timedelta(hours=i)
             expected.append(i * 3600000)
-            session.add(OCIDCell(created=created, cid=i, **cell_args))
+            ocid_factory(created=created, cid=i)
             session.flush()
             results.append(monitor_ocid_import.delay().get())
 

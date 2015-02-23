@@ -228,6 +228,8 @@ class ValidPositionSchema(FieldSchema, CopyingSchema):
 class ValidStationSchema(ValidPositionSchema):
     """A schema which validates the fields present in a station."""
 
+    created = SchemaNode(DateTimeFromString(), missing=None)
+    modified = SchemaNode(DateTimeFromString(), missing=None)
     total_measures = SchemaNode(Integer(), missing=0)
     range = SchemaNode(Integer(), missing=0)
 
@@ -387,7 +389,6 @@ class ValidCellSchema(ValidCellKeySchema, ValidStationSchema):
 class ValidOCIDCellSchema(ValidCellSchema):
     """A schema which validates the fields present in a OCID cell."""
 
-    modified = SchemaNode(DateTimeFromString(), missing=None)
     changeable = SchemaNode(Boolean(), missing=True)
 
 

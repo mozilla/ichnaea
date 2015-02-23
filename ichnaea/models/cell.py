@@ -13,11 +13,11 @@ from sqlalchemy.dialects.mysql import (
 from ichnaea import geocalc
 from ichnaea.models.base import (
     _Model,
+    CreationMixin,
     HashKey,
     HashKeyMixin,
     PositionMixin,
     TimeTrackingMixin,
-    ValidationMixin,
 )
 from ichnaea.models.sa_types import TinyIntEnum
 from ichnaea.models.station import (
@@ -106,7 +106,7 @@ class CellMixin(CellKeyPscMixin):
     _hashkey_cls = CellKey
 
 
-class Cell(CellMixin, StationMixin, _Model):
+class Cell(CellMixin, StationMixin, CreationMixin, _Model):
     __tablename__ = 'cell'
 
     _indices = (
@@ -124,8 +124,13 @@ class Cell(CellMixin, StationMixin, _Model):
             kw['total_measures'] = 0
         super(Cell, self).__init__(*args, **kw)
 
+    @classmethod
+    def valid_schema(cls):
+        from ichnaea.data.schema import ValidCellSchema
+        return ValidCellSchema
 
-class OCIDCell(CellMixin, BaseStationMixin, ValidationMixin, _Model):
+
+class OCIDCell(CellMixin, BaseStationMixin, CreationMixin, _Model):
     __tablename__ = 'ocid_cell'
 
     _indices = (
