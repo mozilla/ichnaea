@@ -1,9 +1,13 @@
+from hashlib import sha1
+
 import factory
 from factory.alchemy import SQLAlchemyModelFactory
 
 from ichnaea.models import (
     Cell,
     CellObservation,
+    ObservationBlock,
+    ObservationType,
     OCIDCell,
     Radio,
     Wifi,
@@ -63,6 +67,19 @@ class CellObservationFactory(CellPositionFactory):
 
     class Meta:
         model = CellObservation.create
+
+
+class ObservationBlockFactory(BaseFactory):
+
+    class Meta:
+        model = ObservationBlock
+
+    measure_type = ObservationType.cell
+    start_id = 10
+    end_id = 20
+    s3_key = '201502/cell_10_200.zip'
+    archive_sha = sha1('').digest()
+    archive_date = None
 
 
 class WifiPositionFactory(BaseFactory):
