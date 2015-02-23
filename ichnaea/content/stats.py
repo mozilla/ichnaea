@@ -8,8 +8,7 @@ from sqlalchemy import func
 
 from ichnaea.models import (
     Cell,
-    RADIO_TYPE,
-    RADIO_TYPE_INVERSE,
+    Radio,
 )
 
 from ichnaea.models.content import (
@@ -172,7 +171,7 @@ def countries(session):
     # We group by radio, mcc to take advantage of the index
     # and explicitly specify a small list of all valid radio values
     # to get mysql to actually use the index.
-    radios = [v for v in RADIO_TYPE.values() if v >= 0]
+    radios = set([int(radio) for radio in Radio])
     rows = session.query(Cell.radio, Cell.mcc, func.count()).filter(
         Cell.radio.in_(radios)).group_by(Cell.radio, Cell.mcc).all()
 
@@ -194,16 +193,16 @@ def countries(session):
                 'total': 0,
                 'gsm': 0, 'cdma': 0, 'umts': 0, 'lte': 0,
             }
-            for t, v in item.items():
-                country[RADIO_TYPE_INVERSE[t]] = int(v)
+            for radio, value in item.items():
+                country[radio.name] = int(value)
             country['total'] = int(sum(item.values()))
             if alpha3 not in countries:
                 countries[alpha3] = country
             else:
                 # some countries like the US have multiple mcc codes,
                 # we merge them here
-                for k, v in country.items():
-                    if isinstance(v, int):
-                        countries[alpha3][k] += v
+                for radio_name, value in country.items():
+                    if isinstance(value, int):
+                        countries[alpha3][radio_name] += value
 
     return sorted(countries.values(), key=itemgetter('name'))

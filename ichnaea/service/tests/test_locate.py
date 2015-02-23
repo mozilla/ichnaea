@@ -10,7 +10,7 @@ from ichnaea.models import (
     Cell,
     CellArea,
     OCIDCell,
-    RADIO_TYPE,
+    Radio,
     Wifi,
 )
 from ichnaea.tests.base import (
@@ -124,7 +124,7 @@ class TestPositionSearcher(BaseLocateTest):
 
     def test_geoip_mcc_match(self):
         session = self.db_slave_session
-        gsm = RADIO_TYPE['gsm']
+        gsm = int(Radio.gsm)
         london = self.geoip_data['London']
         cell = {'radio': gsm, 'mcc': GB_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
         session.add(Cell(range=1000, **cell))
@@ -145,13 +145,12 @@ class TestPositionSearcher(BaseLocateTest):
 
     def test_geoip_mcc_mismatch(self):
         session = self.db_slave_session
-        gsm = RADIO_TYPE['gsm']
         bhutan = self.geoip_data['Bhutan']
         key = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
         key2 = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1, }
-        session.add(Cell(radio=gsm, lat=FREMONT_LAT, lon=FREMONT_LON,
+        session.add(Cell(radio=Radio.gsm, lat=FREMONT_LAT, lon=FREMONT_LON,
                          range=1000, **key))
-        session.add(CellArea(radio=gsm, lat=FREMONT_LAT,
+        session.add(CellArea(radio=Radio.gsm, lat=FREMONT_LAT,
                              lon=FREMONT_LON, range=10000, **key2))
         session.flush()
 
@@ -163,7 +162,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': CELL_MIN_ACCURACY})
 
     def test_geoip_mcc_mismatch_unknown_cell(self):
-        gsm = RADIO_TYPE['gsm']
+        gsm = int(Radio.gsm)
         london = self.geoip_data['London']
         # We do not add the cell to the DB on purpose
         cell = {'radio': gsm, 'mcc': USA_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
@@ -177,7 +176,7 @@ class TestPositionSearcher(BaseLocateTest):
 
     def test_geoip_mcc_multiple(self):
         session = self.db_slave_session
-        gsm = RADIO_TYPE['gsm']
+        gsm = int(Radio.gsm)
         london = self.geoip_data['London']
         cell_key = {'radio': gsm, 'mnc': 1, 'lac': 1, 'cid': 1}
         cells = [
@@ -197,7 +196,7 @@ class TestPositionSearcher(BaseLocateTest):
 
     def test_geoip_mcc_multiple_unknown_mismatching_cell(self):
         session = self.db_slave_session
-        gsm = RADIO_TYPE['gsm']
+        gsm = int(Radio.gsm)
         london = self.geoip_data['London']
         cell_key = {'radio': gsm, 'mnc': 1, 'lac': 1, 'cid': 1}
         cells = [
@@ -219,7 +218,7 @@ class TestPositionSearcher(BaseLocateTest):
         session = self.db_slave_session
         london = self.geoip_data['London']
         cell_key = {
-            'radio': RADIO_TYPE['gsm'], 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
+            'radio': int(Radio.gsm), 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
         }
         session.add(Cell(
             lat=GB_LAT, lon=GB_LON, range=6000, cid=1, **cell_key))
@@ -247,7 +246,7 @@ class TestPositionSearcher(BaseLocateTest):
         session = self.db_slave_session
         london = self.geoip_data['London']
         cell_key = {
-            'radio': RADIO_TYPE['gsm'], 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
+            'radio': int(Radio.gsm), 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
         }
         session.add(OCIDCell(
             lat=GB_LAT, lon=GB_LON, range=6000, cid=1, **cell_key))
@@ -267,7 +266,7 @@ class TestPositionSearcher(BaseLocateTest):
         lat = PARIS_LAT
         lon = PARIS_LON
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
-        umts = RADIO_TYPE['umts']
+        umts = Radio.umts
         data = [
             Cell(lat=lat, lon=lon, radio=umts, cid=4, **key),
             Cell(lat=lat + 0.002, lon=lon + 0.004, radio=umts, cid=5, **key),
@@ -327,7 +326,7 @@ class TestPositionSearcher(BaseLocateTest):
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         lat = PARIS_LAT
         lon = PARIS_LON
-        gsm = RADIO_TYPE['gsm']
+        gsm = Radio.gsm
         data = [
             Cell(lat=lat, lon=lon, radio=gsm, cid=4, **key),
             Cell(lat=lat + 0.002, lon=lon + 0.004, radio=gsm, cid=5, **key),
@@ -348,8 +347,6 @@ class TestPositionSearcher(BaseLocateTest):
         session = self.db_slave_session
         lat = PARIS_LAT
         lon = PARIS_LON
-        gsm = RADIO_TYPE['gsm']
-        lte = RADIO_TYPE['lte']
 
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         ignored_key = dict(
@@ -359,13 +356,13 @@ class TestPositionSearcher(BaseLocateTest):
 
         data = [
             Cell(lat=lat, lon=lon, range=1000,
-                 radio=gsm, cid=4, **key),
+                 radio=Radio.gsm, cid=4, **key),
             Cell(lat=lat + 0.002, lon=lon + 0.004, range=1000,
-                 radio=gsm, cid=5, **key),
+                 radio=Radio.gsm, cid=5, **key),
             Cell(lat=lat, lon=lon, range=1000,
-                 radio=gsm, **ignored_key),
+                 radio=Radio.gsm, **ignored_key),
             Cell(lat=lat + 0.002, lon=lon + 0.004, range=1000,
-                 radio=lte, **ignored_key),
+                 radio=Radio.lte, **ignored_key),
         ]
         session.add_all(data)
         session.flush()
@@ -388,23 +385,22 @@ class TestPositionSearcher(BaseLocateTest):
         session = self.db_slave_session
         lat = PARIS_LAT
         lon = PARIS_LON
-        gsm = RADIO_TYPE['gsm']
 
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         key2 = dict(mcc=FRANCE_MCC, mnc=2, lac=4)
 
         expected_lac = CellArea(
-            lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
+            lat=lat + 0.2, lon=lon + 0.2, radio=Radio.gsm,
             range=20000, **key)
 
         data = [
-            Cell(lat=lat + 0.02, lon=lon + 0.02, radio=gsm,
+            Cell(lat=lat + 0.02, lon=lon + 0.02, radio=Radio.gsm,
                  cid=4, range=2000, **key2),
-            Cell(lat=lat + 0.04, lon=lon + 0.04, radio=gsm,
+            Cell(lat=lat + 0.04, lon=lon + 0.04, radio=Radio.gsm,
                  cid=5, range=3000, **key2),
-            Cell(lat=lat + 0.2, lon=lon + 0.4, radio=gsm,
+            Cell(lat=lat + 0.2, lon=lon + 0.4, radio=Radio.gsm,
                  cid=5, range=1000, **key),
-            CellArea(lat=lat, lon=lon, radio=gsm,
+            CellArea(lat=lat, lon=lon, radio=Radio.gsm,
                      range=30000, **key2),
             expected_lac,
         ]
@@ -432,21 +428,20 @@ class TestPositionSearcher(BaseLocateTest):
         session = self.db_slave_session
         lat = PARIS_LAT
         lon = PARIS_LON
-        gsm = RADIO_TYPE['gsm']
 
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         key2 = dict(mcc=FRANCE_MCC, mnc=2, lac=4)
 
         expected_lac = CellArea(
-            lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
+            lat=lat + 0.2, lon=lon + 0.2, radio=Radio.gsm,
             range=10000, **key)
 
         data = [
-            Cell(lat=lat + 0.02, lon=lon + 0.02, radio=gsm,
+            Cell(lat=lat + 0.02, lon=lon + 0.02, radio=Radio.gsm,
                  cid=4, range=2000, **key2),
-            Cell(lat=lat + 0.2, lon=lon + 0.4, radio=gsm,
+            Cell(lat=lat + 0.2, lon=lon + 0.4, radio=Radio.gsm,
                  cid=4, range=4000, **key),
-            CellArea(lat=lat, lon=lon, radio=gsm,
+            CellArea(lat=lat, lon=lon, radio=Radio.gsm,
                      range=20000, **key2),
             expected_lac,
         ]
@@ -471,22 +466,20 @@ class TestPositionSearcher(BaseLocateTest):
         session = self.db_slave_session
         lat = PARIS_LAT
         lon = PARIS_LON
-        gsm = RADIO_TYPE['gsm']
-        lte = RADIO_TYPE['lte']
 
         key = dict(mcc=FRANCE_MCC, mnc=3, lac=4)
         key2 = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
 
         expected_lac = CellArea(
-            lat=lat + 0.2, lon=lon + 0.2, radio=gsm,
+            lat=lat + 0.2, lon=lon + 0.2, radio=Radio.gsm,
             range=3000, **key)
 
         data = [
-            Cell(lat=lat + 0.01, lon=lon + 0.02, radio=lte,
+            Cell(lat=lat + 0.01, lon=lon + 0.02, radio=Radio.lte,
                  cid=4, range=2000, **key2),
-            Cell(lat=lat + 0.2, lon=lon + 0.4, radio=gsm,
+            Cell(lat=lat + 0.2, lon=lon + 0.4, radio=Radio.gsm,
                  cid=5, range=500, **key),
-            CellArea(lat=lat, lon=lon, radio=lte,
+            CellArea(lat=lat, lon=lon, radio=Radio.lte,
                      range=10000, **key2),
             expected_lac,
         ]
@@ -509,14 +502,13 @@ class TestPositionSearcher(BaseLocateTest):
         session = self.db_slave_session
         lat = PARIS_LAT
         lon = PARIS_LON
-        umts = RADIO_TYPE['umts']
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
             Wifi(key="a0a0a0a0a0a0", lat=3, lon=3),
             Cell(lat=lat, lon=lon, range=1000,
-                 radio=umts, cid=4, **key),
+                 radio=Radio.umts, cid=4, **key),
             Cell(lat=lat + 0.002, lon=lon + 0.004, range=1000,
-                 radio=umts, cid=5, **key),
+                 radio=Radio.umts, cid=5, **key),
         ]
         session.add_all(data)
         session.flush()
@@ -539,7 +531,7 @@ class TestPositionSearcher(BaseLocateTest):
     def test_cell_multiple_country_codes_from_mcc(self):
         session = self.db_slave_session
         cell_key = {
-            'radio': RADIO_TYPE['gsm'], 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
+            'radio': int(Radio.gsm), 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
         }
         session.add(Cell(
             lat=GB_LAT, lon=GB_LON, range=6000, cid=1, **cell_key))
@@ -613,11 +605,11 @@ class TestPositionSearcher(BaseLocateTest):
             Cell(lat=PORTO_ALEGRE_LAT,
                  lon=PORTO_ALEGRE_LON,
                  range=1000,
-                 radio=RADIO_TYPE['gsm'], cid=6789, **key),
+                 radio=Radio.gsm, cid=6789, **key),
             CellArea(lat=SAO_PAULO_LAT,
                      lon=SAO_PAULO_LON,
                      range=10000,
-                     radio=RADIO_TYPE['gsm'], **key),
+                     radio=Radio.gsm, **key),
         ]
         session.add_all(data)
         session.flush()
@@ -654,7 +646,7 @@ class TestPositionSearcher(BaseLocateTest):
             CellArea(lat=SAO_PAULO_LAT,
                      lon=SAO_PAULO_LON,
                      range=10000,
-                     radio=RADIO_TYPE['gsm'], **key),
+                     radio=Radio.gsm, **key),
         ]
         session.add_all(data)
         session.flush()
@@ -694,7 +686,7 @@ class TestPositionSearcher(BaseLocateTest):
             Cell(lat=SAO_PAULO_LAT,
                  lon=SAO_PAULO_LON,
                  range=1000,
-                 radio=RADIO_TYPE['gsm'], cid=6789, **key),
+                 radio=Radio.gsm, cid=6789, **key),
         ]
         session.add_all(data)
         session.flush()
@@ -726,11 +718,11 @@ class TestPositionSearcher(BaseLocateTest):
             Cell(lat=SAO_PAULO_LAT + 0.002,
                  lon=SAO_PAULO_LON + 0.002,
                  range=1000,
-                 radio=RADIO_TYPE['gsm'], cid=6789, **key),
+                 radio=Radio.gsm, cid=6789, **key),
             CellArea(lat=SAO_PAULO_LAT,
                      lon=SAO_PAULO_LON,
                      range=10000,
-                     radio=RADIO_TYPE['gsm'], **key),
+                     radio=Radio.gsm, **key),
         ]
         session.add_all(data)
         session.flush()
@@ -768,7 +760,7 @@ class TestPositionSearcher(BaseLocateTest):
             Cell(lat=SAO_PAULO_LAT,
                  lon=SAO_PAULO_LON,
                  range=1000,
-                 radio=RADIO_TYPE['gsm'], cid=6789, **key),
+                 radio=Radio.gsm, cid=6789, **key),
         ]
         session.add_all(data)
         session.flush()
@@ -809,7 +801,7 @@ class TestPositionSearcher(BaseLocateTest):
             CellArea(lat=SAO_PAULO_LAT,
                      lon=SAO_PAULO_LON,
                      range=10000,
-                     radio=RADIO_TYPE['gsm'], **key),
+                     radio=Radio.gsm, **key),
         ]
         session.add_all(data)
         session.flush()
@@ -848,11 +840,11 @@ class TestPositionSearcher(BaseLocateTest):
             Cell(lat=SAO_PAULO_LAT,
                  lon=SAO_PAULO_LON,
                  range=1000,
-                 radio=RADIO_TYPE['gsm'], cid=6789, **key),
+                 radio=Radio.gsm, cid=6789, **key),
             CellArea(lat=SAO_PAULO_LAT,
                      lon=SAO_PAULO_LON,
                      range=10000,
-                     radio=RADIO_TYPE['gsm'], **key),
+                     radio=Radio.gsm, **key),
         ]
         session.add_all(data)
         session.flush()
@@ -1208,7 +1200,7 @@ class TestCountrySearcher(BaseLocateTest):
     def test_mcc_without_geoip(self):
         bhutan = self.geoip_data['Bhutan']
         cell_key = {
-            'radio': RADIO_TYPE['gsm'], 'mcc': BHUTAN_MCC, 'mnc': 1, 'lac': 1,
+            'radio': int(Radio.gsm), 'mcc': BHUTAN_MCC, 'mnc': 1, 'lac': 1,
         }
 
         with self.db_call_checker() as check_db_calls:
@@ -1224,7 +1216,7 @@ class TestCountrySearcher(BaseLocateTest):
         bhutan = self.geoip_data['Bhutan']
         london = self.geoip_data['London']
         cell_key = {
-            'radio': RADIO_TYPE['gsm'], 'mcc': BHUTAN_MCC, 'mnc': 1, 'lac': 1,
+            'radio': int(Radio.gsm), 'mcc': BHUTAN_MCC, 'mnc': 1, 'lac': 1,
         }
 
         with self.db_call_checker() as check_db_calls:
@@ -1239,7 +1231,7 @@ class TestCountrySearcher(BaseLocateTest):
     def test_refuse_guessing_multiple_cell_countries(self):
         bhutan = self.geoip_data['Bhutan']
         cell_key = {
-            'radio': RADIO_TYPE['gsm'], 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
+            'radio': int(Radio.gsm), 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
         }
 
         with self.db_call_checker() as check_db_calls:
@@ -1253,7 +1245,7 @@ class TestCountrySearcher(BaseLocateTest):
 
     def test_neither_mcc_nor_geoip(self):
         cell_key = {
-            'radio': RADIO_TYPE['gsm'], 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
+            'radio': int(Radio.gsm), 'mcc': GB_MCC, 'mnc': 1, 'lac': 1,
         }
 
         with self.db_call_checker() as check_db_calls:

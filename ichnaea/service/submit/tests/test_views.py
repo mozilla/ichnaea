@@ -12,7 +12,7 @@ from ichnaea.models.content import (
 from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
     CellObservation,
-    RADIO_TYPE,
+    Radio,
     WifiObservation,
 )
 from ichnaea.customjson import dumps
@@ -61,7 +61,7 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(item.accuracy, 10)
         self.assertEqual(item.altitude, 123)
         self.assertEqual(item.altitude_accuracy, 7)
-        self.assertEqual(item.radio, RADIO_TYPE['umts'])
+        self.assertEqual(item.radio, Radio.umts)
         self.assertEqual(item.mcc, FRANCE_MCC)
         self.assertEqual(item.mnc, 1)
         self.assertEqual(item.lac, 2)
@@ -487,7 +487,7 @@ class TestSubmit(CeleryAppTestCase):
         cell_result = session.query(CellObservation).all()
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
-        self.assertEqual(item.radio, RADIO_TYPE['gsm'])
+        self.assertEqual(item.radio, Radio.gsm)
 
     def test_missing_radio_top_level(self):
         app = self.app

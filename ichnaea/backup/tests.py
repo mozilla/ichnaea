@@ -24,7 +24,7 @@ from ichnaea.models import (
     CellObservation,
     ObservationBlock,
     ObservationType,
-    RADIO_TYPE,
+    Radio,
     Wifi,
     WifiObservation,
 )
@@ -323,8 +323,7 @@ class TestObservationsDump(CeleryTestCase):
         block.archive_date = None
         session.add(block)
 
-        gsm = RADIO_TYPE['gsm']
-        k = dict(radio=gsm, mcc=1, mnc=2, lac=4, lat=1.0, lon=1.0)
+        k = dict(radio=Radio.gsm, mcc=1, mnc=2, lac=4, lat=1.0, lon=1.0)
         for i in range(100, 150):
             session.add(
                 CellObservation(id=i, cid=i, created=self.really_old, **k))

@@ -13,13 +13,13 @@ from colander import (
     String,
 )
 
-RADIO_TYPE_KEYS = ['gsm', 'cdma', 'wcdma', 'lte']
+RADIO_STRINGS = ['gsm', 'cdma', 'wcdma', 'lte']
 
 
 class CellTowerSchema(MappingSchema):
     # mapped to 'radio' for submit
     radioType = SchemaNode(String(),
-                           validator=OneOf(RADIO_TYPE_KEYS),
+                           validator=OneOf(RADIO_STRINGS),
                            missing=None)
     # mapped to 'cid' for submit
     cellId = SchemaNode(Integer())
@@ -75,7 +75,7 @@ class GeoSubmitSchema(MappingSchema):
 
     # mapped to 'radio' for submit
     radioType = SchemaNode(String(),
-                           validator=OneOf(RADIO_TYPE_KEYS),
+                           validator=OneOf(RADIO_STRINGS),
                            missing=None)
     carrier = SchemaNode(String(), missing='')
     cellTowers = CellTowersSchema(missing=())

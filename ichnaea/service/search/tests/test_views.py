@@ -6,8 +6,8 @@ from ichnaea.customjson import dumps, loads
 from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
     Cell,
+    Radio,
     Wifi,
-    RADIO_TYPE,
 )
 from ichnaea.tests.base import (
     AppTestCase,
@@ -213,7 +213,7 @@ class TestSearch(AppTestCase):
             lat=PARIS_LAT,
             lon=PARIS_LON,
             range=1000,
-            radio=RADIO_TYPE['umts'], **key)
+            radio=Radio.umts, **key)
         )
         session.commit()
 
@@ -234,7 +234,7 @@ class TestSearch(AppTestCase):
             lat=PARIS_LAT,
             lon=PARIS_LON,
             range=1000,
-            radio=RADIO_TYPE['umts'], **key)
+            radio=Radio.umts, **key)
         )
         session.commit()
 

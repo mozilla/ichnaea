@@ -26,16 +26,6 @@ from ichnaea.models.station import (
     StationBlacklistMixin,
 )
 
-RADIO_TYPE = {
-    'gsm': 0,
-    'cdma': 1,
-    'umts': 2,
-    'wcdma': 2,
-    'lte': 3,
-}
-RADIO_TYPE_INVERSE = dict((v, k) for k, v in RADIO_TYPE.items() if v != 2)
-RADIO_TYPE_INVERSE[2] = 'umts'
-
 
 class Radio(IntEnum):
     __order__ = 'gsm cdma umts wcdma lte'
@@ -45,6 +35,10 @@ class Radio(IntEnum):
     umts = 2
     wcdma = 2
     lte = 3
+
+    @classmethod
+    def _gsm_family(cls):
+        return (cls.gsm, cls.umts, cls.lte)
 
     @classmethod
     def _max(cls):
@@ -88,7 +82,6 @@ class CellAreaKeyMixin(HashKeyMixin):
 
     _hashkey_cls = CellAreaKey
 
-    # mapped via RADIO_TYPE
     radio = Column(TinyIntEnum(Radio), autoincrement=False)
     mcc = Column(SmallInteger, autoincrement=False)
     mnc = Column(SmallInteger, autoincrement=False)

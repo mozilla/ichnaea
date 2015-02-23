@@ -7,8 +7,8 @@ from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
     ApiKey,
     Cell,
+    Radio,
     Wifi,
-    RADIO_TYPE,
 )
 from ichnaea.tests.base import (
     AppTestCase,
@@ -33,7 +33,7 @@ class TestGeolocate(AppTestCase):
         cell = Cell()
         cell.lat = PARIS_LAT
         cell.lon = PARIS_LON
-        cell.radio = RADIO_TYPE['gsm']
+        cell.radio = Radio.gsm
         cell.mcc = FRANCE_MCC
         cell.mnc = 1
         cell.lac = 2
@@ -135,7 +135,7 @@ class TestGeolocate(AppTestCase):
         session = self.db_slave_session
         cell = Cell(
             lat=PARIS_LAT, lon=PARIS_LON, range=1000,
-            radio=RADIO_TYPE['gsm'], mcc=FRANCE_MCC, mnc=1, lac=2, cid=3)
+            radio=Radio.gsm, mcc=FRANCE_MCC, mnc=1, lac=2, cid=3)
         session.add(cell)
         session.commit()
 
@@ -230,7 +230,7 @@ class TestGeolocate(AppTestCase):
             lat=PARIS_LAT,
             lon=PARIS_LON,
             range=1000,
-            radio=RADIO_TYPE['gsm'], **key)
+            radio=Radio.gsm, **key)
         )
         session.commit()
 
@@ -259,7 +259,7 @@ class TestGeolocate(AppTestCase):
             lat=PARIS_LAT,
             lon=PARIS_LON,
             range=1000,
-            radio=RADIO_TYPE['gsm'], **key)
+            radio=Radio.gsm, **key)
         )
         session.commit()
 
@@ -307,12 +307,12 @@ class TestGeolocate(AppTestCase):
         cells = [
             Cell(lat=PARIS_LAT,
                  lon=PARIS_LON,
-                 radio=RADIO_TYPE['lte'],
+                 radio=Radio.lte,
                  mcc=FRANCE_MCC, mnc=1, lac=2, cid=3,
                  range=10000),
             Cell(lat=PARIS_LAT + 0.002,
                  lon=PARIS_LON + 0.004,
-                 radio=RADIO_TYPE['lte'],
+                 radio=Radio.lte,
                  mcc=FRANCE_MCC, mnc=1, lac=2, cid=4,
                  range=20000),
         ]
@@ -437,12 +437,12 @@ class TestGeolocateFxOSWorkarounds(AppTestCase):
         cells = [
             Cell(lat=PARIS_LAT,
                  lon=PARIS_LON,
-                 radio=RADIO_TYPE['gsm'],
+                 radio=Radio.gsm,
                  mcc=FRANCE_MCC, mnc=1, lac=2, cid=3,
                  range=10000),
             Cell(lat=PARIS_LAT + 0.002,
                  lon=PARIS_LON + 0.004,
-                 radio=RADIO_TYPE['umts'],
+                 radio=Radio.umts,
                  mcc=FRANCE_MCC, mnc=2, lac=3, cid=4,
                  range=2000),
         ]

@@ -14,8 +14,6 @@ from ichnaea.models.cell import (  # NOQA
     OCIDCell,
     OCIDCellArea,
     Radio,
-    RADIO_TYPE,
-    RADIO_TYPE_INVERSE,
 )
 from ichnaea.models.content import (  # NOQA
     MapStat,

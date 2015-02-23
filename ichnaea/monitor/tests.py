@@ -4,7 +4,7 @@ from ichnaea.models import (
     ApiKey,
     CellObservation,
     OCIDCell,
-    RADIO_TYPE,
+    Radio,
     WifiObservation,
 )
 from ichnaea.monitor.tasks import (
@@ -100,7 +100,7 @@ class TestMonitorTasks(CeleryTestCase):
     def test_monitor_ocid_import(self):
         session = self.db_master_session
         now = util.utcnow()
-        cell_args = dict(radio=RADIO_TYPE['gsm'], mcc=262, mnc=1, lac=1)
+        cell_args = dict(radio=Radio.gsm, mcc=262, mnc=1, lac=1)
 
         expected = []
         results = []

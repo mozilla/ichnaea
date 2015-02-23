@@ -25,7 +25,7 @@ from ichnaea.models import (
     Cell,
     OCIDCell,
     OCIDCellArea,
-    RADIO_TYPE,
+    Radio,
 )
 from ichnaea.tests.base import (
     CeleryTestCase,
@@ -52,7 +52,7 @@ class TestExport(CeleryTestCase):
         session = self.db_master_session
         cell_fixture_fields = (
             'radio', 'cid', 'lat', 'lon', 'mnc', 'mcc', 'lac')
-        cell_key = {'radio': RADIO_TYPE['gsm'], 'mcc': 1, 'mnc': 2, 'lac': 4}
+        cell_key = {'radio': Radio.gsm, 'mcc': 1, 'mnc': 2, 'lac': 4}
         cells = set()
 
         for cid in range(190, 200):
@@ -96,8 +96,7 @@ class TestExport(CeleryTestCase):
 
     def test_hourly_export(self):
         session = self.db_master_session
-        gsm = RADIO_TYPE['gsm']
-        k = {'radio': gsm, 'mcc': 1, 'mnc': 2, 'lac': 4,
+        k = {'radio': Radio.gsm, 'mcc': 1, 'mnc': 2, 'lac': 4,
              'psc': -1, 'lat': 1.0, 'lon': 2.0}
         for i in range(190, 200):
             session.add(Cell(cid=i, **k))
@@ -112,8 +111,7 @@ class TestExport(CeleryTestCase):
 
     def test_daily_export(self):
         session = self.db_master_session
-        gsm = RADIO_TYPE['gsm']
-        k = {'radio': gsm, 'mcc': 1, 'mnc': 2, 'lac': 4,
+        k = {'radio': Radio.gsm, 'mcc': 1, 'mnc': 2, 'lac': 4,
              'lat': 1.0, 'lon': 2.0}
         for i in range(190, 200):
             session.add(Cell(cid=i, **k))

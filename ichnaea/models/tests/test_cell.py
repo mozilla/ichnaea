@@ -4,7 +4,7 @@ from ichnaea.models.cell import (
     CellBlacklist,
     OCIDCell,
     OCIDCellArea,
-    RADIO_TYPE,
+    Radio,
 )
 from ichnaea.tests.base import DBTestCase
 
@@ -13,14 +13,14 @@ class TestCell(DBTestCase):
 
     def test_fields(self):
         cell = Cell(
-            radio=RADIO_TYPE['gsm'], mcc=100, mnc=5, lac=1234, cid=23456,
+            radio=Radio.gsm, mcc=100, mnc=5, lac=1234, cid=23456,
             lat=1.2345678, lon=2.3456789, new_measures=2, total_measures=15)
         session = self.db_master_session
         session.add(cell)
         session.commit()
 
         result = session.query(cell.__class__).first()
-        self.assertEqual(result.radio, RADIO_TYPE['gsm'])
+        self.assertEqual(result.radio, Radio.gsm)
         self.assertEqual(result.mcc, 100)
         self.assertEqual(result.mnc, 5)
         self.assertEqual(result.lac, 1234)
@@ -35,7 +35,7 @@ class TestCellArea(DBTestCase):
 
     def test_fields(self):
         cell = CellArea(
-            radio=RADIO_TYPE['cdma'], lac=1234, mcc=100, mnc=5,
+            radio=Radio.cdma, lac=1234, mcc=100, mnc=5,
             lat=1.2345678, lon=2.3456789,
             range=10, avg_cell_range=10, num_cells=15,
         )
@@ -44,7 +44,7 @@ class TestCellArea(DBTestCase):
         session.commit()
 
         result = session.query(cell.__class__).first()
-        self.assertEqual(result.radio, RADIO_TYPE['cdma'])
+        self.assertEqual(result.radio, Radio.cdma)
         self.assertEqual(result.mcc, 100)
         self.assertEqual(result.mnc, 5)
         self.assertEqual(result.lac, 1234)
@@ -59,14 +59,14 @@ class TestCellBlacklist(DBTestCase):
 
     def test_fields(self):
         cell = CellBlacklist(
-            radio=RADIO_TYPE['lte'], mcc=100, mnc=5, lac=1234, cid=23456,
+            radio=Radio.lte, mcc=100, mnc=5, lac=1234, cid=23456,
             count=2)
         session = self.db_master_session
         session.add(cell)
         session.commit()
 
         result = session.query(cell.__class__).first()
-        self.assertEqual(result.radio, RADIO_TYPE['lte'])
+        self.assertEqual(result.radio, Radio.lte)
         self.assertEqual(result.mcc, 100)
         self.assertEqual(result.mnc, 5)
         self.assertEqual(result.lac, 1234)
@@ -78,7 +78,7 @@ class TestOCIDCell(DBTestCase):
 
     def test_fields(self):
         cell = OCIDCell(
-            radio=RADIO_TYPE['gsm'], mcc=100, mnc=5, lac=1234, cid=23456,
+            radio=Radio.gsm, mcc=100, mnc=5, lac=1234, cid=23456,
             lat=1.2345678, lon=2.3456789, range=1000, total_measures=15,
         )
         session = self.db_master_session
@@ -86,7 +86,7 @@ class TestOCIDCell(DBTestCase):
         session.commit()
 
         result = session.query(cell.__class__).first()
-        self.assertEqual(result.radio, RADIO_TYPE['gsm'])
+        self.assertEqual(result.radio, Radio.gsm)
         self.assertEqual(result.mcc, 100)
         self.assertEqual(result.mnc, 5)
         self.assertEqual(result.lac, 1234)
@@ -104,7 +104,7 @@ class TestOCIDCellArea(DBTestCase):
 
     def test_fields(self):
         cell = OCIDCellArea(
-            radio=RADIO_TYPE['umts'], lac=1234, mcc=100, mnc=5,
+            radio=Radio.umts, lac=1234, mcc=100, mnc=5,
             lat=1.2345678, lon=2.3456789,
             range=10, avg_cell_range=10, num_cells=15,
         )
@@ -113,7 +113,7 @@ class TestOCIDCellArea(DBTestCase):
         session.commit()
 
         result = session.query(cell.__class__).first()
-        self.assertEqual(result.radio, RADIO_TYPE['umts'])
+        self.assertEqual(result.radio, Radio.umts)
         self.assertEqual(result.mcc, 100)
         self.assertEqual(result.mnc, 5)
         self.assertEqual(result.lac, 1234)

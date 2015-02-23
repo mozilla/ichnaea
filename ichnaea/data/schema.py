@@ -20,10 +20,7 @@ from pytz import UTC
 
 from ichnaea import geocalc
 from ichnaea.data import constants
-from ichnaea.models import (
-    Radio,
-    RADIO_TYPE,
-)
+from ichnaea.models import Radio
 from ichnaea import util
 
 
@@ -103,8 +100,11 @@ class RadioType(Integer):
         if isinstance(cstruct, Radio):
             return cstruct
         try:
-            cstruct = Radio(cstruct)
-        except ValueError:
+            if isinstance(cstruct, basestring):
+                cstruct = Radio[cstruct]
+            else:
+                cstruct = Radio(cstruct)
+        except (KeyError, ValueError):
             raise Invalid(node, '%r is not a valid radio type' % cstruct)
         return cstruct
 
@@ -311,20 +311,19 @@ class ValidCellKeySchema(FieldSchema, CopyingSchema):
 
     def deserialize(self, data, default_radio=None):
         if data:
-            if isinstance(data['radio'], basestring):
-                data['radio'] = RADIO_TYPE.get(
-                    data['radio'], self.fields['radio'].missing)
+            # deserialize radio child field early
+            data['radio'] = self.fields['radio'].deserialize(data['radio'])
 
             # If a default radio was set,
             # and we don't know, use it as fallback
             if (self.is_missing(data, 'radio')
                     and default_radio is not None):
-                data['radio'] = default_radio
+                data['radio'] = self.fields['radio'].deserialize(default_radio)
 
             # If the cell id >= 65536 then it must be a umts tower
             if (data.get('cid', 0) >= 65536
-                    and data['radio'] == RADIO_TYPE['gsm']):
-                data['radio'] = RADIO_TYPE['umts']
+                    and data['radio'] == Radio.gsm):
+                data['radio'] = Radio.umts
 
             # Treat cid=65535 without a valid lac as an unspecified value
             if (self.is_missing(data, 'lac')
@@ -341,18 +340,13 @@ class ValidCellKeySchema(FieldSchema, CopyingSchema):
             raise Invalid(
                 schema, 'Check against the list of all known valid mccs')
 
-        if (data['radio'] == RADIO_TYPE['cdma']
+        if (data['radio'] == Radio.cdma
                 and (lac_missing or cid_missing)):
             raise Invalid(schema, (
                 'Skip CDMA towers missing lac or cid '
                 '(no psc on CDMA exists to backfill using inference)'))
 
-        gsm_family = (
-            RADIO_TYPE['gsm'],
-            RADIO_TYPE['umts'],
-            RADIO_TYPE['lte'],
-        )
-        if data['radio'] in gsm_family and data['mnc'] > 999:
+        if data['radio'] in Radio._gsm_family() and data['mnc'] > 999:
             raise Invalid(
                 schema, 'Skip GSM/LTE/UMTS towers with an invalid MNC')
 
@@ -361,15 +355,15 @@ class ValidCellKeySchema(FieldSchema, CopyingSchema):
                 'Must have (lac and cid) or '
                 'psc (psc-only to use in backfill)'))
 
-        if (data['radio'] == RADIO_TYPE['cdma']
+        if (data['radio'] == Radio.cdma
                 and data['cid'] > constants.MAX_CID_CDMA):
             raise Invalid(schema, ('CID is out of range for CDMA.'))
 
-        if (data['radio'] == RADIO_TYPE['lte']
+        if (data['radio'] == Radio.lte
                 and data['cid'] > constants.MAX_CID_LTE):
             raise Invalid(schema, ('CID is out of range for LTE.'))
 
-        if (data['radio'] in gsm_family
+        if (data['radio'] in Radio._gsm_family()
                 and data['lac'] > constants.MAX_LAC_GSM_UMTS_LTE):
             raise Invalid(schema, ('LAC is out of range for GSM/UMTS/LTE.'))
 

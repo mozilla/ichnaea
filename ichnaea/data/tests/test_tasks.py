@@ -10,10 +10,6 @@ from ichnaea.constants import (
     PERMANENT_BLACKLIST_THRESHOLD,
     TEMPORARY_BLACKLIST_DURATION,
 )
-from ichnaea.models.content import (
-    Score,
-    ScoreKey,
-)
 from ichnaea.data import constants
 from ichnaea.data.schema import ValidCellKeySchema
 from ichnaea.data.area import (
@@ -35,7 +31,9 @@ from ichnaea.models import (
     CellArea,
     CellBlacklist,
     CellObservation,
-    RADIO_TYPE,
+    Radio,
+    Score,
+    ScoreKey,
     Wifi,
     WifiBlacklist,
     WifiObservation,
@@ -86,14 +84,14 @@ class TestCell(CeleryTestCase):
         session = self.db_master_session
 
         observations = [dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=i, psc=5,
-                             radio=RADIO_TYPE['gsm'],
+                             radio=int(Radio.gsm),
                              lat=PARIS_LAT + i * 0.0000001,
                              lon=PARIS_LON + i * 0.0000001)
                         for i in range(1, 4)]
 
         black = CellBlacklist(
             mcc=FRANCE_MCC, mnc=2, lac=3, cid=1,
-            radio=RADIO_TYPE['gsm'], time=now, count=1,
+            radio=Radio.gsm, time=now, count=1,
         )
         session.add(black)
         session.flush()
@@ -212,7 +210,7 @@ class TestCell(CeleryTestCase):
             days_ago = (N - (month + 1)) * 30
             time = now - timedelta(days=days_ago)
 
-            obs = dict(radio=RADIO_TYPE['gsm'],
+            obs = dict(radio=int(Radio.gsm),
                        mcc=USA_MCC, mnc=ATT_MNC, lac=456, cid=123,
                        time=time,
                        lat=points[month % 4][0],
@@ -299,7 +297,7 @@ class TestCell(CeleryTestCase):
         last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
         session = self.db_master_session
 
-        cell_key = {'radio': RADIO_TYPE['gsm'], 'mcc': FRANCE_MCC,
+        cell_key = {'radio': int(Radio.gsm), 'mcc': FRANCE_MCC,
                     'mnc': 2, 'lac': 3, 'cid': 1}
 
         session.add(CellBlacklist(time=last_week, count=1, **cell_key))
@@ -322,7 +320,7 @@ class TestCell(CeleryTestCase):
         today = util.utcnow().date()
         mcc = FRANCE_MCC
 
-        session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=mcc, mnc=2, lac=3,
+        session.add(Cell(radio=Radio.gsm, mcc=mcc, mnc=2, lac=3,
                          cid=4, psc=5, new_measures=2,
                          total_measures=5))
         session.add(Score(key=ScoreKey.new_cell,
@@ -334,7 +332,7 @@ class TestCell(CeleryTestCase):
             lat=PARIS_LAT,
             lon=PARIS_LON,
             time=time, accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=RADIO_TYPE['gsm'],
+            altitude_accuracy=0, radio=int(Radio.gsm),
         )
         entries = [
             # Note that this first entry will be skipped as it does
@@ -388,7 +386,7 @@ class TestCell(CeleryTestCase):
         time = util.utcnow() - timedelta(days=1)
         today = util.utcnow().date()
 
-        session.add(Cell(radio=RADIO_TYPE['gsm'], mcc=FRANCE_MCC, mnc=2,
+        session.add(Cell(radio=Radio.gsm, mcc=FRANCE_MCC, mnc=2,
                          lac=3, cid=4, new_measures=2, total_measures=5))
         session.add(Score(key=ScoreKey.new_cell,
                           userid=1, time=today, value=7))
@@ -399,7 +397,7 @@ class TestCell(CeleryTestCase):
             lat=PARIS_LAT,
             lon=PARIS_LON,
             time=time, accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=RADIO_TYPE['gsm'])
+            altitude_accuracy=0, radio=int(Radio.gsm))
         entries = [
             {"mcc": FRANCE_MCC, "mnc": 2, "lac": constants.MAX_LAC_ALL + 1,
              "cid": constants.MAX_CID_ALL + 1, "psc": 5, "asu": 8},
@@ -431,7 +429,7 @@ class TestCell(CeleryTestCase):
         session = self.db_master_session
 
         observations = [dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4, psc=5,
-                             radio=RADIO_TYPE['gsm'],
+                             radio=int(Radio.gsm),
                              lat=PARIS_LAT + i * 0.0000001,
                              lon=PARIS_LON + i * 0.0000001) for i in range(3)]
 
@@ -466,7 +464,7 @@ class TestCell(CeleryTestCase):
             lat=PARIS_LAT,
             lon=PARIS_LON,
             time=time, accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=RADIO_TYPE['gsm'], mcc=FRANCE_MCC,
+            altitude_accuracy=0, radio=int(Radio.gsm), mcc=FRANCE_MCC,
             mnc=2, lac=3, cid=4)
         entries = [
             {"asu": 8, "signal": -70, "ta": 32},

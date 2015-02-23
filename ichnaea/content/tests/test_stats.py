@@ -20,7 +20,7 @@ from ichnaea.content.stats import (
 )
 from ichnaea.models import (
     Cell,
-    RADIO_TYPE,
+    Radio,
 )
 from ichnaea.tests.base import DBTestCase, TestCase
 from ichnaea import util
@@ -181,14 +181,14 @@ class TestStats(DBTestCase):
         session = self.db_master_session
         cell_key = {'lac': 1, 'cid': 1}
         test_data = [
-            Cell(radio=RADIO_TYPE['gsm'], mcc=1, mnc=1, **cell_key),
-            Cell(radio=RADIO_TYPE['lte'], mcc=262, mnc=1, **cell_key),
-            Cell(radio=RADIO_TYPE['gsm'], mcc=310, mnc=1, **cell_key),
-            Cell(radio=RADIO_TYPE['gsm'], mcc=310, mnc=2, **cell_key),
-            Cell(radio=RADIO_TYPE['gsm'], mcc=313, mnc=1, **cell_key),
-            Cell(radio=RADIO_TYPE['cdma'], mcc=310, mnc=1, **cell_key),
-            Cell(radio=RADIO_TYPE['umts'], mcc=244, mnc=1, **cell_key),
-            Cell(radio=RADIO_TYPE['lte'], mcc=244, mnc=1, **cell_key),
+            Cell(radio=Radio.gsm, mcc=1, mnc=1, **cell_key),
+            Cell(radio=Radio.lte, mcc=262, mnc=1, **cell_key),
+            Cell(radio=Radio.gsm, mcc=310, mnc=1, **cell_key),
+            Cell(radio=Radio.gsm, mcc=310, mnc=2, **cell_key),
+            Cell(radio=Radio.gsm, mcc=313, mnc=1, **cell_key),
+            Cell(radio=Radio.cdma, mcc=310, mnc=1, **cell_key),
+            Cell(radio=Radio.umts, mcc=244, mnc=1, **cell_key),
+            Cell(radio=Radio.lte, mcc=244, mnc=1, **cell_key),
         ]
         session.add_all(test_data)
         session.commit()

@@ -10,7 +10,7 @@ from colander import (
     String,
 )
 
-RADIO_TYPE_KEYS = ['gsm', 'cdma', 'wcdma', 'lte']
+RADIO_STRINGS = ['gsm', 'cdma', 'wcdma', 'lte']
 
 
 class CellTowerSchema(MappingSchema):
@@ -18,7 +18,7 @@ class CellTowerSchema(MappingSchema):
     cellId = SchemaNode(Integer())
     locationAreaCode = SchemaNode(Integer())
     radio = SchemaNode(String(),
-                       validator=OneOf(RADIO_TYPE_KEYS), missing=None)
+                       validator=OneOf(RADIO_STRINGS), missing=None)
     mobileCountryCode = SchemaNode(Integer())
     mobileNetworkCode = SchemaNode(Integer())
     # optional
@@ -49,7 +49,7 @@ class GeoLocateSchema(MappingSchema):
     homeMobileCountryCode = SchemaNode(Integer(), missing=None)
     homeMobileNetworkCode = SchemaNode(Integer(), missing=None)
     radioType = SchemaNode(String(),
-                           validator=OneOf(RADIO_TYPE_KEYS), missing=None)
+                           validator=OneOf(RADIO_STRINGS), missing=None)
     carrier = SchemaNode(String(), missing='')
     cellTowers = CellTowersSchema(missing=())
     wifiAccessPoints = WifiAccessPointsSchema(missing=())

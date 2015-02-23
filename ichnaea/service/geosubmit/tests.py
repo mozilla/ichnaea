@@ -3,7 +3,7 @@ import time
 from ichnaea.models import (
     Cell,
     CellObservation,
-    RADIO_TYPE,
+    Radio,
     User,
     Wifi,
     WifiObservation,
@@ -25,7 +25,7 @@ class TestGeoSubmit(CeleryAppTestCase):
         cell = Cell()
         cell.lat = GB_LAT
         cell.lon = GB_LON
-        cell.radio = RADIO_TYPE['cdma']
+        cell.radio = Radio.cdma
         cell.mcc = GB_MCC
         cell.mnc = 1
         cell.lac = 2
@@ -72,7 +72,7 @@ class TestGeoSubmit(CeleryAppTestCase):
         observations = session.query(CellObservation).all()
         self.assertEqual(len(observations), 2)
         radios = set([obs.radio for obs in observations])
-        self.assertEqual(radios, set([RADIO_TYPE['cdma'], RADIO_TYPE['umts']]))
+        self.assertEqual(radios, set([Radio.cdma, Radio.umts]))
 
         self.check_stats(
             counter=['geosubmit.api_key.test',
@@ -138,7 +138,7 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEqual(obs.heading, 45.0)
         self.assertEqual(obs.speed, 3.6)
         self.assertEqual(obs.time, first_of_month)
-        self.assertEqual(obs.radio, RADIO_TYPE['lte'])
+        self.assertEqual(obs.radio, Radio.lte)
         self.assertEqual(obs.mcc, GB_MCC)
         self.assertEqual(obs.mnc, 1)
         self.assertEqual(obs.lac, 2)

@@ -6,7 +6,7 @@ from pytz import UTC
 from ichnaea.data import constants
 from ichnaea.data.schema import normalized_time, ValidCellKeySchema
 from ichnaea.models import (
-    RADIO_TYPE,
+    Radio,
     CellObservation,
     WifiObservation,
 )
@@ -114,11 +114,11 @@ class TestCellValidation(ValidationTest):
 
     def test_all_radio_values(self):
         radio_pairs = [
-            ('gsm', RADIO_TYPE['gsm']),
-            ('cdma', RADIO_TYPE['cdma']),
-            ('umts', RADIO_TYPE['umts']),
-            ('wcdma', RADIO_TYPE['wcdma']),
-            ('lte', RADIO_TYPE['lte']),
+            ('gsm', Radio.gsm),
+            ('cdma', Radio.cdma),
+            ('umts', Radio.umts),
+            ('wcdma', Radio.wcdma),
+            ('lte', Radio.lte),
             ('wimax', None),
             ('', None),
             ('hspa', None),
@@ -349,7 +349,7 @@ class TestCellValidation(ValidationTest):
     def test_wrong_gsm_radio_type_is_corrected_for_large_cid(self):
         obs, cell = self.get_sample(radio='gsm', cid=65536)
         self.check_normalized_cell(
-            obs, cell, {'radio': RADIO_TYPE['umts']})
+            obs, cell, {'radio': Radio.umts})
 
     def test_valid_umts_cid_is_32_bit(self):
         valid_cid = constants.MAX_CID_ALL

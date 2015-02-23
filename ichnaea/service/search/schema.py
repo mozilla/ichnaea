@@ -1,12 +1,12 @@
 from colander import MappingSchema, SchemaNode, SequenceSchema
 from colander import Integer, String, OneOf
 
-RADIO_TYPE_KEYS = ['gsm', 'cdma', 'umts', 'wcdma', 'lte']
+RADIO_STRINGS = ['gsm', 'cdma', 'umts', 'wcdma', 'lte']
 
 
 class CellSchema(MappingSchema):
     radio = SchemaNode(String(),
-                       validator=OneOf(RADIO_TYPE_KEYS), missing=None)
+                       validator=OneOf(RADIO_STRINGS), missing=None)
     mcc = SchemaNode(Integer(), missing=-1)
     mnc = SchemaNode(Integer(), missing=-1)
     lac = SchemaNode(Integer(), missing=-1)
@@ -35,6 +35,6 @@ class WifisSchema(SequenceSchema):
 
 class SearchSchema(MappingSchema):
     radio = SchemaNode(String(),
-                       validator=OneOf(RADIO_TYPE_KEYS), missing=None)
+                       validator=OneOf(RADIO_STRINGS), missing=None)
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())

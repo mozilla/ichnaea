@@ -19,8 +19,7 @@ from ichnaea.async.task import DatabaseTask
 from ichnaea.models import (
     Cell,
     CellArea,
-    RADIO_TYPE,
-    RADIO_TYPE_INVERSE,
+    Radio,
     OCIDCell,
 )
 from ichnaea.data.tasks import update_area
@@ -59,9 +58,8 @@ for name in CELL_COLUMN_NAMES:
     else:
         CELL_COLUMNS.append(getattr(Cell.__table__.c, name))
 
-
 CELL_EXPORT_RADIO_NAMES = dict(
-    [(k, v.upper()) for k, v in RADIO_TYPE_INVERSE.items()])
+    [(int(radio), radio.name.upper()) for radio in Radio])
 
 
 @contextmanager
@@ -138,7 +136,10 @@ def make_ocid_cell_import_dict(row):
     d['lat'] = float(val('lat', None))
     d['lon'] = float(val('lon', None))
 
-    d['radio'] = RADIO_TYPE.get(row['radio'].lower(), -1)
+    try:
+        d['radio'] = Radio[row['radio'].lower()]
+    except KeyError:  # pragma: no cover
+        d['radio'] = None
 
     for k in ['mcc', 'mnc', 'lac', 'cid', 'psc']:
         d[k] = int(val(k, -1))

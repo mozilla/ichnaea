@@ -1,8 +1,8 @@
 import uuid
 
-from ichnaea.models.cell import RADIO_TYPE
-from ichnaea.models.observation import (
+from ichnaea.models import (
     CellObservation,
+    Radio,
     WifiObservation,
 )
 from ichnaea.tests.base import DBTestCase
@@ -16,7 +16,7 @@ class TestCellObservation(DBTestCase):
             lat=1.2345678,
             lon=2.3456789,
             report_id=report_id,
-            radio=RADIO_TYPE['gsm'],
+            radio=Radio.gsm,
             mcc=100,
             mnc=5,
             lac=12345,
@@ -33,7 +33,7 @@ class TestCellObservation(DBTestCase):
         self.assertEqual(result.report_id, report_id)
         self.assertEqual(result.lat, 1.2345678)
         self.assertEqual(result.lon, 2.3456789)
-        self.assertEqual(result.radio, RADIO_TYPE['gsm'])
+        self.assertEqual(result.radio, Radio.gsm)
         self.assertEqual(result.mcc, 100)
         self.assertEqual(result.mnc, 5)
         self.assertEqual(result.lac, 12345)
