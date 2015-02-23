@@ -3,6 +3,7 @@ import uuid
 
 from sqlalchemy.sql import and_, or_
 
+from ichnaea.customjson import encode_radio_dict
 from ichnaea.data.base import DataTask
 from ichnaea.models import (
     CellObservation,
@@ -98,7 +99,7 @@ class ReportQueue(DataTask):
             for i in range(0, len(cells), batch_size):
                 values = []
                 for observations in cells[i:i + batch_size]:
-                    values.extend(observations)
+                    values.extend([encode_radio_dict(o) for o in observations])
                 # insert observations, expire the task if it wasn't processed
                 # after six hours to avoid queue overload, also delay
                 # each task by one second more, to get a more even workload

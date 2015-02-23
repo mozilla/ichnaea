@@ -6,6 +6,7 @@ from ichnaea.constants import (
     PERMANENT_BLACKLIST_THRESHOLD,
     TEMPORARY_BLACKLIST_DURATION,
 )
+from ichnaea.customjson import decode_radio_dict
 from ichnaea.data.base import DataTask
 from ichnaea.data.report import process_score
 from ichnaea.data.schema import ValidCellKeySchema
@@ -41,6 +42,9 @@ class ObservationQueue(DataTask):
         for name, count in dropped.items():
             self.stat_count('dropped', 'ingress_' + name, dropped[name])
 
+    def pre_process_entry(self, entry):
+        entry['created'] = self.utcnow
+
     def insert(self, entries, userid=None):
         all_observations = []
         drop_counter = defaultdict(int)
@@ -49,7 +53,7 @@ class ObservationQueue(DataTask):
         # Process entries and group by validated station key
         station_observations = defaultdict(list)
         for entry in entries:
-            entry['created'] = self.utcnow
+            self.pre_process_entry(entry)
 
             obs = self.observation_model.create(entry)
             if not obs:
@@ -172,6 +176,10 @@ class CellObservationQueue(ObservationQueue):
     station_model = Cell
     observation_model = CellObservation
     blacklist_model = CellBlacklist
+
+    def pre_process_entry(self, entry):
+        ObservationQueue.pre_process_entry(self, entry)
+        decode_radio_dict(entry)
 
     def incomplete_observation(self, key):
         # We want to store certain incomplete observations in the database

@@ -92,6 +92,23 @@ class DateTimeFromString(DateTime):
         return super(DateTimeFromString, self).deserialize(schema, cstruct)
 
 
+class RadioType(Integer):
+    """
+    A RadioType will return a Radio IntEnum object.
+    """
+
+    def deserialize(self, node, cstruct):
+        if cstruct is null:  # pragma: no cover
+            return null
+        if isinstance(cstruct, Radio):
+            return cstruct
+        try:
+            cstruct = Radio(cstruct)
+        except ValueError:
+            raise Invalid(node, '%r is not a valid radio type' % cstruct)
+        return cstruct
+
+
 class UUIDType(String):
     """
     A UUIDType will return a uuid object from either a uuid or a string.
@@ -290,7 +307,7 @@ class ValidCellKeySchema(FieldSchema, CopyingSchema):
     mnc = SchemaNode(Integer(), validator=Range(0, 32767))
     psc = DefaultNode(Integer(), missing=-1, validator=Range(0, 512))
     radio = DefaultNode(
-        Integer(), missing=None, validator=Range(Radio._min(), Radio._max()))
+        RadioType(), missing=None, validator=Range(Radio._min(), Radio._max()))
 
     def deserialize(self, data, default_radio=None):
         if data:
