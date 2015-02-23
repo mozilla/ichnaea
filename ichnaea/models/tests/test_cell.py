@@ -6,50 +6,50 @@ from ichnaea.models.cell import (
     OCIDCellArea,
     Radio,
 )
-from ichnaea.tests.base import DBTestCase
+from ichnaea.tests.base import (
+    DBTestCase,
+    GB_LAT,
+    GB_LON,
+    GB_MCC,
+)
 
 
 class TestCell(DBTestCase):
 
     def test_fields(self):
-        cell = Cell(
-            radio=Radio.gsm, mcc=100, mnc=5, lac=1234, cid=23456,
-            lat=1.2345678, lon=2.3456789, new_measures=2, total_measures=15)
         session = self.db_master_session
-        session.add(cell)
-        session.commit()
+        session.add(Cell.create(
+            radio=Radio.gsm, mcc=GB_MCC, mnc=5, lac=1234, cid=23456,
+            lat=GB_LAT, lon=GB_LON, total_measures=15))
+        session.flush()
 
-        result = session.query(cell.__class__).first()
+        result = session.query(Cell).first()
         self.assertEqual(result.radio, Radio.gsm)
-        self.assertEqual(result.mcc, 100)
+        self.assertEqual(result.mcc, GB_MCC)
         self.assertEqual(result.mnc, 5)
         self.assertEqual(result.lac, 1234)
         self.assertEqual(result.cid, 23456)
-        self.assertEqual(result.lat, 1.2345678)
-        self.assertEqual(result.lon, 2.3456789)
-        self.assertEqual(result.new_measures, 2)
+        self.assertEqual(result.lat, GB_LAT)
+        self.assertEqual(result.lon, GB_LON)
         self.assertEqual(result.total_measures, 15)
 
 
 class TestCellArea(DBTestCase):
 
     def test_fields(self):
-        cell = CellArea(
-            radio=Radio.cdma, lac=1234, mcc=100, mnc=5,
-            lat=1.2345678, lon=2.3456789,
-            range=10, avg_cell_range=10, num_cells=15,
-        )
         session = self.db_master_session
-        session.add(cell)
-        session.commit()
+        session.add(CellArea(
+            radio=Radio.cdma, mcc=GB_MCC, mnc=5, lac=1234, range=10,
+            lat=GB_LAT, lon=GB_LON, avg_cell_range=10, num_cells=15))
+        session.flush()
 
-        result = session.query(cell.__class__).first()
+        result = session.query(CellArea).first()
         self.assertEqual(result.radio, Radio.cdma)
-        self.assertEqual(result.mcc, 100)
+        self.assertEqual(result.mcc, GB_MCC)
         self.assertEqual(result.mnc, 5)
         self.assertEqual(result.lac, 1234)
-        self.assertEqual(result.lat, 1.2345678)
-        self.assertEqual(result.lon, 2.3456789)
+        self.assertEqual(result.lat, GB_LAT)
+        self.assertEqual(result.lon, GB_LON)
         self.assertEqual(result.range, 10)
         self.assertEqual(result.avg_cell_range, 10)
         self.assertEqual(result.num_cells, 15)
@@ -58,16 +58,14 @@ class TestCellArea(DBTestCase):
 class TestCellBlacklist(DBTestCase):
 
     def test_fields(self):
-        cell = CellBlacklist(
-            radio=Radio.lte, mcc=100, mnc=5, lac=1234, cid=23456,
-            count=2)
         session = self.db_master_session
-        session.add(cell)
-        session.commit()
+        session.add(CellBlacklist(
+            radio=Radio.lte, mcc=GB_MCC, mnc=5, lac=1234, cid=23456, count=2))
+        session.flush()
 
-        result = session.query(cell.__class__).first()
+        result = session.query(CellBlacklist).first()
         self.assertEqual(result.radio, Radio.lte)
-        self.assertEqual(result.mcc, 100)
+        self.assertEqual(result.mcc, GB_MCC)
         self.assertEqual(result.mnc, 5)
         self.assertEqual(result.lac, 1234)
         self.assertEqual(result.cid, 23456)
@@ -77,48 +75,43 @@ class TestCellBlacklist(DBTestCase):
 class TestOCIDCell(DBTestCase):
 
     def test_fields(self):
-        cell = OCIDCell(
-            radio=Radio.gsm, mcc=100, mnc=5, lac=1234, cid=23456,
-            lat=1.2345678, lon=2.3456789, range=1000, total_measures=15,
-        )
         session = self.db_master_session
-        session.add(cell)
-        session.commit()
+        session.add(OCIDCell.create(
+            radio=Radio.gsm, mcc=GB_MCC, mnc=5, lac=1234, cid=23456,
+            lat=GB_LAT, lon=GB_LON, range=1000, total_measures=15))
+        session.flush()
 
-        result = session.query(cell.__class__).first()
+        result = session.query(OCIDCell).first()
         self.assertEqual(result.radio, Radio.gsm)
-        self.assertEqual(result.mcc, 100)
+        self.assertEqual(result.mcc, GB_MCC)
         self.assertEqual(result.mnc, 5)
         self.assertEqual(result.lac, 1234)
         self.assertEqual(result.cid, 23456)
-        self.assertEqual(result.lat, 1.2345678)
-        self.assertEqual(result.lon, 2.3456789)
+        self.assertEqual(result.lat, GB_LAT)
+        self.assertEqual(result.lon, GB_LON)
         self.assertEqual(result.total_measures, 15)
-        self.assertEqual(result.min_lat, 1.225567790999991)
-        self.assertEqual(result.min_lon, 2.3184002892204245)
-        self.assertEqual(result.max_lat, 1.243567809000009)
-        self.assertEqual(result.max_lon, 2.372957510779575)
+        self.assertAlmostEqual(result.min_lat, GB_LAT - 0.009, 7)
+        self.assertAlmostEqual(result.min_lon, GB_LON - 0.02727469, 7)
+        self.assertAlmostEqual(result.max_lat, GB_LAT + 0.009, 7)
+        self.assertAlmostEqual(result.max_lon, GB_LON + 0.02727469, 7)
 
 
 class TestOCIDCellArea(DBTestCase):
 
     def test_fields(self):
-        cell = OCIDCellArea(
-            radio=Radio.umts, lac=1234, mcc=100, mnc=5,
-            lat=1.2345678, lon=2.3456789,
-            range=10, avg_cell_range=10, num_cells=15,
-        )
         session = self.db_master_session
-        session.add(cell)
-        session.commit()
+        session.add(OCIDCellArea(
+            radio=Radio.umts, mcc=GB_MCC, mnc=5, lac=1234, range=10,
+            lat=GB_LAT, lon=GB_LON, avg_cell_range=10, num_cells=15))
+        session.flush()
 
-        result = session.query(cell.__class__).first()
+        result = session.query(OCIDCellArea).first()
         self.assertEqual(result.radio, Radio.umts)
-        self.assertEqual(result.mcc, 100)
+        self.assertEqual(result.mcc, GB_MCC)
         self.assertEqual(result.mnc, 5)
         self.assertEqual(result.lac, 1234)
-        self.assertEqual(result.lat, 1.2345678)
-        self.assertEqual(result.lon, 2.3456789)
+        self.assertEqual(result.lat, GB_LAT)
+        self.assertEqual(result.lon, GB_LON)
         self.assertEqual(result.range, 10)
         self.assertEqual(result.avg_cell_range, 10)
         self.assertEqual(result.num_cells, 15)

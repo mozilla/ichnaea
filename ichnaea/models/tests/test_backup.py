@@ -15,14 +15,12 @@ class TestObservationBlock(DBTestCase):
         now = util.utcnow()
         s3_key = '201502/wifi_10_200.zip'
 
-        block = ObservationBlock(
+        session = self.db_master_session
+        session.add(ObservationBlock(
             measure_type=ObservationType.wifi, s3_key=s3_key,
             archive_date=now, archive_sha=archive_sha,
-            start_id=10, end_id=200)
-
-        session = self.db_master_session
-        session.add(block)
-        session.commit()
+            start_id=10, end_id=200))
+        session.flush()
 
         result = session.query(ObservationBlock).first()
         self.assertTrue(result.id > 0)
