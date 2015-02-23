@@ -485,23 +485,6 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(res.body, '')
         session = self.db_master_session
         cell_result = session.query(CellObservation).all()
-        self.assertEqual(len(cell_result), 0)
-
-        cell_data = [{"mcc": FRANCE_MCC, "mnc": 1, "lac": 2, "cid": 1234},
-                     {'radio': 'gsm',
-                      "mcc": FRANCE_MCC,
-                      "mnc": 1,
-                      "lac": 2,
-                      "cid": 1234}, ]
-        res = app.post_json(
-            '/v1/submit', {"items": [{"lat": PARIS_LAT,
-                                      "lon": PARIS_LON,
-                                      "radio": "gsm",
-                                      "cell": cell_data}]},
-            status=204)
-        self.assertEqual(res.body, '')
-        session = self.db_master_session
-        cell_result = session.query(CellObservation).all()
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
         self.assertEqual(item.radio, RADIO_TYPE['gsm'])

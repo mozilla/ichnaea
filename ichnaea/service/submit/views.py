@@ -20,40 +20,20 @@ def configure_submit(config):
     config.add_view(submit_view, route_name='v1_submit', renderer='json')
 
 
-def check_cell_or_wifi(data, errors):
-    cell = data.get('cell', ())
-    wifi = data.get('wifi', ())
+def add_radio_value(data):
+    radio = data.get('radio', None)
+    cells = data.get('cell', ())
 
-    # Clean up the cell data
-    skips = set()
-    for idx, c in enumerate(cell):
-        if c['radio'] is None:
-            skips.add(idx)
+    for cell in cells:
+        if cell['radio'] is None:
+            cell['radio'] = radio
 
-    skips = list(skips)
-    skips.sort(reverse=True)
-    for idx in skips:
-        del cell[idx]
-    data['cell'] = tuple(cell)
-
-    if not any(wifi) and not any(cell):
-        return False
-    return True
+    data['cell'] = tuple(cells)
 
 
 def submit_validator(data, errors):
-    skips = set()
-    for idx, item in enumerate(data.get('items', ())):
-        if item['lat'] is None or item['lon'] is None:
-            skips.add(idx)
-
-        if not check_cell_or_wifi(item, errors):
-            skips.add(idx)
-
-    skips = list(skips)
-    skips.sort(reverse=True)
-    for idx in skips:
-        del data['items'][idx]
+    for item in data.get('items', ()):
+        add_radio_value(item)
 
 
 @check_api_key('submit', error_on_invalidkey=False)
