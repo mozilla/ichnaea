@@ -59,7 +59,7 @@ class Report(PositionMixin, ValidationMixin):
 
     @classmethod
     def valid_schema(cls):
-        from ichnaea.data.schema import ValidReportSchema
+        from ichnaea.models.schema import ValidReportSchema
         return ValidReportSchema
 
 
@@ -83,7 +83,7 @@ class CellReport(CellKeyPscMixin, ValidationMixin):
 
     @classmethod
     def valid_schema(cls):
-        from ichnaea.data.schema import ValidCellReportSchema
+        from ichnaea.models.schema import ValidCellReportSchema
         return ValidCellReportSchema
 
 
@@ -93,7 +93,7 @@ class CellLookup(CellReport):
 
     @classmethod
     def valid_schema(cls):
-        from ichnaea.data.schema import ValidCellLookupSchema
+        from ichnaea.models.schema import ValidCellLookupSchema
         return ValidCellLookupSchema
 
 
@@ -107,7 +107,7 @@ class CellObservation(ObservationMixin, CellReport, _Model):
 
     @classmethod
     def valid_schema(cls):
-        from ichnaea.data.schema import ValidCellObservationSchema
+        from ichnaea.models.schema import ValidCellObservationSchema
         return ValidCellObservationSchema
 
 
@@ -119,7 +119,7 @@ class WifiReport(WifiKeyMixin, ValidationMixin):
 
     @classmethod
     def valid_schema(cls):
-        from ichnaea.data.schema import ValidWifiReportSchema
+        from ichnaea.models.schema import ValidWifiReportSchema
         return ValidWifiReportSchema
 
 
@@ -127,7 +127,7 @@ class WifiLookup(WifiReport):
 
     @classmethod
     def valid_schema(cls):
-        from ichnaea.data.schema import ValidWifiLookupSchema
+        from ichnaea.models.schema import ValidWifiLookupSchema
         return ValidWifiLookupSchema
 
 
@@ -142,5 +142,5 @@ class WifiObservation(ObservationMixin, WifiReport, _Model):
 
     @classmethod
     def valid_schema(cls):
-        from ichnaea.data.schema import ValidWifiObservationSchema
+        from ichnaea.models.schema import ValidWifiObservationSchema
         return ValidWifiObservationSchema

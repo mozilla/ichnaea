@@ -91,7 +91,7 @@ class CellAreaMixin(CellAreaKeyMixin, TimeTrackingMixin,
 
     @classmethod
     def valid_schema(cls):
-        from ichnaea.data.schema import ValidCellAreaSchema
+        from ichnaea.models.schema import ValidCellAreaSchema
         return ValidCellAreaSchema
 
 
@@ -134,7 +134,7 @@ class Cell(CellMixin, StationMixin, CreationMixin, _Model):
 
     @classmethod
     def valid_schema(cls):
-        from ichnaea.data.schema import ValidCellSchema
+        from ichnaea.models.schema import ValidCellSchema
         return ValidCellSchema
 
 
@@ -150,7 +150,7 @@ class OCIDCell(CellMixin, BaseStationMixin, CreationMixin, _Model):
 
     @classmethod
     def valid_schema(cls):
-        from ichnaea.data.schema import ValidOCIDCellSchema
+        from ichnaea.models.schema import ValidOCIDCellSchema
         return ValidOCIDCellSchema
 
     @property

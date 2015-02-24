@@ -3,12 +3,15 @@ import uuid
 
 from pytz import UTC
 
-from ichnaea.data import constants
-from ichnaea.data.schema import normalized_time, ValidCellKeySchema
 from ichnaea.models import (
     Radio,
     CellObservation,
     WifiObservation,
+)
+from ichnaea.models import (
+    constants,
+    normalized_time,
+    ValidCellKeySchema,
 )
 from ichnaea.tests.base import TestCase
 from ichnaea.tests.base import (

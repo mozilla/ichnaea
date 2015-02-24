@@ -19,8 +19,10 @@ import iso8601
 from pytz import UTC
 
 from ichnaea import geocalc
-from ichnaea.data import constants
-from ichnaea.models import Radio
+from ichnaea.models import (
+    constants,
+    Radio,
+)
 from ichnaea import util
 
 

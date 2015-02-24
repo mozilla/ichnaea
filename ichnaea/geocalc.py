@@ -1,7 +1,7 @@
 import math
 from country_bounding_boxes import country_subunits_by_iso_code
 
-from ichnaea.data.constants import MIN_LAT, MAX_LAT, MIN_LON, MAX_LON
+from ichnaea.models import constants
 
 
 EARTH_RADIUS = 6371  # radius of earth in km
@@ -128,13 +128,13 @@ def add_meters_to_latitude(lat, distance):
     distance in meters.
 
     The new latitude is bounded by our globally defined
-    :data:`~ichnaea.data.constants.MIN_LAT` and
-    :data:`~ichnaea.data.constants.MAX_LAT`.
+    :data:`~ichnaea.models.constants.MIN_LAT` and
+    :data:`~ichnaea.models.constants.MAX_LAT`.
     """
     # A suitable estimate for surface level calculations is
     # 111,111m = 1 degree latitude
     new_lat = lat + (distance/111111.0)
-    return bound(MIN_LAT, new_lat, MAX_LAT)
+    return bound(constants.MIN_LAT, new_lat, constants.MAX_LAT)
 
 
 def add_meters_to_longitude(lat, lon, distance):
@@ -143,10 +143,10 @@ def add_meters_to_longitude(lat, lon, distance):
     distance in meters.
 
     The new longitude is bounded by our globally defined
-    :data:`~ichnaea.data.constants.MIN_LON` and
-    :data:`~ichnaea.data.constants.MAX_LON`.
+    :data:`~ichnaea.models.constants.MIN_LON` and
+    :data:`~ichnaea.models.constants.MAX_LON`.
     """
     # A suitable estimate for surface level calculations is
     # 111,111m = 1 degree latitude
     new_lon = lon + (distance/(math.cos(lat) * 111111.0))
-    return bound(MIN_LON, new_lon, MAX_LON)
+    return bound(constants.MIN_LON, new_lon, constants.MAX_LON)

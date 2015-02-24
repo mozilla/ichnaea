@@ -55,7 +55,7 @@ class Wifi(WifiMixin, StationMixin, CreationMixin, _Model):
 
     @classmethod
     def valid_schema(cls):
-        from ichnaea.data.schema import ValidWifiSchema
+        from ichnaea.models.schema import ValidWifiSchema
         return ValidWifiSchema
 
 

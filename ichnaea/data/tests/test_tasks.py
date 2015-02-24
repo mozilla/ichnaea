@@ -10,8 +10,6 @@ from ichnaea.constants import (
     PERMANENT_BLACKLIST_THRESHOLD,
     TEMPORARY_BLACKLIST_DURATION,
 )
-from ichnaea.data import constants
-from ichnaea.data.schema import ValidCellKeySchema
 from ichnaea.data.area import (
     enqueue_areas,
     UPDATE_KEY,
@@ -27,6 +25,7 @@ from ichnaea.data.tasks import (
 )
 from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
+    constants,
     Cell,
     CellArea,
     CellBlacklist,
@@ -34,6 +33,7 @@ from ichnaea.models import (
     Radio,
     Score,
     ScoreKey,
+    ValidCellKeySchema,
     Wifi,
     WifiBlacklist,
     WifiObservation,

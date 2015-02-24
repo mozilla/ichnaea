@@ -1,7 +1,7 @@
-:mod:`ichnaea.data.constants`
------------------------------
+:mod:`ichnaea.models.constants`
+-------------------------------
 
-.. automodule:: ichnaea.data.constants
+.. automodule:: ichnaea.models.constants
 
 Constants
 +++++++++

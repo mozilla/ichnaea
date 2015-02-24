@@ -5,12 +5,12 @@ from ichnaea.constants import (
     LAC_MIN_ACCURACY,
     WIFI_MIN_ACCURACY,
 )
-from ichnaea.data.schema import ValidCellKeySchema
 from ichnaea.models import (
     Cell,
     CellArea,
     OCIDCell,
     Radio,
+    ValidCellKeySchema,
     Wifi,
 )
 from ichnaea.tests.base import (

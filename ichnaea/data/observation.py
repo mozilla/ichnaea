@@ -9,11 +9,11 @@ from ichnaea.constants import (
 from ichnaea.customjson import decode_radio_dict
 from ichnaea.data.base import DataTask
 from ichnaea.data.report import process_score
-from ichnaea.data.schema import ValidCellKeySchema
 from ichnaea.models import (
     Cell,
     CellBlacklist,
     CellObservation,
+    ValidCellKeySchema,
     Wifi,
     WifiBlacklist,
     WifiObservation,

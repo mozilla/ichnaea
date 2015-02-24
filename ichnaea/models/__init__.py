@@ -32,6 +32,10 @@ from ichnaea.models.observation import (  # NOQA
     WifiObservation,
     WifiReport,
 )
+from ichnaea.models.schema import (  # NOQA
+    normalized_time,
+    ValidCellKeySchema,
+)
 from ichnaea.models.wifi import (  # NOQA
     Wifi,
     WifiBlacklist,
