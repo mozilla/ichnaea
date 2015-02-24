@@ -29,7 +29,7 @@ Changes
 
 - Change MEASURE_TYPE_CODE, SCORE_TYPE, STAT_TYPE into IntEnums.
 
-- Updated to latest version of iso3166.
+- Updated to latest versions of iso3166, pyramid and requests.
 
 20150211113000
 **************
