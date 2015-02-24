@@ -83,10 +83,8 @@ class TestMonitorTasks(CeleryTestCase):
         self.assertEqual(result, {'cell_measure': -1, 'wifi_measure': -1})
 
         # add some observations
-        for i in range(3):
-            CellObservationFactory()
-        for i in range(5):
-            WifiObservationFactory()
+        CellObservationFactory.create_batch(3)
+        WifiObservationFactory.create_batch(5)
         self.session.flush()
 
         result = monitor_measures.delay().get()

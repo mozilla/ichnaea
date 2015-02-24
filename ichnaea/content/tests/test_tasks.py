@@ -32,11 +32,9 @@ class TestStats(CeleryTestCase):
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        for i in range(2):
-            CellObservationFactory(created=today)
+        CellObservationFactory.create_batch(2, created=today)
         CellObservationFactory(created=yesterday)
-        for i in range(3):
-            CellObservationFactory(created=two_days)
+        CellObservationFactory.create_batch(3, created=two_days)
         CellObservationFactory(created=long_ago)
         session.flush()
 
@@ -150,11 +148,9 @@ class TestStats(CeleryTestCase):
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        for i in range(2):
-            WifiObservationFactory(created=today)
+        WifiObservationFactory.create_batch(2, created=today)
         WifiObservationFactory(created=yesterday)
-        for i in range(3):
-            WifiObservationFactory(created=two_days)
+        WifiObservationFactory.create_batch(3, created=two_days)
         WifiObservationFactory(created=long_ago)
         session.flush()
 
