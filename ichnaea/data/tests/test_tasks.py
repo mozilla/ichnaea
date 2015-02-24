@@ -43,6 +43,9 @@ from ichnaea.tests.base import (
     PARIS_LAT, PARIS_LON, FRANCE_MCC,
     USA_MCC, ATT_MNC,
 )
+from ichnaea.tests.factories import (
+    CellAreaFactory,
+)
 from ichnaea import util
 
 
@@ -715,16 +718,15 @@ class TestCell(CeleryTestCase):
         redis_client = self.redis_client
 
         # create an orphaned lac entry
-        key = dict(radio=Radio.cdma, mcc=1, mnc=1, lac=1)
-        session.add(CellArea(**key))
+        area = CellAreaFactory()
         session.flush()
         enqueue_areas(session, redis_client,
-                      [CellArea.to_hashkey(key)], UPDATE_KEY['cell_lac'])
+                      [area.hashkey()], UPDATE_KEY['cell_lac'])
 
         # after scanning the orphaned record gets removed
         self.assertEqual(scan_areas.delay().get(), 1)
-        lacs = session.query(CellArea).all()
-        self.assertEqual(lacs, [])
+        areas = session.query(CellArea).all()
+        self.assertEqual(areas, [])
 
     def test_scan_areas_update(self):
         session = self.session

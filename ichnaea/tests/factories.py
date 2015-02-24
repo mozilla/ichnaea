@@ -5,10 +5,12 @@ from factory.alchemy import SQLAlchemyModelFactory
 
 from ichnaea.models import (
     Cell,
+    CellArea,
     CellObservation,
     ObservationBlock,
     ObservationType,
     OCIDCell,
+    OCIDCellArea,
     Radio,
     Wifi,
     WifiObservation,
@@ -43,15 +45,21 @@ class BaseFactory(SQLAlchemyModelFactory):
         return 0
 
 
-class CellPositionFactory(BaseFactory):
+class CellAreaPositionFactory(BaseFactory):
 
     radio = Radio.gsm
     mcc = GB_MCC
     mnc = 10
     lac = 10
-    cid = 10
     lat = GB_LAT
     lon = GB_LON
+    range = 35000
+
+
+class CellPositionFactory(CellAreaPositionFactory):
+
+    cid = 10
+    range = 2000
 
 
 class CellFactory(CellPositionFactory):
@@ -60,10 +68,22 @@ class CellFactory(CellPositionFactory):
         model = Cell.create
 
 
+class CellAreaFactory(CellAreaPositionFactory):
+
+    class Meta:
+        model = CellArea.create
+
+
 class OCIDCellFactory(CellPositionFactory):
 
     class Meta:
         model = OCIDCell.create
+
+
+class OCIDCellAreaFactory(CellAreaPositionFactory):
+
+    class Meta:
+        model = OCIDCellArea.create
 
 
 class CellObservationFactory(CellPositionFactory):

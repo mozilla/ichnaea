@@ -225,11 +225,16 @@ class ValidPositionSchema(FieldSchema, CopyingSchema):
         constants.MIN_LON, constants.MAX_LON))
 
 
-class ValidStationSchema(ValidPositionSchema):
-    """A schema which validates the fields present in a station."""
+class ValidTimeTrackingSchema(FieldSchema, CopyingSchema):
+    """A schema which validates the fields used for time tracking."""
 
     created = SchemaNode(DateTimeFromString(), missing=None)
     modified = SchemaNode(DateTimeFromString(), missing=None)
+
+
+class ValidStationSchema(ValidPositionSchema, ValidTimeTrackingSchema):
+    """A schema which validates the fields present in a station."""
+
     total_measures = SchemaNode(Integer(), missing=0)
     range = SchemaNode(Integer(), missing=0)
 
@@ -309,19 +314,34 @@ class ValidWifiReportSchema(ValidWifiLookupSchema):
     """A schema which validates the wifi specific fields in a report."""
 
 
-class ValidCellKeySchema(FieldSchema, CopyingSchema):
+class ValidCellAreaKeySchema(FieldSchema, CopyingSchema):
+    """A schema which validates the fields present in a cell area key."""
+
+    radio = RadioNode(RadioType(), missing=None)
+    mcc = SchemaNode(Integer(), validator=Range(1, 999))
+    mnc = SchemaNode(Integer(), validator=Range(0, 32767))
+    lac = DefaultNode(
+        Integer(), missing=0, validator=Range(
+            constants.MIN_LAC, constants.MAX_LAC_ALL))
+
+
+class ValidCellAreaSchema(ValidCellAreaKeySchema,
+                          ValidPositionSchema,
+                          ValidTimeTrackingSchema):
+    """A schema which validates the fields present in a cell area."""
+
+    range = SchemaNode(Integer(), missing=0)
+    avg_cell_range = SchemaNode(Integer(), missing=0)
+    num_cells = SchemaNode(Integer(), missing=0)
+
+
+class ValidCellKeySchema(ValidCellAreaKeySchema):
     """A schema which validates the fields present in a cell key."""
 
     cid = DefaultNode(
         Integer(), missing=0, validator=Range(
             constants.MIN_CID, constants.MAX_CID_ALL))
-    lac = DefaultNode(
-        Integer(), missing=0, validator=Range(
-            constants.MIN_LAC, constants.MAX_LAC_ALL))
-    mcc = SchemaNode(Integer(), validator=Range(1, 999))
-    mnc = SchemaNode(Integer(), validator=Range(0, 32767))
     psc = DefaultNode(Integer(), missing=-1, validator=Range(0, 512))
-    radio = RadioNode(RadioType(), missing=None)
 
     def deserialize(self, data, default_radio=None):
         if data:

@@ -80,11 +80,17 @@ class CellAreaKeyMixin(HashKeyMixin):
     lac = Column(SmallInteger(unsigned=True), autoincrement=False)
 
 
-class CellAreaMixin(CellAreaKeyMixin, TimeTrackingMixin, PositionMixin):
+class CellAreaMixin(CellAreaKeyMixin, TimeTrackingMixin,
+                    PositionMixin, CreationMixin):
 
     range = Column(Integer)
     avg_cell_range = Column(Integer)
     num_cells = Column(Integer(unsigned=True))
+
+    @classmethod
+    def valid_schema(cls):
+        from ichnaea.data.schema import ValidCellAreaSchema
+        return ValidCellAreaSchema
 
 
 class CellKeyMixin(CellAreaKeyMixin):
