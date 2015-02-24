@@ -6,8 +6,8 @@ from pytz import UTC
 import simplejson as json
 
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
-from ichnaea.models.base import HashKey
 from ichnaea.models.cell import Radio
+from ichnaea.models.hashkey import HashKey
 
 
 def encode_datetime(obj):

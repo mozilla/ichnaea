@@ -9,6 +9,8 @@ from ichnaea.models.base import (
     _Model,
     BigIdMixin,
     CreationMixin,
+)
+from ichnaea.models.hashkey import (
     HashKey,
     HashKeyMixin,
 )

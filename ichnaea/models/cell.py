@@ -14,10 +14,12 @@ from ichnaea import geocalc
 from ichnaea.models.base import (
     _Model,
     CreationMixin,
-    HashKey,
-    HashKeyMixin,
     PositionMixin,
     TimeTrackingMixin,
+)
+from ichnaea.models.hashkey import (
+    HashKey,
+    HashKeyMixin,
 )
 from ichnaea.models.sa_types import TinyIntEnum
 from ichnaea.models.station import (
