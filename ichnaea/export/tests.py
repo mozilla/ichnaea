@@ -167,7 +167,8 @@ class TestImport(CeleryAppTestCase):
             self.session.query(OCIDCellArea).count(), len(lacs))
 
     def test_local_import_with_query(self):
-        self.import_test_csv(session=self.db_ro_session)
+        self.session = self.db_ro_session
+        self.import_test_csv(session=self.session)
 
         res = self.app.post_json(
             '/v1/search?key=test',

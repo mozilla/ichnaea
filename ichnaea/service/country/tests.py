@@ -123,11 +123,10 @@ class TestCountryErrors(AppTestCase, CountryBase):
         super(TestCountryErrors, self).tearDown()
 
     def test_database_error(self):
-        session = self.db_ro_session
         for tablename in ('wifi', 'cell', 'cell_area',
                           'ocid_cell', 'ocid_cell_area'):
             stmt = text("drop table %s;" % tablename)
-            session.execute(stmt)
+            self.session.execute(stmt)
 
         result = self._make_geoip_query(status=200)
         self._check_geoip_result(result, status=200)

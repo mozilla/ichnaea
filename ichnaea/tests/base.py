@@ -546,6 +546,8 @@ class GeoIPIsolation(object):
 class AppTestCase(TestCase, DBIsolation,
                   RedisIsolation, LogIsolation, GeoIPIsolation):
 
+    default_session = 'db_ro_session'
+
     @classmethod
     def setUpClass(cls):
         super(AppTestCase, cls).setup_engine()
@@ -621,6 +623,8 @@ class CeleryTestCase(DBTestCase, RedisIsolation, CeleryIsolation):
 
 
 class CeleryAppTestCase(AppTestCase, CeleryIsolation):
+
+    default_session = 'db_rw_session'
 
     @classmethod
     def setUpClass(cls):

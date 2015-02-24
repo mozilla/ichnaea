@@ -177,7 +177,7 @@ class TestFunctionalContent(AppTestCase):
         app = self.app
         today = util.utcnow().date()
         yesterday = today - timedelta(1)
-        session = self.db_ro_session
+        session = self.session
         stat = Stat(key=StatKey.unique_cell, time=yesterday, value=2)
         session.add(stat)
         stat = Stat(key=StatKey.unique_ocid_cell, time=yesterday, value=5)
@@ -199,7 +199,7 @@ class TestFunctionalContent(AppTestCase):
         app = self.app
         today = util.utcnow().date()
         yesterday = today - timedelta(1)
-        session = self.db_ro_session
+        session = self.session
         stat = Stat(key=StatKey.unique_wifi, time=yesterday, value=2)
         session.add(stat)
         session.commit()
@@ -245,7 +245,7 @@ class TestFunctionalContentViews(AppTestCase):
             session.add(score2)
         session.commit()
         request = DummyRequest()
-        request.db_ro_session = self.db_rw_session
+        request.db_ro_session = self.session
         request.registry.redis_client = self.redis_client
         inst = self._make_view(request)
         result = inst.leaders_view()
@@ -279,7 +279,7 @@ class TestFunctionalContentViews(AppTestCase):
             session.add(score2)
         session.commit()
         request = DummyRequest()
-        request.db_ro_session = self.db_rw_session
+        request.db_ro_session = self.session
         request.registry.redis_client = self.redis_client
         inst = self._make_view(request)
         result = inst.leaders_weekly_view()
@@ -312,7 +312,7 @@ class TestFunctionalContentViews(AppTestCase):
         session.add_all(stats)
         session.commit()
         request = DummyRequest()
-        request.db_ro_session = self.db_rw_session
+        request.db_ro_session = self.session
         request.registry.redis_client = self.redis_client
         inst = self._make_view(request)
         result = inst.stats_view()
@@ -338,7 +338,7 @@ class TestFunctionalContentViews(AppTestCase):
 
     def test_stats_countries(self):
         request = DummyRequest()
-        request.db_ro_session = self.db_rw_session
+        request.db_ro_session = self.session
         request.registry.redis_client = self.redis_client
         inst = self._make_view(request)
         result = inst.stats_countries_view()
