@@ -27,13 +27,13 @@ kombu==3.0.24
 maxminddb==1.1.1  # optional C extension, version also in Makefile
 mobile-codes==0.7
 ordereddict==1.1
-pyramid==1.5.2
+pyramid==1.5.3
 pyramid-chameleon==0.3
 pytz==2014.10
 raven==3.4.1  # rq.filter: <3.5.0
 redis==2.10.3
 repoze.lru==0.6
-requests==2.5.1
+requests==2.5.2
 six==1.9.0
 statsd==3.0.1
 translationstring==1.3
