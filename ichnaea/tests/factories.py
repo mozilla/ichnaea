@@ -17,6 +17,7 @@ from ichnaea.tests.base import (
     GB_LAT,
     GB_LON,
     GB_MCC,
+    SESSION,
 )
 
 
@@ -26,9 +27,11 @@ class BaseFactory(SQLAlchemyModelFactory):
         strategy = factory.BUILD_STRATEGY
 
     @classmethod
-    def _create(cls, model_class, _session, *args, **kwargs):
+    def _create(cls, model_class, _session=None, *args, **kwargs):
         """Create an instance of the model, and save it to the database."""
         obj = model_class(*args, **kwargs)
+        if _session is None:
+            _session = SESSION['default']
         _session.add(obj)
         return obj
 

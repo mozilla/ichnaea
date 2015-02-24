@@ -32,7 +32,7 @@ class TestStats(CeleryTestCase):
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        obs_factory = self.bind_factory(CellObservationFactory.create)
+        obs_factory = CellObservationFactory.create
         for i in range(2):
             obs_factory(created=today)
         obs_factory(created=yesterday)
@@ -72,7 +72,7 @@ class TestStats(CeleryTestCase):
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        cell_factory = self.bind_factory(CellFactory.create)
+        cell_factory = CellFactory.create
         cell_factory(created=long_ago, radio=Radio.gsm)
         cell_factory(created=two_days, radio=Radio.umts)
         cell_factory(created=two_days, radio=Radio.umts, cid=50)
@@ -112,7 +112,7 @@ class TestStats(CeleryTestCase):
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        ocid_factory = self.bind_factory(OCIDCellFactory.create)
+        ocid_factory = OCIDCellFactory.create
         ocid_factory(created=long_ago)
         ocid_factory(created=two_days, radio=Radio.umts)
         ocid_factory(created=two_days, radio=Radio.umts, cid=50)
@@ -153,7 +153,7 @@ class TestStats(CeleryTestCase):
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        obs_factory = self.bind_factory(WifiObservationFactory.create)
+        obs_factory = WifiObservationFactory.create
         for i in range(2):
             obs_factory(created=today)
         obs_factory(created=yesterday)
@@ -193,7 +193,7 @@ class TestStats(CeleryTestCase):
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        wifi_factory = self.bind_factory(WifiFactory.create)
+        wifi_factory = WifiFactory.create
         wifi_factory(key="ab1234567890", created=long_ago)
         wifi_factory(key="bc1234567890", created=two_days)
         wifi_factory(key="cd1234567890", created=yesterday)

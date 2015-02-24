@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-from functools import partial
 import os
 import os.path
 
@@ -54,6 +53,8 @@ SQL_BASE_STRUCTURE = os.path.join(DATA_DIRECTORY, 'base_structure.sql')
 
 SQLURI = os.environ.get('SQLURI')
 REDIS_URI = os.environ.get('REDIS_URI', 'redis://localhost:6379/1')
+
+SESSION = {}
 
 # Some test-data constants
 
@@ -142,9 +143,6 @@ class DBIsolation(object):
     default_session = 'db_rw_session'
     track_connection_events = False
 
-    def bind_factory(self, factory):
-        return partial(factory, _session=self.session)
-
     @contextmanager
     def db_call_checker(self):
         try:
@@ -198,7 +196,9 @@ class DBIsolation(object):
         self.db_ro_session = self.db_ro.session()
 
         # set up a default session
-        setattr(self, 'session', getattr(self, self.default_session))
+        default_session = getattr(self, self.default_session)
+        setattr(self, 'session', default_session)
+        SESSION['default'] = default_session
 
         if self.track_connection_events:
             self.setup_db_event_tracking()
@@ -207,6 +207,7 @@ class DBIsolation(object):
         if self.track_connection_events:
             self.teardown_db_event_tracking()
 
+        del SESSION['default']
         del self.session
 
         self.ro_trans.rollback()
