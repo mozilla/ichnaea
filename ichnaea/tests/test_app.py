@@ -33,17 +33,17 @@ class TestApp(DBTestCase, RedisIsolation):
                         _stats_client=self.stats_client,
                         _redis=self.redis_client,
                         **settings)
-        self.db_master = app.app.registry.db_master
-        self.db_slave = app.app.registry.db_slave
+        self.db_rw = app.app.registry.db_rw
+        self.db_ro = app.app.registry.db_ro
         self.setup_session()
         app.get('/stats_wifi.json', status=200)
 
     def test_db_config(self):
-        self.db_master = _make_db()
-        self.db_slave = _make_db()
+        self.db_rw = _make_db()
+        self.db_ro = _make_db()
         self.setup_session()
-        app = _make_app(_db_master=self.db_master,
-                        _db_slave=self.db_slave,
+        app = _make_app(_db_rw=self.db_rw,
+                        _db_ro=self.db_ro,
                         _heka_client=self.heka_client,
                         _stats_client=self.stats_client,
                         _redis=self.redis_client,

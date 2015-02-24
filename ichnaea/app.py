@@ -5,14 +5,14 @@ from ichnaea import customjson
 from ichnaea.cache import redis_client
 from ichnaea.db import (
     Database,
-    db_master_session,
-    db_slave_session,
+    db_rw_session,
+    db_ro_session,
 )
 from ichnaea.geoip import configure_geoip
 
 
 def main(global_config, heka_config=None, init=False,
-         _db_master=None, _db_slave=None, _heka_client=None, _redis=None,
+         _db_rw=None, _db_ro=None, _heka_client=None, _redis=None,
          _stats_client=None, **settings):
     config = Configurator(settings=settings)
 
@@ -30,14 +30,14 @@ def main(global_config, heka_config=None, init=False,
     configure_service(config)
 
     # configure databases incl. test override hooks
-    if _db_master is None:
-        config.registry.db_master = Database(settings['db_master'])
+    if _db_rw is None:
+        config.registry.db_rw = Database(settings['db_master'])
     else:
-        config.registry.db_master = _db_master
-    if _db_slave is None:
-        config.registry.db_slave = Database(settings['db_slave'])
+        config.registry.db_rw = _db_rw
+    if _db_ro is None:
+        config.registry.db_ro = Database(settings['db_slave'])
     else:
-        config.registry.db_slave = _db_slave
+        config.registry.db_ro = _db_ro
 
     if _redis is None:
         config.registry.redis_client = None
@@ -59,8 +59,8 @@ def main(global_config, heka_config=None, init=False,
 
     config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)
     config.add_tween('ichnaea.logging.log_tween_factory', under=EXCVIEW)
-    config.add_request_method(db_master_session, property=True)
-    config.add_request_method(db_slave_session, property=True)
+    config.add_request_method(db_rw_session, property=True)
+    config.add_request_method(db_ro_session, property=True)
 
     # replace json renderer with custom json variant
     config.add_renderer('json', customjson.Renderer())
@@ -68,7 +68,7 @@ def main(global_config, heka_config=None, init=False,
     # Should we try to initialize and establish the outbound connections?
     if init:  # pragma: no cover
         registry = config.registry
-        registry.db_slave.ping()
+        registry.db_ro.ping()
         registry.redis_client.ping()
         registry.stats_client.ping()
 

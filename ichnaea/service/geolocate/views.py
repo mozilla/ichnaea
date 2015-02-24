@@ -43,7 +43,7 @@ def geolocate_view(request):
     )
 
     data = map_data(data, client_addr=request.client_addr)
-    session = request.db_slave_session
+    session = request.db_ro_session
     result = PositionSearcher(
         {'geoip': request.registry.geoip_db, 'session': session},
         api_key_log=getattr(request, 'api_key_log', False),

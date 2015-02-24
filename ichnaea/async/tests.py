@@ -40,15 +40,15 @@ class TestWorkerDatabase(DBTestCase):
 
     def setUp(self):
         super(TestWorkerDatabase, self).setUp()
-        self._old_db = getattr(celery, 'db_master', None)
+        self._old_db = getattr(celery, 'db_rw', None)
 
     def tearDown(self):
         if self._old_db:
-            setattr(celery, 'db_master', self._old_db)
+            setattr(celery, 'db_rw', self._old_db)
         else:
-            delattr(celery, 'db_master')
+            delattr(celery, 'db_rw')
         super(TestWorkerDatabase, self).tearDown()
 
     def test_attach(self):
-        attach_database(celery, _db_master=self.db_master)
-        self.assertTrue(hasattr(celery, 'db_master'))
+        attach_database(celery, _db_rw=self.db_rw)
+        self.assertTrue(hasattr(celery, 'db_rw'))

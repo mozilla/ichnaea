@@ -47,7 +47,7 @@ class TestMap(CeleryTestCase):
 
     def test_generate(self):
         with mock_system_call() as mock_system:
-            generate(self.db_master, 's3_bucket',
+            generate(self.db_rw, 's3_bucket',
                      self.heka_client, self.stats_client,
                      upload=False, concurrency=1, datamaps='')
             mock_calls = mock_system.mock_calls
@@ -64,7 +64,7 @@ class TestMap(CeleryTestCase):
     def test_generate_explicit_output(self):
         with tempdir() as temp_dir:
             with mock_system_call() as mock_system:
-                generate(self.db_master, 's3_bucket',
+                generate(self.db_rw, 's3_bucket',
                          self.heka_client, self.stats_client,
                          upload=False, concurrency=1,
                          datamaps='', output=temp_dir)
@@ -82,7 +82,7 @@ class TestMap(CeleryTestCase):
                     '--output=%s' % temp_dir,
                 ]
                 main(argv,
-                     _db_master=self.db_master,
+                     _db_rw=self.db_rw,
                      _heka_client=self.heka_client,
                      _stats_client=self.stats_client)
                 mock_calls = mock_system.mock_calls

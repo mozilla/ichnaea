@@ -29,7 +29,7 @@ class TestGeolocate(AppTestCase):
 
     def test_ok_cell(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.db_ro_session
         cell = Cell()
         cell.lat = PARIS_LAT
         cell.lon = PARIS_LON
@@ -66,7 +66,7 @@ class TestGeolocate(AppTestCase):
 
     def test_ok_wifi(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.db_ro_session
         wifis = [
             Wifi(key="101010101010", lat=1.0, lon=1.0),
             Wifi(key="202020202020", lat=1.001, lon=1.002),
@@ -132,7 +132,7 @@ class TestGeolocate(AppTestCase):
         # Some clients sends us these values as strings, some as integers,
         # so we want to make sure we support both.
         app = self.app
-        session = self.db_slave_session
+        session = self.db_ro_session
         cell = Cell(
             lat=PARIS_LAT, lon=PARIS_LON, range=1000,
             radio=Radio.gsm, mcc=FRANCE_MCC, mnc=1, lac=2, cid=3)
@@ -224,7 +224,7 @@ class TestGeolocate(AppTestCase):
 
     def test_no_api_key(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.db_ro_session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4)
         session.add(Cell(
             lat=PARIS_LAT,
@@ -253,7 +253,7 @@ class TestGeolocate(AppTestCase):
 
     def test_unknown_api_key(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.db_ro_session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4)
         session.add(Cell(
             lat=PARIS_LAT,
@@ -283,7 +283,7 @@ class TestGeolocate(AppTestCase):
     def test_api_key_limit(self):
         app = self.app
         london = self.geoip_data['London']
-        session = self.db_slave_session
+        session = self.db_ro_session
         api_key = uuid1().hex
         session.add(ApiKey(valid_key=api_key, maxreq=5, shortname='dis'))
         session.flush()
@@ -303,7 +303,7 @@ class TestGeolocate(AppTestCase):
 
     def test_lte_radio(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.db_ro_session
         cells = [
             Cell(lat=PARIS_LAT,
                  lon=PARIS_LON,
@@ -356,13 +356,13 @@ class TestGeolocateFxOSWorkarounds(AppTestCase):
         self.metric_url = 'request.v1.geolocate'
 
     def get_session(self):
-        return self.db_slave_session
+        return self.db_ro_session
 
     def test_ok_cell_radio_in_celltowers(self):
         # This test covers a bug related to FxOS calling the
         # geolocate API incorrectly.
         app = self.app
-        session = self.db_slave_session
+        session = self.db_ro_session
         cell = Cell()
         cell.lat = PARIS_LAT
         cell.lon = PARIS_LON
@@ -399,7 +399,7 @@ class TestGeolocateFxOSWorkarounds(AppTestCase):
         # This test covered a bug related to FxOS calling the
         # geolocate API incorrectly.
         app = self.app
-        session = self.db_slave_session
+        session = self.db_ro_session
         cell = Cell()
         cell.lat = PARIS_LAT
         cell.lon = PARIS_LON
@@ -433,7 +433,7 @@ class TestGeolocateFxOSWorkarounds(AppTestCase):
 
     def test_inconsistent_cell_radio_in_towers(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.db_ro_session
         cells = [
             Cell(lat=PARIS_LAT,
                  lon=PARIS_LON,
@@ -481,13 +481,13 @@ class TestGeolocateErrors(AppTestCase):
     # this is a standalone class to ensure DB isolation for dropping tables
 
     def tearDown(self):
-        self.setup_tables(self.db_master.engine)
+        self.setup_tables(self.db_rw.engine)
         super(TestGeolocateErrors, self).tearDown()
 
     def test_database_error(self):
         app = self.app
         london = self.geoip_data['London']
-        session = self.db_slave_session
+        session = self.db_ro_session
         stmt = text("drop table wifi;")
         session.execute(stmt)
         stmt = text("drop table cell;")

@@ -23,7 +23,7 @@ class TestSearch(AppTestCase):
 
     def test_ok_cell(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.db_ro_session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         lat = PARIS_LAT
         lon = PARIS_LON
@@ -60,7 +60,7 @@ class TestSearch(AppTestCase):
 
     def test_ok_wifi(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.db_ro_session
         wifis = [
             Wifi(key="101010101010", lat=1.0, lon=1.0),
             Wifi(key="202020202020", lat=1.002, lon=1.004),
@@ -207,7 +207,7 @@ class TestSearch(AppTestCase):
 
     def test_no_api_key(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.db_ro_session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4)
         session.add(Cell(
             lat=PARIS_LAT,
@@ -228,7 +228,7 @@ class TestSearch(AppTestCase):
 
     def test_unknown_api_key(self):
         app = self.app
-        session = self.db_slave_session
+        session = self.db_ro_session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4)
         session.add(Cell(
             lat=PARIS_LAT,
@@ -252,13 +252,13 @@ class TestSearchErrors(AppTestCase):
     # this is a standalone class to ensure DB isolation for dropping tables
 
     def tearDown(self):
-        self.setup_tables(self.db_master.engine)
+        self.setup_tables(self.db_rw.engine)
         super(TestSearchErrors, self).tearDown()
 
     def test_database_error(self):
         app = self.app
         london = self.geoip_data['London']
-        session = self.db_slave_session
+        session = self.db_ro_session
         stmt = text("drop table wifi;")
         session.execute(stmt)
 

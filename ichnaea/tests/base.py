@@ -110,12 +110,12 @@ def _make_redis(uri=REDIS_URI):
     return redis_client(uri)
 
 
-def _make_app(_db_master=None, _db_slave=None, _heka_client=None, _redis=None,
+def _make_app(_db_rw=None, _db_ro=None, _heka_client=None, _redis=None,
               _stats_client=None, **settings):
     wsgiapp = main(
         {},
-        _db_master=_db_master,
-        _db_slave=_db_slave,
+        _db_rw=_db_rw,
+        _db_ro=_db_ro,
         _heka_client=_heka_client,
         _redis=_redis,
         _stats_client=_stats_client,
@@ -139,7 +139,7 @@ class DBIsolation(object):
     # Inspired by a blog post:
     # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
 
-    default_session = 'db_master_session'
+    default_session = 'db_rw_session'
     track_connection_events = False
 
     def bind_factory(self, factory):
@@ -153,49 +153,49 @@ class DBIsolation(object):
         finally:
             self.teardown_db_event_tracking()
 
-    def check_db_calls(self, master=None, slave=None):
-        if master is not None:
-            events = self.db_events['master']['calls']
-            self.assertEqual(len(events), master, events)
-        if slave is not None:
-            events = self.db_events['slave']['calls']
-            self.assertEqual(len(events), slave, events)
+    def check_db_calls(self, rw=None, ro=None):
+        if rw is not None:
+            events = self.db_events['rw']['calls']
+            self.assertEqual(len(events), rw, events)
+        if ro is not None:
+            events = self.db_events['ro']['calls']
+            self.assertEqual(len(events), ro, events)
 
     def reset_db_event_tracking(self):
         self.db_events = {
-            'master': {'calls': [], 'handler': None},
-            'slave': {'calls': [], 'handler': None},
+            'rw': {'calls': [], 'handler': None},
+            'ro': {'calls': [], 'handler': None},
         }
 
     def setup_db_event_tracking(self):
         self.reset_db_event_tracking()
 
-        self.db_events['master']['handler'] = handler = \
-            scoped_conn_event_handler(self.db_events['master']['calls'])
-        event.listen(self.master_conn, 'before_cursor_execute',
+        self.db_events['rw']['handler'] = handler = \
+            scoped_conn_event_handler(self.db_events['rw']['calls'])
+        event.listen(self.rw_conn, 'before_cursor_execute',
                      handler, named=True)
 
-        self.db_events['slave']['handler'] = handler = \
-            scoped_conn_event_handler(self.db_events['slave']['calls'])
-        event.listen(self.slave_conn, 'before_cursor_execute',
+        self.db_events['ro']['handler'] = handler = \
+            scoped_conn_event_handler(self.db_events['ro']['calls'])
+        event.listen(self.ro_conn, 'before_cursor_execute',
                      handler, named=True)
 
     def teardown_db_event_tracking(self):
-        event.remove(self.slave_conn, 'before_cursor_execute',
-                     self.db_events['slave']['handler'])
-        event.remove(self.master_conn, 'before_cursor_execute',
-                     self.db_events['master']['handler'])
+        event.remove(self.ro_conn, 'before_cursor_execute',
+                     self.db_events['ro']['handler'])
+        event.remove(self.rw_conn, 'before_cursor_execute',
+                     self.db_events['rw']['handler'])
         self.reset_db_event_tracking()
 
     def setup_session(self):
-        self.master_conn = self.db_master.engine.connect()
-        self.master_trans = self.master_conn.begin()
-        self.db_master.session_factory.configure(bind=self.master_conn)
-        self.db_master_session = self.db_master.session()
-        self.slave_conn = self.db_slave.engine.connect()
-        self.slave_trans = self.slave_conn.begin()
-        self.db_slave.session_factory.configure(bind=self.slave_conn)
-        self.db_slave_session = self.db_slave.session()
+        self.rw_conn = self.db_rw.engine.connect()
+        self.rw_trans = self.rw_conn.begin()
+        self.db_rw.session_factory.configure(bind=self.rw_conn)
+        self.db_rw_session = self.db_rw.session()
+        self.ro_conn = self.db_ro.engine.connect()
+        self.ro_trans = self.ro_conn.begin()
+        self.db_ro.session_factory.configure(bind=self.ro_conn)
+        self.db_ro_session = self.db_ro.session()
 
         # set up a default session
         setattr(self, 'session', getattr(self, self.default_session))
@@ -209,34 +209,34 @@ class DBIsolation(object):
 
         del self.session
 
-        self.slave_trans.rollback()
-        self.db_slave_session.close()
-        del self.db_slave_session
-        self.db_slave.session_factory.configure(bind=None)
-        self.slave_trans.close()
-        del self.slave_trans
-        self.slave_conn.close()
-        del self.slave_conn
-        self.master_trans.rollback()
-        self.db_master_session.close()
-        del self.db_master_session
-        self.db_master.session_factory.configure(bind=None)
-        self.master_trans.close()
-        del self.master_trans
-        self.master_conn.close()
-        del self.master_conn
+        self.ro_trans.rollback()
+        self.db_ro_session.close()
+        del self.db_ro_session
+        self.db_ro.session_factory.configure(bind=None)
+        self.ro_trans.close()
+        del self.ro_trans
+        self.ro_conn.close()
+        del self.ro_conn
+        self.rw_trans.rollback()
+        self.db_rw_session.close()
+        del self.db_rw_session
+        self.db_rw.session_factory.configure(bind=None)
+        self.rw_trans.close()
+        del self.rw_trans
+        self.rw_conn.close()
+        del self.rw_conn
 
     @classmethod
     def setup_engine(cls):
-        cls.db_master = _make_db()
-        cls.db_slave = _make_db()
+        cls.db_rw = _make_db()
+        cls.db_ro = _make_db()
 
     @classmethod
     def teardown_engine(cls):
-        cls.db_master.engine.pool.dispose()
-        del cls.db_master
-        cls.db_slave.engine.pool.dispose()
-        del cls.db_slave
+        cls.db_rw.engine.pool.dispose()
+        del cls.db_rw
+        cls.db_ro.engine.pool.dispose()
+        del cls.db_ro
 
     @classmethod
     def setup_tables(cls, engine):
@@ -291,7 +291,7 @@ class CeleryIsolation(object):
 
     @classmethod
     def setup_celery(cls):
-        attach_database(celery, _db_master=cls.db_master)
+        attach_database(celery, _db_rw=cls.db_rw)
         attach_redis_client(celery, _redis=cls.redis_client)
         configure_s3_backup(celery, settings={
             's3_backup_bucket': 'localhost.bucket',
@@ -306,7 +306,7 @@ class CeleryIsolation(object):
     def teardown_celery(cls):
         del celery.s3_settings
         del celery.ocid_settings
-        del celery.db_master
+        del celery.db_rw
 
 
 class LogIsolation(object):
@@ -553,8 +553,8 @@ class AppTestCase(TestCase, DBIsolation,
         super(AppTestCase, cls).setup_logging()
         super(AppTestCase, cls).setup_geoip()
 
-        cls.app = _make_app(_db_master=cls.db_master,
-                            _db_slave=cls.db_slave,
+        cls.app = _make_app(_db_rw=cls.db_rw,
+                            _db_ro=cls.db_ro,
                             _heka_client=cls.heka_client,
                             _redis=cls.redis_client,
                             _stats_client=cls.stats_client,

@@ -177,7 +177,7 @@ class TestFunctionalContent(AppTestCase):
         app = self.app
         today = util.utcnow().date()
         yesterday = today - timedelta(1)
-        session = self.db_slave_session
+        session = self.db_ro_session
         stat = Stat(key=StatKey.unique_cell, time=yesterday, value=2)
         session.add(stat)
         stat = Stat(key=StatKey.unique_ocid_cell, time=yesterday, value=5)
@@ -199,7 +199,7 @@ class TestFunctionalContent(AppTestCase):
         app = self.app
         today = util.utcnow().date()
         yesterday = today - timedelta(1)
-        session = self.db_slave_session
+        session = self.db_ro_session
         stat = Stat(key=StatKey.unique_wifi, time=yesterday, value=2)
         session.add(stat)
         session.commit()
@@ -245,7 +245,7 @@ class TestFunctionalContentViews(AppTestCase):
             session.add(score2)
         session.commit()
         request = DummyRequest()
-        request.db_slave_session = self.db_master_session
+        request.db_ro_session = self.db_rw_session
         request.registry.redis_client = self.redis_client
         inst = self._make_view(request)
         result = inst.leaders_view()
@@ -260,7 +260,7 @@ class TestFunctionalContentViews(AppTestCase):
         # call the view again, without a working db session, so
         # we can be sure to use the cached result
         inst = self._make_view(request)
-        request.db_slave_session = None
+        request.db_ro_session = None
         second_result = inst.leaders_view()
         self.assertEqual(second_result, result)
 
@@ -279,7 +279,7 @@ class TestFunctionalContentViews(AppTestCase):
             session.add(score2)
         session.commit()
         request = DummyRequest()
-        request.db_slave_session = self.db_master_session
+        request.db_ro_session = self.db_rw_session
         request.registry.redis_client = self.redis_client
         inst = self._make_view(request)
         result = inst.leaders_weekly_view()
@@ -295,7 +295,7 @@ class TestFunctionalContentViews(AppTestCase):
         # call the view again, without a working db session, so
         # we can be sure to use the cached result
         inst = self._make_view(request)
-        request.db_slave_session = None
+        request.db_ro_session = None
         second_result = inst.leaders_weekly_view()
         self.assertEqual(second_result, result)
 
@@ -312,7 +312,7 @@ class TestFunctionalContentViews(AppTestCase):
         session.add_all(stats)
         session.commit()
         request = DummyRequest()
-        request.db_slave_session = self.db_master_session
+        request.db_ro_session = self.db_rw_session
         request.registry.redis_client = self.redis_client
         inst = self._make_view(request)
         result = inst.stats_view()
@@ -332,13 +332,13 @@ class TestFunctionalContentViews(AppTestCase):
         # call the view again, without a working db session, so
         # we can be sure to use the cached result
         inst = self._make_view(request)
-        request.db_slave_session = None
+        request.db_ro_session = None
         second_result = inst.stats_view()
         self.assertEqual(second_result, result)
 
     def test_stats_countries(self):
         request = DummyRequest()
-        request.db_slave_session = self.db_master_session
+        request.db_ro_session = self.db_rw_session
         request.registry.redis_client = self.redis_client
         inst = self._make_view(request)
         result = inst.stats_countries_view()
@@ -347,7 +347,7 @@ class TestFunctionalContentViews(AppTestCase):
         # call the view again, without a working db session, so
         # we can be sure to use the cached result
         inst = self._make_view(request)
-        request.db_slave_session = None
+        request.db_ro_session = None
         second_result = inst.stats_countries_view()
         self.assertEqual(second_result, result)
 

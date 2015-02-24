@@ -32,8 +32,8 @@ class TestMonitorErrors(AppTestCase):
         # create database connections to the discard port
         db_uri = 'mysql+pymysql://none:none@127.0.0.1:9/none'
         self.broken_db = _make_db(uri=db_uri)
-        self.app.app.registry.db_master = self.broken_db
-        self.app.app.registry.db_slave = self.broken_db
+        self.app.app.registry.db_rw = self.broken_db
+        self.app.app.registry.db_ro = self.broken_db
         # create broken geoip db
         self.app.app.registry.geoip_db = GeoIPNull()
         # create broken redis connection

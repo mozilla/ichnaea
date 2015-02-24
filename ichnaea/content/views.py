@@ -217,7 +217,7 @@ class ContentViews(Layout):
         if cached:
             data = loads(cached)
         else:
-            session = self.request.db_slave_session
+            session = self.request.db_ro_session
             data = list(enumerate(leaders(session)))
             data = [
                 {
@@ -247,7 +247,7 @@ class ContentViews(Layout):
         if cached:
             data = loads(cached)
         else:
-            session = self.request.db_slave_session
+            session = self.request.db_ro_session
             data = {
                 'new_cell': {'leaders1': [], 'leaders2': []},
                 'new_wifi': {'leaders1': [], 'leaders2': []},
@@ -292,7 +292,7 @@ class ContentViews(Layout):
         if cached:
             data = loads(cached)
         else:
-            session = self.request.db_slave_session
+            session = self.request.db_ro_session
             mls_data = histogram(session, StatKey.unique_cell)
             ocid_data = histogram(session, StatKey.unique_ocid_cell)
             data = [
@@ -311,7 +311,7 @@ class ContentViews(Layout):
         if cached:
             data = loads(cached)
         else:
-            session = self.request.db_slave_session
+            session = self.request.db_ro_session
             data = histogram(session, StatKey.unique_wifi)
             redis_client.set(cache_key, dumps(data), ex=3600)
         return {'series': [{'title': 'MLS WiFi', 'data': data[0]}]}
@@ -325,7 +325,7 @@ class ContentViews(Layout):
         if cached:
             data = loads(cached)
         else:
-            session = self.request.db_slave_session
+            session = self.request.db_ro_session
             data = {
                 'leaders': [],
                 'metrics1': [],
@@ -358,7 +358,7 @@ class ContentViews(Layout):
         if cached:
             data = loads(cached)
         else:
-            session = self.request.db_slave_session
+            session = self.request.db_ro_session
             data = countries(session)
             redis_client.set(cache_key, dumps(data), ex=3600)
 

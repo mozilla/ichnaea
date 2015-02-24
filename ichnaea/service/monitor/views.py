@@ -33,7 +33,7 @@ def _check_timed(ping_function):
 
 
 def check_database(request):
-    return _check_timed(request.db_slave_session.ping)
+    return _check_timed(request.db_ro_session.ping)
 
 
 def check_geoip(request):

@@ -51,7 +51,7 @@ def country_view(request):
     )
     data = map_data(data, client_addr=client_addr)
 
-    session = request.db_slave_session
+    session = request.db_ro_session
     result = CountrySearcher(
         {'geoip': geoip_db, 'session': session},
         api_key_log=False,

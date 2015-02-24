@@ -68,7 +68,7 @@ def check_api_key(func_name, error_on_invalidkey=True):
                 if error_on_invalidkey:
                     return invalid_api_key_response()
 
-            session = request.db_slave_session
+            session = request.db_ro_session
             try:
                 result = session.execute(API_CHECK.bindparams(api_key=api_key))
                 found_key = result.fetchone()

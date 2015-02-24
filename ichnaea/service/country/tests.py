@@ -51,7 +51,7 @@ class TestCountry(AppTestCase, CountryBase):
     def test_geoip(self):
         result = self._make_geoip_query(status=200)
         self._check_geoip_result(result, status=200)
-        self.check_db_calls(master=0, slave=0)
+        self.check_db_calls(rw=0, ro=0)
         self.check_stats(
             total=2,
             counter=['request.v1.country.200'],
@@ -61,7 +61,7 @@ class TestCountry(AppTestCase, CountryBase):
     def test_geoip_miss(self):
         result = self._make_geoip_query(ip='127.0.0.1', status=404)
         self._check_geoip_result(result, status=404)
-        self.check_db_calls(master=0, slave=0)
+        self.check_db_calls(rw=0, ro=0)
         self.check_stats(
             total=2,
             counter=['request.v1.country.404'],
@@ -71,7 +71,7 @@ class TestCountry(AppTestCase, CountryBase):
     def test_no_api_key(self):
         result = self._make_geoip_query(api_key=None, status=200)
         self._check_geoip_result(result, status=200)
-        self.check_db_calls(master=0, slave=0)
+        self.check_db_calls(rw=0, ro=0)
         self.check_stats(
             total=2,
             counter=['request.v1.country.200'],
@@ -81,7 +81,7 @@ class TestCountry(AppTestCase, CountryBase):
     def test_unknown_api_key(self):
         result = self._make_geoip_query(api_key='unknown_key', status=200)
         self._check_geoip_result(result, status=200)
-        self.check_db_calls(master=0, slave=0)
+        self.check_db_calls(rw=0, ro=0)
         self.check_stats(
             total=2,
             counter=['request.v1.country.200'],
@@ -91,7 +91,7 @@ class TestCountry(AppTestCase, CountryBase):
     def test_incomplete_request_means_geoip(self):
         result = self._make_geoip_query(data={"wifiAccessPoints": []})
         self._check_geoip_result(result, status=200)
-        self.check_db_calls(master=0, slave=0)
+        self.check_db_calls(rw=0, ro=0)
         self.check_stats(
             counter=['country.geoip_city_found',
                      'country.geoip_hit'])
@@ -102,7 +102,7 @@ class TestCountry(AppTestCase, CountryBase):
             data={"wifiAccessPoints": [{"macAddress": "ab:cd:ef:12:34:56"}]},
             status=404)
         self._check_geoip_result(result, status=404)
-        self.check_db_calls(master=0, slave=0)
+        self.check_db_calls(rw=0, ro=0)
         self.check_stats(
             counter=['country.miss'])
 
@@ -112,18 +112,18 @@ class TestCountry(AppTestCase, CountryBase):
             extra_environ={'HTTP_X_FORWARDED_FOR': self.test_ip},
             status=200)
         self._check_geoip_result(result)
-        self.check_db_calls(master=0, slave=0)
+        self.check_db_calls(rw=0, ro=0)
 
 
 class TestCountryErrors(AppTestCase, CountryBase):
     # this is a standalone class to ensure DB isolation for dropping tables
 
     def tearDown(self):
-        self.setup_tables(self.db_master.engine)
+        self.setup_tables(self.db_rw.engine)
         super(TestCountryErrors, self).tearDown()
 
     def test_database_error(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         for tablename in ('wifi', 'cell', 'cell_area',
                           'ocid_cell', 'ocid_cell_area'):
             stmt = text("drop table %s;" % tablename)

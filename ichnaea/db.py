@@ -25,19 +25,19 @@ def on_duplicate(insert, compiler, **kw):
 # to provide lazy session creation, session closure and automatic
 # rollback in case of errors
 
-def db_master_session(request):  # pragma: no cover
-    session = getattr(request, '_db_master_session', None)
+def db_rw_session(request):  # pragma: no cover
+    session = getattr(request, '_db_rw_session', None)
     if session is None:
-        db = request.registry.db_master
-        request._db_master_session = session = db.session()
+        db = request.registry.db_rw
+        request._db_rw_session = session = db.session()
     return session
 
 
-def db_slave_session(request):
-    session = getattr(request, '_db_slave_session', None)
+def db_ro_session(request):
+    session = getattr(request, '_db_ro_session', None)
     if session is None:
-        db = request.registry.db_slave
-        request._db_slave_session = session = db.session()
+        db = request.registry.db_ro
+        request._db_ro_session = session = db.session()
     return session
 
 
@@ -60,25 +60,25 @@ def db_tween_factory(handler, registry):
         try:
             response = handler(request)
         finally:
-            master_session = getattr(request, '_db_master_session', None)
-            if master_session is not None:  # pragma: no cover
+            rw_session = getattr(request, '_db_rw_session', None)
+            if rw_session is not None:  # pragma: no cover
                 # only deal with requests with a session
                 if response is not None and \
                    response.status.startswith(('4', '5')):
                     # never commit on error
-                    master_session.rollback()
-                master_session.close()
+                    rw_session.rollback()
+                rw_session.close()
 
-            slave_session = getattr(request, '_db_slave_session', None)
-            if slave_session is not None:
-                # always rollback/close the `read-only` slave sessions
-                if request.registry.db_master != request.registry.db_slave:
-                    # The db_master and db_slave will only be the same
+            ro_session = getattr(request, '_db_ro_session', None)
+            if ro_session is not None:
+                # always rollback/close the `read-only` ro sessions
+                if request.registry.db_rw != request.registry.db_ro:
+                    # The db_rw and db_ro will only be the same
                     # during tests.
                     try:
-                        slave_session.rollback()
+                        ro_session.rollback()
                     finally:
-                        slave_session.close()
+                        ro_session.close()
         return response
 
     return db_tween

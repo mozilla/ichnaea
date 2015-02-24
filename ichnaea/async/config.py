@@ -32,13 +32,13 @@ register('internal_json', customjson.kombu_dumps, customjson.kombu_loads,
          content_encoding='utf-8')
 
 
-def attach_database(app, settings=None, _db_master=None):
+def attach_database(app, settings=None, _db_rw=None):
     # called manually during tests
-    if _db_master is None:  # pragma: no cover
-        db_master = Database(settings['db_master'])
+    if _db_rw is None:  # pragma: no cover
+        db_rw = Database(settings['db_master'])
     else:
-        db_master = _db_master
-    app.db_master = db_master
+        db_rw = _db_rw
+    app.db_rw = db_rw
 
 
 def attach_redis_client(app, settings=None, _redis=None):

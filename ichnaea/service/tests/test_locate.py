@@ -57,7 +57,7 @@ class BaseLocateTest(DBTestCase, GeoIPIsolation):
         if client_addr:
             data['geoip'] = client_addr
         return self.searcher(
-            {'geoip': self.geoip_db, 'session': self.db_slave_session},
+            {'geoip': self.geoip_db, 'session': self.db_ro_session},
             api_key_log=api_key_log,
             api_key_name=api_key_name,
             api_name='m',
@@ -71,7 +71,7 @@ class TestPositionSearcher(BaseLocateTest):
     def test_no_data(self):
         with self.db_call_checker() as check_db_calls:
             result = self._make_query()
-            check_db_calls(master=0, slave=0)
+            check_db_calls(rw=0, ro=0)
 
         self.assertTrue(result is None)
         self.check_stats(
@@ -123,7 +123,7 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_geoip_mcc_match(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         london = self.geoip_data['London']
         cell = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
         session.add(Cell(range=1000, radio=Radio.gsm, **cell))
@@ -144,7 +144,7 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_geoip_mcc_mismatch(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         bhutan = self.geoip_data['Bhutan']
         key = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
         key2 = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1, }
@@ -175,7 +175,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': london['accuracy']})
 
     def test_geoip_mcc_multiple(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         london = self.geoip_data['London']
         cell_key = {'mnc': 1, 'lac': 1, 'cid': 1}
         cells = [
@@ -196,7 +196,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': london['accuracy']})
 
     def test_geoip_mcc_multiple_unknown_mismatching_cell(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         london = self.geoip_data['London']
         cell_key = {'mnc': 1, 'lac': 1, 'cid': 1}
         cells = [
@@ -217,7 +217,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': london['accuracy']})
 
     def test_cell(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         london = self.geoip_data['London']
         cell_key = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1}
         session.add(Cell(lat=GB_LAT, lon=GB_LON, range=6000,
@@ -244,7 +244,7 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_ocid_cell(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         london = self.geoip_data['London']
         cell_key = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1}
         session.add(OCIDCell(lat=GB_LAT, lon=GB_LON, range=6000,
@@ -262,7 +262,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': 6000})
 
     def test_cell_miss_lac_hit(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         lat = PARIS_LAT
         lon = PARIS_LON
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
@@ -296,7 +296,7 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_cell_hit_ignores_lac(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         lat = PARIS_LAT
         lon = PARIS_LON
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
@@ -322,7 +322,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': CELL_MIN_ACCURACY})
 
     def test_lac_miss(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         lat = PARIS_LAT
         lon = PARIS_LON
@@ -344,7 +344,7 @@ class TestPositionSearcher(BaseLocateTest):
 
     def test_cell_ignore_invalid_lac_cid(self):
         schema = ValidCellKeySchema()
-        session = self.db_slave_session
+        session = self.db_ro_session
         lat = PARIS_LAT
         lon = PARIS_LON
 
@@ -384,7 +384,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': CELL_MIN_ACCURACY})
 
     def test_cell_multiple_lac_hit(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         lat = PARIS_LAT
         lon = PARIS_LON
 
@@ -427,7 +427,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': expected_lac.range})
 
     def test_cell_multiple_lac_lower_range_wins(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         lat = PARIS_LAT
         lon = PARIS_LON
 
@@ -465,7 +465,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': LAC_MIN_ACCURACY})
 
     def test_cell_multiple_radio_lac_hit_with_min_lac_accuracy(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         lat = PARIS_LAT
         lon = PARIS_LON
 
@@ -501,7 +501,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': LAC_MIN_ACCURACY})
 
     def test_wifi_not_found_cell_fallback(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         lat = PARIS_LAT
         lon = PARIS_LON
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
@@ -531,7 +531,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': CELL_MIN_ACCURACY})
 
     def test_cell_multiple_country_codes_from_mcc(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         cell_key = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1}
         session.add(Cell(lat=GB_LAT, lon=GB_LON, range=6000,
                          radio=Radio.gsm, cid=1, **cell_key))
@@ -561,7 +561,7 @@ class TestPositionSearcher(BaseLocateTest):
         # is not in the country determined by geoip, we still
         # trust the wifi position over the geoip result
 
-        session = self.db_slave_session
+        session = self.db_ro_session
         london = self.geoip_data['London']
 
         # This lat/lon is Paris, France
@@ -600,7 +600,7 @@ class TestPositionSearcher(BaseLocateTest):
         # database consistency error, but it might also just be a
         # new cell that hasn't been integrated yet or something.
 
-        session = self.db_slave_session
+        session = self.db_ro_session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
         data = [
             Cell(lat=PORTO_ALEGRE_LAT,
@@ -633,7 +633,7 @@ class TestPositionSearcher(BaseLocateTest):
         # is not in the LAC associated with our query, we drop back
         # to the LAC.
 
-        session = self.db_slave_session
+        session = self.db_ro_session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
         wifi1 = dict(key="1234567890ab")
         wifi2 = dict(key="1234890ab567")
@@ -673,7 +673,7 @@ class TestPositionSearcher(BaseLocateTest):
         # is not in the cell associated with our query, we drop back
         # to the cell.
 
-        session = self.db_slave_session
+        session = self.db_ro_session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
         wifi1 = dict(key="1234567890ab")
         wifi2 = dict(key="1234890ab567")
@@ -713,7 +713,7 @@ class TestPositionSearcher(BaseLocateTest):
         # is inside its enclosing LAC, we accept it and tighten
         # our accuracy accordingly.
 
-        session = self.db_slave_session
+        session = self.db_ro_session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
         data = [
             Cell(lat=SAO_PAULO_LAT + 0.002,
@@ -747,7 +747,7 @@ class TestPositionSearcher(BaseLocateTest):
         # is inside its enclosing cell, we accept it and tighten
         # our accuracy accordingly.
 
-        session = self.db_slave_session
+        session = self.db_ro_session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
         wifi1 = dict(key="1234567890ab")
         wifi2 = dict(key="1234890ab567")
@@ -788,7 +788,7 @@ class TestPositionSearcher(BaseLocateTest):
         # is inside its enclosing LAC, we accept it and tighten
         # our accuracy accordingly.
 
-        session = self.db_slave_session
+        session = self.db_ro_session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
         wifi1 = dict(key="1234567890ab")
         wifi2 = dict(key="1234890ab567")
@@ -827,7 +827,7 @@ class TestPositionSearcher(BaseLocateTest):
         # is inside its enclosing LAC and cell, we accept it and
         # tighten our accuracy accordingly.
 
-        session = self.db_slave_session
+        session = self.db_ro_session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
         wifi1 = dict(key="1234567890ab")
         wifi2 = dict(key="1234890ab567")
@@ -865,7 +865,7 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_wifi(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         london = self.geoip_data['London']
         wifis = [{'key': '001122334455'}, {'key': '112233445566'}]
         session.add(Wifi(
@@ -892,7 +892,7 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_wifi_too_few_candidates(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         wifis = [
             Wifi(key="001122334455", lat=1.0, lon=1.0),
             Wifi(key="112233445566", lat=1.001, lon=1.002),
@@ -913,7 +913,7 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_wifi_too_few_matches(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         wifis = [
             Wifi(key="001122334455", lat=1.0, lon=1.0),
             Wifi(key="112233445566", lat=1.001, lon=1.002),
@@ -937,7 +937,7 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_wifi_too_similar_bssids_by_arithmetic_difference(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         wifis = [
             Wifi(key="00000000001f", lat=1.0, lon=1.0),
             Wifi(key="000000000020", lat=1.0, lon=1.0),
@@ -961,7 +961,7 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_wifi_too_similar_bssids_by_hamming_distance(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         wifis = [
             Wifi(key="000000000058", lat=1.0, lon=1.0),
             Wifi(key="00000000005c", lat=1.0, lon=1.0),
@@ -985,7 +985,7 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_wifi_similar_bssids_but_enough_clusters(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         wifis = [
             Wifi(key="00000000001f", lat=1.0, lon=1.0),
             Wifi(key="000000000020", lat=1.0, lon=1.0),
@@ -1006,7 +1006,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': 100.0})
 
     def test_wifi_similar_bssids_but_enough_found_clusters(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         wifis = [
             Wifi(key="00000000001f", lat=1.0, lon=1.0),
             Wifi(key="000000000024", lat=1.00004, lon=1.00004),
@@ -1027,7 +1027,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': 100.0})
 
     def test_wifi_ignore_outlier(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         wifis = [
             Wifi(key="001122334455", lat=1.0, lon=1.0),
             Wifi(key="112233445566", lat=1.001, lon=1.002),
@@ -1048,7 +1048,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': 248.6090897})
 
     def test_wifi_prefer_cluster_with_better_signals(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         wifis = [
             Wifi(key="a1" * 6, lat=1.0, lon=1.0),
             Wifi(key="b2" * 6, lat=1.001, lon=1.002),
@@ -1075,7 +1075,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': 248.51819})
 
     def test_wifi_prefer_larger_cluster_over_high_signal(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         wifis = [Wifi(key=("0%X" % i).lower() * 6,
                       lat=1 + i * 0.000010,
                       lon=1 + i * 0.000012)
@@ -1105,7 +1105,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': WIFI_MIN_ACCURACY})
 
     def test_wifi_only_use_top_five_signals_in_noisy_cluster(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         # all these should wind up in the same cluster since
         # clustering threshold is 500m and the 10 wifis are
         # spaced in increments of (+1m, +1.2m)
@@ -1134,7 +1134,7 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': WIFI_MIN_ACCURACY})
 
     def test_wifi_not_closeby(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         wifis = [
             Wifi(key="101010101010", lat=1.0, lon=1.0),
             Wifi(key="202020202020", lat=1.001, lon=1.002),
@@ -1180,7 +1180,7 @@ class TestCountrySearcher(BaseLocateTest):
         self.assertTrue(result is None)
 
     def test_no_wifi_provider(self):
-        session = self.db_slave_session
+        session = self.db_ro_session
         london = self.geoip_data['London']
         wifis = [{'key': '001122334455'}, {'key': '112233445566'}]
         session.add(Wifi(
@@ -1192,7 +1192,7 @@ class TestCountrySearcher(BaseLocateTest):
         with self.db_call_checker() as check_db_calls:
             result = self._make_query(
                 data={'wifi': wifis}, client_addr=london['ip'])
-            check_db_calls(master=0, slave=0)
+            check_db_calls(rw=0, ro=0)
 
         self.assertEqual(result,
                          {'country_code': london['country_code'],
@@ -1206,7 +1206,7 @@ class TestCountrySearcher(BaseLocateTest):
         with self.db_call_checker() as check_db_calls:
             result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]},
                                       client_addr='127.0.0.1')
-            check_db_calls(master=0, slave=0)
+            check_db_calls(rw=0, ro=0)
 
         self.assertEqual(result,
                          {'country_code': bhutan['country_code'],
@@ -1221,7 +1221,7 @@ class TestCountrySearcher(BaseLocateTest):
         with self.db_call_checker() as check_db_calls:
             result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]},
                                       client_addr=london['ip'])
-            check_db_calls(master=0, slave=0)
+            check_db_calls(rw=0, ro=0)
 
         self.assertEqual(result,
                          {'country_code': bhutan['country_code'],
@@ -1235,7 +1235,7 @@ class TestCountrySearcher(BaseLocateTest):
         with self.db_call_checker() as check_db_calls:
             result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]},
                                       client_addr=bhutan['ip'])
-            check_db_calls(master=0, slave=0)
+            check_db_calls(rw=0, ro=0)
 
         self.assertEqual(result,
                          {'country_code': bhutan['country_code'],
@@ -1248,6 +1248,6 @@ class TestCountrySearcher(BaseLocateTest):
         with self.db_call_checker() as check_db_calls:
             result = self._make_query(data={'cell': [dict(cid=1, **cell_key)]},
                                       client_addr='127.0.0.1')
-            check_db_calls(master=0, slave=0)
+            check_db_calls(rw=0, ro=0)
 
         self.assertTrue(result is None)

@@ -235,7 +235,7 @@ def generate(db, bucketname, heka_client, stats_client,
                 stats_client.timing('datamaps.%s' % metric, value)
 
 
-def main(argv, _db_master=None,
+def main(argv, _db_rw=None,
          _heka_client=None, _stats_client=None):
     # run for example via:
     # bin/location_map --create --upload --datamaps=/path/to/datamaps/ \
@@ -259,8 +259,8 @@ def main(argv, _db_master=None,
 
     if args.create:
         conf = read_config()
-        if _db_master:
-            db = _db_master
+        if _db_rw:
+            db = _db_rw
         else:  # pragma: no cover
             db = Database(conf.get('ichnaea', 'db_master'))
         bucketname = conf.get('ichnaea', 's3_assets_bucket').strip('/')

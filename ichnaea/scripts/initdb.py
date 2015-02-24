@@ -39,8 +39,8 @@ def add_users(conn, location_cfg):
     ichnaea_section = location_cfg.get_map('ichnaea')
 
     creds = {}
-    creds['master'] = _db_creds(ichnaea_section.get('db_master'))
-    creds['slave'] = _db_creds(ichnaea_section.get('db_slave'))
+    creds['rw'] = _db_creds(ichnaea_section.get('db_master'))
+    creds['ro'] = _db_creds(ichnaea_section.get('db_slave'))
 
     stmt = text("SELECT user FROM mysql.user")
     result = conn.execute(stmt)
@@ -83,7 +83,7 @@ def create_schema(engine, alembic_cfg, location_cfg):
     command.current(alembic_cfg)
 
 
-def main(argv, _db_master=None, _heka_client=None):
+def main(argv, _db_rw=None, _heka_client=None):
     parser = argparse.ArgumentParser(
         prog=argv[0], description='Initialize Ichnaea database')
 
@@ -117,13 +117,13 @@ def main(argv, _db_master=None, _heka_client=None):
         alembic_cfg = Config(alembic_ini)
         alembic_section = alembic_cfg.get_section('alembic')
 
-        if _db_master is None:
-            db_master = Database(alembic_section['sqlalchemy.url'])
+        if _db_rw is None:
+            db_rw = Database(alembic_section['sqlalchemy.url'])
         else:
-            db_master = _db_master
+            db_rw = _db_rw
         configure_heka(location_ini, _heka_client=_heka_client)
 
-        engine = db_master.engine
+        engine = db_rw.engine
         create_schema(engine, alembic_cfg, location_cfg)
     else:
         parser.print_help()

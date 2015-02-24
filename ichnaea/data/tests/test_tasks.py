@@ -1185,7 +1185,7 @@ class TestSubmitErrors(CeleryTestCase):
     # this is a standalone class to ensure DB isolation for dropping tables
 
     def tearDown(self):
-        self.setup_tables(self.db_master.engine)
+        self.setup_tables(self.db_rw.engine)
         super(TestSubmitErrors, self).tearDown()
 
     def test_database_error(self):
