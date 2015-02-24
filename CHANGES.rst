@@ -25,9 +25,7 @@ Changes
 
 - #406: Allow access to the country API via empty GET requests.
 
-- Use custom JSON encoding for kombu transport to support date/time objects.
-
-- Change MEASURE_TYPE_CODE, SCORE_TYPE, STAT_TYPE into IntEnums.
+- Massive internal code refactoring and cleanup.
 
 - Updated to latest versions of iso3166, pyramid and requests.
 
