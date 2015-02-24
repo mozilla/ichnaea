@@ -98,9 +98,10 @@ PARIS_LON = 2.3508
 
 BHUTAN_MCC = 402
 
-GB_MCC = 234
 GB_LAT = 51.5
 GB_LON = -0.1
+GB_MCC = 234
+GB_MNC = 30
 
 
 def _make_db(uri=SQLURI):

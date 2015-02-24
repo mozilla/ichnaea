@@ -2,6 +2,7 @@ from hashlib import sha1
 
 import factory
 from factory.alchemy import SQLAlchemyModelFactory
+from factory import fuzzy
 
 from ichnaea.models import (
     Cell,
@@ -19,6 +20,7 @@ from ichnaea.tests.base import (
     GB_LAT,
     GB_LON,
     GB_MCC,
+    GB_MNC,
     SESSION,
 )
 
@@ -45,12 +47,19 @@ class BaseFactory(SQLAlchemyModelFactory):
         return 0
 
 
+class FuzzyWifiKey(fuzzy.BaseFuzzyAttribute):
+
+    def fuzz(self):
+        num = fuzzy.random.randint(100000, 999999)
+        return 'a82066{num:06d}'.format(num=num)
+
+
 class CellAreaPositionFactory(BaseFactory):
 
     radio = Radio.gsm
     mcc = GB_MCC
-    mnc = 10
-    lac = 10
+    mnc = GB_MNC
+    lac = fuzzy.FuzzyInteger(100, 999)
     lat = GB_LAT
     lon = GB_LON
     range = 35000
@@ -58,7 +67,7 @@ class CellAreaPositionFactory(BaseFactory):
 
 class CellPositionFactory(CellAreaPositionFactory):
 
-    cid = 10
+    cid = fuzzy.FuzzyInteger(1000, 9999)
     range = 2000
 
 
@@ -107,7 +116,7 @@ class ObservationBlockFactory(BaseFactory):
 
 class WifiPositionFactory(BaseFactory):
 
-    key = '101010101010'
+    key = FuzzyWifiKey()
     lat = GB_LAT
     lon = GB_LON
 
