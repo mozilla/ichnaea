@@ -1,5 +1,4 @@
 from datetime import timedelta
-from functools import partial
 
 from ichnaea.models import ApiKey
 from ichnaea.monitor.tasks import (
@@ -40,7 +39,6 @@ class TestMonitorTasks(CeleryTestCase):
 
     def test_monitor_api_key_limits_multiple(self):
         redis_client = self.redis_client
-        session = self.db_master_session
         now = util.utcnow()
         today = now.strftime("%Y%m%d")
         yesterday = (now - timedelta(hours=24)).strftime("%Y%m%d")
@@ -60,8 +58,8 @@ class TestMonitorTasks(CeleryTestCase):
             ApiKey(valid_key='no_key_2'),
             ApiKey(valid_key='no_key_3', shortname='shortname_3'),
         ]
-        session.add_all(api_keys)
-        session.flush()
+        self.session.add_all(api_keys)
+        self.session.flush()
 
         # add some other items into Redis
         redis_client.lpush('default', 1, 2)
@@ -78,8 +76,6 @@ class TestMonitorTasks(CeleryTestCase):
             result, {'test': 11, 'shortname_1': 12, 'no_key_2': 15})
 
     def test_monitor_measures(self):
-        session = self.db_master_session
-
         result = monitor_measures.delay().get()
         self.check_stats(
             gauge=[('table.cell_measure', 1), ('table.wifi_measure', 1)],
@@ -87,13 +83,13 @@ class TestMonitorTasks(CeleryTestCase):
         self.assertEqual(result, {'cell_measure': -1, 'wifi_measure': -1})
 
         # add some observations
-        cell_factory = partial(CellObservationFactory.create, _session=session)
+        cell_factory = self.bind_factory(CellObservationFactory.create)
         for i in range(3):
             cell_factory()
-        wifi_factory = partial(WifiObservationFactory.create, _session=session)
+        wifi_factory = self.bind_factory(WifiObservationFactory.create)
         for i in range(5):
             wifi_factory()
-        session.flush()
+        self.session.flush()
 
         result = monitor_measures.delay().get()
         self.check_stats(
@@ -102,10 +98,9 @@ class TestMonitorTasks(CeleryTestCase):
         self.assertEqual(result, {'cell_measure': 3, 'wifi_measure': 5})
 
     def test_monitor_ocid_import(self):
-        session = self.db_master_session
         now = util.utcnow()
 
-        ocid_factory = partial(OCIDCellFactory.create, _session=session)
+        ocid_factory = self.bind_factory(OCIDCellFactory.create)
 
         expected = []
         results = []
@@ -113,7 +108,7 @@ class TestMonitorTasks(CeleryTestCase):
             created = now - timedelta(hours=i)
             expected.append(i * 3600000)
             ocid_factory(created=created, cid=i)
-            session.flush()
+            self.session.flush()
             results.append(monitor_ocid_import.delay().get())
 
         self.check_stats(

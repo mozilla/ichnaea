@@ -1,7 +1,6 @@
 from contextlib import contextmanager
 import datetime
 from datetime import timedelta
-from functools import partial
 import hashlib
 from zipfile import ZipFile
 
@@ -68,16 +67,14 @@ class TestObservationsDump(CeleryTestCase):
             tzinfo=pytz.UTC)
 
     def test_schedule_cell_observations(self):
-        session = self.db_master_session
-
         blocks = schedule_cellmeasure_archival.delay(batch=1).get()
         self.assertEquals(len(blocks), 0)
 
         observations = []
-        obs_factory = partial(CellObservationFactory.create, _session=session)
+        obs_factory = self.bind_factory(CellObservationFactory.create)
         for i in range(20):
             observations.append(obs_factory(created=self.really_old))
-        session.flush()
+        self.session.flush()
         start_id = observations[0].id
 
         blocks = schedule_cellmeasure_archival.delay(batch=15).get()
@@ -97,17 +94,15 @@ class TestObservationsDump(CeleryTestCase):
         self.assertEquals(len(blocks), 0)
 
     def test_schedule_wifi_observations(self):
-        session = self.db_master_session
-
         blocks = schedule_wifimeasure_archival.delay(batch=1).get()
         self.assertEquals(len(blocks), 0)
 
         batch_size = 10
         observations = []
-        obs_factory = partial(WifiObservationFactory.create, _session=session)
+        obs_factory = self.bind_factory(WifiObservationFactory.create)
         for i in range(batch_size * 2):
             observations.append(obs_factory(created=self.really_old))
-        session.flush()
+        self.session.flush()
         start_id = observations[0].id
 
         blocks = schedule_wifimeasure_archival.delay(batch=batch_size).get()
@@ -124,13 +119,12 @@ class TestObservationsDump(CeleryTestCase):
         self.assertEquals(len(blocks), 0)
 
     def test_backup_cell_to_s3(self):
-        session = self.db_master_session
         batch_size = 10
         observations = []
-        obs_factory = partial(CellObservationFactory.create, _session=session)
+        obs_factory = self.bind_factory(CellObservationFactory.create)
         for i in range(batch_size):
             observations.append(obs_factory(created=self.really_old))
-        session.flush()
+        self.session.flush()
         start_id = observations[0].id
 
         blocks = schedule_cellmeasure_archival.delay(batch=batch_size).get()
@@ -158,7 +152,7 @@ class TestObservationsDump(CeleryTestCase):
                 finally:
                     myzip.close()
 
-        blocks = session.query(ObservationBlock).all()
+        blocks = self.session.query(ObservationBlock).all()
 
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
@@ -171,13 +165,12 @@ class TestObservationsDump(CeleryTestCase):
         self.assertTrue(block.archive_date is None)
 
     def test_backup_wifi_to_s3(self):
-        session = self.db_master_session
         batch_size = 10
         observations = []
-        obs_factory = partial(WifiObservationFactory.create, _session=session)
+        obs_factory = self.bind_factory(WifiObservationFactory.create)
         for i in range(batch_size):
             observations.append(obs_factory(created=self.really_old))
-        session.flush()
+        self.session.flush()
         start_id = observations[0].id
 
         blocks = schedule_wifimeasure_archival.delay(batch=batch_size).get()
@@ -205,7 +198,7 @@ class TestObservationsDump(CeleryTestCase):
                 finally:
                     myzip.close()
 
-        blocks = session.query(ObservationBlock).all()
+        blocks = self.session.query(ObservationBlock).all()
 
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
@@ -218,47 +211,43 @@ class TestObservationsDump(CeleryTestCase):
         self.assertTrue(block.archive_date is None)
 
     def test_delete_cell_observations(self):
-        session = self.db_master_session
-
-        obs_factory = partial(CellObservationFactory.create, _session=session)
+        obs_factory = self.bind_factory(CellObservationFactory.create)
         observations = []
         for i in range(50):
             observations.append(obs_factory(created=self.really_old))
-        session.flush()
+        self.session.flush()
 
         start_id = observations[0].id + 20
-        block = ObservationBlockFactory.create(
+        block_factory = self.bind_factory(ObservationBlockFactory.create)
+        block = block_factory(
             measure_type=ObservationType.cell,
-            start_id=start_id, end_id=start_id + 20, archive_date=None,
-            _session=session)
-        session.commit()
+            start_id=start_id, end_id=start_id + 20, archive_date=None)
+        self.session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_cellmeasure_records.delay(batch=3).get()
 
-        self.assertEquals(session.query(CellObservation).count(), 30)
+        self.assertEquals(self.session.query(CellObservation).count(), 30)
         self.assertTrue(block.archive_date is not None)
 
     def test_delete_wifi_observations(self):
-        session = self.db_master_session
-
-        obs_factory = partial(WifiObservationFactory.create, _session=session)
+        obs_factory = self.bind_factory(WifiObservationFactory.create)
         observations = []
         for i in range(50):
             observations.append(obs_factory(created=self.really_old))
-        session.flush()
+        self.session.flush()
 
         start_id = observations[0].id + 20
-        block = ObservationBlockFactory.create(
+        block_factory = self.bind_factory(ObservationBlockFactory.create)
+        block = block_factory(
             measure_type=ObservationType.wifi,
-            start_id=start_id, end_id=start_id + 20, archive_date=None,
-            _session=session)
-        session.commit()
+            start_id=start_id, end_id=start_id + 20, archive_date=None)
+        self.session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_wifimeasure_records.delay(batch=7).get()
 
-        self.assertEquals(session.query(WifiObservation).count(), 30)
+        self.assertEquals(self.session.query(WifiObservation).count(), 30)
         self.assertTrue(block.archive_date is not None)
 
     def test_skip_delete_new_blocks(self):
@@ -267,13 +256,13 @@ class TestObservationsDump(CeleryTestCase):
         yesterday_0000 = today_0000 - timedelta(days=1)
         yesterday_2359 = today_0000 - timedelta(seconds=1)
         old = now - timedelta(days=5)
-        session = self.db_master_session
+        session = self.session
 
+        block_factory = self.bind_factory(ObservationBlockFactory.create)
         for i in range(100, 150, 10):
-            ObservationBlockFactory.create(
+            block_factory(
                 measure_type=ObservationType.cell,
-                start_id=i, end_id=i + 10, archive_date=None,
-                _session=session)
+                start_id=i, end_id=i + 10, archive_date=None)
 
         observations = []
         for i in range(100, 110):
@@ -318,29 +307,27 @@ class TestObservationsDump(CeleryTestCase):
         self.assertEqual(_archived_blocks(), 5)
 
     def test_unthrottle_cell_observations(self):
-        session = self.db_master_session
-
-        cell_factory = partial(CellFactory.create, _session=session)
-        obs_factory = partial(CellObservationFactory.create, _session=session)
+        cell_factory = self.bind_factory(CellFactory.create)
+        obs_factory = self.bind_factory(CellObservationFactory.create)
         observations = []
         for i in range(100, 150):
             observations.append(obs_factory(created=self.really_old, cid=i))
             cell_factory(total_measures=11000, cid=i)
-        session.flush()
+        self.session.flush()
 
         start_id = observations[0].id + 20
-        ObservationBlockFactory.create(
+        block_factory = self.bind_factory(ObservationBlockFactory.create)
+        block_factory(
             measure_type=ObservationType.cell,
-            start_id=start_id, end_id=start_id + 20, archive_date=None,
-            _session=session)
-        session.commit()
+            start_id=start_id, end_id=start_id + 20, archive_date=None)
+        self.session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_cellmeasure_records.delay(batch=3).get()
 
         cell_unthrottle_measures.delay(10000, 1000).get()
 
-        cells = session.query(Cell).all()
+        cells = self.session.query(Cell).all()
         self.assertEquals(len(cells), 50)
         for cell in cells:
             if 120 <= cell.cid and cell.cid < 140:
@@ -351,31 +338,29 @@ class TestObservationsDump(CeleryTestCase):
         self.check_stats(counter=['items.cell_unthrottled'])
 
     def test_unthrottle_wifi_observations(self):
-        session = self.db_master_session
-
-        wifi_factory = partial(WifiFactory.create, _session=session)
-        obs_factory = partial(WifiObservationFactory.create, _session=session)
+        wifi_factory = self.bind_factory(WifiFactory.create)
+        obs_factory = self.bind_factory(WifiObservationFactory.create)
         observations = []
         to_key = lambda num: "a01234567{num:03d}".format(num=num)
         for i in range(100, 150):
             observations.append(
                 obs_factory(created=self.really_old, key=to_key(i)))
             wifi_factory(total_measures=11000, key=to_key(i))
-        session.flush()
+        self.session.flush()
 
         start_id = observations[0].id + 20
-        ObservationBlockFactory.create(
+        block_factory = self.bind_factory(ObservationBlockFactory.create)
+        block_factory(
             measure_type=ObservationType.wifi,
-            start_id=start_id, end_id=start_id + 20, archive_date=None,
-            _session=session)
-        session.commit()
+            start_id=start_id, end_id=start_id + 20, archive_date=None)
+        self.session.commit()
 
         with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
             delete_wifimeasure_records.delay(batch=7).get()
 
         wifi_unthrottle_measures.delay(10000, 1000).get()
 
-        wifis = session.query(Wifi).all()
+        wifis = self.session.query(Wifi).all()
         self.assertEquals(len(wifis), 50)
         for wifi in wifis:
             if 120 <= int(wifi.key[-3:]) and int(wifi.key[-3:]) < 140:

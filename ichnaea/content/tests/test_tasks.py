@@ -1,5 +1,4 @@
 from datetime import timedelta
-from functools import partial
 
 from ichnaea.models.content import (
     Stat,
@@ -27,13 +26,13 @@ from ichnaea import util
 class TestStats(CeleryTestCase):
 
     def test_cell_histogram(self):
-        session = self.db_master_session
+        session = self.session
         today = util.utcnow()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        obs_factory = partial(CellObservationFactory.create, _session=session)
+        obs_factory = self.bind_factory(CellObservationFactory.create)
         for i in range(2):
             obs_factory(created=today)
         obs_factory(created=yesterday)
@@ -67,13 +66,13 @@ class TestStats(CeleryTestCase):
                          today.date(): 7})
 
     def test_unique_cell_histogram(self):
-        session = self.db_master_session
+        session = self.session
         today = util.utcnow()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        cell_factory = partial(CellFactory.create, _session=session)
+        cell_factory = self.bind_factory(CellFactory.create)
         cell_factory(created=long_ago, radio=Radio.gsm)
         cell_factory(created=two_days, radio=Radio.umts)
         cell_factory(created=two_days, radio=Radio.umts, cid=50)
@@ -107,13 +106,13 @@ class TestStats(CeleryTestCase):
                          today.date(): 5})
 
     def test_unique_ocid_cell_histogram(self):
-        session = self.db_master_session
+        session = self.session
         today = util.utcnow()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        ocid_factory = partial(OCIDCellFactory.create, _session=session)
+        ocid_factory = self.bind_factory(OCIDCellFactory.create)
         ocid_factory(created=long_ago)
         ocid_factory(created=two_days, radio=Radio.umts)
         ocid_factory(created=two_days, radio=Radio.umts, cid=50)
@@ -148,13 +147,13 @@ class TestStats(CeleryTestCase):
                          today.date(): 6})
 
     def test_wifi_histogram(self):
-        session = self.db_master_session
+        session = self.session
         today = util.utcnow()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        obs_factory = partial(WifiObservationFactory.create, _session=session)
+        obs_factory = self.bind_factory(WifiObservationFactory.create)
         for i in range(2):
             obs_factory(created=today)
         obs_factory(created=yesterday)
@@ -188,13 +187,13 @@ class TestStats(CeleryTestCase):
                          today.date(): 7})
 
     def test_unique_wifi_histogram(self):
-        session = self.db_master_session
+        session = self.session
         today = util.utcnow()
         yesterday = (today - timedelta(1))
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        wifi_factory = partial(WifiFactory.create, _session=session)
+        wifi_factory = self.bind_factory(WifiFactory.create)
         wifi_factory(key="ab1234567890", created=long_ago)
         wifi_factory(key="bc1234567890", created=two_days)
         wifi_factory(key="cd1234567890", created=yesterday)

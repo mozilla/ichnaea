@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from functools import partial
 import os
 import os.path
 
@@ -138,7 +139,11 @@ class DBIsolation(object):
     # Inspired by a blog post:
     # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
 
+    default_session = 'db_master_session'
     track_connection_events = False
+
+    def bind_factory(self, factory):
+        return partial(factory, _session=self.session)
 
     @contextmanager
     def db_call_checker(self):
@@ -192,12 +197,17 @@ class DBIsolation(object):
         self.db_slave.session_factory.configure(bind=self.slave_conn)
         self.db_slave_session = self.db_slave.session()
 
+        # set up a default session
+        setattr(self, 'session', getattr(self, self.default_session))
+
         if self.track_connection_events:
             self.setup_db_event_tracking()
 
     def teardown_session(self):
         if self.track_connection_events:
             self.teardown_db_event_tracking()
+
+        del self.session
 
         self.slave_trans.rollback()
         self.db_slave_session.close()
