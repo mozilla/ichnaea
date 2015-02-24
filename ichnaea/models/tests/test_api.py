@@ -5,7 +5,7 @@ from ichnaea.tests.base import DBTestCase
 class TestApiKey(DBTestCase):
 
     def test_fields(self):
-        session = self.db_master_session
+        session = self.session
         session.add(ApiKey(
             valid_key='foo-bar', maxreq=10, shortname='foo',
             email='Test <test@test.com>', description='A longer text.'))

@@ -49,7 +49,7 @@ from ichnaea import util
 class TestCell(CeleryTestCase):
 
     def add_line_of_cells_and_scan_lac(self):
-        session = self.db_master_session
+        session = self.session
         big = 1.0
         small = big / 10
         keys = dict(radio=Radio.cdma, mcc=1, mnc=1, lac=1)
@@ -81,7 +81,7 @@ class TestCell(CeleryTestCase):
 
     def test_blacklist(self):
         now = util.utcnow()
-        session = self.db_master_session
+        session = self.session
 
         observations = [dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=i, psc=5,
                              radio=int(Radio.gsm),
@@ -108,7 +108,7 @@ class TestCell(CeleryTestCase):
     def test_blacklist_moving_cells(self):
         now = util.utcnow()
         long_ago = now - timedelta(days=40)
-        session = self.db_master_session
+        session = self.session
 
         k1 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=3, cid=4)
         k2 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=6, cid=8)
@@ -185,7 +185,7 @@ class TestCell(CeleryTestCase):
             ])
 
     def test_blacklist_temporary_and_permanent(self):
-        session = self.db_master_session
+        session = self.session
 
         # This test simulates a cell that moves once a month, for 2 years.
         # The first 2 * PERMANENT_BLACKLIST_THRESHOLD (12) moves should be
@@ -295,7 +295,7 @@ class TestCell(CeleryTestCase):
     def test_blacklist_time_used_as_creation_time(self):
         now = util.utcnow()
         last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
-        session = self.db_master_session
+        session = self.session
 
         cell_key = {'mcc': FRANCE_MCC, 'mnc': 2, 'lac': 3, 'cid': 1}
 
@@ -316,7 +316,7 @@ class TestCell(CeleryTestCase):
         self.assertEqual(cells[0].created, last_week)
 
     def test_insert_observations(self):
-        session = self.db_master_session
+        session = self.session
         time = util.utcnow() - timedelta(days=1)
         today = util.utcnow().date()
         mcc = FRANCE_MCC
@@ -382,7 +382,7 @@ class TestCell(CeleryTestCase):
         self.assertEqual(len(observations), 8)
 
     def test_insert_observations_invalid_lac(self):
-        session = self.db_master_session
+        session = self.session
         schema = ValidCellKeySchema()
         time = util.utcnow() - timedelta(days=1)
         today = util.utcnow().date()
@@ -427,7 +427,7 @@ class TestCell(CeleryTestCase):
         self.assertEqual(set([c.total_measures for c in cells]), set([5]))
 
     def test_insert_observations_overflow(self):
-        session = self.db_master_session
+        session = self.session
 
         observations = [dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4, psc=5,
                              radio=int(Radio.gsm),
@@ -457,7 +457,7 @@ class TestCell(CeleryTestCase):
         self.assertEqual(cells[0].total_measures, 6)
 
     def test_insert_observations_out_of_range(self):
-        session = self.db_master_session
+        session = self.session
         time = util.utcnow() - timedelta(days=1)
 
         obs = dict(
@@ -488,7 +488,7 @@ class TestCell(CeleryTestCase):
         now = util.utcnow()
         before = now - timedelta(days=1)
         schema = ValidCellKeySchema()
-        session = self.db_master_session
+        session = self.session
 
         k1 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=3, cid=4)
         k2 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=6, cid=8)
@@ -537,7 +537,7 @@ class TestCell(CeleryTestCase):
                 self.assertEqual(cell.lon, 2.002)
 
     def test_max_min_range_update(self):
-        session = self.db_master_session
+        session = self.session
 
         k1 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=3, cid=4)
         data = [
@@ -571,7 +571,7 @@ class TestCell(CeleryTestCase):
         self.assertEqual(cell.range, 556)
 
     def test_removal_updates_lac(self):
-        session = self.db_master_session
+        session = self.session
         keys = dict(radio=Radio.cdma, mcc=1, mnc=1, lac=1)
 
         # setup: build LAC as above
@@ -620,7 +620,7 @@ class TestCell(CeleryTestCase):
         self.assertEqual(lac, None)
 
     def test_scan_areas_asymmetric(self):
-        session = self.db_master_session
+        session = self.session
         big = 0.1
         small = big / 10
         keys = dict(radio=Radio.cdma, mcc=1, mnc=1, lac=1)
@@ -663,7 +663,7 @@ class TestCell(CeleryTestCase):
         self.assertEqual(lac.range, 339540)
 
     def test_scan_areas_race_with_location_update(self):
-        session = self.db_master_session
+        session = self.session
 
         # First batch of cell observations for CID 1
         keys = dict(radio=Radio.cdma, mcc=1, mnc=1, lac=1, cid=1)
@@ -711,7 +711,7 @@ class TestCell(CeleryTestCase):
         )
 
     def test_scan_areas_remove(self):
-        session = self.db_master_session
+        session = self.session
         redis_client = self.redis_client
 
         # create an orphaned lac entry
@@ -727,7 +727,7 @@ class TestCell(CeleryTestCase):
         self.assertEqual(lacs, [])
 
     def test_scan_areas_update(self):
-        session = self.db_master_session
+        session = self.session
         self.add_line_of_cells_and_scan_lac()
         today = util.utcnow().date()
 
@@ -751,7 +751,7 @@ class TestWifi(CeleryTestCase):
 
     def test_blacklist(self):
         utcnow = util.utcnow()
-        session = self.db_master_session
+        session = self.session
         bad_key = "ab1234567890"
         good_key = "cd1234567890"
         black = WifiBlacklist(time=utcnow, count=1, key=bad_key)
@@ -777,7 +777,7 @@ class TestWifi(CeleryTestCase):
     def test_blacklist_moving_wifis(self):
         now = util.utcnow()
         long_ago = now - timedelta(days=40)
-        session = self.db_master_session
+        session = self.session
         k1 = "ab1234567890"
         k2 = "bc1234567890"
         k3 = "cd1234567890"
@@ -851,7 +851,7 @@ class TestWifi(CeleryTestCase):
             ])
 
     def test_blacklist_temporary_and_permanent(self):
-        session = self.db_master_session
+        session = self.session
 
         # This test simulates a wifi that moves once a month, for 2 years.
         # The first 2 * PERMANENT_BLACKLIST_THRESHOLD (12) moves should be
@@ -953,7 +953,7 @@ class TestWifi(CeleryTestCase):
     def test_blacklist_time_used_as_creation_time(self):
         now = util.utcnow()
         last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
-        session = self.db_master_session
+        session = self.session
 
         wifi_key = "ab1234567890"
 
@@ -972,7 +972,7 @@ class TestWifi(CeleryTestCase):
         self.assertEqual(wifis[0].created, last_week)
 
     def test_insert_observations(self):
-        session = self.db_master_session
+        session = self.session
         time = util.utcnow() - timedelta(days=1)
         today = util.utcnow().date()
 
@@ -1030,7 +1030,7 @@ class TestWifi(CeleryTestCase):
         self.assertEqual(len(observations), 8)
 
     def test_insert_observations_overflow(self):
-        session = self.db_master_session
+        session = self.session
         key = "001234567890"
 
         observations = [dict(key=key,
@@ -1062,7 +1062,7 @@ class TestWifi(CeleryTestCase):
     def test_location_update_wifi(self):
         now = util.utcnow()
         before = now - timedelta(days=1)
-        session = self.db_master_session
+        session = self.session
         k1 = "ab1234567890"
         k2 = "cd1234567890"
         data = [
@@ -1102,7 +1102,7 @@ class TestWifi(CeleryTestCase):
         self.assertEqual(wifis[k2].new_measures, 0)
 
     def test_max_min_range_update(self):
-        session = self.db_master_session
+        session = self.session
         k1 = "ab1234567890"
         k2 = "cd1234567890"
         data = [
@@ -1152,7 +1152,7 @@ class TestWifi(CeleryTestCase):
         self.assertEqual(wifis[k2].range, 497)
 
     def test_remove_wifi(self):
-        session = self.db_master_session
+        session = self.session
         observations = []
         wifi_keys = [{'key': "a%s1234567890" % i} for i in range(5)]
         m1 = 1.0
@@ -1189,7 +1189,7 @@ class TestSubmitErrors(CeleryTestCase):
         super(TestSubmitErrors, self).tearDown()
 
     def test_database_error(self):
-        session = self.db_master_session
+        session = self.session
 
         stmt = text("drop table wifi;")
         session.execute(stmt)

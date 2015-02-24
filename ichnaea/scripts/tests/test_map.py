@@ -25,7 +25,7 @@ def mock_system_call():
 class TestMap(CeleryTestCase):
 
     def test_export_to_csv(self):
-        session = self.db_master_session
+        session = self.session
         data = [
             MapStat(lat=12345, lon=12345),
             MapStat(lat=-10000, lon=-11000),

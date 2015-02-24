@@ -21,7 +21,7 @@ class TestGeoSubmit(CeleryAppTestCase):
 
     def test_ok_cell(self):
         app = self.app
-        session = self.db_master_session
+        session = self.session
         cell = Cell()
         cell.lat = GB_LAT
         cell.lon = GB_LON
@@ -90,7 +90,7 @@ class TestGeoSubmit(CeleryAppTestCase):
 
     def test_ok_no_existing_cell(self):
         app = self.app
-        session = self.db_master_session
+        session = self.session
         now_ms = int(time.time() * 1000)
         first_of_month = utcnow().replace(day=1, hour=0, minute=0, second=0)
 
@@ -150,7 +150,7 @@ class TestGeoSubmit(CeleryAppTestCase):
 
     def test_ok_wifi(self):
         app = self.app
-        session = self.db_master_session
+        session = self.session
         wifis = [
             Wifi(key="101010101010", lat=1.0, lon=1.0),
             Wifi(key="202020202020", lat=1.001, lon=1.002),
@@ -197,7 +197,7 @@ class TestGeoSubmit(CeleryAppTestCase):
 
     def test_ok_no_existing_wifi(self):
         app = self.app
-        session = self.db_master_session
+        session = self.session
 
         res = app.post_json(
             '/v1/geosubmit?key=test',
@@ -236,7 +236,7 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEqual(obs.snr, 13)
 
     def test_invalid_json(self):
-        session = self.db_master_session
+        session = self.session
         self.app.post_json(
             '/v1/geosubmit?key=test',
             {"items": [
@@ -250,7 +250,7 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEquals(session.query(WifiObservation).count(), 0)
 
     def test_invalid_latitude(self):
-        session = self.db_master_session
+        session = self.session
         self.app.post_json(
             '/v1/geosubmit?key=test',
             {"items": [
@@ -264,7 +264,7 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEquals(session.query(WifiObservation).count(), 0)
 
     def test_invalid_cell(self):
-        session = self.db_master_session
+        session = self.session
         self.app.post_json(
             '/v1/geosubmit?key=test',
             {"items": [
@@ -282,7 +282,7 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEquals(session.query(CellObservation).count(), 0)
 
     def test_duplicated_cell_observations(self):
-        session = self.db_master_session
+        session = self.session
         self.app.post_json(
             '/v1/geosubmit?key=test',
             {"items": [
@@ -307,7 +307,7 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEquals(session.query(CellObservation).count(), 1)
 
     def test_duplicated_wifi_observations(self):
-        session = self.db_master_session
+        session = self.session
         self.app.post_json(
             '/v1/geosubmit?key=test',
             {"items": [
@@ -326,7 +326,7 @@ class TestGeoSubmit(CeleryAppTestCase):
     def test_email_header(self):
         nickname = 'World Tr\xc3\xa4veler'
         email = 'world_tr\xc3\xa4veler@email.com'
-        session = self.db_master_session
+        session = self.session
         self.app.post_json(
             '/v1/geosubmit?key=test',
             {"items": [
@@ -348,13 +348,13 @@ class TestGeoSubmit(CeleryAppTestCase):
             },
             status=200)
 
-        session = self.db_master_session
+        session = self.session
         result = session.query(User).all()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].email, email.decode('utf-8'))
 
     def test_batches(self):
-        session = self.db_master_session
+        session = self.session
         EXPECTED_RECORDS = 110
         wifi_data = [{"macAddress": "101010101010"}]
         items = [{"latitude": GB_LAT,

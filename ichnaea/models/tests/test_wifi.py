@@ -14,7 +14,7 @@ from ichnaea.tests.base import (
 class TestWifi(DBTestCase):
 
     def test_fields(self):
-        session = self.db_master_session
+        session = self.session
         session.add(Wifi(
             key='3680873e9b83', lat=GB_LAT, lon=GB_LON, range=200))
         session.flush()
@@ -29,7 +29,7 @@ class TestWifi(DBTestCase):
 class TestWifiBlacklist(DBTestCase):
 
     def test_fields(self):
-        session = self.db_master_session
+        session = self.session
         session.add(WifiBlacklist(key='3680873e9b83', count=2))
         session.flush()
 
@@ -38,7 +38,7 @@ class TestWifiBlacklist(DBTestCase):
         self.assertEqual(result.count, 2)
 
     def test_unique_key(self):
-        session = self.db_master_session
+        session = self.session
         session.add(WifiBlacklist(key='3680873e9b83'))
         session.flush()
 

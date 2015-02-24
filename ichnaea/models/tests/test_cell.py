@@ -17,7 +17,7 @@ from ichnaea.tests.base import (
 class TestCell(DBTestCase):
 
     def test_fields(self):
-        session = self.db_master_session
+        session = self.session
         session.add(Cell.create(
             radio=Radio.gsm, mcc=GB_MCC, mnc=5, lac=1234, cid=23456,
             lat=GB_LAT, lon=GB_LON, total_measures=15))
@@ -37,7 +37,7 @@ class TestCell(DBTestCase):
 class TestCellArea(DBTestCase):
 
     def test_fields(self):
-        session = self.db_master_session
+        session = self.session
         session.add(CellArea(
             radio=Radio.cdma, mcc=GB_MCC, mnc=5, lac=1234, range=10,
             lat=GB_LAT, lon=GB_LON, avg_cell_range=10, num_cells=15))
@@ -58,7 +58,7 @@ class TestCellArea(DBTestCase):
 class TestCellBlacklist(DBTestCase):
 
     def test_fields(self):
-        session = self.db_master_session
+        session = self.session
         session.add(CellBlacklist(
             radio=Radio.lte, mcc=GB_MCC, mnc=5, lac=1234, cid=23456, count=2))
         session.flush()
@@ -75,7 +75,7 @@ class TestCellBlacklist(DBTestCase):
 class TestOCIDCell(DBTestCase):
 
     def test_fields(self):
-        session = self.db_master_session
+        session = self.session
         session.add(OCIDCell.create(
             radio=Radio.gsm, mcc=GB_MCC, mnc=5, lac=1234, cid=23456,
             lat=GB_LAT, lon=GB_LON, range=1000, total_measures=15))
@@ -99,7 +99,7 @@ class TestOCIDCell(DBTestCase):
 class TestOCIDCellArea(DBTestCase):
 
     def test_fields(self):
-        session = self.db_master_session
+        session = self.session
         session.add(OCIDCellArea(
             radio=Radio.umts, mcc=GB_MCC, mnc=5, lac=1234, range=10,
             lat=GB_LAT, lon=GB_LON, avg_cell_range=10, num_cells=15))

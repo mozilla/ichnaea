@@ -49,7 +49,7 @@ def mock_s3():
 class TestExport(CeleryTestCase):
 
     def test_local_export(self):
-        session = self.db_master_session
+        session = self.session
         cell_fixture_fields = (
             'radio', 'cid', 'lat', 'lon', 'mnc', 'mcc', 'lac')
         cell_key = {'radio': Radio.gsm, 'mcc': 1, 'mnc': 2, 'lac': 4}
@@ -95,7 +95,7 @@ class TestExport(CeleryTestCase):
                 self.assertEqual(cells, exported_cells)
 
     def test_hourly_export(self):
-        session = self.db_master_session
+        session = self.session
         k = {'radio': Radio.gsm, 'mcc': 1, 'mnc': 2, 'lac': 4,
              'psc': -1, 'lat': 1.0, 'lon': 2.0}
         for i in range(190, 200):
@@ -110,7 +110,7 @@ class TestExport(CeleryTestCase):
             self.assertRegexpMatches(method.call_args[0][0], pat)
 
     def test_daily_export(self):
-        session = self.db_master_session
+        session = self.session
         k = {'radio': Radio.gsm, 'mcc': 1, 'mnc': 2, 'lac': 4,
              'lat': 1.0, 'lon': 2.0}
         for i in range(190, 200):
@@ -152,19 +152,19 @@ class TestImport(CeleryAppTestCase):
             yield path
 
     def import_test_csv(self, lo=1, hi=10, time=1408604686, session=None):
-        session = session or self.db_master_session
+        session = session or self.session
         with self.get_test_csv(lo=lo, hi=hi, time=time) as path:
             import_ocid_cells(path, session=session)
 
     def test_local_import(self):
         self.import_test_csv()
-        cells = self.db_master_session.query(OCIDCell).all()
+        cells = self.session.query(OCIDCell).all()
         self.assertEqual(len(cells), 9)
 
         lacs = set([
             (cell.radio, cell.mcc, cell.mnc, cell.lac) for cell in cells])
         self.assertEqual(
-            self.db_master_session.query(OCIDCellArea).count(), len(lacs))
+            self.session.query(OCIDCellArea).count(), len(lacs))
 
     def test_local_import_with_query(self):
         self.import_test_csv(session=self.db_slave_session)
@@ -197,20 +197,20 @@ class TestImport(CeleryAppTestCase):
         new_date = datetime.fromtimestamp(new_time).replace(tzinfo=UTC)
 
         self.import_test_csv(time=old_time)
-        cells = self.db_master_session.query(OCIDCell).all()
+        cells = self.session.query(OCIDCell).all()
         self.assertEqual(len(cells), 9)
 
         lacs = set([
             (cell.radio, cell.mcc, cell.mnc, cell.lac) for cell in cells])
         self.assertEqual(
-            self.db_master_session.query(OCIDCellArea).count(), len(lacs))
+            self.session.query(OCIDCellArea).count(), len(lacs))
 
         # update some entries
         self.import_test_csv(
             lo=5, hi=10, time=new_time)
 
-        cells = (self.db_master_session.query(OCIDCell)
-                                       .order_by(OCIDCell.modified).all())
+        cells = (self.session.query(OCIDCell)
+                             .order_by(OCIDCell.modified).all())
         self.assertEqual(len(cells), 9)
 
         for i in range(0, 4):
@@ -222,7 +222,7 @@ class TestImport(CeleryAppTestCase):
         lacs = set([
             (cell.radio, cell.mcc, cell.mnc, cell.lac) for cell in cells])
         self.assertEqual(
-            self.db_master_session.query(OCIDCellArea).count(), len(lacs))
+            self.session.query(OCIDCellArea).count(), len(lacs))
 
     def test_local_import_latest_through_http(self):
         with self.get_test_csv() as path:
@@ -231,11 +231,11 @@ class TestImport(CeleryAppTestCase):
                     m.register_uri('GET', re.compile('.*'), body=f)
                     import_latest_ocid_cells()
 
-        cells = (self.db_master_session.query(OCIDCell)
-                                       .order_by(OCIDCell.modified).all())
+        cells = (self.session.query(OCIDCell)
+                             .order_by(OCIDCell.modified).all())
         self.assertEqual(len(cells), 9)
 
         lacs = set([
             (cell.radio, cell.mcc, cell.mnc, cell.lac) for cell in cells])
         self.assertEqual(
-            self.db_master_session.query(OCIDCellArea).count(), len(lacs))
+            self.session.query(OCIDCellArea).count(), len(lacs))

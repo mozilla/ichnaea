@@ -14,12 +14,12 @@ class TestDatabase(DBTestCase):
             self.db_slave_session.bind.engine is self.db_slave.engine)
 
     def test_table_creation(self):
-        session = self.db_master_session
+        session = self.session
         result = session.execute('select * from cell;')
         self.assertTrue(result.first() is None)
 
     def test_session_hook(self):
-        session = self.db_master_session
+        session = self.session
         result = []
 
         def hook(session, value, _result=result, **kw):

@@ -33,7 +33,7 @@ def unixtime(value):
 class TestStats(DBTestCase):
 
     def test_global_stats(self):
-        session = self.db_master_session
+        session = self.session
         day = util.utcnow().date() - timedelta(1)
         stats = [
             Stat(key=StatKey.cell, time=day, value=6100000),
@@ -54,7 +54,7 @@ class TestStats(DBTestCase):
             })
 
     def test_global_stats_missing_today(self):
-        session = self.db_master_session
+        session = self.session
         day = util.utcnow().date() - timedelta(1)
         yesterday = day - timedelta(days=1)
         stats = [
@@ -75,7 +75,7 @@ class TestStats(DBTestCase):
             })
 
     def test_histogram(self):
-        session = self.db_master_session
+        session = self.session
         today = util.utcnow().date()
         one_day = today - timedelta(days=1)
         two_days = today - timedelta(days=2)
@@ -104,7 +104,7 @@ class TestStats(DBTestCase):
             [unixtime(expected), 50] in result[0])
 
     def test_histogram_different_stat_name(self):
-        session = self.db_master_session
+        session = self.session
         day = util.utcnow().date() - timedelta(days=1)
         stat = Stat(key=StatKey.unique_cell, time=day, value=9)
         session.add(stat)
@@ -113,7 +113,7 @@ class TestStats(DBTestCase):
         self.assertEqual(result, [[[unixtime(day), 9]]])
 
     def test_leaders(self):
-        session = self.db_master_session
+        session = self.session
         today = util.utcnow().date()
         test_data = []
         for i in range(20):
@@ -139,7 +139,7 @@ class TestStats(DBTestCase):
         self.assertTrue(lowest in [r['nickname'] for r in result])
 
     def test_leaders_weekly(self):
-        session = self.db_master_session
+        session = self.session
         today = util.utcnow().date()
         test_data = []
         for i in range(1, 11):
@@ -178,7 +178,7 @@ class TestStats(DBTestCase):
         self.assertEqual(scores[-1]['num'], 16)
 
     def test_countries(self):
-        session = self.db_master_session
+        session = self.session
         cell_key = {'lac': 1, 'cid': 1}
         test_data = [
             Cell(radio=Radio.gsm, mcc=1, mnc=1, **cell_key),

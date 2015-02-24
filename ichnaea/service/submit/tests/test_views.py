@@ -48,7 +48,7 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(res.body, '')
 
-        session = self.db_master_session
+        session = self.session
         cell_result = session.query(CellObservation).all()
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
@@ -85,7 +85,7 @@ class TestSubmit(CeleryAppTestCase):
                                       "wifi": wifi_data}]},
             status=204)
         self.assertEqual(res.body, '')
-        session = self.db_master_session
+        session = self.session
         wifi_result = session.query(WifiObservation).all()
         self.assertEqual(len(wifi_result), 2)
         item = wifi_result[0]
@@ -119,7 +119,7 @@ class TestSubmit(CeleryAppTestCase):
         items.append({'lat': 10, 'lon': 10, 'whatever': 'xx'})
         app.post_json('/v1/submit', {"items": items}, status=204)
 
-        session = self.db_master_session
+        session = self.session
 
         result = session.query(WifiObservation).all()
         self.assertEqual(len(result), EXPECTED_RECORDS)
@@ -128,7 +128,7 @@ class TestSubmit(CeleryAppTestCase):
         app = self.app
         long_ago = date(2011, 10, 20)
         today = util.utcnow().date()
-        session = self.db_master_session
+        session = self.session
         stats = [
             MapStat(lat=1000, lon=2000, time=long_ago),
             MapStat(lat=2000, lon=3000, time=long_ago),
@@ -185,7 +185,7 @@ class TestSubmit(CeleryAppTestCase):
             ]},
             headers={'X-Nickname': nickname},
             status=204)
-        session = self.db_master_session
+        session = self.session
         result = session.query(User).all()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
@@ -209,7 +209,7 @@ class TestSubmit(CeleryAppTestCase):
             ]},
             headers={'X-Nickname': "a"},
             status=204)
-        session = self.db_master_session
+        session = self.session
         result = session.query(User).all()
         self.assertEqual(len(result), 0)
         result = session.query(Score).all()
@@ -219,7 +219,7 @@ class TestSubmit(CeleryAppTestCase):
         app = self.app
         nickname = 'World Tr\xc3\xa4veler'
         utcday = util.utcnow().date()
-        session = self.db_master_session
+        session = self.session
         user = User(nickname=nickname.decode('utf-8'))
         session.add(user)
         session.flush()
@@ -266,7 +266,7 @@ class TestSubmit(CeleryAppTestCase):
                 'X-Email': email,
             },
             status=204)
-        session = self.db_master_session
+        session = self.session
         result = session.query(User).all()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].email, email.decode('utf-8'))
@@ -276,7 +276,7 @@ class TestSubmit(CeleryAppTestCase):
         nickname = 'World Tr\xc3\xa4veler'
         old_email = 'world_tr\xc3\xa4veler@email.com'
         new_email = 'world_tr\xc3\xa4veler2@email.com'
-        session = self.db_master_session
+        session = self.session
         user = User(nickname=nickname, email=old_email.decode('utf-8'))
         session.add(user)
         session.flush()
@@ -311,7 +311,7 @@ class TestSubmit(CeleryAppTestCase):
                 'X-Email': email,
             },
             status=204)
-        session = self.db_master_session
+        session = self.session
         result = session.query(User).all()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].email, '')
@@ -329,7 +329,7 @@ class TestSubmit(CeleryAppTestCase):
                 'X-Email': email,
             },
             status=204)
-        session = self.db_master_session
+        session = self.session
         result = session.query(User).all()
         self.assertEqual(len(result), 0)
 
@@ -447,7 +447,7 @@ class TestSubmit(CeleryAppTestCase):
         )
 
     def test_missing_latlon(self):
-        session = self.db_master_session
+        session = self.session
         app = self.app
 
         data = [{"lat": 12.3456781,
@@ -483,7 +483,7 @@ class TestSubmit(CeleryAppTestCase):
                                       "cell": cell_data}]},
             status=204)
         self.assertEqual(res.body, '')
-        session = self.db_master_session
+        session = self.session
         cell_result = session.query(CellObservation).all()
         self.assertEqual(len(cell_result), 1)
         item = cell_result[0]
@@ -503,6 +503,6 @@ class TestSubmit(CeleryAppTestCase):
                                       "cell": cell_data}]},
             status=204)
         self.assertEqual(res.body, '')
-        session = self.db_master_session
+        session = self.session
         cell_result = session.query(CellObservation).all()
         self.assertEqual(len(cell_result), 0)

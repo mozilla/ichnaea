@@ -230,7 +230,7 @@ class TestFunctionalContentViews(AppTestCase):
         return ContentViews(request)
 
     def test_leaders(self):
-        session = self.db_master_session
+        session = self.session
         today = util.utcnow().date()
         yesterday = today - timedelta(days=1)
         for i in range(7, 1, -1):
@@ -265,7 +265,7 @@ class TestFunctionalContentViews(AppTestCase):
         self.assertEqual(second_result, result)
 
     def test_leaders_weekly(self):
-        session = self.db_master_session
+        session = self.session
         today = util.utcnow().date()
         for i in range(3):
             user = User(nickname=unicode(i))
@@ -301,7 +301,7 @@ class TestFunctionalContentViews(AppTestCase):
 
     def test_stats(self):
         day = util.utcnow().date() - timedelta(1)
-        session = self.db_master_session
+        session = self.session
         stats = [
             Stat(key=StatKey.cell, time=day, value=2000000),
             Stat(key=StatKey.wifi, time=day, value=2000000),

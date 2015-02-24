@@ -17,7 +17,7 @@ class TestCellObservation(DBTestCase):
 
     def test_fields(self):
         report_id = uuid.uuid1()
-        session = self.db_master_session
+        session = self.session
         session.add(CellObservation.create(
             radio=Radio.gsm, mcc=GB_MCC, mnc=5, lac=12345, cid=23456,
             report_id=report_id, lat=GB_LAT, lon=GB_LON,
@@ -43,7 +43,7 @@ class TestWifiObservation(DBTestCase):
     def test_fields(self):
         key = "3680873e9b83"
         report_id = uuid.uuid1()
-        session = self.db_master_session
+        session = self.session
         session.add(WifiObservation.create(
             key=key, report_id=report_id, lat=GB_LAT, lon=GB_LON,
             channel=5, signal=-45))

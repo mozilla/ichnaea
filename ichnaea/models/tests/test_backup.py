@@ -15,7 +15,7 @@ class TestObservationBlock(DBTestCase):
         now = util.utcnow()
         s3_key = '201502/wifi_10_200.zip'
 
-        session = self.db_master_session
+        session = self.session
         session.add(ObservationBlock(
             measure_type=ObservationType.wifi, s3_key=s3_key,
             archive_date=now, archive_sha=archive_sha,
