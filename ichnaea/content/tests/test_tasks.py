@@ -32,13 +32,12 @@ class TestStats(CeleryTestCase):
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        obs_factory = CellObservationFactory.create
         for i in range(2):
-            obs_factory(created=today)
-        obs_factory(created=yesterday)
+            CellObservationFactory(created=today)
+        CellObservationFactory(created=yesterday)
         for i in range(3):
-            obs_factory(created=two_days)
-        obs_factory(created=long_ago)
+            CellObservationFactory(created=two_days)
+        CellObservationFactory(created=long_ago)
         session.flush()
 
         cell_histogram.delay(ago=3).get()
@@ -72,12 +71,11 @@ class TestStats(CeleryTestCase):
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        cell_factory = CellFactory.create
-        cell_factory(created=long_ago, radio=Radio.gsm)
-        cell_factory(created=two_days, radio=Radio.umts)
-        cell_factory(created=two_days, radio=Radio.umts, cid=50)
-        cell_factory(created=yesterday, radio=Radio.lte, cid=50)
-        cell_factory(created=today, radio=Radio.gsm, mnc=30)
+        CellFactory(created=long_ago, radio=Radio.gsm)
+        CellFactory(created=two_days, radio=Radio.umts)
+        CellFactory(created=two_days, radio=Radio.umts, cid=50)
+        CellFactory(created=yesterday, radio=Radio.lte, cid=50)
+        CellFactory(created=today, radio=Radio.gsm, mnc=30)
         session.flush()
 
         result = unique_cell_histogram.delay(ago=3)
@@ -112,13 +110,12 @@ class TestStats(CeleryTestCase):
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        ocid_factory = OCIDCellFactory.create
-        ocid_factory(created=long_ago)
-        ocid_factory(created=two_days, radio=Radio.umts)
-        ocid_factory(created=two_days, radio=Radio.umts, cid=50)
-        ocid_factory(created=yesterday, radio=Radio.lte, cid=50)
-        ocid_factory(created=today, mnc=30)
-        ocid_factory(created=today, lac=40)
+        OCIDCellFactory(created=long_ago)
+        OCIDCellFactory(created=two_days, radio=Radio.umts)
+        OCIDCellFactory(created=two_days, radio=Radio.umts, cid=50)
+        OCIDCellFactory(created=yesterday, radio=Radio.lte, cid=50)
+        OCIDCellFactory(created=today, mnc=30)
+        OCIDCellFactory(created=today, lac=40)
         session.flush()
 
         result = unique_ocid_cell_histogram.delay(ago=3)
@@ -153,13 +150,12 @@ class TestStats(CeleryTestCase):
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        obs_factory = WifiObservationFactory.create
         for i in range(2):
-            obs_factory(created=today)
-        obs_factory(created=yesterday)
+            WifiObservationFactory(created=today)
+        WifiObservationFactory(created=yesterday)
         for i in range(3):
-            obs_factory(created=two_days)
-        obs_factory(created=long_ago)
+            WifiObservationFactory(created=two_days)
+        WifiObservationFactory(created=long_ago)
         session.flush()
 
         wifi_histogram.delay(ago=3).get()
@@ -193,12 +189,11 @@ class TestStats(CeleryTestCase):
         two_days = (today - timedelta(2))
         long_ago = (today - timedelta(3))
 
-        wifi_factory = WifiFactory.create
-        wifi_factory(key="ab1234567890", created=long_ago)
-        wifi_factory(key="bc1234567890", created=two_days)
-        wifi_factory(key="cd1234567890", created=yesterday)
-        wifi_factory(key="de1234567890", created=yesterday)
-        wifi_factory(key="ef1234567890", created=today)
+        WifiFactory(key="ab1234567890", created=long_ago)
+        WifiFactory(key="bc1234567890", created=two_days)
+        WifiFactory(key="cd1234567890", created=yesterday)
+        WifiFactory(key="de1234567890", created=yesterday)
+        WifiFactory(key="ef1234567890", created=today)
         session.flush()
 
         result = unique_wifi_histogram.delay(ago=3)

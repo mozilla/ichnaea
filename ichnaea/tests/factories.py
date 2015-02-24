@@ -24,12 +24,12 @@ from ichnaea.tests.base import (
 class BaseFactory(SQLAlchemyModelFactory):
 
     class Meta:
-        strategy = factory.BUILD_STRATEGY
+        strategy = factory.CREATE_STRATEGY
 
     @classmethod
-    def _create(cls, model_class, _session=None, *args, **kwargs):
+    def _create(cls, constructor, _session=None, *args, **kwargs):
         """Create an instance of the model, and save it to the database."""
-        obj = model_class(*args, **kwargs)
+        obj = constructor(*args, **kwargs)
         if _session is None:
             _session = SESSION['default']
         _session.add(obj)

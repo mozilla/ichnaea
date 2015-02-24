@@ -83,12 +83,10 @@ class TestMonitorTasks(CeleryTestCase):
         self.assertEqual(result, {'cell_measure': -1, 'wifi_measure': -1})
 
         # add some observations
-        cell_factory = CellObservationFactory.create
         for i in range(3):
-            cell_factory()
-        wifi_factory = WifiObservationFactory.create
+            CellObservationFactory()
         for i in range(5):
-            wifi_factory()
+            WifiObservationFactory()
         self.session.flush()
 
         result = monitor_measures.delay().get()
@@ -99,15 +97,12 @@ class TestMonitorTasks(CeleryTestCase):
 
     def test_monitor_ocid_import(self):
         now = util.utcnow()
-
-        ocid_factory = OCIDCellFactory.create
-
         expected = []
         results = []
         for i in range(35, 5, -5):
             created = now - timedelta(hours=i)
             expected.append(i * 3600000)
-            ocid_factory(created=created, cid=i)
+            OCIDCellFactory(created=created, cid=i)
             self.session.flush()
             results.append(monitor_ocid_import.delay().get())
 

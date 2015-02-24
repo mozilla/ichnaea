@@ -63,7 +63,7 @@ class TestObservationsDump(CeleryTestCase):
 
     def setUp(self):
         CeleryTestCase.setUp(self)
-        self.really_old = datetime.datetime(1980, 1, 1).replace(
+        self.old = datetime.datetime(1980, 1, 1).replace(
             tzinfo=pytz.UTC)
 
     def test_schedule_cell_observations(self):
@@ -71,9 +71,8 @@ class TestObservationsDump(CeleryTestCase):
         self.assertEquals(len(blocks), 0)
 
         observations = []
-        obs_factory = CellObservationFactory.create
         for i in range(20):
-            observations.append(obs_factory(created=self.really_old))
+            observations.append(CellObservationFactory(created=self.old))
         self.session.flush()
         start_id = observations[0].id
 
@@ -99,9 +98,8 @@ class TestObservationsDump(CeleryTestCase):
 
         batch_size = 10
         observations = []
-        obs_factory = WifiObservationFactory.create
         for i in range(batch_size * 2):
-            observations.append(obs_factory(created=self.really_old))
+            observations.append(WifiObservationFactory(created=self.old))
         self.session.flush()
         start_id = observations[0].id
 
@@ -121,9 +119,8 @@ class TestObservationsDump(CeleryTestCase):
     def test_backup_cell_to_s3(self):
         batch_size = 10
         observations = []
-        obs_factory = CellObservationFactory.create
         for i in range(batch_size):
-            observations.append(obs_factory(created=self.really_old))
+            observations.append(CellObservationFactory(created=self.old))
         self.session.flush()
         start_id = observations[0].id
 
@@ -167,9 +164,8 @@ class TestObservationsDump(CeleryTestCase):
     def test_backup_wifi_to_s3(self):
         batch_size = 10
         observations = []
-        obs_factory = WifiObservationFactory.create
         for i in range(batch_size):
-            observations.append(obs_factory(created=self.really_old))
+            observations.append(WifiObservationFactory(created=self.old))
         self.session.flush()
         start_id = observations[0].id
 
@@ -211,15 +207,13 @@ class TestObservationsDump(CeleryTestCase):
         self.assertTrue(block.archive_date is None)
 
     def test_delete_cell_observations(self):
-        obs_factory = CellObservationFactory.create
         observations = []
         for i in range(50):
-            observations.append(obs_factory(created=self.really_old))
+            observations.append(CellObservationFactory(created=self.old))
         self.session.flush()
 
         start_id = observations[0].id + 20
-        block_factory = ObservationBlockFactory.create
-        block = block_factory(
+        block = ObservationBlockFactory(
             measure_type=ObservationType.cell,
             start_id=start_id, end_id=start_id + 20, archive_date=None)
         self.session.commit()
@@ -231,15 +225,13 @@ class TestObservationsDump(CeleryTestCase):
         self.assertTrue(block.archive_date is not None)
 
     def test_delete_wifi_observations(self):
-        obs_factory = WifiObservationFactory.create
         observations = []
         for i in range(50):
-            observations.append(obs_factory(created=self.really_old))
+            observations.append(WifiObservationFactory(created=self.old))
         self.session.flush()
 
         start_id = observations[0].id + 20
-        block_factory = ObservationBlockFactory.create
-        block = block_factory(
+        block = ObservationBlockFactory(
             measure_type=ObservationType.wifi,
             start_id=start_id, end_id=start_id + 20, archive_date=None)
         self.session.commit()
@@ -258,9 +250,8 @@ class TestObservationsDump(CeleryTestCase):
         old = now - timedelta(days=5)
         session = self.session
 
-        block_factory = ObservationBlockFactory.create
         for i in range(100, 150, 10):
-            block_factory(
+            ObservationBlockFactory(
                 measure_type=ObservationType.cell,
                 start_id=i, end_id=i + 10, archive_date=None)
 
@@ -307,17 +298,15 @@ class TestObservationsDump(CeleryTestCase):
         self.assertEqual(_archived_blocks(), 5)
 
     def test_unthrottle_cell_observations(self):
-        cell_factory = CellFactory.create
-        obs_factory = CellObservationFactory.create
         observations = []
         for i in range(100, 150):
-            observations.append(obs_factory(created=self.really_old, cid=i))
-            cell_factory(total_measures=11000, cid=i)
+            observations.append(
+                CellObservationFactory(created=self.old, cid=i))
+            CellFactory(total_measures=11000, cid=i)
         self.session.flush()
 
         start_id = observations[0].id + 20
-        block_factory = ObservationBlockFactory.create
-        block_factory(
+        ObservationBlockFactory(
             measure_type=ObservationType.cell,
             start_id=start_id, end_id=start_id + 20, archive_date=None)
         self.session.commit()
@@ -338,19 +327,16 @@ class TestObservationsDump(CeleryTestCase):
         self.check_stats(counter=['items.cell_unthrottled'])
 
     def test_unthrottle_wifi_observations(self):
-        wifi_factory = WifiFactory.create
-        obs_factory = WifiObservationFactory.create
         observations = []
         to_key = lambda num: "a01234567{num:03d}".format(num=num)
         for i in range(100, 150):
             observations.append(
-                obs_factory(created=self.really_old, key=to_key(i)))
-            wifi_factory(total_measures=11000, key=to_key(i))
+                WifiObservationFactory(created=self.old, key=to_key(i)))
+            WifiFactory(total_measures=11000, key=to_key(i))
         self.session.flush()
 
         start_id = observations[0].id + 20
-        block_factory = ObservationBlockFactory.create
-        block_factory(
+        ObservationBlockFactory(
             measure_type=ObservationType.wifi,
             start_id=start_id, end_id=start_id + 20, archive_date=None)
         self.session.commit()
