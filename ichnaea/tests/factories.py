@@ -4,6 +4,11 @@ import factory
 from factory.alchemy import SQLAlchemyModelFactory
 from factory import fuzzy
 
+from ichnaea.constants import (
+    CELL_MIN_ACCURACY,
+    LAC_MIN_ACCURACY,
+    WIFI_MIN_ACCURACY,
+)
 from ichnaea.models import (
     Cell,
     CellArea,
@@ -62,14 +67,14 @@ class CellAreaPositionFactory(BaseFactory):
     lac = fuzzy.FuzzyInteger(100, 999)
     lat = GB_LAT
     lon = GB_LON
-    range = 35000
+    range = LAC_MIN_ACCURACY
 
 
 class CellPositionFactory(CellAreaPositionFactory):
 
     cid = fuzzy.FuzzyInteger(1000, 9999)
     psc = fuzzy.FuzzyInteger(100, 500)
-    range = 2000
+    range = CELL_MIN_ACCURACY
 
 
 class CellFactory(CellPositionFactory):
@@ -120,6 +125,7 @@ class WifiPositionFactory(BaseFactory):
     key = FuzzyWifiKey()
     lat = GB_LAT
     lon = GB_LON
+    range = WIFI_MIN_ACCURACY
 
 
 class WifiFactory(WifiPositionFactory):
