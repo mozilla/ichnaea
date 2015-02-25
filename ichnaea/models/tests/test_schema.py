@@ -10,9 +10,9 @@ from ichnaea.models import (
 )
 from ichnaea.models import (
     constants,
-    normalized_time,
     ValidCellKeySchema,
 )
+from ichnaea.models.schema import normalized_time
 from ichnaea.tests.base import TestCase
 from ichnaea.tests.base import (
     FREMONT_LAT, FREMONT_LON, USA_MCC,

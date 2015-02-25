@@ -14,6 +14,7 @@ from ichnaea.models.cell import (  # NOQA
     OCIDCell,
     OCIDCellArea,
     Radio,
+    ValidCellKeySchema,
 )
 from ichnaea.models.content import (  # NOQA
     MapStat,
@@ -31,10 +32,6 @@ from ichnaea.models.observation import (  # NOQA
     WifiLookup,
     WifiObservation,
     WifiReport,
-)
-from ichnaea.models.schema import (  # NOQA
-    normalized_time,
-    ValidCellKeySchema,
 )
 from ichnaea.models.wifi import (  # NOQA
     Wifi,

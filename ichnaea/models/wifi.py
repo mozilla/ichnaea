@@ -1,3 +1,4 @@
+import colander
 from sqlalchemy import (
     Column,
     Index,
@@ -10,13 +11,19 @@ from ichnaea.models.base import (
     BigIdMixin,
     CreationMixin,
 )
+from ichnaea.models import constants
 from ichnaea.models.hashkey import (
     HashKey,
     HashKeyMixin,
 )
+from ichnaea.models.schema import (
+    CopyingSchema,
+    FieldSchema,
+)
 from ichnaea.models.station import (
     StationMixin,
     StationBlacklistMixin,
+    ValidStationSchema,
 )
 
 
@@ -32,8 +39,39 @@ class WifiKeyMixin(HashKeyMixin):
     key = Column(String(12))
 
 
+class WifiKeyNode(colander.SchemaNode):
+    """
+    A node containing a valid wifi key.
+    ex: 01005e901000
+    """
+
+    def preparer(self, cstruct):
+        # Remove ':' '-' ',' from a wifi key.
+        if ":" in cstruct or "-" in cstruct or "." in cstruct:
+            cstruct = (cstruct.replace(":", "")
+                              .replace("-", "")
+                              .replace(".", ""))
+        return cstruct.lower()
+
+    def validator(self, node, cstruct):
+        valid = constants.INVALID_WIFI_REGEX.match(cstruct) and \
+            constants.VALID_WIFI_REGEX.match(cstruct) and len(cstruct) == 12
+        if not valid:
+            raise colander.Invalid(node, 'Invalid wifi key')
+
+
+class ValidWifiKeySchema(FieldSchema, CopyingSchema):
+    """A schema which validates the fields present in a a wifi key."""
+
+    key = WifiKeyNode(colander.String())
+
+
 class WifiMixin(BigIdMixin, WifiKeyMixin):
     pass
+
+
+class ValidWifiSchema(ValidWifiKeySchema, ValidStationSchema):
+    """A schema which validates the fields in wifi."""
 
 
 class Wifi(WifiMixin, StationMixin, CreationMixin, _Model):
@@ -55,7 +93,6 @@ class Wifi(WifiMixin, StationMixin, CreationMixin, _Model):
 
     @classmethod
     def valid_schema(cls):
-        from ichnaea.models.schema import ValidWifiSchema
         return ValidWifiSchema
 
 

@@ -1,3 +1,4 @@
+import colander
 from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import (
     DOUBLE as Double,
@@ -5,10 +6,19 @@ from sqlalchemy.dialects.mysql import (
 )
 
 from ichnaea.models.base import (
-    TimeTrackingMixin,
     PositionMixin,
+    TimeTrackingMixin,
+    ValidPositionSchema,
+    ValidTimeTrackingSchema,
 )
 from ichnaea.models.sa_types import TZDateTime as DateTime
+
+
+class ValidStationSchema(ValidPositionSchema, ValidTimeTrackingSchema):
+    """A schema which validates the fields present in a station."""
+
+    total_measures = colander.SchemaNode(colander.Integer(), missing=0)
+    range = colander.SchemaNode(colander.Integer(), missing=0)
 
 
 class BaseStationMixin(PositionMixin, TimeTrackingMixin):

@@ -1,4 +1,4 @@
-from colander import Invalid
+import colander
 from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import (
     BIGINT as BigInteger,
@@ -10,6 +10,12 @@ from sqlalchemy.ext.declarative import (
     declarative_base,
 )
 
+from ichnaea.models import constants
+from ichnaea.models.schema import (
+    CopyingSchema,
+    DateTimeFromString,
+    FieldSchema,
+)
 from ichnaea.models.sa_types import TZDateTime as DateTime
 
 MYSQL_SETTINGS = {
@@ -41,7 +47,7 @@ class ValidationMixin(object):
     def validate(cls, entry, _raise_invalid=False, **kw):
         try:
             validated = cls.valid_schema()().deserialize(entry, **kw)
-        except Invalid:
+        except colander.Invalid:
             if _raise_invalid:  # pragma: no cover
                 raise
             validated = None
@@ -70,10 +76,30 @@ class IdMixin(object):
                 primary_key=True, autoincrement=True)
 
 
+class ValidTimeTrackingSchema(FieldSchema, CopyingSchema):
+    """A schema which validates the fields used for time tracking."""
+
+    created = colander.SchemaNode(DateTimeFromString(), missing=None)
+    modified = colander.SchemaNode(DateTimeFromString(), missing=None)
+
+
 class TimeTrackingMixin(object):
 
     created = Column(DateTime)
     modified = Column(DateTime)
+
+
+class ValidPositionSchema(FieldSchema, CopyingSchema):
+    """A schema which validates the fields present in a position."""
+
+    lat = colander.SchemaNode(
+        colander.Float(),
+        missing=0.0,
+        validator=colander.Range(constants.MIN_LAT, constants.MAX_LAT))
+    lon = colander.SchemaNode(
+        colander.Float(),
+        missing=0.0,
+        validator=colander.Range(constants.MIN_LON, constants.MAX_LON))
 
 
 class PositionMixin(object):
