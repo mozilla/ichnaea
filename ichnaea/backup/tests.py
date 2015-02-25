@@ -290,8 +290,8 @@ class TestObservationsDump(CeleryTestCase):
         observations = []
         for i in range(100, 150):
             observations.append(
-                CellObservationFactory(created=self.old, lac=10, cid=i))
-            CellFactory(total_measures=11000, lac=10, cid=i)
+                CellObservationFactory(created=self.old, lac=i, cid=i, psc=i))
+            CellFactory(total_measures=11000, lac=i, cid=i, psc=i)
         self.session.flush()
 
         start_id = observations[0].id + 20

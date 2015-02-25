@@ -3,16 +3,14 @@ import time
 from ichnaea.models import (
     Cell,
     CellObservation,
-    Radio,
     User,
     Wifi,
     WifiObservation,
 )
-from ichnaea.tests.base import (
-    CeleryAppTestCase,
-    GB_LAT,
-    GB_LON,
-    GB_MCC,
+from ichnaea.tests.base import CeleryAppTestCase
+from ichnaea.tests.factories import (
+    CellFactory,
+    WifiFactory,
 )
 from ichnaea.util import utcnow
 
@@ -20,45 +18,31 @@ from ichnaea.util import utcnow
 class TestGeoSubmit(CeleryAppTestCase):
 
     def test_ok_cell(self):
-        app = self.app
         session = self.session
-        cell = Cell()
-        cell.lat = GB_LAT
-        cell.lon = GB_LON
-        cell.radio = Radio.cdma
-        cell.mcc = GB_MCC
-        cell.mnc = 1
-        cell.lac = 2
-        cell.cid = 1234
-        cell.range = 10000
-        cell.total_measures = 1
-        cell.new_measures = 0
+        cell = CellFactory()
+        new_cell = CellFactory.build()
+        session.flush()
 
-        session.add(cell)
-        session.commit()
-
-        res = app.post_json(
+        res = self.app.post_json(
             '/v1/geosubmit?key=test',
             {"items": [
-                {"latitude": GB_LAT + 0.1,
-                 "longitude": GB_LON + 0.1,
-                 "accuracy": 12.4,
-                 "radioType": Radio.cdma.name,
+                {"latitude": cell.lat,
+                 "longitude": cell.lon,
+                 "radioType": cell.radio.name,
                  "cellTowers": [{
-                     "cellId": 1234,
-                     "locationAreaCode": 2,
-                     "mobileCountryCode": GB_MCC,
-                     "mobileNetworkCode": 1,
+                     "mobileCountryCode": cell.mcc,
+                     "mobileNetworkCode": cell.mnc,
+                     "locationAreaCode": cell.lac,
+                     "cellId": cell.cid,
                  }]},
-                {"latitude": GB_LAT - 0.1,
-                 "longitude": GB_LON - 0.1,
-                 "accuracy": 22.4,
+                {"latitude": new_cell.lat,
+                 "longitude": new_cell.lon,
                  "cellTowers": [{
-                     "radioType": "wcdma",
-                     "cellId": 2234,
-                     "locationAreaCode": 22,
-                     "mobileCountryCode": GB_MCC,
-                     "mobileNetworkCode": 2,
+                     "radioType": new_cell.radio.name,
+                     "mobileCountryCode": new_cell.mcc,
+                     "mobileNetworkCode": new_cell.mnc,
+                     "locationAreaCode": new_cell.lac,
+                     "cellId": new_cell.cid,
                  }]},
             ]},
             status=200)
@@ -68,11 +52,10 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEqual(res.json, {})
 
         self.assertEqual(session.query(Cell).count(), 2)
-
         observations = session.query(CellObservation).all()
         self.assertEqual(len(observations), 2)
         radios = set([obs.radio for obs in observations])
-        self.assertEqual(radios, set([Radio.cdma, Radio.umts]))
+        self.assertEqual(radios, set([cell.radio, new_cell.radio]))
 
         self.check_stats(
             counter=['geosubmit.api_key.test',
@@ -89,32 +72,31 @@ class TestGeoSubmit(CeleryAppTestCase):
                    'request.v1.geosubmit'])
 
     def test_ok_no_existing_cell(self):
-        app = self.app
         session = self.session
         now_ms = int(time.time() * 1000)
         first_of_month = utcnow().replace(day=1, hour=0, minute=0, second=0)
+        cell = CellFactory.build()
 
-        res = app.post_json(
+        res = self.app.post_json(
             '/v1/geosubmit?key=test',
             {"items": [
-                {"latitude": GB_LAT,
-                 "longitude": GB_LON,
+                {"latitude": cell.lat,
+                 "longitude": cell.lon,
                  "accuracy": 12.4,
                  "altitude": 100.1,
                  "altitudeAccuracy": 23.7,
                  "heading": 45.0,
                  "speed": 3.6,
                  "timestamp": now_ms,
-                 "radioType": Radio.gsm.name,
                  "cellTowers": [{
-                     "radioType": Radio.lte.name,
-                     "cellId": 1234,
-                     "locationAreaCode": 2,
-                     "mobileCountryCode": GB_MCC,
-                     "mobileNetworkCode": 1,
+                     "radioType": cell.radio.name,
+                     "mobileCountryCode": cell.mcc,
+                     "mobileNetworkCode": cell.mnc,
+                     "locationAreaCode": cell.lac,
+                     "cellId": cell.cid,
                      "age": 3,
                      "asu": 31,
-                     "psc": 15,
+                     "psc": cell.psc,
                      "signalStrength": -51,
                      "timingAdvance": 1,
                  }]},
@@ -125,67 +107,51 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEqual(res.json, {})
 
         self.assertEquals(session.query(Cell).count(), 1)
-
-        # check that one new observation was created
         result = session.query(CellObservation).all()
         self.assertEquals(len(result), 1)
         obs = result[0]
-        self.assertEqual(obs.lat, GB_LAT)
-        self.assertEqual(obs.lon, GB_LON)
+        for name in ('lat', 'lon', 'radio', 'mcc', 'mnc', 'lac', 'cid', 'psc'):
+            self.assertEqual(getattr(obs, name), getattr(cell, name))
         self.assertEqual(obs.accuracy, 12)
         self.assertEqual(obs.altitude, 100)
         self.assertEqual(obs.altitude_accuracy, 24)
         self.assertEqual(obs.heading, 45.0)
         self.assertEqual(obs.speed, 3.6)
         self.assertEqual(obs.time, first_of_month)
-        self.assertEqual(obs.radio, Radio.lte)
-        self.assertEqual(obs.mcc, GB_MCC)
-        self.assertEqual(obs.mnc, 1)
-        self.assertEqual(obs.lac, 2)
-        self.assertEqual(obs.cid, 1234)
-        self.assertEqual(obs.psc, 15)
         self.assertEqual(obs.asu, 31)
         self.assertEqual(obs.signal, -51)
         self.assertEqual(obs.ta, 1)
 
     def test_ok_wifi(self):
-        app = self.app
         session = self.session
-        wifis = [
-            Wifi(key="101010101010", lat=1.0, lon=1.0),
-            Wifi(key="202020202020", lat=1.001, lon=1.002),
-            Wifi(key="303030303030", lat=1.002, lon=1.004),
-            Wifi(key="404040404040", lat=None, lon=None),
-        ]
-        session.add_all(wifis)
-        session.commit()
-        res = app.post_json(
+        wifis = WifiFactory.create_batch(4)
+        new_wifi = WifiFactory()
+        session.flush()
+        res = self.app.post_json(
             '/v1/geosubmit?key=test',
-            {"items": [
-                {"latitude": 12.34567,
-                 "longitude": 23.45678,
-                 "accuracy": 12.4,
-                 "radioType": Radio.gsm.name,
-                 "wifiAccessPoints": [
-                     {"macAddress": "101010101010"},
-                     {"macAddress": "202020202020"},
-                     {"macAddress": "303030303030"},
-                     {"macAddress": "404040404040"},
-                     {"macAddress": "505050505050"},
-                 ]},
+            {"items": [{
+                "latitude": wifis[0].lat,
+                "longitude": wifis[0].lon,
+                "wifiAccessPoints": [
+                    {"macAddress": wifis[0].key},
+                    {"macAddress": wifis[1].key},
+                    {"macAddress": wifis[2].key},
+                    {"macAddress": wifis[3].key},
+                    {"macAddress": new_wifi.key},
+                ]},
             ]},
             status=200)
 
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {})
 
-        # Check that 505050505050 exists
+        # Check that new wifi exists
         query = session.query(Wifi)
-        count = query.filter(Wifi.key == "505050505050").count()
-        self.assertEquals(1, count)
+        count = query.filter(Wifi.key == new_wifi.key).count()
+        self.assertEquals(count, 1)
 
         # check that WifiObservation records are created
-        self.assertEquals(5, session.query(WifiObservation).count())
+        self.assertEquals(session.query(WifiObservation).count(), 5)
 
         self.check_stats(
             counter=['items.api_log.test.uploaded.batches',
@@ -196,18 +162,16 @@ class TestGeoSubmit(CeleryAppTestCase):
             timer=['items.api_log.test.uploaded.batch_size'])
 
     def test_ok_no_existing_wifi(self):
-        app = self.app
         session = self.session
+        wifi = WifiFactory.build()
 
-        res = app.post_json(
+        res = self.app.post_json(
             '/v1/geosubmit?key=test',
             {"items": [
-                {"latitude": GB_LAT,
-                 "longitude": GB_LON,
-                 "accuracy": 12.4,
-                 "radioType": Radio.gsm.name,
+                {"latitude": wifi.lat,
+                 "longitude": wifi.lon,
                  "wifiAccessPoints": [{
-                     "macAddress": "505050505050",
+                     "macAddress": wifi.key,
                      "age": 3,
                      "channel": 6,
                      "frequency": 2437,
@@ -220,28 +184,30 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {})
 
-        # Check that 505050505050 exists
+        # Check that wifi exists
         query = session.query(Wifi)
-        count = query.filter(Wifi.key == "505050505050").count()
+        count = query.filter(Wifi.key == wifi.key).count()
         self.assertEquals(count, 1)
 
         # check that WifiObservation records are created
         result = session.query(WifiObservation).all()
         self.assertEquals(len(result), 1)
         obs = result[0]
-        self.assertEqual(obs.lat, GB_LAT)
-        self.assertEqual(obs.lon, GB_LON)
+        self.assertEqual(obs.lat, wifi.lat)
+        self.assertEqual(obs.lon, wifi.lon)
+        self.assertEqual(obs.key, wifi.key)
         self.assertEqual(obs.channel, 6)
         self.assertEqual(obs.signal, -77)
         self.assertEqual(obs.snr, 13)
 
     def test_invalid_json(self):
         session = self.session
+        wifi = WifiFactory.build()
         self.app.post_json(
             '/v1/geosubmit?key=test',
             {"items": [
-                {"latitude": GB_LAT,
-                 "longitude": GB_LON,
+                {"latitude": wifi.lat,
+                 "longitude": wifi.lon,
                  "wifiAccessPoints": [{
                      "macAddress": 10,
                  }]},
@@ -251,13 +217,14 @@ class TestGeoSubmit(CeleryAppTestCase):
 
     def test_invalid_latitude(self):
         session = self.session
+        wifi = WifiFactory.build()
         self.app.post_json(
             '/v1/geosubmit?key=test',
             {"items": [
                 {"latitude": 12345.0,
-                 "longitude": GB_LON,
+                 "longitude": wifi.lon,
                  "wifiAccessPoints": [{
-                     "macAddress": "505050505050",
+                     "macAddress": wifi.key,
                  }]},
             ]},
             status=200)
@@ -265,17 +232,18 @@ class TestGeoSubmit(CeleryAppTestCase):
 
     def test_invalid_cell(self):
         session = self.session
+        cell = CellFactory.build()
         self.app.post_json(
             '/v1/geosubmit?key=test',
             {"items": [
-                {"latitude": GB_LAT,
-                 "longitude": GB_LON,
+                {"latitude": cell.lat,
+                 "longitude": cell.lon,
                  "cellTowers": [{
-                     "radioType": Radio.gsm.name,
-                     "cellId": 12,
-                     "locationAreaCode": 34,
-                     "mobileCountryCode": GB_MCC,
+                     "radioType": cell.radio.name,
+                     "mobileCountryCode": cell.mcc,
                      "mobileNetworkCode": 2000,
+                     "locationAreaCode": cell.lac,
+                     "cellId": cell.cid,
                  }]},
             ]},
             status=200)
@@ -283,23 +251,24 @@ class TestGeoSubmit(CeleryAppTestCase):
 
     def test_duplicated_cell_observations(self):
         session = self.session
+        cell = CellFactory.build()
         self.app.post_json(
             '/v1/geosubmit?key=test',
             {"items": [
-                {"latitude": GB_LAT,
-                 "longitude": GB_LON,
+                {"latitude": cell.lat,
+                 "longitude": cell.lon,
                  "cellTowers": [
-                     {"radioType": Radio.gsm.name,
-                      "cellId": 12,
-                      "locationAreaCode": 34,
-                      "mobileCountryCode": GB_MCC,
-                      "mobileNetworkCode": 5,
+                     {"radioType": cell.radio.name,
+                      "mobileCountryCode": cell.mcc,
+                      "mobileNetworkCode": cell.mnc,
+                      "locationAreaCode": cell.lac,
+                      "cellId": cell.cid,
                       "asu": 10},
-                     {"radioType": Radio.gsm.name,
-                      "cellId": 12,
-                      "locationAreaCode": 34,
-                      "mobileCountryCode": GB_MCC,
-                      "mobileNetworkCode": 5,
+                     {"radioType": cell.radio.name,
+                      "mobileCountryCode": cell.mcc,
+                      "mobileNetworkCode": cell.mnc,
+                      "locationAreaCode": cell.lac,
+                      "cellId": cell.cid,
                       "asu": 16},
                  ]},
             ]},
@@ -308,15 +277,16 @@ class TestGeoSubmit(CeleryAppTestCase):
 
     def test_duplicated_wifi_observations(self):
         session = self.session
+        wifi = WifiFactory.build()
         self.app.post_json(
             '/v1/geosubmit?key=test',
             {"items": [
-                {"latitude": GB_LAT,
-                 "longitude": GB_LON,
+                {"latitude": wifi.lat,
+                 "longitude": wifi.lon,
                  "wifiAccessPoints": [
-                     {"macAddress": "101010101010",
+                     {"macAddress": wifi.key,
                       "signalStrength": -92},
-                     {"macAddress": "101010101010",
+                     {"macAddress": wifi.key,
                       "signalStrength": -77},
                  ]},
             ]},
@@ -327,20 +297,16 @@ class TestGeoSubmit(CeleryAppTestCase):
         nickname = 'World Tr\xc3\xa4veler'
         email = 'world_tr\xc3\xa4veler@email.com'
         session = self.session
+        wifis = WifiFactory.create_batch(2)
         self.app.post_json(
             '/v1/geosubmit?key=test',
-            {"items": [
-                {"latitude": 12.34567,
-                 "longitude": 23.45678,
-                 "accuracy": 12.4,
-                 "radioType": Radio.gsm.name,
-                 "wifiAccessPoints": [
-                     {"macAddress": "101010101010"},
-                     {"macAddress": "202020202020"},
-                     {"macAddress": "303030303030"},
-                     {"macAddress": "404040404040"},
-                     {"macAddress": "505050505050"},
-                 ]},
+            {"items": [{
+                "latitude": wifis[0].lat,
+                "longitude": wifis[0].lon,
+                "wifiAccessPoints": [
+                    {"macAddress": wifis[0].key},
+                    {"macAddress": wifis[1].key},
+                ]},
             ]},
             headers={
                 'X-Nickname': nickname,
@@ -355,12 +321,12 @@ class TestGeoSubmit(CeleryAppTestCase):
 
     def test_batches(self):
         session = self.session
-        EXPECTED_RECORDS = 110
-        wifi_data = [{"macAddress": "101010101010"}]
-        items = [{"latitude": GB_LAT,
-                  "longitude": GB_LON + (i / 10000.0),
-                  "wifiAccessPoints": wifi_data}
-                 for i in range(EXPECTED_RECORDS)]
+        batch_size = 110
+        wifis = WifiFactory.create_batch(batch_size)
+        items = [{"latitude": wifis[i].lat,
+                  "longitude": wifis[i].lon + (i / 10000.0),
+                  "wifiAccessPoints": [{"macAddress": wifis[i].key}]}
+                 for i in range(batch_size)]
 
         # let's add a bad one, this will just be skipped
         items.append({'lat': 10, 'lon': 10, 'whatever': 'xx'})
@@ -368,4 +334,4 @@ class TestGeoSubmit(CeleryAppTestCase):
                            {"items": items}, status=200)
 
         result = session.query(WifiObservation).all()
-        self.assertEqual(len(result), EXPECTED_RECORDS)
+        self.assertEqual(len(result), batch_size)

@@ -68,6 +68,7 @@ class CellAreaPositionFactory(BaseFactory):
 class CellPositionFactory(CellAreaPositionFactory):
 
     cid = fuzzy.FuzzyInteger(1000, 9999)
+    psc = fuzzy.FuzzyInteger(100, 500)
     range = 2000
 
 
