@@ -122,6 +122,40 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEqual(obs.signal, -51)
         self.assertEqual(obs.ta, 1)
 
+    def test_ok_partial_cell(self):
+        session = self.session
+        cell = CellFactory()
+        session.flush()
+
+        res = self.app.post_json(
+            '/v1/geosubmit?key=test',
+            {"items": [
+                {"latitude": cell.lat,
+                 "longitude": cell.lon,
+                 "cellTowers": [{
+                     "radioType": cell.radio.name,
+                     "mobileCountryCode": cell.mcc,
+                     "mobileNetworkCode": cell.mnc,
+                     "locationAreaCode": cell.lac,
+                     "cellId": cell.cid,
+                     "psc": cell.psc}, {
+                     "radioType": cell.radio.name,
+                     "mobileCountryCode": cell.mcc,
+                     "mobileNetworkCode": cell.mnc,
+                     "psc": cell.psc + 1,
+                 }]},
+            ]},
+            status=200)
+
+        # check that we get an empty response
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {})
+
+        observations = session.query(CellObservation).all()
+        self.assertEqual(len(observations), 2)
+        pscs = set([obs.psc for obs in observations])
+        self.assertEqual(pscs, set([cell.psc, cell.psc + 1]))
+
     def test_ok_wifi(self):
         session = self.session
         wifis = WifiFactory.create_batch(4)

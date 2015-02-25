@@ -22,9 +22,9 @@ class CellTowerSchema(MappingSchema):
                            validator=OneOf(RADIO_STRINGS),
                            missing=None)
     # mapped to 'cid' for submit
-    cellId = SchemaNode(Integer())
+    cellId = SchemaNode(Integer(), missing=None)
     # mapped to 'lac' for submit
-    locationAreaCode = SchemaNode(Integer())
+    locationAreaCode = SchemaNode(Integer(), missing=None)
     # mapped to 'mcc' for submit
     mobileCountryCode = SchemaNode(Integer())
     # mapped to 'mnc' for submit
