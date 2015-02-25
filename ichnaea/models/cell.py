@@ -156,13 +156,11 @@ class ValidCellAreaSchema(ValidCellAreaKeySchema,
 class CellAreaMixin(CellAreaKeyMixin, TimeTrackingMixin,
                     PositionMixin, CreationMixin):
 
+    _valid_schema = ValidCellAreaSchema
+
     range = Column(Integer)
     avg_cell_range = Column(Integer)
     num_cells = Column(Integer(unsigned=True))
-
-    @classmethod
-    def valid_schema(cls):
-        return ValidCellAreaSchema
 
 
 class ValidCellKeySchema(ValidCellAreaKeySchema):
@@ -272,6 +270,7 @@ class Cell(CellMixin, StationMixin, CreationMixin, _Model):
         Index('cell_new_measures_idx', 'new_measures'),
         Index('cell_total_measures_idx', 'total_measures'),
     )
+    _valid_schema = ValidCellSchema
 
     def __init__(self, *args, **kw):
         if 'new_measures' not in kw:
@@ -279,10 +278,6 @@ class Cell(CellMixin, StationMixin, CreationMixin, _Model):
         if 'total_measures' not in kw:
             kw['total_measures'] = 0
         super(Cell, self).__init__(*args, **kw)
-
-    @classmethod
-    def valid_schema(cls):
-        return ValidCellSchema
 
 
 class ValidOCIDCellSchema(ValidCellSchema):
@@ -298,12 +293,9 @@ class OCIDCell(CellMixin, BaseStationMixin, CreationMixin, _Model):
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
         Index('ocid_cell_created_idx', 'created'),
     )
+    _valid_schema = ValidOCIDCellSchema
 
     changeable = Column(Boolean)
-
-    @classmethod
-    def valid_schema(cls):
-        return ValidOCIDCellSchema
 
     @property
     def min_lat(self):

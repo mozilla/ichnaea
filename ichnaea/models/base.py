@@ -39,14 +39,12 @@ _Model = declarative_base(cls=BaseModel)
 
 class ValidationMixin(object):
 
-    @classmethod
-    def valid_schema(cls):  # pragma: no cover
-        raise NotImplementedError
+    _valid_schema = None
 
     @classmethod
     def validate(cls, entry, _raise_invalid=False, **kw):
         try:
-            validated = cls.valid_schema()().deserialize(entry, **kw)
+            validated = cls._valid_schema().deserialize(entry, **kw)
         except colander.Invalid:
             if _raise_invalid:  # pragma: no cover
                 raise

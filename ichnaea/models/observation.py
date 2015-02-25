@@ -119,6 +119,8 @@ class ValidReportSchema(ValidPositionSchema):
 
 class Report(PositionMixin, ValidationMixin):
 
+    _valid_schema = ValidReportSchema
+
     report_id = Column(UUIDColumn(length=16))
 
     created = Column(DateTime)  # the insert time of the record into the DB
@@ -133,10 +135,6 @@ class Report(PositionMixin, ValidationMixin):
 
     # http://dev.w3.org/geo/api/spec-source.html#speed
     speed = Column(Float)
-
-    @classmethod
-    def valid_schema(cls):
-        return ValidReportSchema
 
 
 class ObservationMixin(CreationMixin, BigIdMixin, Report):
@@ -177,14 +175,11 @@ class ValidCellLookupSchema(ValidCellKeySchema):
 class CellLookup(CellKeyPscMixin, ValidationMixin):
 
     _hashkey_cls = CellKey
+    _valid_schema = ValidCellLookupSchema
 
     asu = Column(SmallInteger)
     signal = Column(SmallInteger)
     ta = Column(TinyInteger)
-
-    @classmethod
-    def valid_schema(cls):
-        return ValidCellLookupSchema
 
 
 class ValidCellReportSchema(ValidCellLookupSchema):
@@ -194,10 +189,7 @@ class ValidCellReportSchema(ValidCellLookupSchema):
 class CellReport(CellLookup):
 
     _hashkey_cls = CellKeyPsc
-
-    @classmethod
-    def valid_schema(cls):
-        return ValidCellReportSchema
+    _valid_schema = ValidCellReportSchema
 
 
 class ValidCellObservationSchema(ValidCellLookupSchema, ValidReportSchema):
@@ -224,10 +216,7 @@ class CellObservation(ObservationMixin, CellReport, _Model):
         Index('cell_measure_created_idx', 'created'),
         Index('cell_measure_key_idx', 'radio', 'mcc', 'mnc', 'lac', 'cid'),
     )
-
-    @classmethod
-    def valid_schema(cls):
-        return ValidCellObservationSchema
+    _valid_schema = ValidCellObservationSchema
 
 
 class ValidWifiLookupSchema(ValidWifiKeySchema):
@@ -278,9 +267,7 @@ class ValidWifiLookupSchema(ValidWifiKeySchema):
 
 class WifiLookup(WifiKeyMixin, ValidationMixin):
 
-    @classmethod
-    def valid_schema(cls):
-        return ValidWifiLookupSchema
+    _valid_schema = ValidWifiLookupSchema
 
 
 class ValidWifiReportSchema(ValidWifiLookupSchema):
@@ -289,13 +276,11 @@ class ValidWifiReportSchema(ValidWifiLookupSchema):
 
 class WifiReport(WifiLookup):
 
+    _valid_schema = ValidWifiReportSchema
+
     channel = Column(SmallInteger)
     signal = Column(SmallInteger)
     snr = Column(SmallInteger)
-
-    @classmethod
-    def valid_schema(cls):
-        return ValidWifiReportSchema
 
 
 class ValidWifiObservationSchema(ValidWifiLookupSchema, ValidReportSchema):
@@ -310,7 +295,4 @@ class WifiObservation(ObservationMixin, WifiReport, _Model):
         Index('wifi_measure_key_idx', 'key'),
         Index('wifi_measure_key_created_idx', 'key', 'created'),
     )
-
-    @classmethod
-    def valid_schema(cls):
-        return ValidWifiObservationSchema
+    _valid_schema = ValidWifiObservationSchema

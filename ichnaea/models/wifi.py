@@ -83,6 +83,7 @@ class Wifi(WifiMixin, StationMixin, CreationMixin, _Model):
         Index('wifi_new_measures_idx', 'new_measures'),
         Index('wifi_total_measures_idx', 'total_measures'),
     )
+    _valid_schema = ValidWifiSchema
 
     def __init__(self, *args, **kw):
         if 'new_measures' not in kw:
@@ -90,10 +91,6 @@ class Wifi(WifiMixin, StationMixin, CreationMixin, _Model):
         if 'total_measures' not in kw:
             kw['total_measures'] = 0
         super(Wifi, self).__init__(*args, **kw)
-
-    @classmethod
-    def valid_schema(cls):
-        return ValidWifiSchema
 
 
 class WifiBlacklist(WifiMixin, StationBlacklistMixin, _Model):
