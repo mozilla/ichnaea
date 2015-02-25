@@ -15,8 +15,8 @@ RADIO_STRINGS = ['gsm', 'cdma', 'wcdma', 'lte']
 
 class CellTowerSchema(MappingSchema):
     # required
-    cellId = SchemaNode(Integer())
-    locationAreaCode = SchemaNode(Integer())
+    cellId = SchemaNode(Integer(), missing=None)
+    locationAreaCode = SchemaNode(Integer(), missing=None)
     radio = SchemaNode(String(),
                        validator=OneOf(RADIO_STRINGS), missing=None)
     mobileCountryCode = SchemaNode(Integer())
@@ -25,6 +25,10 @@ class CellTowerSchema(MappingSchema):
     age = SchemaNode(Integer(), missing=0)
     signalStrength = SchemaNode(Integer(), missing=0)
     timingAdvance = SchemaNode(Integer(), missing=0)
+
+    # The fields below are extra fields which are not part of the
+    # official geolocate API
+    psc = SchemaNode(Integer(), missing=None)
 
 
 class CellTowersSchema(SequenceSchema):

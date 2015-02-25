@@ -17,6 +17,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Allow partial cell ids in geolocate/geosubmit APIs.
+
 - Removed the mixed locate/submit mode from the geosubmit API.
 
 - #402: Avoid multiple validation of common report data fields.

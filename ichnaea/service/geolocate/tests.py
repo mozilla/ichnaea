@@ -49,6 +49,32 @@ class TestGeolocate(AppTestCase):
                                                  "lng": cell.lon},
                                     "accuracy": cell.range})
 
+    def test_ok_partial_cell(self):
+        session = self.session
+        cell = CellFactory()
+        session.flush()
+
+        res = self.app.post_json(
+            '%s?key=test' % self.url, {
+                "cellTowers": [{
+                    "radioType": cell.radio.name,
+                    "mobileCountryCode": cell.mcc,
+                    "mobileNetworkCode": cell.mnc,
+                    "locationAreaCode": cell.lac,
+                    "cellId": cell.cid,
+                    "psc": cell.psc}, {
+                    "radioType": cell.radio.name,
+                    "mobileCountryCode": cell.mcc,
+                    "mobileNetworkCode": cell.mnc,
+                    "psc": cell.psc + 1,
+                }]},
+            status=200)
+
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {"location": {"lat": cell.lat,
+                                                 "lng": cell.lon},
+                                    "accuracy": cell.range})
+
     def test_ok_wifi(self):
         wifi = WifiFactory()
         offset = 0.0001
