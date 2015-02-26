@@ -1,38 +1,22 @@
-import base64
 from datetime import timedelta
-import json
-import zlib
-
-from sqlalchemy.exc import ProgrammingError
-from sqlalchemy import text
 
 from ichnaea.constants import (
     PERMANENT_BLACKLIST_THRESHOLD,
-    TEMPORARY_BLACKLIST_DURATION,
-)
-from ichnaea.data.area import (
-    enqueue_areas,
-    UPDATE_KEY,
 )
 from ichnaea.data.tasks import (
     insert_measures_cell,
     insert_measures_wifi,
     location_update_cell,
     location_update_wifi,
-    remove_cell,
     remove_wifi,
     scan_areas,
 )
-from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
-    constants,
     Cell,
     CellArea,
     CellBlacklist,
     CellObservation,
     Radio,
-    Score,
-    ScoreKey,
     ValidCellKeySchema,
     Wifi,
     WifiBlacklist,
@@ -40,75 +24,16 @@ from ichnaea.models import (
 )
 from ichnaea.tests.base import (
     CeleryTestCase,
-    PARIS_LAT, PARIS_LON, FRANCE_MCC,
     USA_MCC, ATT_MNC,
 )
 from ichnaea.tests.factories import (
     CellFactory,
-    CellAreaFactory,
     CellObservationFactory,
 )
 from ichnaea import util
 
 
 class TestCell(CeleryTestCase):
-
-    def add_line_of_cells_and_scan_lac(self):
-        session = self.session
-        big = 1.0
-        small = big / 10
-        keys = dict(radio=Radio.cdma, mcc=1, mnc=1, lac=1)
-        observations = [
-            CellObservation(lat=ctr + xd, lon=ctr + yd, cid=cell, **keys)
-            for cell in range(10)
-            for ctr in [cell * big]
-            for (xd, yd) in [(small, small),
-                             (small, -small),
-                             (-small, small),
-                             (-small, -small)]
-        ]
-        session.add_all(observations)
-
-        cells = [
-            Cell(lat=ctr, lon=ctr, cid=cell,
-                 new_measures=4, total_measures=1, **keys)
-            for cell in range(10)
-            for ctr in [cell * big]
-        ]
-
-        session.add_all(cells)
-        session.commit()
-        result = location_update_cell.delay(min_new=0,
-                                            max_new=9999,
-                                            batch=len(observations))
-        self.assertEqual(result.get(), (len(cells), 0))
-        scan_areas.delay()
-
-    def test_blacklist(self):
-        now = util.utcnow()
-        session = self.session
-
-        observations = [dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=i, psc=5,
-                             radio=int(Radio.gsm),
-                             lat=PARIS_LAT + i * 0.0000001,
-                             lon=PARIS_LON + i * 0.0000001)
-                        for i in range(1, 4)]
-
-        black = CellBlacklist(
-            mcc=FRANCE_MCC, mnc=2, lac=3, cid=1,
-            radio=Radio.gsm, time=now, count=1,
-        )
-        session.add(black)
-        session.flush()
-
-        result = insert_measures_cell.delay(observations)
-        self.assertEqual(result.get(), 2)
-
-        cell_observations = session.query(CellObservation).all()
-        self.assertEqual(len(cell_observations), 2)
-
-        cells = session.query(Cell).all()
-        self.assertEqual(len(cells), 2)
 
     def test_blacklist_moving_cells(self):
         now = util.utcnow()
@@ -297,168 +222,6 @@ class TestCell(CeleryTestCase):
                 self.assertEqual(insert_result.get(), 0)
                 self.assertEqual(update_result.get(), (0, 0))
 
-    def test_blacklist_time_used_as_creation_time(self):
-        now = util.utcnow()
-        last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
-        session = self.session
-
-        cell_key = {'mcc': FRANCE_MCC, 'mnc': 2, 'lac': 3, 'cid': 1}
-
-        session.add(CellBlacklist(time=last_week, count=1,
-                                  radio=Radio.gsm, **cell_key))
-        session.flush()
-
-        # add a new entry for the previously blacklisted cell
-        obs = dict(lat=PARIS_LAT, lon=PARIS_LON,
-                   radio=int(Radio.gsm), **cell_key)
-        insert_measures_cell.delay([obs]).get()
-
-        # the cell was inserted again
-        cells = session.query(Cell).all()
-        self.assertEqual(len(cells), 1)
-
-        # and the creation date was set to the date of the blacklist entry
-        self.assertEqual(cells[0].created, last_week)
-
-    def test_insert_observations(self):
-        session = self.session
-        time = util.utcnow() - timedelta(days=1)
-        today = util.utcnow().date()
-        mcc = FRANCE_MCC
-
-        session.add(Cell(radio=Radio.gsm, mcc=mcc, mnc=2, lac=3,
-                         cid=4, psc=5, new_measures=2,
-                         total_measures=5))
-        session.add(Score(key=ScoreKey.new_cell,
-                          userid=1, time=today, value=7))
-        session.flush()
-
-        obs = dict(
-            created=time,
-            lat=PARIS_LAT,
-            lon=PARIS_LON,
-            time=time, accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=int(Radio.gsm),
-        )
-        entries = [
-            # Note that this first entry will be skipped as it does
-            # not include (lac, cid) or (psc)
-            {"mcc": mcc, "mnc": 2, "signal": -100},
-
-            {"mcc": mcc, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
-            {"mcc": mcc, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
-            {"mcc": mcc, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 15},
-            {"mcc": mcc, "mnc": 2, "lac": 3, "cid": 7, "psc": 5},
-        ]
-        for e in entries:
-            e.update(obs)
-
-        result = insert_measures_cell.delay(entries, userid=1)
-
-        self.assertEqual(result.get(), 4)
-        observations = session.query(CellObservation).all()
-        self.assertEqual(len(observations), 4)
-        self.assertEqual(set([o.mcc for o in observations]), set([mcc]))
-        self.assertEqual(set([o.mnc for o in observations]), set([2]))
-        self.assertEqual(set([o.asu for o in observations]), set([-1, 8, 15]))
-        self.assertEqual(set([o.psc for o in observations]), set([5]))
-        self.assertEqual(set([o.signal for o in observations]), set([0]))
-
-        cells = session.query(Cell).all()
-        self.assertEqual(len(cells), 2)
-        self.assertEqual(set([c.mcc for c in cells]), set([mcc]))
-        self.assertEqual(set([c.mnc for c in cells]), set([2]))
-        self.assertEqual(set([c.lac for c in cells]), set([3]))
-        self.assertEqual(set([c.cid for c in cells]), set([4, 7]))
-        self.assertEqual(set([c.psc for c in cells]), set([5]))
-        self.assertEqual(set([c.new_measures for c in cells]), set([1, 5]))
-        self.assertEqual(set([c.total_measures for c in cells]), set([1, 8]))
-
-        scores = session.query(Score).all()
-        self.assertEqual(len(scores), 1)
-        self.assertEqual(scores[0].key, ScoreKey.new_cell)
-        self.assertEqual(scores[0].value, 8)
-
-        # test duplicate execution
-        result = insert_measures_cell.delay(entries, userid=1)
-        self.assertEqual(result.get(), 4)
-        # TODO this task isn't idempotent yet
-        observations = session.query(CellObservation).all()
-        self.assertEqual(len(observations), 8)
-
-    def test_insert_observations_invalid_lac(self):
-        session = self.session
-        schema = ValidCellKeySchema()
-        time = util.utcnow() - timedelta(days=1)
-        today = util.utcnow().date()
-
-        session.add(Cell(radio=Radio.gsm, mcc=FRANCE_MCC, mnc=2,
-                         lac=3, cid=4, new_measures=2, total_measures=5))
-        session.add(Score(key=ScoreKey.new_cell,
-                          userid=1, time=today, value=7))
-        session.flush()
-
-        obs = dict(
-            created=time,
-            lat=PARIS_LAT,
-            lon=PARIS_LON,
-            time=time, accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=int(Radio.gsm))
-        entries = [
-            {"mcc": FRANCE_MCC, "mnc": 2, "lac": constants.MAX_LAC_ALL + 1,
-             "cid": constants.MAX_CID_ALL + 1, "psc": 5, "asu": 8},
-            {"mcc": FRANCE_MCC, "mnc": 2, "lac": schema.fields['lac'].missing,
-             "cid": schema.fields['cid'].missing, "psc": 5, "asu": 8},
-        ]
-        for e in entries:
-            e.update(obs)
-
-        result = insert_measures_cell.delay(entries, userid=1)
-        self.assertEqual(result.get(), 2)
-
-        observations = session.query(CellObservation).all()
-        self.assertEqual(len(observations), 2)
-        self.assertEqual(
-            set([o.lac for o in observations]),
-            set([schema.fields['lac'].missing]))
-        self.assertEqual(
-            set([o.cid for o in observations]),
-            set([schema.fields['cid'].missing]))
-
-        # Nothing should change in the initially created Cell record
-        cells = session.query(Cell).all()
-        self.assertEqual(len(cells), 1)
-        self.assertEqual(set([c.new_measures for c in cells]), set([2]))
-        self.assertEqual(set([c.total_measures for c in cells]), set([5]))
-
-    def test_insert_observations_out_of_range(self):
-        session = self.session
-        time = util.utcnow() - timedelta(days=1)
-
-        obs = dict(
-            created=time,
-            lat=PARIS_LAT,
-            lon=PARIS_LON,
-            time=time, accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=int(Radio.gsm), mcc=FRANCE_MCC,
-            mnc=2, lac=3, cid=4)
-        entries = [
-            {"asu": 8, "signal": -70, "ta": 32},
-            {"asu": -10, "signal": -300, "ta": -10},
-            {"asu": 256, "signal": 16, "ta": 128},
-        ]
-        for e in entries:
-            e.update(obs)
-
-        result = insert_measures_cell.delay(entries)
-        self.assertEqual(result.get(), 3)
-
-        observations = session.query(CellObservation).all()
-        self.assertEqual(len(observations), 3)
-        self.assertEqual(set([o.asu for o in observations]), set([-1, 8]))
-        self.assertEqual(set([o.signal for o in observations]), set([0, -70]))
-        self.assertEqual(set([o.ta for o in observations]), set([0, 32]))
-
     def test_location_update_cell(self):
         now = util.utcnow()
         before = now - timedelta(hours=1)
@@ -553,208 +316,8 @@ class TestCell(CeleryTestCase):
         # to any corner is 556m
         self.assertEqual(cell.range, 556)
 
-    def test_removal_updates_lac(self):
-        session = self.session
-        keys = dict(radio=Radio.cdma, mcc=1, mnc=1, lac=1)
-
-        # setup: build LAC as above
-        self.add_line_of_cells_and_scan_lac()
-
-        # confirm we got one
-        lac = session.query(CellArea).filter(CellArea.lac == 1).first()
-
-        self.assertEqual(lac.lat, 4.5)
-        self.assertEqual(lac.lon, 4.5)
-        self.assertEqual(lac.range, 723001)
-
-        # Remove cells one by one checking that the LAC
-        # changes shape along the way.
-        steps = [
-            ((5.0, 5.0), 644242),
-            ((5.5, 5.5), 565475),
-            ((6.0, 6.0), 486721),
-            ((6.5, 6.5), 408000),
-            ((7.0, 7.0), 329334),
-            ((7.5, 7.5), 250743),
-            ((8.0, 8.0), 172249),
-            ((8.5, 8.5), 93871),
-            ((9.0, 9.0), 15630),
-        ]
-        for i in range(9):
-            session.expire(lac)
-            k = Cell.to_hashkey(cid=i, **keys)
-            result = remove_cell.delay([k])
-            self.assertEqual(1, result.get())
-            result = scan_areas.delay()
-            self.assertEqual(1, result.get())
-            lac = session.query(CellArea).filter(CellArea.lac == 1).first()
-
-            self.assertEqual(lac.lat, steps[i][0][0])
-            self.assertEqual(lac.lon, steps[i][0][1])
-            self.assertEqual(lac.range, steps[i][1])
-
-        # Remove final cell, check LAC is gone
-        k = Cell.to_hashkey(cid=9, **keys)
-        result = remove_cell.delay([k])
-        self.assertEqual(1, result.get())
-        result = scan_areas.delay()
-        self.assertEqual(1, result.get())
-        lac = session.query(CellArea).filter(CellArea.lac == 1).first()
-        self.assertEqual(lac, None)
-
-    def test_scan_areas_asymmetric(self):
-        session = self.session
-        big = 0.1
-        small = big / 10
-        keys = dict(radio=Radio.cdma, mcc=1, mnc=1, lac=1)
-        observations = [
-            CellObservation(lat=ctr + xd, lon=ctr + yd, cid=cell, **keys)
-            for cell in range(6)
-            for ctr in [(2 ** cell) * big]
-            for (xd, yd) in [(small, small),
-                             (small, -small),
-                             (-small, small),
-                             (-small, -small)]
-        ]
-        session.add_all(observations)
-
-        cells = [
-            Cell(lat=ctr, lon=ctr, cid=cell,
-                 new_measures=4, total_measures=1, **keys)
-            for cell in range(6)
-            for ctr in [(2 ** cell) * big]
-        ]
-
-        session.add_all(cells)
-        session.commit()
-        result = location_update_cell.delay(min_new=0,
-                                            max_new=9999,
-                                            batch=len(observations))
-        self.assertEqual(result.get(), (len(cells), 0))
-        scan_areas.delay()
-        lac = session.query(CellArea).filter(CellArea.lac == 1).first()
-
-        # We produced a sequence of 0.02-degree-on-a-side
-        # cell bounding boxes centered at
-        # [0, 0.2, 0.4, 0.8, 1.6, 3.2] degrees.
-        # So the lower-left corner is at (-0.01, -0.01)
-        # and the upper-right corner is at (3.21, 3.21)
-        # we should therefore see a LAC centroid at (1.05, 1.05)
-        # with a range of 339.540m
-        self.assertEqual(lac.lat, 1.05)
-        self.assertEqual(lac.lon, 1.05)
-        self.assertEqual(lac.range, 339540)
-
-    def test_scan_areas_race_with_location_update(self):
-        session = self.session
-
-        # First batch of cell observations for CID 1
-        keys = dict(radio=Radio.cdma, mcc=1, mnc=1, lac=1, cid=1)
-        cell = Cell(new_measures=4, total_measures=1, **keys)
-        observations = [
-            CellObservation(lat=1.0, lon=1.0, **keys),
-            CellObservation(lat=1.0, lon=1.0, **keys),
-            CellObservation(lat=1.0, lon=1.0, **keys),
-            CellObservation(lat=1.0, lon=1.0, **keys),
-        ]
-        session.add(cell)
-        session.add_all(observations)
-        session.commit()
-
-        # Periodic location_update_cell runs and updates CID 1
-        # to have a location, inserts LAC 1 with new_measures=1
-        # which will be picked up by the next scan_lac.
-        result = location_update_cell.delay(min_new=1)
-        self.assertEqual(result.get(), (1, 0))
-
-        # Second batch of cell observations for CID 2
-        keys['cid'] = 2
-        cell = Cell(new_measures=4, total_measures=1, **keys)
-        observations = [
-            CellObservation(lat=1.0, lon=1.0, **keys),
-            CellObservation(lat=1.0, lon=1.0, **keys),
-            CellObservation(lat=1.0, lon=1.0, **keys),
-            CellObservation(lat=1.0, lon=1.0, **keys),
-        ]
-        session.add(cell)
-        session.add_all(observations)
-        session.commit()
-
-        # Periodic LAC scan runs, picking up LAC 1; this could
-        # accidentally pick up CID 2, but it should not since it
-        # has not had its location updated yet. If there's no
-        # exception here, CID 2 is properly ignored.
-        scan_areas.delay()
-
-    def test_scan_areas_empty(self):
-        # test tasks with an empty queue
-        self.assertEqual(scan_areas.delay().get(), 0)
-        self.check_expected_heka_messages(
-            sentry=[('msg', RAVEN_ERROR, 0)]
-        )
-
-    def test_scan_areas_remove(self):
-        session = self.session
-        redis_client = self.redis_client
-
-        # create an orphaned lac entry
-        area = CellAreaFactory()
-        session.flush()
-        enqueue_areas(session, redis_client,
-                      [area.hashkey()], UPDATE_KEY['cell_lac'])
-
-        # after scanning the orphaned record gets removed
-        self.assertEqual(scan_areas.delay().get(), 1)
-        areas = session.query(CellArea).all()
-        self.assertEqual(areas, [])
-
-    def test_scan_areas_update(self):
-        session = self.session
-        self.add_line_of_cells_and_scan_lac()
-        today = util.utcnow().date()
-
-        lac = session.query(CellArea).filter(Cell.lac == 1).first()
-
-        # We produced a sequence of 0.2-degree-on-a-side
-        # cell bounding boxes centered at [0, 1, 2, ..., 9]
-        # degrees. So the lower-left corner is at (-0.1, -0.1)
-        # and the upper-right corner is at (9.1, 9.1)
-        # we should therefore see a LAC centroid at (4.5, 4.5)
-        # with a range of 723,001m
-        self.assertEqual(lac.lat, 4.5)
-        self.assertEqual(lac.lon, 4.5)
-        self.assertEqual(lac.range, 723001)
-        self.assertEqual(lac.created.date(), today)
-        self.assertEqual(lac.modified.date(), today)
-        self.assertEqual(lac.num_cells, 10)
-
 
 class TestWifi(CeleryTestCase):
-
-    def test_blacklist(self):
-        utcnow = util.utcnow()
-        session = self.session
-        bad_key = "ab1234567890"
-        good_key = "cd1234567890"
-        black = WifiBlacklist(time=utcnow, count=1, key=bad_key)
-        session.add(black)
-        session.flush()
-        obs = dict(lat=1, lon=2)
-        entries = [{"key": good_key}, {"key": good_key}, {"key": bad_key}]
-        for e in entries:
-            e.update(obs)
-
-        result = insert_measures_wifi.delay(entries)
-        self.assertEqual(result.get(), 2)
-
-        observations = session.query(WifiObservation).all()
-        self.assertEqual(len(observations), 2)
-        self.assertEqual(
-            set([o.key for o in observations]), set([good_key]))
-
-        wifis = session.query(Wifi).all()
-        self.assertEqual(len(wifis), 1)
-        self.assertEqual(set([w.key for w in wifis]), set([good_key]))
 
     def test_blacklist_moving_wifis(self):
         now = util.utcnow()
@@ -932,85 +495,6 @@ class TestWifi(CeleryTestCase):
                 self.assertEqual(insert_result.get(), 0)
                 self.assertEqual(update_result.get(), (0, 0))
 
-    def test_blacklist_time_used_as_creation_time(self):
-        now = util.utcnow()
-        last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
-        session = self.session
-
-        wifi_key = "ab1234567890"
-
-        session.add(WifiBlacklist(time=last_week, count=1, key=wifi_key))
-        session.flush()
-
-        # add a new entry for the previously blacklisted wifi
-        obs = dict(lat=PARIS_LAT, lon=PARIS_LON, key=wifi_key)
-        insert_measures_wifi.delay([obs]).get()
-
-        # the wifi was inserted again
-        wifis = session.query(Wifi).all()
-        self.assertEqual(len(wifis), 1)
-
-        # and the creation date was set to the date of the blacklist entry
-        self.assertEqual(wifis[0].created, last_week)
-
-    def test_insert_observations(self):
-        session = self.session
-        time = util.utcnow() - timedelta(days=1)
-        today = util.utcnow().date()
-
-        session.add(Wifi(key="ab1234567890",
-                         new_measures=0, total_measures=0))
-        session.add(Score(key=ScoreKey.new_wifi,
-                          userid=1, time=today, value=7))
-        session.flush()
-
-        obs = dict(
-            created=time, lat=1.0, lon=2.0,
-            time=time, accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=-1,
-            heading=52.9,
-            speed=158.5,
-        )
-        entries = [
-            {"key": "ab1234567890", "channel": 11, "signal": -80},
-            {"key": "ab1234567890", "channel": 3, "signal": -90},
-            {"key": "ab1234567890", "channel": 3, "signal": -80},
-            {"key": "cd3456789012", "channel": 3, "signal": -90},
-        ]
-        for e in entries:
-            e.update(obs)
-        result = insert_measures_wifi.delay(entries, userid=1)
-        self.assertEqual(result.get(), 4)
-
-        observations = session.query(WifiObservation).all()
-        self.assertEqual(len(observations), 4)
-        self.assertEqual(set([o.key for o in observations]),
-                         set(["ab1234567890", "cd3456789012"]))
-        self.assertEqual(set([o.channel for o in observations]), set([3, 11]))
-        self.assertEqual(set([o.signal for o in observations]),
-                         set([-80, -90]))
-        self.assertEqual(set([o.heading or o in observations]), set([52.9]))
-        self.assertEqual(set([o.speed or o in observations]), set([158.5]))
-
-        wifis = session.query(Wifi).all()
-        self.assertEqual(len(wifis), 2)
-        self.assertEqual(set([w.key for w in wifis]), set(["ab1234567890",
-                                                           "cd3456789012"]))
-        self.assertEqual(set([w.new_measures for w in wifis]), set([1, 3]))
-        self.assertEqual(set([w.total_measures for w in wifis]), set([1, 3]))
-
-        scores = session.query(Score).all()
-        self.assertEqual(len(scores), 1)
-        self.assertEqual(scores[0].key, ScoreKey.new_wifi)
-        self.assertEqual(scores[0].value, 8)
-
-        # test duplicate execution
-        result = insert_measures_wifi.delay(entries, userid=1)
-        self.assertEqual(result.get(), 4)
-        # TODO this task isn't idempotent yet
-        observations = session.query(WifiObservation).all()
-        self.assertEqual(len(observations), 8)
-
     def test_location_update_wifi(self):
         now = util.utcnow()
         before = now - timedelta(days=1)
@@ -1131,47 +615,3 @@ class TestWifi(CeleryTestCase):
 
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 0)
-
-
-class TestSubmitErrors(CeleryTestCase):
-    # this is a standalone class to ensure DB isolation for dropping tables
-
-    def tearDown(self):
-        self.setup_tables(self.db_rw.engine)
-        super(TestSubmitErrors, self).tearDown()
-
-    def test_database_error(self):
-        session = self.session
-
-        stmt = text("drop table wifi;")
-        session.execute(stmt)
-
-        entries = [
-            {"lat": 1.0, "lon": 2.0,
-             "key": "ab:12:34:56:78:90", "channel": 11},
-            {"lat": 1.0, "lon": 2.0,
-             "key": "ab:12:34:56:78:90", "channel": 3},
-            {"lat": 1.0, "lon": 2.0,
-             "key": "ab:12:34:56:78:90", "channel": 3},
-            {"lat": 1.0, "lon": 2.0,
-             "key": "cd:12:34:56:78:90", "channel": 3},
-        ]
-
-        try:
-            insert_measures_wifi.delay(entries)
-        except ProgrammingError:
-            pass
-        except Exception as exc:
-            self.fail("Unexpected exception caught: %s" % repr(exc))
-
-        find_msg = self.find_heka_messages
-        messages = find_msg('sentry', RAVEN_ERROR, field_name='msg')
-        self.assertEquals(len(messages), 4)
-
-        payload = messages[0].payload
-        # duplicate raven.base.RavenClient.decode
-        data = json.loads(zlib.decompress(base64.b64decode(payload)))
-        sentry_exc = data['sentry.interfaces.Exception']
-
-        self.assertEqual(sentry_exc['module'], ProgrammingError.__module__)
-        self.assertEqual(sentry_exc['type'], 'ProgrammingError')
