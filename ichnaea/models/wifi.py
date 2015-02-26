@@ -73,6 +73,8 @@ class WifiMixin(BigIdMixin, WifiKeyMixin):
 class ValidWifiSchema(ValidWifiKeySchema, ValidStationSchema):
     """A schema which validates the fields in wifi."""
 
+    new_measures = colander.SchemaNode(colander.Integer(), missing=0)
+
 
 class Wifi(WifiMixin, StationMixin, CreationMixin, _Model):
     __tablename__ = 'wifi'

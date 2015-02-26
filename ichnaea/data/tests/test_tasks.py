@@ -44,7 +44,9 @@ from ichnaea.tests.base import (
     USA_MCC, ATT_MNC,
 )
 from ichnaea.tests.factories import (
+    CellFactory,
     CellAreaFactory,
+    CellObservationFactory,
 )
 from ichnaea import util
 
@@ -489,55 +491,63 @@ class TestCell(CeleryTestCase):
 
     def test_location_update_cell(self):
         now = util.utcnow()
-        before = now - timedelta(days=1)
+        before = now - timedelta(hours=1)
         schema = ValidCellKeySchema()
-        session = self.session
+        obs_factory = CellObservationFactory
 
-        k1 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=3, cid=4)
-        k2 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=6, cid=8)
-        k3 = dict(radio=Radio.cdma, mcc=1, mnc=2,
-                  lac=schema.fields['lac'].missing,
-                  cid=schema.fields['cid'].missing)
-        data = [
-            Cell(new_measures=3, total_measures=5, **k1),
-            CellObservation(lat=1.0, lon=1.0, created=now, **k1),
-            CellObservation(lat=1.002, lon=1.003, created=now, **k1),
-            CellObservation(lat=1.004, lon=1.006, created=now, **k1),
-            # The lac, cid are invalid and should be skipped
-            CellObservation(lat=1.5, lon=1.5, created=now, **k3),
-            CellObservation(lat=1.502, lon=1.503, created=now, **k3),
+        invalid_key = dict(lac=schema.fields['lac'].missing,
+                           cid=schema.fields['cid'].missing)
 
-            Cell(lat=2.0, lon=2.0,
-                 new_measures=2, total_measures=4, **k2),
-            # the lat/lon is bogus and mismatches the line above on purpose
-            # to make sure old observations are skipped
-            CellObservation(lat=-1.0, lon=-1.0, created=before, **k2),
-            CellObservation(lat=-1.0, lon=-1.0, created=before, **k2),
-            CellObservation(lat=2.002, lon=2.004, created=now, **k2),
-            CellObservation(lat=2.002, lon=2.004, created=now, **k2),
+        cell1 = CellFactory(new_measures=3, total_measures=5)
+        lat1, lon1 = (cell1.lat, cell1.lon)
+        key1 = dict(lac=cell1.lac, cid=cell1.cid)
+        obs_factory(lat=lat1, lon=lon1, created=now, **key1)
+        obs_factory(lat=lat1 + 0.004, lon=lon1 + 0.006, created=now, **key1)
+        obs_factory(lat=lat1 + 0.006, lon=lon1 + 0.009, created=now, **key1)
+        # The lac, cid are invalid and should be skipped
+        obs_factory.create_batch(2, created=now, **invalid_key)
 
-        ]
-        session.add_all(data)
-        session.commit()
+        cell2 = CellFactory(lat=lat1 + 1.0, lon=lon1 + 1.0,
+                            new_measures=2, total_measures=4)
+        lat2, lon2 = (cell2.lat, cell2.lon)
+        key2 = dict(lac=cell2.lac, cid=cell2.cid)
+        # the lat/lon is bogus and mismatches the line above on purpose
+        # to make sure old observations are skipped
+        obs_factory(lat=lat2 - 2.0, lon=lon2 - 2.0, created=before, **key2)
+        obs_factory(lat=lat2 - 2.0, lon=lon2 - 2.0, created=before, **key2)
+        obs_factory(lat=lat2 + 0.001, lon=lon2 + 0.002, created=now, **key2)
+        obs_factory(lat=lat2 + 0.003, lon=lon2 + 0.006, created=now, **key2)
+
+        cell3 = CellFactory(new_measures=10, total_measures=100000)
+        lat3, lon3 = (cell3.lat, cell3.lon)
+        obs_factory.create_batch(
+            10, lat=lat3 + 1.0, lon=lon3 + 1.0,
+            **dict(lac=cell3.lac, cid=cell3.cid))
+        self.session.commit()
 
         result = location_update_cell.delay(min_new=1)
-        self.assertEqual(result.get(), (2, 0))
+        self.assertEqual(result.get(), (3, 0))
         self.check_stats(
             total=2,
             timer=['task.data.location_update_cell'],
             gauge=['task.data.location_update_cell.new_measures_1_100'],
         )
 
-        cells = session.query(Cell).all()
-        self.assertEqual(len(cells), 2)
-        self.assertEqual([c.new_measures for c in cells], [0, 0])
+        cells = self.session.query(Cell).all()
+        self.assertEqual(len(cells), 3)
+        self.assertEqual(set([c.new_measures for c in cells]), set([0]))
         for cell in cells:
-            if cell.cid == 4:
-                self.assertEqual(cell.lat, 1.002)
-                self.assertEqual(cell.lon, 1.003)
-            elif cell.cid == 8:
-                self.assertEqual(cell.lat, 2.001)
-                self.assertEqual(cell.lon, 2.002)
+            if cell.hashkey() == cell1.hashkey():
+                self.assertEqual(cell.lat, lat1 + 0.002)
+                self.assertEqual(cell.lon, lon1 + 0.003)
+            if cell.hashkey() == cell2.hashkey():
+                self.assertEqual(cell.lat, lat2 + 0.001)
+                self.assertEqual(cell.lon, lon2 + 0.002)
+            if cell.hashkey() == cell3.hashkey():
+                expected_lat = ((lat3 * 1000) + (lat3 + 1.0) * 10) / 1010
+                expected_lon = ((lon3 * 1000) + (lon3 + 1.0) * 10) / 1010
+                self.assertAlmostEqual(cell.lat, expected_lat, 7)
+                self.assertAlmostEqual(cell.lon, expected_lon, 7)
 
     def test_max_min_range_update(self):
         session = self.session

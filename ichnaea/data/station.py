@@ -61,6 +61,8 @@ class WifiRemover(StationRemover):
 
 class StationUpdater(DataTask):
 
+    MAX_OLD_OBSERVATIONS = 1000
+
     def __init__(self, task, session,
                  min_new=10, max_new=100, remove_task=None):
         DataTask.__init__(self, task, session)
@@ -136,13 +138,15 @@ class StationUpdater(DataTask):
                 # the station since it will be deleted by caller momentarily
                 return True
 
-            new_total = station.total_measures
-            old_length = new_total - length
+            # limit the maximum weight of the old station estimate
+            old_weight = min(station.total_measures - length,
+                             self.MAX_OLD_OBSERVATIONS)
+            new_weight = old_weight + length
 
-            station.lat = ((station.lat * old_length) +
-                           (new_lat * length)) / new_total
-            station.lon = ((station.lon * old_length) +
-                           (new_lon * length)) / new_total
+            station.lat = ((station.lat * old_weight) +
+                           (new_lat * length)) / new_weight
+            station.lon = ((station.lon * old_weight) +
+                           (new_lon * length)) / new_weight
 
         # decrease new counter, total is already correct
         station.new_measures = station.new_measures - length

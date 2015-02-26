@@ -1,4 +1,5 @@
 from hashlib import sha1
+from inspect import ismethod
 
 import factory
 from factory.alchemy import SQLAlchemyModelFactory
@@ -38,6 +39,8 @@ class BaseFactory(SQLAlchemyModelFactory):
     @classmethod
     def _create(cls, constructor, _session=None, *args, **kwargs):
         """Create an instance of the model, and save it to the database."""
+        if ismethod(constructor) and '_raise_invalid' not in kwargs:
+            kwargs['_raise_invalid'] = True
         obj = constructor(*args, **kwargs)
         if _session is None:
             _session = SESSION['default']

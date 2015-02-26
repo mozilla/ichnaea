@@ -95,7 +95,10 @@ class HashKeyMixin(object):
     @classmethod
     def joinkey(cls, key):
         if not isinstance(key, HashKey):
-            key = cls.to_hashkey(key)
+            if isinstance(key, HashKeyMixin):
+                key = key.hashkey()
+            else:  # pragma: no cover
+                key = cls.to_hashkey(key)
         criterion = ()
         for field in cls._hashkey_cls._fields:
             value = getattr(key, field, None)

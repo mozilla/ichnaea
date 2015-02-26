@@ -259,6 +259,8 @@ class CellMixin(CellKeyPscMixin):
 class ValidCellSchema(ValidCellKeySchema, ValidStationSchema):
     """A schema which validates the fields in cell."""
 
+    new_measures = colander.SchemaNode(colander.Integer(), missing=0)
+
 
 class Cell(CellMixin, StationMixin, CreationMixin, _Model):
     __tablename__ = 'cell'
@@ -280,7 +282,7 @@ class Cell(CellMixin, StationMixin, CreationMixin, _Model):
         super(Cell, self).__init__(*args, **kw)
 
 
-class ValidOCIDCellSchema(ValidCellSchema):
+class ValidOCIDCellSchema(ValidCellKeySchema, ValidStationSchema):
     """A schema which validates the fields present in a OCID cell."""
 
     changeable = colander.SchemaNode(colander.Boolean(), missing=True)
