@@ -11,6 +11,10 @@ from ichnaea.models.base import (
     _Model,
     IdMixin,
 )
+from ichnaea.models.hashkey import (
+    HashKey,
+    HashKeyMixin,
+)
 from ichnaea.models.sa_types import TinyIntEnum
 
 
@@ -46,13 +50,19 @@ class MapStat(IdMixin, _Model):
     lon = Column(Integer)
 
 
-class Score(IdMixin, _Model):
+class ScoreHashKey(HashKey):
+
+    _fields = ('userid', 'key', 'time')
+
+
+class Score(IdMixin, HashKeyMixin, _Model):
     __tablename__ = 'score'
 
     _indices = (
         UniqueConstraint('userid', 'key', 'time',
                          name='score_userid_key_time_unique'),
     )
+    _hashkey_cls = ScoreHashKey
 
     userid = Column(Integer(unsigned=True), index=True)
     key = Column(TinyIntEnum(ScoreKey))

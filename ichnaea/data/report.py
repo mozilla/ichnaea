@@ -21,11 +21,9 @@ from ichnaea import util
 
 def process_score(session, userid, points, scorekey):
     utcday = util.utcnow().date()
-    query = session.query(Score).filter(
-        Score.userid == userid).filter(
-        Score.key == ScoreKey[scorekey]).filter(
-        Score.time == utcday)
-    score = query.first()
+    hashkey = Score.to_hashkey(
+        userid=userid, key=ScoreKey[scorekey], time=utcday)
+    score = Score.querykey(session, hashkey).first()
     if score is not None:
         score.value += int(points)
     else:
