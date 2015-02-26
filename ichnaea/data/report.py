@@ -19,21 +19,6 @@ from ichnaea.models import (
 from ichnaea import util
 
 
-def process_score(session, userid, points, scorekey):
-    utcday = util.utcnow().date()
-    hashkey = Score.to_hashkey(
-        userid=userid, key=ScoreKey[scorekey], time=utcday)
-    score = Score.querykey(session, hashkey).first()
-    if score is not None:
-        score.value += int(points)
-    else:
-        stmt = Score.__table__.insert(
-            on_duplicate='value = value + %s' % int(points)).values(
-            userid=userid, key=ScoreKey[scorekey], time=utcday, value=points)
-        session.execute(stmt)
-    return points
-
-
 class ReportQueue(DataTask):
 
     def __init__(self, task, session,
@@ -146,7 +131,11 @@ class ReportQueue(DataTask):
                 countdown += 1
 
         if userid is not None:
-            process_score(self.session, userid, len(positions), 'location')
+            scorekey = Score.to_hashkey(
+                userid=userid,
+                key=ScoreKey.location,
+                time=util.utcnow().date())
+            Score.incr(self.session, scorekey, len(positions))
         if positions:
             self.process_mapstat(positions)
 

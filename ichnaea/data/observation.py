@@ -8,11 +8,12 @@ from ichnaea.constants import (
 )
 from ichnaea.customjson import decode_radio_dict
 from ichnaea.data.base import DataTask
-from ichnaea.data.report import process_score
 from ichnaea.models import (
     Cell,
     CellBlacklist,
     CellObservation,
+    Score,
+    ScoreKey,
     ValidCellKeySchema,
     Wifi,
     WifiBlacklist,
@@ -91,8 +92,11 @@ class ObservationQueue(DataTask):
 
         # Credit the user with discovering any new stations.
         if userid is not None and new_stations > 0:
-            process_score(self.session, userid, new_stations,
-                          'new_' + self.station_type)
+            scorekey = Score.to_hashkey(
+                userid=userid,
+                key=ScoreKey['new_' + self.station_type],
+                time=self.utcnow.date())
+            Score.incr(self.session, scorekey, new_stations)
 
         added = len(all_observations)
         self.emit_stats(added, drop_counter)
