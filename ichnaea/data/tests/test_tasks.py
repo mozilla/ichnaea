@@ -431,36 +431,6 @@ class TestCell(CeleryTestCase):
         self.assertEqual(set([c.new_measures for c in cells]), set([2]))
         self.assertEqual(set([c.total_measures for c in cells]), set([5]))
 
-    def test_insert_observations_overflow(self):
-        session = self.session
-
-        observations = [dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4, psc=5,
-                             radio=int(Radio.gsm),
-                             lat=PARIS_LAT + i * 0.0000001,
-                             lon=PARIS_LON + i * 0.0000001) for i in range(3)]
-
-        result = insert_measures_cell.delay(observations)
-        self.assertEqual(result.get(), 3)
-
-        result = insert_measures_cell.delay(
-            observations, max_observations_per_cell=3)
-        self.assertEqual(result.get(), 0)
-
-        result = insert_measures_cell.delay(
-            observations, max_observations_per_cell=10)
-        self.assertEqual(result.get(), 3)
-
-        result = insert_measures_cell.delay(
-            observations, max_observations_per_cell=3)
-        self.assertEqual(result.get(), 0)
-
-        observations = session.query(CellObservation).all()
-        self.assertEqual(len(observations), 6)
-
-        cells = session.query(Cell).all()
-        self.assertEqual(len(cells), 1)
-        self.assertEqual(cells[0].total_measures, 6)
-
     def test_insert_observations_out_of_range(self):
         session = self.session
         time = util.utcnow() - timedelta(days=1)
@@ -1040,36 +1010,6 @@ class TestWifi(CeleryTestCase):
         # TODO this task isn't idempotent yet
         observations = session.query(WifiObservation).all()
         self.assertEqual(len(observations), 8)
-
-    def test_insert_observations_overflow(self):
-        session = self.session
-        key = "001234567890"
-
-        observations = [dict(key=key,
-                             lat=1.0 + i * 0.0000001,
-                             lon=2.0 + i * 0.0000001) for i in range(3)]
-
-        result = insert_measures_wifi.delay(observations)
-        self.assertEqual(result.get(), 3)
-
-        result = insert_measures_wifi.delay(
-            observations, max_observations_per_wifi=3)
-        self.assertEqual(result.get(), 0)
-
-        result = insert_measures_wifi.delay(
-            observations, max_observations_per_wifi=10)
-        self.assertEqual(result.get(), 3)
-
-        result = insert_measures_wifi.delay(
-            observations, max_observations_per_wifi=3)
-        self.assertEqual(result.get(), 0)
-
-        observations = session.query(WifiObservation).all()
-        self.assertEqual(len(observations), 6)
-
-        wifis = session.query(Wifi).all()
-        self.assertEqual(len(wifis), 1)
-        self.assertEqual(wifis[0].total_measures, 6)
 
     def test_location_update_wifi(self):
         now = util.utcnow()

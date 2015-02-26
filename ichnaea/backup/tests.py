@@ -16,23 +16,17 @@ from ichnaea.backup.tasks import (
     schedule_wifimeasure_archival,
     write_cellmeasure_s3_backups,
     write_wifimeasure_s3_backups,
-    cell_unthrottle_measures,
-    wifi_unthrottle_measures,
 )
 from ichnaea.models import (
-    Cell,
     CellObservation,
     ObservationBlock,
     ObservationType,
-    Wifi,
     WifiObservation,
 )
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
-    CellFactory,
     CellObservationFactory,
     ObservationBlockFactory,
-    WifiFactory,
     WifiObservationFactory,
 )
 from ichnaea import util
@@ -285,62 +279,3 @@ class TestObservationsDump(CeleryTestCase):
         _delete(days=0)
         self.assertEquals(session.query(CellObservation).count(), 0)
         self.assertEqual(_archived_blocks(), 5)
-
-    def test_unthrottle_cell_observations(self):
-        observations = []
-        for i in range(100, 150):
-            observations.append(
-                CellObservationFactory(created=self.old, lac=i, cid=i, psc=i))
-            CellFactory(total_measures=11000, lac=i, cid=i, psc=i)
-        self.session.flush()
-
-        start_id = observations[0].id + 20
-        ObservationBlockFactory(
-            measure_type=ObservationType.cell,
-            start_id=start_id, end_id=start_id + 20, archive_date=None)
-        self.session.commit()
-
-        with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
-            delete_cellmeasure_records.delay(batch=3).get()
-
-        cell_unthrottle_measures.delay(10000, 1000).get()
-
-        cells = self.session.query(Cell).all()
-        self.assertEquals(len(cells), 50)
-        for cell in cells:
-            if 120 <= cell.cid and cell.cid < 140:
-                self.assertEquals(cell.total_measures, 0)
-            else:
-                self.assertEquals(cell.total_measures, 1)
-
-        self.check_stats(counter=['items.cell_unthrottled'])
-
-    def test_unthrottle_wifi_observations(self):
-        observations = []
-        to_key = lambda num: "a01234567{num:03d}".format(num=num)
-        for i in range(100, 150):
-            observations.append(
-                WifiObservationFactory(created=self.old, key=to_key(i)))
-            WifiFactory(total_measures=11000, key=to_key(i))
-        self.session.flush()
-
-        start_id = observations[0].id + 20
-        ObservationBlockFactory(
-            measure_type=ObservationType.wifi,
-            start_id=start_id, end_id=start_id + 20, archive_date=None)
-        self.session.commit()
-
-        with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
-            delete_wifimeasure_records.delay(batch=7).get()
-
-        wifi_unthrottle_measures.delay(10000, 1000).get()
-
-        wifis = self.session.query(Wifi).all()
-        self.assertEquals(len(wifis), 50)
-        for wifi in wifis:
-            if 120 <= int(wifi.key[-3:]) and int(wifi.key[-3:]) < 140:
-                self.assertEquals(wifi.total_measures, 0)
-            else:
-                self.assertEquals(wifi.total_measures, 1)
-
-        self.check_stats(counter=['items.wifi_unthrottled'])

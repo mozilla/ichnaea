@@ -311,15 +311,6 @@ database tables. Along the way several counters measure the steps involved:
     validity-condition error encountered while attempting to normalize the
     observation.
 
-``items.dropped.cell_ingress_overflow``, ``items.dropped.wifi_ingress_overflow`` : counters
-
-    Count incoming cell or wifi observations that were discarded before
-    integration due to the rate of arrival of new records exceeding a
-    threshold of new records per period of time. The rate limiting is done
-    per-station, in other words only those observations pertaining to a
-    cell or wifi that already has "too many" recent observations are
-    discarded, and only the newest observations are discarded.
-
 ``items.dropped.cell_ingress_blacklisted``, ``items.dropped.wifi_ingress_blacklisted`` : counters
 
     Count incoming cell or wifi observations that were discarded before
@@ -338,16 +329,6 @@ database tables. Along the way several counters measure the steps involved:
 
     Count cell or wifi observations that are successfully normalized and
     integrated, not discarded due to rate limits or consistency errors.
-
-``items.cell_unthrottled``, ``items.wifi_unthrottled`` : counters
-
-    Count space made for new observations in the wifi and cell observation
-    tables due to periodic backup and trimming of old records. Specifically:
-    for cell or wifi stations that were previously rate-limited, count the
-    amount of new space for observations of those stations freed up after each
-    backup and trim task runs. This is not the same as the number of
-    observations backed up; it's *only* a count of the cumulative space freed
-    for previously rate-limited stations.
 
 In addition to these global stats on the data processing pipeline,
 we also have a number of per API key stats for uploaded data.

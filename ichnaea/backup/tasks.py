@@ -12,13 +12,9 @@ from sqlalchemy import func
 from ichnaea.async.task import DatabaseTask
 from ichnaea.backup.s3 import S3Backend, compute_hash
 from ichnaea.models import (
-    Cell,
-    CellObservation,
     OBSERVATION_TYPE_META,
     ObservationBlock,
     ObservationType,
-    Wifi,
-    WifiObservation,
 )
 from ichnaea import util
 from ichnaea.worker import celery
@@ -358,51 +354,15 @@ def delete_wifimeasure_records(self, limit=100, days_old=7,
         batch=batch)
 
 
-def unthrottle_observations(session, station_model, obs_model,
-                            max_observations, batch):
-    """
-    Periodically recalculate the total_measures value for any 'throttled'
-    station, that is, one with total_measures >= max_observations, which is
-    therefore dropping additional incoming observations on the floor. This
-    recalculation (potentially, temporarily) 'un-throttles' the rate, due
-    to the fact that every night, a day worth of observations is backed up and
-    purged from the observation table, so some new room may be made in the
-    observation tables for new observations to be absorbed. Once a station's
-    total_measures count gets back up to max_observations, it will be throttled
-    again.
-
-    """
-    station_query = session.query(station_model).filter(
-        station_model.total_measures > max_observations).limit(batch)
-
-    unthrottled = 0
-    for station in station_query.all():
-        num = obs_model.querykey(session, station).count()
-        unthrottled += station.total_measures - num
-        station.total_measures = num
-        station.new_measures = min(station.new_measures, num)
-
-    session.commit()
-    return unthrottled
+@celery.task(base=DatabaseTask, bind=True)
+def wifi_unthrottle_measures(self, max_observations,
+                             batch=1000):  # pragma: no cover
+    # BBB
+    pass
 
 
 @celery.task(base=DatabaseTask, bind=True)
-def wifi_unthrottle_measures(self, max_observations, batch=1000):
-    with self.db_session() as session:
-        n = unthrottle_observations(session=session,
-                                    station_model=Wifi,
-                                    obs_model=WifiObservation,
-                                    max_observations=max_observations,
-                                    batch=batch)
-        self.stats_client.incr("items.wifi_unthrottled", n)
-
-
-@celery.task(base=DatabaseTask, bind=True)
-def cell_unthrottle_measures(self, max_observations, batch=100):
-    with self.db_session() as session:
-        n = unthrottle_observations(session=session,
-                                    station_model=Cell,
-                                    obs_model=CellObservation,
-                                    max_observations=max_observations,
-                                    batch=batch)
-        self.stats_client.incr("items.cell_unthrottled", n)
+def cell_unthrottle_measures(self, max_observations,
+                             batch=100):  # pragma: no cover
+    # BBB
+    pass

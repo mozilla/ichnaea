@@ -23,9 +23,8 @@ from ichnaea import util
 
 class ObservationQueue(DataTask):
 
-    def __init__(self, task, session, utcnow=None, max_observations=11000):
+    def __init__(self, task, session, utcnow=None):
         DataTask.__init__(self, task, session)
-        self.max_observations = max_observations
         if utcnow is None:
             utcnow = util.utcnow()
         self.utcnow = utcnow
@@ -66,15 +65,9 @@ class ObservationQueue(DataTask):
         for key, observations in station_observations.items():
             first_blacklisted = None
             incomplete = False
-            is_new_station = False
+            station = self.station_model.querykey(self.session, key).first()
 
-            # Figure out how much space is left for this station.
-            free = self.available_station_space(key)
-            if free is None:
-                is_new_station = True
-                free = self.max_observations
-
-            if is_new_station:
+            if station is None:
                 # Drop observations for blacklisted stations.
                 blacklisted, first_blacklisted = self.blacklisted_station(key)
                 if blacklisted:
@@ -86,20 +79,15 @@ class ObservationQueue(DataTask):
                     # We discovered an actual new complete station.
                     new_stations += 1
 
-            # Accept observations up to input-throttling limit, then drop.
-            num = 0
-            for obs in observations:
-                if free <= 0:
-                    drop_counter['overflow'] += 1
-                    continue
-                all_observations.append(obs)
-                free -= 1
-                num += 1
+            # Accept all observations
+            all_observations.extend(observations)
+            num = len(observations)
 
-            # Accept incomplete observations, just don't make stations for them.
+            # Accept incomplete observations, just don't make stations for them
             # (station creation is a side effect of count-updating)
             if not incomplete and num > 0:
-                self.create_or_update_station(key, num, first_blacklisted)
+                self.create_or_update_station(station, key, num,
+                                              first_blacklisted)
 
         # Credit the user with discovering any new stations.
         if userid is not None and new_stations > 0:
@@ -111,19 +99,6 @@ class ObservationQueue(DataTask):
 
         self.session.add_all(all_observations)
         return added
-
-    def available_station_space(self, key):
-        # check if there's space for new observations within per-station
-        # maximum old observations are gradually backed up, so this is an
-        # intake-rate limit
-        query = (self.station_model.querykey(self.session, key)
-                                   .options(load_only('total_measures')))
-        curr = query.first()
-        if curr is not None:
-            return self.max_observations - curr.total_measures
-
-        # Return None to signal no station record was found.
-        return None
 
     def blacklisted_station(self, key):
         query = (self.blacklist_model.querykey(self.session, key)
@@ -141,12 +116,10 @@ class ObservationQueue(DataTask):
     def incomplete_observation(self, key):
         return False
 
-    def create_or_update_station(self, key, num, first_blacklisted):
+    def create_or_update_station(self, station, key, num,
+                                 first_blacklisted):
         # Creates a station or updates its new/total_measures counts to
         # reflect recently-received observations.
-        query = self.station_model.querykey(self.session, key)
-        station = query.first()
-
         if station is not None:
             station.new_measures += num
             station.total_measures += num

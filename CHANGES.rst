@@ -17,6 +17,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #319: Remove the per station ingress filtering.
+
 - Allow partial cell ids in geolocate/geosubmit APIs.
 
 - Removed the mixed locate/submit mode from the geosubmit API.

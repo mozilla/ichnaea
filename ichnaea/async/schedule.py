@@ -164,17 +164,4 @@ CELERYBEAT_SCHEDULE = {
         'options': {'expires': 39600},
     },
 
-    'nightly-cell-unthrottle-messages': {
-        'task': 'ichnaea.backup.tasks.cell_unthrottle_measures',
-        'schedule': crontab(hour=3, minute=17),
-        'args': (10000, 1000),
-        'options': {'expires': 43200},
-    },
-    'nightly-wifi-unthrottle-messages': {
-        'task': 'ichnaea.backup.tasks.wifi_unthrottle_measures',
-        'schedule': crontab(hour=3, minute=27),
-        'args': (10000, 1000),
-        'options': {'expires': 43200},
-    },
-
 }
