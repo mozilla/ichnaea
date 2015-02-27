@@ -10,6 +10,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 230bbf3fe044: Add index on mapstat.time column.
+
 - 6527bee5ac1: Remove auto-inc id columns from cell related tables.
 
 - 3b8d52a9eac4: Change score, stat and measure_block enum columns to tinyint.

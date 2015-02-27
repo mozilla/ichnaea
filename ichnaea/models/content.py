@@ -2,6 +2,7 @@ from enum import IntEnum
 from sqlalchemy import (
     Column,
     Date,
+    Index,
     Unicode,
     UniqueConstraint,
 )
@@ -41,6 +42,7 @@ class MapStat(IdMixin, _Model):
 
     _indices = (
         UniqueConstraint('lat', 'lon', name='mapstat_lat_lon_unique'),
+        Index('idx_mapstat_time', 'time'),
     )
 
     # tracks the creation time
