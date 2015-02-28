@@ -83,7 +83,6 @@ class Wifi(WifiMixin, StationMixin, CreationMixin, _Model):
         UniqueConstraint('key', name='wifi_key_unique'),
         Index('wifi_created_idx', 'created'),
         Index('wifi_new_measures_idx', 'new_measures'),
-        Index('wifi_total_measures_idx', 'total_measures'),
     )
     _valid_schema = ValidWifiSchema
 

@@ -10,6 +10,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 1d549c1d6cfe: Drop total_measures index on station tables.
+
 - 230bbf3fe044: Add index on mapstat.time column.
 
 - 6527bee5ac1: Remove auto-inc id columns from cell related tables.
