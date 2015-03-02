@@ -1,4 +1,5 @@
 from collections import defaultdict, deque, namedtuple
+from enum import IntEnum
 from functools import partial
 import operator
 
@@ -23,6 +24,7 @@ from ichnaea.models import (
     CellArea,
     CellLookup,
     OCIDCell,
+    OCIDCellArea,
     Wifi,
     WifiLookup,
 )
@@ -35,6 +37,13 @@ MAX_WIFIS_IN_CLUSTER = 5
 
 # helper class used in searching
 Network = namedtuple('Network', ['key', 'lat', 'lon', 'range'])
+
+
+# Data sources for location information
+class DataSource(IntEnum):
+    Internal = 1
+    OCID = 2
+    GeoIP = 3
 
 
 def estimate_accuracy(lat, lon, points, minimum):
@@ -97,14 +106,13 @@ def map_data(data, client_addr=None):
     return mapped
 
 
-class AbstractResult(object):
-    """The result of a location provider query."""
+class AbstractLocation(object):
+    """A location returned by a location provider."""
 
-    def __init__(self, provider, priority=-1,
+    def __init__(self, source=None,
                  lat=None, lon=None, accuracy=None,
                  country_code=None, country_name=None, query_data=True):
-        self.provider = provider
-        self.priority = priority
+        self.source = source
         self.lat = self._round(lat)
         self.lon = self._round(lon)
         self.accuracy = self._round(accuracy)
@@ -118,70 +126,73 @@ class AbstractResult(object):
         return value
 
     def found(self):  # pragma: no cover
-        """Does this result include any location data?"""
+        """Does this location include any location data?"""
         raise NotImplementedError
 
-    def agrees_with(self, result):  # pragma: no cover
-        """Does this result match the position of the other result?"""
+    def agrees_with(self, other_location):  # pragma: no cover
+        """Does this location match the position of the other location?"""
         raise NotImplementedError
 
     def accurate_enough(self):  # pragma: no cover
-        """Is this result accurate enough to return it?"""
+        """Is this location accurate enough to return it?"""
         raise NotImplementedError
 
-    def more_accurate(self, result):  # pragma: no cover
-        """Is this result better than the passed in result?"""
+    def more_accurate(self, other_location):  # pragma: no cover
+        """Is this location better than the passed in location?"""
         raise NotImplementedError
 
 
-class PositionResult(AbstractResult):
-    """The result of a position query."""
+class PositionLocation(AbstractLocation):
+    """The location returned by a position query."""
 
     def found(self):
-        return self.lat is not None and self.lon is not None
+        return None not in (self.lat, self.lon)
 
-    def agrees_with(self, result):
-        dist = distance(result.lat, result.lon, self.lat, self.lon) * 1000
-        return dist <= result.accuracy
+    def agrees_with(self, other_location):
+        dist = distance(
+            other_location.lat, other_location.lon, self.lat, self.lon) * 1000
+        return dist <= other_location.accuracy
 
     def accurate_enough(self):
         # For position data we currently always want to continue.
         return False
 
-    def more_accurate(self, result):
+    def more_accurate(self, other_location):
         """
-        Are we more accurate than the passed in result and fit into
-        the claimed result range?
+        Are we more accurate than the passed in other_location and fit into
+        the other_location's range?
         """
         if not self.found():
             return False
-        if not result.found():
+        if not other_location.found():
             return True
-        if self.priority > result.priority:
+        if self.source < other_location.source:
             return True
-        return self.agrees_with(result) and self.accuracy < result.accuracy
+        return (
+            self.agrees_with(other_location) and
+            self.accuracy < other_location.accuracy)
 
 
-class CountryResult(AbstractResult):
-    """The result of a country query."""
+class CountryLocation(AbstractLocation):
+    """The location returned by a country query."""
 
     def found(self):
-        return self.country_code is not None and self.country_name is not None
+        return None not in (self.country_code,  self.country_name)
 
-    def agrees_with(self, result):  # pragma: no cover
-        return self.country_code == result.country_code
+    def agrees_with(self, other_location):  # pragma: no cover
+        return self.country_code == other_location.country_code
 
     def accurate_enough(self):
         if self.found():
             return True
         return False
 
-    def more_accurate(self, result):
+    def more_accurate(self, other_location):
         if not self.found():
             return False
-        if not result.found():
+        if not other_location.found():
             return True
-        if self.priority > result.priority:  # pragma: no cover
+        if self.source < other_location.source:  # pragma: no cover
             return True
         return False  # pragma: no cover
 
@@ -240,18 +251,18 @@ class AbstractLocationProvider(StatsLogger):
     data_field = None
     log_name = None
     log_group = None
-    priority = 1
-    result_type = None
+    location_type = None
+    source = DataSource.Internal
 
-    def __init__(self, db_source, result_type, *args, **kwargs):
+    def __init__(self, db_source, *args, **kwargs):
         self.db_source = db_source
-        self.result_type = partial(result_type, self, priority=self.priority)
+        self.location_type = partial(self.location_type, source=self.source)
         super(AbstractLocationProvider, self).__init__(*args, **kwargs)
 
     def locate(self, data):  # pragma: no cover
         """Provide a location given the provided query data (dict).
 
-        :rtype: :class:`~ichnaea.service.locate.AbstractResult`
+        :rtype: :class:`~ichnaea.service.locate.AbstractLocation`
         """
         raise NotImplementedError()
 
@@ -293,6 +304,7 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
     data_field = 'cell'
     log_name = 'cell'
     log_group = 'cell'
+    location_type = PositionLocation
 
     def clean_cell_keys(self, data):
         """Pre-process cell data."""
@@ -316,7 +328,7 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
                 'radio', 'mcc', 'mnc', 'lac', 'lat', 'lon', 'range')
 
             if cell_keys:
-                # only do a query if we have cell results, or this will match
+                # only do a query if we have cell locations, or this will match
                 # all rows in the table
                 query = (model.querykeys(self.db_source, cell_keys)
                               .options(load_only(*load_fields))
@@ -362,12 +374,17 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
         """
         Combine the queried_objects into an estimated location.
 
-        :rtype: :class:`~ichnaea.service.locate.AbstractResult`
+        :rtype: :class:`~ichnaea.service.locate.AbstractLocation`
         """
-        raise NotImplementedError
+        length = len(queried_objects)
+        avg_lat = sum([c.lat for c in queried_objects]) / length
+        avg_lon = sum([c.lon for c in queried_objects]) / length
+        accuracy = estimate_accuracy(
+            avg_lat, avg_lon, queried_objects, CELL_MIN_ACCURACY)
+        return self.location_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
     def locate(self, data):
-        location = self.result_type(query_data=False)
+        location = self.location_type(query_data=False)
         cell_keys = self.clean_cell_keys(data)
         if cell_keys:
             location.query_data = True
@@ -380,20 +397,30 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
 class CellLocationProvider(AbstractCellLocationProvider):
     """
     A CellLocationProvider implements a cell location search using
-    the Cell and OCID Cell models.
+    the Cell model.
     """
-    models = (Cell, OCIDCell)
+    models = (Cell, )
+
+
+class OCIDCellLocationProvider(AbstractCellLocationProvider):
+    """
+    A CellLocationProvider implements a cell location search using
+    the OCID Cell model.
+    """
+    models = (OCIDCell, )
+    source = DataSource.OCID
+
+
+class AbstractCellAreaLocationProvider(AbstractCellLocationProvider):
 
     def prepare_location(self, queried_objects):
-        length = len(queried_objects)
-        avg_lat = sum([c.lat for c in queried_objects]) / length
-        avg_lon = sum([c.lon for c in queried_objects]) / length
-        accuracy = estimate_accuracy(
-            avg_lat, avg_lon, queried_objects, CELL_MIN_ACCURACY)
-        return self.result_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
+        # take the smallest LAC of any the user is inside
+        lac = sorted(queried_objects, key=operator.attrgetter('range'))[0]
+        accuracy = float(max(LAC_MIN_ACCURACY, lac.range))
+        return self.location_type(lat=lac.lat, lon=lac.lon, accuracy=accuracy)
 
 
-class CellAreaLocationProvider(AbstractCellLocationProvider):
+class CellAreaLocationProvider(AbstractCellAreaLocationProvider):
     """
     A CellAreaLocationProvider implements a cell location search
     using the CellArea model.
@@ -401,11 +428,15 @@ class CellAreaLocationProvider(AbstractCellLocationProvider):
     models = (CellArea, )
     log_name = 'cell_lac'
 
-    def prepare_location(self, queried_objects):
-        # take the smallest LAC of any the user is inside
-        lac = sorted(queried_objects, key=operator.attrgetter('range'))[0]
-        accuracy = float(max(LAC_MIN_ACCURACY, lac.range))
-        return self.result_type(lat=lac.lat, lon=lac.lon, accuracy=accuracy)
+
+class OCIDCellAreaLocationProvider(AbstractCellAreaLocationProvider):
+    """
+    An OCIDCellAreaLocationProvider implements a cell location search
+    using the OCIDCellArea model.
+    """
+    models = (OCIDCellArea, )
+    log_name = 'cell_lac'
+    source = DataSource.OCID
 
 
 class CellCountryProvider(AbstractCellLocationProvider):
@@ -413,6 +444,7 @@ class CellCountryProvider(AbstractCellLocationProvider):
     A CellCountryProvider implements a cell country search without
     using any DB models.
     """
+    location_type = CountryLocation
 
     def query_database(self, cell_keys):
         countries = []
@@ -424,8 +456,8 @@ class CellCountryProvider(AbstractCellLocationProvider):
         return countries[0]
 
     def prepare_location(self, obj):
-        return self.result_type(country_code=obj.alpha2,
-                                country_name=obj.name)
+        return self.location_type(country_code=obj.alpha2,
+                                  country_name=obj.name)
 
 
 class WifiLocationProvider(AbstractLocationProvider):
@@ -436,6 +468,7 @@ class WifiLocationProvider(AbstractLocationProvider):
     data_field = 'wifi'
     log_name = 'wifi'
     log_group = 'wifi'
+    location_type = PositionLocation
 
     def cluster_elements(self, items, distance_fn, threshold):
         """
@@ -608,14 +641,14 @@ class WifiLocationProvider(AbstractLocationProvider):
         avg_lon = sum([n.lon for n in sample]) / length
         accuracy = estimate_accuracy(avg_lat, avg_lon,
                                      sample, WIFI_MIN_ACCURACY)
-        return self.result_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
+        return self.location_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
     def sufficient_data(self, wifi_keys):
         return (len(self.filter_bssids_by_similarity(list(wifi_keys))) >=
                 MIN_WIFIS_IN_QUERY)
 
     def locate(self, data):
-        location = self.result_type(query_data=False)
+        location = self.location_type(query_data=False)
 
         wifis, wifi_signals, wifi_keys = self.get_clean_wifi_keys(data)
 
@@ -656,16 +689,16 @@ class GeoIPLocationProvider(AbstractLocationProvider):
     data_field = 'geoip'
     log_name = 'geoip'
     log_group = 'geoip'
-    priority = 0
+    source = DataSource.GeoIP
 
     def locate(self, data):
         """Provide a location given the provided client IP address.
 
-        :rtype: :class:`~ichnaea.service.locate.AbstractResult`
+        :rtype: :class:`~ichnaea.service.locate.AbstractLocation`
         """
         # Always consider there to be GeoIP data, even if no client_addr
         # was provided
-        location = self.result_type(query_data=True)
+        location = self.location_type(query_data=True)
         client_addr = data.get(self.data_field, None)
 
         if client_addr and self.db_source is not None:
@@ -676,7 +709,7 @@ class GeoIPLocationProvider(AbstractLocationProvider):
                 else:
                     self.stat_count('geoip_country_found')
 
-                location = self.result_type(
+                location = self.location_type(
                     lat=geoip['latitude'],
                     lon=geoip['longitude'],
                     accuracy=geoip['accuracy'],
@@ -687,18 +720,25 @@ class GeoIPLocationProvider(AbstractLocationProvider):
         return location
 
 
+class PositionGeoIPLocationProvider(GeoIPLocationProvider):
+    location_type = PositionLocation
+
+
+class CountryGeoIPLocationProvider(GeoIPLocationProvider):
+    location_type = CountryLocation
+
+
 class AbstractLocationSearcher(StatsLogger):
     """
     An AbstractLocationSearcher will use a collection of LocationProvider
     classes to attempt to identify a user's location. It will loop over them
-    in the order they are specified and use the most accurate result.
+    in the order they are specified and use the most accurate location.
     """
     # First we attempt a "zoom-in" from cell-lac, to cell
     # to wifi, tightening our estimate each step only so
     # long as it doesn't contradict the existing best-estimate.
 
     provider_classes = ()
-    result_type = None
 
     def __init__(self, db_sources, *args, **kwargs):
         super(AbstractLocationSearcher, self).__init__(*args, **kwargs)
@@ -706,64 +746,68 @@ class AbstractLocationSearcher(StatsLogger):
         self.all_providers = [
             cls(
                 db_sources[cls.db_source_field],
-                self.result_type,
                 api_key_log=self.api_key_log,
                 api_key_name=self.api_key_name,
                 api_name=self.api_name,
             ) for cls in self.provider_classes]
 
     def search_location(self, data):
-        result = self.result_type(None, query_data=False)
-        all_results = defaultdict(deque)
+        best_location = None
+        best_location_provider = None
+        all_locations = defaultdict(deque)
 
-        for location_provider in self.all_providers:
-            provider_result = location_provider.locate(data)
-            all_results[location_provider.log_group].appendleft(
-                provider_result)
+        for provider in self.all_providers:
+            provider_location = provider.locate(data)
+            all_locations[provider.log_group].appendleft(
+                (provider, provider_location))
 
-            if provider_result.more_accurate(result):
+            if (
+                best_location is None or
+                provider_location.more_accurate(best_location)
+            ):
                 # If this location is more accurate than our previous one,
                 # we'll use it.
-                result = provider_result
+                best_location = provider_location
+                best_location_provider = provider
 
-            if result.accurate_enough():
-                # Stop the loop, if we have a good quality result.
+            if best_location.accurate_enough():
+                # Stop the loop, if we have a good quality location.
                 break
 
-        if not result.found():
+        if not best_location.found():
             self.stat_count('miss')
         else:
-            result.provider.log_hit()
+            best_location_provider.log_hit()
 
         # Log a hit/miss metric for the first data source for
         # which the user provided sufficient data
         for log_group in ('wifi', 'cell', 'geoip'):
-            results = all_results[log_group]
-            if any([r.query_data for r in results]):
-                # Claim a success if at least one result for a logging
+            group_locations = all_locations[log_group]
+            if any([l.query_data for (p, l) in group_locations]):
+                # Claim a success if at least one location for a logging
                 # group was a success.
-                first_result = results[0]
-                found_result = None
-                for res in results:
-                    if res.found():
-                        found_result = res
+                first_provider, first_location = group_locations[0]
+                found_provider = None
+                for (provider, location) in group_locations:
+                    if location.found():
+                        found_provider = provider
                         break
-                if found_result is not None:
-                    found_result.provider.log_success()
+                if found_provider:
+                    found_provider.log_success()
                 else:
-                    first_result.provider.log_failure()
+                    first_provider.log_failure()
                 break
 
-        return result
+        return best_location
 
     def prepare_location(self, country, location):  # pragma: no cover
         raise NotImplementedError()
 
     def search(self, data):
-        """Provide a type specific search result or return None."""
-        result = self.search_location(data)
-        if result.found():
-            return self.prepare_location(result)
+        """Provide a type specific search location or return None."""
+        location = self.search_location(data)
+        if location.found():
+            return self.prepare_location(location)
         return None
 
 
@@ -774,12 +818,13 @@ class PositionSearcher(AbstractLocationSearcher):
     """
 
     provider_classes = (
-        GeoIPLocationProvider,
+        PositionGeoIPLocationProvider,
+        OCIDCellAreaLocationProvider,
         CellAreaLocationProvider,
+        OCIDCellLocationProvider,
         CellLocationProvider,
         WifiLocationProvider,
     )
-    result_type = PositionResult
 
     def prepare_location(self, location):
         return {
@@ -796,9 +841,8 @@ class CountrySearcher(AbstractLocationSearcher):
 
     provider_classes = (
         CellCountryProvider,
-        GeoIPLocationProvider,
+        CountryGeoIPLocationProvider,
     )
-    result_type = CountryResult
 
     def prepare_location(self, location):
         return {
