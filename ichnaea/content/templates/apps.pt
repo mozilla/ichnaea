@@ -7,9 +7,14 @@
 
     <p class="text-justified">
         There is a wide variety of current applications and libraries
-        for different audiences. The following list does not claim to
-        be complete and specifically does not call out applications
-        merely using this service.
+        for different audiences. The following list calls out a select
+        few officially supported projects.
+    </p>
+
+    <p class="text-justified">
+        A <a href="https://wiki.mozilla.org/CloudServices/Location/Software">
+            list of community maintained projects</a> can be found in the
+        Mozilla wiki.
     </p>
 
     <h3>Mozilla Stumbler for Android</h3>
@@ -62,6 +67,17 @@
         check the Mozilla Location Services option.
     </p>
 
+    <h3>Firefox Desktop</h3>
+
+    <p class="text-justified">
+        Recent versions of Firefox Desktop allow you to use this service
+        instead of the default location provider. Please refer to the
+        documentation on
+        <a href="https://mozilla-ichnaea.readthedocs.org/en/latest/usage.html#firefox-desktop">
+            how to customize the location provider</a> in our development
+        documentation.
+    </p>
+
     <h3>Firefox OS</h3>
 
     <p class="text-justified">
@@ -75,27 +91,6 @@
     <p class="text-justified">
         In general client side code to talk to this service appeared in
         Firefox OS version 1.3T and 1.4.
-    </p>
-
-    <h3>FxStumbler</h3>
-
-    <p class="text-justified">
-        FxStumbler is an open source Firefox OS application similar in purpose
-        to Mozilla Stumbler. It collects data about the radio environment to
-        enhance the service. To contribute to the development of
-        <a href="https://github.com/clochix/FxStumbler">
-            FxStumbler visit it on github</a>.
-    </p>
-
-    <h3>Firefox Desktop</h3>
-
-    <p class="text-justified">
-        Recent versions of Firefox Desktop allow you to use this service
-        instead of the default location provider. Please refer to the
-        documentation on
-        <a href="https://mozilla-ichnaea.readthedocs.org/en/latest/usage.html#firefox-desktop">
-            how to customize the location provider</a> in our development
-        documentation.
     </p>
 
 </section>
