@@ -21,11 +21,13 @@ def normalized_time(time):
     now = util.utcnow()
     if not time:
         time = now
-    elif isinstance(time, (str, unicode, date)):
+    elif isinstance(time, (str, unicode)):
         try:
             time = iso8601.parse_date(time)
         except (iso8601.ParseError, TypeError):
             time = now
+    elif type(time) == date:
+        time = datetime(time.year, time.month, time.day, tzinfo=UTC)
 
     # don't accept future time values or
     # time values more than 60 days in the past

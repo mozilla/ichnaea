@@ -584,6 +584,7 @@ class TestWifiValidation(ValidationTest):
         entries = [
             ('', now_enc),
             (now, now_enc),
+            (now.date(), now_enc),
             (two_weeks_ago, two_weeks_ago.replace(**first_args)),
             (short_format, now_enc),
             ('2011-01-01T11:12:13.456Z', now_enc),
