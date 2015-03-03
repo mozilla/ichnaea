@@ -28,6 +28,8 @@ class TestMap(CeleryTestCase):
         session = self.session
         data = [
             MapStat(lat=12345, lon=12345),
+            MapStat(lat=0, lon=12345),
+            MapStat(lat=0, lon=0),
             MapStat(lat=-10000, lon=-11000),
         ]
         session.add_all(data)
@@ -36,12 +38,14 @@ class TestMap(CeleryTestCase):
         fd, filename = mkstemp()
         try:
             result = export_to_csv(session, filename, multiplier=3)
-            self.assertEqual(result, 6)
+            self.assertEqual(result, 9)
             written = os.read(fd, 10240)
-            lines = written.split()
-            self.assertEqual(len(lines), 6)
-            self.assertEqual(set([l[:6] for l in lines[:3]]), set(['12.345']))
-            self.assertEqual(set([l[:6] for l in lines[3:]]), set(['-9.999']))
+            lines = [line.split(',') for line in written.split()]
+            self.assertEqual(len(lines), 9)
+            self.assertEqual(set([round(float(l[0]), 2) for l in lines]),
+                             set([-10.0, 0.0, 12.35]))
+            self.assertEqual(set([round(float(l[1]), 2) for l in lines]),
+                             set([-11.0, 12.35]))
         finally:
             os.remove(filename)
 

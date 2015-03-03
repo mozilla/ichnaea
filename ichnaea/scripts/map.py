@@ -72,11 +72,14 @@ def export_to_csv(session, filename, multiplier=5):
                 break
             lines = []
             append = lines.append
-            for r in rows:
+            for row in rows:
                 for i in xrange(multiplier):
-                    lat = (r[0] + random()) / 1000.0
-                    lon = (r[1] + random()) / 1000.0
-                    append(pattern % (lat, lon))
+                    # keep calling random even if we skip the lines
+                    # to preserve the pseudo-random sequence
+                    lat = (row[0] + random()) / 1000.0
+                    lon = (row[1] + random()) / 1000.0
+                    if row[0] != 0 or row[1] != 0:
+                        append(pattern % (lat, lon))
             fd.writelines(lines)
             result_rows += len(lines)
             offset += batch
@@ -91,6 +94,7 @@ def upload_to_s3(bucketname, tiles):  # pragma: no cover
     bucket = conn.get_bucket(bucketname, validate=False)
     result = {
         'tile_changed': 0,
+        'tile_deleted': 0,
         'tile_unchanged': 0,
         'tile_new': 0,
         's3_put': 0,
@@ -123,7 +127,7 @@ def upload_to_s3(bucketname, tiles):  # pragma: no cover
             for f in filtered_files:
                 filename = root + os.sep + f
                 keyname = rel_root + f
-                key = keys.get(f, None)
+                key = keys.pop(f, None)
                 changed = True
                 if key is not None:
                     if os.path.getsize(filename) != key.size:
@@ -151,6 +155,10 @@ def upload_to_s3(bucketname, tiles):  # pragma: no cover
                         reduced_redundancy=True)
                 else:
                     result['tile_unchanged'] += 1
+            # delete orphaned files
+            for rel_name, key in keys.items():
+                result['tile_deleted'] += 1
+                key.delete()
 
     # Update status file
     data = {'updated': util.utcnow().isoformat()}
