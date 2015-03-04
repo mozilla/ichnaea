@@ -1,0 +1,26 @@
+{
+    "name": "Ichnea",
+    "description": "Mozilla Ichnaea is an application to provide geo-location coordinates from other sources of data (cell or WiFi networks, GeoIP, etc.).",
+    "repository": {
+        "url": "https://github.com/mozilla/ichnaea/",
+        "license": "Apache 2.0",
+        "tests": "https://travis-ci.org/mozilla/ichnaea"
+    },
+    "participate": {
+        "home": "https://mozilla-ichnaea.readthedocs.org/en/latest/",
+        "docs": "https://mozilla-ichnaea.readthedocs.org/en/latest/deploy.html",
+        "irc": "irc://irc.mozilla.org/#geo",
+        "irc-contacts": ["hannosch"]
+    },
+    "bugs": {
+        "list": "https://github.com/mozilla/ichnaea/issues",
+        "report": "https://github.com/mozilla/ichnaea/issues/new"
+    },
+    "urls": {
+        "prod": "https://location.services.mozilla.com/"
+    },
+    "keywords": [
+        "python",
+        "pyramid"
+    ]
+}
