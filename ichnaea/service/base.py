@@ -5,7 +5,6 @@ from redis import ConnectionError
 from sqlalchemy import text
 
 from ichnaea.customjson import dumps
-from ichnaea.logging import get_heka_client, RAVEN_ERROR
 from ichnaea.service.error import DAILY_LIMIT
 from ichnaea import util
 
@@ -60,7 +59,7 @@ def check_api_key(func_name, error_on_invalidkey=True):
         @wraps(func)
         def closure(request, *args, **kwargs):
             api_key = request.GET.get('key', None)
-            heka_client = get_heka_client()
+            raven_client = request.registry.raven_client
             stats_client = request.registry.stats_client
 
             if api_key is None:
@@ -74,7 +73,7 @@ def check_api_key(func_name, error_on_invalidkey=True):
                 found_key = result.fetchone()
             except Exception:  # pragma: no cover
                 # if we cannot connect to backend DB, skip api key check
-                heka_client.raven(RAVEN_ERROR)
+                raven_client.captureException()
                 stats_client.incr('%s.dbfailure_skip_api_key' % func_name)
                 return func(request, *args, **kwargs)
 

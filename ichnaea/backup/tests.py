@@ -45,7 +45,7 @@ class TestBackup(CeleryTestCase):
 
     def test_backup(self):
         with mock_s3() as mock_key:
-            s3 = S3Backend('localhost.bucket', self.heka_client)
+            s3 = S3Backend('localhost.bucket', self.raven_client)
             s3.backup_archive('some_key', '/tmp/not_a_real_file.zip')
             self.assertEquals(mock_key.key, 'backups/some_key')
             method = mock_key.set_contents_from_filename
@@ -123,12 +123,9 @@ class TestObservationsDump(CeleryTestCase):
                               'backup_archive', lambda x, y, z: True):
                 write_cellmeasure_s3_backups.delay(cleanup_zip=False).get()
 
-                msgs = self.heka_client.stream.msgs
-                info_msgs = [m for m in msgs if m.type == 'oldstyle']
-                self.assertEquals(1, len(info_msgs))
-                info = info_msgs[0]
-                fname = info.payload.split(":")[-1]
-
+                raven_msgs = self.raven_client.msgs
+                fname = [m['message'].split(':')[1] for m in raven_msgs
+                         if m['message'].startswith('s3.backup:')][0]
                 myzip = ZipFile(fname)
                 try:
                     contents = set(myzip.namelist())
@@ -166,12 +163,9 @@ class TestObservationsDump(CeleryTestCase):
                               'backup_archive', lambda x, y, z: True):
                 write_wifimeasure_s3_backups.delay(cleanup_zip=False).get()
 
-                msgs = self.heka_client.stream.msgs
-                info_msgs = [m for m in msgs if m.type == 'oldstyle']
-                self.assertEquals(1, len(info_msgs))
-                info = info_msgs[0]
-                fname = info.payload.split(":")[-1]
-
+                raven_msgs = self.raven_client.msgs
+                fname = [m['message'].split(':')[1] for m in raven_msgs
+                         if m['message'].startswith('s3.backup:')][0]
                 myzip = ZipFile(fname)
                 try:
                     contents = set(myzip.namelist())

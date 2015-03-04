@@ -15,8 +15,7 @@ from ichnaea.geocalc import (
     distance,
 )
 from ichnaea.logging import (
-    RAVEN_ERROR,
-    get_heka_client,
+    get_raven_client,
     get_stats_client,
 )
 from ichnaea.models import (
@@ -206,7 +205,7 @@ class StatsLogger(object):
         self.api_key_name = api_key_name
         self.api_key_log = api_key_log
         self.api_name = api_name
-        self.heka_client = get_heka_client()
+        self.raven_client = get_raven_client()
         self.stats_client = get_stats_client()
 
     def stat_count(self, stat):
@@ -327,7 +326,7 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
                 try:
                     found_cells.extend(query.all())
                 except Exception:
-                    self.heka_client.raven(RAVEN_ERROR)
+                    self.raven_client.captureException()
 
             if found_cells:
                 # Group all found_cellss by location area
@@ -542,7 +541,7 @@ class WifiLocationProvider(AbstractLocationProvider):
                              .filter(Wifi.lon.isnot(None)))
                 queried_wifis = query.all()
             except Exception:
-                self.heka_client.raven(RAVEN_ERROR)
+                self.raven_client.captureException()
 
         return queried_wifis
 

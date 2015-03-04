@@ -10,7 +10,7 @@ from sqlalchemy.exc import ProgrammingError
 
 from ichnaea.app_config import read_config
 from ichnaea.db import Database
-from ichnaea.logging import configure_heka
+from ichnaea.logging import configure_raven
 
 # make sure all models are imported
 from ichnaea.models import _Model
@@ -83,7 +83,7 @@ def create_schema(engine, alembic_cfg, location_cfg):
     command.current(alembic_cfg)
 
 
-def main(argv, _db_rw=None, _heka_client=None):
+def main(argv, _db_rw=None, _raven_client=None):
     parser = argparse.ArgumentParser(
         prog=argv[0], description='Initialize Ichnaea database')
 
@@ -121,7 +121,8 @@ def main(argv, _db_rw=None, _heka_client=None):
             db_rw = Database(alembic_section['sqlalchemy.url'])
         else:
             db_rw = _db_rw
-        configure_heka(location_ini, _heka_client=_heka_client)
+        configure_raven(
+            location_cfg.get('ichnaea', 'sentry_dsn'), _client=_raven_client)
 
         engine = db_rw.engine
         create_schema(engine, alembic_cfg, location_cfg)

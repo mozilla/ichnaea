@@ -43,34 +43,21 @@ If you use Amazon S3 you might want to configure a lifecycle policy to
 delete old export files after a couple of days.
 
 
-Hekad
-=====
+Statsd / Sentry
+===============
 
-The application uses Hekad to aggregate stats and logging messages.
+The application uses Statsd to aggregate stats and Sentry to log
+exception messages.
 
 The default configuration in ichnaea.ini assumes that you are running
-a hekad instance listening for UDP messages on port 5565 and listening
-for Statsd UDP messages on port 8125.
+a Statsd instance listening for UDP messages on port 8125 and a
+Sentry instance listening for UDP messages on port 9001.
 
-An example hekad configuration is available in the hekad.toml file.
-If you have installed hekad globally on the system, you can run it via:
+To get the app to log exceptions to Sentry, you will need to obtain the
+DSN for your Sentry instance. Edit ichnaea.ini and in the `ichnaea` section
+put your real DSN into the `sentry_dsn` setting.
 
-.. code-block:: bash
-
-    hekad -config=hekad.toml
-
-To learn more about the heka configuration, please consult
-`the hekad documentation <http://hekad.readthedocs.org/>`_.
-
-The example configuration file outputs stats messages to a Graphite server
-and can route exception messages to Sentry.
-
-To get heka to log exceptions to Sentry, you will need to obtain the
-DSN for your Sentry instance. Edit ichnaea.ini in the `heka_plugin_raven`
-section with your actual DSN and exceptions should start appearing in Sentry.
-
-Installation of Graphite and Sentry are outside the scope of this
-documentation.
+Installation of Statsd and Sentry are outside the scope of this documentation.
 
 
 Dependencies
@@ -118,7 +105,7 @@ Now you can run the web app on for example port 7001:
 
 .. code-block:: bash
 
-   bin/gunicorn -b 127.0.0.1:7001 ichnaea:application
+   bin/gunicorn -b 127.0.0.1:7001 -c ichnaea.gunicorn_config ichnaea:application
 
 The celery processes are started via:
 

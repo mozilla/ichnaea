@@ -2,7 +2,6 @@ from uuid import uuid1
 
 from sqlalchemy import text
 
-from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
     ApiKey,
     Radio,
@@ -130,8 +129,7 @@ class TestGeolocate(AppTestCase):
                      self.metric + '.api_log.test.wifi_miss',
                      self.metric_url + '.404'],
             timer=[self.metric_url])
-
-        self.check_expected_heka_messages(sentry=[('msg', RAVEN_ERROR, 0)])
+        self.check_raven(total=0)
 
     def test_cell_mcc_mnc_strings(self):
         # mcc and mnc are officially defined as strings, where "01" is
@@ -439,4 +437,4 @@ class TestGeolocateErrors(AppTestCase):
                 'request.v1.geolocate.200',
                 'geolocate.geoip_hit',
             ])
-        self.check_expected_heka_messages(sentry=[('msg', RAVEN_ERROR, 2)])
+        self.check_raven([('ProgrammingError', 2)])

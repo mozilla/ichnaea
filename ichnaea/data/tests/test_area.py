@@ -7,7 +7,6 @@ from ichnaea.data.tasks import (
     remove_cell,
     scan_areas,
 )
-from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
     Cell,
     CellArea,
@@ -190,9 +189,7 @@ class TestArea(CeleryTestCase):
     def test_scan_areas_empty(self):
         # test tasks with an empty queue
         self.assertEqual(scan_areas.delay().get(), 0)
-        self.check_expected_heka_messages(
-            sentry=[('msg', RAVEN_ERROR, 0)]
-        )
+        self.check_raven(total=0)
 
     def test_scan_areas_remove(self):
         session = self.session

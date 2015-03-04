@@ -17,10 +17,9 @@ from ichnaea.db import (
     db_worker_session,
 )
 from ichnaea.logging import (
-    configure_heka,
-    RAVEN_ERROR,
+    configure_raven,
+    configure_stats,
 )
-from ichnaea.logging import configure_stats
 from ichnaea import util
 
 IMAGE_HEADERS = {
@@ -172,7 +171,7 @@ def upload_to_s3(bucketname, tiles):  # pragma: no cover
     return result
 
 
-def generate(db, bucketname, heka_client, stats_client,
+def generate(db, bucketname, raven_client, stats_client,
              upload=True, concurrency=2, datamaps='', output=None):
     datamaps_encode = os.path.join(datamaps, 'encode')
     datamaps_enumerate = os.path.join(datamaps, 'enumerate')
@@ -244,7 +243,7 @@ def generate(db, bucketname, heka_client, stats_client,
 
 
 def main(argv, _db_rw=None,
-         _heka_client=None, _stats_client=None):
+         _raven_client=None, _stats_client=None):
     # run for example via:
     # bin/location_map --create --upload --datamaps=/path/to/datamaps/ \
     #   --output=ichnaea/content/static/tiles/
@@ -272,7 +271,8 @@ def main(argv, _db_rw=None,
         else:  # pragma: no cover
             db = Database(conf.get('ichnaea', 'db_master'))
         bucketname = conf.get('ichnaea', 's3_assets_bucket').strip('/')
-        heka_client = configure_heka(conf.filename, _heka_client=_heka_client)
+        raven_client = configure_raven(
+            conf.get('ichnaea', 'sentry_dsn'), _client=_raven_client)
         stats_client = configure_stats(
             conf.get('ichnaea', 'statsd_host'), _client=_stats_client)
 
@@ -294,13 +294,13 @@ def main(argv, _db_rw=None,
 
         try:
             with stats_client.timer("datamaps.total_time"):
-                generate(db, bucketname, heka_client, stats_client,
+                generate(db, bucketname, raven_client, stats_client,
                          upload=upload,
                          concurrency=concurrency,
                          datamaps=datamaps,
                          output=output)
         except Exception:  # pragma: no cover
-            heka_client.raven(RAVEN_ERROR)
+            raven_client.captureException()
             raise
     else:  # pragma: no cover
         parser.print_help()

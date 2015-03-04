@@ -10,7 +10,6 @@ from redis import ConnectionError
 
 from ichnaea.customjson import kombu_dumps
 from ichnaea.data.tasks import insert_measures
-from ichnaea.logging import RAVEN_ERROR
 from ichnaea.service.base import check_api_key
 from ichnaea.service.error import (
     JSONParseError,
@@ -90,7 +89,7 @@ def geosubmit_view(request):
         )
     except JSONParseError:
         # capture JSON exceptions for submit calls
-        request.registry.heka_client.raven(RAVEN_ERROR)
+        request.registry.raven_client.captureException()
         raise
 
     items = map_items(data['items'])

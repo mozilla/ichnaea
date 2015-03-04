@@ -21,6 +21,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Replace heka-py-raven with a direct raven client.
+
 - #319: Remove the per station ingress filtering.
 
 - Allow partial cell ids in geolocate/geosubmit APIs.

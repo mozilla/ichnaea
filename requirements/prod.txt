@@ -12,13 +12,10 @@ celery==3.1.17
 colander==1.0
 configparser==3.5.0b2
 country-bounding-boxes==0.2.2
-docopt==0.6.2
 enum34==1.0.4
 filechunkio==1.6
 geoip2==2.1.0
 gunicorn==19.2.1
-heka-py==0.30.3
-heka-py-raven==0.7
 importlib==1.0.3
 ipaddr==2.1.11
 iso3166==0.7

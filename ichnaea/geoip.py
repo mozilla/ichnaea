@@ -26,7 +26,7 @@ VALID_COUNTRIES = frozenset(iso3166.countries_by_alpha2.keys())
 
 
 def configure_geoip(registry_settings=None, filename=None,
-                    mode=MODE_AUTO, heka_client=None):
+                    mode=MODE_AUTO, raven_client=None):
     """
     Configures and returns a :class:`~ichnaea.geoip.GeoIPWrapper` instance.
 
@@ -46,26 +46,26 @@ def configure_geoip(registry_settings=None, filename=None,
 
     if not filename:
         # No DB file specified in the config
-        if heka_client is not None:
+        if raven_client is not None:
             try:
-                raise IOError()
+                raise IOError('No geoip filename specified.')
             except IOError:
-                heka_client.raven('No geoip filename specified.')
+                raven_client.captureException()
         return GeoIPNull()
 
     try:
         db = GeoIPWrapper(filename, mode=mode)
-        if not db.check_extension() and heka_client is not None:
+        if not db.check_extension() and raven_client is not None:
             try:
-                raise RuntimeError()
+                raise RuntimeError('Maxmind C extension not installed.')
             except RuntimeError:
-                heka_client.raven('Maxmind C extension not installed.')
+                raven_client.captureException()
         # Actually initialize the memory cache, by doing one fake look-up
         db.geoip_lookup('127.0.0.1')
     except (InvalidDatabaseError, IOError, ValueError):
         # Error opening the database file, maybe it doesn't exist
-        if heka_client is not None:
-            heka_client.raven('Error opening geoip database file.')
+        if raven_client is not None:
+            raven_client.captureException()
         return GeoIPNull()
 
     return db

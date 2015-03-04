@@ -20,7 +20,9 @@ from webtest import TestApp
 from ichnaea import main
 from ichnaea.async.config import (
     attach_database,
+    attach_raven_client,
     attach_redis_client,
+    attach_stats_client,
     configure_s3_backup,
     configure_ocid_import,
 )
@@ -30,8 +32,9 @@ from ichnaea.db import Database
 from ichnaea.geocalc import maximum_country_radius
 from ichnaea.geoip import configure_geoip
 from ichnaea.logging import (
-    configure_heka,
+    configure_raven,
     configure_stats,
+    DebugRavenClient,
     DebugStatsClient,
 )
 from ichnaea.models import _Model, ApiKey
@@ -44,7 +47,6 @@ except ImportError:
     from unittest import TestCase
 
 TEST_DIRECTORY = os.path.dirname(__file__)
-HEKA_TEST_CONFIG = os.path.join(TEST_DIRECTORY, 'heka.ini')
 DATA_DIRECTORY = os.path.join(TEST_DIRECTORY, 'data')
 GEOIP_TEST_FILE = os.path.join(DATA_DIRECTORY, 'GeoIP2-City-Test.mmdb')
 GEOIP_BAD_FILE = os.path.join(
@@ -112,13 +114,13 @@ def _make_redis(uri=REDIS_URI):
     return redis_client(uri)
 
 
-def _make_app(_db_rw=None, _db_ro=None, _heka_client=None, _redis=None,
+def _make_app(_db_rw=None, _db_ro=None, _raven_client=None, _redis=None,
               _stats_client=None, **settings):
     wsgiapp = main(
         {},
         _db_rw=_db_rw,
         _db_ro=_db_ro,
-        _heka_client=_heka_client,
+        _raven_client=_raven_client,
         _redis=_redis,
         _stats_client=_stats_client,
         **settings)
@@ -294,7 +296,9 @@ class CeleryIsolation(object):
     @classmethod
     def setup_celery(cls):
         attach_database(celery, _db_rw=cls.db_rw)
-        attach_redis_client(celery, _redis=cls.redis_client)
+        attach_raven_client(celery, _client=cls.raven_client)
+        attach_redis_client(celery, _client=cls.redis_client)
+        attach_stats_client(celery, _client=cls.stats_client)
         configure_s3_backup(celery, settings={
             's3_backup_bucket': 'localhost.bucket',
             's3_assets_bucket': 'localhost.bucket',
@@ -316,21 +320,17 @@ class LogIsolation(object):
     @classmethod
     def setup_logging(cls):
         # Use a debug configuration
-        cls.heka_client = configure_heka(HEKA_TEST_CONFIG)
+        cls.raven_client = configure_raven('', DebugRavenClient())
         cls.stats_client = configure_stats('', DebugStatsClient())
 
     @classmethod
     def teardown_logging(cls):
-        del cls.heka_client
+        del cls.raven_client
         del cls.stats_client
 
     def clear_log_messages(self):
-        self.heka_client.stream.msgs.clear()
-        self.stats_client.msgs.clear()
-
-    def find_heka_messages(self, *args, **kw):
-        msgs = self.heka_client.stream.msgs
-        return find_msg(msgs, *args, **kw)
+        self.raven_client._clear()
+        self.stats_client._clear()
 
     def find_stats_messages(self, msg_type, msg_name, msg_value=None):
         data = {
@@ -364,9 +364,29 @@ class LogIsolation(object):
                     result.append((m[0], m[1]))
         return result
 
-    def print_stats_messages(self):
-        for m in self.stats_client.msgs:
-            print(m)
+    def check_raven(self, expected=None, total=None):
+        """Checks the raven message stream looking for the expected messages.
+
+        The expected argument should be a list of either names or tuples.
+
+        If it is a tuple, it should be a tuple of name and an expected count.
+
+        The names are matched via startswith against the captured exception
+        messages.
+        """
+        msgs = self.raven_client.msgs
+        found_msgs = [msg['message'] for msg in msgs]
+        if expected is None:
+            expected = ()
+        if total is not None:
+            self.assertEqual(len(msgs), total, found_msgs)
+        for exp in expected:
+            count = 1
+            name = exp
+            if isinstance(exp, tuple):
+                name, count = exp
+            matches = [found for found in found_msgs if found.startswith(name)]
+            self.assertEqual(len(matches), count, found_msgs)
 
     def check_stats(self, total=None, **kw):
         """Checks a partial specification of messages to be found in
@@ -434,111 +454,21 @@ class LogIsolation(object):
                     self.assertEqual(match, len(msgs),
                                      msg='%s %s not found' % (msg_type, name))
 
-    def check_expected_heka_messages(self, total=None, **kw):
-        """Checks a partial specification of messages to be found in
-        the heka message stream.
-
-        Keyword arguments:
-        total --  (optional) exact count of messages expected in stream.
-        kw  --  for all remaining keyword args of the form k:v :
-
-                select messages of heka message-type k, comparing the
-                message fields against v subject to type-dependent
-                interpretation:
-
-                  if v is a str, select messages with field 'name' == v
-                  and let match = 1
-
-                  if v is a 2-tuple (n, match), select messages with
-                  field 'name' == n
-
-                  if v is a 3-tuple, (f, n, match), select messages
-                  with field f == n
-
-               the selected messages are then checked depending on the type
-               of match:
-
-                  if match is an int, assert match messages were selected
-
-                  if match is a dict, assert that at least one message
-                  exists with each f:n entry in the mapping in the message
-                  field list.
-
-        Examples:
-
-           check_expected_heka_messages(timer=['request'])
-
-           This call will check for exactly one timer message with
-           'name':'request' in its fields.
-
-
-           check_expected_heka_messages(
-               total=5,
-               timer=[('request', {'url_path': '/v1/search'})],
-               counter=['search.api_key.test',
-                        ('items.uploaded.batches', 2)],
-               sentry=[('msg', RAVEN_ERROR, 1)]
-           )
-
-           This call will check for exactly 5 messages, exactly one timer
-           with 'name':'request' and 'url_path':'/v1/search' in its
-           fields; exactly one counter with 'name':'search.api_key.test',
-           exactly two counters with 'name':'items.uploaded.batches', and
-           at least one sentry message with 'msg':RAVEN_ERROR in its
-           fields.
-
-        """
-
-        if total is not None:
-            self.assertEqual(total, len(self.heka_client.stream.msgs))
-
-        for (msg_type, pred) in kw.items():
-            for p in pred:
-                fname = 'name'
-                match = 1
-                if isinstance(p, str):
-                    name = p
-                elif isinstance(p, tuple):
-                    if len(p) == 2:
-                        (name, match) = p
-                    elif len(p) == 3:
-                        (fname, name, match) = p
-                    else:
-                        raise TypeError("wanted 2 or 3-element tuple, got %s"
-                                        % type(p))
-                else:
-                    raise TypeError("wanted str or tuple, got %s"
-                                    % type(p))
-                msgs = self.find_heka_messages(msg_type, name,
-                                               field_name=fname)
-                if isinstance(match, int):
-                    self.assertEqual(match, len(msgs))
-                elif isinstance(match, dict):
-                    matching = []
-                    for msg in msgs:
-                        for (k, v) in match.items():
-                            for f in msg.fields:
-                                if f.name == k and f.value_string == [v]:
-                                    matching.append(msg)
-                    self.assertNotEqual(matching, [])
-                else:
-                    raise TypeError("wanted int or dict, got %s" % type(match))
-
 
 class GeoIPIsolation(object):
 
     geoip_data = GEOIP_DATA
 
     @classmethod
-    def configure_geoip(cls, filename=None, mode=MODE_AUTO, heka_client=None):
+    def configure_geoip(cls, filename=None, mode=MODE_AUTO, raven_client=None):
         if filename is None:
             filename = GEOIP_TEST_FILE
         return configure_geoip(filename=filename, mode=mode,
-                               heka_client=heka_client)
+                               raven_client=raven_client)
 
     @classmethod
-    def setup_geoip(cls, heka_client=None):
-        cls.geoip_db = cls.configure_geoip(heka_client=heka_client)
+    def setup_geoip(cls, raven_client=None):
+        cls.geoip_db = cls.configure_geoip(raven_client=raven_client)
 
     @classmethod
     def teardown_geoip(cls):
@@ -559,7 +489,7 @@ class AppTestCase(TestCase, DBIsolation,
 
         cls.app = _make_app(_db_rw=cls.db_rw,
                             _db_ro=cls.db_ro,
-                            _heka_client=cls.heka_client,
+                            _raven_client=cls.raven_client,
                             _redis=cls.redis_client,
                             _stats_client=cls.stats_client,
                             _geoip_db=cls.geoip_db,

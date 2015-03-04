@@ -11,9 +11,9 @@ from ichnaea.db import (
 from ichnaea.geoip import configure_geoip
 
 
-def main(global_config, heka_config=None, init=False,
-         _db_rw=None, _db_ro=None, _heka_client=None, _redis=None,
-         _stats_client=None, **settings):
+def main(global_config, init=False,
+         _db_rw=None, _db_ro=None, _redis=None,
+         _raven_client=None, _stats_client=None, **settings):
     config = Configurator(settings=settings)
 
     # add support for pt templates
@@ -22,7 +22,7 @@ def main(global_config, heka_config=None, init=False,
     settings = config.registry.settings
 
     from ichnaea.content.views import configure_content
-    from ichnaea.logging import configure_heka
+    from ichnaea.logging import configure_raven
     from ichnaea.logging import configure_stats
     from ichnaea.service import configure_service
 
@@ -46,16 +46,14 @@ def main(global_config, heka_config=None, init=False,
     else:
         config.registry.redis_client = _redis
 
-    if _heka_client is None:  # pragma: no cover
-        config.registry.heka_client = heka_client = configure_heka(heka_config)
-    else:
-        config.registry.heka_client = heka_client = _heka_client
+    config.registry.raven_client = raven_client = configure_raven(
+        settings.get('sentry_dsn'), _client=_raven_client)
 
     config.registry.stats_client = configure_stats(
         settings.get('statsd_host'), _client=_stats_client)
 
     config.registry.geoip_db = configure_geoip(
-        config.registry.settings, heka_client=heka_client)
+        config.registry.settings, raven_client=raven_client)
 
     config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)
     config.add_tween('ichnaea.logging.log_tween_factory', under=EXCVIEW)

@@ -4,7 +4,6 @@ from webob.response import gzip_app_iter
 
 from ichnaea.constants import CELL_MIN_ACCURACY
 from ichnaea.customjson import dumps, loads
-from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
     Cell,
     Radio,
@@ -320,6 +319,4 @@ class TestSearchErrors(AppTestCase):
                 'search.geoip_hit',
             ],
         )
-        self.check_expected_heka_messages(
-            sentry=[('msg', RAVEN_ERROR, 1)]
-        )
+        self.check_raven(['ProgrammingError'])

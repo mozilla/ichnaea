@@ -19,7 +19,6 @@ from ichnaea.content.views import (
     LOCAL_TILES,
     LOCAL_TILES_BASE,
 )
-from ichnaea.logging import RAVEN_ERROR
 from ichnaea.tests.base import AppTestCase
 from ichnaea import util
 
@@ -151,10 +150,7 @@ class TestFunctionalContent(AppTestCase):
 
             # No timers for invalid urls either
             timer=[('request.nobody-is-home', 0)])
-
-        self.check_expected_heka_messages(
-            # No tracebacks for 404's
-            sentry=[('msg', RAVEN_ERROR, 0)])
+        self.check_raven(total=0)
 
     def test_image_file(self):
         self.app.get('/static/css/images/icons-000000@2x.png', status=200)

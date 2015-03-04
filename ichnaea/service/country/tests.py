@@ -1,6 +1,5 @@
 from sqlalchemy import text
 
-from ichnaea.logging import RAVEN_ERROR
 from ichnaea.tests.base import AppTestCase
 
 
@@ -135,6 +134,4 @@ class TestCountryErrors(AppTestCase, CountryBase):
             counter=['request.v1.country.200'],
             timer=['request.v1.country'],
         )
-        self.check_expected_heka_messages(
-            sentry=[('msg', RAVEN_ERROR, 0)]
-        )
+        self.check_raven(total=0)

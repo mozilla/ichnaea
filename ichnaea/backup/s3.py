@@ -4,8 +4,6 @@ import os
 import shutil
 import tempfile
 
-from ichnaea.logging import RAVEN_ERROR
-
 
 def compute_hash(zip_path):
     sha = hashlib.sha1()
@@ -20,8 +18,8 @@ def compute_hash(zip_path):
 
 class S3Backend(object):
 
-    def __init__(self, backup_bucket, heka_client):
-        self.heka_client = heka_client
+    def __init__(self, backup_bucket, raven_client):
+        self.raven_client = raven_client
         self.backup_bucket = backup_bucket
 
     def check_archive(self, expected_sha, s3_key):  # pragma: no cover
@@ -41,7 +39,7 @@ class S3Backend(object):
             s3_hash = compute_hash(s3_copy)
             return s3_hash == expected_sha
         except Exception:
-            self.heka_client.raven(RAVEN_ERROR)
+            self.raven_client.captureException()
             return False
         finally:
             if os.path.exists(tmpdir):
@@ -56,5 +54,5 @@ class S3Backend(object):
             k.set_contents_from_filename(fname)
             return True
         except Exception:  # pragma: no cover
-            self.heka_client.raven(RAVEN_ERROR)
+            self.raven_client.captureException()
             return False

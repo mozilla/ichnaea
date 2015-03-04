@@ -21,7 +21,7 @@ class GeoIPBaseTest(LogIsolation, GeoIPIsolation):
     @classmethod
     def setUpClass(cls):
         super(GeoIPBaseTest, cls).setup_logging()
-        super(GeoIPBaseTest, cls).setup_geoip(heka_client=cls.heka_client)
+        super(GeoIPBaseTest, cls).setup_geoip(raven_client=cls.raven_client)
 
     @classmethod
     def tearDownClass(cls):
@@ -33,7 +33,7 @@ class GeoIPBaseTest(LogIsolation, GeoIPIsolation):
 
     def _open_db(self, filename=None, mode=MODE_AUTO):
         return self.configure_geoip(
-            filename=filename, mode=mode, heka_client=self.heka_client)
+            filename=filename, mode=mode, raven_client=self.raven_client)
 
 
 class TestDatabase(GeoIPBaseTest, TestCase):
@@ -57,23 +57,17 @@ class TestDatabase(GeoIPBaseTest, TestCase):
     def test_c_extension_warning(self):
         db = self._open_db(mode=MODE_MMAP)
         self.assertFalse(db.check_extension())
-        self.check_expected_heka_messages(
-            sentry=[('msg', 'Maxmind C extension not installed.', 1)]
-        )
+        self.check_raven(['RuntimeError: Maxmind C extension not installed'])
 
     def test_no_file(self):
         db = self._open_db('')
         self.assertTrue(isinstance(db, geoip.GeoIPNull))
-        self.check_expected_heka_messages(
-            sentry=[('msg', 'No geoip filename specified.', 1)]
-        )
+        self.check_raven(['IOError: No geoip filename specified.'])
 
     def test_open_missing_file(self):
         db = self._open_db('/i/taught/i/taw/a/putty/tat')
         self.assertTrue(isinstance(db, geoip.GeoIPNull))
-        self.check_expected_heka_messages(
-            sentry=[('msg', 'Error opening geoip database file.', 1)]
-        )
+        self.check_raven(['IOError: No such file or directory'])
 
     def test_open_invalid_file(self):
         with tempfile.NamedTemporaryFile() as temp:
@@ -81,17 +75,12 @@ class TestDatabase(GeoIPBaseTest, TestCase):
             temp.seek(0)
             db = self._open_db(temp.name)
             self.assertTrue(isinstance(db, geoip.GeoIPNull))
-
-        self.check_expected_heka_messages(
-            sentry=[('msg', 'Error opening geoip database file.', 1)]
-        )
+        self.check_raven(['InvalidDatabaseError: Error opening database file'])
 
     def test_open_wrong_file_type(self):
         db = self._open_db(GEOIP_BAD_FILE)
         self.assertTrue(isinstance(db, geoip.GeoIPNull))
-        self.check_expected_heka_messages(
-            sentry=[('msg', 'Error opening geoip database file.', 1)]
-        )
+        self.check_raven(['InvalidDatabaseError: Invalid database type'])
 
     def test_valid_countries(self):
         db = self._open_db()

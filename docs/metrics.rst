@@ -5,7 +5,7 @@ Metrics
 =======
 
 As discussed in :ref:`the deployment document <deploy>`, Ichnaea emits
-metrics through the Heka and Statsd client libraries with the intent of
+metrics through the Statsd client library with the intent of
 aggregating and viewing them on a Graphite server.
 
 This document describes the metrics collected.
@@ -14,10 +14,10 @@ Counter aggregation
 -------------------
 
 In the following sections, any counter described will typically result in
-*two* sub-metrics emitted from Heka. This is because Heka performs a level
+*two* sub-metrics being emitted. This is because Statsd performs a level
 of time-based aggregation before reporting to Graphite. In other words,
-Heka typically accumulates counter messages for a given reporting period (60
-seconds by default) and passes along to Graphite a single aggregate
+Statsd typically accumulates counter messages for a given reporting period
+(60 seconds by default) and passes along to Graphite a single aggregate
 function applied to the messages in each reporting period.
 
 ``count``
@@ -40,7 +40,7 @@ time-based buckets when graphing them.
 Timer aggregation
 -----------------
 
-As with counters, Heka will accumulate timer messages over a reporting
+As with counters, Statsd will accumulate timer messages over a reporting
 period, and emit periodic sub-metrics of aggregate functions over the
 messages accumulated during the reporting period. The aggregates emitted
 for timers are different than for counters, however:
@@ -58,6 +58,15 @@ for timers are different than for counters, however:
 
     The minimum value of any timer event over the reporting period.
 
+``mean``
+
+    The mean of the values of all timer events over the reporting period.
+
+``mean_90``
+
+    The mean of the lower 90th percentile of the values of all timer
+    events over the reporting period.
+
 ``upper``
 
     The maximum value of any timer event over the reporting period.
@@ -70,15 +79,6 @@ for timers are different than for counters, however:
 ``sum``
 
     The sum of the values of all timer events over the reporting period.
-
-``mean``
-
-    The mean of the values of all timer events over the reporting period.
-
-``mean_90``
-
-    The mean of the lower 90th percentile of the values of all timer
-    events over the reporting period.
 
 
 API-key counters

@@ -8,7 +8,10 @@ from ichnaea.async.schedule import CELERYBEAT_SCHEDULE
 from ichnaea.cache import redis_client
 from ichnaea import customjson
 from ichnaea.db import Database
-
+from ichnaea.logging import (
+    configure_raven,
+    configure_stats,
+)
 
 CELERY_IMPORTS = [
     'ichnaea.backup.tasks',
@@ -41,13 +44,22 @@ def attach_database(app, settings=None, _db_rw=None):
     app.db_rw = db_rw
 
 
-def attach_redis_client(app, settings=None, _redis=None):
-    if _redis is None:  # pragma: no cover
-        app.redis_client = None
-        if 'redis_url' in settings:
-            app.redis_client = redis_client(settings['redis_url'])
-    else:
-        app.redis_client = _redis
+def attach_raven_client(app, settings=None, _client=None):
+    app.raven_client = _client
+    if _client is None:  # pragma: no cover
+        app.raven_client = configure_raven(settings.get('sentry_dsn'))
+
+
+def attach_redis_client(app, settings=None, _client=None):
+    app.redis_client = _client
+    if _client is None:  # pragma: no cover
+        app.redis_client = redis_client(settings.get('redis_url'))
+
+
+def attach_stats_client(app, settings=None, _client=None):
+    app.stats_client = _client
+    if _client is None:  # pragma: no cover
+        app.stats_client = configure_stats(settings.get('statsd_host'))
 
 
 def configure_s3_backup(app, settings=None):

@@ -29,7 +29,7 @@ class TestApp(DBTestCase, RedisIsolation):
             'db_master': SQLURI,
             'db_slave': SQLURI,
         }
-        app = _make_app(_heka_client=self.heka_client,
+        app = _make_app(_raven_client=self.raven_client,
                         _stats_client=self.stats_client,
                         _redis=self.redis_client,
                         **settings)
@@ -44,7 +44,7 @@ class TestApp(DBTestCase, RedisIsolation):
         self.setup_session()
         app = _make_app(_db_rw=self.db_rw,
                         _db_ro=self.db_ro,
-                        _heka_client=self.heka_client,
+                        _raven_client=self.raven_client,
                         _stats_client=self.stats_client,
                         _redis=self.redis_client,
                         )
@@ -56,6 +56,6 @@ class TestApp(DBTestCase, RedisIsolation):
             'db_slave': SQLURI,
             'redis_url': REDIS_URI,
         }
-        app = _make_app(_heka_client=self.heka_client,
+        app = _make_app(_raven_client=self.raven_client,
                         _stats_client=self.stats_client, **settings)
         self.assertTrue(app.app.registry.redis_client is not None)

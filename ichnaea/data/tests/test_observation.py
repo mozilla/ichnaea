@@ -1,7 +1,4 @@
-import base64
 from datetime import timedelta
-import json
-import zlib
 
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy import text
@@ -13,7 +10,6 @@ from ichnaea.data.tasks import (
     insert_measures_cell,
     insert_measures_wifi,
 )
-from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models import (
     constants,
     Cell,
@@ -363,14 +359,4 @@ class TestSubmitErrors(CeleryTestCase):
         except Exception as exc:
             self.fail("Unexpected exception caught: %s" % repr(exc))
 
-        find_msg = self.find_heka_messages
-        messages = find_msg('sentry', RAVEN_ERROR, field_name='msg')
-        self.assertEquals(len(messages), 4)
-
-        payload = messages[0].payload
-        # duplicate raven.base.RavenClient.decode
-        data = json.loads(zlib.decompress(base64.b64decode(payload)))
-        sentry_exc = data['sentry.interfaces.Exception']
-
-        self.assertEqual(sentry_exc['module'], ProgrammingError.__module__)
-        self.assertEqual(sentry_exc['type'], 'ProgrammingError')
+        self.check_raven([('ProgrammingError', 4)])

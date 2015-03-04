@@ -17,8 +17,6 @@ requires = [
     'gevent',
     'geoip2',
     'gunicorn',
-    'heka-py',
-    'heka-py-raven',
     'iso3166',
     'mobile-codes',
     'PyMySQL',

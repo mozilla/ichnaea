@@ -5,11 +5,6 @@ from kombu.serialization import (
 )
 
 from ichnaea.db import db_worker_session
-from ichnaea.logging import (
-    get_heka_client,
-    get_stats_client,
-    RAVEN_ERROR,
-)
 
 
 class DatabaseTask(Task):
@@ -36,7 +31,7 @@ class DatabaseTask(Task):
             try:
                 result = super(DatabaseTask, self).__call__(*args, **kw)
             except Exception as exc:
-                self.heka_client.raven(RAVEN_ERROR)
+                self.raven_client.captureException()
                 if self._auto_retry:
                     raise self.retry(exc=exc)
                 raise  # pragma: no cover
@@ -65,9 +60,13 @@ class DatabaseTask(Task):
         return db_worker_session(self.app.db_rw)
 
     @property
-    def heka_client(self):
-        return get_heka_client()
+    def raven_client(self):
+        return self.app.raven_client
+
+    @property
+    def redis_client(self):  # pragma: no cover
+        return self.app.redis_client
 
     @property
     def stats_client(self):
-        return get_stats_client()
+        return self.app.stats_client

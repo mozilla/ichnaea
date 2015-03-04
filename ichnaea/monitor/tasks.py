@@ -49,7 +49,7 @@ def monitor_api_key_limits(self):
             stats_client.gauge('apilimit.' + name, value)
     except Exception:  # pragma: no cover
         # Log but ignore the exception
-        self.heka_client.raven('error')
+        self.raven_client.captureException()
     return result
 
 
@@ -71,7 +71,7 @@ def monitor_measures(self):
                 stats_client.gauge('table.' + name, num_rows)
     except Exception:  # pragma: no cover
         # Log but ignore the exception
-        self.heka_client.raven('error')
+        self.raven_client.captureException()
     return result
 
 
@@ -92,7 +92,7 @@ def monitor_ocid_import(self):
         stats_client.gauge('table.ocid_cell_age', result)
     except Exception:  # pragma: no cover
         # Log but ignore the exception
-        self.heka_client.raven('error')
+        self.raven_client.captureException()
     return result
 
 
@@ -107,5 +107,5 @@ def monitor_queue_length(self):
             stats_client.gauge('queue.' + name, value)
     except Exception:  # pragma: no cover
         # Log but ignore the exception
-        self.heka_client.raven('error')
+        self.raven_client.captureException()
     return result

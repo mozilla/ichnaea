@@ -44,7 +44,7 @@ class BaseLocateTest(DBTestCase, GeoIPIsolation):
     @classmethod
     def setUpClass(cls):
         DBTestCase.setUpClass()
-        GeoIPIsolation.setup_geoip(heka_client=cls.heka_client)
+        GeoIPIsolation.setup_geoip(raven_client=cls.raven_client)
 
     @classmethod
     def tearDownClass(cls):

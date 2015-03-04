@@ -19,7 +19,6 @@ from ichnaea.content.stats import (
     leaders_weekly,
 )
 from ichnaea.customjson import dumps, loads
-from ichnaea.logging import RAVEN_ERROR
 from ichnaea.models.content import StatKey
 from ichnaea import util
 
@@ -100,7 +99,7 @@ def security_headers(event):
         response.headers.add("X-Frame-Options", "DENY")
 
 
-def s3_list_downloads(assets_bucket, assets_url, heka_client):
+def s3_list_downloads(assets_bucket, assets_url, raven_client):
     if not assets_url.endswith('/'):  # pragma: no cover
         assets_url = assets_url + '/'
 
@@ -117,7 +116,7 @@ def s3_list_downloads(assets_bucket, assets_url, heka_client):
             size = int(round(key.size / 1024.0, 0))
             files.append(dict(name=name, path=path, size=size))
     except S3ResponseError:  # pragma: no cover
-        heka_client.raven(RAVEN_ERROR)
+        raven_client.captureException()
         return []
     return sorted(files, reverse=True)
 
@@ -191,8 +190,8 @@ class ContentViews(Layout):
             settings = self.request.registry.settings
             assets_bucket = settings['s3_assets_bucket']
             assets_url = settings['assets_url']
-            heka_client = self.request.registry.heka_client
-            data = s3_list_downloads(assets_bucket, assets_url, heka_client)
+            raven_client = self.request.registry.raven_client
+            data = s3_list_downloads(assets_bucket, assets_url, raven_client)
             # cache the download files, expire after 10 minutes
             redis_client.set(cache_key, dumps(data), ex=600)
         return {'page_title': 'Downloads', 'files': data}

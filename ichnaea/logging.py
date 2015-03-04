@@ -2,42 +2,35 @@ from collections import deque
 import socket
 import time
 
-from heka.config import client_from_stream_config
-from heka.holder import (
-    CLIENT_HOLDER,
-    get_client,
-)
 from pyramid.httpexceptions import (
     HTTPException,
     HTTPNotFound,
 )
+from raven import Client as RavenClient
 from statsd.client import StatsClient
 
 from ichnaea.exceptions import BaseJSONError
 
-
-RAVEN_ERROR = 'Unhandled error occurred'
+RAVEN_CLIENT = None
 STATS_CLIENT = None
 
 
-def get_heka_client():
-    return get_client('ichnaea')
+def get_raven_client():
+    return RAVEN_CLIENT
 
 
-def set_heka_client(client):
-    CLIENT_HOLDER.set_client('ichnaea', client)
-    return get_heka_client()
+def set_raven_client(client):
+    global RAVEN_CLIENT
+    RAVEN_CLIENT = client
+    return RAVEN_CLIENT
 
 
-def configure_heka(heka_config, _heka_client=None):
-    if _heka_client is not None:
-        return set_heka_client(_heka_client)
+def configure_raven(config, _client=None):  # pragma: no cover
+    if _client is not None:
+        return set_raven_client(_client)
 
-    client = get_heka_client()
-    if heka_config:
-        with open(heka_config, 'r') as fd:
-            client = client_from_stream_config(fd, 'heka', client=client)
-    return client
+    client = RavenClient(dsn=config)
+    return set_raven_client(client)
 
 
 def get_stats_client():
@@ -85,7 +78,7 @@ def log_tween_factory(handler, registry):
     ]
 
     def log_tween(request):
-        heka_client = registry.heka_client
+        raven_client = registry.raven_client
         stats_client = registry.stats_client
         start = time.time()
         request_path = request.path
@@ -118,7 +111,7 @@ def log_tween_factory(handler, registry):
                 status = 500
             counter_send(status)
             if not skip_log:
-                heka_client.raven(RAVEN_ERROR)
+                raven_client.captureException()
             raise
         else:
             if not skip_log:
@@ -134,6 +127,22 @@ def log_tween_factory(handler, registry):
         return response
 
     return log_tween
+
+
+class DebugRavenClient(RavenClient):
+
+    def __init__(self, *args, **kw):
+        super(DebugRavenClient, self).__init__(*args, **kw)
+        self.msgs = deque(maxlen=100)
+
+    def _clear(self):
+        self.msgs.clear()
+
+    def is_enabled(self):
+        return True
+
+    def send(self, auth_header=None, **data):
+        self.msgs.append(data)
 
 
 class PingableStatsClient(StatsClient):
@@ -160,6 +169,9 @@ class DebugStatsClient(PingableStatsClient):
         self._prefix = prefix
         self._maxudpsize = maxudpsize
         self.msgs = deque(maxlen=100)
+
+    def _clear(self):
+        self.msgs.clear()
 
     def _send(self, data):
         self.msgs.append(data)
