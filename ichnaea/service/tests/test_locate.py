@@ -9,6 +9,7 @@ from ichnaea.models import (
     Cell,
     CellArea,
     OCIDCell,
+    OCIDCellArea,
     Radio,
     ValidCellKeySchema,
     Wifi,
@@ -124,11 +125,10 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_geoip_mcc_match(self):
-        session = self.session
         london = self.geoip_data['London']
         cell = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
-        session.add(Cell(range=1000, radio=Radio.gsm, **cell))
-        session.flush()
+        self.session.add(Cell(range=1000, radio=Radio.gsm, **cell))
+        self.session.flush()
 
         result = self._make_query(
             data={'cell': [dict(radio=Radio.gsm.name, **cell)]},
@@ -145,18 +145,18 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_geoip_mcc_mismatch(self):
-        session = self.session
         bhutan = self.geoip_data['Bhutan']
         key = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1, 'cid': 1}
         key2 = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1, }
-        session.add(Cell(radio=Radio.gsm, lat=FREMONT_LAT, lon=FREMONT_LON,
-                         range=1000, **key))
-        session.add(CellArea(radio=Radio.gsm, lat=FREMONT_LAT,
-                             lon=FREMONT_LON, range=10000, **key2))
-        session.flush()
+        self.session.add(Cell(radio=Radio.gsm, lat=FREMONT_LAT,
+                              lon=FREMONT_LON, range=1000, **key))
+        self.session.add(CellArea(radio=Radio.gsm, lat=FREMONT_LAT,
+                                  lon=FREMONT_LON, range=10000, **key2))
+        self.session.flush()
 
-        result = self._make_query(data={'cell': [dict(radio='gsm', **key)]},
-                                  client_addr=bhutan['ip'])
+        result = self._make_query(
+            data={'cell': [dict(radio='Radio.gsm', **key)]},
+            client_addr=bhutan['ip'])
         self.assertEqual(result,
                          {'lat': FREMONT_LAT,
                           'lon': FREMONT_LON,
@@ -176,20 +176,19 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': london['accuracy']})
 
     def test_geoip_mcc_multiple(self):
-        session = self.session
         london = self.geoip_data['London']
         cell_key = {'mnc': 1, 'lac': 1, 'cid': 1}
         cells = [
             dict(mcc=GB_MCC, **cell_key),
             dict(mcc=USA_MCC, **cell_key),
         ]
-        gsm = Radio.gsm
         for cell in cells:
-            session.add(Cell(range=1000, radio=gsm, **cell))
-        session.flush()
+            self.session.add(Cell(range=1000, radio=Radio.gsm, **cell))
+        self.session.flush()
 
         result = self._make_query(
-            data={'cell': [dict(radio=gsm.name, **cell) for cell in cells]},
+            data={'cell': [dict(radio=Radio.gsm.name, **cell)
+                           for cell in cells]},
             client_addr=london['ip'])
         self.assertEqual(result,
                          {'lat': london['latitude'],
@@ -197,7 +196,6 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': london['accuracy']})
 
     def test_geoip_mcc_multiple_unknown_mismatching_cell(self):
-        session = self.session
         london = self.geoip_data['London']
         cell_key = {'mnc': 1, 'lac': 1, 'cid': 1}
         cells = [
@@ -205,12 +203,12 @@ class TestPositionSearcher(BaseLocateTest):
             dict(mcc=USA_MCC, **cell_key),
         ]
         # Only add the matching cell to the DB
-        session.add(Cell(range=1000, radio=Radio.gsm, **cells[0]))
-        session.flush()
+        self.session.add(Cell(range=1000, radio=Radio.gsm, **cells[0]))
+        self.session.flush()
 
-        gsm = Radio.gsm
         result = self._make_query(
-            data={'cell': [dict(radio=gsm.name, **cell) for cell in cells]},
+            data={'cell': [dict(radio=Radio.gsm.name, **cell)
+                           for cell in cells]},
             client_addr=london['ip'])
         self.assertEqual(result,
                          {'lat': london['latitude'],
@@ -218,14 +216,13 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': london['accuracy']})
 
     def test_cell(self):
-        session = self.session
         london = self.geoip_data['London']
         cell_key = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1}
-        session.add(Cell(lat=GB_LAT, lon=GB_LON, range=6000,
-                         radio=Radio.gsm, cid=1, **cell_key))
-        session.add(CellArea(lat=GB_LAT, lon=GB_LON, range=9000,
-                             radio=Radio.gsm, **cell_key))
-        session.flush()
+        self.session.add(Cell(lat=GB_LAT, lon=GB_LON, range=6000,
+                              radio=Radio.gsm, cid=1, **cell_key))
+        self.session.add(CellArea(lat=GB_LAT, lon=GB_LON, range=9000,
+                                  radio=Radio.gsm, **cell_key))
+        self.session.flush()
 
         result = self._make_query(
             data={'cell': [dict(cid=1, radio=Radio.gsm.name, **cell_key)]},
@@ -245,14 +242,13 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_ocid_cell(self):
-        session = self.session
         london = self.geoip_data['London']
         cell_key = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1}
-        session.add(OCIDCell(lat=GB_LAT, lon=GB_LON, range=6000,
-                             radio=Radio.gsm, cid=1, **cell_key))
-        session.add(CellArea(lat=GB_LAT, lon=GB_LON, range=9000,
-                             radio=Radio.gsm, **cell_key))
-        session.flush()
+        self.session.add(OCIDCell(lat=GB_LAT, lon=GB_LON, range=6000,
+                                  radio=Radio.gsm, cid=1, **cell_key))
+        self.session.add(CellArea(lat=GB_LAT, lon=GB_LON, range=9000,
+                                  radio=Radio.gsm, **cell_key))
+        self.session.flush()
 
         result = self._make_query(
             data={'cell': [dict(cid=1, radio=Radio.gsm.name, **cell_key)]},
@@ -262,8 +258,27 @@ class TestPositionSearcher(BaseLocateTest):
                           'lon': GB_LON,
                           'accuracy': 6000})
 
+    def test_mls_cell_preferred_over_ocid_cell(self):
+        london = self.geoip_data['London']
+        cell_key = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1}
+        self.session.add(Cell(lat=GB_LAT, lon=GB_LON, range=7000,
+                              radio=Radio.gsm, cid=1, **cell_key))
+        self.session.add(OCIDCell(lat=GB_LAT + 0.001, lon=GB_LON + 0.001,
+                                  range=5000, radio=Radio.gsm, cid=1,
+                                  **cell_key))
+        self.session.add(CellArea(lat=GB_LAT, lon=GB_LON, range=9000,
+                                  radio=Radio.gsm, **cell_key))
+        self.session.flush()
+
+        result = self._make_query(
+            data={'cell': [dict(cid=1, radio=Radio.gsm.name, **cell_key)]},
+            client_addr=london['ip'], api_key_log=True)
+        self.assertEqual(result,
+                         {'lat': GB_LAT,
+                          'lon': GB_LON,
+                          'accuracy': 7000})
+
     def test_cell_miss_lac_hit(self):
-        session = self.session
         lat = PARIS_LAT
         lon = PARIS_LON
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
@@ -276,11 +291,80 @@ class TestPositionSearcher(BaseLocateTest):
                      radio=umts,
                      range=500000, **key),
         ]
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
         result = self._make_query(
-            data={"cell": [dict(radio=Radio.umts.name, cid=7, **key)]},
+            data={'cell': [dict(radio=Radio.umts.name, cid=7, **key)]},
+            api_key_log=True)
+        self.assertEqual(result,
+                         {'lat': PARIS_LAT + 0.0026666,
+                          'lon': PARIS_LON + 0.0033333,
+                          'accuracy': 500000})
+
+        self.check_stats(
+            counter=[
+                'm.cell_lac_hit',
+                'm.api_log.test.cell_lac_hit',
+                ('m.api_log.test.cell_hit', 0),
+                ('m.api_log.test.cell_miss', 0),
+            ],
+        )
+
+    def test_cell_miss_ocid_lac_hit(self):
+        lat = PARIS_LAT
+        lon = PARIS_LON
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        umts = Radio.umts
+        data = [
+            Cell(lat=lat, lon=lon, radio=umts, cid=4, **key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=umts, cid=5, **key),
+            Cell(lat=lat + 0.006, lon=lon + 0.006, radio=umts, cid=6, **key),
+            OCIDCellArea(lat=lat + 0.0026666, lon=lon + 0.0033333,
+                         radio=umts,
+                         range=500000, **key),
+        ]
+        self.session.add_all(data)
+        self.session.flush()
+
+        result = self._make_query(
+            data={'cell': [dict(radio=Radio.umts.name, cid=7, **key)]},
+            api_key_log=True)
+        self.assertEqual(result,
+                         {'lat': PARIS_LAT + 0.0026666,
+                          'lon': PARIS_LON + 0.0033333,
+                          'accuracy': 500000})
+
+        self.check_stats(
+            counter=[
+                'm.cell_lac_hit',
+                'm.api_log.test.cell_lac_hit',
+                ('m.api_log.test.cell_hit', 0),
+                ('m.api_log.test.cell_miss', 0),
+            ],
+        )
+
+    def test_mls_lac_preferred_over_ocid_lac(self):
+        lat = PARIS_LAT
+        lon = PARIS_LON
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        umts = Radio.umts
+        data = [
+            Cell(lat=lat, lon=lon, radio=umts, cid=4, **key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=umts, cid=5, **key),
+            Cell(lat=lat + 0.006, lon=lon + 0.006, radio=umts, cid=6, **key),
+            CellArea(lat=lat + 0.0026666, lon=lon + 0.0033333,
+                     radio=umts,
+                     range=500000, **key),
+            OCIDCellArea(lat=lat + 0.0026666, lon=lon + 0.0033333,
+                         radio=umts,
+                         range=300000, **key),
+        ]
+        self.session.add_all(data)
+        self.session.flush()
+
+        result = self._make_query(
+            data={'cell': [dict(radio=Radio.umts.name, cid=7, **key)]},
             api_key_log=True)
         self.assertEqual(result,
                          {'lat': PARIS_LAT + 0.0026666,
@@ -297,7 +381,6 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_cell_hit_ignores_lac(self):
-        session = self.session
         lat = PARIS_LAT
         lon = PARIS_LON
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
@@ -312,40 +395,38 @@ class TestPositionSearcher(BaseLocateTest):
                      lon=lon + 0.0033333, radio=Radio.umts,
                      range=50000, **key),
         ]
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
         result = self._make_query(
-            data={"cell": [dict(radio=Radio.umts.name, cid=5, **key)]})
+            data={'cell': [dict(radio=Radio.umts.name, cid=5, **key)]})
         self.assertEqual(result,
                          {'lat': PARIS_LAT + 0.002,
                           'lon': PARIS_LON + 0.004,
                           'accuracy': CELL_MIN_ACCURACY})
 
     def test_lac_miss(self):
-        session = self.session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         lat = PARIS_LAT
         lon = PARIS_LON
-        gsm = Radio.gsm
         data = [
-            Cell(lat=lat, lon=lon, radio=gsm, cid=4, **key),
-            Cell(lat=lat + 0.002, lon=lon + 0.004, radio=gsm, cid=5, **key),
-            Cell(lat=1.006, lon=1.006, radio=gsm, cid=6, **key),
-            CellArea(lat=1.0026666, lon=1.0033333, radio=gsm,
+            Cell(lat=lat, lon=lon, radio=Radio.gsm, cid=4, **key),
+            Cell(lat=lat + 0.002, lon=lon + 0.004,
+                 radio=Radio.gsm, cid=5, **key),
+            Cell(lat=1.006, lon=1.006, radio=Radio.gsm, cid=6, **key),
+            CellArea(lat=1.0026666, lon=1.0033333, radio=Radio.gsm,
                      range=50000, **key),
         ]
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
         result = self._make_query(
-            data={"cell": [dict(radio=Radio.gsm.name, mcc=FRANCE_MCC,
+            data={'cell': [dict(radio=Radio.gsm.name, mcc=FRANCE_MCC,
                                 mnc=2, lac=4, cid=5)]})
         self.assertTrue(result is None)
 
     def test_cell_ignore_invalid_lac_cid(self):
         schema = ValidCellKeySchema()
-        session = self.session
         lat = PARIS_LAT
         lon = PARIS_LON
 
@@ -365,11 +446,11 @@ class TestPositionSearcher(BaseLocateTest):
             Cell(lat=lat + 0.002, lon=lon + 0.004, range=1000,
                  radio=Radio.lte, **ignored_key),
         ]
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
         result = self._make_query(data={
-            "cell": [
+            'cell': [
                 dict(radio=Radio.gsm.name, cid=4, **key),
                 dict(radio=Radio.gsm.name, cid=5, **key),
 
@@ -385,7 +466,6 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': CELL_MIN_ACCURACY})
 
     def test_cell_multiple_lac_hit(self):
-        session = self.session
         lat = PARIS_LAT
         lon = PARIS_LON
 
@@ -407,15 +487,15 @@ class TestPositionSearcher(BaseLocateTest):
                      range=30000, **key2),
             expected_lac,
         ]
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
         # We have two lacs, both with two cells, but only know about
         # one cell in one of them and two in the other.
         # The lac with two known cells wins and we use both their
         # positions to calculate the final result.
         result = self._make_query(data={
-            "cell": [
+            'cell': [
                 dict(radio=Radio.gsm.name, cid=4, **key),
                 dict(radio=Radio.gsm.name, cid=9, **key),
                 dict(radio=Radio.gsm.name, cid=4, **key2),
@@ -428,7 +508,6 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': expected_lac.range})
 
     def test_cell_multiple_lac_lower_range_wins(self):
-        session = self.session
         lat = PARIS_LAT
         lon = PARIS_LON
 
@@ -449,13 +528,13 @@ class TestPositionSearcher(BaseLocateTest):
             expected_lac,
         ]
 
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
         # We have two lacs with each one known cell.
         # The lac with the smallest cell wins.
         result = self._make_query(data={
-            "cell": [
+            'cell': [
                 dict(radio=Radio.gsm.name, cid=4, **key),
                 dict(radio=Radio.gsm.name, cid=4, **key2),
             ]
@@ -466,7 +545,6 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': LAC_MIN_ACCURACY})
 
     def test_cell_multiple_radio_lac_hit_with_min_lac_accuracy(self):
-        session = self.session
         lat = PARIS_LAT
         lon = PARIS_LON
 
@@ -486,12 +564,12 @@ class TestPositionSearcher(BaseLocateTest):
                      range=10000, **key2),
             expected_lac,
         ]
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
         # GSM lac-only hit (cid 9 instead of 5) and a LTE cell hit
         result = self._make_query(data={
-            "cell": [
+            'cell': [
                 dict(radio=Radio.gsm.name, cid=9, **key),
                 dict(radio=Radio.lte.name, cid=4, **key2),
             ]
@@ -502,28 +580,27 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': LAC_MIN_ACCURACY})
 
     def test_wifi_not_found_cell_fallback(self):
-        session = self.session
         lat = PARIS_LAT
         lon = PARIS_LON
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         data = [
-            Wifi(key="a0a0a0a0a0a0", lat=3, lon=3),
+            Wifi(key='a0a0a0a0a0a0', lat=3, lon=3),
             Cell(lat=lat, lon=lon, range=1000,
                  radio=Radio.umts, cid=4, **key),
             Cell(lat=lat + 0.002, lon=lon + 0.004, range=1000,
                  radio=Radio.umts, cid=5, **key),
         ]
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
         result = self._make_query(data={
-            "cell": [
+            'cell': [
                 dict(radio=Radio.umts.name, cid=4, **key),
                 dict(radio=Radio.umts.name, cid=5, **key),
             ],
-            "wifi": [
-                {"key": "101010101010"},
-                {"key": "202020202020"},
+            'wifi': [
+                {'key': '101010101010'},
+                {'key': '202020202020'},
             ],
         })
         self.assertEqual(result,
@@ -532,13 +609,12 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': CELL_MIN_ACCURACY})
 
     def test_cell_multiple_country_codes_from_mcc(self):
-        session = self.session
         cell_key = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1}
-        session.add(Cell(lat=GB_LAT, lon=GB_LON, range=6000,
-                         radio=Radio.gsm, cid=1, **cell_key))
-        session.add(CellArea(lat=GB_LAT, lon=GB_LON, range=9000,
-                             radio=Radio.gsm, **cell_key))
-        session.flush()
+        self.session.add(Cell(lat=GB_LAT, lon=GB_LON, range=6000,
+                              radio=Radio.gsm, cid=1, **cell_key))
+        self.session.add(CellArea(lat=GB_LAT, lon=GB_LON, range=9000,
+                                  radio=Radio.gsm, **cell_key))
+        self.session.flush()
 
         # Without a GeoIP, the mcc results in 4 different equally common
         # mcc values, GB not being the first one. We need to make sure
@@ -562,24 +638,23 @@ class TestPositionSearcher(BaseLocateTest):
         # is not in the country determined by geoip, we still
         # trust the wifi position over the geoip result
 
-        session = self.session
         london = self.geoip_data['London']
 
         # This lat/lon is Paris, France
         (lat, lon) = (PARIS_LAT, PARIS_LON)
 
-        wifi1 = dict(key="1234567890ab")
-        wifi2 = dict(key="1234890ab567")
-        wifi3 = dict(key="4321890ab567")
+        wifi1 = dict(key='1234567890ab')
+        wifi2 = dict(key='1234890ab567')
+        wifi3 = dict(key='4321890ab567')
         data = [
             Wifi(lat=lat, lon=lon, **wifi1),
             Wifi(lat=lat, lon=lon, **wifi2),
             Wifi(lat=lat, lon=lon, **wifi3),
         ]
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
-        result = self._make_query(data={"wifi": [wifi1, wifi2, wifi3]},
+        result = self._make_query(data={'wifi': [wifi1, wifi2, wifi3]},
                                   client_addr=london['ip'])
         self.assertEqual(result,
                          {'lat': PARIS_LAT,
@@ -601,7 +676,6 @@ class TestPositionSearcher(BaseLocateTest):
         # database consistency error, but it might also just be a
         # new cell that hasn't been integrated yet or something.
 
-        session = self.session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
         data = [
             Cell(lat=PORTO_ALEGRE_LAT,
@@ -613,11 +687,11 @@ class TestPositionSearcher(BaseLocateTest):
                      range=10000,
                      radio=Radio.gsm, **key),
         ]
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
         result = self._make_query(
-            data={"cell": [dict(radio=Radio.gsm.name, cid=6789, **key)]})
+            data={'cell': [dict(radio=Radio.gsm.name, cid=6789, **key)]})
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT,
                           'lon': SAO_PAULO_LON,
@@ -634,11 +708,10 @@ class TestPositionSearcher(BaseLocateTest):
         # is not in the LAC associated with our query, we drop back
         # to the LAC.
 
-        session = self.session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
-        wifi1 = dict(key="1234567890ab")
-        wifi2 = dict(key="1234890ab567")
-        wifi3 = dict(key="4321890ab567")
+        wifi1 = dict(key='1234567890ab')
+        wifi2 = dict(key='1234890ab567')
+        wifi3 = dict(key='4321890ab567')
         lat = PORTO_ALEGRE_LAT
         lon = PORTO_ALEGRE_LON
         data = [
@@ -650,12 +723,12 @@ class TestPositionSearcher(BaseLocateTest):
                      range=10000,
                      radio=Radio.gsm, **key),
         ]
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
         result = self._make_query(data={
-            "cell": [dict(radio=Radio.gsm.name, cid=6789, **key)],
-            "wifi": [wifi1, wifi2, wifi3],
+            'cell': [dict(radio=Radio.gsm.name, cid=6789, **key)],
+            'wifi': [wifi1, wifi2, wifi3],
         })
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT,
@@ -674,11 +747,10 @@ class TestPositionSearcher(BaseLocateTest):
         # is not in the cell associated with our query, we drop back
         # to the cell.
 
-        session = self.session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
-        wifi1 = dict(key="1234567890ab")
-        wifi2 = dict(key="1234890ab567")
-        wifi3 = dict(key="4321890ab567")
+        wifi1 = dict(key='1234567890ab')
+        wifi2 = dict(key='1234890ab567')
+        wifi3 = dict(key='4321890ab567')
         lat = PORTO_ALEGRE_LAT
         lon = PORTO_ALEGRE_LON
         data = [
@@ -690,12 +762,12 @@ class TestPositionSearcher(BaseLocateTest):
                  range=1000,
                  radio=Radio.gsm, cid=6789, **key),
         ]
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
         result = self._make_query(data={
-            "cell": [dict(radio=Radio.gsm.name, cid=6789, **key)],
-            "wifi": [wifi1, wifi2, wifi3],
+            'cell': [dict(radio=Radio.gsm.name, cid=6789, **key)],
+            'wifi': [wifi1, wifi2, wifi3],
         })
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT,
@@ -714,7 +786,6 @@ class TestPositionSearcher(BaseLocateTest):
         # is inside its enclosing LAC, we accept it and tighten
         # our accuracy accordingly.
 
-        session = self.session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
         data = [
             Cell(lat=SAO_PAULO_LAT + 0.002,
@@ -726,11 +797,11 @@ class TestPositionSearcher(BaseLocateTest):
                      range=10000,
                      radio=Radio.gsm, **key),
         ]
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
         result = self._make_query(data={
-            "cell": [dict(radio=Radio.gsm.name, cid=6789, **key)]})
+            'cell': [dict(radio=Radio.gsm.name, cid=6789, **key)]})
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT + 0.002,
                           'lon': SAO_PAULO_LON + 0.002,
@@ -748,11 +819,10 @@ class TestPositionSearcher(BaseLocateTest):
         # is inside its enclosing cell, we accept it and tighten
         # our accuracy accordingly.
 
-        session = self.session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
-        wifi1 = dict(key="1234567890ab")
-        wifi2 = dict(key="1234890ab567")
-        wifi3 = dict(key="4321890ab567")
+        wifi1 = dict(key='1234567890ab')
+        wifi2 = dict(key='1234890ab567')
+        wifi3 = dict(key='4321890ab567')
         lat = SAO_PAULO_LAT + 0.002
         lon = SAO_PAULO_LON + 0.002
         data = [
@@ -764,12 +834,12 @@ class TestPositionSearcher(BaseLocateTest):
                  range=1000,
                  radio=Radio.gsm, cid=6789, **key),
         ]
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
         result = self._make_query(data={
-            "cell": [dict(radio=Radio.gsm.name, cid=6789, **key)],
-            "wifi": [wifi1, wifi2, wifi3]})
+            'cell': [dict(radio=Radio.gsm.name, cid=6789, **key)],
+            'wifi': [wifi1, wifi2, wifi3]})
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT + 0.002,
                           'lon': SAO_PAULO_LON + 0.002,
@@ -789,11 +859,10 @@ class TestPositionSearcher(BaseLocateTest):
         # is inside its enclosing LAC, we accept it and tighten
         # our accuracy accordingly.
 
-        session = self.session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
-        wifi1 = dict(key="1234567890ab")
-        wifi2 = dict(key="1234890ab567")
-        wifi3 = dict(key="4321890ab567")
+        wifi1 = dict(key='1234567890ab')
+        wifi2 = dict(key='1234890ab567')
+        wifi3 = dict(key='4321890ab567')
         lat = SAO_PAULO_LAT + 0.002
         lon = SAO_PAULO_LON + 0.002
         data = [
@@ -805,12 +874,12 @@ class TestPositionSearcher(BaseLocateTest):
                      range=10000,
                      radio=Radio.gsm, **key),
         ]
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
         result = self._make_query(data={
-            "cell": [dict(radio=Radio.gsm.name, cid=6789, **key)],
-            "wifi": [wifi1, wifi2, wifi3]})
+            'cell': [dict(radio=Radio.gsm.name, cid=6789, **key)],
+            'wifi': [wifi1, wifi2, wifi3]})
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT + 0.002,
                           'lon': SAO_PAULO_LON + 0.002,
@@ -828,11 +897,10 @@ class TestPositionSearcher(BaseLocateTest):
         # is inside its enclosing LAC and cell, we accept it and
         # tighten our accuracy accordingly.
 
-        session = self.session
         key = dict(mcc=BRAZIL_MCC, mnc=VIVO_MNC, lac=12345)
-        wifi1 = dict(key="1234567890ab")
-        wifi2 = dict(key="1234890ab567")
-        wifi3 = dict(key="4321890ab567")
+        wifi1 = dict(key='1234567890ab')
+        wifi2 = dict(key='1234890ab567')
+        wifi3 = dict(key='4321890ab567')
         lat = SAO_PAULO_LAT + 0.002
         lon = SAO_PAULO_LON + 0.002
         data = [
@@ -848,12 +916,12 @@ class TestPositionSearcher(BaseLocateTest):
                      range=10000,
                      radio=Radio.gsm, **key),
         ]
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
         result = self._make_query(data={
-            "cell": [dict(radio=Radio.gsm.name, cid=6789, **key)],
-            "wifi": [wifi1, wifi2, wifi3]})
+            'cell': [dict(radio=Radio.gsm.name, cid=6789, **key)],
+            'wifi': [wifi1, wifi2, wifi3]})
         self.assertEqual(result,
                          {'lat': SAO_PAULO_LAT + 0.002,
                           'lon': SAO_PAULO_LON + 0.002,
@@ -866,14 +934,13 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_wifi(self):
-        session = self.session
         london = self.geoip_data['London']
         wifis = [{'key': '001122334455'}, {'key': '112233445566'}]
-        session.add(Wifi(
+        self.session.add(Wifi(
             key=wifis[0]['key'], lat=GB_LAT, lon=GB_LON, range=200))
-        session.add(Wifi(
+        self.session.add(Wifi(
             key=wifis[1]['key'], lat=GB_LAT, lon=GB_LON + 0.00001, range=300))
-        session.flush()
+        self.session.flush()
 
         result = self._make_query(
             data={'wifi': wifis}, client_addr=london['ip'], api_key_log=True)
@@ -893,16 +960,15 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_wifi_too_few_candidates(self):
-        session = self.session
         wifis = [
-            Wifi(key="001122334455", lat=1.0, lon=1.0),
-            Wifi(key="112233445566", lat=1.001, lon=1.002),
+            Wifi(key='001122334455', lat=1.0, lon=1.0),
+            Wifi(key='112233445566', lat=1.001, lon=1.002),
         ]
-        session.add_all(wifis)
-        session.flush()
+        self.session.add_all(wifis)
+        self.session.flush()
 
         result = self._make_query(
-            data={'wifi': [{"key": "001122334455"}]}, api_key_log=True)
+            data={'wifi': [{'key': '001122334455'}]}, api_key_log=True)
         self.assertTrue(result is None)
         self.check_stats(
             counter=[
@@ -914,17 +980,16 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_wifi_too_few_matches(self):
-        session = self.session
         wifis = [
-            Wifi(key="001122334455", lat=1.0, lon=1.0),
-            Wifi(key="112233445566", lat=1.001, lon=1.002),
-            Wifi(key="223344556677", lat=None, lon=None),
+            Wifi(key='001122334455', lat=1.0, lon=1.0),
+            Wifi(key='112233445566', lat=1.001, lon=1.002),
+            Wifi(key='223344556677', lat=None, lon=None),
         ]
-        session.add_all(wifis)
-        session.flush()
+        self.session.add_all(wifis)
+        self.session.flush()
 
         result = self._make_query(
-            data={'wifi': [{"key": "001122334455"}, {"key": "223344556677"}]})
+            data={'wifi': [{'key': '001122334455'}, {'key': '223344556677'}]})
         self.assertTrue(result is None)
         self.check_stats(
             counter=[
@@ -938,17 +1003,16 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_wifi_too_similar_bssids_by_arithmetic_difference(self):
-        session = self.session
         wifis = [
-            Wifi(key="00000000001f", lat=1.0, lon=1.0),
-            Wifi(key="000000000020", lat=1.0, lon=1.0),
+            Wifi(key='00000000001f', lat=1.0, lon=1.0),
+            Wifi(key='000000000020', lat=1.0, lon=1.0),
         ]
-        session.add_all(wifis)
-        session.flush()
+        self.session.add_all(wifis)
+        self.session.flush()
 
         result = self._make_query(
-            data={'wifi': [{"key": "00000000001f"},
-                           {"key": "000000000020"}]},
+            data={'wifi': [{'key': '00000000001f'},
+                           {'key': '000000000020'}]},
             api_key_log=True)
         self.assertTrue(result is None)
         self.check_stats(
@@ -962,17 +1026,16 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_wifi_too_similar_bssids_by_hamming_distance(self):
-        session = self.session
         wifis = [
-            Wifi(key="000000000058", lat=1.0, lon=1.0),
-            Wifi(key="00000000005c", lat=1.0, lon=1.0),
+            Wifi(key='000000000058', lat=1.0, lon=1.0),
+            Wifi(key='00000000005c', lat=1.0, lon=1.0),
         ]
-        session.add_all(wifis)
-        session.flush()
+        self.session.add_all(wifis)
+        self.session.flush()
 
         result = self._make_query(
-            data={'wifi': [{"key": "000000000058"},
-                           {"key": "00000000005c"}]},
+            data={'wifi': [{'key': '000000000058'},
+                           {'key': '00000000005c'}]},
             api_key_log=True)
         self.assertTrue(result is None)
         self.check_stats(
@@ -986,62 +1049,59 @@ class TestPositionSearcher(BaseLocateTest):
         )
 
     def test_wifi_similar_bssids_but_enough_clusters(self):
-        session = self.session
         wifis = [
-            Wifi(key="00000000001f", lat=1.0, lon=1.0),
-            Wifi(key="000000000020", lat=1.0, lon=1.0),
-            Wifi(key="000000000058", lat=1.00004, lon=1.00004),
-            Wifi(key="00000000005c", lat=1.00004, lon=1.00004),
+            Wifi(key='00000000001f', lat=1.0, lon=1.0),
+            Wifi(key='000000000020', lat=1.0, lon=1.0),
+            Wifi(key='000000000058', lat=1.00004, lon=1.00004),
+            Wifi(key='00000000005c', lat=1.00004, lon=1.00004),
         ]
-        session.add_all(wifis)
-        session.flush()
+        self.session.add_all(wifis)
+        self.session.flush()
 
         result = self._make_query(
-            data={'wifi': [{"key": "00000000001f"},
-                           {"key": "000000000020"},
-                           {"key": "000000000058"},
-                           {"key": "00000000005c"}]})
+            data={'wifi': [{'key': '00000000001f'},
+                           {'key': '000000000020'},
+                           {'key': '000000000058'},
+                           {'key': '00000000005c'}]})
         self.assertEqual(result,
                          {'lat': 1.00002,
                           'lon': 1.00002,
                           'accuracy': 100.0})
 
     def test_wifi_similar_bssids_but_enough_found_clusters(self):
-        session = self.session
         wifis = [
-            Wifi(key="00000000001f", lat=1.0, lon=1.0),
-            Wifi(key="000000000024", lat=1.00004, lon=1.00004),
+            Wifi(key='00000000001f', lat=1.0, lon=1.0),
+            Wifi(key='000000000024', lat=1.00004, lon=1.00004),
         ]
-        session.add_all(wifis)
-        session.flush()
+        self.session.add_all(wifis)
+        self.session.flush()
 
         result = self._make_query(
-            data={'wifi': [{"key": "00000000001f"},
-                           {"key": "000000000020"},
-                           {"key": "000000000021"},
-                           {"key": "000000000022"},
-                           {"key": "000000000023"},
-                           {"key": "000000000024"}]})
+            data={'wifi': [{'key': '00000000001f'},
+                           {'key': '000000000020'},
+                           {'key': '000000000021'},
+                           {'key': '000000000022'},
+                           {'key': '000000000023'},
+                           {'key': '000000000024'}]})
         self.assertEqual(result,
                          {'lat': 1.00002,
                           'lon': 1.00002,
                           'accuracy': 100.0})
 
     def test_wifi_ignore_outlier(self):
-        session = self.session
         wifis = [
-            Wifi(key="001122334455", lat=1.0, lon=1.0),
-            Wifi(key="112233445566", lat=1.001, lon=1.002),
-            Wifi(key="223344556677", lat=1.002, lon=1.004),
-            Wifi(key="334455667788", lat=2.0, lon=2.0),
+            Wifi(key='001122334455', lat=1.0, lon=1.0),
+            Wifi(key='112233445566', lat=1.001, lon=1.002),
+            Wifi(key='223344556677', lat=1.002, lon=1.004),
+            Wifi(key='334455667788', lat=2.0, lon=2.0),
         ]
-        session.add_all(wifis)
-        session.flush()
+        self.session.add_all(wifis)
+        self.session.flush()
 
         result = self._make_query(data={
             'wifi': [
-                {"key": "001122334455"}, {"key": "112233445566"},
-                {"key": "223344556677"}, {"key": "334455667788"},
+                {'key': '001122334455'}, {'key': '112233445566'},
+                {'key': '223344556677'}, {'key': '334455667788'},
             ]})
         self.assertEqual(result,
                          {'lat': 1.001,
@@ -1049,26 +1109,25 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': 248.6090897})
 
     def test_wifi_prefer_cluster_with_better_signals(self):
-        session = self.session
         wifis = [
-            Wifi(key="a1" * 6, lat=1.0, lon=1.0),
-            Wifi(key="b2" * 6, lat=1.001, lon=1.002),
-            Wifi(key="c3" * 6, lat=1.002, lon=1.004),
-            Wifi(key="d4" * 6, lat=2.0, lon=2.0),
-            Wifi(key="e5" * 6, lat=2.001, lon=2.002),
-            Wifi(key="f6" * 6, lat=2.002, lon=2.004),
+            Wifi(key='a1' * 6, lat=1.0, lon=1.0),
+            Wifi(key='b2' * 6, lat=1.001, lon=1.002),
+            Wifi(key='c3' * 6, lat=1.002, lon=1.004),
+            Wifi(key='d4' * 6, lat=2.0, lon=2.0),
+            Wifi(key='e5' * 6, lat=2.001, lon=2.002),
+            Wifi(key='f6' * 6, lat=2.002, lon=2.004),
         ]
-        session.add_all(wifis)
-        session.flush()
+        self.session.add_all(wifis)
+        self.session.flush()
 
         result = self._make_query(data={
             'wifi': [
-                {"key": "A1" * 6, "signal": -100},
-                {"key": "D4" * 6, "signal": -80},
-                {"key": "B2" * 6, "signal": -100},
-                {"key": "E5" * 6, "signal": -90},
-                {"key": "C3" * 6, "signal": -100},
-                {"key": "F6" * 6, "signal": -54},
+                {'key': 'A1' * 6, 'signal': -100},
+                {'key': 'D4' * 6, 'signal': -80},
+                {'key': 'B2' * 6, 'signal': -100},
+                {'key': 'E5' * 6, 'signal': -90},
+                {'key': 'C3' * 6, 'signal': -100},
+                {'key': 'F6' * 6, 'signal': -54},
             ]})
         self.assertEqual(result,
                          {'lat': 2.001,
@@ -1076,26 +1135,25 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': 248.51819})
 
     def test_wifi_prefer_larger_cluster_over_high_signal(self):
-        session = self.session
-        wifis = [Wifi(key=("0%X" % i).lower() * 6,
+        wifis = [Wifi(key=('0%X' % i).lower() * 6,
                       lat=1 + i * 0.000010,
                       lon=1 + i * 0.000012)
                  for i in range(1, 6)]
         wifis += [
-            Wifi(key="d4" * 6, lat=2.0, lon=2.0),
-            Wifi(key="e5" * 6, lat=2.001, lon=2.002),
-            Wifi(key="f6" * 6, lat=2.002, lon=2.004),
+            Wifi(key='d4' * 6, lat=2.0, lon=2.0),
+            Wifi(key='e5' * 6, lat=2.001, lon=2.002),
+            Wifi(key='f6' * 6, lat=2.002, lon=2.004),
         ]
-        session.add_all(wifis)
-        session.flush()
+        self.session.add_all(wifis)
+        self.session.flush()
 
-        observations = [dict(key=("0%X" % i) * 6,
+        observations = [dict(key=('0%X' % i) * 6,
                              signal=-80)
                         for i in range(1, 6)]
         observations += [
-            dict(key="D4" * 6, signal=-75),
-            dict(key="E5" * 6, signal=-74),
-            dict(key="F6" * 6, signal=-73)
+            dict(key='D4' * 6, signal=-75),
+            dict(key='E5' * 6, signal=-74),
+            dict(key='F6' * 6, signal=-73)
         ]
         random.shuffle(observations)
 
@@ -1106,25 +1164,24 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': WIFI_MIN_ACCURACY})
 
     def test_wifi_only_use_top_five_signals_in_noisy_cluster(self):
-        session = self.session
         # all these should wind up in the same cluster since
         # clustering threshold is 500m and the 10 wifis are
         # spaced in increments of (+1m, +1.2m)
-        wifis = [Wifi(key=("0%X".lower() % i) * 6,
+        wifis = [Wifi(key=('0%X'.lower() % i) * 6,
                       lat=1 + i * 0.000010,
                       lon=1 + i * 0.000012)
                  for i in range(1, 11)]
-        session.add_all(wifis)
-        session.commit()
-        observations = [dict(key=("0%X" % i) * 6,
+        self.session.add_all(wifis)
+        self.session.commit()
+        observations = [dict(key=('0%X' % i) * 6,
                              signal=-80)
                         for i in range(6, 11)]
         observations += [
-            dict(key="010101010101", signal=-75),
-            dict(key="020202020202", signal=-74),
-            dict(key="030303030303", signal=-73),
-            dict(key="040404040404", signal=-72),
-            dict(key="050505050505", signal=-71),
+            dict(key='010101010101', signal=-75),
+            dict(key='020202020202', signal=-74),
+            dict(key='030303030303', signal=-73),
+            dict(key='040404040404', signal=-72),
+            dict(key='050505050505', signal=-71),
         ]
         random.shuffle(observations)
 
@@ -1135,18 +1192,17 @@ class TestPositionSearcher(BaseLocateTest):
                           'accuracy': WIFI_MIN_ACCURACY})
 
     def test_wifi_not_closeby(self):
-        session = self.session
         wifis = [
-            Wifi(key="101010101010", lat=1.0, lon=1.0),
-            Wifi(key="202020202020", lat=1.001, lon=1.002),
-            Wifi(key="303030303030", lat=2.002, lon=2.004),
-            Wifi(key="404040404040", lat=2.0, lon=2.0),
+            Wifi(key='101010101010', lat=1.0, lon=1.0),
+            Wifi(key='202020202020', lat=1.001, lon=1.002),
+            Wifi(key='303030303030', lat=2.002, lon=2.004),
+            Wifi(key='404040404040', lat=2.0, lon=2.0),
         ]
-        session.add_all(wifis)
-        session.flush()
+        self.session.add_all(wifis)
+        self.session.flush()
 
         result = self._make_query(
-            data={'wifi': [{"key": "101010101010"}, {"key": "303030303030"}]},
+            data={'wifi': [{'key': '101010101010'}, {'key': '303030303030'}]},
             api_key_log=True)
         self.assertTrue(result is None)
         self.check_stats(
@@ -1181,14 +1237,13 @@ class TestCountrySearcher(BaseLocateTest):
         self.assertTrue(result is None)
 
     def test_no_wifi_provider(self):
-        session = self.session
         london = self.geoip_data['London']
         wifis = [{'key': '001122334455'}, {'key': '112233445566'}]
-        session.add(Wifi(
+        self.session.add(Wifi(
             key=wifis[0]['key'], lat=GB_LAT, lon=GB_LON, range=200))
-        session.add(Wifi(
+        self.session.add(Wifi(
             key=wifis[1]['key'], lat=GB_LAT, lon=GB_LON + 0.00001, range=300))
-        session.flush()
+        self.session.flush()
 
         with self.db_call_checker() as check_db_calls:
             result = self._make_query(
