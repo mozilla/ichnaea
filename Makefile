@@ -167,9 +167,6 @@ endif
 $(BIN)/sphinx-build:
 	$(INSTALL) -r requirements/docs.txt
 
-shell:
-	SQLURI=$(SQLURI) $(PYTHON) scripts/start_ipython.py
-
 docs: $(BIN)/sphinx-build
 	git submodule update --recursive --init
 	cd docs; make html
