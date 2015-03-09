@@ -10,7 +10,7 @@ from ichnaea.locate.location_provider import (
     CellCountryProvider,
     CountryGeoIPLocationProvider,
 )
-from ichnaea.locate.base import StatsLogger
+from ichnaea.locate.stats import StatsLogger
 
 
 def map_data(data, client_addr=None):

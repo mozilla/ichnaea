@@ -22,7 +22,7 @@ from ichnaea.models import (
     WifiLookup,
 )
 from ichnaea.locate.location import PositionLocation, CountryLocation
-from ichnaea.locate.base import StatsLogger
+from ichnaea.locate.stats import StatsLogger
 
 
 # parameters for wifi clustering
