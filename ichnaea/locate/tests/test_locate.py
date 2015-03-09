@@ -34,7 +34,7 @@ from ichnaea.tests.base import (
     USA_MCC,
     VIVO_MNC,
 )
-from ichnaea.service import locate
+from ichnaea.locate import locate
 
 
 class BaseLocateTest(DBTestCase, GeoIPIsolation):

@@ -262,7 +262,7 @@ class AbstractLocationProvider(StatsLogger):
     def locate(self, data):  # pragma: no cover
         """Provide a location given the provided query data (dict).
 
-        :rtype: :class:`~ichnaea.service.locate.AbstractLocation`
+        :rtype: :class:`~ichnaea.locate.AbstractLocation`
         """
         raise NotImplementedError()
 
@@ -374,7 +374,7 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
         """
         Combine the queried_objects into an estimated location.
 
-        :rtype: :class:`~ichnaea.service.locate.AbstractLocation`
+        :rtype: :class:`~ichnaea.locate.AbstractLocation`
         """
         length = len(queried_objects)
         avg_lat = sum([c.lat for c in queried_objects]) / length
@@ -694,7 +694,7 @@ class GeoIPLocationProvider(AbstractLocationProvider):
     def locate(self, data):
         """Provide a location given the provided client IP address.
 
-        :rtype: :class:`~ichnaea.service.locate.AbstractLocation`
+        :rtype: :class:`~ichnaea.locate.AbstractLocation`
         """
         # Always consider there to be GeoIP data, even if no client_addr
         # was provided

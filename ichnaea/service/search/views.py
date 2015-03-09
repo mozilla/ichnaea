@@ -1,6 +1,6 @@
 from ichnaea.service.base import check_api_key
 from ichnaea.service.error import preprocess_request
-from ichnaea.service.locate import PositionSearcher
+from ichnaea.locate.locate import PositionSearcher
 from ichnaea.service.search.schema import SearchSchema
 
 
