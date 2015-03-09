@@ -6,39 +6,12 @@ import operator
 import mobile_codes
 from sqlalchemy.orm import load_only
 
-from ichnaea.constants import (
-    CELL_MIN_ACCURACY,
-    DEGREE_DECIMAL_PLACES,
-    LAC_MIN_ACCURACY,
-    WIFI_MIN_ACCURACY,
-)
-from ichnaea.geocalc import (
-    distance,
-)
-from ichnaea.logging import (
-    get_raven_client,
-    get_stats_client,
-)
-from ichnaea.models import (
-    Cell,
-    CellArea,
-    CellLookup,
-    OCIDCell,
-    OCIDCellArea,
-    Wifi,
-    WifiLookup,
-)
+from ichnaea.constants import (    CELL_MIN_ACCURACY,     DEGREE_DECIMAL_PLACES,     LAC_MIN_ACCURACY,     WIFI_MIN_ACCURACY, )
+from ichnaea.geocalc import (    distance, )
+from ichnaea.logging import (    get_raven_client,     get_stats_client, )
+from ichnaea.models import (    Cell,     CellArea,     CellLookup,     OCIDCell,     OCIDCellArea,     Wifi,     WifiLookup, )
 
-from ichnaea.locate.location_provider import (
-    PositionGeoIPLocationProvider,
-    OCIDCellAreaLocationProvider,
-    CellAreaLocationProvider,
-    OCIDCellLocationProvider,
-    CellLocationProvider,
-    WifiLocationProvider,
-    CellCountryProvider,
-    CountryGeoIPLocationProvider,
-)
+from ichnaea.locate.location_provider import (    PositionGeoIPLocationProvider,     OCIDCellAreaLocationProvider,     CellAreaLocationProvider,     OCIDCellLocationProvider,     CellLocationProvider,     WifiLocationProvider,     CellCountryProvider,     CountryGeoIPLocationProvider, )
 from ichnaea.locate.base import StatsLogger
 
 
