@@ -34,7 +34,7 @@ from ichnaea.tests.base import (
     USA_MCC,
     VIVO_MNC,
 )
-from ichnaea.locate import locate
+from ichnaea.locate.location_searcher import PositionSearcher, CountrySearcher
 
 
 class BaseLocateTest(DBTestCase, GeoIPIsolation):
@@ -68,7 +68,7 @@ class BaseLocateTest(DBTestCase, GeoIPIsolation):
 
 class TestPositionSearcher(BaseLocateTest):
 
-    searcher = locate.PositionSearcher
+    searcher = PositionSearcher
 
     def test_no_data(self):
         with self.db_call_checker() as check_db_calls:
@@ -1215,7 +1215,7 @@ class TestPositionSearcher(BaseLocateTest):
 
 class TestCountrySearcher(BaseLocateTest):
 
-    searcher = locate.CountrySearcher
+    searcher = CountrySearcher
 
     def test_country_geoip(self):
         bhutan = self.geoip_data['Bhutan']

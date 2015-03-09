@@ -9,7 +9,7 @@ from ichnaea.service.error import (
 )
 from ichnaea.service.geolocate.views import NOT_FOUND
 from ichnaea.service.geolocate.schema import GeoLocateSchema
-from ichnaea.locate.locate import (
+from ichnaea.locate.location_searcher import (
     CountrySearcher,
     map_data,
 )
