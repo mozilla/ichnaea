@@ -4,16 +4,10 @@ Changelog
 1.2 (unreleased)
 ----------------
 
-Untagged
-********
+20150309175500
+**************
 
-Migrations
-~~~~~~~~~~
-
-
-Changes
-~~~~~~~
-
+- Fix unittest2 version pin.
 
 20150305122500
 **************
