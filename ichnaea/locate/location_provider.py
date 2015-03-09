@@ -1,4 +1,4 @@
-from collections import defaultdict, deque, namedtuple
+from collections import defaultdict, namedtuple
 from enum import IntEnum
 from functools import partial
 import operator
@@ -6,10 +6,21 @@ import operator
 import mobile_codes
 from sqlalchemy.orm import load_only
 
-from ichnaea.constants import (    CELL_MIN_ACCURACY,     DEGREE_DECIMAL_PLACES,     LAC_MIN_ACCURACY,     WIFI_MIN_ACCURACY, )
-from ichnaea.geocalc import (    distance, )
-from ichnaea.logging import (    get_raven_client,     get_stats_client, )
-from ichnaea.models import (    Cell,     CellArea,     CellLookup,     OCIDCell,     OCIDCellArea,     Wifi,     WifiLookup, )
+from ichnaea.constants import (
+    CELL_MIN_ACCURACY,
+    LAC_MIN_ACCURACY,
+    WIFI_MIN_ACCURACY,
+)
+from ichnaea.geocalc import distance
+from ichnaea.models import (
+    Cell,
+    CellArea,
+    CellLookup,
+    OCIDCell,
+    OCIDCellArea,
+    Wifi,
+    WifiLookup,
+)
 from ichnaea.locate.location import PositionLocation, CountryLocation
 from ichnaea.locate.base import StatsLogger
 
