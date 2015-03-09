@@ -18,5 +18,5 @@ Modules
 
    geocalc
    geoip
+   locate/index
    models/constants
-   service/locate

@@ -6,22 +6,19 @@ from ichnaea.service.error import (
     JSONParseError,
     preprocess_request,
 )
-from ichnaea.service.base import check_api_key
-from ichnaea.service.locate import (
-    PositionSearcher,
-    map_data,
-)
+from ichnaea.locate.searcher import PositionSearcher
+from ichnaea.service.base import check_api_key, prepare_search_data
 
 
 NOT_FOUND = {
-    "error": {
-        "errors": [{
-            "domain": "geolocation",
-            "reason": "notFound",
-            "message": "Not found",
+    'error': {
+        'errors': [{
+            'domain': 'geolocation',
+            'reason': 'notFound',
+            'message': 'Not found',
         }],
-        "code": 404,
-        "message": "Not found",
+        'code': 404,
+        'message': 'Not found',
     }
 }
 NOT_FOUND = dumps(NOT_FOUND)
@@ -34,22 +31,22 @@ def configure_geolocate(config):
 
 @check_api_key('geolocate')
 def geolocate_view(request):
-
-    data, errors = preprocess_request(
+    request_data, errors = preprocess_request(
         request,
         schema=GeoLocateSchema(),
         response=JSONParseError,
         accept_empty=True,
     )
+    search_data = prepare_search_data(
+        request_data, client_addr=request.client_addr)
 
-    data = map_data(data, client_addr=request.client_addr)
-    session = request.db_ro_session
     result = PositionSearcher(
-        {'geoip': request.registry.geoip_db, 'session': session},
+        session_db=request.db_ro_session,
+        geoip_db=request.registry.geoip_db,
         api_key_log=getattr(request, 'api_key_log', False),
         api_key_name=getattr(request, 'api_key_name', None),
         api_name='geolocate',
-    ).search(data)
+    ).search(search_data)
 
     if not result:
         result = HTTPNotFound()
@@ -58,9 +55,9 @@ def geolocate_view(request):
         return result
 
     return {
-        "location": {
-            "lat": result['lat'],
-            "lng": result['lon'],
+        'location': {
+            'lat': result['lat'],
+            'lng': result['lon'],
         },
-        "accuracy": float(result['accuracy']),
+        'accuracy': float(result['accuracy']),
     }

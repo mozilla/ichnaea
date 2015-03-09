@@ -29,14 +29,14 @@ Table of contents
    :maxdepth: 2
 
    usage
-   api/index.rst
+   api/index
    cell
    calculation
    deploy
    metrics
    import_export
    testing
-   internal_api/index.rst
+   internal_api/index
    changelog
 
 

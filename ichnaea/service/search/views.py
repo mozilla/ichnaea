@@ -1,6 +1,6 @@
 from ichnaea.service.base import check_api_key
 from ichnaea.service.error import preprocess_request
-from ichnaea.service.locate import PositionSearcher
+from ichnaea.locate.searcher import PositionSearcher
 from ichnaea.service.search.schema import SearchSchema
 
 
@@ -18,9 +18,9 @@ def search_view(request):
     )
 
     data['geoip'] = request.client_addr
-    session = request.db_ro_session
     result = PositionSearcher(
-        {'geoip': request.registry.geoip_db, 'session': session},
+        session_db=request.db_ro_session,
+        geoip_db=request.registry.geoip_db,
         api_key_log=getattr(request, 'api_key_log', False),
         api_key_name=getattr(request, 'api_key_name', None),
         api_name='search',
