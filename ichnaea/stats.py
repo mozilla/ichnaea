@@ -1,8 +1,4 @@
-from collections import namedtuple
-from enum import IntEnum
-
-from ichnaea.geocalc import distance
-from ichnaea.logging import get_raven_client,     get_stats_client
+from ichnaea.logging import get_raven_client, get_stats_client
 
 
 class StatsLogger(object):
