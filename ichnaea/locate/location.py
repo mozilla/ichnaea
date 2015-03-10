@@ -79,9 +79,7 @@ class CountryLocation(AbstractLocation):
         return self.country_code == other_location.country_code
 
     def accurate_enough(self):
-        if self.found():
-            return True
-        return False
+        return self.found()
 
     def more_accurate(self, other_location):
         if not self.found():
