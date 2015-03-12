@@ -78,12 +78,13 @@ class TestAbstractLocationProvider(DBTestCase):
 class TestAbstractCellLocationProvider(DBTestCase):
 
     default_session = 'db_rw_session'
+    model = Cell
 
     def setUp(self):
         super(TestAbstractCellLocationProvider, self).setUp()
 
         class TestProvider(AbstractCellLocationProvider):
-            model = Cell
+            model = self.model
             location_type = PositionLocation
             log_name = 'test'
             data_field = 'cell'
@@ -96,28 +97,14 @@ class TestAbstractCellLocationProvider(DBTestCase):
             api_name='m',
         )
 
-    def _make_query(self, data=None, client_addr=None,
-                    api_key_log=False, api_key_name='test'):
-        if data is None:
-            data = {'geoip': None, 'cell': [], 'wifi': []}
-        if client_addr:
-            data['geoip'] = client_addr
-        return self.test_class(
-            self.session,
-            api_key_log=api_key_log,
-            api_key_name=api_key_name,
-            api_name='m',
-        ).locate(data)
-
     def test_locate_searches_provided_model(self):
         cell_key = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1}
-        self.session.add(Cell(lat=GB_LAT, lon=GB_LON, range=6000,
-                              radio=Radio.gsm, cid=1, **cell_key))
+        self.session.add(self.model(
+            lat=GB_LAT, lon=GB_LON, range=6000,
+            radio=Radio.gsm, cid=1, **cell_key))
         self.session.flush()
 
-        result = self._make_query(
-            data={'cell': [dict(cid=1, radio=Radio.gsm.name, **cell_key)]},
-            api_key_log=True)
+        result = self.test_instance.locate({'cell': [dict(cid=1, radio=Radio.gsm.name, **cell_key)]})
         self.assertEqual(type(result), PositionLocation)
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)

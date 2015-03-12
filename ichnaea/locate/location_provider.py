@@ -42,26 +42,6 @@ class DataSource(IntEnum):
     GeoIP = 3
 
 
-def estimate_accuracy(lat, lon, points, minimum):
-    """
-    Return the maximum range between a position (lat/lon) and a
-    list of secondary positions (points). But at least use the
-    specified minimum value.
-    """
-    if len(points) == 1:
-        accuracy = points[0].range
-    else:
-        # Terrible approximation, but hopefully better
-        # than the old approximation, "worst-case range":
-        # this one takes the maximum distance from location
-        # to any of the provided points.
-        accuracy = max([distance(lat, lon, p.lat, p.lon) * 1000
-                        for p in points])
-    if accuracy is not None:
-        accuracy = float(accuracy)
-    return max(accuracy, minimum)
-
-
 class AbstractLocationProvider(StatsLogger):
     """
     An AbstractLocationProvider provides an interface for a class
@@ -99,6 +79,25 @@ class AbstractLocationProvider(StatsLogger):
         :rtype: :class:`~ichnaea.locate.AbstractLocation`
         """
         raise NotImplementedError()
+
+    def _estimate_accuracy(self, lat, lon, points, minimum):
+        """
+        Return the maximum range between a position (lat/lon) and a
+        list of secondary positions (points). But at least use the
+        specified minimum value.
+        """
+        if len(points) == 1:
+            accuracy = points[0].range
+        else:
+            # Terrible approximation, but hopefully better
+            # than the old approximation, "worst-case range":
+            # this one takes the maximum distance from location
+            # to any of the provided points.
+            accuracy = max([distance(lat, lon, p.lat, p.lon) * 1000
+                            for p in points])
+        if accuracy is not None:
+            accuracy = float(accuracy)
+        return max(accuracy, minimum)
 
     def log_hit(self):
         """Log a stat metric for a successful provider lookup."""
@@ -208,7 +207,7 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
         length = len(queried_cells)
         avg_lat = sum([c.lat for c in queried_cells]) / length
         avg_lon = sum([c.lon for c in queried_cells]) / length
-        accuracy = estimate_accuracy(
+        accuracy = self._estimate_accuracy(
             avg_lat, avg_lon, queried_cells, CELL_MIN_ACCURACY)
         return self.location_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
@@ -468,7 +467,7 @@ class WifiLocationProvider(AbstractLocationProvider):
         length = len(sample)
         avg_lat = sum([n.lat for n in sample]) / length
         avg_lon = sum([n.lon for n in sample]) / length
-        accuracy = estimate_accuracy(avg_lat, avg_lon,
+        accuracy = self._estimate_accuracy(avg_lat, avg_lon,
                                      sample, WIFI_MIN_ACCURACY)
         return self.location_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
