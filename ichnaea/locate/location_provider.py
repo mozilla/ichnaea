@@ -468,7 +468,7 @@ class WifiLocationProvider(AbstractLocationProvider):
         avg_lat = sum([n.lat for n in sample]) / length
         avg_lon = sum([n.lon for n in sample]) / length
         accuracy = self._estimate_accuracy(avg_lat, avg_lon,
-                                     sample, WIFI_MIN_ACCURACY)
+                                           sample, WIFI_MIN_ACCURACY)
         return self.location_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
     def sufficient_data(self, wifi_keys):

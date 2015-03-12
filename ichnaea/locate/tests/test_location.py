@@ -1,6 +1,6 @@
 from unittest2 import TestCase
 
-from ichnaea.locate.location import AbstractLocation, PositionLocation, CountryLocation
+from ichnaea.locate.location import PositionLocation, CountryLocation
 
 
 class TestPositionLocation(TestCase):
@@ -56,8 +56,10 @@ class TestCountryLocation(TestCase):
         self.assertTrue(location.found())
 
     def test_not_found_when_country_code_or_name_missing(self):
-        for (country_code, country_name) in (('CA', None), (None, 'Canada'), (None, None)):
-            location = CountryLocation(country_code=country_code, country_name=country_name)
+        for (country_code, country_name) in (
+                ('CA', None), (None, 'Canada'), (None, None)):
+            location = CountryLocation(
+                country_code=country_code, country_name=country_name)
             self.assertFalse(location.found())
 
     def test_agrees_with_same_country_code(self):
@@ -89,11 +91,15 @@ class TestCountryLocation(TestCase):
         self.assertTrue(location1.more_accurate(location2))
 
     def test_more_accurate_if_from_preferred_source(self):
-        location1 = CountryLocation(country_code='CA', country_name='Canada', source=1)
-        location2 = CountryLocation(country_code='CA', country_name='Canada', source=2)
+        location1 = CountryLocation(
+            country_code='CA', country_name='Canada', source=1)
+        location2 = CountryLocation(
+            country_code='CA', country_name='Canada', source=2)
         self.assertTrue(location1.more_accurate(location2))
 
     def test_not_more_accurate_if_from_same_source_and_same_value(self):
-        location1 = CountryLocation(country_code='CA', country_name='Canada', source=1)
-        location2 = CountryLocation(country_code='CA', country_name='Canada', source=1)
+        location1 = CountryLocation(
+            country_code='CA', country_name='Canada', source=1)
+        location2 = CountryLocation(
+            country_code='CA', country_name='Canada', source=1)
         self.assertFalse(location1.more_accurate(location2))
