@@ -126,15 +126,15 @@ class AbstractLocationProvider(StatsLogger):
 class AbstractCellLocationProvider(AbstractLocationProvider):
     """
     An AbstractCellLocationProvider provides an interface and
-    partial implementation of a location search using a set of
-    models which have a Cell-like set of fields.
+    partial implementation of a location search using a
+    model which has a Cell-like set of fields.
 
-    .. attribute:: models
+    .. attribute:: model
 
-        A list of models which have a Cell interface to be used
+        A model which has a Cell interface to be used
         in the location search.
     """
-    models = ()
+    model = None
     data_field = 'cell'
     log_name = 'cell'
     log_group = 'cell'
@@ -153,31 +153,26 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
         return cell_keys
 
     def _query_database(self, cell_keys):
-        """Query all cell models."""
-        queried_objects = []
-        for model in self.models:
-            found_cells = []
+        """Query the cell model."""
+        queried_cells = None
 
-            load_fields = (
-                'radio', 'mcc', 'mnc', 'lac', 'lat', 'lon', 'range')
+        load_fields = (
+            'radio', 'mcc', 'mnc', 'lac', 'lat', 'lon', 'range')
 
-            if cell_keys:
-                # only do a query if we have cell locations, or this will match
-                # all rows in the table
-                query = (model.querykeys(self.db_source, cell_keys)
-                              .options(load_only(*load_fields))
-                              .filter(model.lat.isnot(None))
-                              .filter(model.lon.isnot(None)))
+        # only do a query if we have cell locations, or this will match
+        # all rows in the table
+        query = (self.model.querykeys(self.db_source, cell_keys)
+                           .options(load_only(*load_fields))
+                           .filter(self.model.lat.isnot(None))
+                           .filter(self.model.lon.isnot(None)))
 
-                try:
-                    found_cells.extend(query.all())
-                except Exception:
-                    self.raven_client.captureException()
+        try:
+            queried_cells = query.all()
+        except Exception:
+            self.raven_client.captureException()
 
-            if found_cells:
-                queried_objects.extend(self._filter_cells(found_cells))
-
-        return queried_objects
+        if queried_cells:
+            return self._filter_cells(queried_cells)
 
     def _filter_cells(self, found_cells):
         # Group all found_cellss by location area
@@ -204,17 +199,17 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
             range=cell.range,
         ) for cell in lac[0]]
 
-    def _prepare_location(self, queried_objects):  # pragma: no cover
+    def _prepare_location(self, queried_cells):  # pragma: no cover
         """
-        Combine the queried_objects into an estimated location.
+        Combine the queried_cells into an estimated location.
 
         :rtype: :class:`~ichnaea.locate.AbstractLocation`
         """
-        length = len(queried_objects)
-        avg_lat = sum([c.lat for c in queried_objects]) / length
-        avg_lon = sum([c.lon for c in queried_objects]) / length
+        length = len(queried_cells)
+        avg_lat = sum([c.lat for c in queried_cells]) / length
+        avg_lon = sum([c.lon for c in queried_cells]) / length
         accuracy = estimate_accuracy(
-            avg_lat, avg_lon, queried_objects, CELL_MIN_ACCURACY)
+            avg_lat, avg_lon, queried_cells, CELL_MIN_ACCURACY)
         return self.location_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
     def locate(self, data):
@@ -222,9 +217,9 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
         cell_keys = self._clean_cell_keys(data)
         if cell_keys:
             location.query_data = True
-        queried_objects = self._query_database(cell_keys)
-        if queried_objects:
-            location = self._prepare_location(queried_objects)
+            queried_cells = self._query_database(cell_keys)
+            if queried_cells:
+                location = self._prepare_location(queried_cells)
         return location
 
 
@@ -233,7 +228,7 @@ class CellLocationProvider(AbstractCellLocationProvider):
     A CellLocationProvider implements a cell location search using
     the Cell model.
     """
-    models = (Cell, )
+    model = Cell
 
 
 class OCIDCellLocationProvider(AbstractCellLocationProvider):
@@ -241,15 +236,15 @@ class OCIDCellLocationProvider(AbstractCellLocationProvider):
     A CellLocationProvider implements a cell location search using
     the OCID Cell model.
     """
-    models = (OCIDCell, )
+    model = OCIDCell
     source = DataSource.OCID
 
 
 class AbstractCellAreaLocationProvider(AbstractCellLocationProvider):
 
-    def _prepare_location(self, queried_objects):
+    def _prepare_location(self, queried_cells):
         # take the smallest LAC of any the user is inside
-        lac = sorted(queried_objects, key=operator.attrgetter('range'))[0]
+        lac = sorted(queried_cells, key=operator.attrgetter('range'))[0]
         accuracy = float(max(LAC_MIN_ACCURACY, lac.range))
         return self.location_type(lat=lac.lat, lon=lac.lon, accuracy=accuracy)
 
@@ -259,7 +254,7 @@ class CellAreaLocationProvider(AbstractCellAreaLocationProvider):
     A CellAreaLocationProvider implements a cell location search
     using the CellArea model.
     """
-    models = (CellArea, )
+    model = CellArea
     log_name = 'cell_lac'
 
 
@@ -268,7 +263,7 @@ class OCIDCellAreaLocationProvider(AbstractCellAreaLocationProvider):
     An OCIDCellAreaLocationProvider implements a cell location search
     using the OCIDCellArea model.
     """
-    models = (OCIDCellArea, )
+    model = OCIDCellArea
     log_name = 'cell_lac'
     source = DataSource.OCID
 

@@ -83,7 +83,7 @@ class TestAbstractCellLocationProvider(DBTestCase):
         super(TestAbstractCellLocationProvider, self).setUp()
 
         class TestProvider(AbstractCellLocationProvider):
-            models = (Cell,)
+            model = Cell
             location_type = PositionLocation
             log_name = 'test'
             data_field = 'cell'
