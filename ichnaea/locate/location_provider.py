@@ -140,7 +140,7 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
     log_group = 'cell'
     location_type = PositionLocation
 
-    def clean_cell_keys(self, data):
+    def _clean_cell_keys(self, data):
         """Pre-process cell data."""
         radio = data.get('radio')
         cell_keys = []
@@ -152,7 +152,7 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
 
         return cell_keys
 
-    def query_database(self, cell_keys):
+    def _query_database(self, cell_keys):
         """Query all cell models."""
         queried_objects = []
         for model in self.models:
@@ -175,36 +175,36 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
                     self.raven_client.captureException()
 
             if found_cells:
-                # Group all found_cellss by location area
-                lacs = defaultdict(list)
-                for cell in found_cells:
-                    cellarea_key = (cell.radio, cell.mcc, cell.mnc, cell.lac)
-                    lacs[cellarea_key].append(cell)
-
-                def sort_lac(v):
-                    # use the lac with the most values,
-                    # or the one with the smallest range
-                    return (len(v), -min([e.range for e in v]))
-
-                # If we get data from multiple location areas, use the one
-                # with the most data points in it. That way a lac with a cell
-                # hit will have two entries and win over a lac with only the
-                # lac entry.
-                lac = sorted(lacs.values(), key=sort_lac, reverse=True)
-
-                for cell in lac[0]:
-                    # The first entry is the key,
-                    # used only to distinguish cell from lac
-                    network = Network(
-                        key=None,
-                        lat=cell.lat,
-                        lon=cell.lon,
-                        range=cell.range)
-                    queried_objects.append(network)
+                queried_objects.extend(self._filter_cells(found_cells))
 
         return queried_objects
 
-    def prepare_location(self, queried_objects):  # pragma: no cover
+    def _filter_cells(self, found_cells):
+        # Group all found_cellss by location area
+        lacs = defaultdict(list)
+        for cell in found_cells:
+            cellarea_key = (cell.radio, cell.mcc, cell.mnc, cell.lac)
+            lacs[cellarea_key].append(cell)
+
+        def sort_lac(v):
+            # use the lac with the most values,
+            # or the one with the smallest range
+            return (len(v), -min([e.range for e in v]))
+
+        # If we get data from multiple location areas, use the one
+        # with the most data points in it. That way a lac with a cell
+        # hit will have two entries and win over a lac with only the
+        # lac entry.
+        lac = sorted(lacs.values(), key=sort_lac, reverse=True)
+
+        return [Network(
+            key=None,
+            lat=cell.lat,
+            lon=cell.lon,
+            range=cell.range,
+        ) for cell in lac[0]]
+
+    def _prepare_location(self, queried_objects):  # pragma: no cover
         """
         Combine the queried_objects into an estimated location.
 
@@ -219,12 +219,12 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
 
     def locate(self, data):
         location = self.location_type(query_data=False)
-        cell_keys = self.clean_cell_keys(data)
+        cell_keys = self._clean_cell_keys(data)
         if cell_keys:
             location.query_data = True
-        queried_objects = self.query_database(cell_keys)
+        queried_objects = self._query_database(cell_keys)
         if queried_objects:
-            location = self.prepare_location(queried_objects)
+            location = self._prepare_location(queried_objects)
         return location
 
 
@@ -247,7 +247,7 @@ class OCIDCellLocationProvider(AbstractCellLocationProvider):
 
 class AbstractCellAreaLocationProvider(AbstractCellLocationProvider):
 
-    def prepare_location(self, queried_objects):
+    def _prepare_location(self, queried_objects):
         # take the smallest LAC of any the user is inside
         lac = sorted(queried_objects, key=operator.attrgetter('range'))[0]
         accuracy = float(max(LAC_MIN_ACCURACY, lac.range))
@@ -280,7 +280,7 @@ class CellCountryProvider(AbstractCellLocationProvider):
     """
     location_type = CountryLocation
 
-    def query_database(self, cell_keys):
+    def _query_database(self, cell_keys):
         countries = []
         for key in cell_keys:
             countries.extend(mobile_codes.mcc(str(key.mcc)))
@@ -289,7 +289,7 @@ class CellCountryProvider(AbstractCellLocationProvider):
             return []
         return countries[0]
 
-    def prepare_location(self, obj):
+    def _prepare_location(self, obj):
         return self.location_type(country_code=obj.alpha2,
                                   country_name=obj.name)
 
@@ -396,7 +396,7 @@ class WifiLocationProvider(AbstractLocationProvider):
 
         return (wifis, wifi_signals, wifi_keys)
 
-    def query_database(self, wifi_keys):
+    def _query_database(self, wifi_keys):
         queried_wifis = []
         if len(wifi_keys) >= MIN_WIFIS_IN_QUERY:
             keys = [Wifi.to_hashkey(key=key) for key in wifi_keys]
@@ -466,7 +466,7 @@ class WifiLocationProvider(AbstractLocationProvider):
 
         return [c for c in clusters if len(c) >= MIN_WIFIS_IN_CLUSTER]
 
-    def prepare_location(self, clusters):
+    def _prepare_location(self, clusters):
         clusters.sort(lambda a, b: cmp(len(b), len(a)))
         cluster = clusters[0]
         sample = cluster[:min(len(cluster), MAX_WIFIS_IN_CLUSTER)]
@@ -496,7 +496,7 @@ class WifiLocationProvider(AbstractLocationProvider):
             if self.sufficient_data(wifi_keys):
                 location.query_data = True
 
-            queried_wifis = self.query_database(wifi_keys)
+            queried_wifis = self._query_database(wifi_keys)
 
             if len(queried_wifis) < len(wifi_keys):
                 self.stat_count('wifi.partial_match')
@@ -509,7 +509,7 @@ class WifiLocationProvider(AbstractLocationProvider):
             if len(clusters) == 0:
                 self.stat_count('wifi.found_no_cluster')
             else:
-                location = self.prepare_location(clusters)
+                location = self._prepare_location(clusters)
 
         return location
 
