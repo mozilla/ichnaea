@@ -53,9 +53,9 @@ def map_data(data, client_addr=None):
     return mapped
 
 
-class AbstractLocationSearcher(StatsLogger):
+class LocationSearcher(StatsLogger):
     """
-    An AbstractLocationSearcher will use a collection of LocationProvider
+    An LocationSearcher will use a collection of LocationProvider
     classes to attempt to identify a user's location. It will loop over them
     in the order they are specified and use the most accurate location.
     """
@@ -66,7 +66,7 @@ class AbstractLocationSearcher(StatsLogger):
     provider_classes = ()
 
     def __init__(self, db_sources, *args, **kwargs):
-        super(AbstractLocationSearcher, self).__init__(*args, **kwargs)
+        super(LocationSearcher, self).__init__(*args, **kwargs)
 
         self.all_providers = [
             cls(
@@ -136,7 +136,7 @@ class AbstractLocationSearcher(StatsLogger):
         return None
 
 
-class PositionSearcher(AbstractLocationSearcher):
+class PositionSearcher(LocationSearcher):
     """
     A PositionSearcher will return a position defined by a latitude,
     a longitude and an accuracy in meters.
@@ -159,7 +159,7 @@ class PositionSearcher(AbstractLocationSearcher):
         }
 
 
-class CountrySearcher(AbstractLocationSearcher):
+class CountrySearcher(LocationSearcher):
     """
     A CountrySearcher will return a country name and code.
     """

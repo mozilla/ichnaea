@@ -42,9 +42,9 @@ class DataSource(IntEnum):
     GeoIP = 3
 
 
-class AbstractLocationProvider(StatsLogger):
+class LocationProvider(StatsLogger):
     """
-    An AbstractLocationProvider provides an interface for a class
+    An LocationProvider provides an interface for a class
     which will provide a location given a set of query data.
 
     .. attribute:: data_field
@@ -71,12 +71,12 @@ class AbstractLocationProvider(StatsLogger):
     def __init__(self, db_source, *args, **kwargs):
         self.db_source = db_source
         self.location_type = partial(self.location_type, source=self.source)
-        super(AbstractLocationProvider, self).__init__(*args, **kwargs)
+        super(LocationProvider, self).__init__(*args, **kwargs)
 
     def locate(self, data):  # pragma: no cover
         """Provide a location given the provided query data (dict).
 
-        :rtype: :class:`~ichnaea.locate.AbstractLocation`
+        :rtype: :class:`~ichnaea.locate.Location`
         """
         raise NotImplementedError()
 
@@ -122,9 +122,9 @@ class AbstractLocationProvider(StatsLogger):
                 key=self.api_key_name, metric=self.log_name))
 
 
-class AbstractCellLocationProvider(AbstractLocationProvider):
+class CellLocationProvider(LocationProvider):
     """
-    An AbstractCellLocationProvider provides an interface and
+    An CellLocationProvider provides an interface and
     partial implementation of a location search using a
     model which has a Cell-like set of fields.
 
@@ -202,7 +202,7 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
         """
         Combine the queried_cells into an estimated location.
 
-        :rtype: :class:`~ichnaea.locate.AbstractLocation`
+        :rtype: :class:`~ichnaea.locate.Location`
         """
         length = len(queried_cells)
         avg_lat = sum([c.lat for c in queried_cells]) / length
@@ -222,7 +222,7 @@ class AbstractCellLocationProvider(AbstractLocationProvider):
         return location
 
 
-class CellLocationProvider(AbstractCellLocationProvider):
+class CellLocationProvider(CellLocationProvider):
     """
     A CellLocationProvider implements a cell location search using
     the Cell model.
@@ -230,7 +230,7 @@ class CellLocationProvider(AbstractCellLocationProvider):
     model = Cell
 
 
-class OCIDCellLocationProvider(AbstractCellLocationProvider):
+class OCIDCellLocationProvider(CellLocationProvider):
     """
     A CellLocationProvider implements a cell location search using
     the OCID Cell model.
@@ -239,7 +239,7 @@ class OCIDCellLocationProvider(AbstractCellLocationProvider):
     source = DataSource.OCID
 
 
-class AbstractCellAreaLocationProvider(AbstractCellLocationProvider):
+class CellAreaLocationProvider(CellLocationProvider):
 
     def _prepare_location(self, queried_cells):
         # take the smallest LAC of any the user is inside
@@ -248,7 +248,7 @@ class AbstractCellAreaLocationProvider(AbstractCellLocationProvider):
         return self.location_type(lat=lac.lat, lon=lac.lon, accuracy=accuracy)
 
 
-class CellAreaLocationProvider(AbstractCellAreaLocationProvider):
+class CellAreaLocationProvider(CellAreaLocationProvider):
     """
     A CellAreaLocationProvider implements a cell location search
     using the CellArea model.
@@ -257,7 +257,7 @@ class CellAreaLocationProvider(AbstractCellAreaLocationProvider):
     log_name = 'cell_lac'
 
 
-class OCIDCellAreaLocationProvider(AbstractCellAreaLocationProvider):
+class OCIDCellAreaLocationProvider(CellAreaLocationProvider):
     """
     An OCIDCellAreaLocationProvider implements a cell location search
     using the OCIDCellArea model.
@@ -267,7 +267,7 @@ class OCIDCellAreaLocationProvider(AbstractCellAreaLocationProvider):
     source = DataSource.OCID
 
 
-class CellCountryProvider(AbstractCellLocationProvider):
+class CellCountryProvider(CellLocationProvider):
     """
     A CellCountryProvider implements a cell country search without
     using any DB models.
@@ -288,7 +288,7 @@ class CellCountryProvider(AbstractCellLocationProvider):
                                   country_name=obj.name)
 
 
-class WifiLocationProvider(AbstractLocationProvider):
+class WifiLocationProvider(LocationProvider):
     """
     A WifiLocationProvider implements a location search using
     the WiFi models and a series of clustering algorithms.
@@ -508,7 +508,7 @@ class WifiLocationProvider(AbstractLocationProvider):
         return location
 
 
-class GeoIPLocationProvider(AbstractLocationProvider):
+class GeoIPLocationProvider(LocationProvider):
     """
     A GeoIPLocationProvider implements a location search using a
     GeoIP client service lookup.
@@ -522,7 +522,7 @@ class GeoIPLocationProvider(AbstractLocationProvider):
     def locate(self, data):
         """Provide a location given the provided client IP address.
 
-        :rtype: :class:`~ichnaea.locate.AbstractLocation`
+        :rtype: :class:`~ichnaea.locate.Location`
         """
         # Always consider there to be GeoIP data, even if no client_addr
         # was provided

@@ -6,9 +6,9 @@ from ichnaea.constants import (
     WIFI_MIN_ACCURACY,
 )
 from ichnaea.locate.location_provider import (
-    AbstractLocationProvider,
-    AbstractCellLocationProvider,
-    AbstractCellAreaLocationProvider,
+    LocationProvider,
+    CellLocationProvider,
+    CellAreaLocationProvider,
     CellCountryProvider,
     WifiLocationProvider,
     GeoIPLocationProvider,
@@ -33,11 +33,11 @@ from ichnaea.tests.base import (
 from ichnaea.locate.location import CountryLocation, PositionLocation
 
 
-class AbstractLocationProviderTest(DBTestCase, GeoIPIsolation):
+class LocationProviderTest(DBTestCase, GeoIPIsolation):
 
     default_session = 'db_ro_session'
 
-    class TestProvider(AbstractLocationProvider):
+    class TestProvider(LocationProvider):
         location_type = PositionLocation
         log_name = 'test'
 
@@ -52,7 +52,7 @@ class AbstractLocationProviderTest(DBTestCase, GeoIPIsolation):
         DBTestCase.tearDownClass()
 
     def setUp(self, db_session=None):
-        super(AbstractLocationProviderTest, self).setUp()
+        super(LocationProviderTest, self).setUp()
 
         self.provider = self.TestProvider(
             db_session or self.session,
@@ -62,7 +62,7 @@ class AbstractLocationProviderTest(DBTestCase, GeoIPIsolation):
         )
 
 
-class TestAbstractLocationProvider(AbstractLocationProviderTest):
+class TestLocationProvider(LocationProviderTest):
 
     def test_log_hit(self):
         self.provider.log_hit()
@@ -89,9 +89,9 @@ class TestAbstractLocationProvider(AbstractLocationProviderTest):
         )
 
 
-class TestAbstractCellLocationProvider(AbstractLocationProviderTest):
+class TestCellLocationProvider(LocationProviderTest):
 
-    class TestProvider(AbstractCellLocationProvider):
+    class TestProvider(CellLocationProvider):
         model = Cell
         location_type = PositionLocation
         log_name = 'test'
@@ -145,9 +145,9 @@ class TestAbstractCellLocationProvider(AbstractLocationProviderTest):
         self.assertEqual(location.lon, GB_LON + 0.2)
 
 
-class TestAbstractCellAreaLocationProvider(AbstractLocationProviderTest):
+class TestCellAreaLocationProvider(LocationProviderTest):
 
-    class TestProvider(AbstractCellAreaLocationProvider):
+    class TestProvider(CellAreaLocationProvider):
         model = CellArea
         location_type = PositionLocation
         log_name = 'cell_lac'
@@ -192,7 +192,7 @@ class TestAbstractCellAreaLocationProvider(AbstractLocationProviderTest):
         self.assertEqual(location.accuracy, LAC_MIN_ACCURACY)
 
 
-class TestCellCountryProvider(AbstractLocationProviderTest):
+class TestCellCountryProvider(LocationProviderTest):
 
     TestProvider = CellCountryProvider
 
@@ -213,7 +213,7 @@ class TestCellCountryProvider(AbstractLocationProviderTest):
         self.assertFalse(location.found())
 
 
-class TestWifiLocationProvider(AbstractLocationProviderTest):
+class TestWifiLocationProvider(LocationProviderTest):
 
     TestProvider = WifiLocationProvider
 
@@ -462,7 +462,7 @@ class TestWifiLocationProvider(AbstractLocationProviderTest):
         self.assertFalse(location.found())
 
 
-class TestGeoIPLocationProvider(AbstractLocationProviderTest):
+class TestGeoIPLocationProvider(LocationProviderTest):
 
     class TestProvider(GeoIPLocationProvider):
         location_type = PositionLocation
