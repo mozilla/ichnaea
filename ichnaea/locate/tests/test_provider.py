@@ -11,6 +11,7 @@ from ichnaea.locate.location_provider import (
     AbstractCellAreaLocationProvider,
     CellCountryProvider,
     WifiLocationProvider,
+    GeoIPLocationProvider,
 )
 from ichnaea.models.cell import (
     Cell,
@@ -21,15 +22,18 @@ from ichnaea.models.wifi import (
     Wifi,
 )
 from ichnaea.tests.base import (
+    CANADA_MCC,
     DBTestCase,
+    GeoIPIsolation,
     GB_LAT,
     GB_LON,
     GB_MCC,
+    USA_MCC,
 )
 from ichnaea.locate.location import CountryLocation, PositionLocation
 
 
-class AbstractLocationProviderTest(DBTestCase):
+class AbstractLocationProviderTest(DBTestCase, GeoIPIsolation):
 
     default_session = 'db_ro_session'
 
@@ -37,11 +41,21 @@ class AbstractLocationProviderTest(DBTestCase):
         location_type = PositionLocation
         log_name = 'test'
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        DBTestCase.setUpClass()
+        GeoIPIsolation.setup_geoip(raven_client=cls.raven_client)
+
+    @classmethod
+    def tearDownClass(cls):
+        GeoIPIsolation.teardown_geoip()
+        DBTestCase.tearDownClass()
+
+    def setUp(self, db_session=None):
         super(AbstractLocationProviderTest, self).setUp()
 
         self.provider = self.TestProvider(
-            self.session,
+            db_session or self.session,
             api_key_log=True,
             api_key_name='test',
             api_name='m',
@@ -183,9 +197,8 @@ class TestCellCountryProvider(AbstractLocationProviderTest):
     TestProvider = CellCountryProvider
 
     def test_locate_finds_country_from_mcc(self):
-        mcc = 302
-        country = mobile_codes.mcc(str(mcc))[0]
-        cell_key = {'mcc': mcc, 'mnc': 1, 'lac': 1}
+        country = mobile_codes.mcc(str(CANADA_MCC))[0]
+        cell_key = {'mcc': CANADA_MCC, 'mnc': 1, 'lac': 1}
         location = self.provider.locate(
             {'cell': [dict(cid=1, radio=Radio.gsm.name, **cell_key)]})
         self.assertEqual(type(location), CountryLocation)
@@ -193,9 +206,7 @@ class TestCellCountryProvider(AbstractLocationProviderTest):
         self.assertEqual(location.country_name, country.name)
 
     def test_mcc_with_multiple_countries_returns_empty_location(self):
-        mcc = 310
-        country = mobile_codes.mcc(str(mcc))
-        cell_key = {'mcc': mcc, 'mnc': 1, 'lac': 1}
+        cell_key = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1}
         location = self.provider.locate(
             {'cell': [dict(cid=1, radio=Radio.gsm.name, **cell_key)]})
         self.assertEqual(type(location), CountryLocation)
@@ -250,7 +261,8 @@ class TestWifiLocationProvider(AbstractLocationProviderTest):
         self.session.add_all(wifis)
         self.session.flush()
 
-        location = self.provider.locate({'wifi': [{'key': '001122334455'}, {'key': '223344556677'}]})
+        location = self.provider.locate(
+            {'wifi': [{'key': '001122334455'}, {'key': '223344556677'}]})
         self.assertFalse(location.found())
         self.check_stats(
             counter=[
@@ -270,7 +282,8 @@ class TestWifiLocationProvider(AbstractLocationProviderTest):
         self.session.add_all(wifis)
         self.session.flush()
 
-        location = self.provider.locate({'wifi': [{'key': '00000000001f'}, {'key': '000000000020'}]})
+        location = self.provider.locate(
+            {'wifi': [{'key': '00000000001f'}, {'key': '000000000020'}]})
         self.assertFalse(location.found())
         self.check_stats(
             timer=[
@@ -286,7 +299,8 @@ class TestWifiLocationProvider(AbstractLocationProviderTest):
         self.session.add_all(wifis)
         self.session.flush()
 
-        location = self.provider.locate({'wifi': [{'key': '000000000058'}, {'key': '00000000005c'}]})
+        location = self.provider.locate(
+            {'wifi': [{'key': '000000000058'}, {'key': '00000000005c'}]})
         self.assertFalse(location.found())
         self.check_stats(
             timer=[
@@ -304,10 +318,12 @@ class TestWifiLocationProvider(AbstractLocationProviderTest):
         self.session.add_all(wifis)
         self.session.flush()
 
-        location = self.provider.locate({'wifi': [{'key': '00000000001f'},
-                           {'key': '000000000020'},
-                           {'key': '000000000058'},
-                           {'key': '00000000005c'}]})
+        location = self.provider.locate({'wifi': [
+            {'key': '00000000001f'},
+            {'key': '000000000020'},
+            {'key': '000000000058'},
+            {'key': '00000000005c'},
+        ]})
         self.assertEqual(location.lat, 1.00002)
         self.assertEqual(location.lon, 1.00002)
         self.assertEqual(location.accuracy, 100.0)
@@ -320,12 +336,14 @@ class TestWifiLocationProvider(AbstractLocationProviderTest):
         self.session.add_all(wifis)
         self.session.flush()
 
-        location = self.provider.locate({'wifi': [{'key': '00000000001f'},
-                           {'key': '000000000020'},
-                           {'key': '000000000021'},
-                           {'key': '000000000022'},
-                           {'key': '000000000023'},
-                           {'key': '000000000024'}]})
+        location = self.provider.locate({'wifi': [
+            {'key': '00000000001f'},
+            {'key': '000000000020'},
+            {'key': '000000000021'},
+            {'key': '000000000022'},
+            {'key': '000000000023'},
+            {'key': '000000000024'},
+        ]})
         self.assertEqual(location.lat, 1.00002)
         self.assertEqual(location.lon, 1.00002)
         self.assertEqual(location.accuracy, 100.0)
@@ -439,5 +457,35 @@ class TestWifiLocationProvider(AbstractLocationProviderTest):
         self.session.add_all(wifis)
         self.session.flush()
 
-        location = self.provider.locate({'wifi': [{'key': '101010101010'}, {'key': '303030303030'}]})
+        location = self.provider.locate(
+            {'wifi': [{'key': '101010101010'}, {'key': '303030303030'}]})
         self.assertFalse(location.found())
+
+
+class TestGeoIPLocationProvider(AbstractLocationProviderTest):
+
+    class TestProvider(GeoIPLocationProvider):
+        location_type = PositionLocation
+
+    def setUp(self):
+        super(TestGeoIPLocationProvider, self).setUp(db_session=self.geoip_db)
+
+    def test_geoip_unknown(self):
+        location = self.provider.locate({'geoip': '127.0.0.1'})
+        self.assertFalse(location.found())
+
+    def test_geoip_city(self):
+        london = self.geoip_data['London']
+        location = self.provider.locate({'geoip': london['ip']})
+        self.assertEqual(type(location), PositionLocation)
+        self.assertEqual(location.lat, london['latitude'])
+        self.assertEqual(location.lon, london['longitude'])
+        self.assertEqual(location.accuracy, london['accuracy'])
+
+    def test_geoip_country(self):
+        bhutan = self.geoip_data['Bhutan']
+        location = self.provider.locate({'geoip': bhutan['ip']})
+        self.assertEqual(type(location), PositionLocation)
+        self.assertEqual(location.lat, bhutan['latitude'])
+        self.assertEqual(location.lon, bhutan['longitude'])
+        self.assertEqual(location.accuracy, bhutan['accuracy'])
