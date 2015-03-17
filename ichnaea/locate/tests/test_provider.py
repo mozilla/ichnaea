@@ -95,7 +95,6 @@ class TestCellLocationProvider(LocationProviderTest):
         model = Cell
         location_type = PositionLocation
         log_name = 'test'
-        data_field = 'cell'
 
     def test_locate_with_no_data_returns_None(self):
         location = self.provider.locate({})
@@ -151,7 +150,6 @@ class TestCellAreaLocationProvider(LocationProviderTest):
         model = CellArea
         location_type = PositionLocation
         log_name = 'cell_lac'
-        data_field = 'cell'
 
     def test_shortest_range_lac_used(self):
         cell_key = {'mcc': GB_MCC, 'mnc': 1}

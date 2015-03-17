@@ -47,17 +47,12 @@ class LocationProvider(StatsLogger):
     An LocationProvider provides an interface for a class
     which will provide a location given a set of query data.
 
-    .. attribute:: data_field
-
-        The key to look for in the query data, for example 'cell'
-
     .. attribute:: log_name
 
         The name to use in logging statements, for example 'cell_lac'
     """
 
     db_source_field = 'session'
-    data_field = None
     log_name = None
     location_type = None
     source = DataSource.Internal
@@ -128,7 +123,6 @@ class CellLocationProvider(LocationProvider):
         in the location search.
     """
     model = None
-    data_field = 'cell'
     log_name = 'cell'
     location_type = PositionLocation
 
@@ -136,7 +130,7 @@ class CellLocationProvider(LocationProvider):
         """Pre-process cell data."""
         radio = data.get('radio')
         cell_keys = []
-        for cell in data.get(self.data_field, ()):
+        for cell in data.get('cell', ()):
             cell = CellLookup.validate(cell, default_radio=radio)
             if cell:
                 cell_key = CellLookup.to_hashkey(cell)
@@ -286,7 +280,6 @@ class WifiLocationProvider(LocationProvider):
     A WifiLocationProvider implements a location search using
     the WiFi models and a series of clustering algorithms.
     """
-    data_field = 'wifi'
     log_name = 'wifi'
     location_type = PositionLocation
 
@@ -368,7 +361,7 @@ class WifiLocationProvider(LocationProvider):
         wifis = []
 
         # Pre-process wifi data
-        for wifi in data.get(self.data_field, ()):
+        for wifi in data.get('wifi', ()):
             wifi = WifiLookup.validate(wifi)
             if wifi:
                 wifis.append(wifi)
@@ -506,7 +499,6 @@ class GeoIPLocationProvider(LocationProvider):
     GeoIP client service lookup.
     """
     db_source_field = 'geoip'
-    data_field = 'geoip'
     log_name = 'geoip'
     source = DataSource.GeoIP
 
@@ -518,7 +510,7 @@ class GeoIPLocationProvider(LocationProvider):
         # Always consider there to be GeoIP data, even if no client_addr
         # was provided
         location = self.location_type(query_data=True)
-        client_addr = data.get(self.data_field, None)
+        client_addr = data.get('geoip', None)
 
         if client_addr and self.db_source is not None:
             geoip = self.db_source.geoip_lookup(client_addr)
