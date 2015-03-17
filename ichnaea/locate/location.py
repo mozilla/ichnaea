@@ -2,7 +2,7 @@ from ichnaea.constants import DEGREE_DECIMAL_PLACES
 from ichnaea.geocalc import distance
 
 
-class AbstractLocation(object):
+class Location(object):
     """A location returned by a location provider."""
 
     def __init__(self, source=None,
@@ -38,7 +38,23 @@ class AbstractLocation(object):
         raise NotImplementedError
 
 
-class PositionLocation(AbstractLocation):
+class EmptyLocation(Location):
+    """An undefined location."""
+
+    def found(self):
+        return False
+
+    def agrees_with(self, other_location):  # pragma: no cover
+        return True
+
+    def accurate_enough(self):
+        return False
+
+    def more_accurate(self, other_location):  # pragma: no cover
+        return False
+
+
+class PositionLocation(Location):
     """The location returned by a position query."""
 
     def found(self):
@@ -69,7 +85,7 @@ class PositionLocation(AbstractLocation):
             self.accuracy < other_location.accuracy)
 
 
-class CountryLocation(AbstractLocation):
+class CountryLocation(Location):
     """The location returned by a country query."""
 
     def found(self):

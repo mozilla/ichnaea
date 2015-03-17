@@ -1,5 +1,6 @@
 from collections import defaultdict, deque
 
+from ichnaea.locate.location import EmptyLocation
 from ichnaea.locate.location_provider import (
     PositionGeoIPLocationProvider,
     OCIDCellAreaLocationProvider,
@@ -64,6 +65,7 @@ class LocationSearcher(StatsLogger):
     # long as it doesn't contradict the existing best-estimate.
 
     provider_classes = ()
+    log_groups = ('wifi', 'cell', 'geoip')
 
     def __init__(self, db_sources, *args, **kwargs):
         super(LocationSearcher, self).__init__(*args, **kwargs)
@@ -77,7 +79,7 @@ class LocationSearcher(StatsLogger):
             ) for cls in self.provider_classes]
 
     def search_location(self, data):
-        best_location = None
+        best_location = EmptyLocation()
         best_location_provider = None
         all_locations = defaultdict(deque)
 
@@ -86,10 +88,7 @@ class LocationSearcher(StatsLogger):
             all_locations[provider.log_group].appendleft(
                 (provider, provider_location))
 
-            if (
-                best_location is None or
-                provider_location.more_accurate(best_location)
-            ):
+            if provider_location.more_accurate(best_location):
                 # If this location is more accurate than our previous one,
                 # we'll use it.
                 best_location = provider_location
@@ -106,7 +105,7 @@ class LocationSearcher(StatsLogger):
 
         # Log a hit/miss metric for the first data source for
         # which the user provided sufficient data
-        for log_group in ('wifi', 'cell', 'geoip'):
+        for log_group in self.log_groups:
             group_locations = all_locations[log_group]
             if any([l.query_data for (p, l) in group_locations]):
                 # Claim a success if at least one location for a logging
@@ -125,7 +124,7 @@ class LocationSearcher(StatsLogger):
 
         return best_location
 
-    def prepare_location(self, country, location):  # pragma: no cover
+    def prepare_location(self, location):  # pragma: no cover
         raise NotImplementedError()
 
     def search(self, data):
