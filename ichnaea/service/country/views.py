@@ -7,12 +7,10 @@ from ichnaea.service.error import (
     JSONParseError,
     preprocess_request,
 )
-from ichnaea.service.geolocate.views import NOT_FOUND
+from ichnaea.locate.location_searcher import CountrySearcher
+from ichnaea.service.base import prepare_search_data
 from ichnaea.service.geolocate.schema import GeoLocateSchema
-from ichnaea.locate.location_searcher import (
-    CountrySearcher,
-    map_data,
-)
+from ichnaea.service.geolocate.views import NOT_FOUND
 
 EMPTY = ('{}', '')
 
@@ -33,37 +31,39 @@ def country_view(request):
         # Optimize common case of geoip-only request
         country = request.registry.geoip_db.country_lookup(request.client_addr)
         if country:
-            result = HTTPOk()
-            result.content_type = 'application/json'
-            result.text = '{"country_code": "%s", "country_name": "%s"}' % (
+            response = HTTPOk()
+            response.content_type = 'application/json'
+            response.text = '{"country_code": "%s", "country_name": "%s"}' % (
                 country.code, country.name)
-            return result
+            return response
         else:
-            result = HTTPNotFound()
-            result.content_type = 'application/json'
-            result.body = NOT_FOUND
-            return result
+            response = HTTPNotFound()
+            response.content_type = 'application/json'
+            response.body = NOT_FOUND
+            return response
 
-    data, errors = preprocess_request(
+    request_data, errors = preprocess_request(
         request,
         schema=GeoLocateSchema(),
         response=JSONParseError,
         accept_empty=True,
     )
-    data = map_data(data, client_addr=request.client_addr)
 
-    result = CountrySearcher(
+    search_data = prepare_search_data(
+        request_data, client_addr=request.client_addr)
+
+    response = CountrySearcher(
         session_db=request.db_ro_session,
         geoip_db=request.registry.geoip_db,
         api_key_log=False,
         api_key_name=None,
         api_name='country',
-    ).search(data)
+    ).search(search_data)
 
-    if not result:
-        result = HTTPNotFound()
-        result.content_type = 'application/json'
-        result.body = NOT_FOUND
-        return result
+    if not response:
+        response = HTTPNotFound()
+        response.content_type = 'application/json'
+        response.body = NOT_FOUND
+        return response
 
-    return result
+    return response

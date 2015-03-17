@@ -14,46 +14,6 @@ from ichnaea.locate.location_provider import (
 from ichnaea.stats import StatsLogger
 
 
-def map_data(data, client_addr=None):
-    """
-    Transform a geolocate API dictionary to an equivalent search API
-    dictionary.
-    """
-    mapped = {
-        'geoip': None,
-        'radio': data.get('radioType', None),
-        'cell': [],
-        'wifi': [],
-    }
-    if client_addr:
-        mapped['geoip'] = client_addr
-
-    if not data:
-        return mapped
-
-    if 'cellTowers' in data:
-        for cell in data['cellTowers']:
-            new_cell = {
-                'mcc': cell['mobileCountryCode'],
-                'mnc': cell['mobileNetworkCode'],
-                'lac': cell['locationAreaCode'],
-                'cid': cell['cellId'],
-            }
-            # If a radio field is populated in any one of the cells in
-            # cellTowers, this is a buggy geolocate call from FirefoxOS.
-            # Just pass on the radio field, as long as it's non-empty.
-            if 'radio' in cell and cell['radio'] != '':
-                new_cell['radio'] = cell['radio']
-            mapped['cell'].append(new_cell)
-
-    if 'wifiAccessPoints' in data:
-        mapped['wifi'] = [{
-            'key': wifi['macAddress'],
-        } for wifi in data['wifiAccessPoints']]
-
-    return mapped
-
-
 class LocationSearcher(StatsLogger):
     """
     An LocationSearcher will use a collection of LocationProvider
