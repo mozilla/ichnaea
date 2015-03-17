@@ -65,27 +65,29 @@ class LocationSearcher(StatsLogger):
     # long as it doesn't contradict the existing best-estimate.
 
     provider_classes = ()
-    log_groups = ('wifi', 'cell', 'geoip')
 
     def __init__(self, db_sources, *args, **kwargs):
         super(LocationSearcher, self).__init__(*args, **kwargs)
 
-        self.all_providers = [
-            cls(
-                db_sources[cls.db_source_field],
-                api_key_log=self.api_key_log,
-                api_key_name=self.api_key_name,
-                api_name=self.api_name,
-            ) for cls in self.provider_classes]
+        self.all_providers = []
+        for provider_group, providers in self.provider_classes:
+            for provider in providers:
+                provider_instance = provider(
+                    db_sources[provider.db_source_field],
+                    api_key_log=self.api_key_log,
+                    api_key_name=self.api_key_name,
+                    api_name=self.api_name,
+                )
+                self.all_providers.append((provider_group, provider_instance))
 
     def search_location(self, data):
         best_location = EmptyLocation()
         best_location_provider = None
         all_locations = defaultdict(deque)
 
-        for provider in self.all_providers:
+        for provider_group, provider in self.all_providers:
             provider_location = provider.locate(data)
-            all_locations[provider.log_group].appendleft(
+            all_locations[provider_group].appendleft(
                 (provider, provider_location))
 
             if provider_location.more_accurate(best_location):
@@ -104,9 +106,11 @@ class LocationSearcher(StatsLogger):
             best_location_provider.log_hit()
 
         # Log a hit/miss metric for the first data source for
-        # which the user provided sufficient data
-        for log_group in self.log_groups:
-            group_locations = all_locations[log_group]
+        # which the user provided sufficient data.
+        # We check each provider group in reverse order
+        # (most accurate to least).
+        for provider_group, providers in reversed(self.provider_classes):
+            group_locations = all_locations[provider_group]
             if any([l.query_data for (p, l) in group_locations]):
                 # Claim a success if at least one location for a logging
                 # group was a success.
@@ -142,12 +146,18 @@ class PositionSearcher(LocationSearcher):
     """
 
     provider_classes = (
-        PositionGeoIPLocationProvider,
-        OCIDCellAreaLocationProvider,
-        CellAreaLocationProvider,
-        OCIDCellLocationProvider,
-        CellLocationProvider,
-        WifiLocationProvider,
+        ('geoip', (
+            PositionGeoIPLocationProvider,
+        )),
+        ('cell', (
+            OCIDCellAreaLocationProvider,
+            CellAreaLocationProvider,
+            OCIDCellLocationProvider,
+            CellLocationProvider,
+        )),
+        ('wifi', (
+            WifiLocationProvider,
+        )),
     )
 
     def prepare_location(self, location):
@@ -164,8 +174,8 @@ class CountrySearcher(LocationSearcher):
     """
 
     provider_classes = (
-        CellCountryProvider,
-        CountryGeoIPLocationProvider,
+        ('cell', (CellCountryProvider,)),
+        ('geoip', (CountryGeoIPLocationProvider,)),
     )
 
     def prepare_location(self, location):

@@ -11,15 +11,7 @@ from ichnaea.tests.base import (
 )
 
 
-class TestLogProvider(LocationProvider):
-    log_group = 'test'
-
-
-class TestLogSearcher(LocationSearcher):
-    log_groups = ('test',)
-
-
-class TestLogSearcherTest(DBTestCase, GeoIPIsolation):
+class LocationSearcherTest(DBTestCase, GeoIPIsolation):
 
     default_session = 'db_ro_session'
     searcher = None
@@ -50,7 +42,7 @@ class TestLogSearcherTest(DBTestCase, GeoIPIsolation):
                     return False
 
         if not TestProvider:
-            class TestProvider(TestLogProvider):
+            class TestProvider(LocationProvider):
                 location_type = TestLocation
                 log_name = 'test'
 
@@ -58,9 +50,9 @@ class TestLogSearcherTest(DBTestCase, GeoIPIsolation):
                     return self.location_type()
 
         if not TestSearcher:
-            class TestSearcher(TestLogSearcher):
+            class TestSearcher(LocationSearcher):
                 provider_classes = (
-                    TestProvider,
+                    ('test', (TestProvider,)),
                 )
 
                 def prepare_location(self, location):
@@ -74,11 +66,11 @@ class TestLogSearcherTest(DBTestCase, GeoIPIsolation):
         ).search(data)
 
 
-class TestTestLogSearcher(TestLogSearcherTest):
+class TestLocationSearcher(LocationSearcherTest):
 
     def test_searcher_with_no_providers_returns_None(self):
 
-        class TestSearcher(TestLogSearcher):
+        class TestSearcher(LocationSearcher):
             provider_classes = ()
 
         location = self._make_query(TestSearcher=TestSearcher)
@@ -135,24 +127,26 @@ class TestTestLogSearcher(TestLogSearcherTest):
             def more_accurate(self, other):
                 return True
 
-        class TestProvider1(TestLogProvider):
+        class TestProvider1(LocationProvider):
             location_type = TestLocation
             log_name = 'test1'
 
             def locate(self, data):
                 return self.location_type()
 
-        class TestProvider2(TestLogProvider):
+        class TestProvider2(LocationProvider):
             location_type = TestLocation
             log_name = 'test2'
 
             def locate(self, data):
                 raise Exception('The searcher should not reach this point.')
 
-        class TestSearcher(TestLogSearcher):
+        class TestSearcher(LocationSearcher):
             provider_classes = (
-                TestProvider1,
-                TestProvider2,
+                ('test', (
+                    TestProvider1,
+                    TestProvider2,
+                )),
             )
 
             def prepare_location(self, location):
@@ -168,7 +162,7 @@ class TestTestLogSearcher(TestLogSearcherTest):
         )
 
 
-class TestPositionSearcher(TestLogSearcherTest):
+class TestPositionSearcher(LocationSearcherTest):
 
     def test_position_searcher_returns_lat_lon_accuracy(self):
 
@@ -183,7 +177,7 @@ class TestPositionSearcher(TestLogSearcherTest):
             def more_accurate(self, other):
                 return True
 
-        class TestProvider(TestLogProvider):
+        class TestProvider(LocationProvider):
             location_type = TestLocation
             log_name = 'test'
 
@@ -192,7 +186,7 @@ class TestPositionSearcher(TestLogSearcherTest):
 
         class TestSearcher(PositionSearcher):
             provider_classes = (
-                TestProvider,
+                ('test', (TestProvider,)),
             )
 
         location = self._make_query(TestSearcher=TestSearcher)
@@ -201,7 +195,7 @@ class TestPositionSearcher(TestLogSearcherTest):
         self.assertEqual(location['accuracy'], 1000)
 
 
-class TestCountrySearcher(TestLogSearcherTest):
+class TestCountrySearcher(LocationSearcherTest):
 
     def test_country_searcher_returns_country_name_and_code(self):
 
@@ -216,7 +210,7 @@ class TestCountrySearcher(TestLogSearcherTest):
             def more_accurate(self, other):
                 return True
 
-        class TestProvider(TestLogProvider):
+        class TestProvider(LocationProvider):
             location_type = TestLocation
             log_name = 'test'
 
@@ -226,7 +220,7 @@ class TestCountrySearcher(TestLogSearcherTest):
 
         class TestSearcher(CountrySearcher):
             provider_classes = (
-                TestProvider,
+                ('test', (TestProvider,)),
             )
 
         location = self._make_query(TestSearcher=TestSearcher)

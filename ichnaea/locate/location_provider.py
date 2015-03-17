@@ -54,17 +54,11 @@ class LocationProvider(StatsLogger):
     .. attribute:: log_name
 
         The name to use in logging statements, for example 'cell_lac'
-
-    .. attribute:: log_group
-
-        The name of the logging group, for example 'cell' for both
-        cell and cell location area providers.
     """
 
     db_source_field = 'session'
     data_field = None
     log_name = None
-    log_group = None
     location_type = None
     source = DataSource.Internal
 
@@ -136,7 +130,6 @@ class CellLocationProvider(LocationProvider):
     model = None
     data_field = 'cell'
     log_name = 'cell'
-    log_group = 'cell'
     location_type = PositionLocation
 
     def _clean_cell_keys(self, data):
@@ -295,7 +288,6 @@ class WifiLocationProvider(LocationProvider):
     """
     data_field = 'wifi'
     log_name = 'wifi'
-    log_group = 'wifi'
     location_type = PositionLocation
 
     def cluster_elements(self, items, distance_fn, threshold):
@@ -516,7 +508,6 @@ class GeoIPLocationProvider(LocationProvider):
     db_source_field = 'geoip'
     data_field = 'geoip'
     log_name = 'geoip'
-    log_group = 'geoip'
     source = DataSource.GeoIP
 
     def locate(self, data):
