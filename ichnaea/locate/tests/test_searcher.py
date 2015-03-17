@@ -59,7 +59,8 @@ class LocationSearcherTest(DBTestCase, GeoIPIsolation):
                     return location
 
         return TestSearcher(
-            {'geoip': self.geoip_db, 'session': self.session},
+            session_db=self.session,
+            geoip_db=self.geoip_db,
             api_key_log=True,
             api_key_name='test',
             api_name='m',

@@ -51,11 +51,12 @@ class LocationProviderTest(DBTestCase, GeoIPIsolation):
         GeoIPIsolation.teardown_geoip()
         DBTestCase.tearDownClass()
 
-    def setUp(self, db_session=None):
+    def setUp(self):
         super(LocationProviderTest, self).setUp()
 
         self.provider = self.TestProvider(
-            db_session or self.session,
+            session_db=self.session,
+            geoip_db=self.geoip_db,
             api_key_log=True,
             api_key_name='test',
             api_name='m',
@@ -466,7 +467,7 @@ class TestGeoIPLocationProvider(LocationProviderTest):
         location_type = PositionLocation
 
     def setUp(self):
-        super(TestGeoIPLocationProvider, self).setUp(db_session=self.geoip_db)
+        super(TestGeoIPLocationProvider, self).setUp()
 
     def test_geoip_unknown(self):
         location = self.provider.locate({'geoip': '127.0.0.1'})

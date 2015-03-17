@@ -66,14 +66,15 @@ class LocationSearcher(StatsLogger):
 
     provider_classes = ()
 
-    def __init__(self, db_sources, *args, **kwargs):
+    def __init__(self, session_db, geoip_db, *args, **kwargs):
         super(LocationSearcher, self).__init__(*args, **kwargs)
 
         self.all_providers = []
         for provider_group, providers in self.provider_classes:
             for provider in providers:
                 provider_instance = provider(
-                    db_sources[provider.db_source_field],
+                    session_db=session_db,
+                    geoip_db=geoip_db,
                     api_key_log=self.api_key_log,
                     api_key_name=self.api_key_name,
                     api_name=self.api_name,

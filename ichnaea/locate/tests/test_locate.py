@@ -59,7 +59,8 @@ class BaseLocateTest(DBTestCase, GeoIPIsolation):
         if client_addr:
             data['geoip'] = client_addr
         return self.searcher(
-            {'geoip': self.geoip_db, 'session': self.session},
+            session_db=self.session,
+            geoip_db=self.geoip_db,
             api_key_log=api_key_log,
             api_key_name=api_key_name,
             api_name='m',

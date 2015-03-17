@@ -25,12 +25,13 @@ def configure_country(config):
 # Disable API key checks and logging for this API, for the initial wave
 # @check_api_key('country', error_on_invalidkey=False)
 def country_view(request):
-    client_addr = request.client_addr
-    geoip_db = request.registry.geoip_db
-
-    if request.body in EMPTY and client_addr and geoip_db is not None:
+    if (
+            request.body in EMPTY and
+            request.client_addr and
+            request.registry.geoip_db is not None
+    ):
         # Optimize common case of geoip-only request
-        country = geoip_db.country_lookup(client_addr)
+        country = request.registry.geoip_db.country_lookup(request.client_addr)
         if country:
             result = HTTPOk()
             result.content_type = 'application/json'
@@ -49,11 +50,11 @@ def country_view(request):
         response=JSONParseError,
         accept_empty=True,
     )
-    data = map_data(data, client_addr=client_addr)
+    data = map_data(data, client_addr=request.client_addr)
 
-    session = request.db_ro_session
     result = CountrySearcher(
-        {'geoip': geoip_db, 'session': session},
+        session_db=request.db_ro_session,
+        geoip_db=request.registry.geoip_db,
         api_key_log=False,
         api_key_name=None,
         api_name='country',

@@ -52,13 +52,13 @@ class LocationProvider(StatsLogger):
         The name to use in logging statements, for example 'cell_lac'
     """
 
-    db_source_field = 'session'
     log_name = None
     location_type = None
     source = DataSource.Internal
 
-    def __init__(self, db_source, *args, **kwargs):
-        self.db_source = db_source
+    def __init__(self, session_db, geoip_db, *args, **kwargs):
+        self.session_db = session_db
+        self.geoip_db = geoip_db
         self.location_type = partial(self.location_type, source=self.source)
         super(LocationProvider, self).__init__(*args, **kwargs)
 
@@ -147,7 +147,7 @@ class CellLocationProvider(LocationProvider):
 
         # only do a query if we have cell locations, or this will match
         # all rows in the table
-        query = (self.model.querykeys(self.db_source, cell_keys)
+        query = (self.model.querykeys(self.session_db, cell_keys)
                            .options(load_only(*load_fields))
                            .filter(self.model.lat.isnot(None))
                            .filter(self.model.lon.isnot(None)))
@@ -381,7 +381,7 @@ class WifiLocationProvider(LocationProvider):
             keys = [Wifi.to_hashkey(key=key) for key in wifi_keys]
             try:
                 load_fields = ('key', 'lat', 'lon', 'range')
-                query = (Wifi.querykeys(self.db_source, keys)
+                query = (Wifi.querykeys(self.session_db, keys)
                              .options(load_only(*load_fields))
                              .filter(Wifi.lat.isnot(None))
                              .filter(Wifi.lon.isnot(None)))
@@ -498,7 +498,6 @@ class GeoIPLocationProvider(LocationProvider):
     A GeoIPLocationProvider implements a location search using a
     GeoIP client service lookup.
     """
-    db_source_field = 'geoip'
     log_name = 'geoip'
     source = DataSource.GeoIP
 
@@ -512,8 +511,8 @@ class GeoIPLocationProvider(LocationProvider):
         location = self.location_type(query_data=True)
         client_addr = data.get('geoip', None)
 
-        if client_addr and self.db_source is not None:
-            geoip = self.db_source.geoip_lookup(client_addr)
+        if client_addr and self.geoip_db is not None:
+            geoip = self.geoip_db.geoip_lookup(client_addr)
             if geoip:
                 if geoip['city']:
                     self.stat_count('geoip_city_found')

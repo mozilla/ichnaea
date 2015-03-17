@@ -34,7 +34,6 @@ def configure_geolocate(config):
 
 @check_api_key('geolocate')
 def geolocate_view(request):
-
     data, errors = preprocess_request(
         request,
         schema=GeoLocateSchema(),
@@ -43,9 +42,9 @@ def geolocate_view(request):
     )
 
     data = map_data(data, client_addr=request.client_addr)
-    session = request.db_ro_session
     result = PositionSearcher(
-        {'geoip': request.registry.geoip_db, 'session': session},
+        session_db=request.db_ro_session,
+        geoip_db=request.registry.geoip_db,
         api_key_log=getattr(request, 'api_key_log', False),
         api_key_name=getattr(request, 'api_key_name', None),
         api_name='geolocate',
