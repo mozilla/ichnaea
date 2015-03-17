@@ -1,7 +1,7 @@
-:mod:`ichnaea.service.locate`
+:mod:`ichnaea.locate.locate`
 -----------------------------
 
-.. automodule:: ichnaea.service.locate
+.. automodule:: ichnaea.locate.locate
 
 Classes
 +++++++

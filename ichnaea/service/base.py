@@ -12,14 +12,14 @@ API_CHECK = text('select maxreq, log, shortname from api_key '
                  'where valid_key = :api_key')
 
 INVALID_API_KEY = {
-    "error": {
-        "errors": [{
-            "domain": "usageLimits",
-            "reason": "keyInvalid",
-            "message": "Missing or invalid API key.",
+    'error': {
+        'errors': [{
+            'domain': 'usageLimits',
+            'reason': 'keyInvalid',
+            'message': 'Missing or invalid API key.',
         }],
-        "code": 400,
-        "message": "Invalid API key",
+        'code': 400,
+        'message': 'Invalid API key',
     }
 }
 INVALID_API_KEY = dumps(INVALID_API_KEY)
@@ -36,8 +36,8 @@ def rate_limit(redis_client, api_key, maxreq=0, expire=86400):
     if not maxreq:
         return False
 
-    dstamp = util.utcnow().strftime("%Y%m%d")
-    key = "apilimit:%s:%s" % (api_key, dstamp)
+    dstamp = util.utcnow().strftime('%Y%m%d')
+    key = 'apilimit:%s:%s' % (api_key, dstamp)
 
     try:
         current = redis_client.get(key)
@@ -109,3 +109,39 @@ def check_api_key(func_name, error_on_invalidkey=True):
             return func(request, *args, **kwargs)
         return closure
     return c
+
+
+def prepare_search_data(request_data, client_addr=None):
+    """
+    Transform a geolocate API dictionary to an equivalent search API
+    dictionary.
+    """
+    search_data = {
+        'geoip': client_addr,
+        'radio': request_data.get('radioType', None),
+        'cell': [],
+        'wifi': [],
+    }
+
+    if request_data:
+        if 'cellTowers' in request_data:
+            for cell in request_data['cellTowers']:
+                new_cell = {
+                    'mcc': cell['mobileCountryCode'],
+                    'mnc': cell['mobileNetworkCode'],
+                    'lac': cell['locationAreaCode'],
+                    'cid': cell['cellId'],
+                }
+                # If a radio field is populated in any one of the cells in
+                # cellTowers, this is a buggy geolocate call from FirefoxOS.
+                # Just pass on the radio field, as long as it's non-empty.
+                if 'radio' in cell and cell['radio'] != '':
+                    new_cell['radio'] = cell['radio']
+                search_data['cell'].append(new_cell)
+
+        if 'wifiAccessPoints' in request_data:
+            search_data['wifi'] = [{
+                'key': wifi['macAddress'],
+            } for wifi in request_data['wifiAccessPoints']]
+
+    return search_data
