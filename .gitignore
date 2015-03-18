@@ -14,6 +14,7 @@ pip-selfcheck.json
 private-*.ini
 bin/
 build/
+coverage/
 dist/
 ichnaea/content/static/tiles/
 include/

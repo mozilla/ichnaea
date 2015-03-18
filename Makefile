@@ -157,12 +157,11 @@ clean:
 	rm -rf $(HERE)/ichnaea.egg-info
 
 test: mysql
-ifeq ($(TRAVIS), false)
-	$(BIN)/coverage erase
-endif
 	SQLURI=$(SQLURI) CELERY_ALWAYS_EAGER=true \
 	LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(HERE)/lib \
-	$(NOSE) -s -d -v --with-coverage --cover-package ichnaea ichnaea
+	$(NOSE) -s -d -v ichnaea \
+	--with-coverage --cover-package ichnaea --cover-branches \
+	--cover-erase --cover-html --cover-html-dir=coverage
 
 $(BIN)/sphinx-build:
 	$(INSTALL) -r requirements/docs.txt
