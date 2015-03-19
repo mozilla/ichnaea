@@ -72,7 +72,7 @@ setup(
     author_email='dev-geolocation@lists.mozilla.org',
     url='https://github.com/mozilla/ichnaea',
     license="Apache 2.0",
-    packages=find_packages(exclude=['integration_tests']),
+    packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
     install_requires=requires,

@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove the vaurien/integration tests.
+
 - #416: Accept radioType inside the cellTowers mapping in geolocate queries.
 
 - Updated to latest version of Sphinx and its new dependencies.
