@@ -18,9 +18,7 @@ import os
 import os.path
 import sys
 
-EXCLUDES_27 = [
-    'pymysql/_socketio.py',
-]
+EXCLUDES_27 = []
 EXCLUDES_34 = [
     'gunicorn/workers/_gaiohttp.py',
 ]

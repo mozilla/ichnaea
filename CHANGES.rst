@@ -18,6 +18,8 @@ Changes
 
 - Updated to latest version of Sphinx and its new dependencies.
 
+- Updated to latests versions of pyramid, requests, SQLAlchemy and statsd.
+
 20150309175500
 **************
 
