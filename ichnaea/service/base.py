@@ -118,7 +118,6 @@ def prepare_search_data(request_data, client_addr=None):
     """
     search_data = {
         'geoip': client_addr,
-        'radio': request_data.get('radioType', None),
         'cell': [],
         'wifi': [],
     }
@@ -132,11 +131,18 @@ def prepare_search_data(request_data, client_addr=None):
                     'lac': cell['locationAreaCode'],
                     'cid': cell['cellId'],
                 }
+                # Map a per-cell radioType to our internal radio name
+                if 'radioType' in cell and cell['radioType']:
+                    new_cell['radio'] = cell['radioType']
                 # If a radio field is populated in any one of the cells in
                 # cellTowers, this is a buggy geolocate call from FirefoxOS.
                 # Just pass on the radio field, as long as it's non-empty.
-                if 'radio' in cell and cell['radio'] != '':
+                elif 'radio' in cell and cell['radio']:
                     new_cell['radio'] = cell['radio']
+                # If neither could be found, fall back to top-level
+                # radioType field
+                if 'radio' not in new_cell:
+                    new_cell['radio'] = request_data.get('radioType', None)
                 search_data['cell'].append(new_cell)
 
         if 'wifiAccessPoints' in request_data:

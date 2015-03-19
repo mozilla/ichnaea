@@ -28,8 +28,8 @@ class TestGeolocate(AppTestCase):
 
         res = self.app.post_json(
             '%s?key=test' % self.url, {
+                "radioType": cell.radio.name,
                 "cellTowers": [{
-                    "radioType": cell.radio.name,
                     "mobileCountryCode": cell.mcc,
                     "mobileNetworkCode": cell.mnc,
                     "locationAreaCode": cell.lac,
@@ -302,15 +302,6 @@ class TestGeolocate(AppTestCase):
         self.assertAlmostEquals(location['lng'], cell.lon)
         self.assertEqual(res.json['accuracy'], cell.range)
 
-
-class TestGeolocateFxOSWorkarounds(AppTestCase):
-
-    def setUp(self):
-        AppTestCase.setUp(self)
-        self.url = '/v1/geolocate'
-        self.metric = 'geolocate'
-        self.metric_url = 'request.v1.geolocate'
-
     def test_ok_cell_radio_in_celltowers(self):
         # This test covers a bug related to FxOS calling the
         # geolocate API incorrectly.
@@ -328,16 +319,32 @@ class TestGeolocateFxOSWorkarounds(AppTestCase):
                 ]},
             status=200)
 
-        self.check_stats(
-            counter=[self.metric_url + '.200', self.metric + '.api_key.test'])
+        self.assertEqual(res.json, {"location": {"lat": cell.lat,
+                                                 "lng": cell.lon},
+                                    "accuracy": cell.range})
 
-        self.assertEqual(res.content_type, 'application/json')
+    def test_ok_cell_radiotype_in_celltowers(self):
+        # This test covers an extension to the geolocate API
+        cell = CellFactory()
+        self.session.flush()
+
+        res = self.app.post_json(
+            '%s?key=test' % self.url, {
+                "cellTowers": [
+                    {"radioType": cell.radio.name,
+                     "mobileCountryCode": cell.mcc,
+                     "mobileNetworkCode": cell.mnc,
+                     "locationAreaCode": cell.lac,
+                     "cellId": cell.cid},
+                ]},
+            status=200)
+
         self.assertEqual(res.json, {"location": {"lat": cell.lat,
                                                  "lng": cell.lon},
                                     "accuracy": cell.range})
 
     def test_ok_cell_radio_in_celltowers_dupes(self):
-        # This test covered a bug related to FxOS calling the
+        # This test covers a bug related to FxOS calling the
         # geolocate API incorrectly.
         cell = CellFactory()
         self.session.flush()
@@ -356,26 +363,26 @@ class TestGeolocateFxOSWorkarounds(AppTestCase):
                      "cellId": cell.cid},
                 ]},
             status=200)
-        self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {"location": {"lat": cell.lat,
                                                  "lng": cell.lon},
                                     "accuracy": cell.range})
 
     def test_inconsistent_cell_radio_in_towers(self):
-        cell = CellFactory(radio=Radio.gsm)
-        cell2 = CellFactory(radio=Radio.umts, lat=cell.lat, lon=cell.lon)
+        cell = CellFactory(radio=Radio.umts, range=15000)
+        cell2 = CellFactory(radio=Radio.gsm, range=35000,
+                            lat=cell.lat + 0.0002, lon=cell.lon)
         self.session.flush()
 
         res = self.app.post_json(
             '%s?key=test' % self.url, {
                 "radioType": Radio.cdma.name,
                 "cellTowers": [
-                    {"radio": cell.radio.name,
+                    {"radio": "wcdma",
                      "mobileCountryCode": cell.mcc,
                      "mobileNetworkCode": cell.mnc,
                      "locationAreaCode": cell.lac,
                      "cellId": cell.cid},
-                    {"radio": "wcdma",
+                    {"radio": cell2.radio.name,
                      "mobileCountryCode": cell2.mcc,
                      "mobileNetworkCode": cell2.mnc,
                      "locationAreaCode": cell2.lac,
@@ -383,10 +390,35 @@ class TestGeolocateFxOSWorkarounds(AppTestCase):
                 ]},
             status=200)
 
-        self.check_stats(
-            counter=[self.metric_url + '.200', self.metric + '.api_key.test'])
+        location = res.json['location']
+        self.assertAlmostEquals(location['lat'], cell.lat)
+        self.assertAlmostEquals(location['lng'], cell.lon)
+        self.assertEqual(res.json['accuracy'], cell.range)
 
-        self.assertEqual(res.content_type, 'application/json')
+    def test_inconsistent_cell_radio_type_in_towers(self):
+        cell = CellFactory(radio=Radio.umts, range=15000)
+        cell2 = CellFactory(radio=Radio.gsm, range=35000,
+                            lat=cell.lat + 0.0002, lon=cell.lon)
+        self.session.flush()
+
+        res = self.app.post_json(
+            '%s?key=test' % self.url, {
+                "radioType": Radio.cdma.name,
+                "cellTowers": [
+                    {"radio": "cdma",
+                     "radioType": "wcdma",
+                     "mobileCountryCode": cell.mcc,
+                     "mobileNetworkCode": cell.mnc,
+                     "locationAreaCode": cell.lac,
+                     "cellId": cell.cid},
+                    {"radioType": cell2.radio.name,
+                     "mobileCountryCode": cell2.mcc,
+                     "mobileNetworkCode": cell2.mnc,
+                     "locationAreaCode": cell2.lac,
+                     "cellId": cell2.cid},
+                ]},
+            status=200)
+
         location = res.json['location']
         self.assertAlmostEquals(location['lat'], cell.lat)
         self.assertAlmostEquals(location['lng'], cell.lon)

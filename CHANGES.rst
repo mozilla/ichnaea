@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- #416: Accept radioType inside the cellTowers mapping in geolocate queries.
 
 20150309175500
 **************
