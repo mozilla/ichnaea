@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove the circus docs and example ini file.
+
 - Remove the vaurien/integration tests.
 
 - #416: Accept radioType inside the cellTowers mapping in geolocate queries.

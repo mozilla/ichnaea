@@ -112,26 +112,5 @@ The celery processes are started via:
 .. code-block:: bash
 
    bin/celery -A ichnaea.worker:celery beat
-   bin/celery -A ichnaea.worker:celery worker --no-execv
-
-
-Circus
-======
-
-You can also use a process manager like circus to supervise all processes.
-
-To install circus and its dependencies call:
-
-.. code-block:: bash
-
-    bin/pip install --no-deps -r requirements/circus.txt
-
-And then start circus via our example config:
-
-.. code-block:: bash
-
-    bin/circusd --daemon circus.ini
-
-You can interact with a daemonized circus via circusctl. Have a look at
-`the Circus documentation <https://circus.readthedocs.org/>`_ for more
-information on this.
+   bin/celery -A ichnaea.worker:celery worker -Ofair --no-execv \
+       --without-mingle --without-gossip
