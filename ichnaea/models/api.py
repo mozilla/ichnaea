@@ -39,6 +39,9 @@ class ApiKey(HashKeyMixin, _Model):
     # Some free form context / description
     description = Column(String(255))
 
+    # Allow this API key to make external fallback calls
+    allow_fallback = Column(Boolean)
+
     @property
     def name(self):
         return self.shortname or self.valid_key

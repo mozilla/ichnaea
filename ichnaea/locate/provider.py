@@ -4,6 +4,7 @@ from functools import partial
 import operator
 
 import mobile_codes
+import requests
 from sqlalchemy.orm import load_only
 
 from ichnaea.constants import (
@@ -41,6 +42,7 @@ class DataSource(IntEnum):
     Internal = 1
     OCID = 2
     GeoIP = 3
+    Fallback = 4
 
 
 class Provider(StatsLogger):
@@ -57,14 +59,24 @@ class Provider(StatsLogger):
     location_type = None
     source = DataSource.Internal
 
-    def __init__(self, session_db, geoip_db, *args, **kwargs):
+    def __init__(self, session_db, geoip_db, settings, *args, **kwargs):
         self.session_db = session_db
         self.geoip_db = geoip_db
+        self.settings = settings
         self.location_type = partial(self.location_type, source=self.source)
         super(Provider, self).__init__(*args, **kwargs)
 
+    def should_locate(self, data, location):
+        """
+        Given location query data and a possible location
+        found by another provider, check if this provider should
+        attempt to perform a location search.
+        """
+        return True
+
     def locate(self, data):  # pragma: no cover
-        """Provide a location given the provided query data (dict).
+        """
+        Provide a location given the provided query data (dict).
 
         :rtype: :class:`~ichnaea.locate.location.Location`
         """
@@ -531,3 +543,79 @@ class GeoIPPositionProvider(BaseGeoIPProvider):
 
 class GeoIPCountryProvider(BaseGeoIPProvider):
     location_type = Country
+
+
+class FallbackProvider(Provider):
+    log_name = 'fallback'
+    location_type = Position
+    source = DataSource.Fallback
+
+    def _prepare_cell(self, cell):
+        return {
+            'radioType': cell.get('radio', None),
+            'cellId': cell.get('cid', None),
+            'locationAreaCode': cell.get('lac', None),
+            'mobileCountryCode': cell.get('mcc', None),
+            'mobileNetworkCode': cell.get('mnc', None),
+        }
+
+    def _prepare_wifi(self, wifi):
+        return {
+            'macAddress': wifi.get('key', ''),
+        }
+
+    def _prepare_data(self, data):
+        cell_queries = [
+            self._prepare_cell(cell) for cell in data.get('cell', [])]
+        wifi_queries = [
+            self._prepare_wifi(wifi) for wifi in data.get('wifi', [])]
+
+        return {
+            'cellTowers': cell_queries,
+            'wifiAccessPoints': wifi_queries,
+        }
+
+    def should_locate(self, data, location):
+        empty_location = not location.found()
+        weak_location = location.source >= DataSource.GeoIP
+        cell_found = data.get('cell', [])
+        wifi_found = len(data.get('wifi', [])) > 1
+        return (
+            self.api_key.allow_fallback and
+            (empty_location or weak_location) and
+            (cell_found or wifi_found)
+        )
+
+    def locate(self, data):
+        location = self.location_type(query_data=False)
+
+        query_data = self._prepare_data(data)
+
+        try:
+            response = requests.post(
+                self.settings['url'],
+                headers={'User-Agent': 'ichnaea'},
+                json=query_data,
+                timeout=5.0,
+                verify=False,
+            )
+            response.raise_for_status()
+        except requests.exceptions.RequestException:
+            self.raven_client.captureException()
+            response = None
+
+        if response:
+            try:
+                json_data = response.json()
+                lat = json_data['location']['lat']
+                lon = json_data['location']['lng']
+                accuracy = json_data['accuracy']
+                location = self.location_type(
+                    lat=lat,
+                    lon=lon,
+                    accuracy=accuracy,
+                )
+            except (KeyError, TypeError):
+                self.raven_client.captureException()
+
+        return location

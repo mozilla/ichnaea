@@ -70,6 +70,9 @@ TEST_CONFIG = DummyConfig({
         'source_apikey': 'export',
         'batch': '3',
     },
+    'locate:fallback': {
+        'url': 'http://127.0.0.1:9/?api',
+    },
 })
 
 GEOIP_DATA = {

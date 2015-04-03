@@ -62,6 +62,7 @@ class SearcherTest(DBTestCase, GeoIPIsolation):
         return TestSearcher(
             session_db=self.session,
             geoip_db=self.geoip_db,
+            settings={},
             api_key=ApiKey(shortname='test', log=True),
             api_name='m',
         ).search(data)
@@ -115,6 +116,62 @@ class TestSearcher(SearcherTest):
                 ('m.test_miss', 0),
                 'm.api_log.test.test_hit',
                 ('m.api_log.test.test_miss', 0),
+            ],
+        )
+
+    def test_only_searches_providers_when_should_locate_is_true(self):
+
+        class TestLocation(Location):
+
+            def accurate_enough(self):
+                return False
+
+            def found(self):
+                return True
+
+            def more_accurate(self, other):
+                return True
+
+        class TestProvider1(Provider):
+            location_type = TestLocation
+            log_name = 'test1'
+
+            def should_locate(self, data, location):
+                return True
+
+            def locate(self, data):
+                return self.location_type()
+
+        class TestProvider2(Provider):
+            location_type = TestLocation
+            log_name = 'test2'
+
+            def should_locate(self, data, location):
+                return False
+
+            def locate(self, data):
+                raise Exception('The searcher should not reach this point.')
+
+        class TestSearcher(Searcher):
+            provider_classes = (
+                ('test', (
+                    TestProvider1,
+                    TestProvider2,
+                )),
+            )
+
+            def _prepare(self, location):
+                return location
+
+        location = self._make_query(TestSearcher=TestSearcher)
+        self.assertTrue(isinstance(location, TestLocation))
+        self.check_stats(
+            counter=[
+                'm.test1_hit',
+                'm.api_log.test.test1_hit',
+                ('m.test2_hit', 0),
+                ('m.api_log.test.test2_hit', 0),
+                ('m.api_log.test.test2_miss', 0),
             ],
         )
 

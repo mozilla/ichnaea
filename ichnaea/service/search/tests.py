@@ -1,9 +1,11 @@
+import requests_mock
 from pyramid.testing import DummyRequest
 from sqlalchemy import text
 
 from ichnaea.constants import CELL_MIN_ACCURACY
 from ichnaea.customjson import dumps, loads
 from ichnaea.models import (
+    ApiKey,
     Cell,
     Radio,
     Wifi,
@@ -120,6 +122,72 @@ class TestSearch(AppTestCase):
                      ('search.wifi_hit', 1),
                      ('request.v1.search.200', 1),
                      ('search.api_log.test.wifi_hit', 1)],
+        )
+
+    def test_ok_geoip(self):
+        app = self.app
+        london = self.geoip_data['London']
+        res = app.post_json(
+            '/v1/search?key=test',
+            {"wifi": [
+                {"key": "a0fffffff0ff"}, {"key": "b1ffff0fffff"},
+                {"key": "c2fffffffff0"}, {"key": "d3fffff0ffff"},
+            ]},
+            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
+            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {"status": "ok",
+                                    "lat": london['latitude'],
+                                    "lon": london['longitude'],
+                                    "accuracy": london['accuracy']})
+
+        self.check_stats(
+            timer=[('request.v1.search', 1)],
+            counter=[('search.api_key.test', 1),
+                     ('search.geoip_hit', 1),
+                     ('request.v1.search.200', 1),
+                     ('search.geoip_city_found', 1),
+                     ('search.api_log.test.wifi_miss', 1)],
+        )
+
+    def test_ok_fallback(self):
+        cell_key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        api_key = ApiKey.getkey(self.session, 'test')
+        api_key.allow_fallback = True
+        self.session.commit()
+
+        with requests_mock.Mocker() as mock:
+            response_location = {
+                'location': {
+                    'lat': 1.0,
+                    'lng': 1.0,
+                },
+                'accuracy': 100,
+                'fallback': 'lacf',
+            }
+            mock.register_uri(
+                'POST', requests_mock.ANY, json=response_location)
+
+            res = self.app.post_json(
+                '/v1/search?key=test',
+                {'radio': Radio.gsm.name, 'cell': [
+                    dict(radio=Radio.umts.name, cid=4, **cell_key),
+                    dict(radio=Radio.umts.name, cid=5, **cell_key),
+                ]},
+                status=200)
+
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {'status': 'ok',
+                                    'lat': 1.0,
+                                    'lon': 1.0,
+                                    'accuracy': 100})
+
+        self.check_stats(
+            timer=[('request.v1.search', 1)],
+            counter=[('search.api_key.test', 1),
+                     ('search.fallback_hit', 1),
+                     ('request.v1.search.200', 1),
+                     ('search.api_log.test.fallback_hit', 1)],
         )
 
     def test_not_found(self):

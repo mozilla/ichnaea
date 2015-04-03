@@ -1,11 +1,15 @@
 import mobile_codes
 import random
 
+import requests_mock
+from requests.exceptions import RequestException
+
 from ichnaea.constants import (
     LAC_MIN_ACCURACY,
     WIFI_MIN_ACCURACY,
 )
 from ichnaea.locate.location import (
+    EmptyLocation,
     Country,
     Position,
 )
@@ -13,6 +17,8 @@ from ichnaea.locate.provider import (
     CellAreaPositionProvider,
     CellCountryProvider,
     CellPositionProvider,
+    DataSource,
+    FallbackProvider,
     GeoIPCountryProvider,
     GeoIPPositionProvider,
     Provider,
@@ -32,6 +38,7 @@ from ichnaea.tests.base import (
     GB_MCC,
     USA_MCC,
 )
+from ichnaea.tests.factories import CellFactory, WifiFactory
 
 
 class ProviderTest(DBTestCase, GeoIPIsolation):
@@ -58,6 +65,7 @@ class ProviderTest(DBTestCase, GeoIPIsolation):
         self.provider = self.TestProvider(
             session_db=self.session,
             geoip_db=self.geoip_db,
+            settings={},
             api_key=ApiKey(shortname='test', log=True),
             api_name='m',
         )
@@ -505,3 +513,139 @@ class TestGeoIPCountryProvider(ProviderTest):
         self.assertEqual(type(location), Country)
         self.assertEqual(location.country_code, bhutan['country_code'])
         self.assertEqual(location.country_name, bhutan['country_name'])
+
+
+class TestFallbackProvider(ProviderTest):
+
+    TestProvider = FallbackProvider
+
+    def setUp(self):
+        super(TestFallbackProvider, self).setUp()
+
+        self.provider.api_key.allow_fallback = True
+        self.provider.settings = {
+            'url': 'http://127.0.0.1:9/?api',
+        }
+
+        self.cells = [
+            CellFactory.build().hashkey()._to_json_value() for _ in range(2)]
+        self.wifis = [
+            WifiFactory.build().hashkey()._to_json_value() for _ in range(2)]
+
+    def test_successful_call_returns_location(self):
+        response_location = {
+            'location': {
+                'lat': 51.5366,
+                'lng': 0.03989,
+            },
+            'accuracy': 1500,
+            'fallback': 'lacf',
+        }
+
+        with requests_mock.Mocker() as mock:
+            mock.register_uri(
+                'POST', requests_mock.ANY, json=response_location)
+
+            location = self.provider.locate({
+                'cell': self.cells,
+                'wifi': self.wifis,
+            })
+
+        self.assertTrue(location.found())
+        self.assertEqual(location.lat, response_location['location']['lat'])
+        self.assertEqual(location.lon, response_location['location']['lng'])
+        self.assertEqual(location.accuracy, response_location['accuracy'])
+
+    def test_failed_call_returns_empty_location(self):
+        with requests_mock.Mocker() as mock:
+            def raise_request_exception(request, context):
+                raise RequestException()
+
+            mock.register_uri(
+                'POST', requests_mock.ANY, json=raise_request_exception)
+
+            location = self.provider.locate({
+                'cell': self.cells,
+                'wifi': self.wifis,
+            })
+
+        self.assertFalse(location.found())
+
+    def test_invalid_json_returns_empty_location(self):
+        with requests_mock.Mocker() as mock:
+            mock.register_uri('POST', requests_mock.ANY, json='[invalid json')
+
+            location = self.provider.locate({
+                'cell': self.cells,
+                'wifi': self.wifis,
+            })
+
+        self.assertFalse(location.found())
+
+    def test_500_response_returns_empty_location(self):
+        with requests_mock.Mocker() as mock:
+            mock.register_uri('POST', requests_mock.ANY, status_code=500)
+
+            location = self.provider.locate({
+                'cell': self.cells,
+                'wifi': self.wifis,
+            })
+
+        self.assertFalse(location.found())
+
+    def test_403_response_returns_empty_location(self):
+        with requests_mock.Mocker() as mock:
+            mock.register_uri('POST', requests_mock.ANY, status_code=403)
+
+            location = self.provider.locate({
+                'cell': self.cells,
+                'wifi': self.wifis,
+            })
+
+        self.assertFalse(location.found())
+
+    def test_no_call_made_when_not_allowed_for_apikey(self):
+        self.provider.api_key.allow_fallback = False
+
+        query_data = {
+            'cell': self.cells,
+            'wifi': self.wifis,
+        }
+        location = EmptyLocation()
+
+        self.assertFalse(self.provider.should_locate(query_data, location))
+
+    def test_should_not_provide_location_if_one_wifi_provided(self):
+        self.assertFalse(self.provider.should_locate({
+            'cell': [],
+            'wifi': self.wifis[:1],
+        }, EmptyLocation()))
+
+    def test_should_not_provide_location_without_cell_or_wifi_data(self):
+        self.assertFalse(self.provider.should_locate({}, EmptyLocation()))
+
+    def test_should_provide_location_if_only_empty_location_found(self):
+        self.assertTrue(self.provider.should_locate({
+            'cell': [],
+            'wifi': self.wifis,
+        }, EmptyLocation()))
+
+    def test_should_provide_location_if_only_geoip_location_found(self):
+        geoip_location = Position(
+            source=DataSource.GeoIP, lat=1.0, lon=1.0, accuracy=1.0)
+        query_data = {
+            'cell': [],
+            'wifi': self.wifis,
+        }
+        self.assertTrue(
+            self.provider.should_locate(query_data, geoip_location))
+
+    def test_should_not_provide_location_if_non_geoip_location_found(self):
+        internal_location = Position(
+            source=DataSource.Internal, lat=1.0, lon=1.0, accuracy=1.0)
+        query_data = {
+            'cell': [],
+            'wifi': self.wifis,
+        }
+        self.assertFalse(
+            self.provider.should_locate(query_data, internal_location))

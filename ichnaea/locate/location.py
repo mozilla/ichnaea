@@ -57,6 +57,13 @@ class EmptyLocation(Location):
 class Position(Location):
     """The position returned by a position query."""
 
+    def __repr__(self):  # pragma: no cover
+        return 'Position<lat: {lat}, lon: {lon}, accuracy: {accuracy}>'.format(
+            lat=self.lat,
+            lon=self.lon,
+            accuracy=self.accuracy,
+        )
+
     def found(self):
         return None not in (self.lat, self.lon)
 
@@ -84,6 +91,12 @@ class Position(Location):
 
 class Country(Location):
     """The country returned by a country query."""
+
+    def __repr__(self):  # pragma: no cover
+        return 'Country<name: {name}, code: {code}>'.format(
+            name=self.country_name,
+            code=self.country_code,
+        )
 
     def found(self):
         return None not in (self.country_code, self.country_name)

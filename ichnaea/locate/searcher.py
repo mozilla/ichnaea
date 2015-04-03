@@ -5,6 +5,7 @@ from ichnaea.locate.provider import (
     CellAreaPositionProvider,
     CellCountryProvider,
     CellPositionProvider,
+    FallbackProvider,
     GeoIPCountryProvider,
     GeoIPPositionProvider,
     OCIDCellAreaPositionProvider,
@@ -26,15 +27,19 @@ class Searcher(StatsLogger):
 
     provider_classes = ()
 
-    def __init__(self, session_db, geoip_db, *args, **kwargs):
+    def __init__(self, session_db, geoip_db, settings, *args, **kwargs):
         super(Searcher, self).__init__(*args, **kwargs)
 
         self.all_providers = []
         for provider_group, providers in self.provider_classes:
             for provider in providers:
+                provider_settings = settings.get(
+                    'locate:{provider_group}'.format(
+                        provider_group=provider_group), {})
                 provider_instance = provider(
                     session_db=session_db,
                     geoip_db=geoip_db,
+                    settings=provider_settings,
                     api_key=self.api_key,
                     api_name=self.api_name,
                 )
@@ -46,19 +51,20 @@ class Searcher(StatsLogger):
         all_locations = defaultdict(deque)
 
         for provider_group, provider in self.all_providers:
-            provider_location = provider.locate(data)
-            all_locations[provider_group].appendleft(
-                (provider, provider_location))
+            if provider.should_locate(data, best_location):
+                provider_location = provider.locate(data)
+                all_locations[provider_group].appendleft(
+                    (provider, provider_location))
 
-            if provider_location.more_accurate(best_location):
-                # If this location is more accurate than our previous one,
-                # we'll use it.
-                best_location = provider_location
-                best_location_provider = provider
+                if provider_location.more_accurate(best_location):
+                    # If this location is more accurate than our previous one,
+                    # we'll use it.
+                    best_location = provider_location
+                    best_location_provider = provider
 
-            if best_location.accurate_enough():
-                # Stop the loop, if we have a good quality location.
-                break
+                if best_location.accurate_enough():
+                    # Stop the loop, if we have a good quality location.
+                    break
 
         if not best_location.found():
             self.stat_count('miss')
@@ -117,6 +123,9 @@ class PositionSearcher(Searcher):
         )),
         ('wifi', (
             WifiPositionProvider,
+        )),
+        ('fallback', (
+            FallbackProvider,
         )),
     )
 
