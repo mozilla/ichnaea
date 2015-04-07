@@ -42,8 +42,10 @@
         on uptime, availability, accuracy of results or continued existence.
         We also don't offer any commercial plans to use the service
         and have no plans to provide such. You are free to run your own
-        instance of the service using the open-source code and publicly
-        available data from <a href="/downloads">our downloads section</a>.
+        instance of the service using the open-source
+        <a href="https://github.com/mozilla/ichnaea">
+            service code called ichnaea</a> and use the available data
+        from <a href="/downloads">our downloads section</a>.
     </p>
 
     <h3>API Keys</h3>
@@ -64,9 +66,9 @@
     </p>
 
     <p class="text-justified">
-        If you are developing a new application, please contact
-        <a href="mailto:Hanno Schlichting %3Chschlichting@mozilla.com%3E">
-            Hanno Schlichting</a> to obtain an API key.
+        If you are developing a new application, please
+        <a href="mailto:mls-contact@mozilla.com">
+            contact us via email</a> to obtain an API key.
         Please make sure to describe your use-case and intended use of
         the service. If you merely want to test out the service for a
         small experiment, please use the literal "test" API key. We'll
@@ -78,14 +80,6 @@
     <p class="text-justified">
         We'll try to get back to you in a manner of days, but depending
         on vacation times it might take longer.
-    </p>
-
-    <p class="text-justified">
-        If you do not qualify for free access to this service or need
-        SLA's  you can run your own instance of the service, using the
-        open-source <a href="https://github.com/mozilla/ichnaea">
-            service code called ichnaea</a> and use the available data
-        from the <a href="/downloads">downloads section</a>.
     </p>
 
 </section>
