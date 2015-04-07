@@ -21,6 +21,7 @@ ipaddr==2.1.11
 iso3166==0.7
 iso8601==0.1.10
 kombu==3.0.24
+linecache2==1.0.0
 maxminddb==1.1.1  # optional C extension, version also in Makefile
 mobile-codes==0.7
 ordereddict==1.1
@@ -33,8 +34,9 @@ repoze.lru==0.6
 requests==2.6.0
 six==1.9.0
 statsd==3.1
+traceback2==1.4.0
 translationstring==1.3
-unittest2==0.8.0
+unittest2==1.0.1
 venusian==1.0
 wsgiref==0.1.2
 zope.deprecation==4.1.2

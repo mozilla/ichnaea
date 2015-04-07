@@ -18,7 +18,9 @@ import os
 import os.path
 import sys
 
-EXCLUDES_27 = []
+EXCLUDES_27 = [
+    'linecache2/tests/inspect_fodder2.py',
+]
 EXCLUDES_34 = [
     'gunicorn/workers/_gaiohttp.py',
 ]
