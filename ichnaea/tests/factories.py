@@ -47,13 +47,6 @@ class BaseFactory(SQLAlchemyModelFactory):
         _session.add(obj)
         return obj
 
-    @classmethod
-    def _setup_next_sequence(cls):
-        # BBB: Override back to BaseFactory implementation, this backports
-        # a fix from factory-boy 2.5.0,
-        # refs https://github.com/rbarrois/factory_boy/issues/78
-        return 0
-
 
 class FuzzyWifiKey(fuzzy.BaseFuzzyAttribute):
 
