@@ -3,8 +3,8 @@ inflect==0.2.5
 irc==9.0  # rq.filter: <10.0
 jaraco.functools==1.1  # rq.filter: <1.2
 jaraco.itertools==1.2  # rq.filter: <1.3
-jaraco.timing==1.1  # rq.filter: <1.2
-jaraco.util==10.9  # rq.filter: <11.0
+jaraco.timing==1.1  # rq.filter: <1.1.1
+jaraco.util==10.9  # rq.filter: <10.10
 konfig==0.9
 loads==0.3
 more-itertools==2.2

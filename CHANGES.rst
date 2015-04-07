@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Updated to latests versions of alabaster, boto, nose, PyMySQL and pytz.
+
 20150320100800
 **************
 
