@@ -6,22 +6,18 @@ from ichnaea.log import (
 
 class StatsLogger(object):
 
-    def __init__(self, api_key_name, api_key_log, api_name):
+    def __init__(self, api_key, api_name):
         """
         A StatsLogger sends counted and timed named statistics to
         a statistic aggregator client.
 
-        :param api_key_name: Human readable API key name
-            (for example 'test_1')
-        :type api_key_name: str
-        :param api_key_log: Gather additional API key specific stats?
-        :type api_key_log: bool
+        :param api_key: An ApiKey instance for the calling user
+        :type api_key: ApiKey
         :param api_name: Name of the API, used as stats prefix
             (for example 'geolocate')
         :type api_name: str
         """
-        self.api_key_name = api_key_name
-        self.api_key_log = api_key_log
+        self.api_key = api_key
         self.api_name = api_name
         self.raven_client = get_raven_client()
         self.stats_client = get_stats_client()

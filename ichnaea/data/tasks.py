@@ -24,19 +24,21 @@ from ichnaea.data.station import (
     WifiRemover,
     WifiUpdater,
 )
+from ichnaea.models import ApiKey
 
 
 @celery_app.task(base=DatabaseTask, bind=True, queue='celery_incoming')
 def insert_measures(self, items=None, nickname='', email='',
-                    api_key_log=False, api_key_name=None):
+                    api_key_text=None):
     if not items:  # pragma: no cover
         return 0
 
     reports = kombu_loads(items)
     with self.db_session() as session:
+        api_key = api_key_text and session.query(ApiKey).filter(ApiKey.valid_key==api_key_text).first()
+
         queue = ReportQueueV1(self, session,
-                              api_key_log=api_key_log,
-                              api_key_name=api_key_name,
+                              api_key,
                               insert_cell_task=insert_measures_cell,
                               insert_wifi_task=insert_measures_wifi)
         length = queue.insert(reports, nickname=nickname, email=email)

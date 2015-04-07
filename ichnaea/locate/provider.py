@@ -6,6 +6,7 @@ import operator
 import mobile_codes
 from sqlalchemy.orm import load_only
 
+from ichnaea.config import read_config
 from ichnaea.constants import (
     CELL_MIN_ACCURACY,
     LAC_MIN_ACCURACY,
@@ -98,18 +99,18 @@ class Provider(StatsLogger):
         Log a stat metric for a request in which the user provided
         relevant data for this provider and the lookup was successful.
         """
-        if self.api_key_log:
+        if self.api_key.log:
             self.stat_count('api_log.{key}.{metric}_hit'.format(
-                key=self.api_key_name, metric=self.log_name))
+                key=self.api_key.name, metric=self.log_name))
 
     def log_failure(self):
         """
         Log a stat metric for a request in which the user provided
         relevant data for this provider and the lookup failed.
         """
-        if self.api_key_log:
+        if self.api_key.log:
             self.stat_count('api_log.{key}.{metric}_miss'.format(
-                key=self.api_key_name, metric=self.log_name))
+                key=self.api_key.name, metric=self.log_name))
 
 
 class BaseCellProvider(Provider):

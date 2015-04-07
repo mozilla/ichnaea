@@ -1,3 +1,4 @@
+from ichnaea.models import ApiKey
 from ichnaea.locate.location import Location
 from ichnaea.locate.provider import Provider
 from ichnaea.locate.searcher import (
@@ -61,8 +62,7 @@ class SearcherTest(DBTestCase, GeoIPIsolation):
         return TestSearcher(
             session_db=self.session,
             geoip_db=self.geoip_db,
-            api_key_log=True,
-            api_key_name='test',
+            api_key=ApiKey(shortname='test', log=True),
             api_name='m',
         ).search(data)
 

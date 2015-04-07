@@ -44,7 +44,7 @@ def prepare_search_data(request_data, client_addr=None):
 
 
 @check_api_key('search')
-def search_view(request):
+def search_view(request, api_key):
     request_data, errors = preprocess_request(
         request,
         schema=SearchSchema(),
@@ -56,8 +56,7 @@ def search_view(request):
     result = PositionSearcher(
         session_db=request.db_ro_session,
         geoip_db=request.registry.geoip_db,
-        api_key_log=getattr(request, 'api_key_log', False),
-        api_key_name=getattr(request, 'api_key_name', None),
+        api_key=api_key,
         api_name='search',
     ).search(search_data)
 

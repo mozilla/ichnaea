@@ -11,13 +11,11 @@ class BaseSubmitter(object):
     schema = None
     error_response = None
 
-    def __init__(self, request):
+    def __init__(self, request, api_key):
         self.request = request
         self.raven_client = request.registry.raven_client
         self.stats_client = request.registry.stats_client
-        self.api_key = request.GET.get('key', None)
-        self.api_key_log = getattr(request, 'api_key_log', False)
-        self.api_key_name = getattr(request, 'api_key_name', None)
+        self.api_key = api_key
         self.email, self.nickname = self.get_request_user_data()
 
     def decode_request_header(self, header_name):
@@ -37,8 +35,8 @@ class BaseSubmitter(object):
         self.stats_client.incr('items.uploaded.batches')
         self.stats_client.timing('items.uploaded.batch_size', value)
 
-        if self.api_key_log:
-            api_key_name = self.api_key_name
+        if self.api_key.log:
+            api_key_name = self.api_key.name
             self.stats_client.incr(
                 'items.api_log.%s.uploaded.batches' % api_key_name)
             self.stats_client.timing(
@@ -72,11 +70,10 @@ class BaseSubmitter(object):
             # after six hours to avoid queue overload
             insert_measures.apply_async(
                 kwargs={
+                    'api_key_text': self.api_key.valid_key,
                     'email': self.email,
                     'items': batch,
                     'nickname': self.nickname,
-                    'api_key_log': self.api_key_log,
-                    'api_key_name': self.api_key_name,
                 },
                 expires=21600)
 
@@ -92,9 +89,9 @@ class BaseSubmitter(object):
             # after six hours to avoid queue overload
             queue_reports.apply_async(
                 kwargs={
-                    'reports': batch,
-                    'api_key': self.api_key,
+                    'api_key': self.api_key.valid_key,
                     'email': self.email,
                     'nickname': self.nickname,
+                    'reports': batch,
                 },
                 expires=21600)

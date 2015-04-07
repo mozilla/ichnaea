@@ -19,6 +19,7 @@ from ichnaea.locate.provider import (
     WifiPositionProvider,
 )
 from ichnaea.models import (
+    ApiKey,
     Radio,
     Wifi,
 )
@@ -57,8 +58,7 @@ class ProviderTest(DBTestCase, GeoIPIsolation):
         self.provider = self.TestProvider(
             session_db=self.session,
             geoip_db=self.geoip_db,
-            api_key_log=True,
-            api_key_name='test',
+            api_key=ApiKey(shortname='test', log=True),
             api_name='m',
         )
 

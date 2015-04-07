@@ -134,8 +134,8 @@ class Submitter(BaseSubmitter):
 
 
 @check_api_key('submit', error_on_invalidkey=False)
-def submit_view(request):
-    submitter = Submitter(request)
+def submit_view(request, api_key):
+    submitter = Submitter(request, api_key)
 
     # may raise HTTP error
     request_data = submitter.preprocess()

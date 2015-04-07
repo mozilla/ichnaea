@@ -1,5 +1,6 @@
 from pyramid.httpexceptions import HTTPNotFound
 
+from ichnaea.models import ApiKey
 from ichnaea.locate.searcher import CountrySearcher
 from ichnaea.service.base import prepare_search_data
 from ichnaea.service.error import (
@@ -30,8 +31,7 @@ def country_view(request):
     response = CountrySearcher(
         session_db=request.db_ro_session,
         geoip_db=request.registry.geoip_db,
-        api_key_log=False,
-        api_key_name=None,
+        api_key=ApiKey(),
         api_name='country',
     ).search(search_data)
 

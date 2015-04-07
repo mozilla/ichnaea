@@ -26,3 +26,10 @@ class ApiKey(_Model):
     email = Column(String(255))
     # Some free form context / description
     description = Column(String(255))
+
+    @property
+    def name(self):
+        return self.shortname or self.valid_key
+
+    def __str__(self):
+        return self.name

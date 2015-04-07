@@ -26,12 +26,10 @@ _sentinel = object()
 
 class ReportQueueV1(DataTask):
 
-    def __init__(self, task, session,
-                 api_key_log=False, api_key_name=None,
+    def __init__(self, task, session, api_key=None,
                  insert_cell_task=None, insert_wifi_task=None):
         DataTask.__init__(self, task, session)
-        self.api_key_log = api_key_log
-        self.api_key_name = api_key_name
+        self.api_key = api_key
         self.insert_cell_task = insert_cell_task
         self.insert_wifi_task = insert_wifi_task
 
@@ -43,9 +41,9 @@ class ReportQueueV1(DataTask):
         self.process_reports(reports, userid=userid)
 
         self.stats_client.incr('items.uploaded.reports', length)
-        if self.api_key_log:
+        if self.api_key and self.api_key.log:
             self.stats_client.incr(
-                'items.api_log.%s.uploaded.reports' % self.api_key_name)
+                'items.api_log.%s.uploaded.reports' % self.api_key.name)
 
         return length
 
@@ -68,10 +66,10 @@ class ReportQueueV1(DataTask):
             # group by and create task per cell key
             self.stats_client.incr('items.uploaded.cell_observations',
                                    len(cell_observations))
-            if self.api_key_log:
+            if self.api_key and self.api_key.log:
                 self.stats_client.incr(
                     'items.api_log.%s.uploaded.'
-                    'cell_observations' % self.api_key_name,
+                    'cell_observations' % self.api_key.name,
                     len(cell_observations))
 
             cells = defaultdict(list)
@@ -102,10 +100,10 @@ class ReportQueueV1(DataTask):
             # group by WiFi key
             self.stats_client.incr('items.uploaded.wifi_observations',
                                    len(wifi_observations))
-            if self.api_key_log:
+            if self.api_key and self.api_key.log:
                 self.stats_client.incr(
                     'items.api_log.%s.uploaded.'
-                    'wifi_observations' % self.api_key_name,
+                    'wifi_observations' % self.api_key.name,
                     len(wifi_observations))
 
             wifis = defaultdict(list)

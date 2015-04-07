@@ -35,8 +35,7 @@ class Searcher(StatsLogger):
                 provider_instance = provider(
                     session_db=session_db,
                     geoip_db=geoip_db,
-                    api_key_log=self.api_key_log,
-                    api_key_name=self.api_key_name,
+                    api_key=self.api_key,
                     api_name=self.api_name,
                 )
                 self.all_providers.append((provider_group, provider_instance))

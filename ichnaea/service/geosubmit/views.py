@@ -166,8 +166,8 @@ class GeoSubmitter(BaseSubmitter):
 
 
 @check_api_key('geosubmit')
-def geosubmit_view(request):
-    submitter = GeoSubmitter(request)
+def geosubmit_view(request, api_key):
+    submitter = GeoSubmitter(request, api_key)
 
     # may raise HTTP error
     request_data = submitter.preprocess()
