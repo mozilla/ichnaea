@@ -15,10 +15,6 @@ from ichnaea.data.station import (
     WifiRemover,
     WifiUpdater,
 )
-from ichnaea.models import (
-    CellArea,
-    OCIDCellArea,
-)
 from ichnaea.worker import celery
 
 
@@ -98,32 +94,6 @@ def remove_wifi(self, wifi_keys):
         length = WifiRemover(self, session).remove(wifi_keys)
         session.commit()
     return length
-
-
-@celery.task(base=DatabaseTask, bind=True)
-def scan_lacs(self, batch=100):  # pragma: no cover
-    # BBB this task can go after one release
-    updater = CellAreaUpdater(self, None)
-    length = updater.scan(update_area, batch=batch)
-    return length
-
-
-@celery.task(base=DatabaseTask, bind=True)
-def update_lac(self, radio, mcc, mnc, lac,
-               cell_model_key='cell',
-               cell_area_model_key='cell_area'):  # pragma: no cover
-    # BBB this task can go after one release
-    if cell_model_key == 'ocid_cell':
-        area_model = OCIDCellArea
-        cell_type = 'ocid'
-    else:
-        area_model = CellArea
-        cell_type = 'cell'
-
-    area_key = area_model.to_hashkey(
-        radio=radio, mcc=mcc, mnc=mnc, lac=lac)
-
-    update_area.delay(area_key, cell_type=cell_type)
 
 
 @celery.task(base=DatabaseTask, bind=True)

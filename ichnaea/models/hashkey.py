@@ -49,11 +49,6 @@ class HashKey(object):
             return self.__dict__ == other.__dict__
         return False  # pragma: no cover
 
-    def __getitem__(self, key):
-        if key in self._fields:
-            return getattr(self, key, None)
-        raise IndexError  # pragma: no cover
-
     def __hash__(self):
         # emulate a tuple hash
         value = ()
@@ -75,7 +70,7 @@ class HashKeyMixin(object):
             obj = args[0]
         else:
             obj = kw
-        if isinstance(obj, cls._hashkey_cls):
+        if isinstance(obj, cls._hashkey_cls):  # pragma: no cover
             return obj
         fields = cls._hashkey_cls._fields
         if isinstance(obj, dict):

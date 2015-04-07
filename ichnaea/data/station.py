@@ -51,10 +51,7 @@ class CellRemover(StationRemover):
 class WifiRemover(StationRemover):
 
     def remove(self, wifi_keys):
-        # BBB this might still get namedtuples encoded as a dicts for
-        # one release, afterwards it'll get wifi hashkeys
-        keys = [Wifi.to_hashkey(key=wifi['key']) for wifi in wifi_keys]
-        query = Wifi.querykeys(self.session, keys)
+        query = Wifi.querykeys(self.session, wifi_keys)
         length = query.delete(synchronize_session=False)
         return length
 

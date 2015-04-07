@@ -588,23 +588,23 @@ class TestWifi(CeleryTestCase):
         self.assertEqual(wifis[k2].range, 497)
 
     def test_remove_wifi(self):
-        session = self.session
         observations = []
-        wifi_keys = [{'key': "a%s1234567890" % i} for i in range(5)]
+        wifi_keys = []
         m1 = 1.0
         m2 = 2.0
-        for key in wifi_keys:
-            key = key['key']
-            observations.append(Wifi(key=key))
+        for key in ['a%s1234567890' % i for i in range(5)]:
+            wifi = Wifi(key=key)
+            wifi_keys.append(wifi.hashkey())
+            observations.append(wifi)
             observations.append(WifiObservation(lat=m1, lon=m1, key=key))
             observations.append(WifiObservation(lat=m2, lon=m2, key=key))
-        session.add_all(observations)
-        session.flush()
+        self.session.add_all(observations)
+        self.session.flush()
 
         result = remove_wifi.delay(wifi_keys[:2])
         self.assertEqual(result.get(), 2)
 
-        wifis = session.query(Wifi).all()
+        wifis = self.session.query(Wifi).all()
         self.assertEqual(len(wifis), 3)
 
         result = remove_wifi.delay(wifi_keys)
@@ -613,5 +613,5 @@ class TestWifi(CeleryTestCase):
         result = remove_wifi.delay(wifi_keys)
         self.assertEqual(result.get(), 0)
 
-        wifis = session.query(Wifi).all()
+        wifis = self.session.query(Wifi).all()
         self.assertEqual(len(wifis), 0)

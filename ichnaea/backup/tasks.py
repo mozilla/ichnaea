@@ -354,17 +354,3 @@ def delete_wifimeasure_records(self, limit=100, days_old=7,
         days_old=days_old,
         countdown=countdown,
         batch=batch)
-
-
-@celery.task(base=DatabaseTask, bind=True)
-def wifi_unthrottle_measures(self, max_observations,
-                             batch=1000):  # pragma: no cover
-    # BBB
-    pass
-
-
-@celery.task(base=DatabaseTask, bind=True)
-def cell_unthrottle_measures(self, max_observations,
-                             batch=100):  # pragma: no cover
-    # BBB
-    pass

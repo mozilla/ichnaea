@@ -1,8 +1,6 @@
-from datetime import datetime
 import uuid
 
 import colander
-import iso8601
 import mobile_codes
 from sqlalchemy import (
     Column,
@@ -44,16 +42,6 @@ from ichnaea.models.wifi import (
     ValidWifiKeySchema,
     WifiKeyMixin,
 )
-from ichnaea import util
-
-
-def decode_datetime(obj):  # pragma: no cover
-    if isinstance(obj, datetime):
-        return obj
-    try:
-        return iso8601.parse_date(obj)
-    except (iso8601.ParseError, TypeError):
-        return util.utcnow()
 
 
 class ReportIDNode(colander.SchemaNode):
@@ -144,8 +132,6 @@ class ObservationMixin(CreationMixin, BigIdMixin, Report):
         validated = cls.validate(kw, _raise_invalid=_raise_invalid)
         if validated is None:  # pragma: no cover
             return None
-        # BBB: no longer required, internaljson format decodes to datetime
-        validated['time'] = decode_datetime(validated['time'])
         return cls(**validated)
 
 

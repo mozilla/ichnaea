@@ -54,11 +54,7 @@ class CellAreaUpdater(DataTask):
         redis_areas = dequeue_areas(
             self.redis_client, UPDATE_KEY['cell_lac'], batch=batch)
 
-        # BBB conversion from dicts can go after one release
-        area_keys = set()
-        for redis_area in redis_areas:
-            area_keys.add(self.cell_area_model.to_hashkey(redis_area))
-
+        area_keys = set(redis_areas)
         for area_key in area_keys:
             update_task.delay(area_key)
         return len(area_keys)
