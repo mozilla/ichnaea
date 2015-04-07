@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #418: Remove country API shortcut implementation.
+
 - Removed BBB code for old tasks and pre-hashkey queued values.
 
 - Updated to latests versions of alabaster, boto, factory_boy, nose,

@@ -52,7 +52,6 @@ class TestCountry(AppTestCase, CountryBase):
         self._check_geoip_result(result, status=200)
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
-            total=2,
             counter=['request.v1.country.200'],
             timer=['request.v1.country'],
         )
@@ -62,8 +61,17 @@ class TestCountry(AppTestCase, CountryBase):
         self._check_geoip_result(result, status=404)
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
-            total=2,
             counter=['request.v1.country.404'],
+            timer=['request.v1.country'],
+        )
+
+    def test_known_api_key(self):
+        result = self._make_geoip_query(api_key='test', status=200)
+        self._check_geoip_result(result, status=200)
+        self.check_db_calls(rw=0, ro=0)
+        self.check_stats(
+            counter=[('request.v1.country.200', 1),
+                     ('country.api_key.test', 0)],
             timer=['request.v1.country'],
         )
 
@@ -72,8 +80,8 @@ class TestCountry(AppTestCase, CountryBase):
         self._check_geoip_result(result, status=200)
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
-            total=2,
-            counter=['request.v1.country.200'],
+            counter=[('request.v1.country.200', 1),
+                     ('country.api_key.no_api_key', 0)],
             timer=['request.v1.country'],
         )
 
@@ -82,8 +90,8 @@ class TestCountry(AppTestCase, CountryBase):
         self._check_geoip_result(result, status=200)
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
-            total=2,
-            counter=['request.v1.country.200'],
+            counter=[('request.v1.country.200', 1),
+                     ('country.api_key.unknown_key', 0)],
             timer=['request.v1.country'],
         )
 
@@ -130,7 +138,6 @@ class TestCountryErrors(AppTestCase, CountryBase):
         result = self._make_geoip_query(status=200)
         self._check_geoip_result(result, status=200)
         self.check_stats(
-            total=2,
             counter=['request.v1.country.200'],
             timer=['request.v1.country'],
         )

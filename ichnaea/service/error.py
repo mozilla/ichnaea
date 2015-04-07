@@ -14,7 +14,6 @@ MSG_EMPTY = 'No JSON body was provided.'
 MSG_GZIP = 'Error decompressing gzip data stream.'
 MSG_BAD_RADIO = 'Radio fields were not consistent in the cellTower data.'
 
-
 DAILY_LIMIT = dumps({
     "error": {
         "errors": [{
@@ -80,7 +79,7 @@ def preprocess_request(request, schema, extra_checks=(), response=JSONError,
     else:  # pragma: no cover
         errors.append(dict(name=None, description=MSG_EMPTY))
 
-    if accept_empty and body == {}:
+    if accept_empty and not body:
         return ({}, errors)
 
     if not body or (errors and response is not None):
