@@ -17,8 +17,7 @@ Changes
 
 - Removed BBB code for old tasks and pre-hashkey queued values.
 
-- Updated to latests versions of alabaster, boto, factory_boy, nose,
-  pytz and unittest2.
+- Updated to latests versions of alabaster, boto, factory_boy and pytz.
 
 20150320100800
 **************
