@@ -582,4 +582,4 @@ class TestSubmit(CeleryAppTestCase):
                 }]
             }]},
             status=204)
-        self.assertEqual(self.session.query(CellObservation).count(), 1)
+        self.assertEqual(self.session.query(CellObservation).count(), 0)

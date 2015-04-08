@@ -117,21 +117,21 @@ class TestCellValidation(ValidationTest):
 
     def test_all_radio_values(self):
         radio_pairs = [
-            ('gsm', Radio.gsm),
-            (Radio.gsm.name, Radio.gsm),
-            ('cdma', Radio.cdma),
-            ('umts', Radio.umts),
-            ('wcdma', Radio.wcdma),
-            ('lte', Radio.lte),
+            ('gsm', {'radio': Radio.gsm}),
+            (Radio.gsm.name, {'radio': Radio.gsm}),
+            ('cdma', {'radio': Radio.cdma}),
+            ('umts', {'radio': Radio.umts}),
+            ('wcdma', {'radio': Radio.wcdma}),
+            ('lte', {'radio': Radio.lte}),
             ('wimax', None),
             ('', None),
             ('hspa', None),
             ('n/a', None),
         ]
 
-        for (radio, v) in radio_pairs:
+        for (radio, expect) in radio_pairs:
             obs, cell = self.get_sample(radio=radio)
-            self.check_normalized_cell(obs, cell, dict(radio=v))
+            self.check_normalized_cell(obs, cell, expect)
 
     def test_all_valid_lat_lon_mcc_mnc_groups(self):
         valid_lat_lon_mcc_triples = [

@@ -284,6 +284,7 @@ class TestGeoSubmit(CeleryAppTestCase):
 
     def test_invalid_radiotype(self):
         cell = CellFactory.build()
+        cell2 = CellFactory.build()
         self.app.post_json(
             '/v1/geosubmit?key=test',
             {'items': [
@@ -295,10 +296,18 @@ class TestGeoSubmit(CeleryAppTestCase):
                      'mobileNetworkCode': cell.mnc,
                      'locationAreaCode': cell.lac,
                      'cellId': cell.cid,
+                 }, {
+                     'radioType': cell2.radio.name,
+                     'mobileCountryCode': cell2.mcc,
+                     'mobileNetworkCode': cell2.mnc,
+                     'locationAreaCode': cell2.lac,
+                     'cellId': cell2.cid,
                  }]},
             ]},
             status=200)
-        self.assertEquals(self.session.query(CellObservation).count(), 1)
+        obs = self.session.query(CellObservation).all()
+        self.assertEqual(len(obs), 1)
+        self.assertEqual(obs[0].cid, cell2.cid)
 
     def test_duplicated_cell_observations(self):
         session = self.session

@@ -75,9 +75,7 @@ class RadioNode(DefaultNode):
     def validator(self, node, cstruct):
         if type(cstruct) == Radio:
             return True
-        if cstruct is None or cstruct is colander.null:  # pragma: no cover
-            return True
-        raise colander.Invalid(node, 'Invalid radio type')  # pragma: no cover
+        raise colander.Invalid(node, 'Invalid radio type')
 
 
 class RadioType(colander.Integer):
@@ -87,7 +85,7 @@ class RadioType(colander.Integer):
 
     def deserialize(self, node, cstruct):
         if cstruct is colander.null:  # pragma: no cover
-            return colander.null
+            return None
         if isinstance(cstruct, Radio):
             return cstruct
         try:
@@ -119,7 +117,7 @@ class CellKeyPsc(CellHashKey):
 class ValidCellAreaKeySchema(FieldSchema, CopyingSchema):
     """A schema which validates the fields present in a cell area key."""
 
-    radio = RadioNode(RadioType(), missing=None)
+    radio = RadioNode(RadioType())
     mcc = colander.SchemaNode(
         colander.Integer(),
         validator=colander.Range(1, 999))
@@ -177,8 +175,11 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
 
     def deserialize(self, data):
         if data:
-            # deserialize radio child field early
-            data['radio'] = self.fields['radio'].deserialize(data['radio'])
+            # deserialize and validate radio field early
+            radio_node = self.fields['radio']
+            radio = radio_node.deserialize(data['radio'])
+            if radio_node.validator(radio_node, radio):
+                data['radio'] = radio
 
             # If the cell id >= 65536 then it must be a umts tower
             if (data.get('cid', 0) >= 65536

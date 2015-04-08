@@ -164,7 +164,7 @@ class CellObservationQueue(ObservationQueue):
         # entry; these are cell observations with a missing value for
         # LAC and/or CID, and will be inferred from neighboring cells.
         schema = ValidCellKeySchema()
-        for field in ('radio', 'lac', 'cid'):
+        for field in ('lac', 'cid'):
             if getattr(key, field, None) == schema.fields[field].missing:
                 return True
         return False

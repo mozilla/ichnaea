@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Make radio an internally required field.
+
 - Don't validate radio fields in request side schema.
 
 - #418: Remove country API shortcut implementation.
