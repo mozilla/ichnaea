@@ -129,10 +129,9 @@ class BaseCellProvider(Provider):
 
     def _clean_cell_keys(self, data):
         """Pre-process cell data."""
-        radio = data.get('radio')
         cell_keys = []
         for cell in data.get('cell', ()):
-            cell = CellLookup.validate(cell, default_radio=radio)
+            cell = CellLookup.validate(cell)
             if cell:
                 cell_key = CellLookup.to_hashkey(cell)
                 cell_keys.append(cell_key)

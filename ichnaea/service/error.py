@@ -56,7 +56,7 @@ class JSONParseError(HTTPError, BaseJSONError):
         self.content_type = 'application/json'
 
 
-def preprocess_request(request, schema, extra_checks=(), response=JSONError,
+def preprocess_request(request, schema, response=JSONError,
                        accept_empty=False):
     body = {}
     errors = []
@@ -89,9 +89,6 @@ def preprocess_request(request, schema, extra_checks=(), response=JSONError,
     # schema validation, but report at most one error at a time
 
     verify_schema(schema, body, errors, validated)
-
-    for func in extra_checks:
-        func(validated, errors)
 
     if errors and response is not None:
         # the response / None check is used in schema tests

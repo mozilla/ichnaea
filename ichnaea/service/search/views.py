@@ -9,22 +9,57 @@ def configure_search(config):
     config.add_view(search_view, route_name='v1_search', renderer='json')
 
 
+def prepare_search_data(request_data, client_addr=None):
+    search_data = {
+        'geoip': client_addr,
+        'cell': [],
+        'wifi': [],
+    }
+    if request_data:
+        if 'cell' in request_data:
+            for cell in request_data['cell']:
+                new_cell = {
+                    'mcc': cell['mcc'],
+                    'mnc': cell['mnc'],
+                    'lac': cell['lac'],
+                    'cid': cell['cid'],
+                }
+                # Use a per-cell radio if present
+                if 'radio' in cell and cell['radio']:
+                    new_cell['radio'] = cell['radio']
+                # Fall back to a top-level radio field
+                if 'radio' not in new_cell:
+                    new_cell['radio'] = request_data.get('radio', None)
+                search_data['cell'].append(new_cell)
+
+        if 'wifi' in request_data:
+            for wifi in request_data['wifi']:
+                new_wifi = {
+                    'key': wifi['key'],
+                    'signal': wifi['signal'],
+                }
+                search_data['wifi'].append(new_wifi)
+
+    return search_data
+
+
 @check_api_key('search')
 def search_view(request):
-    data, errors = preprocess_request(
+    request_data, errors = preprocess_request(
         request,
         schema=SearchSchema(),
         accept_empty=True,
     )
+    search_data = prepare_search_data(
+        request_data, client_addr=request.client_addr)
 
-    data['geoip'] = request.client_addr
     result = PositionSearcher(
         session_db=request.db_ro_session,
         geoip_db=request.registry.geoip_db,
         api_key_log=getattr(request, 'api_key_log', False),
         api_key_name=getattr(request, 'api_key_name', None),
         api_name='search',
-    ).search(data)
+    ).search(search_data)
 
     if not result:
         return {'status': 'not_found'}

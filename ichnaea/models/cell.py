@@ -175,16 +175,10 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
         missing=-1,
         validator=colander.Range(0, 512))
 
-    def deserialize(self, data, default_radio=None):
+    def deserialize(self, data):
         if data:
             # deserialize radio child field early
             data['radio'] = self.fields['radio'].deserialize(data['radio'])
-
-            # If a default radio was set,
-            # and we don't know, use it as fallback
-            if (self.is_missing(data, 'radio')
-                    and default_radio is not None):
-                data['radio'] = self.fields['radio'].deserialize(default_radio)
 
             # If the cell id >= 65536 then it must be a umts tower
             if (data.get('cid', 0) >= 65536

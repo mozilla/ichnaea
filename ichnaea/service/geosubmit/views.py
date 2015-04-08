@@ -18,9 +18,9 @@ from ichnaea.service.error import (
 from ichnaea.service.geosubmit.schema import GeoSubmitBatchSchema
 
 
-def map_items(items):
+def prepare_submit_data(request_data):
     batch_list = []
-    for batch in items:
+    for batch in request_data['items']:
         normalized_cells = []
         for c in batch['cellTowers']:
             cell_radio = c['radioType']
@@ -60,7 +60,6 @@ def map_items(items):
                             'accuracy': batch['accuracy'],
                             'altitude': batch['altitude'],
                             'altitude_accuracy': batch['altitudeAccuracy'],
-                            'radio': batch['radioType'],
                             'heading': batch['heading'],
                             'speed': batch['speed'],
                             'cell': normalized_cells,
@@ -82,7 +81,7 @@ def geosubmit_view(request):
     api_key_name = getattr(request, 'api_key_name', None)
 
     try:
-        data, errors = preprocess_request(
+        request_data, errors = preprocess_request(
             request,
             schema=GeoSubmitBatchSchema(),
             response=JSONParseError,
@@ -92,7 +91,8 @@ def geosubmit_view(request):
         request.registry.raven_client.captureException()
         raise
 
-    items = map_items(data['items'])
+    submit_data = prepare_submit_data(request_data)
+
     nickname = request.headers.get('X-Nickname', u'')
     if isinstance(nickname, str):
         nickname = nickname.decode('utf-8', 'ignore')
@@ -103,7 +103,7 @@ def geosubmit_view(request):
 
     # count the number of batches and emit a pseudo-timer to capture
     # the number of reports per batch
-    length = len(items)
+    length = len(submit_data)
     stats_client.incr('items.uploaded.batches')
     stats_client.timing('items.uploaded.batch_size', length)
 
@@ -116,7 +116,7 @@ def geosubmit_view(request):
     # batch incoming data into multiple tasks, in case someone
     # manages to submit us a huge single request
     for i in range(0, length, 100):
-        batch = kombu_dumps(items[i:i + 100])
+        batch = kombu_dumps(submit_data[i:i + 100])
         # insert observations, expire the task if it wasn't processed
         # after six hours to avoid queue overload
         try:

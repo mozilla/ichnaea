@@ -19,20 +19,18 @@ def configure_submit(config):
     config.add_view(submit_view, route_name='v1_submit', renderer='json')
 
 
-def add_radio_value(data):
-    radio = data.get('radio', None)
-    cells = data.get('cell', ())
-
-    for cell in cells:
-        if cell['radio'] is None:
-            cell['radio'] = radio
-
-    data['cell'] = tuple(cells)
-
-
-def submit_validator(data, errors):
-    for item in data.get('items', ()):
-        add_radio_value(item)
+def prepare_submit_data(request_data):
+    reports = []
+    for item in request_data['items']:
+        report = item.copy()
+        report_radio = report['radio']
+        for cell in report['cell']:
+            if cell['radio'] is None:
+                cell['radio'] = report_radio
+        reports.append(report)
+        if 'radio' in report:
+            del report['radio']
+    return reports
 
 
 @check_api_key('submit', error_on_invalidkey=False)
@@ -42,10 +40,9 @@ def submit_view(request):
     api_key_name = getattr(request, 'api_key_name', None)
 
     try:
-        data, errors = preprocess_request(
+        request_data, errors = preprocess_request(
             request,
             schema=SubmitSchema(),
-            extra_checks=(submit_validator, ),
             response=JSONError,
         )
     except JSONError:
@@ -53,7 +50,8 @@ def submit_view(request):
         request.registry.raven_client.captureException()
         raise
 
-    items = data['items']
+    submit_data = prepare_submit_data(request_data)
+
     nickname = request.headers.get('X-Nickname', u'')
     if isinstance(nickname, str):
         nickname = nickname.decode('utf-8', 'ignore')
@@ -64,7 +62,7 @@ def submit_view(request):
 
     # count the number of batches and emit a pseudo-timer to capture
     # the number of reports per batch
-    length = len(items)
+    length = len(submit_data)
     stats_client.incr('items.uploaded.batches')
     stats_client.timing('items.uploaded.batch_size', length)
 
@@ -77,7 +75,7 @@ def submit_view(request):
     # batch incoming data into multiple tasks, in case someone
     # manages to submit us a huge single request
     for i in range(0, length, 100):
-        batch = kombu_dumps(items[i:i + 100])
+        batch = kombu_dumps(submit_data[i:i + 100])
         # insert observations, expire the task if it wasn't processed
         # after six hours to avoid queue overload
         try:

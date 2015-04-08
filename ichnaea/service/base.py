@@ -146,8 +146,11 @@ def prepare_search_data(request_data, client_addr=None):
                 search_data['cell'].append(new_cell)
 
         if 'wifiAccessPoints' in request_data:
-            search_data['wifi'] = [{
-                'key': wifi['macAddress'],
-            } for wifi in request_data['wifiAccessPoints']]
+            for wifi in request_data['wifiAccessPoints']:
+                new_wifi = {
+                    'key': wifi['macAddress'],
+                    'signal': wifi['signalStrength'],
+                }
+                search_data['wifi'].append(new_wifi)
 
     return search_data

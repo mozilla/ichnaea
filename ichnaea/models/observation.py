@@ -148,14 +148,13 @@ class ValidCellLookupSchema(ValidCellKeySchema):
         colander.Integer(),
         missing=0, validator=colander.Range(0, 63))
 
-    def deserialize(self, data, default_radio=None):
+    def deserialize(self, data):
         if data:
             # Sometimes the asu and signal fields are swapped
             if data.get('asu', 0) < -1 and data.get('signal', None) == 0:
                 data['signal'] = data['asu']
                 data['asu'] = self.fields['asu'].missing
-        return super(ValidCellLookupSchema, self).deserialize(
-            data, default_radio=default_radio)
+        return super(ValidCellLookupSchema, self).deserialize(data)
 
 
 class CellLookup(CellKeyPscMixin, ValidationMixin):
