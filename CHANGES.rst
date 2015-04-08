@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Don't validate radio fields in request side schema.
+
 - #418: Remove country API shortcut implementation.
 
 - Removed BBB code for old tasks and pre-hashkey queued values.

@@ -7,20 +7,15 @@ from colander import (
     Float,
     Integer,
     MappingSchema,
-    OneOf,
     SchemaNode,
     SequenceSchema,
     String,
 )
 
-RADIO_STRINGS = ['gsm', 'cdma', 'wcdma', 'lte']
-
 
 class CellTowerSchema(MappingSchema):
     # mapped to 'radio' for submit
-    radioType = SchemaNode(String(),
-                           validator=OneOf(RADIO_STRINGS),
-                           missing=None)
+    radioType = SchemaNode(String(), missing=None)
     # mapped to 'cid' for submit
     cellId = SchemaNode(Integer(), missing=None)
     # mapped to 'lac' for submit
@@ -74,9 +69,7 @@ class GeoSubmitSchema(MappingSchema):
         Integer(), missing=None)
 
     # mapped to 'radio' for submit
-    radioType = SchemaNode(String(),
-                           validator=OneOf(RADIO_STRINGS),
-                           missing=None)
+    radioType = SchemaNode(String(), missing=None)
     carrier = SchemaNode(String(), missing='')
     cellTowers = CellTowersSchema(missing=())
     wifiAccessPoints = WifiAccessPointsSchema(missing=())

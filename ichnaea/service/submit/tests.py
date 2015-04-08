@@ -24,6 +24,10 @@ from ichnaea.tests.base import (
     PARIS_LON,
     TestCase,
 )
+from ichnaea.tests.factories import (
+    CellFactory,
+    WifiFactory,
+)
 from ichnaea import util
 
 
@@ -435,10 +439,11 @@ class TestSubmit(CeleryAppTestCase):
         self.assertTrue('errors' in res.json)
 
     def test_many_errors(self):
-        app = self.app
-        cell = [{'radio': '0', 'mcc': 1, 'mnc': 2} for i in range(100)]
-        res = app.post_json(
-            '/v1/submit', {"items": [{"lat": 1.0, "lon": 2.0, "cell": cell}]},
+        wifi = WifiFactory.build()
+        wifis = [{'wrong_key': 'ab'} for i in range(100)]
+        res = self.app.post_json(
+            '/v1/submit',
+            {'items': [{'lat': wifi.lat, 'lon': wifi.lon, 'wifi': wifis}]},
             status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
@@ -529,35 +534,52 @@ class TestSubmit(CeleryAppTestCase):
         self.assertTrue(len(res.json['errors']) == 0)
 
     def test_missing_radio_in_observation(self):
-        app = self.app
-        cell_data = [{"mcc": FRANCE_MCC, "mnc": 1, "lac": 2, "cid": 1234}]
-        res = app.post_json(
-            '/v1/submit', {"items": [{"lat": PARIS_LAT,
-                                      "lon": PARIS_LON,
-                                      "radio": Radio.gsm.name,
-                                      "cell": cell_data}]},
+        cell = CellFactory.build()
+        self.app.post_json(
+            '/v1/submit', {'items': [{
+                'lat': cell.lat,
+                'lon': cell.lon,
+                'radio': cell.radio.name,
+                'cell': [{
+                    'mcc': cell.mcc,
+                    'mnc': cell.mnc,
+                    'lac': cell.lac,
+                    'cid': cell.cid,
+                }]
+            }]},
             status=204)
-        self.assertEqual(res.body, '')
-        session = self.session
-        cell_result = session.query(CellObservation).all()
-        self.assertEqual(len(cell_result), 1)
-        item = cell_result[0]
-        self.assertEqual(item.radio, Radio.gsm)
+        self.assertEqual(self.session.query(CellObservation).count(), 1)
 
     def test_missing_radio_top_level(self):
-        app = self.app
-        cell_data = [{'radio': '',
-                      "mcc": 123,
-                      "mnc": 1,
-                      "lac": 2,
-                      "cid": 1234}]
-        res = app.post_json(
-            '/v1/submit', {"items": [{"lat": 12.3456781,
-                                      "lon": 23.4567892,
-                                      "radio": Radio.gsm.name,
-                                      "cell": cell_data}]},
+        cell = CellFactory.build()
+        self.app.post_json(
+            '/v1/submit', {'items': [{
+                'lat': cell.lat,
+                'lon': cell.lon,
+                'cell': [{
+                    'radio': cell.radio.name,
+                    'mcc': cell.mcc,
+                    'mnc': cell.mnc,
+                    'lac': cell.lac,
+                    'cid': cell.cid,
+                }]
+            }]},
             status=204)
-        self.assertEqual(res.body, '')
-        session = self.session
-        cell_result = session.query(CellObservation).all()
-        self.assertEqual(len(cell_result), 0)
+        self.assertEqual(self.session.query(CellObservation).count(), 1)
+
+    def test_invalid_radio(self):
+        cell = CellFactory.build()
+        self.app.post_json(
+            '/v1/submit', {'items': [{
+                'lat': cell.lat,
+                'lon': cell.lon,
+                'cell': [{
+                    'radio': '18',
+                    'mcc': cell.mcc,
+                    'mnc': cell.mnc,
+                    'lac': cell.lac,
+                    'cid': cell.cid,
+                }]
+            }]},
+            status=204)
+        self.assertEqual(self.session.query(CellObservation).count(), 1)

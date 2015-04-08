@@ -25,7 +25,8 @@ def encode_radio_dict(dct):
 
 
 def decode_radio_dict(dct):
-    if 'radio' in dct and not type(dct['radio']) == Radio:
+    if 'radio' in dct and dct['radio'] is not None and \
+       not type(dct['radio']) == Radio:
         dct['radio'] = Radio(dct['radio'])
     return dct
 

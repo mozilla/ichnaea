@@ -1,12 +1,9 @@
 from colander import MappingSchema, SchemaNode, SequenceSchema
-from colander import Float, Integer, String, OneOf
-
-RADIO_STRINGS = ['gsm', 'cdma', 'umts', 'wcdma', 'lte']
+from colander import Float, Integer, String
 
 
 class CellSchema(MappingSchema):
-    radio = SchemaNode(String(),
-                       validator=OneOf(RADIO_STRINGS), missing=None)
+    radio = SchemaNode(String(), missing=None)
     mcc = SchemaNode(Integer(), missing=-1)
     mnc = SchemaNode(Integer(), missing=-1)
     lac = SchemaNode(Integer(), missing=-1)
@@ -41,8 +38,7 @@ class BaseReportSchema(MappingSchema):
     accuracy = SchemaNode(Integer(), missing=0)
     altitude = SchemaNode(Integer(), missing=0)
     altitude_accuracy = SchemaNode(Integer(), missing=0)
-    radio = SchemaNode(String(),
-                       validator=OneOf(RADIO_STRINGS), missing=None)
+    radio = SchemaNode(String(), missing=None)
 
     heading = SchemaNode(Float(), missing=-1.0)
     speed = SchemaNode(Float(), missing=-1.0)
