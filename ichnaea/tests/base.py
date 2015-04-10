@@ -345,6 +345,7 @@ class LogIsolation(object):
         for m in self.stats_client.msgs:
             suffix = m.split('|')[-1]
             name, value = m.split('|')[0].split(':')
+            value = int(value)
             if suffix == 'g':
                 data['gauge'].append((name, value))
             elif suffix == 'ms':

@@ -12,11 +12,7 @@ from ichnaea.models import (
 )
 from ichnaea import util
 
-UPDATE_KEY = {
-    'cell': 'update_cell',
-    'cell_lac': 'update_cell_lac',
-    'wifi': 'update_wifi',
-}
+AREA_UPDATE_KEY = 'update_cell_lac'
 
 
 def enqueue_areas(session, redis_client, area_keys,
@@ -52,7 +48,7 @@ class CellAreaUpdater(DataTask):
 
     def scan(self, update_task, batch=100):
         redis_areas = dequeue_areas(
-            self.redis_client, UPDATE_KEY['cell_lac'], batch=batch)
+            self.redis_client, AREA_UPDATE_KEY, batch=batch)
 
         area_keys = set(redis_areas)
         for area_key in area_keys:

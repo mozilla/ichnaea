@@ -1,8 +1,8 @@
 from sqlalchemy.orm import load_only
 
 from ichnaea.data.area import (
+    AREA_UPDATE_KEY,
     enqueue_areas,
-    UPDATE_KEY,
 )
 from ichnaea.data.base import DataTask
 from ichnaea.geocalc import (
@@ -43,7 +43,7 @@ class CellRemover(StationRemover):
                 enqueue_areas,
                 self.redis_client,
                 changed_areas,
-                UPDATE_KEY['cell_lac'])
+                AREA_UPDATE_KEY)
 
         return cells_removed
 
@@ -237,7 +237,7 @@ class CellUpdater(StationUpdater):
                 enqueue_areas,
                 self.redis_client,
                 self.updated_areas,
-                UPDATE_KEY['cell_lac'])
+                AREA_UPDATE_KEY)
 
 
 class WifiUpdater(StationUpdater):
