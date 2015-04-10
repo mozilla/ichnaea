@@ -105,6 +105,7 @@ class TestSubmit(CeleryAppTestCase):
             '/v1/submit?key=test',
             {"items": [{"lat": PARIS_LAT,
                         "lon": PARIS_LON,
+                        "time": now.strftime('%Y-%m-%d'),
                         "accuracy": 10,
                         "altitude": 123,
                         "altitude_accuracy": 7,

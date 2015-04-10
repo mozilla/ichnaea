@@ -36,6 +36,7 @@ class CellTowerSchema(MappingSchema):
     # geolocate API, but assist with data submission
     psc = SchemaNode(Integer(), missing=-1)
     asu = SchemaNode(Integer(), missing=-1)
+    serving = SchemaNode(Integer(), missing=None)
 
 
 class CellTowersSchema(SequenceSchema):
@@ -55,6 +56,7 @@ class WifiAccessPointSchema(MappingSchema):
     # The fields below are extra fields which are not part of the
     # geolocate API, but assist with data submission
     frequency = SchemaNode(Integer(), missing=0)
+    radioType = SchemaNode(String(), missing=None)
 
 
 class WifiAccessPointsSchema(SequenceSchema):
@@ -100,6 +102,10 @@ class GeoSubmitSchema(MappingSchema):
 
     heading = SchemaNode(Float(), missing=-1.0)
     speed = SchemaNode(Float(), missing=-1.0)
+
+    age = SchemaNode(Integer(), missing=None)
+    source = SchemaNode(String(), missing='gps')
+    pressure = SchemaNode(Integer(), missing=None)
 
 
 class GeoSubmitListSchema(SequenceSchema):

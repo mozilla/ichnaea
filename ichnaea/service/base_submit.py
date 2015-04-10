@@ -1,5 +1,8 @@
 from ichnaea.customjson import kombu_dumps
-from ichnaea.data.tasks import insert_measures
+from ichnaea.data.tasks import (
+    insert_measures,
+    queue_reports,
+)
 from ichnaea.service.error import preprocess_request
 
 
@@ -12,6 +15,7 @@ class BaseSubmitter(object):
         self.request = request
         self.raven_client = request.registry.raven_client
         self.stats_client = request.registry.stats_client
+        self.api_key = request.GET.get('key', None)
         self.api_key_log = getattr(request, 'api_key_log', False)
         self.api_key_name = getattr(request, 'api_key_name', None)
         self.email, self.nickname = self.get_request_user_data()
@@ -73,5 +77,24 @@ class BaseSubmitter(object):
                     'nickname': self.nickname,
                     'api_key_log': self.api_key_log,
                     'api_key_name': self.api_key_name,
+                },
+                expires=21600)
+
+    def prepare_reports(self, request_data):  # pragma: no cover
+        raise NotImplementedError()
+
+    def submit(self, request_data):
+        # secondary data pipeline using new internal data format
+        reports = self.prepare_reports(request_data)
+        for i in range(0, len(reports), 100):
+            batch = reports[i:i + 100]
+            # insert reports, expire the task if it wasn't processed
+            # after six hours to avoid queue overload
+            queue_reports.apply_async(
+                kwargs={
+                    'reports': batch,
+                    'api_key': self.api_key,
+                    'email': self.email,
+                    'nickname': self.nickname,
                 },
                 expires=21600)

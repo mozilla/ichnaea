@@ -8,7 +8,10 @@ from ichnaea.data.observation import (
     CellObservationQueue,
     WifiObservationQueue,
 )
-from ichnaea.data.report import ReportQueue
+from ichnaea.data.report import (
+    ReportQueueV1,
+    ReportQueueV2,
+)
 from ichnaea.data.station import (
     CellRemover,
     CellUpdater,
@@ -26,11 +29,11 @@ def insert_measures(self, items=None, nickname='', email='',
 
     reports = kombu_loads(items)
     with self.db_session() as session:
-        queue = ReportQueue(self, session,
-                            api_key_log=api_key_log,
-                            api_key_name=api_key_name,
-                            insert_cell_task=insert_measures_cell,
-                            insert_wifi_task=insert_measures_wifi)
+        queue = ReportQueueV1(self, session,
+                              api_key_log=api_key_log,
+                              api_key_name=api_key_name,
+                              insert_cell_task=insert_measures_cell,
+                              insert_wifi_task=insert_measures_wifi)
         length = queue.insert(reports, nickname=nickname, email=email)
         session.commit()
     return length
@@ -78,6 +81,19 @@ def location_update_wifi(self, min_new=10, max_new=100, batch=10):
         wifis, moving = updater.update(batch=batch)
         session.commit()
     return (wifis, moving)
+
+
+@celery.task(base=DatabaseTask, bind=True, queue='celery_reports')
+def queue_reports(self, reports=(), api_key=None, email=None, nickname=None):
+    with self.db_session() as session:
+        queue = ReportQueueV2(self, session,
+                              api_key=api_key,
+                              email=email,
+                              nickname=nickname)
+        length = queue.insert(reports)
+        # Doesn't do any changes yet
+        # session.commit()
+    return length
 
 
 @celery.task(base=DatabaseTask, bind=True)

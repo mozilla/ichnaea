@@ -13,6 +13,9 @@ class CellSchema(MappingSchema):
     signal = SchemaNode(Integer(), missing=0)
     ta = SchemaNode(Integer(), missing=0)
 
+    age = SchemaNode(Integer(), missing=None)
+    serving = SchemaNode(Integer(), missing=None)
+
 
 class CellsSchema(SequenceSchema):
     cell = CellSchema()
@@ -24,6 +27,9 @@ class WifiSchema(MappingSchema):
     channel = SchemaNode(Integer(), missing=0)
     signal = SchemaNode(Integer(), missing=0)
     signalToNoiseRatio = SchemaNode(Integer(), missing=0)
+
+    radio = SchemaNode(String(), missing=None)
+    age = SchemaNode(Integer(), missing=None)
 
 
 class WifisSchema(SequenceSchema):
@@ -42,6 +48,10 @@ class BaseReportSchema(MappingSchema):
 
     heading = SchemaNode(Float(), missing=-1.0)
     speed = SchemaNode(Float(), missing=-1.0)
+
+    age = SchemaNode(Integer(), missing=None)
+    source = SchemaNode(String(), missing='gps')
+    pressure = SchemaNode(Integer(), missing=None)
 
 
 class ReportSchema(BaseReportSchema):

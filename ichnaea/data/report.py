@@ -19,7 +19,7 @@ from ichnaea.models import (
 from ichnaea import util
 
 
-class ReportQueue(DataTask):
+class ReportQueueV1(DataTask):
 
     def __init__(self, task, session,
                  api_key_log=False, api_key_name=None,
@@ -248,3 +248,15 @@ class ReportQueue(DataTask):
                     old.email = email
 
         return (userid, nickname, email)
+
+
+class ReportQueueV2(DataTask):
+
+    def __init__(self, task, session, api_key=None, nickname=None, email=None):
+        DataTask.__init__(self, task, session)
+        self.api_key = api_key
+        self.email = email
+        self.nickname = nickname
+
+    def insert(self, reports):
+        return 0

@@ -3,6 +3,7 @@ import time
 from ichnaea.models import (
     Cell,
     CellObservation,
+    Radio,
     User,
     Wifi,
     WifiObservation,
@@ -284,7 +285,7 @@ class TestGeoSubmit(CeleryAppTestCase):
 
     def test_invalid_radiotype(self):
         cell = CellFactory.build()
-        cell2 = CellFactory.build()
+        cell2 = CellFactory.build(radio=Radio.wcdma)
         self.app.post_json(
             '/v1/geosubmit?key=test',
             {'items': [
@@ -297,7 +298,7 @@ class TestGeoSubmit(CeleryAppTestCase):
                      'locationAreaCode': cell.lac,
                      'cellId': cell.cid,
                  }, {
-                     'radioType': cell2.radio.name,
+                     'radioType': 'umts',
                      'mobileCountryCode': cell2.mcc,
                      'mobileNetworkCode': cell2.mnc,
                      'locationAreaCode': cell2.lac,
