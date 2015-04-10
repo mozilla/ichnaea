@@ -1,10 +1,8 @@
 from sqlalchemy.orm import load_only
 
-from ichnaea.data.area import (
-    AREA_UPDATE_KEY,
-    enqueue_areas,
-)
+from ichnaea.data.area import enqueue_areas
 from ichnaea.data.base import DataTask
+from ichnaea.data.queue import AREA_UPDATE_KEY
 from ichnaea.geocalc import (
     distance,
     range_to_points,

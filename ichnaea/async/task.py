@@ -64,7 +64,7 @@ class DatabaseTask(Task):
         return self.app.raven_client
 
     @property
-    def redis_client(self):  # pragma: no cover
+    def redis_client(self):
         return self.app.redis_client
 
     @property

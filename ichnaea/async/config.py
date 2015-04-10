@@ -23,10 +23,12 @@ CELERY_IMPORTS = [
 
 CELERY_QUEUES = (
     Queue('celery_default', routing_key='celery_default'),
+    Queue('celery_export', routing_key='celery_export'),
     Queue('celery_incoming', routing_key='celery_incoming'),
     Queue('celery_insert', routing_key='celery_insert'),
     Queue('celery_monitor', routing_key='celery_monitor'),
     Queue('celery_reports', routing_key='celery_reports'),
+    Queue('celery_upload', routing_key='celery_upload'),
 )
 CELERY_QUEUE_NAMES = frozenset([q.name for q in CELERY_QUEUES])
 

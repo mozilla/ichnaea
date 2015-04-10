@@ -4,6 +4,10 @@ from ichnaea.data.area import (
     CellAreaUpdater,
     OCIDCellAreaUpdater,
 )
+from ichnaea.data.export import (
+    ReportExporter,
+    ReportUploader,
+)
 from ichnaea.data.observation import (
     CellObservationQueue,
     WifiObservationQueue,
@@ -91,9 +95,20 @@ def queue_reports(self, reports=(), api_key=None, email=None, nickname=None):
                               email=email,
                               nickname=nickname)
         length = queue.insert(reports)
-        # Doesn't do any changes yet
-        # session.commit()
     return length
+
+
+@celery.task(base=DatabaseTask, bind=True, queue='celery_export')
+def export_reports(self, batch=1000):
+    exporter = ReportExporter(self, None)
+    length = exporter.export(export_reports, upload_reports, batch=batch)
+    return length
+
+
+@celery.task(base=DatabaseTask, bind=True, queue='celery_upload')
+def upload_reports(self, data, url=None):
+    uploader = ReportUploader(self, None, url=url)
+    return uploader.upload(data)
 
 
 @celery.task(base=DatabaseTask, bind=True)

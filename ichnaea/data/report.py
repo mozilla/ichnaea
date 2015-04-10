@@ -3,8 +3,12 @@ import uuid
 
 from sqlalchemy.sql import and_, or_
 
-from ichnaea.customjson import encode_radio_dict
+from ichnaea.customjson import (
+    encode_radio_dict,
+    kombu_dumps,
+)
 from ichnaea.data.base import DataTask
+from ichnaea.data.queue import QUEUE_EXPORT_KEY
 from ichnaea.models import (
     CellObservation,
     CellReport,
@@ -259,4 +263,12 @@ class ReportQueueV2(DataTask):
         self.nickname = nickname
 
     def insert(self, reports):
-        return 0
+        self.queue_export(reports)
+        return len(reports)
+
+    def queue_export(self, reports):
+        data = []
+        for report in reports:
+            data.append(str(kombu_dumps(report)))
+        if data:
+            self.redis_client.lpush(QUEUE_EXPORT_KEY, *data)

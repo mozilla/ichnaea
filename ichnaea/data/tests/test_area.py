@@ -1,7 +1,5 @@
-from ichnaea.data.area import (
-    AREA_UPDATE_KEY,
-    enqueue_areas,
-)
+from ichnaea.data.area import enqueue_areas
+from ichnaea.data.queue import AREA_UPDATE_KEY
 from ichnaea.data.tasks import (
     location_update_cell,
     remove_cell,

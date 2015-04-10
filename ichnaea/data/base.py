@@ -7,5 +7,6 @@ class DataTask(object):
         self.task = task
         self.session = session
         self.task_shortname = task.shortname
-        self.redis_client = task.app.redis_client
+        self.raven_client = task.raven_client
+        self.redis_client = task.redis_client
         self.stats_client = task.stats_client

@@ -1,10 +1,9 @@
 from datetime import timedelta
 from random import randint
 
-from ichnaea.async.config import CELERY_QUEUE_NAMES
-from ichnaea.data.area import AREA_UPDATE_KEY
 from ichnaea.models import ApiKey
 from ichnaea.monitor.tasks import (
+    MONITOR_QUEUE_NAMES,
     monitor_api_key_limits,
     monitor_measures,
     monitor_ocid_import,
@@ -116,11 +115,9 @@ class TestMonitorTasks(CeleryTestCase):
             self.assertAlmostEqual(r, e, -4)
 
     def test_monitor_queue_length(self):
-        data = {
-            AREA_UPDATE_KEY: 1,
-        }
-        for name in CELERY_QUEUE_NAMES:
-            data[name] = randint(2, 10)
+        data = {}
+        for name in MONITOR_QUEUE_NAMES:
+            data[name] = randint(1, 10)
 
         for k, v in data.items():
             self.redis_client.lpush(k, *range(v))

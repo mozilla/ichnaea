@@ -3,6 +3,7 @@ from ichnaea.customjson import (
     kombu_loads,
 )
 from ichnaea.data.base import DataTask
+from ichnaea.data.queue import AREA_UPDATE_KEY
 from ichnaea.geocalc import centroid, range_to_points
 from ichnaea.models import (
     Cell,
@@ -11,8 +12,6 @@ from ichnaea.models import (
     OCIDCellArea,
 )
 from ichnaea import util
-
-AREA_UPDATE_KEY = 'update_cell_lac'
 
 
 def enqueue_areas(session, redis_client, area_keys,

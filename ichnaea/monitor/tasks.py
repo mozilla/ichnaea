@@ -2,7 +2,7 @@ from sqlalchemy import func
 
 from ichnaea.async.config import CELERY_QUEUE_NAMES
 from ichnaea.async.task import DatabaseTask
-from ichnaea.data.area import AREA_UPDATE_KEY
+from ichnaea.data.queue import DATA_QUEUE_NAMES
 from ichnaea.models import (
     ApiKey,
     CellObservation,
@@ -13,8 +13,7 @@ from ichnaea import util
 from ichnaea.worker import celery
 
 # combine celery queues and manual update queues
-MONITOR_QUEUE_NAMES = set(CELERY_QUEUE_NAMES)
-MONITOR_QUEUE_NAMES.add(AREA_UPDATE_KEY)
+MONITOR_QUEUE_NAMES = set(CELERY_QUEUE_NAMES).union(DATA_QUEUE_NAMES)
 
 
 @celery.task(base=DatabaseTask, bind=True, queue='celery_monitor')
