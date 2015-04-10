@@ -4,14 +4,10 @@ from pyramid.httpexceptions import (
 )
 from redis import ConnectionError
 
-from ichnaea.customjson import kombu_dumps
-from ichnaea.data.tasks import insert_measures
-from ichnaea.service.error import (
-    JSONError,
-    preprocess_request,
-)
-from ichnaea.service.submit.schema import SubmitSchema
+from ichnaea.service.error import JSONError
 from ichnaea.service.base import check_api_key
+from ichnaea.service.base_submit import BaseSubmitter
+from ichnaea.service.submit.schema import SubmitSchema
 
 
 def configure_submit(config):
@@ -19,76 +15,35 @@ def configure_submit(config):
     config.add_view(submit_view, route_name='v1_submit', renderer='json')
 
 
-def prepare_submit_data(request_data):
-    reports = []
-    for item in request_data['items']:
-        report = item.copy()
-        report_radio = report['radio']
-        for cell in report['cell']:
-            if cell['radio'] is None:
-                cell['radio'] = report_radio
-        reports.append(report)
-        if 'radio' in report:
-            del report['radio']
-    return reports
+class Submitter(BaseSubmitter):
+
+    schema = SubmitSchema
+    error_response = JSONError
+
+    def prepare_measure_data(self, request_data):
+        reports = []
+        for item in request_data['items']:
+            report = item.copy()
+            report_radio = report['radio']
+            for cell in report['cell']:
+                if cell['radio'] is None:
+                    cell['radio'] = report_radio
+            reports.append(report)
+            if 'radio' in report:
+                del report['radio']
+        return reports
 
 
 @check_api_key('submit', error_on_invalidkey=False)
 def submit_view(request):
-    stats_client = request.registry.stats_client
-    api_key_log = getattr(request, 'api_key_log', False)
-    api_key_name = getattr(request, 'api_key_name', None)
+    submitter = Submitter(request)
+
+    # may raise HTTP error
+    request_data = submitter.preprocess()
 
     try:
-        request_data, errors = preprocess_request(
-            request,
-            schema=SubmitSchema(),
-            response=JSONError,
-        )
-    except JSONError:
-        # capture JSON exceptions for submit calls
-        request.registry.raven_client.captureException()
-        raise
-
-    submit_data = prepare_submit_data(request_data)
-
-    nickname = request.headers.get('X-Nickname', u'')
-    if isinstance(nickname, str):
-        nickname = nickname.decode('utf-8', 'ignore')
-
-    email = request.headers.get('X-Email', u'')
-    if isinstance(email, str):
-        email = email.decode('utf-8', 'ignore')
-
-    # count the number of batches and emit a pseudo-timer to capture
-    # the number of reports per batch
-    length = len(submit_data)
-    stats_client.incr('items.uploaded.batches')
-    stats_client.timing('items.uploaded.batch_size', length)
-
-    if api_key_log:
-        stats_client.incr(
-            'items.api_log.%s.uploaded.batches' % api_key_name)
-        stats_client.timing(
-            'items.api_log.%s.uploaded.batch_size' % api_key_name, length)
-
-    # batch incoming data into multiple tasks, in case someone
-    # manages to submit us a huge single request
-    for i in range(0, length, 100):
-        batch = kombu_dumps(submit_data[i:i + 100])
-        # insert observations, expire the task if it wasn't processed
-        # after six hours to avoid queue overload
-        try:
-            insert_measures.apply_async(
-                kwargs={
-                    'email': email,
-                    'items': batch,
-                    'nickname': nickname,
-                    'api_key_log': api_key_log,
-                    'api_key_name': api_key_name,
-                },
-                expires=21600)
-        except ConnectionError:  # pragma: no cover
-            return HTTPServiceUnavailable()
+        submitter.insert_measures(request_data)
+    except ConnectionError:  # pragma: no cover
+        return HTTPServiceUnavailable()
 
     return HTTPNoContent()
