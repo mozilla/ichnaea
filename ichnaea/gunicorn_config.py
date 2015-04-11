@@ -16,10 +16,10 @@ timeout = 60
 keepalive = 0
 
 # Recycle worker processes after 10m requests to prevent memory leaks
-# from effecting us, at 1000 req/s this means recycle every 2.8 hours
-max_requests = 10000000
+# from effecting us, at 100 req/s this means recycle every 2.8 hours
+max_requests = 1000000
 # Use some jitter to prevent all workers from restarting at once.
-max_requests_jitter = 100000
+max_requests_jitter = max_requests // 10
 
 # Log errors to stderr
 errorlog = "-"
