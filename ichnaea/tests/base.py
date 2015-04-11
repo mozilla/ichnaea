@@ -18,6 +18,7 @@ from unittest2 import TestCase
 from webtest import TestApp
 
 from ichnaea import main
+from ichnaea.app_config import DummyConfig
 from ichnaea.async.config import (
     attach_database,
     attach_raven_client,
@@ -115,16 +116,18 @@ def _make_redis(uri=REDIS_URI):
     return redis_client(uri)
 
 
-def _make_app(_db_rw=None, _db_ro=None, _raven_client=None, _redis=None,
-              _stats_client=None, **settings):
+def _make_app(app_config=None,
+              _db_rw=None, _db_ro=None, _geoip_db=None,
+              _raven_client=None, _redis=None, _stats_client=None):
     wsgiapp = main(
         {},
+        app_config=app_config,
         _db_rw=_db_rw,
         _db_ro=_db_ro,
+        _geoip_db=_geoip_db,
         _raven_client=_raven_client,
         _redis=_redis,
-        _stats_client=_stats_client,
-        **settings)
+        _stats_client=_stats_client)
     return TestApp(wsgiapp)
 
 
@@ -489,15 +492,19 @@ class AppTestCase(TestCase, DBIsolation,
         super(AppTestCase, cls).setup_logging()
         super(AppTestCase, cls).setup_geoip()
 
-        cls.app = _make_app(_db_rw=cls.db_rw,
+        app_config = DummyConfig({'ichnaea': {
+            'assets_url': 'http://127.0.0.1:7001/static/',
+            's3_backup_bucket': 'localhost.bucket',
+            's3_assets_bucket': 'localhost.bucket',
+        }})
+
+        cls.app = _make_app(app_config=app_config,
+                            _db_rw=cls.db_rw,
                             _db_ro=cls.db_ro,
+                            _geoip_db=cls.geoip_db,
                             _raven_client=cls.raven_client,
                             _redis=cls.redis_client,
                             _stats_client=cls.stats_client,
-                            _geoip_db=cls.geoip_db,
-                            s3_backup_bucket='localhost.bucket',
-                            s3_assets_bucket='localhost.bucket',
-                            assets_url='http://127.0.0.1:7001/static/',
                             )
 
     @classmethod

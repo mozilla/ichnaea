@@ -25,8 +25,8 @@ A named tuple consisting of a country code and name.
 VALID_COUNTRIES = frozenset(iso3166.countries_by_alpha2.keys())
 
 
-def configure_geoip(registry_settings=None, filename=None,
-                    mode=MODE_AUTO, raven_client=None):
+def configure_geoip(filename, mode=MODE_AUTO,
+                    raven_client=None, _client=None):
     """
     Configures and returns a :class:`~ichnaea.geoip.GeoIPWrapper` instance.
 
@@ -34,15 +34,8 @@ def configure_geoip(registry_settings=None, filename=None,
     a :class:`~ichnaea.geoip.GeoIPNull` dummy implementation instead.
     """
 
-    if registry_settings is None:
-        registry_settings = {}
-
-    # Allow tests to override what's defined in settings
-    if '_geoip_db' in registry_settings:
-        return registry_settings['_geoip_db']
-
-    if filename is None:
-        filename = registry_settings.get('geoip_db_path', None)
+    if _client is not None:
+        return _client
 
     if not filename:
         # No DB file specified in the config

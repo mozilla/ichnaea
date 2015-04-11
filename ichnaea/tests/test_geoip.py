@@ -33,7 +33,7 @@ class GeoIPBaseTest(LogIsolation, GeoIPIsolation):
 
     def _open_db(self, filename=None, mode=MODE_AUTO):
         return self.configure_geoip(
-            filename=filename, mode=mode, raven_client=self.raven_client)
+            filename, mode=mode, raven_client=self.raven_client)
 
 
 class TestDatabase(GeoIPBaseTest, TestCase):

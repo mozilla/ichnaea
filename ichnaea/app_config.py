@@ -24,6 +24,15 @@ class Config(ConfigParser):
         return option
 
 
+class DummyConfig(object):
+
+    def __init__(self, settings):
+        self.settings = settings
+
+    def get_map(self, section):
+        return self.settings.get(section)
+
+
 def read_config(filename=None):
     if filename is None:
         filename = os.environ.get('ICHNAEA_CFG', 'ichnaea.ini')
