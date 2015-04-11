@@ -10,14 +10,19 @@ from ichnaea.db import (
     db_ro_session,
 )
 from ichnaea.geoip import configure_geoip
-from ichnaea.logging import configure_raven
-from ichnaea.logging import configure_stats
+from ichnaea.log import (
+    configure_logging,
+    configure_raven,
+    configure_stats,
+)
 from ichnaea.service import configure_service
 
 
 def main(global_config, app_config=None, init=False,
          _db_rw=None, _db_ro=None, _geoip_db=None,
          _raven_client=None, _redis_client=None, _stats_client=None):
+
+    configure_logging()
 
     if app_config is not None:
         app_settings = app_config.get_map('ichnaea')
@@ -52,7 +57,7 @@ def main(global_config, app_config=None, init=False,
         _client=_geoip_db)
 
     config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)
-    config.add_tween('ichnaea.logging.log_tween_factory', under=EXCVIEW)
+    config.add_tween('ichnaea.log.log_tween_factory', under=EXCVIEW)
     config.add_request_method(db_rw_session, property=True)
     config.add_request_method(db_ro_session, property=True)
 

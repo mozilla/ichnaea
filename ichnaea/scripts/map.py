@@ -16,7 +16,7 @@ from ichnaea.db import (
     Database,
     db_worker_session,
 )
-from ichnaea.logging import (
+from ichnaea.log import (
     configure_raven,
     configure_stats,
 )

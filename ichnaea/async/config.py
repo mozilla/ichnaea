@@ -8,7 +8,7 @@ from ichnaea.async.schedule import CELERYBEAT_SCHEDULE
 from ichnaea.cache import redis_client
 from ichnaea import customjson
 from ichnaea.db import Database
-from ichnaea.logging import (
+from ichnaea.log import (
     configure_raven,
     configure_stats,
 )

@@ -1,4 +1,4 @@
-from ichnaea.logging import (
+from ichnaea.log import (
     get_raven_client,
     get_stats_client,
 )

@@ -32,7 +32,7 @@ from ichnaea.constants import GEOIP_CITY_ACCURACY
 from ichnaea.db import Database
 from ichnaea.geocalc import maximum_country_radius
 from ichnaea.geoip import configure_geoip
-from ichnaea.logging import (
+from ichnaea.log import (
     configure_raven,
     configure_stats,
     DebugRavenClient,

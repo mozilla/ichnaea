@@ -13,6 +13,9 @@ Migrations
 Changes
 ~~~~~~~
 
+- #385: Configure Python's logging module.
+
+- #423: Add a new queue system using the new geosubmit v2 internal format.
 
 20150409120500
 **************

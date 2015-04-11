@@ -10,7 +10,7 @@ from sqlalchemy.exc import ProgrammingError
 
 from ichnaea.app_config import read_config
 from ichnaea.db import Database
-from ichnaea.logging import configure_raven
+from ichnaea.log import configure_raven
 
 # make sure all models are imported
 from ichnaea.models import _Model

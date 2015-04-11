@@ -1,5 +1,5 @@
 from ichnaea.geoip import GeoIPNull
-from ichnaea.logging import PingableStatsClient
+from ichnaea.log import PingableStatsClient
 from ichnaea.tests.base import (
     _make_db,
     _make_redis,

@@ -1,4 +1,5 @@
 from collections import deque
+import logging
 import socket
 import time
 
@@ -61,6 +62,10 @@ def configure_stats(config, _client=None):  # pragma: no cover
 
 def quote_statsd_path(path):
     return path.replace('/', '.').lstrip('.').replace('@', '-')
+
+
+def configure_logging():
+    logging.basicConfig()
 
 
 def log_tween_factory(handler, registry):
