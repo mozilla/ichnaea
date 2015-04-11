@@ -21,6 +21,12 @@ def on_duplicate(insert, compiler, **kw):
     return s
 
 
+def configure_db(uri, _db=None):
+    if _db is not None:
+        return _db
+    return Database(uri)
+
+
 # the request db_sessions and db_tween_factory are inspired by pyramid_tm
 # to provide lazy session creation, session closure and automatic
 # rollback in case of errors

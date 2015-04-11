@@ -2,10 +2,10 @@ from pyramid.config import Configurator
 from pyramid.tweens import EXCVIEW
 
 from ichnaea import customjson
-from ichnaea.cache import redis_client
+from ichnaea.cache import configure_redis
 from ichnaea.content.views import configure_content
 from ichnaea.db import (
-    Database,
+    configure_db,
     db_rw_session,
     db_ro_session,
 )
@@ -17,7 +17,7 @@ from ichnaea.service import configure_service
 
 def main(global_config, app_config=None, init=False,
          _db_rw=None, _db_ro=None, _geoip_db=None,
-         _raven_client=None, _redis=None, _stats_client=None):
+         _raven_client=None, _redis_client=None, _stats_client=None):
 
     if app_config is not None:
         app_settings = app_config.get_map('ichnaea')
@@ -28,35 +28,26 @@ def main(global_config, app_config=None, init=False,
     # add support for pt templates
     config.include('pyramid_chameleon')
 
-    settings = config.registry.settings
-
     configure_content(config)
     configure_service(config)
 
-    # configure databases incl. test override hooks
-    if _db_rw is None:
-        config.registry.db_rw = Database(settings['db_master'])
-    else:
-        config.registry.db_rw = _db_rw
-    if _db_ro is None:
-        config.registry.db_ro = Database(settings['db_slave'])
-    else:
-        config.registry.db_ro = _db_ro
+    # configure outside connections
+    registry = config.registry
+    settings = registry.settings
 
-    if _redis is None:
-        config.registry.redis_client = None
-        if 'redis_url' in settings:
-            config.registry.redis_client = redis_client(settings['redis_url'])
-    else:
-        config.registry.redis_client = _redis
+    registry.db_rw = configure_db(settings.get('db_master'), _db=_db_rw)
+    registry.db_ro = configure_db(settings.get('db_slave'), _db=_db_ro)
 
-    config.registry.raven_client = raven_client = configure_raven(
+    registry.raven_client = raven_client = configure_raven(
         settings.get('sentry_dsn'), _client=_raven_client)
 
-    config.registry.stats_client = configure_stats(
+    registry.redis_client = configure_redis(
+        settings.get('redis_url'), _client=_redis_client)
+
+    registry.stats_client = configure_stats(
         settings.get('statsd_host'), _client=_stats_client)
 
-    config.registry.geoip_db = configure_geoip(
+    registry.geoip_db = configure_geoip(
         settings.get('geoip_db_path'), raven_client=raven_client,
         _client=_geoip_db)
 
@@ -70,7 +61,6 @@ def main(global_config, app_config=None, init=False,
 
     # Should we try to initialize and establish the outbound connections?
     if init:  # pragma: no cover
-        registry = config.registry
         registry.db_ro.ping()
         registry.redis_client.ping()
         registry.stats_client.ping()

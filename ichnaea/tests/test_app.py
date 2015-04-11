@@ -32,8 +32,9 @@ class TestApp(DBTestCase, RedisIsolation):
         }})
         app = _make_app(app_config=app_config,
                         _raven_client=self.raven_client,
+                        _redis_client=self.redis_client,
                         _stats_client=self.stats_client,
-                        _redis=self.redis_client)
+                        )
         self.db_rw = app.app.registry.db_rw
         self.db_ro = app.app.registry.db_ro
         self.setup_session()
@@ -46,8 +47,8 @@ class TestApp(DBTestCase, RedisIsolation):
         app = _make_app(_db_rw=self.db_rw,
                         _db_ro=self.db_ro,
                         _raven_client=self.raven_client,
+                        _redis_client=self.redis_client,
                         _stats_client=self.stats_client,
-                        _redis=self.redis_client,
                         )
         app.get('/stats_wifi.json', status=200)
 

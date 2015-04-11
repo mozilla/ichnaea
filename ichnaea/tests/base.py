@@ -118,7 +118,7 @@ def _make_redis(uri=REDIS_URI):
 
 def _make_app(app_config=None,
               _db_rw=None, _db_ro=None, _geoip_db=None,
-              _raven_client=None, _redis=None, _stats_client=None):
+              _raven_client=None, _redis_client=None, _stats_client=None):
     wsgiapp = main(
         {},
         app_config=app_config,
@@ -126,7 +126,7 @@ def _make_app(app_config=None,
         _db_ro=_db_ro,
         _geoip_db=_geoip_db,
         _raven_client=_raven_client,
-        _redis=_redis,
+        _redis_client=_redis_client,
         _stats_client=_stats_client)
     return TestApp(wsgiapp)
 
@@ -503,7 +503,7 @@ class AppTestCase(TestCase, DBIsolation,
                             _db_ro=cls.db_ro,
                             _geoip_db=cls.geoip_db,
                             _raven_client=cls.raven_client,
-                            _redis=cls.redis_client,
+                            _redis_client=cls.redis_client,
                             _stats_client=cls.stats_client,
                             )
 

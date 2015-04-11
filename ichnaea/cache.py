@@ -17,6 +17,12 @@ class RedisClient(redis.StrictRedis):
         return True
 
 
+def configure_redis(redis_url, _client=None):
+    if redis_url is None or _client is not None:
+        return _client
+    return redis_client(redis_url)
+
+
 def redis_client(redis_url):
     url = urlparse.urlparse(redis_url)
     netloc = url.netloc.split(":")
