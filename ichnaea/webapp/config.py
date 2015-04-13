@@ -38,22 +38,21 @@ def main(global_config, app_config=None, init=False,
 
     # configure outside connections
     registry = config.registry
-    settings = registry.settings
 
-    registry.db_rw = configure_db(settings.get('db_master'), _db=_db_rw)
-    registry.db_ro = configure_db(settings.get('db_slave'), _db=_db_ro)
+    registry.db_rw = configure_db(app_settings.get('db_master'), _db=_db_rw)
+    registry.db_ro = configure_db(app_settings.get('db_slave'), _db=_db_ro)
 
     registry.raven_client = raven_client = configure_raven(
-        settings.get('sentry_dsn'), _client=_raven_client)
+        app_settings.get('sentry_dsn'), _client=_raven_client)
 
     registry.redis_client = configure_redis(
-        settings.get('redis_url'), _client=_redis_client)
+        app_settings.get('redis_url'), _client=_redis_client)
 
     registry.stats_client = configure_stats(
-        settings.get('statsd_host'), _client=_stats_client)
+        app_settings.get('statsd_host'), _client=_stats_client)
 
     registry.geoip_db = configure_geoip(
-        settings.get('geoip_db_path'), raven_client=raven_client,
+        app_settings.get('geoip_db_path'), raven_client=raven_client,
         _client=_geoip_db)
 
     config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)

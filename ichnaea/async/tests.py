@@ -4,12 +4,8 @@ import tempfile
 from unittest2 import TestCase
 
 from ichnaea.async.app import celery_app
-from ichnaea.async.config import attach_database
 from ichnaea.async import schedule
-from ichnaea.tests.base import (
-    CeleryTestCase,
-    DBTestCase,
-)
+from ichnaea.tests.base import CeleryTestCase
 
 
 class TestBeat(CeleryTestCase):
@@ -34,21 +30,3 @@ class TestWorkerConfig(TestCase):
     def test_config(self):
         self.assertTrue(celery_app.conf['CELERY_ALWAYS_EAGER'])
         self.assertTrue('redis' in celery_app.conf['CELERY_RESULT_BACKEND'])
-
-
-class TestWorkerDatabase(DBTestCase):
-
-    def setUp(self):
-        super(TestWorkerDatabase, self).setUp()
-        self._old_db = getattr(celery_app, 'db_rw', None)
-
-    def tearDown(self):
-        if self._old_db:
-            setattr(celery_app, 'db_rw', self._old_db)
-        else:
-            delattr(celery_app, 'db_rw')
-        super(TestWorkerDatabase, self).tearDown()
-
-    def test_attach(self):
-        attach_database(celery_app, _db_rw=self.db_rw)
-        self.assertTrue(hasattr(celery_app, 'db_rw'))

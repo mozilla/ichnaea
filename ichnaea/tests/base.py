@@ -18,14 +18,7 @@ from unittest2 import TestCase
 from webtest import TestApp
 
 from ichnaea.async.app import celery_app
-from ichnaea.async.config import (
-    attach_database,
-    attach_raven_client,
-    attach_redis_client,
-    attach_stats_client,
-    configure_s3_backup,
-    configure_ocid_import,
-)
+from ichnaea.async.config import init_worker
 from ichnaea.cache import redis_client
 from ichnaea.config import DummyConfig
 from ichnaea.constants import GEOIP_CITY_ACCURACY
@@ -60,6 +53,16 @@ REDIS_URI = os.environ.get('REDIS_URI', 'redis://localhost:6379/1')
 SESSION = {}
 
 # Some test-data constants
+
+TEST_CONFIG = DummyConfig({
+    'ichnaea': {
+        'assets_url': 'http://127.0.0.1:7001/static/',
+        's3_backup_bucket': 'localhost.bucket',
+        's3_assets_bucket': 'localhost.bucket',
+        'ocid_url': 'http://localhost:7001/downloads/',
+        'ocid_apikey': 'xxxxxxxx-yyyy-xxxx-yyyy-xxxxxxxxxxxx',
+    },
+})
 
 GEOIP_DATA = {
     'London': {
@@ -299,24 +302,21 @@ class CeleryIsolation(object):
 
     @classmethod
     def setup_celery(cls):
-        attach_database(celery_app, _db_rw=cls.db_rw)
-        attach_raven_client(celery_app, _client=cls.raven_client)
-        attach_redis_client(celery_app, _client=cls.redis_client)
-        attach_stats_client(celery_app, _client=cls.stats_client)
-        configure_s3_backup(celery_app, settings={
-            's3_backup_bucket': 'localhost.bucket',
-            's3_assets_bucket': 'localhost.bucket',
-        })
-        configure_ocid_import(celery_app, settings={
-            'ocid_url': 'http://localhost:7001/downloads/',
-            'ocid_apikey': 'xxxxxxxx-yyyy-xxxx-yyyy-xxxxxxxxxxxx',
-        })
+        init_worker(
+            celery_app, TEST_CONFIG,
+            _db_rw=cls.db_rw,
+            _raven_client=cls.raven_client,
+            _redis_client=cls.redis_client,
+            _stats_client=cls.stats_client)
 
     @classmethod
     def teardown_celery(cls):
-        del celery_app.s3_settings
-        del celery_app.ocid_settings
         del celery_app.db_rw
+        del celery_app.raven_client
+        del celery_app.redis_client
+        del celery_app.stats_client
+        del celery_app.ocid_settings
+        del celery_app.s3_settings
 
 
 class LogIsolation(object):
@@ -492,13 +492,7 @@ class AppTestCase(TestCase, DBIsolation,
         super(AppTestCase, cls).setup_logging()
         super(AppTestCase, cls).setup_geoip()
 
-        app_config = DummyConfig({'ichnaea': {
-            'assets_url': 'http://127.0.0.1:7001/static/',
-            's3_backup_bucket': 'localhost.bucket',
-            's3_assets_bucket': 'localhost.bucket',
-        }})
-
-        cls.app = _make_app(app_config=app_config,
+        cls.app = _make_app(app_config=TEST_CONFIG,
                             _db_rw=cls.db_rw,
                             _db_ro=cls.db_ro,
                             _geoip_db=cls.geoip_db,

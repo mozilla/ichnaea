@@ -4,10 +4,10 @@ from kombu import Queue
 from kombu.serialization import register
 
 from ichnaea.async.schedule import CELERYBEAT_SCHEDULE
-from ichnaea.cache import redis_client
+from ichnaea.cache import configure_redis
 from ichnaea.config import read_config
 from ichnaea import customjson
-from ichnaea.db import Database
+from ichnaea.db import configure_db
 from ichnaea.log import (
     configure_raven,
     configure_stats,
@@ -28,49 +28,6 @@ CELERY_QUEUE_NAMES = frozenset([q.name for q in CELERY_QUEUES])
 register('internal_json', customjson.kombu_dumps, customjson.kombu_loads,
          content_type='application/x-internaljson',
          content_encoding='utf-8')
-
-
-def attach_database(app, settings=None, _db_rw=None):
-    # called manually during tests
-    if _db_rw is None:  # pragma: no cover
-        db_rw = Database(settings['db_master'])
-    else:
-        db_rw = _db_rw
-    app.db_rw = db_rw
-
-
-def attach_raven_client(app, settings=None, _client=None):
-    app.raven_client = _client
-    if _client is None:  # pragma: no cover
-        app.raven_client = configure_raven(settings.get('sentry_dsn'))
-
-
-def attach_redis_client(app, settings=None, _client=None):
-    app.redis_client = _client
-    if _client is None:  # pragma: no cover
-        app.redis_client = redis_client(settings.get('redis_url'))
-
-
-def attach_stats_client(app, settings=None, _client=None):
-    app.stats_client = _client
-    if _client is None:  # pragma: no cover
-        app.stats_client = configure_stats(settings.get('statsd_host'))
-
-
-def configure_s3_backup(app, settings=None):
-    # called manually during tests
-    app.s3_settings = {
-        'backup_bucket': settings['s3_backup_bucket'],
-        'assets_bucket': settings['s3_assets_bucket'],
-    }
-
-
-def configure_ocid_import(app, settings=None):
-    # called manually during tests
-    app.ocid_settings = {
-        'ocid_url': settings['ocid_url'],
-        'ocid_apikey': settings['ocid_apikey'],
-    }
 
 
 def configure_celery(celery_app):
@@ -99,3 +56,31 @@ def configure_celery(celery_app):
         CELERY_QUEUES=CELERY_QUEUES,
         CELERYBEAT_SCHEDULE=CELERYBEAT_SCHEDULE,
     )
+
+
+def init_worker(celery_app, app_config,
+                _db_rw=None, _db_ro=None, _geoip_db=None,
+                _raven_client=None, _redis_client=None, _stats_client=None):
+    # currently neither a db_ro nor geoip_db are set up
+    app_settings = app_config.get_map('ichnaea')
+
+    # configure outside connections
+    celery_app.db_rw = configure_db(app_settings.get('db_master'), _db=_db_rw)
+
+    celery_app.raven_client = configure_raven(
+        app_settings.get('sentry_dsn'), _client=_raven_client)
+
+    celery_app.redis_client = configure_redis(
+        app_settings.get('redis_url'), _client=_redis_client)
+
+    celery_app.stats_client = configure_stats(
+        app_settings.get('statsd_host'), _client=_stats_client)
+
+    celery_app.ocid_settings = {
+        'ocid_url': app_settings['ocid_url'],
+        'ocid_apikey': app_settings['ocid_apikey'],
+    }
+    celery_app.s3_settings = {
+        'backup_bucket': app_settings['s3_backup_bucket'],
+        'assets_bucket': app_settings['s3_assets_bucket'],
+    }
