@@ -3,7 +3,7 @@ BIN = $(HERE)/bin
 BUILD_DIRS = bin build dist include lib lib64 libmaxminddb man node_modules share
 TRAVIS ?= false
 
-MAXMINDDB_VERSION = 1.1.1
+MAXMINDDB_VERSION = 1.2.0
 MYSQL_DB = location
 MYSQL_TEST_DB = test_location
 

@@ -17,6 +17,8 @@ Changes
 
 - #423: Add a new queue system using the new geosubmit v2 internal format.
 
+- Updated to latests versions of boto and maxminddb.
+
 20150409120500
 **************
 

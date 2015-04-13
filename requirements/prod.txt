@@ -1,13 +1,13 @@
 Chameleon==2.22
 Mako==1.0.1
 PasteDeploy==1.5.2
-PyMySQL==0.6.3  # rq.filter: !=0.6.4,!=0.6.6
+PyMySQL==0.6.3  # rq.filter: !=0.6.4,!=0.6.5,!=0.6.6
 WebOb==1.4
 alembic==0.7.4
 amqp==1.4.6
 anyjson==0.3.3
 argparse==1.3.0
-boto==2.37.0
+boto==2.38.0
 celery==3.1.17
 colander==1.0
 configparser==3.5.0b2
@@ -21,7 +21,7 @@ ipaddr==2.1.11
 iso3166==0.7
 iso8601==0.1.10
 kombu==3.0.24
-maxminddb==1.1.1  # optional C extension, version also in Makefile
+maxminddb==1.2.0  # optional C extension, version also in Makefile
 mobile-codes==0.7
 ordereddict==1.1
 pyramid==1.5.4
