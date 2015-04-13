@@ -9,6 +9,7 @@ import tempfile
 import pytz
 from sqlalchemy import func
 
+from ichnaea.async.app import celery_app
 from ichnaea.async.task import DatabaseTask
 from ichnaea.backup.s3 import S3Backend, compute_hash
 from ichnaea.models import (
@@ -17,7 +18,6 @@ from ichnaea.models import (
     ObservationType,
 )
 from ichnaea import util
-from ichnaea.worker import celery
 
 
 @contextmanager
@@ -56,7 +56,7 @@ def selfdestruct_tempdir(s3_key):
             shutil.rmtree(base_path)
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=DatabaseTask, bind=True)
 def write_cellmeasure_s3_backups(self,
                                  limit=100,
                                  batch=10000,
@@ -70,7 +70,7 @@ def write_cellmeasure_s3_backups(self,
                                         cleanup_zip=cleanup_zip)
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=DatabaseTask, bind=True)
 def write_wifimeasure_s3_backups(self,
                                  limit=100,
                                  batch=10000,
@@ -110,7 +110,7 @@ def write_observation_s3_backups(self,
             c += countdown
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=DatabaseTask, bind=True)
 def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
     with self.db_session() as session:
         block = session.query(ObservationBlock).filter(
@@ -245,13 +245,13 @@ def schedule_observation_archival(self, observation_type,
     return blocks
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=DatabaseTask, bind=True)
 def schedule_cellmeasure_archival(self, limit=100, batch=1000000):
     return schedule_observation_archival(
         self, ObservationType.cell, limit=limit, batch=batch)
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=DatabaseTask, bind=True)
 def schedule_wifimeasure_archival(self, limit=100, batch=1000000):
     return schedule_observation_archival(
         self, ObservationType.wifi, limit=limit, batch=batch)
@@ -295,7 +295,7 @@ def delete_observation_records(self,
             c += countdown
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=DatabaseTask, bind=True)
 def dispatch_delete(self, block_id, batch=10000):
     s3_backend = S3Backend(self.app.s3_settings['backup_bucket'],
                            self.raven_client)
@@ -312,7 +312,7 @@ def dispatch_delete(self, block_id, batch=10000):
             kwargs={'batch': batch})
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=DatabaseTask, bind=True)
 def verified_delete(self, block_id, batch=10000):
     utcnow = util.utcnow()
     with self.db_session() as session:
@@ -332,7 +332,7 @@ def verified_delete(self, block_id, batch=10000):
         session.commit()
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=DatabaseTask, bind=True)
 def delete_cellmeasure_records(self, limit=100, days_old=7,
                                countdown=300, batch=10000):
     return delete_observation_records(
@@ -344,7 +344,7 @@ def delete_cellmeasure_records(self, limit=100, days_old=7,
         batch=batch)
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=DatabaseTask, bind=True)
 def delete_wifimeasure_records(self, limit=100, days_old=7,
                                countdown=300, batch=10000):
     return delete_observation_records(

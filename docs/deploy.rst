@@ -105,12 +105,13 @@ Now you can run the web app on for example port 7001:
 
 .. code-block:: bash
 
-   bin/gunicorn -b 127.0.0.1:7001 -c ichnaea.gunicorn_config ichnaea:application
+   bin/gunicorn -b 127.0.0.1:7001 -c ichnaea.webapp.settings \
+       ichnaea.webapp.app:wsgi_app
 
 The celery processes are started via:
 
 .. code-block:: bash
 
-   bin/celery -A ichnaea.worker:celery beat
-   bin/celery -A ichnaea.worker:celery worker -Ofair --no-execv \
+   bin/celery -A ichnaea.async.app:celery_app beat
+   bin/celery -A ichnaea.async.app:celery_app worker -Ofair --no-execv \
        --without-mingle --without-gossip

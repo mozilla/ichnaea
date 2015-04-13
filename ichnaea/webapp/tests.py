@@ -1,4 +1,4 @@
-from ichnaea.app_config import DummyConfig
+from ichnaea.config import DummyConfig
 from ichnaea.tests.base import (
     _make_app,
     _make_db,

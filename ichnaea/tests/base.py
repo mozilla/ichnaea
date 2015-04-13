@@ -17,8 +17,7 @@ from sqlalchemy.schema import (
 from unittest2 import TestCase
 from webtest import TestApp
 
-from ichnaea import main
-from ichnaea.app_config import DummyConfig
+from ichnaea.async.app import celery_app
 from ichnaea.async.config import (
     attach_database,
     attach_raven_client,
@@ -28,6 +27,7 @@ from ichnaea.async.config import (
     configure_ocid_import,
 )
 from ichnaea.cache import redis_client
+from ichnaea.config import DummyConfig
 from ichnaea.constants import GEOIP_CITY_ACCURACY
 from ichnaea.db import Database
 from ichnaea.geocalc import maximum_country_radius
@@ -39,7 +39,7 @@ from ichnaea.log import (
     DebugStatsClient,
 )
 from ichnaea.models import _Model, ApiKey
-from ichnaea.worker import celery
+from ichnaea.webapp.config import main
 
 # make new unittest API's available under Python 2.6
 try:
@@ -299,24 +299,24 @@ class CeleryIsolation(object):
 
     @classmethod
     def setup_celery(cls):
-        attach_database(celery, _db_rw=cls.db_rw)
-        attach_raven_client(celery, _client=cls.raven_client)
-        attach_redis_client(celery, _client=cls.redis_client)
-        attach_stats_client(celery, _client=cls.stats_client)
-        configure_s3_backup(celery, settings={
+        attach_database(celery_app, _db_rw=cls.db_rw)
+        attach_raven_client(celery_app, _client=cls.raven_client)
+        attach_redis_client(celery_app, _client=cls.redis_client)
+        attach_stats_client(celery_app, _client=cls.stats_client)
+        configure_s3_backup(celery_app, settings={
             's3_backup_bucket': 'localhost.bucket',
             's3_assets_bucket': 'localhost.bucket',
         })
-        configure_ocid_import(celery, settings={
+        configure_ocid_import(celery_app, settings={
             'ocid_url': 'http://localhost:7001/downloads/',
             'ocid_apikey': 'xxxxxxxx-yyyy-xxxx-yyyy-xxxxxxxxxxxx',
         })
 
     @classmethod
     def teardown_celery(cls):
-        del celery.s3_settings
-        del celery.ocid_settings
-        del celery.db_rw
+        del celery_app.s3_settings
+        del celery_app.ocid_settings
+        del celery_app.db_rw
 
 
 class LogIsolation(object):

@@ -8,7 +8,7 @@ from alembic import command
 from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 
-from ichnaea.app_config import read_config
+from ichnaea.config import read_config
 from ichnaea.db import Database
 from ichnaea.log import configure_raven
 

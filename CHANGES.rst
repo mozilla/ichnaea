@@ -10,8 +10,13 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- The command line invocation for the services changed, please refer to
+  the deploy docs for the new syntax.
+
 Changes
 ~~~~~~~
+
+- Move runtime related code into async/webapp sub-packages.
 
 - #385: Configure Python's logging module.
 

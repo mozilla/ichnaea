@@ -11,7 +11,7 @@ import boto
 from simplejson import dumps
 from sqlalchemy import text
 
-from ichnaea.app_config import read_config
+from ichnaea.config import read_config
 from ichnaea.db import (
     Database,
     db_worker_session,

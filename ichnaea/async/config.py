@@ -3,9 +3,9 @@ import os
 from kombu import Queue
 from kombu.serialization import register
 
-from ichnaea.app_config import read_config
 from ichnaea.async.schedule import CELERYBEAT_SCHEDULE
 from ichnaea.cache import redis_client
+from ichnaea.config import read_config
 from ichnaea import customjson
 from ichnaea.db import Database
 from ichnaea.log import (

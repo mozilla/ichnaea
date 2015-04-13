@@ -1,5 +1,6 @@
 from sqlalchemy import func
 
+from ichnaea.async.app import celery_app
 from ichnaea.async.config import CELERY_QUEUE_NAMES
 from ichnaea.async.task import DatabaseTask
 from ichnaea.data.queue import DATA_QUEUE_NAMES
@@ -10,13 +11,12 @@ from ichnaea.models import (
     WifiObservation,
 )
 from ichnaea import util
-from ichnaea.worker import celery
 
 # combine celery queues and manual update queues
 MONITOR_QUEUE_NAMES = set(CELERY_QUEUE_NAMES).union(DATA_QUEUE_NAMES)
 
 
-@celery.task(base=DatabaseTask, bind=True, queue='celery_monitor')
+@celery_app.task(base=DatabaseTask, bind=True, queue='celery_monitor')
 def monitor_api_key_limits(self):
     result = {}
     try:
@@ -53,7 +53,7 @@ def monitor_api_key_limits(self):
     return result
 
 
-@celery.task(base=DatabaseTask, bind=True, queue='celery_monitor')
+@celery_app.task(base=DatabaseTask, bind=True, queue='celery_monitor')
 def monitor_measures(self):
     checks = [('cell_measure', CellObservation),
               ('wifi_measure', WifiObservation)]
@@ -75,7 +75,7 @@ def monitor_measures(self):
     return result
 
 
-@celery.task(base=DatabaseTask, bind=True, queue='celery_monitor')
+@celery_app.task(base=DatabaseTask, bind=True, queue='celery_monitor')
 def monitor_ocid_import(self):
     result = -1
     try:
@@ -96,7 +96,7 @@ def monitor_ocid_import(self):
     return result
 
 
-@celery.task(base=DatabaseTask, bind=True, queue='celery_monitor')
+@celery_app.task(base=DatabaseTask, bind=True, queue='celery_monitor')
 def monitor_queue_length(self):
     result = {}
     try:

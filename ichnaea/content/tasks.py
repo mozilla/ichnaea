@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from ichnaea.async.app import celery_app
 from ichnaea.async.task import DatabaseTask
 from ichnaea.models.content import (
     Stat,
@@ -13,7 +14,6 @@ from ichnaea.models import (
     WifiObservation,
 )
 from ichnaea import util
-from ichnaea.worker import celery
 
 
 def daily_task_days(ago):
@@ -69,31 +69,31 @@ def histogram_task(db_session, model, stat_key, ago=1):
     return 1
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=DatabaseTask, bind=True)
 def cell_histogram(self, ago=1):
     return histogram_task(
         self.db_session, CellObservation, StatKey.cell, ago=ago)
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=DatabaseTask, bind=True)
 def wifi_histogram(self, ago=1):
     return histogram_task(
         self.db_session, WifiObservation, StatKey.wifi, ago=ago)
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=DatabaseTask, bind=True)
 def unique_cell_histogram(self, ago=1):
     return histogram_task(
         self.db_session, Cell, StatKey.unique_cell, ago=ago)
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=DatabaseTask, bind=True)
 def unique_ocid_cell_histogram(self, ago=1):
     return histogram_task(
         self.db_session, OCIDCell, StatKey.unique_ocid_cell, ago=ago)
 
 
-@celery.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=DatabaseTask, bind=True)
 def unique_wifi_histogram(self, ago=1):
     return histogram_task(
         self.db_session, Wifi, StatKey.unique_wifi, ago=ago)
