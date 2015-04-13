@@ -13,14 +13,6 @@ from ichnaea.log import (
     configure_stats,
 )
 
-CELERY_IMPORTS = [
-    'ichnaea.backup.tasks',
-    'ichnaea.content.tasks',
-    'ichnaea.data.tasks',
-    'ichnaea.export.tasks',
-    'ichnaea.monitor.tasks',
-]
-
 CELERY_QUEUES = (
     Queue('celery_default', routing_key='celery_default'),
     Queue('celery_export', routing_key='celery_export'),
@@ -81,7 +73,7 @@ def configure_ocid_import(app, settings=None):
     }
 
 
-def configure_celery(celery):
+def configure_celery(celery_app):
     conf = read_config()
     if conf.has_section('celery'):
         section = conf.get_map('celery')
@@ -100,40 +92,10 @@ def configure_celery(celery):
         broker_url = section['broker_url']
         result_url = section['result_url']
 
-    if 'redis' in broker_url:
-        broker_options = {}
-        # Based on celery / redis caveats
-        # celery.rtfd.org/en/latest/getting-started/brokers/redis.html#caveats
-        broker_options['fanout_patterns'] = True
-        broker_options['fanout_prefix'] = True
-        broker_options['visibility_timeout'] = 3600
-
-    if 'redis' in result_url:
-        celery.conf.update(
-            CELERY_RESULT_BACKEND=result_url,
-        )
-
-    celery.conf.update(
-        # testing
-        CELERY_ALWAYS_EAGER=always_eager,
-        CELERY_EAGER_PROPAGATES_EXCEPTIONS=always_eager,
-        # broker
+    celery_app.config_from_object('ichnaea.async.settings')
+    celery_app.conf.update(
         BROKER_URL=broker_url,
-        BROKER_TRANSPORT_OPTIONS=broker_options,
-        # queues
-        CELERY_DEFAULT_QUEUE='celery_default',
+        CELERY_RESULT_BACKEND=result_url,
         CELERY_QUEUES=CELERY_QUEUES,
-        # tasks
-        CELERY_IMPORTS=CELERY_IMPORTS,
-        # optimization
-        CELERYD_PREFETCH_MULTIPLIER=8,
-        CELERY_DISABLE_RATE_LIMITS=True,
-        CELERY_MESSAGE_COMPRESSION='gzip',
-        # security
-        CELERY_ACCEPT_CONTENT=['json', 'internal_json'],
-        CELERY_RESULT_SERIALIZER='internal_json',
-        CELERY_TASK_SERIALIZER='internal_json',
-        # schedule
-        CELERYBEAT_LOG_LEVEL="WARNING",
         CELERYBEAT_SCHEDULE=CELERYBEAT_SCHEDULE,
     )
