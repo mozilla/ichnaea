@@ -127,7 +127,7 @@ def write_block_to_s3(self, block_id, batch=10000, cleanup_zip=True):
         alembic_rev = rset.first()[0]
 
         s3_backend = S3Backend(
-            self.app.s3_settings['backup_bucket'],
+            self.app.settings['ichnaea']['s3_backup_bucket'],
             self.raven_client)
 
         utcnow = util.utcnow()
@@ -297,7 +297,7 @@ def delete_observation_records(self,
 
 @celery_app.task(base=DatabaseTask, bind=True)
 def dispatch_delete(self, block_id, batch=10000):
-    s3_backend = S3Backend(self.app.s3_settings['backup_bucket'],
+    s3_backend = S3Backend(self.app.settings['ichnaea']['s3_backup_bucket'],
                            self.raven_client)
     with self.db_session() as session:
         block = session.query(ObservationBlock).filter(

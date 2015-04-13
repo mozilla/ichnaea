@@ -1,6 +1,10 @@
 import os
 
-from configparser import ConfigParser
+from configparser import (
+    ConfigParser,
+    NoOptionError,
+    NoSectionError,
+)
 
 
 class Config(ConfigParser):
@@ -15,6 +19,13 @@ class Config(ConfigParser):
             self.filename = None
             self.read_file(filename)
 
+    def get(self, section, option, default=None):
+        try:
+            value = ConfigParser.get(self, section, option)
+        except (NoOptionError, NoSectionError):  # pragma: no cover
+            value = default
+        return value
+
     def get_map(self, section):
         # Additional convenience API
         return dict(self.items(section))
@@ -23,14 +34,33 @@ class Config(ConfigParser):
         # Avoid lower-casing the option names
         return option
 
+    def asdict(self):  # pragma: no cover
+        result = {}
+        for section in self.sections():
+            result[section] = self.get_map(section)
+        return result
+
 
 class DummyConfig(object):
 
     def __init__(self, settings):
         self.settings = settings
 
+    def get(self, section, option):
+        section_values = self.get_map(section)
+        return section_values.get(option)
+
     def get_map(self, section):
         return self.settings.get(section)
+
+    def sections(self):
+        return list(self.settings.keys())
+
+    def asdict(self):
+        result = {}
+        for section in self.sections():
+            result[section] = self.get_map(section)
+        return result
 
 
 def read_config(filename=None):

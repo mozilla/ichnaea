@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Expose all config file settings to the runtime services.
+
 - Move runtime related code into async/webapp sub-packages.
 
 - #385: Configure Python's logging module.

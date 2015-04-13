@@ -178,7 +178,7 @@ def write_stations_to_s3(path, bucketname):
 @celery_app.task(base=DatabaseTask, bind=True)
 def export_modified_cells(self, hourly=True, bucket=None):
     if bucket is None:  # pragma: no cover
-        bucket = self.app.s3_settings['assets_bucket']
+        bucket = self.app.settings['ichnaea']['s3_assets_bucket']
     now = util.utcnow()
 
     if hourly:
@@ -257,8 +257,8 @@ def import_ocid_cells(self, filename=None, session=None):
 
 @celery_app.task(base=DatabaseTask, bind=True)
 def import_latest_ocid_cells(self, diff=True, filename=None, session=None):
-    url = self.app.ocid_settings['ocid_url']
-    apikey = self.app.ocid_settings['ocid_apikey']
+    url = self.app.settings['ichnaea']['ocid_url']
+    apikey = self.app.settings['ichnaea']['ocid_apikey']
     if filename is None:
         if diff:
             prev_hour = util.utcnow() - timedelta(hours=1)

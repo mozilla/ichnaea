@@ -119,12 +119,12 @@ def _make_redis(uri=REDIS_URI):
     return redis_client(uri)
 
 
-def _make_app(app_config=None,
+def _make_app(app_config=TEST_CONFIG,
               _db_rw=None, _db_ro=None, _geoip_db=None,
               _raven_client=None, _redis_client=None, _stats_client=None):
     wsgiapp = main(
         {},
-        app_config=app_config,
+        app_config,
         _db_rw=_db_rw,
         _db_ro=_db_ro,
         _geoip_db=_geoip_db,
@@ -315,8 +315,7 @@ class CeleryIsolation(object):
         del celery_app.raven_client
         del celery_app.redis_client
         del celery_app.stats_client
-        del celery_app.ocid_settings
-        del celery_app.s3_settings
+        del celery_app.settings
 
 
 class LogIsolation(object):

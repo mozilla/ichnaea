@@ -62,25 +62,19 @@ def init_worker(celery_app, app_config,
                 _db_rw=None, _db_ro=None, _geoip_db=None,
                 _raven_client=None, _redis_client=None, _stats_client=None):
     # currently neither a db_ro nor geoip_db are set up
-    app_settings = app_config.get_map('ichnaea')
+
+    # make config file settings available
+    celery_app.settings = app_config.asdict()
 
     # configure outside connections
-    celery_app.db_rw = configure_db(app_settings.get('db_master'), _db=_db_rw)
+    celery_app.db_rw = configure_db(
+        app_config.get('ichnaea', 'db_master'), _db=_db_rw)
 
     celery_app.raven_client = configure_raven(
-        app_settings.get('sentry_dsn'), _client=_raven_client)
+        app_config.get('ichnaea', 'sentry_dsn'), _client=_raven_client)
 
     celery_app.redis_client = configure_redis(
-        app_settings.get('redis_url'), _client=_redis_client)
+        app_config.get('ichnaea', 'redis_url'), _client=_redis_client)
 
     celery_app.stats_client = configure_stats(
-        app_settings.get('statsd_host'), _client=_stats_client)
-
-    celery_app.ocid_settings = {
-        'ocid_url': app_settings['ocid_url'],
-        'ocid_apikey': app_settings['ocid_apikey'],
-    }
-    celery_app.s3_settings = {
-        'backup_bucket': app_settings['s3_backup_bucket'],
-        'assets_bucket': app_settings['s3_assets_bucket'],
-    }
+        app_config.get('ichnaea', 'statsd_host'), _client=_stats_client)
