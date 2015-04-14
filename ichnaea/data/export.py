@@ -19,12 +19,12 @@ class ExportScheduler(DataTask):
     def queue_length(self, redis_key):
         return queue_length(self.redis_client, redis_key)
 
-    def schedule(self, export_reports):
+    def schedule(self, export_task):
         triggered = 0
         for name, settings in self.export_queues.items():
             redis_key = settings['redis_key']
             if self.queue_length(redis_key) >= settings['batch']:
-                export_reports.delay(name)
+                export_task.delay(name)
                 triggered += 1
         return triggered
 
@@ -62,7 +62,10 @@ class ReportExporter(DataTask):
             return 0
 
         # schedule the upload task
-        reports = [kombu_loads(item) for item in queued_items]
+        items = [kombu_loads(item) for item in queued_items]
+        # split out metadata
+        reports = [item['report'] for item in items]
+
         upload_task.delay(dumps({'items': reports}))
 
         # check the queue at the end, if there's still enough to do

@@ -1,4 +1,5 @@
 from collections import defaultdict
+from random import random
 import uuid
 
 from sqlalchemy.sql import and_, or_
@@ -36,7 +37,6 @@ class ReportQueueV1(DataTask):
         self.insert_wifi_task = insert_wifi_task
 
     def insert(self, reports, nickname='', email=''):
-
         length = len(reports)
 
         userid, nickname, email = self.process_user(nickname, email)
@@ -274,10 +274,13 @@ class ReportQueueV2(DataTask):
             'email': self.email,
             'nickname': self.nickname,
         }
+        # temporary export throttle
+        throttle = float(self.redis_client.get('throttle_export') or 1.0)
         data = []
         for report in reports:
-            data.append(str(kombu_dumps({'report': report,
-                                         'metadata': metadata})))
+            if random() <= throttle:
+                data.append(str(kombu_dumps({'report': report,
+                                             'metadata': metadata})))
         if data:
             for name, settings in self.export_queues.items():
                 redis_key = settings['redis_key']
