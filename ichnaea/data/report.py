@@ -8,7 +8,6 @@ from ichnaea.customjson import (
     kombu_dumps,
 )
 from ichnaea.data.base import DataTask
-from ichnaea.data.queue import QUEUE_EXPORT_KEY
 from ichnaea.models import (
     CellObservation,
     CellReport,
@@ -21,6 +20,8 @@ from ichnaea.models import (
     WifiReport,
 )
 from ichnaea import util
+
+_sentinel = object()
 
 
 class ReportQueueV1(DataTask):
@@ -261,14 +262,25 @@ class ReportQueueV2(DataTask):
         self.api_key = api_key
         self.email = email
         self.nickname = nickname
+        self.export_queues = task.app.export_queues
 
     def insert(self, reports):
         self.queue_export(reports)
         return len(reports)
 
     def queue_export(self, reports):
+        metadata = {
+            'api_key': self.api_key,
+            'email': self.email,
+            'nickname': self.nickname,
+        }
         data = []
         for report in reports:
-            data.append(str(kombu_dumps(report)))
+            data.append(str(kombu_dumps({'report': report,
+                                         'metadata': metadata})))
         if data:
-            self.redis_client.lpush(QUEUE_EXPORT_KEY, *data)
+            for name, settings in self.export_queues.items():
+                redis_key = settings['redis_key']
+                source_apikey = settings.get('source_apikey', _sentinel)
+                if self.api_key != source_apikey:
+                    self.redis_client.lpush(redis_key, *data)

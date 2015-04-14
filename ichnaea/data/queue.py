@@ -1,4 +1,0 @@
-AREA_UPDATE_KEY = 'update_cell_lac'
-QUEUE_EXPORT_KEY = 'queue_export'
-
-DATA_QUEUE_NAMES = set([AREA_UPDATE_KEY, QUEUE_EXPORT_KEY])

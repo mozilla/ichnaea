@@ -3,14 +3,12 @@ import time
 from requests.exceptions import ConnectionError
 from simplejson import dumps
 
-from ichnaea.data.export import (
-    check_queue_length,
-    enqueue_reports,
-)
+from ichnaea.async.config import EXPORT_QUEUE_PREFIX
+from ichnaea.data.export import queue_length
 from ichnaea.data.tasks import (
-    export_reports,
-    upload_reports,
+    schedule_export_reports,
     queue_reports,
+    upload_reports,
 )
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
@@ -21,7 +19,7 @@ from ichnaea.tests.factories import (
 
 class BaseTest(object):
 
-    def add_reports(self, number=3):
+    def add_reports(self, number=3, api_key='test'):
         reports = []
         for i in range(number):
             report = {
@@ -53,38 +51,76 @@ class BaseTest(object):
                 report['wifiAccessPoints'].append(wifi_data)
             reports.append(report)
 
-        queue_reports.delay(reports=reports, api_key='test').get()
-        return reports
+        queue_reports.delay(reports=reports, api_key=api_key).get()
 
-    def check_queue_length(self):
-        return check_queue_length(self.redis_client)
+    def queue_length(self, redis_key):
+        return queue_length(self.redis_client, redis_key)
+
+
+class TestExportScheduler(BaseTest, CeleryTestCase):
+
+    def test_schedule_exports(self):
+        pass
 
 
 class TestExporter(BaseTest, CeleryTestCase):
 
-    def test_enqueue_reports(self):
-        reports = self.add_reports(2)
-        enqueue_reports(self.redis_client, reports)
-        self.assertEqual(self.check_queue_length(), 4)
+    def setUp(self):
+        super(TestExporter, self).setUp()
+        self.celery_app.export_queues = {
+            'test': {
+                'url': 'http://localhost:7001/v2/geosubmit?key=external',
+                'source_apikey': 'export_source',
+                'batch': 3,
+                'redis_key': EXPORT_QUEUE_PREFIX + 'test',
+            },
+            'everything': {
+                'url': 'http://localhost:7001/v2/geosubmit?key=external',
+                'batch': 5,
+                'redis_key': EXPORT_QUEUE_PREFIX + 'everything',
+            },
+            'no_test': {
+                'url': 'http://localhost:7001/v2/geosubmit?key=external',
+                'source_apikey': 'test',
+                'batch': 2,
+                'redis_key': EXPORT_QUEUE_PREFIX + 'no_test',
+            },
+        }
+        self.prefix = EXPORT_QUEUE_PREFIX
 
-    def test_too_little_data(self):
-        self.add_reports(2)
-        length = export_reports.delay(batch=10).get()
-        # nothing was processed, all reports still in queue
-        self.assertEqual(length, 0)
-        self.assertEqual(self.check_queue_length(), 2)
+    def test_enqueue_reports(self):
+        self.add_reports(4)
+        self.add_reports(1, api_key='test2')
+        expected = [
+            (EXPORT_QUEUE_PREFIX + 'test', 5),
+            (EXPORT_QUEUE_PREFIX + 'everything', 5),
+            (EXPORT_QUEUE_PREFIX + 'no_test', 1),
+        ]
+        for key, num in expected:
+            self.assertEqual(self.queue_length(key), num)
+
+    def test_one_queue(self):
+        self.add_reports(3)
+        triggered = schedule_export_reports.delay().get()
+        self.assertEqual(triggered, 1)
+        # data from one queue was processed
+        expected = [
+            (EXPORT_QUEUE_PREFIX + 'test', 0),
+            (EXPORT_QUEUE_PREFIX + 'everything', 3),
+            (EXPORT_QUEUE_PREFIX + 'no_test', 0),
+        ]
+        for key, num in expected:
+            self.assertEqual(self.queue_length(key), num)
 
     def test_one_batch(self):
-        self.add_reports(6)
-        length = export_reports.delay(batch=5).get()
-        self.assertEqual(length, 5)
-        self.assertEqual(self.check_queue_length(), 1)
+        self.add_reports(5)
+        schedule_export_reports.delay().get()
+        self.assertEqual(self.queue_length(EXPORT_QUEUE_PREFIX + 'test'), 2)
 
     def test_multiple_batches(self):
-        self.add_reports(11)
-        length = export_reports.delay(batch=3).get()
-        self.assertEqual(length, 3)
-        self.assertEqual(self.check_queue_length(), 2)
+        self.add_reports(10)
+        schedule_export_reports.delay().get()
+        self.assertEqual(self.queue_length(EXPORT_QUEUE_PREFIX + 'test'), 1)
 
 
 class TestUploader(BaseTest, CeleryTestCase):

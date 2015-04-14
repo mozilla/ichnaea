@@ -6,6 +6,7 @@ from ichnaea.data.area import (
     OCIDCellAreaUpdater,
 )
 from ichnaea.data.export import (
+    ExportScheduler,
     ReportExporter,
     ReportUploader,
 )
@@ -87,6 +88,18 @@ def location_update_wifi(self, min_new=10, max_new=100, batch=10):
     return (wifis, moving)
 
 
+@celery_app.task(base=DatabaseTask, bind=True, queue='celery_export')
+def schedule_export_reports(self):
+    scheduler = ExportScheduler(self, None)
+    return scheduler.schedule(export_reports)
+
+
+@celery_app.task(base=DatabaseTask, bind=True, queue='celery_export')
+def export_reports(self, export_name):
+    exporter = ReportExporter(self, None, export_name)
+    return exporter.export(export_reports, upload_reports)
+
+
 @celery_app.task(base=DatabaseTask, bind=True, queue='celery_reports')
 def queue_reports(self, reports=(), api_key=None, email=None, nickname=None):
     with self.db_session() as session:
@@ -95,13 +108,6 @@ def queue_reports(self, reports=(), api_key=None, email=None, nickname=None):
                               email=email,
                               nickname=nickname)
         length = queue.insert(reports)
-    return length
-
-
-@celery_app.task(base=DatabaseTask, bind=True, queue='celery_export')
-def export_reports(self, batch=1000):
-    exporter = ReportExporter(self, None)
-    length = exporter.export(export_reports, upload_reports, batch=batch)
     return length
 
 

@@ -3,7 +3,6 @@ from random import randint
 
 from ichnaea.models import ApiKey
 from ichnaea.monitor.tasks import (
-    MONITOR_QUEUE_NAMES,
     monitor_api_key_limits,
     monitor_measures,
     monitor_ocid_import,
@@ -116,7 +115,7 @@ class TestMonitorTasks(CeleryTestCase):
 
     def test_monitor_queue_length(self):
         data = {}
-        for name in MONITOR_QUEUE_NAMES:
+        for name in self.celery_app.all_queues:
             data[name] = randint(1, 10)
 
         for k, v in data.items():

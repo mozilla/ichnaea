@@ -4,41 +4,61 @@ from webob.response import gzip_app_iter
 
 from ichnaea.customjson import kombu_loads
 from ichnaea.data.base import DataTask
-from ichnaea.data.queue import QUEUE_EXPORT_KEY
 
 
-def check_queue_length(redis_client):
-    return redis_client.llen(QUEUE_EXPORT_KEY)
+def queue_length(redis_client, redis_key):
+    return redis_client.llen(redis_key)
 
 
-def enqueue_reports(redis_client, items):
-    if items:
-        redis_client.lpush(QUEUE_EXPORT_KEY, *items)
+class ExportScheduler(DataTask):
+
+    def __init__(self, task, session):
+        DataTask.__init__(self, task, session)
+        self.export_queues = task.app.export_queues
+
+    def queue_length(self, redis_key):
+        return queue_length(self.redis_client, redis_key)
+
+    def schedule(self, export_reports):
+        triggered = 0
+        for name, settings in self.export_queues.items():
+            redis_key = settings['redis_key']
+            if self.queue_length(redis_key) >= settings['batch']:
+                export_reports.delay(name)
+                triggered += 1
+        return triggered
 
 
 class ReportExporter(DataTask):
 
-    def check_queue_length(self):
-        return check_queue_length(self.redis_client)
+    def __init__(self, task, session, export_name):
+        DataTask.__init__(self, task, session)
+        self.export_name = export_name
+        self.settings = task.app.export_queues[self.export_name]
+        self.batch = self.settings['batch']
+        self.redis_key = self.settings['redis_key']
 
-    def dequeue_reports(self, batch=1000):
+    def queue_length(self):
+        return queue_length(self.redis_client, self.redis_key)
+
+    def dequeue_reports(self):
         pipe = self.redis_client.pipeline()
         pipe.multi()
-        pipe.lrange(QUEUE_EXPORT_KEY, 0, batch - 1)
-        pipe.ltrim(QUEUE_EXPORT_KEY, batch, -1)
+        pipe.lrange(self.redis_key, 0, self.batch - 1)
+        pipe.ltrim(self.redis_key, self.batch, -1)
         return pipe.execute()[0]
 
-    def export(self, export_task, upload_task, batch=1000):
-        queue_length = self.check_queue_length()
-        if queue_length < batch:
+    def export(self, export_task, upload_task):
+        length = self.queue_length()
+        if length < self.batch:  # pragma: no cover
             # not enough to do, skip
             return 0
 
-        queued_items = self.dequeue_reports(batch=batch)
-        if len(queued_items) < batch:  # pragma: no cover
+        queued_items = self.dequeue_reports()
+        if queued_items and len(queued_items) < self.batch:  # pragma: no cover
             # race condition, something emptied the queue in between
             # our llen call and fetching the items, put them back
-            enqueue_reports(self.redis_client, queued_items)
+            self.redis_client.lpush(self.redis_key, *queued_items)
             return 0
 
         # schedule the upload task
@@ -47,8 +67,8 @@ class ReportExporter(DataTask):
 
         # check the queue at the end, if there's still enough to do
         # immediately schedule another job
-        if self.check_queue_length() >= batch:
-            export_task.apply_async(kwargs={'batch': batch}, expires=300)
+        if self.queue_length() >= self.batch:
+            export_task.apply_async(args=[self.export_name], expires=300)
 
         return len(queued_items)
 

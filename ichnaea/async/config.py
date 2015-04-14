@@ -22,8 +22,7 @@ CELERY_QUEUES = (
     Queue('celery_reports', routing_key='celery_reports'),
     Queue('celery_upload', routing_key='celery_upload'),
 )
-CELERY_QUEUE_NAMES = frozenset([q.name for q in CELERY_QUEUES])
-
+EXPORT_QUEUE_PREFIX = 'queue_export_'
 
 register('internal_json', customjson.kombu_dumps, customjson.kombu_loads,
          content_type='application/x-internaljson',
@@ -65,6 +64,31 @@ def init_worker(celery_app, app_config,
 
     # make config file settings available
     celery_app.settings = app_config.asdict()
+
+    # configure data / export queues
+    celery_app.all_queues = all_queues = set([q.name for q in CELERY_QUEUES])
+
+    celery_app.data_queues = data_queues = {
+        'cell_area_update': 'update_cell_lac',
+    }
+    for value in data_queues.values():
+        all_queues.add(value)
+
+    celery_app.export_queues = export_queues = {}
+    for section_name in app_config.sections():
+        if section_name.startswith('export:'):
+            section = app_config.get_map(section_name)
+            name = section_name.split(':')[1]
+            queue_name = EXPORT_QUEUE_PREFIX + name
+            export_queues[name] = {
+                'redis_key': queue_name,
+            }
+            all_queues.add(queue_name)
+            for key, value in section.items():
+                if key == 'batch':
+                    export_queues[name][key] = int(value)
+                else:
+                    export_queues[name][key] = value
 
     # configure outside connections
     celery_app.db_rw = configure_db(

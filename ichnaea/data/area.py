@@ -3,7 +3,6 @@ from ichnaea.customjson import (
     kombu_loads,
 )
 from ichnaea.data.base import DataTask
-from ichnaea.data.queue import AREA_UPDATE_KEY
 from ichnaea.geocalc import centroid, range_to_points
 from ichnaea.models import (
     Cell,
@@ -43,11 +42,12 @@ class CellAreaUpdater(DataTask):
 
     def __init__(self, task, session):
         DataTask.__init__(self, task, session)
+        self.redis_key = self.task.app.data_queues['cell_area_update']
         self.utcnow = util.utcnow()
 
     def scan(self, update_task, batch=100):
         redis_areas = dequeue_areas(
-            self.redis_client, AREA_UPDATE_KEY, batch=batch)
+            self.redis_client, self.redis_key, batch=batch)
 
         area_keys = set(redis_areas)
         for area_key in area_keys:

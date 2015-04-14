@@ -1,5 +1,4 @@
 from ichnaea.data.area import enqueue_areas
-from ichnaea.data.queue import AREA_UPDATE_KEY
 from ichnaea.data.tasks import (
     location_update_cell,
     remove_cell,
@@ -196,8 +195,9 @@ class TestArea(CeleryTestCase):
         # create an orphaned lac entry
         area = CellAreaFactory()
         session.flush()
+        redis_key = self.celery_app.data_queues['cell_area_update']
         enqueue_areas(session, redis_client,
-                      [area.hashkey()], AREA_UPDATE_KEY)
+                      [area.hashkey()], redis_key)
 
         # after scanning the orphaned record gets removed
         self.assertEqual(scan_areas.delay().get(), 1)

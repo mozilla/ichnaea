@@ -1,9 +1,7 @@
 from sqlalchemy import func
 
 from ichnaea.async.app import celery_app
-from ichnaea.async.config import CELERY_QUEUE_NAMES
 from ichnaea.async.task import DatabaseTask
-from ichnaea.data.queue import DATA_QUEUE_NAMES
 from ichnaea.models import (
     ApiKey,
     CellObservation,
@@ -11,9 +9,6 @@ from ichnaea.models import (
     WifiObservation,
 )
 from ichnaea import util
-
-# combine celery queues and manual update queues
-MONITOR_QUEUE_NAMES = set(CELERY_QUEUE_NAMES).union(DATA_QUEUE_NAMES)
 
 
 @celery_app.task(base=DatabaseTask, bind=True, queue='celery_monitor')
@@ -102,7 +97,7 @@ def monitor_queue_length(self):
     try:
         redis_client = self.app.redis_client
         stats_client = self.stats_client
-        for name in MONITOR_QUEUE_NAMES:
+        for name in self.app.all_queues:
             result[name] = value = redis_client.llen(name)
             stats_client.gauge('queue.' + name, value)
     except Exception:  # pragma: no cover

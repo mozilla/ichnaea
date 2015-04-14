@@ -11,7 +11,8 @@ class TestApiKey(DBTestCase):
             email='Test <test@test.com>', description='A longer text.'))
         session.flush()
 
-        result = session.query(ApiKey).first()
+        query = session.query(ApiKey).filter(ApiKey.valid_key == 'foo-bar')
+        result = query.first()
         self.assertEqual(result.valid_key, 'foo-bar')
         self.assertEqual(result.shortname, 'foo')
         self.assertEqual(result.email, 'Test <test@test.com>')

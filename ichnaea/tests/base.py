@@ -62,6 +62,11 @@ TEST_CONFIG = DummyConfig({
         'ocid_url': 'http://localhost:7001/downloads/',
         'ocid_apikey': 'xxxxxxxx-yyyy-xxxx-yyyy-xxxxxxxxxxxx',
     },
+    'export:test': {
+        'url': 'http://localhost:7001/v2/geosubmit?key=external',
+        'source_apikey': 'export',
+        'batch': '3',
+    },
 })
 
 GEOIP_DATA = {
@@ -302,6 +307,7 @@ class CeleryIsolation(object):
 
     @classmethod
     def setup_celery(cls):
+        cls.celery_app = celery_app
         init_worker(
             celery_app, TEST_CONFIG,
             _db_rw=cls.db_rw,
@@ -311,11 +317,15 @@ class CeleryIsolation(object):
 
     @classmethod
     def teardown_celery(cls):
-        del celery_app.db_rw
-        del celery_app.raven_client
-        del celery_app.redis_client
-        del celery_app.stats_client
-        del celery_app.settings
+        del cls.celery_app.db_rw
+        del cls.celery_app.raven_client
+        del cls.celery_app.redis_client
+        del cls.celery_app.stats_client
+        del cls.celery_app.all_queues
+        del cls.celery_app.data_queues
+        del cls.celery_app.export_queues
+        del cls.celery_app.settings
+        del cls.celery_app
 
 
 class LogIsolation(object):
@@ -582,6 +592,7 @@ def setup_package(module):
     # always add a test API key
     session = db.session()
     session.add(ApiKey(valid_key='test', log=True, shortname='test'))
+    session.add(ApiKey(valid_key='export', log=False, shortname='export'))
     session.commit()
     session.close()
     db.engine.pool.dispose()
