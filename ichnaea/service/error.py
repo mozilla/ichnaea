@@ -9,6 +9,7 @@ from ichnaea.customjson import (
     dumps,
     loads,
 )
+from ichnaea import util
 
 MSG_EMPTY = 'No JSON body was provided.'
 MSG_GZIP = 'Error decompressing gzip data stream.'
@@ -67,7 +68,7 @@ def preprocess_request(request, schema, response=JSONError,
         if request.headers.get('Content-Encoding') == 'gzip':
             # handle gzip request bodies
             try:
-                body = zlib.decompress(body, 16 + zlib.MAX_WBITS)
+                body = util.decode_gzip(body)
             except zlib.error:  # pragma: no cover
                 errors.append(dict(name=None, description=MSG_GZIP))
 

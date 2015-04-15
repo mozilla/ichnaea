@@ -2,7 +2,6 @@ from datetime import date
 import uuid
 
 from pyramid.testing import DummyRequest
-from webob.response import gzip_app_iter
 
 from ichnaea.models.content import (
     MapStat,
@@ -461,7 +460,7 @@ class TestSubmit(CeleryAppTestCase):
         data = {"items": [{"lat": 1.0,
                            "lon": 2.0,
                            "wifi": [{"key": "aaaaaaaaaaaa"}]}]}
-        body = ''.join(gzip_app_iter(dumps(data)))
+        body = util.encode_gzip(dumps(data))
         headers = {
             'Content-Encoding': 'gzip',
         }

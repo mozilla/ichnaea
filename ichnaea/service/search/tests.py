@@ -1,6 +1,5 @@
 from pyramid.testing import DummyRequest
 from sqlalchemy import text
-from webob.response import gzip_app_iter
 
 from ichnaea.constants import CELL_MIN_ACCURACY
 from ichnaea.customjson import dumps, loads
@@ -18,6 +17,7 @@ from ichnaea.tests.base import (
     PARIS_LON,
     TestCase,
 )
+from ichnaea import util
 
 
 class TestSearchSchema(TestCase):
@@ -230,7 +230,7 @@ class TestSearch(AppTestCase):
     def test_gzip(self):
         app = self.app
         data = {"cell": [{"mcc": FRANCE_MCC, "mnc": 2, "lac": 3, "cid": 4}]}
-        body = ''.join(gzip_app_iter(dumps(data)))
+        body = util.encode_gzip(dumps(data))
         headers = {
             'Content-Encoding': 'gzip',
         }
