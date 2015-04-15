@@ -57,30 +57,24 @@ class BaseTest(object):
         return queue_length(self.redis_client, redis_key)
 
 
-class TestExportScheduler(BaseTest, CeleryTestCase):
-
-    def test_schedule_exports(self):
-        pass
-
-
 class TestExporter(BaseTest, CeleryTestCase):
 
     def setUp(self):
         super(TestExporter, self).setUp()
         self.celery_app.export_queues = {
             'test': {
-                'url': 'http://localhost:7001/v2/geosubmit?key=external',
+                'url': None,
                 'source_apikey': 'export_source',
                 'batch': 3,
                 'redis_key': EXPORT_QUEUE_PREFIX + 'test',
             },
             'everything': {
-                'url': 'http://localhost:7001/v2/geosubmit?key=external',
+                'url': None,
                 'batch': 5,
                 'redis_key': EXPORT_QUEUE_PREFIX + 'everything',
             },
             'no_test': {
-                'url': 'http://localhost:7001/v2/geosubmit?key=external',
+                'url': None,
                 'source_apikey': 'test',
                 'batch': 2,
                 'redis_key': EXPORT_QUEUE_PREFIX + 'no_test',
