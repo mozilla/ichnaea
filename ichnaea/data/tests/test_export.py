@@ -1,25 +1,26 @@
+import json
 import time
 
-from requests.exceptions import ConnectionError
-from simplejson import dumps
+from celery.exceptions import Retry
+import requests_mock
 
 from ichnaea.async.config import EXPORT_QUEUE_PREFIX
 from ichnaea.data.export import queue_length
 from ichnaea.data.tasks import (
     schedule_export_reports,
     queue_reports,
-    upload_reports,
 )
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
     CellFactory,
     WifiFactory,
 )
+from ichnaea.util import decode_gzip
 
 
 class BaseTest(object):
 
-    def add_reports(self, number=3, api_key='test'):
+    def add_reports(self, number=3, api_key='test', email=None):
         reports = []
         for i in range(number):
             report = {
@@ -51,7 +52,9 @@ class BaseTest(object):
                 report['wifiAccessPoints'].append(wifi_data)
             reports.append(report)
 
-        queue_reports.delay(reports=reports, api_key=api_key).get()
+        queue_reports.delay(
+            reports=reports, api_key=api_key, email=email).get()
+        return reports
 
     def queue_length(self, redis_key):
         return queue_length(self.redis_client, redis_key)
@@ -119,13 +122,62 @@ class TestExporter(BaseTest, CeleryTestCase):
 
 class TestUploader(BaseTest, CeleryTestCase):
 
-    def test_upload(self):
-        reports = self.add_reports(2)
-        data = dumps({'items': reports})
+    def setUp(self):
+        super(TestUploader, self).setUp()
+        self.celery_app.export_queues = {
+            'test': {
+                'url': 'http://127.0.0.1:9/v2/geosubmit?key=external',
+                'batch': 3,
+                'redis_key': EXPORT_QUEUE_PREFIX + 'test',
+            },
+        }
+        self.prefix = EXPORT_QUEUE_PREFIX
 
-        exc = None
-        try:
-            upload_reports.delay(data, url='http://127.0.0.1:9').get()
-        except Exception as exc:
-            pass
-        self.assertTrue(isinstance(exc, ConnectionError), exc)
+    def test_upload(self):
+        reports = self.add_reports(3, email='secretemail@localhost')
+
+        with requests_mock.Mocker() as mock:
+            mock.register_uri('POST', requests_mock.ANY, text='{}')
+            schedule_export_reports.delay().get()
+
+        self.assertEqual(mock.call_count, 1)
+        req = mock.request_history[0]
+
+        # check headers
+        self.assertEqual(req.headers['Content-Type'], 'application/json')
+        self.assertEqual(req.headers['Content-Encoding'], 'gzip')
+        self.assertEqual(req.headers['User-Agent'], 'ichnaea')
+
+        # check body
+        body = decode_gzip(req.body)
+        # make sure we don't accidentally leak emails
+        self.assertFalse('secretemail' in body)
+
+        # make sure a standards based json can decode this data
+        # and none of our internal_json structures end up in it
+        send_reports = json.loads(body)['items']
+        self.assertEqual(len(send_reports), 3)
+        expect = [report['position']['accuracy'] for report in reports]
+        gotten = [report['position']['accuracy'] for report in send_reports]
+        self.assertEqual(set(expect), set(gotten))
+
+    def test_upload_retried(self):
+        self.add_reports(3)
+
+        with requests_mock.Mocker() as mock:
+            mock.register_uri('POST', requests_mock.ANY, [
+                {'text': '', 'status_code': 500},
+                {'text': '{}', 'status_code': 404},
+                {'text': '{}', 'status_code': 200},
+            ])
+            # simulate celery retry handling
+            for i in range(5):
+                try:
+                    schedule_export_reports.delay().get()
+                except Retry:
+                    continue
+                else:
+                    break
+                self.fail('Task should have succeeded')
+
+        self.assertEqual(mock.call_count, 3)

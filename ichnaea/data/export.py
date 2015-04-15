@@ -1,9 +1,9 @@
 import requests
 from simplejson import dumps
-from webob.response import gzip_app_iter
 
 from ichnaea.customjson import kombu_loads
 from ichnaea.data.base import DataTask
+from ichnaea.util import encode_gzip
 
 
 def queue_length(redis_client, redis_key):
@@ -66,7 +66,7 @@ class ReportExporter(DataTask):
         # split out metadata
         reports = [item['report'] for item in items]
 
-        upload_task.delay(dumps({'items': reports}))
+        upload_task.delay(self.export_name, dumps({'items': reports}))
 
         # check the queue at the end, if there's still enough to do
         # immediately schedule another job
@@ -78,9 +78,11 @@ class ReportExporter(DataTask):
 
 class ReportUploader(DataTask):
 
-    def __init__(self, task, session, url=None):
+    def __init__(self, task, session, export_name):
         DataTask.__init__(self, task, session)
-        self.url = url
+        self.export_name = export_name
+        self.settings = task.app.export_queues[self.export_name]
+        self.url = self.settings['url']
 
     def upload(self, data):
         if self.url is None:
@@ -89,11 +91,12 @@ class ReportUploader(DataTask):
         headers = {
             'Content-Encoding': 'gzip',
             'Content-Type': 'application/json',
+            'User-Agent': 'ichnaea',
         }
 
-        return self.send(self.url, ''.join(gzip_app_iter(data)), headers)
+        return self.send(self.url, encode_gzip(data), headers)
 
-    def send(self, url, data, headers):  # pragma: no cover
+    def send(self, url, data, headers):
         response = requests.post(
             url,
             data=data,

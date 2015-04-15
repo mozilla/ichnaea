@@ -112,8 +112,8 @@ def queue_reports(self, reports=(), api_key=None, email=None, nickname=None):
 
 
 @celery_app.task(base=DatabaseTask, bind=True, queue='celery_upload')
-def upload_reports(self, data, url=None):
-    uploader = ReportUploader(self, None, url=url)
+def upload_reports(self, export_name, data):
+    uploader = ReportUploader(self, None, export_name)
     return uploader.upload(data)
 
 
