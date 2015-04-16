@@ -347,6 +347,24 @@ we also have a number of per API key stats for uploaded data.
 
     Count the number of uploaded cell and wifi observations for this API key.
 
+Export stats
+------------
+
+Incoming reports can also be sent to a number of different export targets.
+We keep stats on how those individual export targets perform.
+
+``items.export.<export_key>.batches`` : counter
+
+    Count the number of batches sent to the export target.
+
+``items.export.<export_key>.upload`` : timer
+
+    Track how long the upload operation took per export target.
+
+``items.export.<export_key>.upload_status.<status_code>`` : counter
+
+    Track the response code of the HTTP upload request.
+
 Gauges
 ------
 

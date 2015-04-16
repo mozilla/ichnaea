@@ -161,6 +161,12 @@ class TestUploader(BaseTest, CeleryTestCase):
         gotten = [report['position']['accuracy'] for report in send_reports]
         self.assertEqual(set(expect), set(gotten))
 
+        self.check_stats(
+            counter=[('items.export.test.batches', 1, 1),
+                     ('items.export.test.upload_status.200', 1)],
+            timer=['items.export.test.upload'],
+        )
+
     def test_upload_retried(self):
         self.add_reports(3)
 
@@ -181,3 +187,10 @@ class TestUploader(BaseTest, CeleryTestCase):
                 self.fail('Task should have succeeded')
 
         self.assertEqual(mock.call_count, 3)
+        self.check_stats(
+            counter=[('items.export.test.batches', 1, 1),
+                     ('items.export.test.upload_status.200', 1),
+                     ('items.export.test.upload_status.404', 1),
+                     ('items.export.test.upload_status.500', 1)],
+            timer=[('items.export.test.upload', 3)],
+        )

@@ -87,6 +87,11 @@ class ReportUploader(DataTask):
     def upload(self, data):
         if self.url is None:
             return False
+        return self.send(self.url, data)
+
+    def send(self, url, data):
+        stats_client = self.stats_client
+        stats_prefix = 'items.export.%s.' % self.export_name
 
         headers = {
             'Content-Encoding': 'gzip',
@@ -94,19 +99,21 @@ class ReportUploader(DataTask):
             'User-Agent': 'ichnaea',
         }
 
-        return self.send(self.url, encode_gzip(data), headers)
+        with stats_client.timer(stats_prefix + 'upload'):
+            response = requests.post(
+                url,
+                data=encode_gzip(data),
+                headers=headers,
+                timeout=60.0,
+                verify=False,  # TODO switch this back on
+            )
 
-    def send(self, url, data, headers):
-        response = requests.post(
-            url,
-            data=data,
-            headers=headers,
-            timeout=60.0,
-            verify=False,  # TODO switch this back on
-        )
-
-        # trigger exception for bad responses
+        # log upload_status and trigger exception for bad responses
         # this causes the task to be re-tried
+        response_code = response.status_code
+        stats_client.incr('%supload_status.%s' % (stats_prefix, response_code))
         response.raise_for_status()
 
-        return response.status_code == requests.codes.ok
+        # only log successful uploads
+        stats_client.incr(stats_prefix + 'batches')
+        return True

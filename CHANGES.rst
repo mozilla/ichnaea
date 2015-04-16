@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #423: Add a first version of an export job.
+
 - Expose all config file settings to the runtime services.
 
 - Move runtime related code into async/webapp sub-packages.
