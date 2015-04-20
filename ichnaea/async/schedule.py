@@ -168,8 +168,8 @@ CELERYBEAT_SCHEDULE = {
 
     'schedule-export-reports': {
         'task': 'ichnaea.data.tasks.schedule_export_reports',
-        'schedule': timedelta(seconds=299),
-        'options': {'expires': 270},
+        'schedule': timedelta(seconds=60),
+        'options': {'expires': 57},
     },
 
 }
