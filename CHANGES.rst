@@ -13,6 +13,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Updated to latests versions of billiard, pyramid and WebOb.
 
 20150416111700
 **************

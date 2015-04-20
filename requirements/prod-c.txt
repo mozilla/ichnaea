@@ -1,6 +1,6 @@
 MarkupSafe==0.23
-SQLAlchemy==0.9.9
-billiard==3.3.0.19
+SQLAlchemy==0.9.9  # rq.filter: <1.0.0
+billiard==3.3.0.20
 gevent==1.0.1
 greenlet==0.4.5
 setproctitle==1.1.8
