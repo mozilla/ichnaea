@@ -95,7 +95,8 @@ def init_worker(celery_app, app_config,
         app_config.get('ichnaea', 'db_master'), _db=_db_rw)
 
     celery_app.raven_client = configure_raven(
-        app_config.get('ichnaea', 'sentry_dsn'), _client=_raven_client)
+        app_config.get('ichnaea', 'sentry_dsn'),
+        transport='threaded', _client=_raven_client)
 
     celery_app.redis_client = configure_redis(
         app_config.get('ichnaea', 'redis_url'), _client=_redis_client)

@@ -23,6 +23,7 @@ EXCLUDES_27 = [
 ]
 EXCLUDES_34 = [
     'gunicorn/workers/_gaiohttp.py',
+    'raven/transport/aiohttp.py',
 ]
 
 

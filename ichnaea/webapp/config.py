@@ -42,7 +42,8 @@ def main(global_config, app_config, init=False,
         app_config.get('ichnaea', 'db_slave'), _db=_db_ro)
 
     registry.raven_client = raven_client = configure_raven(
-        app_config.get('ichnaea', 'sentry_dsn'), _client=_raven_client)
+        app_config.get('ichnaea', 'sentry_dsn'),
+        transport='gevent', _client=_raven_client)
 
     registry.redis_client = configure_redis(
         app_config.get('ichnaea', 'redis_url'), _client=_redis_client)
