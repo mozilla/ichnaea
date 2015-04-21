@@ -1,5 +1,4 @@
 from collections import defaultdict
-from random import random
 import uuid
 
 from sqlalchemy.sql import and_, or_
@@ -274,13 +273,10 @@ class ReportQueueV2(DataTask):
             'email': self.email,
             'nickname': self.nickname,
         }
-        # temporary export throttle
-        throttle = float(self.redis_client.get('throttle_export') or 1.0)
         data = []
         for report in reports:
-            if random() <= throttle:
-                data.append(str(kombu_dumps({'report': report,
-                                             'metadata': metadata})))
+            data.append(str(kombu_dumps({'report': report,
+                                         'metadata': metadata})))
         if data:
             for name, settings in self.export_queues.items():
                 redis_key = settings['redis_key']
