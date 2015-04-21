@@ -69,9 +69,12 @@ class ReportExporter(DataTask):
         upload_task.delay(self.export_name, dumps({'items': reports}))
 
         # check the queue at the end, if there's still enough to do
-        # immediately schedule another job
+        # schedule another job, but give it a second before it runs
         if self.queue_length() >= self.batch:
-            export_task.apply_async(args=[self.export_name], expires=300)
+            export_task.apply_async(
+                args=[self.export_name],
+                countdown=1,
+                expires=300)
 
         return len(queued_items)
 
