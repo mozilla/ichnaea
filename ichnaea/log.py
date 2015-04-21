@@ -26,9 +26,14 @@ def set_raven_client(client):
     return RAVEN_CLIENT
 
 
-def configure_raven(config, _client=None):  # pragma: no cover
+def configure_raven(config, transport='sync',
+                    _client=None):  # pragma: no cover
     if _client is not None:
         return set_raven_client(_client)
+
+    if config and '+' not in config.split(':')[0]:
+        # no explicit transport was specified in the dsn
+        config = '%s+%s' % (transport, config)
 
     client = RavenClient(dsn=config)
     return set_raven_client(client)

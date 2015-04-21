@@ -333,8 +333,8 @@ class LogIsolation(object):
     @classmethod
     def setup_logging(cls):
         # Use a debug configuration
-        cls.raven_client = configure_raven('', DebugRavenClient())
-        cls.stats_client = configure_stats('', DebugStatsClient())
+        cls.raven_client = configure_raven('', _client=DebugRavenClient())
+        cls.stats_client = configure_stats('', _client=DebugStatsClient())
 
     @classmethod
     def teardown_logging(cls):
