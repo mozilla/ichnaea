@@ -18,7 +18,10 @@ from unittest2 import TestCase
 from webtest import TestApp
 
 from ichnaea.async.app import celery_app
-from ichnaea.async.config import init_worker
+from ichnaea.async.config import (
+    init_worker,
+    shutdown_worker,
+)
 from ichnaea.cache import redis_client
 from ichnaea.config import DummyConfig
 from ichnaea.constants import GEOIP_CITY_ACCURACY
@@ -317,14 +320,7 @@ class CeleryIsolation(object):
 
     @classmethod
     def teardown_celery(cls):
-        del cls.celery_app.db_rw
-        del cls.celery_app.raven_client
-        del cls.celery_app.redis_client
-        del cls.celery_app.stats_client
-        del cls.celery_app.all_queues
-        del cls.celery_app.data_queues
-        del cls.celery_app.export_queues
-        del cls.celery_app.settings
+        shutdown_worker(celery_app)
         del cls.celery_app
 
 

@@ -102,3 +102,21 @@ def init_worker(celery_app, app_config,
 
     celery_app.stats_client = configure_stats(
         app_config.get('ichnaea', 'statsd_host'), _client=_stats_client)
+
+
+def shutdown_worker(celery_app):
+    # close outbound connections / remove custom instance state
+    celery_app.db_rw.engine.pool.dispose()
+    del celery_app.db_rw
+
+    del celery_app.raven_client
+
+    celery_app.redis_client.connection_pool.disconnect()
+    del celery_app.redis_client
+
+    del celery_app.stats_client
+
+    del celery_app.all_queues
+    del celery_app.data_queues
+    del celery_app.export_queues
+    del celery_app.settings
