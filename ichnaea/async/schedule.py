@@ -68,9 +68,9 @@ CELERYBEAT_SCHEDULE = {
     },
     'continuous-cell-scan-areas': {
         'task': 'ichnaea.data.tasks.scan_areas',
-        'schedule': timedelta(seconds=331),
+        'schedule': timedelta(seconds=121),
         'args': (500, ),
-        'options': {'expires': 300},
+        'options': {'expires': 110},
     },
 
     # Daily content tasks
