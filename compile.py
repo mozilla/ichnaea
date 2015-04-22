@@ -20,6 +20,7 @@ import sys
 
 EXCLUDES_27 = [
     'linecache2/tests/inspect_fodder2.py',
+    'raven/transport/aiohttp.py',
 ]
 EXCLUDES_34 = [
     'gunicorn/workers/_gaiohttp.py',
