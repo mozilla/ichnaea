@@ -165,7 +165,7 @@ class GeoSubmitter(BaseSubmitter):
         return reports
 
 
-@check_api_key('geosubmit')
+@check_api_key('geosubmit', error_on_invalidkey=False)
 def geosubmit_view(request, api_key):
     submitter = GeoSubmitter(request, api_key)
 

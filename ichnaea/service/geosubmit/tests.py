@@ -396,3 +396,21 @@ class TestGeoSubmit(CeleryAppTestCase):
 
         result = session.query(WifiObservation).all()
         self.assertEqual(len(result), batch_size)
+
+    def test_log_unknown_api_key(self):
+        wifis = WifiFactory.create_batch(2)
+        self.app.post_json(
+            '/v1/geosubmit?key=invalidkey',
+            {"items": [{
+                "latitude": wifis[0].lat,
+                "longitude": wifis[0].lon,
+                "wifiAccessPoints": [
+                    {"macAddress": wifis[0].key},
+                    {"macAddress": wifis[1].key},
+                ]},
+            ]},
+            status=200)
+
+        self.check_stats(
+            counter=['geosubmit.unknown_api_key',
+                     ('geosubmit.api_key.invalidkey', 0)])

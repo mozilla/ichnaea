@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Allow anonymous data submission via the geosubmit API.
+
 - #425: Refactor internal API key logic.
 
 - Updated to latest raven version, requires a Sentry 7 server.
