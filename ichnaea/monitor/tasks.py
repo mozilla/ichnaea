@@ -1,4 +1,5 @@
 from sqlalchemy import func
+from sqlalchemy.orm import load_only
 
 from ichnaea.async.app import celery_app
 from ichnaea.async.task import DatabaseTask
@@ -15,14 +16,10 @@ from ichnaea import util
 def monitor_api_key_limits(self):
     result = {}
     try:
-        redis_client = self.app.redis_client
-        stats_client = self.stats_client
-        now = util.utcnow()
-        today = now.strftime("%Y%m%d")
-
-        keys = redis_client.keys('apilimit:*:' + today)
+        today = util.utcnow().strftime("%Y%m%d")
+        keys = self.redis_client.keys('apilimit:*:' + today)
         if keys:
-            values = redis_client.mget(keys)
+            values = self.redis_client.mget(keys)
             keys = [k.split(':')[1] for k in keys]
         else:
             values = []
@@ -30,18 +27,17 @@ def monitor_api_key_limits(self):
         names = {}
         if keys:
             with self.db_session() as session:
-                q = session.query(ApiKey.valid_key, ApiKey.shortname).filter(
-                    ApiKey.valid_key.in_(keys))
-                names = dict(q.all())
+                query = (ApiKey.querykeys(session, keys)
+                               .options(load_only('valid_key', 'shortname')))
+                for api_key in query.all():
+                    names[api_key.valid_key] = api_key.name
 
         result = {}
         for k, v in zip(keys, values):
-            name = names.get(k)
-            if not name:
-                name = k
+            name = names.get(k, k)
             value = int(v)
             result[name] = value
-            stats_client.gauge('apilimit.' + name, value)
+            self.stats_client.gauge('apilimit.' + name, value)
     except Exception:  # pragma: no cover
         # Log but ignore the exception
         self.raven_client.captureException()

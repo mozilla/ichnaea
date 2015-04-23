@@ -35,7 +35,7 @@ def insert_measures(self, items=None, nickname='', email='',
 
     reports = kombu_loads(items)
     with self.db_session() as session:
-        api_key = api_key_text and session.query(ApiKey).filter(ApiKey.valid_key==api_key_text).first()
+        api_key = api_key_text and ApiKey.getkey(session, api_key_text)
 
         queue = ReportQueueV1(self, session,
                               api_key,

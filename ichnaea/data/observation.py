@@ -66,7 +66,7 @@ class ObservationQueue(DataTask):
         for key, observations in station_observations.items():
             first_blacklisted = None
             incomplete = False
-            station = self.station_model.querykey(self.session, key).first()
+            station = self.station_model.getkey(self.session, key)
 
             if station is None:
                 # Drop observations for blacklisted stations.

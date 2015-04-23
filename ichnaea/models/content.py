@@ -73,7 +73,7 @@ class Score(IdMixin, HashKeyMixin, _Model):
 
     @classmethod
     def incr(cls, session, key, value):
-        score = cls.querykey(session, key).first()
+        score = cls.getkey(session, key)
         if score is not None:
             score.value += int(value)
         else:
