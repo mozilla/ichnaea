@@ -2,7 +2,6 @@ from functools import wraps
 
 from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden
 from redis import ConnectionError
-from sqlalchemy import text
 
 from ichnaea.customjson import dumps
 from ichnaea.models.api import ApiKey
@@ -56,22 +55,25 @@ def check_api_key(func_name, error_on_invalidkey=True):
     def c(func):
         @wraps(func)
         def closure(request, *args, **kwargs):
+            raven_client = request.registry.raven_client
+            stats_client = request.registry.stats_client
+
             api_key = None
             api_key_text = request.GET.get('key', None)
 
             if api_key_text is None:
-                request.registry.stats_client.incr('%s.no_api_key' % func_name)
+                stats_client.incr('%s.no_api_key' % func_name)
                 if error_on_invalidkey:
                     return invalid_api_key_response()
             try:
-                api_key = request.db_ro_session.query(ApiKey).filter(ApiKey.valid_key==api_key_text).first()
+                api_key = ApiKey.getkey(request.db_ro_session, api_key_text)
             except Exception:  # pragma: no cover
                 # if we cannot connect to backend DB, skip api key check
-                request.registry.raven_client.captureException()
-                request.registry.stats_client.incr('%s.dbfailure_skip_api_key' % func_name)
+                raven_client.captureException()
+                stats_client.incr('%s.dbfailure_skip_api_key' % func_name)
 
             if api_key is not None:
-                request.registry.stats_client.incr('%s.api_key.%s' % (func_name, api_key.shortname or api_key_text))
+                stats_client.incr('%s.api_key.%s' % (func_name, api_key.name))
                 should_limit = rate_limit(request.registry.redis_client,
                                           api_key_text, maxreq=api_key.maxreq)
                 if should_limit:
@@ -81,9 +83,9 @@ def check_api_key(func_name, error_on_invalidkey=True):
                     return response
                 elif should_limit is None:  # pragma: no cover
                     # We couldn't connect to Redis
-                    request.registry.stats_client.incr('%s.redisfailure_skip_limit' % func_name)
+                    stats_client.incr('%s.redisfailure_skip_limit' % func_name)
             else:
-                request.registry.stats_client.incr('%s.unknown_api_key' % func_name)
+                stats_client.incr('%s.unknown_api_key' % func_name)
                 if error_on_invalidkey:
                     return invalid_api_key_response()
 

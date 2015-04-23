@@ -75,6 +75,10 @@ class HashKeyMixin(object):
         fields = cls._hashkey_cls._fields
         if isinstance(obj, dict):
             return cls._hashkey_cls(**obj)
+        elif isinstance(obj, basestring) and len(fields) == 1:
+            # if we get a single string argument and the underlying
+            # model has only a single hashkey field, match them up
+            return cls._hashkey_cls(**{fields[0]: obj})
         values = {}
         for field in fields:
             values[field] = getattr(obj, field, None)
@@ -92,7 +96,7 @@ class HashKeyMixin(object):
         if not isinstance(key, HashKey):
             if isinstance(key, HashKeyMixin):
                 key = key.hashkey()
-            else:  # pragma: no cover
+            else:
                 key = cls.to_hashkey(key)
         criterion = ()
         for field in cls._hashkey_cls._fields:
@@ -100,6 +104,10 @@ class HashKeyMixin(object):
             if value is not None:
                 criterion += (getattr(cls, field) == value, )
         return criterion
+
+    @classmethod
+    def getkey(cls, session, key):
+        return cls.querykey(session, key).first()
 
     @classmethod
     def querykey(cls, session, key):
@@ -117,7 +125,11 @@ class HashKeyMixin(object):
             field = cls._hashkey_cls._fields[0]
             key_list = []
             for key in keys:
-                key_list.append(getattr(key, field))
+                if isinstance(key, (HashKey, HashKeyMixin)):
+                    # extract plain value from class
+                    key_list.append(getattr(key, field))
+                else:
+                    key_list.append(key)
             return session.query(cls).filter(getattr(cls, field).in_(key_list))
 
         key_filters = []

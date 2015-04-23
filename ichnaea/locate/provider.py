@@ -6,7 +6,6 @@ import operator
 import mobile_codes
 from sqlalchemy.orm import load_only
 
-from ichnaea.config import read_config
 from ichnaea.constants import (
     CELL_MIN_ACCURACY,
     LAC_MIN_ACCURACY,

@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #425: Refactor internal API key logic.
+
 - Updated to latest raven version, requires a Sentry 7 server.
 
 - Updated to latests versions of billiard, pyramid and WebOb.
