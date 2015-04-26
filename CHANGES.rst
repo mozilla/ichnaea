@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Deal with nan/inf floating point numbers in data submissions.
+
 - Fixed upload issues for cell entries without any radio field.
 
 20150423105800

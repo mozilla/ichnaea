@@ -4,13 +4,14 @@
 # http://www.w3.org/TR/geolocation-API/#position_interface
 
 from colander import (
-    Float,
     Integer,
     MappingSchema,
     SchemaNode,
     SequenceSchema,
     String,
 )
+
+from ichnaea.service.schema import BoundedFloat
 
 
 class CellTowerSchema(MappingSchema):
@@ -80,28 +81,28 @@ class GeoSubmitSchema(MappingSchema):
     # geolocate API, but are part of the submit schema
 
     # mapped to 'lat' for submit
-    latitude = SchemaNode(Float(), missing=None)
+    latitude = SchemaNode(BoundedFloat(), missing=None)
 
     # mapped to 'lon' for submit
-    longitude = SchemaNode(Float(), missing=None)
+    longitude = SchemaNode(BoundedFloat(), missing=None)
 
     # parsed and mapped to 'time' for submit
     timestamp = SchemaNode(Integer(), missing=0)
 
     # mapped to 'accuracy' for submit
-    accuracy = SchemaNode(Float(), missing=0)
+    accuracy = SchemaNode(BoundedFloat(), missing=0)
 
     # mapped to 'altitude' for submit
-    altitude = SchemaNode(Float(), missing=0)
+    altitude = SchemaNode(BoundedFloat(), missing=0)
 
     # mapped to 'altitude_accuracy' for submit
-    altitudeAccuracy = SchemaNode(Float(), missing=0)
+    altitudeAccuracy = SchemaNode(BoundedFloat(), missing=0)
     # radio is taken from radioType
     # cell is taken from cellTowers
     # wifi is taken from wifiAccessPoints
 
-    heading = SchemaNode(Float(), missing=-1.0)
-    speed = SchemaNode(Float(), missing=-1.0)
+    heading = SchemaNode(BoundedFloat(), missing=-1.0)
+    speed = SchemaNode(BoundedFloat(), missing=-1.0)
 
     age = SchemaNode(Integer(), missing=None)
     source = SchemaNode(String(), missing='gps')

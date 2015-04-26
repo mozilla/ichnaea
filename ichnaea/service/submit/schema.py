@@ -1,5 +1,7 @@
 from colander import MappingSchema, SchemaNode, SequenceSchema
-from colander import Float, Integer, String
+from colander import Integer, String
+
+from ichnaea.service.schema import BoundedFloat
 
 
 class CellSchema(MappingSchema):
@@ -37,8 +39,8 @@ class WifisSchema(SequenceSchema):
 
 
 class BaseReportSchema(MappingSchema):
-    lat = SchemaNode(Float(), missing=None)
-    lon = SchemaNode(Float(), missing=None)
+    lat = SchemaNode(BoundedFloat(), missing=None)
+    lon = SchemaNode(BoundedFloat(), missing=None)
 
     time = SchemaNode(String(), missing='')
     accuracy = SchemaNode(Integer(), missing=0)
@@ -46,8 +48,8 @@ class BaseReportSchema(MappingSchema):
     altitude_accuracy = SchemaNode(Integer(), missing=0)
     radio = SchemaNode(String(), missing=None)
 
-    heading = SchemaNode(Float(), missing=-1.0)
-    speed = SchemaNode(Float(), missing=-1.0)
+    heading = SchemaNode(BoundedFloat(), missing=-1.0)
+    speed = SchemaNode(BoundedFloat(), missing=-1.0)
 
     age = SchemaNode(Integer(), missing=None)
     source = SchemaNode(String(), missing='gps')

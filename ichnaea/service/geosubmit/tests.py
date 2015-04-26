@@ -256,6 +256,25 @@ class TestGeoSubmit(CeleryAppTestCase):
         self.assertEqual(obs.signal, -77)
         self.assertEqual(obs.snr, 13)
 
+    def test_invalid_float(self):
+        wifi = WifiFactory.build()
+        self.app.post_json(
+            '/v1/geosubmit?key=test',
+            {"items": [
+                {"latitude": wifi.lat,
+                 "longitude": wifi.lon,
+                 "accuracy": float('+nan'),
+                 "altitude": float('-inf'),
+                 "wifiAccessPoints": [{
+                     "macAddress": wifi.key,
+                 }]},
+            ]},
+            status=200)
+        obs = self.session.query(WifiObservation).all()
+        self.assertEqual(len(obs), 1)
+        self.assertFalse(obs[0].accuracy)
+        self.assertFalse(obs[0].altitude)
+
     def test_invalid_json(self):
         session = self.session
         wifi = WifiFactory.build()
