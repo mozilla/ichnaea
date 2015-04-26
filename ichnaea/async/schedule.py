@@ -51,7 +51,19 @@ CELERYBEAT_SCHEDULE = {
     'location-update-wifi-1': {
         'task': 'ichnaea.data.tasks.location_update_wifi',
         'schedule': timedelta(seconds=31),
-        'args': (1, 10, 4000),
+        'args': (1, 4, 4000),
+        'options': {'expires': 25},
+    },
+    'location-update-wifi-4': {
+        'task': 'ichnaea.data.tasks.location_update_wifi',
+        'schedule': timedelta(seconds=33),
+        'args': (4, 7, 3000),
+        'options': {'expires': 25},
+    },
+    'location-update-wifi-7': {
+        'task': 'ichnaea.data.tasks.location_update_wifi',
+        'schedule': timedelta(seconds=37),
+        'args': (7, 10, 2000),
         'options': {'expires': 25},
     },
     'location-update-wifi-10': {
