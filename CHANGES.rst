@@ -13,6 +13,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Fixed upload issues for cell entries without any radio field.
 
 20150423105800
 **************

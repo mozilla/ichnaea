@@ -567,6 +567,22 @@ class TestSubmit(CeleryAppTestCase):
             status=204)
         self.assertEqual(self.session.query(CellObservation).count(), 1)
 
+    def test_missing_radio(self):
+        cell = CellFactory.build()
+        self.app.post_json(
+            '/v1/submit', {'items': [{
+                'lat': cell.lat,
+                'lon': cell.lon,
+                'cell': [{
+                    'mcc': cell.mcc,
+                    'mnc': cell.mnc,
+                    'lac': cell.lac,
+                    'cid': cell.cid,
+                }]
+            }]},
+            status=204)
+        self.assertEqual(self.session.query(CellObservation).count(), 0)
+
     def test_invalid_radio(self):
         cell = CellFactory.build()
         self.app.post_json(

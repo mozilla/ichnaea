@@ -157,6 +157,27 @@ class TestGeoSubmit(CeleryAppTestCase):
         pscs = set([obs.psc for obs in observations])
         self.assertEqual(pscs, set([cell.psc, cell.psc + 1]))
 
+    def test_ok_radioless_cell(self):
+        cell = CellFactory.build()
+
+        self.app.post_json(
+            '/v1/geosubmit?key=test',
+            {"items": [
+                {"latitude": cell.lat,
+                 "longitude": cell.lon,
+                 "cellTowers": [{
+                     "mobileCountryCode": cell.mcc,
+                     "mobileNetworkCode": cell.mnc,
+                     "locationAreaCode": cell.lac,
+                     "cellId": cell.cid,
+                     "psc": cell.psc,
+                 }]},
+            ]},
+            status=200)
+
+        observations = self.session.query(CellObservation).all()
+        self.assertEqual(len(observations), 0)
+
     def test_ok_wifi(self):
         session = self.session
         wifis = WifiFactory.create_batch(4)

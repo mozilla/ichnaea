@@ -141,7 +141,7 @@ class GeoSubmitter(BaseSubmitter):
                 if cell:
                     if 'radioType' not in cell and item_radio:
                         cell['radioType'] = item_radio
-                    if cell['radioType'] == 'umts':
+                    if cell.get('radioType') == 'umts':
                         cell['radioType'] = 'wcdma'
                     cells.append(cell)
 
