@@ -1,7 +1,10 @@
+from contextlib import contextmanager
 import json
 import time
 
+import boto
 from celery.exceptions import Retry
+import mock
 import requests_mock
 
 from ichnaea.async.config import EXPORT_QUEUE_PREFIX
@@ -15,7 +18,16 @@ from ichnaea.tests.factories import (
     CellFactory,
     WifiFactory,
 )
-from ichnaea.util import decode_gzip
+from ichnaea import util
+
+
+@contextmanager
+def mock_s3():
+    mock_conn = mock.MagicMock()
+    mock_key = mock.MagicMock()
+    with mock.patch.object(boto, 'connect_s3', mock_conn):
+        with mock.patch('boto.s3.key.Key', lambda _: mock_key):
+            yield mock_key
 
 
 class BaseTest(object):
@@ -120,10 +132,10 @@ class TestExporter(BaseTest, CeleryTestCase):
         self.assertEqual(self.queue_length(EXPORT_QUEUE_PREFIX + 'test'), 1)
 
 
-class TestUploader(BaseTest, CeleryTestCase):
+class TestGeosubmitUploader(BaseTest, CeleryTestCase):
 
     def setUp(self):
-        super(TestUploader, self).setUp()
+        super(TestGeosubmitUploader, self).setUp()
         self.celery_app.export_queues = {
             'test': {
                 'url': 'http://127.0.0.1:9/v2/geosubmit?key=external',
@@ -149,7 +161,7 @@ class TestUploader(BaseTest, CeleryTestCase):
         self.assertEqual(req.headers['User-Agent'], 'ichnaea')
 
         # check body
-        body = decode_gzip(req.body)
+        body = util.decode_gzip(req.body)
         # make sure we don't accidentally leak emails
         self.assertFalse('secretemail' in body)
 
@@ -193,4 +205,50 @@ class TestUploader(BaseTest, CeleryTestCase):
                      ('items.export.test.upload_status.404', 1),
                      ('items.export.test.upload_status.500', 1)],
             timer=[('items.export.test.upload', 3)],
+        )
+
+
+class TestS3Uploader(BaseTest, CeleryTestCase):
+
+    def setUp(self):
+        super(TestS3Uploader, self).setUp()
+        self.celery_app.export_queues = {
+            'backup': {
+                'url': 's3://bucket/backups/{year}/{month}/{day}',
+                'batch': 3,
+                'redis_key': EXPORT_QUEUE_PREFIX + 'backup',
+            },
+        }
+        self.prefix = EXPORT_QUEUE_PREFIX
+
+    def test_upload(self):
+        reports = self.add_reports(3, email='secretemail@localhost')
+
+        with mock_s3() as mock_key:
+            schedule_export_reports.delay().get()
+
+        self.assertEqual(mock_key.content_encoding, 'gzip')
+        self.assertEqual(mock_key.content_type, 'application/json')
+        self.assertTrue(mock_key.key.startswith('backups/2'))
+        self.assertTrue(mock_key.key.endswith('.json.gz'))
+        self.assertTrue(mock_key.close.called)
+
+        # check uploaded content
+        args, kw = mock_key.set_contents_from_string.call_args
+        uploaded_data = args[0]
+        uploaded_text = util.decode_gzip(uploaded_data)
+
+        # make sure we don't accidentally leak emails
+        self.assertFalse('secretemail' in uploaded_text)
+
+        send_reports = json.loads(uploaded_text)['items']
+        self.assertEqual(len(send_reports), 3)
+        expect = [report['position']['accuracy'] for report in reports]
+        gotten = [report['position']['accuracy'] for report in send_reports]
+        self.assertEqual(set(expect), set(gotten))
+
+        self.check_stats(
+            counter=[('items.export.backup.batches', 1, 1),
+                     ('items.export.backup.upload_status.success', 1)],
+            timer=['items.export.backup.upload'],
         )

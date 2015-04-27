@@ -6,9 +6,10 @@ from ichnaea.data.area import (
     OCIDCellAreaUpdater,
 )
 from ichnaea.data.export import (
+    GeosubmitUploader,
     ExportScheduler,
     ReportExporter,
-    ReportUploader,
+    S3Uploader,
 )
 from ichnaea.data.observation import (
     CellObservationQueue,
@@ -115,7 +116,14 @@ def queue_reports(self, reports=(), api_key=None, email=None, nickname=None):
 
 @celery_app.task(base=DatabaseTask, bind=True, queue='celery_upload')
 def upload_reports(self, export_name, data):
-    uploader = ReportUploader(self, None, export_name)
+    settings = self.app.export_queues[export_name]
+    url = settings.get('url', '') or ''
+
+    uploader_type = GeosubmitUploader
+    if url.startswith('s3:'):
+        uploader_type = S3Uploader
+
+    uploader = uploader_type(self, None, export_name, settings)
     return uploader.upload(data)
 
 
