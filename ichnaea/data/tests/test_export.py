@@ -23,11 +23,17 @@ from ichnaea import util
 
 
 @contextmanager
-def mock_s3():
+def mock_s3(mock_keys):
     mock_conn = mock.MagicMock()
-    mock_key = mock.MagicMock()
+
+    def new_mock(*args, **kw):
+        mock_key = mock.MagicMock()
+        mock_key(*args, **kw)
+        mock_keys.append(mock_key)
+        return mock_key
+
     with mock.patch.object(boto, 'connect_s3', mock_conn):
-        with mock.patch('boto.s3.key.Key', lambda _: mock_key):
+        with mock.patch('boto.s3.key.Key', new_mock) as mock_key:
             yield mock_key
 
 
@@ -227,7 +233,7 @@ class TestS3Uploader(BaseTest, CeleryTestCase):
         super(TestS3Uploader, self).setUp()
         config = DummyConfig({
             'export:backup': {
-                'url': 's3://bucket/backups/{year}/{month}/{day}',
+                'url': 's3://bucket/backups/{api_key}/{year}/{month}/{day}',
                 'batch': '3',
             },
         })
@@ -238,23 +244,35 @@ class TestS3Uploader(BaseTest, CeleryTestCase):
         self.assertFalse(export_queue.monitor_name)
 
     def test_upload(self):
-        reports = []
-        reports.extend(self.add_reports(3, email='secretemail@localhost'))
-        reports.extend(self.add_reports(3, api_key='e5444e9f-7946'))
-        reports.extend(self.add_reports(3, api_key=None))
+        reports = self.add_reports(3, email='secretemail@localhost')
+        self.add_reports(6, api_key='e5444-794')
+        self.add_reports(3, api_key=None)
 
-        with mock_s3() as mock_key:
+        mock_keys = []
+        with mock_s3(mock_keys):
             schedule_export_reports.delay().get()
 
-        self.assertTrue(mock_key.set_contents_from_string.called)
-        self.assertEqual(mock_key.content_encoding, 'gzip')
-        self.assertEqual(mock_key.content_type, 'application/json')
-        self.assertTrue(mock_key.key.startswith('backups/2'))
-        self.assertTrue(mock_key.key.endswith('.json.gz'))
-        self.assertTrue(mock_key.close.called)
+        self.assertEqual(len(mock_keys), 4)
+
+        keys = []
+        test_export = None
+        for mock_key in mock_keys:
+            self.assertTrue(mock_key.set_contents_from_string.called)
+            self.assertEqual(mock_key.content_encoding, 'gzip')
+            self.assertEqual(mock_key.content_type, 'application/json')
+            self.assertTrue(mock_key.key.startswith('backups/'))
+            self.assertTrue(mock_key.key.endswith('.json.gz'))
+            self.assertTrue(mock_key.close.called)
+            keys.append(mock_key.key)
+            if 'test' in mock_key.key:
+                test_export = mock_key
+
+        # extract second path segment from key names
+        queue_keys = [key.split('/')[1] for key in keys]
+        self.assertEqual(set(queue_keys), set(['test', 'no_key', 'e5444-794']))
 
         # check uploaded content
-        args, kw = mock_key.set_contents_from_string.call_args
+        args, kw = test_export.set_contents_from_string.call_args
         uploaded_data = args[0]
         uploaded_text = util.decode_gzip(uploaded_data)
 
@@ -268,7 +286,7 @@ class TestS3Uploader(BaseTest, CeleryTestCase):
         self.assertEqual(set(expect), set(gotten))
 
         self.check_stats(
-            counter=[('items.export.backup.batches', 3, 1),
-                     ('items.export.backup.upload_status.success', 3)],
-            timer=[('items.export.backup.upload', 3)],
+            counter=[('items.export.backup.batches', 4, 1),
+                     ('items.export.backup.upload_status.success', 4)],
+            timer=[('items.export.backup.upload', 4)],
         )

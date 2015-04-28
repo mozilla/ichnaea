@@ -115,7 +115,7 @@ def queue_reports(self, reports=(), api_key=None, email=None, nickname=None):
 
 
 @celery_app.task(base=DatabaseTask, bind=True, queue='celery_upload')
-def upload_reports(self, export_queue_name, data):
+def upload_reports(self, export_queue_name, data, queue_key=None):
     uploaders = {
         'http': GeosubmitUploader,
         'https': GeosubmitUploader,
@@ -125,7 +125,7 @@ def upload_reports(self, export_queue_name, data):
     uploader_type = uploaders.get(export_queue.scheme, None)
 
     if uploader_type is not None:
-        uploader = uploader_type(self, None, export_queue_name)
+        uploader = uploader_type(self, None, export_queue_name, queue_key)
         return uploader.upload(data)
 
 
