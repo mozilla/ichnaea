@@ -98,8 +98,8 @@ def schedule_export_reports(self):
 
 
 @celery_app.task(base=DatabaseTask, bind=True, queue='celery_export')
-def export_reports(self, export_name):
-    exporter = ReportExporter(self, None, export_name)
+def export_reports(self, export_queue_name):
+    exporter = ReportExporter(self, None, export_queue_name)
     return exporter.export(export_reports, upload_reports)
 
 
@@ -115,17 +115,17 @@ def queue_reports(self, reports=(), api_key=None, email=None, nickname=None):
 
 
 @celery_app.task(base=DatabaseTask, bind=True, queue='celery_upload')
-def upload_reports(self, export_name, data):
+def upload_reports(self, export_queue_name, data):
     uploaders = {
         'http': GeosubmitUploader,
         'https': GeosubmitUploader,
         's3': S3Uploader,
     }
-    export_queue = self.app.export_queues[export_name]
+    export_queue = self.app.export_queues[export_queue_name]
     uploader_type = uploaders.get(export_queue.scheme, None)
 
     if uploader_type is not None:
-        uploader = uploader_type(self, None, export_name)
+        uploader = uploader_type(self, None, export_queue_name)
         return uploader.upload(data)
 
 

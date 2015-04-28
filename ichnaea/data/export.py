@@ -35,10 +35,10 @@ class ExportScheduler(DataTask):
 
 class ReportExporter(DataTask):
 
-    def __init__(self, task, session, export_name):
+    def __init__(self, task, session, export_queue_name):
         DataTask.__init__(self, task, session)
-        self.export_name = export_name
-        self.export_queue = task.app.export_queues[export_name]
+        self.export_queue_name = export_queue_name
+        self.export_queue = task.app.export_queues[export_queue_name]
         self.batch = self.export_queue.batch
         self.queue_key = self.export_queue.queue_key()
 
@@ -70,13 +70,13 @@ class ReportExporter(DataTask):
         # split out metadata
         reports = [item['report'] for item in items]
 
-        upload_task.delay(self.export_name, dumps({'items': reports}))
+        upload_task.delay(self.export_queue_name, dumps({'items': reports}))
 
         # check the queue at the end, if there's still enough to do
         # schedule another job, but give it a second before it runs
         if self.queue_length() >= self.batch:
             export_task.apply_async(
-                args=[self.export_name],
+                args=[self.export_queue_name],
                 countdown=1,
                 expires=300)
 
@@ -85,11 +85,11 @@ class ReportExporter(DataTask):
 
 class ReportUploader(DataTask):
 
-    def __init__(self, task, session, export_name):
+    def __init__(self, task, session, export_queue_name):
         DataTask.__init__(self, task, session)
-        self.export_name = export_name
-        self.export_queue = task.app.export_queues[export_name]
-        self.stats_prefix = 'items.export.%s.' % export_name
+        self.export_queue_name = export_queue_name
+        self.export_queue = task.app.export_queues[export_queue_name]
+        self.stats_prefix = 'items.export.%s.' % export_queue_name
         self.url = self.export_queue.url
 
     def upload(self, data):
@@ -129,8 +129,8 @@ class GeosubmitUploader(ReportUploader):
 
 class S3Uploader(ReportUploader):
 
-    def __init__(self, task, session, export_name):
-        super(S3Uploader, self).__init__(task, session, export_name)
+    def __init__(self, task, session, export_queue_name):
+        super(S3Uploader, self).__init__(task, session, export_queue_name)
         _, self.bucket, path = urlparse.urlparse(self.url)[:3]
         # s3 key names start without a leading slash
         path = path.lstrip('/')
