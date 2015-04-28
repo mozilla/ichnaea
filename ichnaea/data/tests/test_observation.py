@@ -32,7 +32,14 @@ from ichnaea.tests.base import (
 from ichnaea import util
 
 
-class TestCell(CeleryTestCase):
+class ObservationTestCase(CeleryTestCase):
+
+    def check_statcounter(self, stat_key, value):
+        key = statcounter_key(stat_key, util.utcnow())
+        self.assertEqual(int(self.redis_client.get(key) or 0), value)
+
+
+class TestCell(ObservationTestCase):
 
     def test_blacklist(self):
         now = util.utcnow()
@@ -60,6 +67,9 @@ class TestCell(CeleryTestCase):
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 2)
 
+        self.check_statcounter(StatKey.cell, 2)
+        self.check_statcounter(StatKey.unique_cell, 2)
+
     def test_blacklist_time_used_as_creation_time(self):
         now = util.utcnow()
         last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
@@ -82,6 +92,9 @@ class TestCell(CeleryTestCase):
 
         # and the creation date was set to the date of the blacklist entry
         self.assertEqual(cells[0].created, last_week)
+
+        self.check_statcounter(StatKey.cell, 1)
+        self.check_statcounter(StatKey.unique_cell, 0)
 
     def test_insert_observations(self):
         session = self.session
@@ -142,9 +155,8 @@ class TestCell(CeleryTestCase):
         self.assertEqual(scores[0].key, ScoreKey.new_cell)
         self.assertEqual(scores[0].value, 8)
 
-        # check redis stat counter
-        stat_key = statcounter_key(StatKey.cell, today)
-        self.assertEqual(int(self.redis_client.get(stat_key)), 4)
+        self.check_statcounter(StatKey.cell, 4)
+        self.check_statcounter(StatKey.unique_cell, 1)
 
         # test duplicate execution
         result = insert_measures_cell.delay(entries, userid=1)
@@ -227,7 +239,7 @@ class TestCell(CeleryTestCase):
         self.assertEqual(set([o.ta for o in observations]), set([0, 32]))
 
 
-class TestWifi(CeleryTestCase):
+class TestWifi(ObservationTestCase):
 
     def test_blacklist(self):
         utcnow = util.utcnow()
@@ -254,6 +266,9 @@ class TestWifi(CeleryTestCase):
         self.assertEqual(len(wifis), 1)
         self.assertEqual(set([w.key for w in wifis]), set([good_key]))
 
+        self.check_statcounter(StatKey.wifi, 2)
+        self.check_statcounter(StatKey.unique_wifi, 1)
+
     def test_blacklist_time_used_as_creation_time(self):
         now = util.utcnow()
         last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
@@ -274,6 +289,7 @@ class TestWifi(CeleryTestCase):
 
         # and the creation date was set to the date of the blacklist entry
         self.assertEqual(wifis[0].created, last_week)
+        self.check_statcounter(StatKey.unique_wifi, 0)
 
     def test_insert_observations(self):
         session = self.session
@@ -326,9 +342,8 @@ class TestWifi(CeleryTestCase):
         self.assertEqual(scores[0].key, ScoreKey.new_wifi)
         self.assertEqual(scores[0].value, 8)
 
-        # check redis stat counter
-        stat_key = statcounter_key(StatKey.wifi, today)
-        self.assertEqual(int(self.redis_client.get(stat_key)), 4)
+        self.check_statcounter(StatKey.wifi, 4)
+        self.check_statcounter(StatKey.unique_wifi, 1)
 
         # test duplicate execution
         result = insert_measures_wifi.delay(entries, userid=1)
@@ -338,7 +353,7 @@ class TestWifi(CeleryTestCase):
         self.assertEqual(len(observations), 8)
 
 
-class TestSubmitErrors(CeleryTestCase):
+class TestSubmitErrors(ObservationTestCase):
     # this is a standalone class to ensure DB isolation for dropping tables
 
     def tearDown(self):
@@ -371,7 +386,5 @@ class TestSubmitErrors(CeleryTestCase):
 
         self.check_raven([('ProgrammingError', 4)])
 
-        # check redis stat counter
-        today = util.utcnow().date()
-        stat_key = statcounter_key(StatKey.wifi, today)
-        self.assertEqual(int(self.redis_client.get(stat_key) or 0), 0)
+        self.check_statcounter(StatKey.wifi, 0)
+        self.check_statcounter(StatKey.unique_wifi, 0)

@@ -44,6 +44,15 @@ class ObservationQueue(DataTask):
         for name, count in dropped.items():
             self.stat_count('dropped', 'ingress_' + name, dropped[name])
 
+    def emit_statcounters(self, obs, stations):
+        self.session.on_post_commit(
+            statcounter_emit, self.redis_client,
+            self.stat_obs_key, self.utcnow, obs)
+
+        self.session.on_post_commit(
+            statcounter_emit, self.redis_client,
+            self.stat_station_key, self.utcnow, stations)
+
     def pre_process_entry(self, entry):
         entry['created'] = self.utcnow
 
@@ -78,7 +87,7 @@ class ObservationQueue(DataTask):
                     continue
 
                 incomplete = self.incomplete_observation(key)
-                if not incomplete:
+                if not incomplete and not first_blacklisted:
                     # We discovered an actual new complete station.
                     new_stations += 1
 
@@ -102,10 +111,8 @@ class ObservationQueue(DataTask):
 
         added = len(all_observations)
         self.emit_stats(added, drop_counter)
+        self.emit_statcounters(added, new_stations)
 
-        self.session.on_post_commit(
-            statcounter_emit,
-            self.redis_client, self.stat_key, self.utcnow, added)
         self.session.add_all(all_observations)
 
         return added
@@ -155,7 +162,8 @@ class ObservationQueue(DataTask):
 
 class CellObservationQueue(ObservationQueue):
 
-    stat_key = StatKey.cell
+    stat_obs_key = StatKey.cell
+    stat_station_key = StatKey.unique_cell
     station_type = "cell"
     station_model = Cell
     observation_model = CellObservation
@@ -179,7 +187,8 @@ class CellObservationQueue(ObservationQueue):
 
 class WifiObservationQueue(ObservationQueue):
 
-    stat_key = StatKey.wifi
+    stat_obs_key = StatKey.wifi
+    stat_station_key = StatKey.unique_wifi
     station_type = "wifi"
     station_model = Wifi
     observation_model = WifiObservation
