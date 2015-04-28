@@ -60,7 +60,6 @@ SESSION = {}
 TEST_CONFIG = DummyConfig({
     'ichnaea': {
         'assets_url': 'http://127.0.0.1:7001/static/',
-        's3_backup_bucket': 'localhost.bucket',
         's3_assets_bucket': 'localhost.bucket',
         'ocid_url': 'http://127.0.0.1:9/downloads/',
         'ocid_apikey': 'xxxxxxxx-yyyy-xxxx-yyyy-xxxxxxxxxxxx',
