@@ -21,6 +21,8 @@ from ichnaea.models.content import (  # NOQA
     Score,
     ScoreKey,
     Stat,
+    statcounter_emit,
+    statcounter_key,
     StatKey,
     User,
 )

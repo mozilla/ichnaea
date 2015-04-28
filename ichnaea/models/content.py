@@ -18,6 +18,24 @@ from ichnaea.models.hashkey import (
 )
 from ichnaea.models.sa_types import TinyIntEnum
 
+STAT_PREFIX = 'statcounter'
+
+
+def statcounter_key(stat_key, now):
+    return '{prefix}_{key}_{date}'.format(
+        prefix=STAT_PREFIX,
+        key=stat_key.name,
+        date=now.strftime('%Y%m%d'))
+
+
+def statcounter_emit(session, redis_client, stat_key, now, added):
+    # keep track of newly inserted observations in redis
+    pipe = redis_client.pipeline()
+    pipeline_key = statcounter_key(stat_key, now)
+    pipe.incr(pipeline_key, added)
+    pipe.expire(pipeline_key, 172800)  # 2 days
+    pipe.execute()
+
 
 class ScoreKey(IntEnum):
     location = 0

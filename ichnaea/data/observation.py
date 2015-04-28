@@ -14,6 +14,8 @@ from ichnaea.models import (
     CellObservation,
     Score,
     ScoreKey,
+    statcounter_emit,
+    StatKey,
     ValidCellKeySchema,
     Wifi,
     WifiBlacklist,
@@ -101,7 +103,11 @@ class ObservationQueue(DataTask):
         added = len(all_observations)
         self.emit_stats(added, drop_counter)
 
+        self.session.on_post_commit(
+            statcounter_emit,
+            self.redis_client, self.stat_key, self.utcnow, added)
         self.session.add_all(all_observations)
+
         return added
 
     def blacklisted_station(self, key):
@@ -149,6 +155,7 @@ class ObservationQueue(DataTask):
 
 class CellObservationQueue(ObservationQueue):
 
+    stat_key = StatKey.cell
     station_type = "cell"
     station_model = Cell
     observation_model = CellObservation
@@ -172,6 +179,7 @@ class CellObservationQueue(ObservationQueue):
 
 class WifiObservationQueue(ObservationQueue):
 
+    stat_key = StatKey.wifi
     station_type = "wifi"
     station_model = Wifi
     observation_model = WifiObservation

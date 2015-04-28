@@ -18,6 +18,8 @@ from ichnaea.models import (
     Radio,
     Score,
     ScoreKey,
+    statcounter_key,
+    StatKey,
     ValidCellKeySchema,
     Wifi,
     WifiBlacklist,
@@ -139,6 +141,10 @@ class TestCell(CeleryTestCase):
         self.assertEqual(len(scores), 1)
         self.assertEqual(scores[0].key, ScoreKey.new_cell)
         self.assertEqual(scores[0].value, 8)
+
+        # check redis stat counter
+        stat_key = statcounter_key(StatKey.cell, today)
+        self.assertEqual(int(self.redis_client.get(stat_key)), 4)
 
         # test duplicate execution
         result = insert_measures_cell.delay(entries, userid=1)
@@ -320,6 +326,10 @@ class TestWifi(CeleryTestCase):
         self.assertEqual(scores[0].key, ScoreKey.new_wifi)
         self.assertEqual(scores[0].value, 8)
 
+        # check redis stat counter
+        stat_key = statcounter_key(StatKey.wifi, today)
+        self.assertEqual(int(self.redis_client.get(stat_key)), 4)
+
         # test duplicate execution
         result = insert_measures_wifi.delay(entries, userid=1)
         self.assertEqual(result.get(), 4)
@@ -360,3 +370,8 @@ class TestSubmitErrors(CeleryTestCase):
             self.fail("Unexpected exception caught: %s" % repr(exc))
 
         self.check_raven([('ProgrammingError', 4)])
+
+        # check redis stat counter
+        today = util.utcnow().date()
+        stat_key = statcounter_key(StatKey.wifi, today)
+        self.assertEqual(int(self.redis_client.get(stat_key) or 0), 0)
