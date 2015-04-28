@@ -1,14 +1,8 @@
-from contextlib import contextmanager
 import datetime
 from datetime import timedelta
-import hashlib
-from zipfile import ZipFile
 
-import boto
-from mock import MagicMock, patch
 import pytz
 
-from ichnaea.backup.s3 import S3Backend
 from ichnaea.backup.tasks import (
     delete_cellmeasure_records,
     delete_wifimeasure_records,
@@ -30,27 +24,6 @@ from ichnaea.tests.factories import (
     WifiObservationFactory,
 )
 from ichnaea import util
-
-
-@contextmanager
-def mock_s3():
-    mock_conn = MagicMock()
-    mock_key = MagicMock()
-    with patch.object(boto, 'connect_s3', mock_conn):
-        with patch('boto.s3.key.Key', lambda _: mock_key):
-            yield mock_key
-
-
-class TestBackup(CeleryTestCase):
-
-    def test_backup(self):
-        with mock_s3() as mock_key:
-            s3 = S3Backend('localhost.bucket', self.raven_client)
-            s3.backup_archive('some_key', '/tmp/not_a_real_file.zip')
-            self.assertEquals(mock_key.key, 'backups/some_key')
-            method = mock_key.set_contents_from_filename
-            self.assertEquals(method.call_args[0][0],
-                              '/tmp/not_a_real_file.zip')
 
 
 class TestObservationsDump(CeleryTestCase):
@@ -118,33 +91,14 @@ class TestObservationsDump(CeleryTestCase):
         block = blocks[0]
         self.assertEquals(block, (start_id, start_id + batch_size))
 
-        with mock_s3():
-            with patch.object(S3Backend,
-                              'backup_archive', lambda x, y, z: True):
-                write_cellmeasure_s3_backups.delay(cleanup_zip=False).get()
-
-                raven_msgs = self.raven_client.msgs
-                fname = [m['message'].split(':')[1] for m in raven_msgs
-                         if m['message'].startswith('s3.backup:')][0]
-                myzip = ZipFile(fname)
-                try:
-                    contents = set(myzip.namelist())
-                    expected_contents = set(['alembic_revision.txt',
-                                             'cell_measure.csv'])
-                    self.assertEquals(expected_contents, contents)
-                finally:
-                    myzip.close()
+        write_cellmeasure_s3_backups.delay(cleanup_zip=False).get()
 
         blocks = self.session.query(ObservationBlock).all()
-
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
 
-        actual_sha = hashlib.sha1()
-        actual_sha.update(open(fname, 'rb').read())
-        self.assertEquals(block.archive_sha, actual_sha.digest())
-        self.assertTrue(block.s3_key is not None)
-        self.assertTrue('/cell_' in block.s3_key)
+        self.assertEqual(block.archive_sha, '20bytes_mean_success')
+        self.assertEqual(block.s3_key, 'skipped')
         self.assertTrue(block.archive_date is None)
 
     def test_backup_wifi_to_s3(self):
@@ -158,33 +112,14 @@ class TestObservationsDump(CeleryTestCase):
         block = blocks[0]
         self.assertEquals(block, (start_id, start_id + batch_size))
 
-        with mock_s3():
-            with patch.object(S3Backend,
-                              'backup_archive', lambda x, y, z: True):
-                write_wifimeasure_s3_backups.delay(cleanup_zip=False).get()
-
-                raven_msgs = self.raven_client.msgs
-                fname = [m['message'].split(':')[1] for m in raven_msgs
-                         if m['message'].startswith('s3.backup:')][0]
-                myzip = ZipFile(fname)
-                try:
-                    contents = set(myzip.namelist())
-                    expected_contents = set(['alembic_revision.txt',
-                                             'wifi_measure.csv'])
-                    self.assertEquals(expected_contents, contents)
-                finally:
-                    myzip.close()
+        write_wifimeasure_s3_backups.delay(cleanup_zip=False).get()
 
         blocks = self.session.query(ObservationBlock).all()
-
         self.assertEquals(len(blocks), 1)
         block = blocks[0]
 
-        actual_sha = hashlib.sha1()
-        actual_sha.update(open(fname, 'rb').read())
-        self.assertEquals(block.archive_sha, actual_sha.digest())
-        self.assertTrue(block.s3_key is not None)
-        self.assertTrue('/wifi_' in block.s3_key)
+        self.assertEqual(block.archive_sha, '20bytes_mean_success')
+        self.assertEqual(block.s3_key, 'skipped')
         self.assertTrue(block.archive_date is None)
 
     def test_delete_cell_observations(self):
@@ -197,8 +132,7 @@ class TestObservationsDump(CeleryTestCase):
             start_id=start_id, end_id=start_id + 20, archive_date=None)
         self.session.commit()
 
-        with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
-            delete_cellmeasure_records.delay(batch=3).get()
+        delete_cellmeasure_records.delay(batch=3).get()
 
         self.assertEquals(self.session.query(CellObservation).count(), 30)
         self.assertTrue(block.archive_date is not None)
@@ -213,8 +147,7 @@ class TestObservationsDump(CeleryTestCase):
             start_id=start_id, end_id=start_id + 20, archive_date=None)
         self.session.commit()
 
-        with patch.object(S3Backend, 'check_archive', lambda x, y, z: True):
-            delete_wifimeasure_records.delay(batch=7).get()
+        delete_wifimeasure_records.delay(batch=7).get()
 
         self.assertEquals(self.session.query(WifiObservation).count(), 30)
         self.assertTrue(block.archive_date is not None)
@@ -252,10 +185,7 @@ class TestObservationsDump(CeleryTestCase):
             return len([b for b in blocks if b.archive_date is not None])
 
         def _delete(days=7):
-            with patch.object(S3Backend,
-                              'check_archive',
-                              lambda x, y, z: True):
-                delete_cellmeasure_records.delay(days_old=days).get()
+            delete_cellmeasure_records.delay(days_old=days).get()
             session.commit()
 
         _delete(days=7)

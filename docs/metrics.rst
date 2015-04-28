@@ -361,9 +361,11 @@ We keep stats on how those individual export targets perform.
 
     Track how long the upload operation took per export target.
 
-``items.export.<export_key>.upload_status.<status_code>`` : counter
+``items.export.<export_key>.upload_status.<status>`` : counter
 
-    Track the response code of the HTTP upload request.
+    Track the upload status of the current job. One counter per status.
+    A status can either be a simple `success` and `failure` or a HTTP
+    response code like 200, 400, etc.
 
 Gauges
 ------
@@ -405,18 +407,6 @@ Gauges
     represents this as `now() - max(created)` and converts it to a
     millisecond value. This metric is useful to see if the ocid_import
     jobs are run on a regular basis.
-
-
-S3 backup counters
-------------------
-
-Ichnaea contains logic for backing up and optionally trimming large
-observation tables to S3 or similar bulk storage systems. When such backup
-events occur, some associated counters are emitted:
-
-``s3.backup.cell``, ``s3.backup.wifi`` : counters
-
-    Counts the number of cell or wifi observations that have been backed up.
 
 
 HTTP counters
