@@ -275,7 +275,6 @@ class ReportQueueV2(DataTask):
                                          'metadata': metadata})))
         if data:
             for name, queue in self.export_queues.items():
-                redis_key = queue.redis_key
-
                 if queue.export_allowed(self.api_key):
-                    self.redis_client.lpush(redis_key, *data)
+                    queue_key = queue.queue_key()
+                    self.redis_client.lpush(queue_key, *data)

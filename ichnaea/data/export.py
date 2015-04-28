@@ -10,8 +10,8 @@ from ichnaea.data.base import DataTask
 from ichnaea import util
 
 
-def queue_length(redis_client, redis_key):
-    return redis_client.llen(redis_key)
+def queue_length(redis_client, queue_key):
+    return redis_client.llen(queue_key)
 
 
 class ExportScheduler(DataTask):
@@ -20,14 +20,14 @@ class ExportScheduler(DataTask):
         DataTask.__init__(self, task, session)
         self.export_queues = task.app.export_queues
 
-    def queue_length(self, redis_key):
-        return queue_length(self.redis_client, redis_key)
+    def queue_length(self, queue_key):
+        return queue_length(self.redis_client, queue_key)
 
     def schedule(self, export_task):
         triggered = 0
         for name, export_queue in self.export_queues.items():
-            redis_key = export_queue.redis_key
-            if self.queue_length(redis_key) >= export_queue.batch:
+            queue_key = export_queue.queue_key()
+            if self.queue_length(queue_key) >= export_queue.batch:
                 export_task.delay(name)
                 triggered += 1
         return triggered
@@ -40,16 +40,16 @@ class ReportExporter(DataTask):
         self.export_name = export_name
         self.export_queue = task.app.export_queues[export_name]
         self.batch = self.export_queue.batch
-        self.redis_key = self.export_queue.redis_key
+        self.queue_key = self.export_queue.queue_key()
 
     def queue_length(self):
-        return queue_length(self.redis_client, self.redis_key)
+        return queue_length(self.redis_client, self.queue_key)
 
     def dequeue_reports(self):
         pipe = self.redis_client.pipeline()
         pipe.multi()
-        pipe.lrange(self.redis_key, 0, self.batch - 1)
-        pipe.ltrim(self.redis_key, self.batch, -1)
+        pipe.lrange(self.queue_key, 0, self.batch - 1)
+        pipe.ltrim(self.queue_key, self.batch, -1)
         return pipe.execute()[0]
 
     def export(self, export_task, upload_task):
@@ -62,7 +62,7 @@ class ReportExporter(DataTask):
         if queued_items and len(queued_items) < self.batch:  # pragma: no cover
             # race condition, something emptied the queue in between
             # our llen call and fetching the items, put them back
-            self.redis_client.lpush(self.redis_key, *queued_items)
+            self.redis_client.lpush(self.queue_key, *queued_items)
             return 0
 
         # schedule the upload task

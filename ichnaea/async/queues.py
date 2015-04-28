@@ -16,10 +16,9 @@ class ExportQueue(object):
 
     @property
     def monitor_name(self):
-        return self.redis_key
+        return self.queue_key()
 
-    @property
-    def redis_key(self):
+    def queue_key(self, api_key=None):
         return EXPORT_QUEUE_PREFIX + self.name
 
     def export_allowed(self, api_key):

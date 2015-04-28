@@ -100,7 +100,8 @@ class TestExporter(BaseTest, CeleryTestCase):
                 'batch': '5',
             },
         })
-        self.celery_app.export_queues = configure_export(config)
+        self.celery_app.export_queues = queues = configure_export(config)
+        self.test_queue_key = queues['test'].queue_key()
 
     def test_enqueue_reports(self):
         self.add_reports(3)
@@ -109,9 +110,9 @@ class TestExporter(BaseTest, CeleryTestCase):
 
         export_queues = self.celery_app.export_queues
         expected = [
-            (export_queues['test'].redis_key, 5),
-            (export_queues['everything'].redis_key, 5),
-            (export_queues['no_test'].redis_key, 2),
+            (export_queues['test'].queue_key(), 5),
+            (export_queues['everything'].queue_key(), 5),
+            (export_queues['no_test'].queue_key(), 2),
         ]
         for key, num in expected:
             self.assertEqual(self.queue_length(key), num)
@@ -124,9 +125,9 @@ class TestExporter(BaseTest, CeleryTestCase):
         # data from one queue was processed
         export_queues = self.celery_app.export_queues
         expected = [
-            (export_queues['test'].redis_key, 0),
-            (export_queues['everything'].redis_key, 3),
-            (export_queues['no_test'].redis_key, 0),
+            (export_queues['test'].queue_key(), 0),
+            (export_queues['everything'].queue_key(), 3),
+            (export_queues['no_test'].queue_key(), 0),
         ]
         for key, num in expected:
             self.assertEqual(self.queue_length(key), num)
@@ -134,14 +135,12 @@ class TestExporter(BaseTest, CeleryTestCase):
     def test_one_batch(self):
         self.add_reports(5)
         schedule_export_reports.delay().get()
-        export_queues = self.celery_app.export_queues
-        self.assertEqual(self.queue_length(export_queues['test'].redis_key), 2)
+        self.assertEqual(self.queue_length(self.test_queue_key), 2)
 
     def test_multiple_batches(self):
         self.add_reports(10)
         schedule_export_reports.delay().get()
-        export_queues = self.celery_app.export_queues
-        self.assertEqual(self.queue_length(export_queues['test'].redis_key), 1)
+        self.assertEqual(self.queue_length(self.test_queue_key), 1)
 
 
 class TestGeosubmitUploader(BaseTest, CeleryTestCase):
