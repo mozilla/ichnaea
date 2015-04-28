@@ -3,6 +3,7 @@ import os
 from kombu import Queue
 from kombu.serialization import register
 
+from ichnaea.async import queues
 from ichnaea.async.schedule import CELERYBEAT_SCHEDULE
 from ichnaea.cache import configure_redis
 from ichnaea.config import read_config
@@ -22,7 +23,6 @@ CELERY_QUEUES = (
     Queue('celery_reports', routing_key='celery_reports'),
     Queue('celery_upload', routing_key='celery_upload'),
 )
-EXPORT_QUEUE_PREFIX = 'queue_export_'
 
 register('internal_json', customjson.kombu_dumps, customjson.kombu_loads,
          content_type='application/x-internaljson',
@@ -74,21 +74,10 @@ def init_worker(celery_app, app_config,
     for value in data_queues.values():
         all_queues.add(value)
 
-    celery_app.export_queues = export_queues = {}
-    for section_name in app_config.sections():
-        if section_name.startswith('export:'):
-            section = app_config.get_map(section_name)
-            name = section_name.split(':')[1]
-            queue_name = EXPORT_QUEUE_PREFIX + name
-            export_queues[name] = {
-                'redis_key': queue_name,
-            }
-            all_queues.add(queue_name)
-            for key, value in section.items():
-                if key == 'batch':
-                    export_queues[name][key] = int(value)
-                else:
-                    export_queues[name][key] = value
+    celery_app.export_queues = queues.configure_export(app_config)
+    for queue in celery_app.export_queues.values():
+        if queue.monitor_name:
+            all_queues.add(queue.monitor_name)
 
     # configure outside connections
     celery_app.db_rw = configure_db(

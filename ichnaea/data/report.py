@@ -21,8 +21,6 @@ from ichnaea.models import (
 )
 from ichnaea import util
 
-_sentinel = object()
-
 
 class ReportQueueV1(DataTask):
 
@@ -276,8 +274,8 @@ class ReportQueueV2(DataTask):
             data.append(str(kombu_dumps({'report': report,
                                          'metadata': metadata})))
         if data:
-            for name, settings in self.export_queues.items():
-                redis_key = settings['redis_key']
-                source_apikey = settings.get('source_apikey', _sentinel)
-                if self.api_key != source_apikey:
+            for name, queue in self.export_queues.items():
+                redis_key = queue.redis_key
+
+                if queue.export_allowed(self.api_key):
                     self.redis_client.lpush(redis_key, *data)

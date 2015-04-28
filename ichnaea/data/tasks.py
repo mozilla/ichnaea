@@ -116,15 +116,17 @@ def queue_reports(self, reports=(), api_key=None, email=None, nickname=None):
 
 @celery_app.task(base=DatabaseTask, bind=True, queue='celery_upload')
 def upload_reports(self, export_name, data):
-    settings = self.app.export_queues[export_name]
-    url = settings.get('url', '') or ''
+    uploaders = {
+        'http': GeosubmitUploader,
+        'https': GeosubmitUploader,
+        's3': S3Uploader,
+    }
+    export_queue = self.app.export_queues[export_name]
+    uploader_type = uploaders.get(export_queue.scheme, None)
 
-    uploader_type = GeosubmitUploader
-    if url.startswith('s3:'):
-        uploader_type = S3Uploader
-
-    uploader = uploader_type(self, None, export_name, settings)
-    return uploader.upload(data)
+    if uploader_type is not None:
+        uploader = uploader_type(self, None, export_name)
+        return uploader.upload(data)
 
 
 @celery_app.task(base=DatabaseTask, bind=True)

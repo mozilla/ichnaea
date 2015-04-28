@@ -25,9 +25,9 @@ class ExportScheduler(DataTask):
 
     def schedule(self, export_task):
         triggered = 0
-        for name, settings in self.export_queues.items():
-            redis_key = settings['redis_key']
-            if self.queue_length(redis_key) >= settings['batch']:
+        for name, export_queue in self.export_queues.items():
+            redis_key = export_queue.redis_key
+            if self.queue_length(redis_key) >= export_queue.batch:
                 export_task.delay(name)
                 triggered += 1
         return triggered
@@ -38,9 +38,9 @@ class ReportExporter(DataTask):
     def __init__(self, task, session, export_name):
         DataTask.__init__(self, task, session)
         self.export_name = export_name
-        self.settings = task.app.export_queues[self.export_name]
-        self.batch = self.settings['batch']
-        self.redis_key = self.settings['redis_key']
+        self.export_queue = task.app.export_queues[export_name]
+        self.batch = self.export_queue.batch
+        self.redis_key = self.export_queue.redis_key
 
     def queue_length(self):
         return queue_length(self.redis_client, self.redis_key)
@@ -85,30 +85,25 @@ class ReportExporter(DataTask):
 
 class ReportUploader(DataTask):
 
-    def __init__(self, task, session, export_name, settings):
+    def __init__(self, task, session, export_name):
         DataTask.__init__(self, task, session)
         self.export_name = export_name
-        self.settings = settings
+        self.export_queue = task.app.export_queues[export_name]
         self.stats_prefix = 'items.export.%s.' % export_name
-        self.url = settings['url']
+        self.url = self.export_queue.url
 
     def upload(self, data):
-        if self.url is None:
-            return False
-        return self.send(self.url, data)
-
-    def send(self, url, data):
-        result = self._send(url, data)
+        result = self.send(self.url, data)
         self.stats_client.incr(self.stats_prefix + 'batches')
         return result
 
-    def _send(self, url, data):  # pragma: no cover
+    def send(self, url, data):  # pragma: no cover
         raise NotImplementedError
 
 
 class GeosubmitUploader(ReportUploader):
 
-    def _send(self, url, data):
+    def send(self, url, data):
         headers = {
             'Content-Encoding': 'gzip',
             'Content-Type': 'application/json',
@@ -134,8 +129,8 @@ class GeosubmitUploader(ReportUploader):
 
 class S3Uploader(ReportUploader):
 
-    def __init__(self, task, session, export_name, settings):
-        super(S3Uploader, self).__init__(task, session, export_name, settings)
+    def __init__(self, task, session, export_name):
+        super(S3Uploader, self).__init__(task, session, export_name)
         _, self.bucket, path = urlparse.urlparse(self.url)[:3]
         # s3 key names start without a leading slash
         path = path.lstrip('/')
@@ -143,7 +138,7 @@ class S3Uploader(ReportUploader):
             path += '/'
         self.path = path
 
-    def _send(self, url, data):
+    def send(self, url, data):
         year, month, day = util.utcnow().timetuple()[:3]
         key_name = self.path.format(year=year, month=month, day=day)
         key_name += uuid.uuid1().hex + '.json.gz'

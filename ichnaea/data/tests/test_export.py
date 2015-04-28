@@ -7,7 +7,8 @@ from celery.exceptions import Retry
 import mock
 import requests_mock
 
-from ichnaea.async.config import EXPORT_QUEUE_PREFIX
+from ichnaea.async.queues import configure_export
+from ichnaea.config import DummyConfig
 from ichnaea.data.export import queue_length
 from ichnaea.data.tasks import (
     schedule_export_reports,
@@ -76,34 +77,41 @@ class TestExporter(BaseTest, CeleryTestCase):
 
     def setUp(self):
         super(TestExporter, self).setUp()
-        self.celery_app.export_queues = {
-            'test': {
+        config = DummyConfig({
+            'export:test': {
                 'url': None,
                 'source_apikey': 'export_source',
-                'batch': 3,
-                'redis_key': EXPORT_QUEUE_PREFIX + 'test',
+                'batch': '3',
             },
-            'everything': {
-                'url': None,
-                'batch': 5,
-                'redis_key': EXPORT_QUEUE_PREFIX + 'everything',
+            'export:everything': {
+                'url': '',
+                'batch': '5',
             },
-            'no_test': {
-                'url': None,
+            'export:no_test': {
                 'source_apikey': 'test',
-                'batch': 2,
-                'redis_key': EXPORT_QUEUE_PREFIX + 'no_test',
+                'batch': '2',
             },
-        }
-        self.prefix = EXPORT_QUEUE_PREFIX
+            'export:invalid_ftp': {
+                'url': 'ftp://127.0.0.1:9/',
+                'batch': '5',
+            },
+            'export:invalid': {
+                'url': 'no_url',
+                'batch': '5',
+            },
+        })
+        self.celery_app.export_queues = configure_export(config)
 
     def test_enqueue_reports(self):
-        self.add_reports(4)
+        self.add_reports(3)
         self.add_reports(1, api_key='test2')
+        self.add_reports(1, api_key=None)
+
+        export_queues = self.celery_app.export_queues
         expected = [
-            (EXPORT_QUEUE_PREFIX + 'test', 5),
-            (EXPORT_QUEUE_PREFIX + 'everything', 5),
-            (EXPORT_QUEUE_PREFIX + 'no_test', 1),
+            (export_queues['test'].redis_key, 5),
+            (export_queues['everything'].redis_key, 5),
+            (export_queues['no_test'].redis_key, 2),
         ]
         for key, num in expected:
             self.assertEqual(self.queue_length(key), num)
@@ -112,11 +120,13 @@ class TestExporter(BaseTest, CeleryTestCase):
         self.add_reports(3)
         triggered = schedule_export_reports.delay().get()
         self.assertEqual(triggered, 1)
+
         # data from one queue was processed
+        export_queues = self.celery_app.export_queues
         expected = [
-            (EXPORT_QUEUE_PREFIX + 'test', 0),
-            (EXPORT_QUEUE_PREFIX + 'everything', 3),
-            (EXPORT_QUEUE_PREFIX + 'no_test', 0),
+            (export_queues['test'].redis_key, 0),
+            (export_queues['everything'].redis_key, 3),
+            (export_queues['no_test'].redis_key, 0),
         ]
         for key, num in expected:
             self.assertEqual(self.queue_length(key), num)
@@ -124,29 +134,33 @@ class TestExporter(BaseTest, CeleryTestCase):
     def test_one_batch(self):
         self.add_reports(5)
         schedule_export_reports.delay().get()
-        self.assertEqual(self.queue_length(EXPORT_QUEUE_PREFIX + 'test'), 2)
+        export_queues = self.celery_app.export_queues
+        self.assertEqual(self.queue_length(export_queues['test'].redis_key), 2)
 
     def test_multiple_batches(self):
         self.add_reports(10)
         schedule_export_reports.delay().get()
-        self.assertEqual(self.queue_length(EXPORT_QUEUE_PREFIX + 'test'), 1)
+        export_queues = self.celery_app.export_queues
+        self.assertEqual(self.queue_length(export_queues['test'].redis_key), 1)
 
 
 class TestGeosubmitUploader(BaseTest, CeleryTestCase):
 
     def setUp(self):
         super(TestGeosubmitUploader, self).setUp()
-        self.celery_app.export_queues = {
-            'test': {
+        config = DummyConfig({
+            'export:test': {
                 'url': 'http://127.0.0.1:9/v2/geosubmit?key=external',
-                'batch': 3,
-                'redis_key': EXPORT_QUEUE_PREFIX + 'test',
+                'batch': '3',
             },
-        }
-        self.prefix = EXPORT_QUEUE_PREFIX
+        })
+        self.celery_app.export_queues = configure_export(config)
 
     def test_upload(self):
-        reports = self.add_reports(3, email='secretemail@localhost')
+        reports = []
+        reports.extend(self.add_reports(1, email='secretemail@localhost'))
+        reports.extend(self.add_reports(1, api_key='e5444e9f-7946'))
+        reports.extend(self.add_reports(1, api_key=None))
 
         with requests_mock.Mocker() as mock:
             mock.register_uri('POST', requests_mock.ANY, text='{}')
@@ -212,21 +226,24 @@ class TestS3Uploader(BaseTest, CeleryTestCase):
 
     def setUp(self):
         super(TestS3Uploader, self).setUp()
-        self.celery_app.export_queues = {
-            'backup': {
+        config = DummyConfig({
+            'export:backup': {
                 'url': 's3://bucket/backups/{year}/{month}/{day}',
-                'batch': 3,
-                'redis_key': EXPORT_QUEUE_PREFIX + 'backup',
+                'batch': '3',
             },
-        }
-        self.prefix = EXPORT_QUEUE_PREFIX
+        })
+        self.celery_app.export_queues = configure_export(config)
 
     def test_upload(self):
-        reports = self.add_reports(3, email='secretemail@localhost')
+        reports = []
+        reports.extend(self.add_reports(1, email='secretemail@localhost'))
+        reports.extend(self.add_reports(1, api_key='e5444e9f-7946'))
+        reports.extend(self.add_reports(1, api_key=None))
 
         with mock_s3() as mock_key:
             schedule_export_reports.delay().get()
 
+        self.assertTrue(mock_key.set_contents_from_string.called)
         self.assertEqual(mock_key.content_encoding, 'gzip')
         self.assertEqual(mock_key.content_type, 'application/json')
         self.assertTrue(mock_key.key.startswith('backups/2'))
