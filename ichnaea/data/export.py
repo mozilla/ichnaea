@@ -58,6 +58,7 @@ class ReportExporter(DataTask):
         self.export_queue_name = export_queue_name
         self.export_queue = task.app.export_queues[export_queue_name]
         self.batch = self.export_queue.batch
+        self.metadata = self.export_queue.metadata
         self.queue_key = queue_key
         if not self.queue_key:
             self.queue_key = self.export_queue.queue_key()
@@ -87,12 +88,16 @@ class ReportExporter(DataTask):
 
         # schedule the upload task
         items = [kombu_loads(item) for item in queued_items]
-        # split out metadata
-        reports = [item['report'] for item in items]
+
+        if self.metadata:  # pragma: no cover
+            reports = items
+        else:
+            # split out metadata
+            reports = {'items': [item['report'] for item in items]}
 
         upload_task.delay(
             self.export_queue_name,
-            dumps({'items': reports}),
+            dumps(reports),
             queue_key=self.queue_key)
 
         # check the queue at the end, if there's still enough to do

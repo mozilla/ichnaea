@@ -10,6 +10,7 @@ class ExportQueue(object):
         self.name = name
         self.settings = settings
         self.batch = int(settings.get('batch', -1))
+        self.metadata = bool(settings.get('metadata', False))
         self.url = settings.get('url', '') or ''
         self.scheme = urlparse.urlparse(self.url).scheme
         self.source_apikey = settings.get('source_apikey', _sentinel)
