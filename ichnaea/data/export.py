@@ -25,22 +25,43 @@ class ExportScheduler(DataTask):
 
     def schedule(self, export_task):
         triggered = 0
-        for name, export_queue in self.export_queues.items():
-            queue_key = export_queue.queue_key()
+        for export_queue in self.export_queues.values():
+            if not export_queue.queue_prefix:
+                triggered += self.schedule_one(export_queue, export_task)
+            else:
+                triggered += self.schedule_multiple(export_queue, export_task)
+        return triggered
+
+    def schedule_one(self, export_queue, export_task):
+        triggered = 0
+        queue_key = export_queue.queue_key()
+        if self.queue_length(queue_key) >= export_queue.batch:
+            export_task.delay(export_queue.name)
+            triggered += 1
+        return triggered
+
+    def schedule_multiple(self, export_queue, export_task):
+        triggered = 0
+        queue_prefix = export_queue.queue_prefix
+        for queue_key in self.redis_client.scan_iter(match=queue_prefix + '*',
+                                                     count=100):
             if self.queue_length(queue_key) >= export_queue.batch:
-                export_task.delay(name)
+                export_task.delay(export_queue.name, queue_key=queue_key)
                 triggered += 1
         return triggered
 
 
 class ReportExporter(DataTask):
 
-    def __init__(self, task, session, export_queue_name):
+    def __init__(self, task, session, export_queue_name, queue_key):
         DataTask.__init__(self, task, session)
         self.export_queue_name = export_queue_name
         self.export_queue = task.app.export_queues[export_queue_name]
         self.batch = self.export_queue.batch
-        self.queue_key = self.export_queue.queue_key()
+        if queue_key:
+            self.queue_key = queue_key
+        else:
+            self.queue_key = self.export_queue.queue_key()
 
     def queue_length(self):
         return queue_length(self.redis_client, self.queue_key)

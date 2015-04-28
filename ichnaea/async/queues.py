@@ -16,10 +16,22 @@ class ExportQueue(object):
 
     @property
     def monitor_name(self):
+        if self.scheme == 's3':
+            return None
         return self.queue_key()
 
     def queue_key(self, api_key=None):
+        if self.scheme == 's3':
+            if not api_key:
+                api_key = 'no_key'
+            return self.queue_prefix + api_key
         return EXPORT_QUEUE_PREFIX + self.name
+
+    @property
+    def queue_prefix(self):
+        if self.scheme == 's3':
+            return EXPORT_QUEUE_PREFIX + self.name + ':'
+        return None
 
     def export_allowed(self, api_key):
         return (api_key != self.source_apikey)

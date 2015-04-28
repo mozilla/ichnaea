@@ -98,8 +98,8 @@ def schedule_export_reports(self):
 
 
 @celery_app.task(base=DatabaseTask, bind=True, queue='celery_export')
-def export_reports(self, export_queue_name):
-    exporter = ReportExporter(self, None, export_queue_name)
+def export_reports(self, export_queue_name, queue_key=None):
+    exporter = ReportExporter(self, None, export_queue_name, queue_key)
     return exporter.export(export_reports, upload_reports)
 
 

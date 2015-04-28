@@ -233,11 +233,15 @@ class TestS3Uploader(BaseTest, CeleryTestCase):
         })
         self.celery_app.export_queues = configure_export(config)
 
+    def test_no_monitoring(self):
+        export_queue = self.celery_app.export_queues['backup']
+        self.assertFalse(export_queue.monitor_name)
+
     def test_upload(self):
         reports = []
-        reports.extend(self.add_reports(1, email='secretemail@localhost'))
-        reports.extend(self.add_reports(1, api_key='e5444e9f-7946'))
-        reports.extend(self.add_reports(1, api_key=None))
+        reports.extend(self.add_reports(3, email='secretemail@localhost'))
+        reports.extend(self.add_reports(3, api_key='e5444e9f-7946'))
+        reports.extend(self.add_reports(3, api_key=None))
 
         with mock_s3() as mock_key:
             schedule_export_reports.delay().get()
@@ -264,7 +268,7 @@ class TestS3Uploader(BaseTest, CeleryTestCase):
         self.assertEqual(set(expect), set(gotten))
 
         self.check_stats(
-            counter=[('items.export.backup.batches', 1, 1),
-                     ('items.export.backup.upload_status.success', 1)],
-            timer=['items.export.backup.upload'],
+            counter=[('items.export.backup.batches', 3, 1),
+                     ('items.export.backup.upload_status.success', 3)],
+            timer=[('items.export.backup.upload', 3)],
         )
