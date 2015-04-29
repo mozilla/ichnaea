@@ -65,20 +65,6 @@ def init_worker(celery_app, app_config,
     # make config file settings available
     celery_app.settings = app_config.asdict()
 
-    # configure data / export queues
-    celery_app.all_queues = all_queues = set([q.name for q in CELERY_QUEUES])
-
-    celery_app.data_queues = data_queues = {
-        'cell_area_update': 'update_cell_lac',
-    }
-    for value in data_queues.values():
-        all_queues.add(value)
-
-    celery_app.export_queues = queues.configure_export(app_config)
-    for queue in celery_app.export_queues.values():
-        if queue.monitor_name:
-            all_queues.add(queue.monitor_name)
-
     # configure outside connections
     celery_app.db_rw = configure_db(
         app_config.get('ichnaea', 'db_master'), _db=_db_rw)
@@ -87,11 +73,24 @@ def init_worker(celery_app, app_config,
         app_config.get('ichnaea', 'sentry_dsn'),
         transport='threaded', _client=_raven_client)
 
-    celery_app.redis_client = configure_redis(
+    celery_app.redis_client = redis_client = configure_redis(
         app_config.get('ichnaea', 'redis_url'), _client=_redis_client)
 
     celery_app.stats_client = configure_stats(
         app_config.get('ichnaea', 'statsd_host'), _client=_stats_client)
+
+    # configure data / export queues
+    celery_app.all_queues = all_queues = set([q.name for q in CELERY_QUEUES])
+
+    celery_app.data_queues = data_queues = queues.configure_data(redis_client)
+    for queue in data_queues.values():
+        if queue.monitor_name:
+            all_queues.add(queue.monitor_name)
+
+    celery_app.export_queues = queues.configure_export(app_config)
+    for queue in celery_app.export_queues.values():
+        if queue.monitor_name:
+            all_queues.add(queue.monitor_name)
 
 
 def shutdown_worker(celery_app):

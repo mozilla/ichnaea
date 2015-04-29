@@ -1,7 +1,3 @@
-from ichnaea.customjson import (
-    kombu_dumps,
-    kombu_loads,
-)
 from ichnaea.data.base import DataTask
 from ichnaea.geocalc import centroid, range_to_points
 from ichnaea.models import (
@@ -13,26 +9,6 @@ from ichnaea.models import (
 from ichnaea import util
 
 
-def enqueue_areas(pipe, pipeline_key, area_keys, expire=86400, batch=100):
-    area_json = [str(kombu_dumps(area)) for area in area_keys]
-
-    if area_json:
-        pipe.expire(pipeline_key, expire)  # expire after 24 hours
-
-    while area_json:
-        pipe.lpush(pipeline_key, *area_json[:batch])
-        area_json = area_json[batch:]
-
-
-def dequeue_areas(redis_client, pipeline_key, batch=100):
-    with redis_client.pipeline() as pipe:
-        pipe.multi()
-        pipe.lrange(pipeline_key, 0, batch - 1)
-        pipe.ltrim(pipeline_key, batch, -1)
-        result = [kombu_loads(item) for item in pipe.execute()[0]]
-    return result
-
-
 class CellAreaUpdater(DataTask):
 
     cell_model = Cell
@@ -40,13 +16,11 @@ class CellAreaUpdater(DataTask):
 
     def __init__(self, task, session):
         DataTask.__init__(self, task, session)
-        self.redis_key = self.task.app.data_queues['cell_area_update']
+        self.data_queue = self.task.app.data_queues['update_cellarea']
         self.utcnow = util.utcnow()
 
     def scan(self, update_task, batch=100):
-        redis_areas = dequeue_areas(
-            self.redis_client, self.redis_key, batch=batch)
-
+        redis_areas = self.data_queue.dequeue(batch=batch)
         area_keys = set(redis_areas)
         for area_key in area_keys:
             update_task.delay(area_key)

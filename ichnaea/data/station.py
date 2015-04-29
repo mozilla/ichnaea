@@ -1,6 +1,5 @@
 from sqlalchemy.orm import load_only
 
-from ichnaea.data.area import enqueue_areas
 from ichnaea.data.base import DataTask
 from ichnaea.geocalc import (
     distance,
@@ -30,6 +29,7 @@ class CellRemover(StationRemover):
     def remove(self, cell_keys):
         cells_removed = 0
         changed_areas = set()
+        data_queue = self.task.app.data_queues['update_cellarea']
 
         for key in cell_keys:
             query = Cell.querykey(self.session, key)
@@ -37,8 +37,7 @@ class CellRemover(StationRemover):
             changed_areas.add(CellArea.to_hashkey(key))
 
         if changed_areas:
-            redis_key = self.task.app.data_queues['cell_area_update']
-            enqueue_areas(self.pipe, redis_key, changed_areas)
+            data_queue.enqueue(changed_areas, pipe=self.pipe)
 
         return cells_removed
 
@@ -229,8 +228,8 @@ class CellUpdater(StationUpdater):
 
     def queue_area_updates(self):
         if self.updated_areas:
-            redis_key = self.task.app.data_queues['cell_area_update']
-            enqueue_areas(self.pipe, redis_key, self.updated_areas)
+            data_queue = self.task.app.data_queues['update_cellarea']
+            data_queue.enqueue(self.updated_areas, pipe=self.pipe)
 
 
 class WifiUpdater(StationUpdater):
