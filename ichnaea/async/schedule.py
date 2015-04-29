@@ -152,8 +152,14 @@ CELERYBEAT_SCHEDULE = {
         'options': {'expires': 43200},
     },
 
-    # OCID cell import task
+    # Hourly tasks
 
+    # TODO only schedule once the redis counters are maintained
+    # 'statcounter-update': {
+    #     'task': 'ichnaea.data.tasks.statcounter_update',
+    #     'schedule': crontab(minute=3),
+    #     'args': (1, ),
+    # },
     'ocid-hourly-cell-delta-import': {
         'task': 'ichnaea.export.tasks.import_latest_ocid_cells',
         'args': (True, ),

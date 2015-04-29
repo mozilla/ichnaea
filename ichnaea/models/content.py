@@ -100,16 +100,34 @@ class Score(IdMixin, HashKeyMixin, _Model):
         return value
 
 
-class Stat(IdMixin, _Model):
+class StatHashKey(HashKey):
+
+    _fields = ('key', 'time')
+
+
+class Stat(IdMixin, HashKeyMixin, _Model):
     __tablename__ = 'stat'
 
     _indices = (
         UniqueConstraint('key', 'time', name='stat_key_time_unique'),
     )
+    _hashkey_cls = StatHashKey
 
     key = Column(TinyIntEnum(StatKey))
     time = Column(Date)
     value = Column(Integer(unsigned=True))
+
+    @classmethod
+    def incr(cls, session, key, old_value, value):
+        stat = cls.getkey(session, key)
+        if stat is not None:
+            stat.value += int(value)
+        else:
+            stmt = cls.__table__.insert(
+                on_duplicate='value = value + %s' % int(value)).values(
+                key=key.key, time=key.time, value=old_value + value)
+            session.execute(stmt)
+        return value
 
 
 class User(IdMixin, _Model):

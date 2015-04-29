@@ -25,6 +25,7 @@ from ichnaea.data.station import (
     WifiRemover,
     WifiUpdater,
 )
+from ichnaea.data.stats import StatCounterUpdate
 from ichnaea.models import ApiKey
 
 
@@ -159,3 +160,11 @@ def update_area(self, area_key, cell_type='cell'):
         else:
             updater = CellAreaUpdater(self, session)
         updater.update(area_key)
+
+
+@celery_app.task(base=DatabaseTask, bind=True)
+def statcounter_update(self, ago=1):
+    with self.redis_pipeline() as pipe:
+        with self.db_session() as session:
+            updater = StatCounterUpdate(self, session, pipe)
+            updater.update(ago=ago)

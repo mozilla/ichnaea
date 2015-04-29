@@ -446,8 +446,8 @@ emits a timer indicating its execution time.
 
 For example:
 
-  - ``task.content.cell_histogram``
-  - ``task.data.insert_measures``
+  - ``task.data.statcounter_update``
+  - ``task.data.upload_reports``
 
 
 Datamaps timers
