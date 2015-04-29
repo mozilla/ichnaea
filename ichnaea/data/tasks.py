@@ -43,7 +43,6 @@ def insert_measures(self, items=None, nickname='', email='',
                               insert_cell_task=insert_measures_cell,
                               insert_wifi_task=insert_measures_wifi)
         length = queue.insert(reports, nickname=nickname, email=email)
-        session.commit()
     return length
 
 
@@ -53,7 +52,6 @@ def insert_measures_cell(self, entries, userid=None, utcnow=None):
         with self.db_session() as session:
             queue = CellObservationQueue(self, session, pipe, utcnow=utcnow)
             length = queue.insert(entries, userid=userid)
-            session.commit()
     return length
 
 
@@ -63,7 +61,6 @@ def insert_measures_wifi(self, entries, userid=None, utcnow=None):
         with self.db_session() as session:
             queue = WifiObservationQueue(self, session, pipe, utcnow=utcnow)
             length = queue.insert(entries, userid=userid)
-            session.commit()
     return length
 
 
@@ -77,7 +74,6 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
                 max_new=max_new,
                 remove_task=remove_cell)
             cells, moving = updater.update(batch=batch)
-            session.commit()
     return (cells, moving)
 
 
@@ -91,7 +87,6 @@ def location_update_wifi(self, min_new=10, max_new=100, batch=10):
                 max_new=max_new,
                 remove_task=remove_wifi)
             wifis, moving = updater.update(batch=batch)
-            session.commit()
     return (wifis, moving)
 
 
@@ -109,7 +104,7 @@ def export_reports(self, export_queue_name, queue_key=None):
 
 @celery_app.task(base=DatabaseTask, bind=True, queue='celery_reports')
 def queue_reports(self, reports=(), api_key=None, email=None, nickname=None):
-    with self.db_session() as session:
+    with self.db_session(commit=False) as session:
         queue = ReportQueueV2(self, session,
                               api_key=api_key,
                               email=email,
@@ -138,7 +133,6 @@ def remove_cell(self, cell_keys):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
             length = CellRemover(self, session, pipe).remove(cell_keys)
-            session.commit()
     return length
 
 
@@ -147,7 +141,6 @@ def remove_wifi(self, wifi_keys):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
             length = WifiRemover(self, session, pipe).remove(wifi_keys)
-            session.commit()
     return length
 
 
@@ -166,4 +159,3 @@ def update_area(self, area_key, cell_type='cell'):
         else:
             updater = CellAreaUpdater(self, session)
         updater.update(area_key)
-        session.commit()

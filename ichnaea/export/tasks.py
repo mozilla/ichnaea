@@ -199,7 +199,7 @@ def export_modified_cells(self, hourly=True, bucket=None):
 
     with selfdestruct_tempdir() as d:
         path = os.path.join(d, filename)
-        with self.db_session() as session:
+        with self.db_session(commit=False) as session:
             write_stations_to_csv(session, Cell.__table__, CELL_COLUMNS, cond,
                                   path, make_cell_export_dict, CELL_FIELDS)
         write_stations_to_s3(path, bucket)

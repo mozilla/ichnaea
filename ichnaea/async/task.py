@@ -60,9 +60,9 @@ class DatabaseTask(Task):
         # returns a context manager
         return redis_pipeline(self.redis_client)
 
-    def db_session(self):
+    def db_session(self, commit=True):
         # returns a context manager
-        return db_worker_session(self.app.db_rw)
+        return db_worker_session(self.app.db_rw, commit=commit)
 
     @property
     def raven_client(self):

@@ -48,10 +48,12 @@ def db_ro_session(request):
 
 
 @contextmanager
-def db_worker_session(database):
+def db_worker_session(database, commit=True):
     try:
         session = database.session()
         yield session
+        if commit:
+            session.commit()
     except Exception:
         session.rollback()
         raise
@@ -110,7 +112,7 @@ class Database(object):
             autocommit=False, autoflush=False)
 
     def ping(self):  # pragma: no cover
-        with db_worker_session(self) as session:
+        with db_worker_session(self, commit=False) as session:
             success = session.ping()
         return success
 

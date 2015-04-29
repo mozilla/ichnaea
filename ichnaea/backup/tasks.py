@@ -61,7 +61,6 @@ def write_observation_s3_backups(self,
             # always set archive flags to successful
             block.archive_sha = '20bytes_mean_success'
             block.s3_key = 'skipped'
-        session.commit()
 
 
 @celery_app.task(base=DatabaseTask, bind=True)
@@ -125,7 +124,6 @@ def schedule_observation_archival(self, observation_type,
             min_id = this_max_id
             this_max_id = min(batch + this_max_id, max_id)
             i += 1
-        session.commit()
     return blocks
 
 
@@ -151,7 +149,7 @@ def delete_observation_records(self,
     today = util.utcnow().date()
     min_age = today - timedelta(days_old)
 
-    with self.db_session() as session:
+    with self.db_session(commit=False) as session:
         query = session.query(ObservationBlock).filter(
             ObservationBlock.measure_type == observation_type).filter(
             ObservationBlock.s3_key.isnot(None)).filter(
@@ -201,7 +199,6 @@ def verified_delete(self, block_id, batch=10000):
             q.delete()
             session.flush()
         block.archive_date = utcnow
-        session.commit()
 
 
 @celery_app.task(base=DatabaseTask, bind=True)

@@ -26,7 +26,7 @@ def monitor_api_key_limits(self):
 
         names = {}
         if keys:
-            with self.db_session() as session:
+            with self.db_session(commit=False) as session:
                 query = (ApiKey.querykeys(session, keys)
                                .options(load_only('valid_key', 'shortname')))
                 for api_key in query.all():
@@ -51,7 +51,7 @@ def monitor_measures(self):
     result = dict([(name, -1) for name, model in checks])
     try:
         stats_client = self.stats_client
-        with self.db_session() as session:
+        with self.db_session(commit=False) as session:
             for name, model in checks:
                 # record current number of db rows in *_measure table
                 q = session.query(func.max(model.id) - func.min(model.id) + 1)
@@ -72,7 +72,7 @@ def monitor_ocid_import(self):
     try:
         now = util.utcnow()
         stats_client = self.stats_client
-        with self.db_session() as session:
+        with self.db_session(commit=False) as session:
             q = session.query(func.max(OCIDCell.created))
             max_created = q.first()[0]
         if max_created:

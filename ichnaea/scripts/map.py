@@ -181,7 +181,7 @@ def generate(db, bucketname, raven_client, stats_client,
         csv = os.path.join(workdir, 'map.csv')
 
         with stats_client.timer("datamaps.export_to_csv"):
-            with db_worker_session(db) as session:
+            with db_worker_session(db, commit=False) as session:
                 result_rows = export_to_csv(session, csv)
 
         stats_client.timing('datamaps.csv_rows', result_rows)
