@@ -70,40 +70,50 @@ class BaseQueue(object):
         self.name = name
         self.redis_client = redis_client
 
+    def _dequeue(self, queue_key, batch):
+        with self.redis_client.pipeline() as pipe:
+            pipe.multi()
+            pipe.lrange(queue_key, 0, batch - 1)
+            pipe.ltrim(queue_key, batch, -1)
+            result = [kombu_loads(item) for item in pipe.execute()[0]]
+        return result
+
+    def _push(self, pipe, queue_key, data, batch, expire):
+        if data and expire:
+            pipe.expire(queue_key, expire)
+
+        while data:
+            pipe.lpush(queue_key, *data[:batch])
+            data = data[batch:]
+
+    def _enqueue(self, queue_key, items, batch=100, expire=False, pipe=None):
+        data = [str(kombu_dumps(item)) for item in items]
+        if pipe is not None:
+            self._push(pipe, queue_key, data, batch, expire)
+        else:
+            with redis_pipeline(self.redis_client) as pipe:
+                self._push(pipe, queue_key, data, batch, expire)
+
 
 class DataQueue(BaseQueue):
 
     def __init__(self, name, redis_client, queue_key):
         BaseQueue.__init__(self, name, redis_client)
-        self.queue_key = queue_key
+        self._queue_key = queue_key
 
     @property
     def monitor_name(self):
-        return self.queue_key
+        return self.queue_key()
+
+    def queue_key(self):
+        return self._queue_key
 
     def dequeue(self, batch=100):
-        with self.redis_client.pipeline() as pipe:
-            pipe.multi()
-            pipe.lrange(self.queue_key, 0, batch - 1)
-            pipe.ltrim(self.queue_key, batch, -1)
-            result = [kombu_loads(item) for item in pipe.execute()[0]]
-        return result
-
-    def _enqueue(self, pipe, data, batch, expire):
-        if data and expire:
-            pipe.expire(self.queue_key, expire)
-
-        while data:
-            pipe.lpush(self.queue_key, *data[:batch])
-            data = data[batch:]
+        return self._dequeue(self.queue_key(), batch)
 
     def enqueue(self, items, batch=100, expire=86400, pipe=None):
-        data = [str(kombu_dumps(item)) for item in items]
-        if pipe is not None:
-            self._enqueue(pipe, data, batch, expire)
-        else:
-            with redis_pipeline(self.redis_client) as pipe:
-                self._enqueue(pipe, data, batch, expire)
+        self._enqueue(self.queue_key(), items,
+                      batch=batch, expire=expire, pipe=pipe)
 
 
 class ExportQueue(BaseQueue):
@@ -140,25 +150,11 @@ class ExportQueue(BaseQueue):
         return (api_key != self.source_apikey)
 
     def dequeue(self, queue_key, batch=100):
-        with self.redis_client.pipeline() as pipe:
-            pipe.multi()
-            pipe.lrange(queue_key, 0, batch - 1)
-            pipe.ltrim(queue_key, batch, -1)
-            result = [kombu_loads(item) for item in pipe.execute()[0]]
-        return result
+        return self._dequeue(queue_key, batch)
 
-    def _enqueue(self, pipe, queue_key, data, batch):
-        while data:
-            pipe.lpush(queue_key, *data[:batch])
-            data = data[batch:]
-
-    def enqueue(self, queue_key, items, batch=100, pipe=None):
-        data = [str(kombu_dumps(item)) for item in items]
-        if pipe is not None:
-            self._enqueue(pipe, queue_key, data, batch)
-        else:
-            with redis_pipeline(self.redis_client) as pipe:
-                self._enqueue(pipe, queue_key, data, batch)
+    def enqueue(self, queue_key, items, batch=100, expire=False, pipe=None):
+        self._enqueue(queue_key, items,
+                      batch=batch, expire=expire, pipe=pipe)
 
     def size(self, queue_key):
         return self.redis_client.llen(queue_key)
