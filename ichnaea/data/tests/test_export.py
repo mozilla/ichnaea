@@ -7,7 +7,7 @@ from celery.exceptions import Retry
 import mock
 import requests_mock
 
-from ichnaea.async.queues import configure_export
+from ichnaea.async.config import configure_export
 from ichnaea.config import DummyConfig
 from ichnaea.data.export import queue_length
 from ichnaea.data.tasks import (
@@ -106,7 +106,8 @@ class TestExporter(BaseTest, CeleryTestCase):
                 'batch': '5',
             },
         })
-        self.celery_app.export_queues = queues = configure_export(config)
+        self.celery_app.export_queues = queues = configure_export(
+            self.redis_client, config)
         self.test_queue_key = queues['test'].queue_key()
 
     def test_enqueue_reports(self):
@@ -159,7 +160,8 @@ class TestGeosubmitUploader(BaseTest, CeleryTestCase):
                 'batch': '3',
             },
         })
-        self.celery_app.export_queues = configure_export(config)
+        self.celery_app.export_queues = configure_export(
+            self.redis_client, config)
 
     def test_upload(self):
         reports = []
@@ -237,7 +239,8 @@ class TestS3Uploader(BaseTest, CeleryTestCase):
                 'batch': '3',
             },
         })
-        self.celery_app.export_queues = configure_export(config)
+        self.celery_app.export_queues = configure_export(
+            self.redis_client, config)
 
     def test_no_monitoring(self):
         export_queue = self.celery_app.export_queues['backup']

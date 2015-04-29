@@ -3,9 +3,12 @@ import os
 from kombu import Queue
 from kombu.serialization import register
 
-from ichnaea.async import queues
 from ichnaea.async.schedule import CELERYBEAT_SCHEDULE
-from ichnaea.cache import configure_redis
+from ichnaea.cache import (
+    configure_redis,
+    DataQueue,
+    ExportQueue,
+)
 from ichnaea.config import read_config
 from ichnaea import customjson
 from ichnaea.db import configure_db
@@ -57,6 +60,24 @@ def configure_celery(celery_app):
     )
 
 
+def configure_data(redis_client):
+    data_queues = {
+        'update_cellarea': DataQueue('update_cellarea', redis_client,
+                                     queue_key='update_cell_lac'),
+    }
+    return data_queues
+
+
+def configure_export(redis_client, app_config):
+    export_queues = {}
+    for section_name in app_config.sections():
+        if section_name.startswith('export:'):
+            section = app_config.get_map(section_name)
+            name = section_name.split(':')[1]
+            export_queues[name] = ExportQueue(name, redis_client, section)
+    return export_queues
+
+
 def init_worker(celery_app, app_config,
                 _db_rw=None, _db_ro=None, _geoip_db=None,
                 _raven_client=None, _redis_client=None, _stats_client=None):
@@ -82,12 +103,12 @@ def init_worker(celery_app, app_config,
     # configure data / export queues
     celery_app.all_queues = all_queues = set([q.name for q in CELERY_QUEUES])
 
-    celery_app.data_queues = data_queues = queues.configure_data(redis_client)
+    celery_app.data_queues = data_queues = configure_data(redis_client)
     for queue in data_queues.values():
         if queue.monitor_name:
             all_queues.add(queue.monitor_name)
 
-    celery_app.export_queues = queues.configure_export(app_config)
+    celery_app.export_queues = configure_export(redis_client, app_config)
     for queue in celery_app.export_queues.values():
         if queue.monitor_name:
             all_queues.add(queue.monitor_name)
