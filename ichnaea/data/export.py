@@ -5,13 +5,8 @@ import boto
 import requests
 from simplejson import dumps
 
-from ichnaea.customjson import kombu_loads
 from ichnaea.data.base import DataTask
 from ichnaea import util
-
-
-def queue_length(redis_client, queue_key):
-    return redis_client.llen(queue_key)
 
 
 class ExportScheduler(DataTask):
@@ -19,9 +14,6 @@ class ExportScheduler(DataTask):
     def __init__(self, task, session):
         DataTask.__init__(self, task, session)
         self.export_queues = task.app.export_queues
-
-    def queue_length(self, queue_key):
-        return queue_length(self.redis_client, queue_key)
 
     def schedule(self, export_task):
         triggered = 0
@@ -35,7 +27,7 @@ class ExportScheduler(DataTask):
     def schedule_one(self, export_queue, export_task):
         triggered = 0
         queue_key = export_queue.queue_key()
-        if self.queue_length(queue_key) >= export_queue.batch:
+        if export_queue.size(queue_key) >= export_queue.batch:
             export_task.delay(export_queue.name)
             triggered += 1
         return triggered
@@ -45,7 +37,7 @@ class ExportScheduler(DataTask):
         queue_prefix = export_queue.queue_prefix
         for queue_key in self.redis_client.scan_iter(match=queue_prefix + '*',
                                                      count=100):
-            if self.queue_length(queue_key) >= export_queue.batch:
+            if export_queue.size(queue_key) >= export_queue.batch:
                 export_task.delay(export_queue.name, queue_key=queue_key)
                 triggered += 1
         return triggered
@@ -63,32 +55,18 @@ class ReportExporter(DataTask):
         if not self.queue_key:
             self.queue_key = self.export_queue.queue_key()
 
-    def queue_length(self):
-        return queue_length(self.redis_client, self.queue_key)
-
-    def dequeue_reports(self):
-        with self.redis_client.pipeline() as pipe:
-            pipe.multi()
-            pipe.lrange(self.queue_key, 0, self.batch - 1)
-            pipe.ltrim(self.queue_key, self.batch, -1)
-            result = pipe.execute()[0]
-        return result
-
     def export(self, export_task, upload_task):
-        length = self.queue_length()
+        length = self.export_queue.size(self.queue_key)
         if length < self.batch:  # pragma: no cover
             # not enough to do, skip
             return 0
 
-        queued_items = self.dequeue_reports()
-        if queued_items and len(queued_items) < self.batch:  # pragma: no cover
+        items = self.export_queue.dequeue(self.queue_key, batch=self.batch)
+        if items and len(items) < self.batch:  # pragma: no cover
             # race condition, something emptied the queue in between
             # our llen call and fetching the items, put them back
-            self.redis_client.lpush(self.queue_key, *queued_items)
+            self.export_queue.enqueue(self.queue_key, items)
             return 0
-
-        # schedule the upload task
-        items = [kombu_loads(item) for item in queued_items]
 
         if self.metadata:  # pragma: no cover
             reports = items
@@ -103,14 +81,14 @@ class ReportExporter(DataTask):
 
         # check the queue at the end, if there's still enough to do
         # schedule another job, but give it a second before it runs
-        if self.queue_length() >= self.batch:
+        if self.export_queue.size(self.queue_key) >= self.batch:
             export_task.apply_async(
                 args=[self.export_queue_name],
                 kwargs={'queue_key': self.queue_key},
                 countdown=1,
                 expires=300)
 
-        return len(queued_items)
+        return len(items)
 
 
 class ReportUploader(DataTask):

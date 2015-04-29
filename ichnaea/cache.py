@@ -138,3 +138,27 @@ class ExportQueue(BaseQueue):
 
     def export_allowed(self, api_key):
         return (api_key != self.source_apikey)
+
+    def dequeue(self, queue_key, batch=100):
+        with self.redis_client.pipeline() as pipe:
+            pipe.multi()
+            pipe.lrange(queue_key, 0, batch - 1)
+            pipe.ltrim(queue_key, batch, -1)
+            result = [kombu_loads(item) for item in pipe.execute()[0]]
+        return result
+
+    def _enqueue(self, pipe, queue_key, data, batch):
+        while data:
+            pipe.lpush(queue_key, *data[:batch])
+            data = data[batch:]
+
+    def enqueue(self, queue_key, items, batch=100, pipe=None):
+        data = [str(kombu_dumps(item)) for item in items]
+        if pipe is not None:
+            self._enqueue(pipe, queue_key, data, batch)
+        else:
+            with redis_pipeline(self.redis_client) as pipe:
+                self._enqueue(pipe, queue_key, data, batch)
+
+    def size(self, queue_key):
+        return self.redis_client.llen(queue_key)

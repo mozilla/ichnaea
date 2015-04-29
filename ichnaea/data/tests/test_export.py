@@ -9,7 +9,6 @@ import requests_mock
 
 from ichnaea.async.config import configure_export
 from ichnaea.config import DummyConfig
-from ichnaea.data.export import queue_length
 from ichnaea.data.tasks import (
     schedule_export_reports,
     queue_reports,
@@ -76,7 +75,7 @@ class BaseTest(object):
         return reports
 
     def queue_length(self, redis_key):
-        return queue_length(self.redis_client, redis_key)
+        return self.redis_client.llen(redis_key)
 
 
 class TestExporter(BaseTest, CeleryTestCase):

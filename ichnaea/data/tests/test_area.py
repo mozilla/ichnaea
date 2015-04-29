@@ -1,4 +1,3 @@
-from ichnaea.cache import redis_pipeline
 from ichnaea.data.tasks import (
     location_update_cell,
     remove_cell,

@@ -3,10 +3,7 @@ import uuid
 
 from sqlalchemy.sql import and_, or_
 
-from ichnaea.customjson import (
-    encode_radio_dict,
-    kombu_dumps,
-)
+from ichnaea.customjson import encode_radio_dict
 from ichnaea.data.base import DataTask
 from ichnaea.models import (
     CellObservation,
@@ -271,12 +268,11 @@ class ReportQueueV2(DataTask):
             'email': self.email,
             'nickname': self.nickname,
         }
-        data = []
+        items = []
         for report in reports:
-            data.append(str(kombu_dumps({'report': report,
-                                         'metadata': metadata})))
-        if data:
+            items.append({'report': report, 'metadata': metadata})
+        if items:
             for name, queue in self.export_queues.items():
                 if queue.export_allowed(self.api_key):
                     queue_key = queue.queue_key(self.api_key)
-                    self.pipe.lpush(queue_key, *data)
+                    queue.enqueue(queue_key, items, pipe=self.pipe)
