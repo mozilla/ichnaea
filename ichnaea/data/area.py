@@ -13,26 +13,24 @@ from ichnaea.models import (
 from ichnaea import util
 
 
-def enqueue_areas(session, redis_client, area_keys,
-                  pipeline_key, expire=86400, batch=100):
-    pipe = redis_client.pipeline()
+def enqueue_areas(pipe, pipeline_key, area_keys, expire=86400, batch=100):
     area_json = [str(kombu_dumps(area)) for area in area_keys]
+
+    if area_json:
+        pipe.expire(pipeline_key, expire)  # expire after 24 hours
 
     while area_json:
         pipe.lpush(pipeline_key, *area_json[:batch])
         area_json = area_json[batch:]
 
-    # Expire key after 24 hours
-    pipe.expire(pipeline_key, expire)
-    pipe.execute()
-
 
 def dequeue_areas(redis_client, pipeline_key, batch=100):
-    pipe = redis_client.pipeline()
-    pipe.multi()
-    pipe.lrange(pipeline_key, 0, batch - 1)
-    pipe.ltrim(pipeline_key, batch, -1)
-    return [kombu_loads(item) for item in pipe.execute()[0]]
+    with redis_client.pipeline() as pipe:
+        pipe.multi()
+        pipe.lrange(pipeline_key, 0, batch - 1)
+        pipe.ltrim(pipeline_key, batch, -1)
+        result = [kombu_loads(item) for item in pipe.execute()[0]]
+    return result
 
 
 class CellAreaUpdater(DataTask):

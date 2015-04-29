@@ -69,27 +69,29 @@ def insert_measures_wifi(self, entries, userid=None, utcnow=None):
 
 @celery_app.task(base=DatabaseTask, bind=True)
 def location_update_cell(self, min_new=10, max_new=100, batch=10):
-    with self.db_session() as session:
-        updater = CellUpdater(
-            self, session,
-            min_new=min_new,
-            max_new=max_new,
-            remove_task=remove_cell)
-        cells, moving = updater.update(batch=batch)
-        session.commit()
+    with self.redis_pipeline() as pipe:
+        with self.db_session() as session:
+            updater = CellUpdater(
+                self, session, pipe,
+                min_new=min_new,
+                max_new=max_new,
+                remove_task=remove_cell)
+            cells, moving = updater.update(batch=batch)
+            session.commit()
     return (cells, moving)
 
 
 @celery_app.task(base=DatabaseTask, bind=True)
 def location_update_wifi(self, min_new=10, max_new=100, batch=10):
-    with self.db_session() as session:
-        updater = WifiUpdater(
-            self, session,
-            min_new=min_new,
-            max_new=max_new,
-            remove_task=remove_wifi)
-        wifis, moving = updater.update(batch=batch)
-        session.commit()
+    with self.redis_pipeline() as pipe:
+        with self.db_session() as session:
+            updater = WifiUpdater(
+                self, session, pipe,
+                min_new=min_new,
+                max_new=max_new,
+                remove_task=remove_wifi)
+            wifis, moving = updater.update(batch=batch)
+            session.commit()
     return (wifis, moving)
 
 
@@ -133,17 +135,19 @@ def upload_reports(self, export_queue_name, data, queue_key=None):
 
 @celery_app.task(base=DatabaseTask, bind=True)
 def remove_cell(self, cell_keys):
-    with self.db_session() as session:
-        length = CellRemover(self, session).remove(cell_keys)
-        session.commit()
+    with self.redis_pipeline() as pipe:
+        with self.db_session() as session:
+            length = CellRemover(self, session, pipe).remove(cell_keys)
+            session.commit()
     return length
 
 
 @celery_app.task(base=DatabaseTask, bind=True)
 def remove_wifi(self, wifi_keys):
-    with self.db_session() as session:
-        length = WifiRemover(self, session).remove(wifi_keys)
-        session.commit()
+    with self.redis_pipeline() as pipe:
+        with self.db_session() as session:
+            length = WifiRemover(self, session, pipe).remove(wifi_keys)
+            session.commit()
     return length
 
 

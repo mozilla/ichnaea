@@ -20,8 +20,9 @@ from ichnaea import util
 
 class StationRemover(DataTask):
 
-    def __init__(self, task, session):
+    def __init__(self, task, session, pipe):
         DataTask.__init__(self, task, session)
+        self.pipe = pipe
 
 
 class CellRemover(StationRemover):
@@ -37,11 +38,7 @@ class CellRemover(StationRemover):
 
         if changed_areas:
             redis_key = self.task.app.data_queues['cell_area_update']
-            self.session.on_post_commit(
-                enqueue_areas,
-                self.redis_client,
-                changed_areas,
-                redis_key)
+            enqueue_areas(self.pipe, redis_key, changed_areas)
 
         return cells_removed
 
@@ -58,9 +55,10 @@ class StationUpdater(DataTask):
 
     MAX_OLD_OBSERVATIONS = 1000
 
-    def __init__(self, task, session,
+    def __init__(self, task, session, pipe,
                  min_new=10, max_new=100, remove_task=None):
         DataTask.__init__(self, task, session)
+        self.pipe = pipe
         self.min_new = min_new
         self.max_new = max_new
         self.remove_task = remove_task
@@ -232,11 +230,7 @@ class CellUpdater(StationUpdater):
     def queue_area_updates(self):
         if self.updated_areas:
             redis_key = self.task.app.data_queues['cell_area_update']
-            self.session.on_post_commit(
-                enqueue_areas,
-                self.redis_client,
-                self.updated_areas,
-                redis_key)
+            enqueue_areas(self.pipe, redis_key, self.updated_areas)
 
 
 class WifiUpdater(StationUpdater):

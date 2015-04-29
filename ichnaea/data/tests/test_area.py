@@ -1,3 +1,4 @@
+from ichnaea.cache import redis_pipeline
 from ichnaea.data.area import enqueue_areas
 from ichnaea.data.tasks import (
     location_update_cell,
@@ -189,19 +190,16 @@ class TestArea(CeleryTestCase):
         self.check_raven(total=0)
 
     def test_scan_areas_remove(self):
-        session = self.session
-        redis_client = self.redis_client
-
         # create an orphaned lac entry
         area = CellAreaFactory()
-        session.flush()
+        self.session.flush()
         redis_key = self.celery_app.data_queues['cell_area_update']
-        enqueue_areas(session, redis_client,
-                      [area.hashkey()], redis_key)
+        with redis_pipeline(self.redis_client) as pipe:
+            enqueue_areas(pipe, redis_key, [area.hashkey()])
 
         # after scanning the orphaned record gets removed
         self.assertEqual(scan_areas.delay().get(), 1)
-        areas = session.query(CellArea).all()
+        areas = self.session.query(CellArea).all()
         self.assertEqual(areas, [])
 
     def test_scan_areas_update(self):

@@ -37,8 +37,7 @@ def redis_client(redis_url):
 
 @contextmanager
 def redis_pipeline(redis_client, execute=True):
-    pipeline = redis_client.pipeline()
-    with pipeline as pipe:
+    with redis_client.pipeline() as pipe:
         yield pipe
         if execute:
             pipe.execute()
