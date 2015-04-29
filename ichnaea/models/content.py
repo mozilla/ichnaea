@@ -28,13 +28,11 @@ def statcounter_key(stat_key, now):
         date=now.strftime('%Y%m%d'))
 
 
-def statcounter_emit(session, redis_client, stat_key, now, added):
+def statcounter_emit(pipe, stat_key, now, added):
     # keep track of newly inserted observations in redis
-    pipe = redis_client.pipeline()
     pipeline_key = statcounter_key(stat_key, now)
     pipe.incr(pipeline_key, added)
     pipe.expire(pipeline_key, 172800)  # 2 days
-    pipe.execute()
 
 
 class ScoreKey(IntEnum):

@@ -1,20 +1,8 @@
+from contextlib import contextmanager
 import urlparse
 
 import redis
 from redis.exceptions import ConnectionError
-
-
-class RedisClient(redis.StrictRedis):
-
-    def ping(self):
-        """
-        Ping the Redis server, but also catch exceptions.
-        """
-        try:
-            self.execute_command('PING')
-        except ConnectionError:
-            return False
-        return True
 
 
 def configure_redis(redis_url, _client=None):
@@ -45,3 +33,25 @@ def redis_client(redis_url):
         socket_keepalive=True,
     )
     return RedisClient(connection_pool=pool)
+
+
+@contextmanager
+def redis_pipeline(redis_client, execute=True):
+    pipeline = redis_client.pipeline()
+    with pipeline as pipe:
+        yield pipe
+        if execute:
+            pipe.execute()
+
+
+class RedisClient(redis.StrictRedis):
+
+    def ping(self):
+        """
+        Ping the Redis server, but also catch exceptions.
+        """
+        try:
+            self.execute_command('PING')
+        except ConnectionError:
+            return False
+        return True

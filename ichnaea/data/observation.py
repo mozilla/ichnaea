@@ -26,8 +26,9 @@ from ichnaea import util
 
 class ObservationQueue(DataTask):
 
-    def __init__(self, task, session, utcnow=None):
+    def __init__(self, task, session, pipe, utcnow=None):
         DataTask.__init__(self, task, session)
+        self.pipe = pipe
         if utcnow is None:
             utcnow = util.utcnow()
         self.utcnow = utcnow
@@ -45,13 +46,10 @@ class ObservationQueue(DataTask):
             self.stat_count('dropped', 'ingress_' + name, dropped[name])
 
     def emit_statcounters(self, obs, stations):
-        self.session.on_post_commit(
-            statcounter_emit, self.redis_client,
-            self.stat_obs_key, self.utcnow, obs)
-
-        self.session.on_post_commit(
-            statcounter_emit, self.redis_client,
-            self.stat_station_key, self.utcnow, stations)
+        statcounter_emit(self.pipe, self.stat_obs_key,
+                         self.utcnow, obs)
+        statcounter_emit(self.pipe, self.stat_station_key,
+                         self.utcnow, stations)
 
     def pre_process_entry(self, entry):
         entry['created'] = self.utcnow

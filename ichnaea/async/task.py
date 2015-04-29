@@ -4,6 +4,7 @@ from kombu.serialization import (
     loads as kombu_loads,
 )
 
+from ichnaea.cache import redis_pipeline
 from ichnaea.db import db_worker_session
 
 
@@ -54,6 +55,10 @@ class DatabaseTask(Task):
             args = kombu_loads(data, content_type, encoding)
 
         return super(DatabaseTask, self).apply(*args, **kw)
+
+    def redis_pipeline(self, execute=True):
+        # returns a context manager
+        return redis_pipeline(self.redis_client)
 
     def db_session(self):
         # returns a context manager
