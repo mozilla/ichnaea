@@ -104,8 +104,8 @@ def export_reports(self, export_queue_name, queue_key=None):
 
 @celery_app.task(base=DatabaseTask, bind=True, queue='celery_reports')
 def queue_reports(self, reports=(), api_key=None, email=None, nickname=None):
-    with self.db_session(commit=False) as session:
-        queue = ReportQueueV2(self, session,
+    with self.redis_pipeline() as pipe:
+        queue = ReportQueueV2(self, None, pipe,
                               api_key=api_key,
                               email=email,
                               nickname=nickname)

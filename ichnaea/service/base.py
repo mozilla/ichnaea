@@ -39,11 +39,10 @@ def rate_limit(redis_client, api_key, maxreq=0, expire=86400):
     try:
         current = redis_client.get(key)
         if current is None or int(current) < maxreq:
-            pipe = redis_client.pipeline()
-            pipe.incr(key, 1)
-            # Expire keys after 24 hours
-            pipe.expire(key, expire)
-            pipe.execute()
+            with redis_client.pipeline() as pipe:
+                pipe.incr(key, 1)
+                pipe.expire(key, expire)  # expire key after 24 hours
+                pipe.execute()
             return False
     except ConnectionError:  # pragma: no cover
         # If we cannot connect to Redis, disable rate limitation.

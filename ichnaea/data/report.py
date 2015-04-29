@@ -252,8 +252,10 @@ class ReportQueueV1(DataTask):
 
 class ReportQueueV2(DataTask):
 
-    def __init__(self, task, session, api_key=None, nickname=None, email=None):
+    def __init__(self, task, session, pipe,
+                 api_key=None, nickname=None, email=None):
         DataTask.__init__(self, task, session)
+        self.pipe = pipe
         self.api_key = api_key
         self.email = email
         self.nickname = nickname
@@ -277,4 +279,4 @@ class ReportQueueV2(DataTask):
             for name, queue in self.export_queues.items():
                 if queue.export_allowed(self.api_key):
                     queue_key = queue.queue_key(self.api_key)
-                    self.redis_client.lpush(queue_key, *data)
+                    self.pipe.lpush(queue_key, *data)

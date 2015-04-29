@@ -67,11 +67,12 @@ class ReportExporter(DataTask):
         return queue_length(self.redis_client, self.queue_key)
 
     def dequeue_reports(self):
-        pipe = self.redis_client.pipeline()
-        pipe.multi()
-        pipe.lrange(self.queue_key, 0, self.batch - 1)
-        pipe.ltrim(self.queue_key, self.batch, -1)
-        return pipe.execute()[0]
+        with self.redis_client.pipeline() as pipe:
+            pipe.multi()
+            pipe.lrange(self.queue_key, 0, self.batch - 1)
+            pipe.ltrim(self.queue_key, self.batch, -1)
+            result = pipe.execute()[0]
+        return result
 
     def export(self, export_task, upload_task):
         length = self.queue_length()
