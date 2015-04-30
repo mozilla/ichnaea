@@ -4,7 +4,7 @@ from ichnaea.cache import redis_pipeline
 from ichnaea.data.tasks import statcounter_update
 from ichnaea.models.content import (
     Stat,
-    statcounter_emit,
+    StatCounter,
     StatKey,
 )
 from ichnaea.tests.base import CeleryTestCase
@@ -20,8 +20,9 @@ class TestStatCounter(CeleryTestCase):
         self.two_days = self.today - timedelta(2)
 
     def add_counter(self, stat_key, time, value):
+        stat_counter = StatCounter(stat_key, time)
         with redis_pipeline(self.redis_client) as pipe:
-            statcounter_emit(pipe, stat_key, time, value)
+            stat_counter.incr(pipe, value)
 
     def check_stat(self, stat_key, time, value):
         hashkey = Stat.to_hashkey(key=stat_key, time=time)

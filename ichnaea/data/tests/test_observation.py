@@ -18,7 +18,7 @@ from ichnaea.models import (
     Radio,
     Score,
     ScoreKey,
-    statcounter_key,
+    StatCounter,
     StatKey,
     ValidCellKeySchema,
     Wifi,
@@ -35,8 +35,8 @@ from ichnaea import util
 class ObservationTestCase(CeleryTestCase):
 
     def check_statcounter(self, stat_key, value):
-        key = statcounter_key(stat_key, util.utcnow())
-        self.assertEqual(int(self.redis_client.get(key) or 0), value)
+        stat_counter = StatCounter(stat_key, util.utcnow())
+        self.assertEqual(stat_counter.get(self.redis_client), value)
 
 
 class TestCell(ObservationTestCase):

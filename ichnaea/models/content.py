@@ -18,22 +18,6 @@ from ichnaea.models.hashkey import (
 )
 from ichnaea.models.sa_types import TinyIntEnum
 
-STAT_PREFIX = 'statcounter'
-
-
-def statcounter_key(stat_key, now):
-    return '{prefix}_{key}_{date}'.format(
-        prefix=STAT_PREFIX,
-        key=stat_key.name,
-        date=now.strftime('%Y%m%d'))
-
-
-def statcounter_emit(pipe, stat_key, now, added):
-    # keep track of newly inserted observations in redis
-    pipeline_key = statcounter_key(stat_key, now)
-    pipe.incr(pipeline_key, added)
-    pipe.expire(pipeline_key, 172800)  # 2 days
-
 
 class ScoreKey(IntEnum):
     location = 0
@@ -98,6 +82,30 @@ class Score(IdMixin, HashKeyMixin, _Model):
                 userid=key.userid, key=key.key, time=key.time, value=value)
             session.execute(stmt)
         return value
+
+
+class StatCounter(object):
+
+    def __init__(self, stat_key, day):
+        self.stat_key = stat_key
+        self.day = day
+        self.redis_key = self._key(stat_key, day)
+
+    def _key(self, stat_key, day):
+        return 'statcounter_{key}_{date}'.format(
+            key=stat_key.name,
+            date=day.strftime('%Y%m%d'))
+
+    def get(self, redis_client):
+        return int(redis_client.get(self.redis_key) or 0)
+
+    def decr(self, pipe, amount):
+        pipe.decr(self.redis_key, amount)
+
+    def incr(self, pipe, amount):
+        # keep track of newly inserted observations in redis
+        pipe.incr(self.redis_key, amount)
+        pipe.expire(self.redis_key, 172800)  # 2 days
 
 
 class StatHashKey(HashKey):

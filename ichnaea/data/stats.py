@@ -3,7 +3,7 @@ from datetime import timedelta
 from ichnaea.data.base import DataTask
 from ichnaea.models.content import (
     Stat,
-    statcounter_key,
+    StatCounter,
     StatKey,
 )
 from ichnaea import util
@@ -33,12 +33,12 @@ class StatCounterUpdate(DataTask):
             old_value = before.value
 
         # get the value from redis for the day in question
-        redis_key = statcounter_key(stat_key, day)
-        value = int(self.redis_client.get(redis_key) or 0)
+        stat_counter = StatCounter(stat_key, day)
+        value = stat_counter.get(self.redis_client)
 
         # insert or update a new stat value
         hashkey = Stat.to_hashkey(key=stat_key, time=day)
         Stat.incr(self.session, hashkey, old_value, value)
 
         # queue the redis value to be decreased
-        self.pipe.decr(redis_key, value)
+        stat_counter.decr(self.pipe, value)

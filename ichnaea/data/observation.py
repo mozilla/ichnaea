@@ -14,7 +14,7 @@ from ichnaea.models import (
     CellObservation,
     Score,
     ScoreKey,
-    statcounter_emit,
+    StatCounter,
     StatKey,
     ValidCellKeySchema,
     Wifi,
@@ -46,10 +46,9 @@ class ObservationQueue(DataTask):
             self.stat_count('dropped', 'ingress_' + name, dropped[name])
 
     def emit_statcounters(self, obs, stations):
-        statcounter_emit(self.pipe, self.stat_obs_key,
-                         self.utcnow, obs)
-        statcounter_emit(self.pipe, self.stat_station_key,
-                         self.utcnow, stations)
+        day = self.utcnow.date()
+        StatCounter(self.stat_obs_key, day).incr(self.pipe, obs)
+        StatCounter(self.stat_station_key, day).incr(self.pipe, stations)
 
     def pre_process_entry(self, entry):
         entry['created'] = self.utcnow
