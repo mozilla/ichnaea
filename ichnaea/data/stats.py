@@ -9,7 +9,7 @@ from ichnaea.models.content import (
 from ichnaea import util
 
 
-class StatCounterUpdate(DataTask):
+class StatCounterUpdater(DataTask):
 
     def __init__(self, task, session, pipe):
         DataTask.__init__(self, task, session)

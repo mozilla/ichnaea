@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from ichnaea.data.tasks import mapstat_update
+from ichnaea.data.tasks import update_mapstat
 from ichnaea.models.content import (
     MapStat,
 )
@@ -32,12 +32,12 @@ class TestMapStat(CeleryTestCase):
         self.queue.enqueue(positions)
 
     def test_empty(self):
-        mapstat_update.delay().get()
+        update_mapstat.delay().get()
         self.assertEqual(self.session.query(MapStat).count(), 0)
 
     def test_one(self):
         self._queue([(1.234567, 2.345678)])
-        mapstat_update.delay().get()
+        update_mapstat.delay().get()
 
         stats = self.session.query(MapStat).all()
         self.assertEqual(len(stats), 1)
@@ -47,7 +47,7 @@ class TestMapStat(CeleryTestCase):
     def test_update(self):
         self._add([(1.0, 2.0, self.yesterday)])
         self._queue([(1.0, 2.0)])
-        mapstat_update.delay().get()
+        update_mapstat.delay().get()
 
         stats = self.session.query(MapStat).all()
         self.assertEqual(len(stats), 1)
@@ -69,7 +69,7 @@ class TestMapStat(CeleryTestCase):
             (1.0, 2.0),
             (1.00001, 2.00001),
         ])
-        mapstat_update.delay(batch=2).get()
+        update_mapstat.delay(batch=2).get()
 
         stats = self.session.query(MapStat).all()
         self.assertEqual(len(stats), 4)

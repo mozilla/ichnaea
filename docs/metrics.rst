@@ -446,7 +446,7 @@ emits a timer indicating its execution time.
 
 For example:
 
-  - ``task.data.statcounter_update``
+  - ``task.data.update_statcounter``
   - ``task.data.upload_reports``
 
 

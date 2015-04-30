@@ -155,8 +155,8 @@ CELERYBEAT_SCHEDULE = {
     # Hourly
 
     # TODO only schedule once the redis counters are maintained
-    # 'statcounter-update': {
-    #     'task': 'ichnaea.data.tasks.statcounter_update',
+    # 'update-statcounter': {
+    #     'task': 'ichnaea.data.tasks.update_statcounter',
     #     'args': (1, ),
     #     'schedule': crontab(minute=3),
     # },
@@ -181,8 +181,8 @@ CELERYBEAT_SCHEDULE = {
 
     # One minute
 
-    'mapstat-update': {
-        'task': 'ichnaea.data.tasks.mapstat_update',
+    'update-mapstat': {
+        'task': 'ichnaea.data.tasks.update_mapstat',
         'args': (1000, ),
         'schedule': timedelta(seconds=61),
         'options': {'expires': 57},

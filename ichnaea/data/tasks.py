@@ -11,7 +11,7 @@ from ichnaea.data.export import (
     ReportExporter,
     S3Uploader,
 )
-from ichnaea.data.mapstat import MapStatUpdate
+from ichnaea.data.mapstat import MapStatUpdater
 from ichnaea.data.observation import (
     CellObservationQueue,
     WifiObservationQueue,
@@ -26,7 +26,7 @@ from ichnaea.data.station import (
     WifiRemover,
     WifiUpdater,
 )
-from ichnaea.data.stats import StatCounterUpdate
+from ichnaea.data.stats import StatCounterUpdater
 from ichnaea.models import ApiKey
 
 
@@ -165,16 +165,16 @@ def update_area(self, area_key, cell_type='cell'):
 
 
 @celery_app.task(base=DatabaseTask, bind=True)
-def mapstat_update(self, batch=100):
+def update_mapstat(self, batch=100):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
-            updater = MapStatUpdate(self, session, pipe)
+            updater = MapStatUpdater(self, session, pipe)
             updater.update(batch=batch)
 
 
 @celery_app.task(base=DatabaseTask, bind=True)
-def statcounter_update(self, ago=1):
+def update_statcounter(self, ago=1):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
-            updater = StatCounterUpdate(self, session, pipe)
+            updater = StatCounterUpdater(self, session, pipe)
             updater.update(ago=ago)

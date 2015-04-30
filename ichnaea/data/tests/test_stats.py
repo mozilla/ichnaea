@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from ichnaea.cache import redis_pipeline
-from ichnaea.data.tasks import statcounter_update
+from ichnaea.data.tasks import update_statcounter
 from ichnaea.models.content import (
     Stat,
     StatCounter,
@@ -32,7 +32,7 @@ class TestStatCounter(CeleryTestCase):
     def test_first_run(self):
         self.add_counter(StatKey.cell, self.yesterday, 3)
 
-        statcounter_update.delay(ago=1).get()
+        update_statcounter.delay(ago=1).get()
         self.check_stat(StatKey.cell, self.yesterday, 3)
 
     def test_update_from_yesterday(self):
@@ -41,7 +41,7 @@ class TestStatCounter(CeleryTestCase):
         self.session.add(Stat(key=StatKey.cell, time=self.two_days, value=2))
         self.session.flush()
 
-        statcounter_update.delay(ago=1).get()
+        update_statcounter.delay(ago=1).get()
         self.check_stat(StatKey.cell, self.yesterday, 5)
 
     def test_multiple_updates_for_today(self):
@@ -49,11 +49,11 @@ class TestStatCounter(CeleryTestCase):
         self.session.add(Stat(key=StatKey.cell, time=self.yesterday, value=5))
         self.session.flush()
 
-        statcounter_update.delay(ago=0).get()
+        update_statcounter.delay(ago=0).get()
         self.check_stat(StatKey.cell, self.today, 9)
 
         self.add_counter(StatKey.cell, self.today, 3)
-        statcounter_update.delay(ago=0).get()
+        update_statcounter.delay(ago=0).get()
         self.check_stat(StatKey.cell, self.today, 12)
 
     def test_update_with_gap(self):
@@ -63,7 +63,7 @@ class TestStatCounter(CeleryTestCase):
         self.session.add(Stat(key=StatKey.cell, time=a_week_ago, value=7))
         self.session.flush()
 
-        statcounter_update.delay(ago=1).get()
+        update_statcounter.delay(ago=1).get()
         self.check_stat(StatKey.cell, self.yesterday, 10)
 
     def test_update_does_not_overwrite(self):
@@ -73,7 +73,7 @@ class TestStatCounter(CeleryTestCase):
         self.session.add(Stat(key=StatKey.cell, time=self.yesterday, value=3))
         self.session.flush()
 
-        statcounter_update.delay(ago=1).get()
+        update_statcounter.delay(ago=1).get()
         self.check_stat(StatKey.cell, self.yesterday, 8)
 
     def test_update_all_keys(self):
@@ -86,7 +86,7 @@ class TestStatCounter(CeleryTestCase):
         self.session.add(Stat(key=StatKey.wifi, time=self.two_days, value=8))
         self.session.flush()
 
-        statcounter_update.delay(ago=1).get()
+        update_statcounter.delay(ago=1).get()
         self.check_stat(StatKey.cell, self.yesterday, 9)
         self.check_stat(StatKey.wifi, self.yesterday, 11)
         self.check_stat(StatKey.unique_cell, self.yesterday, 4)

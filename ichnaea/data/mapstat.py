@@ -7,7 +7,7 @@ from ichnaea.models.content import (
 from ichnaea import util
 
 
-class MapStatUpdate(DataTask):
+class MapStatUpdater(DataTask):
 
     def __init__(self, task, session, pipe):
         DataTask.__init__(self, task, session)
