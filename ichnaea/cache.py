@@ -94,6 +94,9 @@ class BaseQueue(object):
             with redis_pipeline(self.redis_client) as pipe:
                 self._push(pipe, queue_key, data, batch, expire)
 
+    def _size(self, queue_key):
+        return self.redis_client.llen(queue_key)
+
 
 class DataQueue(BaseQueue):
 
@@ -114,6 +117,9 @@ class DataQueue(BaseQueue):
     def enqueue(self, items, batch=100, expire=86400, pipe=None):
         self._enqueue(self.queue_key(), items,
                       batch=batch, expire=expire, pipe=pipe)
+
+    def size(self):
+        return self._size(self.queue_key())
 
 
 class ExportQueue(BaseQueue):
@@ -157,4 +163,4 @@ class ExportQueue(BaseQueue):
                       batch=batch, expire=expire, pipe=pipe)
 
     def size(self, queue_key):
-        return self.redis_client.llen(queue_key)
+        return self._size(queue_key)

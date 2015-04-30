@@ -1,14 +1,11 @@
 from collections import defaultdict
 import uuid
 
-from sqlalchemy.sql import and_, or_
-
 from ichnaea.customjson import encode_radio_dict
 from ichnaea.data.base import DataTask
 from ichnaea.models import (
     CellObservation,
     CellReport,
-    MapStat,
     Report,
     Score,
     ScoreKey,
@@ -21,9 +18,10 @@ from ichnaea import util
 
 class ReportQueueV1(DataTask):
 
-    def __init__(self, task, session, api_key=None,
+    def __init__(self, task, session, pipe, api_key=None,
                  insert_cell_task=None, insert_wifi_task=None):
         DataTask.__init__(self, task, session)
+        self.pipe = pipe
         self.api_key = api_key
         self.insert_cell_task = insert_cell_task
         self.insert_wifi_task = insert_wifi_task
@@ -43,7 +41,7 @@ class ReportQueueV1(DataTask):
         return length
 
     def process_reports(self, reports, userid=None):
-        positions = []
+        positions = set()
         cell_observations = []
         wifi_observations = []
         for i, report in enumerate(reports):
@@ -52,10 +50,7 @@ class ReportQueueV1(DataTask):
             cell_observations.extend(cell)
             wifi_observations.extend(wifi)
             if cell or wifi:
-                positions.append({
-                    'lat': report['lat'],
-                    'lon': report['lon'],
-                })
+                positions.add((report['lat'], report['lon']))
 
         if cell_observations:
             # group by and create task per cell key
@@ -194,33 +189,9 @@ class ReportQueueV1(DataTask):
         return (cell_observations, wifi_observations)
 
     def process_mapstat(self, positions):
-        # Scale from floating point degrees to integer counts of thousandths of
-        # a degree; 1/1000 degree is about 110m at the equator.
-        factor = 1000
-        today = util.utcnow().date()
-        tiles = {}
-        # aggregate to tiles, according to factor
-        for position in positions:
-            tiles[(int(position['lat'] * factor),
-                   int(position['lon'] * factor))] = True
-        query = self.session.query(MapStat.lat, MapStat.lon)
-        # dynamically construct a (lat, lon) in (list of tuples) filter
-        # as MySQL isn't able to use indexes on such in queries
-        lat_lon = []
-        for (lat, lon) in tiles.keys():
-            lat_lon.append(and_((MapStat.lat == lat), (MapStat.lon == lon)))
-        query = query.filter(or_(*lat_lon))
-        result = query.all()
-        prior = {}
-        for r in result:
-            prior[(r[0], r[1])] = True
-        for (lat, lon) in tiles.keys():
-            old = prior.get((lat, lon), False)
-            if not old:
-                stmt = MapStat.__table__.insert(
-                    on_duplicate='id = id').values(
-                    time=today, lat=lat, lon=lon)
-                self.session.execute(stmt)
+        queue = self.task.app.data_queues['update_mapstat']
+        positions = [{'lat': lat, 'lon': lon} for lat, lon in positions]
+        queue.enqueue(positions, pipe=self.pipe)
 
     def process_user(self, nickname, email):
         userid = None

@@ -11,6 +11,7 @@ from ichnaea.data.export import (
     ReportExporter,
     S3Uploader,
 )
+from ichnaea.data.mapstat import MapStatUpdate
 from ichnaea.data.observation import (
     CellObservationQueue,
     WifiObservationQueue,
@@ -36,14 +37,15 @@ def insert_measures(self, items=None, nickname='', email='',
         return 0
 
     reports = kombu_loads(items)
-    with self.db_session() as session:
-        api_key = api_key_text and ApiKey.getkey(session, api_key_text)
+    with self.redis_pipeline() as pipe:
+        with self.db_session() as session:
+            api_key = api_key_text and ApiKey.getkey(session, api_key_text)
 
-        queue = ReportQueueV1(self, session,
-                              api_key,
-                              insert_cell_task=insert_measures_cell,
-                              insert_wifi_task=insert_measures_wifi)
-        length = queue.insert(reports, nickname=nickname, email=email)
+            queue = ReportQueueV1(self, session, pipe,
+                                  api_key,
+                                  insert_cell_task=insert_measures_cell,
+                                  insert_wifi_task=insert_measures_wifi)
+            length = queue.insert(reports, nickname=nickname, email=email)
     return length
 
 
@@ -160,6 +162,14 @@ def update_area(self, area_key, cell_type='cell'):
         else:
             updater = CellAreaUpdater(self, session)
         updater.update(area_key)
+
+
+@celery_app.task(base=DatabaseTask, bind=True)
+def mapstat_update(self, batch=100):
+    with self.redis_pipeline() as pipe:
+        with self.db_session() as session:
+            updater = MapStatUpdate(self, session, pipe)
+            updater.update(batch=batch)
 
 
 @celery_app.task(base=DatabaseTask, bind=True)

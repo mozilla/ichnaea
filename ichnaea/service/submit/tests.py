@@ -1,10 +1,8 @@
-from datetime import date
 import uuid
 
 from pyramid.testing import DummyRequest
 
 from ichnaea.models.content import (
-    MapStat,
     Score,
     ScoreKey,
     User,
@@ -190,26 +188,15 @@ class TestSubmit(CeleryAppTestCase):
         self.assertEqual(len(result), EXPECTED_RECORDS)
 
     def test_mapstat(self):
-        app = self.app
-        long_ago = date(2011, 10, 20)
-        today = util.utcnow().date()
-        session = self.session
-        stats = [
-            MapStat(lat=1000, lon=2000, time=long_ago),
-            MapStat(lat=2000, lon=3000, time=long_ago),
-            MapStat(lat=3000, lon=4000, time=long_ago),
-        ]
-        session.add_all(stats)
-        session.flush()
-        app.post_json(
+        self.app.post_json(
             '/v1/submit', {"items": [
                 {"lat": 1.0,
                  "lon": 2.0,
                  "wifi": [{"key": "aaaaaaaaaaaa"}]},
-                {"lat": 2.0,
+                {"lat": 2.00012,
                  "lon": 3.0,
                  "wifi": [{"key": "bbbbbbbbbbbb"}]},
-                {"lat": 2.0,
+                {"lat": 2.00023,
                  "lon": 3.0,
                  "wifi": [{"key": "cccccccccccc"}]},
                 {"lat": -2.0,
@@ -220,18 +207,12 @@ class TestSubmit(CeleryAppTestCase):
                  "wifi": [{"key": "invalid"}]},
             ]},
             status=204)
-        # check coarse grained stats
-        result = session.query(MapStat).all()
-        self.assertEqual(len(result), 4)
-        self.assertEqual(
-            sorted([(int(r.lat), int(r.lon), r.time, r.id) for r in result]),
-            [
-                (-2000, 3000, today, stats[2].id + 1),
-                (1000, 2000, long_ago, stats[0].id),
-                (2000, 3000, long_ago, stats[1].id),
-                (3000, 4000, long_ago, stats[2].id),
-            ]
-        )
+        # check queued values
+        queue = self.celery_app.data_queues['update_mapstat']
+        positions = set([(pos['lat'], pos['lon']) for pos in queue.dequeue()])
+        self.assertEqual(positions, set([
+            (1.0, 2.0), (2.00012, 3.0), (2.00023, 3.0), (-2.0, 3.0)
+        ]))
 
     def test_nickname_header(self):
         app = self.app

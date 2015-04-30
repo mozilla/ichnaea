@@ -152,13 +152,13 @@ CELERYBEAT_SCHEDULE = {
         'options': {'expires': 43200},
     },
 
-    # Hourly tasks
+    # Hourly
 
     # TODO only schedule once the redis counters are maintained
     # 'statcounter-update': {
     #     'task': 'ichnaea.data.tasks.statcounter_update',
-    #     'schedule': crontab(minute=3),
     #     'args': (1, ),
+    #     'schedule': crontab(minute=3),
     # },
     'ocid-hourly-cell-delta-import': {
         'task': 'ichnaea.export.tasks.import_latest_ocid_cells',
@@ -166,9 +166,6 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(minute=52),
         'options': {'expires': 2700},
     },
-
-    # Cell export tasks
-
     's3-hourly-cell-delta-export': {
         'task': 'ichnaea.export.tasks.export_modified_cells',
         'args': (True, ),
@@ -182,8 +179,14 @@ CELERYBEAT_SCHEDULE = {
         'options': {'expires': 39600},
     },
 
-    # Export tasks
+    # One minute
 
+    'mapstat-update': {
+        'task': 'ichnaea.data.tasks.mapstat_update',
+        'args': (1000, ),
+        'schedule': timedelta(seconds=61),
+        'options': {'expires': 57},
+    },
     'schedule-export-reports': {
         'task': 'ichnaea.data.tasks.schedule_export_reports',
         'schedule': timedelta(seconds=60),
