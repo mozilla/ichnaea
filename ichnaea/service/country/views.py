@@ -31,6 +31,7 @@ def country_view(request):
     response = CountrySearcher(
         session_db=request.db_ro_session,
         geoip_db=request.registry.geoip_db,
+        redis_client=request.registry.redis_client,
         settings=request.registry.settings,
         api_key=ApiKey(),
         api_name='country',

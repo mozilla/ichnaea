@@ -27,7 +27,8 @@ class Searcher(StatsLogger):
 
     provider_classes = ()
 
-    def __init__(self, session_db, geoip_db, settings, *args, **kwargs):
+    def __init__(self, session_db, geoip_db,
+                 redis_client, settings, *args, **kwargs):
         super(Searcher, self).__init__(*args, **kwargs)
 
         self.all_providers = []
@@ -39,6 +40,7 @@ class Searcher(StatsLogger):
                 provider_instance = provider(
                     session_db=session_db,
                     geoip_db=geoip_db,
+                    redis_client=redis_client,
                     settings=provider_settings,
                     api_key=self.api_key,
                     api_name=self.api_name,

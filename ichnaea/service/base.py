@@ -1,10 +1,10 @@
 from functools import wraps
 
 from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden
-from redis import ConnectionError
 
 from ichnaea.customjson import dumps
 from ichnaea.models.api import ApiKey
+from ichnaea.rate_limit import rate_limit
 from ichnaea.service.error import DAILY_LIMIT
 from ichnaea import util
 
@@ -29,52 +29,39 @@ def invalid_api_key_response():
     return result
 
 
-def rate_limit(redis_client, api_key, maxreq=0, expire=86400):
-    if not maxreq:
-        return False
-
-    dstamp = util.utcnow().strftime('%Y%m%d')
-    key = 'apilimit:%s:%s' % (api_key, dstamp)
-
-    try:
-        current = redis_client.get(key)
-        if current is None or int(current) < maxreq:
-            with redis_client.pipeline() as pipe:
-                pipe.incr(key, 1)
-                pipe.expire(key, expire)  # expire key after 24 hours
-                pipe.execute()
-            return False
-    except ConnectionError:  # pragma: no cover
-        # If we cannot connect to Redis, disable rate limitation.
-        return None
-    return True
-
-
 def check_api_key(func_name, error_on_invalidkey=True):
     def c(func):
         @wraps(func)
         def closure(request, *args, **kwargs):
-            raven_client = request.registry.raven_client
-            stats_client = request.registry.stats_client
-
             api_key = None
             api_key_text = request.GET.get('key', None)
 
             if api_key_text is None:
-                stats_client.incr('%s.no_api_key' % func_name)
+                request.registry.stats_client.incr('%s.no_api_key' % func_name)
                 if error_on_invalidkey:
                     return invalid_api_key_response()
             try:
                 api_key = ApiKey.getkey(request.db_ro_session, api_key_text)
             except Exception:  # pragma: no cover
                 # if we cannot connect to backend DB, skip api key check
-                raven_client.captureException()
-                stats_client.incr('%s.dbfailure_skip_api_key' % func_name)
+                request.registry.rave_client.captureException()
+                request.registry.stats_client.incr(
+                    '%s.dbfailure_skip_api_key' % func_name)
 
             if api_key is not None:
-                stats_client.incr('%s.api_key.%s' % (func_name, api_key.name))
-                should_limit = rate_limit(request.registry.redis_client,
-                                          api_key_text, maxreq=api_key.maxreq)
+                request.registry.stats_client.incr(
+                    '%s.api_key.%s' % (func_name, api_key.name))
+                rate_key = 'apilimit:{key}:{time}'.format(
+                    key=api_key_text,
+                    time=util.utcnow().strftime('%Y%m%d')
+                )
+
+                should_limit = rate_limit(
+                    request.registry.redis_client,
+                    rate_key,
+                    maxreq=api_key.maxreq
+                )
+
                 if should_limit:
                     response = HTTPForbidden()
                     response.content_type = 'application/json'
@@ -82,10 +69,12 @@ def check_api_key(func_name, error_on_invalidkey=True):
                     return response
                 elif should_limit is None:  # pragma: no cover
                     # We couldn't connect to Redis
-                    stats_client.incr('%s.redisfailure_skip_limit' % func_name)
+                    request.registry.stats_client.incr(
+                        '%s.redisfailure_skip_limit' % func_name)
             else:
                 if api_key_text is not None:
-                    stats_client.incr('%s.unknown_api_key' % func_name)
+                    request.registry.stats_client.incr(
+                        '%s.unknown_api_key' % func_name)
                 if error_on_invalidkey:
                     return invalid_api_key_response()
 
