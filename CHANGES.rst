@@ -15,6 +15,12 @@ Migrations
 Changes
 ~~~~~~~
 
+- #287: Move mapstat and score processing to separate queues/tasks.
+
+- #287: Keep track of uploaded data via Redis stat counters.
+
+- #287: Add new backup to S3 export target.
+
 - #421: Add fallback geolocation provider.
 
 - Deal with nan/inf floating point numbers in data submissions.
