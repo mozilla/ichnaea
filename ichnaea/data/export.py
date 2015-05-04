@@ -27,7 +27,7 @@ class ExportScheduler(DataTask):
     def schedule_one(self, export_queue, export_task):
         triggered = 0
         queue_key = export_queue.queue_key()
-        if export_queue.size(queue_key) >= export_queue.batch:
+        if export_queue.enough_data(queue_key):
             export_task.delay(export_queue.name)
             triggered += 1
         return triggered
@@ -37,7 +37,7 @@ class ExportScheduler(DataTask):
         queue_prefix = export_queue.queue_prefix
         for queue_key in self.redis_client.scan_iter(match=queue_prefix + '*',
                                                      count=100):
-            if export_queue.size(queue_key) >= export_queue.batch:
+            if export_queue.enough_data(queue_key):
                 export_task.delay(export_queue.name, queue_key=queue_key)
                 triggered += 1
         return triggered
@@ -56,16 +56,15 @@ class ReportExporter(DataTask):
             self.queue_key = self.export_queue.queue_key()
 
     def export(self, export_task, upload_task):
-        length = self.export_queue.size(self.queue_key)
-        if length < self.batch:  # pragma: no cover
-            # not enough to do, skip
+        export_queue = self.export_queue
+        if not export_queue.enough_data(self.queue_key):  # pragma: no cover
             return 0
 
-        items = self.export_queue.dequeue(self.queue_key, batch=self.batch)
+        items = export_queue.dequeue(self.queue_key, batch=self.batch)
         if items and len(items) < self.batch:  # pragma: no cover
             # race condition, something emptied the queue in between
             # our llen call and fetching the items, put them back
-            self.export_queue.enqueue(self.queue_key, items)
+            export_queue.enqueue(self.queue_key, items)
             return 0
 
         if self.metadata:  # pragma: no cover
@@ -81,7 +80,7 @@ class ReportExporter(DataTask):
 
         # check the queue at the end, if there's still enough to do
         # schedule another job, but give it a second before it runs
-        if self.export_queue.size(self.queue_key) >= self.batch:
+        if export_queue.enough_data(self.queue_key):
             export_task.apply_async(
                 args=[self.export_queue_name],
                 kwargs={'queue_key': self.queue_key},

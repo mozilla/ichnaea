@@ -164,5 +164,8 @@ class ExportQueue(BaseQueue):
         self._enqueue(queue_key, items,
                       batch=batch, expire=expire, pipe=pipe)
 
+    def enough_data(self, queue_key):
+        return self.size(queue_key) >= self.batch
+
     def size(self, queue_key):
         return self._size(queue_key)
