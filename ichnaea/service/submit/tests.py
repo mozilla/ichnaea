@@ -189,22 +189,22 @@ class TestSubmit(CeleryAppTestCase):
 
     def test_mapstat(self):
         self.app.post_json(
-            '/v1/submit', {"items": [
-                {"lat": 1.0,
-                 "lon": 2.0,
-                 "wifi": [{"key": "aaaaaaaaaaaa"}]},
-                {"lat": 2.00012,
-                 "lon": 3.0,
-                 "wifi": [{"key": "bbbbbbbbbbbb"}]},
-                {"lat": 2.00023,
-                 "lon": 3.0,
-                 "wifi": [{"key": "cccccccccccc"}]},
-                {"lat": -2.0,
-                 "lon": 3.0,
-                 "wifi": [{"key": "cccccccccccc"}]},
-                {"lat": 10.0,
-                 "lon": 10.0,
-                 "wifi": [{"key": "invalid"}]},
+            '/v1/submit', {'items': [
+                {'lat': 1.0,
+                 'lon': 2.0,
+                 'wifi': [{'key': 'aaaaaaaaaaaa'}]},
+                {'lat': 2.00012,
+                 'lon': 3.0,
+                 'wifi': [{'key': 'bbbbbbbbbbbb'}]},
+                {'lat': 2.00023,
+                 'lon': 3.0,
+                 'wifi': [{'key': 'cccccccccccc'}]},
+                {'lat': -2.0,
+                 'lon': 3.0,
+                 'wifi': [{'key': 'cccccccccccc'}]},
+                {'lat': 10.0,
+                 'lon': 10.0,
+                 'wifi': [{'key': 'invalid'}]},
             ]},
             status=204)
         # check queued values
@@ -215,87 +215,52 @@ class TestSubmit(CeleryAppTestCase):
         ]))
 
     def test_nickname_header(self):
-        app = self.app
         nickname = 'World Tr\xc3\xa4veler'
-        app.post_json(
-            '/v1/submit', {"items": [
-                {"lat": 1.0,
-                 "lon": 2.0,
-                 "wifi": [{"key": "00aaaaaaaaaa"}]},
-                {"lat": 2.0,
-                 "lon": 3.0,
-                 "wifi": [{"key": "00bbbbbbbbbb"}]},
-                {"lat": 10.0,
-                 "lon": 10.0,
-                 "wifi": [{"key": "invalid"}]},
+        self.app.post_json(
+            '/v1/submit', {'items': [
+                {'lat': 1.0,
+                 'lon': 2.0,
+                 'wifi': [{'key': '00aaaaaaaaaa'}]},
+                {'lat': 2.0,
+                 'lon': 3.0,
+                 'wifi': [{'key': '00bbbbbbbbbb'}]},
+                {'lat': 10.0,
+                 'lon': 10.0,
+                 'wifi': [{'key': 'invalid'}]},
             ]},
             headers={'X-Nickname': nickname},
             status=204)
-        session = self.session
-        result = session.query(User).all()
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
-        result = session.query(Score).all()
-        self.assertEqual(len(result), 2)
-        self.assertEqual(set([r.key.name for r in result]),
-                         set(['location', 'new_wifi']))
-        for r in result:
-            if r.key.name == 'location':
-                self.assertEqual(r.value, 2)
-            elif r.key.name == 'new_wifi':
-                self.assertEqual(r.value, 2)
+
+        users = self.session.query(User).all()
+        self.assertEqual(len(users), 1)
+        self.assertEqual(users[0].nickname, nickname.decode('utf-8'))
+        user = users[0]
+
+        queue = self.celery_app.data_queues['update_score']
+        scores = {}
+        for value in queue.dequeue():
+            scores[value['hashkey']] = value['value']
+
+        expected = {
+            Score.to_hashkey(userid=user.id,
+                             key=ScoreKey.location, time=None): 2,
+            Score.to_hashkey(userid=user.id,
+                             key=ScoreKey.new_wifi, time=None): 2,
+        }
+        self.assertEqual(scores, expected)
 
     def test_nickname_header_error(self):
-        app = self.app
-        app.post_json(
-            '/v1/submit', {"items": [
-                {"lat": 1.0,
-                 "lon": 2.0,
-                 "wifi": [{"key": "aaaaaaaaaaaa"}]},
+        self.app.post_json(
+            '/v1/submit', {'items': [
+                {'lat': 1.0,
+                 'lon': 2.0,
+                 'wifi': [{"key": 'aaaaaaaaaaaa'}]},
             ]},
-            headers={'X-Nickname': "a"},
+            headers={'X-Nickname': 'a'},
             status=204)
-        session = self.session
-        result = session.query(User).all()
-        self.assertEqual(len(result), 0)
-        result = session.query(Score).all()
-        self.assertEqual(len(result), 0)
-
-    def test_nickname_header_update(self):
-        app = self.app
-        nickname = 'World Tr\xc3\xa4veler'
-        utcday = util.utcnow().date()
-        session = self.session
-        user = User(nickname=nickname.decode('utf-8'))
-        session.add(user)
-        session.flush()
-        session.add(Score(key=ScoreKey.location,
-                          userid=user.id, time=utcday, value=7))
-        session.add(Score(key=ScoreKey.new_wifi,
-                          userid=user.id, time=utcday, value=3))
-        session.commit()
-        app.post_json(
-            '/v1/submit', {"items": [
-                {"lat": 1.0,
-                 "lon": 2.0,
-                 "wifi": [{"key": "00AAAAAAAAAA"}]},
-            ]},
-            headers={'X-Nickname': nickname},
-            status=204)
-        result = session.query(User).all()
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].nickname, nickname.decode('utf-8'))
-        result = session.query(Score).all()
-        self.assertEqual(len(result), 2)
-        self.assertEqual(set([r.key.name for r in result]),
-                         set(['location', 'new_wifi']))
-        for r in result:
-            if r.key.name == 'location':
-                self.assertEqual(r.value, 8)
-                self.assertEqual(r.time, utcday)
-            elif r.key.name == 'new_wifi':
-                self.assertEqual(r.value, 4)
-                self.assertEqual(r.time, utcday)
+        self.assertEqual(self.session.query(User).count(), 0)
+        queue = self.celery_app.data_queues['update_score']
+        self.assertEqual(queue.size(), 0)
 
     def test_email_header(self):
         app = self.app

@@ -20,6 +20,7 @@ from ichnaea.data.report import (
     ReportQueueV1,
     ReportQueueV2,
 )
+from ichnaea.data.score import ScoreUpdater
 from ichnaea.data.station import (
     CellRemover,
     CellUpdater,
@@ -165,10 +166,18 @@ def update_area(self, area_key, cell_type='cell'):
 
 
 @celery_app.task(base=DatabaseTask, bind=True)
-def update_mapstat(self, batch=100):
+def update_mapstat(self, batch=1000):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
             updater = MapStatUpdater(self, session, pipe)
+            updater.update(batch=batch)
+
+
+@celery_app.task(base=DatabaseTask, bind=True)
+def update_score(self, batch=1000):
+    with self.redis_pipeline() as pipe:
+        with self.db_session() as session:
+            updater = ScoreUpdater(self, session, pipe)
             updater.update(batch=batch)
 
 

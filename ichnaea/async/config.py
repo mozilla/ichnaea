@@ -66,6 +66,8 @@ def configure_data(redis_client):
                                      queue_key='update_cell_lac'),
         'update_mapstat': DataQueue('update_mapstat', redis_client,
                                     queue_key='update_mapstat'),
+        'update_score': DataQueue('update_score', redis_client,
+                                  queue_key='update_score'),
     }
     return data_queues
 

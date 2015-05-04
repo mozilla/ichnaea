@@ -56,6 +56,17 @@ class ScoreHashKey(HashKey):
 
     _fields = ('userid', 'key', 'time')
 
+    @classmethod
+    def _from_json_value(cls, value):
+        data = value.copy()
+        data['key'] = ScoreKey(data['key'])
+        return cls(**data)
+
+    def _to_json_value(self):
+        value = self.__dict__.copy()
+        value['key'] = int(value['key'])
+        return value
+
 
 class Score(IdMixin, HashKeyMixin, _Model):
     __tablename__ = 'score'

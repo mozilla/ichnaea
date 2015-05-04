@@ -20,6 +20,7 @@ from ichnaea.models import (
     ScoreKey,
     StatCounter,
     StatKey,
+    User,
     ValidCellKeySchema,
     Wifi,
     WifiBlacklist,
@@ -99,14 +100,13 @@ class TestCell(ObservationTestCase):
     def test_insert_observations(self):
         session = self.session
         time = util.utcnow() - timedelta(days=1)
-        today = util.utcnow().date()
         mcc = FRANCE_MCC
 
         session.add(Cell(radio=Radio.gsm, mcc=mcc, mnc=2, lac=3,
                          cid=4, psc=5, new_measures=2,
                          total_measures=5))
-        session.add(Score(key=ScoreKey.new_cell,
-                          userid=1, time=today, value=7))
+        user = User(nickname='test')
+        session.add(user)
         session.flush()
 
         obs = dict(
@@ -129,7 +129,7 @@ class TestCell(ObservationTestCase):
         for e in entries:
             e.update(obs)
 
-        result = insert_measures_cell.delay(entries, userid=1)
+        result = insert_measures_cell.delay(entries, userid=user.id)
 
         self.assertEqual(result.get(), 4)
         observations = session.query(CellObservation).all()
@@ -150,10 +150,13 @@ class TestCell(ObservationTestCase):
         self.assertEqual(set([c.new_measures for c in cells]), set([1, 5]))
         self.assertEqual(set([c.total_measures for c in cells]), set([1, 8]))
 
-        scores = session.query(Score).all()
+        score_queue = self.celery_app.data_queues['update_score']
+        scores = score_queue.dequeue()
         self.assertEqual(len(scores), 1)
-        self.assertEqual(scores[0].key, ScoreKey.new_cell)
-        self.assertEqual(scores[0].value, 8)
+        score = scores[0]
+        self.assertEqual(score['hashkey'].userid, user.id)
+        self.assertEqual(score['hashkey'].key, ScoreKey.new_cell)
+        self.assertEqual(score['value'], 1)
 
         self.check_statcounter(StatKey.cell, 4)
         self.check_statcounter(StatKey.unique_cell, 1)
@@ -294,12 +297,11 @@ class TestWifi(ObservationTestCase):
     def test_insert_observations(self):
         session = self.session
         time = util.utcnow() - timedelta(days=1)
-        today = util.utcnow().date()
 
         session.add(Wifi(key="ab1234567890",
                          new_measures=0, total_measures=0))
-        session.add(Score(key=ScoreKey.new_wifi,
-                          userid=1, time=today, value=7))
+        user = User(nickname='test')
+        session.add(user)
         session.flush()
 
         obs = dict(
@@ -317,7 +319,7 @@ class TestWifi(ObservationTestCase):
         ]
         for e in entries:
             e.update(obs)
-        result = insert_measures_wifi.delay(entries, userid=1)
+        result = insert_measures_wifi.delay(entries, userid=user.id)
         self.assertEqual(result.get(), 4)
 
         observations = session.query(WifiObservation).all()
@@ -337,10 +339,13 @@ class TestWifi(ObservationTestCase):
         self.assertEqual(set([w.new_measures for w in wifis]), set([1, 3]))
         self.assertEqual(set([w.total_measures for w in wifis]), set([1, 3]))
 
-        scores = session.query(Score).all()
+        score_queue = self.celery_app.data_queues['update_score']
+        scores = score_queue.dequeue()
         self.assertEqual(len(scores), 1)
-        self.assertEqual(scores[0].key, ScoreKey.new_wifi)
-        self.assertEqual(scores[0].value, 8)
+        score = scores[0]
+        self.assertEqual(score['hashkey'].userid, user.id)
+        self.assertEqual(score['hashkey'].key, ScoreKey.new_wifi)
+        self.assertEqual(score['value'], 1)
 
         self.check_statcounter(StatKey.wifi, 4)
         self.check_statcounter(StatKey.unique_wifi, 1)

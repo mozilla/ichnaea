@@ -187,6 +187,12 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(seconds=61),
         'options': {'expires': 57},
     },
+    'update-score': {
+        'task': 'ichnaea.data.tasks.update_score',
+        'args': (1000, ),
+        'schedule': timedelta(seconds=63),
+        'options': {'expires': 57},
+    },
     'schedule-export-reports': {
         'task': 'ichnaea.data.tasks.schedule_export_reports',
         'schedule': timedelta(seconds=60),

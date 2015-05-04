@@ -13,7 +13,6 @@ from ichnaea.models import (
     WifiObservation,
     WifiReport,
 )
-from ichnaea import util
 
 
 class ReportQueueV1(DataTask):
@@ -122,14 +121,8 @@ class ReportQueueV1(DataTask):
                     countdown=countdown)
                 countdown += 1
 
-        if userid is not None:
-            scorekey = Score.to_hashkey(
-                userid=userid,
-                key=ScoreKey.location,
-                time=util.utcnow().date())
-            Score.incr(self.session, scorekey, len(positions))
-        if positions:
-            self.process_mapstat(positions)
+        self.process_mapstat(positions)
+        self.process_score(userid, positions)
 
     def process_report(self, data):
         def add_missing_dict_entries(dst, src):
@@ -189,9 +182,23 @@ class ReportQueueV1(DataTask):
         return (cell_observations, wifi_observations)
 
     def process_mapstat(self, positions):
+        if not positions:
+            return
+
         queue = self.task.app.data_queues['update_mapstat']
         positions = [{'lat': lat, 'lon': lon} for lat, lon in positions]
         queue.enqueue(positions, pipe=self.pipe)
+
+    def process_score(self, userid, positions):
+        if userid is None or len(positions) <= 0:
+            return
+
+        queue = self.task.app.data_queues['update_score']
+        key = Score.to_hashkey(
+            userid=userid,
+            key=ScoreKey.location,
+            time=None)
+        queue.enqueue([{'hashkey': key, 'value': len(positions)}])
 
     def process_user(self, nickname, email):
         userid = None

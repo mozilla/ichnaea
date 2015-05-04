@@ -53,6 +53,16 @@ class ObservationQueue(DataTask):
     def pre_process_entry(self, entry):
         entry['created'] = self.utcnow
 
+    def queue_scores(self, userid, new_stations):
+        # Credit the user with discovering any new stations.
+        if userid is None or new_stations <= 0:
+            return
+
+        queue = self.task.app.data_queues['update_score']
+        key = Score.to_hashkey(
+            userid=userid, key=self.station_score, time=None)
+        queue.enqueue([{'hashkey': key, 'value': int(new_stations)}])
+
     def insert(self, entries, userid=None):
         all_observations = []
         drop_counter = defaultdict(int)
@@ -98,17 +108,10 @@ class ObservationQueue(DataTask):
                 self.create_or_update_station(station, key, num,
                                               first_blacklisted)
 
-        # Credit the user with discovering any new stations.
-        if userid is not None and new_stations > 0:
-            scorekey = Score.to_hashkey(
-                userid=userid,
-                key=ScoreKey['new_' + self.station_type],
-                time=self.utcnow.date())
-            Score.incr(self.session, scorekey, new_stations)
-
         added = len(all_observations)
         self.emit_stats(added, drop_counter)
         self.emit_statcounters(added, new_stations)
+        self.queue_scores(userid, new_stations)
 
         self.session.add_all(all_observations)
 
@@ -161,6 +164,7 @@ class CellObservationQueue(ObservationQueue):
 
     stat_obs_key = StatKey.cell
     stat_station_key = StatKey.unique_cell
+    station_score = ScoreKey.new_cell
     station_type = "cell"
     station_model = Cell
     observation_model = CellObservation
@@ -186,6 +190,7 @@ class WifiObservationQueue(ObservationQueue):
 
     stat_obs_key = StatKey.wifi
     stat_station_key = StatKey.unique_wifi
+    station_score = ScoreKey.new_wifi
     station_type = "wifi"
     station_model = Wifi
     observation_model = WifiObservation
