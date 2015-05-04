@@ -66,7 +66,7 @@ TEST_CONFIG = DummyConfig({
     },
     'export:test': {
         'url': None,
-        'source_apikey': 'export',
+        'skip_keys': 'export',
         'batch': '3',
     },
     'locate:fallback': {

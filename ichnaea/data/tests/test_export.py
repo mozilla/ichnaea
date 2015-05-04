@@ -85,7 +85,7 @@ class TestExporter(BaseTest, CeleryTestCase):
         config = DummyConfig({
             'export:test': {
                 'url': None,
-                'source_apikey': 'export_source',
+                'skip_keys': 'export_source',
                 'batch': '3',
             },
             'export:everything': {
@@ -93,7 +93,7 @@ class TestExporter(BaseTest, CeleryTestCase):
                 'batch': '5',
             },
             'export:no_test': {
-                'source_apikey': 'test',
+                'skip_keys': 'test_1 test\ntest:-1',
                 'batch': '2',
             },
             'export:invalid_ftp': {

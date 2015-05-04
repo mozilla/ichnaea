@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import re
 import urlparse
 
 import redis
@@ -10,7 +11,7 @@ from ichnaea.customjson import (
 )
 
 EXPORT_QUEUE_PREFIX = 'queue_export_'
-_sentinel = object()
+WHITESPACE = re.compile('\s', flags=re.UNICODE)
 
 
 def configure_redis(redis_url, _client=None):
@@ -131,7 +132,8 @@ class ExportQueue(BaseQueue):
         self.metadata = bool(settings.get('metadata', False))
         self.url = settings.get('url', '') or ''
         self.scheme = urlparse.urlparse(self.url).scheme
-        self.source_apikey = settings.get('source_apikey', _sentinel)
+        skip_keys = WHITESPACE.split(settings.get('skip_keys', ''))
+        self.skip_keys = tuple([key for key in skip_keys if key])
 
     @property
     def monitor_name(self):
@@ -153,7 +155,7 @@ class ExportQueue(BaseQueue):
         return None
 
     def export_allowed(self, api_key):
-        return (api_key != self.source_apikey)
+        return (api_key not in self.skip_keys)
 
     def dequeue(self, queue_key, batch=100):
         return self._dequeue(queue_key, batch)
