@@ -27,6 +27,8 @@ Changes
 
 - Fixed upload issues for cell entries without any radio field.
 
+- Updated to latest versions of certifi, greenlet, pyramid, raven and requests.
+
 20150423105800
 **************
 
@@ -63,7 +65,7 @@ Changes
 
 - #423: Add a new queue system using the new geosubmit v2 internal format.
 
-- Updated to latests versions of boto and maxminddb.
+- Updated to latest versions of boto and maxminddb.
 
 20150409120500
 **************
@@ -79,7 +81,7 @@ Changes
 
 - Removed BBB code for old tasks and pre-hashkey queued values.
 
-- Updated to latests versions of alabaster, boto, factory_boy and pytz.
+- Updated to latest versions of alabaster, boto, factory_boy and pytz.
 
 20150320100800
 **************
@@ -95,7 +97,7 @@ Changes
 
 - Updated to latest version of Sphinx and its new dependencies.
 
-- Updated to latests versions of pyramid, requests, SQLAlchemy and statsd.
+- Updated to latest versions of pyramid, requests, SQLAlchemy and statsd.
 
 20150309175500
 **************

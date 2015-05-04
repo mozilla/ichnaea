@@ -10,8 +10,8 @@ loads==0.3
 more-itertools==2.2
 pexpect==3.3
 psutil==2.2.1
-pyzmq==14.5.0
-tempora==1.2
+pyzmq==14.6.0
+tempora==1.3
 ujson==1.33
 waitress==0.8.9
 ws4py==0.3.4
