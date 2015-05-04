@@ -527,10 +527,19 @@ class TestFallbackProvider(ProviderTest):
             'url': 'http://127.0.0.1:9/?api',
         }
 
-        self.cells = [
-            CellFactory.build().hashkey()._to_json_value() for _ in range(2)]
-        self.wifis = [
-            WifiFactory.build().hashkey()._to_json_value() for _ in range(2)]
+        self.cells = []
+        for cell in CellFactory.build_batch(2):
+            self.cells.append({
+                'radio': cell.radio.name,
+                'mcc': cell.mcc,
+                'mnc': cell.mnc,
+                'lac': cell.lac,
+                'cid': cell.cid,
+            })
+
+        self.wifis = []
+        for wifi in WifiFactory.build_batch(2):
+            self.wifis.append({'key': wifi.key})
 
     def test_successful_call_returns_location(self):
         response_location = {
@@ -555,6 +564,10 @@ class TestFallbackProvider(ProviderTest):
         self.assertEqual(location.lat, response_location['location']['lat'])
         self.assertEqual(location.lon, response_location['location']['lng'])
         self.assertEqual(location.accuracy, response_location['accuracy'])
+        self.check_raven(total=0)
+        self.check_stats(
+            counter=['m.fallback.lookup_status.200'],
+            timer=['m.fallback.lookup'])
 
     def test_failed_call_returns_empty_location(self):
         with requests_mock.Mocker() as mock:
@@ -582,17 +595,6 @@ class TestFallbackProvider(ProviderTest):
 
         self.assertFalse(location.found())
 
-    def test_500_response_returns_empty_location(self):
-        with requests_mock.Mocker() as mock:
-            mock.register_uri('POST', requests_mock.ANY, status_code=500)
-
-            location = self.provider.locate({
-                'cell': self.cells,
-                'wifi': self.wifis,
-            })
-
-        self.assertFalse(location.found())
-
     def test_403_response_returns_empty_location(self):
         with requests_mock.Mocker() as mock:
             mock.register_uri('POST', requests_mock.ANY, status_code=403)
@@ -603,6 +605,50 @@ class TestFallbackProvider(ProviderTest):
             })
 
         self.assertFalse(location.found())
+        self.check_raven([('HTTPError', 1)])
+        self.check_stats(counter=['m.fallback.lookup_status.403'])
+
+    def test_404_response_returns_empty_location(self):
+        response_json = {
+            'error': {
+                'errors': {
+                    'domain': 'geolocation',
+                    'reason': 'notFound',
+                    'message': 'Not Found',
+                },
+                'code': 404,
+                'message': 'Not Found'
+            }
+        }
+        with requests_mock.Mocker() as mock:
+            mock.register_uri(
+                'POST', requests_mock.ANY,
+                json=response_json,
+                status_code=404)
+
+            location = self.provider.locate({
+                'cell': self.cells,
+                'wifi': self.wifis,
+            })
+
+        self.assertFalse(location.found())
+        self.check_raven([('HTTPError', 0)])
+        self.check_stats(counter=['m.fallback.lookup_status.404'])
+
+    def test_500_response_returns_empty_location(self):
+        with requests_mock.Mocker() as mock:
+            mock.register_uri('POST', requests_mock.ANY, status_code=500)
+
+            location = self.provider.locate({
+                'cell': self.cells,
+                'wifi': self.wifis,
+            })
+
+        self.assertFalse(location.found())
+        self.check_raven([('HTTPError', 1)])
+        self.check_stats(
+            counter=['m.fallback.lookup_status.500'],
+            timer=['m.fallback.lookup'])
 
     def test_no_call_made_when_not_allowed_for_apikey(self):
         self.provider.api_key.allow_fallback = False
@@ -631,10 +677,15 @@ class TestFallbackProvider(ProviderTest):
         }, EmptyLocation()))
 
     def test_should_provide_location_if_only_geoip_location_found(self):
+        london = self.geoip_data['London']
         geoip_location = Position(
-            source=DataSource.GeoIP, lat=1.0, lon=1.0, accuracy=1.0)
+            source=DataSource.GeoIP,
+            lat=london['latitude'],
+            lon=london['longitude'],
+            accuracy=london['accuracy'])
         query_data = {
             'cell': [],
+            'geoip': london['ip'],
             'wifi': self.wifis,
         }
         self.assertTrue(

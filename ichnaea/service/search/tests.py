@@ -125,21 +125,20 @@ class TestSearch(AppTestCase):
         )
 
     def test_ok_geoip(self):
-        app = self.app
         london = self.geoip_data['London']
-        res = app.post_json(
+        res = self.app.post_json(
             '/v1/search?key=test',
-            {"wifi": [
-                {"key": "a0fffffff0ff"}, {"key": "b1ffff0fffff"},
-                {"key": "c2fffffffff0"}, {"key": "d3fffff0ffff"},
+            {'wifi': [
+                {'key': 'a0fffffff0ff'}, {'key': 'b1ffff0fffff'},
+                {'key': 'c2fffffffff0'}, {'key': 'd3fffff0ffff'},
             ]},
             extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"status": "ok",
-                                    "lat": london['latitude'],
-                                    "lon": london['longitude'],
-                                    "accuracy": london['accuracy']})
+        self.assertEqual(res.json, {'status': 'ok',
+                                    'lat': london['latitude'],
+                                    'lon': london['longitude'],
+                                    'accuracy': london['accuracy']})
 
         self.check_stats(
             timer=[('request.v1.search', 1)],
@@ -214,32 +213,6 @@ class TestSearch(AppTestCase):
         self.check_stats(counter=['search.api_key.test',
                                   'search.miss',
                                   'search.api_log.test.wifi_miss'])
-
-    def test_geoip_fallback(self):
-        app = self.app
-        london = self.geoip_data['London']
-        res = app.post_json(
-            '/v1/search?key=test',
-            {"wifi": [
-                {"key": "a0fffffff0ff"}, {"key": "b1ffff0fffff"},
-                {"key": "c2fffffffff0"}, {"key": "d3fffff0ffff"},
-            ]},
-            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
-            status=200)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"status": "ok",
-                                    "lat": london['latitude'],
-                                    "lon": london['longitude'],
-                                    "accuracy": london['accuracy']})
-
-        self.check_stats(
-            timer=[('request.v1.search', 1)],
-            counter=[('search.api_key.test', 1),
-                     ('search.geoip_hit', 1),
-                     ('request.v1.search.200', 1),
-                     ('search.geoip_city_found', 1),
-                     ('search.api_log.test.wifi_miss', 1)],
-        )
 
     def test_empty_request_means_geoip(self):
         app = self.app

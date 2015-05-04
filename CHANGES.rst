@@ -10,8 +10,12 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- e9c1224f6bb: Add allow_fallback column to api_key table.
+
 Changes
 ~~~~~~~
+
+- #421: Add fallback geolocation provider.
 
 - Deal with nan/inf floating point numbers in data submissions.
 

@@ -15,7 +15,9 @@ import sqlalchemy as sa
 
 
 def upgrade():
-    stmt = "ALTER TABLE api_key ADD COLUMN allow_fallback tinyint(1) AFTER description"
+    stmt = 'ALTER TABLE api_key ADD COLUMN allow_fallback tinyint(1) AFTER log'
+    op.execute(sa.text(stmt))
+    stmt = 'UPDATE api_key SET allow_fallback = 0 WHERE allow_fallback IS NULL'
     op.execute(sa.text(stmt))
 
 

@@ -32,15 +32,14 @@ class ApiKey(HashKeyMixin, _Model):
     maxreq = Column(Integer)
     # Extended logging enabled?
     log = Column(Boolean)
+    # Allow this API key to make external fallback calls
+    allow_fallback = Column(Boolean)
     # A readable short name used in metrics
     shortname = Column(String(40))
     # A contact address
     email = Column(String(255))
     # Some free form context / description
     description = Column(String(255))
-
-    # Allow this API key to make external fallback calls
-    allow_fallback = Column(Boolean)
 
     @property
     def name(self):

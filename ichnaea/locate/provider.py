@@ -592,14 +592,20 @@ class FallbackProvider(Provider):
         query_data = self._prepare_data(data)
 
         try:
-            response = requests.post(
-                self.settings['url'],
-                headers={'User-Agent': 'ichnaea'},
-                json=query_data,
-                timeout=5.0,
-                verify=False,
-            )
-            response.raise_for_status()
+            with self.stat_timer('fallback.lookup'):
+                response = requests.post(
+                    self.settings['url'],
+                    headers={'User-Agent': 'ichnaea'},
+                    json=query_data,
+                    timeout=5.0,
+                    verify=False,
+                )
+            self.stat_count('fallback.lookup_status.%s' % response.status_code)
+            if response.status_code == 404:
+                # don't log exceptions for normal not found responses
+                response = None
+            else:
+                response.raise_for_status()
         except requests.exceptions.RequestException:
             self.raven_client.captureException()
             response = None
@@ -607,13 +613,10 @@ class FallbackProvider(Provider):
         if response:
             try:
                 json_data = response.json()
-                lat = json_data['location']['lat']
-                lon = json_data['location']['lng']
-                accuracy = json_data['accuracy']
                 location = self.location_type(
-                    lat=lat,
-                    lon=lon,
-                    accuracy=accuracy,
+                    lat=json_data['location']['lat'],
+                    lon=json_data['location']['lng'],
+                    accuracy=json_data['accuracy'],
                 )
             except (KeyError, TypeError):
                 self.raven_client.captureException()
