@@ -2,6 +2,7 @@ from collections import defaultdict, namedtuple
 from enum import IntEnum
 from functools import partial
 import operator
+import time
 
 import mobile_codes
 import requests
@@ -24,6 +25,7 @@ from ichnaea.models import (
 )
 from ichnaea.locate.location import Position, Country
 from ichnaea.locate.stats import StatsLogger
+from ichnaea.rate_limit import rate_limit
 
 
 # parameters for wifi clustering
@@ -59,10 +61,12 @@ class Provider(StatsLogger):
     location_type = None
     source = DataSource.Internal
 
-    def __init__(self, session_db, geoip_db, settings, *args, **kwargs):
+    def __init__(self, session_db, geoip_db,
+                 redis_client, settings, *args, **kwargs):
         self.session_db = session_db
         self.geoip_db = geoip_db
         self.settings = settings
+        self.redis_client = redis_client
         self.location_type = partial(self.location_type, source=self.source)
         super(Provider, self).__init__(*args, **kwargs)
 
@@ -550,6 +554,12 @@ class FallbackProvider(Provider):
     location_type = Position
     source = DataSource.Fallback
 
+    def __init__(self, settings, *args, **kwargs):
+        self.url = settings['url']
+        self.ratelimit = int(settings.get('ratelimit', 0))
+        super(FallbackProvider, self).__init__(
+            settings=settings, *args, **kwargs)
+
     def _prepare_cell(self, cell):
         radio = cell.get('radio', None)
         if radio is not None:
@@ -593,15 +603,30 @@ class FallbackProvider(Provider):
             (cell_found or wifi_found)
         )
 
+    def get_ratelimit_key(self):
+        return 'fallback:{time}'.format(time=int(time.time()))
+
+    def limit_reached(self):
+        return self.ratelimit and rate_limit(
+            self.redis_client,
+            self.get_ratelimit_key(),
+            maxreq=self.ratelimit,
+            expire=60,
+            fail_on_error=True,
+        )
+
     def locate(self, data):
         location = self.location_type(query_data=False)
+
+        if self.limit_reached():
+            return location
 
         query_data = self._prepare_data(data)
 
         try:
             with self.stat_timer('fallback.lookup'):
                 response = requests.post(
-                    self.settings['url'],
+                    self.url,
                     headers={'User-Agent': 'ichnaea'},
                     json=query_data,
                     timeout=5.0,

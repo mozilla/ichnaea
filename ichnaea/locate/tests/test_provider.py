@@ -1,7 +1,9 @@
 import mobile_codes
 import random
 
+import mock
 import requests_mock
+from redis import ConnectionError
 from requests.exceptions import RequestException
 
 from ichnaea.constants import (
@@ -37,13 +39,15 @@ from ichnaea.tests.base import (
     GB_LON,
     GB_MCC,
     USA_MCC,
+    RedisIsolation,
 )
 from ichnaea.tests.factories import CellFactory, WifiFactory
 
 
-class ProviderTest(DBTestCase, GeoIPIsolation):
+class ProviderTest(DBTestCase, GeoIPIsolation, RedisIsolation):
 
     default_session = 'db_ro_session'
+    settings = {}
 
     class TestProvider(Provider):
         location_type = Position
@@ -53,9 +57,11 @@ class ProviderTest(DBTestCase, GeoIPIsolation):
     def setUpClass(cls):
         DBTestCase.setUpClass()
         GeoIPIsolation.setup_geoip(raven_client=cls.raven_client)
+        RedisIsolation.setup_redis()
 
     @classmethod
     def tearDownClass(cls):
+        RedisIsolation.teardown_redis()
         GeoIPIsolation.teardown_geoip()
         DBTestCase.tearDownClass()
 
@@ -65,10 +71,15 @@ class ProviderTest(DBTestCase, GeoIPIsolation):
         self.provider = self.TestProvider(
             session_db=self.session,
             geoip_db=self.geoip_db,
-            settings={},
+            redis_client=self.redis_client,
+            settings=self.settings,
             api_key=ApiKey(shortname='test', log=True),
             api_name='m',
         )
+
+    def tearDown(self):
+        self.cleanup_redis()
+        self.teardown_session()
 
 
 class TestProvider(ProviderTest):
@@ -518,13 +529,23 @@ class TestGeoIPCountryProvider(ProviderTest):
 class TestFallbackProvider(ProviderTest):
 
     TestProvider = FallbackProvider
+    settings = {
+        'url': 'http://127.0.0.1:9/?api',
+        'ratelimit': '5',
+    }
 
     def setUp(self):
         super(TestFallbackProvider, self).setUp()
 
         self.provider.api_key.allow_fallback = True
-        self.provider.settings = {
-            'url': 'http://127.0.0.1:9/?api',
+
+        self.response_location = {
+            'location': {
+                'lat': 51.5366,
+                'lng': 0.03989,
+            },
+            'accuracy': 1500,
+            'fallback': 'lacf',
         }
 
         self.cells = []
@@ -542,18 +563,9 @@ class TestFallbackProvider(ProviderTest):
             self.wifis.append({'key': wifi.key})
 
     def test_successful_call_returns_location(self):
-        response_location = {
-            'location': {
-                'lat': 51.5366,
-                'lng': 0.03989,
-            },
-            'accuracy': 1500,
-            'fallback': 'lacf',
-        }
-
-        with requests_mock.Mocker() as mock:
-            mock.register_uri(
-                'POST', requests_mock.ANY, json=response_location)
+        with requests_mock.Mocker() as mock_request:
+            mock_request.register_uri(
+                'POST', requests_mock.ANY, json=self.response_location)
 
             location = self.provider.locate({
                 'cell': self.cells,
@@ -561,20 +573,23 @@ class TestFallbackProvider(ProviderTest):
             })
 
         self.assertTrue(location.found())
-        self.assertEqual(location.lat, response_location['location']['lat'])
-        self.assertEqual(location.lon, response_location['location']['lng'])
-        self.assertEqual(location.accuracy, response_location['accuracy'])
+        self.assertEqual(
+            location.lat, self.response_location['location']['lat'])
+        self.assertEqual(
+            location.lon, self.response_location['location']['lng'])
+        self.assertEqual(
+            location.accuracy, self.response_location['accuracy'])
         self.check_raven(total=0)
         self.check_stats(
             counter=['m.fallback.lookup_status.200'],
             timer=['m.fallback.lookup'])
 
     def test_failed_call_returns_empty_location(self):
-        with requests_mock.Mocker() as mock:
+        with requests_mock.Mocker() as mock_request:
             def raise_request_exception(request, context):
                 raise RequestException()
 
-            mock.register_uri(
+            mock_request.register_uri(
                 'POST', requests_mock.ANY, json=raise_request_exception)
 
             location = self.provider.locate({
@@ -585,8 +600,9 @@ class TestFallbackProvider(ProviderTest):
         self.assertFalse(location.found())
 
     def test_invalid_json_returns_empty_location(self):
-        with requests_mock.Mocker() as mock:
-            mock.register_uri('POST', requests_mock.ANY, json='[invalid json')
+        with requests_mock.Mocker() as mock_request:
+            mock_request.register_uri(
+                'POST', requests_mock.ANY, json='[invalid json')
 
             location = self.provider.locate({
                 'cell': self.cells,
@@ -596,8 +612,9 @@ class TestFallbackProvider(ProviderTest):
         self.assertFalse(location.found())
 
     def test_403_response_returns_empty_location(self):
-        with requests_mock.Mocker() as mock:
-            mock.register_uri('POST', requests_mock.ANY, status_code=403)
+        with requests_mock.Mocker() as mock_request:
+            mock_request.register_uri(
+                'POST', requests_mock.ANY, status_code=403)
 
             location = self.provider.locate({
                 'cell': self.cells,
@@ -620,8 +637,9 @@ class TestFallbackProvider(ProviderTest):
                 'message': 'Not Found'
             }
         }
-        with requests_mock.Mocker() as mock:
-            mock.register_uri(
+
+        with requests_mock.Mocker() as mock_request:
+            mock_request.register_uri(
                 'POST', requests_mock.ANY,
                 json=response_json,
                 status_code=404)
@@ -636,8 +654,9 @@ class TestFallbackProvider(ProviderTest):
         self.check_stats(counter=['m.fallback.lookup_status.404'])
 
     def test_500_response_returns_empty_location(self):
-        with requests_mock.Mocker() as mock:
-            mock.register_uri('POST', requests_mock.ANY, status_code=500)
+        with requests_mock.Mocker() as mock_request:
+            mock_request.register_uri(
+                'POST', requests_mock.ANY, status_code=500)
 
             location = self.provider.locate({
                 'cell': self.cells,
@@ -682,21 +701,70 @@ class TestFallbackProvider(ProviderTest):
             source=DataSource.GeoIP,
             lat=london['latitude'],
             lon=london['longitude'],
-            accuracy=london['accuracy'])
+            accuracy=london['accuracy'],
+        )
+
         query_data = {
             'cell': [],
             'geoip': london['ip'],
             'wifi': self.wifis,
         }
+
         self.assertTrue(
             self.provider.should_locate(query_data, geoip_location))
 
     def test_should_not_provide_location_if_non_geoip_location_found(self):
         internal_location = Position(
             source=DataSource.Internal, lat=1.0, lon=1.0, accuracy=1.0)
+
         query_data = {
             'cell': [],
             'wifi': self.wifis,
         }
+
         self.assertFalse(
             self.provider.should_locate(query_data, internal_location))
+
+    def test_rate_limiting_allows_calls_below_ratelimit(self):
+        with requests_mock.Mocker() as mock_request:
+            mock_request.register_uri(
+                'POST', requests_mock.ANY, json=self.response_location)
+
+            for _ in range(self.provider.ratelimit):
+                location = self.provider.locate({
+                    'cell': self.cells,
+                    'wifi': self.wifis,
+                })
+
+                self.assertTrue(location.found())
+
+    def test_rate_limiting_blocks_calls_above_ratelimit(self):
+        with requests_mock.Mocker() as mock_request:
+            mock_request.register_uri(
+                'POST', requests_mock.ANY, json=self.response_location)
+
+            ratelimit_key = self.provider.get_ratelimit_key()
+            self.redis_client.set(ratelimit_key, self.provider.ratelimit)
+
+            location = self.provider.locate({
+                'cell': self.cells,
+                'wifi': self.wifis,
+            })
+
+            self.assertFalse(location.found())
+
+    def test_redis_connection_failure_prevents_external_call(self):
+        mock_redis_client = mock.Mock()
+        mock_redis_client.pipeline.side_effect = ConnectionError()
+        self.provider.redis_client = mock_redis_client
+
+        with requests_mock.Mocker() as mock_request:
+            mock_request.register_uri(
+                'POST', requests_mock.ANY, json=self.response_location)
+
+            location = self.provider.locate({
+                'cell': self.cells,
+                'wifi': self.wifis,
+            })
+
+            self.assertFalse(location.found())

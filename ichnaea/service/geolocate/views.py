@@ -43,6 +43,7 @@ def geolocate_view(request, api_key):
     result = PositionSearcher(
         session_db=request.db_ro_session,
         geoip_db=request.registry.geoip_db,
+        redis_client=request.registry.redis_client,
         settings=request.registry.settings,
         api_key=api_key,
         api_name='geolocate',

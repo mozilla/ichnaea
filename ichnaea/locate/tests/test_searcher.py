@@ -62,6 +62,7 @@ class SearcherTest(DBTestCase, GeoIPIsolation):
         return TestSearcher(
             session_db=self.session,
             geoip_db=self.geoip_db,
+            redis_client=None,
             settings={},
             api_key=ApiKey(shortname='test', log=True),
             api_name='m',
