@@ -69,6 +69,11 @@ TEST_CONFIG = DummyConfig({
         'skip_keys': 'export',
         'batch': '3',
     },
+    'export:internal': {
+        'url': 'internal://',
+        'metadata': 'true',
+        'batch': '0',
+    },
     'locate:fallback': {
         'url': 'http://127.0.0.1:9/?api',
     },

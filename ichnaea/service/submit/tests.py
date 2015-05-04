@@ -13,6 +13,7 @@ from ichnaea.models import (
     WifiObservation,
 )
 from ichnaea.customjson import dumps
+from ichnaea.data.tasks import schedule_export_reports
 from ichnaea.service.error import preprocess_request
 from ichnaea.tests.base import (
     CeleryAppTestCase,
@@ -110,6 +111,7 @@ class TestSubmit(CeleryAppTestCase):
                         "cell": cell_data}]},
             status=204)
         self.assertEqual(res.body, '')
+        schedule_export_reports.delay().get()
 
         session = self.session
         cell_result = session.query(CellObservation).all()
@@ -148,6 +150,8 @@ class TestSubmit(CeleryAppTestCase):
                                       "wifi": wifi_data}]},
             status=204)
         self.assertEqual(res.body, '')
+        schedule_export_reports.delay().get()
+
         session = self.session
         wifi_result = session.query(WifiObservation).all()
         self.assertEqual(len(wifi_result), 2)
@@ -181,10 +185,9 @@ class TestSubmit(CeleryAppTestCase):
         # let's add a bad one, this will just be skipped
         items.append({'lat': 10, 'lon': 10, 'whatever': 'xx'})
         app.post_json('/v1/submit', {"items": items}, status=204)
+        schedule_export_reports.delay().get()
 
-        session = self.session
-
-        result = session.query(WifiObservation).all()
+        result = self.session.query(WifiObservation).all()
         self.assertEqual(len(result), EXPECTED_RECORDS)
 
     def test_mapstat(self):
@@ -207,6 +210,8 @@ class TestSubmit(CeleryAppTestCase):
                  'wifi': [{'key': 'invalid'}]},
             ]},
             status=204)
+        schedule_export_reports.delay().get()
+
         # check queued values
         queue = self.celery_app.data_queues['update_mapstat']
         positions = set([(pos['lat'], pos['lon']) for pos in queue.dequeue()])
@@ -230,6 +235,7 @@ class TestSubmit(CeleryAppTestCase):
             ]},
             headers={'X-Nickname': nickname},
             status=204)
+        schedule_export_reports.delay().get()
 
         users = self.session.query(User).all()
         self.assertEqual(len(users), 1)
@@ -258,6 +264,8 @@ class TestSubmit(CeleryAppTestCase):
             ]},
             headers={'X-Nickname': 'a'},
             status=204)
+        schedule_export_reports.delay().get()
+
         self.assertEqual(self.session.query(User).count(), 0)
         queue = self.celery_app.data_queues['update_score']
         self.assertEqual(queue.size(), 0)
@@ -277,8 +285,9 @@ class TestSubmit(CeleryAppTestCase):
                 'X-Email': email,
             },
             status=204)
-        session = self.session
-        result = session.query(User).all()
+        schedule_export_reports.delay().get()
+
+        result = self.session.query(User).all()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].email, email.decode('utf-8'))
 
@@ -303,6 +312,8 @@ class TestSubmit(CeleryAppTestCase):
                 'X-Email': new_email,
             },
             status=204)
+        schedule_export_reports.delay().get()
+
         result = session.query(User).all()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].email, new_email.decode('utf-8'))
@@ -322,8 +333,9 @@ class TestSubmit(CeleryAppTestCase):
                 'X-Email': email,
             },
             status=204)
-        session = self.session
-        result = session.query(User).all()
+        schedule_export_reports.delay().get()
+
+        result = self.session.query(User).all()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].email, '')
 
@@ -340,8 +352,9 @@ class TestSubmit(CeleryAppTestCase):
                 'X-Email': email,
             },
             status=204)
-        session = self.session
-        result = session.query(User).all()
+        schedule_export_reports.delay().get()
+
+        result = self.session.query(User).all()
         self.assertEqual(len(result), 0)
 
     def test_error(self):
@@ -433,6 +446,7 @@ class TestSubmit(CeleryAppTestCase):
                         }]},
             status=204)
         self.assertEqual(res.body, '')
+        schedule_export_reports.delay().get()
 
         self.check_stats(
             counter=['items.api_log.test.uploaded.batches',
@@ -466,6 +480,7 @@ class TestSubmit(CeleryAppTestCase):
 
         res = app.post_json('/v1/submit', {"items": data}, status=204)
         self.assertEqual(res.body, '')
+        schedule_export_reports.delay().get()
 
         cell_result = session.query(CellObservation).all()
         self.assertEqual(len(cell_result), 0)
@@ -494,6 +509,8 @@ class TestSubmit(CeleryAppTestCase):
                 }]
             }]},
             status=204)
+        schedule_export_reports.delay().get()
+
         self.assertEqual(self.session.query(CellObservation).count(), 1)
 
     def test_missing_radio_top_level(self):
@@ -511,6 +528,8 @@ class TestSubmit(CeleryAppTestCase):
                 }]
             }]},
             status=204)
+        schedule_export_reports.delay().get()
+
         self.assertEqual(self.session.query(CellObservation).count(), 1)
 
     def test_missing_radio(self):
@@ -527,6 +546,8 @@ class TestSubmit(CeleryAppTestCase):
                 }]
             }]},
             status=204)
+        schedule_export_reports.delay().get()
+
         self.assertEqual(self.session.query(CellObservation).count(), 0)
 
     def test_invalid_radio(self):
@@ -544,4 +565,6 @@ class TestSubmit(CeleryAppTestCase):
                 }]
             }]},
             status=204)
+        schedule_export_reports.delay().get()
+
         self.assertEqual(self.session.query(CellObservation).count(), 0)

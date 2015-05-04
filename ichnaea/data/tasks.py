@@ -7,6 +7,7 @@ from ichnaea.data.area import (
 )
 from ichnaea.data.export import (
     GeosubmitUploader,
+    InternalUploader,
     ExportScheduler,
     ReportExporter,
     S3Uploader,
@@ -122,6 +123,7 @@ def upload_reports(self, export_queue_name, data, queue_key=None):
     uploaders = {
         'http': GeosubmitUploader,
         'https': GeosubmitUploader,
+        'internal': InternalUploader,
         's3': S3Uploader,
     }
     export_queue = self.app.export_queues[export_queue_name]

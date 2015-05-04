@@ -36,7 +36,7 @@ def mock_s3(mock_keys):
             yield mock_key
 
 
-class BaseTest(object):
+class BaseExportTest(CeleryTestCase):
 
     def add_reports(self, number=3, api_key='test', email=None):
         reports = []
@@ -78,7 +78,7 @@ class BaseTest(object):
         return self.redis_client.llen(redis_key)
 
 
-class TestExporter(BaseTest, CeleryTestCase):
+class TestExporter(BaseExportTest):
 
     def setUp(self):
         super(TestExporter, self).setUp()
@@ -149,7 +149,7 @@ class TestExporter(BaseTest, CeleryTestCase):
         self.assertEqual(self.queue_length(self.test_queue_key), 1)
 
 
-class TestGeosubmitUploader(BaseTest, CeleryTestCase):
+class TestGeosubmitUploader(BaseExportTest):
 
     def setUp(self):
         super(TestGeosubmitUploader, self).setUp()
@@ -228,7 +228,7 @@ class TestGeosubmitUploader(BaseTest, CeleryTestCase):
         )
 
 
-class TestS3Uploader(BaseTest, CeleryTestCase):
+class TestS3Uploader(BaseExportTest):
 
     def setUp(self):
         super(TestS3Uploader, self).setUp()

@@ -177,7 +177,7 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
         if data:
             # deserialize and validate radio field early
             radio_node = self.fields['radio']
-            radio = radio_node.deserialize(data['radio'])
+            radio = radio_node.deserialize(data.get('radio', colander.null))
             if radio_node.validator(radio_node, radio):
                 data['radio'] = radio
 

@@ -1,8 +1,4 @@
-from ichnaea.customjson import kombu_dumps
-from ichnaea.data.tasks import (
-    insert_measures,
-    queue_reports,
-)
+from ichnaea.data.tasks import queue_reports
 from ichnaea.service.error import preprocess_request
 
 
@@ -57,31 +53,11 @@ class BaseSubmitter(object):
         self.emit_upload_metrics(len(request_data['items']))
         return request_data
 
-    def prepare_measure_data(self, request_data):  # pragma: no cover
-        raise NotImplementedError()
-
-    def insert_measures(self, request_data):
-        # batch incoming data into multiple tasks, in case someone
-        # manages to submit us a huge single request
-        submit_data = self.prepare_measure_data(request_data)
-        for i in range(0, len(submit_data), 100):
-            batch = kombu_dumps(submit_data[i:i + 100])
-            # insert observations, expire the task if it wasn't processed
-            # after six hours to avoid queue overload
-            insert_measures.apply_async(
-                kwargs={
-                    'api_key_text': self.api_key.valid_key,
-                    'email': self.email,
-                    'items': batch,
-                    'nickname': self.nickname,
-                },
-                expires=21600)
-
     def prepare_reports(self, request_data):  # pragma: no cover
         raise NotImplementedError()
 
     def submit(self, request_data):
-        # secondary data pipeline using new internal data format
+        # data pipeline using new internal data format
         reports = self.prepare_reports(request_data)
         for i in range(0, len(reports), 100):
             batch = reports[i:i + 100]

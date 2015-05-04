@@ -1,5 +1,4 @@
 import calendar
-import copy
 import time
 
 import iso8601
@@ -24,19 +23,6 @@ class Submitter(BaseSubmitter):
 
     schema = SubmitSchema
     error_response = JSONError
-
-    def prepare_measure_data(self, request_data):
-        reports = []
-        for item in request_data['items']:
-            report = copy.deepcopy(item)
-            report_radio = report['radio']
-            for cell in report['cell']:
-                if cell['radio'] is None:
-                    cell['radio'] = report_radio
-            reports.append(report)
-            if 'radio' in report:
-                del report['radio']
-        return reports
 
     def prepare_reports(self, request_data):
         def conditional_set(item, target, value, missing):
@@ -141,14 +127,8 @@ def submit_view(request, api_key):
     request_data = submitter.preprocess()
 
     try:
-        submitter.insert_measures(request_data)
-    except ConnectionError:  # pragma: no cover
-        return HTTPServiceUnavailable()
-
-    try:
         submitter.submit(request_data)
     except ConnectionError:  # pragma: no cover
-        # secondary pipeline is considered non-essential for now
-        pass
+        return HTTPServiceUnavailable()
 
     return HTTPNoContent()

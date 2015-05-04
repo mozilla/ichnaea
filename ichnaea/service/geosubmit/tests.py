@@ -1,5 +1,6 @@
 import time
 
+from ichnaea.data.tasks import schedule_export_reports
 from ichnaea.models import (
     Cell,
     CellObservation,
@@ -47,6 +48,7 @@ class TestGeoSubmit(CeleryAppTestCase):
                  }]},
             ]},
             status=200)
+        schedule_export_reports.delay().get()
 
         # check that we get an empty response
         self.assertEqual(res.content_type, 'application/json')
@@ -103,6 +105,7 @@ class TestGeoSubmit(CeleryAppTestCase):
                  }]},
             ]},
             status=200)
+        schedule_export_reports.delay().get()
 
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {})
@@ -147,6 +150,7 @@ class TestGeoSubmit(CeleryAppTestCase):
                  }]},
             ]},
             status=200)
+        schedule_export_reports.delay().get()
 
         # check that we get an empty response
         self.assertEqual(res.content_type, 'application/json')
@@ -174,6 +178,7 @@ class TestGeoSubmit(CeleryAppTestCase):
                  }]},
             ]},
             status=200)
+        schedule_export_reports.delay().get()
 
         observations = self.session.query(CellObservation).all()
         self.assertEqual(len(observations), 0)
@@ -197,6 +202,7 @@ class TestGeoSubmit(CeleryAppTestCase):
                 ]},
             ]},
             status=200)
+        schedule_export_reports.delay().get()
 
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {})
@@ -218,7 +224,6 @@ class TestGeoSubmit(CeleryAppTestCase):
             timer=['items.api_log.test.uploaded.batch_size'])
 
     def test_ok_no_existing_wifi(self):
-        session = self.session
         wifi = WifiFactory.build()
 
         res = self.app.post_json(
@@ -236,17 +241,18 @@ class TestGeoSubmit(CeleryAppTestCase):
                  }]},
             ]},
             status=200)
+        schedule_export_reports.delay().get()
 
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {})
 
         # Check that wifi exists
-        query = session.query(Wifi)
+        query = self.session.query(Wifi)
         count = query.filter(Wifi.key == wifi.key).count()
         self.assertEquals(count, 1)
 
         # check that WifiObservation records are created
-        result = session.query(WifiObservation).all()
+        result = self.session.query(WifiObservation).all()
         self.assertEquals(len(result), 1)
         obs = result[0]
         self.assertEqual(obs.lat, wifi.lat)
@@ -270,13 +276,14 @@ class TestGeoSubmit(CeleryAppTestCase):
                  }]},
             ]},
             status=200)
+        schedule_export_reports.delay().get()
+
         obs = self.session.query(WifiObservation).all()
         self.assertEqual(len(obs), 1)
         self.assertFalse(obs[0].accuracy)
         self.assertFalse(obs[0].altitude)
 
     def test_invalid_json(self):
-        session = self.session
         wifi = WifiFactory.build()
         self.app.post_json(
             '/v1/geosubmit?key=test',
@@ -288,10 +295,11 @@ class TestGeoSubmit(CeleryAppTestCase):
                  }]},
             ]},
             status=400)
-        self.assertEquals(session.query(WifiObservation).count(), 0)
+        schedule_export_reports.delay().get()
+
+        self.assertEquals(self.session.query(WifiObservation).count(), 0)
 
     def test_invalid_latitude(self):
-        session = self.session
         wifi = WifiFactory.build()
         self.app.post_json(
             '/v1/geosubmit?key=test',
@@ -303,7 +311,9 @@ class TestGeoSubmit(CeleryAppTestCase):
                  }]},
             ]},
             status=200)
-        self.assertEquals(session.query(WifiObservation).count(), 0)
+        schedule_export_reports.delay().get()
+
+        self.assertEquals(self.session.query(WifiObservation).count(), 0)
 
     def test_invalid_cell(self):
         cell = CellFactory.build()
@@ -321,6 +331,8 @@ class TestGeoSubmit(CeleryAppTestCase):
                  }]},
             ]},
             status=200)
+        schedule_export_reports.delay().get()
+
         self.assertEquals(self.session.query(CellObservation).count(), 0)
 
     def test_invalid_radiotype(self):
@@ -346,12 +358,13 @@ class TestGeoSubmit(CeleryAppTestCase):
                  }]},
             ]},
             status=200)
+        schedule_export_reports.delay().get()
+
         obs = self.session.query(CellObservation).all()
         self.assertEqual(len(obs), 1)
         self.assertEqual(obs[0].cid, cell2.cid)
 
     def test_duplicated_cell_observations(self):
-        session = self.session
         cell = CellFactory.build()
         self.app.post_json(
             '/v1/geosubmit?key=test',
@@ -374,10 +387,11 @@ class TestGeoSubmit(CeleryAppTestCase):
                  ]},
             ]},
             status=200)
-        self.assertEquals(session.query(CellObservation).count(), 1)
+        schedule_export_reports.delay().get()
+
+        self.assertEquals(self.session.query(CellObservation).count(), 1)
 
     def test_duplicated_wifi_observations(self):
-        session = self.session
         wifi = WifiFactory.build()
         self.app.post_json(
             '/v1/geosubmit?key=test',
@@ -392,12 +406,13 @@ class TestGeoSubmit(CeleryAppTestCase):
                  ]},
             ]},
             status=200)
-        self.assertEquals(session.query(WifiObservation).count(), 1)
+        schedule_export_reports.delay().get()
+
+        self.assertEquals(self.session.query(WifiObservation).count(), 1)
 
     def test_email_header(self):
         nickname = 'World Tr\xc3\xa4veler'
         email = 'world_tr\xc3\xa4veler@email.com'
-        session = self.session
         wifis = WifiFactory.create_batch(2)
         self.app.post_json(
             '/v1/geosubmit?key=test',
@@ -414,14 +429,13 @@ class TestGeoSubmit(CeleryAppTestCase):
                 'X-Email': email,
             },
             status=200)
+        schedule_export_reports.delay().get()
 
-        session = self.session
-        result = session.query(User).all()
+        result = self.session.query(User).all()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].email, email.decode('utf-8'))
 
     def test_batches(self):
-        session = self.session
         batch_size = 110
         wifis = WifiFactory.create_batch(batch_size)
         items = [{"latitude": wifis[i].lat,
@@ -433,8 +447,9 @@ class TestGeoSubmit(CeleryAppTestCase):
         items.append({'lat': 10, 'lon': 10, 'whatever': 'xx'})
         self.app.post_json('/v1/geosubmit?key=test',
                            {"items": items}, status=200)
+        schedule_export_reports.delay().get()
 
-        result = session.query(WifiObservation).all()
+        result = self.session.query(WifiObservation).all()
         self.assertEqual(len(result), batch_size)
 
     def test_log_unknown_api_key(self):
@@ -450,6 +465,7 @@ class TestGeoSubmit(CeleryAppTestCase):
                 ]},
             ]},
             status=200)
+        schedule_export_reports.delay().get()
 
         self.check_stats(
             counter=['geosubmit.unknown_api_key',

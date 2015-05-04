@@ -1,11 +1,9 @@
-from datetime import datetime
 import time
 
 from pyramid.httpexceptions import (
     HTTPOk,
     HTTPServiceUnavailable,
 )
-from pytz import utc
 from redis import ConnectionError
 
 from ichnaea.service.base import check_api_key
@@ -23,57 +21,6 @@ class GeoSubmitter(BaseSubmitter):
 
     schema = GeoSubmitBatchSchema
     error_response = JSONParseError
-
-    def prepare_measure_data(self, request_data):
-        batch_list = []
-        for batch in request_data['items']:
-            normalized_cells = []
-            for c in batch['cellTowers']:
-                cell_radio = c['radioType']
-                if not cell_radio:
-                    cell_radio = batch['radioType']
-                cell = {}
-                cell['radio'] = cell_radio
-                cell['mcc'] = c['mobileCountryCode']
-                cell['mnc'] = c['mobileNetworkCode']
-                cell['lac'] = c['locationAreaCode']
-                cell['cid'] = c['cellId']
-                cell['psc'] = c['psc']
-                cell['asu'] = c['asu']
-                cell['signal'] = c['signalStrength']
-                cell['ta'] = c['timingAdvance']
-                normalized_cells.append(cell)
-
-            normalized_wifi = []
-            for w in batch['wifiAccessPoints']:
-                wifi = {}
-                wifi['key'] = w['macAddress']
-                wifi['frequency'] = w['frequency']
-                wifi['channel'] = w['channel']
-                wifi['signal'] = w['signalStrength']
-                wifi['snr'] = w['signalToNoiseRatio']
-                normalized_wifi.append(wifi)
-
-            timestamp = batch['timestamp']
-            if timestamp == 0:
-                timestamp = time.time() * 1000.0
-
-            dt = utc.fromutc(datetime.utcfromtimestamp(
-                             timestamp / 1000.0).replace(tzinfo=utc))
-
-            normalized_batch = {'lat': batch['latitude'],
-                                'lon': batch['longitude'],
-                                'time': dt,
-                                'accuracy': batch['accuracy'],
-                                'altitude': batch['altitude'],
-                                'altitude_accuracy': batch['altitudeAccuracy'],
-                                'heading': batch['heading'],
-                                'speed': batch['speed'],
-                                'cell': normalized_cells,
-                                'wifi': normalized_wifi,
-                                }
-            batch_list.append(normalized_batch)
-        return batch_list
 
     def prepare_reports(self, request_data):
         def conditional_set(item, target, value, missing):
@@ -173,15 +120,9 @@ def geosubmit_view(request, api_key):
     request_data = submitter.preprocess()
 
     try:
-        submitter.insert_measures(request_data)
-    except ConnectionError:  # pragma: no cover
-        return HTTPServiceUnavailable()
-
-    try:
         submitter.submit(request_data)
     except ConnectionError:  # pragma: no cover
-        # secondary pipeline is considered non-essential for now
-        pass
+        return HTTPServiceUnavailable()
 
     result = HTTPOk()
     result.content_type = 'application/json'
