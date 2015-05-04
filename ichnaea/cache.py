@@ -75,7 +75,11 @@ class BaseQueue(object):
         with self.redis_client.pipeline() as pipe:
             pipe.multi()
             pipe.lrange(queue_key, 0, batch - 1)
-            pipe.ltrim(queue_key, batch, -1)
+            if batch != 0:
+                pipe.ltrim(queue_key, batch, -1)
+            else:
+                # special case for deleting everything
+                pipe.ltrim(queue_key, 1, 0)
             result = [kombu_loads(item) for item in pipe.execute()[0]]
         return result
 
@@ -128,7 +132,7 @@ class ExportQueue(BaseQueue):
     def __init__(self, name, redis_client, settings):
         BaseQueue.__init__(self, name, redis_client)
         self.settings = settings
-        self.batch = int(settings.get('batch', -1))
+        self.batch = int(settings.get('batch', 0))
         self.metadata = bool(settings.get('metadata', False))
         self.url = settings.get('url', '') or ''
         self.scheme = urlparse.urlparse(self.url).scheme
@@ -165,7 +169,8 @@ class ExportQueue(BaseQueue):
                       batch=batch, expire=expire, pipe=pipe)
 
     def enough_data(self, queue_key):
-        return self.size(queue_key) >= self.batch
+        queue_size = self.size(queue_key)
+        return (queue_size > 0) and (queue_size >= self.batch)
 
     def size(self, queue_key):
         return self._size(queue_key)
