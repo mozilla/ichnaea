@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #421: Fix encoding of radioType in fallback queries.
+
 20150505113200
 **************
 

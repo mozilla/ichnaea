@@ -175,6 +175,10 @@ class TestSearch(AppTestCase):
                 ]},
                 status=200)
 
+            send_json = mock.request_history[0].json()
+            self.assertEqual(len(send_json['cellTowers']), 2)
+            self.assertEqual(send_json['cellTowers'][0]['radioType'], 'wcdma')
+
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {'status': 'ok',
                                     'lat': 1.0,

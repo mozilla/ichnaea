@@ -530,7 +530,7 @@ class TestFallbackProvider(ProviderTest):
         self.cells = []
         for cell in CellFactory.build_batch(2):
             self.cells.append({
-                'radio': cell.radio.name,
+                'radio': cell.radio,
                 'mcc': cell.mcc,
                 'mnc': cell.mnc,
                 'lac': cell.lac,

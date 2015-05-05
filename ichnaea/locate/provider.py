@@ -551,8 +551,13 @@ class FallbackProvider(Provider):
     source = DataSource.Fallback
 
     def _prepare_cell(self, cell):
+        radio = cell.get('radio', None)
+        if radio is not None:
+            radio = radio.name
+            if radio == 'umts':
+                radio = 'wcdma'
         return {
-            'radioType': cell.get('radio', None),
+            'radioType': radio,
             'cellId': cell.get('cid', None),
             'locationAreaCode': cell.get('lac', None),
             'mobileCountryCode': cell.get('mcc', None),
@@ -570,10 +575,12 @@ class FallbackProvider(Provider):
         wifi_queries = [
             self._prepare_wifi(wifi) for wifi in data.get('wifi', [])]
 
-        return {
-            'cellTowers': cell_queries,
-            'wifiAccessPoints': wifi_queries,
-        }
+        query = {}
+        if cell_queries:
+            query['cellTowers'] = cell_queries
+        if wifi_queries:
+            query['wifiAccessPoints'] = wifi_queries
+        return query
 
     def should_locate(self, data, location):
         empty_location = not location.found()
