@@ -103,14 +103,21 @@ class HashKeyMixin(object):
             value = getattr(key, field, None)
             if value is not None:
                 criterion += (getattr(cls, field) == value, )
+        if not criterion:  # pragma: no cover
+            # prevent construction of queries without a key restriction
+            raise ValueError('Model.joinkey called with empty key.')
         return criterion
 
     @classmethod
     def getkey(cls, session, key):
+        if key is None:  # pragma: no cover
+            return None
         return cls.querykey(session, key).first()
 
     @classmethod
     def querykey(cls, session, key):
+        if key is None:  # pragma: no cover
+            return None
         return session.query(cls).filter(*cls.joinkey(key))
 
     @classmethod

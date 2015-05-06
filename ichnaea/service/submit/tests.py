@@ -361,16 +361,21 @@ class TestStats(SubmitTest):
     def test_log_no_api_key(self):
         wifi = WifiFactory.build()
         self._post([{'lat': wifi.lat, 'lon': wifi.lon}])
-        self.check_stats(counter=['submit.no_api_key'])
+        self.check_stats(counter=[
+            ('submit.no_api_key', 1),
+            ('submit.unknown_api_key', 0),
+        ])
 
     def test_log_unknown_api_key(self):
         wifi = WifiFactory.build()
         self._post(
             [{'lat': wifi.lat, 'lon': wifi.lon}],
             api_key='invalidkey')
-        self.check_stats(
-            counter=['submit.unknown_api_key',
-                     ('submit.api_key.invalidkey', 0)])
+        self.check_stats(counter=[
+            ('submit.no_api_key', 0),
+            ('submit.unknown_api_key', 1),
+            ('submit.api_key.invalidkey', 0),
+        ])
 
     def test_stats(self):
         cell = CellFactory.build()

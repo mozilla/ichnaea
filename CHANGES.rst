@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Correct handling for requests without API keys.
+
 - #421: Fix encoding of radioType in fallback queries.
 
 20150505113200

@@ -50,6 +50,8 @@ class ApiKey(HashKeyMixin, _Model):
 
     @classmethod
     def querykey(cls, session, key):
+        if key is None:  # pragma: no cover
+            return None
         # by default exclude the long email/description string fields
         return (session.query(cls)
                        .filter(*cls.joinkey(key))

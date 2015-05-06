@@ -84,13 +84,14 @@ def check_api_key(func_name, error_on_invalidkey=True):
                     # We couldn't connect to Redis
                     stats_client.incr('%s.redisfailure_skip_limit' % func_name)
             else:
-                stats_client.incr('%s.unknown_api_key' % func_name)
+                if api_key_text is not None:
+                    stats_client.incr('%s.unknown_api_key' % func_name)
                 if error_on_invalidkey:
                     return invalid_api_key_response()
 
             # If we failed to look up an ApiKey, create an empty one
             # rather than passing None through
-            api_key = api_key or ApiKey()
+            api_key = api_key or ApiKey(valid_key=None)
 
             return func(request, api_key, *args, **kwargs)
         return closure
