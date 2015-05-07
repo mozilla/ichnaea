@@ -75,7 +75,7 @@ class Submitter(BaseSubmitter):
             if item['time'] != '':
                 try:
                     dt = iso8601.parse_date(item['time'])
-                    calendar.timegm(dt.timetuple()) * 1000.0
+                    timestamp = calendar.timegm(dt.timetuple()) * 1000.0
                 except (iso8601.ParseError, TypeError):  # pragma: no cover
                     pass
             report['timestamp'] = timestamp
