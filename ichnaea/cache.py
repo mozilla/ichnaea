@@ -83,21 +83,21 @@ class BaseQueue(object):
             result = [kombu_loads(item) for item in pipe.execute()[0]]
         return result
 
-    def _push(self, pipe, queue_key, data, batch, expire):
-        if data and expire:
+    def _push(self, pipe, items, queue_key, batch=100, expire=False):
+        if items and expire:
             pipe.expire(queue_key, expire)
 
-        while data:
-            pipe.lpush(queue_key, *data[:batch])
-            data = data[batch:]
+        while items:
+            pipe.lpush(queue_key, *items[:batch])
+            items = items[batch:]
 
-    def _enqueue(self, queue_key, items, batch=100, expire=False, pipe=None):
+    def _enqueue(self, items, queue_key, batch=100, expire=False, pipe=None):
         data = [str(kombu_dumps(item)) for item in items]
         if pipe is not None:
-            self._push(pipe, queue_key, data, batch, expire)
+            self._push(pipe, data, queue_key, batch=batch, expire=expire)
         else:
             with redis_pipeline(self.redis_client) as pipe:
-                self._push(pipe, queue_key, data, batch, expire)
+                self._push(pipe, data, queue_key, batch=batch, expire=expire)
 
     def _size(self, queue_key):
         return self.redis_client.llen(queue_key)
@@ -120,7 +120,7 @@ class DataQueue(BaseQueue):
         return self._dequeue(self.queue_key(), batch)
 
     def enqueue(self, items, batch=100, expire=86400, pipe=None):
-        self._enqueue(self.queue_key(), items,
+        self._enqueue(items, self.queue_key(),
                       batch=batch, expire=expire, pipe=pipe)
 
     def size(self):
@@ -164,8 +164,8 @@ class ExportQueue(BaseQueue):
     def dequeue(self, queue_key, batch=100):
         return self._dequeue(queue_key, batch)
 
-    def enqueue(self, queue_key, items, batch=100, expire=False, pipe=None):
-        self._enqueue(queue_key, items,
+    def enqueue(self, items, queue_key, batch=100, expire=False, pipe=None):
+        self._enqueue(items, queue_key=queue_key,
                       batch=batch, expire=expire, pipe=pipe)
 
     def enough_data(self, queue_key):

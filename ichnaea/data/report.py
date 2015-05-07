@@ -260,4 +260,4 @@ class ReportQueueV2(DataTask):
             for name, queue in self.export_queues.items():
                 if queue.export_allowed(self.api_key):
                     queue_key = queue.queue_key(self.api_key)
-                    queue.enqueue(queue_key, items, pipe=self.pipe)
+                    queue.enqueue(items, queue_key, pipe=self.pipe)

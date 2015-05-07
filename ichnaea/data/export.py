@@ -73,7 +73,7 @@ class ReportExporter(DataTask):
         if items and len(items) < self.batch:  # pragma: no cover
             # race condition, something emptied the queue in between
             # our llen call and fetching the items, put them back
-            export_queue.enqueue(self.queue_key, items)
+            export_queue.enqueue(items, self.queue_key)
             return 0
 
         if self.metadata:  # pragma: no cover
