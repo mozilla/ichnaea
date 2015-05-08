@@ -1,3 +1,4 @@
+import mock
 import requests_mock
 from pyramid.testing import DummyRequest
 from sqlalchemy import text
@@ -173,6 +174,52 @@ class TestSearch(AppTestCase):
                     dict(radio=Radio.umts.name, cid=4, **cell_key),
                     dict(radio=Radio.umts.name, cid=5, **cell_key),
                 ]},
+                status=200)
+
+            send_json = mock.request_history[0].json()
+            self.assertEqual(len(send_json['cellTowers']), 2)
+            self.assertEqual(send_json['cellTowers'][0]['radioType'], 'wcdma')
+
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {'status': 'ok',
+                                    'lat': 1.0,
+                                    'lon': 1.0,
+                                    'accuracy': 100})
+
+        self.check_stats(
+            timer=[('request.v1.search', 1)],
+            counter=[('search.api_key.test', 1),
+                     ('search.fallback_hit', 1),
+                     ('request.v1.search.200', 1),
+                     ('search.api_log.test.fallback_hit', 1)],
+        )
+
+    def test_fallback_used_when_geoip_also_present(self):
+        london = self.geoip_data['London']
+        cell_key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        api_key = ApiKey.getkey(self.session, 'test')
+        api_key.allow_fallback = True
+        self.session.commit()
+
+        with requests_mock.Mocker() as mock:
+            response_location = {
+                'location': {
+                    'lat': 1.0,
+                    'lng': 1.0,
+                },
+                'accuracy': 100,
+                'fallback': 'lacf',
+            }
+            mock.register_uri(
+                'POST', requests_mock.ANY, json=response_location)
+
+            res = self.app.post_json(
+                '/v1/search?key=test',
+                {'radio': Radio.gsm.name, 'cell': [
+                    dict(radio=Radio.umts.name, cid=4, **cell_key),
+                    dict(radio=Radio.umts.name, cid=5, **cell_key),
+                ]},
+                extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
                 status=200)
 
             send_json = mock.request_history[0].json()
