@@ -43,8 +43,8 @@ Network = namedtuple('Network', ['key', 'lat', 'lon', 'range'])
 class DataSource(IntEnum):
     Internal = 1
     OCID = 2
-    GeoIP = 3
-    Fallback = 4
+    Fallback = 3
+    GeoIP = 4
 
 
 class Provider(StatsLogger):
