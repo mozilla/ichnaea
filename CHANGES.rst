@@ -13,7 +13,7 @@ Migrations
 Changes
 ~~~~~~~
 
-- Updated to latest version of alembic.
+- Updated to latest version of alembic, celery and kombu.
 
 20150507103300
 **************
