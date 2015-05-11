@@ -13,6 +13,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Updated to latest version of alembic.
 
 20150507103300
 **************
