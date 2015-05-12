@@ -1,4 +1,3 @@
-import mock
 import requests_mock
 from pyramid.testing import DummyRequest
 from sqlalchemy import text

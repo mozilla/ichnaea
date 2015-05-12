@@ -77,6 +77,8 @@ TEST_CONFIG = DummyConfig({
     'locate:fallback': {
         'url': 'http://127.0.0.1:9/?api',
         'ratelimit': '10',
+        'ratelimit_expire': '60',
+        'cache_expire': '60',
     },
 })
 

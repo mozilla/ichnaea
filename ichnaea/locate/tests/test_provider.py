@@ -3,6 +3,7 @@ import random
 
 import mock
 import requests_mock
+import simplejson as json
 from redis import ConnectionError
 from requests.exceptions import RequestException
 
@@ -501,7 +502,9 @@ class TestFallbackProvider(ProviderTest):
     TestProvider = FallbackProvider
     settings = {
         'url': 'http://127.0.0.1:9/?api',
-        'ratelimit': '5',
+        'ratelimit': '10',
+        'ratelimit_expire': '60',
+        'cache_expire': '60',
     }
 
     def setUp(self):
@@ -723,7 +726,7 @@ class TestFallbackProvider(ProviderTest):
 
             self.assertFalse(location.found())
 
-    def test_redis_connection_failure_prevents_external_call(self):
+    def test_redis_failure_during_ratelimit_prevents_external_call(self):
         mock_redis_client = mock.Mock()
         mock_redis_client.pipeline.side_effect = ConnectionError()
         self.provider.redis_client = mock_redis_client
@@ -733,8 +736,210 @@ class TestFallbackProvider(ProviderTest):
                 'POST', requests_mock.ANY, json=self.response_location)
 
             location = self.provider.locate({
-                'cell': self.cells,
-                'wifi': self.wifis,
+                'cell': self.cells[:1],
+                'wifi': [],
+            })
+
+            self.assertFalse(mock_request.called)
+            self.assertFalse(location.found())
+
+    def test_redis_failure_during_get_cache_allows_external_call(self):
+        mock_redis_client = mock.Mock()
+        mock_redis_client.pipeline.return_value = mock.Mock()
+        mock_redis_client.pipeline.return_value.__enter__ = mock.Mock()
+        mock_redis_client.pipeline.return_value.__exit__ = mock.Mock()
+        mock_redis_client.get.side_effect = ConnectionError()
+        self.provider.redis_client = mock_redis_client
+
+        with requests_mock.Mocker() as mock_request:
+            mock_request.register_uri(
+                'POST', requests_mock.ANY, json=self.response_location)
+
+            location = self.provider.locate({
+                'cell': self.cells[:1],
+                'wifi': [],
+            })
+
+            self.assertTrue(mock_request.called)
+            self.assertTrue(location.found())
+
+    def test_redis_failure_during_set_cache_returns_location(self):
+        mock_redis_client = mock.Mock()
+        mock_redis_client.pipeline.return_value = mock.Mock()
+        mock_redis_client.pipeline.return_value.__enter__ = mock.Mock()
+        mock_redis_client.pipeline.return_value.__exit__ = mock.Mock()
+        mock_redis_client.get.return_value = None
+        mock_redis_client.set.side_effect = ConnectionError()
+        self.provider.redis_client = mock_redis_client
+
+        with requests_mock.Mocker() as mock_request:
+            mock_request.register_uri(
+                'POST', requests_mock.ANY, json=self.response_location)
+
+            location = self.provider.locate({
+                'cell': self.cells[:1],
+                'wifi': [],
+            })
+
+            self.assertTrue(mock_request.called)
+            self.assertTrue(location.found())
+
+    def test_single_cell_results_cached_preventing_external_call(self):
+        with requests_mock.Mocker() as mock_request:
+            mock_request.register_uri(
+                'POST', requests_mock.ANY, json=self.response_location)
+
+            location = self.provider.locate({
+                'cell': self.cells[:1],
+                'wifi': [],
+            })
+
+            self.assertTrue(location.found())
+            self.assertEqual(mock_request.call_count, 1)
+            self.assertEqual(
+                location.lat, self.response_location['location']['lat'])
+            self.assertEqual(
+                location.lon, self.response_location['location']['lng'])
+            self.assertEqual(
+                location.accuracy, self.response_location['accuracy'])
+            self.check_raven(total=0)
+            self.check_stats(
+                counter=[
+                    'm.fallback.lookup_status.200',
+                    'm.fallback.cache.miss',
+                ],
+                timer=['m.fallback.lookup'])
+
+            location = self.provider.locate({
+                'cell': self.cells[:1],
+                'wifi': [],
+            })
+
+            self.assertTrue(location.found())
+            self.assertEqual(mock_request.call_count, 1)
+            self.assertEqual(
+                location.lat, self.response_location['location']['lat'])
+            self.assertEqual(
+                location.lon, self.response_location['location']['lng'])
+            self.assertEqual(
+                location.accuracy, self.response_location['accuracy'])
+            self.check_stats(
+                counter=[
+                    'm.fallback.lookup_status.200',
+                    'm.fallback.cache.hit',
+                ],
+                timer=['m.fallback.lookup'])
+
+    def test_empty_result_from_fallback_cached(self):
+        with requests_mock.Mocker() as mock_request:
+            error_response = {
+                'error': {
+                    'code': 404,
+                    'errors': {
+                        'domain': '',
+                        'message': '',
+                        'reason': '',
+                    },
+                    'message': '',
+                }
+            }
+
+            mock_request.register_uri(
+                'POST',
+                requests_mock.ANY,
+                json=error_response,
+                status_code=404
+            )
+
+            location = self.provider.locate({
+                'cell': self.cells[:1],
+                'wifi': [],
             })
 
             self.assertFalse(location.found())
+            self.assertEqual(mock_request.call_count, 1)
+            self.check_stats(
+                counter=[
+                    'm.fallback.lookup_status.404',
+                    'm.fallback.cache.miss',
+                ],
+                timer=['m.fallback.lookup'])
+
+            location = self.provider.locate({
+                'cell': self.cells[:1],
+                'wifi': [],
+            })
+
+            self.assertFalse(location.found())
+            self.assertEqual(mock_request.call_count, 1)
+            self.check_stats(
+                counter=[
+                    'm.fallback.lookup_status.404',
+                    'm.fallback.cache.hit',
+                ],
+                timer=['m.fallback.lookup'])
+
+            self.check_raven(total=0)
+
+    def test_dont_set_cache_value_retrieved_from_cache(self):
+        mock_redis_client = mock.Mock()
+        mock_redis_client.pipeline.return_value = mock.Mock()
+        mock_redis_client.pipeline.return_value.__enter__ = mock.Mock()
+        mock_redis_client.pipeline.return_value.__exit__ = mock.Mock()
+        mock_redis_client.get.return_value = json.dumps(self.response_location)
+        self.provider.redis_client = mock_redis_client
+
+        with requests_mock.Mocker() as mock_request:
+            mock_request.register_uri(
+                'POST', requests_mock.ANY, json=self.response_location)
+
+            location = self.provider.locate({
+                'cell': self.cells[:1],
+                'wifi': [],
+            })
+
+            self.assertTrue(location.found())
+            self.assertFalse(mock_redis_client.set.called)
+
+    def test_cache_expire_set_to_0_disables_caching(self):
+        mock_redis_client = mock.Mock()
+        mock_redis_client.pipeline.return_value = mock.Mock()
+        mock_redis_client.pipeline.return_value.__enter__ = mock.Mock()
+        mock_redis_client.pipeline.return_value.__exit__ = mock.Mock()
+        mock_redis_client.get.return_value = json.dumps(self.response_location)
+        self.provider.redis_client = mock_redis_client
+        self.provider.cache_expire = 0
+
+        with requests_mock.Mocker() as mock_request:
+            mock_request.register_uri(
+                'POST', requests_mock.ANY, json=self.response_location)
+
+            location = self.provider.locate({
+                'cell': self.cells[:1],
+                'wifi': [],
+            })
+
+            self.assertTrue(location.found())
+            self.assertFalse(mock_redis_client.get.called)
+            self.assertFalse(mock_redis_client.set.called)
+
+    def test_dont_cache_when_wifi_keys_present(self):
+        mock_redis_client = mock.Mock()
+        mock_redis_client.pipeline.return_value = mock.Mock()
+        mock_redis_client.pipeline.return_value.__enter__ = mock.Mock()
+        mock_redis_client.pipeline.return_value.__exit__ = mock.Mock()
+        mock_redis_client.get.return_value = json.dumps(self.response_location)
+        self.provider.redis_client = mock_redis_client
+
+        with requests_mock.Mocker() as mock_request:
+            mock_request.register_uri(
+                'POST', requests_mock.ANY, json=self.response_location)
+
+            location = self.provider.locate({
+                'cell': self.cells[:1],
+                'wifi': self.wifis,
+            })
+
+            self.assertTrue(location.found())
+            self.assertFalse(mock_redis_client.get.called)
+            self.assertFalse(mock_redis_client.set.called)

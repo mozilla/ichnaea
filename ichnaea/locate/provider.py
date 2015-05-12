@@ -1,11 +1,13 @@
+import simplejson as json
+import operator
+import time
 from collections import defaultdict, namedtuple
 from enum import IntEnum
 from functools import partial
-import operator
-import time
 
 import mobile_codes
 import requests
+from redis import ConnectionError
 from sqlalchemy.orm import load_only
 
 from ichnaea.constants import (
@@ -529,10 +531,13 @@ class FallbackProvider(Provider):
     log_name = 'fallback'
     location_type = Position
     source = DataSource.Fallback
+    LOCATION_NOT_FOUND = True
 
     def __init__(self, settings, *args, **kwargs):
         self.url = settings['url']
         self.ratelimit = int(settings.get('ratelimit', 0))
+        self.rate_limit_expire = int(settings.get('ratelimit_expire', 0))
+        self.cache_expire = int(settings.get('cache_expire', 0))
         super(FallbackProvider, self).__init__(
             settings=settings, *args, **kwargs)
 
@@ -587,16 +592,48 @@ class FallbackProvider(Provider):
             self.redis_client,
             self.get_ratelimit_key(),
             maxreq=self.ratelimit,
-            expire=60,
+            expire=self.rate_limit_expire,
             fail_on_error=True,
         )
 
-    def locate(self, data):
-        location = self.location_type(query_data=False)
+    def _should_cache(self, data):
+        return (
+            self.cache_expire and
+            len(data.get('cell', [])) == 1 and
+            len(data.get('wifi', [])) == 0
+        )
 
-        if self.limit_reached():
-            return location
+    def _get_cache_key(self, cell_data):
+        return 'fallback_cache_{0}'.format(sorted(cell_data.items()))
 
+    def _get_cached_result(self, data):
+        if self._should_cache(data):
+            all_cell_data = data.get('cell', [])
+            cache_key = self._get_cache_key(all_cell_data[0])
+            try:
+                cached_cell = self.redis_client.get(cache_key)
+                if cached_cell:
+                    self.stat_count('fallback.cache.hit')
+                    return json.loads(cached_cell)
+                else:
+                    self.stat_count('fallback.cache.miss')
+            except ConnectionError:
+                self.raven_client.captureException()
+
+    def _set_cached_result(self, data, result):
+        if self._should_cache(data):
+            all_cell_data = data.get('cell', [])
+            cache_key = self._get_cache_key(all_cell_data[0])
+            try:
+                self.redis_client.set(
+                    cache_key,
+                    json.dumps(result),
+                    ex=self.cache_expire,
+                )
+            except ConnectionError:
+                self.raven_client.captureException()
+
+    def _make_external_call(self, data):
         query_data = self._prepare_data(data)
 
         try:
@@ -609,24 +646,39 @@ class FallbackProvider(Provider):
                     verify=False,
                 )
             self.stat_count('fallback.lookup_status.%s' % response.status_code)
-            if response.status_code == 404:
+            if response.status_code != 404:
                 # don't log exceptions for normal not found responses
-                response = None
-            else:
                 response.raise_for_status()
+            else:
+                return self.LOCATION_NOT_FOUND
+
+            return response.json()
+
         except requests.exceptions.RequestException:
             self.raven_client.captureException()
-            response = None
 
-        if response:
-            try:
-                json_data = response.json()
-                location = self.location_type(
-                    lat=json_data['location']['lat'],
-                    lon=json_data['location']['lng'],
-                    accuracy=json_data['accuracy'],
-                )
-            except (KeyError, TypeError):
-                self.raven_client.captureException()
+    def locate(self, data):
+        location = self.location_type(query_data=False)
+
+        if not self.limit_reached():
+
+            cached_location = self._get_cached_result(data)
+            location_data = (
+                cached_location or
+                self._make_external_call(data)
+            )
+
+            if location_data is not self.LOCATION_NOT_FOUND:
+                try:
+                    location = self.location_type(
+                        lat=location_data['location']['lat'],
+                        lon=location_data['location']['lng'],
+                        accuracy=location_data['accuracy'],
+                    )
+                except (KeyError, TypeError):
+                    self.raven_client.captureException()
+
+            if cached_location is None:
+                self._set_cached_result(data, location_data)
 
         return location
