@@ -1,8 +1,9 @@
+import json
+import operator
+import time
 from collections import defaultdict, namedtuple
 from enum import IntEnum
 from functools import partial
-import operator
-import time
 
 import mobile_codes
 import requests
@@ -553,6 +554,8 @@ class FallbackProvider(Provider):
     log_name = 'fallback'
     location_type = Position
     source = DataSource.Fallback
+    RATE_LIMIT_EXPIRE = 60
+    CACHE_EXPIRE = (24 * 60 * 60)  # 1 day
 
     def __init__(self, settings, *args, **kwargs):
         self.url = settings['url']
@@ -611,16 +614,34 @@ class FallbackProvider(Provider):
             self.redis_client,
             self.get_ratelimit_key(),
             maxreq=self.ratelimit,
-            expire=60,
+            expire=self.RATE_LIMIT_EXPIRE,
             fail_on_error=True,
         )
 
-    def locate(self, data):
-        location = self.location_type(query_data=False)
+    def _get_cache_key(self, cell_data):
+        return 'fallback_cache_{}'.format(sorted(cell_data.items()))
 
-        if self.limit_reached():
-            return location
+    def _fetch_cached_result(self, data):
+        all_cell_data = data.get('cell', [])
 
+        if len(all_cell_data) == 1:
+            cache_key = self._get_cache_key(all_cell_data[0])
+            cached_cell = self.redis_client.get(cache_key)
+            if cached_cell:
+                return json.loads(cached_cell)
+
+    def _set_cached_result(self, data, result):
+        all_cell_data = data.get('cell', [])
+
+        if len(all_cell_data) == 1:
+            cache_key = self._get_cache_key(all_cell_data[0])
+            self.redis_client.set(
+                cache_key,
+                json.dumps(result),
+                ex=self.CACHE_EXPIRE,
+            )
+
+    def _make_external_call(self, data):
         query_data = self._prepare_data(data)
 
         try:
@@ -633,24 +654,35 @@ class FallbackProvider(Provider):
                     verify=False,
                 )
             self.stat_count('fallback.lookup_status.%s' % response.status_code)
-            if response.status_code == 404:
+            if response.status_code != 404:
                 # don't log exceptions for normal not found responses
-                response = None
-            else:
                 response.raise_for_status()
+
+            return response.json()
+
         except requests.exceptions.RequestException:
             self.raven_client.captureException()
-            response = None
 
-        if response:
-            try:
-                json_data = response.json()
-                location = self.location_type(
-                    lat=json_data['location']['lat'],
-                    lon=json_data['location']['lng'],
-                    accuracy=json_data['accuracy'],
-                )
-            except (KeyError, TypeError):
-                self.raven_client.captureException()
+    def locate(self, data):
+        location = self.location_type(query_data=False)
+
+        if not self.limit_reached():
+
+            location_data = (
+                self._fetch_cached_result(data) or
+                self._make_external_call(data)
+            )
+
+            if location_data:
+                try:
+                    location = self.location_type(
+                        lat=location_data['location']['lat'],
+                        lon=location_data['location']['lng'],
+                        accuracy=location_data['accuracy'],
+                    )
+                except (KeyError, TypeError):
+                    self.raven_client.captureException()
+
+                self._set_cached_result(data, location_data)
 
         return location

@@ -768,3 +768,40 @@ class TestFallbackProvider(ProviderTest):
             })
 
             self.assertFalse(location.found())
+
+    def test_single_cell_results_cached_preventing_external_call(self):
+        with requests_mock.Mocker() as mock_request:
+            mock_request.register_uri(
+                'POST', requests_mock.ANY, json=self.response_location)
+
+            location = self.provider.locate({
+                'cell': self.cells[:1],
+                'wifi': [],
+            })
+
+            self.assertTrue(location.found())
+            self.assertEqual(mock_request.call_count, 1)
+            self.assertEqual(
+                location.lat, self.response_location['location']['lat'])
+            self.assertEqual(
+                location.lon, self.response_location['location']['lng'])
+            self.assertEqual(
+                location.accuracy, self.response_location['accuracy'])
+            self.check_raven(total=0)
+            self.check_stats(
+                counter=['m.fallback.lookup_status.200'],
+                timer=['m.fallback.lookup'])
+
+            location = self.provider.locate({
+                'cell': self.cells[:1],
+                'wifi': [],
+            })
+
+            self.assertTrue(location.found())
+            self.assertEqual(mock_request.call_count, 1)
+            self.assertEqual(
+                location.lat, self.response_location['location']['lat'])
+            self.assertEqual(
+                location.lon, self.response_location['location']['lng'])
+            self.assertEqual(
+                location.accuracy, self.response_location['accuracy'])
