@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #433: Remove the wifi specific query stats.
+
 - Updated to latest version of alembic, celery and kombu.
 
 20150507103300

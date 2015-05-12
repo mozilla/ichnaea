@@ -410,18 +410,9 @@ class WifiPositionProvider(Provider):
         dissimilar_keys = set(self._filter_bssids_by_similarity(
             [w.key for w in queried_wifis]))
 
-        if len(dissimilar_keys) < len(queried_wifis):
-            self.stat_time(
-                'wifi.provided_too_similar',
-                len(queried_wifis) - len(dissimilar_keys))
-
         wifi_networks = [
             Network(w.key, w.lat, w.lon, w.range)
             for w in queried_wifis if w.key in dissimilar_keys]
-
-        if len(wifi_networks) < MIN_WIFIS_IN_QUERY:
-            # We didn't get enough matches.
-            self.stat_count('wifi.found_too_few')
 
         # Sort networks by signal strengths in query.
         wifi_networks.sort(
@@ -476,29 +467,14 @@ class WifiPositionProvider(Provider):
 
         wifis, wifi_signals, wifi_keys = self._get_clean_wifi_keys(data)
 
-        if len(wifi_keys) < MIN_WIFIS_IN_QUERY:
-            # We didn't get enough keys.
-            if len(wifi_keys) >= 1:
-                self.stat_count('wifi.provided_too_few')
-        else:
-            self.stat_time('wifi.provided', len(wifi_keys))
-
+        if len(wifi_keys) >= MIN_WIFIS_IN_QUERY:
             if self._sufficient_data(wifi_keys):
                 location.query_data = True
 
             queried_wifis = self._query_database(wifi_keys)
-
-            if len(queried_wifis) < len(wifi_keys):
-                self.stat_count('wifi.partial_match')
-                self.stats_client.timing(
-                    '{api}.wifi.provided_not_known'.format(api=self.api_name),
-                    len(wifi_keys) - len(queried_wifis))
-
             clusters = self._get_clusters(wifi_signals, queried_wifis)
 
-            if len(clusters) == 0:
-                self.stat_count('wifi.found_no_cluster')
-            else:
+            if clusters:
                 location = self._prepare(clusters)
 
         return location

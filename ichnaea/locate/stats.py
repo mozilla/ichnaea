@@ -26,10 +26,6 @@ class StatsLogger(object):
         self.stats_client.incr('{api}.{stat}'.format(
             api=self.api_name, stat=stat))
 
-    def stat_time(self, stat, count):
-        self.stats_client.timing('{api}.{stat}'.format(
-            api=self.api_name, stat=stat), count)
-
     def stat_timer(self, stat):
         return self.stats_client.timer('{api}.{stat}'.format(
             api=self.api_name, stat=stat))

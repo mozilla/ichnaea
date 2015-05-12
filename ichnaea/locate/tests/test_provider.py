@@ -244,12 +244,6 @@ class TestWifiPositionProvider(ProviderTest):
         self.assertEqual(location.lon, GB_LON + 0.000005)
         self.assertEqual(location.accuracy, WIFI_MIN_ACCURACY)
 
-        self.check_stats(
-            timer=[
-                'm.wifi.provided',
-            ],
-        )
-
     def test_wifi_too_few_candidates(self):
         wifis = [
             Wifi(key='001122334455', lat=1.0, lon=1.0),
@@ -261,11 +255,6 @@ class TestWifiPositionProvider(ProviderTest):
         location = self.provider.locate({'wifi': [{'key': '001122334455'}]})
         self.assertFalse(location.found())
         self.assertFalse(location.query_data)
-        self.check_stats(
-            counter=[
-                'm.wifi.provided_too_few',
-            ],
-        )
 
     def test_wifi_too_few_matches(self):
         wifis = [
@@ -280,15 +269,6 @@ class TestWifiPositionProvider(ProviderTest):
             {'wifi': [{'key': '001122334455'}, {'key': '223344556677'}]})
         self.assertFalse(location.found())
         self.assertTrue(location.query_data)
-        self.check_stats(
-            counter=[
-                'm.wifi.found_too_few',
-                'm.wifi.partial_match',
-            ],
-            timer=[
-                'm.wifi.provided_not_known',
-            ],
-        )
 
     def test_wifi_too_similar_bssids_by_arithmetic_difference(self):
         wifis = [
@@ -302,11 +282,6 @@ class TestWifiPositionProvider(ProviderTest):
             {'wifi': [{'key': '00000000001f'}, {'key': '000000000020'}]})
         self.assertFalse(location.found())
         self.assertFalse(location.query_data)
-        self.check_stats(
-            timer=[
-                'm.wifi.provided_too_similar',
-            ],
-        )
 
     def test_wifi_too_similar_bssids_by_hamming_distance(self):
         wifis = [
@@ -320,11 +295,6 @@ class TestWifiPositionProvider(ProviderTest):
             {'wifi': [{'key': '000000000058'}, {'key': '00000000005c'}]})
         self.assertFalse(location.found())
         self.assertFalse(location.query_data)
-        self.check_stats(
-            timer=[
-                'm.wifi.provided_too_similar',
-            ],
-        )
 
     def test_wifi_similar_bssids_but_enough_clusters(self):
         wifis = [
