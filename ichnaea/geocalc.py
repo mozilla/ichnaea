@@ -1,7 +1,7 @@
 import math
 from country_bounding_boxes import country_subunits_by_iso_code
 
-from ichnaea.models import constants
+from ichnaea import constants
 
 
 EARTH_RADIUS = 6371  # radius of earth in km

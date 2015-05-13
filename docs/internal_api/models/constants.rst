@@ -6,7 +6,9 @@
 Constants
 +++++++++
 
-.. autodata:: MAX_LAT
-.. autodata:: MIN_LAT
-.. autodata:: MAX_LON
-.. autodata:: MIN_LON
+.. autodata:: MAX_ACCURACY
+.. autodata:: MIN_ALTITUDE
+.. autodata:: MAX_ALTITUDE
+.. autodata:: MAX_ALTITUDE_ACCURACY
+.. autodata:: MAX_HEADING
+.. autodata:: MAX_SPEED

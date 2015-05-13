@@ -6,6 +6,12 @@ from datetime import timedelta
 # spatial resolution.
 DEGREE_DECIMAL_PLACES = 7
 
+MAX_LAT = 85.051  #: Maximum latitude in Web Mercator projection.
+MIN_LAT = -85.051  #: Minimum latitude in Web Mercator projection.
+
+MAX_LON = 180.0  #: Maximum unrestricted longitude.
+MIN_LON = -180.0  #: Minimum unrestricted longitude.
+
 # Empirical 95th percentile accuracy of ichnaea's responses,
 # from feedback testing of observations as queries.
 WIFI_MIN_ACCURACY = 100

@@ -8,7 +8,7 @@ from ichnaea.geocalc import (
     add_meters_to_latitude,
     add_meters_to_longitude
 )
-from ichnaea.models import constants
+from ichnaea import constants
 from ichnaea.tests.base import TestCase
 
 
