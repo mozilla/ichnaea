@@ -58,7 +58,7 @@ class DatabaseTask(Task):
 
     def redis_pipeline(self, execute=True):
         # returns a context manager
-        return redis_pipeline(self.redis_client)
+        return redis_pipeline(self.redis_client, execute=execute)
 
     def db_session(self, commit=True):
         # returns a context manager

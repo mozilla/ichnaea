@@ -1,3 +1,6 @@
+# TODO: Disable SSL warnings for now
+from requests.packages import urllib3
+urllib3.disable_warnings()
 
 
 # nosetests package level fixture setup/teardown
