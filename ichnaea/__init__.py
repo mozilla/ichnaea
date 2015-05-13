@@ -1,5 +1,3 @@
-# BBB
-from ichnaea.webapp.app import wsgi_app as application  # NOQA
 
 
 # nosetests package level fixture setup/teardown

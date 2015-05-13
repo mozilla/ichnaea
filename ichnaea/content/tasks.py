@@ -6,13 +6,7 @@ from ichnaea.models.content import (
     Stat,
     StatKey,
 )
-from ichnaea.models import (
-    Cell,
-    CellObservation,
-    OCIDCell,
-    Wifi,
-    WifiObservation,
-)
+from ichnaea.models import OCIDCell
 from ichnaea import util
 
 
@@ -70,30 +64,6 @@ def histogram_task(db_session, model, stat_key, ago=1):
 
 
 @celery_app.task(base=DatabaseTask, bind=True)
-def cell_histogram(self, ago=1):
-    return histogram_task(
-        self.db_session, CellObservation, StatKey.cell, ago=ago)
-
-
-@celery_app.task(base=DatabaseTask, bind=True)
-def wifi_histogram(self, ago=1):
-    return histogram_task(
-        self.db_session, WifiObservation, StatKey.wifi, ago=ago)
-
-
-@celery_app.task(base=DatabaseTask, bind=True)
-def unique_cell_histogram(self, ago=1):
-    return histogram_task(
-        self.db_session, Cell, StatKey.unique_cell, ago=ago)
-
-
-@celery_app.task(base=DatabaseTask, bind=True)
 def unique_ocid_cell_histogram(self, ago=1):
     return histogram_task(
         self.db_session, OCIDCell, StatKey.unique_ocid_cell, ago=ago)
-
-
-@celery_app.task(base=DatabaseTask, bind=True)
-def unique_wifi_histogram(self, ago=1):
-    return histogram_task(
-        self.db_session, Wifi, StatKey.unique_wifi, ago=ago)

@@ -87,29 +87,9 @@ CELERYBEAT_SCHEDULE = {
 
     # Daily content tasks
 
-    'histogram-cell-yesterday': {
-        'task': 'ichnaea.content.tasks.cell_histogram',
-        'schedule': crontab(hour=0, minute=3),
-        'args': (1, ),
-    },
-    'histogram-wifi-yesterday': {
-        'task': 'ichnaea.content.tasks.wifi_histogram',
-        'schedule': crontab(hour=0, minute=4),
-        'args': (1, ),
-    },
-    'histogram-unique-cell-yesterday': {
-        'task': 'ichnaea.content.tasks.unique_cell_histogram',
-        'schedule': crontab(hour=0, minute=5),
-        'args': (1, ),
-    },
     'histogram-unique-ocid-cell-yesterday': {
         'task': 'ichnaea.content.tasks.unique_ocid_cell_histogram',
         'schedule': crontab(hour=0, minute=6),
-        'args': (1, ),
-    },
-    'histogram-unique-wifi-yesterday': {
-        'task': 'ichnaea.content.tasks.unique_wifi_histogram',
-        'schedule': crontab(hour=0, minute=7),
         'args': (1, ),
     },
 
@@ -154,12 +134,11 @@ CELERYBEAT_SCHEDULE = {
 
     # Hourly
 
-    # TODO only schedule once the redis counters are maintained
-    # 'update-statcounter': {
-    #     'task': 'ichnaea.data.tasks.update_statcounter',
-    #     'args': (1, ),
-    #     'schedule': crontab(minute=3),
-    # },
+    'update-statcounter': {
+        'task': 'ichnaea.data.tasks.update_statcounter',
+        'args': (1, ),
+        'schedule': crontab(minute=3),
+    },
     'ocid-hourly-cell-delta-import': {
         'task': 'ichnaea.export.tasks.import_latest_ocid_cells',
         'args': (True, ),

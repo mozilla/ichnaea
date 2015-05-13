@@ -63,12 +63,6 @@ def write_observation_s3_backups(self,
             block.s3_key = 'skipped'
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
-def write_block_to_s3(self, block_id,
-                      batch=10000, cleanup_zip=True):  # pragma: no cover
-    pass
-
-
 def schedule_observation_archival(self, observation_type,
                                   limit=100, batch=1000000):
     blocks = []
@@ -175,11 +169,6 @@ def delete_observation_records(self,
                 kwargs={'batch': batch},
                 countdown=c)
             c += countdown
-
-
-@celery_app.task(base=DatabaseTask, bind=True)
-def dispatch_delete(self, block_id, batch=10000):  # pragma: no cover
-    pass
 
 
 @celery_app.task(base=DatabaseTask, bind=True)
