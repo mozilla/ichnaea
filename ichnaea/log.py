@@ -188,3 +188,34 @@ class DebugStatsClient(PingableStatsClient):
 
     def ping(self):
         return True
+
+
+# TODO Fix for https://github.com/getsentry/raven-python/issues/608
+
+from raven.conf import defaults
+from raven.transport import registry
+from raven.transport.gevent import GeventedHTTPTransport, Semaphore
+from raven.transport.http import HTTPTransport
+
+
+class FixedGeventedHTTPTransport(GeventedHTTPTransport):
+
+    def __init__(self, parsed_url,
+                 timeout=defaults.TIMEOUT, verify_ssl=True,
+                 ca_certs=defaults.CA_BUNDLE,
+                 maximum_outstanding_requests=100):  # pragma: no cover
+        self._lock = Semaphore(maximum_outstanding_requests)
+
+        HTTPTransport.__init__(self, parsed_url, timeout=timeout,
+                               verify_ssl=verify_ssl, ca_certs=ca_certs)
+
+        self._url = self._url.split('+', 1)[-1]
+
+original_transports = tuple(registry.default_transports)
+new_transports = [transport for transport in registry.default_transports
+                  if transport is not GeventedHTTPTransport]
+new_transports.append(FixedGeventedHTTPTransport)
+
+registry.default_transports = new_transports
+
+RavenClient._registry = registry.TransportRegistry(new_transports)

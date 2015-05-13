@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add workaround for raven issue #608.
+
 - Enable new stat counter tasks.
 
 - #433: Remove the wifi specific query stats.
