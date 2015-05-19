@@ -35,7 +35,8 @@ class ReportQueueV1(DataTask):
         self.stats_client.incr('items.uploaded.reports', length)
         if self.api_key and self.api_key.log:
             self.stats_client.incr(
-                'items.api_log.%s.uploaded.reports' % self.api_key.name)
+                'items.api_log.%s.uploaded.reports' % self.api_key.name,
+                length)
 
         return length
 
