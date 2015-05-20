@@ -7,18 +7,7 @@ from ichnaea.tests.base import (
 )
 
 
-class TestLimiter(TestCase, RedisIsolation):
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestLimiter, cls).setup_redis()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(TestLimiter, cls).teardown_redis()
-
-    def tearDown(self):
-        self.cleanup_redis()
+class TestLimiter(RedisIsolation, TestCase):
 
     def test_limiter_maxrequests(self):
         api_key = 'key_a'

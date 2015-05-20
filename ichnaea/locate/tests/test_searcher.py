@@ -12,20 +12,10 @@ from ichnaea.tests.base import (
 )
 
 
-class SearcherTest(DBTestCase, GeoIPIsolation):
+class SearcherTest(GeoIPIsolation, DBTestCase):
 
     default_session = 'db_ro_session'
     searcher = None
-
-    @classmethod
-    def setUpClass(cls):
-        DBTestCase.setUpClass()
-        GeoIPIsolation.setup_geoip(raven_client=cls.raven_client)
-
-    @classmethod
-    def tearDownClass(cls):
-        GeoIPIsolation.teardown_geoip()
-        DBTestCase.tearDownClass()
 
     def _make_query(self, data=None, TestLocation=None,  # NOQA
                     TestProvider=None, TestSearcher=None):

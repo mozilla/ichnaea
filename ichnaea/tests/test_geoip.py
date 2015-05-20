@@ -7,51 +7,38 @@ from ichnaea.constants import (
     GEOIP_COUNTRY_ACCURACY,
 )
 from ichnaea import geoip
-from ichnaea.geoip import geoip_accuracy
+from ichnaea.geoip import configure_geoip, geoip_accuracy
 from ichnaea.tests.base import (
     GEOIP_BAD_FILE,
+    GEOIP_TEST_FILE,
     GeoIPIsolation,
     LogIsolation,
     TestCase,
 )
 
 
-class GeoIPBaseTest(LogIsolation, GeoIPIsolation):
-
-    @classmethod
-    def setUpClass(cls):
-        super(GeoIPBaseTest, cls).setup_logging()
-        super(GeoIPBaseTest, cls).setup_geoip(raven_client=cls.raven_client)
-
-    @classmethod
-    def tearDownClass(cls):
-        super(GeoIPBaseTest, cls).teardown_geoip()
-        super(GeoIPBaseTest, cls).teardown_logging()
-
-    def setUp(self):
-        self.clear_log_messages()
+class GeoIPTestCase(LogIsolation, GeoIPIsolation, TestCase):
 
     def _open_db(self, filename=None, mode=MODE_AUTO):
-        return self.configure_geoip(
+        if filename is None:
+            filename = GEOIP_TEST_FILE
+        return configure_geoip(
             filename, mode=mode, raven_client=self.raven_client)
 
 
-class TestDatabase(GeoIPBaseTest, TestCase):
+class TestDatabase(GeoIPTestCase):
 
     def test_open_ok(self):
-        db = self._open_db()
-        self.assertIsInstance(db, geoip.GeoIPWrapper)
+        self.assertIsInstance(self.geoip_db, geoip.GeoIPWrapper)
 
     def test_age(self):
-        db = self._open_db()
-        self.assertTrue(isinstance(db.age, int))
+        self.assertTrue(isinstance(self.geoip_db.age, int))
         # the test file is older than two months, but not more than 10 years
-        self.assertTrue(db.age > 60)
-        self.assertTrue(db.age < 3650)
+        self.assertTrue(self.geoip_db.age > 60)
+        self.assertTrue(self.geoip_db.age < 3650)
 
     def test_c_extension(self):
-        db = self._open_db()
-        self.assertTrue(db.check_extension(),
+        self.assertTrue(self.geoip_db.check_extension(),
                         'The C extension was not installed correctly.')
 
     def test_c_extension_warning(self):
@@ -83,12 +70,11 @@ class TestDatabase(GeoIPBaseTest, TestCase):
         self.check_raven(['InvalidDatabaseError: Invalid database type'])
 
     def test_valid_countries(self):
-        db = self._open_db()
         for code in ('US', 'GB', 'DE'):
-            self.assertTrue(code in db.valid_countries)
+            self.assertTrue(code in self.geoip_db.valid_countries)
 
 
-class TestGeoIPLookup(GeoIPBaseTest, TestCase):
+class TestGeoIPLookup(GeoIPTestCase):
 
     def test_ok_city(self):
         london = self.geoip_data['London']
@@ -117,7 +103,7 @@ class TestGeoIPLookup(GeoIPBaseTest, TestCase):
         self.assertIsNone(geoip.GeoIPNull().geoip_lookup('200'))
 
 
-class TestCountryLookup(GeoIPBaseTest, TestCase):
+class TestCountryLookup(GeoIPTestCase):
 
     def test_ok_city(self):
         london = self.geoip_data['London']

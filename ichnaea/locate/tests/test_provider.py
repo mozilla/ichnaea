@@ -44,7 +44,7 @@ from ichnaea.tests.base import (
 from ichnaea.tests.factories import CellFactory, WifiFactory
 
 
-class ProviderTest(DBTestCase, GeoIPIsolation, RedisIsolation):
+class ProviderTest(GeoIPIsolation, RedisIsolation, DBTestCase):
 
     default_session = 'db_ro_session'
     settings = {}
@@ -52,18 +52,6 @@ class ProviderTest(DBTestCase, GeoIPIsolation, RedisIsolation):
     class TestProvider(Provider):
         location_type = Position
         log_name = 'test'
-
-    @classmethod
-    def setUpClass(cls):
-        DBTestCase.setUpClass()
-        GeoIPIsolation.setup_geoip(raven_client=cls.raven_client)
-        RedisIsolation.setup_redis()
-
-    @classmethod
-    def tearDownClass(cls):
-        RedisIsolation.teardown_redis()
-        GeoIPIsolation.teardown_geoip()
-        DBTestCase.tearDownClass()
 
     def setUp(self):
         super(ProviderTest, self).setUp()
@@ -76,10 +64,6 @@ class ProviderTest(DBTestCase, GeoIPIsolation, RedisIsolation):
             api_key=ApiKey(shortname='test', log=True),
             api_name='m',
         )
-
-    def tearDown(self):
-        self.cleanup_redis()
-        self.teardown_session()
 
 
 class TestProvider(ProviderTest):

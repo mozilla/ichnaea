@@ -150,18 +150,6 @@ def _make_app(app_config=TEST_CONFIG,
     return TestApp(wsgiapp)
 
 
-def find_msg(msgs, msg_type, field_value, field_name='name'):
-    return [m for m in msgs if m.type == msg_type and
-            [f for f in m.fields if f.name == field_name and
-             f.value_string == [field_value]]]
-
-
-def scoped_conn_event_handler(calls):
-    def conn_event_handler(**kw):
-        calls.append((kw['statement'], kw['parameters']))
-    return conn_event_handler
-
-
 class DBIsolation(object):
     # Inspired by a blog post:
     # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
@@ -194,15 +182,20 @@ class DBIsolation(object):
     def setup_db_event_tracking(self):
         self.reset_db_event_tracking()
 
-        self.db_events['rw']['handler'] = handler = \
-            scoped_conn_event_handler(self.db_events['rw']['calls'])
-        event.listen(self.rw_conn, 'before_cursor_execute',
-                     handler, named=True)
+        def scoped_conn_event_handler(calls):
+            def conn_event_handler(**kw):
+                calls.append((kw['statement'], kw['parameters']))
+            return conn_event_handler
 
-        self.db_events['ro']['handler'] = handler = \
-            scoped_conn_event_handler(self.db_events['ro']['calls'])
+        rw_handler = scoped_conn_event_handler(self.db_events['rw']['calls'])
+        self.db_events['rw']['handler'] = rw_handler
+        event.listen(self.rw_conn, 'before_cursor_execute',
+                     rw_handler, named=True)
+
+        ro_handler = scoped_conn_event_handler(self.db_events['ro']['calls'])
+        self.db_events['ro']['handler'] = ro_handler
         event.listen(self.ro_conn, 'before_cursor_execute',
-                     handler, named=True)
+                     ro_handler, named=True)
 
     def teardown_db_event_tracking(self):
         event.remove(self.ro_conn, 'before_cursor_execute',
@@ -211,7 +204,8 @@ class DBIsolation(object):
                      self.db_events['rw']['handler'])
         self.reset_db_event_tracking()
 
-    def setup_session(self):
+    def setUp(self):
+        super(DBIsolation, self).setUp()
         self.rw_conn = self.db_rw.engine.connect()
         self.rw_trans = self.rw_conn.begin()
         self.db_rw.session_factory.configure(bind=self.rw_conn)
@@ -229,7 +223,8 @@ class DBIsolation(object):
         if self.track_connection_events:
             self.setup_db_event_tracking()
 
-    def teardown_session(self):
+    def tearDown(self):
+        super(DBIsolation, self).tearDown()
         if self.track_connection_events:
             self.teardown_db_event_tracking()
 
@@ -254,12 +249,14 @@ class DBIsolation(object):
         del self.rw_conn
 
     @classmethod
-    def setup_engine(cls):
+    def setUpClass(cls):
+        super(DBIsolation, cls).setUpClass()
         cls.db_rw = _make_db()
         cls.db_ro = _make_db()
 
     @classmethod
-    def teardown_engine(cls):
+    def tearDownClass(cls):
+        super(DBIsolation, cls).tearDownClass()
         cls.db_rw.engine.pool.dispose()
         del cls.db_rw
         cls.db_ro.engine.pool.dispose()
@@ -301,23 +298,26 @@ class DBIsolation(object):
 class RedisIsolation(object):
 
     @classmethod
-    def setup_redis(cls):
+    def setUpClass(cls):
+        super(RedisIsolation, cls).setUpClass()
         cls.redis_client = _make_redis()
 
     @classmethod
-    def teardown_redis(cls):
+    def tearDownClass(cls):
+        super(RedisIsolation, cls).tearDownClass()
         cls.redis_client.connection_pool.disconnect()
         del cls.redis_client
 
-    @classmethod
-    def cleanup_redis(cls):
-        cls.redis_client.flushdb()
+    def tearDown(self):
+        super(RedisIsolation, self).tearDown()
+        self.redis_client.flushdb()
 
 
 class CeleryIsolation(object):
 
     @classmethod
-    def setup_celery(cls):
+    def setUpClass(cls):
+        super(CeleryIsolation, cls).setUpClass()
         cls.celery_app = celery_app
         init_worker(
             celery_app, TEST_CONFIG,
@@ -327,7 +327,8 @@ class CeleryIsolation(object):
             _stats_client=cls.stats_client)
 
     @classmethod
-    def teardown_celery(cls):
+    def tearDownClass(cls):
+        super(CeleryIsolation, cls).tearDownClass()
         shutdown_worker(celery_app)
         del cls.celery_app
 
@@ -335,17 +336,20 @@ class CeleryIsolation(object):
 class LogIsolation(object):
 
     @classmethod
-    def setup_logging(cls):
+    def setUpClass(cls):
+        super(LogIsolation, cls).setUpClass()
         # Use a debug configuration
         cls.raven_client = configure_raven('', _client=DebugRavenClient())
         cls.stats_client = configure_stats('', _client=DebugStatsClient())
 
     @classmethod
-    def teardown_logging(cls):
+    def tearDownClass(cls):
+        super(LogIsolation, cls).tearDownClass()
         del cls.raven_client
         del cls.stats_client
 
-    def clear_log_messages(self):
+    def setUp(self):
+        super(LogIsolation, self).setUp()
         self.raven_client._clear()
         self.stats_client._clear()
 
@@ -478,33 +482,28 @@ class GeoIPIsolation(object):
     geoip_data = GEOIP_DATA
 
     @classmethod
-    def configure_geoip(cls, filename=None, mode=MODE_AUTO, raven_client=None):
-        if filename is None:
-            filename = GEOIP_TEST_FILE
-        return configure_geoip(filename=filename, mode=mode,
-                               raven_client=raven_client)
+    def setUpClass(cls):
+        super(GeoIPIsolation, cls).setUpClass()
+        cls.geoip_db = configure_geoip(
+            filename=GEOIP_TEST_FILE, mode=MODE_AUTO, raven_client=None)
 
     @classmethod
-    def setup_geoip(cls, raven_client=None):
-        cls.geoip_db = cls.configure_geoip(raven_client=raven_client)
-
-    @classmethod
-    def teardown_geoip(cls):
+    def tearDownClass(cls):
+        super(GeoIPIsolation, cls).tearDownClass()
         del cls.geoip_db
 
 
-class AppTestCase(TestCase, DBIsolation,
-                  RedisIsolation, LogIsolation, GeoIPIsolation):
+class DBTestCase(DBIsolation, LogIsolation, TestCase):
+    pass
+
+
+class AppTestCase(RedisIsolation, GeoIPIsolation, DBTestCase):
 
     default_session = 'db_ro_session'
 
     @classmethod
     def setUpClass(cls):
-        super(AppTestCase, cls).setup_engine()
-        super(AppTestCase, cls).setup_redis()
-        super(AppTestCase, cls).setup_logging()
-        super(AppTestCase, cls).setup_geoip()
-
+        super(AppTestCase, cls).setUpClass()
         cls.app = _make_app(app_config=TEST_CONFIG,
                             _db_rw=cls.db_rw,
                             _db_ro=cls.db_ro,
@@ -516,73 +515,16 @@ class AppTestCase(TestCase, DBIsolation,
 
     @classmethod
     def tearDownClass(cls):
+        super(AppTestCase, cls).tearDownClass()
         del cls.app
-        super(AppTestCase, cls).teardown_engine()
-        super(AppTestCase, cls).teardown_redis()
-        super(AppTestCase, cls).teardown_logging()
-        super(AppTestCase, cls).teardown_geoip()
-
-    def setUp(self):
-        self.setup_session()
-        self.clear_log_messages()
-
-    def tearDown(self):
-        self.cleanup_redis()
-        self.teardown_session()
 
 
-class DBTestCase(TestCase, DBIsolation, LogIsolation):
-
-    @classmethod
-    def setUpClass(cls):
-        super(DBTestCase, cls).setup_engine()
-        super(DBTestCase, cls).setup_logging()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(DBTestCase, cls).teardown_engine()
-        super(DBTestCase, cls).teardown_logging()
-
-    def setUp(self):
-        self.setup_session()
-        self.clear_log_messages()
-
-    def tearDown(self):
-        self.teardown_session()
+class CeleryTestCase(CeleryIsolation, RedisIsolation, DBTestCase):
+    pass
 
 
-class CeleryTestCase(DBTestCase, RedisIsolation, CeleryIsolation):
-
-    @classmethod
-    def setUpClass(cls):
-        super(CeleryTestCase, cls).setUpClass()
-        super(CeleryTestCase, cls).setup_redis()
-        super(CeleryTestCase, cls).setup_celery()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(CeleryTestCase, cls).teardown_celery()
-        super(CeleryTestCase, cls).teardown_redis()
-        super(CeleryTestCase, cls).tearDownClass()
-
-    def tearDown(self):
-        self.cleanup_redis()
-        self.teardown_session()
-
-
-class CeleryAppTestCase(AppTestCase, CeleryIsolation):
-
+class CeleryAppTestCase(CeleryIsolation, AppTestCase):
     default_session = 'db_rw_session'
-
-    @classmethod
-    def setUpClass(cls):
-        super(CeleryAppTestCase, cls).setUpClass()
-        super(CeleryAppTestCase, cls).setup_celery()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(CeleryAppTestCase, cls).teardown_celery()
-        super(CeleryAppTestCase, cls).tearDownClass()
 
 
 def setup_package(module):
@@ -600,7 +542,3 @@ def setup_package(module):
     session.commit()
     session.close()
     db.engine.pool.dispose()
-
-
-def teardown_package(module):
-    pass
