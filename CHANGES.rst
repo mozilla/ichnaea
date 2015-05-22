@@ -19,7 +19,7 @@ Changes
 
 - #433: Remove the wifi specific query stats.
 
-- Updated to latest version of alembic, celery and kombu.
+- Updated to latest version of alembic, celery, greenlet, kombu and pytz.
 
 20150507103300
 **************
