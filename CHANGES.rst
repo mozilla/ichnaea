@@ -13,6 +13,14 @@ Migrations
 Changes
 ~~~~~~~
 
+- #421: Cache cell-only lookups for fallback provider queries.
+
+- #421: Add rate limiting to fallback provider.
+
+- #421: Reordered data sources to prefer fallback over geoip responses.
+
+- Fix api-key specific report upload counter.
+
 - Add workaround for raven issue #608.
 
 - Enable new stat counter tasks.
