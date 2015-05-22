@@ -9,21 +9,7 @@ from ichnaea.tests.base import (
 )
 
 
-class TestApp(DBTestCase, RedisIsolation):
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestApp, cls).setUpClass()
-        super(TestApp, cls).setup_redis()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(TestApp, cls).tearDownClass()
-        super(TestApp, cls).teardown_redis()
-
-    def tearDown(self):
-        super(TestApp, self).tearDown()
-        self.cleanup_redis()
+class TestApp(RedisIsolation, DBTestCase):
 
     def test_db_hooks(self):
         app_config = DummyConfig({'ichnaea': {
@@ -37,13 +23,11 @@ class TestApp(DBTestCase, RedisIsolation):
                         )
         self.db_rw = app.app.registry.db_rw
         self.db_ro = app.app.registry.db_ro
-        self.setup_session()
         app.get('/stats_wifi.json', status=200)
 
     def test_db_config(self):
         self.db_rw = _make_db()
         self.db_ro = _make_db()
-        self.setup_session()
         app = _make_app(_db_rw=self.db_rw,
                         _db_ro=self.db_ro,
                         _raven_client=self.raven_client,

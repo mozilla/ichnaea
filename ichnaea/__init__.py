@@ -15,8 +15,3 @@ def setup_package(module):
 
     from ichnaea.tests.base import setup_package
     return setup_package(module)
-
-
-def teardown_package(module):
-    from ichnaea.tests.base import teardown_package
-    return teardown_package(module)
