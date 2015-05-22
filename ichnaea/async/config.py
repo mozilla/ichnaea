@@ -12,6 +12,7 @@ from ichnaea.cache import (
 from ichnaea.config import read_config
 from ichnaea import customjson
 from ichnaea.db import configure_db
+from ichnaea.geoip import configure_geoip
 from ichnaea.log import (
     configure_raven,
     configure_stats,
@@ -85,7 +86,7 @@ def configure_export(redis_client, app_config):
 def init_worker(celery_app, app_config,
                 _db_rw=None, _db_ro=None, _geoip_db=None,
                 _raven_client=None, _redis_client=None, _stats_client=None):
-    # currently neither a db_ro nor geoip_db are set up
+    # currently db_ro is not set up
 
     # make config file settings available
     celery_app.settings = app_config.asdict()
@@ -94,7 +95,7 @@ def init_worker(celery_app, app_config,
     celery_app.db_rw = configure_db(
         app_config.get('ichnaea', 'db_master'), _db=_db_rw)
 
-    celery_app.raven_client = configure_raven(
+    celery_app.raven_client = raven_client = configure_raven(
         app_config.get('ichnaea', 'sentry_dsn'),
         transport='threaded', _client=_raven_client)
 
@@ -103,6 +104,10 @@ def init_worker(celery_app, app_config,
 
     celery_app.stats_client = configure_stats(
         app_config.get('ichnaea', 'statsd_host'), _client=_stats_client)
+
+    celery_app.geoip_db = configure_geoip(
+        app_config.get('ichnaea', 'geoip_db_path'), raven_client=raven_client,
+        _client=_geoip_db)
 
     # configure data / export queues
     celery_app.all_queues = all_queues = set([q.name for q in CELERY_QUEUES])

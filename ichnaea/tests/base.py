@@ -518,7 +518,7 @@ class AppTestCase(ConnectionTestCase):
         del cls.app
 
 
-class CeleryTestCase(DBTestCase, RedisTestCase):
+class CeleryTestCase(ConnectionTestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -527,6 +527,7 @@ class CeleryTestCase(DBTestCase, RedisTestCase):
         init_worker(
             celery_app, TEST_CONFIG,
             _db_rw=cls.db_rw,
+            _geoip_db=cls.geoip_db,
             _raven_client=cls.raven_client,
             _redis_client=cls.redis_client,
             _stats_client=cls.stats_client)

@@ -65,6 +65,10 @@ class DatabaseTask(Task):
         return db_worker_session(self.app.db_rw, commit=commit)
 
     @property
+    def geoip_db(self):  # pragma: no cover
+        return self.app.geoip_db
+
+    @property
     def raven_client(self):
         return self.app.raven_client
 
