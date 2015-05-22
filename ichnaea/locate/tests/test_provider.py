@@ -529,11 +529,19 @@ class TestFallbackProvider(ProviderTest):
                 'mnc': cell.mnc,
                 'lac': cell.lac,
                 'cid': cell.cid,
+                'signal': -70,
             })
+        self.cells[0]['ta'] = 1
 
         self.wifis = []
         for wifi in WifiFactory.build_batch(2):
-            self.wifis.append({'key': wifi.key})
+            self.wifis.append({
+                'key': wifi.key,
+                'signal': -77,
+            })
+        self.wifis[0]['channel'] = 6
+        self.wifis[0]['frequency'] = 2437
+        self.wifis[0]['snr'] = 13
 
     def test_successful_call_returns_location(self):
         with requests_mock.Mocker() as mock_request:
@@ -661,6 +669,20 @@ class TestFallbackProvider(ProviderTest):
 
     def test_should_not_provide_location_without_cell_or_wifi_data(self):
         self.assertFalse(self.provider.should_locate({}, EmptyLocation()))
+
+    def test_should_not_provide_location_if_malformed_cell(self):
+        malformed_cell = CellFactory.build(mcc=99999)
+        self.assertFalse(self.provider.should_locate({
+            'cell': [malformed_cell],
+            'wifi': [],
+        }, EmptyLocation()))
+
+    def test_should_not_provide_location_if_malformed_wifi(self):
+        malformed_wifi = {'key': 'abcd'}
+        self.assertFalse(self.provider.should_locate({
+            'cell': [],
+            'wifi': [self.wifis[0], malformed_wifi],
+        }, EmptyLocation()))
 
     def test_should_provide_location_if_only_empty_location_found(self):
         self.assertTrue(self.provider.should_locate({

@@ -23,6 +23,9 @@ def prepare_search_data(request_data, client_addr=None):
                     'mnc': cell['mnc'],
                     'lac': cell['lac'],
                     'cid': cell['cid'],
+                    'signal': cell['signal'],
+                    'ta': cell['ta'],
+                    'psc': cell['psc'],
                 }
                 # Use a per-cell radio if present
                 if 'radio' in cell and cell['radio']:
@@ -36,7 +39,10 @@ def prepare_search_data(request_data, client_addr=None):
             for wifi in request_data['wifi']:
                 new_wifi = {
                     'key': wifi['key'],
+                    'channel': wifi['channel'],
+                    'frequency': wifi['frequency'],
                     'signal': wifi['signal'],
+                    'snr': wifi['signalToNoiseRatio'],
                 }
                 search_data['wifi'].append(new_wifi)
 

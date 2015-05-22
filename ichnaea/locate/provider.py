@@ -542,29 +542,63 @@ class FallbackProvider(Provider):
             settings=settings, *args, **kwargs)
 
     def _prepare_cell(self, cell):
-        radio = cell.get('radio', None)
+        validated_cell = CellLookup.validate(cell)
+        if validated_cell is None:
+            return None
+
+        radio = validated_cell.get('radio', None)
         if radio is not None:
             radio = radio.name
             if radio == 'umts':
                 radio = 'wcdma'
-        return {
-            'radioType': radio,
-            'cellId': cell.get('cid', None),
-            'locationAreaCode': cell.get('lac', None),
-            'mobileCountryCode': cell.get('mcc', None),
-            'mobileNetworkCode': cell.get('mnc', None),
+
+        result = {}
+        cell_map = {
+            'mcc': 'mobileCountryCode',
+            'mnc': 'mobileNetworkCode',
+            'lac': 'locationAreaCode',
+            'cid': 'cellId',
+            'signal': 'signalStrength',
+            'ta': 'timingAdvance',
         }
+        if radio:
+            result['radioType'] = radio
+        for source, target in cell_map.items():
+            if validated_cell.get(source):
+                result[target] = validated_cell[source]
+
+        return result
 
     def _prepare_wifi(self, wifi):
-        return {
-            'macAddress': wifi.get('key', ''),
+        validated_wifi = WifiLookup.validate(wifi)
+        if validated_wifi is None:
+            return None
+
+        result = {}
+        wifi_map = {
+            'key': 'macAddress',
+            'channel': 'channel',
+            'signal': 'signalStrength',
+            'snr': 'signalToNoiseRatio',
         }
+        for source, target in wifi_map.items():
+            if validated_wifi.get(source):
+                result[target] = validated_wifi[source]
+
+        return result
 
     def _prepare_data(self, data):
-        cell_queries = [
-            self._prepare_cell(cell) for cell in data.get('cell', [])]
-        wifi_queries = [
-            self._prepare_wifi(wifi) for wifi in data.get('wifi', [])]
+        cell_queries = []
+        for cell in data.get('cell', []):
+            cell_query = self._prepare_cell(cell)
+            if cell_query:
+                cell_queries.append(cell_query)
+
+        wifi_queries = []
+        for wifi in data.get('wifi', []):
+            wifi_query = self._prepare_wifi(wifi)
+            if wifi_query:
+                wifi_queries.append(wifi_query)
 
         query = {}
         if cell_queries:
@@ -576,8 +610,10 @@ class FallbackProvider(Provider):
     def should_locate(self, data, location):
         empty_location = not location.found()
         weak_location = location.source >= DataSource.GeoIP
-        cell_found = data.get('cell', [])
-        wifi_found = len(data.get('wifi', [])) > 1
+
+        query_data = self._prepare_data(data)
+        cell_found = query_data.get('cellTowers', [])
+        wifi_found = len(query_data.get('wifiAccessPoints', [])) > 1
         return (
             self.api_key.allow_fallback and
             (empty_location or weak_location) and

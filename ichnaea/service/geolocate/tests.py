@@ -28,12 +28,14 @@ class TestGeolocate(AppTestCase):
 
         res = self.app.post_json(
             '%s?key=test' % self.url, {
-                "radioType": cell.radio.name,
-                "cellTowers": [{
-                    "mobileCountryCode": cell.mcc,
-                    "mobileNetworkCode": cell.mnc,
-                    "locationAreaCode": cell.lac,
-                    "cellId": cell.cid},
+                'radioType': cell.radio.name,
+                'cellTowers': [{
+                    'mobileCountryCode': cell.mcc,
+                    'mobileNetworkCode': cell.mnc,
+                    'locationAreaCode': cell.lac,
+                    'cellId': cell.cid,
+                    'signalStrength': -70,
+                    'timingAdvance': 1},
                 ]},
             status=200)
 
@@ -44,9 +46,9 @@ class TestGeolocate(AppTestCase):
         )
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": cell.lat,
-                                                 "lng": cell.lon},
-                                    "accuracy": cell.range})
+        self.assertEqual(res.json, {'location': {'lat': cell.lat,
+                                                 'lng': cell.lon},
+                                    'accuracy': cell.range})
 
     def test_ok_partial_cell(self):
         session = self.session
@@ -86,20 +88,20 @@ class TestGeolocate(AppTestCase):
         self.session.flush()
         res = self.app.post_json(
             '%s?key=test' % self.url, {
-                "wifiAccessPoints": [
-                    {"macAddress": wifis[0].key},
-                    {"macAddress": wifis[1].key},
-                    {"macAddress": wifis[2].key},
-                    {"macAddress": wifis[3].key},
+                'wifiAccessPoints': [
+                    {'macAddress': wifis[0].key, 'channel': 6},
+                    {'macAddress': wifis[1].key, 'frequency': 2437},
+                    {'macAddress': wifis[2].key, 'signalStrength': -77},
+                    {'macAddress': wifis[3].key, 'signalToNoiseRatio': 13},
                 ]},
             status=200)
         self.check_stats(
             counter=[self.metric + '.api_key.test',
                      self.metric + '.api_log.test.wifi_hit'])
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": wifi.lat + offset,
-                                                 "lng": wifi.lon},
-                                    "accuracy": wifi.range})
+        self.assertEqual(res.json, {'location': {'lat': wifi.lat + offset,
+                                                 'lng': wifi.lon},
+                                    'accuracy': wifi.range})
 
     def test_wifi_not_found(self):
         wifis = WifiFactory.build_batch(2)

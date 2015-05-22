@@ -106,6 +106,9 @@ def prepare_search_data(request_data, client_addr=None):
                     'mnc': cell['mobileNetworkCode'],
                     'lac': cell['locationAreaCode'],
                     'cid': cell['cellId'],
+                    'signal': cell['signalStrength'],
+                    'ta': cell['timingAdvance'],
+                    'psc': cell['psc'],
                 }
                 # Map a per-cell radioType to our internal radio name
                 if 'radioType' in cell and cell['radioType']:
@@ -125,7 +128,9 @@ def prepare_search_data(request_data, client_addr=None):
             for wifi in request_data['wifiAccessPoints']:
                 new_wifi = {
                     'key': wifi['macAddress'],
+                    'channel': wifi['channel'],
                     'signal': wifi['signalStrength'],
+                    'snr': wifi['signalToNoiseRatio'],
                 }
                 search_data['wifi'].append(new_wifi)
 

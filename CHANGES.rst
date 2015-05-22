@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #421: Pass through additional lookup data into the fallback query.
+
 - #421: Cache cell-only lookups for fallback provider queries.
 
 - #421: Add rate limiting to fallback provider.
