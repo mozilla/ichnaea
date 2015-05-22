@@ -15,7 +15,7 @@ from ichnaea.customjson import kombu_dumps
 from ichnaea.data.base import DataTask
 from ichnaea import util
 
-MetadataGroup = namedtuple('MetadataGroup', 'api_key nickname email')
+MetadataGroup = namedtuple('MetadataGroup', 'api_key email ip nickname')
 
 
 class ExportScheduler(DataTask):
@@ -223,6 +223,7 @@ class InternalUploader(ReportUploader):
                 kwargs={
                     'api_key_text': group.api_key,
                     'email': group.email,
+                    'ip': group.ip,
                     'items': kombu_dumps(reports),
                     'nickname': group.nickname,
                 },

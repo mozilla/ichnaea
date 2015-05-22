@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #242: Pass through submission IP address into the data pipeline.
+
 - #242: Expose geoip database to async tasks.
 
 - Make sure there are no unexpected raven messages left after each test.

@@ -18,17 +18,21 @@ from ichnaea.models import (
 class ReportQueueV1(DataTask):
 
     def __init__(self, task, session, pipe, api_key=None,
+                 email='', ip=None, nickname='',
                  insert_cell_task=None, insert_wifi_task=None):
         DataTask.__init__(self, task, session)
         self.pipe = pipe
         self.api_key = api_key
+        self.email = email
+        self.ip = ip
+        self.nickname = nickname
         self.insert_cell_task = insert_cell_task
         self.insert_wifi_task = insert_wifi_task
 
-    def insert(self, reports, nickname='', email=''):
+    def insert(self, reports):
         length = len(reports)
 
-        userid, nickname, email = self.process_user(nickname, email)
+        userid, nickname, email = self.process_user(self.nickname, self.email)
 
         self.process_reports(reports, userid=userid)
 
@@ -229,11 +233,12 @@ class ReportQueueV1(DataTask):
 class ReportQueueV2(DataTask):
 
     def __init__(self, task, session, pipe,
-                 api_key=None, nickname=None, email=None):
+                 api_key=None, email=None, ip=None, nickname=None):
         DataTask.__init__(self, task, session)
         self.pipe = pipe
         self.api_key = api_key
         self.email = email
+        self.ip = ip
         self.nickname = nickname
         self.export_queues = task.app.export_queues
 
@@ -245,6 +250,7 @@ class ReportQueueV2(DataTask):
         metadata = {
             'api_key': self.api_key,
             'email': self.email,
+            'ip': self.ip,
             'nickname': self.nickname,
         }
         items = []

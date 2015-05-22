@@ -67,6 +67,7 @@ class BaseSubmitter(object):
                 kwargs={
                     'api_key': self.api_key.valid_key,
                     'email': self.email,
+                    'ip': self.request.client_addr,
                     'nickname': self.nickname,
                     'reports': batch,
                 },

@@ -33,7 +33,7 @@ from ichnaea.models import ApiKey
 
 
 @celery_app.task(base=DatabaseTask, bind=True, queue='celery_incoming')
-def insert_measures(self, items=None, nickname='', email='',
+def insert_measures(self, items=None, email='', ip=None, nickname='',
                     api_key_text=None):
     if not items:  # pragma: no cover
         return 0
@@ -44,10 +44,13 @@ def insert_measures(self, items=None, nickname='', email='',
             api_key = api_key_text and ApiKey.getkey(session, api_key_text)
 
             queue = ReportQueueV1(self, session, pipe,
-                                  api_key,
+                                  api_key=api_key,
+                                  email=email,
+                                  ip=ip,
+                                  nickname=nickname,
                                   insert_cell_task=insert_measures_cell,
                                   insert_wifi_task=insert_measures_wifi)
-            length = queue.insert(reports, nickname=nickname, email=email)
+            length = queue.insert(reports)
     return length
 
 
@@ -108,11 +111,13 @@ def export_reports(self, export_queue_name, queue_key=None):
 
 
 @celery_app.task(base=DatabaseTask, bind=True, queue='celery_reports')
-def queue_reports(self, reports=(), api_key=None, email=None, nickname=None):
+def queue_reports(self, reports=(),
+                  api_key=None, email=None, ip=None, nickname=None):
     with self.redis_pipeline() as pipe:
         queue = ReportQueueV2(self, None, pipe,
                               api_key=api_key,
                               email=email,
+                              ip=ip,
                               nickname=nickname)
         length = queue.insert(reports)
     return length
