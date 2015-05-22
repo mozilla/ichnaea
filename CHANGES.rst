@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Make sure there are no unexpected raven messages left after each test.
+
 - #434: Internal test only changes to test base classes.
 
 20150522094900

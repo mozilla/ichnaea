@@ -704,7 +704,7 @@ class FallbackProvider(Provider):
                 self._make_external_call(data)
             )
 
-            if location_data is not self.LOCATION_NOT_FOUND:
+            if location_data and location_data is not self.LOCATION_NOT_FOUND:
                 try:
                     location = self.location_type(
                         lat=location_data['location']['lat'],

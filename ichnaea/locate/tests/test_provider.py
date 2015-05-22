@@ -541,7 +541,6 @@ class TestFallbackProvider(ProviderTest):
             location.lon, self.response_location['location']['lng'])
         self.assertEqual(
             location.accuracy, self.response_location['accuracy'])
-        self.check_raven(total=0)
         self.check_stats(
             counter=['m.fallback.lookup_status.200'],
             timer=['m.fallback.lookup'])
@@ -805,7 +804,6 @@ class TestFallbackProvider(ProviderTest):
                 location.lon, self.response_location['location']['lng'])
             self.assertEqual(
                 location.accuracy, self.response_location['accuracy'])
-            self.check_raven(total=0)
             self.check_stats(
                 counter=[
                     'm.fallback.lookup_status.200',
@@ -881,8 +879,6 @@ class TestFallbackProvider(ProviderTest):
                     'm.fallback.cache.hit',
                 ],
                 timer=['m.fallback.lookup'])
-
-            self.check_raven(total=0)
 
     def test_dont_set_cache_value_retrieved_from_cache(self):
         mock_redis_client = mock.Mock()

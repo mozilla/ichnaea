@@ -185,7 +185,6 @@ class TestArea(CeleryTestCase):
     def test_scan_areas_empty(self):
         # test tasks with an empty queue
         self.assertEqual(scan_areas.delay().get(), 0)
-        self.check_raven(total=0)
 
     def test_scan_areas_remove(self):
         # create an orphaned lac entry

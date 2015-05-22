@@ -166,8 +166,14 @@ class LogTestCase(TestCase):
         del cls.raven_client
         del cls.stats_client
 
+    def setUp(self):
+        super(LogTestCase, self).setUp()
+        self._unexpected_errors = []
+
     def tearDown(self):
         super(LogTestCase, self).tearDown()
+        self.assert_no_unexpected_raven_errors()
+        del self._unexpected_errors
         self.raven_client._clear()
         self.stats_client._clear()
 
@@ -204,7 +210,7 @@ class LogTestCase(TestCase):
                     result.append((m[0], m[1]))
         return result
 
-    def check_raven(self, expected=None, total=None):
+    def check_raven(self, expected=None):
         """Checks the raven message stream looking for the expected messages.
 
         The expected argument should be a list of either names or tuples.
@@ -216,17 +222,23 @@ class LogTestCase(TestCase):
         """
         msgs = self.raven_client.msgs
         found_msgs = [msg['message'] for msg in msgs]
+        matched_msgs = []
         if expected is None:
             expected = ()
-        if total is not None:
-            self.assertEqual(len(msgs), total, found_msgs)
         for exp in expected:
             count = 1
             name = exp
             if isinstance(exp, tuple):
                 name, count = exp
             matches = [found for found in found_msgs if found.startswith(name)]
+            matched_msgs.extend(matches)
             self.assertEqual(len(matches), count, found_msgs)
+        self._unexpected_errors = [msg for msg in msgs
+                                   if msg['message'] not in matched_msgs]
+
+    def assert_no_unexpected_raven_errors(self):
+        self.assertEqual(len(self._unexpected_errors), 0,
+                         self._unexpected_errors)
 
     def check_stats(self, total=None, **kw):
         """Checks a partial specification of messages to be found in

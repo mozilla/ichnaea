@@ -150,7 +150,6 @@ class TestFunctionalContent(AppTestCase):
 
             # No timers for invalid urls either
             timer=[('request.nobody-is-home', 0)])
-        self.check_raven(total=0)
 
     def test_image_file(self):
         self.app.get('/static/css/images/icons-000000@2x.png', status=200)

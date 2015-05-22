@@ -131,7 +131,6 @@ class TestGeolocate(AppTestCase):
                      self.metric + '.api_log.test.wifi_miss',
                      self.metric_url + '.404'],
             timer=[self.metric_url])
-        self.check_raven(total=0)
 
     def test_cell_mcc_mnc_strings(self):
         # mcc and mnc are officially defined as strings, where "01" is
