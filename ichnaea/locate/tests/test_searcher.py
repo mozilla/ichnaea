@@ -6,15 +6,11 @@ from ichnaea.locate.searcher import (
     PositionSearcher,
     Searcher,
 )
-from ichnaea.tests.base import (
-    DBTestCase,
-    GeoIPIsolation,
-)
+from ichnaea.tests.base import ConnectionTestCase
 
 
-class SearcherTest(GeoIPIsolation, DBTestCase):
+class SearcherTest(ConnectionTestCase):
 
-    default_session = 'db_ro_session'
     searcher = None
 
     def _make_query(self, data=None, TestLocation=None,  # NOQA

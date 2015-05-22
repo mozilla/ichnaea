@@ -18,6 +18,7 @@ from ichnaea import util
 class TestRenderer(TestCase):
 
     def setUp(self):
+        super(TestRenderer, self).setUp()
         self.render = Renderer()(None)
 
     def test_basic(self):

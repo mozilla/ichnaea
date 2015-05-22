@@ -1,11 +1,10 @@
 import os
 import shutil
 import tempfile
-from unittest2 import TestCase
 
 from ichnaea.async.app import celery_app
 from ichnaea.async import schedule
-from ichnaea.tests.base import CeleryTestCase
+from ichnaea.tests.base import CeleryTestCase, TestCase
 
 
 class TestBeat(CeleryTestCase):

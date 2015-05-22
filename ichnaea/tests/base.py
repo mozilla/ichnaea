@@ -14,7 +14,6 @@ from sqlalchemy.schema import (
     MetaData,
     Table,
 )
-from unittest2 import TestCase
 from webtest import TestApp
 
 from ichnaea.async.app import celery_app
@@ -152,206 +151,23 @@ def _make_app(app_config=TEST_CONFIG,
     return TestApp(wsgiapp)
 
 
-class DBIsolation(object):
-    # Inspired by a blog post:
-    # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
-
-    default_session = 'db_rw_session'
-    track_connection_events = False
-
-    @contextmanager
-    def db_call_checker(self):
-        try:
-            self.setup_db_event_tracking()
-            yield self.check_db_calls
-        finally:
-            self.teardown_db_event_tracking()
-
-    def check_db_calls(self, rw=None, ro=None):
-        if rw is not None:
-            events = self.db_events['rw']['calls']
-            self.assertEqual(len(events), rw, events)
-        if ro is not None:
-            events = self.db_events['ro']['calls']
-            self.assertEqual(len(events), ro, events)
-
-    def reset_db_event_tracking(self):
-        self.db_events = {
-            'rw': {'calls': [], 'handler': None},
-            'ro': {'calls': [], 'handler': None},
-        }
-
-    def setup_db_event_tracking(self):
-        self.reset_db_event_tracking()
-
-        def scoped_conn_event_handler(calls):
-            def conn_event_handler(**kw):
-                calls.append((kw['statement'], kw['parameters']))
-            return conn_event_handler
-
-        rw_handler = scoped_conn_event_handler(self.db_events['rw']['calls'])
-        self.db_events['rw']['handler'] = rw_handler
-        event.listen(self.rw_conn, 'before_cursor_execute',
-                     rw_handler, named=True)
-
-        ro_handler = scoped_conn_event_handler(self.db_events['ro']['calls'])
-        self.db_events['ro']['handler'] = ro_handler
-        event.listen(self.ro_conn, 'before_cursor_execute',
-                     ro_handler, named=True)
-
-    def teardown_db_event_tracking(self):
-        event.remove(self.ro_conn, 'before_cursor_execute',
-                     self.db_events['ro']['handler'])
-        event.remove(self.rw_conn, 'before_cursor_execute',
-                     self.db_events['rw']['handler'])
-        self.reset_db_event_tracking()
-
-    def setUp(self):
-        super(DBIsolation, self).setUp()
-        self.rw_conn = self.db_rw.engine.connect()
-        self.rw_trans = self.rw_conn.begin()
-        self.db_rw.session_factory.configure(bind=self.rw_conn)
-        self.db_rw_session = self.db_rw.session()
-        self.ro_conn = self.db_ro.engine.connect()
-        self.ro_trans = self.ro_conn.begin()
-        self.db_ro.session_factory.configure(bind=self.ro_conn)
-        self.db_ro_session = self.db_ro.session()
-
-        # set up a default session
-        default_session = getattr(self, self.default_session)
-        setattr(self, 'session', default_session)
-        SESSION['default'] = default_session
-
-        if self.track_connection_events:
-            self.setup_db_event_tracking()
-
-    def tearDown(self):
-        super(DBIsolation, self).tearDown()
-        if self.track_connection_events:
-            self.teardown_db_event_tracking()
-
-        del SESSION['default']
-        del self.session
-
-        self.ro_trans.rollback()
-        self.db_ro_session.close()
-        del self.db_ro_session
-        self.db_ro.session_factory.configure(bind=None)
-        self.ro_trans.close()
-        del self.ro_trans
-        self.ro_conn.close()
-        del self.ro_conn
-        self.rw_trans.rollback()
-        self.db_rw_session.close()
-        del self.db_rw_session
-        self.db_rw.session_factory.configure(bind=None)
-        self.rw_trans.close()
-        del self.rw_trans
-        self.rw_conn.close()
-        del self.rw_conn
+class LogTestCase(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(DBIsolation, cls).setUpClass()
-        cls.db_rw = _make_db()
-        cls.db_ro = _make_db()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(DBIsolation, cls).tearDownClass()
-        cls.db_rw.engine.pool.dispose()
-        del cls.db_rw
-        cls.db_ro.engine.pool.dispose()
-        del cls.db_ro
-
-    @classmethod
-    def setup_tables(cls, engine):
-        with engine.connect() as conn:
-            trans = conn.begin()
-            _Model.metadata.create_all(engine)
-            # Now stamp the latest alembic version
-            alembic_cfg = Config()
-            alembic_cfg.set_section_option('alembic',
-                                           'script_location',
-                                           'alembic')
-            alembic_cfg.set_section_option('alembic',
-                                           'sqlalchemy.url',
-                                           str(engine.url))
-
-            command.stamp(alembic_cfg, "head")
-            trans.commit()
-
-    @classmethod
-    def cleanup_tables(cls, engine):
-        # reflect and delete all tables, not just those known to
-        # our current code version / models
-        metadata = MetaData()
-        inspector = inspect(engine)
-        tables = []
-        with engine.connect() as conn:
-            trans = conn.begin()
-            for t in inspector.get_table_names():
-                tables.append(Table(t, metadata))
-            for t in tables:
-                conn.execute(DropTable(t))
-            trans.commit()
-
-
-class RedisIsolation(object):
-
-    @classmethod
-    def setUpClass(cls):
-        super(RedisIsolation, cls).setUpClass()
-        cls.redis_client = _make_redis()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(RedisIsolation, cls).tearDownClass()
-        cls.redis_client.connection_pool.disconnect()
-        del cls.redis_client
-
-    def tearDown(self):
-        super(RedisIsolation, self).tearDown()
-        self.redis_client.flushdb()
-
-
-class CeleryIsolation(object):
-
-    @classmethod
-    def setUpClass(cls):
-        super(CeleryIsolation, cls).setUpClass()
-        cls.celery_app = celery_app
-        init_worker(
-            celery_app, TEST_CONFIG,
-            _db_rw=cls.db_rw,
-            _raven_client=cls.raven_client,
-            _redis_client=cls.redis_client,
-            _stats_client=cls.stats_client)
-
-    @classmethod
-    def tearDownClass(cls):
-        super(CeleryIsolation, cls).tearDownClass()
-        shutdown_worker(celery_app)
-        del cls.celery_app
-
-
-class LogIsolation(object):
-
-    @classmethod
-    def setUpClass(cls):
-        super(LogIsolation, cls).setUpClass()
+        super(LogTestCase, cls).setUpClass()
         # Use a debug configuration
         cls.raven_client = configure_raven('', _client=DebugRavenClient())
         cls.stats_client = configure_stats('', _client=DebugStatsClient())
 
     @classmethod
     def tearDownClass(cls):
-        super(LogIsolation, cls).tearDownClass()
+        super(LogTestCase, cls).tearDownClass()
         del cls.raven_client
         del cls.stats_client
 
-    def setUp(self):
-        super(LogIsolation, self).setUp()
+    def tearDown(self):
+        super(LogTestCase, self).tearDown()
         self.raven_client._clear()
         self.stats_client._clear()
 
@@ -479,27 +295,196 @@ class LogIsolation(object):
                                      msg='%s %s not found' % (msg_type, name))
 
 
-class GeoIPIsolation(object):
+class DBTestCase(LogTestCase):
+    # Inspired by a blog post:
+    # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
+
+    default_session = 'db_rw_session'
+    track_connection_events = False
+
+    @contextmanager
+    def db_call_checker(self):
+        try:
+            self.setup_db_event_tracking()
+            yield self.check_db_calls
+        finally:
+            self.teardown_db_event_tracking()
+
+    def check_db_calls(self, rw=None, ro=None):
+        if rw is not None:
+            events = self.db_events['rw']['calls']
+            self.assertEqual(len(events), rw, events)
+        if ro is not None:
+            events = self.db_events['ro']['calls']
+            self.assertEqual(len(events), ro, events)
+
+    def reset_db_event_tracking(self):
+        self.db_events = {
+            'rw': {'calls': [], 'handler': None},
+            'ro': {'calls': [], 'handler': None},
+        }
+
+    def setup_db_event_tracking(self):
+        self.reset_db_event_tracking()
+
+        def scoped_conn_event_handler(calls):
+            def conn_event_handler(**kw):
+                calls.append((kw['statement'], kw['parameters']))
+            return conn_event_handler
+
+        rw_handler = scoped_conn_event_handler(self.db_events['rw']['calls'])
+        self.db_events['rw']['handler'] = rw_handler
+        event.listen(self.rw_conn, 'before_cursor_execute',
+                     rw_handler, named=True)
+
+        ro_handler = scoped_conn_event_handler(self.db_events['ro']['calls'])
+        self.db_events['ro']['handler'] = ro_handler
+        event.listen(self.ro_conn, 'before_cursor_execute',
+                     ro_handler, named=True)
+
+    def teardown_db_event_tracking(self):
+        event.remove(self.ro_conn, 'before_cursor_execute',
+                     self.db_events['ro']['handler'])
+        event.remove(self.rw_conn, 'before_cursor_execute',
+                     self.db_events['rw']['handler'])
+        self.reset_db_event_tracking()
+
+    def setUp(self):
+        super(DBTestCase, self).setUp()
+        self.rw_conn = self.db_rw.engine.connect()
+        self.rw_trans = self.rw_conn.begin()
+        self.db_rw.session_factory.configure(bind=self.rw_conn)
+        self.db_rw_session = self.db_rw.session()
+        self.ro_conn = self.db_ro.engine.connect()
+        self.ro_trans = self.ro_conn.begin()
+        self.db_ro.session_factory.configure(bind=self.ro_conn)
+        self.db_ro_session = self.db_ro.session()
+
+        # set up a default session
+        default_session = getattr(self, self.default_session)
+        setattr(self, 'session', default_session)
+        SESSION['default'] = default_session
+
+        if self.track_connection_events:
+            self.setup_db_event_tracking()
+
+    def tearDown(self):
+        super(DBTestCase, self).tearDown()
+        if self.track_connection_events:
+            self.teardown_db_event_tracking()
+
+        del SESSION['default']
+        del self.session
+
+        self.ro_trans.rollback()
+        self.db_ro_session.close()
+        del self.db_ro_session
+        self.db_ro.session_factory.configure(bind=None)
+        self.ro_trans.close()
+        del self.ro_trans
+        self.ro_conn.close()
+        del self.ro_conn
+        self.rw_trans.rollback()
+        self.db_rw_session.close()
+        del self.db_rw_session
+        self.db_rw.session_factory.configure(bind=None)
+        self.rw_trans.close()
+        del self.rw_trans
+        self.rw_conn.close()
+        del self.rw_conn
+
+    @classmethod
+    def setUpClass(cls):
+        super(DBTestCase, cls).setUpClass()
+        cls.db_rw = _make_db()
+        cls.db_ro = _make_db()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(DBTestCase, cls).tearDownClass()
+        cls.db_rw.engine.pool.dispose()
+        del cls.db_rw
+        cls.db_ro.engine.pool.dispose()
+        del cls.db_ro
+
+    @classmethod
+    def setup_tables(cls, engine):
+        with engine.connect() as conn:
+            trans = conn.begin()
+            _Model.metadata.create_all(engine)
+            # Now stamp the latest alembic version
+            alembic_cfg = Config()
+            alembic_cfg.set_section_option('alembic',
+                                           'script_location',
+                                           'alembic')
+            alembic_cfg.set_section_option('alembic',
+                                           'sqlalchemy.url',
+                                           str(engine.url))
+
+            command.stamp(alembic_cfg, "head")
+            trans.commit()
+
+    @classmethod
+    def cleanup_tables(cls, engine):
+        # reflect and delete all tables, not just those known to
+        # our current code version / models
+        metadata = MetaData()
+        inspector = inspect(engine)
+        tables = []
+        with engine.connect() as conn:
+            trans = conn.begin()
+            for t in inspector.get_table_names():
+                tables.append(Table(t, metadata))
+            for t in tables:
+                conn.execute(DropTable(t))
+            trans.commit()
+
+
+class GeoIPTestCase(LogTestCase):
 
     geoip_data = GEOIP_DATA
 
     @classmethod
+    def _open_db(cls, filename=None, mode=MODE_AUTO):
+        if filename is None:
+            filename = GEOIP_TEST_FILE
+        return configure_geoip(
+            filename, mode=mode, raven_client=cls.raven_client)
+
+    @classmethod
     def setUpClass(cls):
-        super(GeoIPIsolation, cls).setUpClass()
-        cls.geoip_db = configure_geoip(
-            filename=GEOIP_TEST_FILE, mode=MODE_AUTO, raven_client=None)
+        super(GeoIPTestCase, cls).setUpClass()
+        cls.geoip_db = cls._open_db()
 
     @classmethod
     def tearDownClass(cls):
-        super(GeoIPIsolation, cls).tearDownClass()
+        super(GeoIPTestCase, cls).tearDownClass()
         del cls.geoip_db
 
 
-class DBTestCase(DBIsolation, LogIsolation, TestCase):
+class RedisTestCase(LogTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super(RedisTestCase, cls).setUpClass()
+        cls.redis_client = _make_redis()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(RedisTestCase, cls).tearDownClass()
+        cls.redis_client.connection_pool.disconnect()
+        del cls.redis_client
+
+    def tearDown(self):
+        super(RedisTestCase, self).tearDown()
+        self.redis_client.flushdb()
+
+
+class ConnectionTestCase(DBTestCase, GeoIPTestCase, RedisTestCase):
     pass
 
 
-class AppTestCase(RedisIsolation, GeoIPIsolation, DBTestCase):
+class AppTestCase(ConnectionTestCase):
 
     default_session = 'db_ro_session'
 
@@ -521,11 +506,27 @@ class AppTestCase(RedisIsolation, GeoIPIsolation, DBTestCase):
         del cls.app
 
 
-class CeleryTestCase(CeleryIsolation, RedisIsolation, DBTestCase):
-    pass
+class CeleryTestCase(DBTestCase, RedisTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super(CeleryTestCase, cls).setUpClass()
+        cls.celery_app = celery_app
+        init_worker(
+            celery_app, TEST_CONFIG,
+            _db_rw=cls.db_rw,
+            _raven_client=cls.raven_client,
+            _redis_client=cls.redis_client,
+            _stats_client=cls.stats_client)
+
+    @classmethod
+    def tearDownClass(cls):
+        super(CeleryTestCase, cls).tearDownClass()
+        shutdown_worker(celery_app)
+        del cls.celery_app
 
 
-class CeleryAppTestCase(CeleryIsolation, AppTestCase):
+class CeleryAppTestCase(AppTestCase, CeleryTestCase):
     default_session = 'db_rw_session'
 
 
@@ -535,8 +536,8 @@ def setup_package(module):
     from ichnaea.models import content  # NOQA
     db = _make_db()
     engine = db.engine
-    DBIsolation.cleanup_tables(engine)
-    DBIsolation.setup_tables(engine)
+    DBTestCase.cleanup_tables(engine)
+    DBTestCase.setup_tables(engine)
     # always add a test API key
     session = db.session()
     session.add(ApiKey(valid_key='test', log=True, shortname='test'))

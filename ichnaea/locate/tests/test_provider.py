@@ -34,20 +34,17 @@ from ichnaea.models import (
 )
 from ichnaea.tests.base import (
     CANADA_MCC,
-    DBTestCase,
-    GeoIPIsolation,
+    ConnectionTestCase,
     GB_LAT,
     GB_LON,
     GB_MCC,
     USA_MCC,
-    RedisIsolation,
 )
 from ichnaea.tests.factories import CellFactory, WifiFactory
 
 
-class ProviderTest(GeoIPIsolation, RedisIsolation, DBTestCase):
+class ProviderTest(ConnectionTestCase):
 
-    default_session = 'db_ro_session'
     settings = {}
 
     class TestProvider(Provider):

@@ -29,7 +29,7 @@ from ichnaea import util
 class TestObservationsDump(CeleryTestCase):
 
     def setUp(self):
-        CeleryTestCase.setUp(self)
+        super(TestObservationsDump, self).setUp()
         self.old = datetime.datetime(1980, 1, 1).replace(
             tzinfo=pytz.UTC)
 

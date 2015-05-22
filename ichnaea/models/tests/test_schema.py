@@ -26,6 +26,7 @@ class ValidationTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
+        super(ValidationTest, cls).setUpClass()
         cls.time = util.utcnow()
 
     def check_normalized(self, validator, observation, extra, expect):
@@ -50,6 +51,7 @@ class ValidationTest(TestCase):
 class TestCellValidation(ValidationTest):
 
     def setUp(self):
+        super(TestCellValidation, self).setUp()
         self.invalid_lacs = [constants.MIN_LAC - 1, constants.MAX_LAC_ALL + 1]
         self.invalid_cids = [constants.MIN_CID - 1, constants.MAX_CID_ALL + 1]
 

@@ -7,7 +7,7 @@ class CountryBase(object):
 
     @property
     def test_ip(self):
-        # accesses data defined in GeoIPIsolation
+        # accesses data defined in GeoIPTestCase
         return self.geoip_data['London']['ip']
 
     def _make_geoip_query(self, api_key='test', data=None,

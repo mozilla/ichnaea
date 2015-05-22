@@ -4,9 +4,7 @@ from datetime import timedelta
 import boto
 from mock import MagicMock, patch
 from pyramid.testing import DummyRequest
-from pyramid.testing import setUp
-from pyramid.testing import tearDown
-from unittest2 import TestCase
+from pyramid import testing
 
 from ichnaea.models.content import (
     Score,
@@ -19,18 +17,20 @@ from ichnaea.content.views import (
     LOCAL_TILES,
     LOCAL_TILES_BASE,
 )
-from ichnaea.tests.base import AppTestCase
+from ichnaea.tests.base import AppTestCase, TestCase
 from ichnaea import util
 
 
 class TestContentViews(TestCase):
 
     def setUp(self):
+        super(TestContentViews, self).setUp()
         request = DummyRequest()
-        self.config = setUp(request=request)
+        self.config = testing.setUp(request=request)
 
     def tearDown(self):
-        tearDown()
+        super(TestContentViews, self).setUp()
+        testing.tearDown()
 
     def _make_view(self, request):
         from ichnaea.content.views import ContentViews
@@ -213,13 +213,13 @@ class TestFunctionalContent(AppTestCase):
 class TestFunctionalContentViews(AppTestCase):
 
     def setUp(self):
-        AppTestCase.setUp(self)
+        super(TestFunctionalContentViews, self).setUp()
         request = DummyRequest()
-        self.config = setUp(request=request)
+        self.config = testing.setUp(request=request)
 
     def tearDown(self):
-        tearDown()
-        AppTestCase.tearDown(self)
+        super(TestFunctionalContentViews, self).tearDown()
+        testing.tearDown()
 
     def _make_view(self, request):
         from ichnaea.content.views import ContentViews
@@ -351,12 +351,14 @@ class TestFunctionalContentViews(AppTestCase):
 class TestLayout(TestCase):
 
     def setUp(self):
+        super(TestLayout, self).setUp()
         request = DummyRequest()
-        self.config = setUp(request=request)
+        self.config = testing.setUp(request=request)
         self.config.include('pyramid_chameleon')
 
     def tearDown(self):
-        tearDown()
+        super(TestLayout, self).tearDown()
+        testing.tearDown()
 
     def _make_layout(self):
         from ichnaea.content.views import Layout

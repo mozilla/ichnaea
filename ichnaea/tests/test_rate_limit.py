@@ -1,13 +1,10 @@
 import time
 
 from ichnaea.service.base import rate_limit
-from ichnaea.tests.base import (
-    RedisIsolation,
-    TestCase,
-)
+from ichnaea.tests.base import RedisTestCase
 
 
-class TestLimiter(RedisIsolation, TestCase):
+class TestLimiter(RedisTestCase):
 
     def test_limiter_maxrequests(self):
         api_key = 'key_a'

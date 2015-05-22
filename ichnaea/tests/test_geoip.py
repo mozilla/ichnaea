@@ -1,29 +1,18 @@
 import tempfile
 
-from maxminddb.const import MODE_AUTO, MODE_MMAP
+from maxminddb.const import MODE_MMAP
 
 from ichnaea.constants import (
     GEOIP_CITY_ACCURACY,
     GEOIP_COUNTRY_ACCURACY,
 )
 from ichnaea import geoip
-from ichnaea.geoip import configure_geoip, geoip_accuracy
+from ichnaea.geoip import geoip_accuracy
 from ichnaea.tests.base import (
     GEOIP_BAD_FILE,
-    GEOIP_TEST_FILE,
-    GeoIPIsolation,
-    LogIsolation,
+    GeoIPTestCase,
     TestCase,
 )
-
-
-class GeoIPTestCase(LogIsolation, GeoIPIsolation, TestCase):
-
-    def _open_db(self, filename=None, mode=MODE_AUTO):
-        if filename is None:
-            filename = GEOIP_TEST_FILE
-        return configure_geoip(
-            filename, mode=mode, raven_client=self.raven_client)
 
 
 class TestDatabase(GeoIPTestCase):

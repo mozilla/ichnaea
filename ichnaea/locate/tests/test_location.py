@@ -1,9 +1,8 @@
-from unittest2 import TestCase
-
 from ichnaea.locate.location import (
     Country,
     Position,
 )
+from ichnaea.tests.base import TestCase
 
 
 class TestPosition(TestCase):

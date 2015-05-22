@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #434: Internal test only changes to test base classes.
+
 20150522094900
 **************
 

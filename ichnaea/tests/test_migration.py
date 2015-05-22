@@ -12,7 +12,7 @@ from ichnaea.models import _Model  # NOQA
 
 from ichnaea.tests.base import (
     _make_db,
-    DBIsolation,
+    DBTestCase,
     setup_package,
     SQL_BASE_STRUCTURE,
     TestCase,
@@ -55,12 +55,14 @@ def db_compare_type(context, inspected_column,
 class TestMigration(TestCase):
 
     def setUp(self):
+        super(TestMigration, self).setUp()
         self.db = _make_db()
         # capture state of fresh database
         self.head_metadata = self.inspect_db()
-        DBIsolation.cleanup_tables(self.db.engine)
+        DBTestCase.cleanup_tables(self.db.engine)
 
     def tearDown(self):
+        super(TestMigration, self).tearDown()
         self.db.engine.pool.dispose()
         del self.db
         # setup normal database schema again

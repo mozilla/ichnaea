@@ -17,7 +17,7 @@ from ichnaea import util
 class TestGeolocate(AppTestCase):
 
     def setUp(self):
-        AppTestCase.setUp(self)
+        super(TestGeolocate, self).setUp()
         self.url = '/v1/geolocate'
         self.metric = 'geolocate'
         self.metric_url = 'request.v1.geolocate'

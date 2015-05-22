@@ -2,14 +2,13 @@ from ichnaea.config import DummyConfig
 from ichnaea.tests.base import (
     _make_app,
     _make_db,
-    DBTestCase,
-    RedisIsolation,
+    ConnectionTestCase,
     REDIS_URI,
     SQLURI,
 )
 
 
-class TestApp(RedisIsolation, DBTestCase):
+class TestApp(ConnectionTestCase):
 
     def test_db_config(self):
         app_config = DummyConfig({'ichnaea': {
