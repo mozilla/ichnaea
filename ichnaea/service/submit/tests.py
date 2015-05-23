@@ -1,19 +1,10 @@
-import uuid
+from datetime import datetime
 
 from pyramid.testing import DummyRequest
+import pytz
 
-from ichnaea.models.content import (
-    Score,
-    ScoreKey,
-    User,
-)
-from ichnaea.models import (
-    CellObservation,
-    Radio,
-    WifiObservation,
-)
+from ichnaea.models import Radio
 from ichnaea.customjson import dumps
-from ichnaea.data.tasks import schedule_export_reports
 from ichnaea.service.error import preprocess_request
 from ichnaea.service.submit.schema import (
     ReportSchema,
@@ -78,29 +69,27 @@ class TestSubmitSchema(SchemaTest):
 
 class SubmitTest(CeleryAppTestCase):
 
-    nickname = 'World Tr\xc3\xa4veler'.decode('utf-8')
-    email = 'world_tr\xc3\xa4veler@email.com'.decode('utf-8')
+    def setUp(self):
+        super(SubmitTest, self).setUp()
+        self.queue = self.celery_app.export_queues['internal']
 
     def _post(self, items, api_key=None, status=204, **kw):
         url = '/v1/submit'
         if api_key:
             url += '?key=%s' % api_key
-        res = self.app.post_json(url, {'items': items}, status=status, **kw)
-        schedule_export_reports.delay().get()
-        return res
+        return self.app.post_json(url, {'items': items}, status=status, **kw)
 
 
 class TestSubmit(SubmitTest):
 
     def test_ok_cell(self):
         now = util.utcnow()
-        today = now.date()
-        first_of_month = now.replace(day=1, hour=0, minute=0, second=0)
+        today = now.replace(hour=0, minute=0, second=0)
         cell = CellFactory.build(radio=Radio.umts)
         res = self._post([{
             'lat': cell.lat,
             'lon': cell.lon,
-            'time': now.strftime('%Y-%m-%d'),
+            'time': today.strftime('%Y-%m-%d'),
             'accuracy': 10,
             'altitude': 123,
             'altitude_accuracy': 7,
@@ -111,60 +100,55 @@ class TestSubmit(SubmitTest):
         }], api_key='test')
         self.assertEqual(res.body, '')
 
-        cell_result = self.session.query(CellObservation).all()
-        self.assertEqual(len(cell_result), 1)
-        item = cell_result[0]
-        self.assertTrue(isinstance(item.report_id, uuid.UUID))
-        self.assertEqual(item.created.date(), today)
-
-        self.assertEqual(item.time, first_of_month)
-        self.assertEqual(item.lat, cell.lat)
-        self.assertEqual(item.lon, cell.lon)
-        self.assertEqual(item.accuracy, 10)
-        self.assertEqual(item.altitude, 123)
-        self.assertEqual(item.altitude_accuracy, 7)
-        self.assertEqual(item.radio, cell.radio)
-        self.assertEqual(item.mcc, cell.mcc)
-        self.assertEqual(item.mnc, cell.mnc)
-        self.assertEqual(item.lac, cell.lac)
-        self.assertEqual(item.cid, cell.cid)
+        self.assertEqual(self.queue.size(self.queue.queue_key()), 1)
+        item = self.queue.dequeue(self.queue.queue_key())[0]
+        self.assertEqual(item['metadata']['api_key'], 'test')
+        report = item['report']
+        timestamp = datetime.utcfromtimestamp(report['timestamp'] / 1000.0)
+        timestamp = timestamp.replace(microsecond=0, tzinfo=pytz.UTC)
+        self.assertEqual(timestamp, today)
+        position = report['position']
+        self.assertEqual(position['latitude'], cell.lat)
+        self.assertEqual(position['longitude'], cell.lon)
+        self.assertEqual(position['accuracy'], 10)
+        self.assertEqual(position['altitude'], 123)
+        self.assertEqual(position['altitudeAccuracy'], 7)
+        cells = report['cellTowers']
+        self.assertEqual(cells[0]['radioType'], 'wcdma')
+        self.assertEqual(cells[0]['mobileCountryCode'], cell.mcc)
+        self.assertEqual(cells[0]['mobileNetworkCode'], cell.mnc)
+        self.assertEqual(cells[0]['locationAreaCode'], cell.lac)
+        self.assertEqual(cells[0]['cellId'], cell.cid)
 
     def test_ok_wifi(self):
-        now = util.utcnow()
-        today = now.date()
-        first_of_month = now.replace(day=1, hour=0, minute=0, second=0)
         wifi = WifiFactory.build()
         self._post([{
             'lat': wifi.lat,
             'lon': wifi.lon,
             'accuracy': 17,
             'wifi': [{'key': wifi.key.upper(),
-                      'signalToNoiseRatio': 5},
-                     {'key': '00:34:cd:34:cd:34',
-                      'signalToNoiseRatio': 5}],
+                      'frequency': 2437,
+                      'signal': -70,
+                      'signalToNoiseRatio': 5,
+                      }]
         }])
 
-        wifi_result = self.session.query(WifiObservation).all()
-        self.assertEqual(len(wifi_result), 2)
-        item = wifi_result[0]
-        report_id = item.report_id
-        self.assertTrue(isinstance(report_id, uuid.UUID))
-        self.assertEqual(item.created.date(), today)
-        self.assertEqual(item.time, first_of_month)
-        self.assertEqual(item.lat, wifi.lat)
-        self.assertEqual(item.lon, wifi.lon)
-        self.assertEqual(item.accuracy, 17)
-        self.assertEqual(item.altitude, 0)
-        self.assertEqual(item.altitude_accuracy, 0)
-        self.assertTrue(item.key in (wifi.key, '0034cd34cd34'))
-        self.assertEqual(item.channel, 0)
-        self.assertEqual(item.signal, 0)
-        self.assertEqual(item.snr, 5)
-        item = wifi_result[1]
-        self.assertEqual(item.report_id, report_id)
-        self.assertEqual(item.created.date(), today)
-        self.assertEqual(item.lat, wifi.lat)
-        self.assertEqual(item.lon, wifi.lon)
+        self.assertEqual(self.queue.size(self.queue.queue_key()), 1)
+        item = self.queue.dequeue(self.queue.queue_key())[0]
+        self.assertEqual(item['metadata']['api_key'], None)
+        report = item['report']
+        position = report['position']
+        self.assertEqual(position['latitude'], wifi.lat)
+        self.assertEqual(position['longitude'], wifi.lon)
+        self.assertEqual(position['accuracy'], 17)
+        self.assertFalse('altitude' in position)
+        self.assertFalse('altitudeAccuracy' in position)
+        wifis = report['wifiAccessPoints']
+        self.assertEqual(wifis[0]['macAddress'], wifi.key.upper())
+        self.assertFalse('channel' in wifis[0])
+        self.assertEqual(wifis[0]['frequency'], 2437)
+        self.assertEqual(wifis[0]['signalStrength'], -70)
+        self.assertEqual(wifis[0]['signalToNoiseRatio'], 5)
 
     def test_batches(self):
         batch = 110
@@ -177,7 +161,7 @@ class TestSubmit(SubmitTest):
         # add a bad one, this will just be skipped
         items.append({'lat': 10.0, 'lon': 10.0, 'whatever': 'xx'})
         self._post(items)
-        self.assertEqual(self.session.query(WifiObservation).count(), batch)
+        self.assertEqual(self.queue.size(self.queue.queue_key()), batch)
 
     def test_gzip(self):
         wifi = WifiFactory.build()
@@ -190,68 +174,11 @@ class TestSubmit(SubmitTest):
             '/v1/submit?key=test', body, headers=headers,
             content_type='application/json', status=204)
 
-    def test_mapstat(self):
-        wifis = WifiFactory.build_batch(4)
-        self._post([
-            {'lat': wifis[0].lat,
-             'lon': wifis[0].lon,
-             'wifi': [{'key': wifis[0].key}]},
-            {'lat': wifis[1].lat + 0.00012,
-             'lon': wifis[1].lon,
-             'wifi': [{'key': wifis[1].key}]},
-            {'lat': wifis[1].lat + 0.00013,
-             'lon': wifis[1].lon,
-             'wifi': [{'key': wifis[2].key}]},
-            {'lat': wifis[2].lat * -1.0,
-             'lon': wifis[2].lon,
-             'wifi': [{'key': wifis[3].key}]},
-            {'lat': wifis[3].lat + 1.0,
-             'lon': wifis[3].lon,
-             'wifi': [{'key': 'invalid'}]},
-        ])
-        queue = self.celery_app.data_queues['update_mapstat']
-        positions = set([(pos['lat'], pos['lon']) for pos in queue.dequeue()])
-        self.assertEqual(positions, set([
-            (wifis[0].lat, wifis[0].lon),
-            (wifis[1].lat + 0.00012, wifis[1].lon),
-            (wifis[1].lat + 0.00013, wifis[1].lon),
-            (wifis[2].lat * -1.0, wifis[2].lon),
-        ]))
-
-    def test_scores(self):
-        wifis = WifiFactory.build_batch(3)
-        self._post([
-            {'lat': wifis[0].lat,
-             'lon': wifis[0].lon,
-             'wifi': [{'key': wifis[0].key}]},
-            {'lat': wifis[1].lat + 1.0,
-             'lon': wifis[1].lon,
-             'wifi': [{'key': wifis[1].key}]},
-            {'lat': wifis[2].lat,
-             'lon': wifis[2].lon,
-             'wifi': [{'key': 'invalid'}]},
-        ], headers={'X-Nickname': self.nickname.encode('utf-8')})
-
-        users = self.session.query(User).all()
-        self.assertEqual(len(users), 1)
-        self.assertEqual(users[0].nickname, self.nickname)
-        user = users[0]
-
-        queue = self.celery_app.data_queues['update_score']
-        scores = {}
-        for value in queue.dequeue():
-            scores[value['hashkey']] = value['value']
-
-        expected = {
-            Score.to_hashkey(userid=user.id,
-                             key=ScoreKey.location, time=None): 2,
-            Score.to_hashkey(userid=user.id,
-                             key=ScoreKey.new_wifi, time=None): 2,
-        }
-        self.assertEqual(scores, expected)
-
 
 class TestNickname(SubmitTest):
+
+    nickname = 'World Tr\xc3\xa4veler'.decode('utf-8')
+    email = 'world_tr\xc3\xa4veler@email.com'.decode('utf-8')
 
     def _post_one_wifi(self, nickname=None, email=None):
         wifi = WifiFactory.build()
@@ -263,38 +190,17 @@ class TestNickname(SubmitTest):
             headers['X-Email'] = email.encode('utf-8')
         return self._post([data], headers=headers)
 
-    def test_nickname_header_error(self):
-        self._post_one_wifi(nickname='a')
-        self.assertEqual(self.session.query(User).count(), 0)
-        queue = self.celery_app.data_queues['update_score']
-        self.assertEqual(queue.size(), 0)
-
-    def test_email_header(self):
-        self._post_one_wifi(nickname=self.nickname, email=self.email)
-        result = self.session.query(User).all()
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].email, self.email)
-
-    def test_email_header_update(self):
-        user = User(nickname=self.nickname, email=self.email)
-        self.session.add(user)
-        self.session.commit()
-        self._post_one_wifi(nickname=self.nickname, email='new' + self.email)
-        result = self.session.query(User).all()
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].email, 'new' + self.email)
-
-    def test_email_header_too_long(self):
-        email = 'a' * 255 + '@email.com'
-        self._post_one_wifi(nickname=self.nickname, email=email)
-        result = self.session.query(User).all()
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].email, '')
-
     def test_email_header_without_nickname(self):
-        self._post_one_wifi(email=self.email)
-        result = self.session.query(User).all()
-        self.assertEqual(len(result), 0)
+        self._post_one_wifi(nickname=None, email=self.email)
+        item = self.queue.dequeue(self.queue.queue_key())[0]
+        self.assertEqual(item['metadata']['nickname'], None)
+        self.assertEqual(item['metadata']['email'], self.email)
+
+    def test_nickname_and_email_headers(self):
+        self._post_one_wifi(nickname=self.nickname, email=self.email)
+        item = self.queue.dequeue(self.queue.queue_key())[0]
+        self.assertEqual(item['metadata']['nickname'], self.nickname)
+        self.assertEqual(item['metadata']['email'], self.email)
 
 
 class TestSubmitErrors(SubmitTest):
@@ -341,13 +247,10 @@ class TestSubmitErrors(SubmitTest):
              'accuracy': 17,
              'wifi': [{'key': wifi.key}],
              },
-            {'wifi': [],
+            {'wifi': [{'key': wifi.key}],
              'accuracy': 16},
         ])
-        cell_result = self.session.query(CellObservation).all()
-        self.assertEqual(len(cell_result), 0)
-        wifi_result = self.session.query(WifiObservation).all()
-        self.assertEqual(len(wifi_result), 1)
+        self.assertEqual(self.queue.size(self.queue.queue_key()), 2)
 
     def test_completely_empty(self):
         res = self.app.post_json('/v1/submit', None, status=400)
@@ -396,23 +299,14 @@ class TestStats(SubmitTest):
             }],
             'wifi': [{'key': wifi.key}],
         }], api_key='test')
-
         self.check_stats(
             counter=['items.api_log.test.uploaded.batches',
-                     'items.api_log.test.uploaded.reports',
-                     'items.api_log.test.uploaded.cell_observations',
-                     'items.api_log.test.uploaded.wifi_observations',
                      'items.uploaded.batches',
-                     'items.uploaded.reports',
-                     'items.uploaded.cell_observations',
-                     'items.uploaded.wifi_observations',
                      'submit.api_key.test',
                      'request.v1.submit.204'],
             timer=['items.api_log.test.uploaded.batch_size',
                    'items.uploaded.batch_size',
-                   'request.v1.submit',
-                   'task.data.insert_measures',
-                   'task.data.insert_measures_cell']
+                   'request.v1.submit'],
         )
 
 
@@ -428,22 +322,29 @@ class TestRadio(SubmitTest):
     def test_missing_radio(self):
         cell, query = self._query()
         self._post([query])
-        self.assertEqual(self.session.query(CellObservation).count(), 0)
+        item = self.queue.dequeue(self.queue.queue_key())[0]
+        self.assertFalse('radioType' in item['report']['cellTowers'])
 
     def test_missing_radio_in_observation(self):
         cell, query = self._query()
         query['radio'] = cell.radio.name
         self._post([query])
-        self.assertEqual(self.session.query(CellObservation).count(), 1)
+        item = self.queue.dequeue(self.queue.queue_key())[0]
+        cells = item['report']['cellTowers']
+        self.assertEqual(cells[0]['radioType'], cell.radio.name)
 
     def test_missing_radio_top_level(self):
         cell, query = self._query()
         query['cell'][0]['radio'] = cell.radio.name
         self._post([query])
-        self.assertEqual(self.session.query(CellObservation).count(), 1)
+        item = self.queue.dequeue(self.queue.queue_key())[0]
+        cells = item['report']['cellTowers']
+        self.assertEqual(cells[0]['radioType'], cell.radio.name)
 
     def test_invalid_radio(self):
         cell, query = self._query()
         query['cell'][0]['radio'] = '18'
         self._post([query])
-        self.assertEqual(self.session.query(CellObservation).count(), 0)
+        item = self.queue.dequeue(self.queue.queue_key())[0]
+        cells = item['report']['cellTowers']
+        self.assertEqual(cells[0]['radioType'], '18')

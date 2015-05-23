@@ -17,6 +17,7 @@ from ichnaea.data.tasks import (
 from ichnaea.models import (
     ApiKey,
     Cell,
+    User,
     Wifi,
 )
 from ichnaea.tests.base import CeleryTestCase
@@ -44,8 +45,9 @@ def mock_s3(mock_keys):
 
 class BaseExportTest(CeleryTestCase):
 
-    def add_reports(self, number, cell_factor=1, wifi_factor=2,
-                    api_key='test', email=None, ip=None):
+    def add_reports(self, number=1, cell_factor=1, wifi_factor=2,
+                    api_key='test', email=None, ip=None, nickname=None,
+                    cell_cid=None, wifi_key=None, lat=None):
         reports = []
         for i in range(number):
             pos = CellFactory.build()
@@ -55,7 +57,7 @@ class BaseExportTest(CeleryTestCase):
                 'cellTowers': [],
                 'wifiAccessPoints': [],
             }
-            report['position']['latitude'] = pos.lat
+            report['position']['latitude'] = lat or pos.lat
             report['position']['longitude'] = pos.lon
             report['position']['accuracy'] = 17 + i
 
@@ -67,7 +69,7 @@ class BaseExportTest(CeleryTestCase):
                     'mobileCountryCode': cell.mcc,
                     'mobileNetworkCode': cell.mnc,
                     'locationAreaCode': cell.lac,
-                    'cellId': cell.cid,
+                    'cellId': cell_cid or cell.cid,
                     'primaryScramblingCode': cell.psc,
                     'signalStrength': -110 + i,
                 }
@@ -77,15 +79,15 @@ class BaseExportTest(CeleryTestCase):
                                             lat=pos.lat, lon=pos.lon)
             for wifi in wifis:
                 wifi_data = {
-                    'macAddress': wifi.key,
+                    'macAddress': wifi_key or wifi.key,
                     'signalStrength': -90 + i,
                 }
                 report['wifiAccessPoints'].append(wifi_data)
 
             reports.append(report)
 
-        queue_reports.delay(
-            reports=reports, api_key=api_key, email=email, ip=ip).get()
+        queue_reports.delay(reports=reports, api_key=api_key,
+                            email=email, ip=ip, nickname=nickname).get()
         return reports
 
     def queue_length(self, redis_key):
@@ -223,6 +225,9 @@ class TestGeosubmitUploader(BaseExportTest):
 
 class TestInternalUploader(BaseExportTest):
 
+    nickname = 'World Tr\xc3\xa4veler'.decode('utf-8')
+    email = 'world_tr\xc3\xa4veler@email.com'.decode('utf-8')
+
     def setUp(self):
         super(TestInternalUploader, self).setUp()
         config = DummyConfig({
@@ -261,7 +266,7 @@ class TestInternalUploader(BaseExportTest):
         ])
 
     def test_upload_cell(self):
-        reports = self.add_reports(1, cell_factor=1, wifi_factor=0)
+        reports = self.add_reports(cell_factor=1, wifi_factor=0)
         schedule_export_reports.delay().get()
         location_update_cell.delay().get()
 
@@ -282,8 +287,14 @@ class TestInternalUploader(BaseExportTest):
         self.assertEqual(cell.psc, cell_data['primaryScramblingCode'])
         self.assertEqual(cell.total_measures, 1)
 
+    def test_upload_invalid_cell(self):
+        self.add_reports(cell_factor=1, wifi_factor=0, cell_cid=-2)
+        schedule_export_reports.delay().get()
+        location_update_cell.delay().get()
+        self.assertEqual(self.session.query(Cell).count(), 0)
+
     def test_upload_wifi(self):
-        reports = self.add_reports(1, cell_factor=0, wifi_factor=1)
+        reports = self.add_reports(cell_factor=0, wifi_factor=1)
         schedule_export_reports.delay().get()
         location_update_wifi.delay().get()
 
@@ -298,6 +309,71 @@ class TestInternalUploader(BaseExportTest):
         self.assertEqual(wifi.lon, position['longitude'])
         self.assertEqual(wifi.key, wifi_data['macAddress'])
         self.assertEqual(wifi.total_measures, 1)
+
+    def test_upload_invalid_wifi(self):
+        self.add_reports(cell_factor=0, wifi_factor=1, wifi_key='abcd')
+        schedule_export_reports.delay().get()
+        location_update_cell.delay().get()
+        self.assertEqual(self.session.query(Wifi).count(), 0)
+
+    def test_upload_invalid_position(self):
+        self.add_reports(1, cell_factor=1, wifi_factor=0, lat=-90.1)
+        self.add_reports(1, cell_factor=1, wifi_factor=0)
+        schedule_export_reports.delay().get()
+        location_update_cell.delay().get()
+        self.assertEqual(self.session.query(Cell).count(), 1)
+
+    def test_nickname(self):
+        self.add_reports(wifi_factor=0, nickname=self.nickname)
+        schedule_export_reports.delay().get()
+
+        queue = self.celery_app.data_queues['update_score']
+        self.assertEqual(queue.size(), 2)
+        users = self.session.query(User).all()
+        self.assertEqual(len(users), 1)
+        self.assertEqual(users[0].nickname, self.nickname)
+        self.assertEqual(users[0].email, '')
+
+    def test_nickname_too_short(self):
+        self.add_reports(nickname='a')
+        schedule_export_reports.delay().get()
+
+        queue = self.celery_app.data_queues['update_score']
+        self.assertEqual(queue.size(), 0)
+        self.assertEqual(self.session.query(User).count(), 0)
+
+    def test_email_header_update(self):
+        user = User(nickname=self.nickname, email=self.email)
+        self.session.add(user)
+        self.session.commit()
+        self.add_reports(nickname=self.nickname,
+                         email='new' + self.email)
+        schedule_export_reports.delay().get()
+
+        users = self.session.query(User).all()
+        self.assertEqual(len(users), 1)
+        self.assertEqual(users[0].nickname, self.nickname)
+        self.assertEqual(users[0].email, 'new' + self.email)
+
+    def test_email_too_long(self):
+        self.add_reports(nickname=self.nickname,
+                         email='a' * 255 + '@email.com')
+        schedule_export_reports.delay().get()
+
+        users = self.session.query(User).all()
+        self.assertEqual(len(users), 1)
+        self.assertEqual(users[0].nickname, self.nickname)
+        self.assertEqual(users[0].email, '')
+
+    def test_stats(self):
+        self.add_reports(3, api_key='test')
+        schedule_export_reports.delay().get()
+        location_update_cell.delay().get()
+        location_update_wifi.delay().get()
+
+        self.check_stats(
+            counter=[('items.api_log.test.uploaded.reports', 1, 3),
+                     ('items.uploaded.reports', 1, 3)])
 
 
 class TestS3Uploader(BaseExportTest):
