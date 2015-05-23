@@ -335,7 +335,7 @@ class TestInternalUploader(BaseExportTest):
         self.assertEqual(users[0].email, '')
 
     def test_nickname_too_short(self):
-        self.add_reports(nickname='a')
+        self.add_reports(nickname=u'a')
         schedule_export_reports.delay().get()
 
         queue = self.celery_app.data_queues['update_score']
@@ -347,23 +347,23 @@ class TestInternalUploader(BaseExportTest):
         self.session.add(user)
         self.session.commit()
         self.add_reports(nickname=self.nickname,
-                         email='new' + self.email)
+                         email=u'new' + self.email)
         schedule_export_reports.delay().get()
 
         users = self.session.query(User).all()
         self.assertEqual(len(users), 1)
         self.assertEqual(users[0].nickname, self.nickname)
-        self.assertEqual(users[0].email, 'new' + self.email)
+        self.assertEqual(users[0].email, u'new' + self.email)
 
     def test_email_too_long(self):
         self.add_reports(nickname=self.nickname,
-                         email='a' * 255 + '@email.com')
+                         email=u'a' * 255 + u'@email.com')
         schedule_export_reports.delay().get()
 
         users = self.session.query(User).all()
         self.assertEqual(len(users), 1)
         self.assertEqual(users[0].nickname, self.nickname)
-        self.assertEqual(users[0].email, '')
+        self.assertEqual(users[0].email, u'')
 
     def test_stats(self):
         self.add_reports(3, api_key='test')

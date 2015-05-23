@@ -105,7 +105,7 @@ class TestCell(ObservationTestCase):
         session.add(Cell(radio=Radio.gsm, mcc=mcc, mnc=2, lac=3,
                          cid=4, psc=5, new_measures=2,
                          total_measures=5))
-        user = User(nickname='test')
+        user = User(nickname=u'test')
         session.add(user)
         session.flush()
 
@@ -300,7 +300,7 @@ class TestWifi(ObservationTestCase):
 
         session.add(Wifi(key="ab1234567890",
                          new_measures=0, total_measures=0))
-        user = User(nickname='test')
+        user = User(nickname=u'test')
         session.add(user)
         session.flush()
 

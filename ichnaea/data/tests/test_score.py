@@ -44,21 +44,21 @@ class TestScore(CeleryTestCase):
         self.assertEqual(self.session.query(Score).count(), 0)
 
     def test_one(self):
-        users = self._add_nicks(['nick1'])
-        self._queue([(users['nick1'].id, ScoreKey.location, 3)])
+        users = self._add_nicks([u'nick1'])
+        self._queue([(users[u'nick1'].id, ScoreKey.location, 3)])
         update_score.delay().get()
 
         scores = self.session.query(Score).all()
         self.assertEqual(len(scores), 1)
-        self.assertEqual(scores[0].userid, users['nick1'].id)
+        self.assertEqual(scores[0].userid, users[u'nick1'].id)
         self.assertEqual(scores[0].key, ScoreKey.location)
         self.assertEqual(scores[0].time, self.today)
         self.assertEqual(scores[0].value, 3)
 
     def test_update(self):
-        users = self._add_nicks(['nick1'])
-        self._add([(users['nick1'].id, ScoreKey.location, self.today, 2)])
-        self._queue([(users['nick1'].id, ScoreKey.location, 3)])
+        users = self._add_nicks([u'nick1'])
+        self._add([(users[u'nick1'].id, ScoreKey.location, self.today, 2)])
+        self._queue([(users[u'nick1'].id, ScoreKey.location, 3)])
         update_score.delay().get()
 
         scores = self.session.query(Score).all()
@@ -66,7 +66,7 @@ class TestScore(CeleryTestCase):
         self.assertEqual(scores[0].value, 5)
 
     def test_multiple(self):
-        users = self._add_nicks(['nick1', 'nick2'])
+        users = self._add_nicks([u'nick1', u'nick2'])
         self._add([
             (users['nick1'].id, ScoreKey.location, self.yesterday, 20),
             (users['nick1'].id, ScoreKey.location, self.today, 2),

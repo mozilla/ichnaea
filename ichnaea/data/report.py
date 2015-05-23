@@ -207,7 +207,7 @@ class ReportQueueV1(DataTask):
     def process_user(self, nickname, email):
         userid = None
         if not email or len(email) > 255:
-            email = ''
+            email = u''
         if nickname and (2 <= len(nickname) <= 128):
             # automatically create user objects and update nickname
             rows = self.session.query(User).filter(User.nickname == nickname)
