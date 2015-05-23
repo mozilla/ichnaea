@@ -18,7 +18,7 @@ from ichnaea.models import (
 class ReportQueueV1(DataTask):
 
     def __init__(self, task, session, pipe, api_key=None,
-                 email='', ip=None, nickname='',
+                 email=None, ip=None, nickname=None,
                  insert_cell_task=None, insert_wifi_task=None):
         DataTask.__init__(self, task, session)
         self.pipe = pipe
@@ -31,8 +31,7 @@ class ReportQueueV1(DataTask):
 
     def insert(self, reports):
         length = len(reports)
-
-        userid, nickname, email = self.process_user(self.nickname, self.email)
+        userid = self.process_user(self.nickname, self.email)
 
         self.process_reports(reports, userid=userid)
 
@@ -207,9 +206,9 @@ class ReportQueueV1(DataTask):
 
     def process_user(self, nickname, email):
         userid = None
-        if len(email) > 255:
+        if not email or len(email) > 255:
             email = ''
-        if (2 <= len(nickname) <= 128):
+        if nickname and (2 <= len(nickname) <= 128):
             # automatically create user objects and update nickname
             rows = self.session.query(User).filter(User.nickname == nickname)
             old = rows.first()
@@ -227,7 +226,7 @@ class ReportQueueV1(DataTask):
                 if old.email != email:
                     old.email = email
 
-        return (userid, nickname, email)
+        return userid
 
 
 class ReportQueueV2(DataTask):

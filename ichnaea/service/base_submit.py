@@ -15,7 +15,7 @@ class BaseSubmitter(object):
         self.email, self.nickname = self.get_request_user_data()
 
     def decode_request_header(self, header_name):
-        value = self.request.headers.get(header_name, u'')
+        value = self.request.headers.get(header_name, None)
         if isinstance(value, str):
             value = value.decode('utf-8', 'ignore')
         return value

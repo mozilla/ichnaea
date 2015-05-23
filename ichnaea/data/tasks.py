@@ -33,7 +33,7 @@ from ichnaea.models import ApiKey
 
 
 @celery_app.task(base=DatabaseTask, bind=True, queue='celery_incoming')
-def insert_measures(self, items=None, email='', ip=None, nickname='',
+def insert_measures(self, items=None, email=None, ip=None, nickname=None,
                     api_key_text=None):
     if not items:  # pragma: no cover
         return 0
