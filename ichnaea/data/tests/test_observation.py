@@ -389,7 +389,7 @@ class TestSubmitErrors(ObservationTestCase):
         except Exception as exc:
             self.fail("Unexpected exception caught: %s" % repr(exc))
 
-        self.check_raven([('ProgrammingError', 4)])
+        self.check_raven([('ProgrammingError', 1)])
 
         self.check_statcounter(StatKey.wifi, 0)
         self.check_statcounter(StatKey.unique_wifi, 0)

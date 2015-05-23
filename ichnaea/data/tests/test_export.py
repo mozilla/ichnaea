@@ -3,7 +3,6 @@ import json
 import time
 
 import boto
-from celery.exceptions import Retry
 import mock
 import requests_mock
 
@@ -199,34 +198,6 @@ class TestGeosubmitUploader(BaseExportTest):
             counter=[('items.export.test.batches', 1, 1),
                      ('items.export.test.upload_status.200', 1)],
             timer=['items.export.test.upload'],
-        )
-
-    def test_upload_retried(self):
-        self.add_reports(3)
-
-        with requests_mock.Mocker() as mock:
-            mock.register_uri('POST', requests_mock.ANY, [
-                {'text': '', 'status_code': 500},
-                {'text': '{}', 'status_code': 404},
-                {'text': '{}', 'status_code': 200},
-            ])
-            # simulate celery retry handling
-            for i in range(5):
-                try:
-                    schedule_export_reports.delay().get()
-                except Retry:
-                    continue
-                else:
-                    break
-                self.fail('Task should have succeeded')
-
-        self.assertEqual(mock.call_count, 3)
-        self.check_stats(
-            counter=[('items.export.test.batches', 1, 1),
-                     ('items.export.test.upload_status.200', 1),
-                     ('items.export.test.upload_status.404', 1),
-                     ('items.export.test.upload_status.500', 1)],
-            timer=[('items.export.test.upload', 3)],
         )
 
 

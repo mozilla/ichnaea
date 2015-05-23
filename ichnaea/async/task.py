@@ -33,9 +33,9 @@ class DatabaseTask(Task):
                 result = super(DatabaseTask, self).__call__(*args, **kw)
             except Exception as exc:
                 self.raven_client.captureException()
-                if self._auto_retry:
-                    raise self.retry(exc=exc)
-                raise  # pragma: no cover
+                if self._auto_retry and not self.app.conf.CELERY_ALWAYS_EAGER:
+                    raise self.retry(exc=exc)  # pragma: no cover
+                raise
         return result
 
     def apply(self, *args, **kw):
