@@ -9,8 +9,15 @@ import requests_mock
 from ichnaea.async.config import configure_export
 from ichnaea.config import DummyConfig
 from ichnaea.data.tasks import (
+    location_update_cell,
+    location_update_wifi,
     schedule_export_reports,
     queue_reports,
+)
+from ichnaea.models import (
+    ApiKey,
+    Cell,
+    Wifi,
 )
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
@@ -37,36 +44,44 @@ def mock_s3(mock_keys):
 
 class BaseExportTest(CeleryTestCase):
 
-    def add_reports(self, number=3, api_key='test', email=None, ip=None):
+    def add_reports(self, number, cell_factor=1, wifi_factor=2,
+                    api_key='test', email=None, ip=None):
         reports = []
         for i in range(number):
+            pos = CellFactory.build()
             report = {
                 'timestamp': time.time() * 1000.0,
                 'position': {},
                 'cellTowers': [],
                 'wifiAccessPoints': [],
             }
-            cell = CellFactory.build()
-            report['position']['latitude'] = cell.lat
-            report['position']['longitude'] = cell.lon
+            report['position']['latitude'] = pos.lat
+            report['position']['longitude'] = pos.lon
             report['position']['accuracy'] = 17 + i
-            cell_data = {
-                'radioType': cell.radio.name,
-                'mobileCountryCode': cell.mcc,
-                'mobileNetworkCode': cell.mnc,
-                'locationAreaCode': cell.lac,
-                'cellId': cell.cid,
-                'primaryScramblingCode': cell.psc,
-                'signalStrength': -110 + i,
-            }
-            report['cellTowers'].append(cell_data)
-            wifis = WifiFactory.build_batch(2, lat=cell.lat, lon=cell.lon)
+
+            cells = CellFactory.build_batch(cell_factor,
+                                            lat=pos.lat, lon=pos.lon)
+            for cell in cells:
+                cell_data = {
+                    'radioType': cell.radio.name,
+                    'mobileCountryCode': cell.mcc,
+                    'mobileNetworkCode': cell.mnc,
+                    'locationAreaCode': cell.lac,
+                    'cellId': cell.cid,
+                    'primaryScramblingCode': cell.psc,
+                    'signalStrength': -110 + i,
+                }
+                report['cellTowers'].append(cell_data)
+
+            wifis = WifiFactory.build_batch(wifi_factor,
+                                            lat=pos.lat, lon=pos.lon)
             for wifi in wifis:
                 wifi_data = {
                     'macAddress': wifi.key,
                     'signalStrength': -90 + i,
                 }
                 report['wifiAccessPoints'].append(wifi_data)
+
             reports.append(report)
 
         queue_reports.delay(
@@ -107,6 +122,8 @@ class TestExporter(BaseExportTest):
         self.celery_app.export_queues = queues = configure_export(
             self.redis_client, config)
         self.test_queue_key = queues['test'].queue_key()
+        self.session.add(ApiKey(valid_key='test2', log=True))
+        self.session.flush()
 
     def test_enqueue_reports(self):
         self.add_reports(3)
@@ -162,6 +179,9 @@ class TestGeosubmitUploader(BaseExportTest):
             self.redis_client, config)
 
     def test_upload(self):
+        self.session.add(ApiKey(valid_key='e5444-794', log=True))
+        self.session.flush()
+
         reports = []
         reports.extend(self.add_reports(1, email='secretemail@localhost',
                                         ip=self.geoip_data['London']['ip']))
@@ -201,6 +221,85 @@ class TestGeosubmitUploader(BaseExportTest):
         )
 
 
+class TestInternalUploader(BaseExportTest):
+
+    def setUp(self):
+        super(TestInternalUploader, self).setUp()
+        config = DummyConfig({
+            'export:internal': {
+                'url': 'internal://',
+                'metadata': 'true',
+                'batch': '0',
+            },
+        })
+        self.celery_app.export_queues = configure_export(
+            self.redis_client, config)
+
+    def test_upload(self):
+        self.session.add(ApiKey(valid_key='e5444-794', log=True))
+        self.session.flush()
+
+        self.add_reports(3, email='secretemail@localhost',
+                         ip=self.geoip_data['London']['ip'])
+        self.add_reports(6, api_key='e5444-794')
+        self.add_reports(3, api_key=None)
+
+        schedule_export_reports.delay().get()
+        location_update_cell.delay().get()
+        location_update_wifi.delay().get()
+
+        self.assertEqual(self.session.query(Cell).count(), 12)
+        self.assertEqual(self.session.query(Wifi).count(), 24)
+
+        self.check_stats(counter=[
+            ('items.export.internal.batches', 1, 1),
+            ('items.api_log.test.uploaded.cell_observations', 1, 3),
+            ('items.api_log.test.uploaded.wifi_observations', 1, 6),
+            ('items.api_log.no_key.uploaded.cell_observations', 0),
+            ('items.api_log.e5444-794.uploaded.cell_observations', 1, 6),
+            ('items.api_log.e5444-794.uploaded.wifi_observations', 1, 12),
+        ])
+
+    def test_upload_cell(self):
+        reports = self.add_reports(1, cell_factor=1, wifi_factor=0)
+        schedule_export_reports.delay().get()
+        location_update_cell.delay().get()
+
+        position = reports[0]['position']
+        cell_data = reports[0]['cellTowers'][0]
+
+        cells = self.session.query(Cell).all()
+        self.assertEqual(len(cells), 1)
+        cell = cells[0]
+
+        self.assertEqual(cell.lat, position['latitude'])
+        self.assertEqual(cell.lon, position['longitude'])
+        self.assertEqual(cell.radio.name, cell_data['radioType'])
+        self.assertEqual(cell.mcc, cell_data['mobileCountryCode'])
+        self.assertEqual(cell.mnc, cell_data['mobileNetworkCode'])
+        self.assertEqual(cell.lac, cell_data['locationAreaCode'])
+        self.assertEqual(cell.cid, cell_data['cellId'])
+        self.assertEqual(cell.psc, cell_data['primaryScramblingCode'])
+        self.assertEqual(cell.total_measures, 1)
+
+    def test_upload_wifi(self):
+        reports = self.add_reports(1, cell_factor=0, wifi_factor=1)
+        schedule_export_reports.delay().get()
+        location_update_wifi.delay().get()
+
+        position = reports[0]['position']
+        wifi_data = reports[0]['wifiAccessPoints'][0]
+
+        wifis = self.session.query(Wifi).all()
+        self.assertEqual(len(wifis), 1)
+        wifi = wifis[0]
+
+        self.assertEqual(wifi.lat, position['latitude'])
+        self.assertEqual(wifi.lon, position['longitude'])
+        self.assertEqual(wifi.key, wifi_data['macAddress'])
+        self.assertEqual(wifi.total_measures, 1)
+
+
 class TestS3Uploader(BaseExportTest):
 
     def setUp(self):
@@ -219,6 +318,9 @@ class TestS3Uploader(BaseExportTest):
         self.assertFalse(export_queue.monitor_name)
 
     def test_upload(self):
+        self.session.add(ApiKey(valid_key='e5444-794', log=True))
+        self.session.flush()
+
         reports = self.add_reports(3, email='secretemail@localhost',
                                    ip=self.geoip_data['London']['ip'])
         self.add_reports(6, api_key='e5444-794')

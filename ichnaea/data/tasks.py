@@ -73,7 +73,7 @@ def insert_measures_wifi(self, entries, userid=None, utcnow=None):
 
 
 @celery_app.task(base=DatabaseTask, bind=True)
-def location_update_cell(self, min_new=10, max_new=100, batch=10):
+def location_update_cell(self, min_new=1, max_new=100, batch=1000):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
             updater = CellUpdater(
@@ -86,7 +86,7 @@ def location_update_cell(self, min_new=10, max_new=100, batch=10):
 
 
 @celery_app.task(base=DatabaseTask, bind=True)
-def location_update_wifi(self, min_new=10, max_new=100, batch=10):
+def location_update_wifi(self, min_new=1, max_new=100, batch=1000):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
             updater = WifiUpdater(
