@@ -47,7 +47,7 @@ class BaseExportTest(CeleryTestCase):
 
     def add_reports(self, number=1, cell_factor=1, wifi_factor=2,
                     api_key='test', email=None, ip=None, nickname=None,
-                    cell_cid=None, wifi_key=None, lat=None):
+                    cell_mcc=None, wifi_key=None, lat=None):
         reports = []
         for i in range(number):
             pos = CellFactory.build()
@@ -66,10 +66,10 @@ class BaseExportTest(CeleryTestCase):
             for cell in cells:
                 cell_data = {
                     'radioType': cell.radio.name,
-                    'mobileCountryCode': cell.mcc,
+                    'mobileCountryCode': cell_mcc or cell.mcc,
                     'mobileNetworkCode': cell.mnc,
                     'locationAreaCode': cell.lac,
-                    'cellId': cell_cid or cell.cid,
+                    'cellId': cell.cid,
                     'primaryScramblingCode': cell.psc,
                     'signalStrength': -110 + i,
                 }
@@ -287,8 +287,26 @@ class TestInternalUploader(BaseExportTest):
         self.assertEqual(cell.psc, cell_data['primaryScramblingCode'])
         self.assertEqual(cell.total_measures, 1)
 
+    def test_upload_duplicated_cell(self):
+        self.add_reports(cell_factor=1, wifi_factor=0)
+        # duplicate the cell entry inside the report
+        queue = self.celery_app.export_queues['internal']
+        items = queue.dequeue(queue.queue_key())
+        report = items[0]['report']
+        cell = report['cellTowers'][0].copy()
+        report['cellTowers'].append(cell)
+        report['cellTowers'][1]['signalStrength'] += 2
+        queue.enqueue(items, queue.queue_key())
+
+        schedule_export_reports.delay().get()
+        location_update_cell.delay().get()
+
+        cells = self.session.query(Cell).all()
+        self.assertEqual(len(cells), 1)
+        self.assertEqual(cells[0].total_measures, 1)
+
     def test_upload_invalid_cell(self):
-        self.add_reports(cell_factor=1, wifi_factor=0, cell_cid=-2)
+        self.add_reports(cell_factor=1, wifi_factor=0, cell_mcc=-2)
         schedule_export_reports.delay().get()
         location_update_cell.delay().get()
         self.assertEqual(self.session.query(Cell).count(), 0)
@@ -300,20 +318,36 @@ class TestInternalUploader(BaseExportTest):
 
         position = reports[0]['position']
         wifi_data = reports[0]['wifiAccessPoints'][0]
-
         wifis = self.session.query(Wifi).all()
         self.assertEqual(len(wifis), 1)
         wifi = wifis[0]
-
         self.assertEqual(wifi.lat, position['latitude'])
         self.assertEqual(wifi.lon, position['longitude'])
         self.assertEqual(wifi.key, wifi_data['macAddress'])
         self.assertEqual(wifi.total_measures, 1)
 
+    def test_upload_duplicated_wifi(self):
+        self.add_reports(cell_factor=0, wifi_factor=1)
+        # duplicate the wifi entry inside the report
+        queue = self.celery_app.export_queues['internal']
+        items = queue.dequeue(queue.queue_key())
+        report = items[0]['report']
+        wifi = report['wifiAccessPoints'][0].copy()
+        report['wifiAccessPoints'].append(wifi)
+        report['wifiAccessPoints'][1]['signalStrength'] += 2
+        queue.enqueue(items, queue.queue_key())
+
+        schedule_export_reports.delay().get()
+        location_update_wifi.delay().get()
+
+        wifis = self.session.query(Wifi).all()
+        self.assertEqual(len(wifis), 1)
+        self.assertEqual(wifis[0].total_measures, 1)
+
     def test_upload_invalid_wifi(self):
         self.add_reports(cell_factor=0, wifi_factor=1, wifi_key='abcd')
         schedule_export_reports.delay().get()
-        location_update_cell.delay().get()
+        location_update_wifi.delay().get()
         self.assertEqual(self.session.query(Wifi).count(), 0)
 
     def test_upload_invalid_position(self):

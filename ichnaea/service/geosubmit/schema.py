@@ -73,7 +73,7 @@ class GeoSubmitSchema(MappingSchema):
 
     # mapped to 'radio' for submit
     radioType = SchemaNode(String(), missing=None)
-    carrier = SchemaNode(String(), missing='')
+    carrier = SchemaNode(String(), missing=None)
     cellTowers = CellTowersSchema(missing=())
     wifiAccessPoints = WifiAccessPointsSchema(missing=())
 
