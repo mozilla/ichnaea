@@ -14,11 +14,11 @@ Historically the service first offered the custom :ref:`api_search` and
 :ref:`api_submit` APIs. Later it was decided to also implement the
 :ref:`api_geolocate` API to lessen the burden on clients that want to
 support multiple location services. As an extension to this the
-:ref:`api_geosubmit` was added to offer a consistent way to contribute
+:ref:`api_geosubmit2` was added to offer a consistent way to contribute
 back data to the service.
 
 New client developments should use the :ref:`api_geolocate` and
-:ref:`api_geosubmit` APIs. At some point in the future the
+:ref:`api_geosubmit2` APIs. At some point in the future the
 :ref:`api_search` and :ref:`api_submit` APIs will be deprecated and retired.
 
 
@@ -26,12 +26,13 @@ API Access Keys
 ===============
 
 You must identify your client to the service using an API key when
-using any of the APIs. We currently do not define a way to register
-a new API key. Please contact us via our public mailing list or IRC
-channel if you want to use this service in your own application.
+using any of the search/lookup APIs.
 
-Each method that the service exposes expects the API key to be provided
-as a key parameter in the request URI in the form::
+You can use API keys for the submission API's, but are not required
+to do so.
+
+Each method that the service expects the API key to be provided
+as a (optional) key parameter in the request URI in the form::
 
     key=<API_KEY>
 
@@ -42,10 +43,12 @@ to allow an unlimited number of requests per day.
 
 .. include:: geolocate_api.rst
 
+.. include:: geosubmit2_api.rst
+
 .. include:: geosubmit_api.rst
+
+.. include:: country_api.rst
 
 .. include:: search_api.rst
 
 .. include:: submit_api.rst
-
-.. include:: country_api.rst

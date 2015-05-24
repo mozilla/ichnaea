@@ -27,6 +27,12 @@ class GeoSubmitter(BaseSubmitter):
             if value != missing:
                 item[target] = value
 
+        toplevel_map = [
+            ('carrier', 'carrier', None),
+            ('homeMobileCountryCode', 'homeMobileCountryCode', None),
+            ('homeMobileNetworkCode', 'homeMobileNetworkCode', None),
+        ]
+
         position_map = [
             ('latitude', 'latitude', None),
             ('longitude', 'longitude', None),
@@ -34,10 +40,7 @@ class GeoSubmitter(BaseSubmitter):
             ('altitude', 'altitude', 0),
             ('altitudeAccuracy', 'altitudeAccuracy', 0),
             ('age', 'age', None),
-            ('carrier', 'carrier', None),
             ('heading', 'heading', -1.0),
-            ('homeMobileCountryCode', 'homeMobileCountryCode', None),
-            ('homeMobileNetworkCode', 'homeMobileNetworkCode', None),
             ('pressure', 'pressure', None),
             ('speed', 'speed', -1.0),
             ('source', 'source', 'gps'),
@@ -75,6 +78,9 @@ class GeoSubmitter(BaseSubmitter):
                 report['timestamp'] = time.time() * 1000.0
             else:
                 report['timestamp'] = item['timestamp']
+
+            for target, source, missing in toplevel_map:
+                conditional_set(report, target, item[source], missing)
 
             position = {}
             for target, source, missing in position_map:

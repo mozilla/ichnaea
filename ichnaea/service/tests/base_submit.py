@@ -83,10 +83,11 @@ class BaseTest(object):
             counter=['items.api_log.test.uploaded.batches',
                      'items.uploaded.batches',
                      self.metric + '.api_key.test',
-                     'request.v1.%s.%s' % (self.metric, self.status)],
+                     'request%s.%s' % (self.url.replace('/', '.'),
+                                       self.status)],
             timer=['items.api_log.test.uploaded.batch_size',
                    'items.uploaded.batch_size',
-                   'request.v1.' + self.metric])
+                   'request' + self.url.replace('/', '.')])
 
     def test_radio_duplicated(self):
         cell, query = self._one_cell_query(radio=False)

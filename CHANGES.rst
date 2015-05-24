@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #423: Add new public `v2/geosubmit` API.
+
 - #242: Pass through submission IP address into the data pipeline.
 
 - #242: Expose geoip database to async tasks.

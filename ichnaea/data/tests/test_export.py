@@ -45,21 +45,31 @@ def mock_s3(mock_keys):
 
 class BaseExportTest(CeleryTestCase):
 
-    def add_reports(self, number=1, cell_factor=1, wifi_factor=2,
+    def add_reports(self, num=1, blue_factor=0, cell_factor=1, wifi_factor=2,
                     api_key='test', email=None, ip=None, nickname=None,
-                    cell_mcc=None, wifi_key=None, lat=None):
+                    blue_key=None, cell_mcc=None, wifi_key=None, lat=None):
         reports = []
-        for i in range(number):
+        for i in range(num):
             pos = CellFactory.build()
             report = {
                 'timestamp': time.time() * 1000.0,
                 'position': {},
+                'bluetoothBeacons': [],
                 'cellTowers': [],
                 'wifiAccessPoints': [],
             }
             report['position']['latitude'] = lat or pos.lat
             report['position']['longitude'] = pos.lon
             report['position']['accuracy'] = 17 + i
+
+            blues = WifiFactory.build_batch(blue_factor,
+                                            lat=pos.lat, lon=pos.lon)
+            for blue in blues:
+                blue_data = {
+                    'macAddress': blue_key or blue.key,
+                    'signalStrength': -100 + i,
+                }
+                report['bluetoothBeacons'].append(blue_data)
 
             cells = CellFactory.build_batch(cell_factor,
                                             lat=pos.lat, lon=pos.lon)
@@ -349,6 +359,15 @@ class TestInternalUploader(BaseExportTest):
         schedule_export_reports.delay().get()
         location_update_wifi.delay().get()
         self.assertEqual(self.session.query(Wifi).count(), 0)
+
+    def test_upload_bluetooth(self):
+        self.add_reports(blue_factor=1, cell_factor=0, wifi_factor=0)
+        schedule_export_reports.delay().get()
+
+    def test_upload_invalid_bluetooth(self):
+        self.add_reports(blue_factor=1, cell_factor=0, wifi_factor=0,
+                         blue_key='abcd')
+        schedule_export_reports.delay().get()
 
     def test_upload_invalid_position(self):
         self.add_reports(1, cell_factor=1, wifi_factor=0, lat=-90.1)

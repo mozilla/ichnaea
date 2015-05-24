@@ -10,8 +10,11 @@ Geosubmit requests are submitted using a POST request to the URL::
 
     https://location.services.mozilla.com/v1/geosubmit?key=<API_KEY>
 
+There is a newer :ref:`api_geosubmit2` API, with a slightly
+different and more extensive field list.
 
-Geosubmit upload format
+
+Geosubmit Upload Format
 -----------------------
 
 Geosubmit requests are submitted using a POST request with a JSON
@@ -58,8 +61,8 @@ body:
        }
     ]}
 
-Record definition
------------------
+Geosubmit Record definition
+---------------------------
 
 Requests always need to contain a batch of reports. Each report
 must contain at least one entry in the `cellTowers` array or
@@ -127,13 +130,13 @@ speed
     omitted.
 
 
-Geosubmit results
------------------
+Geosubmit Responses
+-------------------
 
 Successful requests return a HTTP 200 response with a body of an empty
 JSON object.
 
-Geosubmit results can return the same error results as those used by the
+Geosubmit responses can return the same error responses as those used by the
 :ref:`api_geolocate` API endpoint.
 
 You might also get a 5xx HTTP response if there was a service side problem.

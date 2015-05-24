@@ -9,10 +9,10 @@ from ichnaea.tests.factories import (
 )
 
 
-class TestGeoSubmit(BaseTest, CeleryAppTestCase):
+class TestGeoSubmit2(BaseTest, CeleryAppTestCase):
 
-    url = '/v1/geosubmit'
-    metric = 'geosubmit'
+    url = '/v2/geosubmit'
+    metric = 'geosubmit2'
     status = 200
     radio_id = 'radioType'
     cells_id = 'cellTowers'
@@ -20,8 +20,10 @@ class TestGeoSubmit(BaseTest, CeleryAppTestCase):
     def _one_cell_query(self, radio=True):
         cell = CellFactory.build()
         query = {
-            'latitude': cell.lat,
-            'longitude': cell.lon,
+            'position': {
+                'latitude': cell.lat,
+                'longitude': cell.lon,
+            },
             'cellTowers': [{
                 'mobileCountryCode': cell.mcc,
                 'mobileNetworkCode': cell.mnc,
@@ -37,34 +39,41 @@ class TestGeoSubmit(BaseTest, CeleryAppTestCase):
         now_ms = int(time.time() * 1000)
         cell = CellFactory.build(radio=Radio.wcdma)
         response = self._post([{
-            'latitude': cell.lat,
-            'longitude': cell.lon,
-            'accuracy': 12.4,
-            'age': 1,
-            'altitude': 100.1,
-            'altitudeAccuracy': 23.7,
             'carrier': 'Some Carrier',
-            'heading': 45.0,
             'homeMobileCountryCode': cell.mcc,
             'homeMobileNetworkCode': cell.mnc,
-            'pressure': 1010,
-            'source': 'fused',
-            'speed': 3.6,
             'timestamp': now_ms,
             'xtra_field': 1,
+            'position': {
+                'latitude': cell.lat,
+                'longitude': cell.lon,
+                'accuracy': 12.4,
+                'altitude': 100.1,
+                'altitudeAccuracy': 23.7,
+                'age': 1,
+                'heading': 45.0,
+                'pressure': 1010,
+                'source': 'fused',
+                'speed': 3.6,
+                'xtra_field': 2,
+            },
+            'connection': {
+                'ip': self.geoip_data['London']['ip'],
+                'xtra_field': 3,
+            },
             'cellTowers': [{
                 'radioType': 'umts',
                 'mobileCountryCode': cell.mcc,
                 'mobileNetworkCode': cell.mnc,
                 'locationAreaCode': cell.lac,
                 'cellId': cell.cid,
-                'psc': cell.psc,
+                'primaryScramblingCode': cell.psc,
                 'age': 3,
                 'asu': 31,
                 'serving': 1,
                 'signalStrength': -51,
                 'timingAdvance': 1,
-                'xtra_field': 2,
+                'xtra_field': 4,
             }]},
         ], api_key='test')
         # check that we get an empty response
@@ -92,6 +101,7 @@ class TestGeoSubmit(BaseTest, CeleryAppTestCase):
         self.assertEqual(position['source'], 'fused')
         self.assertEqual(position['speed'], 3.6)
         self.assertFalse('xtra_field' in position)
+        self.assertFalse('connection' in report)
         cells = report['cellTowers']
         self.assertEqual(len(cells), 1)
         self.assertEqual(cells[0]['radioType'], 'wcdma')
@@ -110,10 +120,13 @@ class TestGeoSubmit(BaseTest, CeleryAppTestCase):
     def test_wifi(self):
         wifi = WifiFactory.build()
         self._post([{
-            'latitude': wifi.lat,
-            'longitude': wifi.lon,
+            'position': {
+                'latitude': wifi.lat,
+                'longitude': wifi.lon,
+            },
             'wifiAccessPoints': [{
                 'macAddress': wifi.key,
+                'ssid': 'my-wifi',
                 'age': 3,
                 'channel': 5,
                 'frequency': 2437,
@@ -141,15 +154,55 @@ class TestGeoSubmit(BaseTest, CeleryAppTestCase):
         self.assertEqual(wifis[0]['radioType'], '802.11n')
         self.assertEqual(wifis[0]['signalStrength'], -90),
         self.assertEqual(wifis[0]['signalToNoiseRatio'], 5),
+        self.assertFalse('ssid' in wifis[0])
         self.assertFalse('xtra_field' in wifis[0])
+
+    def test_bluetooth(self):
+        wifi = WifiFactory.build()
+        self._post([{
+            'position': {
+                'latitude': wifi.lat,
+                'longitude': wifi.lon,
+            },
+            'bluetoothBeacons': [{
+                'macAddress': wifi.key,
+                'name': 'my-beacon',
+                'age': 3,
+                'signalStrength': -90,
+                'xtra_field': 4,
+            }],
+            'wifiAccessPoints': [{
+                'signalStrength': -52,
+            }]},
+        ])
+
+        self._assert_queue_size(1)
+        item = self.queue.dequeue(self.queue.queue_key())[0]
+        report = item['report']
+        self.assertTrue('timestamp' in report)
+        position = report['position']
+        self.assertEqual(position['latitude'], wifi.lat)
+        self.assertEqual(position['longitude'], wifi.lon)
+        blues = report['bluetoothBeacons']
+        self.assertEqual(len(blues), 1)
+        self.assertEqual(blues[0]['macAddress'], wifi.key)
+        self.assertEqual(blues[0]['age'], 3),
+        self.assertEqual(blues[0]['name'], 'my-beacon'),
+        self.assertEqual(blues[0]['signalStrength'], -90),
+        self.assertFalse('xtra_field' in blues[0])
+        wifis = report['wifiAccessPoints']
+        self.assertEqual(len(wifis), 1)
 
     def test_batches(self):
         batch = 110
         wifis = WifiFactory.build_batch(batch)
-        items = [{'latitude': wifi.lat,
-                  'longitude': wifi.lon,
-                  'wifiAccessPoints': [{'macAddress': wifi.key}]}
-                 for wifi in wifis]
+        items = [{
+            'position': {
+                'latitude': wifi.lat,
+                'longitude': wifi.lon},
+            'wifiAccessPoints': [
+                {'macAddress': wifi.key},
+            ]} for wifi in wifis]
 
         # add a bad one, this will just be skipped
         items.append({'latitude': 10.0, 'longitude': 10.0, 'whatever': 'xx'})
@@ -159,28 +212,12 @@ class TestGeoSubmit(BaseTest, CeleryAppTestCase):
     def test_error(self):
         wifi = WifiFactory.build()
         self._post([{
-            'latitude': wifi.lat,
-            'longitude': wifi.lon,
+            'position': {
+                'latitude': wifi.lat,
+                'longitude': wifi.lon,
+            },
             'wifiAccessPoints': [{
                 'macAddress': 10,
             }],
         }], status=400)
         self._assert_queue_size(0)
-
-    def test_error_invalid_float(self):
-        wifi = WifiFactory.build()
-        self._post([{
-            'latitude': wifi.lat,
-            'longitude': wifi.lon,
-            'accuracy': float('+nan'),
-            'altitude': float('-inf'),
-            'wifiAccessPoints': [{
-                'macAddress': wifi.key,
-            }],
-        }])
-
-        self._assert_queue_size(1)
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        position = item['report']['position']
-        self.assertFalse('accuracy' in position)
-        self.assertFalse('altitude' in position)

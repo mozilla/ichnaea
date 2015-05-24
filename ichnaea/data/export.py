@@ -132,8 +132,12 @@ class InternalUploader(ReportUploader):
         report = {}
 
         def conditional_set(item, target, value, missing):
-            if value != missing:
+            if value and value != missing:
                 item[target] = value
+
+        # don't forward the bluetooth mapping,
+        # the top-level home mcc/mnc and carrier fields
+        # as we don't do anything with them
 
         position_map = [
             ('lat', 'latitude', None),
