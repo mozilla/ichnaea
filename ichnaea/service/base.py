@@ -30,7 +30,7 @@ def check_api_key():
             api_key_text = self.request.GET.get('key', None)
 
             if api_key_text is None:
-                self.stats_client.incr('%s.no_api_key' % self.view_name)
+                self.log_count('{view_name}.no_api_key')
                 if self.error_on_invalidkey:
                     return self.invalid_api_key()
             try:
@@ -39,12 +39,12 @@ def check_api_key():
             except Exception:  # pragma: no cover
                 # if we cannot connect to backend DB, skip api key check
                 self.raven_client.captureException()
-                self.stats_client.incr(
-                    '%s.dbfailure_skip_api_key' % self.view_name)
+                self.log_count('{view_name}.dbfailure_skip_api_key')
 
             if api_key is not None:
-                self.stats_client.incr(
-                    '%s.api_key.%s' % (self.view_name, api_key.name))
+                self.log_count('{view_name}.api_key.{api_key}',
+                               api_key=api_key.name)
+
                 rate_key = 'apilimit:{key}:{time}'.format(
                     key=api_key_text,
                     time=util.utcnow().strftime('%Y%m%d')
@@ -57,18 +57,13 @@ def check_api_key():
                 )
 
                 if should_limit:
-                    response = HTTPForbidden()
-                    response.content_type = 'application/json'
-                    response.body = DAILY_LIMIT
-                    return response
+                    return self.forbidden()
                 elif should_limit is None:  # pragma: no cover
                     # We couldn't connect to Redis
-                    self.stats_client.incr(
-                        '%s.redisfailure_skip_limit' % self.view_name)
+                    self.log_count('{view_name}.redisfailure_skip_limit')
             else:
                 if api_key_text is not None:
-                    self.stats_client.incr(
-                        '%s.unknown_api_key' % self.view_name)
+                    self.log_count('{view_name}.unknown_api_key')
                 if self.error_on_invalidkey:
                     return self.invalid_api_key()
 
@@ -108,6 +103,15 @@ class BaseAPIView(BaseServiceView):
         self.raven_client = request.registry.raven_client
         self.redis_client = request.registry.redis_client
         self.stats_client = request.registry.stats_client
+
+    def log_count(self, msg, **kw):
+        self.stats_client.incr(msg.format(view_name=self.view_name, **kw))
+
+    def forbidden(self):
+        response = HTTPForbidden()
+        response.content_type = 'application/json'
+        response.body = DAILY_LIMIT
+        return response
 
     def invalid_api_key(self):
         response = HTTPBadRequest()
