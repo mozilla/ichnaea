@@ -1,16 +1,8 @@
-from pyramid.httpexceptions import (
-    HTTPNoContent,
-    HTTPServiceUnavailable,
-)
-from redis import ConnectionError
+from pyramid.httpexceptions import HTTPNoContent
 
 from ichnaea.models.transform import ReportTransform
 from ichnaea.service.error import JSONError
-from ichnaea.service.base import check_api_key
-from ichnaea.service.base_submit import (
-    BaseSubmitter,
-    BaseSubmitView,
-)
+from ichnaea.service.base_submit import BaseSubmitView
 from ichnaea.service.submit.schema import SubmitSchema
 
 
@@ -55,6 +47,7 @@ class SubmitTransform(ReportTransform):
 
     wifi_id = ('wifi', 'wifiAccessPoints')
     wifi_map = [
+        # ssid is not mapped on purpose, we never want to store it
         ('key', 'macAddress'),
         ('age', 'age'),
         ('channel', 'channel'),
@@ -67,22 +60,10 @@ class SubmitTransform(ReportTransform):
 
 class SubmitView(BaseSubmitView):
 
-    class Submitter(BaseSubmitter):
+    error_response = JSONError
+    schema = SubmitSchema
+    transform = SubmitTransform
+    view_name = 'submit'
 
-        error_response = JSONError
-        schema = SubmitSchema
-        transform = SubmitTransform
-
-    @check_api_key('submit', error_on_invalidkey=False)
-    def __call__(self, api_key):
-        submitter = self.Submitter(self.request, api_key)
-
-        # may raise HTTP error
-        request_data = submitter.preprocess()
-
-        try:
-            submitter.submit(request_data)
-        except ConnectionError:  # pragma: no cover
-            return HTTPServiceUnavailable()
-
+    def success(self):
         return HTTPNoContent()

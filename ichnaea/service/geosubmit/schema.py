@@ -53,7 +53,7 @@ class WifiAccessPointsSchema(SequenceSchema):
     wifi = WifiAccessPointSchema()
 
 
-class GeoSubmitSchema(MappingSchema):
+class ReportSchema(MappingSchema):
 
     carrier = SchemaNode(String(), missing=None)
     homeMobileCountryCode = SchemaNode(Integer(), missing=None)
@@ -77,9 +77,9 @@ class GeoSubmitSchema(MappingSchema):
     source = SchemaNode(String(), missing=None)
 
 
-class GeoSubmitListSchema(SequenceSchema):
-    report = GeoSubmitSchema()
+class ReportsSchema(SequenceSchema):
+    report = ReportSchema()
 
 
-class GeoSubmitBatchSchema(MappingSchema):
-    items = GeoSubmitListSchema()
+class GeoSubmitSchema(MappingSchema):
+    items = ReportsSchema()

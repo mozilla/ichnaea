@@ -1,17 +1,6 @@
-from pyramid.httpexceptions import (
-    HTTPOk,
-    HTTPServiceUnavailable,
-)
-from redis import ConnectionError
-
 from ichnaea.models.transform import ReportTransform
-from ichnaea.service.base import check_api_key
-from ichnaea.service.base_submit import (
-    BaseSubmitter,
-    BaseSubmitView,
-)
-from ichnaea.service.error import JSONParseError
-from ichnaea.service.geosubmit2.schema import GeoSubmit2BatchSchema
+from ichnaea.service.base_submit import BaseSubmitView
+from ichnaea.service.geosubmit2.schema import GeoSubmit2Schema
 
 
 def configure_geosubmit2(config):
@@ -83,25 +72,6 @@ class GeoSubmit2Transform(ReportTransform):
 
 class GeoSubmit2View(BaseSubmitView):
 
-    class Submitter(BaseSubmitter):
-
-        error_response = JSONParseError
-        schema = GeoSubmit2BatchSchema
-        transform = GeoSubmit2Transform
-
-    @check_api_key('geosubmit2', error_on_invalidkey=False)
-    def __call__(self, api_key):
-        submitter = self.Submitter(self.request, api_key)
-
-        # may raise HTTP error
-        request_data = submitter.preprocess()
-
-        try:
-            submitter.submit(request_data)
-        except ConnectionError:  # pragma: no cover
-            return HTTPServiceUnavailable()
-
-        result = HTTPOk()
-        result.content_type = 'application/json'
-        result.body = '{}'
-        return result
+    schema = GeoSubmit2Schema
+    transform = GeoSubmit2Transform
+    view_name = 'geosubmit2'

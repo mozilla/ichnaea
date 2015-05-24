@@ -1,18 +1,30 @@
+from pyramid.httpexceptions import (
+    HTTPOk,
+    HTTPServiceUnavailable,
+)
+from redis import ConnectionError
+
 from ichnaea.data.tasks import queue_reports
-from ichnaea.service.error import preprocess_request
+from ichnaea.service.base import (
+    BaseAPIView,
+    check_api_key,
+)
+from ichnaea.service.error import (
+    JSONParseError,
+    preprocess_request,
+)
 
 
-class BaseSubmitter(object):
+class BaseSubmitView(BaseAPIView):
 
-    error_response = None
+    error_on_invalidkey = False
+    error_response = JSONParseError
     transform = None
     schema = None
+    view_name = None
 
-    def __init__(self, request, api_key):
-        self.request = request
-        self.raven_client = request.registry.raven_client
-        self.stats_client = request.registry.stats_client
-        self.api_key = api_key
+    def __init__(self, request):
+        super(BaseSubmitView, self).__init__(request)
         self.email, self.nickname = self.get_request_user_data()
 
     def decode_request_header(self, header_name):
@@ -26,20 +38,20 @@ class BaseSubmitter(object):
         nickname = self.decode_request_header('X-Nickname')
         return (email, nickname)
 
-    def emit_upload_metrics(self, value):
+    def emit_upload_metrics(self, value, api_key):
         # count the number of batches and emit a pseudo-timer to capture
         # the number of reports per batch
         self.stats_client.incr('items.uploaded.batches')
         self.stats_client.timing('items.uploaded.batch_size', value)
 
-        if self.api_key.log:
-            api_key_name = self.api_key.name
+        if api_key.log:
+            api_key_name = api_key.name
             self.stats_client.incr(
                 'items.api_log.%s.uploaded.batches' % api_key_name)
             self.stats_client.timing(
                 'items.api_log.%s.uploaded.batch_size' % api_key_name, value)
 
-    def preprocess(self):
+    def preprocess(self, api_key):
         try:
             request_data, errors = preprocess_request(
                 self.request,
@@ -51,10 +63,10 @@ class BaseSubmitter(object):
             self.raven_client.captureException()
             raise
 
-        self.emit_upload_metrics(len(request_data['items']))
+        self.emit_upload_metrics(len(request_data['items']), api_key)
         return request_data
 
-    def submit(self, request_data):
+    def submit(self, request_data, api_key):
         # data pipeline using new internal data format
         transform = self.transform()
         reports = transform.transform_many(request_data['items'])
@@ -64,7 +76,7 @@ class BaseSubmitter(object):
             # after six hours to avoid queue overload
             queue_reports.apply_async(
                 kwargs={
-                    'api_key': self.api_key.valid_key,
+                    'api_key': api_key.valid_key,
                     'email': self.email,
                     'ip': self.request.client_addr,
                     'nickname': self.nickname,
@@ -72,11 +84,20 @@ class BaseSubmitter(object):
                 },
                 expires=21600)
 
+    def success(self):
+        response = HTTPOk()
+        response.content_type = 'application/json'
+        response.body = '{}'
+        return response
 
-class BaseSubmitView(object):
+    @check_api_key()
+    def __call__(self, api_key):
+        # may raise HTTP error
+        request_data = self.preprocess(api_key)
 
-    def __init__(self, request):
-        self.request = request
+        try:
+            self.submit(request_data, api_key)
+        except ConnectionError:  # pragma: no cover
+            return HTTPServiceUnavailable()
 
-    def __call__(self):  # pragma: no cover
-        raise NotImplementedError()
+        return self.success()

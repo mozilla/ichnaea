@@ -48,7 +48,9 @@ def prepare_locate_query(request_data, client_addr=None):
 
 class SearchView(BaseLocateView):
 
-    @check_api_key('search')
+    view_name = 'search'
+
+    @check_api_key()
     def __call__(self, api_key):
         request = self.request
         request_data, errors = preprocess_request(

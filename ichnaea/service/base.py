@@ -22,43 +22,36 @@ INVALID_API_KEY = {
 INVALID_API_KEY = dumps(INVALID_API_KEY)
 
 
-def invalid_api_key_response():
-    result = HTTPBadRequest()
-    result.content_type = 'application/json'
-    result.body = INVALID_API_KEY
-    return result
-
-
-def check_api_key(func_name, error_on_invalidkey=True):
+def check_api_key():
     def c(func):
         @wraps(func)
         def closure(self, *args, **kwargs):
-            request = self.request
             api_key = None
-            api_key_text = request.GET.get('key', None)
+            api_key_text = self.request.GET.get('key', None)
 
             if api_key_text is None:
-                request.registry.stats_client.incr('%s.no_api_key' % func_name)
-                if error_on_invalidkey:
-                    return invalid_api_key_response()
+                self.stats_client.incr('%s.no_api_key' % self.view_name)
+                if self.error_on_invalidkey:
+                    return self.invalid_api_key()
             try:
-                api_key = ApiKey.getkey(request.db_ro_session, api_key_text)
+                api_key = ApiKey.getkey(self.request.db_ro_session,
+                                        api_key_text)
             except Exception:  # pragma: no cover
                 # if we cannot connect to backend DB, skip api key check
-                request.registry.rave_client.captureException()
-                request.registry.stats_client.incr(
-                    '%s.dbfailure_skip_api_key' % func_name)
+                self.raven_client.captureException()
+                self.stats_client.incr(
+                    '%s.dbfailure_skip_api_key' % self.view_name)
 
             if api_key is not None:
-                request.registry.stats_client.incr(
-                    '%s.api_key.%s' % (func_name, api_key.name))
+                self.stats_client.incr(
+                    '%s.api_key.%s' % (self.view_name, api_key.name))
                 rate_key = 'apilimit:{key}:{time}'.format(
                     key=api_key_text,
                     time=util.utcnow().strftime('%Y%m%d')
                 )
 
                 should_limit = rate_limit(
-                    request.registry.redis_client,
+                    self.redis_client,
                     rate_key,
                     maxreq=api_key.maxreq
                 )
@@ -70,14 +63,14 @@ def check_api_key(func_name, error_on_invalidkey=True):
                     return response
                 elif should_limit is None:  # pragma: no cover
                     # We couldn't connect to Redis
-                    request.registry.stats_client.incr(
-                        '%s.redisfailure_skip_limit' % func_name)
+                    self.stats_client.incr(
+                        '%s.redisfailure_skip_limit' % self.view_name)
             else:
                 if api_key_text is not None:
-                    request.registry.stats_client.incr(
-                        '%s.unknown_api_key' % func_name)
-                if error_on_invalidkey:
-                    return invalid_api_key_response()
+                    self.stats_client.incr(
+                        '%s.unknown_api_key' % self.view_name)
+                if self.error_on_invalidkey:
+                    return self.invalid_api_key()
 
             # If we failed to look up an ApiKey, create an empty one
             # rather than passing None through
@@ -86,3 +79,23 @@ def check_api_key(func_name, error_on_invalidkey=True):
             return func(self, api_key, *args, **kwargs)
         return closure
     return c
+
+
+class BaseAPIView(object):
+
+    error_on_invalidkey = True
+
+    def __init__(self, request):
+        self.request = request
+        self.raven_client = request.registry.raven_client
+        self.redis_client = request.registry.redis_client
+        self.stats_client = request.registry.stats_client
+
+    def __call__(self):  # pragma: no cover
+        raise NotImplementedError()
+
+    def invalid_api_key(self):
+        response = HTTPBadRequest()
+        response.content_type = 'application/json'
+        response.body = INVALID_API_KEY
+        return response

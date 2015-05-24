@@ -21,8 +21,11 @@ def configure_country(config):
 
 class CountryView(BaseLocateView):
 
+    error_on_invalidkey = False
+    view_name = 'country'
+
     # TODO: Disable API key checks and logging, for the initial wave
-    # @check_api_key('country', error_on_invalidkey=False)
+    # @check_api_key()
     def __call__(self):
         request = self.request
         request_data, errors = preprocess_request(

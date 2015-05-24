@@ -1,4 +1,5 @@
 from ichnaea.models.transform import ReportTransform
+from ichnaea.service.base import BaseAPIView
 
 
 class LocateTransform(ReportTransform):
@@ -28,13 +29,8 @@ class LocateTransform(ReportTransform):
     ]
 
 
-class BaseLocateView(object):
-
-    def __init__(self, request):
-        self.request = request
-
-    def __call__(self):  # pragma: no cover
-        raise NotImplementedError()
+class BaseLocateView(BaseAPIView):
+    pass
 
 
 def prepare_locate_query(request_data, client_addr=None):

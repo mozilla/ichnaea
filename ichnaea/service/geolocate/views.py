@@ -35,7 +35,9 @@ def configure_geolocate(config):
 
 class GeolocateView(BaseLocateView):
 
-    @check_api_key('geolocate')
+    view_name = 'geolocate'
+
+    @check_api_key()
     def __call__(self, api_key):
         request = self.request
         request_data, errors = preprocess_request(
