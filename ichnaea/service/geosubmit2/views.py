@@ -20,6 +20,7 @@ def configure_geosubmit2(config):
 class GeoSubmit2Transform(ReportTransform):
     # the connection section is not mapped on purpose
 
+    time_id = 'timestamp'
     toplevel_map = [
         ('carrier', 'carrier', None),
         ('homeMobileCountryCode', 'homeMobileCountryCode', None),
@@ -75,9 +76,6 @@ class GeoSubmit2Transform(ReportTransform):
         ('signalToNoiseRatio', 'signalToNoiseRatio', None),
         ('signalStrength', 'signalStrength', None),
     ]
-
-    def _parse_extra(self, item, report):
-        self._parse_timestamp(item, report)
 
 
 class GeoSubmitter2(BaseSubmitter):

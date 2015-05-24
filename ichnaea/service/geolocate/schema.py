@@ -15,24 +15,20 @@ RADIO_STRINGS = ['gsm', 'cdma', 'wcdma', 'lte']
 
 class CellTowerSchema(MappingSchema):
 
+    # radio is a FxOS specific undocumented workaround
+    radio = SchemaNode(String(),
+                       validator=OneOf(RADIO_STRINGS), missing=None)
+    radioType = SchemaNode(String(),
+                           validator=OneOf(RADIO_STRINGS), missing=None)
     mobileCountryCode = SchemaNode(Integer(), missing=None)
     mobileNetworkCode = SchemaNode(Integer(), missing=None)
     locationAreaCode = SchemaNode(Integer(), missing=None)
     cellId = SchemaNode(Integer(), missing=None)
 
     age = SchemaNode(Integer(), missing=None)
+    psc = SchemaNode(Integer(), missing=None)
     signalStrength = SchemaNode(Integer(), missing=None)
     timingAdvance = SchemaNode(Integer(), missing=None)
-
-    # The fields below are extra fields which are not part of the
-    # official geolocate API
-    # radio is a FxOS specific undocumented workaround,
-    # radioType is a deliberate addition
-    radio = SchemaNode(String(),
-                       validator=OneOf(RADIO_STRINGS), missing=None)
-    radioType = SchemaNode(String(),
-                           validator=OneOf(RADIO_STRINGS), missing=None)
-    psc = SchemaNode(Integer(), missing=None)
 
 
 class CellTowersSchema(SequenceSchema):

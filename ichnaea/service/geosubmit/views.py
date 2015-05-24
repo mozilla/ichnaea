@@ -18,6 +18,7 @@ def configure_geosubmit(config):
 
 class GeoSubmitTransform(ReportTransform):
 
+    time_id = 'timestamp'
     toplevel_map = [
         ('carrier', 'carrier', None),
         ('homeMobileCountryCode', 'homeMobileCountryCode', None),
@@ -65,9 +66,6 @@ class GeoSubmitTransform(ReportTransform):
         ('signalStrength', 'signalStrength', None),
         # ssid is not mapped on purpose, we never want to store it
     ]
-
-    def _parse_extra(self, item, report):
-        self._parse_timestamp(item, report)
 
 
 class GeoSubmitter(BaseSubmitter):

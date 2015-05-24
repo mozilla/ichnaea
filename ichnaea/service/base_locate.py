@@ -6,6 +6,8 @@ class LocateTransform(ReportTransform):
     radio_id = ('radioType', 'radio')
     cell_id = ('cellTowers', 'cell')
     cell_map = [
+        # if both radio and radioType are present in the source,
+        # radioType takes precedence
         ('radio', 'radio', None),
         ('radioType', 'radio', None),
         ('mobileCountryCode', 'mcc', None),
