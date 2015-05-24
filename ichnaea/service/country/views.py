@@ -3,15 +3,11 @@ from ichnaea.locate.searcher import CountrySearcher
 from ichnaea.service.base_locate import BaseLocateView
 
 
-def configure_country(config):
-    config.add_route('v1_country', '/v1/country')
-    config.add_view(CountryView, route_name='v1_country', renderer='json')
-
-
 class CountryView(BaseLocateView):
 
     error_on_invalidkey = False
     searcher = CountrySearcher
+    route = '/v1/country'
     view_name = 'country'
 
     # TODO: Disable API key checks and logging, for the initial wave

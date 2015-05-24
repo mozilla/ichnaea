@@ -6,11 +6,6 @@ from ichnaea.service.base_submit import BaseSubmitView
 from ichnaea.service.submit.schema import SubmitSchema
 
 
-def configure_submit(config):
-    config.add_route('v1_submit', '/v1/submit')
-    config.add_view(SubmitView, route_name='v1_submit', renderer='json')
-
-
 class SubmitTransform(ReportTransform):
 
     time_id = 'time'
@@ -61,6 +56,7 @@ class SubmitTransform(ReportTransform):
 class SubmitView(BaseSubmitView):
 
     error_response = JSONError
+    route = '/v1/submit'
     schema = SubmitSchema
     transform = SubmitTransform
     view_name = 'submit'

@@ -3,11 +3,6 @@ from ichnaea.service.base_submit import BaseSubmitView
 from ichnaea.service.geosubmit.schema import GeoSubmitSchema
 
 
-def configure_geosubmit(config):
-    config.add_route('v1_geosubmit', '/v1/geosubmit')
-    config.add_view(GeoSubmitView, route_name='v1_geosubmit', renderer='json')
-
-
 class GeoSubmitTransform(ReportTransform):
 
     time_id = 'timestamp'
@@ -62,6 +57,7 @@ class GeoSubmitTransform(ReportTransform):
 
 class GeoSubmitView(BaseSubmitView):
 
+    route = '/v1/geosubmit'
     schema = GeoSubmitSchema
     transform = GeoSubmitTransform
     view_name = 'geosubmit'

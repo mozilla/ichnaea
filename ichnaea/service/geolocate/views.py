@@ -2,13 +2,9 @@ from ichnaea.service.base import check_api_key
 from ichnaea.service.base_locate import BaseLocateView
 
 
-def configure_geolocate(config):
-    config.add_route('v1_geolocate', '/v1/geolocate')
-    config.add_view(GeolocateView, route_name='v1_geolocate', renderer='json')
-
-
 class GeolocateView(BaseLocateView):
 
+    route = '/v1/geolocate'
     view_name = 'geolocate'
 
     @check_api_key()

@@ -5,11 +5,6 @@ from ichnaea.service.error import JSONError
 from ichnaea.service.search.schema import SearchSchema
 
 
-def configure_search(config):
-    config.add_route('v1_search', '/v1/search')
-    config.add_view(SearchView, route_name='v1_search', renderer='json')
-
-
 class SearchTransform(ReportTransform):
 
     radio_id = ('radio', 'radio')
@@ -38,6 +33,7 @@ class SearchTransform(ReportTransform):
 class SearchView(BaseLocateView):
 
     error_response = JSONError
+    route = '/v1/search'
     schema = SearchSchema
     transform = SearchTransform
     view_name = 'search'

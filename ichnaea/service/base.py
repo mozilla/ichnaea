@@ -81,18 +81,33 @@ def check_api_key():
     return c
 
 
-class BaseAPIView(object):
+class BaseServiceView(object):
+
+    route = None
+
+    @classmethod
+    def configure(cls, config):
+        path = cls.route
+        name = path.lstrip('/').replace('/', '_')
+        config.add_route(name, path)
+        config.add_view(cls, route_name=name, renderer='json')
+
+    def __init__(self, request):
+        self.request = request
+
+    def __call__(self):  # pragma: no cover
+        raise NotImplementedError()
+
+
+class BaseAPIView(BaseServiceView):
 
     error_on_invalidkey = True
 
     def __init__(self, request):
-        self.request = request
+        super(BaseAPIView, self).__init__(request)
         self.raven_client = request.registry.raven_client
         self.redis_client = request.registry.redis_client
         self.stats_client = request.registry.stats_client
-
-    def __call__(self):  # pragma: no cover
-        raise NotImplementedError()
 
     def invalid_api_key(self):
         response = HTTPBadRequest()

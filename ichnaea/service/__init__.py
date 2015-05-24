@@ -1,18 +1,18 @@
 def configure_service(config):
-    from ichnaea.service.country.views import configure_country
-    from ichnaea.service.geolocate.views import configure_geolocate
-    from ichnaea.service.geosubmit.views import configure_geosubmit
-    from ichnaea.service.geosubmit2.views import configure_geosubmit2
-    from ichnaea.service.heartbeat.views import configure_heartbeat
-    from ichnaea.service.monitor.views import configure_monitor
-    from ichnaea.service.search.views import configure_search
-    from ichnaea.service.submit.views import configure_submit
+    from ichnaea.service.country.views import CountryView
+    from ichnaea.service.geolocate.views import GeolocateView
+    from ichnaea.service.geosubmit.views import GeoSubmitView
+    from ichnaea.service.geosubmit2.views import GeoSubmit2View
+    from ichnaea.service.heartbeat.views import HeartbeatView
+    from ichnaea.service.monitor.views import MonitorView
+    from ichnaea.service.search.views import SearchView
+    from ichnaea.service.submit.views import SubmitView
 
-    configure_country(config)
-    configure_geolocate(config)
-    configure_geosubmit(config)
-    configure_geosubmit2(config)
-    configure_heartbeat(config)
-    configure_monitor(config)
-    configure_search(config)
-    configure_submit(config)
+    CountryView.configure(config)
+    GeolocateView.configure(config)
+    GeoSubmitView.configure(config)
+    GeoSubmit2View.configure(config)
+    HeartbeatView.configure(config)
+    MonitorView.configure(config)
+    SearchView.configure(config)
+    SubmitView.configure(config)

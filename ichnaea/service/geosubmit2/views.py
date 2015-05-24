@@ -3,12 +3,6 @@ from ichnaea.service.base_submit import BaseSubmitView
 from ichnaea.service.geosubmit2.schema import GeoSubmit2Schema
 
 
-def configure_geosubmit2(config):
-    config.add_route('v2_geosubmit', '/v2/geosubmit')
-    config.add_view(GeoSubmit2View,
-                    route_name='v2_geosubmit', renderer='json')
-
-
 class GeoSubmit2Transform(ReportTransform):
     # the connection section is not mapped on purpose
 
@@ -72,6 +66,7 @@ class GeoSubmit2Transform(ReportTransform):
 
 class GeoSubmit2View(BaseSubmitView):
 
+    route = '/v2/geosubmit'
     schema = GeoSubmit2Schema
     transform = GeoSubmit2Transform
     view_name = 'geosubmit2'
