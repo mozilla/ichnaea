@@ -1,31 +1,5 @@
-from pyramid.httpexceptions import HTTPNotFound
-
-from ichnaea.customjson import dumps
-from ichnaea.service.geolocate.schema import GeoLocateSchema
-from ichnaea.service.error import (
-    JSONParseError,
-    preprocess_request,
-)
-from ichnaea.locate.searcher import PositionSearcher
 from ichnaea.service.base import check_api_key
-from ichnaea.service.base_locate import (
-    BaseLocateView,
-    prepare_locate_query,
-)
-
-
-NOT_FOUND = {
-    'error': {
-        'errors': [{
-            'domain': 'geolocation',
-            'reason': 'notFound',
-            'message': 'Not found',
-        }],
-        'code': 404,
-        'message': 'Not found',
-    }
-}
-NOT_FOUND = dumps(NOT_FOUND)
+from ichnaea.service.base_locate import BaseLocateView
 
 
 def configure_geolocate(config):
@@ -39,30 +13,9 @@ class GeolocateView(BaseLocateView):
 
     @check_api_key()
     def __call__(self, api_key):
-        request = self.request
-        request_data, errors = preprocess_request(
-            request,
-            schema=GeoLocateSchema(),
-            response=JSONParseError,
-            accept_empty=True,
-        )
-        query = prepare_locate_query(
-            request_data, client_addr=request.client_addr)
-
-        result = PositionSearcher(
-            session_db=request.db_ro_session,
-            geoip_db=request.registry.geoip_db,
-            redis_client=request.registry.redis_client,
-            settings=request.registry.settings,
-            api_key=api_key,
-            api_name='geolocate',
-        ).search(query)
-
+        result = self.locate(api_key)
         if not result:
-            result = HTTPNotFound()
-            result.content_type = 'application/json'
-            result.body = NOT_FOUND
-            return result
+            return self.not_found()
 
         return {
             'location': {

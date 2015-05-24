@@ -36,7 +36,7 @@ class TestSearchSchema(TestCase):
     def test_empty(self):
         schema = self._make_schema()
         request = self._make_request('{}')
-        data, errors = preprocess_request(request, schema, response=None)
+        data, errors = preprocess_request(request, schema, None)
         self.assertEqual(errors, [])
         self.assertEqual(data,
                          {'cell': (), 'wifi': (), 'radio': None})
@@ -44,14 +44,14 @@ class TestSearchSchema(TestCase):
     def test_empty_cell_entry(self):
         schema = self._make_schema()
         request = self._make_request('{"cell": [{}]}')
-        data, errors = preprocess_request(request, schema, response=None)
+        data, errors = preprocess_request(request, schema, None)
         self.assertTrue('cell' in data)
 
     def test_wrong_cell_data(self):
         schema = self._make_schema()
         request = self._make_request(
             '{"cell": [{"mcc": "a", "mnc": 2, "lac": 3, "cid": 4}]}')
-        data, errors = preprocess_request(request, schema, response=None)
+        data, errors = preprocess_request(request, schema, None)
         self.assertTrue(errors)
 
 

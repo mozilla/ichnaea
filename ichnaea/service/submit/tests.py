@@ -34,7 +34,7 @@ class TestReportSchema(SchemaTest):
     def test_empty(self):
         schema = ReportSchema()
         request = self._make_request('{}')
-        data, errors = preprocess_request(request, schema, response=None)
+        data, errors = preprocess_request(request, schema, None)
         self.assertEquals(data['lat'], None)
         self.assertEquals(data['lon'], None)
         self.assertFalse(errors)
@@ -44,7 +44,7 @@ class TestReportSchema(SchemaTest):
         wifi = WifiFactory.build()
         request = self._make_request(
             '{"lat": %s, "lon": %s, "wifi": [{}]}' % (wifi.lat, wifi.lon))
-        data, errors = preprocess_request(request, schema, response=None)
+        data, errors = preprocess_request(request, schema, None)
         self.assertTrue(errors)
 
 
@@ -53,7 +53,7 @@ class TestSubmitSchema(SchemaTest):
     def test_empty(self):
         schema = SubmitSchema()
         request = self._make_request('{}')
-        data, errors = preprocess_request(request, schema, response=None)
+        data, errors = preprocess_request(request, schema, None)
         self.assertTrue(errors)
 
     def test_minimal(self):
@@ -61,7 +61,7 @@ class TestSubmitSchema(SchemaTest):
         wifi = WifiFactory.build()
         request = self._make_request(
             '{"items": [{"lat": %s, "lon": %s}]}' % (wifi.lat, wifi.lon))
-        data, errors = preprocess_request(request, schema, response=None)
+        data, errors = preprocess_request(request, schema, None)
         self.assertFalse(errors)
         self.assertTrue('items' in data)
         self.assertEqual(len(data['items']), 1)

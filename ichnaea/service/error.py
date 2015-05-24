@@ -57,8 +57,7 @@ class JSONParseError(HTTPError, BaseJSONError):
         self.content_type = 'application/json'
 
 
-def preprocess_request(request, schema, response=JSONError,
-                       accept_empty=False):
+def preprocess_request(request, schema, response, accept_empty=False):
     body = {}
     errors = []
     validated = {}
