@@ -37,15 +37,16 @@ class LocateTransform(ReportTransform):
         ('mobileNetworkCode', 'mnc'),
         ('locationAreaCode', 'lac'),
         ('cellId', 'cid'),
-        ('psc', 'psc'),
-        ('signalStrength', 'signalStrength'),
-        ('timingAdvance', 'timingAdvance'),
+        'psc',
+        ('signalStrength', 'signal'),
+        ('timingAdvance', 'ta'),
     ]
 
     wifi_id = ('wifiAccessPoints', 'wifi')
     wifi_map = [
         ('macAddress', 'key'),
-        ('channel', 'channel'),
+        'channel',
+        'frequency',
         ('signalToNoiseRatio', 'snr'),
         ('signalStrength', 'signal'),
     ]

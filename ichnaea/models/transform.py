@@ -8,8 +8,8 @@ class ReportTransform(object):
 
     # *_id maps a source section id to a target section id
     # *_map maps fields inside the section from source to target id
-    # and treats the third value as a default value that is going to
-    # be ignored
+    # if the names are equal, a simple string can be specified instead
+    # of a two-tuple
 
     time_id = None
 
@@ -36,7 +36,12 @@ class ReportTransform(object):
         blues = []
         for blue_item in item.get(self.blue_id[0], ()):
             blue = {}
-            for source, target in self.blue_map:
+            for spec in self.blue_map:
+                if isinstance(spec, tuple):  # pragma: no cover
+                    source, target = spec
+                else:
+                    source = spec
+                    target = spec
                 self.conditional_set(blue, target, blue_item[source])
             if blue:
                 blues.append(blue)
@@ -49,7 +54,12 @@ class ReportTransform(object):
         item_radio = item.get(self.radio_id[0])
         for cell_item in item.get(self.cell_id[0], ()):
             cell = {}
-            for source, target in self.cell_map:
+            for spec in self.cell_map:
+                if isinstance(spec, tuple):
+                    source, target = spec
+                else:
+                    source = spec
+                    target = spec
                 self.conditional_set(cell, target, cell_item[source])
             if cell:
                 if not cell.get(self.radio_id[1]) and item_radio:
@@ -68,14 +78,24 @@ class ReportTransform(object):
         else:
             item_position = item.get(self.position_id[0])
         if item_position:
-            for source, target in self.position_map:
+            for spec in self.position_map:
+                if isinstance(spec, tuple):
+                    source, target = spec
+                else:
+                    source = spec
+                    target = spec
                 self.conditional_set(position, target, item_position[source])
         if position:
             report[self.position_id[1]] = position
         return position
 
     def _parse_toplevel(self, item, report):
-        for source, target in self.toplevel_map:
+        for spec in self.toplevel_map:
+            if isinstance(spec, tuple):  # pragma: no cover
+                source, target = spec
+            else:
+                source = spec
+                target = spec
             self.conditional_set(report, target, item[source])
         return report
 
@@ -83,7 +103,12 @@ class ReportTransform(object):
         wifis = []
         for wifi_item in item.get(self.wifi_id[0], ()):
             wifi = {}
-            for source, target in self.wifi_map:
+            for spec in self.wifi_map:
+                if isinstance(spec, tuple):
+                    source, target = spec
+                else:
+                    source = spec
+                    target = spec
                 self.conditional_set(wifi, target, wifi_item[source])
             if wifi:
                 wifis.append(wifi)

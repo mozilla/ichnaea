@@ -42,6 +42,7 @@ class WifiAccessPointSchema(MappingSchema):
 
     age = SchemaNode(Integer(), missing=None)
     channel = SchemaNode(Integer(), missing=None)
+    frequency = SchemaNode(Integer(), missing=None)
     signalStrength = SchemaNode(Integer(), missing=None)
     signalToNoiseRatio = SchemaNode(Integer(), missing=None)
 

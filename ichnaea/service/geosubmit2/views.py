@@ -8,59 +8,59 @@ class GeoSubmit2Transform(ReportTransform):
 
     time_id = 'timestamp'
     toplevel_map = [
-        ('carrier', 'carrier'),
-        ('homeMobileCountryCode', 'homeMobileCountryCode'),
-        ('homeMobileNetworkCode', 'homeMobileNetworkCode'),
+        'carrier',
+        'homeMobileCountryCode',
+        'homeMobileNetworkCode',
     ]
 
     position_id = ('position', 'position')
     position_map = [
-        ('latitude', 'latitude'),
-        ('longitude', 'longitude'),
-        ('accuracy', 'accuracy'),
-        ('altitude', 'altitude'),
-        ('altitudeAccuracy', 'altitudeAccuracy'),
-        ('age', 'age'),
-        ('heading', 'heading'),
-        ('pressure', 'pressure'),
-        ('speed', 'speed'),
-        ('source', 'source'),
+        'latitude',
+        'longitude',
+        'accuracy',
+        'altitude',
+        'altitudeAccuracy',
+        'age',
+        'heading',
+        'pressure',
+        'speed',
+        'source',
     ]
 
     blue_id = ('bluetoothBeacons', 'bluetoothBeacons')
     blue_map = [
-        ('macAddress', 'macAddress'),
-        ('name', 'name'),
-        ('age', 'age'),
-        ('signalStrength', 'signalStrength'),
+        'macAddress',
+        'name',
+        'age',
+        'signalStrength',
     ]
 
     radio_id = ('radioType', 'radioType')
     cell_id = ('cellTowers', 'cellTowers')
     cell_map = [
-        ('radioType', 'radioType'),
-        ('mobileCountryCode', 'mobileCountryCode'),
-        ('mobileNetworkCode', 'mobileNetworkCode'),
-        ('locationAreaCode', 'locationAreaCode'),
-        ('cellId', 'cellId'),
-        ('age', 'age'),
-        ('asu', 'asu'),
-        ('primaryScramblingCode', 'primaryScramblingCode'),
-        ('serving', 'serving'),
-        ('signalStrength', 'signalStrength'),
-        ('timingAdvance', 'timingAdvance'),
+        'radioType',
+        'mobileCountryCode',
+        'mobileNetworkCode',
+        'locationAreaCode',
+        'cellId',
+        'age',
+        'asu',
+        'primaryScramblingCode',
+        'serving',
+        'signalStrength',
+        'timingAdvance',
     ]
 
     wifi_id = ('wifiAccessPoints', 'wifiAccessPoints')
     wifi_map = [
         # ssid is not mapped on purpose, we never want to store it
-        ('macAddress', 'macAddress'),
-        ('radioType', 'radioType'),
-        ('age', 'age'),
-        ('channel', 'channel'),
-        ('frequency', 'frequency'),
-        ('signalToNoiseRatio', 'signalToNoiseRatio'),
-        ('signalStrength', 'signalStrength'),
+        'macAddress',
+        'radioType',
+        'age',
+        'channel',
+        'frequency',
+        'signalToNoiseRatio',
+        'signalStrength',
     ]
 
 

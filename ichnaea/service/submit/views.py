@@ -14,14 +14,14 @@ class SubmitTransform(ReportTransform):
     position_map = [
         ('lat', 'latitude'),
         ('lon', 'longitude'),
-        ('accuracy', 'accuracy'),
-        ('altitude', 'altitude'),
+        'accuracy',
+        'altitude',
         ('altitude_accuracy', 'altitudeAccuracy'),
-        ('age', 'age'),
-        ('heading', 'heading'),
-        ('pressure', 'pressure'),
-        ('speed', 'speed'),
-        ('source', 'source'),
+        'age',
+        'heading',
+        'pressure',
+        'speed',
+        'source',
     ]
 
     radio_id = ('radio', 'radioType')
@@ -32,10 +32,10 @@ class SubmitTransform(ReportTransform):
         ('mnc', 'mobileNetworkCode'),
         ('lac', 'locationAreaCode'),
         ('cid', 'cellId'),
-        ('age', 'age'),
-        ('asu', 'asu'),
+        'age',
+        'asu',
         ('psc', 'primaryScramblingCode'),
-        ('serving', 'serving'),
+        'serving',
         ('signal', 'signalStrength'),
         ('ta', 'timingAdvance'),
     ]
@@ -44,12 +44,12 @@ class SubmitTransform(ReportTransform):
     wifi_map = [
         # ssid is not mapped on purpose, we never want to store it
         ('key', 'macAddress'),
-        ('age', 'age'),
-        ('channel', 'channel'),
-        ('frequency', 'frequency'),
+        'age',
+        'channel',
+        'frequency',
         ('radio', 'radioType'),
         ('signal', 'signalStrength'),
-        ('signalToNoiseRatio', 'signalToNoiseRatio'),
+        'signalToNoiseRatio',
     ]
 
 

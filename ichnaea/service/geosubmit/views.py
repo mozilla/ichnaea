@@ -7,51 +7,51 @@ class GeoSubmitTransform(ReportTransform):
 
     time_id = 'timestamp'
     toplevel_map = [
-        ('carrier', 'carrier'),
-        ('homeMobileCountryCode', 'homeMobileCountryCode'),
-        ('homeMobileNetworkCode', 'homeMobileNetworkCode'),
+        'carrier',
+        'homeMobileCountryCode',
+        'homeMobileNetworkCode',
     ]
 
     position_id = (None, 'position')
     position_map = [
-        ('latitude', 'latitude'),
-        ('longitude', 'longitude'),
-        ('accuracy', 'accuracy'),
-        ('altitude', 'altitude'),
-        ('altitudeAccuracy', 'altitudeAccuracy'),
-        ('age', 'age'),
-        ('heading', 'heading'),
-        ('pressure', 'pressure'),
-        ('speed', 'speed'),
-        ('source', 'source'),
+        'latitude',
+        'longitude',
+        'accuracy',
+        'altitude',
+        'altitudeAccuracy',
+        'age',
+        'heading',
+        'pressure',
+        'speed',
+        'source',
     ]
 
     radio_id = ('radioType', 'radioType')
     cell_id = ('cellTowers', 'cellTowers')
     cell_map = [
-        ('radioType', 'radioType'),
-        ('mobileCountryCode', 'mobileCountryCode'),
-        ('mobileNetworkCode', 'mobileNetworkCode'),
-        ('locationAreaCode', 'locationAreaCode'),
-        ('cellId', 'cellId'),
-        ('age', 'age'),
-        ('asu', 'asu'),
+        'radioType',
+        'mobileCountryCode',
+        'mobileNetworkCode',
+        'locationAreaCode',
+        'cellId',
+        'age',
+        'asu',
         ('psc', 'primaryScramblingCode'),
-        ('serving', 'serving'),
-        ('signalStrength', 'signalStrength'),
-        ('timingAdvance', 'timingAdvance'),
+        'serving',
+        'signalStrength',
+        'timingAdvance',
     ]
 
     wifi_id = ('wifiAccessPoints', 'wifiAccessPoints')
     wifi_map = [
         # ssid is not mapped on purpose, we never want to store it
-        ('macAddress', 'macAddress'),
-        ('age', 'age'),
-        ('channel', 'channel'),
-        ('frequency', 'frequency'),
-        ('radioType', 'radioType'),
-        ('signalToNoiseRatio', 'signalToNoiseRatio'),
-        ('signalStrength', 'signalStrength'),
+        'macAddress',
+        'age',
+        'channel',
+        'frequency',
+        'radioType',
+        'signalToNoiseRatio',
+        'signalStrength',
     ]
 
 
