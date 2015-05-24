@@ -2,7 +2,7 @@ from pyramid.httpexceptions import HTTPNotFound
 
 from ichnaea.models import ApiKey
 from ichnaea.locate.searcher import CountrySearcher
-from ichnaea.service.base import prepare_search_data
+from ichnaea.service.base_locate import prepare_locate_query
 from ichnaea.service.error import (
     JSONParseError,
     preprocess_request,
@@ -25,7 +25,7 @@ def country_view(request):
         response=JSONParseError,
         accept_empty=True,
     )
-    search_data = prepare_search_data(
+    query = prepare_locate_query(
         request_data, client_addr=request.client_addr)
 
     response = CountrySearcher(
@@ -35,7 +35,7 @@ def country_view(request):
         settings=request.registry.settings,
         api_key=ApiKey(),
         api_name='country',
-    ).search(search_data)
+    ).search(query)
 
     if not response:
         response = HTTPNotFound()

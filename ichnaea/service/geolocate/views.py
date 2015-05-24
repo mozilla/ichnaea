@@ -7,7 +7,8 @@ from ichnaea.service.error import (
     preprocess_request,
 )
 from ichnaea.locate.searcher import PositionSearcher
-from ichnaea.service.base import check_api_key, prepare_search_data
+from ichnaea.service.base import check_api_key
+from ichnaea.service.base_locate import prepare_locate_query
 
 
 NOT_FOUND = {
@@ -37,7 +38,7 @@ def geolocate_view(request, api_key):
         response=JSONParseError,
         accept_empty=True,
     )
-    search_data = prepare_search_data(
+    query = prepare_locate_query(
         request_data, client_addr=request.client_addr)
 
     result = PositionSearcher(
@@ -47,7 +48,7 @@ def geolocate_view(request, api_key):
         settings=request.registry.settings,
         api_key=api_key,
         api_name='geolocate',
-    ).search(search_data)
+    ).search(query)
 
     if not result:
         result = HTTPNotFound()

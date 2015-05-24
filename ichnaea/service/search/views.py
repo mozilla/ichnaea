@@ -1,6 +1,7 @@
+from ichnaea.models.transform import ReportTransform
+from ichnaea.locate.searcher import PositionSearcher
 from ichnaea.service.base import check_api_key
 from ichnaea.service.error import preprocess_request
-from ichnaea.locate.searcher import PositionSearcher
 from ichnaea.service.search.schema import SearchSchema
 
 
@@ -9,44 +10,39 @@ def configure_search(config):
     config.add_view(search_view, route_name='v1_search', renderer='json')
 
 
-def prepare_search_data(request_data, client_addr=None):
-    search_data = {
-        'geoip': client_addr,
-        'cell': [],
-        'wifi': [],
-    }
-    if request_data:
-        if 'cell' in request_data:
-            for cell in request_data['cell']:
-                new_cell = {
-                    'mcc': cell['mcc'],
-                    'mnc': cell['mnc'],
-                    'lac': cell['lac'],
-                    'cid': cell['cid'],
-                    'signal': cell['signal'],
-                    'ta': cell['ta'],
-                    'psc': cell['psc'],
-                }
-                # Use a per-cell radio if present
-                if 'radio' in cell and cell['radio']:
-                    new_cell['radio'] = cell['radio']
-                # Fall back to a top-level radio field
-                if 'radio' not in new_cell:
-                    new_cell['radio'] = request_data.get('radio', None)
-                search_data['cell'].append(new_cell)
+class SearchTransform(ReportTransform):
 
-        if 'wifi' in request_data:
-            for wifi in request_data['wifi']:
-                new_wifi = {
-                    'key': wifi['key'],
-                    'channel': wifi['channel'],
-                    'frequency': wifi['frequency'],
-                    'signal': wifi['signal'],
-                    'snr': wifi['signalToNoiseRatio'],
-                }
-                search_data['wifi'].append(new_wifi)
+    radio_id = ('radio', 'radio')
+    cell_id = ('cell', 'cell')
+    cell_map = [
+        ('radio', 'radio', None),
+        ('mcc', 'mcc', None),
+        ('mnc', 'mnc', None),
+        ('lac', 'lac', None),
+        ('cid', 'cid', None),
+        ('signal', 'signal', None),
+        ('ta', 'ta', None),
+        ('psc', 'psc', None),
+    ]
 
-    return search_data
+    wifi_id = ('wifi', 'wifi')
+    wifi_map = [
+        ('key', 'key', None),
+        ('channel', 'channel', None),
+        ('frequency', 'frequency', None),
+        ('signal', 'signal', None),
+        ('signalToNoiseRatio', 'snr', None),
+    ]
+
+
+def prepare_locate_query(request_data, client_addr=None):
+    transform = SearchTransform()
+    parsed_data = transform.transform_one(request_data)
+
+    query = {'geoip': client_addr}
+    query['cell'] = parsed_data.get('cell', [])
+    query['wifi'] = parsed_data.get('wifi', [])
+    return query
 
 
 @check_api_key('search')
@@ -56,7 +52,7 @@ def search_view(request, api_key):
         schema=SearchSchema(),
         accept_empty=True,
     )
-    search_data = prepare_search_data(
+    query = prepare_locate_query(
         request_data, client_addr=request.client_addr)
 
     result = PositionSearcher(
@@ -66,7 +62,7 @@ def search_view(request, api_key):
         settings=request.registry.settings,
         api_key=api_key,
         api_name='search',
-    ).search(search_data)
+    ).search(query)
 
     if not result:
         return {'status': 'not_found'}

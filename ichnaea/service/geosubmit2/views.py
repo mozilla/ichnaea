@@ -48,6 +48,7 @@ class GeoSubmit2Transform(ReportTransform):
         ('signalStrength', 'signalStrength', None),
     ]
 
+    radio_id = ('radioType', 'radioType')
     cell_id = ('cellTowers', 'cellTowers')
     cell_map = [
         ('radioType', 'radioType', None),
@@ -86,7 +87,7 @@ class GeoSubmitter2(BaseSubmitter):
 
     def prepare_reports(self, request_data):
         transform = GeoSubmit2Transform()
-        return transform.transform(request_data['items'])
+        return transform.transform_many(request_data['items'])
 
 
 @check_api_key('geosubmit2', error_on_invalidkey=False)

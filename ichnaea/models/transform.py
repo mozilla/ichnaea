@@ -10,11 +10,16 @@ class ReportTransform(object):
 
     blue_id = (None, None)
     blue_map = []
+
+    radio_id = (None, None)
     cell_id = (None, None)
     cell_map = []
+
     position_id = (None, None)
     position_map = []
+
     toplevel_map = []
+
     wifi_id = (None, None)
     wifi_map = []
 
@@ -37,17 +42,17 @@ class ReportTransform(object):
 
     def _parse_cells(self, item, report):
         cells = []
-        item_radio = item['radioType']
+        item_radio = item.get(self.radio_id[0])
         for cell_item in item.get(self.cell_id[0], ()):
             cell = {}
             for source, target, missing in self.cell_map:
                 self.conditional_set(cell, target,
                                      cell_item[source], missing)
             if cell:
-                if 'radioType' not in cell and item_radio:
-                    cell['radioType'] = item_radio
-                if cell.get('radioType') == 'umts':
-                    cell['radioType'] = 'wcdma'
+                if not cell.get(self.radio_id[1]) and item_radio:
+                    cell[self.radio_id[1]] = item_radio
+                if cell.get(self.radio_id[1]) == 'umts':
+                    cell[self.radio_id[1]] = 'wcdma'
                 cells.append(cell)
         if cells:
             report[self.cell_id[1]] = cells
@@ -63,7 +68,8 @@ class ReportTransform(object):
             for source, target, missing in self.position_map:
                 self.conditional_set(position, target,
                                      item_position[source], missing)
-        report[self.position_id[1]] = position
+        if position:
+            report[self.position_id[1]] = position
         return position
 
     def _parse_toplevel(self, item, report):
@@ -93,19 +99,25 @@ class ReportTransform(object):
     def _parse_extra(self, item, report):  # pragma: no cover
         pass
 
-    def transform(self, items):
+    def transform_one(self, item):
+        report = {}
+        self._parse_extra(item, report)
+        self._parse_position(item, report)
+        self._parse_toplevel(item, report)
+
+        blues = self._parse_blues(item, report)
+        cells = self._parse_cells(item, report)
+        wifis = self._parse_wifis(item, report)
+
+        if blues or cells or wifis:
+            return report
+        return {}
+
+    def transform_many(self, items):
         reports = []
         for item in items:
-            report = {}
-            self._parse_extra(item, report)
-            self._parse_position(item, report)
-            self._parse_toplevel(item, report)
-
-            blues = self._parse_blues(item, report)
-            cells = self._parse_cells(item, report)
-            wifis = self._parse_wifis(item, report)
-
-            if blues or cells or wifis:
+            report = self.transform_one(item)
+            if report:
                 reports.append(report)
 
         return reports

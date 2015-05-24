@@ -91,7 +91,7 @@ class RadioType(colander.Integer):
         try:
             if isinstance(cstruct, basestring):
                 cstruct = Radio[cstruct]
-            else:
+            else:  # pragma: no cover
                 cstruct = Radio(cstruct)
         except (KeyError, ValueError):
             raise colander.Invalid(node, (

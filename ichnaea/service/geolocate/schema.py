@@ -14,13 +14,15 @@ RADIO_STRINGS = ['gsm', 'cdma', 'wcdma', 'lte']
 
 
 class CellTowerSchema(MappingSchema):
-    cellId = SchemaNode(Integer(), missing=None)
+
+    mobileCountryCode = SchemaNode(Integer(), missing=None)
+    mobileNetworkCode = SchemaNode(Integer(), missing=None)
     locationAreaCode = SchemaNode(Integer(), missing=None)
-    mobileCountryCode = SchemaNode(Integer())
-    mobileNetworkCode = SchemaNode(Integer())
-    age = SchemaNode(Integer(), missing=0)
-    signalStrength = SchemaNode(Integer(), missing=0)
-    timingAdvance = SchemaNode(Integer(), missing=0)
+    cellId = SchemaNode(Integer(), missing=None)
+
+    age = SchemaNode(Integer(), missing=None)
+    signalStrength = SchemaNode(Integer(), missing=None)
+    timingAdvance = SchemaNode(Integer(), missing=None)
 
     # The fields below are extra fields which are not part of the
     # official geolocate API
@@ -34,28 +36,32 @@ class CellTowerSchema(MappingSchema):
 
 
 class CellTowersSchema(SequenceSchema):
+
     cell = CellTowerSchema()
 
 
 class WifiAccessPointSchema(MappingSchema):
-    # required
-    macAddress = SchemaNode(String())
-    # optional
-    signalStrength = SchemaNode(Integer(), missing=0)
-    age = SchemaNode(Integer(), missing=0)
-    channel = SchemaNode(Integer(), missing=0)
-    signalToNoiseRatio = SchemaNode(Integer(), missing=0)
+
+    macAddress = SchemaNode(String(), missing=None)
+
+    age = SchemaNode(Integer(), missing=None)
+    channel = SchemaNode(Integer(), missing=None)
+    signalStrength = SchemaNode(Integer(), missing=None)
+    signalToNoiseRatio = SchemaNode(Integer(), missing=None)
 
 
 class WifiAccessPointsSchema(SequenceSchema):
+
     wifi = WifiAccessPointSchema()
 
 
 class GeoLocateSchema(MappingSchema):
+
+    carrier = SchemaNode(String(), missing=None)
     homeMobileCountryCode = SchemaNode(Integer(), missing=None)
     homeMobileNetworkCode = SchemaNode(Integer(), missing=None)
     radioType = SchemaNode(String(),
                            validator=OneOf(RADIO_STRINGS), missing=None)
-    carrier = SchemaNode(String(), missing='')
+
     cellTowers = CellTowersSchema(missing=())
     wifiAccessPoints = WifiAccessPointsSchema(missing=())

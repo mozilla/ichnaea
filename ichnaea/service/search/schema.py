@@ -5,35 +5,41 @@ RADIO_STRINGS = ['gsm', 'cdma', 'umts', 'wcdma', 'lte']
 
 
 class CellSchema(MappingSchema):
+
     radio = SchemaNode(String(),
                        validator=OneOf(RADIO_STRINGS), missing=None)
-    mcc = SchemaNode(Integer(), missing=-1)
-    mnc = SchemaNode(Integer(), missing=-1)
-    lac = SchemaNode(Integer(), missing=-1)
-    cid = SchemaNode(Integer(), missing=-1)
-    psc = SchemaNode(Integer(), missing=-1)
-    asu = SchemaNode(Integer(), missing=-1)
-    signal = SchemaNode(Integer(), missing=0)
-    ta = SchemaNode(Integer(), missing=0)
+    mcc = SchemaNode(Integer(), missing=None)
+    mnc = SchemaNode(Integer(), missing=None)
+    lac = SchemaNode(Integer(), missing=None)
+    cid = SchemaNode(Integer(), missing=None)
+
+    asu = SchemaNode(Integer(), missing=None)
+    psc = SchemaNode(Integer(), missing=None)
+    signal = SchemaNode(Integer(), missing=None)
+    ta = SchemaNode(Integer(), missing=None)
 
 
 class CellsSchema(SequenceSchema):
+
     cell = CellSchema()
 
 
 class WifiSchema(MappingSchema):
-    key = SchemaNode(String())
-    frequency = SchemaNode(Integer(), missing=0)
-    channel = SchemaNode(Integer(), missing=0)
-    signal = SchemaNode(Integer(), missing=0)
-    signalToNoiseRatio = SchemaNode(Integer(), missing=0)
+
+    key = SchemaNode(String(), missing=None)
+    frequency = SchemaNode(Integer(), missing=None)
+    channel = SchemaNode(Integer(), missing=None)
+    signal = SchemaNode(Integer(), missing=None)
+    signalToNoiseRatio = SchemaNode(Integer(), missing=None)
 
 
 class WifisSchema(SequenceSchema):
+
     wifi = WifiSchema()
 
 
 class SearchSchema(MappingSchema):
+
     radio = SchemaNode(String(),
                        validator=OneOf(RADIO_STRINGS), missing=None)
     cell = CellsSchema(missing=())

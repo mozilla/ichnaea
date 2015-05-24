@@ -198,12 +198,7 @@ class TestGeolocate(AppTestCase):
                                     "accuracy": london['accuracy']})
 
     def test_parse_error(self):
-        res = self.app.post_json(
-            '%s?key=test' % self.url, {
-                "wifiAccessPoints": [
-                    {"nomac": 1},
-                ]},
-            status=400)
+        res = self.app.post('%s?key=test' % self.url, '\xae', status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(
             res.json, {"error": {
