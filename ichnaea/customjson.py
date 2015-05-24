@@ -15,7 +15,7 @@ def encode_datetime(obj):
         return obj.strftime('%Y-%m-%dT%H:%M:%S.%f')
     elif isinstance(obj, date):
         return obj.strftime('%Y-%m-%d')
-    raise TypeError(repr(obj) + " is not JSON serializable")
+    raise TypeError(repr(obj) + ' is not JSON serializable')
 
 
 def encode_radio_dict(dct):
@@ -57,7 +57,7 @@ def custom_iterencode(value):
             text = 'null'
         elif not allow_nan:
             raise ValueError(
-                "Out of range float values are not JSON compliant: " +
+                'Out of range float values are not JSON compliant: ' +
                 repr(o))
 
         return text
@@ -116,7 +116,7 @@ def dumps(value):
         # >>> repr(3.00003/3)
         # '1.00001'
         #
-        # This behavior is preserved in python3, and made "more uniform" merely
+        # This behavior is preserved in python3, and made more uniform merely
         # by causing str() to do the same thing. So we explicitly round in the
         # custom_iterencode routine.
         return u''.join(custom_iterencode(value))
@@ -124,7 +124,7 @@ def dumps(value):
         return json.dumps(value, default=encode_datetime)
 
 
-def loads(value, encoding="utf-8"):
+def loads(value, encoding='utf-8'):
     return json.loads(value, encoding=encoding)
 
 
@@ -151,7 +151,7 @@ def kombu_default(obj):
         return {'__uuid__': obj.hex}
     elif isinstance(obj, HashKey):
         return obj._to_json()
-    raise TypeError("%r is not JSON serializable" % obj)  # pragma: no cover
+    raise TypeError('%r is not JSON serializable' % obj)  # pragma: no cover
 
 
 def kombu_object_hook(dct):

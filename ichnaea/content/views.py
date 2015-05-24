@@ -92,11 +92,11 @@ def security_headers(event):
     response = event.response
     if response.content_type == 'text/html':
         csp = event.request.registry.csp
-        response.headers.add("Strict-Transport-Security", "max-age=31536000")
-        response.headers.add("Content-Security-Policy", csp)
-        response.headers.add("X-Content-Type-Options", "nosniff")
-        response.headers.add("X-XSS-Protection", "1; mode=block")
-        response.headers.add("X-Frame-Options", "DENY")
+        response.headers.add('Strict-Transport-Security', 'max-age=31536000')
+        response.headers.add('Content-Security-Policy', csp)
+        response.headers.add('X-Content-Type-Options', 'nosniff')
+        response.headers.add('X-XSS-Protection', '1; mode=block')
+        response.headers.add('X-Frame-Options', 'DENY')
 
 
 def s3_list_downloads(assets_bucket, assets_url, raven_client):
@@ -125,12 +125,12 @@ class Layout(object):
 
     @reify
     def base_template(self):
-        renderer = get_renderer("templates/base.pt")
+        renderer = get_renderer('templates/base.pt')
         return renderer.implementation().macros['layout']
 
     @reify
     def base_macros(self):
-        renderer = get_renderer("templates/base_macros.pt")
+        renderer = get_renderer('templates/base_macros.pt')
         return renderer.implementation().macros
 
     @property
@@ -164,22 +164,22 @@ class ContentViews(Layout):
         }
 
     @view_config(renderer='templates/api.pt',
-                 name="api", http_cache=3600)
+                 name='api', http_cache=3600)
     def api_view(self):
         return {'page_title': 'API'}
 
     @view_config(renderer='templates/apps.pt',
-                 name="apps", http_cache=3600)
+                 name='apps', http_cache=3600)
     def apps_view(self):
         return {'page_title': 'Client Applications'}
 
     @view_config(renderer='templates/contact.pt',
-                 name="contact", http_cache=3600)
+                 name='contact', http_cache=3600)
     def contact_view(self):
         return {'page_title': 'Contact Us'}
 
     @view_config(renderer='templates/downloads.pt',
-                 name="downloads", http_cache=3600)
+                 name='downloads', http_cache=3600)
     def downloads_view(self):
         redis_client = self.request.registry.redis_client
         cache_key = CACHE_KEYS['downloads']
@@ -197,17 +197,17 @@ class ContentViews(Layout):
         return {'page_title': 'Downloads', 'files': data}
 
     @view_config(renderer='templates/optout.pt',
-                 name="optout", http_cache=3600)
+                 name='optout', http_cache=3600)
     def optout_view(self):
         return {'page_title': 'Opt-Out'}
 
     @view_config(renderer='templates/privacy.pt',
-                 name="privacy", http_cache=3600)
+                 name='privacy', http_cache=3600)
     def privacy_view(self):
         return {'page_title': 'Privacy Notice'}
 
     @view_config(renderer='templates/leaders.pt',
-                 route_name="leaders", http_cache=3600)
+                 route_name='leaders', http_cache=3600)
     def leaders_view(self):
         redis_client = self.request.registry.redis_client
         cache_key = CACHE_KEYS['leaders']
@@ -237,7 +237,7 @@ class ContentViews(Layout):
         }
 
     @view_config(renderer='templates/leaders_weekly.pt',
-                 route_name="leaders_weekly", http_cache=3600)
+                 route_name='leaders_weekly', http_cache=3600)
     def leaders_weekly_view(self):
         redis_client = self.request.registry.redis_client
         cache_key = CACHE_KEYS['leaders_weekly']
@@ -270,12 +270,12 @@ class ContentViews(Layout):
             'scores': data,
         }
 
-    @view_config(renderer='templates/map.pt', name="map", http_cache=3600)
+    @view_config(renderer='templates/map.pt', name='map', http_cache=3600)
     def map_view(self):
         return {'page_title': 'Map', 'tiles': self._tiles_url()}
 
     @view_config(
-        renderer='json', name="map.json", http_cache=3600)
+        renderer='json', name='map.json', http_cache=3600)
     def map_json(self):
         tiles_url = self._tiles_url()
         offset = tiles_url.find(TILES_PATTERN)
@@ -283,7 +283,7 @@ class ContentViews(Layout):
         return {'tiles_url': base_url}
 
     @view_config(
-        renderer='json', name="stats_cell.json", http_cache=3600)
+        renderer='json', name='stats_cell.json', http_cache=3600)
     def stats_cell_json(self):
         redis_client = self.request.registry.redis_client
         cache_key = CACHE_KEYS['stats_cell_json']
@@ -302,7 +302,7 @@ class ContentViews(Layout):
         return {'series': data}
 
     @view_config(
-        renderer='json', name="stats_wifi.json", http_cache=3600)
+        renderer='json', name='stats_wifi.json', http_cache=3600)
     def stats_wifi_json(self):
         redis_client = self.request.registry.redis_client
         cache_key = CACHE_KEYS['stats_wifi_json']
@@ -316,7 +316,7 @@ class ContentViews(Layout):
         return {'series': [{'title': 'MLS WiFi', 'data': data[0]}]}
 
     @view_config(renderer='templates/stats.pt',
-                 route_name="stats", http_cache=3600)
+                 route_name='stats', http_cache=3600)
     def stats_view(self):
         redis_client = self.request.registry.redis_client
         cache_key = CACHE_KEYS['stats']
@@ -349,7 +349,7 @@ class ContentViews(Layout):
         return result
 
     @view_config(renderer='templates/stats_countries.pt',
-                 route_name="stats_countries", http_cache=3600)
+                 route_name='stats_countries', http_cache=3600)
     def stats_countries_view(self):
         redis_client = self.request.registry.redis_client
         cache_key = CACHE_KEYS['stats_countries']
@@ -374,10 +374,10 @@ def touchicon_view(request):
 
 _robots_response = Response(
     content_type='text/plain',
-    body="User-agent: *\n"
-         "Disallow: /leaders\n"
-         "Disallow: /static/\n"
-         "Disallow: /v1/\n"
+    body='User-agent: *\n'
+         'Disallow: /leaders\n'
+         'Disallow: /static/\n'
+         'Disallow: /v1/\n'
 )
 
 

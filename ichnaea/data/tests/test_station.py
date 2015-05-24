@@ -217,7 +217,7 @@ class TestCell(CeleryTestCase):
                                                       utcnow=next_day).get())
 
             else:
-                # Blacklist has exceeded threshold, gone to "permanent" mode,
+                # Blacklist has exceeded threshold, gone to permanent mode,
                 # so no observation accepted, no stations seen.
                 self.assertEqual(insert_result.get(), 0)
                 self.assertEqual(update_result.get(), (0, 0))
@@ -323,12 +323,12 @@ class TestWifi(CeleryTestCase):
         now = util.utcnow()
         long_ago = now - timedelta(days=40)
         session = self.session
-        k1 = "ab1234567890"
-        k2 = "bc1234567890"
-        k3 = "cd1234567890"
-        k4 = "de1234567890"
-        k5 = "ef1234567890"
-        k6 = "fa1234567890"
+        k1 = 'ab1234567890'
+        k2 = 'bc1234567890'
+        k3 = 'cd1234567890'
+        k4 = 'de1234567890'
+        k5 = 'ef1234567890'
+        k6 = 'fa1234567890'
 
         keys = set([k1, k2, k3, k4, k5, k6])
 
@@ -421,7 +421,7 @@ class TestWifi(CeleryTestCase):
             days_ago = (N - (month + 1)) * 30
             time = now - timedelta(days=days_ago)
 
-            obs = dict(key="ab1234567890",
+            obs = dict(key='ab1234567890',
                        time=time,
                        lat=points[month % 4][0],
                        lon=points[month % 4][1])
@@ -490,7 +490,7 @@ class TestWifi(CeleryTestCase):
                                                       utcnow=next_day).get())
 
             else:
-                # Blacklist has exceeded threshold, gone to "permanent" mode,
+                # Blacklist has exceeded threshold, gone to permanent mode,
                 # so no observation accepted, no stations seen.
                 self.assertEqual(insert_result.get(), 0)
                 self.assertEqual(update_result.get(), (0, 0))
@@ -499,8 +499,8 @@ class TestWifi(CeleryTestCase):
         now = util.utcnow()
         before = now - timedelta(days=1)
         session = self.session
-        k1 = "ab1234567890"
-        k2 = "cd1234567890"
+        k1 = 'ab1234567890'
+        k2 = 'cd1234567890'
         data = [
             Wifi(key=k1, new_measures=3, total_measures=3),
             WifiObservation(lat=1.0, lon=1.0, key=k1, created=now),
@@ -539,8 +539,8 @@ class TestWifi(CeleryTestCase):
 
     def test_max_min_range_update(self):
         session = self.session
-        k1 = "ab1234567890"
-        k2 = "cd1234567890"
+        k1 = 'ab1234567890'
+        k2 = 'cd1234567890'
         data = [
             Wifi(key=k1, new_measures=2, total_measures=2),
             WifiObservation(lat=1.0, lon=1.0, key=k1),

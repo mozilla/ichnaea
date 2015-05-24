@@ -22,7 +22,7 @@ class TestDistance(TestCase):
         lat2 = 44.0347065
         lon2 = -79.4918184
         delta = distance(lat1, lon1, lat2, lon2)
-        sdelta = "%0.4f" % delta
+        sdelta = '%0.4f' % delta
         self.assertEqual(sdelta, '0.1369')
 
     def test_antipodal(self):
@@ -36,7 +36,7 @@ class TestDistance(TestCase):
         lat2 = -90.0
         lon2 = 0
         delta = distance(lat1, lon1, lat2, lon2)
-        sdelta = "%0.4f" % delta
+        sdelta = '%0.4f' % delta
         self.assertEqual(sdelta, '20015.0868')
 
     def test_out_of_range(self):
@@ -49,7 +49,7 @@ class TestDistance(TestCase):
         lat2 = 0.0
         lon2 = 0.0
         delta = distance(lat1, lon1, lat2, lon2)
-        sdelta = "%0.4f" % delta
+        sdelta = '%0.4f' % delta
         self.assertEqual(sdelta, '8901.7476')
 
 

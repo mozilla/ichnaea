@@ -10,7 +10,7 @@ def configure_heartbeat(config):
     config.scan('ichnaea.service.heartbeat.views')
 
 
-@view_config(renderer='json', name="__heartbeat__")
+@view_config(renderer='json', name='__heartbeat__')
 def heartbeat_view(request):
     try:
         return {'status': 'OK', 'hostname': LOCAL_FQDN}

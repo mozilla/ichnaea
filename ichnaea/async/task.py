@@ -28,7 +28,7 @@ class DatabaseTask(Task):
         return short
 
     def __call__(self, *args, **kw):
-        with self.stats_client.timer("task." + self.shortname):
+        with self.stats_client.timer('task.' + self.shortname):
             try:
                 result = super(DatabaseTask, self).__call__(*args, **kw)
             except Exception as exc:

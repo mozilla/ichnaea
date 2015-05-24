@@ -1,29 +1,25 @@
 import zlib
 
 from colander import Invalid
-from ichnaea.exceptions import BaseJSONError
+from simplejson import dumps, loads
 from pyramid.httpexceptions import HTTPError
 from pyramid.response import Response
 
-from ichnaea.customjson import (
-    dumps,
-    loads,
-)
+from ichnaea.exceptions import BaseJSONError
 from ichnaea import util
 
 MSG_EMPTY = 'No JSON body was provided.'
 MSG_GZIP = 'Error decompressing gzip data stream.'
-MSG_BAD_RADIO = 'Radio fields were not consistent in the cellTower data.'
 
 DAILY_LIMIT = dumps({
-    "error": {
-        "errors": [{
-            "domain": "usageLimits",
-            "reason": "dailyLimitExceeded",
-            "message": "You have exceeded your daily limit.",
+    'error': {
+        'errors': [{
+            'domain': 'usageLimits',
+            'reason': 'dailyLimitExceeded',
+            'message': 'You have exceeded your daily limit.',
         }],
-        "code": 403,
-        "message": "You have exceeded your daily limit.",
+        'code': 403,
+        'message': 'You have exceeded your daily limit.',
     }
 })
 
@@ -35,16 +31,16 @@ class JSONError(HTTPError, BaseJSONError):
         self.status = status
         self.content_type = 'application/json'
 
-PARSE_ERROR = {"error": {
-    "errors": [{
-        "domain": "global",
-        "reason":
-        "parseError",
-        "message":
-        "Parse Error",
+PARSE_ERROR = {'error': {
+    'errors': [{
+        'domain': 'global',
+        'reason':
+        'parseError',
+        'message':
+        'Parse Error',
     }],
-    "code": 400,
-    "message": "Parse Error"
+    'code': 400,
+    'message': 'Parse Error',
 }}
 
 PARSE_ERROR = dumps(PARSE_ERROR)
@@ -87,7 +83,6 @@ def preprocess_request(request, schema, response, accept_empty=False):
             raise response(errors)
 
     # schema validation, but report at most one error at a time
-
     verify_schema(schema, body, errors, validated)
 
     if errors and response is not None:

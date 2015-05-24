@@ -16,7 +16,7 @@ from ichnaea import util
 def monitor_api_key_limits(self):
     result = {}
     try:
-        today = util.utcnow().strftime("%Y%m%d")
+        today = util.utcnow().strftime('%Y%m%d')
         keys = self.redis_client.keys('apilimit:*:' + today)
         if keys:
             values = self.redis_client.mget(keys)

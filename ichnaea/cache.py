@@ -22,7 +22,7 @@ def configure_redis(redis_url, _client=None):
 
 def redis_client(redis_url):
     url = urlparse.urlparse(redis_url)
-    netloc = url.netloc.split(":")
+    netloc = url.netloc.split(':')
     host = netloc[0]
     if len(netloc) > 1:
         port = int(netloc[1])

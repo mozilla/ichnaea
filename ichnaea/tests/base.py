@@ -296,10 +296,10 @@ class LogTestCase(TestCase):
                     elif len(p) == 3:
                         (name, match, value) = p
                     else:
-                        raise TypeError("wanted 2 or 3-element tuple, got %s"
+                        raise TypeError('wanted 2 or 3-element tuple, got %s'
                                         % type(p))
                 else:
-                    raise TypeError("wanted str or tuple, got %s"
+                    raise TypeError('wanted str or tuple, got %s'
                                     % type(p))
                 msgs = self.find_stats_messages(msg_type, name, value)
                 if isinstance(match, int):
@@ -433,7 +433,7 @@ class DBTestCase(LogTestCase):
                                            'sqlalchemy.url',
                                            str(engine.url))
 
-            command.stamp(alembic_cfg, "head")
+            command.stamp(alembic_cfg, 'head')
             trans.commit()
 
     @classmethod

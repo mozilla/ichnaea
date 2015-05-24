@@ -42,19 +42,19 @@ def add_users(conn, location_cfg):
     creds['rw'] = _db_creds(ichnaea_section.get('db_master'))
     creds['ro'] = _db_creds(ichnaea_section.get('db_slave'))
 
-    stmt = text("SELECT user FROM mysql.user")
+    stmt = text('SELECT user FROM mysql.user')
     result = conn.execute(stmt)
     userids = set([r[0] for r in result.fetchall()])
 
-    create_stmt = text("CREATE USER :user IDENTIFIED BY :pwd")
-    grant_stmt = text("GRANT delete, insert, select, update ON *.* TO :user")
+    create_stmt = text('CREATE USER :user IDENTIFIED BY :pwd')
+    grant_stmt = text('GRANT delete, insert, select, update ON *.* TO :user')
     for cred in creds.values():
         if cred.user not in userids:
             conn.execute(create_stmt.bindparams(user=cred.user, pwd=cred.pwd))
             conn.execute(grant_stmt.bindparams(user=cred.user))
     # create a monitoring user without a password nor grants
-    if "lbcheck" not in userids:
-        conn.execute(text("CREATE USER lbcheck"))
+    if 'lbcheck' not in userids:
+        conn.execute(text('CREATE USER lbcheck'))
 
 
 def create_schema(engine, alembic_cfg, location_cfg):
@@ -79,7 +79,7 @@ def create_schema(engine, alembic_cfg, location_cfg):
 
     # Now stamp the latest alembic version
     if not old_version:
-        command.stamp(alembic_cfg, "head")
+        command.stamp(alembic_cfg, 'head')
     command.current(alembic_cfg)
 
 

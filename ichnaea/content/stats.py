@@ -78,7 +78,7 @@ def global_stats(session):
 
     for k, v in result.items():
         # show as millions
-        result[k] = "%.2f" % ((v // 10000) / 100.0)
+        result[k] = '%.2f' % ((v // 10000) / 100.0)
 
     return result
 

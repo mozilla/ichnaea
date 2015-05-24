@@ -47,10 +47,10 @@ class WifiKeyNode(colander.SchemaNode):
 
     def preparer(self, cstruct):
         # Remove ':' '-' ',' from a wifi key.
-        if cstruct and (":" in cstruct or "-" in cstruct or "." in cstruct):
-            cstruct = (cstruct.replace(":", "")
-                              .replace("-", "")
-                              .replace(".", ""))
+        if cstruct and (':' in cstruct or '-' in cstruct or '.' in cstruct):
+            cstruct = (cstruct.replace(':', '')
+                              .replace('-', '')
+                              .replace('.', ''))
         return cstruct and cstruct.lower() or colander.null
 
     def validator(self, node, cstruct):

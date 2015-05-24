@@ -51,7 +51,7 @@ def check_stats(request):
     return _check_timed(request.registry.stats_client.ping)
 
 
-@view_config(renderer='json', name="__monitor__")
+@view_config(renderer='json', name='__monitor__')
 def monitor_view(request):
     services = {
         'database': check_database,

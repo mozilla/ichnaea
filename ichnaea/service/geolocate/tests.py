@@ -57,24 +57,24 @@ class TestGeolocate(AppTestCase):
 
         res = self.app.post_json(
             '%s?key=test' % self.url, {
-                "cellTowers": [{
-                    "radioType": cell.radio.name,
-                    "mobileCountryCode": cell.mcc,
-                    "mobileNetworkCode": cell.mnc,
-                    "locationAreaCode": cell.lac,
-                    "cellId": cell.cid,
-                    "psc": cell.psc}, {
-                    "radioType": cell.radio.name,
-                    "mobileCountryCode": cell.mcc,
-                    "mobileNetworkCode": cell.mnc,
-                    "psc": cell.psc + 1,
+                'cellTowers': [{
+                    'radioType': cell.radio.name,
+                    'mobileCountryCode': cell.mcc,
+                    'mobileNetworkCode': cell.mnc,
+                    'locationAreaCode': cell.lac,
+                    'cellId': cell.cid,
+                    'psc': cell.psc}, {
+                    'radioType': cell.radio.name,
+                    'mobileCountryCode': cell.mcc,
+                    'mobileNetworkCode': cell.mnc,
+                    'psc': cell.psc + 1,
                 }]},
             status=200)
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": cell.lat,
-                                                 "lng": cell.lon},
-                                    "accuracy": cell.range})
+        self.assertEqual(res.json, {'location': {'lat': cell.lat,
+                                                 'lng': cell.lon},
+                                    'accuracy': cell.range})
 
     def test_ok_wifi(self):
         wifi = WifiFactory()
@@ -107,21 +107,21 @@ class TestGeolocate(AppTestCase):
         wifis = WifiFactory.build_batch(2)
         res = self.app.post_json(
             '%s?key=test' % self.url, {
-                "wifiAccessPoints": [
-                    {"macAddress": wifis[0].key},
-                    {"macAddress": wifis[1].key},
+                'wifiAccessPoints': [
+                    {'macAddress': wifis[0].key},
+                    {'macAddress': wifis[1].key},
                 ]},
             status=404)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(
-            res.json, {"error": {
-                "errors": [{
-                    "domain": "geolocation",
-                    "reason": "notFound",
-                    "message": "Not found",
+            res.json, {'error': {
+                'errors': [{
+                    'domain': 'geolocation',
+                    'reason': 'notFound',
+                    'message': 'Not found',
                 }],
-                "code": 404,
-                "message": "Not found"
+                'code': 404,
+                'message': 'Not found'
             }}
         )
 
@@ -133,8 +133,8 @@ class TestGeolocate(AppTestCase):
             timer=[self.metric_url])
 
     def test_cell_mcc_mnc_strings(self):
-        # mcc and mnc are officially defined as strings, where "01" is
-        # different from "1". In practice many systems ours included treat
+        # mcc and mnc are officially defined as strings, where '01' is
+        # different from '1'. In practice many systems ours included treat
         # them as integers, so both of these are encoded as 1 instead.
         # Some clients sends us these values as strings, some as integers,
         # so we want to make sure we support both.
@@ -143,37 +143,37 @@ class TestGeolocate(AppTestCase):
 
         res = self.app.post_json(
             '%s?key=test' % self.url, {
-                "cellTowers": [{
-                    "radioType": cell.radio.name,
-                    "mobileCountryCode": str(cell.mcc),
-                    "mobileNetworkCode": "01",
-                    "locationAreaCode": cell.lac,
-                    "cellId": cell.cid},
+                'cellTowers': [{
+                    'radioType': cell.radio.name,
+                    'mobileCountryCode': str(cell.mcc),
+                    'mobileNetworkCode': '01',
+                    'locationAreaCode': cell.lac,
+                    'cellId': cell.cid},
                 ]},
             status=200)
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": cell.lat,
-                                                 "lng": cell.lon},
-                                    "accuracy": cell.range})
+        self.assertEqual(res.json, {'location': {'lat': cell.lat,
+                                                 'lng': cell.lon},
+                                    'accuracy': cell.range})
 
     def test_geoip_fallback(self):
         london = self.geoip_data['London']
         wifis = WifiFactory.build_batch(4)
         res = self.app.post_json(
             '%s?key=test' % self.url,
-            {"wifiAccessPoints": [
-                {"macAddress": wifis[0].key},
-                {"macAddress": wifis[1].key},
-                {"macAddress": wifis[2].key},
-                {"macAddress": wifis[3].key},
+            {'wifiAccessPoints': [
+                {'macAddress': wifis[0].key},
+                {'macAddress': wifis[1].key},
+                {'macAddress': wifis[2].key},
+                {'macAddress': wifis[3].key},
             ]},
             extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": london['latitude'],
-                                                 "lng": london['longitude']},
-                                    "accuracy": london['accuracy']})
+        self.assertEqual(res.json, {'location': {'lat': london['latitude'],
+                                                 'lng': london['longitude']},
+                                    'accuracy': london['accuracy']})
 
     def test_empty_request_means_geoip(self):
         london = self.geoip_data['London']
@@ -182,33 +182,33 @@ class TestGeolocate(AppTestCase):
             extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": london['latitude'],
-                                                 "lng": london['longitude']},
-                                    "accuracy": london['accuracy']})
+        self.assertEqual(res.json, {'location': {'lat': london['latitude'],
+                                                 'lng': london['longitude']},
+                                    'accuracy': london['accuracy']})
 
     def test_incomplete_request_means_geoip(self):
         london = self.geoip_data['London']
         res = self.app.post_json(
-            '%s?key=test' % self.url, {"wifiAccessPoints": []},
+            '%s?key=test' % self.url, {'wifiAccessPoints': []},
             extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
             status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": london['latitude'],
-                                                 "lng": london['longitude']},
-                                    "accuracy": london['accuracy']})
+        self.assertEqual(res.json, {'location': {'lat': london['latitude'],
+                                                 'lng': london['longitude']},
+                                    'accuracy': london['accuracy']})
 
     def test_parse_error(self):
         res = self.app.post('%s?key=test' % self.url, '\xae', status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(
-            res.json, {"error": {
-                "errors": [{
-                    "domain": "global",
-                    "reason": "parseError",
-                    "message": "Parse Error",
+            res.json, {'error': {
+                'errors': [{
+                    'domain': 'global',
+                    'reason': 'parseError',
+                    'message': 'Parse Error',
                 }],
-                "code": 400,
-                "message": "Parse Error"
+                'code': 400,
+                'message': 'Parse Error'
             }})
 
         self.check_stats(counter=[self.metric + '.api_key.test'])
@@ -219,12 +219,12 @@ class TestGeolocate(AppTestCase):
 
         res = self.app.post_json(
             self.url, {
-                "cellTowers": [{
-                    "radioType": cell.radio.name,
-                    "mobileCountryCode": cell.mcc,
-                    "mobileNetworkCode": cell.mnc,
-                    "locationAreaCode": cell.lac,
-                    "cellId": cell.cid},
+                'cellTowers': [{
+                    'radioType': cell.radio.name,
+                    'mobileCountryCode': cell.mcc,
+                    'mobileNetworkCode': cell.mnc,
+                    'locationAreaCode': cell.lac,
+                    'cellId': cell.cid},
                 ]
             },
             status=400)
@@ -240,12 +240,12 @@ class TestGeolocate(AppTestCase):
 
         res = self.app.post_json(
             '%s?key=unknown_key' % self.url, {
-                "radioType": cell.radio.name,
-                "cellTowers": [
-                    {"mobileCountryCode": cell.mcc,
-                     "mobileNetworkCode": cell.mnc,
-                     "locationAreaCode": cell.lac,
-                     "cellId": cell.cid},
+                'radioType': cell.radio.name,
+                'cellTowers': [
+                    {'mobileCountryCode': cell.mcc,
+                     'mobileNetworkCode': cell.mnc,
+                     'locationAreaCode': cell.lac,
+                     'cellId': cell.cid},
                 ]
             },
             status=400)
@@ -262,8 +262,8 @@ class TestGeolocate(AppTestCase):
         self.session.flush()
 
         # exhaust today's limit
-        dstamp = util.utcnow().strftime("%Y%m%d")
-        key = "apilimit:%s:%s" % (api_key, dstamp)
+        dstamp = util.utcnow().strftime('%Y%m%d')
+        key = 'apilimit:%s:%s' % (api_key, dstamp)
         self.redis_client.incr(key, 10)
 
         res = self.app.post_json(
@@ -280,12 +280,12 @@ class TestGeolocate(AppTestCase):
 
         res = self.app.post_json(
             '%s?key=test' % self.url, {
-                "cellTowers": [{
-                    "radio": cell.radio.name,
-                    "mobileCountryCode": cell.mcc,
-                    "mobileNetworkCode": cell.mnc,
-                    "locationAreaCode": cell.lac,
-                    "cellId": cell.cid},
+                'cellTowers': [{
+                    'radio': cell.radio.name,
+                    'mobileCountryCode': cell.mcc,
+                    'mobileNetworkCode': cell.mnc,
+                    'locationAreaCode': cell.lac,
+                    'cellId': cell.cid},
                 ]},
             status=200)
 
@@ -306,18 +306,18 @@ class TestGeolocate(AppTestCase):
 
         res = self.app.post_json(
             '%s?key=test' % self.url, {
-                "cellTowers": [
-                    {"radio": cell.radio.name,
-                     "mobileCountryCode": cell.mcc,
-                     "mobileNetworkCode": cell.mnc,
-                     "locationAreaCode": cell.lac,
-                     "cellId": cell.cid},
+                'cellTowers': [
+                    {'radio': cell.radio.name,
+                     'mobileCountryCode': cell.mcc,
+                     'mobileNetworkCode': cell.mnc,
+                     'locationAreaCode': cell.lac,
+                     'cellId': cell.cid},
                 ]},
             status=200)
 
-        self.assertEqual(res.json, {"location": {"lat": cell.lat,
-                                                 "lng": cell.lon},
-                                    "accuracy": cell.range})
+        self.assertEqual(res.json, {'location': {'lat': cell.lat,
+                                                 'lng': cell.lon},
+                                    'accuracy': cell.range})
 
     def test_ok_cell_radiotype_in_celltowers(self):
         # This test covers an extension to the geolocate API
@@ -326,18 +326,18 @@ class TestGeolocate(AppTestCase):
 
         res = self.app.post_json(
             '%s?key=test' % self.url, {
-                "cellTowers": [
-                    {"radioType": cell.radio.name,
-                     "mobileCountryCode": cell.mcc,
-                     "mobileNetworkCode": cell.mnc,
-                     "locationAreaCode": cell.lac,
-                     "cellId": cell.cid},
+                'cellTowers': [
+                    {'radioType': cell.radio.name,
+                     'mobileCountryCode': cell.mcc,
+                     'mobileNetworkCode': cell.mnc,
+                     'locationAreaCode': cell.lac,
+                     'cellId': cell.cid},
                 ]},
             status=200)
 
-        self.assertEqual(res.json, {"location": {"lat": cell.lat,
-                                                 "lng": cell.lon},
-                                    "accuracy": cell.range})
+        self.assertEqual(res.json, {'location': {'lat': cell.lat,
+                                                 'lng': cell.lon},
+                                    'accuracy': cell.range})
 
     def test_ok_cell_radio_in_celltowers_dupes(self):
         # This test covers a bug related to FxOS calling the
@@ -346,22 +346,22 @@ class TestGeolocate(AppTestCase):
         self.session.flush()
         res = self.app.post_json(
             '%s?key=test' % self.url, {
-                "cellTowers": [
-                    {"radio": cell.radio.name,
-                     "mobileCountryCode": cell.mcc,
-                     "mobileNetworkCode": cell.mnc,
-                     "locationAreaCode": cell.lac,
-                     "cellId": cell.cid},
-                    {"radio": cell.radio.name,
-                     "mobileCountryCode": cell.mcc,
-                     "mobileNetworkCode": cell.mnc,
-                     "locationAreaCode": cell.lac,
-                     "cellId": cell.cid},
+                'cellTowers': [
+                    {'radio': cell.radio.name,
+                     'mobileCountryCode': cell.mcc,
+                     'mobileNetworkCode': cell.mnc,
+                     'locationAreaCode': cell.lac,
+                     'cellId': cell.cid},
+                    {'radio': cell.radio.name,
+                     'mobileCountryCode': cell.mcc,
+                     'mobileNetworkCode': cell.mnc,
+                     'locationAreaCode': cell.lac,
+                     'cellId': cell.cid},
                 ]},
             status=200)
-        self.assertEqual(res.json, {"location": {"lat": cell.lat,
-                                                 "lng": cell.lon},
-                                    "accuracy": cell.range})
+        self.assertEqual(res.json, {'location': {'lat': cell.lat,
+                                                 'lng': cell.lon},
+                                    'accuracy': cell.range})
 
     def test_inconsistent_cell_radio_in_towers(self):
         cell = CellFactory(radio=Radio.umts, range=15000)
@@ -371,18 +371,18 @@ class TestGeolocate(AppTestCase):
 
         res = self.app.post_json(
             '%s?key=test' % self.url, {
-                "radioType": Radio.cdma.name,
-                "cellTowers": [
-                    {"radio": "wcdma",
-                     "mobileCountryCode": cell.mcc,
-                     "mobileNetworkCode": cell.mnc,
-                     "locationAreaCode": cell.lac,
-                     "cellId": cell.cid},
-                    {"radio": cell2.radio.name,
-                     "mobileCountryCode": cell2.mcc,
-                     "mobileNetworkCode": cell2.mnc,
-                     "locationAreaCode": cell2.lac,
-                     "cellId": cell2.cid},
+                'radioType': Radio.cdma.name,
+                'cellTowers': [
+                    {'radio': 'wcdma',
+                     'mobileCountryCode': cell.mcc,
+                     'mobileNetworkCode': cell.mnc,
+                     'locationAreaCode': cell.lac,
+                     'cellId': cell.cid},
+                    {'radio': cell2.radio.name,
+                     'mobileCountryCode': cell2.mcc,
+                     'mobileNetworkCode': cell2.mnc,
+                     'locationAreaCode': cell2.lac,
+                     'cellId': cell2.cid},
                 ]},
             status=200)
 
@@ -399,19 +399,19 @@ class TestGeolocate(AppTestCase):
 
         res = self.app.post_json(
             '%s?key=test' % self.url, {
-                "radioType": Radio.cdma.name,
-                "cellTowers": [
-                    {"radio": "cdma",
-                     "radioType": "wcdma",
-                     "mobileCountryCode": cell.mcc,
-                     "mobileNetworkCode": cell.mnc,
-                     "locationAreaCode": cell.lac,
-                     "cellId": cell.cid},
-                    {"radioType": cell2.radio.name,
-                     "mobileCountryCode": cell2.mcc,
-                     "mobileNetworkCode": cell2.mnc,
-                     "locationAreaCode": cell2.lac,
-                     "cellId": cell2.cid},
+                'radioType': Radio.cdma.name,
+                'cellTowers': [
+                    {'radio': 'cdma',
+                     'radioType': 'wcdma',
+                     'mobileCountryCode': cell.mcc,
+                     'mobileNetworkCode': cell.mnc,
+                     'locationAreaCode': cell.lac,
+                     'cellId': cell.cid},
+                    {'radioType': cell2.radio.name,
+                     'mobileCountryCode': cell2.mcc,
+                     'mobileNetworkCode': cell2.mnc,
+                     'locationAreaCode': cell2.lac,
+                     'cellId': cell2.cid},
                 ]},
             status=200)
 
@@ -431,33 +431,33 @@ class TestGeolocateErrors(AppTestCase):
     def test_database_error(self):
         london = self.geoip_data['London']
         session = self.session
-        stmt = text("drop table wifi;")
+        stmt = text('drop table wifi;')
         session.execute(stmt)
-        stmt = text("drop table cell;")
+        stmt = text('drop table cell;')
         session.execute(stmt)
         cell = CellFactory.build()
         wifis = WifiFactory.build_batch(2)
 
         res = self.app.post_json(
             '/v1/geolocate?key=test', {
-                "cellTowers": [{
-                    "radioType": cell.radio.name,
-                    "mobileCountryCode": cell.mcc,
-                    "mobileNetworkCode": cell.mnc,
-                    "locationAreaCode": cell.lac,
-                    "cellId": cell.cid},
+                'cellTowers': [{
+                    'radioType': cell.radio.name,
+                    'mobileCountryCode': cell.mcc,
+                    'mobileNetworkCode': cell.mnc,
+                    'locationAreaCode': cell.lac,
+                    'cellId': cell.cid},
                 ],
-                "wifiAccessPoints": [
-                    {"macAddress": wifis[0].key},
-                    {"macAddress": wifis[1].key},
+                'wifiAccessPoints': [
+                    {'macAddress': wifis[0].key},
+                    {'macAddress': wifis[1].key},
                 ]},
             extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
             status=200)
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {"location": {"lat": london['latitude'],
-                                                 "lng": london['longitude']},
-                                    "accuracy": london['accuracy']})
+        self.assertEqual(res.json, {'location': {'lat': london['latitude'],
+                                                 'lng': london['longitude']},
+                                    'accuracy': london['accuracy']})
 
         self.check_stats(
             timer=['request.v1.geolocate'],

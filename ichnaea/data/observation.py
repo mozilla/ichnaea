@@ -165,7 +165,7 @@ class CellObservationQueue(ObservationQueue):
     stat_obs_key = StatKey.cell
     stat_station_key = StatKey.unique_cell
     station_score = ScoreKey.new_cell
-    station_type = "cell"
+    station_type = 'cell'
     station_model = Cell
     observation_model = CellObservation
     blacklist_model = CellBlacklist
@@ -191,7 +191,7 @@ class WifiObservationQueue(ObservationQueue):
     stat_obs_key = StatKey.wifi
     stat_station_key = StatKey.unique_wifi
     station_score = ScoreKey.new_wifi
-    station_type = "wifi"
+    station_type = 'wifi'
     station_model = Wifi
     observation_model = WifiObservation
     blacklist_model = WifiBlacklist

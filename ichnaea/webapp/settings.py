@@ -3,7 +3,7 @@
 # The file is loaded via the -c ichnaea.gunicorn_config command line option
 
 # Use our own Gevent worker
-worker_class = "ichnaea.webapp.worker.LocationGeventWorker"
+worker_class = 'ichnaea.webapp.worker.LocationGeventWorker'
 
 # Maximum number of simultaneous greenlets,
 # limited by number of DB and Redis connections
@@ -22,10 +22,10 @@ max_requests = 1000000
 max_requests_jitter = max_requests // 10
 
 # Log errors to stderr
-errorlog = "-"
+errorlog = '-'
 
 # Avoid too much output on the console
-loglevel = "warning"
+loglevel = 'warning'
 
 
 def _statsd_host():

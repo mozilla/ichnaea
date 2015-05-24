@@ -41,7 +41,7 @@ class TestCellObservation(DBTestCase):
 class TestWifiObservation(DBTestCase):
 
     def test_fields(self):
-        key = "3680873e9b83"
+        key = '3680873e9b83'
         report_id = uuid.uuid1()
         session = self.session
         session.add(WifiObservation.create(

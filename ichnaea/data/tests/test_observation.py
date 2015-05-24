@@ -119,12 +119,12 @@ class TestCell(ObservationTestCase):
         entries = [
             # Note that this first entry will be skipped as it does
             # not include (lac, cid) or (psc)
-            {"mcc": mcc, "mnc": 2, "signal": -100},
+            {'mcc': mcc, 'mnc': 2, 'signal': -100},
 
-            {"mcc": mcc, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
-            {"mcc": mcc, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 8},
-            {"mcc": mcc, "mnc": 2, "lac": 3, "cid": 4, "psc": 5, "asu": 15},
-            {"mcc": mcc, "mnc": 2, "lac": 3, "cid": 7, "psc": 5},
+            {'mcc': mcc, 'mnc': 2, 'lac': 3, 'cid': 4, 'psc': 5, 'asu': 8},
+            {'mcc': mcc, 'mnc': 2, 'lac': 3, 'cid': 4, 'psc': 5, 'asu': 8},
+            {'mcc': mcc, 'mnc': 2, 'lac': 3, 'cid': 4, 'psc': 5, 'asu': 15},
+            {'mcc': mcc, 'mnc': 2, 'lac': 3, 'cid': 7, 'psc': 5},
         ]
         for e in entries:
             e.update(obs)
@@ -187,10 +187,10 @@ class TestCell(ObservationTestCase):
             time=time, accuracy=0, altitude=0,
             altitude_accuracy=0, radio=int(Radio.gsm))
         entries = [
-            {"mcc": FRANCE_MCC, "mnc": 2, "lac": constants.MAX_LAC_ALL + 1,
-             "cid": constants.MAX_CID_ALL + 1, "psc": 5, "asu": 8},
-            {"mcc": FRANCE_MCC, "mnc": 2, "lac": schema.fields['lac'].missing,
-             "cid": schema.fields['cid'].missing, "psc": 5, "asu": 8},
+            {'mcc': FRANCE_MCC, 'mnc': 2, 'lac': constants.MAX_LAC_ALL + 1,
+             'cid': constants.MAX_CID_ALL + 1, 'psc': 5, 'asu': 8},
+            {'mcc': FRANCE_MCC, 'mnc': 2, 'lac': schema.fields['lac'].missing,
+             'cid': schema.fields['cid'].missing, 'psc': 5, 'asu': 8},
         ]
         for e in entries:
             e.update(obs)
@@ -225,9 +225,9 @@ class TestCell(ObservationTestCase):
             altitude_accuracy=0, radio=int(Radio.gsm), mcc=FRANCE_MCC,
             mnc=2, lac=3, cid=4)
         entries = [
-            {"asu": 8, "signal": -70, "ta": 32},
-            {"asu": -10, "signal": -300, "ta": -10},
-            {"asu": 256, "signal": 16, "ta": 128},
+            {'asu': 8, 'signal': -70, 'ta': 32},
+            {'asu': -10, 'signal': -300, 'ta': -10},
+            {'asu': 256, 'signal': 16, 'ta': 128},
         ]
         for e in entries:
             e.update(obs)
@@ -247,13 +247,13 @@ class TestWifi(ObservationTestCase):
     def test_blacklist(self):
         utcnow = util.utcnow()
         session = self.session
-        bad_key = "ab1234567890"
-        good_key = "cd1234567890"
+        bad_key = 'ab1234567890'
+        good_key = 'cd1234567890'
         black = WifiBlacklist(time=utcnow, count=1, key=bad_key)
         session.add(black)
         session.flush()
         obs = dict(lat=1, lon=2)
-        entries = [{"key": good_key}, {"key": good_key}, {"key": bad_key}]
+        entries = [{'key': good_key}, {'key': good_key}, {'key': bad_key}]
         for e in entries:
             e.update(obs)
 
@@ -277,7 +277,7 @@ class TestWifi(ObservationTestCase):
         last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
         session = self.session
 
-        wifi_key = "ab1234567890"
+        wifi_key = 'ab1234567890'
 
         session.add(WifiBlacklist(time=last_week, count=1, key=wifi_key))
         session.flush()
@@ -298,7 +298,7 @@ class TestWifi(ObservationTestCase):
         session = self.session
         time = util.utcnow() - timedelta(days=1)
 
-        session.add(Wifi(key="ab1234567890",
+        session.add(Wifi(key='ab1234567890',
                          new_measures=0, total_measures=0))
         user = User(nickname=u'test')
         session.add(user)
@@ -312,10 +312,10 @@ class TestWifi(ObservationTestCase):
             speed=158.5,
         )
         entries = [
-            {"key": "ab1234567890", "channel": 11, "signal": -80},
-            {"key": "ab1234567890", "channel": 3, "signal": -90},
-            {"key": "ab1234567890", "channel": 3, "signal": -80},
-            {"key": "cd3456789012", "channel": 3, "signal": -90},
+            {'key': 'ab1234567890', 'channel': 11, 'signal': -80},
+            {'key': 'ab1234567890', 'channel': 3, 'signal': -90},
+            {'key': 'ab1234567890', 'channel': 3, 'signal': -80},
+            {'key': 'cd3456789012', 'channel': 3, 'signal': -90},
         ]
         for e in entries:
             e.update(obs)
@@ -325,7 +325,7 @@ class TestWifi(ObservationTestCase):
         observations = session.query(WifiObservation).all()
         self.assertEqual(len(observations), 4)
         self.assertEqual(set([o.key for o in observations]),
-                         set(["ab1234567890", "cd3456789012"]))
+                         set(['ab1234567890', 'cd3456789012']))
         self.assertEqual(set([o.channel for o in observations]), set([3, 11]))
         self.assertEqual(set([o.signal for o in observations]),
                          set([-80, -90]))
@@ -334,8 +334,8 @@ class TestWifi(ObservationTestCase):
 
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 2)
-        self.assertEqual(set([w.key for w in wifis]), set(["ab1234567890",
-                                                           "cd3456789012"]))
+        self.assertEqual(set([w.key for w in wifis]), set(['ab1234567890',
+                                                           'cd3456789012']))
         self.assertEqual(set([w.new_measures for w in wifis]), set([1, 3]))
         self.assertEqual(set([w.total_measures for w in wifis]), set([1, 3]))
 
@@ -368,18 +368,18 @@ class TestSubmitErrors(ObservationTestCase):
     def test_database_error(self):
         session = self.session
 
-        stmt = text("drop table wifi;")
+        stmt = text('drop table wifi;')
         session.execute(stmt)
 
         entries = [
-            {"lat": 1.0, "lon": 2.0,
-             "key": "ab:12:34:56:78:90", "channel": 11},
-            {"lat": 1.0, "lon": 2.0,
-             "key": "ab:12:34:56:78:90", "channel": 3},
-            {"lat": 1.0, "lon": 2.0,
-             "key": "ab:12:34:56:78:90", "channel": 3},
-            {"lat": 1.0, "lon": 2.0,
-             "key": "cd:12:34:56:78:90", "channel": 3},
+            {'lat': 1.0, 'lon': 2.0,
+             'key': 'ab:12:34:56:78:90', 'channel': 11},
+            {'lat': 1.0, 'lon': 2.0,
+             'key': 'ab:12:34:56:78:90', 'channel': 3},
+            {'lat': 1.0, 'lon': 2.0,
+             'key': 'ab:12:34:56:78:90', 'channel': 3},
+            {'lat': 1.0, 'lon': 2.0,
+             'key': 'cd:12:34:56:78:90', 'channel': 3},
         ]
 
         try:
@@ -387,7 +387,7 @@ class TestSubmitErrors(ObservationTestCase):
         except ProgrammingError:
             pass
         except Exception as exc:
-            self.fail("Unexpected exception caught: %s" % repr(exc))
+            self.fail('Unexpected exception caught: %s' % repr(exc))
 
         self.check_raven([('ProgrammingError', 1)])
 

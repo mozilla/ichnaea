@@ -33,8 +33,8 @@ class CountryBase(object):
         self.assertEqual(result.charset, 'UTF-8')
         if status == 200:
             self.assertEqual(result.json,
-                             {"country_name": "United Kingdom",
-                              "country_code": "GB"})
+                             {'country_name': 'United Kingdom',
+                              'country_code': 'GB'})
         elif status == 400:
             self.assertEqual(result.json['error']['message'],
                              'Invalid API key')
@@ -96,7 +96,7 @@ class TestCountry(AppTestCase, CountryBase):
         )
 
     def test_incomplete_request_means_geoip(self):
-        result = self._make_geoip_query(data={"wifiAccessPoints": []})
+        result = self._make_geoip_query(data={'wifiAccessPoints': []})
         self._check_geoip_result(result, status=200)
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
@@ -106,7 +106,7 @@ class TestCountry(AppTestCase, CountryBase):
     def test_no_wifi(self):
         result = self._make_geoip_query(
             ip='127.0.0.1',
-            data={"wifiAccessPoints": [{"macAddress": "ab:cd:ef:12:34:56"}]},
+            data={'wifiAccessPoints': [{'macAddress': 'ab:cd:ef:12:34:56'}]},
             status=404)
         self._check_geoip_result(result, status=404)
         self.check_db_calls(rw=0, ro=0)
@@ -132,7 +132,7 @@ class TestCountryErrors(AppTestCase, CountryBase):
     def test_database_error(self):
         for tablename in ('wifi', 'cell', 'cell_area',
                           'ocid_cell', 'ocid_cell_area'):
-            stmt = text("drop table %s;" % tablename)
+            stmt = text('drop table %s;' % tablename)
             self.session.execute(stmt)
 
         result = self._make_geoip_query(status=200)

@@ -10,7 +10,7 @@ class TestHeartbeat(AppTestCase):
         app = self.app
         res = app.get('/__heartbeat__', status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json['status'], "OK")
+        self.assertEqual(res.json['status'], 'OK')
 
 
 class TestDatabaseHeartbeat(AppTestCase):
@@ -26,4 +26,4 @@ class TestDatabaseHeartbeat(AppTestCase):
 
         res = app.get('/__heartbeat__', status=200)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json['status'], "OK")
+        self.assertEqual(res.json['status'], 'OK')

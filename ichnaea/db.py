@@ -17,7 +17,7 @@ from sqlalchemy.sql.expression import Insert
 def on_duplicate(insert, compiler, **kw):
     s = compiler.visit_insert(insert, **kw)
     if 'on_duplicate' in insert.kwargs:
-        return s + " ON DUPLICATE KEY UPDATE " + insert.kwargs['on_duplicate']
+        return s + ' ON DUPLICATE KEY UPDATE ' + insert.kwargs['on_duplicate']
     return s
 
 
@@ -142,7 +142,7 @@ class HookedSession(Session):
         return True
 
 
-@event.listens_for(Pool, "checkin")
+@event.listens_for(Pool, 'checkin')
 def clear_result_on_pool_checkin(conn, conn_record):
     """
     PyMySQL Connection objects hold a reference to their most recent
@@ -153,7 +153,7 @@ def clear_result_on_pool_checkin(conn, conn_record):
         conn._result = None
 
 
-@event.listens_for(Pool, "checkout")
+@event.listens_for(Pool, 'checkout')
 def check_connection(dbapi_conn, conn_record, conn_proxy):
     '''
     Listener for Pool checkout events that pings every connection before using.
