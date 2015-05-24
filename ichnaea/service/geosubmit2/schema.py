@@ -66,7 +66,7 @@ class PositionSchema(MappingSchema):
     heading = SchemaNode(BoundedFloat(), missing=None)
     pressure = SchemaNode(Integer(), missing=None)
     speed = SchemaNode(BoundedFloat(), missing=None)
-    source = SchemaNode(String(), missing='gps')
+    source = SchemaNode(String(), missing=None)
 
 
 class WifiAccessPointSchema(MappingSchema):
@@ -89,17 +89,17 @@ class WifiAccessPointsSchema(SequenceSchema):
 
 class GeoSubmitSchema(MappingSchema):
 
-    bluetoothBeacons = BluetoothBeaconsSchema(missing=())
-    cellTowers = CellTowersSchema(missing=())
-    position = PositionSchema(missing=None)
-    timestamp = SchemaNode(Integer(), missing=0)
-    wifiAccessPoints = WifiAccessPointsSchema(missing=())
-
     carrier = SchemaNode(String(), missing=None)
-    connection = ConnectionSchema(missing=None)
     homeMobileCountryCode = SchemaNode(Integer(), missing=None)
     homeMobileNetworkCode = SchemaNode(Integer(), missing=None)
     radioType = SchemaNode(String(), missing=None)
+    timestamp = SchemaNode(Integer(), missing=None)
+
+    bluetoothBeacons = BluetoothBeaconsSchema(missing=())
+    cellTowers = CellTowersSchema(missing=())
+    connection = ConnectionSchema(missing=None)
+    position = PositionSchema(missing=None)
+    wifiAccessPoints = WifiAccessPointsSchema(missing=())
 
 
 class GeoSubmitListSchema(SequenceSchema):
