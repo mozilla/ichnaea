@@ -32,7 +32,8 @@ def invalid_api_key_response():
 def check_api_key(func_name, error_on_invalidkey=True):
     def c(func):
         @wraps(func)
-        def closure(request, *args, **kwargs):
+        def closure(self, *args, **kwargs):
+            request = self.request
             api_key = None
             api_key_text = request.GET.get('key', None)
 
@@ -82,6 +83,6 @@ def check_api_key(func_name, error_on_invalidkey=True):
             # rather than passing None through
             api_key = api_key or ApiKey(valid_key=None)
 
-            return func(request, api_key, *args, **kwargs)
+            return func(self, api_key, *args, **kwargs)
         return closure
     return c

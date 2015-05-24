@@ -71,3 +71,12 @@ class BaseSubmitter(object):
                     'reports': batch,
                 },
                 expires=21600)
+
+
+class BaseSubmitView(object):
+
+    def __init__(self, request):
+        self.request = request
+
+    def __call__(self):  # pragma: no cover
+        raise NotImplementedError()

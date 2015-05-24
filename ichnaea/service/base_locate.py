@@ -28,6 +28,15 @@ class LocateTransform(ReportTransform):
     ]
 
 
+class BaseLocateView(object):
+
+    def __init__(self, request):
+        self.request = request
+
+    def __call__(self):  # pragma: no cover
+        raise NotImplementedError()
+
+
 def prepare_locate_query(request_data, client_addr=None):
     """
     Transform a geolocate API dictionary to an equivalent internal

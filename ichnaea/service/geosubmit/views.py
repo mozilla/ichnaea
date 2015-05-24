@@ -6,14 +6,17 @@ from redis import ConnectionError
 
 from ichnaea.models.transform import ReportTransform
 from ichnaea.service.base import check_api_key
-from ichnaea.service.base_submit import BaseSubmitter
+from ichnaea.service.base_submit import (
+    BaseSubmitter,
+    BaseSubmitView,
+)
 from ichnaea.service.error import JSONParseError
 from ichnaea.service.geosubmit.schema import GeoSubmitBatchSchema
 
 
 def configure_geosubmit(config):
     config.add_route('v1_geosubmit', '/v1/geosubmit')
-    config.add_view(geosubmit_view, route_name='v1_geosubmit', renderer='json')
+    config.add_view(GeoSubmitView, route_name='v1_geosubmit', renderer='json')
 
 
 class GeoSubmitTransform(ReportTransform):
@@ -68,26 +71,27 @@ class GeoSubmitTransform(ReportTransform):
     ]
 
 
-class GeoSubmitter(BaseSubmitter):
+class GeoSubmitView(BaseSubmitView):
 
-    error_response = JSONParseError
-    schema = GeoSubmitBatchSchema
-    transform = GeoSubmitTransform
+    class Submitter(BaseSubmitter):
 
+        error_response = JSONParseError
+        schema = GeoSubmitBatchSchema
+        transform = GeoSubmitTransform
 
-@check_api_key('geosubmit', error_on_invalidkey=False)
-def geosubmit_view(request, api_key):
-    submitter = GeoSubmitter(request, api_key)
+    @check_api_key('geosubmit', error_on_invalidkey=False)
+    def __call__(self, api_key):
+        submitter = self.Submitter(self.request, api_key)
 
-    # may raise HTTP error
-    request_data = submitter.preprocess()
+        # may raise HTTP error
+        request_data = submitter.preprocess()
 
-    try:
-        submitter.submit(request_data)
-    except ConnectionError:  # pragma: no cover
-        return HTTPServiceUnavailable()
+        try:
+            submitter.submit(request_data)
+        except ConnectionError:  # pragma: no cover
+            return HTTPServiceUnavailable()
 
-    result = HTTPOk()
-    result.content_type = 'application/json'
-    result.body = '{}'
-    return result
+        result = HTTPOk()
+        result.content_type = 'application/json'
+        result.body = '{}'
+        return result

@@ -6,14 +6,17 @@ from redis import ConnectionError
 
 from ichnaea.models.transform import ReportTransform
 from ichnaea.service.base import check_api_key
-from ichnaea.service.base_submit import BaseSubmitter
+from ichnaea.service.base_submit import (
+    BaseSubmitter,
+    BaseSubmitView,
+)
 from ichnaea.service.error import JSONParseError
 from ichnaea.service.geosubmit2.schema import GeoSubmit2BatchSchema
 
 
 def configure_geosubmit2(config):
     config.add_route('v2_geosubmit', '/v2/geosubmit')
-    config.add_view(geosubmit2_view,
+    config.add_view(GeoSubmit2View,
                     route_name='v2_geosubmit', renderer='json')
 
 
@@ -78,26 +81,27 @@ class GeoSubmit2Transform(ReportTransform):
     ]
 
 
-class GeoSubmitter2(BaseSubmitter):
+class GeoSubmit2View(BaseSubmitView):
 
-    error_response = JSONParseError
-    schema = GeoSubmit2BatchSchema
-    transform = GeoSubmit2Transform
+    class Submitter(BaseSubmitter):
 
+        error_response = JSONParseError
+        schema = GeoSubmit2BatchSchema
+        transform = GeoSubmit2Transform
 
-@check_api_key('geosubmit2', error_on_invalidkey=False)
-def geosubmit2_view(request, api_key):
-    submitter = GeoSubmitter2(request, api_key)
+    @check_api_key('geosubmit2', error_on_invalidkey=False)
+    def __call__(self, api_key):
+        submitter = self.Submitter(self.request, api_key)
 
-    # may raise HTTP error
-    request_data = submitter.preprocess()
+        # may raise HTTP error
+        request_data = submitter.preprocess()
 
-    try:
-        submitter.submit(request_data)
-    except ConnectionError:  # pragma: no cover
-        return HTTPServiceUnavailable()
+        try:
+            submitter.submit(request_data)
+        except ConnectionError:  # pragma: no cover
+            return HTTPServiceUnavailable()
 
-    result = HTTPOk()
-    result.content_type = 'application/json'
-    result.body = '{}'
-    return result
+        result = HTTPOk()
+        result.content_type = 'application/json'
+        result.body = '{}'
+        return result
