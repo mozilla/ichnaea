@@ -4,8 +4,9 @@ from ichnaea.service.error import preprocess_request
 
 class BaseSubmitter(object):
 
-    schema = None
     error_response = None
+    transform = None
+    schema = None
 
     def __init__(self, request, api_key):
         self.request = request
@@ -53,12 +54,10 @@ class BaseSubmitter(object):
         self.emit_upload_metrics(len(request_data['items']))
         return request_data
 
-    def prepare_reports(self, request_data):  # pragma: no cover
-        raise NotImplementedError()
-
     def submit(self, request_data):
         # data pipeline using new internal data format
-        reports = self.prepare_reports(request_data)
+        transform = self.transform()
+        reports = transform.transform_many(request_data['items'])
         for i in range(0, len(reports), 100):
             batch = reports[i:i + 100]
             # insert reports, expire the task if it wasn't processed

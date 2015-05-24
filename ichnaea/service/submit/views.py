@@ -64,12 +64,9 @@ class SubmitTransform(ReportTransform):
 
 class Submitter(BaseSubmitter):
 
-    schema = SubmitSchema
     error_response = JSONError
-
-    def prepare_reports(self, request_data):
-        transform = SubmitTransform()
-        return transform.transform_many(request_data['items'])
+    schema = SubmitSchema
+    transform = SubmitTransform
 
 
 @check_api_key('submit', error_on_invalidkey=False)

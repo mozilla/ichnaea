@@ -70,12 +70,9 @@ class GeoSubmitTransform(ReportTransform):
 
 class GeoSubmitter(BaseSubmitter):
 
-    schema = GeoSubmitBatchSchema
     error_response = JSONParseError
-
-    def prepare_reports(self, request_data):
-        transform = GeoSubmitTransform()
-        return transform.transform_many(request_data['items'])
+    schema = GeoSubmitBatchSchema
+    transform = GeoSubmitTransform
 
 
 @check_api_key('geosubmit', error_on_invalidkey=False)
