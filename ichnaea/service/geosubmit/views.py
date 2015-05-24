@@ -20,50 +20,50 @@ class GeoSubmitTransform(ReportTransform):
 
     time_id = 'timestamp'
     toplevel_map = [
-        ('carrier', 'carrier', None),
-        ('homeMobileCountryCode', 'homeMobileCountryCode', None),
-        ('homeMobileNetworkCode', 'homeMobileNetworkCode', None),
+        ('carrier', 'carrier'),
+        ('homeMobileCountryCode', 'homeMobileCountryCode'),
+        ('homeMobileNetworkCode', 'homeMobileNetworkCode'),
     ]
 
     position_id = (None, 'position')
     position_map = [
-        ('latitude', 'latitude', None),
-        ('longitude', 'longitude', None),
-        ('accuracy', 'accuracy', None),
-        ('altitude', 'altitude', None),
-        ('altitudeAccuracy', 'altitudeAccuracy', None),
-        ('age', 'age', None),
-        ('heading', 'heading', None),
-        ('pressure', 'pressure', None),
-        ('speed', 'speed', None),
-        ('source', 'source', None),
+        ('latitude', 'latitude'),
+        ('longitude', 'longitude'),
+        ('accuracy', 'accuracy'),
+        ('altitude', 'altitude'),
+        ('altitudeAccuracy', 'altitudeAccuracy'),
+        ('age', 'age'),
+        ('heading', 'heading'),
+        ('pressure', 'pressure'),
+        ('speed', 'speed'),
+        ('source', 'source'),
     ]
 
     radio_id = ('radioType', 'radioType')
     cell_id = ('cellTowers', 'cellTowers')
     cell_map = [
-        ('radioType', 'radioType', None),
-        ('mobileCountryCode', 'mobileCountryCode', None),
-        ('mobileNetworkCode', 'mobileNetworkCode', None),
-        ('locationAreaCode', 'locationAreaCode', None),
-        ('cellId', 'cellId', None),
-        ('age', 'age', None),
-        ('asu', 'asu', None),
-        ('psc', 'primaryScramblingCode', None),
-        ('serving', 'serving', None),
-        ('signalStrength', 'signalStrength', None),
-        ('timingAdvance', 'timingAdvance', None),
+        ('radioType', 'radioType'),
+        ('mobileCountryCode', 'mobileCountryCode'),
+        ('mobileNetworkCode', 'mobileNetworkCode'),
+        ('locationAreaCode', 'locationAreaCode'),
+        ('cellId', 'cellId'),
+        ('age', 'age'),
+        ('asu', 'asu'),
+        ('psc', 'primaryScramblingCode'),
+        ('serving', 'serving'),
+        ('signalStrength', 'signalStrength'),
+        ('timingAdvance', 'timingAdvance'),
     ]
 
     wifi_id = ('wifiAccessPoints', 'wifiAccessPoints')
     wifi_map = [
-        ('macAddress', 'macAddress', None),
-        ('age', 'age', None),
-        ('channel', 'channel', None),
-        ('frequency', 'frequency', None),
-        ('radioType', 'radioType', None),
-        ('signalToNoiseRatio', 'signalToNoiseRatio', None),
-        ('signalStrength', 'signalStrength', None),
+        ('macAddress', 'macAddress'),
+        ('age', 'age'),
+        ('channel', 'channel'),
+        ('frequency', 'frequency'),
+        ('radioType', 'radioType'),
+        ('signalToNoiseRatio', 'signalToNoiseRatio'),
+        ('signalStrength', 'signalStrength'),
         # ssid is not mapped on purpose, we never want to store it
     ]
 

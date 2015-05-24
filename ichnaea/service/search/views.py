@@ -15,23 +15,23 @@ class SearchTransform(ReportTransform):
     radio_id = ('radio', 'radio')
     cell_id = ('cell', 'cell')
     cell_map = [
-        ('radio', 'radio', None),
-        ('mcc', 'mcc', None),
-        ('mnc', 'mnc', None),
-        ('lac', 'lac', None),
-        ('cid', 'cid', None),
-        ('signal', 'signal', None),
-        ('ta', 'ta', None),
-        ('psc', 'psc', None),
+        ('radio', 'radio'),
+        ('mcc', 'mcc'),
+        ('mnc', 'mnc'),
+        ('lac', 'lac'),
+        ('cid', 'cid'),
+        ('signal', 'signal'),
+        ('ta', 'ta'),
+        ('psc', 'psc'),
     ]
 
     wifi_id = ('wifi', 'wifi')
     wifi_map = [
-        ('key', 'key', None),
-        ('channel', 'channel', None),
-        ('frequency', 'frequency', None),
-        ('signal', 'signal', None),
-        ('signalToNoiseRatio', 'snr', None),
+        ('key', 'key'),
+        ('channel', 'channel'),
+        ('frequency', 'frequency'),
+        ('signal', 'signal'),
+        ('signalToNoiseRatio', 'snr'),
     ]
 
 

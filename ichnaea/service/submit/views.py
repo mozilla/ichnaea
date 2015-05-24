@@ -22,43 +22,43 @@ class SubmitTransform(ReportTransform):
 
     position_id = (None, 'position')
     position_map = [
-        ('lat', 'latitude', None),
-        ('lon', 'longitude', None),
-        ('accuracy', 'accuracy', None),
-        ('altitude', 'altitude', None),
-        ('altitude_accuracy', 'altitudeAccuracy', None),
-        ('age', 'age', None),
-        ('heading', 'heading', None),
-        ('pressure', 'pressure', None),
-        ('speed', 'speed', None),
-        ('source', 'source', None),
+        ('lat', 'latitude'),
+        ('lon', 'longitude'),
+        ('accuracy', 'accuracy'),
+        ('altitude', 'altitude'),
+        ('altitude_accuracy', 'altitudeAccuracy'),
+        ('age', 'age'),
+        ('heading', 'heading'),
+        ('pressure', 'pressure'),
+        ('speed', 'speed'),
+        ('source', 'source'),
     ]
 
     radio_id = ('radio', 'radioType')
     cell_id = ('cell', 'cellTowers')
     cell_map = [
-        ('radio', 'radioType', None),
-        ('mcc', 'mobileCountryCode', None),
-        ('mnc', 'mobileNetworkCode', None),
-        ('lac', 'locationAreaCode', None),
-        ('cid', 'cellId', None),
-        ('age', 'age', None),
-        ('asu', 'asu', None),
-        ('psc', 'primaryScramblingCode', None),
-        ('serving', 'serving', None),
-        ('signal', 'signalStrength', None),
-        ('ta', 'timingAdvance', None),
+        ('radio', 'radioType'),
+        ('mcc', 'mobileCountryCode'),
+        ('mnc', 'mobileNetworkCode'),
+        ('lac', 'locationAreaCode'),
+        ('cid', 'cellId'),
+        ('age', 'age'),
+        ('asu', 'asu'),
+        ('psc', 'primaryScramblingCode'),
+        ('serving', 'serving'),
+        ('signal', 'signalStrength'),
+        ('ta', 'timingAdvance'),
     ]
 
     wifi_id = ('wifi', 'wifiAccessPoints')
     wifi_map = [
-        ('key', 'macAddress', None),
-        ('age', 'age', None),
-        ('channel', 'channel', None),
-        ('frequency', 'frequency', None),
-        ('radio', 'radioType', None),
-        ('signal', 'signalStrength', None),
-        ('signalToNoiseRatio', 'signalToNoiseRatio', None),
+        ('key', 'macAddress'),
+        ('age', 'age'),
+        ('channel', 'channel'),
+        ('frequency', 'frequency'),
+        ('radio', 'radioType'),
+        ('signal', 'signalStrength'),
+        ('signalToNoiseRatio', 'signalToNoiseRatio'),
     ]
 
 

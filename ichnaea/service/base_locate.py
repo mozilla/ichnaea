@@ -8,23 +8,23 @@ class LocateTransform(ReportTransform):
     cell_map = [
         # if both radio and radioType are present in the source,
         # radioType takes precedence
-        ('radio', 'radio', None),
-        ('radioType', 'radio', None),
-        ('mobileCountryCode', 'mcc', None),
-        ('mobileNetworkCode', 'mnc', None),
-        ('locationAreaCode', 'lac', None),
-        ('cellId', 'cid', None),
-        ('psc', 'psc', None),
-        ('signalStrength', 'signalStrength', None),
-        ('timingAdvance', 'timingAdvance', None),
+        ('radio', 'radio'),
+        ('radioType', 'radio'),
+        ('mobileCountryCode', 'mcc'),
+        ('mobileNetworkCode', 'mnc'),
+        ('locationAreaCode', 'lac'),
+        ('cellId', 'cid'),
+        ('psc', 'psc'),
+        ('signalStrength', 'signalStrength'),
+        ('timingAdvance', 'timingAdvance'),
     ]
 
     wifi_id = ('wifiAccessPoints', 'wifi')
     wifi_map = [
-        ('macAddress', 'key', None),
-        ('channel', 'channel', None),
-        ('signalToNoiseRatio', 'snr', None),
-        ('signalStrength', 'signal', None),
+        ('macAddress', 'key'),
+        ('channel', 'channel'),
+        ('signalToNoiseRatio', 'snr'),
+        ('signalStrength', 'signal'),
     ]
 
 
