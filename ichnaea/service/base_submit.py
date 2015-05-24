@@ -5,10 +5,7 @@ from pyramid.httpexceptions import (
 from redis import ConnectionError
 
 from ichnaea.data.tasks import queue_reports
-from ichnaea.service.base import (
-    BaseAPIView,
-    check_api_key,
-)
+from ichnaea.service.base import BaseAPIView
 from ichnaea.service.error import (
     JSONParseError,
     preprocess_request,
@@ -90,8 +87,7 @@ class BaseSubmitView(BaseAPIView):
         response.body = '{}'
         return response
 
-    @check_api_key()
-    def __call__(self, api_key):
+    def view(self, api_key):
         # may raise HTTP error
         request_data = self.preprocess(api_key)
 

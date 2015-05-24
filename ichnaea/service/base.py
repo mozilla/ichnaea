@@ -1,5 +1,3 @@
-from functools import wraps
-
 from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden
 
 from ichnaea.customjson import dumps
@@ -22,60 +20,6 @@ INVALID_API_KEY = {
 INVALID_API_KEY = dumps(INVALID_API_KEY)
 
 
-def check_api_key():
-    def c(func):
-        @wraps(func)
-        def closure(self, *args, **kwargs):
-            api_key = None
-            api_key_text = self.request.GET.get('key', None)
-
-            if api_key_text is None:
-                self.log_count('{view_name}.no_api_key')
-                if self.error_on_invalidkey:
-                    return self.invalid_api_key()
-            try:
-                api_key = ApiKey.getkey(self.request.db_ro_session,
-                                        api_key_text)
-            except Exception:  # pragma: no cover
-                # if we cannot connect to backend DB, skip api key check
-                self.raven_client.captureException()
-                self.log_count('{view_name}.dbfailure_skip_api_key')
-
-            if api_key is not None:
-                self.log_count('{view_name}.api_key.{api_key}',
-                               api_key=api_key.name)
-
-                rate_key = 'apilimit:{key}:{time}'.format(
-                    key=api_key_text,
-                    time=util.utcnow().strftime('%Y%m%d')
-                )
-
-                should_limit = rate_limit(
-                    self.redis_client,
-                    rate_key,
-                    maxreq=api_key.maxreq
-                )
-
-                if should_limit:
-                    return self.forbidden()
-                elif should_limit is None:  # pragma: no cover
-                    # We couldn't connect to Redis
-                    self.log_count('{view_name}.redisfailure_skip_limit')
-            else:
-                if api_key_text is not None:
-                    self.log_count('{view_name}.unknown_api_key')
-                if self.error_on_invalidkey:
-                    return self.invalid_api_key()
-
-            # If we failed to look up an ApiKey, create an empty one
-            # rather than passing None through
-            api_key = api_key or ApiKey(valid_key=None)
-
-            return func(self, api_key, *args, **kwargs)
-        return closure
-    return c
-
-
 class BaseServiceView(object):
 
     route = None
@@ -96,6 +40,7 @@ class BaseServiceView(object):
 
 class BaseAPIView(BaseServiceView):
 
+    check_api_key = True
     error_on_invalidkey = True
 
     def __init__(self, request):
@@ -118,3 +63,57 @@ class BaseAPIView(BaseServiceView):
         response.content_type = 'application/json'
         response.body = INVALID_API_KEY
         return response
+
+    def check(self):
+        api_key = None
+        api_key_text = self.request.GET.get('key', None)
+
+        if api_key_text is None:
+            self.log_count('{view_name}.no_api_key')
+            if self.error_on_invalidkey:
+                return self.invalid_api_key()
+        try:
+            api_key = ApiKey.getkey(self.request.db_ro_session,
+                                    api_key_text)
+        except Exception:  # pragma: no cover
+            # if we cannot connect to backend DB, skip api key check
+            self.raven_client.captureException()
+            self.log_count('{view_name}.dbfailure_skip_api_key')
+
+        if api_key is not None:
+            self.log_count('{view_name}.api_key.{api_key}',
+                           api_key=api_key.name)
+
+            rate_key = 'apilimit:{key}:{time}'.format(
+                key=api_key_text,
+                time=util.utcnow().strftime('%Y%m%d')
+            )
+
+            should_limit = rate_limit(
+                self.redis_client,
+                rate_key,
+                maxreq=api_key.maxreq
+            )
+
+            if should_limit:
+                return self.forbidden()
+            elif should_limit is None:  # pragma: no cover
+                # We couldn't connect to Redis
+                self.log_count('{view_name}.redisfailure_skip_limit')
+        else:
+            if api_key_text is not None:
+                self.log_count('{view_name}.unknown_api_key')
+            if self.error_on_invalidkey:
+                return self.invalid_api_key()
+
+        # If we failed to look up an ApiKey, create an empty one
+        # rather than passing None through
+        api_key = api_key or ApiKey(valid_key=None)
+        return self.view(api_key)
+
+    def __call__(self):
+        if self.check_api_key:
+            return self.check()
+        else:
+            api_key = ApiKey(valid_key=None)
+            return self.view(api_key)

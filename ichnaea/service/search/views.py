@@ -1,5 +1,4 @@
 from ichnaea.models.transform import ReportTransform
-from ichnaea.service.base import check_api_key
 from ichnaea.service.base_locate import BaseLocateView
 from ichnaea.service.error import JSONError
 from ichnaea.service.search.schema import SearchSchema
@@ -41,8 +40,7 @@ class SearchView(BaseLocateView):
     def not_found(self):
         return {'status': 'not_found'}
 
-    @check_api_key()
-    def __call__(self, api_key):
+    def view(self, api_key):
         result = self.locate(api_key)
         if not result:
             return self.not_found()
