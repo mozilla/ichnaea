@@ -141,7 +141,7 @@ test: mysql
 	LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(HERE)/lib \
 	$(NOSE) -s -d -v ichnaea \
 	--with-coverage --cover-package ichnaea --cover-branches \
-	--cover-erase --cover-html --cover-html-dir=coverage
+	--cover-erase
 
 $(BIN)/sphinx-build:
 	$(INSTALL) -r requirements/docs.txt
