@@ -1,29 +1,21 @@
 import time
 
-from ichnaea.customjson import dumps
 from ichnaea.models import Radio
+from ichnaea.service.tests.base_submit import BaseTest
 from ichnaea.tests.base import CeleryAppTestCase
 from ichnaea.tests.factories import (
     CellFactory,
     WifiFactory,
 )
-from ichnaea import util
 
 
-class GeoSubmitTest(CeleryAppTestCase):
+class TestGeoSubmit(BaseTest, CeleryAppTestCase):
 
-    def setUp(self):
-        super(GeoSubmitTest, self).setUp()
-        self.queue = self.celery_app.export_queues['internal']
-
-    def _assert_queue_size(self, expected):
-        self.assertEqual(self.queue.size(self.queue.queue_key()), expected)
-
-    def _post(self, items, api_key='test', status=200, **kw):
-        url = '/v1/geosubmit'
-        if api_key:
-            url += '?key=%s' % api_key
-        return self.app.post_json(url, {'items': items}, status=status, **kw)
+    url = '/v1/geosubmit'
+    metric = 'geosubmit'
+    status = 200
+    radio_id = 'radioType'
+    cells_id = 'cellTowers'
 
     def _one_cell_query(self, radio=True):
         cell = CellFactory.build()
@@ -40,9 +32,6 @@ class GeoSubmitTest(CeleryAppTestCase):
         if radio:
             query['cellTowers'][0]['radioType'] = cell.radio.name
         return (cell, query)
-
-
-class TestGeoSubmit(GeoSubmitTest):
 
     def test_cell(self):
         now_ms = int(time.time() * 1000)
@@ -77,7 +66,7 @@ class TestGeoSubmit(GeoSubmitTest):
                 'timingAdvance': 1,
                 'xtra_field': 2,
             }]},
-        ])
+        ], api_key='test')
         # check that we get an empty response
         self.assertEqual(response.content_type, 'application/json')
         self.assertEqual(response.json, {})
@@ -133,7 +122,7 @@ class TestGeoSubmit(GeoSubmitTest):
                 'signalToNoiseRatio': 5,
                 'xtra_field': 3,
             }]},
-        ], api_key=None)
+        ])
 
         self._assert_queue_size(1)
         item = self.queue.dequeue(self.queue.queue_key())[0]
@@ -167,46 +156,6 @@ class TestGeoSubmit(GeoSubmitTest):
         self._post(items)
         self._assert_queue_size(batch)
 
-    def test_gzip(self):
-        cell, query = self._one_cell_query()
-        data = {'items': [query]}
-        body = util.encode_gzip(dumps(data))
-        headers = {'Content-Encoding': 'gzip'}
-        self.app.post(
-            '/v1/geosubmit?key=test', body, headers=headers,
-            content_type='application/json', status=200)
-        self._assert_queue_size(1)
-
-
-class TestNickname(GeoSubmitTest):
-
-    nickname = 'World Tr\xc3\xa4veler'.decode('utf-8')
-    email = 'world_tr\xc3\xa4veler@email.com'.decode('utf-8')
-
-    def _post_one_cell(self, nickname=None, email=None):
-        cell, query = self._one_cell_query()
-        headers = {}
-        if nickname:
-            headers['X-Nickname'] = nickname.encode('utf-8')
-        if email:
-            headers['X-Email'] = email.encode('utf-8')
-        return self._post([query], headers=headers)
-
-    def test_email_header_without_nickname(self):
-        self._post_one_cell(nickname=None, email=self.email)
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        self.assertEqual(item['metadata']['nickname'], None)
-        self.assertEqual(item['metadata']['email'], self.email)
-
-    def test_nickname_and_email_headers(self):
-        self._post_one_cell(nickname=self.nickname, email=self.email)
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        self.assertEqual(item['metadata']['nickname'], self.nickname)
-        self.assertEqual(item['metadata']['email'], self.email)
-
-
-class GeoTestSubmitErrors(GeoSubmitTest):
-
     def test_error(self):
         wifi = WifiFactory.build()
         self._post([{
@@ -218,7 +167,7 @@ class GeoTestSubmitErrors(GeoSubmitTest):
         }], status=400)
         self._assert_queue_size(0)
 
-    def test_invalid_float(self):
+    def test_error_invalid_float(self):
         wifi = WifiFactory.build()
         self._post([{
             'latitude': wifi.lat,
@@ -235,76 +184,3 @@ class GeoTestSubmitErrors(GeoSubmitTest):
         position = item['report']['position']
         self.assertFalse('accuracy' in position)
         self.assertFalse('altitude' in position)
-
-
-class TestStats(GeoSubmitTest):
-
-    def test_log_no_api_key(self):
-        cell, query = self._one_cell_query()
-        self._post([query], api_key=None)
-        self.check_stats(counter=[
-            ('geosubmit.no_api_key', 1),
-            ('geosubmit.unknown_api_key', 0),
-        ])
-
-    def test_log_unknown_api_key(self):
-        cell, query = self._one_cell_query()
-        self._post([query], api_key='invalidkey')
-        self.check_stats(counter=[
-            ('geosubmit.api_key.invalidkey', 0),
-            ('geosubmit.no_api_key', 0),
-            ('geosubmit.unknown_api_key', 1),
-        ])
-
-    def test_stats(self):
-        cell, query = self._one_cell_query()
-        self._post([query])
-        self.check_stats(
-            counter=['geosubmit.api_key.test',
-                     'items.api_log.test.uploaded.batches',
-                     'items.uploaded.batches',
-                     'request.v1.geosubmit.200'],
-            timer=['items.api_log.test.uploaded.batch_size',
-                   'items.uploaded.batch_size',
-                   'request.v1.geosubmit'])
-
-
-class TestRadio(GeoSubmitTest):
-
-    def test_duplicated_radio(self):
-        cell, query = self._one_cell_query(radio=False)
-        query['radioType'] = Radio.gsm.name
-        query['cellTowers'][0]['radioType'] = Radio.lte.name
-        self._post([query])
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        cells = item['report']['cellTowers']
-        self.assertEqual(cells[0]['radioType'], Radio.lte.name)
-
-    def test_missing_radio(self):
-        cell, query = self._one_cell_query(radio=False)
-        self._post([query])
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        self.assertFalse('radioType' in item['report']['cellTowers'])
-
-    def test_missing_radio_in_observation(self):
-        cell, query = self._one_cell_query(radio=False)
-        query['radioType'] = cell.radio.name
-        self._post([query])
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        cells = item['report']['cellTowers']
-        self.assertEqual(cells[0]['radioType'], cell.radio.name)
-
-    def test_missing_radio_top_level(self):
-        cell, query = self._one_cell_query()
-        self._post([query])
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        cells = item['report']['cellTowers']
-        self.assertEqual(cells[0]['radioType'], cell.radio.name)
-
-    def test_invalid_radio(self):
-        cell, query = self._one_cell_query()
-        query['cellTowers'][0]['radioType'] = '18'
-        self._post([query])
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        cells = item['report']['cellTowers']
-        self.assertEqual(cells[0]['radioType'], '18')

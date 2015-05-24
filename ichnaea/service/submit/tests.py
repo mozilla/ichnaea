@@ -4,12 +4,12 @@ from pyramid.testing import DummyRequest
 import pytz
 
 from ichnaea.models import Radio
-from ichnaea.customjson import dumps
 from ichnaea.service.error import preprocess_request
 from ichnaea.service.submit.schema import (
     ReportSchema,
     SubmitSchema,
 )
+from ichnaea.service.tests.base_submit import BaseTest
 from ichnaea.tests.base import (
     CeleryAppTestCase,
     TestCase,
@@ -67,20 +67,13 @@ class TestSubmitSchema(SchemaTest):
         self.assertEqual(len(data['items']), 1)
 
 
-class SubmitTest(CeleryAppTestCase):
+class TestSubmit(BaseTest, CeleryAppTestCase):
 
-    def setUp(self):
-        super(SubmitTest, self).setUp()
-        self.queue = self.celery_app.export_queues['internal']
-
-    def _assert_queue_size(self, expected):
-        self.assertEqual(self.queue.size(self.queue.queue_key()), expected)
-
-    def _post(self, items, api_key=None, status=204, **kw):
-        url = '/v1/submit'
-        if api_key:
-            url += '?key=%s' % api_key
-        return self.app.post_json(url, {'items': items}, status=status, **kw)
+    url = '/v1/submit'
+    metric = 'submit'
+    status = 204
+    radio_id = 'radio'
+    cells_id = 'cell'
 
     def _one_cell_query(self, radio=True):
         cell = CellFactory.build()
@@ -90,9 +83,6 @@ class SubmitTest(CeleryAppTestCase):
         if radio:
             query['cell'][0]['radio'] = cell.radio.name
         return (cell, query)
-
-
-class TestSubmit(SubmitTest):
 
     def test_cell(self):
         now = util.utcnow()
@@ -175,46 +165,6 @@ class TestSubmit(SubmitTest):
         self._post(items)
         self._assert_queue_size(batch)
 
-    def test_gzip(self):
-        cell, query = self._one_cell_query()
-        data = {'items': [query]}
-        body = util.encode_gzip(dumps(data))
-        headers = {'Content-Encoding': 'gzip'}
-        self.app.post(
-            '/v1/submit?key=test', body, headers=headers,
-            content_type='application/json', status=204)
-        self._assert_queue_size(1)
-
-
-class TestNickname(SubmitTest):
-
-    nickname = 'World Tr\xc3\xa4veler'.decode('utf-8')
-    email = 'world_tr\xc3\xa4veler@email.com'.decode('utf-8')
-
-    def _post_one_cell(self, nickname=None, email=None):
-        cell, query = self._one_cell_query()
-        headers = {}
-        if nickname:
-            headers['X-Nickname'] = nickname.encode('utf-8')
-        if email:
-            headers['X-Email'] = email.encode('utf-8')
-        return self._post([query], headers=headers)
-
-    def test_email_header_without_nickname(self):
-        self._post_one_cell(nickname=None, email=self.email)
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        self.assertEqual(item['metadata']['nickname'], None)
-        self.assertEqual(item['metadata']['email'], self.email)
-
-    def test_nickname_and_email_headers(self):
-        self._post_one_cell(nickname=self.nickname, email=self.email)
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        self.assertEqual(item['metadata']['nickname'], self.nickname)
-        self.assertEqual(item['metadata']['email'], self.email)
-
-
-class TestSubmitErrors(SubmitTest):
-
     def test_error(self):
         wifi = WifiFactory.build()
         res = self.app.post_json(
@@ -226,26 +176,13 @@ class TestSubmitErrors(SubmitTest):
         self.assertFalse('status' in res.json)
         self.check_raven(['JSONError'])
 
-    def test_error_no_mapping(self):
-        res = self.app.post_json('/v1/submit', [1], status=400)
-        self.assertTrue('errors' in res.json)
-
-    def test_many_errors(self):
-        wifi = WifiFactory.build()
-        wifis = [{'wrong_key': 'ab'} for i in range(100)]
-        res = self._post(
-            [{'lat': wifi.lat, 'lon': wifi.lon, 'wifi': wifis}],
-            status=400)
+    def test_error_completely_empty(self):
+        res = self.app.post_json(self.url, None, status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
-        self.assertTrue(len(res.json['errors']) < 10)
-        self.check_raven(['JSONError'])
+        self.assertTrue(len(res.json['errors']) == 0)
 
-    def test_no_json(self):
-        res = self.app.post('/v1/submit', '\xae', status=400)
-        self.assertTrue('errors' in res.json)
-
-    def test_missing_latlon(self):
+    def test_error_missing_latlon(self):
         wifi = WifiFactory.build()
         self._post([
             {'lat': wifi.lat,
@@ -258,81 +195,21 @@ class TestSubmitErrors(SubmitTest):
         ])
         self._assert_queue_size(2)
 
-    def test_completely_empty(self):
-        res = self.app.post_json('/v1/submit', None, status=400)
+    def test_error_no_json(self):
+        res = self.app.post('/v1/submit', '\xae', status=400)
+        self.assertTrue('errors' in res.json)
+
+    def test_error_no_mapping(self):
+        res = self.app.post_json('/v1/submit', [1], status=400)
+        self.assertTrue('errors' in res.json)
+
+    def test_errors(self):
+        wifi = WifiFactory.build()
+        wifis = [{'wrong_key': 'ab'} for i in range(100)]
+        res = self._post(
+            [{'lat': wifi.lat, 'lon': wifi.lon, 'wifi': wifis}],
+            status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
-        self.assertTrue(len(res.json['errors']) == 0)
-
-
-class TestStats(SubmitTest):
-
-    def test_log_no_api_key(self):
-        cell, query = self._one_cell_query()
-        self._post([query], api_key=None)
-        self.check_stats(counter=[
-            ('submit.no_api_key', 1),
-            ('submit.unknown_api_key', 0),
-        ])
-
-    def test_log_unknown_api_key(self):
-        cell, query = self._one_cell_query()
-        self._post([query], api_key='invalidkey')
-        self.check_stats(counter=[
-            ('submit.api_key.invalidkey', 0),
-            ('submit.no_api_key', 0),
-            ('submit.unknown_api_key', 1),
-        ])
-
-    def test_stats(self):
-        cell, query = self._one_cell_query()
-        self._post([query], api_key='test')
-        self.check_stats(
-            counter=['items.api_log.test.uploaded.batches',
-                     'items.uploaded.batches',
-                     'submit.api_key.test',
-                     'request.v1.submit.204'],
-            timer=['items.api_log.test.uploaded.batch_size',
-                   'items.uploaded.batch_size',
-                   'request.v1.submit'])
-
-
-class TestRadio(SubmitTest):
-
-    def test_duplicated_radio(self):
-        cell, query = self._one_cell_query(radio=False)
-        query['radio'] = Radio.gsm.name
-        query['cell'][0]['radio'] = Radio.lte.name
-        self._post([query])
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        cells = item['report']['cellTowers']
-        self.assertEqual(cells[0]['radioType'], Radio.lte.name)
-
-    def test_missing_radio(self):
-        cell, query = self._one_cell_query(radio=False)
-        self._post([query])
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        self.assertFalse('radioType' in item['report']['cellTowers'])
-
-    def test_missing_radio_in_observation(self):
-        cell, query = self._one_cell_query(radio=False)
-        query['radio'] = cell.radio.name
-        self._post([query])
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        cells = item['report']['cellTowers']
-        self.assertEqual(cells[0]['radioType'], cell.radio.name)
-
-    def test_missing_radio_top_level(self):
-        cell, query = self._one_cell_query()
-        self._post([query])
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        cells = item['report']['cellTowers']
-        self.assertEqual(cells[0]['radioType'], cell.radio.name)
-
-    def test_invalid_radio(self):
-        cell, query = self._one_cell_query(radio=False)
-        query['cell'][0]['radio'] = '18'
-        self._post([query])
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        cells = item['report']['cellTowers']
-        self.assertEqual(cells[0]['radioType'], '18')
+        self.assertTrue(len(res.json['errors']) < 10)
+        self.check_raven(['JSONError'])
