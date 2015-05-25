@@ -14,7 +14,6 @@ from ichnaea.models.cell import (  # NOQA
     OCIDCell,
     OCIDCellArea,
     Radio,
-    ValidCellKeySchema,
 )
 from ichnaea.models.content import (  # NOQA
     MapStat,

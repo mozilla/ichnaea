@@ -92,11 +92,11 @@ class ValidPositionSchema(FieldSchema, CopyingSchema):
 
     lat = colander.SchemaNode(
         colander.Float(),
-        missing=0.0,
+        missing=None,
         validator=colander.Range(constants.MIN_LAT, constants.MAX_LAT))
     lon = colander.SchemaNode(
         colander.Float(),
-        missing=0.0,
+        missing=None,
         validator=colander.Range(constants.MIN_LON, constants.MAX_LON))
 
 

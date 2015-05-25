@@ -84,8 +84,3 @@ class FieldSchema(colander.MappingSchema):
     @property
     def fields(self):
         return dict([(field.name, field) for field in self.children])
-
-    def is_missing(self, data, field_name):
-        missing_value = self.fields[field_name].missing
-        data_value = data.get(field_name, missing_value)
-        return data_value == missing_value

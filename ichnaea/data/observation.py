@@ -16,7 +16,6 @@ from ichnaea.models import (
     ScoreKey,
     StatCounter,
     StatKey,
-    ValidCellKeySchema,
     Wifi,
     WifiBlacklist,
     WifiObservation,
@@ -179,9 +178,8 @@ class CellObservationQueue(ObservationQueue):
         # even though they should not lead to the creation of a station
         # entry; these are cell observations with a missing value for
         # LAC and/or CID, and will be inferred from neighboring cells.
-        schema = ValidCellKeySchema()
         for field in ('lac', 'cid'):
-            if getattr(key, field, None) == schema.fields[field].missing:
+            if getattr(key, field, None) is None:
                 return True
         return False
 

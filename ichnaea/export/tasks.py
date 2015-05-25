@@ -100,36 +100,31 @@ def make_cell_export_dict(row):
     # Fix up specific entry formatting
     radio = row[ix['radio']]
 
-    psc = row[ix['psc']]
-    if psc is None or psc == -1:
-        psc = ''
-
     d['radio'] = radio.name.upper()
     d['created'] = row[ix['created']]
     d['updated'] = row[ix['modified']]
     d['samples'] = row[ix['total_measures']]
-    d['psc'] = psc
     return d
 
 
 def make_ocid_cell_import_dict(row):
 
-    def val(key, default):
+    def val(key, default, _type):
         if key in row and row[key] != '' and row[key] is not None:
-            return row[key]
+            return _type(row[key])
         else:
             return default
 
     d = dict()
 
     d['created'] = datetime.fromtimestamp(
-        int(val('created', 0))).replace(tzinfo=UTC)
+        val('created', 0, int)).replace(tzinfo=UTC)
 
     d['modified'] = datetime.fromtimestamp(
-        int(val('updated', 0))).replace(tzinfo=UTC)
+        val('updated', 0, int)).replace(tzinfo=UTC)
 
-    d['lat'] = float(val('lat', None))
-    d['lon'] = float(val('lon', None))
+    d['lat'] = val('lat', None, float)
+    d['lon'] = val('lon', None, float)
 
     try:
         d['radio'] = Radio[row['radio'].lower()]
@@ -137,12 +132,11 @@ def make_ocid_cell_import_dict(row):
         d['radio'] = None
 
     for k in ['mcc', 'mnc', 'lac', 'cid', 'psc']:
-        d[k] = int(val(k, -1))
+        d[k] = val(k, None, int)
 
-    d['range'] = int(float(val('range', 0)))
-
-    d['total_measures'] = int(val('samples', -1))
-    d['changeable'] = bool(val('changeable', True))
+    d['range'] = int(val('range', 0, float))
+    d['total_measures'] = val('samples', 0, int)
+    d['changeable'] = val('changeable', True, bool)
     return OCIDCell.validate(d)
 
 

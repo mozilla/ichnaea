@@ -97,7 +97,7 @@ class TestExport(CeleryTestCase):
     def test_hourly_export(self):
         session = self.session
         k = {'radio': Radio.gsm, 'mcc': 1, 'mnc': 2, 'lac': 4,
-             'psc': -1, 'lat': 1.0, 'lon': 2.0}
+             'psc': None, 'lat': 1.0, 'lon': 2.0}
         for i in range(190, 200):
             session.add(Cell(cid=i, **k))
         session.commit()

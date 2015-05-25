@@ -17,7 +17,6 @@ from ichnaea.models import (
     CellBlacklist,
     CellObservation,
     Radio,
-    ValidCellKeySchema,
     Wifi,
     WifiBlacklist,
     WifiObservation,
@@ -225,11 +224,8 @@ class TestCell(CeleryTestCase):
     def test_location_update_cell(self):
         now = util.utcnow()
         before = now - timedelta(hours=1)
-        schema = ValidCellKeySchema()
         obs_factory = CellObservationFactory
-
-        invalid_key = dict(lac=schema.fields['lac'].missing,
-                           cid=schema.fields['cid'].missing)
+        invalid_key = dict(lac=None, cid=None)
 
         cell1 = CellFactory(new_measures=3, total_measures=5)
         lat1, lon1 = (cell1.lat, cell1.lon)

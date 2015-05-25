@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #394: Replace magic schema values by `None`.
+
 - #423: Add new public `v2/geosubmit` API.
 
 - #242: Pass through submission IP address into the data pipeline.

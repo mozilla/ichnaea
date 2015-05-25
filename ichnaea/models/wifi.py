@@ -54,8 +54,9 @@ class WifiKeyNode(colander.SchemaNode):
         return cstruct and cstruct.lower() or colander.null
 
     def validator(self, node, cstruct):
-        valid = constants.INVALID_WIFI_REGEX.match(cstruct) and \
-            constants.VALID_WIFI_REGEX.match(cstruct) and len(cstruct) == 12
+        valid = (len(cstruct) == 12 and
+                 constants.INVALID_WIFI_REGEX.match(cstruct) and
+                 constants.VALID_WIFI_REGEX.match(cstruct))
         if not valid:
             raise colander.Invalid(node, 'Invalid wifi key')
 

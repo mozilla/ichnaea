@@ -126,7 +126,7 @@ class ValidCellAreaKeySchema(FieldSchema, CopyingSchema):
         validator=colander.Range(0, 32767))
     lac = DefaultNode(
         colander.Integer(),
-        missing=0,
+        missing=None,
         validator=colander.Range(
             constants.MIN_LAC, constants.MAX_LAC_ALL))
 
@@ -166,11 +166,11 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
 
     cid = DefaultNode(
         colander.Integer(),
-        missing=0, validator=colander.Range(
+        missing=None, validator=colander.Range(
             constants.MIN_CID, constants.MAX_CID_ALL))
     psc = DefaultNode(
         colander.Integer(),
-        missing=-1,
+        missing=None,
         validator=colander.Range(0, 512))
 
     def deserialize(self, data):
@@ -182,27 +182,25 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
                 data['radio'] = radio
 
             # If the cell id >= 65536 then it must be a umts tower
-            if (data.get('cid', 0) >= 65536
-                    and data['radio'] == Radio.gsm):
+            if data.get('cid', 0) >= 65536 and data['radio'] == Radio.gsm:
                 data['radio'] = Radio.umts
 
             # Treat cid=65535 without a valid lac as an unspecified value
-            if (self.is_missing(data, 'lac')
-                    and data.get('cid', None) == 65535):
-                data['cid'] = self.fields['cid'].missing
+            if data.get('lac') is None and data.get('cid') == 65535:
+                data['cid'] = None
 
         return super(ValidCellKeySchema, self).deserialize(data)
 
     def validator(self, schema, data):
-        lac_missing = self.is_missing(data, 'lac')
-        cid_missing = self.is_missing(data, 'cid')
+        lac_missing = data.get('lac') is None
+        cid_missing = data.get('cid') is None
+        psc_missing = data.get('psc') is None
 
         if data['mcc'] not in constants.ALL_VALID_MCCS:
             raise colander.Invalid(schema, (
                 'Check against the list of all known valid mccs'))
 
-        if (data['radio'] == Radio.cdma
-                and (lac_missing or cid_missing)):
+        if data['radio'] == Radio.cdma and (lac_missing or cid_missing):
             raise colander.Invalid(schema, (
                 'Skip CDMA towers missing lac or cid '
                 '(no psc on CDMA exists to backfill using inference)'))
@@ -211,23 +209,23 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
             raise colander.Invalid(schema, (
                 'Skip GSM/LTE/UMTS towers with an invalid MNC'))
 
-        if ((lac_missing or cid_missing) and self.is_missing(data, 'psc')):
+        if (lac_missing or cid_missing) and psc_missing:
             raise colander.Invalid(schema, (
                 'Must have (lac and cid) or '
                 'psc (psc-only to use in backfill)'))
 
-        if (data['radio'] == Radio.cdma
-                and data['cid'] > constants.MAX_CID_CDMA):
+        if (data['radio'] == Radio.cdma and
+                data['cid'] > constants.MAX_CID_CDMA):
             raise colander.Invalid(schema, (
                 'CID is out of range for CDMA.'))
 
-        if (data['radio'] == Radio.lte
-                and data['cid'] > constants.MAX_CID_LTE):
+        if (data['radio'] == Radio.lte and
+                data['cid'] > constants.MAX_CID_LTE):
             raise colander.Invalid(schema, (
                 'CID is out of range for LTE.'))
 
-        if (data['radio'] in Radio._gsm_family()
-                and data['lac'] > constants.MAX_LAC_GSM_UMTS_LTE):
+        if (data['radio'] in Radio._gsm_family() and
+                data['lac'] > constants.MAX_LAC_GSM_UMTS_LTE):
             raise colander.Invalid(schema, (
                 'LAC is out of range for GSM/UMTS/LTE.'))
 

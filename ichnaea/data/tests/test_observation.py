@@ -21,7 +21,6 @@ from ichnaea.models import (
     StatCounter,
     StatKey,
     User,
-    ValidCellKeySchema,
     Wifi,
     WifiBlacklist,
     WifiObservation,
@@ -34,6 +33,9 @@ from ichnaea import util
 
 
 class ObservationTestCase(CeleryTestCase):
+
+    def _compare_sets(self, one, two):
+        self.assertEqual(set(one), set(two))
 
     def check_statcounter(self, stat_key, value):
         stat_counter = StatCounter(stat_key, util.utcnow())
@@ -134,21 +136,21 @@ class TestCell(ObservationTestCase):
         self.assertEqual(result.get(), 4)
         observations = session.query(CellObservation).all()
         self.assertEqual(len(observations), 4)
-        self.assertEqual(set([o.mcc for o in observations]), set([mcc]))
-        self.assertEqual(set([o.mnc for o in observations]), set([2]))
-        self.assertEqual(set([o.asu for o in observations]), set([-1, 8, 15]))
-        self.assertEqual(set([o.psc for o in observations]), set([5]))
-        self.assertEqual(set([o.signal for o in observations]), set([0]))
+        self._compare_sets([o.mcc for o in observations], [mcc])
+        self._compare_sets([o.mnc for o in observations], [2])
+        self._compare_sets([o.asu for o in observations], [None, 8, 15])
+        self._compare_sets([o.psc for o in observations], [5])
+        self._compare_sets([o.signal for o in observations], [None])
 
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 2)
-        self.assertEqual(set([c.mcc for c in cells]), set([mcc]))
-        self.assertEqual(set([c.mnc for c in cells]), set([2]))
-        self.assertEqual(set([c.lac for c in cells]), set([3]))
-        self.assertEqual(set([c.cid for c in cells]), set([4, 7]))
-        self.assertEqual(set([c.psc for c in cells]), set([5]))
-        self.assertEqual(set([c.new_measures for c in cells]), set([1, 5]))
-        self.assertEqual(set([c.total_measures for c in cells]), set([1, 8]))
+        self._compare_sets([c.mcc for c in cells], [mcc])
+        self._compare_sets([c.mnc for c in cells], [2])
+        self._compare_sets([c.lac for c in cells], [3])
+        self._compare_sets([c.cid for c in cells], [4, 7])
+        self._compare_sets([c.psc for c in cells], [5])
+        self._compare_sets([c.new_measures for c in cells], [1, 5])
+        self._compare_sets([c.total_measures for c in cells], [1, 8])
 
         score_queue = self.celery_app.data_queues['update_score']
         scores = score_queue.dequeue()
@@ -170,7 +172,6 @@ class TestCell(ObservationTestCase):
 
     def test_insert_observations_invalid_lac(self):
         session = self.session
-        schema = ValidCellKeySchema()
         time = util.utcnow() - timedelta(days=1)
         today = util.utcnow().date()
 
@@ -189,8 +190,8 @@ class TestCell(ObservationTestCase):
         entries = [
             {'mcc': FRANCE_MCC, 'mnc': 2, 'lac': constants.MAX_LAC_ALL + 1,
              'cid': constants.MAX_CID_ALL + 1, 'psc': 5, 'asu': 8},
-            {'mcc': FRANCE_MCC, 'mnc': 2, 'lac': schema.fields['lac'].missing,
-             'cid': schema.fields['cid'].missing, 'psc': 5, 'asu': 8},
+            {'mcc': FRANCE_MCC, 'mnc': 2, 'lac': None,
+             'cid': None, 'psc': 5, 'asu': 8},
         ]
         for e in entries:
             e.update(obs)
@@ -200,18 +201,14 @@ class TestCell(ObservationTestCase):
 
         observations = session.query(CellObservation).all()
         self.assertEqual(len(observations), 2)
-        self.assertEqual(
-            set([o.lac for o in observations]),
-            set([schema.fields['lac'].missing]))
-        self.assertEqual(
-            set([o.cid for o in observations]),
-            set([schema.fields['cid'].missing]))
+        self._compare_sets([o.lac for o in observations], [None])
+        self._compare_sets([o.cid for o in observations], [None])
 
         # Nothing should change in the initially created Cell record
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 1)
-        self.assertEqual(set([c.new_measures for c in cells]), set([2]))
-        self.assertEqual(set([c.total_measures for c in cells]), set([5]))
+        self._compare_sets([c.new_measures for c in cells], [2])
+        self._compare_sets([c.total_measures for c in cells], [5])
 
     def test_insert_observations_out_of_range(self):
         session = self.session
@@ -237,9 +234,9 @@ class TestCell(ObservationTestCase):
 
         observations = session.query(CellObservation).all()
         self.assertEqual(len(observations), 3)
-        self.assertEqual(set([o.asu for o in observations]), set([-1, 8]))
-        self.assertEqual(set([o.signal for o in observations]), set([0, -70]))
-        self.assertEqual(set([o.ta for o in observations]), set([0, 32]))
+        self._compare_sets([o.asu for o in observations], [None, 8])
+        self._compare_sets([o.signal for o in observations], [None, -70])
+        self._compare_sets([o.ta for o in observations], [None, 32])
 
 
 class TestWifi(ObservationTestCase):
@@ -262,12 +259,11 @@ class TestWifi(ObservationTestCase):
 
         observations = session.query(WifiObservation).all()
         self.assertEqual(len(observations), 2)
-        self.assertEqual(
-            set([o.key for o in observations]), set([good_key]))
+        self._compare_sets([o.key for o in observations], [good_key])
 
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 1)
-        self.assertEqual(set([w.key for w in wifis]), set([good_key]))
+        self._compare_sets([w.key for w in wifis], [good_key])
 
         self.check_statcounter(StatKey.wifi, 2)
         self.check_statcounter(StatKey.unique_wifi, 1)
@@ -306,10 +302,9 @@ class TestWifi(ObservationTestCase):
 
         obs = dict(
             created=time, lat=1.0, lon=2.0,
-            time=time, accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=-1,
-            heading=52.9,
-            speed=158.5,
+            time=time, accuracy=None, altitude=None,
+            altitude_accuracy=None, radio=None,
+            heading=52.9, speed=158.5,
         )
         entries = [
             {'key': 'ab1234567890', 'channel': 11, 'signal': -80},
@@ -324,20 +319,19 @@ class TestWifi(ObservationTestCase):
 
         observations = session.query(WifiObservation).all()
         self.assertEqual(len(observations), 4)
-        self.assertEqual(set([o.key for o in observations]),
-                         set(['ab1234567890', 'cd3456789012']))
-        self.assertEqual(set([o.channel for o in observations]), set([3, 11]))
-        self.assertEqual(set([o.signal for o in observations]),
-                         set([-80, -90]))
-        self.assertEqual(set([o.heading or o in observations]), set([52.9]))
-        self.assertEqual(set([o.speed or o in observations]), set([158.5]))
+        self._compare_sets([o.key for o in observations],
+                           ['ab1234567890', 'cd3456789012'])
+        self._compare_sets([o.channel for o in observations], [3, 11])
+        self._compare_sets([o.signal for o in observations], [-80, -90])
+        self._compare_sets([o.heading or o in observations], [52.9])
+        self._compare_sets([o.speed or o in observations], [158.5])
 
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 2)
-        self.assertEqual(set([w.key for w in wifis]), set(['ab1234567890',
-                                                           'cd3456789012']))
-        self.assertEqual(set([w.new_measures for w in wifis]), set([1, 3]))
-        self.assertEqual(set([w.total_measures for w in wifis]), set([1, 3]))
+        self._compare_sets([w.key for w in wifis],
+                           ['ab1234567890', 'cd3456789012'])
+        self._compare_sets([w.new_measures for w in wifis], [1, 3])
+        self._compare_sets([w.total_measures for w in wifis], [1, 3])
 
         score_queue = self.celery_app.data_queues['update_score']
         scores = score_queue.dequeue()

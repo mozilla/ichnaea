@@ -2,6 +2,7 @@ from pyramid.path import DottedNameResolver
 from sqlalchemy.sql import and_, or_
 
 RESOLVER = DottedNameResolver('ichnaea')
+_sentinel = object()
 
 
 class HashKey(object):
@@ -100,8 +101,8 @@ class HashKeyMixin(object):
                 key = cls.to_hashkey(key)
         criterion = ()
         for field in cls._hashkey_cls._fields:
-            value = getattr(key, field, None)
-            if value is not None:
+            value = getattr(key, field, _sentinel)
+            if value is not _sentinel:
                 criterion += (getattr(cls, field) == value, )
         if not criterion:  # pragma: no cover
             # prevent construction of queries without a key restriction

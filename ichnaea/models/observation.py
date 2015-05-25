@@ -86,19 +86,19 @@ class ValidReportSchema(ValidPositionSchema):
     """A schema which validates the fields present in a report."""
 
     accuracy = DefaultNode(
-        colander.Float(), missing=0, validator=colander.Range(
+        colander.Float(), missing=None, validator=colander.Range(
             0, constants.MAX_ACCURACY))
     altitude = DefaultNode(
-        colander.Float(), missing=0, validator=colander.Range(
+        colander.Float(), missing=None, validator=colander.Range(
             constants.MIN_ALTITUDE, constants.MAX_ALTITUDE))
     altitude_accuracy = DefaultNode(
-        colander.Float(), missing=0, validator=colander.Range(
+        colander.Float(), missing=None, validator=colander.Range(
             0, constants.MAX_ALTITUDE_ACCURACY))
     heading = DefaultNode(
-        colander.Float(), missing=-1, validator=colander.Range(
+        colander.Float(), missing=None, validator=colander.Range(
             0, constants.MAX_HEADING))
     speed = DefaultNode(
-        colander.Float(), missing=-1, validator=colander.Range(
+        colander.Float(), missing=None, validator=colander.Range(
             0, constants.MAX_SPEED))
     report_id = ReportIDNode(UUIDType())
     created = colander.SchemaNode(DateTimeFromString(), missing=None)
@@ -140,20 +140,20 @@ class ValidCellLookupSchema(ValidCellKeySchema):
 
     asu = DefaultNode(
         colander.Integer(),
-        missing=-1, validator=colander.Range(0, 97))
+        missing=None, validator=colander.Range(0, 97))
     signal = DefaultNode(
         colander.Integer(),
-        missing=0, validator=colander.Range(-150, -1))
+        missing=None, validator=colander.Range(-150, -1))
     ta = DefaultNode(
         colander.Integer(),
-        missing=0, validator=colander.Range(0, 63))
+        missing=None, validator=colander.Range(0, 63))
 
     def deserialize(self, data):
         if data:
             # Sometimes the asu and signal fields are swapped
             if data.get('asu', 0) < -1 and data.get('signal', None) == 0:
                 data['signal'] = data['asu']
-                data['asu'] = self.fields['asu'].missing
+                data['asu'] = None
         return super(ValidCellLookupSchema, self).deserialize(data)
 
 
@@ -209,26 +209,26 @@ class ValidWifiLookupSchema(ValidWifiKeySchema):
 
     channel = colander.SchemaNode(
         colander.Integer(),
-        missing=0,
+        missing=None,
         validator=colander.Range(
             constants.MIN_WIFI_CHANNEL, constants.MAX_WIFI_CHANNEL))
     signal = DefaultNode(
         colander.Integer(),
-        missing=0,
+        missing=None,
         validator=colander.Range(
             constants.MIN_WIFI_SIGNAL, constants.MAX_WIFI_SIGNAL))
     snr = DefaultNode(
         colander.Integer(),
-        missing=0,
+        missing=None,
         validator=colander.Range(0, 100))
 
     def deserialize(self, data):
         if data:
-            channel = int(data.get('channel', 0))
+            channel = data.get('channel')
+            channel = channel is not None and int(channel) or None
 
-            if not (constants.MIN_WIFI_CHANNEL
-                    < channel
-                    < constants.MAX_WIFI_CHANNEL):
+            if not (constants.MIN_WIFI_CHANNEL < channel <
+                    constants.MAX_WIFI_CHANNEL):
                 # if no explicit channel was given, calculate
                 freq = data.get('frequency', 0)
 
@@ -241,11 +241,7 @@ class ValidWifiLookupSchema(ValidWifiKeySchema):
                     data['channel'] = (freq - 5000) // 5
 
                 else:
-                    data['channel'] = self.fields['channel'].missing
-
-            # map external name to internal
-            if data.get('snr', None) is None:
-                data['snr'] = data.get('signalToNoiseRatio', 0)
+                    data['channel'] = None
 
         return super(ValidWifiLookupSchema, self).deserialize(data)
 

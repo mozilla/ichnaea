@@ -8,10 +8,7 @@ from ichnaea.models import (
     CellObservation,
     WifiObservation,
 )
-from ichnaea.models import (
-    constants,
-    ValidCellKeySchema,
-)
+from ichnaea.models import constants
 from ichnaea.models.schema import normalized_time
 from ichnaea.tests.base import TestCase
 from ichnaea.tests.base import (
@@ -80,7 +77,7 @@ class TestCellValidation(ValidationTest):
             'lac': 12345,
             'mcc': FRANCE_MCC,
             'mnc': 220,
-            'psc': -1,
+            'psc': None,
             'signal': -83,
             'ta': 5,
         }
@@ -182,7 +179,7 @@ class TestCellValidation(ValidationTest):
                     obs, cell = self.get_sample(
                         lac=lac, cid=cid, psc=psc)
                     self.check_normalized_cell(
-                        obs, cell, dict(lac=lac, cid=cid, psc=-1))
+                        obs, cell, dict(lac=lac, cid=cid, psc=None))
 
     def test_invalid_lac_with_an_invalid_psc(self):
         for lac in self.invalid_lacs:
@@ -191,13 +188,11 @@ class TestCellValidation(ValidationTest):
                 self.check_normalized_cell(obs, cell, None)
 
     def test_invalid_lac_with_a_valid_psc(self):
-        schema = ValidCellKeySchema()
         for lac in self.invalid_lacs:
             for psc in self.valid_pscs:
                 obs, cell = self.get_sample(lac=lac, psc=psc)
                 self.check_normalized_cell(
-                    obs, cell, dict(
-                        lac=schema.fields['lac'].missing, psc=psc))
+                    obs, cell, dict(lac=None, psc=psc))
 
     def test_invalid_cid_with_an_invalid_psc(self):
         for cid in self.invalid_cids:
@@ -206,13 +201,11 @@ class TestCellValidation(ValidationTest):
                 self.check_normalized_cell(obs, cell, None)
 
     def test_invalid_cid_with_a_valid_psc(self):
-        schema = ValidCellKeySchema()
         for cid in self.invalid_cids:
             for psc in self.valid_pscs:
                 obs, cell = self.get_sample(cid=cid, psc=psc)
                 self.check_normalized_cell(
-                    obs, cell, dict(
-                        cid=schema.fields['cid'].missing, psc=psc))
+                    obs, cell, dict(cid=None, psc=psc))
 
     def test_invalid_latitude(self):
         invalid_latitudes = [constants.MIN_LAT - 0.1, constants.MAX_LAT + 0.1]
@@ -274,13 +267,13 @@ class TestCellValidation(ValidationTest):
         invalid_accuracies = [-10, -1, 5000000]
         for accuracy in invalid_accuracies:
             obs, cell = self.get_sample(accuracy=accuracy)
-            self.check_normalized_cell(obs, cell, {'accuracy': 0})
+            self.check_normalized_cell(obs, cell, {'accuracy': None})
 
     def test_invalid_altitude(self):
         invalid_altitudes = [-20000, 200000]
         for altitude in invalid_altitudes:
             obs, cell = self.get_sample(altitude=altitude)
-            self.check_normalized_cell(obs, cell, {'altitude': 0})
+            self.check_normalized_cell(obs, cell, {'altitude': None})
 
     def test_invalid_altitude_accuracy(self):
         invalid_altitude_accuracies = [-10, -1, 500000]
@@ -288,48 +281,45 @@ class TestCellValidation(ValidationTest):
             obs, cell = self.get_sample(
                 altitude_accuracy=altitude_accuracy)
             self.check_normalized_cell(
-                obs, cell, {'altitude_accuracy': 0})
+                obs, cell, {'altitude_accuracy': None})
 
     def test_invalid_asu(self):
         invalid_asus = [-10, -1, 99]
         for asu in invalid_asus:
             obs, cell = self.get_sample(asu=asu)
-            self.check_normalized_cell(obs, cell, {'asu': -1})
+            self.check_normalized_cell(obs, cell, {'asu': None})
 
     def test_invalid_ta(self):
         invalid_tas = [-10, -1, 64, 100]
         for ta in invalid_tas:
             obs, cell = self.get_sample(ta=ta)
-            self.check_normalized_cell(obs, cell, {'ta': 0})
+            self.check_normalized_cell(obs, cell, {'ta': None})
 
     def test_invalid_signal(self):
         invalid_signals = [-300, -151, 0, 10]
         for signal in invalid_signals:
             obs, cell = self.get_sample(signal=signal)
-            self.check_normalized_cell(obs, cell, {'signal': 0})
+            self.check_normalized_cell(obs, cell, {'signal': None})
 
     def test_asu_signal_field_mix_up(self):
         obs, cell = self.get_sample(asu=-75, signal=0)
         self.check_normalized_cell(obs, cell, {'signal': -75})
 
     def test_cid_65535_without_a_valid_lac_sets_cid_to_invalid(self):
-        schema = ValidCellKeySchema()
-        obs, cell = self.get_sample(
-            lac=schema.fields['lac'].missing, cid=65535, psc=1)
-        self.check_normalized_cell(
-            obs, cell, {'cid': schema.fields['cid'].missing})
+        obs, cell = self.get_sample(lac=None, cid=65535, psc=1)
+        self.check_normalized_cell(obs, cell, {'cid': None})
 
     def test_unknown_lac_cid_is_65535_and_missing_psc(self):
-        obs, cell = self.get_sample(lac=0, cid=65535, psc=-1)
+        obs, cell = self.get_sample(lac=None, cid=65535, psc=None)
         self.check_normalized_cell(obs, cell, None)
 
     def test_cdma_cell_records_must_have_full_cell_id(self):
         entries = [
             # (data-in, data-out)
             ({'lac': 3, 'cid': 4}, {'lac': 3, 'cid': 4}),
-            ({'lac': 3, 'cid': -1}, None),
-            ({'lac': -1, 'cid': 4}, None),
-            ({'lac': -1, 'cid': -1, 'psc': 5}, None),
+            ({'lac': 3, 'cid': None}, None),
+            ({'lac': None, 'cid': 4}, None),
+            ({'lac': None, 'cid': None, 'psc': 5}, None),
         ]
 
         for entry in entries:
@@ -339,9 +329,9 @@ class TestCellValidation(ValidationTest):
 
     def test_records_fail_the_lac_or_cid_and_psc_check(self):
         entries = [
-            {'lac': -1, 'cid': -1},
-            {'lac': 3, 'cid': -1},
-            {'lac': -1, 'cid': 4},
+            {'lac': None, 'cid': None},
+            {'lac': 3, 'cid': None},
+            {'lac': None, 'cid': 4},
         ]
 
         for entry in entries:
@@ -529,7 +519,7 @@ class TestWifiValidation(ValidationTest):
 
         for signal in invalid_signals:
             obs, wifi = self.get_sample(signal=signal)
-            self.check_normalized_wifi(obs, wifi, dict(signal=0))
+            self.check_normalized_wifi(obs, wifi, dict(signal=None))
 
     def test_valid_snr(self):
         valid_snrs = [0, 12, 100]
@@ -543,7 +533,7 @@ class TestWifiValidation(ValidationTest):
 
         for snr in invalid_snrs:
             obs, wifi = self.get_sample(snr=snr)
-            self.check_normalized_wifi(obs, wifi, dict(snr=0))
+            self.check_normalized_wifi(obs, wifi, dict(snr=None))
 
     def test_valid_channel(self):
         valid_channels = [1, 20, 45, 165]
