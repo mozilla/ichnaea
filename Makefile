@@ -1,6 +1,7 @@
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
 BUILD_DIRS = bin build dist include lib lib64 libmaxminddb man node_modules share
+TESTS ?= ichnaea
 TRAVIS ?= false
 
 MAXMINDDB_VERSION = 1.2.0
@@ -25,10 +26,16 @@ else
 	NOSE = $(BIN)/nosetests
 endif
 
+ifeq ($(TESTS), ichnaea)
+	TEST_ARG = ichnaea --with-coverage --cover-package ichnaea \
+	--cover-branches --cover-erase
+else
+	TEST_ARG = --tests=$(TESTS)
+endif
+
 PIP_WHEEL_DIR ?= $(HERE)/wheelhouse
 INSTALL = $(PIP) install --no-deps -f file://$(PIP_WHEEL_DIR)
 WHEEL = $(PIP) wheel --no-deps -w $(PIP_WHEEL_DIR)
-
 
 .PHONY: all js mysql init_db css js_map js test clean shell docs \
 	build wheel release release_install release_compile
@@ -139,9 +146,7 @@ clean:
 test: mysql
 	SQLURI=$(SQLURI) CELERY_ALWAYS_EAGER=true \
 	LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(HERE)/lib \
-	$(NOSE) -s -d -v ichnaea \
-	--with-coverage --cover-package ichnaea --cover-branches \
-	--cover-erase
+	$(NOSE) -s -d -v $(TEST_ARG)
 
 $(BIN)/sphinx-build:
 	$(INSTALL) -r requirements/docs.txt

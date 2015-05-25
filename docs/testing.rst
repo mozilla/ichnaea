@@ -7,7 +7,8 @@ Testing
 Unit tests
 ----------
 
-If you have a local development environment setup, you can run all tests via:
+If you have a local development environment setup, you can run all tests
+including coverage tests via:
 
 .. code-block:: bash
 
@@ -17,9 +18,7 @@ Or run individual test modules or functions via for example:
 
 .. code-block:: bash
 
-    SQLURI=mysql+pymysql://root:mysql@localhost/test_location \
-    CELERY_ALWAYS_EAGER=true \
-    bin/nosetests -s -d -v ichnaea.tests.test_geoip
+    make test TESTS=ichnaea.tests.test_geoip
 
 
 Testing tasks
