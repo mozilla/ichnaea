@@ -31,7 +31,7 @@ body:
             "altitude": 100.0,
             "altitudeAccuracy": 50.0,
             "heading": 45.0,
-            "pressure": 1010,
+            "pressure": 1013.25,
             "speed": 3.6,
             "source": "gps"
         },

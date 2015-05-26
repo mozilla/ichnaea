@@ -47,7 +47,7 @@ class TestGeoSubmit(BaseTest, CeleryAppTestCase):
             'heading': 45.0,
             'homeMobileCountryCode': cell.mcc,
             'homeMobileNetworkCode': cell.mnc,
-            'pressure': 1010,
+            'pressure': 1013.25,
             'source': 'fused',
             'speed': 3.6,
             'timestamp': now_ms,
@@ -88,7 +88,7 @@ class TestGeoSubmit(BaseTest, CeleryAppTestCase):
         self.assertEqual(position['altitude'], 100.1)
         self.assertEqual(position['altitudeAccuracy'], 23.7)
         self.assertEqual(position['heading'], 45.0)
-        self.assertEqual(position['pressure'], 1010)
+        self.assertEqual(position['pressure'], 1013.25)
         self.assertEqual(position['source'], 'fused')
         self.assertEqual(position['speed'], 3.6)
         self.assertFalse('xtra_field' in position)

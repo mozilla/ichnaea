@@ -52,7 +52,7 @@ class TestGeoSubmit2(BaseTest, CeleryAppTestCase):
                 'altitudeAccuracy': 23.7,
                 'age': 1,
                 'heading': 45.0,
-                'pressure': 1010,
+                'pressure': 1013.25,
                 'source': 'fused',
                 'speed': 3.6,
                 'xtra_field': 2,
@@ -97,7 +97,7 @@ class TestGeoSubmit2(BaseTest, CeleryAppTestCase):
         self.assertEqual(position['altitude'], 100.1)
         self.assertEqual(position['altitudeAccuracy'], 23.7)
         self.assertEqual(position['heading'], 45.0)
-        self.assertEqual(position['pressure'], 1010)
+        self.assertEqual(position['pressure'], 1013.25)
         self.assertEqual(position['source'], 'fused')
         self.assertEqual(position['speed'], 3.6)
         self.assertFalse('xtra_field' in position)

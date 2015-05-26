@@ -72,7 +72,7 @@ class ReportSchema(MappingSchema):
     altitude = SchemaNode(BoundedFloat(), missing=None)
     altitudeAccuracy = SchemaNode(BoundedFloat(), missing=None)
     heading = SchemaNode(BoundedFloat(), missing=None)
-    pressure = SchemaNode(Integer(), missing=None)
+    pressure = SchemaNode(BoundedFloat(), missing=None)
     speed = SchemaNode(BoundedFloat(), missing=None)
     source = SchemaNode(String(), missing=None)
 
