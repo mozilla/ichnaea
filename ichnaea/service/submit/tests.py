@@ -9,7 +9,7 @@ from ichnaea.service.submit.schema import (
     ReportSchema,
     SubmitSchema,
 )
-from ichnaea.service.tests.base_submit import BaseTest
+from ichnaea.service.tests.base_submit import BaseSubmitTest
 from ichnaea.tests.base import (
     CeleryAppTestCase,
     TestCase,
@@ -67,7 +67,7 @@ class TestSubmitSchema(SchemaTest):
         self.assertEqual(len(data['items']), 1)
 
 
-class TestSubmit(BaseTest, CeleryAppTestCase):
+class TestSubmit(BaseSubmitTest, CeleryAppTestCase):
 
     url = '/v1/submit'
     metric = 'submit'

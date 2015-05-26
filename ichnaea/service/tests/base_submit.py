@@ -3,7 +3,7 @@ from ichnaea.models import Radio
 from ichnaea import util
 
 
-class BaseTest(object):
+class BaseSubmitTest(object):
 
     url = None
     metric = None
@@ -13,7 +13,7 @@ class BaseTest(object):
     email = 'world_tr\xc3\xa4veler@email.com'.decode('utf-8')
 
     def setUp(self):
-        super(BaseTest, self).setUp()
+        super(BaseSubmitTest, self).setUp()
         self.queue = self.celery_app.export_queues['internal']
 
     def _assert_queue_size(self, expected):
