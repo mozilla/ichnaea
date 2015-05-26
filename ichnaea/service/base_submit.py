@@ -63,7 +63,10 @@ class BaseSubmitView(BaseAPIView):
         self.emit_upload_metrics(len(request_data['items']), api_key)
         return request_data
 
-    def submit(self, request_data, api_key):
+    def submit(self, api_key):
+        # may raise HTTP error
+        request_data = self.preprocess(api_key)
+
         # data pipeline using new internal data format
         transform = self.transform()
         reports = transform.transform_many(request_data['items'])
@@ -88,11 +91,8 @@ class BaseSubmitView(BaseAPIView):
         return response
 
     def view(self, api_key):
-        # may raise HTTP error
-        request_data = self.preprocess(api_key)
-
         try:
-            self.submit(request_data, api_key)
+            self.submit(api_key)
         except ConnectionError:  # pragma: no cover
             return HTTPServiceUnavailable()
 
