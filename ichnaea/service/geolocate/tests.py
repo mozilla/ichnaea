@@ -78,6 +78,77 @@ class TestGeolocate(AppTestCase):
                                                  'lng': cell.lon},
                                     'accuracy': cell.range})
 
+    def test_ok_cellarea_when_lacf_enabled(self):
+        cell = CellAreaFactory()
+        self.session.flush()
+
+        res = self.app.post_json(
+            '%s?key=test' % self.url,
+            {
+                'radioType': cell.radio.name,
+                'cellTowers': [{
+                    'mobileCountryCode': cell.mcc,
+                    'mobileNetworkCode': cell.mnc,
+                    'locationAreaCode': cell.lac,
+                    'signalStrength': -70,
+                    'timingAdvance': 1},
+                ],
+                'fallbacks': {
+                    'lacf': 1,
+                },
+            },
+            status=200)
+
+        self.check_stats(
+            counter=[self.metric_url + '.200',
+                     self.metric + '.api_key.test',
+                     self.metric + '.api_log.test.cell_lac_hit']
+        )
+
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {'location': {'lat': cell.lat,
+                                                 'lng': cell.lon},
+                                    'accuracy': cell.range})
+
+    def test_cellarea_not_found_when_lacf_disabled(self):
+        cell = CellAreaFactory()
+        self.session.flush()
+
+        res = self.app.post_json(
+            '%s?key=test' % self.url,
+            {
+                'radioType': cell.radio.name,
+                'cellTowers': [{
+                    'mobileCountryCode': cell.mcc,
+                    'mobileNetworkCode': cell.mnc,
+                    'locationAreaCode': cell.lac,
+                    'signalStrength': -70,
+                    'timingAdvance': 1},
+                ],
+                'fallbacks': {
+                    'lacf': 0,
+                },
+            },
+            status=404)
+
+        self.check_stats(
+            counter=[self.metric_url + '.404',
+                     self.metric + '.api_key.test']
+        )
+
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(
+            res.json, {'error': {
+                'errors': [{
+                    'domain': 'geolocation',
+                    'reason': 'notFound',
+                    'message': 'Not found',
+                }],
+                'code': 404,
+                'message': 'Not found'
+            }}
+        )
+
     def test_ok_partial_cell(self):
         session = self.session
         cell = CellFactory()

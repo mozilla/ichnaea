@@ -60,6 +60,7 @@ class Provider(StatsLogger):
         The name to use in logging statements, for example 'cell_lac'
     """
 
+    fallback_field = None
     log_name = None
     location_type = None
     source = DataSource.Internal
@@ -70,7 +71,11 @@ class Provider(StatsLogger):
         self.geoip_db = geoip_db
         self.settings = settings
         self.redis_client = redis_client
-        self.location_type = partial(self.location_type, source=self.source)
+        self.location_type = partial(
+            self.location_type,
+            source=self.source,
+            fallback=self.fallback_field,
+        )
         super(Provider, self).__init__(*args, **kwargs)
 
     def should_locate(self, data, location):
@@ -79,6 +84,14 @@ class Provider(StatsLogger):
         found by another provider, check if this provider should
         attempt to perform a location search.
         """
+        if self.fallback_field is not None:
+            try:
+                fallbacks = data.get('fallbacks', {})
+                if fallbacks:
+                    return fallbacks.get(self.fallback_field, True)
+            except ValueError:
+                self.raven_client.captureException()
+
         return True
 
     def locate(self, data):  # pragma: no cover
@@ -253,6 +266,7 @@ class CellAreaPositionProvider(BaseCellProvider):
     model = CellArea
     log_name = 'cell_lac'
     validator = CellAreaLookup
+    fallback_field = 'lacf'
 
     def _prepare(self, queried_cells):
         # take the smallest LAC of any the user is inside
@@ -490,6 +504,7 @@ class BaseGeoIPProvider(Provider):
     A BaseGeoIPProvider implements a search using
     a GeoIP client service lookup.
     """
+    fallback_field = 'ipf'
     log_name = 'geoip'
     source = DataSource.GeoIP
 
@@ -608,6 +623,12 @@ class FallbackProvider(Provider):
             query['cellTowers'] = cell_queries
         if wifi_queries:
             query['wifiAccessPoints'] = wifi_queries
+        if 'fallbacks' in data and data['fallbacks']:
+            query['fallbacks'] = {
+                # We only send the lacf fallback for now
+                'lacf': data['fallbacks'].get('lacf', 0),
+            }
+
         return query
 
     def should_locate(self, data, location):

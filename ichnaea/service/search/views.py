@@ -41,13 +41,18 @@ class SearchView(BaseLocateView):
         return {'status': 'not_found'}
 
     def view(self, api_key):
-        result = self.locate(api_key)
-        if not result:
+        location_data = self.locate(api_key)
+        if not location_data:
             return self.not_found()
 
-        return {
+        response = {
             'status': 'ok',
-            'lat': result['lat'],
-            'lon': result['lon'],
-            'accuracy': result['accuracy'],
+            'lat': location_data['lat'],
+            'lon': location_data['lon'],
+            'accuracy': location_data['accuracy'],
         }
+
+        if location_data['fallback']:
+            response['fallback'] = location_data['fallback']
+
+        return response

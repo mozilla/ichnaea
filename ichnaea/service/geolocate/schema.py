@@ -10,6 +10,8 @@ from colander import (
     String,
 )
 
+from ichnaea.service.schema import FallbackSchema
+
 RADIO_STRINGS = ['gsm', 'cdma', 'wcdma', 'lte']
 
 
@@ -62,3 +64,4 @@ class GeoLocateSchema(MappingSchema):
 
     cellTowers = CellTowersSchema(missing=())
     wifiAccessPoints = WifiAccessPointsSchema(missing=())
+    fallbacks = FallbackSchema(missing=None)

@@ -69,9 +69,12 @@ class BaseLocateView(BaseAPIView):
         transform = self.transform()
         parsed_data = transform.transform_one(request_data)
 
-        query = {'geoip': self.request.client_addr}
-        query['cell'] = parsed_data.get('cell', [])
-        query['wifi'] = parsed_data.get('wifi', [])
+        query = {
+            'geoip': self.request.client_addr,
+            'cell': parsed_data.get('cell', []),
+            'wifi': parsed_data.get('wifi', []),
+            'fallbacks': request_data.get('fallbacks', {}),
+        }
         return query
 
     def locate(self, api_key):
