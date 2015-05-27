@@ -1,5 +1,10 @@
-from colander import MappingSchema, SchemaNode, SequenceSchema
-from colander import Integer, String
+from colander import (
+    Integer,
+    MappingSchema,
+    SchemaNode,
+    SequenceSchema,
+    String,
+)
 
 from ichnaea.service.schema import BoundedFloat
 
