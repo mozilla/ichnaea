@@ -6,7 +6,10 @@ from colander import (
     String,
 )
 
-from ichnaea.service.schema import BoundedFloat
+from ichnaea.service.schema import (
+    BoundedFloat,
+    UnixTimeFromString,
+)
 
 
 class CellSchema(MappingSchema):
@@ -52,7 +55,7 @@ class BaseReportSchema(MappingSchema):
     lat = SchemaNode(BoundedFloat(), missing=None)
     lon = SchemaNode(BoundedFloat(), missing=None)
 
-    time = SchemaNode(String(), missing=None)
+    time = SchemaNode(UnixTimeFromString(), missing=None)
     accuracy = SchemaNode(Integer(), missing=None)
     age = SchemaNode(Integer(), missing=None)
     altitude = SchemaNode(Integer(), missing=None)

@@ -1,7 +1,3 @@
-import calendar
-import time
-
-import iso8601
 
 
 class ReportTransform(object):
@@ -116,32 +112,14 @@ class ReportTransform(object):
             report[self.wifi_id[1]] = wifis
         return wifis
 
-    def _parse_time(self, item, report):
-        # parse date string to unixtime, default to now
-        timestamp = time.time() * 1000.0
-        if item['time']:
-            try:
-                dt = iso8601.parse_date(item['time'])
-                timestamp = calendar.timegm(dt.timetuple()) * 1000.0
-            except (iso8601.ParseError, TypeError):  # pragma: no cover
-                pass
-        report['timestamp'] = timestamp
-
-    def _parse_timestamp(self, item, report):
-        if not item['timestamp']:
-            report['timestamp'] = time.time() * 1000.0
-        else:
-            report['timestamp'] = item['timestamp']
-
     def transform_one(self, item):
         report = {}
         self._parse_position(item, report)
         self._parse_toplevel(item, report)
 
-        if self.time_id == 'time':
-            self._parse_time(item, report)
-        elif self.time_id == 'timestamp':
-            self._parse_timestamp(item, report)
+        timestamp = item.get(self.time_id)
+        if timestamp:
+            report['timestamp'] = timestamp
 
         blues = self._parse_blues(item, report)
         cells = self._parse_cells(item, report)

@@ -11,7 +11,10 @@ from colander import (
     String,
 )
 
-from ichnaea.service.schema import BoundedFloat
+from ichnaea.service.schema import (
+    BoundedFloat,
+    UnixTimeFromInteger,
+)
 
 
 class BluetoothBeaconSchema(MappingSchema):
@@ -87,6 +90,6 @@ class ReportSchema(MappingSchema):
     homeMobileCountryCode = SchemaNode(Integer(), missing=None)
     homeMobileNetworkCode = SchemaNode(Integer(), missing=None)
     radioType = SchemaNode(String(), missing=None)
-    timestamp = SchemaNode(Integer(), missing=None)
+    timestamp = SchemaNode(UnixTimeFromInteger(), missing=None)
 
     wifiAccessPoints = WifiAccessPointsSchema(missing=())
