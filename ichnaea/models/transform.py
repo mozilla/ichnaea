@@ -38,7 +38,7 @@ class ReportTransform(object):
                 else:
                     source = spec
                     target = spec
-                self.conditional_set(blue, target, blue_item[source])
+                self.conditional_set(blue, target, blue_item.get(source))
             if blue:
                 blues.append(blue)
         if blues:
@@ -56,7 +56,7 @@ class ReportTransform(object):
                 else:
                     source = spec
                     target = spec
-                self.conditional_set(cell, target, cell_item[source])
+                self.conditional_set(cell, target, cell_item.get(source))
             if cell:
                 if not cell.get(self.radio_id[1]) and item_radio:
                     cell[self.radio_id[1]] = item_radio
@@ -80,7 +80,8 @@ class ReportTransform(object):
                 else:
                     source = spec
                     target = spec
-                self.conditional_set(position, target, item_position[source])
+                self.conditional_set(position, target,
+                                     item_position.get(source))
         if position:
             report[self.position_id[1]] = position
         return position
@@ -92,7 +93,7 @@ class ReportTransform(object):
             else:
                 source = spec
                 target = spec
-            self.conditional_set(report, target, item[source])
+            self.conditional_set(report, target, item.get(source))
         return report
 
     def _parse_wifis(self, item, report):
@@ -105,7 +106,7 @@ class ReportTransform(object):
                 else:
                     source = spec
                     target = spec
-                self.conditional_set(wifi, target, wifi_item[source])
+                self.conditional_set(wifi, target, wifi_item.get(source))
             if wifi:
                 wifis.append(wifi)
         if wifis:

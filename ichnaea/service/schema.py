@@ -48,3 +48,42 @@ class UnixTimeFromString(colander.String):
             except (iso8601.ParseError, TypeError):  # pragma: no cover
                 pass
         return timestamp
+
+
+class OptionalMapping(colander.Mapping):
+
+    unknown = 'ignore'
+
+
+class OptionalMappingSchema(colander.Schema):
+
+    schema_type = OptionalMapping
+
+
+class OptionalSequence(colander.Sequence):
+    pass
+
+
+class OptionalSequenceSchema(colander.Schema):
+
+    schema_type = OptionalSequence
+
+
+class OptionalNode(colander.SchemaNode):
+
+    missing = colander.drop
+
+
+class OptionalBoundedFloatNode(OptionalNode):
+
+    schema_type = BoundedFloat
+
+
+class OptionalIntNode(OptionalNode):
+
+    schema_type = colander.Integer
+
+
+class OptionalStringNode(OptionalNode):
+
+    schema_type = colander.String

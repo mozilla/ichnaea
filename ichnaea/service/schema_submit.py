@@ -3,93 +3,90 @@
 # and the W3C geolocation position interface
 # http://www.w3.org/TR/geolocation-API/#position_interface
 
-from colander import (
-    Integer,
-    MappingSchema,
-    SchemaNode,
-    SequenceSchema,
-    String,
-)
-
 from ichnaea.service.schema import (
-    BoundedFloat,
+    OptionalBoundedFloatNode,
+    OptionalMappingSchema,
+    OptionalNode,
+    OptionalIntNode,
+    OptionalSequenceSchema,
+    OptionalStringNode,
     UnixTimeFromInteger,
 )
 
 
-class BluetoothBeaconSchema(MappingSchema):
+class BluetoothBeaconSchema(OptionalMappingSchema):
 
-    macAddress = SchemaNode(String(), missing=None)
+    macAddress = OptionalStringNode()
 
-    age = SchemaNode(Integer(), missing=None)
-    name = SchemaNode(String(), missing=None)
-    signalStrength = SchemaNode(Integer(), missing=None)
+    age = OptionalIntNode()
+    name = OptionalStringNode()
+    signalStrength = OptionalIntNode()
 
 
-class BluetoothBeaconsSchema(SequenceSchema):
+class BluetoothBeaconsSchema(OptionalSequenceSchema):
 
     blue = BluetoothBeaconSchema()
 
 
-class CellTowerSchema(MappingSchema):
+class CellTowerSchema(OptionalMappingSchema):
 
-    radioType = SchemaNode(String(), missing=None)
-    mobileCountryCode = SchemaNode(Integer(), missing=None)
-    mobileNetworkCode = SchemaNode(Integer(), missing=None)
-    locationAreaCode = SchemaNode(Integer(), missing=None)
-    cellId = SchemaNode(Integer(), missing=None)
+    radioType = OptionalStringNode()
+    mobileCountryCode = OptionalIntNode()
+    mobileNetworkCode = OptionalIntNode()
+    locationAreaCode = OptionalIntNode()
+    cellId = OptionalIntNode()
 
-    age = SchemaNode(Integer(), missing=None)
-    asu = SchemaNode(Integer(), missing=None)
-    serving = SchemaNode(Integer(), missing=None)
-    signalStrength = SchemaNode(Integer(), missing=None)
-    timingAdvance = SchemaNode(Integer(), missing=None)
-
-
-class ConnectionSchema(MappingSchema):
-
-    ip = SchemaNode(String(), missing=None)
+    age = OptionalIntNode()
+    asu = OptionalIntNode()
+    serving = OptionalIntNode()
+    signalStrength = OptionalIntNode()
+    timingAdvance = OptionalIntNode()
 
 
-class WifiAccessPointSchema(MappingSchema):
+class ConnectionSchema(OptionalMappingSchema):
 
-    macAddress = SchemaNode(String(), missing=None)
-
-    age = SchemaNode(Integer(), missing=None)
-    channel = SchemaNode(Integer(), missing=None)
-    frequency = SchemaNode(Integer(), missing=None)
-    radioType = SchemaNode(String(), missing=None)
-    signalStrength = SchemaNode(Integer(), missing=None)
-    signalToNoiseRatio = SchemaNode(Integer(), missing=None)
-    ssid = SchemaNode(String(), missing=None)
+    ip = OptionalStringNode()
 
 
-class WifiAccessPointsSchema(SequenceSchema):
+class WifiAccessPointSchema(OptionalMappingSchema):
+
+    macAddress = OptionalStringNode()
+
+    age = OptionalIntNode()
+    channel = OptionalIntNode()
+    frequency = OptionalIntNode()
+    radioType = OptionalStringNode()
+    signalStrength = OptionalIntNode()
+    signalToNoiseRatio = OptionalIntNode()
+    ssid = OptionalStringNode()
+
+
+class WifiAccessPointsSchema(OptionalSequenceSchema):
 
     wifi = WifiAccessPointSchema()
 
 
-class PositionSchema(MappingSchema):
+class PositionSchema(OptionalMappingSchema):
 
-    latitude = SchemaNode(BoundedFloat(), missing=None)
-    longitude = SchemaNode(BoundedFloat(), missing=None)
+    latitude = OptionalBoundedFloatNode()
+    longitude = OptionalBoundedFloatNode()
 
-    accuracy = SchemaNode(BoundedFloat(), missing=None)
-    age = SchemaNode(Integer(), missing=None)
-    altitude = SchemaNode(BoundedFloat(), missing=None)
-    altitudeAccuracy = SchemaNode(BoundedFloat(), missing=None)
-    heading = SchemaNode(BoundedFloat(), missing=None)
-    pressure = SchemaNode(BoundedFloat(), missing=None)
-    speed = SchemaNode(BoundedFloat(), missing=None)
-    source = SchemaNode(String(), missing=None)
+    accuracy = OptionalBoundedFloatNode()
+    age = OptionalIntNode()
+    altitude = OptionalBoundedFloatNode()
+    altitudeAccuracy = OptionalBoundedFloatNode()
+    heading = OptionalBoundedFloatNode()
+    pressure = OptionalBoundedFloatNode()
+    speed = OptionalBoundedFloatNode()
+    source = OptionalStringNode()
 
 
-class ReportSchema(MappingSchema):
+class ReportSchema(OptionalMappingSchema):
 
-    carrier = SchemaNode(String(), missing=None)
-    homeMobileCountryCode = SchemaNode(Integer(), missing=None)
-    homeMobileNetworkCode = SchemaNode(Integer(), missing=None)
-    radioType = SchemaNode(String(), missing=None)
-    timestamp = SchemaNode(UnixTimeFromInteger(), missing=None)
+    carrier = OptionalStringNode()
+    homeMobileCountryCode = OptionalIntNode()
+    homeMobileNetworkCode = OptionalIntNode()
+    radioType = OptionalStringNode()
+    timestamp = OptionalNode(UnixTimeFromInteger())
 
     wifiAccessPoints = WifiAccessPointsSchema(missing=())

@@ -1,6 +1,6 @@
 import zlib
 
-from colander import Invalid
+import colander
 from simplejson import dumps, loads
 from pyramid.httpexceptions import HTTPError
 from pyramid.response import Response
@@ -101,7 +101,7 @@ def verify_schema(schema, body, errors, validated):
                 deserialized = attr.deserialize()
             else:
                 deserialized = attr.deserialize(body[name])
-        except Invalid as e:
+        except colander.Invalid as e:
             # the struct is invalid
             err_dict = e.asdict()
             try:
@@ -114,4 +114,6 @@ def verify_schema(schema, body, errors, validated):
                         break
                 break
         else:
-            validated[name] = deserialized
+            if (deserialized is not colander.drop and
+                    deserialized is not colander.null):
+                validated[name] = deserialized

@@ -1,19 +1,17 @@
-from colander import (
-    Integer,
-    MappingSchema,
-    SchemaNode,
-    SequenceSchema,
+from ichnaea.service.schema import (
+    OptionalIntNode,
+    OptionalMappingSchema,
+    OptionalSequenceSchema,
 )
-
 from ichnaea.service import schema_submit
 
 
 class CellTowerSchema(schema_submit.CellTowerSchema):
 
-    primaryScramblingCode = SchemaNode(Integer(), missing=None)
+    primaryScramblingCode = OptionalIntNode()
 
 
-class CellTowersSchema(SequenceSchema):
+class CellTowersSchema(OptionalSequenceSchema):
 
     cell = CellTowerSchema()
 
@@ -26,11 +24,11 @@ class ReportSchema(schema_submit.ReportSchema):
     position = schema_submit.PositionSchema(missing=None)
 
 
-class ReportsSchema(SequenceSchema):
+class ReportsSchema(OptionalSequenceSchema):
 
     report = ReportSchema()
 
 
-class GeoSubmit2Schema(MappingSchema):
+class GeoSubmit2Schema(OptionalMappingSchema):
 
     items = ReportsSchema()

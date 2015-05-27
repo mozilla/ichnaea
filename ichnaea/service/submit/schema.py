@@ -1,70 +1,67 @@
-from colander import (
-    Integer,
-    MappingSchema,
-    SchemaNode,
-    SequenceSchema,
-    String,
-)
-
 from ichnaea.service.schema import (
-    BoundedFloat,
+    OptionalBoundedFloatNode,
+    OptionalIntNode,
+    OptionalMappingSchema,
+    OptionalNode,
+    OptionalSequenceSchema,
+    OptionalStringNode,
     UnixTimeFromString,
 )
 
 
-class CellSchema(MappingSchema):
+class CellSchema(OptionalMappingSchema):
 
-    radio = SchemaNode(String(), missing=None)
-    mcc = SchemaNode(Integer(), missing=None)
-    mnc = SchemaNode(Integer(), missing=None)
-    lac = SchemaNode(Integer(), missing=None)
-    cid = SchemaNode(Integer(), missing=None)
+    radio = OptionalStringNode()
+    mcc = OptionalIntNode()
+    mnc = OptionalIntNode()
+    lac = OptionalIntNode()
+    cid = OptionalIntNode()
 
-    age = SchemaNode(Integer(), missing=None)
-    asu = SchemaNode(Integer(), missing=None)
-    psc = SchemaNode(Integer(), missing=None)
-    serving = SchemaNode(Integer(), missing=None)
-    signal = SchemaNode(Integer(), missing=None)
-    ta = SchemaNode(Integer(), missing=None)
+    age = OptionalIntNode()
+    asu = OptionalIntNode()
+    psc = OptionalIntNode()
+    serving = OptionalIntNode()
+    signal = OptionalIntNode()
+    ta = OptionalIntNode()
 
 
-class CellsSchema(SequenceSchema):
+class CellsSchema(OptionalSequenceSchema):
 
     cell = CellSchema()
 
 
-class WifiSchema(MappingSchema):
+class WifiSchema(OptionalMappingSchema):
 
-    key = SchemaNode(String())
+    key = OptionalStringNode()
 
-    age = SchemaNode(Integer(), missing=None)
-    channel = SchemaNode(Integer(), missing=None)
-    frequency = SchemaNode(Integer(), missing=None)
-    radio = SchemaNode(String(), missing=None)
-    signal = SchemaNode(Integer(), missing=None)
-    signalToNoiseRatio = SchemaNode(Integer(), missing=None)
+    age = OptionalIntNode()
+    channel = OptionalIntNode()
+    frequency = OptionalIntNode()
+    radio = OptionalStringNode()
+    signal = OptionalIntNode()
+    signalToNoiseRatio = OptionalIntNode()
 
 
-class WifisSchema(SequenceSchema):
+class WifisSchema(OptionalSequenceSchema):
 
     wifi = WifiSchema()
 
 
-class BaseReportSchema(MappingSchema):
+class BaseReportSchema(OptionalMappingSchema):
 
-    lat = SchemaNode(BoundedFloat(), missing=None)
-    lon = SchemaNode(BoundedFloat(), missing=None)
+    lat = OptionalBoundedFloatNode()
+    lon = OptionalBoundedFloatNode()
 
-    time = SchemaNode(UnixTimeFromString(), missing=None)
-    accuracy = SchemaNode(Integer(), missing=None)
-    age = SchemaNode(Integer(), missing=None)
-    altitude = SchemaNode(Integer(), missing=None)
-    altitude_accuracy = SchemaNode(Integer(), missing=None)
-    heading = SchemaNode(BoundedFloat(), missing=None)
-    pressure = SchemaNode(BoundedFloat(), missing=None)
-    radio = SchemaNode(String(), missing=None)
-    speed = SchemaNode(BoundedFloat(), missing=None)
-    source = SchemaNode(String(), missing=None)
+    time = OptionalNode(UnixTimeFromString())
+    accuracy = OptionalIntNode()
+    age = OptionalIntNode()
+    altitude = OptionalIntNode()
+    altitude_accuracy = OptionalIntNode()
+    heading = OptionalBoundedFloatNode()
+    pressure = OptionalBoundedFloatNode()
+    radio = OptionalStringNode()
+    speed = OptionalBoundedFloatNode()
+    source = OptionalStringNode()
 
 
 class ReportSchema(BaseReportSchema):
@@ -73,11 +70,11 @@ class ReportSchema(BaseReportSchema):
     wifi = WifisSchema(missing=())
 
 
-class ReportsSchema(SequenceSchema):
+class ReportsSchema(OptionalSequenceSchema):
 
     report = ReportSchema()
 
 
-class SubmitSchema(MappingSchema):
+class SubmitSchema(OptionalMappingSchema):
 
     items = ReportsSchema()

@@ -35,8 +35,8 @@ class TestReportSchema(SchemaTest):
         schema = ReportSchema()
         request = self._make_request('{}')
         data, errors = preprocess_request(request, schema, None)
-        self.assertEquals(data['lat'], None)
-        self.assertEquals(data['lon'], None)
+        self.assertFalse('lat' in data)
+        self.assertFalse('lon' in data)
         self.assertFalse(errors)
 
     def test_empty_wifi_entry(self):
@@ -45,7 +45,7 @@ class TestReportSchema(SchemaTest):
         request = self._make_request(
             '{"lat": %s, "lon": %s, "wifi": [{}]}' % (wifi.lat, wifi.lon))
         data, errors = preprocess_request(request, schema, None)
-        self.assertTrue(errors)
+        self.assertFalse(errors)
 
 
 class TestSubmitSchema(SchemaTest):
@@ -202,14 +202,3 @@ class TestSubmit(BaseSubmitTest, CeleryAppTestCase):
     def test_error_no_mapping(self):
         res = self.app.post_json('/v1/submit', [1], status=400)
         self.assertTrue('errors' in res.json)
-
-    def test_errors(self):
-        wifi = WifiFactory.build()
-        wifis = [{'wrong_key': 'ab'} for i in range(100)]
-        res = self._post(
-            [{'lat': wifi.lat, 'lon': wifi.lon, 'wifi': wifis}],
-            status=400)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertTrue('errors' in res.json)
-        self.assertTrue(len(res.json['errors']) < 10)
-        self.check_raven(['JSONError'])
