@@ -4,11 +4,8 @@ Changelog
 1.2 (unreleased)
 ----------------
 
-Untagged
-********
-
-Migrations
-~~~~~~~~~~
+20150528085200
+**************
 
 Changes
 ~~~~~~~
