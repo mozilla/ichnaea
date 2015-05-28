@@ -25,6 +25,8 @@ Changes
 
 - #434: Internal test only changes to test base classes.
 
+- Update to latest versions of gevent and simplejson.
+
 20150522094900
 **************
 

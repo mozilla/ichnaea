@@ -1,8 +1,8 @@
 MarkupSafe==0.23
 SQLAlchemy==0.9.9  # rq.filter: <1.0.0
 billiard==3.3.0.20
-gevent==1.0.1
+gevent==1.0.2
 greenlet==0.4.7
 setproctitle==1.1.8
-simplejson==3.6.5
+simplejson==3.7.2
 zope.interface==4.1.2
