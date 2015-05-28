@@ -9,6 +9,7 @@ from ichnaea.models import (
 from ichnaea.tests.base import AppTestCase
 from ichnaea.tests.factories import (
     CellFactory,
+    CellAreaFactory,
     WifiFactory,
 )
 from ichnaea import util
@@ -43,6 +44,33 @@ class TestGeolocate(AppTestCase):
             counter=[self.metric_url + '.200',
                      self.metric + '.api_key.test',
                      self.metric + '.api_log.test.cell_hit']
+        )
+
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {'location': {'lat': cell.lat,
+                                                 'lng': cell.lon},
+                                    'accuracy': cell.range})
+
+    def test_ok_cellarea(self):
+        cell = CellAreaFactory()
+        self.session.flush()
+
+        res = self.app.post_json(
+            '%s?key=test' % self.url, {
+                'radioType': cell.radio.name,
+                'cellTowers': [{
+                    'mobileCountryCode': cell.mcc,
+                    'mobileNetworkCode': cell.mnc,
+                    'locationAreaCode': cell.lac,
+                    'signalStrength': -70,
+                    'timingAdvance': 1},
+                ]},
+            status=200)
+
+        self.check_stats(
+            counter=[self.metric_url + '.200',
+                     self.metric + '.api_key.test',
+                     self.metric + '.api_log.test.cell_lac_hit']
         )
 
         self.assertEqual(res.content_type, 'application/json')

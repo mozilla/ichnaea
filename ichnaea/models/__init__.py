@@ -26,6 +26,7 @@ from ichnaea.models.content import (  # NOQA
 )
 from ichnaea.models.observation import (  # NOQA
     CellLookup,
+    CellAreaLookup,
     CellObservation,
     CellReport,
     Report,

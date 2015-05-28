@@ -2,11 +2,12 @@ import requests_mock
 from pyramid.testing import DummyRequest
 from sqlalchemy import text
 
-from ichnaea.constants import CELL_MIN_ACCURACY
+from ichnaea.constants import CELL_MIN_ACCURACY, LAC_MIN_ACCURACY
 from ichnaea.customjson import dumps, loads
 from ichnaea.models import (
     ApiKey,
     Cell,
+    CellArea,
     Radio,
     Wifi,
 )
@@ -92,6 +93,44 @@ class TestSearch(AppTestCase):
                      ('search.cell_hit', 1),
                      ('request.v1.search.200', 1),
                      ('search.api_log.test.cell_hit', 1)],
+        )
+
+    def test_ok_cellarea(self):
+        app = self.app
+        session = self.session
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        lat = PARIS_LAT
+        lon = PARIS_LON
+        data = [
+            CellArea(lat=lat, lon=lon, range=1000,
+                     radio=Radio.umts, **key),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        res = app.post_json(
+            '/v1/search?key=test',
+            {
+                'radio': Radio.gsm.name,
+                'cell': [
+                    dict(radio=Radio.umts.name, **key),
+                    dict(radio=Radio.umts.name, **key),
+                ],
+            },
+            status=200)
+
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {'status': 'ok',
+                                    'lat': PARIS_LAT,
+                                    'lon': PARIS_LON,
+                                    'accuracy': LAC_MIN_ACCURACY})
+
+        self.check_stats(
+            timer=[('request.v1.search', 1)],
+            counter=[('search.api_key.test', 1),
+                     ('search.cell_lac_hit', 1),
+                     ('request.v1.search.200', 1),
+                     ('search.api_log.test.cell_lac_hit', 1)],
         )
 
     def test_ok_wifi(self):
