@@ -97,9 +97,6 @@ class BaseAPIView(BaseServiceView):
 
             if should_limit:
                 return self.forbidden()
-            elif should_limit is None:  # pragma: no cover
-                # We couldn't connect to Redis
-                self.log_count('{view_name}.redisfailure_skip_limit')
         else:
             if api_key_text is not None:
                 self.log_count('{view_name}.unknown_api_key')
