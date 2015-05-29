@@ -1,5 +1,7 @@
 from ichnaea.models.base import ValidationMixin
 from ichnaea.models.cell import (
+    CellAreaKey,
+    CellAreaKeyMixin,
     CellKey,
     CellKeyPscMixin,
     CellSignalMixin,
@@ -15,18 +17,23 @@ from ichnaea.models.wifi import (
 )
 
 
-class CellAreaLookup(CellKeyPscMixin, CellSignalMixin, ValidationMixin):
+class ValidCellAreaLookupSchema(ValidCellAreaKeySchema, ValidCellSignalSchema):
+    """A schema which validates the fields in a cell area lookup."""
 
-    _hashkey_cls = CellKey
-    _valid_schema = ValidCellAreaKeySchema
+
+class CellAreaLookup(CellAreaKeyMixin, CellSignalMixin, ValidationMixin):
+
+    _hashkey_cls = CellAreaKey
+    _valid_schema = ValidCellAreaLookupSchema
 
 
 class ValidCellLookupSchema(ValidCellKeySchema, ValidCellSignalSchema):
     """A schema which validates the fields in a cell lookup."""
 
 
-class CellLookup(CellAreaLookup):
+class CellLookup(CellKeyPscMixin, CellSignalMixin, ValidationMixin):
 
+    _hashkey_cls = CellKey
     _valid_schema = ValidCellLookupSchema
 
 

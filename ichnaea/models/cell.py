@@ -131,6 +131,20 @@ class ValidCellAreaKeySchema(FieldSchema, CopyingSchema):
         validator=colander.Range(
             constants.MIN_LAC, constants.MAX_LAC_ALL))
 
+    def validator(self, schema, data):
+        if data['mcc'] not in constants.ALL_VALID_MCCS:
+            raise colander.Invalid(schema, (
+                'Check against the list of all known valid mccs'))
+
+        if data['radio'] in Radio._gsm_family() and data['mnc'] > 999:
+            raise colander.Invalid(schema, (
+                'Skip GSM/LTE/UMTS towers with an invalid MNC'))
+
+        if (data['radio'] in Radio._gsm_family() and
+                data['lac'] > constants.MAX_LAC_GSM_UMTS_LTE):
+            raise colander.Invalid(schema, (
+                'LAC is out of range for GSM/UMTS/LTE.'))
+
 
 class CellAreaKeyMixin(HashKeyMixin):
 
@@ -193,22 +207,16 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
         return super(ValidCellKeySchema, self).deserialize(data)
 
     def validator(self, schema, data):
+        super(ValidCellKeySchema, self).validator(schema, data)
+
         lac_missing = data.get('lac') is None
         cid_missing = data.get('cid') is None
         psc_missing = data.get('psc') is None
-
-        if data['mcc'] not in constants.ALL_VALID_MCCS:
-            raise colander.Invalid(schema, (
-                'Check against the list of all known valid mccs'))
 
         if data['radio'] == Radio.cdma and (lac_missing or cid_missing):
             raise colander.Invalid(schema, (
                 'Skip CDMA towers missing lac or cid '
                 '(no psc on CDMA exists to backfill using inference)'))
-
-        if data['radio'] in Radio._gsm_family() and data['mnc'] > 999:
-            raise colander.Invalid(schema, (
-                'Skip GSM/LTE/UMTS towers with an invalid MNC'))
 
         if (lac_missing or cid_missing) and psc_missing:
             raise colander.Invalid(schema, (
@@ -224,11 +232,6 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
                 data['cid'] > constants.MAX_CID_LTE):
             raise colander.Invalid(schema, (
                 'CID is out of range for LTE.'))
-
-        if (data['radio'] in Radio._gsm_family() and
-                data['lac'] > constants.MAX_LAC_GSM_UMTS_LTE):
-            raise colander.Invalid(schema, (
-                'LAC is out of range for GSM/UMTS/LTE.'))
 
 
 class CellKeyMixin(CellAreaKeyMixin):
