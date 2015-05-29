@@ -83,7 +83,10 @@ class ReportTransform(object):
                 self.conditional_set(position, target,
                                      item_position.get(source))
         if position:
-            report[self.position_id[1]] = position
+            if self.position_id[1] is None:
+                report.update(position)
+            else:
+                report[self.position_id[1]] = position
         return position
 
     def _parse_toplevel(self, item, report):

@@ -13,6 +13,7 @@ import pytz
 
 from ichnaea.customjson import kombu_dumps
 from ichnaea.data.base import DataTask
+from ichnaea.models.transform import ReportTransform
 from ichnaea import util
 
 MetadataGroup = namedtuple('MetadataGroup', 'api_key email ip nickname')
@@ -120,6 +121,51 @@ class ReportUploader(DataTask):
         raise NotImplementedError
 
 
+class InternalTransform(ReportTransform):
+
+    time_id = 'timestamp'
+
+    position_id = ('position', None)
+    position_map = [
+        ('latitude', 'lat'),
+        ('longitude', 'lon'),
+        'accuracy',
+        'altitude',
+        ('altitudeAccuracy', 'altitude_accuracy'),
+        'age',
+        'heading',
+        'pressure',
+        'speed',
+        'source',
+    ]
+
+    cell_id = ('cellTowers', 'cell')
+    cell_map = [
+        ('radioType', 'radio'),
+        ('mobileCountryCode', 'mcc'),
+        ('mobileNetworkCode', 'mnc'),
+        ('locationAreaCode', 'lac'),
+        ('cellId', 'cid'),
+        'age',
+        'asu',
+        ('primaryScramblingCode', 'psc'),
+        'serving',
+        ('signalStrength', 'signal'),
+        ('timingAdvance', 'ta'),
+    ]
+
+    wifi_id = ('wifiAccessPoints', 'wifi')
+    wifi_map = [
+        ('macAddress', 'key'),
+        ('radioType', 'radio'),
+        'age',
+        'channel',
+        'frequency',
+        'signalToNoiseRatio',
+        ('signalStrength', 'signal'),
+    ]
+
+
 class InternalUploader(ReportUploader):
 
     @staticmethod
@@ -129,90 +175,15 @@ class InternalUploader(ReportUploader):
         return insert_measures
 
     def _format_report(self, item):
-        report = {}
+        transform = InternalTransform()
+        report = transform.transform_one(item)
 
-        def conditional_set(item, target, value, missing):
-            if value and value != missing:
-                item[target] = value
-
-        # don't forward the bluetooth mapping,
-        # the top-level home mcc/mnc and carrier fields
-        # as we don't do anything with them
-
-        position_map = [
-            ('lat', 'latitude', None),
-            ('lon', 'longitude', None),
-            ('accuracy', 'accuracy', 0),
-            ('altitude', 'altitude', 0),
-            ('altitude_accuracy', 'altitudeAccuracy', 0),
-            ('age', 'age', None),
-            ('heading', 'heading', -1.0),
-            ('pressure', 'pressure', None),
-            ('speed', 'speed', -1.0),
-            ('source', 'source', 'gps'),
-        ]
-
-        cell_map = [
-            ('radio', 'radioType', None),
-            ('mcc', 'mobileCountryCode', -1),
-            ('mnc', 'mobileNetworkCode', -1),
-            ('lac', 'locationAreaCode', -1),
-            ('cid', 'cellId', -1),
-            ('age', 'age', None),
-            ('asu', 'asu', -1),
-            ('psc', 'primaryScramblingCode', -1),
-            ('serving', 'serving', None),
-            ('signal', 'signalStrength', 0),
-            ('ta', 'timingAdvance', 0),
-        ]
-
-        wifi_map = [
-            ('key', 'macAddress', None),
-            ('radio', 'radioType', None),
-            ('age', 'age', None),
-            ('channel', 'channel', 0),
-            ('frequency', 'frequency', 0),
-            ('signalToNoiseRatio', 'signalToNoiseRatio', 0),
-            ('signal', 'signalStrength', 0),
-        ]
-
-        timestamp = item.get('timestamp', None)
+        timestamp = report.pop('timestamp', None)
         if timestamp:
             dt = datetime.utcfromtimestamp(timestamp / 1000.0)
             report['time'] = dt.replace(microsecond=0, tzinfo=pytz.UTC)
 
-        position = item.get('position')
-        if position:
-            for target, source, missing in position_map:
-                conditional_set(report, target,
-                                position.get(source, missing), missing)
-
-        cells = []
-        for cell_item in item.get('cellTowers', ()):
-            cell = {}
-            for target, source, missing in cell_map:
-                conditional_set(cell, target,
-                                cell_item.get(source, missing), missing)
-            if cell:
-                cells.append(cell)
-
-        if cells:
-            report['cell'] = cells
-
-        wifis = []
-        for wifi_item in item.get('wifiAccessPoints', ()):
-            wifi = {}
-            for target, source, missing in wifi_map:
-                conditional_set(wifi, target,
-                                wifi_item.get(source, missing), missing)
-            if wifi:
-                wifis.append(wifi)
-
-        if wifis:
-            report['wifi'] = wifis
-
-        if report.get('cell') or report.get('wifi'):
-            return report
+        return report
 
     def send(self, url, data):
         groups = defaultdict(list)
