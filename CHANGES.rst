@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #440: Allow search/locate queries without a cell id.
+
 20150528085200
 **************
 

@@ -24,13 +24,15 @@ from ichnaea.models.content import (  # NOQA
     StatKey,
     User,
 )
-from ichnaea.models.observation import (  # NOQA
+from ichnaea.models.lookup import (  # NOQA
     CellLookup,
     CellAreaLookup,
+    WifiLookup,
+)
+from ichnaea.models.observation import (  # NOQA
     CellObservation,
     CellReport,
     Report,
-    WifiLookup,
     WifiObservation,
     WifiReport,
 )
