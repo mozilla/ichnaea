@@ -78,7 +78,6 @@ class BaseAPIView(BaseServiceView):
         except Exception:  # pragma: no cover
             # if we cannot connect to backend DB, skip api key check
             self.raven_client.captureException()
-            self.log_count('{view_name}.dbfailure_skip_api_key')
 
         if api_key is not None:
             self.log_count('{view_name}.api_key.{api_key}',
