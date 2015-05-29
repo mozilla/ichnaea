@@ -137,14 +137,14 @@ class Stat(IdMixin, HashKeyMixin, _Model):
     value = Column(Integer(unsigned=True))
 
     @classmethod
-    def incr(cls, session, key, old_value, value):
+    def incr(cls, session, key, value, old=0):
         stat = cls.getkey(session, key)
         if stat is not None:
             stat.value += int(value)
         else:
             stmt = cls.__table__.insert(
                 on_duplicate='value = value + %s' % int(value)).values(
-                key=key.key, time=key.time, value=old_value + value)
+                key=key.key, time=key.time, value=old + value)
             session.execute(stmt)
         return value
 

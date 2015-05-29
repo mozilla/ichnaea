@@ -38,7 +38,7 @@ class StatCounterUpdater(DataTask):
 
         # insert or update a new stat value
         hashkey = Stat.to_hashkey(key=stat_key, time=day)
-        Stat.incr(self.session, hashkey, old_value, value)
+        Stat.incr(self.session, hashkey, value, old=old_value)
 
         # queue the redis value to be decreased
         stat_counter.decr(self.pipe, value)

@@ -1,14 +1,16 @@
-import boto
 import csv
 import os
 import re
-from datetime import datetime
-from pytz import UTC
 from contextlib import contextmanager
+from datetime import datetime
+
+import boto
 from mock import MagicMock, patch
+from pytz import UTC
 import requests_mock
 
 from ichnaea.constants import CELL_MIN_ACCURACY
+from ichnaea.data.tasks import update_statcounter
 from ichnaea.export.tasks import (
     export_modified_cells,
     import_ocid_cells,
@@ -26,6 +28,8 @@ from ichnaea.models import (
     OCIDCell,
     OCIDCellArea,
     Radio,
+    Stat,
+    StatKey,
 )
 from ichnaea.tests.base import (
     CeleryTestCase,
@@ -35,6 +39,7 @@ from ichnaea.tests.base import (
     PARIS_LAT,
     PARIS_LON,
 )
+from ichnaea import util
 
 
 @contextmanager
@@ -166,6 +171,11 @@ class TestImport(CeleryAppTestCase):
         self.assertEqual(
             self.session.query(OCIDCellArea).count(), len(lacs))
 
+        update_statcounter.delay(ago=0).get()
+        today = util.utcnow().date()
+        stat_key = Stat.to_hashkey(key=StatKey.unique_ocid_cell, time=today)
+        self.assertEqual(Stat.getkey(self.session, stat_key).value, 9)
+
     def test_local_import_with_query(self):
         self.session = self.db_ro_session
         self.import_test_csv(session=self.session)
@@ -196,10 +206,14 @@ class TestImport(CeleryAppTestCase):
         new_time = 1408000000
         old_date = datetime.fromtimestamp(old_time).replace(tzinfo=UTC)
         new_date = datetime.fromtimestamp(new_time).replace(tzinfo=UTC)
+        today = util.utcnow().date()
 
         self.import_test_csv(time=old_time)
         cells = self.session.query(OCIDCell).all()
         self.assertEqual(len(cells), 9)
+        update_statcounter.delay(ago=0).get()
+        stat_key = Stat.to_hashkey(key=StatKey.unique_ocid_cell, time=today)
+        self.assertEqual(Stat.getkey(self.session, stat_key).value, 9)
 
         lacs = set([
             (cell.radio, cell.mcc, cell.mnc, cell.lac) for cell in cells])
@@ -207,23 +221,26 @@ class TestImport(CeleryAppTestCase):
             self.session.query(OCIDCellArea).count(), len(lacs))
 
         # update some entries
-        self.import_test_csv(
-            lo=5, hi=10, time=new_time)
+        self.import_test_csv(lo=5, hi=13, time=new_time)
 
         cells = (self.session.query(OCIDCell)
                              .order_by(OCIDCell.modified).all())
-        self.assertEqual(len(cells), 9)
+        self.assertEqual(len(cells), 12)
 
         for i in range(0, 4):
             self.assertEqual(cells[i].modified, old_date)
 
-        for i in range(4, 9):
+        for i in range(4, 12):
             self.assertEqual(cells[i].modified, new_date)
 
         lacs = set([
             (cell.radio, cell.mcc, cell.mnc, cell.lac) for cell in cells])
         self.assertEqual(
             self.session.query(OCIDCellArea).count(), len(lacs))
+
+        update_statcounter.delay(ago=0).get()
+        stat_key = Stat.to_hashkey(key=StatKey.unique_ocid_cell, time=today)
+        self.assertEqual(Stat.getkey(self.session, stat_key).value, 12)
 
     def test_local_import_latest_through_http(self):
         with self.get_test_csv() as path:

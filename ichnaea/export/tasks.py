@@ -20,8 +20,10 @@ from ichnaea.async.task import DatabaseTask
 from ichnaea.models import (
     Cell,
     CellArea,
-    Radio,
     OCIDCell,
+    Radio,
+    StatCounter,
+    StatKey,
 )
 from ichnaea.data.tasks import update_area
 from ichnaea import util
@@ -199,7 +201,23 @@ def export_modified_cells(self, hourly=True, bucket=None):
         write_stations_to_s3(path, bucket)
 
 
-def import_stations(session, filename, fields):
+def import_stations(session, pipe, filename, fields):
+    today = util.utcnow().date()
+
+    def commit_batch(ins, rows, commit=True):
+        result = session.execute(ins, rows)
+        count = result.rowcount
+        # apply trick to avoid querying for existing rows,
+        # MySQL claims 1 row for an inserted row, 2 for an updated row
+        inserted_rows = 2 * len(rows) - count
+        changed_rows = count - len(rows)
+        assert inserted_rows + changed_rows == len(rows)
+        StatCounter(StatKey.unique_ocid_cell, today).incr(pipe, inserted_rows)
+        if commit:
+            session.commit()
+        else:  # pragma: no cover
+            session.flush()
+
     with GzipFile(filename, 'rb') as zip_file:
         csv_reader = csv.DictReader(zip_file, fields)
         batch = 10000
@@ -227,13 +245,11 @@ def import_stations(session, filename, fields):
                 area_keys.add(CellArea.to_hashkey(data))
 
             if len(rows) == batch:  # pragma: no cover
-                session.execute(ins, rows)
-                session.commit()
+                commit_batch(ins, rows, commit=False)
                 rows = []
 
         if rows:
-            session.execute(ins, rows)
-            session.commit()
+            commit_batch(ins, rows)
 
         for area_key in area_keys:
             update_area.delay(area_key, cell_type='ocid')
@@ -241,12 +257,14 @@ def import_stations(session, filename, fields):
 
 @celery_app.task(base=DatabaseTask, bind=True)
 def import_ocid_cells(self, filename=None, session=None):
-    with self.db_session() as dbsession:
-        if session is None:  # pragma: no cover
-            session = dbsession
-        import_stations(session,
-                        filename,
-                        CELL_FIELDS)
+    with self.redis_pipeline() as pipe:
+        with self.db_session() as dbsession:
+            if session is None:  # pragma: no cover
+                session = dbsession
+            import_stations(session,
+                            pipe,
+                            filename,
+                            CELL_FIELDS)
 
 
 @celery_app.task(base=DatabaseTask, bind=True)
@@ -271,9 +289,11 @@ def import_latest_ocid_cells(self, diff=True, filename=None, session=None):
                     f.write(chunk)
                     f.flush()
 
-            with self.db_session() as dbsession:
-                if session is None:  # pragma: no cover
-                    session = dbsession
-                import_stations(session,
-                                path,
-                                CELL_FIELDS)
+            with self.redis_pipeline() as pipe:
+                with self.db_session() as dbsession:
+                    if session is None:  # pragma: no cover
+                        session = dbsession
+                    import_stations(session,
+                                    pipe,
+                                    path,
+                                    CELL_FIELDS)

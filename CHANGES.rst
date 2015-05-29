@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Replace the last daily stats task with a queue based one.
+
 - #440: Allow search/locate queries without a cell id.
 
 20150528085200

@@ -85,14 +85,6 @@ CELERYBEAT_SCHEDULE = {
         'options': {'expires': 110},
     },
 
-    # Daily content tasks
-
-    'histogram-unique-ocid-cell-yesterday': {
-        'task': 'ichnaea.content.tasks.unique_ocid_cell_histogram',
-        'schedule': crontab(hour=0, minute=6),
-        'args': (1, ),
-    },
-
     # Daily backup tasks
 
     's3-schedule-cellobservation-archival': {
