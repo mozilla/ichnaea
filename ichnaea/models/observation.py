@@ -9,7 +9,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.mysql import (
     INTEGER as Integer,
-    SMALLINT as SmallInteger,
 )
 
 from ichnaea import geocalc
@@ -23,14 +22,12 @@ from ichnaea.models.base import (
 )
 from ichnaea.models.cell import (
     CellKeyPsc,
+    CellKeyPscMixin,
+    CellSignalMixin,
+    ValidCellKeySchema,
+    ValidCellSignalSchema,
 )
 from ichnaea.models import constants
-from ichnaea.models.lookup import (
-    CellLookup,
-    ValidCellLookupSchema,
-    ValidWifiLookupSchema,
-    WifiLookup,
-)
 from ichnaea.models.schema import (
     DateTimeFromString,
     DefaultNode,
@@ -39,6 +36,12 @@ from ichnaea.models.schema import (
 from ichnaea.models.sa_types import (
     TZDateTime as DateTime,
     UUIDColumn,
+)
+from ichnaea.models.wifi import (
+    WifiKeyMixin,
+    WifiSignalMixin,
+    ValidWifiKeySchema,
+    ValidWifiSignalSchema,
 )
 
 
@@ -133,17 +136,17 @@ class ObservationMixin(CreationMixin, BigIdMixin, Report):
         return cls(**validated)
 
 
-class ValidCellReportSchema(ValidCellLookupSchema):
+class ValidCellReportSchema(ValidCellKeySchema, ValidCellSignalSchema):
     """A schema which validates the cell specific fields in a report."""
 
 
-class CellReport(CellLookup):
+class CellReport(CellKeyPscMixin, CellSignalMixin, ValidationMixin):
 
     _hashkey_cls = CellKeyPsc
     _valid_schema = ValidCellReportSchema
 
 
-class ValidCellObservationSchema(ValidCellLookupSchema, ValidReportSchema):
+class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
     """A schema which validates the fields present in a cell observation."""
 
     def validator(self, schema, data):
@@ -170,20 +173,16 @@ class CellObservation(ObservationMixin, CellReport, _Model):
     _valid_schema = ValidCellObservationSchema
 
 
-class ValidWifiReportSchema(ValidWifiLookupSchema):
+class ValidWifiReportSchema(ValidWifiKeySchema, ValidWifiSignalSchema):
     """A schema which validates the wifi specific fields in a report."""
 
 
-class WifiReport(WifiLookup):
+class WifiReport(WifiKeyMixin, WifiSignalMixin, ValidationMixin):
 
     _valid_schema = ValidWifiReportSchema
 
-    channel = Column(SmallInteger)
-    signal = Column(SmallInteger)
-    snr = Column(SmallInteger)
 
-
-class ValidWifiObservationSchema(ValidWifiLookupSchema, ValidReportSchema):
+class ValidWifiObservationSchema(ValidWifiReportSchema, ValidReportSchema):
     """A schema which validates the fields in wifi observation."""
 
 

@@ -5,6 +5,9 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.mysql import (
+    SMALLINT as SmallInteger,
+)
 
 from ichnaea.models.base import (
     _Model,
@@ -18,6 +21,7 @@ from ichnaea.models.hashkey import (
 )
 from ichnaea.models.schema import (
     CopyingSchema,
+    DefaultNode,
     FieldSchema,
 )
 from ichnaea.models.station import (
@@ -65,6 +69,58 @@ class ValidWifiKeySchema(FieldSchema, CopyingSchema):
     """A schema which validates the fields present in a a wifi key."""
 
     key = WifiKeyNode(colander.String())
+
+
+class WifiSignalMixin(object):
+
+    channel = Column(SmallInteger)
+    signal = Column(SmallInteger)
+    snr = Column(SmallInteger)
+
+
+class ValidWifiSignalSchema(FieldSchema, CopyingSchema):
+    """
+    A schema which validates the fields related to wifi signal
+    strength and quality.
+    """
+
+    channel = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(
+            constants.MIN_WIFI_CHANNEL, constants.MAX_WIFI_CHANNEL))
+    signal = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(
+            constants.MIN_WIFI_SIGNAL, constants.MAX_WIFI_SIGNAL))
+    snr = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(0, 100))
+
+    def deserialize(self, data):
+        if data:
+            channel = data.get('channel')
+            channel = channel is not None and int(channel) or None
+
+            if not (constants.MIN_WIFI_CHANNEL < channel <
+                    constants.MAX_WIFI_CHANNEL):
+                # if no explicit channel was given, calculate
+                freq = data.get('frequency', 0)
+
+                if 2411 < freq < 2473:
+                    # 2.4 GHz band
+                    data['channel'] = (freq - 2407) // 5
+
+                elif 5169 < freq < 5826:
+                    # 5 GHz band
+                    data['channel'] = (freq - 5000) // 5
+
+                else:
+                    data['channel'] = None
+
+        return super(ValidWifiSignalSchema, self).deserialize(data)
 
 
 class WifiMixin(BigIdMixin, WifiKeyMixin):

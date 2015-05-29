@@ -9,6 +9,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import (
     INTEGER as Integer,
     SMALLINT as SmallInteger,
+    TINYINT as TinyInteger,
 )
 
 from ichnaea import geocalc
@@ -242,6 +243,38 @@ class CellKeyPscMixin(CellKeyMixin):
     _hashkey_cls = CellKeyPsc
 
     psc = Column(SmallInteger, autoincrement=False)
+
+
+class CellSignalMixin(object):
+
+    asu = Column(SmallInteger)
+    signal = Column(SmallInteger)
+    ta = Column(TinyInteger)
+
+
+class ValidCellSignalSchema(FieldSchema, CopyingSchema):
+    """
+    A schema which validates the fields related to cell signal
+    strength and quality.
+    """
+
+    asu = DefaultNode(
+        colander.Integer(),
+        missing=None, validator=colander.Range(0, 97))
+    signal = DefaultNode(
+        colander.Integer(),
+        missing=None, validator=colander.Range(-150, -1))
+    ta = DefaultNode(
+        colander.Integer(),
+        missing=None, validator=colander.Range(0, 63))
+
+    def deserialize(self, data):
+        if data:
+            # Sometimes the asu and signal fields are swapped
+            if data.get('asu', 0) < -1 and data.get('signal', None) == 0:
+                data['signal'] = data['asu']
+                data['asu'] = None
+        return super(ValidCellSignalSchema, self).deserialize(data)
 
 
 class CellMixin(CellKeyPscMixin):
