@@ -19,6 +19,7 @@ class ReportTransform(object):
     position_id = (None, None)
     position_map = []
 
+    toplevel_id = (None, None)
     toplevel_map = []
 
     wifi_id = (None, None)
@@ -28,35 +29,48 @@ class ReportTransform(object):
         if value is not None:
             item[target] = value
 
-    def _parse_blues(self, item, report):
-        blues = []
-        for blue_item in item.get(self.blue_id[0], ()):
-            blue = {}
-            for spec in self.blue_map:
-                if isinstance(spec, tuple):  # pragma: no cover
-                    source, target = spec
-                else:
-                    source = spec
-                    target = spec
-                self.conditional_set(blue, target, blue_item.get(source))
-            if blue:
-                blues.append(blue)
-        if blues:
-            report[self.blue_id[1]] = blues
-        return blues
+    def _map_dict(self, item_source, field_map):
+        value = {}
+        for spec in field_map:
+            if isinstance(spec, tuple):
+                source, target = spec
+            else:
+                source = spec
+                target = spec
+            self.conditional_set(value, target,
+                                 item_source.get(source))
+        return value
 
-    def _parse_cells(self, item, report):
+    def _parse_dict(self, item, report, key_map, field_map):
+        value = {}
+        if key_map[0] is None:
+            item_source = item
+        else:
+            item_source = item.get(key_map[0])
+        if item_source:
+            value = self._map_dict(item_source, field_map)
+        if value:
+            if key_map[1] is None:
+                report.update(value)
+            else:
+                report[key_map[1]] = value
+        return value
+
+    def _parse_list(self, item, report, key_map, field_map):
+        values = []
+        for value_item in item.get(key_map[0], ()):
+            value = self._map_dict(value_item, field_map)
+            if value:
+                values.append(value)
+        if values:
+            report[key_map[1]] = values
+        return values
+
+    def _parse_cells(self, item, report, key_map, field_map):
         cells = []
         item_radio = item.get(self.radio_id[0])
-        for cell_item in item.get(self.cell_id[0], ()):
-            cell = {}
-            for spec in self.cell_map:
-                if isinstance(spec, tuple):
-                    source, target = spec
-                else:
-                    source = spec
-                    target = spec
-                self.conditional_set(cell, target, cell_item.get(source))
+        for cell_item in item.get(key_map[0], ()):
+            cell = self._map_dict(cell_item, field_map)
             if cell:
                 if not cell.get(self.radio_id[1]) and item_radio:
                     cell[self.radio_id[1]] = item_radio
@@ -64,70 +78,21 @@ class ReportTransform(object):
                     cell[self.radio_id[1]] = 'wcdma'
                 cells.append(cell)
         if cells:
-            report[self.cell_id[1]] = cells
+            report[key_map[1]] = cells
         return cells
-
-    def _parse_position(self, item, report):
-        position = {}
-        if self.position_id[0] is None:
-            item_position = item
-        else:
-            item_position = item.get(self.position_id[0])
-        if item_position:
-            for spec in self.position_map:
-                if isinstance(spec, tuple):
-                    source, target = spec
-                else:
-                    source = spec
-                    target = spec
-                self.conditional_set(position, target,
-                                     item_position.get(source))
-        if position:
-            if self.position_id[1] is None:
-                report.update(position)
-            else:
-                report[self.position_id[1]] = position
-        return position
-
-    def _parse_toplevel(self, item, report):
-        for spec in self.toplevel_map:
-            if isinstance(spec, tuple):  # pragma: no cover
-                source, target = spec
-            else:
-                source = spec
-                target = spec
-            self.conditional_set(report, target, item.get(source))
-        return report
-
-    def _parse_wifis(self, item, report):
-        wifis = []
-        for wifi_item in item.get(self.wifi_id[0], ()):
-            wifi = {}
-            for spec in self.wifi_map:
-                if isinstance(spec, tuple):
-                    source, target = spec
-                else:
-                    source = spec
-                    target = spec
-                self.conditional_set(wifi, target, wifi_item.get(source))
-            if wifi:
-                wifis.append(wifi)
-        if wifis:
-            report[self.wifi_id[1]] = wifis
-        return wifis
 
     def transform_one(self, item):
         report = {}
-        self._parse_position(item, report)
-        self._parse_toplevel(item, report)
+        self._parse_dict(item, report, self.position_id, self.position_map)
+        self._parse_dict(item, report, self.toplevel_id, self.toplevel_map)
 
         timestamp = item.get(self.time_id)
         if timestamp:
             report['timestamp'] = timestamp
 
-        blues = self._parse_blues(item, report)
-        cells = self._parse_cells(item, report)
-        wifis = self._parse_wifis(item, report)
+        blues = self._parse_list(item, report, self.blue_id, self.blue_map)
+        cells = self._parse_cells(item, report, self.cell_id, self.cell_map)
+        wifis = self._parse_list(item, report, self.wifi_id, self.wifi_map)
 
         if blues or cells or wifis:
             return report
