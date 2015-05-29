@@ -133,7 +133,7 @@ def add_meters_to_latitude(lat, distance):
     """
     # A suitable estimate for surface level calculations is
     # 111,111m = 1 degree latitude
-    new_lat = lat + (distance/111111.0)
+    new_lat = lat + (distance / 111111.0)
     return bound(constants.MIN_LAT, new_lat, constants.MAX_LAT)
 
 
@@ -148,5 +148,5 @@ def add_meters_to_longitude(lat, lon, distance):
     """
     # A suitable estimate for surface level calculations is
     # 111,111m = 1 degree latitude
-    new_lon = lon + (distance/(math.cos(lat) * 111111.0))
+    new_lon = lon + (distance / (math.cos(lat) * 111111.0))
     return bound(constants.MIN_LON, new_lon, constants.MAX_LON)

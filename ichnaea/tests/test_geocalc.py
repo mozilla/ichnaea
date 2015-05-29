@@ -127,11 +127,11 @@ class TestBound(TestCase):
 class TestAddMetersToLatitude(TestCase):
 
     def test_returns_min_lat(self):
-        self.assertEqual(add_meters_to_latitude(1.0, -(10**10)),
+        self.assertEqual(add_meters_to_latitude(1.0, -(10 ** 10)),
                          constants.MIN_LAT)
 
     def test_returns_max_lat(self):
-        self.assertEqual(add_meters_to_latitude(1.0, 10**10),
+        self.assertEqual(add_meters_to_latitude(1.0, 10 ** 10),
                          constants.MAX_LAT)
 
     def test_adds_meters_to_latitude(self):
@@ -142,11 +142,11 @@ class TestAddMetersToLatitude(TestCase):
 class TestAddMetersToLongitude(TestCase):
 
     def test_returns_min_lon(self):
-        self.assertEqual(add_meters_to_longitude(1.0, 1.0, -(10**10)),
+        self.assertEqual(add_meters_to_longitude(1.0, 1.0, -(10 ** 10)),
                          constants.MIN_LON)
 
     def test_returns_max_lon(self):
-        self.assertEqual(add_meters_to_longitude(1.0, 1.0, 10**10),
+        self.assertEqual(add_meters_to_longitude(1.0, 1.0, 10 ** 10),
                          constants.MAX_LON)
 
     def test_adds_meters_to_longitude(self):
