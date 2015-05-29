@@ -26,6 +26,7 @@ from ichnaea.models.cell import (
     CellKeyPsc,
     CellKeyPscMixin,
     ValidCellKeySchema,
+    ValidCellAreaKeySchema,
 )
 from ichnaea.models import constants
 from ichnaea.models.base import ValidPositionSchema
@@ -157,14 +158,19 @@ class ValidCellLookupSchema(ValidCellKeySchema):
         return super(ValidCellLookupSchema, self).deserialize(data)
 
 
-class CellLookup(CellKeyPscMixin, ValidationMixin):
+class CellAreaLookup(CellKeyPscMixin, ValidationMixin):
 
     _hashkey_cls = CellKey
-    _valid_schema = ValidCellLookupSchema
+    _valid_schema = ValidCellAreaKeySchema
 
     asu = Column(SmallInteger)
     signal = Column(SmallInteger)
     ta = Column(TinyInteger)
+
+
+class CellLookup(CellAreaLookup):
+
+    _valid_schema = ValidCellLookupSchema
 
 
 class ValidCellReportSchema(ValidCellLookupSchema):

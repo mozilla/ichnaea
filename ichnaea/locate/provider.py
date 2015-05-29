@@ -20,6 +20,7 @@ from ichnaea.models import (
     Cell,
     CellArea,
     CellLookup,
+    CellAreaLookup,
     OCIDCell,
     OCIDCellArea,
     Wifi,
@@ -144,14 +145,15 @@ class BaseCellProvider(Provider):
     model = None
     log_name = 'cell'
     location_type = Position
+    validator = CellLookup
 
     def _clean_cell_keys(self, data):
         """Pre-process cell data."""
         cell_keys = []
         for cell in data.get('cell', ()):
-            cell = CellLookup.validate(cell)
+            cell = self.validator.validate(cell)
             if cell:
-                cell_key = CellLookup.to_hashkey(cell)
+                cell_key = self.validator.to_hashkey(cell)
                 cell_keys.append(cell_key)
 
         return cell_keys
@@ -234,7 +236,7 @@ class CellPositionProvider(BaseCellProvider):
     model = Cell
 
 
-class OCIDCellPositionProvider(CellPositionProvider):
+class OCIDCellPositionProvider(BaseCellProvider):
     """
     A OCIDCellPositionProvider implements a cell search using
     the OCID Cell model.
@@ -250,6 +252,7 @@ class CellAreaPositionProvider(BaseCellProvider):
     """
     model = CellArea
     log_name = 'cell_lac'
+    validator = CellAreaLookup
 
     def _prepare(self, queried_cells):
         # take the smallest LAC of any the user is inside
