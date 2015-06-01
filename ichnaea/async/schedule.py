@@ -12,11 +12,6 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(seconds=60),
         'options': {'expires': 57},
     },
-    'monitor-observations': {
-        'task': 'ichnaea.monitor.tasks.monitor_measures',
-        'schedule': timedelta(seconds=900),
-        'options': {'expires': 990},
-    },
     'monitor-ocid-import': {
         'task': 'ichnaea.monitor.tasks.monitor_ocid_import',
         'schedule': timedelta(seconds=600),
@@ -28,7 +23,13 @@ CELERYBEAT_SCHEDULE = {
         'options': {'expires': 570},
     },
 
-    # Continuous location update tasks
+    # BBB: Continuous location update tasks
+
+    'monitor-observations': {
+        'task': 'ichnaea.monitor.tasks.monitor_measures',
+        'schedule': timedelta(seconds=900),
+        'options': {'expires': 990},
+    },
 
     'location-update-cell-1': {
         'task': 'ichnaea.data.tasks.location_update_cell',
@@ -78,14 +79,8 @@ CELERYBEAT_SCHEDULE = {
         'args': (1000, 1000000, 100),
         'options': {'expires': 300},
     },
-    'continuous-cell-scan-areas': {
-        'task': 'ichnaea.data.tasks.scan_areas',
-        'schedule': timedelta(seconds=121),
-        'args': (500, ),
-        'options': {'expires': 110},
-    },
 
-    # Daily backup tasks
+    # BBB: Daily backup tasks
 
     's3-schedule-cellobservation-archival': {
         'task': 'ichnaea.backup.tasks.schedule_cellmeasure_archival',
@@ -150,8 +145,23 @@ CELERYBEAT_SCHEDULE = {
         'options': {'expires': 39600},
     },
 
-    # One minute
+    # Couple minutes
 
+    'continuous-cell-scan-areas': {
+        'task': 'ichnaea.data.tasks.scan_areas',
+        'schedule': timedelta(seconds=121),
+        'args': (500, ),
+        'options': {'expires': 110},
+    },
+
+    # (less than) one minute
+
+    'update-cell': {
+        'task': 'ichnaea.data.tasks.update_cell',
+        'schedule': timedelta(seconds=29),
+        'args': (4000, ),
+        'options': {'expires': 25},
+    },
     'update-mapstat': {
         'task': 'ichnaea.data.tasks.update_mapstat',
         'args': (1000, ),
@@ -164,6 +174,13 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(seconds=63),
         'options': {'expires': 57},
     },
+    'update-wifi': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=31),
+        'args': (4000, ),
+        'options': {'expires': 25},
+    },
+
     'schedule-export-reports': {
         'task': 'ichnaea.data.tasks.schedule_export_reports',
         'schedule': timedelta(seconds=60),

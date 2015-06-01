@@ -123,6 +123,10 @@ class DataQueue(BaseQueue):
         self._enqueue(items, self.queue_key(),
                       batch=batch, expire=expire, pipe=pipe)
 
+    def enough_data(self, batch=0):
+        queue_size = self.size()
+        return (queue_size > 0) and (queue_size >= batch)
+
     def size(self):
         return self._size(self.queue_key())
 

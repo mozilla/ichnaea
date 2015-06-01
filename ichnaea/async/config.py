@@ -63,12 +63,16 @@ def configure_celery(celery_app):
 
 def configure_data(redis_client):
     data_queues = {
+        'update_cell': DataQueue('update_cell', redis_client,
+                                 queue_key='update_cell'),
         'update_cellarea': DataQueue('update_cellarea', redis_client,
                                      queue_key='update_cell_lac'),
         'update_mapstat': DataQueue('update_mapstat', redis_client,
                                     queue_key='update_mapstat'),
         'update_score': DataQueue('update_score', redis_client,
                                   queue_key='update_score'),
+        'update_wifi': DataQueue('update_wifi', redis_client,
+                                 queue_key='update_wifi'),
     }
     return data_queues
 

@@ -9,8 +9,8 @@ import requests_mock
 from ichnaea.async.config import configure_export
 from ichnaea.config import DummyConfig
 from ichnaea.data.tasks import (
-    location_update_cell,
-    location_update_wifi,
+    update_cell,
+    update_wifi,
     schedule_export_reports,
     queue_reports,
 )
@@ -260,8 +260,8 @@ class TestInternalUploader(BaseExportTest):
         self.add_reports(3, api_key=None)
 
         schedule_export_reports.delay().get()
-        location_update_cell.delay().get()
-        location_update_wifi.delay().get()
+        update_cell.delay().get()
+        update_wifi.delay().get()
 
         self.assertEqual(self.session.query(Cell).count(), 12)
         self.assertEqual(self.session.query(Wifi).count(), 24)
@@ -278,7 +278,7 @@ class TestInternalUploader(BaseExportTest):
     def test_upload_cell(self):
         reports = self.add_reports(cell_factor=1, wifi_factor=0)
         schedule_export_reports.delay().get()
-        location_update_cell.delay().get()
+        update_cell.delay().get()
 
         position = reports[0]['position']
         cell_data = reports[0]['cellTowers'][0]
@@ -309,7 +309,7 @@ class TestInternalUploader(BaseExportTest):
         queue.enqueue(items, queue.queue_key())
 
         schedule_export_reports.delay().get()
-        location_update_cell.delay().get()
+        update_cell.delay().get()
 
         cells = self.session.query(Cell).all()
         self.assertEqual(len(cells), 1)
@@ -318,13 +318,13 @@ class TestInternalUploader(BaseExportTest):
     def test_upload_invalid_cell(self):
         self.add_reports(cell_factor=1, wifi_factor=0, cell_mcc=-2)
         schedule_export_reports.delay().get()
-        location_update_cell.delay().get()
+        update_cell.delay().get()
         self.assertEqual(self.session.query(Cell).count(), 0)
 
     def test_upload_wifi(self):
         reports = self.add_reports(cell_factor=0, wifi_factor=1)
         schedule_export_reports.delay().get()
-        location_update_wifi.delay().get()
+        update_wifi.delay().get()
 
         position = reports[0]['position']
         wifi_data = reports[0]['wifiAccessPoints'][0]
@@ -348,7 +348,7 @@ class TestInternalUploader(BaseExportTest):
         queue.enqueue(items, queue.queue_key())
 
         schedule_export_reports.delay().get()
-        location_update_wifi.delay().get()
+        update_wifi.delay().get()
 
         wifis = self.session.query(Wifi).all()
         self.assertEqual(len(wifis), 1)
@@ -357,7 +357,7 @@ class TestInternalUploader(BaseExportTest):
     def test_upload_invalid_wifi(self):
         self.add_reports(cell_factor=0, wifi_factor=1, wifi_key='abcd')
         schedule_export_reports.delay().get()
-        location_update_wifi.delay().get()
+        update_wifi.delay().get()
         self.assertEqual(self.session.query(Wifi).count(), 0)
 
     def test_upload_bluetooth(self):
@@ -373,7 +373,7 @@ class TestInternalUploader(BaseExportTest):
         self.add_reports(1, cell_factor=1, wifi_factor=0, lat=-90.1)
         self.add_reports(1, cell_factor=1, wifi_factor=0)
         schedule_export_reports.delay().get()
-        location_update_cell.delay().get()
+        update_cell.delay().get()
         self.assertEqual(self.session.query(Cell).count(), 1)
 
     def test_nickname(self):
@@ -421,8 +421,8 @@ class TestInternalUploader(BaseExportTest):
     def test_stats(self):
         self.add_reports(3, api_key='test')
         schedule_export_reports.delay().get()
-        location_update_cell.delay().get()
-        location_update_wifi.delay().get()
+        update_cell.delay().get()
+        update_wifi.delay().get()
 
         self.check_stats(
             counter=[('items.api_log.test.uploaded.reports', 1, 3),

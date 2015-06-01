@@ -25,9 +25,12 @@ from ichnaea import util
 
 class ObservationQueue(DataTask):
 
+    queue_name = None
+
     def __init__(self, task, session, pipe, utcnow=None):
         DataTask.__init__(self, task, session)
         self.pipe = pipe
+        self.data_queue = self.task.app.data_queues[self.queue_name]
         if utcnow is None:
             utcnow = util.utcnow()
         self.utcnow = utcnow
@@ -63,6 +66,11 @@ class ObservationQueue(DataTask):
         queue.enqueue([{'hashkey': key, 'value': int(new_stations)}])
 
     def insert(self, entries, userid=None):
+        all_observations = self._insert(entries, userid=userid)
+        self.data_queue.enqueue(all_observations, pipe=self.pipe)
+        return len(all_observations)
+
+    def _insert(self, entries, userid=None):
         all_observations = []
         drop_counter = defaultdict(int)
         new_stations = 0
@@ -112,9 +120,7 @@ class ObservationQueue(DataTask):
         self.emit_statcounters(added, new_stations)
         self.queue_scores(userid, new_stations)
 
-        self.session.add_all(all_observations)
-
-        return added
+        return all_observations
 
     def blacklisted_station(self, key):
         query = (self.blacklist_model.querykey(self.session, key)
@@ -168,6 +174,7 @@ class CellObservationQueue(ObservationQueue):
     station_model = Cell
     observation_model = CellObservation
     blacklist_model = CellBlacklist
+    queue_name = 'update_cell'
 
     def pre_process_entry(self, entry):
         ObservationQueue.pre_process_entry(self, entry)
@@ -193,3 +200,4 @@ class WifiObservationQueue(ObservationQueue):
     station_model = Wifi
     observation_model = WifiObservation
     blacklist_model = WifiBlacklist
+    queue_name = 'update_wifi'

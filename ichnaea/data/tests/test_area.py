@@ -1,5 +1,5 @@
 from ichnaea.data.tasks import (
-    location_update_cell,
+    update_cell,
     remove_cell,
     scan_areas,
 )
@@ -18,8 +18,12 @@ from ichnaea import util
 
 class TestArea(CeleryTestCase):
 
+    def setUp(self):
+        super(TestArea, self).setUp()
+        self.area_queue = self.celery_app.data_queues['update_cellarea']
+        self.obs_queue = self.celery_app.data_queues['update_cell']
+
     def add_line_of_cells_and_scan_lac(self):
-        session = self.session
         big = 1.0
         small = big / 10
         keys = dict(radio=Radio.cdma, mcc=1, mnc=1, lac=1)
@@ -32,7 +36,7 @@ class TestArea(CeleryTestCase):
                              (-small, small),
                              (-small, -small)]
         ]
-        session.add_all(observations)
+        self.obs_queue.enqueue(observations)
 
         cells = [
             Cell(lat=ctr, lon=ctr, cid=cell,
@@ -41,13 +45,11 @@ class TestArea(CeleryTestCase):
             for ctr in [cell * big]
         ]
 
-        session.add_all(cells)
-        session.commit()
-        result = location_update_cell.delay(min_new=0,
-                                            max_new=9999,
-                                            batch=len(observations))
+        self.session.add_all(cells)
+        self.session.commit()
+        result = update_cell.delay()
         self.assertEqual(result.get(), (len(cells), 0))
-        scan_areas.delay()
+        scan_areas.delay().get()
 
     def test_removal_updates_lac(self):
         session = self.session
@@ -112,7 +114,7 @@ class TestArea(CeleryTestCase):
                              (-small, small),
                              (-small, -small)]
         ]
-        session.add_all(observations)
+        self.obs_queue.enqueue(observations)
 
         cells = [
             Cell(lat=ctr, lon=ctr, cid=cell,
@@ -123,9 +125,7 @@ class TestArea(CeleryTestCase):
 
         session.add_all(cells)
         session.commit()
-        result = location_update_cell.delay(min_new=0,
-                                            max_new=9999,
-                                            batch=len(observations))
+        result = update_cell.delay()
         self.assertEqual(result.get(), (len(cells), 0))
         scan_areas.delay()
         lac = session.query(CellArea).filter(CellArea.lac == 1).first()
@@ -141,7 +141,7 @@ class TestArea(CeleryTestCase):
         self.assertEqual(lac.lon, 1.05)
         self.assertEqual(lac.range, 339540)
 
-    def test_scan_areas_race_with_location_update(self):
+    def test_scan_areas_race_with_update_cell(self):
         session = self.session
 
         # First batch of cell observations for CID 1
@@ -154,13 +154,13 @@ class TestArea(CeleryTestCase):
             CellObservation(lat=1.0, lon=1.0, **keys),
         ]
         session.add(cell)
-        session.add_all(observations)
+        self.obs_queue.enqueue(observations)
         session.commit()
 
-        # Periodic location_update_cell runs and updates CID 1
+        # Periodic update_cell runs and updates CID 1
         # to have a location, inserts LAC 1 with new_measures=1
         # which will be picked up by the next scan_lac.
-        result = location_update_cell.delay(min_new=1)
+        result = update_cell.delay()
         self.assertEqual(result.get(), (1, 0))
 
         # Second batch of cell observations for CID 2
@@ -173,7 +173,7 @@ class TestArea(CeleryTestCase):
             CellObservation(lat=1.0, lon=1.0, **keys),
         ]
         session.add(cell)
-        session.add_all(observations)
+        self.obs_queue.enqueue(observations)
         session.commit()
 
         # Periodic LAC scan runs, picking up LAC 1; this could
@@ -190,8 +190,7 @@ class TestArea(CeleryTestCase):
         # create an orphaned lac entry
         area = CellAreaFactory()
         self.session.flush()
-        data_queue = self.celery_app.data_queues['update_cellarea']
-        data_queue.enqueue([area.hashkey()])
+        self.area_queue.enqueue([area.hashkey()])
 
         # after scanning the orphaned record gets removed
         self.assertEqual(scan_areas.delay().get(), 1)

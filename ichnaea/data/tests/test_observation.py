@@ -9,12 +9,13 @@ from ichnaea.constants import (
 from ichnaea.data.tasks import (
     insert_measures_cell,
     insert_measures_wifi,
+    update_cell,
+    update_wifi,
 )
 from ichnaea.models import (
     constants,
     Cell,
     CellBlacklist,
-    CellObservation,
     Radio,
     Score,
     ScoreKey,
@@ -23,7 +24,6 @@ from ichnaea.models import (
     User,
     Wifi,
     WifiBlacklist,
-    WifiObservation,
 )
 from ichnaea.tests.base import (
     CeleryTestCase,
@@ -43,6 +43,10 @@ class ObservationTestCase(CeleryTestCase):
 
 
 class TestCell(ObservationTestCase):
+
+    def setUp(self):
+        super(TestCell, self).setUp()
+        self.data_queue = self.celery_app.data_queues['update_cell']
 
     def test_blacklist(self):
         now = util.utcnow()
@@ -64,8 +68,8 @@ class TestCell(ObservationTestCase):
         result = insert_measures_cell.delay(observations)
         self.assertEqual(result.get(), 2)
 
-        cell_observations = session.query(CellObservation).all()
-        self.assertEqual(len(cell_observations), 2)
+        self.assertEqual(self.data_queue.size(), 2)
+        update_cell.delay().get()
 
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 2)
@@ -88,6 +92,9 @@ class TestCell(ObservationTestCase):
         obs = dict(lat=PARIS_LAT, lon=PARIS_LON,
                    radio=int(Radio.gsm), **cell_key)
         insert_measures_cell.delay([obs]).get()
+
+        self.assertEqual(self.data_queue.size(), 1)
+        update_cell.delay().get()
 
         # the cell was inserted again
         cells = session.query(Cell).all()
@@ -132,15 +139,10 @@ class TestCell(ObservationTestCase):
             e.update(obs)
 
         result = insert_measures_cell.delay(entries, userid=user.id)
-
         self.assertEqual(result.get(), 4)
-        observations = session.query(CellObservation).all()
-        self.assertEqual(len(observations), 4)
-        self._compare_sets([o.mcc for o in observations], [mcc])
-        self._compare_sets([o.mnc for o in observations], [2])
-        self._compare_sets([o.asu for o in observations], [None, 8, 15])
-        self._compare_sets([o.psc for o in observations], [5])
-        self._compare_sets([o.signal for o in observations], [None])
+
+        self.assertEqual(self.data_queue.size(), 4)
+        update_cell.delay().get()
 
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 2)
@@ -149,7 +151,7 @@ class TestCell(ObservationTestCase):
         self._compare_sets([c.lac for c in cells], [3])
         self._compare_sets([c.cid for c in cells], [4, 7])
         self._compare_sets([c.psc for c in cells], [5])
-        self._compare_sets([c.new_measures for c in cells], [1, 5])
+        self._compare_sets([c.new_measures for c in cells], [0, 2])
         self._compare_sets([c.total_measures for c in cells], [1, 8])
 
         score_queue = self.celery_app.data_queues['update_score']
@@ -162,13 +164,6 @@ class TestCell(ObservationTestCase):
 
         self.check_statcounter(StatKey.cell, 4)
         self.check_statcounter(StatKey.unique_cell, 1)
-
-        # test duplicate execution
-        result = insert_measures_cell.delay(entries, userid=1)
-        self.assertEqual(result.get(), 4)
-        # TODO this task isn't idempotent yet
-        observations = session.query(CellObservation).all()
-        self.assertEqual(len(observations), 8)
 
     def test_insert_observations_invalid_lac(self):
         session = self.session
@@ -199,10 +194,14 @@ class TestCell(ObservationTestCase):
         result = insert_measures_cell.delay(entries, userid=1)
         self.assertEqual(result.get(), 2)
 
-        observations = session.query(CellObservation).all()
+        self.assertEqual(self.data_queue.size(), 2)
+        observations = self.data_queue.dequeue()
         self.assertEqual(len(observations), 2)
         self._compare_sets([o.lac for o in observations], [None])
         self._compare_sets([o.cid for o in observations], [None])
+
+        self.data_queue.enqueue(observations)
+        update_cell.delay().get()
 
         # Nothing should change in the initially created Cell record
         cells = session.query(Cell).all()
@@ -211,16 +210,9 @@ class TestCell(ObservationTestCase):
         self._compare_sets([c.total_measures for c in cells], [5])
 
     def test_insert_observations_out_of_range(self):
-        session = self.session
-        time = util.utcnow() - timedelta(days=1)
-
         obs = dict(
-            created=time,
-            lat=PARIS_LAT,
-            lon=PARIS_LON,
-            time=time, accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=int(Radio.gsm), mcc=FRANCE_MCC,
-            mnc=2, lac=3, cid=4)
+            lat=PARIS_LAT, lon=PARIS_LON,
+            radio=int(Radio.gsm), mcc=FRANCE_MCC, mnc=2, lac=3, cid=4)
         entries = [
             {'asu': 8, 'signal': -70, 'ta': 32},
             {'asu': -10, 'signal': -300, 'ta': -10},
@@ -232,7 +224,7 @@ class TestCell(ObservationTestCase):
         result = insert_measures_cell.delay(entries)
         self.assertEqual(result.get(), 3)
 
-        observations = session.query(CellObservation).all()
+        observations = self.data_queue.dequeue()
         self.assertEqual(len(observations), 3)
         self._compare_sets([o.asu for o in observations], [None, 8])
         self._compare_sets([o.signal for o in observations], [None, -70])
@@ -240,6 +232,10 @@ class TestCell(ObservationTestCase):
 
 
 class TestWifi(ObservationTestCase):
+
+    def setUp(self):
+        super(TestWifi, self).setUp()
+        self.data_queue = self.celery_app.data_queues['update_wifi']
 
     def test_blacklist(self):
         utcnow = util.utcnow()
@@ -257,9 +253,8 @@ class TestWifi(ObservationTestCase):
         result = insert_measures_wifi.delay(entries)
         self.assertEqual(result.get(), 2)
 
-        observations = session.query(WifiObservation).all()
-        self.assertEqual(len(observations), 2)
-        self._compare_sets([o.key for o in observations], [good_key])
+        self.assertEqual(self.data_queue.size(), 2)
+        update_wifi.delay().get()
 
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 1)
@@ -281,6 +276,9 @@ class TestWifi(ObservationTestCase):
         # add a new entry for the previously blacklisted wifi
         obs = dict(lat=PARIS_LAT, lon=PARIS_LON, key=wifi_key)
         insert_measures_wifi.delay([obs]).get()
+
+        self.assertEqual(self.data_queue.size(), 1)
+        update_wifi.delay().get()
 
         # the wifi was inserted again
         wifis = session.query(Wifi).all()
@@ -317,20 +315,14 @@ class TestWifi(ObservationTestCase):
         result = insert_measures_wifi.delay(entries, userid=user.id)
         self.assertEqual(result.get(), 4)
 
-        observations = session.query(WifiObservation).all()
-        self.assertEqual(len(observations), 4)
-        self._compare_sets([o.key for o in observations],
-                           ['ab1234567890', 'cd3456789012'])
-        self._compare_sets([o.channel for o in observations], [3, 11])
-        self._compare_sets([o.signal for o in observations], [-80, -90])
-        self._compare_sets([o.heading or o in observations], [52.9])
-        self._compare_sets([o.speed or o in observations], [158.5])
+        self.assertEqual(self.data_queue.size(), 4)
+        update_wifi.delay().get()
 
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 2)
         self._compare_sets([w.key for w in wifis],
                            ['ab1234567890', 'cd3456789012'])
-        self._compare_sets([w.new_measures for w in wifis], [1, 3])
+        self._compare_sets([w.new_measures for w in wifis], [0])
         self._compare_sets([w.total_measures for w in wifis], [1, 3])
 
         score_queue = self.celery_app.data_queues['update_score']
@@ -343,13 +335,6 @@ class TestWifi(ObservationTestCase):
 
         self.check_statcounter(StatKey.wifi, 4)
         self.check_statcounter(StatKey.unique_wifi, 1)
-
-        # test duplicate execution
-        result = insert_measures_wifi.delay(entries, userid=1)
-        self.assertEqual(result.get(), 4)
-        # TODO this task isn't idempotent yet
-        observations = session.query(WifiObservation).all()
-        self.assertEqual(len(observations), 8)
 
 
 class TestSubmitErrors(ObservationTestCase):

@@ -19,7 +19,7 @@ class HashKey(JSONMixin):
         for field in self._fields:
             if field in kw:
                 values[field] = kw[field]
-            else:
+            else:  # pragma: no cover
                 values[field] = None
         for key, value in values.items():
             setattr(self, key, value)
@@ -81,7 +81,7 @@ class HashKeyMixin(object):
     @classmethod
     def joinkey(cls, key):
         if not isinstance(key, HashKey):
-            if isinstance(key, HashKeyMixin):
+            if isinstance(key, HashKeyMixin):  # pragma: no cover
                 key = key.hashkey()
             else:
                 key = cls.to_hashkey(key)
