@@ -1,4 +1,5 @@
 import colander
+from pyramid.path import DottedNameResolver
 from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import (
     BIGINT as BigInteger,
@@ -22,6 +23,7 @@ MYSQL_SETTINGS = {
     'mysql_engine': 'InnoDB',
     'mysql_charset': 'utf8',
 }
+RESOLVER = DottedNameResolver('ichnaea')
 
 
 class BaseModel(object):
@@ -35,6 +37,33 @@ class BaseModel(object):
 
 
 _Model = declarative_base(cls=BaseModel)
+
+
+class JSONMixin(object):
+
+    @property
+    def _dottedname(self):
+        klass = self.__class__
+        return '%s:%s' % (klass.__module__, klass.__name__)
+
+    @staticmethod
+    def _from_json(dct):
+        data = dct['__class__']
+        klass = RESOLVER.resolve(data['name'])
+        return klass._from_json_value(data['value'])
+
+    @classmethod
+    def _from_json_value(cls, value):
+        return cls(**value)
+
+    def _to_json(self):
+        return {'__class__': {
+            'name': self._dottedname,
+            'value': self._to_json_value(),
+        }}
+
+    def _to_json_value(self):
+        return self.__dict__
 
 
 class ValidationMixin(object):

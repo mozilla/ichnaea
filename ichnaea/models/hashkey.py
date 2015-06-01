@@ -1,11 +1,14 @@
-from pyramid.path import DottedNameResolver
 from sqlalchemy.sql import and_, or_
 
-RESOLVER = DottedNameResolver('ichnaea')
+from ichnaea.models.base import (
+    JSONMixin,
+    RESOLVER,
+)
+
 _sentinel = object()
 
 
-class HashKey(object):
+class HashKey(JSONMixin):
 
     _fields = ()
 
@@ -21,29 +24,12 @@ class HashKey(object):
         for key, value in values.items():
             setattr(self, key, value)
 
-    @property
-    def _dottedname(self):
-        klass = self.__class__
-        return '%s:%s' % (klass.__module__, klass.__name__)
-
     @staticmethod
-    def _from_json(value):
-        hashkey = value['__hashkey__']
-        klass = RESOLVER.resolve(hashkey['name'])
-        return klass._from_json_value(hashkey['value'])
-
-    @classmethod
-    def _from_json_value(cls, value):
-        return cls(**value)
-
-    def _to_json(self):
-        return {'__hashkey__': {
-            'name': self._dottedname,
-            'value': self._to_json_value(),
-        }}
-
-    def _to_json_value(self):
-        return self.__dict__
+    def _from_json(dct):  # pragma: no cover
+        # BBB: Remove after one release
+        data = dct['__hashkey__']
+        klass = RESOLVER.resolve(data['name'])
+        return klass._from_json_value(data['value'])
 
     def __eq__(self, other):
         if isinstance(other, HashKey):

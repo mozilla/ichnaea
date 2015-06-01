@@ -6,6 +6,7 @@ from pytz import UTC
 import simplejson as json
 
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
+from ichnaea.models.base import JSONMixin
 from ichnaea.models.cell import Radio
 from ichnaea.models.hashkey import HashKey
 
@@ -149,7 +150,7 @@ def kombu_default(obj):
         return {'__date__': [obj.year, obj.month, obj.day]}
     elif isinstance(obj, UUID):
         return {'__uuid__': obj.hex}
-    elif isinstance(obj, HashKey):
+    elif isinstance(obj, JSONMixin):
         return obj._to_json()
     raise TypeError('%r is not JSON serializable' % obj)  # pragma: no cover
 
@@ -162,8 +163,11 @@ def kombu_object_hook(dct):
         return date(*dct['__date__'])
     elif '__uuid__' in dct:
         return UUID(hex=dct['__uuid__'])
-    elif '__hashkey__' in dct:
+    elif '__hashkey__' in dct:  # pragma: no cover
+        # BBB: Remove after one release
         return HashKey._from_json(dct)
+    elif '__class__' in dct:
+        return JSONMixin._from_json(dct)
     return dct
 
 
