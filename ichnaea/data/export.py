@@ -53,6 +53,39 @@ class ExportScheduler(DataTask):
         return triggered
 
 
+class ExportQueue(DataTask):
+
+    def __init__(self, task, session, pipe,
+                 api_key=None, email=None, ip=None, nickname=None):
+        DataTask.__init__(self, task, session)
+        self.pipe = pipe
+        self.api_key = api_key
+        self.email = email
+        self.ip = ip
+        self.nickname = nickname
+        self.export_queues = task.app.export_queues
+
+    def insert(self, reports):
+        self.queue_export(reports)
+        return len(reports)
+
+    def queue_export(self, reports):
+        metadata = {
+            'api_key': self.api_key,
+            'email': self.email,
+            'ip': self.ip,
+            'nickname': self.nickname,
+        }
+        items = []
+        for report in reports:
+            items.append({'report': report, 'metadata': metadata})
+        if items:
+            for name, queue in self.export_queues.items():
+                if queue.export_allowed(self.api_key):
+                    queue_key = queue.queue_key(self.api_key)
+                    queue.enqueue(items, queue_key, pipe=self.pipe)
+
+
 class ReportExporter(DataTask):
 
     def __init__(self, task, session, export_queue_name, queue_key):

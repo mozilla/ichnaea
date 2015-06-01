@@ -8,6 +8,7 @@ from ichnaea.data.area import (
 from ichnaea.data.export import (
     GeosubmitUploader,
     InternalUploader,
+    ExportQueue,
     ExportScheduler,
     ReportExporter,
     S3Uploader,
@@ -17,10 +18,7 @@ from ichnaea.data.observation import (
     CellObservationQueue,
     WifiObservationQueue,
 )
-from ichnaea.data.report import (
-    ReportQueueV1,
-    ReportQueueV2,
-)
+from ichnaea.data.report import ReportQueue
 from ichnaea.data.score import ScoreUpdater
 from ichnaea.data.station import (
     CellRemover,
@@ -43,13 +41,13 @@ def insert_measures(self, items=None, email=None, ip=None, nickname=None,
         with self.db_session() as session:
             api_key = api_key_text and ApiKey.getkey(session, api_key_text)
 
-            queue = ReportQueueV1(self, session, pipe,
-                                  api_key=api_key,
-                                  email=email,
-                                  ip=ip,
-                                  nickname=nickname,
-                                  insert_cell_task=insert_measures_cell,
-                                  insert_wifi_task=insert_measures_wifi)
+            queue = ReportQueue(self, session, pipe,
+                                api_key=api_key,
+                                email=email,
+                                ip=ip,
+                                nickname=nickname,
+                                insert_cell_task=insert_measures_cell,
+                                insert_wifi_task=insert_measures_wifi)
             length = queue.insert(reports)
     return length
 
@@ -114,11 +112,11 @@ def export_reports(self, export_queue_name, queue_key=None):
 def queue_reports(self, reports=(),
                   api_key=None, email=None, ip=None, nickname=None):
     with self.redis_pipeline() as pipe:
-        queue = ReportQueueV2(self, None, pipe,
-                              api_key=api_key,
-                              email=email,
-                              ip=ip,
-                              nickname=nickname)
+        queue = ExportQueue(self, None, pipe,
+                            api_key=api_key,
+                            email=email,
+                            ip=ip,
+                            nickname=nickname)
         length = queue.insert(reports)
     return length
 
