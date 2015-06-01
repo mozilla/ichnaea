@@ -16,11 +16,14 @@ from ichnaea.models.base import (
     _Model,
     BigIdMixin,
     CreationMixin,
+    JSONMixin,
     PositionMixin,
     ValidationMixin,
     ValidPositionSchema,
 )
 from ichnaea.models.cell import (
+    decode_radio_dict,
+    encode_radio_dict,
     CellKeyPsc,
     CellKeyPscMixin,
     CellSignalMixin,
@@ -126,7 +129,11 @@ class Report(PositionMixin, ValidationMixin):
     speed = Column(Float)
 
 
-class ObservationMixin(CreationMixin, BigIdMixin, Report):
+class ObservationMixin(CreationMixin, BigIdMixin, JSONMixin, Report):
+
+    @classmethod
+    def _column_names(cls):
+        return [col.name for col in cls.__table__.columns]
 
     @classmethod
     def create(cls, _raise_invalid=False, **kw):
@@ -134,6 +141,20 @@ class ObservationMixin(CreationMixin, BigIdMixin, Report):
         if validated is None:  # pragma: no cover
             return None
         return cls(**validated)
+
+    @classmethod
+    def _from_json_value(cls, value):
+        value = decode_radio_dict(value)
+        return cls(**value)
+
+    def _to_json_value(self):
+        dct = {}
+        for name in self._column_names():
+            value = getattr(self, name, None)
+            if value is not None:
+                dct[name] = value
+        dct = encode_radio_dict(dct)
+        return dct
 
 
 class ValidCellReportSchema(ValidCellKeySchema, ValidCellSignalSchema):

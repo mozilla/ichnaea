@@ -7,7 +7,6 @@ import simplejson as json
 
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 from ichnaea.models.base import JSONMixin
-from ichnaea.models.cell import Radio
 from ichnaea.models.hashkey import HashKey
 
 
@@ -17,19 +16,6 @@ def encode_datetime(obj):
     elif isinstance(obj, date):
         return obj.strftime('%Y-%m-%d')
     raise TypeError(repr(obj) + ' is not JSON serializable')
-
-
-def encode_radio_dict(dct):
-    if 'radio' in dct and type(dct['radio']) == Radio:
-        dct['radio'] = int(dct['radio'])
-    return dct
-
-
-def decode_radio_dict(dct):
-    if 'radio' in dct and dct['radio'] is not None and \
-       not type(dct['radio']) == Radio:
-        dct['radio'] = Radio(dct['radio'])
-    return dct
 
 
 def custom_iterencode(value):

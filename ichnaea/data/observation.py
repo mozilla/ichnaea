@@ -6,7 +6,6 @@ from ichnaea.constants import (
     PERMANENT_BLACKLIST_THRESHOLD,
     TEMPORARY_BLACKLIST_DURATION,
 )
-from ichnaea.customjson import decode_radio_dict
 from ichnaea.data.base import DataTask
 from ichnaea.models import (
     Cell,
@@ -20,6 +19,7 @@ from ichnaea.models import (
     WifiBlacklist,
     WifiObservation,
 )
+from ichnaea.models.cell import decode_radio_dict
 from ichnaea import util
 
 

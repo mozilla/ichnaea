@@ -1,7 +1,6 @@
 from collections import defaultdict
 import uuid
 
-from ichnaea.customjson import encode_radio_dict
 from ichnaea.data.base import DataTask
 from ichnaea.models import (
     CellObservation,
@@ -13,6 +12,7 @@ from ichnaea.models import (
     WifiObservation,
     WifiReport,
 )
+from ichnaea.models.cell import encode_radio_dict
 
 
 class ReportQueue(DataTask):

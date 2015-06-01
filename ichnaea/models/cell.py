@@ -54,6 +54,19 @@ class Radio(IntEnum):
         return (cls.gsm, cls.umts, cls.lte)
 
 
+def encode_radio_dict(dct):
+    if 'radio' in dct and type(dct['radio']) == Radio:
+        dct['radio'] = int(dct['radio'])
+    return dct
+
+
+def decode_radio_dict(dct):
+    if 'radio' in dct and dct['radio'] is not None and \
+       not type(dct['radio']) == Radio:
+        dct['radio'] = Radio(dct['radio'])
+    return dct
+
+
 class CellHashKey(HashKey):
 
     @classmethod
