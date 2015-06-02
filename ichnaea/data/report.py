@@ -69,10 +69,10 @@ class ReportQueue(DataTask):
             for obs in cell_observations:
                 cells[CellObservation.to_hashkey(obs)].append(obs)
 
-            # Create a task per group of 5 cell keys at a time.
+            # Create a task per group of 100 cell keys at a time.
             # Grouping them helps in avoiding per-task overhead.
             cells = list(cells.values())
-            batch_size = 5
+            batch_size = 100
             countdown = 0
             for i in range(0, len(cells), batch_size):
                 values = []
@@ -103,12 +103,12 @@ class ReportQueue(DataTask):
             for obs in wifi_observations:
                 wifis[WifiObservation.to_hashkey(obs)].append(obs)
 
-            # Create a task per group of 20 WiFi keys at a time.
+            # Create a task per group of 100 WiFi keys at a time.
             # We tend to get a huge number of unique WiFi networks per
             # batch upload, with one to very few observations per WiFi.
             # Grouping them helps in avoiding per-task overhead.
             wifis = list(wifis.values())
-            batch_size = 20
+            batch_size = 100
             countdown = 0
             for i in range(0, len(wifis), batch_size):
                 values = []
