@@ -89,7 +89,7 @@ class Provider(StatsLogger):
                 fallbacks = data.get('fallbacks', {})
                 if fallbacks:
                     return fallbacks.get(self.fallback_field, True)
-            except ValueError:
+            except ValueError:  # pragma: no cover
                 self.raven_client.captureException()
 
         return True
