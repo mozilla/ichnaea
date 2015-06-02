@@ -4,6 +4,8 @@ import time
 
 import colander
 import iso8601
+from colander import MappingSchema, SchemaNode
+from colander import Boolean
 
 
 class BoundedFloat(colander.Float):
@@ -87,3 +89,9 @@ class OptionalIntNode(OptionalNode):
 class OptionalStringNode(OptionalNode):
 
     schema_type = colander.String
+
+
+class FallbackSchema(MappingSchema):
+
+    lacf = SchemaNode(Boolean(), missing=True)
+    ipf = SchemaNode(Boolean(), missing=True)

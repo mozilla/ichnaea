@@ -5,16 +5,17 @@ from ichnaea.geocalc import distance
 class Location(object):
     """A location returned by a location provider."""
 
-    def __init__(self, source=None,
-                 lat=None, lon=None, accuracy=None,
-                 country_code=None, country_name=None, query_data=True):
-        self.source = source
-        self.lat = self._round(lat)
-        self.lon = self._round(lon)
+    def __init__(self, accuracy=None, country_code=None, country_name=None,
+                 fallback=None, lat=None, lon=None, query_data=True,
+                 source=None):
         self.accuracy = self._round(accuracy)
         self.country_code = country_code
         self.country_name = country_name
+        self.fallback = fallback
+        self.lat = self._round(lat)
+        self.lon = self._round(lon)
         self.query_data = query_data
+        self.source = source
 
     def _round(self, value):
         if value is not None:

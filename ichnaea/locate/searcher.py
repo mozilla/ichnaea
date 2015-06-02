@@ -104,7 +104,6 @@ class Searcher(StatsLogger):
         location = self._search(data)
         if location.found():
             return self._prepare(location)
-        return None
 
 
 class PositionSearcher(Searcher):
@@ -136,6 +135,7 @@ class PositionSearcher(Searcher):
             'lat': location.lat,
             'lon': location.lon,
             'accuracy': location.accuracy,
+            'fallback': location.fallback,
         }
 
 

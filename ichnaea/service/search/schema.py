@@ -1,6 +1,9 @@
 from colander import MappingSchema, SchemaNode, SequenceSchema
 from colander import Integer, String, OneOf
 
+from ichnaea.service.schema import FallbackSchema
+
+
 RADIO_STRINGS = ['gsm', 'cdma', 'umts', 'wcdma', 'lte']
 
 
@@ -44,3 +47,4 @@ class SearchSchema(MappingSchema):
                        validator=OneOf(RADIO_STRINGS), missing=None)
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())
+    fallbacks = FallbackSchema(missing=None)

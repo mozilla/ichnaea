@@ -39,8 +39,8 @@ class TestSearchSchema(TestCase):
         request = self._make_request('{}')
         data, errors = preprocess_request(request, schema, None)
         self.assertEqual(errors, [])
-        self.assertEqual(data,
-                         {'cell': (), 'wifi': (), 'radio': None})
+        self.assertEqual(
+            data, {'cell': (), 'wifi': (), 'radio': None, 'fallbacks': None})
 
     def test_empty_cell_entry(self):
         schema = self._make_schema()
@@ -95,7 +95,7 @@ class TestSearch(AppTestCase):
                      ('search.api_log.test.cell_hit', 1)],
         )
 
-    def test_ok_cellarea(self):
+    def test_ok_cellarea_when_fallback_not_set(self):
         app = self.app
         session = self.session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
@@ -123,7 +123,8 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.json, {'status': 'ok',
                                     'lat': PARIS_LAT,
                                     'lon': PARIS_LON,
-                                    'accuracy': LAC_MIN_ACCURACY})
+                                    'accuracy': LAC_MIN_ACCURACY,
+                                    'fallback': 'lacf'})
 
         self.check_stats(
             timer=[('request.v1.search', 1)],
@@ -131,6 +132,125 @@ class TestSearch(AppTestCase):
                      ('search.cell_lac_hit', 1),
                      ('request.v1.search.200', 1),
                      ('search.api_log.test.cell_lac_hit', 1)],
+        )
+
+    def test_ok_cellarea_when_fallback_set(self):
+        app = self.app
+        session = self.session
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        lat = PARIS_LAT
+        lon = PARIS_LON
+        data = [
+            CellArea(lat=lat, lon=lon, range=1000,
+                     radio=Radio.umts, **key),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        res = app.post_json(
+            '/v1/search?key=test',
+            {
+                'radio': Radio.gsm.name,
+                'cell': [
+                    dict(radio=Radio.umts.name, **key),
+                    dict(radio=Radio.umts.name, **key),
+                ],
+                'fallbacks': {
+                    'lacf': 1,
+                },
+            },
+            status=200)
+
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {'status': 'ok',
+                                    'lat': PARIS_LAT,
+                                    'lon': PARIS_LON,
+                                    'accuracy': LAC_MIN_ACCURACY,
+                                    'fallback': 'lacf'})
+
+        self.check_stats(
+            timer=[('request.v1.search', 1)],
+            counter=[('search.api_key.test', 1),
+                     ('search.cell_lac_hit', 1),
+                     ('request.v1.search.200', 1),
+                     ('search.api_log.test.cell_lac_hit', 1)],
+        )
+
+    def test_ok_cellarea_when_different_fallback_set(self):
+        app = self.app
+        session = self.session
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        lat = PARIS_LAT
+        lon = PARIS_LON
+        data = [
+            CellArea(lat=lat, lon=lon, range=1000,
+                     radio=Radio.umts, **key),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        res = app.post_json(
+            '/v1/search?key=test',
+            {
+                'radio': Radio.gsm.name,
+                'cell': [
+                    dict(radio=Radio.umts.name, **key),
+                    dict(radio=Radio.umts.name, **key),
+                ],
+                'fallbacks': {
+                    'ipf': 1,
+                },
+            },
+            status=200)
+
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {'status': 'ok',
+                                    'lat': PARIS_LAT,
+                                    'lon': PARIS_LON,
+                                    'accuracy': LAC_MIN_ACCURACY,
+                                    'fallback': 'lacf'})
+
+        self.check_stats(
+            timer=[('request.v1.search', 1)],
+            counter=[('search.api_key.test', 1),
+                     ('search.cell_lac_hit', 1),
+                     ('request.v1.search.200', 1),
+                     ('search.api_log.test.cell_lac_hit', 1)],
+        )
+
+    def test_cellarea_not_used_when_lacf_disabled(self):
+        app = self.app
+        session = self.session
+        key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
+        lat = PARIS_LAT
+        lon = PARIS_LON
+        data = [
+            CellArea(lat=lat, lon=lon, range=1000,
+                     radio=Radio.umts, **key),
+        ]
+        session.add_all(data)
+        session.commit()
+
+        res = app.post_json(
+            '/v1/search?key=test',
+            {
+                'radio': Radio.gsm.name, 'cell': [
+                    dict(radio=Radio.umts.name, **key),
+                    dict(radio=Radio.umts.name, **key),
+                ],
+                'fallbacks': {
+                    'lacf': 0,
+                },
+            },
+            status=200)
+
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {'status': 'not_found'})
+
+        self.check_stats(
+            timer=[('request.v1.search', 1)],
+            counter=[('search.api_key.test', 1),
+                     ('request.v1.search.200', 1)],
         )
 
     def test_ok_wifi(self):
@@ -177,7 +297,8 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.json, {'status': 'ok',
                                     'lat': london['latitude'],
                                     'lon': london['longitude'],
-                                    'accuracy': london['accuracy']})
+                                    'accuracy': london['accuracy'],
+                                    'fallback': 'ipf'})
 
         self.check_stats(
             timer=[('request.v1.search', 1)],
@@ -185,6 +306,31 @@ class TestSearch(AppTestCase):
                      ('search.geoip_hit', 1),
                      ('request.v1.search.200', 1),
                      ('search.geoip_city_found', 1),
+                     ('search.api_log.test.wifi_miss', 1)],
+        )
+
+    def test_geoip_not_used_when_ipf_disabled(self):
+        london = self.geoip_data['London']
+        res = self.app.post_json(
+            '/v1/search?key=test',
+            {
+                'wifi': [
+                    {'key': 'a0fffffff0ff'}, {'key': 'b1ffff0fffff'},
+                    {'key': 'c2fffffffff0'}, {'key': 'd3fffff0ffff'},
+                ],
+                'fallbacks': {
+                    'ipf': 0,
+                },
+            },
+            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
+            status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, {'status': 'not_found'})
+
+        self.check_stats(
+            timer=[('request.v1.search', 1)],
+            counter=[('search.api_key.test', 1),
+                     ('request.v1.search.200', 1),
                      ('search.api_log.test.wifi_miss', 1)],
         )
 
@@ -201,7 +347,6 @@ class TestSearch(AppTestCase):
                     'lng': 1.0,
                 },
                 'accuracy': 100,
-                'fallback': 'lacf',
             }
             mock.register_uri(
                 'POST', requests_mock.ANY, json=response_location)
@@ -246,7 +391,6 @@ class TestSearch(AppTestCase):
                     'lng': 1.0,
                 },
                 'accuracy': 100,
-                'fallback': 'lacf',
             }
             mock.register_uri(
                 'POST', requests_mock.ANY, json=response_location)
@@ -314,7 +458,8 @@ class TestSearch(AppTestCase):
         self.assertEqual(res.json, {'status': 'ok',
                                     'lat': london['latitude'],
                                     'lon': london['longitude'],
-                                    'accuracy': london['accuracy']})
+                                    'accuracy': london['accuracy'],
+                                    'fallback': 'ipf'})
 
         self.check_stats(
             timer=[('request.v1.search', 1)],
@@ -440,7 +585,8 @@ class TestSearchErrors(AppTestCase):
         self.assertEqual(res.json, {'status': 'ok',
                                     'lat': london['latitude'],
                                     'lon': london['longitude'],
-                                    'accuracy': london['accuracy']})
+                                    'accuracy': london['accuracy'],
+                                    'fallback': 'ipf'})
 
         self.check_stats(
             timer=['request.v1.search'],

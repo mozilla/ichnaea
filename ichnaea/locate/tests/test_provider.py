@@ -90,6 +90,37 @@ class TestProvider(ProviderTest):
             ],
         )
 
+    def test_should_locate_is_true_if_no_fallback_set(self):
+        self.assertTrue(
+            self.provider.should_locate({'fallbacks': {}}, EmptyLocation()))
+
+    def test_should_not_locate_if_fallback_field_is_set(self):
+        self.provider.fallback_field = 'fallback'
+        self.assertFalse(
+            self.provider.should_locate(
+                {'fallbacks': {'fallback': 0}},
+                EmptyLocation(),
+            ),
+        )
+
+    def test_should_locate_if_a_different_fallback_field_is_set(self):
+        self.provider.fallback_field = 'fallback'
+        self.assertTrue(
+            self.provider.should_locate(
+                {'fallbacks': {'another_fallback': 0}},
+                EmptyLocation(),
+            ),
+        )
+
+    def test_should_locate_ignore_invalid_values(self):
+        self.provider.fallback_field = 'fallback'
+        self.assertTrue(
+            self.provider.should_locate(
+                {'fallbacks': {'fallback': 'asdf'}},
+                EmptyLocation(),
+            ),
+        )
+
 
 class TestCellPositionProvider(ProviderTest):
 
@@ -147,6 +178,20 @@ class TestCellPositionProvider(ProviderTest):
 class TestCellAreaPositionProvider(ProviderTest):
 
     TestProvider = CellAreaPositionProvider
+
+    def test_provider_should_not_locate_if_lacf_disabled(self):
+        cell_key = {'mcc': GB_MCC, 'mnc': 1}
+        query_data = {
+            'cell': [
+                dict(radio=Radio.gsm.name, lac=1, cid=1, **cell_key),
+                dict(radio=Radio.gsm.name, lac=2, cid=1, **cell_key),
+            ],
+            'fallbacks': {
+                'lacf': 0,
+            }
+        }
+        self.assertFalse(
+            self.provider.should_locate(query_data, EmptyLocation()))
 
     def test_shortest_range_lac_used(self):
         cell_key = {'mcc': GB_MCC, 'mnc': 1}
@@ -437,6 +482,16 @@ class TestGeoIPPositionProvider(ProviderTest):
 
     TestProvider = GeoIPPositionProvider
 
+    def test_geoip_provider_should_not_locate_if_ipf_disabled(self):
+        query_data = {
+            'geoip': '127.0.0.1',
+            'fallbacks': {
+                'ipf': 0,
+            }
+        }
+        self.assertFalse(
+            self.provider.should_locate(query_data, EmptyLocation()))
+
     def test_geoip_unknown(self):
         location = self.provider.locate({'geoip': '127.0.0.1'})
         self.assertEqual(type(location), Position)
@@ -529,11 +584,20 @@ class TestFallbackProvider(ProviderTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.response_location)
 
-            location = self.provider.locate({
+            query_data = {
                 'cell': self.cells,
                 'wifi': self.wifis,
-            })
+                'fallbacks': {
+                    'lacf': 1,
+                    'ipf': 0,
+                }
+            }
 
+            location = self.provider.locate(query_data)
+
+            request_json = mock_request.request_history[0].json()
+
+        self.assertEqual(request_json['fallbacks'], {'lacf': 1})
         self.assertTrue(location.found())
         self.assertEqual(
             location.lat, self.response_location['location']['lat'])
