@@ -339,21 +339,6 @@ Gauges
     These queues are used to keep track of which observations still need to
     be acted upon and integrated into the aggregate station data.
 
-``task.data.location_update_cell.new_measures_<min>_<max>``,
-``task.data.location_update_wifi.new_measures_<min>_<max>``, : gauges
-
-    These gauges measure the number of stations which have a new observation
-    count within a certain range. These gauges should remain relatively
-    constant if Ichnaea is "keeping up with" using new observations to
-    update the position estimates of these stations.
-
-``table.cell_measure``, ``table.wifi_measure`` : gauges
-
-    These gauges measure the number of database rows in each of the observation
-    tables at a regular interval. For performance reasons the gauges are
-    based on `max(id) - min(id)`, which might be higher than the actual
-    number of rows if not all auto-increment numbers are taken.
-
 ``table.ocid_cell_age`` : gauges
 
     This gauge measures when the last entry was added to the table. It

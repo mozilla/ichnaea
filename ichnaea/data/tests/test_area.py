@@ -39,8 +39,7 @@ class TestArea(CeleryTestCase):
         self.obs_queue.enqueue(observations)
 
         cells = [
-            Cell(lat=ctr, lon=ctr, cid=cell,
-                 new_measures=4, total_measures=1, **keys)
+            Cell(lat=ctr, lon=ctr, cid=cell, total_measures=1, **keys)
             for cell in range(10)
             for ctr in [cell * big]
         ]
@@ -117,8 +116,7 @@ class TestArea(CeleryTestCase):
         self.obs_queue.enqueue(observations)
 
         cells = [
-            Cell(lat=ctr, lon=ctr, cid=cell,
-                 new_measures=4, total_measures=1, **keys)
+            Cell(lat=ctr, lon=ctr, cid=cell, total_measures=1, **keys)
             for cell in range(6)
             for ctr in [(2 ** cell) * big]
         ]
@@ -146,7 +144,7 @@ class TestArea(CeleryTestCase):
 
         # First batch of cell observations for CID 1
         keys = dict(radio=Radio.cdma, mcc=1, mnc=1, lac=1, cid=1)
-        cell = Cell(new_measures=4, total_measures=1, **keys)
+        cell = Cell(total_measures=1, **keys)
         observations = [
             CellObservation(lat=1.0, lon=1.0, **keys),
             CellObservation(lat=1.0, lon=1.0, **keys),
@@ -158,14 +156,14 @@ class TestArea(CeleryTestCase):
         session.commit()
 
         # Periodic update_cell runs and updates CID 1
-        # to have a location, inserts LAC 1 with new_measures=1
+        # to have a location, inserts LAC 1
         # which will be picked up by the next scan_lac.
         result = update_cell.delay()
         self.assertEqual(result.get(), (1, 0))
 
         # Second batch of cell observations for CID 2
         keys['cid'] = 2
-        cell = Cell(new_measures=4, total_measures=1, **keys)
+        cell = Cell(total_measures=1, **keys)
         observations = [
             CellObservation(lat=1.0, lon=1.0, **keys),
             CellObservation(lat=1.0, lon=1.0, **keys),

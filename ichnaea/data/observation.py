@@ -110,10 +110,9 @@ class ObservationQueue(DataTask):
             num = len(observations)
 
             # Accept incomplete observations, just don't make stations for them
-            # (station creation is a side effect of count-updating)
+            # TODO: station creation happens too early
             if not incomplete and num > 0:
-                self.create_or_update_station(station, key, num,
-                                              first_blacklisted)
+                self.create_station(station, key, first_blacklisted)
 
         added = len(all_observations)
         self.emit_stats(added, drop_counter)
@@ -138,29 +137,21 @@ class ObservationQueue(DataTask):
     def incomplete_observation(self, key):
         return False
 
-    def create_or_update_station(self, station, key, num,
-                                 first_blacklisted):
-        # Creates a station or updates its new/total_measures counts to
-        # reflect recently-received observations.
-        if station is not None:
-            station.new_measures += num
-            station.total_measures += num
-        else:
+    def create_station(self, station, key, first_blacklisted):
+        if station is None:
             created = self.utcnow
             if first_blacklisted:
                 # if the station did previously exist, retain at least the
                 # time it was first put on a blacklist as the creation date
                 created = first_blacklisted
             stmt = self.station_model.__table__.insert(
-                on_duplicate='new_measures = new_measures + %s, '
-                             'total_measures = total_measures + %s' % (
-                                 num, num)
+                on_duplicate='total_measures = total_measures'  # no-op change
             ).values(
                 created=created,
                 modified=self.utcnow,
                 range=0,
-                new_measures=num,
-                total_measures=num,
+                new_measures=0,
+                total_measures=0,
                 **key.__dict__)
             self.session.execute(stmt)
 

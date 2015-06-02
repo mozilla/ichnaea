@@ -42,48 +42,36 @@ class TestCell(CeleryTestCase):
 
     def test_blacklist_moving_cells(self):
         now = util.utcnow()
-        long_ago = now - timedelta(days=40)
 
         k1 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=3, cid=4)
         k2 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=6, cid=8)
         k3 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=9, cid=12)
         k4 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=12, cid=16)
         k5 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=15, cid=20)
-        k6 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=18, cid=24)
 
         # keys k2, k3 and k4 are expected to be detected as moving
         data = [
             # a cell with an entry but no prior position
-            Cell(new_measures=3, total_measures=0, **k1),
+            Cell(total_measures=0, **k1),
             CellObservation(lat=1.001, lon=1.001, **k1),
             CellObservation(lat=1.002, lon=1.005, **k1),
             CellObservation(lat=1.003, lon=1.009, **k1),
             # a cell with a prior known position
-            Cell(lat=2.0, lon=2.0,
-                 new_measures=2, total_measures=1, **k2),
+            Cell(lat=2.0, lon=2.0, total_measures=1, **k2),
             CellObservation(lat=2.0, lon=2.0, **k2),
             CellObservation(lat=4.0, lon=2.0, **k2),
             # a cell with a very different prior position
-            Cell(lat=1.0, lon=1.0,
-                 new_measures=2, total_measures=1, **k3),
+            Cell(lat=1.0, lon=1.0, total_measures=1, **k3),
             CellObservation(lat=3.0, lon=3.0, **k3),
             CellObservation(lat=-3.0, lon=3.0, **k3),
             # another cell with a prior known position (and negative lat)
-            Cell(lat=-4.0, lon=4.0,
-                 new_measures=2, total_measures=1, **k4),
+            Cell(lat=-4.0, lon=4.0, total_measures=1, **k4),
             CellObservation(lat=-4.0, lon=4.0, **k4),
             CellObservation(lat=-6.0, lon=4.0, **k4),
             # an already blacklisted cell
             CellBlacklist(time=now, count=1, **k5),
             CellObservation(lat=5.0, lon=5.0, **k5),
             CellObservation(lat=8.0, lon=5.0, **k5),
-            # a cell with an old different record we ignore, position
-            # estimate has been updated since
-            Cell(lat=6.0, lon=6.0,
-                 new_measures=2, total_measures=1, **k6),
-            CellObservation(lat=6.9, lon=6.9, time=long_ago, **k6),
-            CellObservation(lat=6.0, lon=6.0, **k6),
-            CellObservation(lat=6.001, lon=6, **k6),
         ]
         observations = []
         for obj in data:
@@ -95,7 +83,7 @@ class TestCell(CeleryTestCase):
         self.session.commit()
 
         result = update_cell.delay()
-        self.assertEqual(result.get(), (5, 3))
+        self.assertEqual(result.get(), (4, 3))
 
         moving = [k2, k3, k4, k5]
         black = self.session.query(CellBlacklist).all()
@@ -123,14 +111,10 @@ class TestCell(CeleryTestCase):
         now = util.utcnow()
         # Station moves between these 4 points, all in the USA:
         points = [
-            # NYC
-            (40.0, -74.0),
-            # SF
-            (37.0, -122.0),
-            # Seattle
-            (47.0, -122.0),
-            # Miami
-            (25.0, -80.0),
+            (40.0, -74.0),  # NYC
+            (37.0, -122.0),  # SF
+            (47.0, -122.0),  # Seattle
+            (25.0, -80.0),  # Miami
         ]
 
         N = 4 * PERMANENT_BLACKLIST_THRESHOLD
@@ -228,7 +212,7 @@ class TestCell(CeleryTestCase):
             obs = CellObservationFactory.create(**kw)
             observations.append(obs)
 
-        cell1 = CellFactory(new_measures=3, total_measures=5)
+        cell1 = CellFactory(total_measures=3)
         lat1, lon1 = (cell1.lat, cell1.lon)
         key1 = dict(lac=cell1.lac, cid=cell1.cid)
         obs_factory(lat=lat1, lon=lon1, created=now, **key1)
@@ -238,19 +222,17 @@ class TestCell(CeleryTestCase):
         obs_factory(created=now, **invalid_key)
         obs_factory(created=now, **invalid_key)
 
-        cell2 = CellFactory(lat=lat1 + 1.0, lon=lon1 + 1.0,
-                            new_measures=2, total_measures=4)
+        cell2 = CellFactory(lat=lat1 + 1.0, lon=lon1 + 1.0, total_measures=3)
         lat2, lon2 = (cell2.lat, cell2.lon)
         key2 = dict(lac=cell2.lac, cid=cell2.cid)
         obs_factory(lat=lat2 + 0.001, lon=lon2 + 0.002, created=now, **key2)
         obs_factory(lat=lat2 + 0.003, lon=lon2 + 0.006, created=now, **key2)
 
-        cell3 = CellFactory(new_measures=10, total_measures=100000)
+        cell3 = CellFactory(total_measures=100000)
         lat3, lon3 = (cell3.lat, cell3.lon)
         for i in range(10):
-            obs_factory(
-                lat=lat3 + 1.0, lon=lon3 + 1.0,
-                **dict(lac=cell3.lac, cid=cell3.cid))
+            obs_factory(lat=lat3 + 1.0, lon=lon3 + 1.0,
+                        **dict(lac=cell3.lac, cid=cell3.cid))
 
         self.data_queue.enqueue(observations)
         self.session.commit()
@@ -263,14 +245,13 @@ class TestCell(CeleryTestCase):
 
         cells = self.session.query(Cell).all()
         self.assertEqual(len(cells), 3)
-        self.assertEqual(set([c.new_measures for c in cells]), set([0]))
         for cell in cells:
             if cell.hashkey() == cell1.hashkey():
-                self.assertEqual(cell.lat, lat1 + 0.002)
-                self.assertEqual(cell.lon, lon1 + 0.003)
+                self.assertAlmostEqual(cell.lat, lat1 + 0.001667, 6)
+                self.assertAlmostEqual(cell.lon, lon1 + 0.0025, 6)
             if cell.hashkey() == cell2.hashkey():
-                self.assertEqual(cell.lat, lat2 + 0.001)
-                self.assertEqual(cell.lon, lon2 + 0.002)
+                self.assertAlmostEqual(cell.lat, lat2 + 0.0008, 6)
+                self.assertAlmostEqual(cell.lon, lon2 + 0.0016, 6)
             if cell.hashkey() == cell3.hashkey():
                 expected_lat = ((lat3 * 1000) + (lat3 + 1.0) * 10) / 1010
                 expected_lon = ((lon3 * 1000) + (lon3 + 1.0) * 10) / 1010
@@ -283,7 +264,7 @@ class TestCell(CeleryTestCase):
             Cell(lat=1.001, lon=-1.001,
                  max_lat=1.002, min_lat=1.0,
                  max_lon=-1.0, min_lon=-1.002,
-                 new_measures=2, total_measures=4, **k1))
+                 total_measures=3, **k1))
         observations = [
             CellObservation(lat=1.001, lon=-1.003, **k1),
             CellObservation(lat=1.005, lon=-1.007, **k1),
@@ -297,18 +278,13 @@ class TestCell(CeleryTestCase):
         cells = self.session.query(Cell).all()
         self.assertEqual(len(cells), 1)
         cell = cells[0]
-        self.assertEqual(cell.lat, 1.002)
+        self.assertAlmostEqual(cell.lat, 1.0018, 6)
         self.assertEqual(cell.max_lat, 1.005)
         self.assertEqual(cell.min_lat, 1.0)
-        self.assertEqual(cell.lon, -1.003)
+        self.assertAlmostEqual(cell.lon, -1.0026, 6)
         self.assertEqual(cell.max_lon, -1.0)
         self.assertEqual(cell.min_lon, -1.007)
-
-        # independent calculation: the cell bounding box is
-        # (1.000, -1.007) to (1.005, -1.000), with centroid
-        # at (1.002, -1.003); worst distance from centroid
-        # to any corner is 556m
-        self.assertEqual(cell.range, 556)
+        self.assertEqual(cell.range, 605)
 
 
 class TestWifi(CeleryTestCase):
@@ -324,40 +300,30 @@ class TestWifi(CeleryTestCase):
         k3 = 'cd1234567890'
         k4 = 'de1234567890'
         k5 = 'ef1234567890'
-        k6 = 'fa1234567890'
 
         # keys k2, k3 and k4 are expected to be detected as moving
         data = [
             # a wifi with an entry but no prior position
-            Wifi(key=k1, new_measures=3, total_measures=0),
+            Wifi(key=k1, total_measures=0),
             WifiObservation(lat=1.001, lon=1.001, key=k1),
             WifiObservation(lat=1.002, lon=1.005, key=k1),
             WifiObservation(lat=1.003, lon=1.009, key=k1),
             # a wifi with a prior known position
-            Wifi(lat=2.0, lon=2.0, key=k2,
-                 new_measures=2, total_measures=1),
+            Wifi(lat=2.0, lon=2.0, key=k2, total_measures=1),
             WifiObservation(lat=2.01, lon=2, key=k2),
             WifiObservation(lat=2.07, lon=2, key=k2),
             # a wifi with a very different prior position
-            Wifi(lat=1.0, lon=1.0, key=k3,
-                 new_measures=2, total_measures=1),
+            Wifi(lat=1.0, lon=1.0, key=k3, total_measures=1),
             WifiObservation(lat=3.0, lon=3.0, key=k3),
             WifiObservation(lat=-3.0, lon=3.0, key=k3),
             # another wifi with a prior known position (and negative lat)
-            Wifi(lat=-4.0, lon=4.0, key=k4,
-                 new_measures=2, total_measures=1),
+            Wifi(lat=-4.0, lon=4.0, key=k4, total_measures=1),
             WifiObservation(lat=-4.1, lon=4, key=k4),
             WifiObservation(lat=-4.16, lon=4, key=k4),
             # an already blacklisted wifi
             WifiBlacklist(key=k5, time=now, count=1),
             WifiObservation(lat=5.0, lon=5.0, key=k5),
             WifiObservation(lat=5.1, lon=5.0, key=k5),
-            # a wifi with an old different record we ignore, position
-            # estimate has been updated since
-            Wifi(lat=6.0, lon=6.0, key=k6,
-                 new_measures=2, total_measures=1),
-            WifiObservation(lat=6.0, lon=6.0, key=k6),
-            WifiObservation(lat=6.001, lon=6.0, key=k6),
         ]
         observations = []
         for obj in data:
@@ -369,7 +335,7 @@ class TestWifi(CeleryTestCase):
         self.session.commit()
 
         result = update_wifi.delay()
-        self.assertEqual(result.get(), (5, 3))
+        self.assertEqual(result.get(), (4, 3))
 
         black = self.session.query(WifiBlacklist).all()
         self.assertEqual(set([b.key for b in black]), set([k2, k3, k4, k5]))
@@ -488,12 +454,11 @@ class TestWifi(CeleryTestCase):
         k1 = 'ab1234567890'
         k2 = 'cd1234567890'
         data = [
-            Wifi(key=k1, new_measures=3, total_measures=3),
+            Wifi(key=k1, total_measures=3),
             WifiObservation(lat=1.0, lon=1.0, key=k1, created=now),
             WifiObservation(lat=1.002, lon=1.003, key=k1, created=now),
             WifiObservation(lat=1.004, lon=1.006, key=k1, created=now),
-            Wifi(key=k2, lat=2.0, lon=2.0,
-                 new_measures=2, total_measures=4),
+            Wifi(key=k2, lat=2.0, lon=2.0, total_measures=2),
             WifiObservation(lat=2.002, lon=2.004, key=k2, created=now),
             WifiObservation(lat=2.002, lon=2.004, key=k2, created=now),
         ]
@@ -517,23 +482,21 @@ class TestWifi(CeleryTestCase):
 
         self.assertEqual(wifis[k1].lat, 1.002)
         self.assertEqual(wifis[k1].lon, 1.003)
-        self.assertEqual(wifis[k1].new_measures, 0)
 
         self.assertEqual(wifis[k2].lat, 2.001)
         self.assertEqual(wifis[k2].lon, 2.002)
-        self.assertEqual(wifis[k2].new_measures, 0)
 
     def test_max_min_range_update(self):
         k1 = 'ab1234567890'
         k2 = 'cd1234567890'
         data = [
-            Wifi(key=k1, new_measures=2, total_measures=2),
+            Wifi(key=k1, total_measures=2),
             WifiObservation(lat=1.0, lon=1.0, key=k1),
             WifiObservation(lat=1.002, lon=1.004, key=k1),
             Wifi(key=k2, lat=2.0, lon=-2.0,
                  max_lat=2.001, min_lat=1.999,
                  max_lon=-1.999, min_lon=-2.001,
-                 new_measures=2, total_measures=4),
+                 total_measures=4),
             WifiObservation(lat=2.002, lon=-2.004, key=k2),
             WifiObservation(lat=1.998, lon=-1.996, key=k2),
         ]
@@ -620,7 +583,7 @@ class TestTableCell(CeleryTestCase):
             obs = CellObservationFactory.create(**kw)
             observations.append(obs)
 
-        cell1 = CellFactory(new_measures=3, total_measures=5)
+        cell1 = CellFactory(new_measures=3, total_measures=3)
         lat1, lon1 = (cell1.lat, cell1.lon)
         key1 = dict(lac=cell1.lac, cid=cell1.cid)
         obs_factory(lat=lat1, lon=lon1, created=now, **key1)
@@ -631,7 +594,7 @@ class TestTableCell(CeleryTestCase):
         obs_factory(created=now, **invalid_key)
 
         cell2 = CellFactory(lat=lat1 + 1.0, lon=lon1 + 1.0,
-                            new_measures=2, total_measures=4)
+                            new_measures=2, total_measures=3)
         lat2, lon2 = (cell2.lat, cell2.lon)
         key2 = dict(lac=cell2.lac, cid=cell2.cid)
         obs_factory(lat=lat2 + 0.001, lon=lon2 + 0.002, created=now, **key2)
@@ -640,9 +603,8 @@ class TestTableCell(CeleryTestCase):
         cell3 = CellFactory(new_measures=10, total_measures=100000)
         lat3, lon3 = (cell3.lat, cell3.lon)
         for i in range(10):
-            obs_factory(
-                lat=lat3 + 1.0, lon=lon3 + 1.0,
-                **dict(lac=cell3.lac, cid=cell3.cid))
+            obs_factory(lat=lat3 + 1.0, lon=lon3 + 1.0,
+                        **dict(lac=cell3.lac, cid=cell3.cid))
 
         self.session.add_all(observations)
         self.session.commit()
@@ -658,11 +620,11 @@ class TestTableCell(CeleryTestCase):
         self.assertEqual(set([c.new_measures for c in cells]), set([0]))
         for cell in cells:
             if cell.hashkey() == cell1.hashkey():
-                self.assertEqual(cell.lat, lat1 + 0.002)
-                self.assertEqual(cell.lon, lon1 + 0.003)
+                self.assertAlmostEqual(cell.lat, lat1 + 0.001667, 6)
+                self.assertAlmostEqual(cell.lon, lon1 + 0.0025, 6)
             if cell.hashkey() == cell2.hashkey():
-                self.assertEqual(cell.lat, lat2 + 0.001)
-                self.assertEqual(cell.lon, lon2 + 0.002)
+                self.assertAlmostEqual(cell.lat, lat2 + 0.0008, 6)
+                self.assertAlmostEqual(cell.lon, lon2 + 0.0016, 6)
             if cell.hashkey() == cell3.hashkey():
                 expected_lat = ((lat3 * 1000) + (lat3 + 1.0) * 10) / 1010
                 expected_lon = ((lon3 * 1000) + (lon3 + 1.0) * 10) / 1010
@@ -683,7 +645,7 @@ class TestTableWifi(CeleryTestCase):
             WifiObservation(lat=1.002, lon=1.003, key=k1, created=now),
             WifiObservation(lat=1.004, lon=1.006, key=k1, created=now),
             Wifi(key=k2, lat=2.0, lon=2.0,
-                 new_measures=2, total_measures=4),
+                 new_measures=2, total_measures=2),
             WifiObservation(lat=2.002, lon=2.004, key=k2, created=now),
             WifiObservation(lat=2.002, lon=2.004, key=k2, created=now),
         ]

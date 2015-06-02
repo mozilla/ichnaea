@@ -112,8 +112,7 @@ class TestCell(ObservationTestCase):
         mcc = FRANCE_MCC
 
         session.add(Cell(radio=Radio.gsm, mcc=mcc, mnc=2, lac=3,
-                         cid=4, psc=5, new_measures=2,
-                         total_measures=5))
+                         cid=4, psc=5, total_measures=5))
         user = User(nickname=u'test')
         session.add(user)
         session.flush()
@@ -151,7 +150,6 @@ class TestCell(ObservationTestCase):
         self._compare_sets([c.lac for c in cells], [3])
         self._compare_sets([c.cid for c in cells], [4, 7])
         self._compare_sets([c.psc for c in cells], [5])
-        self._compare_sets([c.new_measures for c in cells], [0, 2])
         self._compare_sets([c.total_measures for c in cells], [1, 8])
 
         score_queue = self.celery_app.data_queues['update_score']
@@ -171,7 +169,7 @@ class TestCell(ObservationTestCase):
         today = util.utcnow().date()
 
         session.add(Cell(radio=Radio.gsm, mcc=FRANCE_MCC, mnc=2,
-                         lac=3, cid=4, new_measures=2, total_measures=5))
+                         lac=3, cid=4, total_measures=5))
         session.add(Score(key=ScoreKey.new_cell,
                           userid=1, time=today, value=7))
         session.flush()
@@ -206,7 +204,6 @@ class TestCell(ObservationTestCase):
         # Nothing should change in the initially created Cell record
         cells = session.query(Cell).all()
         self.assertEqual(len(cells), 1)
-        self._compare_sets([c.new_measures for c in cells], [2])
         self._compare_sets([c.total_measures for c in cells], [5])
 
     def test_insert_observations_out_of_range(self):
@@ -292,8 +289,7 @@ class TestWifi(ObservationTestCase):
         session = self.session
         time = util.utcnow() - timedelta(days=1)
 
-        session.add(Wifi(key='ab1234567890',
-                         new_measures=0, total_measures=0))
+        session.add(Wifi(key='ab1234567890', total_measures=0))
         user = User(nickname=u'test')
         session.add(user)
         session.flush()
@@ -322,7 +318,6 @@ class TestWifi(ObservationTestCase):
         self.assertEqual(len(wifis), 2)
         self._compare_sets([w.key for w in wifis],
                            ['ab1234567890', 'cd3456789012'])
-        self._compare_sets([w.new_measures for w in wifis], [0])
         self._compare_sets([w.total_measures for w in wifis], [1, 3])
 
         score_queue = self.celery_app.data_queues['update_score']

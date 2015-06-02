@@ -62,6 +62,9 @@ class StationUpdater(DataTask):
         self.remove_task = remove_task
         self.updated_areas = set()
 
+    def adjust_counters(self, station, length):  # pragma: no cover
+        raise NotImplementedError
+
     def calculate_new_position(self, station, observations):
         # This function returns True if the station was found to be moving.
         length = len(observations)
@@ -107,7 +110,7 @@ class StationUpdater(DataTask):
                 return True
 
             # limit the maximum weight of the old station estimate
-            old_weight = min(station.total_measures - length,
+            old_weight = min(station.total_measures,
                              self.MAX_OLD_OBSERVATIONS)
             new_weight = old_weight + length
 
@@ -116,11 +119,7 @@ class StationUpdater(DataTask):
             station.lon = ((station.lon * old_weight) +
                            (new_lon * length)) / new_weight
 
-        # decrease new counter, total is already correct
-        station.new_measures = station.new_measures - length
-        if station.new_measures < 0:  # pragma: no cover
-            # BBB: Stop new_measures bookkeeping
-            station.new_measures = 0
+        self.adjust_counters(station, length)
 
         # update max/min lat/lon columns
         station.min_lat = min_lat
@@ -180,6 +179,10 @@ class StationQueueUpdater(StationUpdater):
         self.update_task = update_task
         self.data_queue = self.task.app.data_queues[self.queue_name]
 
+    def adjust_counters(self, station, length):
+        # increase total counter, new isn't used
+        station.total_measures = station.total_measures + length
+
     def station_query(self, station_keys):
         return self.station_model.querykeys(self.session, station_keys)
 
@@ -218,8 +221,8 @@ class StationQueueUpdater(StationUpdater):
         if self.data_queue.enough_data(batch=batch):  # pragma: no cover
             self.update_task.apply_async(
                 kwargs={'batch': batch},
-                countdown=1,
-                expires=30)
+                countdown=5,
+                expires=23)
 
         return (len(stations), len(moving_stations))
 
@@ -234,12 +237,14 @@ class StationTableUpdater(StationUpdater):
         self.min_new = min_new
         self.max_new = max_new
 
+    def adjust_counters(self, station, length):
+        # decrease new counter, total is already correct
+        station.new_measures = station.new_measures - length
+        if station.new_measures < 0:  # pragma: no cover
+            station.new_measures = 0
+
     def emit_new_observation_metric(self):
-        num = self.station_query().count()
-        self.stats_client.gauge(
-            'task.%s.new_measures_%d_%d' % (
-                self.task_shortname, self.min_new, self.max_new),
-            num)
+        pass
 
     def station_query(self):
         model = self.station_model
