@@ -8,7 +8,7 @@ from ichnaea.service.error import (
     JSONParseError,
     preprocess_request,
 )
-from ichnaea.service.geolocate.schema import GeoLocateSchema
+from ichnaea.service.locate2.schema import Locate2Schema
 
 NOT_FOUND = {
     'error': {
@@ -57,7 +57,7 @@ class BaseLocateView(BaseAPIView):
     error_response = JSONParseError
     searcher = PositionSearcher
     transform = LocateTransform
-    schema = GeoLocateSchema
+    schema = Locate2Schema
 
     def not_found(self):
         result = HTTPNotFound()

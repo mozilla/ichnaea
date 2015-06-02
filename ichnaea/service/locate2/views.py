@@ -1,7 +1,7 @@
 from ichnaea.service.base_locate import BaseLocateView
 
 
-class GeolocateView(BaseLocateView):
+class Locate2View(BaseLocateView):
 
     route = '/v1/geolocate'
     view_name = 'geolocate'
