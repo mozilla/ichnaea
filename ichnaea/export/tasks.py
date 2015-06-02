@@ -175,6 +175,9 @@ def write_stations_to_s3(path, bucketname):
 def export_modified_cells(self, hourly=True, bucket=None):
     if bucket is None:  # pragma: no cover
         bucket = self.app.settings['ichnaea']['s3_assets_bucket']
+    if not bucket:  # pragma: no cover
+        return
+
     now = util.utcnow()
 
     if hourly:
@@ -271,6 +274,9 @@ def import_ocid_cells(self, filename=None, session=None):
 def import_latest_ocid_cells(self, diff=True, filename=None, session=None):
     url = self.app.settings['ichnaea']['ocid_url']
     apikey = self.app.settings['ichnaea']['ocid_apikey']
+    if not url or not apikey:  # pragma: no cover
+        return
+
     if filename is None:
         if diff:
             prev_hour = util.utcnow() - timedelta(hours=1)
