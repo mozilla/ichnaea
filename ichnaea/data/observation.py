@@ -105,13 +105,11 @@ class ObservationQueue(DataTask):
                     # We discovered an actual new complete station.
                     new_stations += 1
 
-            # Accept all observations
-            all_observations.extend(observations)
-            num = len(observations)
-
-            # Accept incomplete observations, just don't make stations for them
+            # Don't make stations for incomplete observations
+            # and don't queue their data for processing
             # TODO: station creation happens too early
-            if not incomplete and num > 0:
+            if not incomplete and observations:
+                all_observations.extend(observations)
                 self.create_station(station, key, first_blacklisted)
 
         added = len(all_observations)
@@ -172,11 +170,11 @@ class CellObservationQueue(ObservationQueue):
         decode_radio_dict(entry)
 
     def incomplete_observation(self, key):
-        # We want to store certain incomplete observations in the database
+        # We want to store certain incomplete observations
         # even though they should not lead to the creation of a station
         # entry; these are cell observations with a missing value for
         # LAC and/or CID, and will be inferred from neighboring cells.
-        for field in ('lac', 'cid'):
+        for field in ('radio', 'mcc', 'mnc', 'lac', 'cid'):
             if getattr(key, field, None) is None:
                 return True
         return False

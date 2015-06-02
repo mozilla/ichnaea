@@ -197,7 +197,7 @@ class StationQueueUpdater(StationUpdater):
             return (0, 0)
 
         stations = self.station_query(station_obs.keys()).all()
-        if not stations:
+        if not stations:  # pragma: no cover
             # TODO: This task depends on the station records to be
             # pre-created, move that logic into this task later on.
             return (0, 0)

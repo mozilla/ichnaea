@@ -190,15 +190,10 @@ class TestCell(ObservationTestCase):
             e.update(obs)
 
         result = insert_measures_cell.delay(entries, userid=1)
-        self.assertEqual(result.get(), 2)
+        self.assertEqual(result.get(), 0)
 
-        self.assertEqual(self.data_queue.size(), 2)
-        observations = self.data_queue.dequeue()
-        self.assertEqual(len(observations), 2)
-        self._compare_sets([o.lac for o in observations], [None])
-        self._compare_sets([o.cid for o in observations], [None])
-
-        self.data_queue.enqueue(observations)
+        # The incomplete observations never make it into the queue
+        self.assertEqual(self.data_queue.size(), 0)
         update_cell.delay().get()
 
         # Nothing should change in the initially created Cell record
