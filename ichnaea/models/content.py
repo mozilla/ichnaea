@@ -112,6 +112,7 @@ class StatCounter(object):
 
     def decr(self, pipe, amount):
         pipe.decr(self.redis_key, amount)
+        pipe.expire(self.redis_key, 172800)  # 2 days
 
     def incr(self, pipe, amount):
         # keep track of newly inserted observations in redis
