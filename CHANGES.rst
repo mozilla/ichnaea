@@ -15,6 +15,10 @@ Changes
 
 - #446: Filter out incomplete csv cell records.
 
+- #287: Switch location_update tasks to new queue based system.
+
+- #438: Add explicit fallback choices to geolocate API.
+
 - Replace the last daily stats task with a queue based one.
 
 - #440: Allow search/locate queries without a cell id.
