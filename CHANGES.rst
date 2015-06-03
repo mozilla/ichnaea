@@ -23,7 +23,7 @@ Changes
 
 - #440: Allow search/locate queries without a cell id.
 
-- Update to latest versions of nose and simplejson.
+- Update to latest versions of nose, simplejson and SQLAlchemy.
 
 20150528085200
 **************
