@@ -52,7 +52,7 @@ class ReportQueue(DataTask):
             cell, wifi = self.process_report(report)
             cell_observations.extend(cell)
             wifi_observations.extend(wifi)
-            if cell or wifi:
+            if (cell or wifi) and report.get('lat') and report.get('lon'):
                 positions.add((report['lat'], report['lon']))
 
         if cell_observations:
