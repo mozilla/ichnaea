@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #446: Filter out incomplete csv cell records.
+
 - Replace the last daily stats task with a queue based one.
 
 - #440: Allow search/locate queries without a cell id.

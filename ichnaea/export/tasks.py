@@ -139,7 +139,13 @@ def make_ocid_cell_import_dict(row):
     d['range'] = int(val('range', 0, float))
     d['total_measures'] = val('samples', 0, int)
     d['changeable'] = val('changeable', True, bool)
-    return OCIDCell.validate(d)
+    validated = OCIDCell.validate(d)
+    if validated is None:
+        return None
+    for field in ('radio', 'mcc', 'mnc', 'lac', 'cid'):
+        if validated[field] is None:
+            return None
+    return validated
 
 
 def write_stations_to_csv(session, table, columns,

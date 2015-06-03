@@ -139,15 +139,26 @@ class TestImport(CeleryAppTestCase):
 
     @contextmanager
     def get_test_csv(self, lo=1, hi=10, time=1408604686):
-        line_template = ('GSM,{mcc},{mnc},{lac},{cid},,{lon},'
+        line_template = ('GSM,{mcc},{mnc},{lac},{cid},{psc},{lon},'
                          '{lat},1,1,1,{time},{time},')
         lines = [line_template.format(
-            cid=i * 1010,
+            cid=i * 1010, psc='',
             lon=PARIS_LON + i * 0.002,
             lat=PARIS_LAT + i * 0.001,
             time=time,
             **self.KEY)
             for i in range(lo, hi)]
+        # add bad lines
+        lines.append(line_template.format(
+            mcc=FRANCE_MCC, mnc=VIVENDI_MNC,
+            lac='', cid='', psc=12,
+            lon=PARIS_LON, lat=PARIS_LAT, time=time,
+        ))
+        lines.append(line_template.format(
+            mcc=FRANCE_MCC, mnc=VIVENDI_MNC,
+            lac='', cid='', psc='',
+            lon=PARIS_LON, lat=PARIS_LAT, time=time,
+        ))
         txt = '\n'.join(lines)
 
         with selfdestruct_tempdir() as d:
