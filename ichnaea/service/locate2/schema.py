@@ -54,7 +54,7 @@ class WifiAccessPointsSchema(SequenceSchema):
     wifi = WifiAccessPointSchema()
 
 
-class GeoLocateSchema(MappingSchema):
+class Locate2Schema(MappingSchema):
 
     carrier = SchemaNode(String(), missing=None)
     homeMobileCountryCode = SchemaNode(Integer(), missing=None)

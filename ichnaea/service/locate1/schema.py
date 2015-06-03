@@ -41,7 +41,7 @@ class WifisSchema(SequenceSchema):
     wifi = WifiSchema()
 
 
-class SearchSchema(MappingSchema):
+class Locate1Schema(MappingSchema):
 
     radio = SchemaNode(String(),
                        validator=OneOf(RADIO_STRINGS), missing=None)

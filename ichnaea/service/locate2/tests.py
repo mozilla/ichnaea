@@ -15,10 +15,10 @@ from ichnaea.tests.factories import (
 from ichnaea import util
 
 
-class TestGeolocate(AppTestCase):
+class TestView(AppTestCase):
 
     def setUp(self):
-        super(TestGeolocate, self).setUp()
+        super(TestView, self).setUp()
         self.url = '/v1/geolocate'
         self.metric = 'geolocate'
         self.metric_url = 'request.v1.geolocate'
@@ -520,12 +520,12 @@ class TestGeolocate(AppTestCase):
         self.assertEqual(res.json['accuracy'], cell.range)
 
 
-class TestGeolocateErrors(AppTestCase):
+class TestErrors(AppTestCase):
     # this is a standalone class to ensure DB isolation for dropping tables
 
     def tearDown(self):
         self.setup_tables(self.db_rw.engine)
-        super(TestGeolocateErrors, self).tearDown()
+        super(TestErrors, self).tearDown()
 
     def test_database_error(self):
         london = self.geoip_data['London']

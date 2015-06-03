@@ -13,6 +13,7 @@ from ichnaea.models import (
 )
 from ichnaea.service.base import INVALID_API_KEY
 from ichnaea.service.error import preprocess_request
+from ichnaea.service.locate1.schema import Locate1Schema
 from ichnaea.tests.base import (
     AppTestCase,
     FRANCE_MCC,
@@ -23,11 +24,10 @@ from ichnaea.tests.base import (
 from ichnaea import util
 
 
-class TestSearchSchema(TestCase):
+class TestSchema(TestCase):
 
     def _make_schema(self):
-        from ichnaea.service.search.schema import SearchSchema
-        return SearchSchema()
+        return Locate1Schema()
 
     def _make_request(self, body):
         request = DummyRequest()
@@ -56,7 +56,7 @@ class TestSearchSchema(TestCase):
         self.assertTrue(errors)
 
 
-class TestSearch(AppTestCase):
+class TestView(AppTestCase):
 
     def test_ok_cell(self):
         app = self.app
@@ -557,12 +557,12 @@ class TestSearch(AppTestCase):
         self.check_stats(counter=['search.unknown_api_key'])
 
 
-class TestSearchErrors(AppTestCase):
+class TestErrors(AppTestCase):
     # this is a standalone class to ensure DB isolation for dropping tables
 
     def tearDown(self):
         self.setup_tables(self.db_rw.engine)
-        super(TestSearchErrors, self).tearDown()
+        super(TestErrors, self).tearDown()
 
     def test_database_error(self):
         app = self.app
