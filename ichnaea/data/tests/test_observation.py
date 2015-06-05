@@ -327,12 +327,12 @@ class TestWifi(ObservationTestCase):
         self.check_statcounter(StatKey.unique_wifi, 1)
 
 
-class TestSubmitErrors(ObservationTestCase):
+class TestSubmitV1Errors(ObservationTestCase):
     # this is a standalone class to ensure DB isolation for dropping tables
 
     def tearDown(self):
         self.setup_tables(self.db_rw.engine)
-        super(TestSubmitErrors, self).tearDown()
+        super(TestSubmitV1Errors, self).tearDown()
 
     def test_database_error(self):
         session = self.session

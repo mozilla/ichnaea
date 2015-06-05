@@ -15,7 +15,7 @@ from ichnaea.log import (
     configure_raven,
     configure_stats,
 )
-from ichnaea.service import configure_service
+from ichnaea.api import configure_service
 
 
 def main(global_config, app_config, init=False,
