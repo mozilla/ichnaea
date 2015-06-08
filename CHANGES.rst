@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #443: Reorganize internal module/classes.
+
 20150604164500
 **************
 

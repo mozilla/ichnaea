@@ -1,6 +1,6 @@
 import time
 
-from ichnaea.api.base import rate_limit
+from ichnaea.rate_limit import rate_limit
 from ichnaea.tests.base import RedisTestCase
 
 

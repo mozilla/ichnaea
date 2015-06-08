@@ -1,4 +1,4 @@
-from ichnaea.api.locate.base_locate import BaseLocateView
+from ichnaea.api.locate.views import BaseLocateView
 
 
 class LocateV2View(BaseLocateView):

@@ -16,7 +16,7 @@ from sqlalchemy.sql import (
 )
 
 from ichnaea.async.app import celery_app
-from ichnaea.async.task import DatabaseTask
+from ichnaea.async.task import BaseTask
 from ichnaea.models import (
     Cell,
     CellArea,
@@ -177,7 +177,7 @@ def write_stations_to_s3(path, bucketname):
     k.set_contents_from_filename(path, reduced_redundancy=True)
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def export_modified_cells(self, hourly=True, bucket=None):
     if bucket is None:  # pragma: no cover
         bucket = self.app.settings['ichnaea']['s3_assets_bucket']
@@ -264,7 +264,7 @@ def import_stations(session, pipe, filename, fields):
             update_area.delay(area_key, cell_type='ocid')
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def import_ocid_cells(self, filename=None, session=None):
     with self.redis_pipeline() as pipe:
         with self.db_session() as dbsession:
@@ -276,7 +276,7 @@ def import_ocid_cells(self, filename=None, session=None):
                             CELL_FIELDS)
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def import_latest_ocid_cells(self, diff=True, filename=None, session=None):
     url = self.app.settings['ichnaea']['ocid_url']
     apikey = self.app.settings['ichnaea']['ocid_apikey']

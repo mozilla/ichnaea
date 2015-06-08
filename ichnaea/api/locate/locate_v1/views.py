@@ -1,7 +1,7 @@
-from ichnaea.models.transform import ReportTransform
-from ichnaea.api.locate.base_locate import BaseLocateView
 from ichnaea.api.error import JSONError
 from ichnaea.api.locate.locate_v1.schema import LocateV1Schema
+from ichnaea.api.locate.views import BaseLocateView
+from ichnaea.models.transform import ReportTransform
 
 
 class LocateV1Transform(ReportTransform):

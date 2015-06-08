@@ -4,7 +4,7 @@ import pytz
 from sqlalchemy import func
 
 from ichnaea.async.app import celery_app
-from ichnaea.async.task import DatabaseTask
+from ichnaea.async.task import BaseTask
 from ichnaea.models import (
     OBSERVATION_TYPE_META,
     ObservationBlock,
@@ -13,7 +13,7 @@ from ichnaea.models import (
 from ichnaea import util
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def write_cellmeasure_s3_backups(self,
                                  limit=100,
                                  batch=10000,
@@ -27,7 +27,7 @@ def write_cellmeasure_s3_backups(self,
                                         cleanup_zip=cleanup_zip)
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def write_wifimeasure_s3_backups(self,
                                  limit=100,
                                  batch=10000,
@@ -121,13 +121,13 @@ def schedule_observation_archival(self, observation_type,
     return blocks
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def schedule_cellmeasure_archival(self, limit=100, batch=1000000):
     return schedule_observation_archival(
         self, ObservationType.cell, limit=limit, batch=batch)
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def schedule_wifimeasure_archival(self, limit=100, batch=1000000):
     return schedule_observation_archival(
         self, ObservationType.wifi, limit=limit, batch=batch)
@@ -171,7 +171,7 @@ def delete_observation_records(self,
             c += countdown
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def verified_delete(self, block_id, batch=10000):
     utcnow = util.utcnow()
     with self.db_session() as session:
@@ -190,7 +190,7 @@ def verified_delete(self, block_id, batch=10000):
         block.archive_date = utcnow
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def delete_cellmeasure_records(self, limit=100, days_old=7,
                                countdown=300, batch=10000):
     return delete_observation_records(
@@ -202,7 +202,7 @@ def delete_cellmeasure_records(self, limit=100, days_old=7,
         batch=batch)
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def delete_wifimeasure_records(self, limit=100, days_old=7,
                                countdown=300, batch=10000):
     return delete_observation_records(

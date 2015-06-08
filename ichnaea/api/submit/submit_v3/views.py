@@ -1,6 +1,6 @@
 from ichnaea.models.transform import ReportTransform
-from ichnaea.api.submit.base_submit import BaseSubmitView
 from ichnaea.api.submit.submit_v3.schema import SubmitV3Schema
+from ichnaea.api.submit.views import BaseSubmitView
 
 
 class SubmitV3Transform(ReportTransform):

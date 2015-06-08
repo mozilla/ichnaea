@@ -2,8 +2,8 @@ from pyramid.httpexceptions import HTTPNoContent
 
 from ichnaea.models.transform import ReportTransform
 from ichnaea.api.error import JSONError
-from ichnaea.api.submit.base_submit import BaseSubmitView
 from ichnaea.api.submit.submit_v1.schema import SubmitV1Schema
+from ichnaea.api.submit.views import BaseSubmitView
 
 
 class SubmitV1Transform(ReportTransform):

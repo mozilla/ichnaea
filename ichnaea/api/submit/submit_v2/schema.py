@@ -3,10 +3,14 @@ from ichnaea.api.schema import (
     OptionalMappingSchema,
     OptionalSequenceSchema,
 )
-from ichnaea.api.submit import schema_submit
+from ichnaea.api.submit.schema import (
+    CellTowerSchema,
+    PositionSchema,
+    ReportSchema,
+)
 
 
-class CellTowerV2Schema(schema_submit.CellTowerSchema):
+class CellTowerV2Schema(CellTowerSchema):
 
     psc = OptionalIntNode()
 
@@ -16,7 +20,7 @@ class CellTowersV2Schema(OptionalSequenceSchema):
     cell = CellTowerV2Schema()
 
 
-class ReportV2Schema(schema_submit.PositionSchema, schema_submit.ReportSchema):
+class ReportV2Schema(PositionSchema, ReportSchema):
 
     cellTowers = CellTowersV2Schema(missing=())
 

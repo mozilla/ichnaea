@@ -1,8 +1,11 @@
+import socket
 import time
 
 from pyramid.httpexceptions import HTTPServiceUnavailable
 
-from ichnaea.api.base import BaseServiceView
+from ichnaea.webapp.view import BaseView
+
+LOCAL_FQDN = socket.getfqdn()
 
 
 class Timer(object):
@@ -48,7 +51,18 @@ def check_stats(request):
     return _check_timed(request.registry.stats_client.ping)
 
 
-class MonitorView(BaseServiceView):
+class HeartbeatView(BaseView):
+
+    route = '/__heartbeat__'
+
+    def __call__(self):
+        try:
+            return {'status': 'OK', 'hostname': LOCAL_FQDN}
+        except Exception:  # pragma: no cover
+            return HTTPServiceUnavailable()
+
+
+class MonitorView(BaseView):
 
     route = '/__monitor__'
 

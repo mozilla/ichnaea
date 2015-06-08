@@ -3,10 +3,16 @@ from ichnaea.api.schema import (
     OptionalMappingSchema,
     OptionalSequenceSchema,
 )
-from ichnaea.api.submit import schema_submit
+from ichnaea.api.submit.schema import (
+    BluetoothBeaconsSchema,
+    CellTowerSchema,
+    ConnectionSchema,
+    PositionSchema,
+    ReportSchema,
+)
 
 
-class CellTowerV3Schema(schema_submit.CellTowerSchema):
+class CellTowerV3Schema(CellTowerSchema):
 
     primaryScramblingCode = OptionalIntNode()
 
@@ -16,12 +22,12 @@ class CellTowersV3Schema(OptionalSequenceSchema):
     cell = CellTowerV3Schema()
 
 
-class ReportV3Schema(schema_submit.ReportSchema):
+class ReportV3Schema(ReportSchema):
 
-    bluetoothBeacons = schema_submit.BluetoothBeaconsSchema(missing=())
+    bluetoothBeacons = BluetoothBeaconsSchema(missing=())
     cellTowers = CellTowersV3Schema(missing=())
-    connection = schema_submit.ConnectionSchema(missing=None)
-    position = schema_submit.PositionSchema(missing=None)
+    connection = ConnectionSchema(missing=None)
+    position = PositionSchema(missing=None)
 
 
 class ReportsV3Schema(OptionalSequenceSchema):

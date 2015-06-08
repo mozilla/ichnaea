@@ -1,6 +1,7 @@
 from pyramid.config import Configurator
 from pyramid.tweens import EXCVIEW
 
+from ichnaea.api import configure_api
 from ichnaea import customjson
 from ichnaea.cache import configure_redis
 from ichnaea.content.views import configure_content
@@ -15,7 +16,7 @@ from ichnaea.log import (
     configure_raven,
     configure_stats,
 )
-from ichnaea.api import configure_service
+from ichnaea.monitor import configure_monitor
 
 
 def main(global_config, app_config, init=False,
@@ -30,8 +31,9 @@ def main(global_config, app_config, init=False,
     # add support for pt templates
     config.include('pyramid_chameleon')
 
+    configure_api(config)
     configure_content(config)
-    configure_service(config)
+    configure_monitor(config)
 
     # configure outside connections
     registry = config.registry

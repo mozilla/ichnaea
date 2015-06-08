@@ -5,6 +5,7 @@ from ichnaea.models.api import ApiKey
 from ichnaea.rate_limit import rate_limit
 from ichnaea.api.error import DAILY_LIMIT
 from ichnaea import util
+from ichnaea.webapp.view import BaseView
 
 INVALID_API_KEY = {
     'error': {
@@ -20,25 +21,7 @@ INVALID_API_KEY = {
 INVALID_API_KEY = dumps(INVALID_API_KEY)
 
 
-class BaseServiceView(object):
-
-    route = None
-
-    @classmethod
-    def configure(cls, config):
-        path = cls.route
-        name = path.lstrip('/').replace('/', '_')
-        config.add_route(name, path)
-        config.add_view(cls, route_name=name, renderer='json')
-
-    def __init__(self, request):
-        self.request = request
-
-    def __call__(self):  # pragma: no cover
-        raise NotImplementedError()
-
-
-class BaseAPIView(BaseServiceView):
+class BaseAPIView(BaseView):
 
     check_api_key = True
     error_on_invalidkey = True

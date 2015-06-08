@@ -24,9 +24,9 @@ from ichnaea.models import (
     Wifi,
 )
 from ichnaea.api.locate.location import Position, Country
-from ichnaea.api.locate.schema_locate import (
-    CellLookup,
+from ichnaea.api.locate.schema import (
     CellAreaLookup,
+    CellLookup,
     WifiLookup,
 )
 from ichnaea.api.locate.stats import StatsLogger

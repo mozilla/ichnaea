@@ -11,8 +11,8 @@ from ichnaea.models import (
     Radio,
     Wifi,
 )
-from ichnaea.api.base import INVALID_API_KEY
 from ichnaea.api.error import preprocess_request
+from ichnaea.api.views import INVALID_API_KEY
 from ichnaea.tests.base import (
     AppTestCase,
     FRANCE_MCC,

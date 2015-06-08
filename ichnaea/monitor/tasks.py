@@ -2,7 +2,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import load_only
 
 from ichnaea.async.app import celery_app
-from ichnaea.async.task import DatabaseTask
+from ichnaea.async.task import BaseTask
 from ichnaea.models import (
     ApiKey,
     CellObservation,
@@ -12,7 +12,7 @@ from ichnaea.models import (
 from ichnaea import util
 
 
-@celery_app.task(base=DatabaseTask, bind=True, queue='celery_monitor')
+@celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
 def monitor_api_key_limits(self):
     result = {}
     try:
@@ -44,7 +44,7 @@ def monitor_api_key_limits(self):
     return result
 
 
-@celery_app.task(base=DatabaseTask, bind=True, queue='celery_monitor')
+@celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
 def monitor_measures(self):
     checks = [('cell_measure', CellObservation),
               ('wifi_measure', WifiObservation)]
@@ -66,7 +66,7 @@ def monitor_measures(self):
     return result
 
 
-@celery_app.task(base=DatabaseTask, bind=True, queue='celery_monitor')
+@celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
 def monitor_ocid_import(self):
     result = -1
     try:
@@ -87,7 +87,7 @@ def monitor_ocid_import(self):
     return result
 
 
-@celery_app.task(base=DatabaseTask, bind=True, queue='celery_monitor')
+@celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
 def monitor_queue_length(self):
     result = {}
     try:

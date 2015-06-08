@@ -9,7 +9,7 @@ from ichnaea.api.submit.submit_v1.schema import (
     ReportV1Schema,
     SubmitV1Schema,
 )
-from ichnaea.api.tests.base_submit import BaseSubmitTest
+from ichnaea.api.submit.tests.base import BaseSubmitTest
 from ichnaea.tests.base import (
     CeleryAppTestCase,
     TestCase,

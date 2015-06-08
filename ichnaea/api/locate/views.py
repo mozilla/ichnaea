@@ -3,12 +3,12 @@ from simplejson import dumps
 
 from ichnaea.api.locate.searcher import PositionSearcher
 from ichnaea.models.transform import ReportTransform
-from ichnaea.api.base import BaseAPIView
 from ichnaea.api.error import (
     JSONParseError,
     preprocess_request,
 )
 from ichnaea.api.locate.locate_v2.schema import LocateV2Schema
+from ichnaea.api.views import BaseAPIView
 
 NOT_FOUND = {
     'error': {

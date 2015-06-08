@@ -5,11 +5,11 @@ from pyramid.httpexceptions import (
 from redis import ConnectionError
 
 from ichnaea.data.tasks import queue_reports
-from ichnaea.api.base import BaseAPIView
 from ichnaea.api.error import (
     JSONParseError,
     preprocess_request,
 )
+from ichnaea.api.views import BaseAPIView
 
 
 class BaseSubmitView(BaseAPIView):

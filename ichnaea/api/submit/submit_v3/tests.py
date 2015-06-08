@@ -1,7 +1,7 @@
 import time
 
 from ichnaea.models import Radio
-from ichnaea.api.tests.base_submit import BaseSubmitTest
+from ichnaea.api.submit.tests.base import BaseSubmitTest
 from ichnaea.tests.base import CeleryAppTestCase
 from ichnaea.tests.factories import (
     CellFactory,
@@ -9,7 +9,7 @@ from ichnaea.tests.factories import (
 )
 
 
-class TestSubmitV22(BaseSubmitTest, CeleryAppTestCase):
+class TestSubmitV3(BaseSubmitTest, CeleryAppTestCase):
 
     url = '/v2/geosubmit'
     metric = 'geosubmit2'

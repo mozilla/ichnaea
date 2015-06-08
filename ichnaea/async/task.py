@@ -8,7 +8,7 @@ from ichnaea.cache import redis_pipeline
 from ichnaea.db import db_worker_session
 
 
-class DatabaseTask(Task):
+class BaseTask(Task):
     abstract = True
     acks_late = False
     ignore_result = True
@@ -30,7 +30,7 @@ class DatabaseTask(Task):
     def __call__(self, *args, **kw):
         with self.stats_client.timer('task.' + self.shortname):
             try:
-                result = super(DatabaseTask, self).__call__(*args, **kw)
+                result = super(BaseTask, self).__call__(*args, **kw)
             except Exception as exc:
                 self.raven_client.captureException()
                 if self._auto_retry and not self.app.conf.CELERY_ALWAYS_EAGER:
@@ -54,7 +54,7 @@ class DatabaseTask(Task):
             content_type, encoding, data = kombu_dumps(args, serializer)
             args = kombu_loads(data, content_type, encoding)
 
-        return super(DatabaseTask, self).apply(*args, **kw)
+        return super(BaseTask, self).apply(*args, **kw)
 
     def redis_pipeline(self, execute=True):
         # returns a context manager

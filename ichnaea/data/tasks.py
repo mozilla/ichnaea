@@ -1,5 +1,5 @@
 from ichnaea.async.app import celery_app
-from ichnaea.async.task import DatabaseTask
+from ichnaea.async.task import BaseTask
 from ichnaea.customjson import kombu_loads
 from ichnaea.data.area import (
     CellAreaUpdater,
@@ -32,7 +32,7 @@ from ichnaea.data.stats import StatCounterUpdater
 from ichnaea.models import ApiKey
 
 
-@celery_app.task(base=DatabaseTask, bind=True, queue='celery_incoming')
+@celery_app.task(base=BaseTask, bind=True, queue='celery_incoming')
 def insert_measures(self, items=None, email=None, ip=None, nickname=None,
                     api_key_text=None):
     if not items:  # pragma: no cover
@@ -54,7 +54,7 @@ def insert_measures(self, items=None, email=None, ip=None, nickname=None,
     return length
 
 
-@celery_app.task(base=DatabaseTask, bind=True, queue='celery_insert')
+@celery_app.task(base=BaseTask, bind=True, queue='celery_insert')
 def insert_measures_cell(self, entries, userid=None, utcnow=None):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
@@ -63,7 +63,7 @@ def insert_measures_cell(self, entries, userid=None, utcnow=None):
     return length
 
 
-@celery_app.task(base=DatabaseTask, bind=True, queue='celery_insert')
+@celery_app.task(base=BaseTask, bind=True, queue='celery_insert')
 def insert_measures_wifi(self, entries, userid=None, utcnow=None):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
@@ -72,7 +72,7 @@ def insert_measures_wifi(self, entries, userid=None, utcnow=None):
     return length
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def location_update_cell(self, min_new=1, max_new=100, batch=1000):
     # BBB: Old table based updater
     with self.redis_pipeline() as pipe:
@@ -86,7 +86,7 @@ def location_update_cell(self, min_new=1, max_new=100, batch=1000):
     return (cells, moving)
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def location_update_wifi(self, min_new=1, max_new=100, batch=1000):
     # BBB: Old table based updater
     with self.redis_pipeline() as pipe:
@@ -100,19 +100,19 @@ def location_update_wifi(self, min_new=1, max_new=100, batch=1000):
     return (wifis, moving)
 
 
-@celery_app.task(base=DatabaseTask, bind=True, queue='celery_export')
+@celery_app.task(base=BaseTask, bind=True, queue='celery_export')
 def schedule_export_reports(self):
     scheduler = ExportScheduler(self, None)
     return scheduler.schedule(export_reports)
 
 
-@celery_app.task(base=DatabaseTask, bind=True, queue='celery_export')
+@celery_app.task(base=BaseTask, bind=True, queue='celery_export')
 def export_reports(self, export_queue_name, queue_key=None):
     exporter = ReportExporter(self, None, export_queue_name, queue_key)
     return exporter.export(export_reports, upload_reports)
 
 
-@celery_app.task(base=DatabaseTask, bind=True, queue='celery_reports')
+@celery_app.task(base=BaseTask, bind=True, queue='celery_reports')
 def queue_reports(self, reports=(),
                   api_key=None, email=None, ip=None, nickname=None):
     with self.redis_pipeline() as pipe:
@@ -125,7 +125,7 @@ def queue_reports(self, reports=(),
     return length
 
 
-@celery_app.task(base=DatabaseTask, bind=True, queue='celery_upload')
+@celery_app.task(base=BaseTask, bind=True, queue='celery_upload')
 def upload_reports(self, export_queue_name, data, queue_key=None):
     uploaders = {
         'http': GeosubmitUploader,
@@ -141,7 +141,7 @@ def upload_reports(self, export_queue_name, data, queue_key=None):
         return uploader.upload(data)
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def remove_cell(self, cell_keys):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
@@ -149,7 +149,7 @@ def remove_cell(self, cell_keys):
     return length
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def remove_wifi(self, wifi_keys):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
@@ -157,7 +157,7 @@ def remove_wifi(self, wifi_keys):
     return length
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def update_cell(self, batch=1000):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
@@ -169,7 +169,7 @@ def update_cell(self, batch=1000):
     return (cells, moving)
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def update_wifi(self, batch=1000):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
@@ -181,14 +181,14 @@ def update_wifi(self, batch=1000):
     return (wifis, moving)
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def scan_areas(self, batch=100):
     updater = CellAreaUpdater(self, None)
     length = updater.scan(update_area, batch=batch)
     return length
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def update_area(self, area_key, cell_type='cell'):
     with self.db_session() as session:
         if cell_type == 'ocid':
@@ -198,7 +198,7 @@ def update_area(self, area_key, cell_type='cell'):
         updater.update(area_key)
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def update_mapstat(self, batch=1000):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
@@ -206,7 +206,7 @@ def update_mapstat(self, batch=1000):
             updater.update(batch=batch)
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def update_score(self, batch=1000):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
@@ -214,7 +214,7 @@ def update_score(self, batch=1000):
             updater.update(batch=batch)
 
 
-@celery_app.task(base=DatabaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True)
 def update_statcounter(self, ago=1):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:

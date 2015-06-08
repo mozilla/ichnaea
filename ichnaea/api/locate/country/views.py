@@ -1,5 +1,5 @@
 from ichnaea.api.locate.searcher import CountrySearcher
-from ichnaea.api.locate.base_locate import BaseLocateView
+from ichnaea.api.locate.views import BaseLocateView
 
 
 class CountryView(BaseLocateView):

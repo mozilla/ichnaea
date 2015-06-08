@@ -1,7 +1,7 @@
 import time
 
 from ichnaea.models import Radio
-from ichnaea.api.tests.base_submit import BaseSubmitTest
+from ichnaea.api.submit.tests.base import BaseSubmitTest
 from ichnaea.tests.base import CeleryAppTestCase
 from ichnaea.tests.factories import (
     CellFactory,
