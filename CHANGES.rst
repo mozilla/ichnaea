@@ -15,6 +15,8 @@ Changes
 
 - #443: Reorganize internal module/classes.
 
+- Update to latest version of SQLAlchemy.
+
 20150604164500
 **************
 

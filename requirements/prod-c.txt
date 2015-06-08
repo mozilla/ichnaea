@@ -1,5 +1,5 @@
 MarkupSafe==0.23
-SQLAlchemy==1.0.4
+SQLAlchemy==1.0.5
 billiard==3.3.0.20
 gevent==1.0.2
 greenlet==0.4.7
