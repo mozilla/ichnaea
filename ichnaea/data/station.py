@@ -221,8 +221,8 @@ class StationQueueUpdater(StationUpdater):
         if self.data_queue.enough_data(batch=batch):  # pragma: no cover
             self.update_task.apply_async(
                 kwargs={'batch': batch},
-                countdown=5,
-                expires=23)
+                countdown=2,
+                expires=10)
 
         return (len(stations), len(moving_stations))
 

@@ -122,9 +122,9 @@ CELERYBEAT_SCHEDULE = {
 
     'update-cell': {
         'task': 'ichnaea.data.tasks.update_cell',
-        'schedule': timedelta(seconds=29),
-        'args': (4000, ),
-        'options': {'expires': 25},
+        'schedule': timedelta(seconds=7),
+        'args': (1000, ),
+        'options': {'expires': 10},
     },
     'update-mapstat': {
         'task': 'ichnaea.data.tasks.update_mapstat',
@@ -140,9 +140,9 @@ CELERYBEAT_SCHEDULE = {
     },
     'update-wifi': {
         'task': 'ichnaea.data.tasks.update_wifi',
-        'schedule': timedelta(seconds=31),
-        'args': (4000, ),
-        'options': {'expires': 25},
+        'schedule': timedelta(seconds=6),
+        'args': (1000, ),
+        'options': {'expires': 10},
     },
 
     'schedule-export-reports': {

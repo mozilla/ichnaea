@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Adjust batch sizes for new update_station tasks.
+
 - Bugzilla 1172833: Use apolitical names on country stats page.
 
 - #443: Reorganize internal module/classes.
