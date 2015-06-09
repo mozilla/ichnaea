@@ -209,7 +209,7 @@ class TestStats(DBTestCase):
             del country_results[code]['code']
 
         # ensure we use apolitical names
-        # self.assertEqual(country_results['TW']['name'], 'Taiwan')
+        self.assertEqual(country_results['TW']['name'], 'Taiwan')
 
         for code in country_results:
             del country_results[code]['name']
