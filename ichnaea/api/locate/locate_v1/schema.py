@@ -1,13 +1,19 @@
 from colander import MappingSchema, SchemaNode, SequenceSchema
 from colander import Integer, String, OneOf
 
-from ichnaea.api.schema import FallbackSchema
+from ichnaea.api.schema import (
+    FallbackSchema,
+    InternalMapping,
+    InternalSchemaNode,
+)
+from ichnaea.api.locate.schema import BaseLocateSchema
 
 
 RADIO_STRINGS = ['gsm', 'cdma', 'umts', 'wcdma', 'lte']
 
 
 class CellSchema(MappingSchema):
+    schema_type = InternalMapping
 
     radio = SchemaNode(String(),
                        validator=OneOf(RADIO_STRINGS), missing=None)
@@ -28,12 +34,14 @@ class CellsSchema(SequenceSchema):
 
 
 class WifiSchema(MappingSchema):
+    schema_type = InternalMapping
 
     key = SchemaNode(String(), missing=None)
     frequency = SchemaNode(Integer(), missing=None)
     channel = SchemaNode(Integer(), missing=None)
     signal = SchemaNode(Integer(), missing=None)
-    signalToNoiseRatio = SchemaNode(Integer(), missing=None)
+    signalToNoiseRatio = InternalSchemaNode(
+        Integer(), missing=None, internal_name='snr')
 
 
 class WifisSchema(SequenceSchema):
@@ -41,7 +49,7 @@ class WifisSchema(SequenceSchema):
     wifi = WifiSchema()
 
 
-class LocateV1Schema(MappingSchema):
+class LocateV1Schema(BaseLocateSchema):
 
     radio = SchemaNode(String(),
                        validator=OneOf(RADIO_STRINGS), missing=None)

@@ -2,12 +2,9 @@ from pyramid.httpexceptions import HTTPNotFound
 from simplejson import dumps
 
 from ichnaea.api.locate.searcher import PositionSearcher
-from ichnaea.models.transform import ReportTransform
 from ichnaea.api.error import (
     JSONParseError,
-    preprocess_request,
 )
-from ichnaea.api.locate.locate_v2.schema import LocateV2Schema
 from ichnaea.api.views import BaseAPIView
 
 NOT_FOUND = {
@@ -24,40 +21,11 @@ NOT_FOUND = {
 NOT_FOUND = dumps(NOT_FOUND)
 
 
-class LocateTransform(ReportTransform):
-
-    radio_id = ('radioType', 'radio')
-    cell_id = ('cellTowers', 'cell')
-    cell_map = [
-        # if both radio and radioType are present in the source,
-        # radioType takes precedence
-        ('radio', 'radio'),
-        ('radioType', 'radio'),
-        ('mobileCountryCode', 'mcc'),
-        ('mobileNetworkCode', 'mnc'),
-        ('locationAreaCode', 'lac'),
-        ('cellId', 'cid'),
-        'psc',
-        ('signalStrength', 'signal'),
-        ('timingAdvance', 'ta'),
-    ]
-
-    wifi_id = ('wifiAccessPoints', 'wifi')
-    wifi_map = [
-        ('macAddress', 'key'),
-        'channel',
-        'frequency',
-        ('signalToNoiseRatio', 'snr'),
-        ('signalStrength', 'signal'),
-    ]
-
-
 class BaseLocateView(BaseAPIView):
 
     error_response = JSONParseError
     searcher = PositionSearcher
-    transform = LocateTransform
-    schema = LocateV2Schema
+    schema = None
 
     def not_found(self):
         result = HTTPNotFound()
@@ -66,24 +34,15 @@ class BaseLocateView(BaseAPIView):
         return result
 
     def prepare_query(self, request_data):
-        transform = self.transform()
-        parsed_data = transform.transform_one(request_data)
-
-        query = {
+        return {
             'geoip': self.request.client_addr,
-            'cell': parsed_data.get('cell', []),
-            'wifi': parsed_data.get('wifi', []),
+            'cell': request_data.get('cell', []),
+            'wifi': request_data.get('wifi', []),
             'fallbacks': request_data.get('fallbacks', {}),
         }
-        return query
 
     def locate(self, api_key):
-        request_data, errors = preprocess_request(
-            self.request,
-            schema=self.schema(),
-            response=self.error_response,
-            accept_empty=True,
-        )
+        request_data, errors = self.preprocess_request()
         query = self.prepare_query(request_data)
 
         return self.searcher(
@@ -94,3 +53,13 @@ class BaseLocateView(BaseAPIView):
             api_key=api_key,
             api_name=self.view_name,
         ).search(query)
+
+    def prepare_location_data(self, location_data):  # pragma: no cover
+        return location_data
+
+    def view(self, api_key):
+        location_data = self.locate(api_key)
+        if not location_data:
+            return self.not_found()
+
+        return self.prepare_location_data(location_data)

@@ -1,10 +1,10 @@
-import calendar
 import math
+import calendar
 import time
 
 import colander
 import iso8601
-from colander import MappingSchema, SchemaNode
+from colander import Mapping, MappingSchema, SchemaNode
 from colander import Boolean
 
 
@@ -95,3 +95,29 @@ class FallbackSchema(MappingSchema):
 
     lacf = SchemaNode(Boolean(), missing=True)
     ipf = SchemaNode(Boolean(), missing=True)
+
+
+class InternalMixin(object):
+
+    def __init__(self, *args, **kwargs):
+        self.internal_name = kwargs.pop('internal_name', None)
+        super(InternalMixin, self).__init__(*args, **kwargs)
+
+
+class InternalSchemaNode(InternalMixin, SchemaNode):
+    pass
+
+
+class InternalMapping(Mapping):
+
+    def _impl(self, node, *args, **kwargs):
+        result = super(InternalMapping, self)._impl(node, *args, **kwargs)
+        internal_result = {}
+        for subnode in node.children:
+            subnode_internal_name = getattr(
+                subnode, 'internal_name', subnode.name) or subnode.name
+
+            if result[subnode.name]:
+                internal_result[subnode_internal_name] = result[subnode.name]
+
+        return internal_result

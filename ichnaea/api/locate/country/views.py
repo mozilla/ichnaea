@@ -1,8 +1,8 @@
 from ichnaea.api.locate.searcher import CountrySearcher
-from ichnaea.api.locate.views import BaseLocateView
+from ichnaea.api.locate.locate_v2.views import LocateV2View
 
 
-class CountryView(BaseLocateView):
+class CountryView(LocateV2View):
 
     # TODO: Disable API key checks and logging, for the initial wave
     check_api_key = False
@@ -11,9 +11,5 @@ class CountryView(BaseLocateView):
     route = '/v1/country'
     view_name = 'country'
 
-    def view(self, api_key):
-        result = self.locate(api_key)
-        if not result:
-            return self.not_found()
-
-        return result
+    def prepare_location_data(self, location_data):
+        return location_data

@@ -7,7 +7,6 @@ from redis import ConnectionError
 from ichnaea.data.tasks import queue_reports
 from ichnaea.api.error import (
     JSONParseError,
-    preprocess_request,
 )
 from ichnaea.api.views import BaseAPIView
 
@@ -50,11 +49,7 @@ class BaseSubmitView(BaseAPIView):
 
     def preprocess(self, api_key):
         try:
-            request_data, errors = preprocess_request(
-                self.request,
-                schema=self.schema(),
-                response=self.error_response,
-            )
+            request_data, errors = self.preprocess_request()
         except self.error_response:
             # capture JSON exceptions for submit calls
             self.raven_client.captureException()

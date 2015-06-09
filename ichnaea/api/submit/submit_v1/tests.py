@@ -1,10 +1,10 @@
 from datetime import datetime
 
 from pyramid.testing import DummyRequest
+import colander
 import pytz
 
 from ichnaea.models import Radio
-from ichnaea.api.error import preprocess_request
 from ichnaea.api.submit.submit_v1.schema import (
     ReportV1Schema,
     SubmitV1Schema,
@@ -33,36 +33,28 @@ class TestReportV1Schema(SchemaTest):
 
     def test_empty(self):
         schema = ReportV1Schema()
-        request = self._make_request('{}')
-        data, errors = preprocess_request(request, schema, None)
+        data = schema.deserialize({})
         self.assertFalse('lat' in data)
         self.assertFalse('lon' in data)
-        self.assertFalse(errors)
 
     def test_empty_wifi_entry(self):
         schema = ReportV1Schema()
         wifi = WifiFactory.build()
-        request = self._make_request(
-            '{"lat": %s, "lon": %s, "wifi": [{}]}' % (wifi.lat, wifi.lon))
-        data, errors = preprocess_request(request, schema, None)
-        self.assertFalse(errors)
+        schema.deserialize({'lat': wifi.lat, 'lon': wifi.lon, 'wifi': [{}]})
 
 
 class TestSubmitV1Schema(SchemaTest):
 
     def test_empty(self):
-        schema = SubmitV1Schema()
-        request = self._make_request('{}')
-        data, errors = preprocess_request(request, schema, None)
-        self.assertTrue(errors)
+        with self.assertRaises(colander.Invalid):
+            schema = SubmitV1Schema()
+            schema.deserialize({})
 
     def test_minimal(self):
         schema = SubmitV1Schema()
         wifi = WifiFactory.build()
-        request = self._make_request(
-            '{"items": [{"lat": %s, "lon": %s}]}' % (wifi.lat, wifi.lon))
-        data, errors = preprocess_request(request, schema, None)
-        self.assertFalse(errors)
+        data = schema.deserialize(
+            {'items': [{'lat': wifi.lat, 'lon': wifi.lon, 'wifi': [{}]}]})
         self.assertTrue('items' in data)
         self.assertEqual(len(data['items']), 1)
 
@@ -177,10 +169,10 @@ class TestSubmitV1(BaseSubmitTest, CeleryAppTestCase):
         self.check_raven(['JSONError'])
 
     def test_error_completely_empty(self):
-        res = self.app.post_json(self.url, None, status=400)
+        res = self.app.post_json(self.url, [], status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
-        self.assertTrue(len(res.json['errors']) == 0)
+        self.assertTrue(len(res.json['errors']) == 1)
 
     def test_error_missing_latlon(self):
         wifi = WifiFactory.build()
