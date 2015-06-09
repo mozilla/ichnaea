@@ -168,7 +168,7 @@ def leaders_weekly(session, batch=20):
     return result
 
 
-def countries(session):
+def regions(session):
     # We group by radio, mcc to take advantage of the index
     # and explicitly specify a small list of all valid radio values
     # to get mysql to actually use the index.
@@ -181,13 +181,13 @@ def countries(session):
     for row in rows:
         mccs[row.mcc][row.radio] = row[2]
 
-    countries = {}
+    regions = {}
     for mcc, item in mccs.items():
         iso_codes = [rec.alpha2 for rec in mobile_codes.mcc(str(mcc))]
         multiple = bool(len(iso_codes) > 1)
         for alpha2 in iso_codes:
             name = iso3166.countries_by_alpha2[alpha2].apolitical_name
-            country = {
+            region = {
                 'code': alpha2,
                 'name': name,
                 'order': transliterate(name[:10].lower()),
@@ -196,15 +196,15 @@ def countries(session):
                 'gsm': 0, 'cdma': 0, 'umts': 0, 'lte': 0,
             }
             for radio, value in item.items():
-                country[radio.name] = int(value)
-            country['total'] = int(sum(item.values()))
-            if alpha2 not in countries:
-                countries[alpha2] = country
+                region[radio.name] = int(value)
+            region['total'] = int(sum(item.values()))
+            if alpha2 not in regions:
+                regions[alpha2] = region
             else:
-                # some countries like the US have multiple mcc codes,
+                # some regions like the US have multiple mcc codes,
                 # we merge them here
-                for radio_name, value in country.items():
+                for radio_name, value in region.items():
                     if isinstance(value, int):
-                        countries[alpha2][radio_name] += value
+                        regions[alpha2][radio_name] += value
 
-    return sorted(countries.values(), key=itemgetter('name'))
+    return sorted(regions.values(), key=itemgetter('name'))

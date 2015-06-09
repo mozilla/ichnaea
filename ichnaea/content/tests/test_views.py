@@ -165,8 +165,9 @@ class TestFunctionalContent(AppTestCase):
         result = self.app.get('/map.json', status=200)
         self.assertEqual(result.json['tiles_url'], LOCAL_TILES_BASE)
 
-    def test_stats_countries(self):
-        self.app.get('/stats/countries', status=200)
+    def test_stats_regions(self):
+        self.app.get('/stats/regions', status=200)
+        self.app.get('/stats/countries', status=301)
 
     def test_stats_cell_json(self):
         app = self.app
@@ -331,19 +332,19 @@ class TestFunctionalContentViews(AppTestCase):
         second_result = inst.stats_view()
         self.assertEqual(second_result, result)
 
-    def test_stats_countries(self):
+    def test_stats_regions(self):
         request = DummyRequest()
         request.db_ro_session = self.session
         request.registry.redis_client = self.redis_client
         inst = self._make_view(request)
-        result = inst.stats_countries_view()
+        result = inst.stats_regions_view()
         self.assertEqual(result['page_title'], 'Cell Statistics')
 
         # call the view again, without a working db session, so
         # we can be sure to use the cached result
         inst = self._make_view(request)
         request.db_ro_session = None
-        second_result = inst.stats_countries_view()
+        second_result = inst.stats_regions_view()
         self.assertEqual(second_result, result)
 
 

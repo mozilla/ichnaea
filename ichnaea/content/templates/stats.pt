@@ -10,8 +10,8 @@
 <section id="main-content">
     <p>
         This page shows global statistics, updated daily.
-        You can also <a href="/stats/countries">
-            view country or region specific statistics on cell networks</a>.
+        You can also <a href="/stats/regions">
+            view region specific statistics on cell networks</a>.
     </p>
 
     <div class="separator">

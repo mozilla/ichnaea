@@ -356,8 +356,8 @@ of the counter is the based on the path of the HTTP request, with slashes
 replaced with periods, followed by a final component named by the response
 code produced by the request.
 
-For example, a GET of ``/stats/countries`` that results in an HTTP 200
-status code, will increment the counter ``request.stats.countries.200``.
+For example, a GET of ``/stats/regions`` that results in an HTTP 200
+status code, will increment the counter ``request.stats.regions.200``.
 
 Response codes in the 400 range (eg. 404) are only generated for HTTP paths
 referring to API endpoints. Logging them for unknown and invalid paths would

@@ -140,7 +140,7 @@ GeoIP
 The accuracy of GeoIP depends a lot on the country or region the user
 is in. In the US GeoIP can be fairly accurate and often places the
 user in the right city or metropolitan area. In many other parts of
-the world GeoIP is only accurate to the country level.
+the world GeoIP is only accurate to the region level.
 
 IP version 6 has the chance to improve this situation, as the need for
 private carrier networks and network address translation decreases.

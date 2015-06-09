@@ -99,7 +99,7 @@ css: node_modules
 	-o $(HERE)/ichnaea/content/static/css/base-combined.css \
 	$(HERE)/ichnaea/content/static/css/base.css
 	$(HERE)/node_modules/.bin/cleancss -d \
-	-o $(HERE)/ichnaea/content/static/css/stat-countries-combined.css \
+	-o $(HERE)/ichnaea/content/static/css/stat-regions-combined.css \
 	$(HERE)/ichnaea/content/static/css/jquery.datatables.min.css
 	$(HERE)/node_modules/.bin/cleancss -d \
 	-o $(HERE)/ichnaea/content/static/css/map-combined.css \
@@ -128,8 +128,8 @@ js: node_modules js_map
 	$(HERE)/node_modules/.bin/uglifyjs \
 	$(HERE)/ichnaea/content/static/js/jquery.datatables.min.js \
 	$(HERE)/ichnaea/content/static/js/datatables.fixedheader.min.js \
-	$(HERE)/ichnaea/content/static/js/stat-countries.js \
-	-o $(HERE)/ichnaea/content/static/js/stat-countries-combined.js \
+	$(HERE)/ichnaea/content/static/js/stat-regions.js \
+	-o $(HERE)/ichnaea/content/static/js/stat-regions-combined.js \
 	-c --stats
 	$(HERE)/node_modules/.bin/uglifyjs \
 	$(HERE)/ichnaea/content/static/js/ga.js \

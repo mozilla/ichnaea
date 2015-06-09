@@ -6,17 +6,18 @@ from boto.exception import S3ResponseError
 from pyramid.decorator import reify
 from pyramid.events import NewResponse
 from pyramid.events import subscriber
+from pyramid.httpexceptions import HTTPMovedPermanently
 from pyramid.renderers import get_renderer
 from pyramid.response import FileResponse
 from pyramid.response import Response
 from pyramid.view import view_config
 
 from ichnaea.content.stats import (
-    countries,
     global_stats,
     histogram,
     leaders,
     leaders_weekly,
+    regions,
 )
 from ichnaea.customjson import dumps, loads
 from ichnaea.models.content import StatKey
@@ -48,7 +49,7 @@ CACHE_KEYS = {
     'leaders': 'cache_leaders_2',
     'leaders_weekly': 'cache_leaders_weekly',
     'stats': 'cache_stats',
-    'stats_countries': 'cache_stats_countries',
+    'stats_regions': 'cache_stats_regions',
     'stats_cell_json': 'cache_stats_cell_json',
     'stats_wifi_json': 'cache_stats_wifi_json',
 }
@@ -75,7 +76,9 @@ def configure_content(config):
     config.add_route('leaders_weekly', '/leaders/weekly')
     config.add_route('leaders', '/leaders')
 
+    # BBB: countries is an alias for regions
     config.add_route('stats_countries', '/stats/countries')
+    config.add_route('stats_regions', '/stats/regions')
     config.add_route('stats', '/stats')
 
     config.scan('ichnaea.content.views')
@@ -348,17 +351,22 @@ class ContentViews(Layout):
         result.update(data)
         return result
 
-    @view_config(renderer='templates/stats_countries.pt',
-                 route_name='stats_countries', http_cache=3600)
+    @view_config(route_name='stats_countries')
     def stats_countries_view(self):
+        return HTTPMovedPermanently(
+            location=self.request.route_path('stats_regions'))
+
+    @view_config(renderer='templates/stats_regions.pt',
+                 route_name='stats_regions', http_cache=3600)
+    def stats_regions_view(self):
         redis_client = self.request.registry.redis_client
-        cache_key = CACHE_KEYS['stats_countries']
+        cache_key = CACHE_KEYS['stats_regions']
         cached = redis_client.get(cache_key)
         if cached:
             data = loads(cached)
         else:
             session = self.request.db_ro_session
-            data = countries(session)
+            data = regions(session)
             redis_client.set(cache_key, dumps(data), ex=3600)
 
         return {'page_title': 'Cell Statistics', 'metrics': data}

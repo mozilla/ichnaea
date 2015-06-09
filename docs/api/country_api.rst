@@ -4,28 +4,28 @@ Country
 =======
 
 Purpose
-    Determine the current country based on provided data about nearby
-    cell or WiFi networks and based on the IP address used to access
+    Determine the current country or region based on provided data about
+    nearby cell or WiFi networks and based on the IP address used to access
     the service.
 
-Country requests are submitted using a POST request to the URL::
+Requests are submitted using a POST request to the URL::
 
     https://location.services.mozilla.com/v1/country?key=<API_KEY>
 
 
-Country results
----------------
+Country Responses
+-----------------
 
 This implements the same interface as the :ref:`api_geolocate` API.
 
 The simplest request contains no extra information and simply relies
-on the IP address to provide a result:
+on the IP address to provide a response:
 
 .. code-block:: javascript
 
     {}
 
-A successful result will be:
+A successful response will be:
 
 .. code-block:: javascript
 
@@ -34,8 +34,8 @@ A successful result will be:
         "country_code": "US"
     }
 
-If no country could be determined, a HTTP status code 404 will be returned
-with a JSON response body of:
+If no country or region could be determined, a HTTP status code 404 will
+be returned with a JSON response body of:
 
 .. code-block:: javascript
 

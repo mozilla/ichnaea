@@ -13,11 +13,11 @@ from ichnaea.models.content import (
     StatKey,
 )
 from ichnaea.content.stats import (
-    countries,
     global_stats,
     histogram,
     leaders,
     leaders_weekly,
+    regions,
     transliterate,
 )
 from ichnaea.models import (
@@ -179,8 +179,7 @@ class TestStats(DBTestCase):
         self.assertEqual(scores[-1]['nickname'], 'nick-5')
         self.assertEqual(scores[-1]['num'], 16)
 
-    def test_countries(self):
-        session = self.session
+    def test_regions(self):
         cell_key = {'lac': 1, 'cid': 1}
         test_data = [
             Cell(radio=Radio.gsm, mcc=1, mnc=1, **cell_key),
@@ -193,51 +192,52 @@ class TestStats(DBTestCase):
             Cell(radio=Radio.lte, mcc=244, mnc=1, **cell_key),
             Cell(radio=Radio.gsm, mcc=466, mnc=3, **cell_key),
         ]
-        session.add_all(test_data)
-        session.commit()
+        self.session.add_all(test_data)
+        self.session.commit()
 
         # check the result
         expected = set(['AX', 'BM', 'DE', 'FI', 'GU', 'PR', 'TW', 'US'])
-        result = countries(session)
+        result = regions(self.session)
         self.assertEqual(len(result), len(expected))
         self.assertEqual(set([r['code'] for r in result]), expected)
 
-        country_results = {}
+        region_results = {}
         for r in result:
             code = r['code']
-            country_results[code] = r
-            del country_results[code]['code']
+            region_results[code] = r
+            del region_results[code]['code']
 
         # ensure we use apolitical names
-        self.assertEqual(country_results['TW']['name'], 'Taiwan')
+        self.assertEqual(region_results['TW']['name'], 'Taiwan')
 
-        for code in country_results:
-            del country_results[code]['name']
+        # strip out names to make assertion statements shorter
+        for code in region_results:
+            del region_results[code]['name']
 
-        # a simple case with a 1:1 mapping of mcc to ISO country code
-        self.assertEqual(country_results['DE'],
+        # a simple case with a 1:1 mapping of mcc to ISO code
+        self.assertEqual(region_results['DE'],
                          {'cdma': 0, 'gsm': 0, 'lte': 1, 'total': 1,
                           'umts': 0, 'multiple': False, 'order': 'germany'})
 
-        # mcc 310 is valid for both GUM/USA, 313 only for USA
-        self.assertEqual(country_results['US'],
+        # mcc 310 is valid for both GU/US, 313 only for US
+        self.assertEqual(region_results['US'],
                          {'cdma': 1, 'gsm': 3, 'lte': 0, 'total': 4,
                           'umts': 0, 'multiple': True, 'order': 'united sta'})
-        self.assertEqual(country_results['GU'],
+        self.assertEqual(region_results['GU'],
                          {'cdma': 1, 'gsm': 2, 'lte': 0, 'total': 3,
                           'umts': 0, 'multiple': True, 'order': 'guam'})
 
-        # These two countries share a mcc, so we report the same data
+        # These two regions share a mcc, so we report the same data
         # for both of them
-        self.assertEqual(country_results['FI'],
+        self.assertEqual(region_results['FI'],
                          {'cdma': 0, 'gsm': 0, 'lte': 1, 'total': 2,
                           'umts': 1, 'multiple': True, 'order': 'finland'})
-        self.assertEqual(country_results['AX'],
+        self.assertEqual(region_results['AX'],
                          {'cdma': 0, 'gsm': 0, 'lte': 1, 'total': 2,
                           'umts': 1, 'multiple': True, 'order': 'aland isla'})
 
 
-class TestCountries(TestCase):
+class TestRegions(TestCase):
 
     def test_mcc_iso_match(self):
         iso_alpha2 = set([rec.alpha2 for rec in iso3166._records])
@@ -245,11 +245,11 @@ class TestCountries(TestCase):
         self.assertEqual(iso_alpha2, mcc_alpha2)
 
     def test_iso_apolitical_names(self):
-        for country in iso3166._records:
-            self.assertNotEqual(country.apolitical_name, '')
+        for record in iso3166._records:
+            self.assertNotEqual(record.apolitical_name, '')
 
     def test_transliterate(self):
-        for country in iso3166._records:
-            trans = transliterate(country.apolitical_name)
+        for record in iso3166._records:
+            trans = transliterate(record.apolitical_name)
             non_ascii = [c for c in trans if ord(c) > 127]
             self.assertEqual(len(non_ascii), 0)
