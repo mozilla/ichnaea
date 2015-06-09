@@ -3,7 +3,8 @@ from collections import defaultdict
 from datetime import date, timedelta
 from operator import itemgetter
 
-from mobile_codes import mcc
+import iso3166
+import mobile_codes
 from sqlalchemy import func
 
 from ichnaea.models import (
@@ -176,17 +177,18 @@ def countries(session):
         Cell.radio.in_(radios)).group_by(Cell.radio, Cell.mcc).all()
 
     # reverse grouping by mcc, radio
-    codes = defaultdict(dict)
+    mccs = defaultdict(dict)
     for row in rows:
-        codes[row[1]][row[0]] = row[2]
+        mccs[row.mcc][row.radio] = row[2]
 
     countries = {}
-    for code, item in codes.items():
-        names = [(c.name, c.alpha3) for c in mcc(str(code))]
-        multiple = bool(len(names) > 1)
-        for name, alpha3 in names:
+    for mcc, item in mccs.items():
+        iso_codes = [rec.alpha2 for rec in mobile_codes.mcc(str(mcc))]
+        multiple = bool(len(iso_codes) > 1)
+        for alpha2 in iso_codes:
+            name = iso3166.countries_by_alpha2[alpha2].apolitical_name
             country = {
-                'code': alpha3,
+                'code': alpha2,
                 'name': name,
                 'order': transliterate(name[:10].lower()),
                 'multiple': multiple,
@@ -196,13 +198,13 @@ def countries(session):
             for radio, value in item.items():
                 country[radio.name] = int(value)
             country['total'] = int(sum(item.values()))
-            if alpha3 not in countries:
-                countries[alpha3] = country
+            if alpha2 not in countries:
+                countries[alpha2] = country
             else:
                 # some countries like the US have multiple mcc codes,
                 # we merge them here
                 for radio_name, value in country.items():
                     if isinstance(value, int):
-                        countries[alpha3][radio_name] += value
+                        countries[alpha2][radio_name] += value
 
     return sorted(countries.values(), key=itemgetter('name'))

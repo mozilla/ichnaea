@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Bugzilla 1172833: Use apolitical names on country stats page.
+
 - #443: Reorganize internal module/classes.
 
 - Update to latest version of SQLAlchemy.

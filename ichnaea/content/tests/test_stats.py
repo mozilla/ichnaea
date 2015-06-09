@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 from calendar import timegm
 from datetime import date, timedelta
-from mobile_codes import _countries
+
+import iso3166
+import mobile_codes
 
 from ichnaea.models.content import (
     Score,
@@ -189,12 +191,13 @@ class TestStats(DBTestCase):
             Cell(radio=Radio.cdma, mcc=310, mnc=1, **cell_key),
             Cell(radio=Radio.umts, mcc=244, mnc=1, **cell_key),
             Cell(radio=Radio.lte, mcc=244, mnc=1, **cell_key),
+            Cell(radio=Radio.gsm, mcc=466, mnc=3, **cell_key),
         ]
         session.add_all(test_data)
         session.commit()
 
         # check the result
-        expected = set(['ALA', 'BMU', 'DEU', 'FIN', 'GUM', 'PRI', 'USA'])
+        expected = set(['AX', 'BM', 'DE', 'FI', 'GU', 'PR', 'TW', 'US'])
         result = countries(session)
         self.assertEqual(len(result), len(expected))
         self.assertEqual(set([r['code'] for r in result]), expected)
@@ -204,35 +207,49 @@ class TestStats(DBTestCase):
             code = r['code']
             country_results[code] = r
             del country_results[code]['code']
+
+        # ensure we use apolitical names
+        # self.assertEqual(country_results['TW']['name'], 'Taiwan')
+
+        for code in country_results:
             del country_results[code]['name']
 
         # a simple case with a 1:1 mapping of mcc to ISO country code
-        self.assertEqual(country_results['DEU'],
+        self.assertEqual(country_results['DE'],
                          {'cdma': 0, 'gsm': 0, 'lte': 1, 'total': 1,
                           'umts': 0, 'multiple': False, 'order': 'germany'})
 
         # mcc 310 is valid for both GUM/USA, 313 only for USA
-        self.assertEqual(country_results['USA'],
+        self.assertEqual(country_results['US'],
                          {'cdma': 1, 'gsm': 3, 'lte': 0, 'total': 4,
                           'umts': 0, 'multiple': True, 'order': 'united sta'})
-        self.assertEqual(country_results['GUM'],
+        self.assertEqual(country_results['GU'],
                          {'cdma': 1, 'gsm': 2, 'lte': 0, 'total': 3,
                           'umts': 0, 'multiple': True, 'order': 'guam'})
 
         # These two countries share a mcc, so we report the same data
         # for both of them
-        self.assertEqual(country_results['FIN'],
+        self.assertEqual(country_results['FI'],
                          {'cdma': 0, 'gsm': 0, 'lte': 1, 'total': 2,
                           'umts': 1, 'multiple': True, 'order': 'finland'})
-        self.assertEqual(country_results['ALA'],
+        self.assertEqual(country_results['AX'],
                          {'cdma': 0, 'gsm': 0, 'lte': 1, 'total': 2,
                           'umts': 1, 'multiple': True, 'order': 'aland isla'})
 
 
-class TestTransliterate(TestCase):
+class TestCountries(TestCase):
 
-    def test_countries(self):
-        for country in _countries():
-            trans = transliterate(country.name)
+    def test_mcc_iso_match(self):
+        iso_alpha2 = set([rec.alpha2 for rec in iso3166._records])
+        mcc_alpha2 = set([rec.alpha2 for rec in mobile_codes._countries()])
+        self.assertEqual(iso_alpha2, mcc_alpha2)
+
+    def test_iso_apolitical_names(self):
+        for country in iso3166._records:
+            self.assertNotEqual(country.apolitical_name, '')
+
+    def test_transliterate(self):
+        for country in iso3166._records:
+            trans = transliterate(country.apolitical_name)
             non_ascii = [c for c in trans if ord(c) > 127]
             self.assertEqual(len(non_ascii), 0)
