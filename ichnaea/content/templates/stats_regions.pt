@@ -22,7 +22,7 @@
     <p>
         The underlying data is grouped by mobile country code. In some cases
         these mobile country codes are shared between multiple countries
-        or regions, as identified by ISO 3166-2-alpha codes. In these cases
+        or regions, as identified by ISO 3166 alpha-2 codes. In these cases
         we report all data for each of these countries or regions and mark the
         entry with a `*`. For example Australia and the Norfolk Islands share
         a mobile country code, so they get each listed with the same data.
