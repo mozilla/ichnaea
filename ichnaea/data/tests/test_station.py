@@ -28,6 +28,7 @@ from ichnaea.tests.base import (
 from ichnaea.tests.factories import (
     CellFactory,
     CellObservationFactory,
+    WifiFactory,
 )
 from ichnaea import util
 
@@ -207,7 +208,7 @@ class TestCell(CeleryTestCase):
         observations = []
 
         def obs_factory(**kw):
-            obs = CellObservationFactory.create(**kw)
+            obs = CellObservationFactory.build(**kw)
             observations.append(obs)
 
         cell1 = CellFactory(total_measures=3)
@@ -257,32 +258,35 @@ class TestCell(CeleryTestCase):
                 self.assertAlmostEqual(cell.lon, expected_lon, 7)
 
     def test_max_min_range_update(self):
-        k1 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=3, cid=4)
-        self.session.add(
-            Cell(lat=1.001, lon=-1.001,
-                 max_lat=1.002, min_lat=1.0,
-                 max_lon=-1.0, min_lon=-1.002,
-                 total_measures=3, **k1))
+        cell = CellFactory(range=150, total_measures=3)
+        cell_lat = cell.lat
+        cell_lon = cell.lon
+        cell.max_lat = cell.lat + 0.001
+        cell.min_lat = cell.lat - 0.001
+        cell.max_lon = cell.lon + 0.001
+        cell.min_lon = cell.lon - 0.001
+        k1 = cell.hashkey().__dict__
+
         observations = [
-            CellObservation(lat=1.001, lon=-1.003, **k1),
-            CellObservation(lat=1.005, lon=-1.007, **k1),
+            CellObservation(lat=cell.lat, lon=cell.lon - 0.002, **k1),
+            CellObservation(lat=cell.lat + 0.004, lon=cell.lon - 0.006, **k1),
         ]
         self.data_queue.enqueue(observations)
         self.session.commit()
 
-        result = update_cell.delay()
-        self.assertEqual(result.get(), (1, 0))
+        self.assertEqual(update_cell.delay().get(), (1, 0))
 
         cells = self.session.query(Cell).all()
         self.assertEqual(len(cells), 1)
         cell = cells[0]
-        self.assertAlmostEqual(cell.lat, 1.0018, 6)
-        self.assertEqual(cell.max_lat, 1.005)
-        self.assertEqual(cell.min_lat, 1.0)
-        self.assertAlmostEqual(cell.lon, -1.0026, 6)
-        self.assertEqual(cell.max_lon, -1.0)
-        self.assertEqual(cell.min_lon, -1.007)
-        self.assertEqual(cell.range, 605)
+        self.assertAlmostEqual(cell.lat, cell_lat + 0.0008)
+        self.assertAlmostEqual(cell.max_lat, cell_lat + 0.004)
+        self.assertAlmostEqual(cell.min_lat, cell_lat - 0.001)
+        self.assertAlmostEqual(cell.lon, cell_lon - 0.0016)
+        self.assertAlmostEqual(cell.max_lon, cell_lon + 0.001)
+        self.assertAlmostEqual(cell.min_lon, cell_lon - 0.006)
+        self.assertEqual(cell.range, 468)
+        self.assertEqual(cell.total_measures, 5)
 
 
 class TestWifi(CeleryTestCase):
@@ -485,59 +489,37 @@ class TestWifi(CeleryTestCase):
         self.assertEqual(wifis[k2].lon, 2.002)
 
     def test_max_min_range_update(self):
-        k1 = 'ab1234567890'
-        k2 = 'cd1234567890'
-        data = [
-            Wifi(key=k1, total_measures=2),
-            WifiObservation(lat=1.0, lon=1.0, key=k1),
-            WifiObservation(lat=1.002, lon=1.004, key=k1),
-            Wifi(key=k2, lat=2.0, lon=-2.0,
-                 max_lat=2.001, min_lat=1.999,
-                 max_lon=-1.999, min_lon=-2.001,
-                 total_measures=4),
-            WifiObservation(lat=2.002, lon=-2.004, key=k2),
-            WifiObservation(lat=1.998, lon=-1.996, key=k2),
+        wifi = WifiFactory(range=100, total_measures=4)
+        wifi_lat = wifi.lat
+        wifi_lon = wifi.lon
+        wifi.max_lat = wifi.lat + 0.001
+        wifi.min_lat = wifi.lat - 0.001
+        wifi.max_lon = wifi.lon + 0.001
+        wifi.min_lon = wifi.lon - 0.001
+
+        observations = [
+            WifiObservation(lat=wifi.lat + 0.002, lon=wifi.lon - 0.004,
+                            key=wifi.key),
+            WifiObservation(lat=wifi.lat - 0.002, lon=wifi.lon + 0.01,
+                            key=wifi.key),
         ]
-        observations = []
-        for obj in data:
-            if isinstance(obj, WifiObservation):
-                observations.append(obj)
-            else:
-                self.session.add(obj)
         self.data_queue.enqueue(observations)
         self.session.commit()
 
-        result = update_wifi.delay()
-        self.assertEqual(result.get(), (2, 0))
+        self.assertEqual(update_wifi.delay().get(), (1, 0))
 
-        wifis = dict(self.session.query(Wifi.key, Wifi).all())
-        self.assertEqual(set(wifis.keys()), set([k1, k2]))
+        wifis = self.session.query(Wifi).all()
+        self.assertEqual(len(wifis), 1)
+        wifi = wifis[0]
 
-        self.assertEqual(wifis[k1].lat, 1.001)
-        self.assertEqual(wifis[k1].max_lat, 1.002)
-        self.assertEqual(wifis[k1].min_lat, 1.0)
-        self.assertEqual(wifis[k1].lon, 1.002)
-        self.assertEqual(wifis[k1].max_lon, 1.004)
-        self.assertEqual(wifis[k1].min_lon, 1.0)
-
-        self.assertEqual(wifis[k2].lat, 2.0)
-        self.assertEqual(wifis[k2].max_lat, 2.002)
-        self.assertEqual(wifis[k2].min_lat, 1.998)
-        self.assertEqual(wifis[k2].lon, -2.0)
-        self.assertEqual(wifis[k2].max_lon, -1.996)
-        self.assertEqual(wifis[k2].min_lon, -2.004)
-
-        # independent calculation: the k1 bounding box is
-        # (1.000, 1.000) to (1.002, 1.004), with centroid
-        # at (1.001, 1.002); worst distance from centroid
-        # to any corner is 249m
-        self.assertEqual(wifis[k1].range, 249)
-
-        # independent calculation: the k2 bounding box is
-        # (1.998, -2.004) to (2.002, -1.996), with centroid
-        # at (2.000, 2.000); worst distance from centroid
-        # to any corner is 497m
-        self.assertEqual(wifis[k2].range, 497)
+        self.assertAlmostEqual(wifi.lat, wifi_lat)
+        self.assertAlmostEqual(wifi.max_lat, wifi_lat + 0.002)
+        self.assertAlmostEqual(wifi.min_lat, wifi_lat - 0.002)
+        self.assertAlmostEqual(wifi.lon, wifi_lon + 0.001)
+        self.assertAlmostEqual(wifi.max_lon, wifi_lon + 0.01)
+        self.assertAlmostEqual(wifi.min_lon, wifi_lon - 0.004)
+        self.assertEqual(wifi.range, 662)
+        self.assertEqual(wifi.total_measures, 6)
 
     def test_remove_wifi(self):
         observations = []
