@@ -5,9 +5,7 @@ from ichnaea.async.app import celery_app
 from ichnaea.async.task import BaseTask
 from ichnaea.models import (
     ApiKey,
-    CellObservation,
     OCIDCell,
-    WifiObservation,
 )
 from ichnaea import util
 
@@ -45,25 +43,9 @@ def monitor_api_key_limits(self):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
-def monitor_measures(self):
-    checks = [('cell_measure', CellObservation),
-              ('wifi_measure', WifiObservation)]
-    result = dict([(name, -1) for name, model in checks])
-    try:
-        stats_client = self.stats_client
-        with self.db_session(commit=False) as session:
-            for name, model in checks:
-                # record current number of db rows in *_measure table
-                q = session.query(func.max(model.id) - func.min(model.id) + 1)
-                num_rows = q.first()[0]
-                if num_rows is None:
-                    num_rows = -1
-                result[name] = num_rows
-                stats_client.gauge('table.' + name, num_rows)
-    except Exception:  # pragma: no cover
-        # Log but ignore the exception
-        self.raven_client.captureException()
-    return result
+def monitor_measures(self):  # pragma: no cover
+    # BBB
+    pass
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')

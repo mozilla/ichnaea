@@ -1,7 +1,5 @@
 from collections import defaultdict
 
-from sqlalchemy.orm import load_only
-
 from ichnaea.data.base import DataTask
 from ichnaea.geocalc import (
     distance,
@@ -56,14 +54,14 @@ class StationUpdater(DataTask):
 
     MAX_OLD_OBSERVATIONS = 1000
 
-    def __init__(self, task, session, pipe, remove_task=None):
+    def __init__(self, task, session, pipe,
+                 remove_task=None, update_task=None):
         DataTask.__init__(self, task, session)
         self.pipe = pipe
         self.remove_task = remove_task
         self.updated_areas = set()
-
-    def adjust_counters(self, station, length):  # pragma: no cover
-        raise NotImplementedError
+        self.update_task = update_task
+        self.data_queue = self.task.app.data_queues[self.queue_name]
 
     def calculate_new_position(self, station, observations):
         # This function returns True if the station was found to be moving.
@@ -119,7 +117,8 @@ class StationUpdater(DataTask):
             station.lon = ((station.lon * old_weight) +
                            (new_lon * length)) / new_weight
 
-        self.adjust_counters(station, length)
+        # increase total counter, new isn't used
+        station.total_measures = station.total_measures + length
 
         # update max/min lat/lon columns
         station.min_lat = min_lat
@@ -161,31 +160,6 @@ class StationUpdater(DataTask):
                 len(moving_keys))
             self.remove_task.delay(moving_keys)
 
-    def add_area_update(self, station):
-        pass
-
-    def queue_area_updates(self):
-        pass
-
-
-class StationQueueUpdater(StationUpdater):
-
-    queue_name = None
-
-    def __init__(self, task, session, pipe,
-                 remove_task=None, update_task=None):
-        StationUpdater.__init__(self, task, session, pipe,
-                                remove_task=remove_task)
-        self.update_task = update_task
-        self.data_queue = self.task.app.data_queues[self.queue_name]
-
-    def adjust_counters(self, station, length):
-        # increase total counter, new isn't used
-        station.total_measures = station.total_measures + length
-
-    def station_query(self, station_keys):
-        return self.station_model.querykeys(self.session, station_keys)
-
     def update(self, batch=10):
         all_observations = self.data_queue.dequeue(batch=batch)
         station_obs = defaultdict(list)
@@ -196,7 +170,8 @@ class StationQueueUpdater(StationUpdater):
         if not station_obs:
             return (0, 0)
 
-        stations = self.station_query(station_obs.keys()).all()
+        stations = self.station_model.querykeys(
+            self.session, station_obs.keys()).all()
         if not stations:  # pragma: no cover
             # TODO: This task depends on the station records to be
             # pre-created, move that logic into this task later on.
@@ -226,73 +201,19 @@ class StationQueueUpdater(StationUpdater):
 
         return (len(stations), len(moving_stations))
 
-
-class StationTableUpdater(StationUpdater):
-    """BBB: Old table based station updater."""
-
-    def __init__(self, task, session, pipe,
-                 min_new=10, max_new=100, remove_task=None):
-        StationUpdater.__init__(self, task, session, pipe,
-                                remove_task=remove_task)
-        self.min_new = min_new
-        self.max_new = max_new
-
-    def adjust_counters(self, station, length):
-        # decrease new counter, total is already correct
-        station.new_measures = station.new_measures - length
-        if station.new_measures < 0:  # pragma: no cover
-            station.new_measures = 0
-
-    def emit_new_observation_metric(self):
+    def add_area_update(self, station):
         pass
 
-    def station_query(self):
-        model = self.station_model
-        query = (self.session.query(model)
-                             .filter(model.new_measures >= self.min_new)
-                             .filter(model.new_measures < self.max_new))
-        return query
-
-    def observation_query(self, station):
-        # only take the last X new_measures
-        model = self.observation_model
-        query = (model.querykey(self.session, station)
-                      .options(load_only('lat', 'lon'))
-                      .order_by(model.created.desc())
-                      .limit(station.new_measures))
-        return query
-
-    def update(self, batch=10):
-        self.emit_new_observation_metric()
-
-        stations = self.station_query().limit(batch).all()
-        if not stations:  # pragma: no cover
-            return (0, 0)
-
-        moving_stations = set()
-        for station in stations:
-            observations = self.observation_query(station).all()
-            if observations:
-                moving = self.calculate_new_position(station, observations)
-                if moving:  # pragma: no cover
-                    moving_stations.add(station)
-
-                # track potential updates to dependent areas
-                self.add_area_update(station)
-
-        self.queue_area_updates()
-
-        if moving_stations:  # pragma: no cover
-            self.blacklist_stations(moving_stations)
-
-        return (len(stations), len(moving_stations))
+    def queue_area_updates(self):
+        pass
 
 
-class CellUpdater(object):
+class CellUpdater(StationUpdater):
 
     blacklist_model = CellBlacklist
     max_dist_km = 150
     observation_model = CellObservation
+    queue_name = 'update_cell'
     station_model = Cell
     station_type = 'cell'
 
@@ -305,28 +226,11 @@ class CellUpdater(object):
             data_queue.enqueue(self.updated_areas, pipe=self.pipe)
 
 
-class CellQueueUpdater(CellUpdater, StationQueueUpdater):
-
-    queue_name = 'update_cell'
-
-
-class CellTableUpdater(CellUpdater, StationTableUpdater):
-    """BBB: Old table based cell updater."""
-
-
-class WifiUpdater(object):
+class WifiUpdater(StationUpdater):
 
     blacklist_model = WifiBlacklist
     max_dist_km = 5
     observation_model = WifiObservation
+    queue_name = 'update_wifi'
     station_model = Wifi
     station_type = 'wifi'
-
-
-class WifiQueueUpdater(WifiUpdater, StationQueueUpdater):
-
-    queue_name = 'update_wifi'
-
-
-class WifiTableUpdater(WifiUpdater, StationTableUpdater):
-    """BBB: Old table based wifi updater."""

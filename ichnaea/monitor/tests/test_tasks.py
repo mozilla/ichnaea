@@ -4,16 +4,11 @@ from random import randint
 from ichnaea.models import ApiKey
 from ichnaea.monitor.tasks import (
     monitor_api_key_limits,
-    monitor_measures,
     monitor_ocid_import,
     monitor_queue_length,
 )
 from ichnaea.tests.base import CeleryTestCase
-from ichnaea.tests.factories import (
-    CellObservationFactory,
-    OCIDCellFactory,
-    WifiObservationFactory,
-)
+from ichnaea.tests.factories import OCIDCellFactory
 from ichnaea import util
 
 
@@ -75,24 +70,6 @@ class TestMonitorTasks(CeleryTestCase):
         )
         self.assertDictEqual(
             result, {'test': 11, 'shortname_1': 12, 'no_key_2': 15})
-
-    def test_monitor_measures(self):
-        result = monitor_measures.delay().get()
-        self.check_stats(
-            gauge=[('table.cell_measure', 1), ('table.wifi_measure', 1)],
-        )
-        self.assertEqual(result, {'cell_measure': -1, 'wifi_measure': -1})
-
-        # add some observations
-        CellObservationFactory.create_batch(3)
-        WifiObservationFactory.create_batch(5)
-        self.session.flush()
-
-        result = monitor_measures.delay().get()
-        self.check_stats(
-            gauge=[('table.cell_measure', 2), ('table.wifi_measure', 2)],
-        )
-        self.assertEqual(result, {'cell_measure': 3, 'wifi_measure': 5})
 
     def test_monitor_ocid_import(self):
         now = util.utcnow()

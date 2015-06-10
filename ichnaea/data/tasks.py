@@ -22,11 +22,9 @@ from ichnaea.data.report import ReportQueue
 from ichnaea.data.score import ScoreUpdater
 from ichnaea.data.station import (
     CellRemover,
-    CellQueueUpdater,
-    CellTableUpdater,
+    CellUpdater,
     WifiRemover,
-    WifiQueueUpdater,
-    WifiTableUpdater,
+    WifiUpdater,
 )
 from ichnaea.data.stats import StatCounterUpdater
 from ichnaea.models import ApiKey
@@ -73,31 +71,17 @@ def insert_measures_wifi(self, entries, userid=None, utcnow=None):
 
 
 @celery_app.task(base=BaseTask, bind=True)
-def location_update_cell(self, min_new=1, max_new=100, batch=1000):
-    # BBB: Old table based updater
-    with self.redis_pipeline() as pipe:
-        with self.db_session() as session:
-            updater = CellTableUpdater(
-                self, session, pipe,
-                min_new=min_new,
-                max_new=max_new,
-                remove_task=remove_cell)
-            cells, moving = updater.update(batch=batch)
-    return (cells, moving)
+def location_update_cell(self, min_new=1, max_new=100,
+                         batch=1000):  # pragma: no cover
+    # BBB
+    return (0, 0)
 
 
 @celery_app.task(base=BaseTask, bind=True)
-def location_update_wifi(self, min_new=1, max_new=100, batch=1000):
-    # BBB: Old table based updater
-    with self.redis_pipeline() as pipe:
-        with self.db_session() as session:
-            updater = WifiTableUpdater(
-                self, session, pipe,
-                min_new=min_new,
-                max_new=max_new,
-                remove_task=remove_wifi)
-            wifis, moving = updater.update(batch=batch)
-    return (wifis, moving)
+def location_update_wifi(self, min_new=1, max_new=100,
+                         batch=1000):  # pragma: no cover
+    # BBB
+    return (0, 0)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export')
@@ -161,7 +145,7 @@ def remove_wifi(self, wifi_keys):
 def update_cell(self, batch=1000):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
-            updater = CellQueueUpdater(
+            updater = CellUpdater(
                 self, session, pipe,
                 remove_task=remove_cell,
                 update_task=update_cell)
@@ -173,7 +157,7 @@ def update_cell(self, batch=1000):
 def update_wifi(self, batch=1000):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
-            updater = WifiQueueUpdater(
+            updater = WifiUpdater(
                 self, session, pipe,
                 remove_task=remove_wifi,
                 update_task=update_wifi)

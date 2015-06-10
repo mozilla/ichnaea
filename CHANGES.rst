@@ -10,8 +10,12 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 38fde2949750: Remove measure_block table.
+
 Changes
 ~~~~~~~
+
+- #287: Remove table based location_update tasks and old backup code.
 
 - Adjust batch sizes for new update_station tasks.
 
