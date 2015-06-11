@@ -9,28 +9,29 @@ EARTH_RADIUS = 6371  # radius of earth in km
 _radius_cache = {}
 
 
-def maximum_country_radius(country):
+def maximum_country_radius(country_code):
     """
     Return the maximum radius of a circle encompassing the largest
     country subunit in meters, rounded to 1 km increments.
     """
-    if not isinstance(country, basestring):
+    if not isinstance(country_code, basestring):
         return None
-    country = country.upper()
-    if len(country) not in (2, 3):
+    country_code = country_code.upper()
+    if len(country_code) not in (2, 3):
         return None
 
-    value = _radius_cache.get(country, None)
+    value = _radius_cache.get(country_code, None)
     if value:
         return value
 
     diagonals = []
-    for c in country_subunits_by_iso_code(country):
-        (lon1, lat1, lon2, lat2) = c.bbox
+    for country in country_subunits_by_iso_code(country_code):
+        (lon1, lat1, lon2, lat2) = country.bbox
         diagonals.append(distance(lat1, lon1, lat2, lon2))
     if diagonals:
         # Divide by two to get radius, round to 1 km and convert to meters
-        value = _radius_cache[country] = round(max(diagonals) / 2.0) * 1000.0
+        radius = max(diagonals) / 2.0
+        value = _radius_cache[country_code] = round(radius) * 1000.0
 
     return value
 
@@ -73,8 +74,7 @@ def distance(lat1, lon1, lat2, lon2):
         math.sin(dLon / 2.0) * \
         math.sin(dLon / 2.0)
     c = 2 * math.asin(min(1, math.sqrt(a)))
-    d = EARTH_RADIUS * c
-    return d
+    return EARTH_RADIUS * c
 
 
 def centroid(points):
@@ -97,14 +97,14 @@ def range_to_points(point, points):
     return max([distance(p_lat, p_lon, p[0], p[1]) for p in points])
 
 
-def location_is_in_country(lat, lon, country, margin=0):
+def location_is_in_country(lat, lon, country_code, margin=0):
     """
     Return whether or not a given lat, lon pair is inside one of the
     country subunits associated with a given alpha2 country code.
 
     """
-    for c in country_subunits_by_iso_code(country):
-        (lon1, lat1, lon2, lat2) = c.bbox
+    for country in country_subunits_by_iso_code(country_code):
+        (lon1, lat1, lon2, lat2) = country.bbox
         if lon1 - margin <= lon and lon <= lon2 + margin and \
            lat1 - margin <= lat and lat <= lat2 + margin:
             return True

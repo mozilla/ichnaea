@@ -134,8 +134,8 @@ class TestCell(ObservationTestCase):
             {'mcc': mcc, 'mnc': 2, 'lac': 3, 'cid': 4, 'psc': 5, 'asu': 15},
             {'mcc': mcc, 'mnc': 2, 'lac': 3, 'cid': 7, 'psc': 5},
         ]
-        for e in entries:
-            e.update(obs)
+        for entry in entries:
+            entry.update(obs)
 
         result = insert_measures_cell.delay(entries, userid=user.id)
         self.assertEqual(result.get(), 4)
@@ -186,8 +186,8 @@ class TestCell(ObservationTestCase):
             {'mcc': FRANCE_MCC, 'mnc': 2, 'lac': None,
              'cid': None, 'psc': 5, 'asu': 8},
         ]
-        for e in entries:
-            e.update(obs)
+        for entry in entries:
+            entry.update(obs)
 
         result = insert_measures_cell.delay(entries, userid=1)
         self.assertEqual(result.get(), 0)
@@ -210,8 +210,8 @@ class TestCell(ObservationTestCase):
             {'asu': -10, 'signal': -300, 'ta': -10},
             {'asu': 256, 'signal': 16, 'ta': 128},
         ]
-        for e in entries:
-            e.update(obs)
+        for entry in entries:
+            entry.update(obs)
 
         result = insert_measures_cell.delay(entries)
         self.assertEqual(result.get(), 3)
@@ -239,8 +239,8 @@ class TestWifi(ObservationTestCase):
         session.flush()
         obs = dict(lat=1, lon=2)
         entries = [{'key': good_key}, {'key': good_key}, {'key': bad_key}]
-        for e in entries:
-            e.update(obs)
+        for entry in entries:
+            entry.update(obs)
 
         result = insert_measures_wifi.delay(entries)
         self.assertEqual(result.get(), 2)
@@ -301,8 +301,8 @@ class TestWifi(ObservationTestCase):
             {'key': 'ab1234567890', 'channel': 3, 'signal': -80},
             {'key': 'cd3456789012', 'channel': 3, 'signal': -90},
         ]
-        for e in entries:
-            e.update(obs)
+        for entry in entries:
+            entry.update(obs)
         result = insert_measures_wifi.delay(entries, userid=user.id)
         self.assertEqual(result.get(), 4)
 

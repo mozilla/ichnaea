@@ -547,10 +547,10 @@ class TestWifiValidation(ValidationTest):
     def test_invalid_channel_is_corrected_by_valid_frequency(self):
         invalid_channels = [-10, -1, 201, 2500]
 
-        for c in invalid_channels:
+        for channel in invalid_channels:
             obs, wifi = self.get_sample()
             chan = wifi['channel']
-            wifi['channel'] = c
+            wifi['channel'] = channel
             wifi = self.check_normalized_wifi(obs, wifi,
                                               dict(channel=chan))
             self.assertFalse('frequency' in wifi)

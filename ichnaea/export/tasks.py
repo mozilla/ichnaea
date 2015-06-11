@@ -88,25 +88,25 @@ class GzipFile(gzip.GzipFile):
 
 
 def make_cell_export_dict(row):
-    d = {
+    data = {
         'changeable': 1,
         'averageSignal': '',
     }
-    ix = CELL_COLUMN_NAME_INDICES
+    indices = CELL_COLUMN_NAME_INDICES
 
     for field in CELL_FIELDS:
-        pos = ix.get(field, None)
+        pos = indices.get(field, None)
         if pos is not None:
-            d[field] = row[pos]
+            data[field] = row[pos]
 
     # Fix up specific entry formatting
-    radio = row[ix['radio']]
+    radio = row[indices['radio']]
 
-    d['radio'] = radio.name.upper()
-    d['created'] = row[ix['created']]
-    d['updated'] = row[ix['modified']]
-    d['samples'] = row[ix['total_measures']]
-    return d
+    data['radio'] = radio.name.upper()
+    data['created'] = row[indices['created']]
+    data['updated'] = row[indices['modified']]
+    data['samples'] = row[indices['total_measures']]
+    return data
 
 
 def make_ocid_cell_import_dict(row):
@@ -117,29 +117,29 @@ def make_ocid_cell_import_dict(row):
         else:
             return default
 
-    d = dict()
+    data = dict()
 
-    d['created'] = datetime.fromtimestamp(
+    data['created'] = datetime.fromtimestamp(
         val('created', 0, int)).replace(tzinfo=UTC)
 
-    d['modified'] = datetime.fromtimestamp(
+    data['modified'] = datetime.fromtimestamp(
         val('updated', 0, int)).replace(tzinfo=UTC)
 
-    d['lat'] = val('lat', None, float)
-    d['lon'] = val('lon', None, float)
+    data['lat'] = val('lat', None, float)
+    data['lon'] = val('lon', None, float)
 
     try:
-        d['radio'] = Radio[row['radio'].lower()]
+        data['radio'] = Radio[row['radio'].lower()]
     except KeyError:  # pragma: no cover
-        d['radio'] = None
+        data['radio'] = None
 
-    for k in ['mcc', 'mnc', 'lac', 'cid', 'psc']:
-        d[k] = val(k, None, int)
+    for field in ('mcc', 'mnc', 'lac', 'cid', 'psc'):
+        data[field] = val(field, None, int)
 
-    d['range'] = int(val('range', 0, float))
-    d['total_measures'] = val('samples', 0, int)
-    d['changeable'] = val('changeable', True, bool)
-    validated = OCIDCell.validate(d)
+    data['range'] = int(val('range', 0, float))
+    data['total_measures'] = val('samples', 0, int)
+    data['changeable'] = val('changeable', True, bool)
+    validated = OCIDCell.validate(data)
     if validated is None:
         return None
     for field in ('radio', 'mcc', 'mnc', 'lac', 'cid'):
@@ -150,12 +150,12 @@ def make_ocid_cell_import_dict(row):
 
 def write_stations_to_csv(session, table, columns,
                           cond, path, make_dict, fields):
-    with GzipFile(path, 'wb') as f:
-        w = csv.DictWriter(f, fields, extrasaction='ignore')
+    with GzipFile(path, 'wb') as gzip_file:
+        writer = csv.DictWriter(gzip_file, fields, extrasaction='ignore')
         limit = 10000
         offset = 0
         # Write header row
-        w.writerow(CELL_HEADER_DICT)
+        writer.writerow(CELL_HEADER_DICT)
         while True:
             query = (select(columns=columns).where(cond)
                                             .limit(limit)
@@ -163,7 +163,7 @@ def write_stations_to_csv(session, table, columns,
                                             .order_by(table.c.created))
             rows = session.execute(query).fetchall()
             if rows:
-                w.writerows([make_dict(r) for r in rows])
+                writer.writerows([make_dict(row) for row in rows])
                 offset += limit
             else:
                 break
@@ -202,8 +202,8 @@ def export_modified_cells(self, hourly=True, bucket=None):
     filename = 'MLS-%s-cell-export-' % file_type
     filename = filename + file_time.strftime('%Y-%m-%dT%H0000.csv.gz')
 
-    with selfdestruct_tempdir() as d:
-        path = os.path.join(d, filename)
+    with selfdestruct_tempdir() as temp_dir:
+        path = os.path.join(temp_dir, filename)
         with self.db_session(commit=False) as session:
             write_stations_to_csv(session, Cell.__table__, CELL_COLUMNS, cond,
                                   path, make_cell_export_dict, CELL_FIELDS)
@@ -294,12 +294,12 @@ def import_latest_ocid_cells(self, diff=True, filename=None, session=None):
                               params={'apiKey': apikey,
                                       'filename': filename},
                               stream=True)) as r:
-        with selfdestruct_tempdir() as d:
-            path = os.path.join(d, filename)
-            with open(path, 'wb') as f:
+        with selfdestruct_tempdir() as temp_dir:
+            path = os.path.join(temp_dir, filename)
+            with open(path, 'wb') as temp_file:
                 for chunk in r.iter_content(chunk_size=2 ** 20):
-                    f.write(chunk)
-                    f.flush()
+                    temp_file.write(chunk)
+                    temp_file.flush()
 
             with self.redis_pipeline() as pipe:
                 with self.db_session() as dbsession:

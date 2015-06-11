@@ -186,9 +186,9 @@ class LogTestCase(TestCase):
             'meter': [],
             'set': [],
         }
-        for m in self.stats_client.msgs:
-            suffix = m.split('|')[-1]
-            name, value = m.split('|')[0].split(':')
+        for msg in self.stats_client.msgs:
+            suffix = msg.split('|')[-1]
+            name, value = msg.split('|')[0].split(':')
             value = int(value)
             if suffix == 'g':
                 data['gauge'].append((name, value))
@@ -204,10 +204,10 @@ class LogTestCase(TestCase):
                 data['set'].append((name, value))
 
         result = []
-        for m in data.get(msg_type):
-            if m[0] == msg_name:
-                if msg_value is None or m[1] == msg_value:
-                    result.append((m[0], m[1]))
+        for msg in data.get(msg_type):
+            if msg[0] == msg_name:
+                if msg_value is None or msg[1] == msg_value:
+                    result.append((msg[0], msg[1]))
         return result
 
     def check_raven(self, expected=None):
@@ -284,23 +284,23 @@ class LogTestCase(TestCase):
             self.assertEqual(total, len(self.stats_client.msgs),
                              self.stats_client.msgs)
 
-        for (msg_type, pred) in kw.items():
-            for p in pred:
+        for (msg_type, preds) in kw.items():
+            for pred in preds:
                 match = 1
                 value = None
-                if isinstance(p, str):
-                    name = p
-                elif isinstance(p, tuple):
-                    if len(p) == 2:
-                        (name, match) = p
-                    elif len(p) == 3:
-                        (name, match, value) = p
+                if isinstance(pred, str):
+                    name = pred
+                elif isinstance(pred, tuple):
+                    if len(pred) == 2:
+                        (name, match) = pred
+                    elif len(pred) == 3:
+                        (name, match, value) = pred
                     else:
                         raise TypeError('wanted 2 or 3-element tuple, got %s'
-                                        % type(p))
+                                        % type(pred))
                 else:
                     raise TypeError('wanted str or tuple, got %s'
-                                    % type(p))
+                                    % type(pred))
                 msgs = self.find_stats_messages(msg_type, name, value)
                 if isinstance(match, int):
                     self.assertEqual(match, len(msgs),

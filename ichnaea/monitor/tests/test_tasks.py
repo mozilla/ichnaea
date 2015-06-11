@@ -85,10 +85,10 @@ class TestMonitorTasks(CeleryTestCase):
         self.check_stats(
             gauge=[('table.ocid_cell_age', len(expected))],
         )
-        for r, e in zip(results, expected):
+        for result, expect in zip(results, expected):
             # The values should be almost equal, ignoring differences
             # less than 10 seconds (or 9999 milliseconds / 4 places)
-            self.assertAlmostEqual(r, e, -4)
+            self.assertAlmostEqual(result, expect, -4)
 
     def test_monitor_queue_length(self):
         data = {}

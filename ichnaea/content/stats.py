@@ -28,16 +28,16 @@ transliterate_mapping = {
 
 def transliterate(string):
     # optimize for the common case of ascii-only
-    non_ascii = any([ord(c) > 127 for c in string])
+    non_ascii = any([ord(char) > 127 for char in string])
     if not non_ascii:
         return string
 
     result = []
-    for c in string:
-        if ord(c) > 127:
-            result.append(transliterate_mapping.get(ord(c), c))
+    for char in string:
+        if ord(char) > 127:
+            result.append(transliterate_mapping.get(ord(char), char))
         else:
-            result.append(c)
+            result.append(char)
 
     return ''.join(result)
 
