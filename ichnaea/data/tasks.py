@@ -70,20 +70,6 @@ def insert_measures_wifi(self, entries, userid=None, utcnow=None):
     return length
 
 
-@celery_app.task(base=BaseTask, bind=True)
-def location_update_cell(self, min_new=1, max_new=100,
-                         batch=1000):  # pragma: no cover
-    # BBB
-    return (0, 0)
-
-
-@celery_app.task(base=BaseTask, bind=True)
-def location_update_wifi(self, min_new=1, max_new=100,
-                         batch=1000):  # pragma: no cover
-    # BBB
-    return (0, 0)
-
-
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export')
 def schedule_export_reports(self):
     scheduler = ExportScheduler(self, None)

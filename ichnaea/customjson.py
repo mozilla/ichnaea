@@ -7,7 +7,6 @@ import simplejson as json
 
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 from ichnaea.models.base import JSONMixin
-from ichnaea.models.hashkey import HashKey
 
 
 def encode_datetime(obj):
@@ -149,9 +148,6 @@ def kombu_object_hook(dct):
         return date(*dct['__date__'])
     elif '__uuid__' in dct:
         return UUID(hex=dct['__uuid__'])
-    elif '__hashkey__' in dct:  # pragma: no cover
-        # BBB: Remove after one release
-        return HashKey._from_json(dct)
     elif '__class__' in dct:
         return JSONMixin._from_json(dct)
     return dct

@@ -17,7 +17,6 @@ BROKER_TRANSPORT_OPTIONS = {
 CELERY_DEFAULT_QUEUE = 'celery_default'
 # tasks
 CELERY_IMPORTS = [
-    'ichnaea.backup.tasks',
     'ichnaea.data.tasks',
     'ichnaea.export.tasks',
     'ichnaea.monitor.tasks',

@@ -1,9 +1,6 @@
 from sqlalchemy.sql import and_, or_
 
-from ichnaea.models.base import (
-    JSONMixin,
-    RESOLVER,
-)
+from ichnaea.models.base import JSONMixin
 
 _sentinel = object()
 
@@ -23,13 +20,6 @@ class HashKey(JSONMixin):
                 values[field] = None
         for key, value in values.items():
             setattr(self, key, value)
-
-    @staticmethod
-    def _from_json(dct):  # pragma: no cover
-        # BBB: Remove after one release
-        data = dct['__hashkey__']
-        klass = RESOLVER.resolve(data['name'])
-        return klass._from_json_value(data['value'])
 
     def __eq__(self, other):
         if isinstance(other, HashKey):

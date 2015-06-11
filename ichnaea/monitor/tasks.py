@@ -43,12 +43,6 @@ def monitor_api_key_limits(self):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
-def monitor_measures(self):  # pragma: no cover
-    # BBB
-    pass
-
-
-@celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
 def monitor_ocid_import(self):
     result = -1
     try:

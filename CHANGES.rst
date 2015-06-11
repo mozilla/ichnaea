@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove backwards compatibility code.
+
 20150610103900
 **************
 
