@@ -24,6 +24,7 @@ script:
     - make wheel
     - make release_compile
     - make test
+    - make docs
 
 # mysql is started automatically
 services:
