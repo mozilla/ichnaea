@@ -153,7 +153,7 @@ $(BIN)/sphinx-build:
 
 docs: $(BIN)/sphinx-build
 	git submodule update --recursive --init
-	cd docs; make html
+	cd docs; SPHINXBUILD=$(BIN)/sphinx-build make html
 
 release_install:
 	$(INSTALL) -r requirements/prod-c.txt
