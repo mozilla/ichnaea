@@ -1,7 +1,7 @@
-:mod:`ichnaea.locate.provider`
-------------------------------
+:mod:`ichnaea.api.locate.provider`
+----------------------------------
 
-.. automodule:: ichnaea.locate.provider
+.. automodule:: ichnaea.api.locate.provider
 
 Classes
 +++++++

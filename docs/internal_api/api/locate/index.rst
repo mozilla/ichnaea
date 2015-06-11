@@ -1,7 +1,7 @@
 .. _internal_api_locate:
 
-:mod:`ichnaea.locate`
----------------------
+:mod:`ichnaea.api.locate`
+-------------------------
 
 .. toctree::
    :maxdepth: 1

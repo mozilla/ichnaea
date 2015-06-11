@@ -1,13 +1,13 @@
-.. _internal_api:
+.. _internal:
 
-============
-Internal API
-============
+=================
+Internal Code API
+=================
 
 Overview
 ========
 
-This section describes some of the internal API's used throughout the
+This section describes the internal API's used throughout the
 code base.
 
 Modules
@@ -16,7 +16,7 @@ Modules
 .. toctree::
    :maxdepth: 1
 
+   api/index
    geocalc
    geoip
-   locate/index
    models/constants
