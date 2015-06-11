@@ -70,12 +70,10 @@
     <h3>Firefox Desktop</h3>
 
     <p class="text-justified">
-        Recent versions of Firefox Desktop allow you to use this service
-        instead of the default location provider. Please refer to the
-        documentation on
-        <a href="https://mozilla-ichnaea.readthedocs.org/en/latest/usage.html#firefox-desktop">
-            how to customize the location provider</a> in our development
-        documentation.
+        Firefox Desktop version 36 and later allows you to use this service
+        instead of the default location provider. In <i>about:config</i>
+        change the <i>geo.wifi.uri</i> setting to:
+        <pre>https://location.services.mozilla.com/v1/geolocate?key=%MOZILLA_API_KEY%</pre>
     </p>
 
     <h3>Firefox OS</h3>
