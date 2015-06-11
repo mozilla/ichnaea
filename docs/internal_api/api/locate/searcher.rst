@@ -1,7 +1,7 @@
-:mod:`ichnaea.locate.searcher`
-------------------------------
+:mod:`ichnaea.api.locate.searcher`
+----------------------------------
 
-.. automodule:: ichnaea.locate.searcher
+.. automodule:: ichnaea.api.locate.searcher
 
 Classes
 +++++++

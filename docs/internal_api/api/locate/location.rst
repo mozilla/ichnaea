@@ -1,7 +1,7 @@
-:mod:`ichnaea.locate.location`
-------------------------------
+:mod:`ichnaea.api.locate.location`
+----------------------------------
 
-.. automodule:: ichnaea.locate.location
+.. automodule:: ichnaea.api.locate.location
 
 Classes
 +++++++

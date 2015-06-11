@@ -16,6 +16,7 @@ ifeq ($(TRAVIS), true)
 	PYTHON = python
 	PIP = pip
 	NOSE = nosetests
+	SPHINXBUILD = sphinx-build
 else
 	MYSQL_USER ?= root
 	MYSQL_PWD ?= mysql
@@ -24,6 +25,7 @@ else
 	PYTHON = $(BIN)/python
 	PIP = $(BIN)/pip
 	NOSE = $(BIN)/nosetests
+	SPHINXBUILD = $(BIN)/sphinx-build
 endif
 
 ifeq ($(TESTS), ichnaea)
@@ -153,7 +155,7 @@ $(BIN)/sphinx-build:
 
 docs: $(BIN)/sphinx-build
 	git submodule update --recursive --init
-	cd docs; make html
+	cd docs; SPHINXBUILD=$(SPHINXBUILD) make html
 
 release_install:
 	$(INSTALL) -r requirements/prod-c.txt
