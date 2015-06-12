@@ -68,15 +68,15 @@ CELERYBEAT_SCHEDULE = {
     },
     'update-mapstat': {
         'task': 'ichnaea.data.tasks.update_mapstat',
-        'args': (1000, ),
-        'schedule': timedelta(seconds=61),
-        'options': {'expires': 57},
+        'args': (500, ),
+        'schedule': timedelta(seconds=8),
+        'options': {'expires': 10},
     },
     'update-score': {
         'task': 'ichnaea.data.tasks.update_score',
-        'args': (1000, ),
-        'schedule': timedelta(seconds=63),
-        'options': {'expires': 57},
+        'args': (500, ),
+        'schedule': timedelta(seconds=9),
+        'options': {'expires': 10},
     },
     'update-wifi': {
         'task': 'ichnaea.data.tasks.update_wifi',

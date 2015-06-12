@@ -48,7 +48,7 @@ class MapStatUpdater(DataTask):
         if queue.size() >= batch:
             self.task.apply_async(
                 kwargs={'batch': batch},
-                countdown=1,
-                expires=57)
+                countdown=2,
+                expires=10)
 
         return len(positions)
