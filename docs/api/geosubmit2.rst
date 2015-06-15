@@ -1,10 +1,15 @@
 .. _api_geosubmit2:
+.. _api_geosubmit_latest:
 
-Geosubmit version 2
+Geosubmit Version 2
 ===================
 
 Purpose
-    Submit data about nearby bluetooth beacons, cell or WiFi networks.
+    Submit data about nearby Bluetooth beacons, cell or WiFi networks.
+
+
+Request
+-------
 
 Geosubmit requests are submitted using a POST request to the URL::
 
@@ -12,9 +17,6 @@ Geosubmit requests are submitted using a POST request to the URL::
 
 There is an earlier :ref:`api_geosubmit` version one API, with a slightly
 different and less extensive field list.
-
-Geosubmit v2 Upload Format
---------------------------
 
 Geosubmit requests are submitted using a POST request with a JSON
 body:
@@ -77,8 +79,9 @@ body:
         ]
     }]}
 
-Geosubmit v2 Record Definition
-------------------------------
+
+Field Definition
+----------------
 
 Requests always need to contain a batch of reports. Each report
 must contain at least one entry in the `bluetoothBeacons`, `cellTowers` or
@@ -242,19 +245,8 @@ signalToNoiseRatio
     The current signal to noise ratio measured in dB.
 
 
-Geosubmit v2 Responses
-----------------------
+Response
+--------
 
 Successful requests return a HTTP 200 response with a body of an empty
 JSON object.
-
-Responses can include the same error responses as those used by the
-:ref:`api_geolocate` API endpoint, for example 403 errors for missing
-or unknown API keys.
-
-You might also get a 5xx HTTP response if there was a service side problem.
-This might happen if the service or some key part of it is unavailable.
-If you encounter a 5xx response, you should retry the request at a later
-time. As a service side problem is unlikely to be resolved immediately,
-you should wait a couple of minutes before retrying the request for the
-first time and a couple of hours later if there's still a problem.

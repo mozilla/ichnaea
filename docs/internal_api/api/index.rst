@@ -1,16 +1,7 @@
 .. _internal_api:
 
-============
-Internal API
-============
-
-Overview
-========
-
-This section describes the code related to the public HTTP service API.
-
-Modules
-=======
+:mod:`ichnaea.api`
+------------------
 
 .. toctree::
    :maxdepth: 1

@@ -1,19 +1,20 @@
-===============
-Mozilla Ichnaea
-===============
+=======
+Ichnaea
+=======
 
-``Mozilla Ichnaea`` is an application to provide geo-location coordinates
+``Ichnaea`` is a service to provide geo-location coordinates
 from other sources of data (cell or WiFi networks, GeoIP, etc.).
 
-Mozilla hosts an instance of this service, called the Mozilla Location
-Service or MLS. More information about this specific service can be found
-at https://wiki.mozilla.org/CloudServices/Location
+Mozilla hosts an instance of this service, called the `Mozilla Location
+Service or MLS <https://wiki.mozilla.org/CloudServices/Location>`_.
+
 
 You can interact with the service in two ways:
 
-- either submit information about what you see around you, given a location.
+- If you know where you are, submit information about the radio environment
+  to the service
 
-- or search for your current location, given what you see around you.
+- or locate yourself, based on the radio environment around you.
 
 
 About the name
@@ -30,7 +31,6 @@ Table of contents
 
    usage
    api/index
-   cell
    calculation
    deploy
    metrics
@@ -53,4 +53,4 @@ network <https://wiki.mozilla.org/IRC>`_ in the #geo channel.
 License
 =======
 
-The ``mozilla-ichnaea`` source code is offered under the Apache License 2.0.
+The ``ichnaea`` source code is offered under the Apache License 2.0.

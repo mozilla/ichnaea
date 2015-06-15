@@ -1,11 +1,17 @@
 .. _api_submit:
 
-Submit
-======
+Submit (Deprecated)
+===================
+
+.. note::
+    Please use the :ref:`api_geosubmit_latest` API instead.
 
 Purpose
-    Submit data about nearby cell and WiFi networks. This is an alternative
-    to the :ref:`api_geosubmit` API.
+    Submit data about nearby cell and WiFi networks.
+
+
+Request
+-------
 
 Submit requests are submitted using a POST request to the following URL::
 
@@ -48,8 +54,9 @@ with a JSON body:
        ]
     }
 
-Record definition
------------------
+
+Field Definition
+----------------
 
 The record fields have the same meaning and requirements as explained
 in the :ref:`api_search`.
@@ -77,8 +84,9 @@ the server time will be used. It should be the first of the month, in
 which the radio environment was observed at the given location. The
 coarse grained month resolution protects the privacy of the observer.
 
-Submit results
---------------
+
+Response
+--------
 
 On successful submission, you will get a 204 status code back without
 any data in the body.
@@ -93,10 +101,3 @@ HTTP status code and a body of:
     }
 
 The errors mapping contains detailed information about the errors.
-
-You might also get a 5xx HTTP response if there was a service side problem.
-This might happen if the service or some key part of it is unavailable.
-If you encounter a 5xx response, you should retry the request at a later
-time. As a service side problem is unlikely to be resolved immediately,
-you should wait a couple of minutes before retrying the request for the
-first time and a couple of hours later if there's still a problem.

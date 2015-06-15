@@ -1,20 +1,21 @@
 .. _api_country:
+.. _api_country_latest:
 
 Country
 =======
 
 Purpose
-    Determine the current country or region based on provided data about
+    Determine the current country or region based on data provided about
     nearby cell or WiFi networks and based on the IP address used to access
     the service.
+
+
+Request
+-------
 
 Requests are submitted using a POST request to the URL::
 
     https://location.services.mozilla.com/v1/country?key=<API_KEY>
-
-
-Country Responses
------------------
 
 This implements the same interface as the :ref:`api_geolocate` API.
 
@@ -24,6 +25,9 @@ on the IP address to provide a response:
 .. code-block:: javascript
 
     {}
+
+Response
+--------
 
 A successful response will be:
 
@@ -35,7 +39,7 @@ A successful response will be:
     }
 
 If no country or region could be determined, a HTTP status code 404 will
-be returned with a JSON response body of:
+be returned:
 
 .. code-block:: javascript
 

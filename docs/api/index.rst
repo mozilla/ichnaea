@@ -4,51 +4,135 @@
 Services API
 ============
 
-Overview
-========
-
 The service APIs accept data submission for geolocation stumbling as
 well as reporting a location based on IP addresses, cell or WiFi networks.
 
-Historically the service first offered the custom :ref:`api_search` and
-:ref:`api_submit` APIs. Later it was decided to also implement the
-:ref:`api_geolocate` API to lessen the burden on clients that want to
-support multiple location services. As an extension to this the
-:ref:`api_geosubmit2` was added to offer a consistent way to contribute
-back data to the service.
-
-New client developments should use the :ref:`api_geolocate` and
-:ref:`api_geosubmit2` APIs. At some point in the future the
-:ref:`api_search` and :ref:`api_submit` APIs will be deprecated and retired.
+New client developments should use the :ref:`api_country_latest`,
+:ref:`api_geolocate_latest` or :ref:`api_geosubmit_latest` APIs.
 
 
 API Access Keys
 ===============
 
+You can anonymously submit data to the service without an API key via
+any of the submission APIs.
+
 You must identify your client to the service using an API key when
-using any of the search/lookup APIs.
+using one of the :ref:`api_country_latest` or :ref:`api_geolocate_latest`
+APIs.
 
-You can use API keys for the submission API's, but are not required
-to do so.
+If you want or need to specify an API key, you need to be provide
+it as a query argument in the request URI in the form::
 
-Each method that the service expects the API key to be provided
-as a (optional) key parameter in the request URI in the form::
-
-    key=<API_KEY>
+    https://location.services.mozilla.com/<API>?key=<API_KEY>
 
 Each API key can be rate limited per calendar day, but the default is
 to allow an unlimited number of requests per day.
 
-.. include:: invalid_apikey.rst
 
-.. include:: geolocate_api.rst
+Errors
+======
 
-.. include:: geosubmit2_api.rst
+Each of the supported APIs can return specific error responses.
+In addition there are some general error responses.
 
-.. include:: geosubmit_api.rst
 
-.. include:: country_api.rst
+Invalid API Key
+---------------
 
-.. include:: search_api.rst
+If an API key was required but none or no valid key was given, the service
+responds with a `keyInvalid` message with a HTTP 400 error code:
 
-.. include:: submit_api.rst
+.. code-block:: javascript
+
+    {
+        "error": {
+            "errors": [{
+                "domain": "usageLimits",
+                "reason": "keyInvalid",
+                "message": "Missing or invalid API key."
+            }],
+            "code": 400,
+            "message": "Invalid API key"
+        }
+    }
+
+
+API Key Limit
+-------------
+
+API keys can optionally be rate limited. If the limit for a specific
+API key is exceeded, the service responds with a `dailyLimitExceeded`
+message with a HTTP 403 error code:
+
+.. code-block:: javascript
+
+    {
+        "error": {
+            "errors": [{
+                "domain": "usageLimits",
+                "reason": "dailyLimitExceeded",
+                "message": "You have exceeded your daily limit."
+            }],
+            "code": 403,
+            "message": "You have exceeded your daily limit."
+        }
+    }
+
+
+Parse Error
+-----------
+
+If the client sends a malformed request, typically sending malformed
+or invalid JSON, the service will respond with a `parseError` message
+with a HTTP 400 error code:
+
+.. code-block:: javascript
+
+    {
+        "error": {
+            "errors": [{
+                "domain": "global",
+                "reason": "parseError",
+                "message": "Parse Error"
+            }],
+            "code": 400,
+            "message": "Parse Error"
+        }
+    }
+
+
+Service Error
+-------------
+
+If there is a transient service side problem, the service might respond
+with HTTP 5xx error codes with unspecified HTTP bodies.
+
+This might happen if part of the service is down or unreachable. If you
+encounter any 5xx responses, you should retry the request at a later
+time. As a service side problem is unlikely to be resolved immediately,
+you should wait a couple of minutes before retrying the request for the
+first time and a couple of hours later if there's still a problem.
+
+
+APIs
+====
+
+Historically the service first offered the custom :ref:`api_search` and
+:ref:`api_submit` APIs. Later it was decided to also implement the
+:ref:`api_geolocate` API to lessen the burden on clients that want to
+support multiple location services. As an extension to this the
+:ref:`api_geosubmit` was added to offer a consistent way to contribute
+back data to the service. Finally the :ref:`api_country` was added and
+:ref:`api_geosubmit2` superseded its version 1 counterpart.
+
+.. toctree::
+   :maxdepth: 1
+
+   geolocate
+   country
+   geosubmit2
+   geosubmit
+   search
+   submit
+   cell

@@ -7,22 +7,12 @@ from ichnaea.constants import MAX_LAT, MIN_LAT, MAX_LON, MIN_LON  # NOQA
 # Symbolic constant used in specs passed to normalization functions.
 REQUIRED = object()
 
-# Accuracy on land is arbitrarily bounded to [0, 1000km],
-# past which it seems more likely we're looking at bad data.
-MAX_ACCURACY = 1000000
-
-# Challenger Deep, Mariana Trench.
-MIN_ALTITUDE = -10911
-
-# Karman Line, edge of space.
-MAX_ALTITUDE = 100000
-
-MAX_ALTITUDE_ACCURACY = abs(MAX_ALTITUDE - MIN_ALTITUDE)
-
-MAX_HEADING = 360.0
-
-# A bit less than speed of sound, in meters per second
-MAX_SPEED = 300.0
+MAX_ACCURACY = 1000000  #: Accuracy is arbitrarily bounded to [0, 1000km]
+MIN_ALTITUDE = -10911  #: Challenger Deep, Mariana Trench.
+MAX_ALTITUDE = 100000  #: Karman Line, edge of space.
+MAX_ALTITUDE_ACCURACY = abs(MAX_ALTITUDE - MIN_ALTITUDE)  #:
+MAX_HEADING = 360.0  #: Full 360 degrees
+MAX_SPEED = 300.0  #: A bit less than speed of sound, in meters per second
 
 ALL_VALID_MCCS = frozenset(
     [int(country.mcc)

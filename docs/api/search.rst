@@ -1,12 +1,18 @@
 .. _api_search:
 
-Search
-======
+Search (Deprecated)
+===================
+
+.. note::
+    Please use the :ref:`api_geolocate_latest` API instead.
 
 Purpose
     Determine the current location based on provided data about nearby
-    cell or WiFi networks. This is an alternative to the
-    :ref:`api_geolocate` API.
+    cell or WiFi networks.
+
+
+Request
+-------
 
 Search requests are submitted using a POST request to the URL::
 
@@ -48,8 +54,9 @@ A example of a well formed JSON search request :
         ]
     }
 
-Record definition
------------------
+
+Field Definition
+----------------
 
 For `wifi` entries, the `key` field is required. The client must check the
 Wifi SSID for a `_nomap` suffix. Wifi networks with such a suffix must not be
@@ -61,13 +68,48 @@ but you can include only one or omit both fields.
 
 Valid keys for the WiFi record are:
 
-.. include:: wifi_keys.rst
+key **(required)**
+    The client must check the WiFi SSID for a `_nomap`
+    suffix. WiFi networks with such a suffix must not be submitted to the
+    server. WiFi networks with a hidden SSID should not be submitted to the
+    server either.
+
+    The `key` is the BSSID of the WiFi network. So for example
+    a valid key would look similar to `01:23:45:67:89:ab`.
+
+frequency
+    The frequency in MHz of the channel over which the client is
+    communicating with the access point.
+
+channel
+    The channel is a number specified by the IEEE which represents a
+    small band of frequencies.
+
+signal
+    The received signal strength (RSSI) in dBm, typically in the range of
+    -51 to -113.
+
+signalToNoiseRatio
+    The current signal to noise ratio measured in dB.
+
+An example of a valid WiFi record is below:
+
+.. code-block:: javascript
+
+    {
+        "key": "01:23:45:67:89:ab",
+        "channel": 11,
+        "frequency": 2412,
+        "signal": -51,
+        "signalToNoiseRatio": 37
+    }
 
 See :ref:`cell_records` for a detailed explanation of the cell record
 fields for the different network standards.
 
+
 Mapping records into a search request
--------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The mapping can contain zero or more WiFi records and zero or more
 cell records. If either list of records is empty, it can be omitted entirely.
@@ -76,12 +118,11 @@ For WiFi lookups you need to provide at least two WiFi keys of
 nearby WiFi networks. This is an industry standard that is meant to
 prevent you from looking up the position of a single WiFi over time.
 
-Search results
---------------
 
-.. include:: invalid_apikey.rst
+Response
+--------
 
-A successful result will be:
+A successful response will be:
 
 .. code-block:: javascript
 

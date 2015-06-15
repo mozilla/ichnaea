@@ -1,6 +1,5 @@
 .. _cell_records:
 
-============
 Cell records
 ============
 
@@ -13,9 +12,6 @@ constants <http://developer.android.com/reference/android/telephony/TelephonyMan
 A similar classification exists for Firefox OS devices with the
 `MozMobileConnectionInfo API <https://developer.mozilla.org/en-US/docs/Web/API/MozMobileConnectionInfo.type>`_.
 
-
-.. _cell_records_radio_type:
-
 radio
     The type of phone. Must be one of `gsm`, `cdma`, an empty
     string (for example for tablets or laptops without a cell radio)
@@ -26,7 +22,7 @@ cell record specify the type of cell.
 
 
 GSM
-===
+---
 
 If the network is either GSM or any high-data-rate variant of it, the radio
 field should be specified as `gsm`. This includes `GSM`, `EDGE` and `GPRS`.
@@ -79,7 +75,7 @@ ta
 
 
 UMTS
-====
+----
 
 If the network is either UMTS or any high-data-rate variant of it, the radio
 field should be specified as `umts`. This includes `UMTS`, `HSPA`, `HSDPA`,
@@ -138,7 +134,7 @@ For these it is acceptable to specify the lac and cid fields as `-1` if at
 the same time a valid psc field is submitted.
 
 LTE
-===
+---
 
 Example:
 
@@ -197,7 +193,7 @@ the same time a valid psc field is submitted.
 
 
 CDMA
-====
+----
 
 If the network is either CDMA or one of the EVDO variants, the radio
 field should be specified as `cdma`. This includes `1xRTT`, `CDMA`, `eHRPD`,

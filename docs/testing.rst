@@ -33,16 +33,16 @@ by using the celery `call` command. For example:
 
 .. code-block:: bash
 
-    ICHNAEA_CFG=ichnaea.ini bin/celery -A ichnaea.worker:celery call \
-    ichnaea.tasks.wifi_location_update --args='[1, 10, 1000]’
+    ICHNAEA_CFG=ichnaea.ini bin/celery -A ichnaea.async.app:celery_app call \
+    ichnaea.data.tasks.update_cell --args='[1000, ]’
 
 You then need to run the celery worker process and it will pick up the task
 from the queue and execute it:
 
 .. code-block:: bash
 
-    ICHNAEA_CFG=ichnaea.ini bin/celery -A ichnaea.worker:celery worker \
-    -c 1 --without-mingle --without-gossip --no-execv
+    ICHNAEA_CFG=ichnaea.ini bin/celery \
+    -A ichnaea.async.app:celery_app worker -c 1
 
 
 Functional tests
@@ -64,7 +64,7 @@ First submit some new data:
 
 Which should get you a `204 No Content` response.
 
-Right away there's no result found yet:
+There is no result right away:
 
 .. code-block:: bash
 
@@ -74,7 +74,7 @@ Right away there's no result found yet:
 Which means you get a `200 OK` response with a body of
 `{"status": "not_found"}` or alternatively a GeoIP based position estimate.
 
-After the async scheduled tasks have run (~5 every minutes), there should
+After the async scheduled tasks have run (every minute), there should
 be a result:
 
 .. code-block:: bash

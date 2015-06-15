@@ -1,21 +1,21 @@
 .. _api_geosubmit:
 
-Geosubmit
-=========
+Geosubmit (Deprecated)
+======================
+
+.. note::
+    Please use the :ref:`api_geosubmit_latest` API instead.
 
 Purpose
     Submit data about nearby cell and WiFi networks.
 
+
+Request
+-------
+
 Geosubmit requests are submitted using a POST request to the URL::
 
     https://location.services.mozilla.com/v1/geosubmit?key=<API_KEY>
-
-There is a newer :ref:`api_geosubmit2` API, with a slightly
-different and more extensive field list.
-
-
-Geosubmit Upload Format
------------------------
 
 Geosubmit requests are submitted using a POST request with a JSON
 body:
@@ -61,8 +61,9 @@ body:
        }
     ]}
 
-Geosubmit Record definition
----------------------------
+
+Field Definition
+----------------
 
 Requests always need to contain a batch of reports. Each report
 must contain at least one entry in the `cellTowers` array or
@@ -130,18 +131,8 @@ speed
     omitted.
 
 
-Geosubmit Responses
--------------------
+Response
+--------
 
 Successful requests return a HTTP 200 response with a body of an empty
 JSON object.
-
-Geosubmit responses can return the same error responses as those used by the
-:ref:`api_geolocate` API endpoint.
-
-You might also get a 5xx HTTP response if there was a service side problem.
-This might happen if the service or some key part of it is unavailable.
-If you encounter a 5xx response, you should retry the request at a later
-time. As a service side problem is unlikely to be resolved immediately,
-you should wait a couple of minutes before retrying the request for the
-first time and a couple of hours later if there's still a problem.

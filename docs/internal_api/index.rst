@@ -4,17 +4,11 @@
 Internal Code API
 =================
 
-Overview
-========
-
-This section describes the internal API's used throughout the
-code base.
-
-Modules
-=======
+This section describes the internal API's used throughout the code base.
+For documentation on public HTTP API please look at :ref:`service_api`.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    api/index
    geocalc

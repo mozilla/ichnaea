@@ -1,11 +1,11 @@
 .. _usage:
 
 =================
-Using the service
+Using the Service
 =================
 
 You can either use the service directly via the HTTP service APIs
-or you can use one of the existing clients or integrations.
+or you can use one of the existing apps or integrations.
 
 
 HTTP API
@@ -15,10 +15,10 @@ You can use the :ref:`service_api` directly via a command line client
 like curl or via any programming language allowing you to do HTTP calls.
 
 
-Apps
-----
+Apps / Libraries
+----------------
 
-A number of apps with different capabilities exist that allow you to use
-or contribute to the service. Please have a look at the
-`Apps listing <https://location.services.mozilla.com/apps>`_ on the service
-website to learn more.
+A number of applications and libraries with different capabilities exist
+which allow you to interact with the service. Please have a look at the
+`Software listing <https://wiki.mozilla.org/CloudServices/Location/Software>`_
+on the Mozilla Wiki to learn more.
