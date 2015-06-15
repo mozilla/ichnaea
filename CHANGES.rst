@@ -10,6 +10,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 19d6d9fbdb6b: Increase stat table value column to biginteger.
+
 Changes
 ~~~~~~~
 

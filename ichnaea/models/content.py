@@ -6,7 +6,10 @@ from sqlalchemy import (
     Unicode,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.mysql import INTEGER as Integer
+from sqlalchemy.dialects.mysql import (
+    BIGINT as BigInteger,
+    INTEGER as Integer,
+)
 
 from ichnaea.models.base import (
     _Model,
@@ -135,7 +138,7 @@ class Stat(IdMixin, HashKeyMixin, _Model):
 
     key = Column(TinyIntEnum(StatKey))
     time = Column(Date)
-    value = Column(Integer(unsigned=True))
+    value = Column(BigInteger(unsigned=True))
 
     @classmethod
     def incr(cls, session, key, value, old=0):
