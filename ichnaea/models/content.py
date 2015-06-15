@@ -3,6 +3,7 @@ from sqlalchemy import (
     Column,
     Date,
     Index,
+    PrimaryKeyConstraint,
     Unicode,
     UniqueConstraint,
 )
@@ -11,10 +12,7 @@ from sqlalchemy.dialects.mysql import (
     INTEGER as Integer,
 )
 
-from ichnaea.models.base import (
-    _Model,
-    IdMixin,
-)
+from ichnaea.models.base import _Model
 from ichnaea.models.hashkey import (
     HashKey,
     HashKeyMixin,
@@ -40,7 +38,7 @@ class StatKey(IntEnum):
     unique_ocid_cell = 7
 
 
-class MapStat(IdMixin, _Model):
+class MapStat(_Model):
     __tablename__ = 'mapstat'
 
     _indices = (
@@ -48,6 +46,8 @@ class MapStat(IdMixin, _Model):
         Index('idx_mapstat_time', 'time'),
     )
 
+    # used to preserve stable insert ordering
+    id = Column(Integer(unsigned=True), primary_key=True, autoincrement=True)
     # tracks the creation time
     time = Column(Date)
     # lat/lon * 1000, so 12.345 is stored as 12345
@@ -71,17 +71,20 @@ class ScoreHashKey(HashKey):
         return value
 
 
-class Score(IdMixin, HashKeyMixin, _Model):
+class Score(HashKeyMixin, _Model):
     __tablename__ = 'score'
 
     _indices = (
-        UniqueConstraint('userid', 'key', 'time',
-                         name='score_userid_key_time_unique'),
+        PrimaryKeyConstraint('key', 'userid', 'time'),
     )
     _hashkey_cls = ScoreHashKey
 
-    userid = Column(Integer(unsigned=True), index=True)
-    key = Column(TinyIntEnum(ScoreKey))
+    # BBB former PK
+    id = Column(Integer(unsigned=True))
+
+    # this is a foreign key to user.id
+    userid = Column(Integer(unsigned=True), autoincrement=False)
+    key = Column(TinyIntEnum(ScoreKey), autoincrement=False)
     time = Column(Date)
     value = Column(Integer)
 
@@ -128,15 +131,18 @@ class StatHashKey(HashKey):
     _fields = ('key', 'time')
 
 
-class Stat(IdMixin, HashKeyMixin, _Model):
+class Stat(HashKeyMixin, _Model):
     __tablename__ = 'stat'
 
     _indices = (
-        UniqueConstraint('key', 'time', name='stat_key_time_unique'),
+        PrimaryKeyConstraint('key', 'time'),
     )
     _hashkey_cls = StatHashKey
 
-    key = Column(TinyIntEnum(StatKey))
+    # BBB former PK
+    id = Column(Integer(unsigned=True))
+
+    key = Column(TinyIntEnum(StatKey), autoincrement=False)
     time = Column(Date)
     value = Column(BigInteger(unsigned=True))
 
@@ -153,12 +159,14 @@ class Stat(IdMixin, HashKeyMixin, _Model):
         return value
 
 
-class User(IdMixin, _Model):
+class User(_Model):
     __tablename__ = 'user'
 
     _indices = (
         UniqueConstraint('nickname', name='user_nickname_unique'),
     )
 
+    # id serves as a foreign key for score.userid
+    id = Column(Integer(unsigned=True), primary_key=True, autoincrement=True)
     nickname = Column(Unicode(128))
     email = Column(Unicode(255))

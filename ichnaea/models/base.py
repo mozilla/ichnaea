@@ -4,7 +4,6 @@ from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import (
     BIGINT as BigInteger,
     DOUBLE as Double,
-    INTEGER as Integer,
 )
 from sqlalchemy.ext.declarative import (
     declared_attr,
@@ -94,12 +93,6 @@ class CreationMixin(ValidationMixin):
 class BigIdMixin(object):
 
     id = Column(BigInteger(unsigned=True),
-                primary_key=True, autoincrement=True)
-
-
-class IdMixin(object):
-
-    id = Column(Integer(unsigned=True),
                 primary_key=True, autoincrement=True)
 
 

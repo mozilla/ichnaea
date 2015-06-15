@@ -28,23 +28,23 @@ class TestScore(DBTestCase):
 
     def test_fields(self):
         utcday = util.utcnow().date()
-        session = self.session
-        session.add(Score(
+        self.session.add(Score(
             key=ScoreKey.location, userid=3, time=utcday, value=15))
-        session.flush()
+        self.session.flush()
 
-        result = session.query(Score).first()
+        result = self.session.query(Score).first()
         self.assertEqual(result.key, ScoreKey.location)
         self.assertEqual(result.userid, 3)
         self.assertEqual(result.time, utcday)
         self.assertEqual(result.value, 15)
 
     def test_enum(self):
-        session = self.session
-        session.add(Score(key=ScoreKey.location, value=13))
-        session.flush()
+        utcday = util.utcnow().date()
+        self.session.add(Score(
+            key=ScoreKey.location, userid=3, time=utcday, value=13))
+        self.session.flush()
 
-        result = session.query(Score).first()
+        result = self.session.query(Score).first()
         self.assertEqual(result.key, ScoreKey.location)
         self.assertEqual(int(result.key), 0)
         self.assertEqual(result.key.name, 'location')
@@ -54,21 +54,20 @@ class TestStat(DBTestCase):
 
     def test_fields(self):
         utcday = util.utcnow().date()
-        session = self.session
-        session.add(Stat(key=StatKey.cell, time=utcday, value=13))
-        session.flush()
+        self.session.add(Stat(key=StatKey.cell, time=utcday, value=13))
+        self.session.flush()
 
-        result = session.query(Stat).first()
+        result = self.session.query(Stat).first()
         self.assertEqual(result.key, StatKey.cell)
         self.assertEqual(result.time, utcday)
         self.assertEqual(result.value, 13)
 
     def test_enum(self):
-        session = self.session
-        session.add(Stat(key=StatKey.cell, value=13))
-        session.flush()
+        utcday = util.utcnow().date()
+        self.session.add(Stat(key=StatKey.cell, time=utcday, value=13))
+        self.session.flush()
 
-        result = session.query(Stat).first()
+        result = self.session.query(Stat).first()
         self.assertEqual(result.key, StatKey.cell)
         self.assertEqual(int(result.key), 1)
         self.assertEqual(result.key.name, 'cell')
