@@ -301,8 +301,6 @@ class CellMixin(CellKeyPscMixin):
 class ValidCellSchema(ValidCellKeySchema, ValidStationSchema):
     """A schema which validates the fields in cell."""
 
-    new_measures = colander.SchemaNode(colander.Integer(), missing=0)
-
 
 class Cell(CellMixin, StationMixin, CreationMixin, _Model):
     __tablename__ = 'cell'
@@ -311,16 +309,8 @@ class Cell(CellMixin, StationMixin, CreationMixin, _Model):
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
         Index('cell_created_idx', 'created'),
         Index('cell_modified_idx', 'modified'),
-        Index('cell_new_measures_idx', 'new_measures'),
     )
     _valid_schema = ValidCellSchema
-
-    def __init__(self, *args, **kw):
-        if 'new_measures' not in kw:
-            kw['new_measures'] = 0
-        if 'total_measures' not in kw:
-            kw['total_measures'] = 0
-        super(Cell, self).__init__(*args, **kw)
 
 
 class ValidOCIDCellSchema(ValidCellKeySchema, ValidStationSchema):

@@ -5,11 +5,13 @@ Revises: ${down_revision}
 Create Date: ${create_date}
 """
 
+import logging
+
 from alembic import op
 import sqlalchemy as sa
 ${imports if imports else ""}
 
-# revision identifiers, used by Alembic.
+log = logging.getLogger('alembic.migration')
 revision = ${repr(up_revision)}
 down_revision = ${repr(down_revision)}
 

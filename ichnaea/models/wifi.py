@@ -130,8 +130,6 @@ class WifiMixin(BigIdMixin, WifiKeyMixin):
 class ValidWifiSchema(ValidWifiKeySchema, ValidStationSchema):
     """A schema which validates the fields in wifi."""
 
-    new_measures = colander.SchemaNode(colander.Integer(), missing=0)
-
 
 class Wifi(WifiMixin, StationMixin, CreationMixin, _Model):
     __tablename__ = 'wifi'
@@ -139,16 +137,8 @@ class Wifi(WifiMixin, StationMixin, CreationMixin, _Model):
     _indices = (
         UniqueConstraint('key', name='wifi_key_unique'),
         Index('wifi_created_idx', 'created'),
-        Index('wifi_new_measures_idx', 'new_measures'),
     )
     _valid_schema = ValidWifiSchema
-
-    def __init__(self, *args, **kw):
-        if 'new_measures' not in kw:
-            kw['new_measures'] = 0
-        if 'total_measures' not in kw:
-            kw['total_measures'] = 0
-        super(Wifi, self).__init__(*args, **kw)
 
 
 class WifiBlacklist(WifiMixin, StationBlacklistMixin, _Model):

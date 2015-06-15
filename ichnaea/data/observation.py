@@ -148,7 +148,6 @@ class ObservationQueue(DataTask):
                 created=created,
                 modified=self.utcnow,
                 range=0,
-                new_measures=0,
                 total_measures=0,
                 **key.__dict__)
             self.session.execute(stmt)
