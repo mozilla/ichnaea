@@ -87,7 +87,7 @@ class RadioNode(DefaultNode):
     """
 
     def validator(self, node, cstruct):
-        if type(cstruct) == Radio:
+        if type(cstruct) is Radio:
             return True
         raise colander.Invalid(node, 'Invalid radio type')
 

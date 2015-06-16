@@ -63,6 +63,8 @@ class DefaultNode(colander.SchemaNode):
         try:
             return super(DefaultNode, self).deserialize(cstruct)
         except colander.Invalid:
+            if self.missing is colander.required:
+                raise
             return self.missing
 
 

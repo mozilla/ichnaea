@@ -19,6 +19,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Fix locate errors for incomplete cell keys.
+
 - Remove backwards compatibility code.
 
 20150610103900

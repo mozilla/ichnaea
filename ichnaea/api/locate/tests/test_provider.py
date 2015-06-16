@@ -40,7 +40,11 @@ from ichnaea.tests.base import (
     GB_MCC,
     USA_MCC,
 )
-from ichnaea.tests.factories import CellFactory, WifiFactory
+from ichnaea.tests.factories import (
+    CellAreaFactory,
+    CellFactory,
+    WifiFactory,
+)
 
 
 class ProviderTest(ConnectionTestCase):
@@ -174,6 +178,24 @@ class TestCellPositionProvider(ProviderTest):
         self.assertEqual(location.lat, GB_LAT + 0.2)
         self.assertEqual(location.lon, GB_LON + 0.2)
 
+    def test_no_db_query_for_incomplete_keys(self):
+        cell = CellFactory()
+        self.session.flush()
+
+        with self.db_call_checker() as check_db_calls:
+            location = self.provider.locate({'cell': [
+                dict(radio='', mcc=cell.mcc,
+                     mnc=cell.mnc, lac=cell.lac, cid=cell.cid),
+                dict(radio=cell.radio.name, mcc=cell.mcc,
+                     mnc=cell.mnc, lac=None, cid=cell.cid),
+                dict(radio=cell.radio.name, mcc=cell.mcc,
+                     mnc=cell.mnc, lac=cell.lac, cid=None),
+            ]})
+            check_db_calls(rw=0, ro=0)
+
+        self.assertEqual(type(location), Position)
+        self.assertFalse(location.found())
+
 
 class TestCellAreaPositionProvider(ProviderTest):
 
@@ -192,6 +214,22 @@ class TestCellAreaPositionProvider(ProviderTest):
         }
         self.assertFalse(
             self.provider.should_locate(query_data, EmptyLocation()))
+
+    def test_no_db_query_for_incomplete_keys(self):
+        area = CellAreaFactory()
+        self.session.flush()
+
+        with self.db_call_checker() as check_db_calls:
+            location = self.provider.locate({'cell': [
+                dict(radio=area.radio.name, mcc=area.mcc,
+                     mnc=area.mnc, lac=None, cid=1),
+                dict(radio='', mcc=area.mcc,
+                     mnc=area.mnc, lac=area.lac, cid=2),
+            ]})
+            check_db_calls(rw=0, ro=0)
+
+        self.assertEqual(type(location), Position)
+        self.assertFalse(location.found())
 
     def test_shortest_range_lac_used(self):
         cell_key = {'mcc': GB_MCC, 'mnc': 1}
