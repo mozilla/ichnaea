@@ -14,6 +14,9 @@ $(document).ready(function() {
         northEast = L.latLng(85.0511, 270.0),
         bounds = L.latLngBounds(southWest, northEast);
 
+    // Set public access token
+    L.mapbox.accessToken = 'pk.eyJ1IjoibW96aWxsYS13ZWJwcm9kIiwiYSI6ImY2ZDMxNjRhM2Y1ZjE4YTFkNzZjZjkzODg4YzNkNThlIn0.GZPxUn4eIDaRsVX510gFGg'
+
     var map = L.mapbox.map('map', 'mozilla-webprod.map-05ad0a21', {
         minZoom: 1,
         maxZoom: maxZoom,

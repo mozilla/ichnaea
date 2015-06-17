@@ -68,7 +68,7 @@ setup(
         "Topic :: Internet :: WWW/HTTP :: WSGI :: Application"
     ],
     keywords="web services geo location",
-    author='Mozilla Cloud Services',
+    author='Mozilla',
     author_email='dev-geolocation@lists.mozilla.org',
     url='https://github.com/mozilla/ichnaea',
     license="Apache 2.0",

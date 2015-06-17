@@ -1,14 +1,14 @@
 {
   "name": "ichnaea",
-  "version": "1.1.0",
-  "author": "Mozilla Cloud Services <services-dev@mozilla.org>",
+  "version": "1.2.0",
+  "author": "Mozilla <dev-geolocation@lists.mozilla.org>",
   "repository": {
     "type": "git",
-    "url": "git@github.com:mozilla/ichnaea.git"
+    "url": "https://github.com/mozilla/ichnaea.git"
   },
-  "license": "Apache 2.0",
+  "license": "Apache-2.0",
   "dependencies": {
     "uglify-js": ">2.4.0",
-    "clean-css": ">2.2.0"
+    "clean-css": ">3.3.0"
   }
 }

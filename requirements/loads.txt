@@ -9,7 +9,7 @@ konfig==0.9
 loads==0.3
 more-itertools==2.2
 pexpect==3.3
-psutil==2.2.1
+psutil==3.0.0
 pyzmq==14.6.0
 tempora==1.3
 ujson==1.33

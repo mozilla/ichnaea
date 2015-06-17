@@ -15,6 +15,9 @@ Migrations
 Changes
 ~~~~~~~
 
+- Updated to latest versions of clean-css, uglify-js, mapbox.js and
+  leaflet-locatecontrol.js.
+
 20150616104200
 **************
 

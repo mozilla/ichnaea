@@ -105,13 +105,14 @@ css: node_modules
 	$(HERE)/ichnaea/content/static/css/jquery.datatables.min.css
 	$(HERE)/node_modules/.bin/cleancss -d \
 	-o $(HERE)/ichnaea/content/static/css/map-combined.css \
-	$(HERE)/ichnaea/content/static/css/mapbox-1.6.4.min.css
+	$(HERE)/ichnaea/content/static/css/font-awesome-4.3.0.css \
+	$(HERE)/ichnaea/content/static/css/mapbox-2.2.0.min.css
 
 js_map:
 	$(HERE)/node_modules/.bin/uglifyjs \
-	$(HERE)/ichnaea/content/static/js/mapbox-1.6.4.min.js \
+	$(HERE)/ichnaea/content/static/js/mapbox-2.2.0.min.js \
 	$(HERE)/ichnaea/content/static/js/leaflet-hash-0.2.1.js \
-	$(HERE)/ichnaea/content/static/js/leaflet-locatecontrol-0.24.0.js \
+	$(HERE)/ichnaea/content/static/js/leaflet-locatecontrol-0.43.0.min.js \
 		$(HERE)/ichnaea/content/static/js/map.js \
 	-o $(HERE)/ichnaea/content/static/js/map-combined.js \
 	-m -c --stats
@@ -135,7 +136,7 @@ js: node_modules js_map
 	-c --stats
 	$(HERE)/node_modules/.bin/uglifyjs \
 	$(HERE)/ichnaea/content/static/js/ga.js \
-	$(HERE)/ichnaea/content/static/js/jquery-1.11.1.js \
+	$(HERE)/ichnaea/content/static/js/jquery-1.11.3.js \
 	-o $(HERE)/ichnaea/content/static/js/base-combined.js \
 	-m -c --stats
 
