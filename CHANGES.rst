@@ -10,6 +10,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 2e0e620ebc92: Remove id column from content models.
+
 Changes
 ~~~~~~~
 

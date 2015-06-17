@@ -79,9 +79,6 @@ class Score(HashKeyMixin, _Model):
     )
     _hashkey_cls = ScoreHashKey
 
-    # BBB former PK
-    id = Column(Integer(unsigned=True))
-
     # this is a foreign key to user.id
     userid = Column(Integer(unsigned=True), autoincrement=False)
     key = Column(TinyIntEnum(ScoreKey), autoincrement=False)
@@ -138,9 +135,6 @@ class Stat(HashKeyMixin, _Model):
         PrimaryKeyConstraint('key', 'time'),
     )
     _hashkey_cls = StatHashKey
-
-    # BBB former PK
-    id = Column(Integer(unsigned=True))
 
     key = Column(TinyIntEnum(StatKey), autoincrement=False)
     time = Column(Date)
