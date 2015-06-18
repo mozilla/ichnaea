@@ -42,6 +42,8 @@ WHEEL = $(PIP) wheel --no-deps -w $(PIP_WHEEL_DIR)
 BOWER_ROOT = $(HERE)/bower_components
 STATIC_ROOT = $(HERE)/ichnaea/content/static
 CSS_ROOT = $(STATIC_ROOT)/css
+FONT_ROOT = $(STATIC_ROOT)/fonts
+IMG_ROOT = $(STATIC_ROOT)/images
 JS_ROOT = $(STATIC_ROOT)/js
 
 NODE_BIN = $(HERE)/node_modules/.bin
@@ -114,12 +116,19 @@ bower: node_modules
 	$(BOWER) install
 
 css: bower
+	cp $(BOWER_ROOT)/bedrock/media/fonts/OpenSans* $(FONT_ROOT)/
+	cp $(BOWER_ROOT)/bedrock/media/img/sandstone/bg-stone.png $(IMG_ROOT)/
+	cp $(BOWER_ROOT)/bedrock/media/img/sandstone/footer-mozilla.png \
+		$(IMG_ROOT)/mozilla-logo.png
+	cp $(BOWER_ROOT)/bedrock/media/img/sandstone/footer-mozilla-high-res.png \
+		$(IMG_ROOT)/mozilla-logo@2x.png
+	cp $(BOWER_ROOT)/bedrock/media/img/sandstone/menu-current.png $(IMG_ROOT)/
 	$(CLEANCSS) -o bundle-base.css base.css
 
 	cp $(BOWER_ROOT)/datatables/media/css/jquery.dataTables.css $(CSS_ROOT)
 	$(CLEANCSS) -o bundle-stat-regions.css jquery.dataTables.css
 
-	cp $(BOWER_ROOT)/fontawesome/fonts/* $(STATIC_ROOT)/fonts/
+	cp $(BOWER_ROOT)/fontawesome/fonts/* $(FONT_ROOT)/
 	cp $(BOWER_ROOT)/fontawesome/css/font-awesome.css $(CSS_ROOT)
 	cp $(BOWER_ROOT)/mapbox.js/mapbox.uncompressed.css $(CSS_ROOT)
 	mkdir -p $(CSS_ROOT)/images/
