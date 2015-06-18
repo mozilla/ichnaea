@@ -15,8 +15,9 @@ Migrations
 Changes
 ~~~~~~~
 
-- Updated to latest versions of clean-css, uglify-js, mapbox.js and
-  leaflet-locatecontrol.js.
+- Updated to latest versions of all CSS and JS dependencies.
+
+- Switch to using bower for CSS/JS dependency management.
 
 20150616104200
 **************

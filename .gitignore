@@ -13,6 +13,7 @@ nosetests.xml
 pip-selfcheck.json
 private-*.ini
 bin/
+bower_components/
 build/
 coverage/
 dist/

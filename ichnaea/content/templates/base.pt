@@ -15,11 +15,11 @@
     <meta name="msapplication-TileImage" content="/static/images/tile-image-150.png" />
     <meta name="msapplication-TileColor" content="#dedede" />
 
-    <link rel="stylesheet" href="/static/css/base-combined.css" />
+    <link rel="stylesheet" href="/static/css/bundle-base.css" />
     <link href="https://mozorg.cdn.mozilla.net/media/css/tabzilla-min.css" rel="stylesheet" />
     <tal:slot metal:define-slot="css"></tal:slot>
 
-    <script src='/static/js/base-combined.js'></script>
+    <script src='/static/js/bundle-base.js'></script>
     <script src="https://mozorg.cdn.mozilla.net/en-US/tabzilla/tabzilla.js"></script>
     <tal:slot metal:define-slot="js"></tal:slot>
 

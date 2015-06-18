@@ -3,7 +3,7 @@
            metal:use-macro="view.base_template">
 
 <tal:slot metal:fill-slot="js">
-    <script src="/static/js/privacy-combined.js"></script>
+    <script src="/static/js/bundle-privacy.js"></script>
 </tal:slot>
 
 <tal:slot metal:fill-slot="content">

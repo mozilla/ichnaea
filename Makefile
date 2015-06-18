@@ -39,7 +39,19 @@ PIP_WHEEL_DIR ?= $(HERE)/wheelhouse
 INSTALL = $(PIP) install --no-deps -f file://$(PIP_WHEEL_DIR)
 WHEEL = $(PIP) wheel --no-deps -w $(PIP_WHEEL_DIR)
 
-.PHONY: all js mysql init_db css js_map js test clean shell docs \
+BOWER_ROOT = $(HERE)/bower_components
+STATIC_ROOT = $(HERE)/ichnaea/content/static
+CSS_ROOT = $(STATIC_ROOT)/css
+JS_ROOT = $(STATIC_ROOT)/js
+
+NODE_BIN = $(HERE)/node_modules/.bin
+BOWER = $(NODE_BIN)/bower
+BROWSERIFY = $(NODE_BIN)/browserify
+CLEANCSS = cd $(CSS_ROOT) && $(NODE_BIN)/cleancss -d --source-map
+UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
+
+
+.PHONY: all bower js mysql init_db css js test clean shell docs \
 	build wheel release release_install release_compile
 
 all: build init_db
@@ -54,9 +66,6 @@ else
 	mysql -u$(MYSQL_USER) -p$(MYSQL_PWD) -h localhost -e \
 		"create database $(MYSQL_TEST_DB)" || echo
 endif
-
-node_modules:
-	npm install $(HERE)
 
 $(PYTHON):
 ifeq ($(TRAVIS), true)
@@ -96,49 +105,68 @@ wheel:
 init_db:
 	$(BIN)/location_initdb --initdb
 
-css: node_modules
-	$(HERE)/node_modules/.bin/cleancss -d \
-	-o $(HERE)/ichnaea/content/static/css/base-combined.css \
-	$(HERE)/ichnaea/content/static/css/base.css
-	$(HERE)/node_modules/.bin/cleancss -d \
-	-o $(HERE)/ichnaea/content/static/css/stat-regions-combined.css \
-	$(HERE)/ichnaea/content/static/css/jquery.datatables.min.css
-	$(HERE)/node_modules/.bin/cleancss -d \
-	-o $(HERE)/ichnaea/content/static/css/map-combined.css \
-	$(HERE)/ichnaea/content/static/css/font-awesome-4.3.0.css \
-	$(HERE)/ichnaea/content/static/css/mapbox-2.2.0.min.css
+node_modules:
+	npm install -d $(HERE)
+	npm dedupe
+	npm shrinkwrap --dev
 
-js_map:
-	$(HERE)/node_modules/.bin/uglifyjs \
-	$(HERE)/ichnaea/content/static/js/mapbox-2.2.0.min.js \
-	$(HERE)/ichnaea/content/static/js/leaflet-hash-0.2.1.js \
-	$(HERE)/ichnaea/content/static/js/leaflet-locatecontrol-0.43.0.min.js \
-		$(HERE)/ichnaea/content/static/js/map.js \
-	-o $(HERE)/ichnaea/content/static/js/map-combined.js \
-	-m -c --stats
+bower: node_modules
+	$(BOWER) install
 
-js: node_modules js_map
-	$(HERE)/node_modules/.bin/uglifyjs \
-	$(HERE)/ichnaea/content/static/js/privacy.js \
-	-o $(HERE)/ichnaea/content/static/js/privacy-combined.js \
-	-c --stats
-	$(HERE)/node_modules/.bin/uglifyjs \
-	$(HERE)/ichnaea/content/static/js/jquery.flot-0.8.3.js \
-	$(HERE)/ichnaea/content/static/js/jquery.flot.time-0.8.3.js \
-	$(HERE)/ichnaea/content/static/js/stat.js \
-	-o $(HERE)/ichnaea/content/static/js/stat-combined.js \
-	-c --stats
-	$(HERE)/node_modules/.bin/uglifyjs \
-	$(HERE)/ichnaea/content/static/js/jquery.datatables.min.js \
-	$(HERE)/ichnaea/content/static/js/datatables.fixedheader.min.js \
-	$(HERE)/ichnaea/content/static/js/stat-regions.js \
-	-o $(HERE)/ichnaea/content/static/js/stat-regions-combined.js \
-	-c --stats
-	$(HERE)/node_modules/.bin/uglifyjs \
-	$(HERE)/ichnaea/content/static/js/ga.js \
-	$(HERE)/ichnaea/content/static/js/jquery-1.11.3.js \
-	-o $(HERE)/ichnaea/content/static/js/base-combined.js \
-	-m -c --stats
+css: bower
+	$(CLEANCSS) -o bundle-base.css base.css
+
+	cp $(BOWER_ROOT)/datatables/media/css/jquery.dataTables.css $(CSS_ROOT)
+	$(CLEANCSS) -o bundle-stat-regions.css jquery.dataTables.css
+
+	cp $(BOWER_ROOT)/fontawesome/fonts/* $(STATIC_ROOT)/fonts/
+	cp $(BOWER_ROOT)/fontawesome/css/font-awesome.css $(CSS_ROOT)
+	cp $(BOWER_ROOT)/mapbox.js/mapbox.uncompressed.css $(CSS_ROOT)
+	mkdir -p $(CSS_ROOT)/images/
+	cp -R $(BOWER_ROOT)/mapbox.js/images/*.png $(CSS_ROOT)/images/
+	$(CLEANCSS) -o bundle-map.css font-awesome.css mapbox.uncompressed.css
+
+js: bower
+	$(UGLIFYJS) \
+		privacy.js \
+		-o bundle-privacy.js -c --stats \
+		--source-map bundle-privacy.js.map
+
+	cp $(BOWER_ROOT)/jquery/dist/jquery.js $(JS_ROOT)
+	$(UGLIFYJS) \
+		ga.js \
+		jquery.js \
+		-o bundle-base.js -c --stats \
+		--source-map bundle-base.js.map
+
+	cp $(BOWER_ROOT)/datatables/media/js/jquery.dataTables.js $(JS_ROOT)
+	cp $(BOWER_ROOT)/datatables-fixedheader/js/dataTables.fixedHeader.js $(JS_ROOT)
+	$(UGLIFYJS) \
+		jquery.dataTables.js \
+		dataTables.fixedHeader.js \
+		stat-regions.js \
+		-o bundle-stat-regions.js -c --stats \
+		--source-map bundle-stat-regions.js.map
+
+	cp $(BOWER_ROOT)/flot/jquery.flot.js $(JS_ROOT)
+	cp $(BOWER_ROOT)/flot/jquery.flot.time.js $(JS_ROOT)
+	$(UGLIFYJS) \
+		jquery.flot.js \
+		jquery.flot.time.js \
+		stat.js \
+		-o bundle-stat.js -c --stats \
+		--source-map bundle-stat.js.map
+
+	cp $(BOWER_ROOT)/mapbox.js/mapbox.uncompressed.js $(JS_ROOT)
+	cp $(BOWER_ROOT)/leaflet-hash/leaflet-hash.js $(JS_ROOT)
+	cp $(BOWER_ROOT)/leaflet.locatecontrol/src/L.Control.Locate.js $(JS_ROOT)
+	$(UGLIFYJS) \
+		mapbox.uncompressed.js \
+		leaflet-hash.js \
+		L.Control.Locate.js \
+		map.js \
+		-o bundle-map.js -c --stats \
+		--source-map bundle-map.js.map
 
 clean:
 	rm -rf $(BUILD_DIRS)

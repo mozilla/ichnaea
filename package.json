@@ -1,14 +1,16 @@
 {
   "name": "ichnaea",
   "version": "1.2.0",
+  "private": true,
   "author": "Mozilla <dev-geolocation@lists.mozilla.org>",
   "repository": {
     "type": "git",
     "url": "https://github.com/mozilla/ichnaea.git"
   },
   "license": "Apache-2.0",
-  "dependencies": {
-    "uglify-js": ">2.4.0",
-    "clean-css": ">3.3.0"
+  "devDependencies": {
+    "bower": "~1.4",
+    "clean-css": "~3.3",
+    "uglify-js": "~2.4"
   }
 }

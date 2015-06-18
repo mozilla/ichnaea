@@ -3,11 +3,11 @@
            metal:use-macro="view.base_template">
 
 <tal:slot metal:fill-slot="css">
-    <link rel="stylesheet" href="/static/css/stat-regions-combined.css" />
+    <link rel="stylesheet" href="/static/css/bundle-stat-regions.css" />
 </tal:slot>
 
 <tal:slot metal:fill-slot="js">
-    <script src='/static/js/stat-regions-combined.js'></script>
+    <script src='/static/js/bundle-stat-regions.js'></script>
 </tal:slot>
 
 <tal:slot metal:fill-slot="content">
