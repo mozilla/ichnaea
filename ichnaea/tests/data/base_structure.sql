@@ -20,18 +20,19 @@ CREATE TABLE `api_key` (
 CREATE TABLE `cell` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `created` datetime DEFAULT NULL,
+  `modified` datetime DEFAULT NULL,
   `lat` double DEFAULT NULL,
   `max_lat` double DEFAULT NULL,
   `min_lat` double DEFAULT NULL,
   `lon` double DEFAULT NULL,
   `max_lon` double DEFAULT NULL,
   `min_lon` double DEFAULT NULL,
-  `radio` smallint(6) DEFAULT NULL,
+  `radio` tinyint(4) DEFAULT NULL,
   `mcc` smallint(6) DEFAULT NULL,
-  `mnc` int(11) DEFAULT NULL,
+  `mnc` smallint(6) DEFAULT NULL,
   `lac` int(11) DEFAULT NULL,
   `cid` int(11) DEFAULT NULL,
-  `psc` int(11) DEFAULT NULL,
+  `psc` smallint(6) DEFAULT NULL,
   `range` int(11) DEFAULT NULL,
   `new_measures` int(10) unsigned DEFAULT NULL,
   `total_measures` int(10) unsigned DEFAULT NULL,
@@ -47,9 +48,9 @@ CREATE TABLE `cell` (
 CREATE TABLE `cell_blacklist` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `time` datetime DEFAULT NULL,
-  `radio` smallint(6) DEFAULT NULL,
+  `radio` tinyint(4) DEFAULT NULL,
   `mcc` smallint(6) DEFAULT NULL,
-  `mnc` int(11) DEFAULT NULL,
+  `mnc` smallint(6) DEFAULT NULL,
   `lac` int(11) DEFAULT NULL,
   `cid` int(11) DEFAULT NULL,
   `count` int(11) DEFAULT NULL,
@@ -71,15 +72,15 @@ CREATE TABLE `cell_measure` (
   `altitude_accuracy` int(11) DEFAULT NULL,
   `heading` float DEFAULT NULL,
   `speed` float DEFAULT NULL,
-  `radio` smallint(6) DEFAULT NULL,
+  `radio` tinyint(4) DEFAULT NULL,
   `mcc` smallint(6) DEFAULT NULL,
-  `mnc` int(11) DEFAULT NULL,
+  `mnc` smallint(6) DEFAULT NULL,
   `lac` int(11) DEFAULT NULL,
   `cid` int(11) DEFAULT NULL,
-  `psc` int(11) DEFAULT NULL,
+  `psc` smallint(6) DEFAULT NULL,
   `asu` smallint(6) DEFAULT NULL,
   `signal` smallint(6) DEFAULT NULL,
-  `ta` smallint(6) DEFAULT NULL,
+  `ta` tinyint(4) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `cell_measure_created_idx` (`created`),
   KEY `cell_measure_key_idx` (`radio`,`mcc`,`mnc`,`lac`,`cid`)
@@ -111,6 +112,26 @@ CREATE TABLE `measure_block` (
   KEY `idx_measure_block_s3_key` (`s3_key`),
   KEY `idx_measure_block_end_id` (`end_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `ocid_cell` (
+  `created` datetime DEFAULT NULL,
+  `modified` datetime DEFAULT NULL,
+  `lat` double DEFAULT NULL,
+  `lon` double DEFAULT NULL,
+  `radio` tinyint(4) NOT NULL,
+  `mcc` smallint(6) NOT NULL,
+  `mnc` smallint(6) NOT NULL,
+  `lac` smallint(5) unsigned NOT NULL,
+  `cid` int(10) unsigned NOT NULL,
+  `psc` smallint(6) DEFAULT NULL,
+  `range` int(11) DEFAULT NULL,
+  `total_measures` int(10) unsigned DEFAULT NULL,
+  `changeable` tinyint(1) DEFAULT NULL,
+  PRIMARY KEY (`radio`,`mcc`,`mnc`,`lac`,`cid`),
+  KEY `ocid_cell_created_idx` (`created`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -150,6 +171,7 @@ CREATE TABLE `user` (
 CREATE TABLE `wifi` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `created` datetime DEFAULT NULL,
+  `modified` datetime DEFAULT NULL,
   `key` varchar(12) DEFAULT NULL,
   `lat` double DEFAULT NULL,
   `max_lat` double DEFAULT NULL,
