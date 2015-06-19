@@ -12,11 +12,13 @@ from ichnaea.constants import (
 from ichnaea.models import (
     Cell,
     CellArea,
+    CellBlacklist,
     CellObservation,
     OCIDCell,
     OCIDCellArea,
     Radio,
     Wifi,
+    WifiBlacklist,
     WifiObservation,
 )
 from ichnaea.tests.base import (
@@ -52,20 +54,28 @@ class FuzzyWifiKey(fuzzy.BaseFuzzyAttribute):
         return 'a82066{num:06d}'.format(num=num)
 
 
-class CellAreaPositionFactory(BaseFactory):
+class CellAreaKeyFactor(BaseFactory):
 
     radio = Radio.gsm
     mcc = GB_MCC
     mnc = GB_MNC
     lac = fuzzy.FuzzyInteger(100, 999)
+
+
+class CellAreaPositionFactory(CellAreaKeyFactor):
+
     lat = GB_LAT
     lon = GB_LON
     range = LAC_MIN_ACCURACY
 
 
-class CellPositionFactory(CellAreaPositionFactory):
+class CellKeyFactor(CellAreaKeyFactor):
 
     cid = fuzzy.FuzzyInteger(1000, 9999)
+
+
+class CellPositionFactory(CellKeyFactor, CellAreaPositionFactory):
+
     psc = fuzzy.FuzzyInteger(100, 500)
     range = CELL_MIN_ACCURACY
 
@@ -80,6 +90,12 @@ class CellAreaFactory(CellAreaPositionFactory):
 
     class Meta:
         model = CellArea.create
+
+
+class CellBlacklistFactory(CellKeyFactor):
+
+    class Meta:
+        model = CellBlacklist
 
 
 class OCIDCellFactory(CellPositionFactory):
@@ -100,9 +116,13 @@ class CellObservationFactory(CellPositionFactory):
         model = CellObservation.create
 
 
-class WifiPositionFactory(BaseFactory):
+class WifiKeyFactory(BaseFactory):
 
     key = FuzzyWifiKey()
+
+
+class WifiPositionFactory(WifiKeyFactory):
+
     lat = GB_LAT
     lon = GB_LON
     range = WIFI_MIN_ACCURACY
@@ -112,6 +132,12 @@ class WifiFactory(WifiPositionFactory):
 
     class Meta:
         model = Wifi.create
+
+
+class WifiBlacklistFactory(WifiKeyFactory):
+
+    class Meta:
+        model = WifiBlacklist
 
 
 class WifiObservationFactory(WifiPositionFactory):

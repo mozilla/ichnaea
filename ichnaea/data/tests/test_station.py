@@ -15,11 +15,9 @@ from ichnaea.models import (
     Cell,
     CellArea,
     CellBlacklist,
-    CellObservation,
     Radio,
     Wifi,
     WifiBlacklist,
-    WifiObservation,
 )
 from ichnaea.tests.base import (
     CeleryTestCase,
@@ -27,8 +25,11 @@ from ichnaea.tests.base import (
 )
 from ichnaea.tests.factories import (
     CellFactory,
+    CellBlacklistFactory,
     CellObservationFactory,
     WifiFactory,
+    WifiBlacklistFactory,
+    WifiObservationFactory,
 )
 from ichnaea import util
 
@@ -41,53 +42,80 @@ class TestCell(CeleryTestCase):
 
     def test_blacklist_moving_cells(self):
         now = util.utcnow()
+        obs = []
+        obs_factory = CellObservationFactory
+        moving = set()
+        cells = CellFactory.create_batch(4)
+        cells.append(CellFactory.build())
+        # a cell with an entry but no prior position
+        cell = cells[0]
+        cell_key = cell.hashkey().__dict__
+        cell.total_measures = 0
+        obs.extend([
+            obs_factory(lat=cell.lat + 0.01,
+                        lon=cell.lon + 0.01, **cell_key),
+            obs_factory(lat=cell.lat + 0.02,
+                        lon=cell.lon + 0.05, **cell_key),
+            obs_factory(lat=cell.lat + 0.03,
+                        lon=cell.lon + 0.09, **cell_key),
+        ])
+        cell.lat = None
+        cell.lon = None
+        # a cell with a prior known position
+        cell = cells[1]
+        cell_key = cell.hashkey().__dict__
+        cell.total_measures = 1
+        cell.lat += 0.1
+        obs.extend([
+            obs_factory(lat=cell.lat + 1.0,
+                        lon=cell.lon, **cell_key),
+            obs_factory(lat=cell.lat + 3.0,
+                        lon=cell.lon, **cell_key),
+        ])
+        moving.add(cell.hashkey())
+        # a cell with a very different prior position
+        cell = cells[2]
+        cell_key = cell.hashkey().__dict__
+        cell.total_measures = 1
+        obs.extend([
+            obs_factory(lat=cell.lat + 4.0,
+                        lon=cell.lon, **cell_key),
+            obs_factory(lat=cell.lat - 0.1,
+                        lon=cell.lon, **cell_key),
+        ])
+        moving.add(cell.hashkey())
+        # another cell with a prior known position (and negative lon)
+        cell = cells[3]
+        cell_key = cell.hashkey().__dict__
+        cell.total_measures = 1
+        cell.lon *= -1.0
+        obs.extend([
+            obs_factory(lat=cell.lat + 1.0,
+                        lon=cell.lon, **cell_key),
+            obs_factory(lat=cell.lat + 2.0,
+                        lon=cell.lon, **cell_key),
+        ])
+        moving.add(cell.hashkey())
+        # an already blacklisted cell
+        cell = cells[4]
+        cell_key = cell.hashkey().__dict__
+        CellBlacklistFactory(time=now, count=1, **cell_key)
+        obs.extend([
+            obs_factory(lat=cell.lat,
+                        lon=cell.lon, **cell_key),
+            obs_factory(lat=cell.lat + 3.0,
+                        lon=cell.lon, **cell_key),
+        ])
+        moving.add(cell.hashkey())
 
-        k1 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=3, cid=4)
-        k2 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=6, cid=8)
-        k3 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=9, cid=12)
-        k4 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=12, cid=16)
-        k5 = dict(radio=Radio.cdma, mcc=1, mnc=2, lac=15, cid=20)
-
-        # keys k2, k3 and k4 are expected to be detected as moving
-        data = [
-            # a cell with an entry but no prior position
-            Cell(total_measures=0, **k1),
-            CellObservation(lat=1.001, lon=1.001, **k1),
-            CellObservation(lat=1.002, lon=1.005, **k1),
-            CellObservation(lat=1.003, lon=1.009, **k1),
-            # a cell with a prior known position
-            Cell(lat=2.0, lon=2.0, total_measures=1, **k2),
-            CellObservation(lat=2.0, lon=2.0, **k2),
-            CellObservation(lat=4.0, lon=2.0, **k2),
-            # a cell with a very different prior position
-            Cell(lat=1.0, lon=1.0, total_measures=1, **k3),
-            CellObservation(lat=3.0, lon=3.0, **k3),
-            CellObservation(lat=-3.0, lon=3.0, **k3),
-            # another cell with a prior known position (and negative lat)
-            Cell(lat=-4.0, lon=4.0, total_measures=1, **k4),
-            CellObservation(lat=-4.0, lon=4.0, **k4),
-            CellObservation(lat=-6.0, lon=4.0, **k4),
-            # an already blacklisted cell
-            CellBlacklist(time=now, count=1, **k5),
-            CellObservation(lat=5.0, lon=5.0, **k5),
-            CellObservation(lat=8.0, lon=5.0, **k5),
-        ]
-        observations = []
-        for obj in data:
-            if isinstance(obj, CellObservation):
-                observations.append(obj)
-            else:
-                self.session.add(obj)
-        self.data_queue.enqueue(observations)
+        self.data_queue.enqueue(obs)
         self.session.commit()
 
         result = update_cell.delay()
         self.assertEqual(result.get(), (4, 3))
 
-        moving = [k2, k3, k4, k5]
         black = self.session.query(CellBlacklist).all()
-        self.assertEqual(set([b.hashkey() for b in black]),
-                         set([CellBlacklist.to_hashkey(k) for k in moving]))
+        self.assertEqual(set([b.hashkey() for b in black]), moving)
 
         # test duplicate call
         result = update_cell.delay()
@@ -267,11 +295,12 @@ class TestCell(CeleryTestCase):
         cell.min_lon = cell.lon - 0.001
         k1 = cell.hashkey().__dict__
 
-        observations = [
-            CellObservation(lat=cell.lat, lon=cell.lon - 0.002, **k1),
-            CellObservation(lat=cell.lat + 0.004, lon=cell.lon - 0.006, **k1),
+        obs_factory = CellObservationFactory
+        obs = [
+            obs_factory(lat=cell.lat, lon=cell.lon - 0.002, **k1),
+            obs_factory(lat=cell.lat + 0.004, lon=cell.lon - 0.006, **k1),
         ]
-        self.data_queue.enqueue(observations)
+        self.data_queue.enqueue(obs)
         self.session.commit()
 
         self.assertEqual(update_cell.delay().get(), (1, 0))
@@ -297,50 +326,76 @@ class TestWifi(CeleryTestCase):
 
     def test_blacklist_moving_wifis(self):
         now = util.utcnow()
-        k1 = 'ab1234567890'
-        k2 = 'bc1234567890'
-        k3 = 'cd1234567890'
-        k4 = 'de1234567890'
-        k5 = 'ef1234567890'
+        obs = []
+        obs_factory = WifiObservationFactory
+        moving = set()
+        wifis = WifiFactory.create_batch(4)
+        wifis.append(WifiFactory.build())
+        # a wifi with an entry but no prior position
+        wifi = wifis[0]
+        wifi.total_measures = 0
+        obs.extend([
+            obs_factory(lat=wifi.lat + 0.001,
+                        lon=wifi.lon + 0.001, key=wifi.key),
+            obs_factory(lat=wifi.lat + 0.002,
+                        lon=wifi.lon + 0.005, key=wifi.key),
+            obs_factory(lat=wifi.lat + 0.003,
+                        lon=wifi.lon + 0.009, key=wifi.key),
+        ])
+        wifi.lat = None
+        wifi.lon = None
+        # a wifi with a prior known position
+        wifi = wifis[1]
+        wifi.total_measures = 1
+        wifi.lat += 1.0
+        wifi.lon += 1.0
+        obs.extend([
+            obs_factory(lat=wifi.lat + 0.01,
+                        lon=wifi.lon, key=wifi.key),
+            obs_factory(lat=wifi.lat + 0.07,
+                        lon=wifi.lon, key=wifi.key),
+        ])
+        moving.add(wifi.hashkey())
+        # a wifi with a very different prior position
+        wifi = wifis[2]
+        wifi.total_measures = 1
+        obs.extend([
+            obs_factory(lat=wifi.lat + 2.0,
+                        lon=wifi.lon + 2.0, key=wifi.key),
+            obs_factory(lat=wifi.lat - 4.0,
+                        lon=wifi.lon + 2.0, key=wifi.key),
+        ])
+        moving.add(wifi.hashkey())
+        # another wifi with a prior known position (and negative lat)
+        wifi = wifis[3]
+        wifi.total_measures = 1
+        wifi.lat *= -1.0
+        obs.extend([
+            obs_factory(lat=wifi.lat - 0.1,
+                        lon=wifi.lon, key=wifi.key),
+            obs_factory(lat=wifi.lat - 0.16,
+                        lon=wifi.lon, key=wifi.key),
+        ])
+        moving.add(wifi.hashkey())
+        # an already blacklisted wifi
+        wifi = wifis[4]
+        WifiBlacklistFactory(key=wifi.key, time=now, count=1)
+        obs.extend([
+            obs_factory(lat=wifi.lat,
+                        lon=wifi.lon, key=wifi.key),
+            obs_factory(lat=wifi.lat + 0.1,
+                        lon=wifi.lon, key=wifi.key),
+        ])
+        moving.add(wifi.hashkey())
 
-        # keys k2, k3 and k4 are expected to be detected as moving
-        data = [
-            # a wifi with an entry but no prior position
-            Wifi(key=k1, total_measures=0),
-            WifiObservation(lat=1.001, lon=1.001, key=k1),
-            WifiObservation(lat=1.002, lon=1.005, key=k1),
-            WifiObservation(lat=1.003, lon=1.009, key=k1),
-            # a wifi with a prior known position
-            Wifi(lat=2.0, lon=2.0, key=k2, total_measures=1),
-            WifiObservation(lat=2.01, lon=2, key=k2),
-            WifiObservation(lat=2.07, lon=2, key=k2),
-            # a wifi with a very different prior position
-            Wifi(lat=1.0, lon=1.0, key=k3, total_measures=1),
-            WifiObservation(lat=3.0, lon=3.0, key=k3),
-            WifiObservation(lat=-3.0, lon=3.0, key=k3),
-            # another wifi with a prior known position (and negative lat)
-            Wifi(lat=-4.0, lon=4.0, key=k4, total_measures=1),
-            WifiObservation(lat=-4.1, lon=4, key=k4),
-            WifiObservation(lat=-4.16, lon=4, key=k4),
-            # an already blacklisted wifi
-            WifiBlacklist(key=k5, time=now, count=1),
-            WifiObservation(lat=5.0, lon=5.0, key=k5),
-            WifiObservation(lat=5.1, lon=5.0, key=k5),
-        ]
-        observations = []
-        for obj in data:
-            if isinstance(obj, WifiObservation):
-                observations.append(obj)
-            else:
-                self.session.add(obj)
-        self.data_queue.enqueue(observations)
+        self.data_queue.enqueue(obs)
         self.session.commit()
 
         result = update_wifi.delay()
         self.assertEqual(result.get(), (4, 3))
 
         black = self.session.query(WifiBlacklist).all()
-        self.assertEqual(set([b.key for b in black]), set([k2, k3, k4, k5]))
+        self.assertEqual(set([b.hashkey() for b in black]), moving)
 
         # test duplicate call
         result = update_wifi.delay()
@@ -373,7 +428,7 @@ class TestWifi(CeleryTestCase):
             (25.0, -80.0),
         ]
 
-        N = 4 * PERMANENT_BLACKLIST_THRESHOLD
+        N = PERMANENT_BLACKLIST_THRESHOLD * 4
         for month in range(0, N):
             days_ago = (N - (month + 1)) * 30
             time = now - timedelta(days=days_ago)
@@ -452,25 +507,36 @@ class TestWifi(CeleryTestCase):
                 self.assertEqual(update_result.get(), (0, 0))
 
     def test_update_wifi(self):
-        now = util.utcnow()
-        k1 = 'ab1234567890'
-        k2 = 'cd1234567890'
-        data = [
-            Wifi(key=k1, total_measures=3),
-            WifiObservation(lat=1.0, lon=1.0, key=k1, created=now),
-            WifiObservation(lat=1.002, lon=1.003, key=k1, created=now),
-            WifiObservation(lat=1.004, lon=1.006, key=k1, created=now),
-            Wifi(key=k2, lat=2.0, lon=2.0, total_measures=2),
-            WifiObservation(lat=2.002, lon=2.004, key=k2, created=now),
-            WifiObservation(lat=2.002, lon=2.004, key=k2, created=now),
-        ]
-        observations = []
-        for obj in data:
-            if isinstance(obj, WifiObservation):
-                observations.append(obj)
-            else:
-                self.session.add(obj)
-        self.data_queue.enqueue(observations)
+        wifis = WifiFactory.create_batch(2)
+        obs = []
+        obs_factory = WifiObservationFactory
+        # first wifi
+        wifi = wifis[0]
+        wifi.total_measures = 3
+        lat1, lon1 = (wifi.lat, wifi.lon)
+        obs.extend([
+            obs_factory(lat=wifi.lat,
+                        lon=wifi.lon, key=wifi.key),
+            obs_factory(lat=wifi.lat + 0.002,
+                        lon=wifi.lon + 0.003, key=wifi.key),
+            obs_factory(lat=wifi.lat + 0.004,
+                        lon=wifi.lon + 0.006, key=wifi.key),
+        ])
+        wifi.lat = None
+        wifi.lon = None
+        # second wifi
+        wifi = wifis[1]
+        wifi.total_measures = 2
+        wifi.lat += 1.0
+        wifi.lon += 1.0
+        lat2, lon2 = (wifi.lat, wifi.lon)
+        obs.extend([
+            obs_factory(lat=wifi.lat + 0.002,
+                        lon=wifi.lon + 0.004, key=wifi.key),
+            obs_factory(lat=wifi.lat + 0.002,
+                        lon=wifi.lon + 0.004, key=wifi.key),
+        ])
+        self.data_queue.enqueue(obs)
         self.session.commit()
 
         result = update_wifi.delay()
@@ -479,14 +545,12 @@ class TestWifi(CeleryTestCase):
             timer=['task.data.update_wifi'],
         )
 
-        wifis = dict(self.session.query(Wifi.key, Wifi).all())
-        self.assertEqual(set(wifis.keys()), set([k1, k2]))
-
-        self.assertEqual(wifis[k1].lat, 1.002)
-        self.assertEqual(wifis[k1].lon, 1.003)
-
-        self.assertEqual(wifis[k2].lat, 2.001)
-        self.assertEqual(wifis[k2].lon, 2.002)
+        found = dict(self.session.query(Wifi.key, Wifi).all())
+        self.assertEqual(set(found.keys()), set([wifis[0].key, wifis[1].key]))
+        self.assertAlmostEqual(found[wifis[0].key].lat, lat1 + 0.002)
+        self.assertAlmostEqual(found[wifis[0].key].lon, lon1 + 0.003)
+        self.assertAlmostEqual(found[wifis[1].key].lat, lat2 + 0.001)
+        self.assertAlmostEqual(found[wifis[1].key].lon, lon2 + 0.002)
 
     def test_max_min_range_update(self):
         wifi = WifiFactory(range=100, total_measures=4)
@@ -497,13 +561,14 @@ class TestWifi(CeleryTestCase):
         wifi.max_lon = wifi.lon + 0.001
         wifi.min_lon = wifi.lon - 0.001
 
-        observations = [
-            WifiObservation(lat=wifi.lat + 0.002, lon=wifi.lon - 0.004,
-                            key=wifi.key),
-            WifiObservation(lat=wifi.lat - 0.002, lon=wifi.lon + 0.01,
-                            key=wifi.key),
+        obs_factory = WifiObservationFactory
+        obs = [
+            obs_factory(lat=wifi.lat + 0.002,
+                        lon=wifi.lon - 0.004, key=wifi.key),
+            obs_factory(lat=wifi.lat - 0.002,
+                        lon=wifi.lon + 0.01, key=wifi.key),
         ]
-        self.data_queue.enqueue(observations)
+        self.data_queue.enqueue(obs)
         self.session.commit()
 
         self.assertEqual(update_wifi.delay().get(), (1, 0))
@@ -522,17 +587,8 @@ class TestWifi(CeleryTestCase):
         self.assertEqual(wifi.total_measures, 6)
 
     def test_remove_wifi(self):
-        observations = []
-        wifi_keys = []
-        m1 = 1.0
-        m2 = 2.0
-        for key in ['a%s1234567890' % i for i in range(5)]:
-            wifi = Wifi(key=key)
-            self.session.add(wifi)
-            wifi_keys.append(wifi.hashkey())
-            observations.append(WifiObservation(lat=m1, lon=m1, key=key))
-            observations.append(WifiObservation(lat=m2, lon=m2, key=key))
-        self.data_queue.enqueue(observations)
+        wifis = WifiFactory.create_batch(5)
+        wifi_keys = [wifi.key for wifi in wifis]
         self.session.flush()
 
         result = remove_wifi.delay(wifi_keys[:2])
