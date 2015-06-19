@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Optimize mapstat and station data tasks.
+
 - Updated to latest versions of all CSS and JS dependencies.
 
 - Switch to using bower for CSS/JS dependency management.

@@ -170,8 +170,13 @@ class StationUpdater(DataTask):
         if not station_obs:
             return (0, 0)
 
-        stations = self.station_model.querykeys(
-            self.session, station_obs.keys()).all()
+        stations = []
+        station_keys = list(station_obs.keys())
+        # split up query to prevent too large where clause
+        for i in range(0, len(station_keys), 100):
+            stations.extend(self.station_model.querykeys(
+                self.session, station_keys[i:i + 100]).all())
+
         if not stations:  # pragma: no cover
             # TODO: This task depends on the station records to be
             # pre-created, move that logic into this task later on.

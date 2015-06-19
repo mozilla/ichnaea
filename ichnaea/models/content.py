@@ -38,13 +38,20 @@ class StatKey(IntEnum):
     unique_ocid_cell = 7
 
 
-class MapStat(_Model):
+class MapStatHashKey(HashKey):
+
+    _fields = ('lat', 'lon')
+
+
+class MapStat(HashKeyMixin, _Model):
     __tablename__ = 'mapstat'
 
     _indices = (
         UniqueConstraint('lat', 'lon', name='mapstat_lat_lon_unique'),
         Index('idx_mapstat_time', 'time'),
     )
+    _hashkey_cls = MapStatHashKey
+    _scaling_factor = 1000
 
     # used to preserve stable insert ordering
     id = Column(Integer(unsigned=True), primary_key=True, autoincrement=True)
@@ -53,6 +60,10 @@ class MapStat(_Model):
     # lat/lon * 1000, so 12.345 is stored as 12345
     lat = Column(Integer)
     lon = Column(Integer)
+
+    @classmethod
+    def scale(cls, float_value):
+        return int(float_value * cls._scaling_factor)
 
 
 class ScoreHashKey(HashKey):

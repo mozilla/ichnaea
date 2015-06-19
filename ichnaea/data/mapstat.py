@@ -1,4 +1,4 @@
-from sqlalchemy.sql import and_, or_
+from sqlalchemy.orm import load_only
 
 from ichnaea.data.base import DataTask
 from ichnaea.models.content import (
@@ -15,35 +15,29 @@ class MapStatUpdater(DataTask):
 
     def update(self, batch=1000):
         queue = self.task.app.data_queues['update_mapstat']
-        positions = queue.dequeue(batch=batch)
-
-        # Scale from floating point degrees to integer counts of thousandths of
-        # a degree; 1/1000 degree is about 110m at the equator.
-        factor = 1000
         today = util.utcnow().date()
-        tiles = {}
-        # aggregate to tiles, according to factor
+        positions = queue.dequeue(batch=batch)
+        if not positions:
+            return 0
+
+        found = set()
+        wanted = set()
         for position in positions:
-            tiles[(int(position['lat'] * factor),
-                   int(position['lon'] * factor))] = True
-        query = self.session.query(MapStat.lat, MapStat.lon)
-        # dynamically construct a (lat, lon) in (list of tuples) filter
-        # as MySQL isn't able to use indexes on such in queries
-        lat_lon = []
-        for (lat, lon) in tiles.keys():
-            lat_lon.append(and_((MapStat.lat == lat), (MapStat.lon == lon)))
-        query = query.filter(or_(*lat_lon))
-        result = query.all()
-        prior = {}
-        for r in result:
-            prior[(r.lat, r.lon)] = True
-        for (lat, lon) in tiles.keys():
-            old = prior.get((lat, lon), False)
-            if not old:
-                stmt = MapStat.__table__.insert(
-                    on_duplicate='id = id').values(
-                    time=today, lat=lat, lon=lon)
-                self.session.execute(stmt)
+            wanted.add(MapStat.to_hashkey(lat=MapStat.scale(position['lat']),
+                                          lon=MapStat.scale(position['lon'])))
+        # split up query into chunks of 100, otherwise the where clause
+        # gets too large for MySQL to handle efficiently
+        wanted_list = list(wanted)
+        for i in range(0, len(wanted_list), 100):
+            query = (MapStat.querykeys(self.session, wanted_list[i:i + 100])
+                            .options(load_only('lat', 'lon')))
+            found = found.union(set([stat.hashkey() for stat in query.all()]))
+
+        for key in (wanted - found):
+            stmt = MapStat.__table__.insert(
+                on_duplicate='id = id').values(
+                time=today, lat=key.lat, lon=key.lon)
+            self.session.execute(stmt)
 
         if queue.size() >= batch:
             self.task.apply_async(
