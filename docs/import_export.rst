@@ -5,7 +5,7 @@ Data Import / Export
 ====================
 
 Ichnaea supports automatic, periodic CSV (comma separated values) export
-of aggregate cell data (position estimates) and soon periodic import of
+of aggregate cell data (position estimates) and periodic import of
 the same type of data from the OpenCellID project.
 
 The data exchange format was created in collaboration with the

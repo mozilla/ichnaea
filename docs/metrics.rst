@@ -6,82 +6,12 @@ Metrics
 
 As discussed in :ref:`the deployment document <deploy>`, Ichnaea emits
 metrics through the Statsd client library with the intent of
-aggregating and viewing them on a Graphite server.
+aggregating and viewing them on a compatible dashboard.
 
 This document describes the metrics collected.
 
-Counter aggregation
--------------------
 
-In the following sections, any counter described will typically result in
-*two* sub-metrics being emitted. This is because Statsd performs a level
-of time-based aggregation before reporting to Graphite. In other words,
-Statsd typically accumulates counter messages for a given reporting period
-(60 seconds by default) and passes along to Graphite a single aggregate
-function applied to the messages in each reporting period.
-
-``count``
-
-    The net counter-increment over the reporting period.
-
-``rate``
-
-    The average number of increments *per second* over the reporting
-    period.
-
-For example, the counter ``geolocate.cell_found`` below will cause two
-metrics -- ``geolocate.cell_found.count`` and ``geolocate.cell_found.rate``
-to be visible in Graphite.
-
-Typically Graphite will further aggregate these into display-appropriate
-time-based buckets when graphing them.
-
-
-Timer aggregation
------------------
-
-As with counters, Statsd will accumulate timer messages over a reporting
-period, and emit periodic sub-metrics of aggregate functions over the
-messages accumulated during the reporting period. The aggregates emitted
-for timers are different than for counters, however:
-
-``count``
-
-    The number of timer events over the reporting period.
-
-``count_ps``
-
-    The average number of timer events *per second* over the reporting
-    period.
-
-``lower``
-
-    The minimum value of any timer event over the reporting period.
-
-``mean``
-
-    The mean of the values of all timer events over the reporting period.
-
-``mean_90``
-
-    The mean of the lower 90th percentile of the values of all timer
-    events over the reporting period.
-
-``upper``
-
-    The maximum value of any timer event over the reporting period.
-
-``upper_90``
-
-    The maximum of the lower 90th percentile of the values of all timer
-    events over the reporting period.
-
-``sum``
-
-    The sum of the values of all timer events over the reporting period.
-
-
-API-key counters
+API Key Counters
 ----------------
 
 Several families of counters exist based on API keys. These have the prefixes:
@@ -89,34 +19,24 @@ Several families of counters exist based on API keys. These have the prefixes:
   - ``geolocate.api_key.*``
   - ``search.api_key.*``
   - ``geosubmit.api_key.*``
+  - ``geosubmit2.api_key.*``
   - ``submit.api_key.*``
 
 Each immediate sub-component of the metric name after the prefix is the name
 of an API key, which is a counter of the number of times a request to each
-named API endpoint (``geolocate``, ``search``, ``submit`` or ``geosubmit``)
-came in using the named API key.
+named API endpoint (``geolocate``, ``geosubmit``, etc.) came in using the
+named API key.
 
 In addition, each API endpoint has two counters measuring requests that
 fail to provide an API key, or provide an unknown API key. These counters
 are named:
 
-  - ``geolocate.no_api_key``
-  - ``search.no_api_key``
-  - ``geosubmit.no_api_key``
-  - ``submit.no_api_key``
-
-and
-
-  - ``geolocate.unknown_api_key``
-  - ``search.unknown_api_key``
-  - ``geosubmit.unknown_api_key``
-  - ``submit.unknown_api_key``
-
-respectively.
+  - ``<api_endpoint>.no_api_key``
+  - ``<api_endpoint>.unknown_api_key``
 
 
-Response-type counters
-----------------------
+Response Counters
+-----------------
 
 For each API endpoint, and for each type of location datum that can be
 found in response to a query (``cell``, ``cell_lac``, ``wifi`` and
@@ -179,13 +99,13 @@ For the ``geolocate`` API, the following counters are emitted:
 
 
 In addition to ``geolocate`` response-type counters, equivalent counters
-exist for the ``search`` and ``geosubmit`` API endpoints.
+exist for the ``search`` API endpoint.
 
 
-Response type API key specific counters
----------------------------------------
+Per API Key Response Counters
+-----------------------------
 
-In addition to the above mentioned response type counters, additional
+In addition to the above mentioned response counters, additional
 extended stats are provided for some API keys. These counters track if
 the best possible response was given for each query. Exactly one counter
 is used per response. For example if WiFi information was provided in the
@@ -216,19 +136,19 @@ based response was provided instead.
     those were no position estimate could be given (miss).
 
 
-In addition to ``geolocate`` response-type counters, equivalent counters
-exist for the ``search`` and ``geosubmit`` API endpoints.
+In addition to ``geolocate`` response counters, equivalent counters
+exist for the ``search`` API endpoint.
 
 
-Fine-grained ingress stats
---------------------------
+Data Pipeline Stats
+-------------------
 
 When a batch of reports is accepted at one of the submission API
 endpoints, it is decomposed into a number of "items" -- wifi or cell
 observations -- each of which then works its way through a process of
-normalization, consistency-checking, rate limiting and eventually
-(possibly) integration into aggregate station estimates held in the main
-database tables. Along the way several counters measure the steps involved:
+normalization, consistency-checking and eventually (possibly) integration
+into aggregate station estimates held in the main database tables.
+Along the way several counters measure the steps involved:
 
 ``items.uploaded.batches`` : counter
 
@@ -242,20 +162,19 @@ database tables. Along the way several counters measure the steps involved:
 ``items.uploaded.batch_size`` : timer
 
     Pseudo-timer counting the number of reports per uploaded batch.
-    Typically client software like Mozilla Stumbler uploads 50 reports
-    per batch.
+    Typically client software uploads 50 reports per batch.
 
 ``items.uploaded.reports`` : counter
 
-    Counts the number of reports accepted to the data processing pipeline.
+    Counts the number of reports accepted into the data processing pipeline.
 
 ``items.uploaded.cell_observations``, ``items.uploaded.wifi_observations`` : counters
 
-    Count the number of cell or wifi observations entering the data processing
-    pipeline; before normalization, blacklist processing and rate limiting
-    have been applied. In other words this metric counts "total cell or wifi
-    observations inside each submitted batch", as each batch is decomposed
-    into individual observations.
+    Count the number of cell or wifi observations entering the data
+    processing pipeline; before normalization and blacklist processing
+    have been applied. In other words this metric counts "total cell or
+    wifi observations inside each submitted batch", as each batch is
+    decomposed into individual observations.
 
 ``items.dropped.cell_ingress_malformed``, ``items.dropped.wifi_ingress_malformed`` : counters
 
@@ -280,8 +199,8 @@ database tables. Along the way several counters measure the steps involved:
 
 ``items.inserted.cell_observations``, ``items.inserted.wifi_observations`` : counters
 
-    Count cell or wifi observations that are successfully normalized and
-    integrated, not discarded due to rate limits or consistency errors.
+    Count cell or wifi observations that are successfully normalized,
+    integrated and not discarded due to consistency errors.
 
 In addition to these global stats on the data processing pipeline,
 we also have a number of per API key stats for uploaded data.
@@ -300,7 +219,7 @@ we also have a number of per API key stats for uploaded data.
 
     Count the number of uploaded cell and wifi observations for this API key.
 
-Export stats
+Export Stats
 ------------
 
 Incoming reports can also be sent to a number of different export targets.
@@ -320,8 +239,8 @@ We keep stats on how those individual export targets perform.
     A status can either be a simple `success` and `failure` or a HTTP
     response code like 200, 400, etc.
 
-Gauges
-------
+Internal Monitoring
+-------------------
 
 ``queue.celery_default``,
 ``queue.celery_incoming``,
@@ -347,11 +266,11 @@ Gauges
     jobs are run on a regular basis.
 
 
-HTTP counters
+HTTP Counters
 -------------
 
 Every legitimate, routed request to Ichnaea, whether to an API endpoint or
-to static content, also increments an ``request.*`` counter. The path
+to static content, also increments a ``request.*`` counter. The path
 of the counter is the based on the path of the HTTP request, with slashes
 replaced with periods, followed by a final component named by the response
 code produced by the request.
@@ -361,11 +280,11 @@ status code, will increment the counter ``request.stats.regions.200``.
 
 Response codes in the 400 range (eg. 404) are only generated for HTTP paths
 referring to API endpoints. Logging them for unknown and invalid paths would
-overwhelm the graphite backend with all the random paths the friendly
-Internet bots army sends along.
+overwhelm the system with all the random paths the friendly Internet bots
+army sends along.
 
 
-HTTP timers
+HTTP Timers
 -----------
 
 In addition to the HTTP counters, every legitimate, routed request to
@@ -388,7 +307,7 @@ For example:
   - ``task.data.upload_reports``
 
 
-Datamaps timers
+Datamaps Timers
 ---------------
 
 Ichnaea includes a script to generate a data map from the gathered map

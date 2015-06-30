@@ -22,8 +22,8 @@ infer a distance measure from it. The further a device is away from the
 signal source, the weaker the signal should get.
 
 Unfortunately the signal strength is more dependent on the device type,
-how a user holds a device, changing environmental factors like trucks in
-the way. Or modern networks adjust their signal strength to the number
+how a user holds a device and changing environmental factors like trucks in
+the way. Even worth modern networks adjust their signal strength to the number
 of devices inside their reception area. This makes this data practically
 useless while looking up a users position via a single reading.
 
@@ -55,13 +55,15 @@ WiFi
 ----
 
 WiFi networks have a fairly limited range, with buildings in the way often
-only in the tens or low hundreds of meters. This means position estimates
-based on WiFi networks are usually accurate to 100 meter or slightly more
-based on our data and will improve in the future to tens of meters.
+only in the tens or low hundreds of meters. But caching layers in the
+operating system and time differences between when a WiFi scan happened
+and when this is made available to the calling app can lead to WiFi networks
+still being visible up to some kilometers away from their actual position
+if the device moves in the meantime.
 
-In WiFi networks the devices can also almost always see multiple WiFi
-networks at once, so trilateration is often available further improving
-the position estimate.
+This means position estimates based on WiFi networks are usually accurate
+to low hundreds of meters. If a lot of networks are available in the area
+accuracy tends to increase to 100 meter or less.
 
 One challenge that's particular severe in WiFi networks are all the
 constantly moving WiFi networks, for example those installed on buses
@@ -84,12 +86,13 @@ as the accuracy.
 GSM cells are restricted to a maximum range of 35km, but there are rare
 exceptions using the GSM extended range of 120km.
 
-In more populated places the cell sizes are typically much smaller.
+In more populated places the cell sizes are typically much smaller, but
+generally accuracy will be in the tens of kilometer range.
 
-UMTS
-----
+WCDMA / UMTS
+------------
 
-In UMTS networks neighboring cell information can be available. But
+In WCDMA networks neighboring cell information can be available. But
 limitations in chipset drivers, the radio interface layer and the
 operating systems often hide this data from application code. Or
 only partially expose the cell identifiers, for example only exposing
@@ -97,17 +100,20 @@ the carrier and primary scrambling code of the neighboring cells.
 
 So in most cases we are limited to the same approach as for GSM cells.
 The typical cell sizes of UMTS cells are much smaller, which practically
-leads to a better accuracy. But UMTS cells in rural areas can have a
+leads to a better accuracy. But WCDMA cells in rural areas can have a
 larger radius than GSM cells and we observed cells sizes of 60-70km.
+
+In urban areas we should typically see accuracy in the 1 to 10 kilometer
+range.
 
 LTE
 ---
 
-LTE networks are similar to UMTS networks and the same restriction on
+LTE networks are similar to WCDMA networks and the same restriction on
 neighboring cells applies. Instead of a primary scrambling code LTE uses
 a physical cell id, which for our purposes has similar characteristics.
 
-LTE cells are again often even smaller than UMTS cells which leads to
+LTE cells are again often even smaller than WCDMA cells which leads to
 better accuracies.
 
 LTE networks also expose a time based distance metric in the form of
@@ -125,7 +131,7 @@ gotten from all connected towers.
 
 This means we usually get information about multiple cells and can do
 trilateration, leading to better position estimates. Cells sizes are
-comparable to UMTS networks and can be in the 100km range in rural
+comparable to WCDMA networks and can be in the 100km range in rural
 areas.
 
 In theory in CDMA networks the latitude and longitude of each connected
@@ -141,6 +147,9 @@ The accuracy of GeoIP depends a lot on the country or region the user
 is in. In the US GeoIP can be fairly accurate and often places the
 user in the right city or metropolitan area. In many other parts of
 the world GeoIP is only accurate to the region level.
+
+Typical GeoIP accuracies are either in the 50km range for city based
+estimates or multiple hundred kilometers for region based estimates.
 
 IP version 6 has the chance to improve this situation, as the need for
 private carrier networks and network address translation decreases.

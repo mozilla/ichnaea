@@ -36,7 +36,6 @@ if sys.version_info < (2, 7):
     requires.append('argparse')
 
 test_requires = requires + [
-    'beautifulsoup4',
     'coverage',
     'mock',
     'nose',

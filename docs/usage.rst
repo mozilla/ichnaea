@@ -5,7 +5,7 @@ Using the Service
 =================
 
 You can either use the service directly via the HTTP service APIs
-or you can use one of the existing apps or integrations.
+or you can use one of the existing applications or libraries.
 
 
 HTTP API
@@ -15,8 +15,8 @@ You can use the :ref:`service_api` directly via a command line client
 like curl or via any programming language allowing you to do HTTP calls.
 
 
-Apps / Libraries
-----------------
+Applications / Libraries
+------------------------
 
 A number of applications and libraries with different capabilities exist
 which allow you to interact with the service. Please have a look at the

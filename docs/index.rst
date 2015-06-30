@@ -2,7 +2,7 @@
 Ichnaea
 =======
 
-``Ichnaea`` is a service to provide geo-location coordinates
+``Ichnaea`` is a service to provide geolocation coordinates
 from other sources of data (cell or WiFi networks, GeoIP, etc.).
 
 Mozilla hosts an instance of this service, called the `Mozilla Location
@@ -32,10 +32,11 @@ Table of contents
    usage
    api/index
    calculation
-   deploy
-   metrics
    import_export
+   deploy
+   development
    testing
+   metrics
    internal_api/index
    changelog
 
