@@ -25,9 +25,12 @@ def monitor_api_key_limits(self):
         names = {}
         if keys:
             with self.db_session(commit=False) as session:
-                query = (ApiKey.querykeys(session, keys)
-                               .options(load_only('valid_key', 'shortname')))
-                for api_key in query.all():
+                api_iter = ApiKey.iterkeys(
+                    session, keys,
+                    extra=lambda query: query.options(
+                        load_only('valid_key', 'shortname')))
+
+                for api_key in api_iter:
                     names[api_key.valid_key] = api_key.name
 
         result = {}

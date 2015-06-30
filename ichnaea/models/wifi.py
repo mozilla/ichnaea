@@ -39,6 +39,7 @@ class WifiKey(HashKey):
 class WifiKeyMixin(HashKeyMixin):
 
     _hashkey_cls = WifiKey
+    _query_batch = 100
 
     key = Column(String(12))
 

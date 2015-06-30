@@ -40,6 +40,7 @@ class HashKey(JSONMixin):
 class HashKeyMixin(object):
 
     _hashkey_cls = None
+    _query_batch = 100
 
     @classmethod
     def _to_hashkey(cls, *args, **kw):
@@ -121,3 +122,14 @@ class HashKeyMixin(object):
             # create a list of 'and' criteria for each hash key component
             key_filters.append(and_(*cls.joinkey(key)))
         return session.query(cls).filter(or_(*key_filters))
+
+    @classmethod
+    def iterkeys(cls, session, keys, extra=None):
+        # return all the keys, but batch the actual query depending on
+        # an appropriate batch size for each model
+        for i in range(0, len(keys), cls._query_batch):
+            query = cls.querykeys(session, keys[i:i + cls._query_batch])
+            if extra is not None:
+                query = extra(query)
+            for instance in query.all():
+                yield instance

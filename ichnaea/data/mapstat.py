@@ -25,13 +25,12 @@ class MapStatUpdater(DataTask):
         for position in positions:
             wanted.add(MapStat.to_hashkey(lat=MapStat.scale(position['lat']),
                                           lon=MapStat.scale(position['lon'])))
-        # split up query into chunks of 100, otherwise the where clause
-        # gets too large for MySQL to handle efficiently
-        wanted_list = list(wanted)
-        for i in range(0, len(wanted_list), 100):
-            query = (MapStat.querykeys(self.session, wanted_list[i:i + 100])
-                            .options(load_only('lat', 'lon')))
-            found = found.union(set([stat.hashkey() for stat in query.all()]))
+
+        stat_iter = MapStat.iterkeys(
+            self.session, list(wanted),
+            extra=lambda query: query.options(load_only('lat', 'lon')))
+
+        found = set([stat.hashkey() for stat in stat_iter])
 
         for key in (wanted - found):
             stmt = MapStat.__table__.insert(

@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Batch key queries depending on a per-model batch size.
+
 - #192: Suggest a observation data retention period.
 
 - Optimize mapstat and station data tasks.

@@ -175,25 +175,19 @@ class BaseCellProvider(Provider):
 
     def _query_database(self, cell_keys):
         """Query the cell model."""
-        queried_cells = None
-
-        load_fields = (
-            'radio', 'mcc', 'mnc', 'lac', 'lat', 'lon', 'range')
-
-        # only do a query if we have cell locations, or this will match
-        # all rows in the table
-        query = (self.model.querykeys(self.session_db, cell_keys)
-                           .options(load_only(*load_fields))
-                           .filter(self.model.lat.isnot(None))
-                           .filter(self.model.lon.isnot(None)))
-
         try:
-            queried_cells = query.all()
+            load_fields = ('lat', 'lon', 'range')
+            cell_iter = self.model.iterkeys(
+                self.session_db,
+                cell_keys,
+                extra=lambda query: query.options(load_only(*load_fields))
+                                         .filter(self.model.lat.isnot(None))
+                                         .filter(self.model.lon.isnot(None)))
+
+            return self._filter_cells(list(cell_iter))
         except Exception:
             self.raven_client.captureException()
-
-        if queried_cells:
-            return self._filter_cells(queried_cells)
+            return []
 
     def _filter_cells(self, found_cells):
         # Group all found_cells by location area
@@ -212,6 +206,8 @@ class BaseCellProvider(Provider):
         # hit will have two entries and win over a lac with only the
         # lac entry.
         lac = sorted(lacs.values(), key=sort_lac, reverse=True)
+        if not lac:
+            return []
 
         return [Network(
             key=None,
@@ -408,20 +404,19 @@ class WifiPositionProvider(Provider):
         return (wifis, wifi_signals, wifi_keys)
 
     def _query_database(self, wifi_keys):
-        queried_wifis = []
-        if len(wifi_keys) >= MIN_WIFIS_IN_QUERY:
-            keys = [Wifi.to_hashkey(key=key) for key in wifi_keys]
-            try:
-                load_fields = ('key', 'lat', 'lon', 'range')
-                query = (Wifi.querykeys(self.session_db, keys)
-                             .options(load_only(*load_fields))
-                             .filter(Wifi.lat.isnot(None))
-                             .filter(Wifi.lon.isnot(None)))
-                queried_wifis = query.all()
-            except Exception:
-                self.raven_client.captureException()
+        try:
+            load_fields = ('key', 'lat', 'lon', 'range')
+            wifi_iter = Wifi.iterkeys(
+                self.session_db,
+                [Wifi.to_hashkey(key=key) for key in wifi_keys],
+                extra=lambda query: query.options(load_only(*load_fields))
+                                         .filter(Wifi.lat.isnot(None))
+                                         .filter(Wifi.lon.isnot(None)))
 
-        return queried_wifis
+            return list(wifi_iter)
+        except Exception:
+            self.raven_client.captureException()
+            return []
 
     def _get_clusters(self, wifi_signals, queried_wifis):
         """

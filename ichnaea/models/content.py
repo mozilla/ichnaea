@@ -51,6 +51,7 @@ class MapStat(HashKeyMixin, _Model):
         Index('idx_mapstat_time', 'time'),
     )
     _hashkey_cls = MapStatHashKey
+    _query_batch = 50
     _scaling_factor = 1000
 
     # used to preserve stable insert ordering
@@ -89,6 +90,7 @@ class Score(HashKeyMixin, _Model):
         PrimaryKeyConstraint('key', 'userid', 'time'),
     )
     _hashkey_cls = ScoreHashKey
+    _query_batch = 30
 
     # this is a foreign key to user.id
     userid = Column(Integer(unsigned=True), autoincrement=False)
@@ -146,6 +148,7 @@ class Stat(HashKeyMixin, _Model):
         PrimaryKeyConstraint('key', 'time'),
     )
     _hashkey_cls = StatHashKey
+    _query_batch = 50
 
     key = Column(TinyIntEnum(StatKey), autoincrement=False)
     time = Column(Date)

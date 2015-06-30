@@ -162,6 +162,7 @@ class ValidCellAreaKeySchema(FieldSchema, CopyingSchema):
 class CellAreaKeyMixin(HashKeyMixin):
 
     _hashkey_cls = CellAreaKey
+    _query_batch = 25
 
     radio = Column(TinyIntEnum(Radio), autoincrement=False)
     mcc = Column(SmallInteger, autoincrement=False)
@@ -250,6 +251,7 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
 class CellKeyMixin(CellAreaKeyMixin):
 
     _hashkey_cls = CellKey
+    _query_batch = 20
 
     cid = Column(Integer(unsigned=True), autoincrement=False)
 

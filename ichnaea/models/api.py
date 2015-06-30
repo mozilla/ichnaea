@@ -24,6 +24,7 @@ class ApiKey(HashKeyMixin, _Model):
     __tablename__ = 'api_key'
 
     _hashkey_cls = ApiHashKey
+    _query_batch = 100
     _essential_columns = ('valid_key', 'maxreq', 'log', 'shortname')
 
     valid_key = Column(String(40), primary_key=True)
