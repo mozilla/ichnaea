@@ -23,7 +23,7 @@ Changes
 
 - Updated to latest versions of all CSS and JS dependencies.
 
-- Update to latest versions of geoip2 and SQLAlchemy.
+- Update to latest versions of geoip2, SQLAlchemy and unittest2.
 
 20150616104200
 **************
