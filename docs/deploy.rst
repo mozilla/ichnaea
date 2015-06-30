@@ -40,7 +40,8 @@ All of these are triggered by asynchronous jobs and you can disable them
 if you are not hosted in an Amazon environment.
 
 If you use Amazon S3 you might want to configure a lifecycle policy to
-delete old export files after a couple of days.
+delete old export files after a couple of days and observation data after
+one year.
 
 
 Statsd / Sentry
@@ -50,8 +51,7 @@ The application uses Statsd to aggregate stats and Sentry to log
 exception messages.
 
 The default configuration in ichnaea.ini assumes that you are running
-a Statsd instance listening for UDP messages on port 8125 and a
-Sentry instance listening for UDP messages on port 9001.
+a Statsd instance listening for UDP messages on port 8125.
 
 To get the app to log exceptions to Sentry, you will need to obtain the
 DSN for your Sentry instance. Edit ichnaea.ini and in the `ichnaea` section

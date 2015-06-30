@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #192: Suggest a observation data retention period.
+
 - Optimize mapstat and station data tasks.
 
 - Updated to latest versions of all CSS and JS dependencies.
