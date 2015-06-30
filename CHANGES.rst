@@ -19,9 +19,11 @@ Changes
 
 - Optimize mapstat and station data tasks.
 
+- Switch to using bower for CSS/JS dependency management.
+
 - Updated to latest versions of all CSS and JS dependencies.
 
-- Switch to using bower for CSS/JS dependency management.
+- Update to latest versions of geoip2 and SQLAlchemy.
 
 20150616104200
 **************
