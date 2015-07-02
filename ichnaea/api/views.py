@@ -1,9 +1,11 @@
+import zlib
+import colander
 from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden
 
-from ichnaea.customjson import dumps
+import simplejson as json
 from ichnaea.models.api import ApiKey
 from ichnaea.rate_limit import rate_limit
-from ichnaea.api.error import DAILY_LIMIT
+from ichnaea.api.error import DAILY_LIMIT, MSG_EMPTY, MSG_GZIP
 from ichnaea import util
 from ichnaea.webapp.view import BaseView
 
@@ -18,7 +20,7 @@ INVALID_API_KEY = {
         'message': 'Invalid API key',
     }
 }
-INVALID_API_KEY = dumps(INVALID_API_KEY)
+INVALID_API_KEY = json.dumps(INVALID_API_KEY)
 
 
 class BaseAPIView(BaseView):
@@ -89,6 +91,39 @@ class BaseAPIView(BaseView):
         # rather than passing None through
         api_key = api_key or ApiKey(valid_key=None)
         return self.view(api_key)
+
+    def preprocess_request(self):
+        errors = []
+
+        request_content = self.request.body
+        if self.request.headers.get('Content-Encoding') == 'gzip':
+            # handle gzip self.request bodies
+            try:
+                request_content = util.decode_gzip(self.request.body)
+            except zlib.error:  # pragma: no cover
+                errors.append({'name': None, 'description': MSG_GZIP})
+
+        if not request_content:
+            errors.append({'name': None, 'description': MSG_EMPTY})
+
+        request_data = {}
+        try:
+            request_data = json.loads(
+                request_content, encoding=self.request.charset)
+        except ValueError as e:
+            errors.append({'name': None, 'description': e.message})
+
+        validated_data = {}
+        try:
+            validated_data = self.schema().deserialize(request_data)
+        except colander.Invalid as e:
+            errors.append({'name': None, 'description': e.asdict()})
+
+        if request_content and errors and self.error_response is not None:
+            # the self.error_response / None check is used in self.schema tests
+            raise self.error_response(errors)
+
+        return (validated_data, errors)
 
     def __call__(self):
         if self.check_api_key:

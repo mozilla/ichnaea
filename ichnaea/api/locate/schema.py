@@ -1,5 +1,6 @@
 import colander
 
+from ichnaea.api.schema import InternalMapping
 from ichnaea.models.base import ValidationMixin
 from ichnaea.models.cell import (
     CellAreaKey,
@@ -56,3 +57,20 @@ class ValidWifiLookupSchema(ValidWifiKeySchema, ValidWifiSignalSchema):
 class WifiLookup(WifiKeyMixin, WifiSignalMixin, ValidationMixin):
 
     _valid_schema = ValidWifiLookupSchema
+
+
+class BaseLocateSchema(colander.MappingSchema):
+    schema_type = InternalMapping
+
+    def deserialize(self, data):
+        data = super(BaseLocateSchema, self).deserialize(data)
+
+        if 'radio' in data:
+            radio = data.get('radio', None)
+            for cell in data.get('cell', ()):
+                if 'radio' not in cell:
+                    cell['radio'] = radio
+
+            del data['radio']
+
+        return data

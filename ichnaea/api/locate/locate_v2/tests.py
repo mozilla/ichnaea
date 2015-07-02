@@ -6,13 +6,26 @@ from ichnaea.models import (
     ApiKey,
     Radio,
 )
-from ichnaea.tests.base import AppTestCase
+from ichnaea.api.locate.locate_v2.schema import LocateV2Schema
+from ichnaea.tests.base import AppTestCase, TestCase
 from ichnaea.tests.factories import (
     CellFactory,
     CellAreaFactory,
     WifiFactory,
 )
 from ichnaea import util
+
+
+class TestLocateV2Schema(TestCase):
+
+    def test_multiple_radio_fields_uses_radioType(self):
+        schema = LocateV2Schema()
+        data = schema.deserialize({'cellTowers': [{
+            'radio': 'gsm',
+            'radioType': 'cdma',
+        }]})
+        self.assertEqual(data['cell'][0]['radio'], 'cdma')
+        self.assertFalse('radioType' in data['cell'][0])
 
 
 class TestLocateV2(AppTestCase):
@@ -150,9 +163,8 @@ class TestLocateV2(AppTestCase):
         )
 
     def test_ok_partial_cell(self):
-        session = self.session
         cell = CellFactory()
-        session.flush()
+        self.session.flush()
 
         res = self.app.post_json(
             '%s?key=test' % self.url, {
@@ -529,11 +541,8 @@ class TestLocateV2Errors(AppTestCase):
 
     def test_database_error(self):
         london = self.geoip_data['London']
-        session = self.session
-        stmt = text('drop table wifi;')
-        session.execute(stmt)
-        stmt = text('drop table cell;')
-        session.execute(stmt)
+        self.session.execute(text('drop table wifi;'))
+        self.session.execute(text('drop table cell;'))
         cell = CellFactory.build()
         wifis = WifiFactory.build_batch(2)
 

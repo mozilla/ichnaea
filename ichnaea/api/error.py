@@ -1,17 +1,13 @@
-import zlib
-
-import colander
-from simplejson import dumps, loads
 from pyramid.httpexceptions import HTTPError
 from pyramid.response import Response
 
+import simplejson as json
 from ichnaea.exceptions import BaseJSONError
-from ichnaea import util
 
 MSG_EMPTY = 'No JSON body was provided.'
 MSG_GZIP = 'Error decompressing gzip data stream.'
 
-DAILY_LIMIT = dumps({
+DAILY_LIMIT = json.dumps({
     'error': {
         'errors': [{
             'domain': 'usageLimits',
@@ -27,7 +23,7 @@ DAILY_LIMIT = dumps({
 class JSONError(HTTPError, BaseJSONError):
     def __init__(self, errors, status=400):
         body = {'errors': errors}
-        Response.__init__(self, dumps(body))
+        Response.__init__(self, json.dumps(body))
         self.status = status
         self.content_type = 'application/json'
 
@@ -43,7 +39,7 @@ PARSE_ERROR = {'error': {
     'message': 'Parse Error',
 }}
 
-PARSE_ERROR = dumps(PARSE_ERROR)
+PARSE_ERROR = json.dumps(PARSE_ERROR)
 
 
 class JSONParseError(HTTPError, BaseJSONError):
@@ -51,69 +47,3 @@ class JSONParseError(HTTPError, BaseJSONError):
         Response.__init__(self, PARSE_ERROR)
         self.status = status
         self.content_type = 'application/json'
-
-
-def preprocess_request(request, schema, response, accept_empty=False):
-    body = {}
-    errors = []
-    validated = {}
-
-    body = request.body
-    if body:
-        if request.headers.get('Content-Encoding') == 'gzip':
-            # handle gzip request bodies
-            try:
-                body = util.decode_gzip(body)
-            except zlib.error:  # pragma: no cover
-                errors.append(dict(name=None, description=MSG_GZIP))
-
-        if not errors:
-            try:
-                body = loads(body, encoding=request.charset)
-            except ValueError as e:
-                errors.append(dict(name=None, description=e.message))
-    else:  # pragma: no cover
-        errors.append(dict(name=None, description=MSG_EMPTY))
-
-    if accept_empty and not body:
-        return ({}, errors)
-
-    if not body or (errors and response is not None):
-        if response is not None:
-            raise response(errors)
-
-    # schema validation, but report at most one error at a time
-    verify_schema(schema, body, errors, validated)
-
-    if errors and response is not None:
-        # the response / None check is used in schema tests
-        raise response(errors)
-
-    return (validated, errors)
-
-
-def verify_schema(schema, body, errors, validated):
-    schema = schema.bind(request=body)
-    for attr in schema.children:
-        name = attr.name
-        try:
-            if name not in body:
-                deserialized = attr.deserialize()
-            else:
-                deserialized = attr.deserialize(body[name])
-        except colander.Invalid as e:
-            # the struct is invalid
-            err_dict = e.asdict()
-            try:
-                errors.append(dict(name=name, description=err_dict[name]))
-                break
-            except KeyError:
-                for k, v in err_dict.items():
-                    if k.startswith(name):
-                        errors.append(dict(name=k, description=v))
-                        break
-                break
-        else:
-            if (deserialized is not colander.drop and
-                    deserialized is not colander.null):
-                validated[name] = deserialized

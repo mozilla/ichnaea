@@ -1,9 +1,10 @@
+import colander
 import requests_mock
-from pyramid.testing import DummyRequest
+import simplejson as json
 from sqlalchemy import text
 
+from ichnaea.api.locate.locate_v1.schema import LocateV1Schema
 from ichnaea.constants import CELL_MIN_ACCURACY, LAC_MIN_ACCURACY
-from ichnaea.customjson import dumps, loads
 from ichnaea.models import (
     ApiKey,
     Cell,
@@ -11,7 +12,6 @@ from ichnaea.models import (
     Radio,
     Wifi,
 )
-from ichnaea.api.error import preprocess_request
 from ichnaea.api.views import INVALID_API_KEY
 from ichnaea.tests.base import (
     AppTestCase,
@@ -25,42 +25,26 @@ from ichnaea import util
 
 class TestLocateV1Schema(TestCase):
 
-    def _make_schema(self):
-        from ichnaea.api.locate.locate_v1.schema import LocateV1Schema
-        return LocateV1Schema()
-
-    def _make_request(self, body):
-        request = DummyRequest()
-        request.body = body
-        return request
-
     def test_empty(self):
-        schema = self._make_schema()
-        request = self._make_request('{}')
-        data, errors = preprocess_request(request, schema, None)
-        self.assertEqual(errors, [])
-        self.assertEqual(
-            data, {'cell': (), 'wifi': (), 'radio': None, 'fallbacks': None})
+        schema = LocateV1Schema()
+        data = schema.deserialize({})
+        self.assertEqual(data, {})
 
     def test_empty_cell_entry(self):
-        schema = self._make_schema()
-        request = self._make_request('{"cell": [{}]}')
-        data, errors = preprocess_request(request, schema, None)
+        schema = LocateV1Schema()
+        data = schema.deserialize({'cell': [{}]})
         self.assertTrue('cell' in data)
 
     def test_wrong_cell_data(self):
-        schema = self._make_schema()
-        request = self._make_request(
-            '{"cell": [{"mcc": "a", "mnc": 2, "lac": 3, "cid": 4}]}')
-        data, errors = preprocess_request(request, schema, None)
-        self.assertTrue(errors)
+        schema = LocateV1Schema()
+        with self.assertRaises(colander.Invalid):
+            schema.deserialize(
+                {'cell': [{'mcc': 'a', 'mnc': 2, 'lac': 3, 'cid': 4}]})
 
 
 class TestLocateV1(AppTestCase):
 
     def test_ok_cell(self):
-        app = self.app
-        session = self.session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         lat = PARIS_LAT
         lon = PARIS_LON
@@ -70,10 +54,10 @@ class TestLocateV1(AppTestCase):
             Cell(lat=lat + 0.002, lon=lon + 0.004, range=1000,
                  radio=Radio.umts, cid=5, **key),
         ]
-        session.add_all(data)
-        session.commit()
+        self.session.add_all(data)
+        self.session.commit()
 
-        res = app.post_json(
+        res = self.app.post_json(
             '/v1/search?key=test',
             {'radio': Radio.gsm.name, 'cell': [
                 dict(radio=Radio.umts.name, cid=4, **key),
@@ -96,8 +80,6 @@ class TestLocateV1(AppTestCase):
         )
 
     def test_ok_cellarea_when_fallback_not_set(self):
-        app = self.app
-        session = self.session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         lat = PARIS_LAT
         lon = PARIS_LON
@@ -105,10 +87,10 @@ class TestLocateV1(AppTestCase):
             CellArea(lat=lat, lon=lon, range=1000,
                      radio=Radio.umts, **key),
         ]
-        session.add_all(data)
-        session.commit()
+        self.session.add_all(data)
+        self.session.commit()
 
-        res = app.post_json(
+        res = self.app.post_json(
             '/v1/search?key=test',
             {
                 'radio': Radio.gsm.name,
@@ -135,8 +117,6 @@ class TestLocateV1(AppTestCase):
         )
 
     def test_ok_cellarea_when_fallback_set(self):
-        app = self.app
-        session = self.session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         lat = PARIS_LAT
         lon = PARIS_LON
@@ -144,10 +124,10 @@ class TestLocateV1(AppTestCase):
             CellArea(lat=lat, lon=lon, range=1000,
                      radio=Radio.umts, **key),
         ]
-        session.add_all(data)
-        session.commit()
+        self.session.add_all(data)
+        self.session.commit()
 
-        res = app.post_json(
+        res = self.app.post_json(
             '/v1/search?key=test',
             {
                 'radio': Radio.gsm.name,
@@ -177,8 +157,6 @@ class TestLocateV1(AppTestCase):
         )
 
     def test_ok_cellarea_when_different_fallback_set(self):
-        app = self.app
-        session = self.session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         lat = PARIS_LAT
         lon = PARIS_LON
@@ -186,10 +164,10 @@ class TestLocateV1(AppTestCase):
             CellArea(lat=lat, lon=lon, range=1000,
                      radio=Radio.umts, **key),
         ]
-        session.add_all(data)
-        session.commit()
+        self.session.add_all(data)
+        self.session.commit()
 
-        res = app.post_json(
+        res = self.app.post_json(
             '/v1/search?key=test',
             {
                 'radio': Radio.gsm.name,
@@ -219,8 +197,6 @@ class TestLocateV1(AppTestCase):
         )
 
     def test_cellarea_not_used_when_lacf_disabled(self):
-        app = self.app
-        session = self.session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3)
         lat = PARIS_LAT
         lon = PARIS_LON
@@ -228,10 +204,10 @@ class TestLocateV1(AppTestCase):
             CellArea(lat=lat, lon=lon, range=1000,
                      radio=Radio.umts, **key),
         ]
-        session.add_all(data)
-        session.commit()
+        self.session.add_all(data)
+        self.session.commit()
 
-        res = app.post_json(
+        res = self.app.post_json(
             '/v1/search?key=test',
             {
                 'radio': Radio.gsm.name, 'cell': [
@@ -254,22 +230,20 @@ class TestLocateV1(AppTestCase):
         )
 
     def test_ok_wifi(self):
-        app = self.app
-        session = self.session
         wifis = [
             Wifi(key='101010101010', lat=1.0, lon=1.0),
             Wifi(key='202020202020', lat=1.002, lon=1.004),
             Wifi(key='303030303030', lat=None, lon=None),
         ]
-        session.add_all(wifis)
-        session.commit()
-        res = app.post_json('/v1/search?key=test',
-                            {'wifi': [
-                                {'key': '101010101010'},
-                                {'key': '202020202020'},
-                                {'key': '303030303030'},
-                            ]},
-                            status=200)
+        self.session.add_all(wifis)
+        self.session.commit()
+        res = self.app.post_json('/v1/search?key=test',
+                                 {'wifi': [
+                                     {'key': '101010101010'},
+                                     {'key': '202020202020'},
+                                     {'key': '303030303030'},
+                                 ]},
+                                 status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {'status': 'ok',
                                     'lat': 1.001, 'lon': 1.002,
@@ -423,11 +397,10 @@ class TestLocateV1(AppTestCase):
         )
 
     def test_not_found(self):
-        app = self.app
-        res = app.post_json('/v1/search?key=test',
-                            {'cell': [{'mcc': FRANCE_MCC, 'mnc': 2,
-                                       'lac': 3, 'cid': 4}]},
-                            status=200)
+        res = self.app.post_json('/v1/search?key=test',
+                                 {'cell': [{'mcc': FRANCE_MCC, 'mnc': 2,
+                                            'lac': 3, 'cid': 4}]},
+                                 status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {'status': 'not_found'})
 
@@ -435,11 +408,10 @@ class TestLocateV1(AppTestCase):
                                   'search.miss'])
 
     def test_wifi_not_found(self):
-        app = self.app
-        res = app.post_json('/v1/search?key=test', {'wifi': [
-                            {'key': '101010101010'},
-                            {'key': '202020202020'}]},
-                            status=200)
+        res = self.app.post_json('/v1/search?key=test', {'wifi': [
+                                 {'key': '101010101010'},
+                                 {'key': '202020202020'}]},
+                                 status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {'status': 'not_found'})
 
@@ -448,9 +420,8 @@ class TestLocateV1(AppTestCase):
                                   'search.api_log.test.wifi_miss'])
 
     def test_empty_request_means_geoip(self):
-        app = self.app
         london = self.geoip_data['London']
-        res = app.post_json(
+        res = self.app.post_json(
             '/v1/search?key=test', {},
             extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
             status=200)
@@ -471,89 +442,81 @@ class TestLocateV1(AppTestCase):
         )
 
     def test_error(self):
-        app = self.app
-        res = app.post_json('/v1/search?key=test', {'cell': 1}, status=400)
+        res = self.app.post_json(
+            '/v1/search?key=test', {'cell': 1}, status=400)
         self.assertEqual(res.content_type, 'application/json')
         self.assertTrue('errors' in res.json)
         self.assertFalse('status' in res.json)
 
     def test_error_unknown_key(self):
-        app = self.app
-        res = app.post_json('/v1/search?key=test', {'foo': 0}, status=200)
+        res = self.app.post_json('/v1/search?key=test', {'foo': 0}, status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {'status': 'not_found'})
 
     def test_error_no_mapping(self):
-        app = self.app
-        res = app.post_json('/v1/search?key=test', [1], status=200)
+        res = self.app.post_json('/v1/search?key=test', [1], status=400)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {'status': 'not_found'})
+        self.assertTrue('errors' in res.json)
+        self.assertFalse('status' in res.json)
 
     def test_no_valid_keys(self):
-        app = self.app
-        res = app.post_json('/v1/search?key=test', {'wifi': [
-                            {'key': ':'}, {'key': '.-'}]},
-                            status=200)
+        res = self.app.post_json('/v1/search?key=test', {'wifi': [
+                                 {'key': ':'}, {'key': '.-'}]},
+                                 status=200)
         self.assertEqual(res.json, {'status': 'not_found'})
 
     def test_no_json(self):
-        app = self.app
-        res = app.post('/v1/search?key=test', '\xae', status=400)
+        res = self.app.post('/v1/search?key=test', '\xae', status=400)
         self.assertTrue('errors' in res.json)
         self.check_stats(counter=['search.api_key.test'])
 
     def test_gzip(self):
-        app = self.app
         data = {'cell': [{'mcc': FRANCE_MCC, 'mnc': 2, 'lac': 3, 'cid': 4}]}
-        body = util.encode_gzip(dumps(data))
+        body = util.encode_gzip(json.dumps(data))
         headers = {
             'Content-Encoding': 'gzip',
         }
-        res = app.post('/v1/search?key=test', body, headers=headers,
-                       content_type='application/json', status=200)
+        res = self.app.post('/v1/search?key=test', body, headers=headers,
+                            content_type='application/json', status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {'status': 'not_found'})
 
     def test_no_api_key(self):
-        app = self.app
-        session = self.session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4)
-        session.add(Cell(
+        self.session.add(Cell(
             lat=PARIS_LAT,
             lon=PARIS_LON,
             range=1000,
             radio=Radio.umts, **key)
         )
-        session.commit()
+        self.session.commit()
 
-        res = app.post_json(
+        res = self.app.post_json(
             '/v1/search',
             {'radio': Radio.gsm.name, 'cell': [
                 dict(radio=Radio.umts.name, **key),
             ]},
             status=400)
-        self.assertEqual(res.json, loads(INVALID_API_KEY))
+        self.assertEqual(res.json, json.loads(INVALID_API_KEY))
         self.check_stats(counter=['search.no_api_key'])
 
     def test_unknown_api_key(self):
-        app = self.app
-        session = self.session
         key = dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=4)
-        session.add(Cell(
+        self.session.add(Cell(
             lat=PARIS_LAT,
             lon=PARIS_LON,
             range=1000,
             radio=Radio.umts, **key)
         )
-        session.commit()
+        self.session.commit()
 
-        res = app.post_json(
+        res = self.app.post_json(
             '/v1/search?key=unknown_key',
             {'radio': Radio.gsm.name, 'cell': [
                 dict(radio=Radio.umts.name, **key),
             ]},
             status=400)
-        self.assertEqual(res.json, loads(INVALID_API_KEY))
+        self.assertEqual(res.json, json.loads(INVALID_API_KEY))
         self.check_stats(counter=['search.unknown_api_key'])
 
 
@@ -565,13 +528,11 @@ class TestLocateV1Errors(AppTestCase):
         super(TestLocateV1Errors, self).tearDown()
 
     def test_database_error(self):
-        app = self.app
         london = self.geoip_data['London']
-        session = self.session
         stmt = text('drop table wifi;')
-        session.execute(stmt)
+        self.session.execute(stmt)
 
-        res = app.post_json(
+        res = self.app.post_json(
             '/v1/search?key=test',
             {'wifi': [
                 {'key': '101010101010'},

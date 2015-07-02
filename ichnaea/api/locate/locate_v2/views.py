@@ -1,3 +1,4 @@
+from ichnaea.api.locate.locate_v2.schema import LocateV2Schema
 from ichnaea.api.locate.views import BaseLocateView
 
 
@@ -5,16 +6,13 @@ class LocateV2View(BaseLocateView):
 
     route = '/v1/geolocate'
     view_name = 'geolocate'
+    schema = LocateV2Schema
 
-    def view(self, api_key):
-        result = self.locate(api_key)
-        if not result:
-            return self.not_found()
-
+    def prepare_location_data(self, location_data):
         return {
             'location': {
-                'lat': result['lat'],
-                'lng': result['lon'],
+                'lat': location_data['lat'],
+                'lng': location_data['lon'],
             },
-            'accuracy': float(result['accuracy']),
+            'accuracy': float(location_data['accuracy']),
         }
