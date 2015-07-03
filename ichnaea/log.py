@@ -12,6 +12,13 @@ from statsd.client import StatsClient
 
 from ichnaea.exceptions import BaseJSONError
 
+# TODO fix for getsentry/raven-python#608
+from raven.conf import defaults
+from raven.transport import registry
+from raven.transport.gevent import GeventedHTTPTransport, Semaphore
+from raven.transport.http import HTTPTransport
+
+
 RAVEN_CLIENT = None
 STATS_CLIENT = None
 
@@ -75,24 +82,11 @@ def configure_logging():
 
 def log_tween_factory(handler, registry):
 
-    SKIP_LOGGING_URLS = [
-        # none yet
-    ]
-
-    VALID_4xx_URLS = [
-        '/v1/country',
-        '/v1/submit',
-        '/v1/search',
-        '/v1/geolocate',
-        '/v1/geosubmit',
-    ]
-
     def log_tween(request):
         raven_client = registry.raven_client
         stats_client = registry.stats_client
         start = time.time()
         request_path = request.path
-        skip_log = request_path in SKIP_LOGGING_URLS
 
         def timer_send():
             duration = int(round((time.time() - start) * 1000))
@@ -108,10 +102,10 @@ def log_tween_factory(handler, registry):
         except HTTPNotFound:
             # ignore 404's raised as exceptions
             raise
-        except BaseJSONError:
-            # don't capture client JSON exceptions
+        except BaseJSONError as exc:
+            # don't capture client side errors
             timer_send()
-            counter_send(400)
+            counter_send(exc.status_code)
             raise
         except Exception as exc:  # pragma: no cover
             timer_send()
@@ -120,19 +114,15 @@ def log_tween_factory(handler, registry):
             else:
                 status = 500
             counter_send(status)
-            if not skip_log:
-                raven_client.captureException()
+            raven_client.captureException()
             raise
         else:
-            if not skip_log:
-                timer_send()
+            timer_send()
 
-        if not skip_log:
-            # deal with non-exception 4xx responses
-            resp_prefix = str(response.status_code)[0]
-            if (resp_prefix == '4' and request_path in VALID_4xx_URLS) or \
-               (resp_prefix != '4'):
-                counter_send(response.status_code)
+        # deal with non-exception 4xx responses
+        resp_prefix = str(response.status_code)[0]
+        if (resp_prefix != '4'):
+            counter_send(response.status_code)
 
         return response
 
@@ -191,12 +181,6 @@ class DebugStatsClient(PingableStatsClient):
 
 
 # TODO Fix for https://github.com/getsentry/raven-python/issues/608
-
-from raven.conf import defaults
-from raven.transport import registry
-from raven.transport.gevent import GeventedHTTPTransport, Semaphore
-from raven.transport.http import HTTPTransport
-
 
 class FixedGeventedHTTPTransport(GeventedHTTPTransport):
 

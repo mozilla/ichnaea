@@ -1,5 +1,9 @@
 from sqlalchemy import text
 
+from ichnaea.api.exceptions import (
+    InvalidAPIKey,
+    LocationNotFound,
+)
 from ichnaea.tests.base import AppTestCase
 
 
@@ -36,11 +40,9 @@ class CountryBase(object):
                              {'country_name': 'United Kingdom',
                               'country_code': 'GB'})
         elif status == 400:
-            self.assertEqual(result.json['error']['message'],
-                             'Invalid API key')
+            self.assertEqual(result.json, InvalidAPIKey.json_body())
         elif status == 404:
-            self.assertEqual(result.json['error']['message'],
-                             'Not found')
+            self.assertEqual(result.json, LocationNotFound.json_body())
 
 
 class TestCountry(AppTestCase, CountryBase):

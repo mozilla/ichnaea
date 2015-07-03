@@ -6,6 +6,12 @@ from ichnaea.models import (
     ApiKey,
     Radio,
 )
+from ichnaea.api.exceptions import (
+    DailyLimitExceeded,
+    InvalidAPIKey,
+    LocationNotFound,
+    ParseError,
+)
 from ichnaea.api.locate.locate_v2.schema import LocateV2Schema
 from ichnaea.tests.base import AppTestCase, TestCase
 from ichnaea.tests.factories import (
@@ -150,17 +156,7 @@ class TestLocateV2(AppTestCase):
         )
 
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(
-            res.json, {'error': {
-                'errors': [{
-                    'domain': 'geolocation',
-                    'reason': 'notFound',
-                    'message': 'Not found',
-                }],
-                'code': 404,
-                'message': 'Not found'
-            }}
-        )
+        self.assertEqual(res.json, LocationNotFound.json_body())
 
     def test_ok_partial_cell(self):
         cell = CellFactory()
@@ -224,23 +220,13 @@ class TestLocateV2(AppTestCase):
                 ]},
             status=404)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(
-            res.json, {'error': {
-                'errors': [{
-                    'domain': 'geolocation',
-                    'reason': 'notFound',
-                    'message': 'Not found',
-                }],
-                'code': 404,
-                'message': 'Not found'
-            }}
-        )
+        self.assertEqual(res.json, LocationNotFound.json_body())
 
         # Make sure to get two counters, a timer, and no traceback
         self.check_stats(
             counter=[self.metric + '.api_key.test',
                      self.metric + '.api_log.test.wifi_miss',
-                     self.metric_url + '.404'],
+                     (self.metric_url + '.404', 1)],
             timer=[self.metric_url])
 
     def test_cell_mcc_mnc_strings(self):
@@ -311,17 +297,7 @@ class TestLocateV2(AppTestCase):
     def test_parse_error(self):
         res = self.app.post('%s?key=test' % self.url, '\xae', status=400)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(
-            res.json, {'error': {
-                'errors': [{
-                    'domain': 'global',
-                    'reason': 'parseError',
-                    'message': 'Parse Error',
-                }],
-                'code': 400,
-                'message': 'Parse Error'
-            }})
-
+        self.assertEqual(res.json, ParseError.json_body())
         self.check_stats(counter=[self.metric + '.api_key.test'])
 
     def test_no_api_key(self):
@@ -340,7 +316,7 @@ class TestLocateV2(AppTestCase):
             },
             status=400)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(u'Invalid API key', res.json['error']['message'])
+        self.assertEqual(res.json, InvalidAPIKey.json_body())
 
         self.check_stats(
             counter=[self.metric + '.no_api_key'])
@@ -361,7 +337,7 @@ class TestLocateV2(AppTestCase):
             },
             status=400)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(u'Invalid API key', res.json['error']['message'])
+        self.assertEqual(res.json, InvalidAPIKey.json_body())
 
         self.check_stats(
             counter=[self.metric + '.unknown_api_key'])
@@ -381,9 +357,8 @@ class TestLocateV2(AppTestCase):
             '%s?key=%s' % (self.url, api_key), {},
             extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
             status=403)
-
-        errors = res.json['error']['errors']
-        self.assertEqual(errors[0]['reason'], 'dailyLimitExceeded')
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, DailyLimitExceeded.json_body())
 
     def test_lte_radio(self):
         cell = CellFactory(radio=Radio.lte)

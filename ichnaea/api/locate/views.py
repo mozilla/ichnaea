@@ -1,37 +1,20 @@
-from pyramid.httpexceptions import HTTPNotFound
-from simplejson import dumps
-
-from ichnaea.api.locate.searcher import PositionSearcher
-from ichnaea.api.error import (
-    JSONParseError,
+from ichnaea.api.exceptions import (
+    LocationNotFound,
+    ParseError,
 )
+from ichnaea.api.locate.searcher import PositionSearcher
 from ichnaea.api.views import BaseAPIView
-
-NOT_FOUND = {
-    'error': {
-        'errors': [{
-            'domain': 'geolocation',
-            'reason': 'notFound',
-            'message': 'Not found',
-        }],
-        'code': 404,
-        'message': 'Not found',
-    }
-}
-NOT_FOUND = dumps(NOT_FOUND)
 
 
 class BaseLocateView(BaseAPIView):
 
-    error_response = JSONParseError
+    error_response = ParseError
     searcher = PositionSearcher
     schema = None
 
     def not_found(self):
-        result = HTTPNotFound()
-        result.content_type = 'application/json'
-        result.body = NOT_FOUND
-        return result
+        # hook used for v1 API's to return a 200 OK response
+        raise LocationNotFound()
 
     def prepare_query(self, request_data):
         return {

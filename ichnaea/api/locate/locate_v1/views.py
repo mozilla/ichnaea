@@ -1,4 +1,4 @@
-from ichnaea.api.error import JSONError
+from ichnaea.api.exceptions import JSONError
 from ichnaea.api.locate.locate_v1.schema import LocateV1Schema
 from ichnaea.api.locate.views import BaseLocateView
 

@@ -5,16 +5,14 @@ from pyramid.httpexceptions import (
 from redis import ConnectionError
 
 from ichnaea.data.tasks import queue_reports
-from ichnaea.api.error import (
-    JSONParseError,
-)
+from ichnaea.api.exceptions import ParseError
 from ichnaea.api.views import BaseAPIView
 
 
 class BaseSubmitView(BaseAPIView):
 
     error_on_invalidkey = False
-    error_response = JSONParseError
+    error_response = ParseError
     transform = None
     schema = None
     view_name = None

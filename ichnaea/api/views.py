@@ -1,26 +1,17 @@
 import zlib
-import colander
-from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden
 
+import colander
 import simplejson as json
+
+from ichnaea.api.exceptions import (
+    DailyLimitExceeded,
+    InvalidAPIKey,
+    MSG_GZIP,
+)
 from ichnaea.models.api import ApiKey
 from ichnaea.rate_limit import rate_limit
-from ichnaea.api.error import DAILY_LIMIT, MSG_EMPTY, MSG_GZIP
 from ichnaea import util
 from ichnaea.webapp.view import BaseView
-
-INVALID_API_KEY = {
-    'error': {
-        'errors': [{
-            'domain': 'usageLimits',
-            'reason': 'keyInvalid',
-            'message': 'Missing or invalid API key.',
-        }],
-        'code': 400,
-        'message': 'Invalid API key',
-    }
-}
-INVALID_API_KEY = json.dumps(INVALID_API_KEY)
 
 
 class BaseAPIView(BaseView):
@@ -37,18 +28,6 @@ class BaseAPIView(BaseView):
     def log_count(self, msg, **kw):
         self.stats_client.incr(msg.format(view_name=self.view_name, **kw))
 
-    def forbidden(self):
-        response = HTTPForbidden()
-        response.content_type = 'application/json'
-        response.body = DAILY_LIMIT
-        return response
-
-    def invalid_api_key(self):
-        response = HTTPBadRequest()
-        response.content_type = 'application/json'
-        response.body = INVALID_API_KEY
-        return response
-
     def check(self):
         api_key = None
         api_key_text = self.request.GET.get('key', None)
@@ -56,7 +35,7 @@ class BaseAPIView(BaseView):
         if api_key_text is None:
             self.log_count('{view_name}.no_api_key')
             if self.error_on_invalidkey:
-                return self.invalid_api_key()
+                raise InvalidAPIKey()
         try:
             api_key = ApiKey.getkey(self.request.db_ro_session,
                                     api_key_text)
@@ -80,12 +59,12 @@ class BaseAPIView(BaseView):
             )
 
             if should_limit:
-                return self.forbidden()
+                raise DailyLimitExceeded()
         else:
             if api_key_text is not None:
                 self.log_count('{view_name}.unknown_api_key')
             if self.error_on_invalidkey:
-                return self.invalid_api_key()
+                raise InvalidAPIKey()
 
         # If we failed to look up an ApiKey, create an empty one
         # rather than passing None through
@@ -103,9 +82,6 @@ class BaseAPIView(BaseView):
             except zlib.error:  # pragma: no cover
                 errors.append({'name': None, 'description': MSG_GZIP})
 
-        if not request_content:
-            errors.append({'name': None, 'description': MSG_EMPTY})
-
         request_data = {}
         try:
             request_data = json.loads(
@@ -119,8 +95,7 @@ class BaseAPIView(BaseView):
         except colander.Invalid as e:
             errors.append({'name': None, 'description': e.asdict()})
 
-        if request_content and errors and self.error_response is not None:
-            # the self.error_response / None check is used in self.schema tests
+        if request_content and errors:
             raise self.error_response(errors)
 
         return (validated_data, errors)

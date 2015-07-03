@@ -12,7 +12,7 @@ from ichnaea.models import (
     Radio,
     Wifi,
 )
-from ichnaea.api.views import INVALID_API_KEY
+from ichnaea.api.exceptions import InvalidAPIKey
 from ichnaea.tests.base import (
     AppTestCase,
     FRANCE_MCC,
@@ -404,8 +404,11 @@ class TestLocateV1(AppTestCase):
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, {'status': 'not_found'})
 
-        self.check_stats(counter=['search.api_key.test',
-                                  'search.miss'])
+        self.check_stats(
+            counter=[('request.v1.search.200', 1),
+                     'search.api_key.test',
+                     'search.miss'],
+        )
 
     def test_wifi_not_found(self):
         res = self.app.post_json('/v1/search?key=test', {'wifi': [
@@ -497,7 +500,8 @@ class TestLocateV1(AppTestCase):
                 dict(radio=Radio.umts.name, **key),
             ]},
             status=400)
-        self.assertEqual(res.json, json.loads(INVALID_API_KEY))
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, InvalidAPIKey.json_body())
         self.check_stats(counter=['search.no_api_key'])
 
     def test_unknown_api_key(self):
@@ -516,7 +520,8 @@ class TestLocateV1(AppTestCase):
                 dict(radio=Radio.umts.name, **key),
             ]},
             status=400)
-        self.assertEqual(res.json, json.loads(INVALID_API_KEY))
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json, InvalidAPIKey.json_body())
         self.check_stats(counter=['search.unknown_api_key'])
 
 

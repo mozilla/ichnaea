@@ -11,6 +11,7 @@ from ichnaea.constants import (
     LAC_MIN_ACCURACY,
     WIFI_MIN_ACCURACY,
 )
+from ichnaea.api.exceptions import LocationNotFound
 from ichnaea.api.locate.location import (
     EmptyLocation,
     Country,
@@ -689,22 +690,10 @@ class TestFallbackProvider(ProviderTest):
         self.check_stats(counter=['m.fallback.lookup_status.403'])
 
     def test_404_response_returns_empty_location(self):
-        response_json = {
-            'error': {
-                'errors': {
-                    'domain': 'geolocation',
-                    'reason': 'notFound',
-                    'message': 'Not Found',
-                },
-                'code': 404,
-                'message': 'Not Found'
-            }
-        }
-
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY,
-                json=response_json,
+                json=LocationNotFound.json_body(),
                 status_code=404)
 
             location = self.provider.locate({
@@ -935,22 +924,10 @@ class TestFallbackProvider(ProviderTest):
 
     def test_empty_result_from_fallback_cached(self):
         with requests_mock.Mocker() as mock_request:
-            error_response = {
-                'error': {
-                    'code': 404,
-                    'errors': {
-                        'domain': '',
-                        'message': '',
-                        'reason': '',
-                    },
-                    'message': '',
-                }
-            }
-
             mock_request.register_uri(
                 'POST',
                 requests_mock.ANY,
-                json=error_response,
+                json=LocationNotFound.json_body(),
                 status_code=404
             )
 
