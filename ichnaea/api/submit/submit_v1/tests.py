@@ -1,15 +1,16 @@
 from datetime import datetime
 
-from pyramid.testing import DummyRequest
 import colander
+from pyramid.testing import DummyRequest
 import pytz
 
-from ichnaea.models import Radio
+from ichnaea.api.exceptions import ParseError
 from ichnaea.api.submit.submit_v1.schema import (
     ReportV1Schema,
     SubmitV1Schema,
 )
 from ichnaea.api.submit.tests.base import BaseSubmitTest
+from ichnaea.models import Radio
 from ichnaea.tests.base import (
     CeleryAppTestCase,
     TestCase,
@@ -164,15 +165,13 @@ class TestSubmitV1(BaseSubmitTest, CeleryAppTestCase):
             [{'lat': wifi.lat, 'lon': wifi.lon, 'cell': []}],
             status=400)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertTrue('errors' in res.json)
-        self.assertFalse('status' in res.json)
-        self.check_raven(['JSONError'])
+        self.assertEqual(res.json, ParseError.json_body())
+        self.check_raven(['ParseError'])
 
     def test_error_completely_empty(self):
         res = self.app.post_json(self.url, [], status=400)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertTrue('errors' in res.json)
-        self.assertTrue(len(res.json['errors']) == 1)
+        self.assertEqual(res.json, ParseError.json_body())
 
     def test_error_missing_latlon(self):
         wifi = WifiFactory.build()
@@ -189,8 +188,8 @@ class TestSubmitV1(BaseSubmitTest, CeleryAppTestCase):
 
     def test_error_no_json(self):
         res = self.app.post('/v1/submit', '\xae', status=400)
-        self.assertTrue('errors' in res.json)
+        self.assertEqual(res.json, ParseError.json_body())
 
     def test_error_no_mapping(self):
         res = self.app.post_json('/v1/submit', [1], status=400)
-        self.assertTrue('errors' in res.json)
+        self.assertEqual(res.json, ParseError.json_body())

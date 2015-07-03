@@ -1,6 +1,5 @@
 from pyramid.httpexceptions import HTTPNoContent
 
-from ichnaea.api.exceptions import JSONError
 from ichnaea.api.submit.submit_v1.schema import SubmitV1Schema
 from ichnaea.api.submit.views import BaseSubmitView
 from ichnaea.models.transform import ReportTransform
@@ -55,7 +54,6 @@ class SubmitV1Transform(ReportTransform):
 
 class SubmitV1View(BaseSubmitView):
 
-    error_response = JSONError
     route = '/v1/submit'
     schema = SubmitV1Schema
     transform = SubmitV1Transform

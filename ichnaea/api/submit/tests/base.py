@@ -47,6 +47,13 @@ class BaseSubmitTest(object):
             content_type='application/json', status=self.status)
         self._assert_queue_size(1)
 
+    def test_malformed_gzip(self):
+        headers = {'Content-Encoding': 'gzip'}
+        self.app.post(
+            self.url, 'invalid', headers=headers,
+            content_type='application/json', status=400)
+        self._assert_queue_size(0)
+
     def test_headers_email_without_nickname(self):
         self._post_one_cell(nickname=None, email=self.email)
         item = self.queue.dequeue(self.queue.queue_key())[0]

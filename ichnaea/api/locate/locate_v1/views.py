@@ -1,11 +1,9 @@
-from ichnaea.api.exceptions import JSONError
 from ichnaea.api.locate.locate_v1.schema import LocateV1Schema
 from ichnaea.api.locate.views import BaseLocateView
 
 
 class LocateV1View(BaseLocateView):
 
-    error_response = JSONError
     route = '/v1/search'
     schema = LocateV1Schema
     view_name = 'search'

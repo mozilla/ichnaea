@@ -3,6 +3,7 @@ import requests_mock
 import simplejson as json
 from sqlalchemy import text
 
+from ichnaea.api.exceptions import ParseError
 from ichnaea.api.locate.locate_v1.schema import LocateV1Schema
 from ichnaea.constants import CELL_MIN_ACCURACY, LAC_MIN_ACCURACY
 from ichnaea.models import (
@@ -448,8 +449,7 @@ class TestLocateV1(AppTestCase):
         res = self.app.post_json(
             '/v1/search?key=test', {'cell': 1}, status=400)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertTrue('errors' in res.json)
-        self.assertFalse('status' in res.json)
+        self.assertEqual(res.json, ParseError.json_body())
 
     def test_error_unknown_key(self):
         res = self.app.post_json('/v1/search?key=test', {'foo': 0}, status=200)
@@ -459,8 +459,7 @@ class TestLocateV1(AppTestCase):
     def test_error_no_mapping(self):
         res = self.app.post_json('/v1/search?key=test', [1], status=400)
         self.assertEqual(res.content_type, 'application/json')
-        self.assertTrue('errors' in res.json)
-        self.assertFalse('status' in res.json)
+        self.assertEqual(res.json, ParseError.json_body())
 
     def test_no_valid_keys(self):
         res = self.app.post_json('/v1/search?key=test', {'wifi': [
@@ -470,7 +469,7 @@ class TestLocateV1(AppTestCase):
 
     def test_no_json(self):
         res = self.app.post('/v1/search?key=test', '\xae', status=400)
-        self.assertTrue('errors' in res.json)
+        self.assertEqual(res.json, ParseError.json_body())
         self.check_stats(counter=['search.api_key.test'])
 
     def test_gzip(self):

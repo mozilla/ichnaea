@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Unify v1 and v2 parse error responses to v2 format.
+
 - Batch key queries depending on a per-model batch size.
 
 - #192: Suggest a observation data retention period.

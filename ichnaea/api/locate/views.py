@@ -1,14 +1,10 @@
-from ichnaea.api.exceptions import (
-    LocationNotFound,
-    ParseError,
-)
+from ichnaea.api.exceptions import LocationNotFound
 from ichnaea.api.locate.searcher import PositionSearcher
 from ichnaea.api.views import BaseAPIView
 
 
 class BaseLocateView(BaseAPIView):
 
-    error_response = ParseError
     searcher = PositionSearcher
     schema = None
 

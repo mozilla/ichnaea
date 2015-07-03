@@ -90,14 +90,3 @@ Response
 
 On successful submission, you will get a 204 status code back without
 any data in the body.
-
-If there was a problem with the client side sent data, you get a 4xx
-HTTP status code and a body of:
-
-.. code-block:: javascript
-
-    {
-        "errors": {}
-    }
-
-The errors mapping contains detailed information about the errors.

@@ -1,5 +1,5 @@
 
 
-class BaseJSONError(Exception):
-    """Base class for app / service specific JSON errors.
+class BaseClientError(Exception):
+    """Base class for app / service specific client errors.
     """

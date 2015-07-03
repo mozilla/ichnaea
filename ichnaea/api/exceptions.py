@@ -1,26 +1,10 @@
-from pyramid.httpexceptions import (
-    HTTPClientError,
-    HTTPError,
-)
+from pyramid.httpexceptions import HTTPClientError
 from pyramid.response import Response
 
-import simplejson as json
-from ichnaea.exceptions import BaseJSONError
-
-MSG_GZIP = 'Error decompressing gzip data stream.'
+from ichnaea.exceptions import BaseClientError
 
 
-class JSONError(HTTPError, BaseJSONError):
-    # BBB: Old style error response for v1 API's
-
-    def __init__(self, errors, status=400):
-        body = {'errors': errors}
-        Response.__init__(self, json.dumps(body))
-        self.status = status
-        self.content_type = 'application/json'
-
-
-class BaseAPIError(HTTPClientError, BaseJSONError):
+class BaseAPIError(HTTPClientError, BaseClientError):
 
     code = 400
     domain = ''
@@ -81,7 +65,3 @@ class ParseError(BaseAPIError):
     domain = 'global'
     reason = 'parseError'
     message = 'Parse Error'
-
-    def __init__(self, errors):
-        # BBB: compatibility with JSONError
-        BaseAPIError.__init__(self)

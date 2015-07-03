@@ -4,15 +4,14 @@ from pyramid.httpexceptions import (
 )
 from redis import ConnectionError
 
-from ichnaea.data.tasks import queue_reports
 from ichnaea.api.exceptions import ParseError
 from ichnaea.api.views import BaseAPIView
+from ichnaea.data.tasks import queue_reports
 
 
 class BaseSubmitView(BaseAPIView):
 
     error_on_invalidkey = False
-    error_response = ParseError
     transform = None
     schema = None
     view_name = None
@@ -48,7 +47,7 @@ class BaseSubmitView(BaseAPIView):
     def preprocess(self, api_key):
         try:
             request_data, errors = self.preprocess_request()
-        except self.error_response:
+        except ParseError:
             # capture JSON exceptions for submit calls
             self.raven_client.captureException()
             raise

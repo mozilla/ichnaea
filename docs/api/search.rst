@@ -144,14 +144,3 @@ If no position can be determined, you instead get:
     {
         "status": "not_found"
     }
-
-If the request couldn't be processed or a validation error occurred, you
-get a HTTP status code of 400 and a JSON body:
-
-.. code-block:: javascript
-
-    {
-        "errors": {}
-    }
-
-The errors mapping contains detailed information about the errors.

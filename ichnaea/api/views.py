@@ -6,7 +6,7 @@ import simplejson as json
 from ichnaea.api.exceptions import (
     DailyLimitExceeded,
     InvalidAPIKey,
-    MSG_GZIP,
+    ParseError,
 )
 from ichnaea.models.api import ApiKey
 from ichnaea.rate_limit import rate_limit
@@ -79,24 +79,24 @@ class BaseAPIView(BaseView):
             # handle gzip self.request bodies
             try:
                 request_content = util.decode_gzip(self.request.body)
-            except zlib.error:  # pragma: no cover
-                errors.append({'name': None, 'description': MSG_GZIP})
+            except zlib.error as exc:
+                errors.append({'name': None, 'description': repr(exc)})
 
         request_data = {}
         try:
             request_data = json.loads(
                 request_content, encoding=self.request.charset)
-        except ValueError as e:
-            errors.append({'name': None, 'description': e.message})
+        except ValueError as exc:
+            errors.append({'name': None, 'description': repr(exc)})
 
         validated_data = {}
         try:
             validated_data = self.schema().deserialize(request_data)
-        except colander.Invalid as e:
-            errors.append({'name': None, 'description': e.asdict()})
+        except colander.Invalid as exc:
+            errors.append({'name': None, 'description': exc.asdict()})
 
         if request_content and errors:
-            raise self.error_response(errors)
+            raise ParseError()
 
         return (validated_data, errors)
 

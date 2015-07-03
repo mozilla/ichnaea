@@ -10,7 +10,7 @@ from pyramid.httpexceptions import (
 from raven import Client as RavenClient
 from statsd.client import StatsClient
 
-from ichnaea.exceptions import BaseJSONError
+from ichnaea.exceptions import BaseClientError
 
 # TODO fix for getsentry/raven-python#608
 from raven.conf import defaults
@@ -102,7 +102,7 @@ def log_tween_factory(handler, registry):
         except HTTPNotFound:
             # ignore 404's raised as exceptions
             raise
-        except BaseJSONError as exc:
+        except BaseClientError as exc:
             # don't capture client side errors
             timer_send()
             counter_send(exc.status_code)
