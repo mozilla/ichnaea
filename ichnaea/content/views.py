@@ -154,13 +154,11 @@ class ContentViews(Layout):
 
     @view_config(renderer='templates/homepage.pt', http_cache=3600)
     def homepage_view(self):
+        tiles_url = self._tiles_url()
+        map_url = tiles_url.format(z=0, x=0, y=0)
         scheme = urlparse.urlparse(self.request.url).scheme
         map_base_url = '%s://a.tiles.mapbox.com/v3/%s/0/0/0.png' % (
             scheme, BASE_MAP_KEY)
-
-        tiles_url = self._tiles_url()
-        map_url = tiles_url.format(z=0, x=0, y=0).replace('/0/0/0.', '/0.')
-
         return {
             'page_title': 'Overview',
             'map_url': map_url,
@@ -388,7 +386,6 @@ _robots_response = Response(
          'Disallow: /leaders\n'
          'Disallow: /static/\n'
          'Disallow: /v1/\n'
-         'Disallow: /v2/\n'
 )
 
 
