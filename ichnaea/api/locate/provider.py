@@ -711,7 +711,7 @@ class FallbackProvider(Provider):
 
             return response.json()
 
-        except requests.exceptions.RequestException:
+        except (json.JSONDecodeError, requests.exceptions.RequestException):
             self.raven_client.captureException()
 
     def locate(self, data):
