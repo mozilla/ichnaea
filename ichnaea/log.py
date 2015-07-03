@@ -5,7 +5,8 @@ import time
 
 from pyramid.httpexceptions import (
     HTTPException,
-    HTTPNotFound,
+    HTTPClientError,
+    HTTPRedirection,
 )
 from raven import Client as RavenClient
 from statsd.client import StatsClient
@@ -17,7 +18,6 @@ from raven.conf import defaults
 from raven.transport import registry
 from raven.transport.gevent import GeventedHTTPTransport, Semaphore
 from raven.transport.http import HTTPTransport
-
 
 RAVEN_CLIENT = None
 STATS_CLIENT = None
@@ -86,26 +86,24 @@ def log_tween_factory(handler, registry):
         raven_client = registry.raven_client
         stats_client = registry.stats_client
         start = time.time()
-        request_path = request.path
+        statsd_path = quote_statsd_path(request.path)
 
         def timer_send():
             duration = int(round((time.time() - start) * 1000))
-            path = quote_statsd_path(request_path)
-            stats_client.timing('request.' + path, duration)
+            stats_client.timing('request.' + statsd_path, duration)
 
         def counter_send(status_code):
-            path = quote_statsd_path(request_path)
-            stats_client.incr('request.%s.%s' % (path, status_code))
+            stats_client.incr('request.%s.%s' % (statsd_path, status_code))
 
         try:
             response = handler(request)
-        except HTTPNotFound:
-            # ignore 404's raised as exceptions
-            raise
-        except BaseClientError as exc:
-            # don't capture client side errors
+        except (BaseClientError, HTTPRedirection) as exc:
+            # don't capture exceptions
             timer_send()
             counter_send(exc.status_code)
+            raise
+        except HTTPClientError:
+            # ignore general client side errors
             raise
         except Exception as exc:  # pragma: no cover
             timer_send()
@@ -118,10 +116,6 @@ def log_tween_factory(handler, registry):
             raise
         else:
             timer_send()
-
-        # deal with non-exception 4xx responses
-        resp_prefix = str(response.status_code)[0]
-        if (resp_prefix != '4'):
             counter_send(response.status_code)
 
         return response

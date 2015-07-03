@@ -149,14 +149,12 @@ class TestLocateV2(AppTestCase):
                 },
             },
             status=404)
+        self.assertEqual(res.json, LocationNotFound.json_body())
 
         self.check_stats(
             counter=[self.metric_url + '.404',
                      self.metric + '.api_key.test']
         )
-
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, LocationNotFound.json_body())
 
     def test_ok_partial_cell(self):
         cell = CellFactory()
@@ -219,7 +217,6 @@ class TestLocateV2(AppTestCase):
                     {'macAddress': wifis[1].key},
                 ]},
             status=404)
-        self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, LocationNotFound.json_body())
 
         # Make sure to get two counters, a timer, and no traceback
@@ -296,7 +293,6 @@ class TestLocateV2(AppTestCase):
 
     def test_parse_error(self):
         res = self.app.post('%s?key=test' % self.url, '\xae', status=400)
-        self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, ParseError.json_body())
         self.check_stats(counter=[self.metric + '.api_key.test'])
 
@@ -315,7 +311,6 @@ class TestLocateV2(AppTestCase):
                 ]
             },
             status=400)
-        self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, InvalidAPIKey.json_body())
 
         self.check_stats(
@@ -336,7 +331,6 @@ class TestLocateV2(AppTestCase):
                 ]
             },
             status=400)
-        self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, InvalidAPIKey.json_body())
 
         self.check_stats(
@@ -357,7 +351,6 @@ class TestLocateV2(AppTestCase):
             '%s?key=%s' % (self.url, api_key), {},
             extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
             status=403)
-        self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, DailyLimitExceeded.json_body())
 
     def test_lte_radio(self):

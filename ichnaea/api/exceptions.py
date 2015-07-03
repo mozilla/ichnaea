@@ -59,6 +59,15 @@ class LocationNotFound(BaseAPIError):
     message = 'Not found'
 
 
+class LocationNotFoundV1(LocationNotFound):
+
+    code = 200
+
+    @classmethod
+    def json_body(cls):
+        return {'status': 'not_found'}
+
+
 class ParseError(BaseAPIError):
 
     code = 400

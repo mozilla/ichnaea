@@ -164,13 +164,11 @@ class TestSubmitV1(BaseSubmitTest, CeleryAppTestCase):
             '/v1/submit',
             [{'lat': wifi.lat, 'lon': wifi.lon, 'cell': []}],
             status=400)
-        self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, ParseError.json_body())
         self.check_raven(['ParseError'])
 
     def test_error_completely_empty(self):
         res = self.app.post_json(self.url, [], status=400)
-        self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json, ParseError.json_body())
 
     def test_error_missing_latlon(self):

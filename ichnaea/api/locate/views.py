@@ -5,12 +5,9 @@ from ichnaea.api.views import BaseAPIView
 
 class BaseLocateView(BaseAPIView):
 
+    not_found = LocationNotFound
     searcher = PositionSearcher
     schema = None
-
-    def not_found(self):
-        # hook used for v1 API's to return a 200 OK response
-        raise LocationNotFound()
 
     def prepare_query(self, request_data):
         return {
@@ -39,6 +36,6 @@ class BaseLocateView(BaseAPIView):
     def view(self, api_key):
         location_data = self.locate(api_key)
         if not location_data:
-            return self.not_found()
+            raise self.not_found()
 
         return self.prepare_location_data(location_data)
