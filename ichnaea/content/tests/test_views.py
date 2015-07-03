@@ -41,6 +41,9 @@ class TestContentViews(TestCase):
         inst = self._make_view(request)
         result = inst.homepage_view()
         self.assertEqual(result['page_title'], 'Overview')
+        self.assertTrue(result['map_base_url'].endswith('/0/0/0.png'))
+        self.assertTrue(result['map_url'].endswith('tiles/0.png'))
+        self.assertTrue(result['map_url_2'].endswith('tiles/0@2x.png'))
 
     def test_api(self):
         request = DummyRequest()
