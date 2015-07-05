@@ -1,4 +1,5 @@
 from collections import defaultdict
+import operator
 import uuid
 
 from ichnaea.data.base import DataTask
@@ -139,6 +140,26 @@ class ReportQueue(DataTask):
                    and not isinstance(value, (tuple, list, dict)):
                     dst[key] = value
 
+        def better_cell_obs(new, old):
+            comparators = [
+                ('ta', operator.lt),
+                ('signal', operator.gt),
+                ('asu', operator.gt),
+            ]
+            for field, better in comparators:
+                if (old[field] is not None and
+                        new[field] is not None and
+                        better(new[field], old[field])):
+                    return True
+            return False
+
+        def better_wifi_obs(new, old):
+            if (old['signal'] is not None and
+                    new['signal'] is not None and
+                    new['signal'] > old['signal']):
+                return True
+            return False
+
         report_data = Report.validate(data)
         if report_data is None:
             return ([], [])
@@ -157,10 +178,7 @@ class ReportQueue(DataTask):
                 cell_key = CellObservation.to_hashkey(cell)
                 if cell_key in cell_observations:
                     existing = cell_observations[cell_key]
-                    if existing['ta'] > cell['ta'] or \
-                       (existing['signal'] != 0 and
-                        existing['signal'] < cell['signal']) or \
-                       existing['asu'] < cell['asu']:
+                    if better_cell_obs(cell, existing):
                         cell_observations[cell_key] = cell
                 else:
                     cell_observations[cell_key] = cell
@@ -177,8 +195,7 @@ class ReportQueue(DataTask):
                 wifi_key = WifiObservation.to_hashkey(wifi)
                 if wifi_key in wifi_observations:
                     existing = wifi_observations[wifi_key]
-                    if existing['signal'] != 0 and \
-                       existing['signal'] < wifi['signal']:
+                    if better_wifi_obs(wifi, existing):
                         wifi_observations[wifi_key] = wifi
                 else:
                     wifi_observations[wifi_key] = wifi

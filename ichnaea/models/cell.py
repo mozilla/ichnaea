@@ -1,5 +1,6 @@
 import colander
 from enum import IntEnum
+from six import string_types
 from sqlalchemy import (
     Column,
     Index,
@@ -51,7 +52,7 @@ class Radio(IntEnum):
 
     @classmethod
     def _gsm_family(cls):
-        return (cls.gsm, cls.umts, cls.lte)
+        return (cls.gsm, cls.wcdma, cls.lte)
 
 
 def encode_radio_dict(dct):
@@ -103,7 +104,7 @@ class RadioType(colander.Integer):
         if isinstance(cstruct, Radio):
             return cstruct
         try:
-            if isinstance(cstruct, basestring):
+            if isinstance(cstruct, string_types):
                 cstruct = Radio[cstruct]
             else:  # pragma: no cover
                 cstruct = Radio(cstruct)
@@ -154,6 +155,7 @@ class ValidCellAreaKeySchema(FieldSchema, CopyingSchema):
                 'Skip GSM/LTE/UMTS towers with an invalid MNC'))
 
         if (data['radio'] in Radio._gsm_family() and
+                data['lac'] is not None and
                 data['lac'] > constants.MAX_LAC_GSM_UMTS_LTE):
             raise colander.Invalid(schema, (
                 'LAC is out of range for GSM/UMTS/LTE.'))
@@ -210,12 +212,15 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
             if radio_node.validator(radio_node, radio):
                 data['radio'] = radio
 
-            # If the cell id >= 65536 then it must be a umts tower
-            if data.get('cid', 0) >= 65536 and data['radio'] == Radio.gsm:
-                data['radio'] = Radio.umts
+            # If the cell id > 65535 then it must be a WCDMA tower
+            if (data['radio'] == Radio.gsm and
+                    data.get('cid') is not None and
+                    data['cid'] > constants.MAX_CID_GSM):
+                data['radio'] = Radio.wcdma
 
             # Treat cid=65535 without a valid lac as an unspecified value
-            if data.get('lac') is None and data.get('cid') == 65535:
+            if (data.get('lac') is None and
+                    data.get('cid') == constants.MAX_CID_GSM):
                 data['cid'] = None
 
         return super(ValidCellKeySchema, self).deserialize(data)
@@ -289,7 +294,9 @@ class ValidCellSignalSchema(FieldSchema, CopyingSchema):
     def deserialize(self, data):
         if data:
             # Sometimes the asu and signal fields are swapped
-            if data.get('asu', 0) < -1 and data.get('signal', None) == 0:
+            if (data.get('asu') is not None and
+                    data.get('asu', 0) < -1 and
+                    data.get('signal', None) == 0):
                 data['signal'] = data['asu']
                 data['asu'] = None
         return super(ValidCellSignalSchema, self).deserialize(data)

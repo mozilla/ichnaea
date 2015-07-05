@@ -79,7 +79,7 @@ class BaseSubmitView(BaseAPIView):
     def success(self):
         response = HTTPOk()
         response.content_type = 'application/json'
-        response.body = '{}'
+        response.body = b'{}'
         return response
 
     def view(self, api_key):

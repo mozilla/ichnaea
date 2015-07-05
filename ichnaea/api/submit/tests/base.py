@@ -9,8 +9,8 @@ class BaseSubmitTest(object):
     metric = None
     status = None
 
-    nickname = 'World Tr\xc3\xa4veler'.decode('utf-8')
-    email = 'world_tr\xc3\xa4veler@email.com'.decode('utf-8')
+    nickname = b'World Tr\xc3\xa4veler'.decode('utf-8')
+    email = b'world_tr\xc3\xa4veler@email.com'.decode('utf-8')
 
     def setUp(self):
         super(BaseSubmitTest, self).setUp()

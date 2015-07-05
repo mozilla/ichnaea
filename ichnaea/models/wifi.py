@@ -105,8 +105,9 @@ class ValidWifiSignalSchema(FieldSchema, CopyingSchema):
             channel = data.get('channel')
             channel = channel is not None and int(channel) or None
 
-            if not (constants.MIN_WIFI_CHANNEL < channel <
-                    constants.MAX_WIFI_CHANNEL):
+            if (channel is None or not
+                    (constants.MIN_WIFI_CHANNEL < channel <
+                     constants.MAX_WIFI_CHANNEL)):
                 # if no explicit channel was given, calculate
                 freq = data.get('frequency', 0)
 

@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 import colander
 import iso8601
 from pytz import UTC
+from six import string_types, binary_type
 
 from ichnaea import util
 
@@ -21,7 +22,7 @@ def normalized_time(time):
     now = util.utcnow()
     if not time:
         time = now
-    elif isinstance(time, (str, unicode)):
+    elif isinstance(time, string_types + (binary_type, )):
         try:
             time = iso8601.parse_date(time)
         except (iso8601.ParseError, TypeError):

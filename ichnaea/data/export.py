@@ -3,13 +3,13 @@ from collections import (
     namedtuple,
 )
 from datetime import datetime
-import urlparse
 import uuid
 
 import boto
 import requests
 import simplejson
 import pytz
+from six.moves.urllib.parse import urlparse
 
 from ichnaea.customjson import kombu_dumps
 from ichnaea.data.base import DataTask
@@ -271,7 +271,7 @@ class S3Uploader(ReportUploader):
             task, session, export_queue_name, queue_key)
         self.export_queue_name = export_queue_name
         self.export_queue = task.app.export_queues[export_queue_name]
-        _, self.bucket, path = urlparse.urlparse(self.url)[:3]
+        _, self.bucket, path = urlparse(self.url)[:3]
         # s3 key names start without a leading slash
         path = path.lstrip('/')
         if not path.endswith('/'):

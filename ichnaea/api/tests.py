@@ -44,17 +44,17 @@ class TestExceptions(TestCase):
     def test_daily_limit(self):
         error = api_exceptions.DailyLimitExceeded
         response = self._check(error, 403)
-        self.assertTrue('dailyLimitExceeded' in response.body)
+        self.assertTrue('dailyLimitExceeded' in response.text)
 
     def test_invalid_apikey(self):
         error = api_exceptions.InvalidAPIKey
         response = self._check(error, 400)
-        self.assertTrue('keyInvalid' in response.body)
+        self.assertTrue('keyInvalid' in response.text)
 
     def test_location_not_found(self):
         error = api_exceptions.LocationNotFound
         response = self._check(error, 404)
-        self.assertTrue('notFound' in response.body)
+        self.assertTrue('notFound' in response.text)
 
     def test_location_not_found_v1(self):
         error = api_exceptions.LocationNotFoundV1
@@ -64,4 +64,4 @@ class TestExceptions(TestCase):
     def test_parse_error(self):
         error = api_exceptions.ParseError
         response = self._check(error, 400)
-        self.assertTrue('parseError' in response.body)
+        self.assertTrue('parseError' in response.text)

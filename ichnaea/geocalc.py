@@ -1,5 +1,6 @@
 import math
 from country_bounding_boxes import country_subunits_by_iso_code
+from six import string_types
 
 from ichnaea import constants
 
@@ -14,7 +15,7 @@ def maximum_country_radius(country_code):
     Return the maximum radius of a circle encompassing the largest
     country subunit in meters, rounded to 1 km increments.
     """
-    if not isinstance(country_code, basestring):
+    if not isinstance(country_code, string_types):
         return None
     country_code = country_code.upper()
     if len(country_code) not in (2, 3):

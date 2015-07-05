@@ -1,6 +1,7 @@
 import tempfile
 
 from maxminddb.const import MODE_MMAP
+from six import PY2
 
 from ichnaea.constants import (
     GEOIP_CITY_ACCURACY,
@@ -38,16 +39,19 @@ class TestDatabase(GeoIPTestCase):
     def test_no_file(self):
         db = self._open_db('')
         self.assertTrue(isinstance(db, geoip.GeoIPNull))
-        self.check_raven(['IOError: No geoip filename specified.'])
+        self.check_raven(['OSError: No geoip filename specified.'])
 
     def test_open_missing_file(self):
         db = self._open_db('/i/taught/i/taw/a/putty/tat')
         self.assertTrue(isinstance(db, geoip.GeoIPNull))
-        self.check_raven(['IOError: No such file or directory'])
+        error = 'FileNotFoundError'
+        if PY2:
+            error = 'IOError'
+        self.check_raven([error + ': No such file or directory'])
 
     def test_open_invalid_file(self):
         with tempfile.NamedTemporaryFile() as temp:
-            temp.write('Bucephalus')
+            temp.write(b'Bucephalus')
             temp.seek(0)
             db = self._open_db(temp.name)
             self.assertTrue(isinstance(db, geoip.GeoIPNull))

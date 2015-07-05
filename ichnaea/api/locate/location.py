@@ -85,7 +85,7 @@ class Position(Location):
             return False
         if not other.found():
             return True
-        if self.source < other.source:
+        if (self.source != other.source) and (self.source < other.source):
             return True
         return (self.agrees_with(other) and self.accuracy < other.accuracy)
 
