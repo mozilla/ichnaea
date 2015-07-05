@@ -1,8 +1,11 @@
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
-BUILD_DIRS = bin build dist include lib lib64 libmaxminddb man node_modules share
+BUILD_DIRS = .tox bin build dist include lib lib64 libmaxminddb man node_modules share
 TESTS ?= ichnaea
 TRAVIS ?= false
+
+TOXENVDIR ?= $(HERE)/.tox/tmp
+TOXINIDIR ?= $(HERE)
 
 MAXMINDDB_VERSION = 1.2.0
 MYSQL_DB = location
@@ -42,7 +45,8 @@ else
 endif
 
 PIP_WHEEL_DIR ?= $(HERE)/wheelhouse
-INSTALL = $(PIP) install --no-deps -f file://$(PIP_WHEEL_DIR)
+INSTALL = $(PIP) install --no-deps --disable-pip-version-check \
+	-f file://$(PIP_WHEEL_DIR)
 WHEEL = $(PIP) wheel --no-deps -w $(PIP_WHEEL_DIR)
 
 BOWER_ROOT = $(HERE)/bower_components
@@ -60,7 +64,9 @@ UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
 
 
 .PHONY: all bower js mysql init_db css js test clean shell docs \
-	build wheel release release_install release_compile
+	build build_dev build_maxmind build_req wheel \
+	release release_install release_compile \
+	tox_install tox_test
 
 all: build init_db
 
@@ -81,24 +87,27 @@ ifeq ($(TRAVIS), true)
 else
 	virtualenv-2.6 .
 endif
-	bin/pip install -U pip
+	bin/pip install -U pip --disable-pip-version-check
 
-libmaxminddb/bootstrap:
+$(TOXINIDIR)/libmaxminddb/bootstrap:
 	git clone --recursive git://github.com/maxmind/libmaxminddb
 	cd libmaxminddb; git checkout 1.0.4
 	cd libmaxminddb; git submodule update --init --recursive
 
-libmaxminddb/Makefile:
+$(TOXINIDIR)/libmaxminddb/Makefile:
 	cd libmaxminddb; ./bootstrap
 	cd libmaxminddb; ./configure --prefix=$(HERE)
 
-lib/libmaxminddb.0.dylib: libmaxminddb/bootstrap libmaxminddb/Makefile
+$(TOXINIDIR)/lib/libmaxminddb.0.dylib: \
+		$(TOXINIDIR)/libmaxminddb/bootstrap $(TOXINIDIR)/libmaxminddb/Makefile
 	cd libmaxminddb; make
 	cd libmaxminddb; make install
 
-build: $(PYTHON) mysql lib/libmaxminddb.0.dylib
-	CFLAGS=-I$(HERE)/include LDFLAGS=-L$(HERE)/lib \
-		$(INSTALL) maxminddb==$(MAXMINDDB_VERSION)
+build_maxmind: $(PYTHON) $(TOXINIDIR)/lib/libmaxminddb.0.dylib
+	CFLAGS=-I$(TOXINIDIR)/include LDFLAGS=-L$(TOXINIDIR)/lib \
+		$(INSTALL) --no-use-wheel maxminddb==$(MAXMINDDB_VERSION)
+
+build_req: $(PYTHON) mysql build_maxmind
 	$(INSTALL) -r requirements/prod-c.txt
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/test-c.txt
@@ -106,7 +115,11 @@ build: $(PYTHON) mysql lib/libmaxminddb.0.dylib
 ifeq ($(PYTHON_2),no)
 	$(INSTALL) -r requirements/override-3.txt
 endif
+
+build_dev: $(PYTHON)
 	$(PYTHON) setup.py develop
+
+build: build_req build_dev
 
 release_install:
 	$(INSTALL) -r requirements/prod-c.txt
@@ -206,6 +219,22 @@ test: mysql
 	SQLURI=$(SQLURI) CELERY_ALWAYS_EAGER=true \
 	LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(HERE)/lib \
 	$(NOSE) -s -d -v $(TEST_ARG)
+
+tox_install:
+ifeq ($(wildcard $(TOXENVDIR)/.git/),)
+	git init $(TOXENVDIR)
+	cd $(TOXENVDIR); git remote add upstream $(TOXINIDIR) --no-tags
+endif
+	cd $(TOXENVDIR); git fetch upstream --force
+	cd $(TOXENVDIR); git checkout upstream/master --force
+	cd $(TOXENVDIR); git reset --hard
+	rm -rf $(TOXENVDIR)/ichnaea
+	cp -f $(TOXINIDIR)/lib/libmaxminddb* $(TOXENVDIR)/lib/
+	cd $(TOXENVDIR); make build_req
+	cd $(TOXENVDIR); bin/pip install -e /opt/mozilla/ichnaea/
+
+tox_test: tox_install
+	cd $(TOXENVDIR); make test
 
 $(BIN)/sphinx-build:
 	$(INSTALL) -r requirements/docs.txt
