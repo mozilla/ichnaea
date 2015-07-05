@@ -1,6 +1,7 @@
 import re
 
 import mobile_codes
+from six import string_types
 
 from ichnaea.constants import MAX_LAT, MIN_LAT, MAX_LON, MIN_LON  # NOQA
 
@@ -17,7 +18,7 @@ MAX_SPEED = 300.0  #: A bit less than speed of sound, in meters per second
 ALL_VALID_MCCS = frozenset(
     [int(country.mcc)
      for country in mobile_codes._countries()
-     if isinstance(country.mcc, basestring)] +
+     if isinstance(country.mcc, string_types)] +
     [int(code)
      for country in mobile_codes._countries()
      if isinstance(country.mcc, (tuple, list))
@@ -37,6 +38,7 @@ MIN_WIFI_SIGNAL = -200
 MAX_WIFI_SIGNAL = -1
 
 MIN_CID = 1
+MAX_CID_GSM = 2 ** 16 - 1
 MAX_CID_CDMA = 2 ** 16 - 1
 MAX_CID_LTE = 2 ** 28 - 1
 MAX_CID_ALL = 2 ** 32 - 1

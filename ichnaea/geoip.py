@@ -9,6 +9,7 @@ from geoip2.errors import (
 )
 from maxminddb import InvalidDatabaseError
 from maxminddb.const import MODE_AUTO
+from six import PY2
 
 from ichnaea.constants import (
     DEGREE_DECIMAL_PLACES,
@@ -41,8 +42,8 @@ def configure_geoip(filename, mode=MODE_AUTO,
         # No DB file specified in the config
         if raven_client is not None:
             try:
-                raise IOError('No geoip filename specified.')
-            except IOError:
+                raise OSError('No geoip filename specified.')
+            except OSError:
                 raven_client.captureException()
         return GeoIPNull()
 
@@ -55,7 +56,7 @@ def configure_geoip(filename, mode=MODE_AUTO,
                 raven_client.captureException()
         # Actually initialize the memory cache, by doing one fake look-up
         db.geoip_lookup('127.0.0.1')
-    except (InvalidDatabaseError, IOError, ValueError):
+    except (InvalidDatabaseError, IOError, OSError, ValueError):
         # Error opening the database file, maybe it doesn't exist
         if raven_client is not None:
             raven_client.captureException()
@@ -128,8 +129,11 @@ class GeoIPWrapper(Reader):
         return True
 
     def check_extension(self):
+        builtin_module = 'builtins'
+        if PY2:
+            builtin_module = '__builtin__'
         for instance in (self.metadata(), self._db_reader):
-            if type(instance).__module__ != '__builtin__':
+            if type(instance).__module__ != builtin_module:
                 return False
         return True
 

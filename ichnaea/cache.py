@@ -1,10 +1,10 @@
 from contextlib import contextmanager
 import re
-import urlparse
 
 import redis
 from redis.connection import SocketBuffer
 from redis.exceptions import ConnectionError
+from six.moves.urllib.parse import urlparse
 
 from ichnaea.customjson import (
     kombu_dumps,
@@ -37,7 +37,7 @@ def configure_redis(redis_url, _client=None):
 
 
 def redis_client(redis_url):
-    url = urlparse.urlparse(redis_url)
+    url = urlparse(redis_url)
     netloc = url.netloc.split(':')
     host = netloc[0]
     if len(netloc) > 1:
@@ -155,7 +155,7 @@ class ExportQueue(BaseQueue):
         self.batch = int(settings.get('batch', 0))
         self.metadata = bool(settings.get('metadata', False))
         self.url = settings.get('url', '') or ''
-        self.scheme = urlparse.urlparse(self.url).scheme
+        self.scheme = urlparse(self.url).scheme
         skip_keys = WHITESPACE.split(settings.get('skip_keys', ''))
         self.skip_keys = tuple([key for key in skip_keys if key])
 

@@ -235,8 +235,8 @@ class TestGeosubmitUploader(BaseExportTest):
 
 class TestInternalUploader(BaseExportTest):
 
-    nickname = 'World Tr\xc3\xa4veler'.decode('utf-8')
-    email = 'world_tr\xc3\xa4veler@email.com'.decode('utf-8')
+    nickname = b'World Tr\xc3\xa4veler'.decode('utf-8')
+    email = b'world_tr\xc3\xa4veler@email.com'.decode('utf-8')
 
     def setUp(self):
         super(TestInternalUploader, self).setUp()
@@ -303,9 +303,11 @@ class TestInternalUploader(BaseExportTest):
         queue = self.celery_app.export_queues['internal']
         items = queue.dequeue(queue.queue_key())
         report = items[0]['report']
-        cell = report['cellTowers'][0].copy()
-        report['cellTowers'].append(cell)
+        cell = report['cellTowers'][0]
+        report['cellTowers'].append(cell.copy())
+        report['cellTowers'].append(cell.copy())
         report['cellTowers'][1]['signalStrength'] += 2
+        report['cellTowers'][2]['signalStrength'] -= 2
         queue.enqueue(items, queue.queue_key())
 
         schedule_export_reports.delay().get()
@@ -342,9 +344,11 @@ class TestInternalUploader(BaseExportTest):
         queue = self.celery_app.export_queues['internal']
         items = queue.dequeue(queue.queue_key())
         report = items[0]['report']
-        wifi = report['wifiAccessPoints'][0].copy()
-        report['wifiAccessPoints'].append(wifi)
+        wifi = report['wifiAccessPoints'][0]
+        report['wifiAccessPoints'].append(wifi.copy())
+        report['wifiAccessPoints'].append(wifi.copy())
         report['wifiAccessPoints'][1]['signalStrength'] += 2
+        report['wifiAccessPoints'][2]['signalStrength'] -= 2
         queue.enqueue(items, queue.queue_key())
 
         schedule_export_reports.delay().get()

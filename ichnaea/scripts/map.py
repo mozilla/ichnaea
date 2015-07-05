@@ -9,6 +9,7 @@ import tempfile
 
 import boto
 from simplejson import dumps
+from six.moves import range as xrange
 from sqlalchemy import text
 
 from ichnaea.config import read_config

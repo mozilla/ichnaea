@@ -678,7 +678,7 @@ class TestFallbackProvider(ProviderTest):
     def test_malformed_json_returns_empty_location(self):
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
-                'POST', requests_mock.ANY, content='[invalid json')
+                'POST', requests_mock.ANY, content=b'[invalid json')
 
             location = self.provider.locate({
                 'cell': self.cells,

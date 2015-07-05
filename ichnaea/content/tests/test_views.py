@@ -230,7 +230,7 @@ class TestFunctionalContentViews(AppTestCase):
         today = util.utcnow().date()
         yesterday = today - timedelta(days=1)
         for i in range(7, 1, -1):
-            user = User(nickname=unicode(i))
+            user = User(nickname=u'%s' % i)
             session.add(user)
             session.flush()
             score1 = Score(key=ScoreKey.location,
@@ -264,7 +264,7 @@ class TestFunctionalContentViews(AppTestCase):
         session = self.session
         today = util.utcnow().date()
         for i in range(3):
-            user = User(nickname=unicode(i))
+            user = User(nickname=u'%s' % i)
             session.add(user)
             session.flush()
             score1 = Score(key=ScoreKey.new_cell,

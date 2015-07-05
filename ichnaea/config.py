@@ -5,6 +5,7 @@ from configparser import (
     NoOptionError,
     NoSectionError,
 )
+from six import PY2, string_types
 
 
 class Config(ConfigParser):
@@ -12,7 +13,7 @@ class Config(ConfigParser):
     def __init__(self, filename):
         ConfigParser.__init__(self)
         # let's read the file
-        if isinstance(filename, basestring):
+        if isinstance(filename, string_types):
             self.filename = filename
             self.read(filename)
         else:  # pragma: no cover
@@ -66,5 +67,6 @@ class DummyConfig(object):
 def read_config(filename=None):
     if filename is None:
         filename = os.environ.get('ICHNAEA_CFG', 'ichnaea.ini')
-        filename = filename.decode('utf-8')
+        if PY2:
+            filename = filename.decode('utf-8')
     return Config(filename)

@@ -93,7 +93,7 @@ class TestSubmitV1(BaseSubmitTest, CeleryAppTestCase):
                 'radio': cell.radio.name, 'mcc': cell.mcc,
                 'mnc': cell.mnc, 'lac': cell.lac, 'cid': cell.cid}],
         }], api_key='test')
-        self.assertEqual(res.body, '')
+        self.assertEqual(res.body, b'')
 
         self._assert_queue_size(1)
         item = self.queue.dequeue(self.queue.queue_key())[0]

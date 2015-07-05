@@ -431,8 +431,7 @@ class WifiPositionProvider(Provider):
             for w in queried_wifis if w.key in dissimilar_keys]
 
         # Sort networks by signal strengths in query.
-        wifi_networks.sort(
-            lambda a, b: cmp(wifi_signals[b.key], wifi_signals[a.key]))
+        wifi_networks.sort(key=lambda a: wifi_signals[a.key], reverse=True)
 
         clusters = self._cluster_elements(
             wifi_networks,
@@ -464,7 +463,7 @@ class WifiPositionProvider(Provider):
         return [c for c in clusters if len(c) >= MIN_WIFIS_IN_CLUSTER]
 
     def _prepare(self, clusters):
-        clusters.sort(lambda a, b: cmp(len(b), len(a)))
+        clusters.sort(key=lambda a: len(a), reverse=True)
         cluster = clusters[0]
         sample = cluster[:min(len(cluster), MAX_WIFIS_IN_CLUSTER)]
         length = len(sample)
@@ -630,7 +629,8 @@ class FallbackProvider(Provider):
 
     def should_locate(self, data, location):
         empty_location = not location.found()
-        weak_location = location.source >= DataSource.GeoIP
+        weak_location = (location.source is not None and
+                         location.source >= DataSource.GeoIP)
 
         query_data = self._prepare_data(data)
         cell_found = query_data.get('cellTowers', [])

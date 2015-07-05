@@ -1,3 +1,4 @@
+from six import string_types
 from sqlalchemy.sql import and_, or_
 
 from ichnaea.models.base import JSONMixin
@@ -53,7 +54,7 @@ class HashKeyMixin(object):
         fields = cls._hashkey_cls._fields
         if isinstance(obj, dict):
             return cls._hashkey_cls(**obj)
-        elif isinstance(obj, basestring) and len(fields) == 1:
+        elif isinstance(obj, string_types) and len(fields) == 1:
             # if we get a single string argument and the underlying
             # model has only a single hashkey field, match them up
             return cls._hashkey_cls(**{fields[0]: obj})
