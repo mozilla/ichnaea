@@ -28,6 +28,12 @@ else
 	SPHINXBUILD = $(BIN)/sphinx-build
 endif
 
+TRAVIS_PYTHON_VERSION ?= $(shell $(PYTHON) -c "import sys; print('.'.join([str(s) for s in sys.version_info][:2]))")
+PYTHON_2 = yes
+ifeq ($(findstring 3.,$(TRAVIS_PYTHON_VERSION)), 3.)
+	PYTHON_2 = no
+endif
+
 ifeq ($(TESTS), ichnaea)
 	TEST_ARG = ichnaea --with-coverage --cover-package ichnaea \
 	--cover-branches --cover-erase
@@ -97,7 +103,20 @@ build: $(PYTHON) mysql lib/libmaxminddb.0.dylib
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/test-c.txt
 	$(INSTALL) -r requirements/test.txt
+ifeq ($(PYTHON_2),no)
+	$(INSTALL) -r requirements/override-3.txt
+endif
 	$(PYTHON) setup.py develop
+
+release_install:
+	$(INSTALL) -r requirements/prod-c.txt
+	$(INSTALL) -r requirements/prod.txt
+	$(PYTHON) setup.py install
+
+release_compile:
+	$(PYTHON) compile.py
+
+release: release_install release_compile
 
 wheel:
 	$(INSTALL) wheel
@@ -194,13 +213,3 @@ $(BIN)/sphinx-build:
 docs: $(BIN)/sphinx-build
 	git submodule update --recursive --init
 	cd docs; SPHINXBUILD=$(SPHINXBUILD) make html
-
-release_install:
-	$(INSTALL) -r requirements/prod-c.txt
-	$(INSTALL) -r requirements/prod.txt
-	$(PYTHON) setup.py install
-
-release_compile:
-	$(PYTHON) compile.py
-
-release: release_install release_compile

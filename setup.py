@@ -28,6 +28,7 @@ requires = [
     'requests',
     'setproctitle',
     'simplejson',
+    'six',
     'statsd',
     'SQLAlchemy',
 ]

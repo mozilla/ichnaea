@@ -1,0 +1,1 @@
+-e git+https://github.com/hannosch/country-bounding-boxes.git@python3-compat#egg=country-bounding-boxes
