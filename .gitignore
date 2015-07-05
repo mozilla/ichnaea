@@ -12,6 +12,7 @@ loadtest/src/*.json
 nosetests.xml
 pip-selfcheck.json
 private-*.ini
+pyvenv.cfg
 bin/
 bower_components/
 build/
@@ -25,4 +26,5 @@ libmaxminddb/
 logs/
 man/
 node_modules/
+src/
 wheelhouse/
