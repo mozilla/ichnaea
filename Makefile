@@ -4,6 +4,7 @@ BUILD_DIRS = .tox bin build dist include lib lib64 libmaxminddb man node_modules
 TESTS ?= ichnaea
 TRAVIS ?= false
 
+TOXBUILD ?= yes
 TOXENVDIR ?= $(HERE)/.tox/tmp
 TOXINIDIR ?= $(HERE)
 
@@ -231,9 +232,12 @@ endif
 	rm -rf $(TOXENVDIR)/ichnaea
 	cp -f $(TOXINIDIR)/lib/libmaxminddb* $(TOXENVDIR)/lib/
 	cd $(TOXENVDIR); make build_req
-	cd $(TOXENVDIR); bin/pip install -e /opt/mozilla/ichnaea/
+	cd $(TOXENVDIR); bin/pip install -e /opt/mozilla/ichnaea/ --no-compile
 
-tox_test: tox_install
+tox_test:
+ifeq ($(TOXBUILD),yes)
+	make tox_install
+endif
 	cd $(TOXENVDIR); make test
 
 $(BIN)/sphinx-build:

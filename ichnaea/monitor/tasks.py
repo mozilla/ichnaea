@@ -18,7 +18,7 @@ def monitor_api_key_limits(self):
         keys = self.redis_client.keys('apilimit:*:' + today)
         if keys:
             values = self.redis_client.mget(keys)
-            keys = [k.split(':')[1] for k in keys]
+            keys = [k.decode('utf-8').split(':')[1] for k in keys]
         else:
             values = []
 

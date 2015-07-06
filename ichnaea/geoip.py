@@ -130,7 +130,7 @@ class GeoIPWrapper(Reader):
 
     def check_extension(self):
         builtin_module = 'builtins'
-        if PY2:
+        if PY2:  # pragma: no cover
             builtin_module = '__builtin__'
         for instance in (self.metadata(), self._db_reader):
             if type(instance).__module__ != builtin_module:
