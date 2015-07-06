@@ -1,5 +1,4 @@
 import os
-import sys
 from setuptools import setup, find_packages
 
 __version__ = '1.2'
@@ -33,9 +32,6 @@ requires = [
     'SQLAlchemy',
 ]
 
-if sys.version_info < (2, 7):
-    requires.append('argparse')
-
 test_requires = requires + [
     'coverage',
     'mock',
@@ -62,6 +58,8 @@ setup(
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: Implementation :: CPython",
         "Framework :: Pyramid",
         "Topic :: Internet :: WWW/HTTP",
