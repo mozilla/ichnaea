@@ -147,15 +147,13 @@ class ReportQueue(DataTask):
                 ('asu', operator.gt),
             ]
             for field, better in comparators:
-                if (old[field] is not None and
-                        new[field] is not None and
+                if (None not in (old[field], new[field]) and
                         better(new[field], old[field])):
                     return True
             return False
 
         def better_wifi_obs(new, old):
-            if (old['signal'] is not None and
-                    new['signal'] is not None and
+            if (None not in (old['signal'], new['signal']) and
                     new['signal'] > old['signal']):
                 return True
             return False

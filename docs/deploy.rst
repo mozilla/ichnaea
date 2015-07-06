@@ -83,7 +83,7 @@ Run the following command to get the code:
    git clone https://github.com/mozilla/ichnaea
    cd ichnaea
 
-In order to run the code you need to have Python 2.6 or 2.7 installed
+In order to run the code you need to have Python 2.6, 2.7 or 3.4 installed
 on your system. The default Makefile also assumes a `virtualenv-2.6`
 command is globally available. If this isn't true for your system,
 please create a virtualenv manually inside the ichnaea folder before

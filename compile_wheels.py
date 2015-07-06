@@ -25,7 +25,7 @@ def absolute_path(path):
 
 
 def build_wheels(command, wheelhouse, files):
-    print command, wheelhouse, files
+    print(command, wheelhouse, files)
     if not os.path.isdir(wheelhouse):
         print('Wheelhouse %s not found.' % wheelhouse)
         return 0
@@ -46,7 +46,7 @@ def build_wheels(command, wheelhouse, files):
                                    '%s-%s-*.whl' % (reqname, version))
             found = glob(pattern)
             if found:
-                print ('Skipping build, wheel already exists: %s' % found)
+                print('Skipping build, wheel already exists: %s' % found)
                 continue
             os.system('%s %s==%s' % (command, reqname, version))
 

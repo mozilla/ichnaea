@@ -18,12 +18,13 @@ import os
 import os.path
 import sys
 
-EXCLUDES_27 = [
-]
-EXCLUDES_34 = [
+EXCLUDES_2 = [
     'gunicorn/workers/_gaiohttp.py',
     'linecache2/tests/inspect_fodder2.py',
     'raven/transport/aiohttp.py',
+]
+EXCLUDES_3 = [
+    'gevent/_util_py2.py',
 ]
 
 
@@ -33,10 +34,10 @@ def compile_files(path):
 
 def remove_python3_files(path):
     excludes = []
-    if sys.version_info < (2, 7):
-        excludes.extend(EXCLUDES_27)
-    if sys.version_info < (3, 4):
-        excludes.extend(EXCLUDES_34)
+    if sys.version_info < (3, 0):
+        excludes.extend(EXCLUDES_2)
+    if sys.version_info >= (3, 0):
+        excludes.extend(EXCLUDES_3)
 
     for e in excludes:
         fp = os.path.join(path, e)

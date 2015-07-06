@@ -1,6 +1,7 @@
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
-BUILD_DIRS = .tox bin build dist include lib lib64 libmaxminddb man node_modules share
+BUILD_DIRS = .tox bin bower_components build dist include \
+	lib lib64 libmaxminddb man node_modules share
 TESTS ?= ichnaea
 TRAVIS ?= false
 
@@ -128,14 +129,18 @@ release_install:
 	$(PYTHON) setup.py install
 
 release_compile:
+ifeq ($(PYTHON_2),yes)
 	$(PYTHON) compile.py
+endif
 
 release: release_install release_compile
 
 wheel:
+ifeq ($(PYTHON_2),yes)
 	$(INSTALL) wheel
 	$(PYTHON) compile_wheels.py -c "$(WHEEL)" -w $(PIP_WHEEL_DIR) \
 		-f requirements/prod-c.txt -f requirements/test-c.txt
+endif
 
 init_db:
 	$(BIN)/location_initdb --initdb
