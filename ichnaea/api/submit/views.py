@@ -22,7 +22,7 @@ class BaseSubmitView(BaseAPIView):
 
     def decode_request_header(self, header_name):
         value = self.request.headers.get(header_name, None)
-        if isinstance(value, str):
+        if isinstance(value, str):  # pragma: no cover
             value = value.decode('utf-8', 'ignore')
         return value
 

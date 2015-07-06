@@ -6,6 +6,7 @@
 *.log
 *.log.*
 *.pid
+*.sublime-*
 celerybeat-schedule
 coverage.xml
 loadtest/src/*.json

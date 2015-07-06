@@ -67,6 +67,6 @@ class DummyConfig(object):
 def read_config(filename=None):
     if filename is None:
         filename = os.environ.get('ICHNAEA_CFG', 'ichnaea.ini')
-        if PY2:
+        if PY2:  # pragma: no cover
             filename = filename.decode('utf-8')
     return Config(filename)

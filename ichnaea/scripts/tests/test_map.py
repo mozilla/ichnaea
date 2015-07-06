@@ -39,7 +39,7 @@ class TestMap(CeleryTestCase):
         try:
             result = export_to_csv(session, filename, multiplier=3)
             self.assertEqual(result, 9)
-            written = os.read(fd, 10240)
+            written = os.read(fd, 10240).decode('utf-8')
             lines = [line.split(',') for line in written.split()]
             self.assertEqual(len(lines), 9)
             self.assertEqual(set([round(float(l[0]), 2) for l in lines]),

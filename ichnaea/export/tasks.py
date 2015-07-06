@@ -1,7 +1,6 @@
 from contextlib import contextmanager, closing
 import csv
 from datetime import datetime, timedelta
-import gzip
 import os
 import shutil
 import tempfile
@@ -70,23 +69,6 @@ def selfdestruct_tempdir():
         shutil.rmtree(base_path)
 
 
-# Python 2.6 Gzipfile doesn't have __exit__
-class GzipFile(gzip.GzipFile):
-
-    # Add a default value, as this is used in the __repr__ and only
-    # set in the __init__ on successfully opening the file. Sentry/raven
-    # would bark on this while trying to capture the stack frame locals.
-    fileobj = None
-
-    def __enter__(self):
-        if self.fileobj is None:  # pragma: no cover
-            raise ValueError('I/O operation on closed GzipFile object')
-        return self
-
-    def __exit__(self, *args):
-        self.close()
-
-
 def make_cell_export_dict(row):
     data = {
         'changeable': 1,
@@ -150,7 +132,7 @@ def make_ocid_cell_import_dict(row):
 
 def write_stations_to_csv(session, table, columns,
                           cond, path, make_dict, fields):
-    with GzipFile(path, 'wb') as gzip_file:
+    with util.gzip_open(path, 'w') as gzip_file:
         writer = csv.DictWriter(gzip_file, fields, extrasaction='ignore')
         limit = 10000
         offset = 0
@@ -227,8 +209,8 @@ def import_stations(session, pipe, filename, fields):
         else:  # pragma: no cover
             session.flush()
 
-    with GzipFile(filename, 'rb') as zip_file:
-        csv_reader = csv.DictReader(zip_file, fields)
+    with util.gzip_open(filename, 'r') as gzip_file:
+        csv_reader = csv.DictReader(gzip_file, fields)
         batch = 10000
         rows = []
         area_keys = set()

@@ -8,6 +8,7 @@ import boto
 from mock import MagicMock, patch
 from pytz import UTC
 import requests_mock
+import six
 
 from ichnaea.constants import CELL_MIN_ACCURACY
 from ichnaea.data.tasks import update_statcounter
@@ -21,7 +22,6 @@ from ichnaea.export.tasks import (
     CELL_COLUMNS,
     CELL_FIELDS,
     CELL_HEADER_DICT,
-    GzipFile
 )
 from ichnaea.models import (
     Cell,
@@ -81,10 +81,10 @@ class TestExport(CeleryTestCase):
                 session, Cell.__table__, CELL_COLUMNS, cond,
                 path, make_cell_export_dict, CELL_FIELDS)
 
-            with GzipFile(path, 'rb') as gzip_file:
+            with util.gzip_open(path, 'r') as gzip_file:
                 reader = csv.DictReader(gzip_file, CELL_FIELDS)
 
-                header = reader.next()
+                header = six.next(reader)
                 self.assertTrue('area' in header.values())
                 self.assertEqual(header, CELL_HEADER_DICT)
 
@@ -163,8 +163,8 @@ class TestImport(CeleryAppTestCase):
 
         with selfdestruct_tempdir() as d:
             path = os.path.join(d, 'import.csv.gz')
-            with GzipFile(path, 'wb') as f:
-                f.write(txt)
+            with util.gzip_open(path, 'w') as gzip_file:
+                gzip_file.write(txt)
             yield path
 
     def import_test_csv(self, lo=1, hi=10, time=1408604686, session=None):
@@ -255,9 +255,9 @@ class TestImport(CeleryAppTestCase):
 
     def test_local_import_latest_through_http(self):
         with self.get_test_csv() as path:
-            with open(path, 'r') as f:
-                with requests_mock.Mocker() as m:
-                    m.register_uri('GET', re.compile('.*'), body=f)
+            with open(path, 'rb') as gzip_file:
+                with requests_mock.Mocker() as req_m:
+                    req_m.register_uri('GET', re.compile('.*'), body=gzip_file)
                     import_latest_ocid_cells()
 
         cells = (self.session.query(OCIDCell)

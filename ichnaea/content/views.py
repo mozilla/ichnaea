@@ -1,3 +1,4 @@
+import operator
 import os
 
 import boto
@@ -121,7 +122,7 @@ def s3_list_downloads(assets_bucket, assets_url, raven_client):
     except S3ResponseError:  # pragma: no cover
         raven_client.captureException()
         return []
-    return sorted(files, reverse=True)
+    return sorted(files, key=operator.itemgetter('name'), reverse=True)
 
 
 class Layout(object):

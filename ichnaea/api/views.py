@@ -1,5 +1,3 @@
-import zlib
-
 import colander
 import simplejson as json
 
@@ -79,7 +77,7 @@ class BaseAPIView(BaseView):
             # handle gzip self.request bodies
             try:
                 request_content = util.decode_gzip(self.request.body)
-            except zlib.error as exc:
+            except OSError as exc:
                 errors.append({'name': None, 'description': repr(exc)})
 
         request_data = {}
