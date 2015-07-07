@@ -1,13 +1,9 @@
 # new container based environment
 sudo: false
 
-# use a download cache for pip and wheel
-env:
-    - PIP_DOWNLOAD_CACHE=$HOME/.pipcache PIP_WHEEL_DIR=$HOME/.wheelhouse
 cache:
+  pip: true
   directories:
-    - $HOME/.pipcache/
-    - $HOME/.wheelhouse/
     - libmaxminddb/
 
 language: python
@@ -21,8 +17,8 @@ notifications:
     - hschlichting@mozilla.com
 
 script:
+    - pip install -U pip
     - make build
-    - make wheel
     - make release_compile
     - make test
     - make docs

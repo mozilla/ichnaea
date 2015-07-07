@@ -46,10 +46,7 @@ else
 	TEST_ARG = --tests=$(TESTS)
 endif
 
-PIP_WHEEL_DIR ?= $(HERE)/wheelhouse
-INSTALL = $(PIP) install --no-deps --disable-pip-version-check \
-	-f file://$(PIP_WHEEL_DIR)
-WHEEL = $(PIP) wheel --no-deps -w $(PIP_WHEEL_DIR)
+INSTALL = $(PIP) install --no-deps --disable-pip-version-check
 
 BOWER_ROOT = $(HERE)/bower_components
 STATIC_ROOT = $(HERE)/ichnaea/content/static
@@ -66,7 +63,7 @@ UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
 
 
 .PHONY: all bower js mysql init_db css js test clean shell docs \
-	build build_dev build_maxmind build_req wheel \
+	build build_dev build_maxmind build_req \
 	release release_install release_compile \
 	tox_install tox_test
 
@@ -134,13 +131,6 @@ ifeq ($(PYTHON_2),yes)
 endif
 
 release: release_install release_compile
-
-wheel:
-ifeq ($(PYTHON_2),yes)
-	$(INSTALL) wheel
-	$(PYTHON) compile_wheels.py -c "$(WHEEL)" -w $(PIP_WHEEL_DIR) \
-		-f requirements/prod-c.txt -f requirements/test-c.txt
-endif
 
 init_db:
 	$(BIN)/location_initdb --initdb
