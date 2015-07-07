@@ -16,9 +16,195 @@ Geolocate requests are submitted using a POST request to the URL::
 
     https://location.services.mozilla.com/v1/geolocate?key=<API_KEY>
 
-This implements the same interface as the `Google Maps Geolocation
+This implements almost the same interface as the `Google Maps Geolocation
 API <https://developers.google.com/maps/documentation/business/geolocation/>`_
-endpoint. Our service implements all of the standard API.
+endpoint, hence referred to as `GLS` or Google Location Service API.
+
+Our service implements all of the standard GLS API with a couple of additions.
+
+Geolocate requests are submitted using a POST request with a JSON body:
+
+.. code-block:: javascript
+
+    {
+        "carrier": "Telecom",
+        "homeMobileCountryCode": 208,
+        "homeMobileNetworkCode": 1,
+        "cellTowers": [{
+            "radioType": "wcdma",
+            "mobileCountryCode": 208,
+            "mobileNetworkCode": 1,
+            "locationAreaCode": 2,
+            "cellId": 1234567,
+            "age": 1,
+            "psc": 3,
+            "signalStrength": -60,
+            "timingAdvance": 1
+        }],
+        "wifiAccessPoints": [{
+            "macAddress": "01:23:45:67:89:ab",
+            "age": 3,
+            "channel": 11,
+            "frequency": 2412,
+            "signalStrength": -51,
+            "signalToNoiseRatio": 13
+        }, {
+            "macAddress": "01:23:45:67:89:cd"
+        }],
+        "fallbacks": {
+            "lacf": true,
+            "ipf": true
+        }
+    }
+
+
+Field Definition
+----------------
+
+All of the fields are optional. Though in order to get a WiFi based position
+estimate at least two WiFi networks need to be provided and for each the
+`macAddress` needs to be known. The minimum of two networks is a mandatory
+privacy restriction for WiFi based location services.
+
+Cell based position estimates require each cell record to contain at least
+the five `radioType`, `mobileCountryCode`, `mobileNetworkCode`,
+`locationAreaCode` and `cellId` values, except for CDMA networks where the
+`mobileCountryCode` field is optional.
+
+Position estimates do get a lot more precise if in addition to these unique
+identifiers at least `signalStrength` data can be provided for each entry.
+
+Note that all the cell JSON keys use the same names for all radio types,
+generally using the official GSM name to denote similar concepts, even
+though the actual client side API's might use different names for each
+radio type and thus must be mapped to the JSON keys.
+
+
+Global Fields
+~~~~~~~~~~~~~
+
+carrier
+    The clear text name of the cell carrier / operator.
+
+homeMobileCountryCode
+    The mobile country code stored on the SIM card.
+
+homeMobileNetworkCode
+    The mobile network code stored on the SIM card.
+
+radioType
+    Same as the radioType entry in each cell record. If all the cell
+    entries have the same radioType, it can be provided at the top level
+    instead.
+
+
+Cell Tower Fields
+~~~~~~~~~~~~~~~~~
+
+radioType
+    The type of radio network. One of `gsm`, `wcdma`, `lte` or `cdma`.
+    This is a custom extension to the GLS API, which only defines the
+    top-level radioType field.
+
+mobileCountryCode
+    The mobile country code. For CMDA networks it is not defined.
+    If the device is a combined GSM/CDMA phone, the GSM mobile country
+    code might be available and used for the CDMA network.
+
+mobileNetworkCode
+    The mobile network code or the system id for CDMA networks.
+
+locationAreaCode
+    The location area code for GSM and WCDMA networks. The tracking area
+    code for LTE networks. The network id for CDMA networks.
+
+cellId
+    The cell id or cell identity. The base station id for CDMA networks.
+
+age
+    The number of milliseconds since this networks was last detected.
+
+psc
+    The primary scrambling code for WCDMA and physical cell id for LTE.
+    This is an addition to the GLS API.
+
+signalStrength
+    The signal strength for this cell network, either the RSSI or RSCP.
+
+timingAdvance
+    The timing advance value for this cell network.
+
+
+WiFi Access Point Fields
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note:: Hidden WiFi networks and those whose SSID (clear text name)
+          ends with the string `_nomap` must NOT be used for privacy
+          reasons.
+
+macAddress
+    The BSSID of the WiFi network. 
+
+age
+    The number of milliseconds since this networks was last detected.
+
+channel
+    The WiFi channel, often 1 - 13 for networks in the 2.4GHz range.
+
+frequency
+    The frequency in MHz of the channel over which the client is
+    communicating with the access point. This is an addition to the
+    GLS API.
+
+signalStrength
+    The received signal strength (RSSI) in dBm.
+
+signalToNoiseRatio
+    The current signal to noise ratio measured in dB.
+
+
+Fallback Fields
+~~~~~~~~~~~~~~~
+
+The fallback section is a custom addition to the GLS API.
+
+By default both a GeoIP based position fallback and a fallback based
+on cell location areas (lac's) are enabled. Simply omit the `fallbacks`
+section if you want to use the defaults. Change the values to `false`
+if you want to disable either of the fallbacks.
+
+lacf
+    If no exact cell match can be found, fall back from exact cell
+    position estimates to more coarse grained cell location area
+    estimates, rather than going directly to an even worse GeoIP
+    based estimate.
+
+ipf
+    If no position can be estimated based on any of the provided data
+    points, fall back to an estimate based on a GeoIP database based on
+    the senders IP address at the time of the query.
+
+Deviations From GLS API
+~~~~~~~~~~~~~~~~~~~~~~~
+
+As mentioned in the specific fields, our API has a couple of extensions.
+
+* Cell entries allow to specify the `radioType` per cell network
+  instead of globally. This allows for example doing queries with data
+  from multiple active SIM cards where one of them is on a GSM
+  connection while the other uses a WCDMA connection.
+
+* Cell entries take an extra `psc` field.
+
+* The WiFi macAddress field takes both upper- and lower-case characters.
+  It also tolerates `:`, `-` or no separator and internally strips them.
+
+* WiFi entries take an extra `frequency` field.
+
+* The `fallbacks` section allows some control over the more coarse
+  grained position sources. If no exact match can be found, these can
+  be used to return a `404 Not Found` rather than a coarse grained
+  estimate with a large accuracy value.
 
 
 Response
@@ -34,4 +220,21 @@ A successful response will be:
             "lng": -0.1
         },
         "accuracy": 1200.4
+    }
+
+If no position information could be determined, a HTTP status code 404 will
+be returned:
+
+.. code-block:: javascript
+
+    {
+        "error": {
+            "errors": [{
+                "domain": "geolocation",
+                "reason": "notFound",
+                "message": "Not found",
+            }],
+            "code": 404,
+            "message": "Not found",
+        }
     }

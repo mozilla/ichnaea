@@ -18,8 +18,7 @@ Geosubmit requests are submitted using a POST request to the URL::
 There is an earlier :ref:`api_geosubmit` version one API, with a slightly
 different and less extensive field list.
 
-Geosubmit requests are submitted using a POST request with a JSON
-body:
+Geosubmit requests are submitted using a POST request with a JSON body:
 
 .. code-block:: javascript
 
@@ -213,8 +212,8 @@ ip
     The public IP address at the time the observation was taken.
 
 
-Wifi Access Points Fields
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Wifi Access Point Fields
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 macAddress
     The BSSID of the Wifi network. Hidden Wifi networks must not be collected.

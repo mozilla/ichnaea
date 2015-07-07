@@ -31,11 +31,11 @@ Table of contents
 
    usage
    api/index
-   calculation
    import_export
    deploy
    development
    testing
+   calculation
    metrics
    internal_api/index
    changelog

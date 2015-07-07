@@ -17,8 +17,7 @@ Geosubmit requests are submitted using a POST request to the URL::
 
     https://location.services.mozilla.com/v1/geosubmit?key=<API_KEY>
 
-Geosubmit requests are submitted using a POST request with a JSON
-body:
+Geosubmit requests are submitted using a POST request with a JSON body:
 
 .. code-block:: javascript
 

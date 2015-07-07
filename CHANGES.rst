@@ -13,6 +13,9 @@ Migrations
 Changes
 ~~~~~~~
 
+- #376: Document the added home mcc/mnc fields.
+
+- #419: Update geolocate docs to mention all GLS fields.
 
 20150707130400
 **************

@@ -62,7 +62,7 @@ The record fields have the same meaning and requirements as explained
 in the :ref:`api_search`.
 
 The only required fields are `lat` and `lon` and at least one cell or WiFi
-entry.  If either `lat` or `lon` are not included, the record will
+entry. If either `lat` or `lon` are not included, the record will
 not be accepted.
 
 The altitude, accuracy and altitude_accuracy fields are all measured in
@@ -80,9 +80,7 @@ speed and heading cannot be determined or the device was stationary
 while observing the environment.
 
 The time has to be in UTC time, encoded in ISO 8601. If not provided,
-the server time will be used. It should be the first of the month, in
-which the radio environment was observed at the given location. The
-coarse grained month resolution protects the privacy of the observer.
+the server time will be used.
 
 
 Response

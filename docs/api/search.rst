@@ -58,6 +58,40 @@ A example of a well formed JSON search request :
 Field Definition
 ----------------
 
+Cell Fields
+~~~~~~~~~~~
+
+radio
+    The type of radio network. One of `gsm`, `umts`, `lte` or `cdma`.
+
+mcc
+    The mobile country code. For CMDA networks it is not defined.
+    If the device is a combined GSM/CDMA phone, the GSM mobile country
+    code might be available and used for the CDMA network.
+
+mnc
+    The mobile network code or the system id for CDMA networks.
+
+lac
+    The location area code for GSM and WCDMA networks. The tracking area
+    code for LTE networks. The network id for CDMA networks.
+
+cid
+    The cell id or cell identity. The base station id for CDMA networks.
+
+psc
+    The primary scrambling code for WCDMA and physical cell id for LTE.
+
+signal
+    The signal strength for this cell network, either the RSSI or RSCP.
+
+ta
+    The timing advance value for this cell network.
+
+
+WiFi Fields
+~~~~~~~~~~~
+
 For `wifi` entries, the `key` field is required. The client must check the
 Wifi SSID for a `_nomap` suffix. Wifi networks with such a suffix must not be
 submitted to the server.
@@ -65,8 +99,6 @@ submitted to the server.
 Most devices will only report the WiFi frequency or the WiFi channel,
 but not both. The service will accept both if they are provided,
 but you can include only one or omit both fields.
-
-Valid keys for the WiFi record are:
 
 key **(required)**
     The client must check the WiFi SSID for a `_nomap`
@@ -103,9 +135,6 @@ An example of a valid WiFi record is below:
         "signal": -51,
         "signalToNoiseRatio": 37
     }
-
-See :ref:`cell_records` for a detailed explanation of the cell record
-fields for the different network standards.
 
 
 Mapping records into a search request

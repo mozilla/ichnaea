@@ -135,4 +135,3 @@ back data to the service. Finally the :ref:`api_country` was added and
    geosubmit
    search
    submit
-   cell

@@ -13,4 +13,5 @@ For documentation on public HTTP API please look at :ref:`service_api`.
    api/index
    geocalc
    geoip
+   models/cell
    models/constants
