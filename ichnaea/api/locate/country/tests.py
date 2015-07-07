@@ -1,57 +1,41 @@
 from sqlalchemy import text
 
-from ichnaea.api.exceptions import (
-    InvalidAPIKey,
-    LocationNotFound,
+from ichnaea.api.locate.tests.base import (
+    BaseLocateTest,
+    CommonLocateTest,
 )
 from ichnaea.tests.base import AppTestCase
 
 
-class CountryBase(object):
+class CountryBase(BaseLocateTest):
+
+    url = '/v1/country'
+    # disabled metric tracking
+    metric = None  # 'country'
+    metric_url = None  # 'request.v1.country'
 
     @property
-    def test_ip(self):
-        # accesses data defined in GeoIPTestCase
-        return self.geoip_data['London']['ip']
+    def ip_response(self):
+        return {'country_code': 'GB', 'country_name': 'United Kingdom'}
 
-    def _make_geoip_query(self, api_key='test', data=None,
-                          ip=None, status=200):
-        url = '/v1/country'
-        if api_key:
-            url = url + '?key=' + api_key
+    def _make_geoip_query(self, api_key='test', body=None,
+                          ip=True, status=200, **kw):
+        data = body
         if data is None:
             data = {}
-        extra_environ = None
-        if ip is None:
+        if ip is True:
             ip = self.test_ip
-        if ip:
-            extra_environ = {'HTTP_X_FORWARDED_FOR': ip}
-        result = self.app.post_json(
-            url, data,
-            extra_environ=extra_environ,
-            status=status)
-        return result
-
-    def _check_geoip_result(self, result, status=200):
-        self.assertEqual(result.content_type, 'application/json')
-        self.assertEqual(result.charset, 'UTF-8')
-        if status == 200:
-            self.assertEqual(result.json,
-                             {'country_name': 'United Kingdom',
-                              'country_code': 'GB'})
-        elif status == 400:
-            self.assertEqual(result.json, InvalidAPIKey.json_body())
-        elif status == 404:
-            self.assertEqual(result.json, LocationNotFound.json_body())
+        return self._call(body=data, api_key=api_key,
+                          ip=ip, status=status, **kw)
 
 
-class TestCountry(AppTestCase, CountryBase):
+class TestCountry(AppTestCase, CountryBase, CommonLocateTest):
 
     track_connection_events = True
 
     def test_geoip(self):
-        result = self._make_geoip_query(status=200)
-        self._check_geoip_result(result, status=200)
+        res = self._make_geoip_query(status=200)
+        self.check_response(res, 'ok')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
             counter=['request.v1.country.200'],
@@ -59,8 +43,8 @@ class TestCountry(AppTestCase, CountryBase):
         )
 
     def test_geoip_miss(self):
-        result = self._make_geoip_query(ip='127.0.0.1', status=404)
-        self._check_geoip_result(result, status=404)
+        res = self._make_geoip_query(ip='127.0.0.1', status=404)
+        self.check_response(res, 'not_found')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
             counter=['request.v1.country.404'],
@@ -68,8 +52,8 @@ class TestCountry(AppTestCase, CountryBase):
         )
 
     def test_known_api_key(self):
-        result = self._make_geoip_query(api_key='test', status=200)
-        self._check_geoip_result(result, status=200)
+        res = self._make_geoip_query(api_key='test', status=200)
+        self.check_response(res, 'ok')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
             counter=[('request.v1.country.200', 1),
@@ -78,8 +62,7 @@ class TestCountry(AppTestCase, CountryBase):
         )
 
     def test_no_api_key(self):
-        result = self._make_geoip_query(api_key=None, status=200)
-        self._check_geoip_result(result, status=200)
+        super(TestCountry, self).test_no_api_key(status=200, response='ok')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
             counter=[('request.v1.country.200', 1),
@@ -88,8 +71,8 @@ class TestCountry(AppTestCase, CountryBase):
         )
 
     def test_unknown_api_key(self):
-        result = self._make_geoip_query(api_key='unknown_key', status=200)
-        self._check_geoip_result(result, status=200)
+        super(TestCountry, self).test_unknown_api_key(
+            status=200, response='ok')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
             counter=[('request.v1.country.200', 1),
@@ -98,29 +81,25 @@ class TestCountry(AppTestCase, CountryBase):
         )
 
     def test_incomplete_request_means_geoip(self):
-        result = self._make_geoip_query(data={'wifiAccessPoints': []})
-        self._check_geoip_result(result, status=200)
+        res = self._make_geoip_query(body={'wifiAccessPoints': []})
+        self.check_response(res, 'ok')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
             counter=['country.geoip_city_found',
                      'country.geoip_hit'])
 
     def test_no_wifi(self):
-        result = self._make_geoip_query(
+        res = self._make_geoip_query(
             ip='127.0.0.1',
-            data={'wifiAccessPoints': [{'macAddress': 'ab:cd:ef:12:34:56'}]},
+            body={'wifiAccessPoints': [{'macAddress': 'ab:cd:ef:12:34:56'}]},
             status=404)
-        self._check_geoip_result(result, status=404)
+        self.check_response(res, 'not_found')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
             counter=['country.miss'])
 
-    def test_get_fallback(self):
-        result = self.app.get(
-            '/v1/country?key=test',
-            extra_environ={'HTTP_X_FORWARDED_FOR': self.test_ip},
-            status=200)
-        self._check_geoip_result(result)
+    def test_get(self):
+        super(TestCountry, self).test_get()
         self.check_db_calls(rw=0, ro=0)
 
 
@@ -137,8 +116,8 @@ class TestCountryErrors(AppTestCase, CountryBase):
             stmt = text('drop table %s;' % tablename)
             self.session.execute(stmt)
 
-        result = self._make_geoip_query(status=200)
-        self._check_geoip_result(result, status=200)
+        res = self._make_geoip_query(status=200)
+        self.check_response(res, 'ok')
         self.check_stats(
             counter=['request.v1.country.200'],
             timer=['request.v1.country'],

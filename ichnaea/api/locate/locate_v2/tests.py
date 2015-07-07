@@ -6,13 +6,11 @@ from ichnaea.models import (
     ApiKey,
     Radio,
 )
-from ichnaea.api.exceptions import (
-    DailyLimitExceeded,
-    InvalidAPIKey,
-    LocationNotFound,
-    ParseError,
-)
 from ichnaea.api.locate.locate_v2.schema import LocateV2Schema
+from ichnaea.api.locate.tests.base import (
+    BaseLocateTest,
+    CommonLocateTest,
+)
 from ichnaea.tests.base import AppTestCase, TestCase
 from ichnaea.tests.factories import (
     CellFactory,
@@ -34,30 +32,54 @@ class TestLocateV2Schema(TestCase):
         self.assertFalse('radioType' in data['cell'][0])
 
 
-class TestLocateV2(AppTestCase):
+class LocateV2Base(BaseLocateTest):
 
-    def setUp(self):
-        super(TestLocateV2, self).setUp()
-        self.url = '/v1/geolocate'
-        self.metric = 'geolocate'
-        self.metric_url = 'request.v1.geolocate'
+    url = '/v1/geolocate'
+    metric = 'geolocate'
+    metric_url = 'request.v1.geolocate'
+
+    @property
+    def ip_response(self):
+        london = self.geoip_data['London']
+        return {'location': {'lat': london['latitude'],
+                             'lng': london['longitude']},
+                'accuracy': london['accuracy']}
+
+
+class TestLocateV2(AppTestCase, LocateV2Base, CommonLocateTest):
+
+    def check_model_response(self, response, model, fallback=None, **kw):
+        expected_names = set(['location', 'accuracy'])
+
+        expected = super(TestLocateV2, self).check_model_response(
+            response, model,
+            fallback=fallback,
+            expected_names=expected_names,
+            **kw)
+
+        data = response.json
+        location = data['location']
+        self.assertAlmostEquals(location['lat'], expected['lat'])
+        self.assertAlmostEquals(location['lng'], expected['lon'])
+        self.assertAlmostEqual(data['accuracy'], expected['accuracy'])
+        if fallback is not None:
+            self.assertEqual(data['fallback'], fallback)
 
     def test_ok_cell(self):
         cell = CellFactory()
         self.session.flush()
 
-        res = self.app.post_json(
-            '%s?key=test' % self.url, {
-                'radioType': cell.radio.name,
-                'cellTowers': [{
-                    'mobileCountryCode': cell.mcc,
-                    'mobileNetworkCode': cell.mnc,
-                    'locationAreaCode': cell.lac,
-                    'cellId': cell.cid,
-                    'signalStrength': -70,
-                    'timingAdvance': 1},
-                ]},
-            status=200)
+        res = self._call(body={
+            'radioType': cell.radio.name,
+            'cellTowers': [{
+                'mobileCountryCode': cell.mcc,
+                'mobileNetworkCode': cell.mnc,
+                'locationAreaCode': cell.lac,
+                'cellId': cell.cid,
+                'signalStrength': -70,
+                'timingAdvance': 1},
+            ]})
+        self.check_model_response(res, cell)
 
         self.check_stats(
             counter=[self.metric_url + '.200',
@@ -65,58 +87,44 @@ class TestLocateV2(AppTestCase):
                      self.metric + '.api_log.test.cell_hit']
         )
 
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {'location': {'lat': cell.lat,
-                                                 'lng': cell.lon},
-                                    'accuracy': cell.range})
-
     def test_ok_cellarea(self):
         cell = CellAreaFactory()
         self.session.flush()
 
-        res = self.app.post_json(
-            '%s?key=test' % self.url, {
-                'radioType': cell.radio.name,
-                'cellTowers': [{
-                    'mobileCountryCode': cell.mcc,
-                    'mobileNetworkCode': cell.mnc,
-                    'locationAreaCode': cell.lac,
-                    'signalStrength': -70,
-                    'timingAdvance': 1},
-                ]},
-            status=200)
+        res = self._call(body={
+            'radioType': cell.radio.name,
+            'cellTowers': [{
+                'mobileCountryCode': cell.mcc,
+                'mobileNetworkCode': cell.mnc,
+                'locationAreaCode': cell.lac,
+                'signalStrength': -70,
+                'timingAdvance': 1},
+            ]})
+        self.check_model_response(res, cell)
 
         self.check_stats(
             counter=[self.metric_url + '.200',
                      self.metric + '.api_key.test',
                      self.metric + '.api_log.test.cell_lac_hit']
         )
-
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {'location': {'lat': cell.lat,
-                                                 'lng': cell.lon},
-                                    'accuracy': cell.range})
 
     def test_ok_cellarea_when_lacf_enabled(self):
         cell = CellAreaFactory()
         self.session.flush()
 
-        res = self.app.post_json(
-            '%s?key=test' % self.url,
-            {
-                'radioType': cell.radio.name,
-                'cellTowers': [{
-                    'mobileCountryCode': cell.mcc,
-                    'mobileNetworkCode': cell.mnc,
-                    'locationAreaCode': cell.lac,
-                    'signalStrength': -70,
-                    'timingAdvance': 1},
-                ],
-                'fallbacks': {
-                    'lacf': 1,
-                },
-            },
-            status=200)
+        res = self._call(body={
+            'radioType': cell.radio.name,
+            'cellTowers': [{
+                'mobileCountryCode': cell.mcc,
+                'mobileNetworkCode': cell.mnc,
+                'locationAreaCode': cell.lac,
+                'signalStrength': -70,
+                'timingAdvance': 1},
+            ],
+            'fallbacks': {
+                'lacf': 1,
+            }})
+        self.check_model_response(res, cell)
 
         self.check_stats(
             counter=[self.metric_url + '.200',
@@ -124,32 +132,24 @@ class TestLocateV2(AppTestCase):
                      self.metric + '.api_log.test.cell_lac_hit']
         )
 
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {'location': {'lat': cell.lat,
-                                                 'lng': cell.lon},
-                                    'accuracy': cell.range})
-
     def test_cellarea_not_found_when_lacf_disabled(self):
         cell = CellAreaFactory()
         self.session.flush()
 
-        res = self.app.post_json(
-            '%s?key=test' % self.url,
-            {
-                'radioType': cell.radio.name,
-                'cellTowers': [{
-                    'mobileCountryCode': cell.mcc,
-                    'mobileNetworkCode': cell.mnc,
-                    'locationAreaCode': cell.lac,
-                    'signalStrength': -70,
-                    'timingAdvance': 1},
-                ],
-                'fallbacks': {
-                    'lacf': 0,
-                },
-            },
+        res = self._call(body={
+            'radioType': cell.radio.name,
+            'cellTowers': [{
+                'mobileCountryCode': cell.mcc,
+                'mobileNetworkCode': cell.mnc,
+                'locationAreaCode': cell.lac,
+                'signalStrength': -70,
+                'timingAdvance': 1},
+            ],
+            'fallbacks': {
+                'lacf': 0,
+            }},
             status=404)
-        self.assertEqual(res.json, LocationNotFound.json_body())
+        self.check_response(res, 'not_found')
 
         self.check_stats(
             counter=[self.metric_url + '.404',
@@ -160,26 +160,20 @@ class TestLocateV2(AppTestCase):
         cell = CellFactory()
         self.session.flush()
 
-        res = self.app.post_json(
-            '%s?key=test' % self.url, {
-                'cellTowers': [{
-                    'radioType': cell.radio.name,
-                    'mobileCountryCode': cell.mcc,
-                    'mobileNetworkCode': cell.mnc,
-                    'locationAreaCode': cell.lac,
-                    'cellId': cell.cid,
-                    'psc': cell.psc}, {
-                    'radioType': cell.radio.name,
-                    'mobileCountryCode': cell.mcc,
-                    'mobileNetworkCode': cell.mnc,
-                    'psc': cell.psc + 1,
-                }]},
-            status=200)
-
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {'location': {'lat': cell.lat,
-                                                 'lng': cell.lon},
-                                    'accuracy': cell.range})
+        res = self._call(body={
+            'cellTowers': [{
+                'radioType': cell.radio.name,
+                'mobileCountryCode': cell.mcc,
+                'mobileNetworkCode': cell.mnc,
+                'locationAreaCode': cell.lac,
+                'cellId': cell.cid,
+                'psc': cell.psc}, {
+                'radioType': cell.radio.name,
+                'mobileCountryCode': cell.mcc,
+                'mobileNetworkCode': cell.mnc,
+                'psc': cell.psc + 1,
+            }]})
+        self.check_model_response(res, cell)
 
     def test_ok_wifi(self):
         wifi = WifiFactory()
@@ -191,33 +185,30 @@ class TestLocateV2(AppTestCase):
             WifiFactory(lat=None, lon=None),
         ]
         self.session.flush()
-        res = self.app.post_json(
-            '%s?key=test' % self.url, {
-                'wifiAccessPoints': [
-                    {'macAddress': wifis[0].key, 'channel': 6},
-                    {'macAddress': wifis[1].key, 'frequency': 2437},
-                    {'macAddress': wifis[2].key, 'signalStrength': -77},
-                    {'macAddress': wifis[3].key, 'signalToNoiseRatio': 13},
-                ]},
-            status=200)
+
+        res = self._call(body={
+            'wifiAccessPoints': [
+                {'macAddress': wifis[0].key, 'channel': 6},
+                {'macAddress': wifis[1].key, 'frequency': 2437},
+                {'macAddress': wifis[2].key, 'signalStrength': -77},
+                {'macAddress': wifis[3].key, 'signalToNoiseRatio': 13},
+            ]})
+        self.check_model_response(res, wifi, lat=wifi.lat + offset)
+
         self.check_stats(
             counter=[self.metric + '.api_key.test',
                      self.metric + '.api_log.test.wifi_hit'])
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {'location': {'lat': wifi.lat + offset,
-                                                 'lng': wifi.lon},
-                                    'accuracy': wifi.range})
 
     def test_wifi_not_found(self):
         wifis = WifiFactory.build_batch(2)
-        res = self.app.post_json(
-            '%s?key=test' % self.url, {
-                'wifiAccessPoints': [
-                    {'macAddress': wifis[0].key},
-                    {'macAddress': wifis[1].key},
-                ]},
+
+        res = self._call(body={
+            'wifiAccessPoints': [
+                {'macAddress': wifis[0].key},
+                {'macAddress': wifis[1].key},
+            ]},
             status=404)
-        self.assertEqual(res.json, LocationNotFound.json_body())
+        self.check_response(res, 'not_found')
 
         # Make sure to get two counters, a timer, and no traceback
         self.check_stats(
@@ -235,119 +226,30 @@ class TestLocateV2(AppTestCase):
         cell = CellFactory(mnc=1)
         self.session.flush()
 
-        res = self.app.post_json(
-            '%s?key=test' % self.url, {
-                'cellTowers': [{
-                    'radioType': cell.radio.name,
-                    'mobileCountryCode': str(cell.mcc),
-                    'mobileNetworkCode': '01',
-                    'locationAreaCode': cell.lac,
-                    'cellId': cell.cid},
-                ]},
-            status=200)
-
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {'location': {'lat': cell.lat,
-                                                 'lng': cell.lon},
-                                    'accuracy': cell.range})
+        res = self._call(body={
+            'cellTowers': [{
+                'radioType': cell.radio.name,
+                'mobileCountryCode': str(cell.mcc),
+                'mobileNetworkCode': '01',
+                'locationAreaCode': cell.lac,
+                'cellId': cell.cid},
+            ]})
+        self.check_model_response(res, cell)
 
     def test_geoip_fallback(self):
-        london = self.geoip_data['London']
         wifis = WifiFactory.build_batch(4)
-        res = self.app.post_json(
-            '%s?key=test' % self.url,
-            {'wifiAccessPoints': [
+
+        res = self._call(body={
+            'wifiAccessPoints': [
                 {'macAddress': wifis[0].key},
                 {'macAddress': wifis[1].key},
                 {'macAddress': wifis[2].key},
                 {'macAddress': wifis[3].key},
             ]},
-            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
-            status=200)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {'location': {'lat': london['latitude'],
-                                                 'lng': london['longitude']},
-                                    'accuracy': london['accuracy']})
-
-    def test_get_request_means_geoip(self):
-        london = self.geoip_data['London']
-        res = self.app.get(
-            '%s?key=test' % self.url,
-            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
-            status=200)
-        self.assertEqual(res.json, {'location': {'lat': london['latitude'],
-                                                 'lng': london['longitude']},
-                                    'accuracy': london['accuracy']})
-
-    def test_empty_request_means_geoip(self):
-        london = self.geoip_data['London']
-        res = self.app.post_json(
-            '%s?key=test' % self.url, {},
-            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
-            status=200)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {'location': {'lat': london['latitude'],
-                                                 'lng': london['longitude']},
-                                    'accuracy': london['accuracy']})
-
-    def test_incomplete_request_means_geoip(self):
-        london = self.geoip_data['London']
-        res = self.app.post_json(
-            '%s?key=test' % self.url, {'wifiAccessPoints': []},
-            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
-            status=200)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {'location': {'lat': london['latitude'],
-                                                 'lng': london['longitude']},
-                                    'accuracy': london['accuracy']})
-
-    def test_parse_error(self):
-        res = self.app.post('%s?key=test' % self.url, '\xae', status=400)
-        self.assertEqual(res.json, ParseError.json_body())
-        self.check_stats(counter=[self.metric + '.api_key.test'])
-
-    def test_no_api_key(self):
-        cell = CellFactory()
-        self.session.flush()
-
-        res = self.app.post_json(
-            self.url, {
-                'cellTowers': [{
-                    'radioType': cell.radio.name,
-                    'mobileCountryCode': cell.mcc,
-                    'mobileNetworkCode': cell.mnc,
-                    'locationAreaCode': cell.lac,
-                    'cellId': cell.cid},
-                ]
-            },
-            status=400)
-        self.assertEqual(res.json, InvalidAPIKey.json_body())
-
-        self.check_stats(
-            counter=[self.metric + '.no_api_key'])
-
-    def test_unknown_api_key(self):
-        cell = CellFactory()
-        self.session.flush()
-
-        res = self.app.post_json(
-            '%s?key=unknown_key' % self.url, {
-                'radioType': cell.radio.name,
-                'cellTowers': [
-                    {'mobileCountryCode': cell.mcc,
-                     'mobileNetworkCode': cell.mnc,
-                     'locationAreaCode': cell.lac,
-                     'cellId': cell.cid},
-                ]
-            },
-            status=400)
-        self.assertEqual(res.json, InvalidAPIKey.json_body())
-
-        self.check_stats(
-            counter=[self.metric + '.unknown_api_key'])
+            ip=self.test_ip)
+        self.check_response(res, 'ok')
 
     def test_api_key_limit(self):
-        london = self.geoip_data['London']
         api_key = uuid1().hex
         self.session.add(ApiKey(valid_key=api_key, maxreq=5, shortname='dis'))
         self.session.flush()
@@ -357,35 +259,26 @@ class TestLocateV2(AppTestCase):
         key = 'apilimit:%s:%s' % (api_key, dstamp)
         self.redis_client.incr(key, 10)
 
-        res = self.app.post_json(
-            '%s?key=%s' % (self.url, api_key), {},
-            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
-            status=403)
-        self.assertEqual(res.json, DailyLimitExceeded.json_body())
+        res = self._call(
+            body={}, api_key=api_key, ip=self.test_ip, status=403)
+        self.check_response(res, 'limit_exceeded')
 
     def test_lte_radio(self):
         cell = CellFactory(radio=Radio.lte)
         self.session.flush()
 
-        res = self.app.post_json(
-            '%s?key=test' % self.url, {
-                'cellTowers': [{
-                    'radio': cell.radio.name,
-                    'mobileCountryCode': cell.mcc,
-                    'mobileNetworkCode': cell.mnc,
-                    'locationAreaCode': cell.lac,
-                    'cellId': cell.cid},
-                ]},
-            status=200)
+        res = self._call(body={
+            'cellTowers': [{
+                'radio': cell.radio.name,
+                'mobileCountryCode': cell.mcc,
+                'mobileNetworkCode': cell.mnc,
+                'locationAreaCode': cell.lac,
+                'cellId': cell.cid},
+            ]})
+        self.check_model_response(res, cell)
 
         self.check_stats(
             counter=[self.metric_url + '.200', self.metric + '.api_key.test'])
-
-        self.assertEqual(res.content_type, 'application/json')
-        location = res.json['location']
-        self.assertAlmostEquals(location['lat'], cell.lat)
-        self.assertAlmostEquals(location['lng'], cell.lon)
-        self.assertEqual(res.json['accuracy'], cell.range)
 
     def test_ok_cell_radio_in_celltowers(self):
         # This test covers a bug related to FxOS calling the
@@ -393,64 +286,51 @@ class TestLocateV2(AppTestCase):
         cell = CellFactory()
         self.session.flush()
 
-        res = self.app.post_json(
-            '%s?key=test' % self.url, {
-                'cellTowers': [
-                    {'radio': cell.radio.name,
-                     'mobileCountryCode': cell.mcc,
-                     'mobileNetworkCode': cell.mnc,
-                     'locationAreaCode': cell.lac,
-                     'cellId': cell.cid},
-                ]},
-            status=200)
-
-        self.assertEqual(res.json, {'location': {'lat': cell.lat,
-                                                 'lng': cell.lon},
-                                    'accuracy': cell.range})
+        res = self._call(body={
+            'cellTowers': [
+                {'radio': cell.radio.name,
+                 'mobileCountryCode': cell.mcc,
+                 'mobileNetworkCode': cell.mnc,
+                 'locationAreaCode': cell.lac,
+                 'cellId': cell.cid},
+            ]})
+        self.check_model_response(res, cell)
 
     def test_ok_cell_radiotype_in_celltowers(self):
         # This test covers an extension to the geolocate API
         cell = CellFactory()
         self.session.flush()
 
-        res = self.app.post_json(
-            '%s?key=test' % self.url, {
-                'cellTowers': [
-                    {'radioType': cell.radio.name,
-                     'mobileCountryCode': cell.mcc,
-                     'mobileNetworkCode': cell.mnc,
-                     'locationAreaCode': cell.lac,
-                     'cellId': cell.cid},
-                ]},
-            status=200)
-
-        self.assertEqual(res.json, {'location': {'lat': cell.lat,
-                                                 'lng': cell.lon},
-                                    'accuracy': cell.range})
+        res = self._call(body={
+            'cellTowers': [
+                {'radioType': cell.radio.name,
+                 'mobileCountryCode': cell.mcc,
+                 'mobileNetworkCode': cell.mnc,
+                 'locationAreaCode': cell.lac,
+                 'cellId': cell.cid},
+            ]})
+        self.check_model_response(res, cell)
 
     def test_ok_cell_radio_in_celltowers_dupes(self):
         # This test covers a bug related to FxOS calling the
         # geolocate API incorrectly.
         cell = CellFactory()
         self.session.flush()
-        res = self.app.post_json(
-            '%s?key=test' % self.url, {
-                'cellTowers': [
-                    {'radio': cell.radio.name,
-                     'mobileCountryCode': cell.mcc,
-                     'mobileNetworkCode': cell.mnc,
-                     'locationAreaCode': cell.lac,
-                     'cellId': cell.cid},
-                    {'radio': cell.radio.name,
-                     'mobileCountryCode': cell.mcc,
-                     'mobileNetworkCode': cell.mnc,
-                     'locationAreaCode': cell.lac,
-                     'cellId': cell.cid},
-                ]},
-            status=200)
-        self.assertEqual(res.json, {'location': {'lat': cell.lat,
-                                                 'lng': cell.lon},
-                                    'accuracy': cell.range})
+
+        res = self._call(body={
+            'cellTowers': [
+                {'radio': cell.radio.name,
+                 'mobileCountryCode': cell.mcc,
+                 'mobileNetworkCode': cell.mnc,
+                 'locationAreaCode': cell.lac,
+                 'cellId': cell.cid},
+                {'radio': cell.radio.name,
+                 'mobileCountryCode': cell.mcc,
+                 'mobileNetworkCode': cell.mnc,
+                 'locationAreaCode': cell.lac,
+                 'cellId': cell.cid},
+            ]})
+        self.check_model_response(res, cell)
 
     def test_inconsistent_cell_radio_in_towers(self):
         cell = CellFactory(radio=Radio.umts, range=15000)
@@ -458,27 +338,21 @@ class TestLocateV2(AppTestCase):
                             lat=cell.lat + 0.0002, lon=cell.lon)
         self.session.flush()
 
-        res = self.app.post_json(
-            '%s?key=test' % self.url, {
-                'radioType': Radio.cdma.name,
-                'cellTowers': [
-                    {'radio': 'wcdma',
-                     'mobileCountryCode': cell.mcc,
-                     'mobileNetworkCode': cell.mnc,
-                     'locationAreaCode': cell.lac,
-                     'cellId': cell.cid},
-                    {'radio': cell2.radio.name,
-                     'mobileCountryCode': cell2.mcc,
-                     'mobileNetworkCode': cell2.mnc,
-                     'locationAreaCode': cell2.lac,
-                     'cellId': cell2.cid},
-                ]},
-            status=200)
-
-        location = res.json['location']
-        self.assertAlmostEquals(location['lat'], cell.lat)
-        self.assertAlmostEquals(location['lng'], cell.lon)
-        self.assertEqual(res.json['accuracy'], cell.range)
+        res = self._call(body={
+            'radioType': Radio.cdma.name,
+            'cellTowers': [
+                {'radio': 'wcdma',
+                 'mobileCountryCode': cell.mcc,
+                 'mobileNetworkCode': cell.mnc,
+                 'locationAreaCode': cell.lac,
+                 'cellId': cell.cid},
+                {'radio': cell2.radio.name,
+                 'mobileCountryCode': cell2.mcc,
+                 'mobileNetworkCode': cell2.mnc,
+                 'locationAreaCode': cell2.lac,
+                 'cellId': cell2.cid},
+            ]})
+        self.check_model_response(res, cell)
 
     def test_inconsistent_cell_radio_type_in_towers(self):
         cell = CellFactory(radio=Radio.umts, range=15000)
@@ -486,31 +360,25 @@ class TestLocateV2(AppTestCase):
                             lat=cell.lat + 0.0002, lon=cell.lon)
         self.session.flush()
 
-        res = self.app.post_json(
-            '%s?key=test' % self.url, {
-                'radioType': Radio.cdma.name,
-                'cellTowers': [
-                    {'radio': 'cdma',
-                     'radioType': 'wcdma',
-                     'mobileCountryCode': cell.mcc,
-                     'mobileNetworkCode': cell.mnc,
-                     'locationAreaCode': cell.lac,
-                     'cellId': cell.cid},
-                    {'radioType': cell2.radio.name,
-                     'mobileCountryCode': cell2.mcc,
-                     'mobileNetworkCode': cell2.mnc,
-                     'locationAreaCode': cell2.lac,
-                     'cellId': cell2.cid},
-                ]},
-            status=200)
-
-        location = res.json['location']
-        self.assertAlmostEquals(location['lat'], cell.lat)
-        self.assertAlmostEquals(location['lng'], cell.lon)
-        self.assertEqual(res.json['accuracy'], cell.range)
+        res = self._call(body={
+            'radioType': Radio.cdma.name,
+            'cellTowers': [
+                {'radio': 'cdma',
+                 'radioType': 'wcdma',
+                 'mobileCountryCode': cell.mcc,
+                 'mobileNetworkCode': cell.mnc,
+                 'locationAreaCode': cell.lac,
+                 'cellId': cell.cid},
+                {'radioType': cell2.radio.name,
+                 'mobileCountryCode': cell2.mcc,
+                 'mobileNetworkCode': cell2.mnc,
+                 'locationAreaCode': cell2.lac,
+                 'cellId': cell2.cid},
+            ]})
+        self.check_model_response(res, cell)
 
 
-class TestLocateV2Errors(AppTestCase):
+class TestLocateV2Errors(AppTestCase, LocateV2Base):
     # this is a standalone class to ensure DB isolation for dropping tables
 
     def tearDown(self):
@@ -518,32 +386,26 @@ class TestLocateV2Errors(AppTestCase):
         super(TestLocateV2Errors, self).tearDown()
 
     def test_database_error(self):
-        london = self.geoip_data['London']
         self.session.execute(text('drop table wifi;'))
         self.session.execute(text('drop table cell;'))
         cell = CellFactory.build()
         wifis = WifiFactory.build_batch(2)
 
-        res = self.app.post_json(
-            '/v1/geolocate?key=test', {
-                'cellTowers': [{
-                    'radioType': cell.radio.name,
-                    'mobileCountryCode': cell.mcc,
-                    'mobileNetworkCode': cell.mnc,
-                    'locationAreaCode': cell.lac,
-                    'cellId': cell.cid},
-                ],
-                'wifiAccessPoints': [
-                    {'macAddress': wifis[0].key},
-                    {'macAddress': wifis[1].key},
-                ]},
-            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
+        res = self._call(body={
+            'cellTowers': [{
+                'radioType': cell.radio.name,
+                'mobileCountryCode': cell.mcc,
+                'mobileNetworkCode': cell.mnc,
+                'locationAreaCode': cell.lac,
+                'cellId': cell.cid},
+            ],
+            'wifiAccessPoints': [
+                {'macAddress': wifis[0].key},
+                {'macAddress': wifis[1].key},
+            ]},
+            ip=self.test_ip,
             status=200)
-
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json, {'location': {'lat': london['latitude'],
-                                                 'lng': london['longitude']},
-                                    'accuracy': london['accuracy']})
+        self.check_response(res, 'ok')
 
         self.check_stats(
             timer=['request.v1.geolocate'],
