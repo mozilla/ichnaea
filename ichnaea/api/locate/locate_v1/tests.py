@@ -421,6 +421,18 @@ class TestLocateV1(AppTestCase):
                                   'search.miss',
                                   'search.api_log.test.wifi_miss'])
 
+    def test_get_request_means_geoip(self):
+        london = self.geoip_data['London']
+        res = self.app.get(
+            '/v1/search?key=test',
+            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
+            status=200)
+        self.assertEqual(res.json, {'status': 'ok',
+                                    'lat': london['latitude'],
+                                    'lon': london['longitude'],
+                                    'accuracy': london['accuracy'],
+                                    'fallback': 'ipf'})
+
     def test_empty_request_means_geoip(self):
         london = self.geoip_data['London']
         res = self.app.post_json(

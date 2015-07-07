@@ -167,10 +167,6 @@ class TestSubmitV1(BaseSubmitTest, CeleryAppTestCase):
         self.assertEqual(res.json, ParseError.json_body())
         self.check_raven(['ParseError'])
 
-    def test_error_completely_empty(self):
-        res = self.app.post_json(self.url, [], status=400)
-        self.assertEqual(res.json, ParseError.json_body())
-
     def test_error_missing_latlon(self):
         wifi = WifiFactory.build()
         self._post([
@@ -183,11 +179,3 @@ class TestSubmitV1(BaseSubmitTest, CeleryAppTestCase):
              'accuracy': 16},
         ])
         self._assert_queue_size(2)
-
-    def test_error_no_json(self):
-        res = self.app.post('/v1/submit', '\xae', status=400)
-        self.assertEqual(res.json, ParseError.json_body())
-
-    def test_error_no_mapping(self):
-        res = self.app.post_json('/v1/submit', [1], status=400)
-        self.assertEqual(res.json, ParseError.json_body())

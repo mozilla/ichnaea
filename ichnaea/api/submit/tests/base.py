@@ -1,3 +1,4 @@
+from ichnaea.api.exceptions import ParseError
 from ichnaea.customjson import dumps
 from ichnaea.models import Radio
 from ichnaea import util
@@ -53,6 +54,26 @@ class BaseSubmitTest(object):
             self.url, 'invalid', headers=headers,
             content_type='application/json', status=400)
         self._assert_queue_size(0)
+
+    def test_error_get(self):
+        res = self.app.get(self.url, status=400)
+        self.assertEqual(res.json, ParseError.json_body())
+
+    def test_error_empty_body(self):
+        res = self.app.post(self.url, '', status=400)
+        self.assertEqual(res.json, ParseError.json_body())
+
+    def test_error_empty_json(self):
+        res = self.app.post_json(self.url, {}, status=400)
+        self.assertEqual(res.json, ParseError.json_body())
+
+    def test_error_no_json(self):
+        res = self.app.post(self.url, '\xae', status=400)
+        self.assertEqual(res.json, ParseError.json_body())
+
+    def test_error_no_mapping(self):
+        res = self.app.post_json(self.url, [1], status=400)
+        self.assertEqual(res.json, ParseError.json_body())
 
     def test_headers_email_without_nickname(self):
         self._post_one_cell(nickname=None, email=self.email)

@@ -269,6 +269,16 @@ class TestLocateV2(AppTestCase):
                                                  'lng': london['longitude']},
                                     'accuracy': london['accuracy']})
 
+    def test_get_request_means_geoip(self):
+        london = self.geoip_data['London']
+        res = self.app.get(
+            '%s?key=test' % self.url,
+            extra_environ={'HTTP_X_FORWARDED_FOR': london['ip']},
+            status=200)
+        self.assertEqual(res.json, {'location': {'lat': london['latitude'],
+                                                 'lng': london['longitude']},
+                                    'accuracy': london['accuracy']})
+
     def test_empty_request_means_geoip(self):
         london = self.geoip_data['London']
         res = self.app.post_json(
