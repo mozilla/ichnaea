@@ -10,6 +10,16 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+Changes
+~~~~~~~
+
+
+20150707130400
+**************
+
+Migrations
+~~~~~~~~~~
+
 - 2e0e620ebc92: Remove id column from content models.
 
 Changes
