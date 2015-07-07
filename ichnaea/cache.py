@@ -3,6 +3,7 @@ import re
 import urlparse
 
 import redis
+from redis.connection import SocketBuffer
 from redis.exceptions import ConnectionError
 
 from ichnaea.customjson import (
@@ -12,6 +13,21 @@ from ichnaea.customjson import (
 
 EXPORT_QUEUE_PREFIX = 'queue_export_'
 WHITESPACE = re.compile('\s', flags=re.UNICODE)
+
+
+# workaround for https://github.com/andymccurdy/redis-py/issues/633
+
+def close(self):
+    try:
+        self.purge()
+    except ValueError:  # pragma: no cover
+        pass
+    self._buffer.close()
+    self._buffer = None
+    self._sock = None
+
+SocketBuffer._old_close = SocketBuffer.close
+SocketBuffer.close = close
 
 
 def configure_redis(redis_url, _client=None):
