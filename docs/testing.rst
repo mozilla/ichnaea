@@ -4,6 +4,9 @@
 Testing
 =======
 
+.. note:: Since the tests use a real database and Redis connection,
+          you cannot parallelize any tests.
+
 Unit Tests
 ----------
 
@@ -43,3 +46,55 @@ from the queue and execute it:
 
     ICHNAEA_CFG=ichnaea.ini bin/celery \
     -A ichnaea.async.app:celery_app worker -c 1
+
+
+Testing Multiple Python Versions
+--------------------------------
+
+The project supports multiple Python versions. In order to run the tests
+against all of them locally, we are using tox:
+
+.. code-block:: bash
+
+    bin/tox
+
+You can explicitly state what Python versions to test:
+
+.. code-block:: bash
+
+    bin/tox -e=py{26,27,34}
+
+You can also run a subset of all tests, the same way as via `make test`:
+
+.. code-block:: bash
+
+    bin/tox TESTS=ichnaea.tests.test_util
+
+Once the tox environment is built and no changes to dependencies have
+taken place, you can speed up the build by skipping the `make build` step:
+
+.. code-block:: bash
+
+    bin/tox TOXBUILD=no
+
+Or if the tox environment got into a weird state, just recreate it:
+
+.. code-block:: bash
+
+    bin/tox --recreate
+
+Of course these options can be combined, for example:
+
+.. code-block:: bash
+
+    bin/tox -e=py{34} TOXBUILD=no TESTS=ichnaea.tests.test_util
+
+Since the project relies on a number of non-Python dependencies, each
+tox environment is created from a full copy of the git repo. The ease
+testing the `ichnaea` code package is then removed from inside each
+tox environment and finally `bin/install -e ichnaea /path/to/parent/repo`
+called. This means the code inside the top-level `ichnaea` code package
+is actually used from inside each tox environment.
+
+If you set a pdb breakpoint in the normal main code, you'll thus get
+an easy way to have a pdb inside each tox environment.
