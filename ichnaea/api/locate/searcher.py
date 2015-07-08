@@ -151,6 +151,7 @@ class CountrySearcher(Searcher):
 
     def _prepare(self, location):
         return {
-            'country_name': location.country_name,
             'country_code': location.country_code,
+            'country_name': location.country_name,
+            'fallback': location.fallback,
         }

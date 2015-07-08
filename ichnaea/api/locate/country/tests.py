@@ -1,73 +1,84 @@
-from sqlalchemy import text
-
 from ichnaea.api.locate.tests.base import (
     BaseLocateTest,
+    CommonLocateErrorTest,
     CommonLocateTest,
 )
 from ichnaea.tests.base import AppTestCase
+from ichnaea.tests.factories import (
+    CellFactory,
+    WifiFactory,
+)
 
 
-class CountryBase(BaseLocateTest):
+class CountryBase(BaseLocateTest, AppTestCase):
 
     url = '/v1/country'
-    # disabled metric tracking
-    metric = None  # 'country'
-    metric_url = None  # 'request.v1.country'
+    apikey_metrics = False
+    metric = 'country'
+    metric_url = 'request.v1.country'
 
     @property
     def ip_response(self):
-        return {'country_code': 'GB', 'country_name': 'United Kingdom'}
+        return {
+            'country_code': 'GB',
+            'country_name': 'United Kingdom',
+            'fallback': 'ipf',
+        }
 
-    def _make_geoip_query(self, api_key='test', body=None,
-                          ip=True, status=200, **kw):
-        data = body
-        if data is None:
-            data = {}
-        if ip is True:
-            ip = self.test_ip
-        return self._call(body=data, api_key=api_key,
-                          ip=ip, status=status, **kw)
+    def check_model_response(self, response, model,
+                             country=None, fallback=None, **kw):
+        expected_names = set(['country_code', 'country_name'])
+
+        expected = super(CountryBase, self).check_model_response(
+            response, model,
+            country=country,
+            fallback=fallback,
+            expected_names=expected_names,
+            **kw)
+
+        data = response.json
+        self.assertEqual(data['country_code'], expected['country'])
+        if fallback is not None:
+            self.assertEqual(data['fallback'], fallback)
 
 
-class TestCountry(AppTestCase, CountryBase, CommonLocateTest):
+class TestCountry(CountryBase, CommonLocateTest):
 
     track_connection_events = True
 
     def test_geoip(self):
-        res = self._make_geoip_query(status=200)
+        res = self._call(ip=self.test_ip)
         self.check_response(res, 'ok')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
-            counter=['request.v1.country.200'],
-            timer=['request.v1.country'],
+            counter=[self.metric_url + '.200'],
+            timer=[self.metric_url],
         )
 
     def test_geoip_miss(self):
-        res = self._make_geoip_query(ip='127.0.0.1', status=404)
+        res = self._call(ip='127.0.0.1', status=404)
         self.check_response(res, 'not_found')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
-            counter=['request.v1.country.404'],
-            timer=['request.v1.country'],
+            counter=[self.metric_url + '.404'],
+            timer=[self.metric_url],
         )
 
     def test_known_api_key(self):
-        res = self._make_geoip_query(api_key='test', status=200)
+        res = self._call(api_key='test', ip=self.test_ip)
         self.check_response(res, 'ok')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
-            counter=[('request.v1.country.200', 1),
-                     ('country.api_key.test', 0)],
-            timer=['request.v1.country'],
+            counter=[(self.metric_url + '.200', 1),
+                     (self.metric + '.api_key.test', 0)],
+            timer=[self.metric_url],
         )
 
     def test_no_api_key(self):
         super(TestCountry, self).test_no_api_key(status=200, response='ok')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
-            counter=[('request.v1.country.200', 1),
-                     ('country.api_key.no_api_key', 0)],
-            timer=['request.v1.country'],
+            counter=[(self.metric + '.api_key.no_api_key', 0)],
         )
 
     def test_unknown_api_key(self):
@@ -75,50 +86,45 @@ class TestCountry(AppTestCase, CountryBase, CommonLocateTest):
             status=200, response='ok')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
-            counter=[('request.v1.country.200', 1),
-                     ('country.api_key.unknown_key', 0)],
-            timer=['request.v1.country'],
+            counter=[(self.metric + '.api_key.unknown_key', 0)],
         )
 
-    def test_incomplete_request_means_geoip(self):
-        res = self._make_geoip_query(body={'wifiAccessPoints': []})
+    def test_incomplete_request(self):
+        res = self._call(body={'wifiAccessPoints': []}, ip=self.test_ip)
         self.check_response(res, 'ok')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
-            counter=['country.geoip_city_found',
-                     'country.geoip_hit'])
+            counter=[self.metric + '.geoip_city_found',
+                     self.metric + '.geoip_hit'])
 
-    def test_no_wifi(self):
-        res = self._make_geoip_query(
+    def test_cell(self):
+        # create a cell in the UK
+        cell = CellFactory.create(mcc=235)
+        query = self.model_query(cells=[cell])
+        res = self._call(body=query)
+        self.check_model_response(res, cell, country='GB')
+        self.check_db_calls(rw=0, ro=0)
+        self.check_stats(
+            counter=[self.metric + '.cell_hit'])
+
+    def test_wifi(self):
+        wifis = WifiFactory.build_batch(2)
+        query = self.model_query(wifis=wifis)
+        res = self._call(
+            body=query,
             ip='127.0.0.1',
-            body={'wifiAccessPoints': [{'macAddress': 'ab:cd:ef:12:34:56'}]},
             status=404)
         self.check_response(res, 'not_found')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
-            counter=['country.miss'])
+            counter=[self.metric + '.miss'])
 
     def test_get(self):
         super(TestCountry, self).test_get()
         self.check_db_calls(rw=0, ro=0)
 
 
-class TestCountryErrors(AppTestCase, CountryBase):
-    # this is a standalone class to ensure DB isolation for dropping tables
-
-    def tearDown(self):
-        self.setup_tables(self.db_rw.engine)
-        super(TestCountryErrors, self).tearDown()
+class TestCountryErrors(CountryBase, CommonLocateErrorTest):
 
     def test_database_error(self):
-        for tablename in ('wifi', 'cell', 'cell_area',
-                          'ocid_cell', 'ocid_cell_area'):
-            stmt = text('drop table %s;' % tablename)
-            self.session.execute(stmt)
-
-        res = self._make_geoip_query(status=200)
-        self.check_response(res, 'ok')
-        self.check_stats(
-            counter=['request.v1.country.200'],
-            timer=['request.v1.country'],
-        )
+        super(TestCountryErrors, self).test_database_error(db_errors=0)

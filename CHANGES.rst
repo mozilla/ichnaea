@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add `fallback` key to all locate responses.
+
 - #451: Properly test and reject empty submit requests.
 
 - #376: Document the added home mcc/mnc fields.

@@ -12,4 +12,12 @@ class CountryView(LocateV2View):
     view_name = 'country'
 
     def prepare_location_data(self, location_data):
-        return location_data
+        response = {
+            'country_code': location_data['country_code'],
+            'country_name': location_data['country_name'],
+        }
+
+        if location_data['fallback']:
+            response['fallback'] = location_data['fallback']
+
+        return response

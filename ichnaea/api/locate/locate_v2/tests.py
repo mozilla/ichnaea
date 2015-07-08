@@ -1,26 +1,31 @@
-from uuid import uuid1
+import colander
 
-from sqlalchemy import text
-
-from ichnaea.models import (
-    ApiKey,
-    Radio,
-)
+from ichnaea.models import Radio
 from ichnaea.api.locate.locate_v2.schema import LocateV2Schema
 from ichnaea.api.locate.tests.base import (
     BaseLocateTest,
+    CommonLocateErrorTest,
     CommonLocateTest,
+    CommonPositionTest,
 )
-from ichnaea.tests.base import AppTestCase, TestCase
+from ichnaea.tests.base import (
+    AppTestCase,
+    TestCase,
+)
 from ichnaea.tests.factories import (
     CellFactory,
-    CellAreaFactory,
     WifiFactory,
 )
-from ichnaea import util
 
 
 class TestLocateV2Schema(TestCase):
+
+    def test_invalid_radio_field(self):
+        schema = LocateV2Schema()
+        with self.assertRaises(colander.Invalid):
+            schema.deserialize({'cellTowers': [{
+                'radioType': 'umts',
+            }]})
 
     def test_multiple_radio_fields_uses_radioType(self):
         schema = LocateV2Schema()
@@ -32,7 +37,7 @@ class TestLocateV2Schema(TestCase):
         self.assertFalse('radioType' in data['cell'][0])
 
 
-class LocateV2Base(BaseLocateTest):
+class LocateV2Base(BaseLocateTest, AppTestCase):
 
     url = '/v1/geolocate'
     metric = 'geolocate'
@@ -41,18 +46,20 @@ class LocateV2Base(BaseLocateTest):
     @property
     def ip_response(self):
         london = self.geoip_data['London']
-        return {'location': {'lat': london['latitude'],
-                             'lng': london['longitude']},
-                'accuracy': london['accuracy']}
+        return {
+            'location': {'lat': london['latitude'],
+                         'lng': london['longitude']},
+            'accuracy': london['accuracy'],
+            'fallback': 'ipf',
+        }
 
-
-class TestLocateV2(AppTestCase, LocateV2Base, CommonLocateTest):
-
-    def check_model_response(self, response, model, fallback=None, **kw):
+    def check_model_response(self, response, model,
+                             country=None, fallback=None, **kw):
         expected_names = set(['location', 'accuracy'])
 
-        expected = super(TestLocateV2, self).check_model_response(
+        expected = super(LocateV2Base, self).check_model_response(
             response, model,
+            country=country,
             fallback=fallback,
             expected_names=expected_names,
             **kw)
@@ -65,20 +72,20 @@ class TestLocateV2(AppTestCase, LocateV2Base, CommonLocateTest):
         if fallback is not None:
             self.assertEqual(data['fallback'], fallback)
 
-    def test_ok_cell(self):
+
+class TestLocateV2(LocateV2Base, CommonLocateTest, CommonPositionTest):
+
+    def test_cell(self):
         cell = CellFactory()
         self.session.flush()
 
-        res = self._call(body={
-            'radioType': cell.radio.name,
-            'cellTowers': [{
-                'mobileCountryCode': cell.mcc,
-                'mobileNetworkCode': cell.mnc,
-                'locationAreaCode': cell.lac,
-                'cellId': cell.cid,
-                'signalStrength': -70,
-                'timingAdvance': 1},
-            ]})
+        query = self.model_query(cells=[cell])
+        query['radioType'] = cell.radio.name
+        del query['cellTowers'][0]['radioType']
+        query['cellTowers'][0]['signalStrength'] = -70
+        query['cellTowers'][0]['timingAdvance'] = 1
+
+        res = self._call(body=query)
         self.check_model_response(res, cell)
 
         self.check_stats(
@@ -87,95 +94,24 @@ class TestLocateV2(AppTestCase, LocateV2Base, CommonLocateTest):
                      self.metric + '.api_log.test.cell_hit']
         )
 
-    def test_ok_cellarea(self):
-        cell = CellAreaFactory()
-        self.session.flush()
-
-        res = self._call(body={
-            'radioType': cell.radio.name,
-            'cellTowers': [{
-                'mobileCountryCode': cell.mcc,
-                'mobileNetworkCode': cell.mnc,
-                'locationAreaCode': cell.lac,
-                'signalStrength': -70,
-                'timingAdvance': 1},
-            ]})
-        self.check_model_response(res, cell)
-
-        self.check_stats(
-            counter=[self.metric_url + '.200',
-                     self.metric + '.api_key.test',
-                     self.metric + '.api_log.test.cell_lac_hit']
-        )
-
-    def test_ok_cellarea_when_lacf_enabled(self):
-        cell = CellAreaFactory()
-        self.session.flush()
-
-        res = self._call(body={
-            'radioType': cell.radio.name,
-            'cellTowers': [{
-                'mobileCountryCode': cell.mcc,
-                'mobileNetworkCode': cell.mnc,
-                'locationAreaCode': cell.lac,
-                'signalStrength': -70,
-                'timingAdvance': 1},
-            ],
-            'fallbacks': {
-                'lacf': 1,
-            }})
-        self.check_model_response(res, cell)
-
-        self.check_stats(
-            counter=[self.metric_url + '.200',
-                     self.metric + '.api_key.test',
-                     self.metric + '.api_log.test.cell_lac_hit']
-        )
-
-    def test_cellarea_not_found_when_lacf_disabled(self):
-        cell = CellAreaFactory()
-        self.session.flush()
-
-        res = self._call(body={
-            'radioType': cell.radio.name,
-            'cellTowers': [{
-                'mobileCountryCode': cell.mcc,
-                'mobileNetworkCode': cell.mnc,
-                'locationAreaCode': cell.lac,
-                'signalStrength': -70,
-                'timingAdvance': 1},
-            ],
-            'fallbacks': {
-                'lacf': 0,
-            }},
-            status=404)
-        self.check_response(res, 'not_found')
-
-        self.check_stats(
-            counter=[self.metric_url + '.404',
-                     self.metric + '.api_key.test']
-        )
-
-    def test_ok_partial_cell(self):
+    def test_partial_cell(self):
         cell = CellFactory()
         self.session.flush()
 
-        res = self._call(body={
-            'cellTowers': [{
-                'radioType': cell.radio.name,
-                'mobileCountryCode': cell.mcc,
-                'mobileNetworkCode': cell.mnc,
-                'locationAreaCode': cell.lac,
-                'cellId': cell.cid,
-                'psc': cell.psc}, {
-                'radioType': cell.radio.name,
-                'mobileCountryCode': cell.mcc,
-                'mobileNetworkCode': cell.mnc,
-                'psc': cell.psc + 1,
-            }]})
+        # simulate one neighboring incomplete cell
+        query = self.model_query(cells=[cell])
+        query['cellTowers'][0]['psc'] = cell.psc
+
+        cell_two = query['cellTowers'][0].copy()
+        del cell_two['locationAreaCode']
+        del cell_two['cellId']
+        cell_two['psc'] = cell.psc + 1
+        query['cellTowers'].append(cell_two)
+
+        res = self._call(body=query)
         self.check_model_response(res, cell)
 
-    def test_ok_wifi(self):
+    def test_wifi(self):
         wifi = WifiFactory()
         offset = 0.0001
         wifis = [
@@ -186,36 +122,20 @@ class TestLocateV2(AppTestCase, LocateV2Base, CommonLocateTest):
         ]
         self.session.flush()
 
-        res = self._call(body={
-            'wifiAccessPoints': [
-                {'macAddress': wifis[0].key, 'channel': 6},
-                {'macAddress': wifis[1].key, 'frequency': 2437},
-                {'macAddress': wifis[2].key, 'signalStrength': -77},
-                {'macAddress': wifis[3].key, 'signalToNoiseRatio': 13},
-            ]})
+        query = self.model_query(wifis=wifis)
+        wifi_query = query['wifiAccessPoints']
+        wifi_query[0]['channel'] = 6
+        wifi_query[1]['frequency'] = 2437
+        wifi_query[2]['signalStrength'] = -77
+        wifi_query[3]['signalToNoiseRatio'] = 13
+
+        res = self._call(body=query)
         self.check_model_response(res, wifi, lat=wifi.lat + offset)
 
         self.check_stats(
-            counter=[self.metric + '.api_key.test',
+            counter=[self.metric + '.wifi_hit',
+                     self.metric + '.api_key.test',
                      self.metric + '.api_log.test.wifi_hit'])
-
-    def test_wifi_not_found(self):
-        wifis = WifiFactory.build_batch(2)
-
-        res = self._call(body={
-            'wifiAccessPoints': [
-                {'macAddress': wifis[0].key},
-                {'macAddress': wifis[1].key},
-            ]},
-            status=404)
-        self.check_response(res, 'not_found')
-
-        # Make sure to get two counters, a timer, and no traceback
-        self.check_stats(
-            counter=[self.metric + '.api_key.test',
-                     self.metric + '.api_log.test.wifi_miss',
-                     (self.metric_url + '.404', 1)],
-            timer=[self.metric_url])
 
     def test_cell_mcc_mnc_strings(self):
         # mcc and mnc are officially defined as strings, where '01' is
@@ -226,191 +146,84 @@ class TestLocateV2(AppTestCase, LocateV2Base, CommonLocateTest):
         cell = CellFactory(mnc=1)
         self.session.flush()
 
-        res = self._call(body={
-            'cellTowers': [{
-                'radioType': cell.radio.name,
-                'mobileCountryCode': str(cell.mcc),
-                'mobileNetworkCode': '01',
-                'locationAreaCode': cell.lac,
-                'cellId': cell.cid},
-            ]})
+        query = self.model_query(cells=[cell])
+        query['cellTowers'][0]['mobileCountryCode'] = str(cell.mcc)
+        query['cellTowers'][0]['mobileNetworkCode'] = '01'
+
+        res = self._call(body=query)
         self.check_model_response(res, cell)
 
-    def test_geoip_fallback(self):
-        wifis = WifiFactory.build_batch(4)
-
-        res = self._call(body={
-            'wifiAccessPoints': [
-                {'macAddress': wifis[0].key},
-                {'macAddress': wifis[1].key},
-                {'macAddress': wifis[2].key},
-                {'macAddress': wifis[3].key},
-            ]},
-            ip=self.test_ip)
-        self.check_response(res, 'ok')
-
-    def test_api_key_limit(self):
-        api_key = uuid1().hex
-        self.session.add(ApiKey(valid_key=api_key, maxreq=5, shortname='dis'))
-        self.session.flush()
-
-        # exhaust today's limit
-        dstamp = util.utcnow().strftime('%Y%m%d')
-        key = 'apilimit:%s:%s' % (api_key, dstamp)
-        self.redis_client.incr(key, 10)
-
-        res = self._call(
-            body={}, api_key=api_key, ip=self.test_ip, status=403)
-        self.check_response(res, 'limit_exceeded')
-
-    def test_lte_radio(self):
-        cell = CellFactory(radio=Radio.lte)
-        self.session.flush()
-
-        res = self._call(body={
-            'cellTowers': [{
-                'radio': cell.radio.name,
-                'mobileCountryCode': cell.mcc,
-                'mobileNetworkCode': cell.mnc,
-                'locationAreaCode': cell.lac,
-                'cellId': cell.cid},
-            ]})
-        self.check_model_response(res, cell)
-
-        self.check_stats(
-            counter=[self.metric_url + '.200', self.metric + '.api_key.test'])
-
-    def test_ok_cell_radio_in_celltowers(self):
+    def test_cell_radio_in_celltowers(self):
         # This test covers a bug related to FxOS calling the
         # geolocate API incorrectly.
         cell = CellFactory()
         self.session.flush()
 
-        res = self._call(body={
-            'cellTowers': [
-                {'radio': cell.radio.name,
-                 'mobileCountryCode': cell.mcc,
-                 'mobileNetworkCode': cell.mnc,
-                 'locationAreaCode': cell.lac,
-                 'cellId': cell.cid},
-            ]})
+        query = self.model_query(cells=[cell])
+        query['cellTowers'][0]['radio'] = cell.radio.name
+        del query['cellTowers'][0]['radioType']
+
+        res = self._call(body=query)
         self.check_model_response(res, cell)
 
-    def test_ok_cell_radiotype_in_celltowers(self):
+    def test_cell_radiotype_in_celltowers(self):
         # This test covers an extension to the geolocate API
         cell = CellFactory()
         self.session.flush()
 
-        res = self._call(body={
-            'cellTowers': [
-                {'radioType': cell.radio.name,
-                 'mobileCountryCode': cell.mcc,
-                 'mobileNetworkCode': cell.mnc,
-                 'locationAreaCode': cell.lac,
-                 'cellId': cell.cid},
-            ]})
+        query = self.model_query(cells=[cell])
+        query['cellTowers'][0]['radioType'] = cell.radio.name
+
+        res = self._call(body=query)
         self.check_model_response(res, cell)
 
-    def test_ok_cell_radio_in_celltowers_dupes(self):
+    def test_cell_radio_in_celltowers_dupes(self):
         # This test covers a bug related to FxOS calling the
         # geolocate API incorrectly.
         cell = CellFactory()
         self.session.flush()
 
-        res = self._call(body={
-            'cellTowers': [
-                {'radio': cell.radio.name,
-                 'mobileCountryCode': cell.mcc,
-                 'mobileNetworkCode': cell.mnc,
-                 'locationAreaCode': cell.lac,
-                 'cellId': cell.cid},
-                {'radio': cell.radio.name,
-                 'mobileCountryCode': cell.mcc,
-                 'mobileNetworkCode': cell.mnc,
-                 'locationAreaCode': cell.lac,
-                 'cellId': cell.cid},
-            ]})
+        query = self.model_query(cells=[cell])
+        query['cellTowers'][0]['radio'] = cell.radio.name
+        del query['cellTowers'][0]['radioType']
+
+        cell_two = query['cellTowers'][0].copy()
+        query['cellTowers'].append(cell_two)
+
+        res = self._call(body=query)
         self.check_model_response(res, cell)
 
     def test_inconsistent_cell_radio_in_towers(self):
-        cell = CellFactory(radio=Radio.umts, range=15000)
+        cell = CellFactory(radio=Radio.wcdma, range=15000)
         cell2 = CellFactory(radio=Radio.gsm, range=35000,
                             lat=cell.lat + 0.0002, lon=cell.lon)
         self.session.flush()
 
-        res = self._call(body={
-            'radioType': Radio.cdma.name,
-            'cellTowers': [
-                {'radio': 'wcdma',
-                 'mobileCountryCode': cell.mcc,
-                 'mobileNetworkCode': cell.mnc,
-                 'locationAreaCode': cell.lac,
-                 'cellId': cell.cid},
-                {'radio': cell2.radio.name,
-                 'mobileCountryCode': cell2.mcc,
-                 'mobileNetworkCode': cell2.mnc,
-                 'locationAreaCode': cell2.lac,
-                 'cellId': cell2.cid},
-            ]})
+        query = self.model_query(cells=[cell, cell2])
+        query['radioType'] = Radio.cdma.name
+        query['cellTowers'][0]['radio'] = 'wcdma'
+        query['cellTowers'][1]['radio'] = cell2.radio.name
+        del query['cellTowers'][0]['radioType']
+        del query['cellTowers'][1]['radioType']
+
+        res = self._call(body=query)
         self.check_model_response(res, cell)
 
     def test_inconsistent_cell_radio_type_in_towers(self):
-        cell = CellFactory(radio=Radio.umts, range=15000)
+        cell = CellFactory(radio=Radio.wcdma, range=15000)
         cell2 = CellFactory(radio=Radio.gsm, range=35000,
                             lat=cell.lat + 0.0002, lon=cell.lon)
         self.session.flush()
 
-        res = self._call(body={
-            'radioType': Radio.cdma.name,
-            'cellTowers': [
-                {'radio': 'cdma',
-                 'radioType': 'wcdma',
-                 'mobileCountryCode': cell.mcc,
-                 'mobileNetworkCode': cell.mnc,
-                 'locationAreaCode': cell.lac,
-                 'cellId': cell.cid},
-                {'radioType': cell2.radio.name,
-                 'mobileCountryCode': cell2.mcc,
-                 'mobileNetworkCode': cell2.mnc,
-                 'locationAreaCode': cell2.lac,
-                 'cellId': cell2.cid},
-            ]})
+        query = self.model_query(cells=[cell, cell2])
+        query['radioType'] = Radio.cdma.name
+        query['cellTowers'][0]['radio'] = 'cdma'
+
+        res = self._call(body=query)
         self.check_model_response(res, cell)
 
 
-class TestLocateV2Errors(AppTestCase, LocateV2Base):
-    # this is a standalone class to ensure DB isolation for dropping tables
-
-    def tearDown(self):
-        self.setup_tables(self.db_rw.engine)
-        super(TestLocateV2Errors, self).tearDown()
+class TestLocateV2Errors(LocateV2Base, CommonLocateErrorTest):
 
     def test_database_error(self):
-        self.session.execute(text('drop table wifi;'))
-        self.session.execute(text('drop table cell;'))
-        cell = CellFactory.build()
-        wifis = WifiFactory.build_batch(2)
-
-        res = self._call(body={
-            'cellTowers': [{
-                'radioType': cell.radio.name,
-                'mobileCountryCode': cell.mcc,
-                'mobileNetworkCode': cell.mnc,
-                'locationAreaCode': cell.lac,
-                'cellId': cell.cid},
-            ],
-            'wifiAccessPoints': [
-                {'macAddress': wifis[0].key},
-                {'macAddress': wifis[1].key},
-            ]},
-            ip=self.test_ip,
-            status=200)
-        self.check_response(res, 'ok')
-
-        self.check_stats(
-            timer=['request.v1.geolocate'],
-            counter=[
-                'request.v1.geolocate.200',
-                'geolocate.geoip_hit',
-            ])
-        self.check_raven([('ProgrammingError', 2)])
+        super(TestLocateV2Errors, self).test_database_error(db_errors=5)

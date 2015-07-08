@@ -159,12 +159,27 @@ A successful response will be:
         "status": "ok",
         "lat": -22.7539192,
         "lon": -43.4371081,
-        "accuracy": 1000
+        "accuracy": 100
     }
 
 The latitude and longitude are numbers, with seven decimal places of
 actual precision. The coordinate reference system is WGS 84. The accuracy
 is an integer measured in meters and defines a circle around the location.
+
+Should the response be based on a GeoIP estimate:
+
+.. code-block:: javascript
+
+    {
+        "status": "ok",
+        "lat": 51.0,
+        "lon": -0.1,
+        "accuracy": 600000,
+        "fallback": "ipf"
+    }
+
+Alternatively the fallback field can also state `lacf` for an estimate
+based on a cell location area.
 
 If no position can be determined, you instead get:
 

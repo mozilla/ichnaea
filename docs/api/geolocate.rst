@@ -206,6 +206,8 @@ As mentioned in the specific fields, our API has a couple of extensions.
   be used to return a `404 Not Found` rather than a coarse grained
   estimate with a large accuracy value.
 
+* If either the GeoIP or location area fallbacks where used to determine
+  the response, an additional fallback key will be returned in the response.
 
 Response
 --------
@@ -216,11 +218,27 @@ A successful response will be:
 
     {
         "location": {
+            "lat": -22.7539192,
+            "lng": -43.4371081
+        },
+        "accuracy": 100.0
+    }
+
+Should the response be based on a GeoIP estimate:
+
+.. code-block:: javascript
+
+    {
+        "location": {
             "lat": 51.0,
             "lng": -0.1
         },
-        "accuracy": 1200.4
+        "accuracy": 600000.0,
+        "fallback": "ipf"
     }
+
+Alternatively the fallback field can also state `lacf` for an estimate
+based on a cell location area.
 
 If no position information could be determined, a HTTP status code 404 will
 be returned:

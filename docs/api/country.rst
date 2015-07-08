@@ -34,8 +34,18 @@ A successful response will be:
 .. code-block:: javascript
 
     {
+        "country_code": "US",
+        "country_name": "United States"
+    }
+
+Should the response be based on a GeoIP estimate:
+
+.. code-block:: javascript
+
+    {
+        "country_code": "US",
         "country_name": "United States",
-        "country_code": "US"
+        "fallback": "ipf"
     }
 
 If no country or region could be determined, a HTTP status code 404 will
