@@ -11,12 +11,20 @@ from ichnaea.models import (
 from ichnaea.models import constants
 from ichnaea.models.schema import normalized_time
 from ichnaea.tests.base import TestCase
-from ichnaea.tests.base import (
-    FREMONT_LAT, FREMONT_LON, USA_MCC,
-    SAO_PAULO_LAT, SAO_PAULO_LON, BRAZIL_MCC,
-    PARIS_LAT, PARIS_LON, FRANCE_MCC
-)
 from ichnaea import util
+
+FRANCE_MCC = 208
+VIVENDI_MNC = 10
+PARIS_LAT = 48.8568
+PARIS_LON = 2.3508
+
+BRAZIL_MCC = 724
+SAO_PAULO_LAT = -23.54
+SAO_PAULO_LON = -46.64
+
+USA_MCC = 310
+FREMONT_LAT = 37.5079
+FREMONT_LON = -121.96
 
 
 class ValidationTest(TestCase):
@@ -76,7 +84,7 @@ class TestCellValidation(ValidationTest):
             'cid': 34567,
             'lac': 12345,
             'mcc': FRANCE_MCC,
-            'mnc': 220,
+            'mnc': VIVENDI_MNC,
             'psc': None,
             'signal': -83,
             'ta': 5,

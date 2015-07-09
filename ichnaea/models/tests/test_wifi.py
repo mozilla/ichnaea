@@ -14,12 +14,11 @@ from ichnaea.tests.base import (
 class TestWifi(DBTestCase):
 
     def test_fields(self):
-        session = self.session
-        session.add(Wifi(
+        self.session.add(Wifi.create(
             key='3680873e9b83', lat=GB_LAT, lon=GB_LON, range=200))
-        session.flush()
+        self.session.flush()
 
-        result = session.query(Wifi).first()
+        result = self.session.query(Wifi).first()
         self.assertEqual(result.key, '3680873e9b83')
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
@@ -29,18 +28,16 @@ class TestWifi(DBTestCase):
 class TestWifiBlacklist(DBTestCase):
 
     def test_fields(self):
-        session = self.session
-        session.add(WifiBlacklist(key='3680873e9b83', count=2))
-        session.flush()
+        self.session.add(WifiBlacklist(key='3680873e9b83', count=2))
+        self.session.flush()
 
-        result = session.query(WifiBlacklist).first()
+        result = self.session.query(WifiBlacklist).first()
         self.assertEqual(result.key, '3680873e9b83')
         self.assertEqual(result.count, 2)
 
     def test_unique_key(self):
-        session = self.session
-        session.add(WifiBlacklist(key='3680873e9b83'))
-        session.flush()
+        self.session.add(WifiBlacklist(key='3680873e9b83'))
+        self.session.flush()
 
-        session.add(WifiBlacklist(key='3680873e9b83'))
-        self.assertRaises(IntegrityError, session.flush)
+        self.session.add(WifiBlacklist(key='3680873e9b83'))
+        self.assertRaises(IntegrityError, self.session.flush)

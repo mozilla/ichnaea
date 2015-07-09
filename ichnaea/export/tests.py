@@ -34,11 +34,8 @@ from ichnaea.models import (
 from ichnaea.tests.base import (
     CeleryTestCase,
     CeleryAppTestCase,
-    FRANCE_MCC,
-    VIVENDI_MNC,
-    PARIS_LAT,
-    PARIS_LON,
 )
+from ichnaea.tests.factories import CellFactory
 from ichnaea import util
 
 
@@ -54,15 +51,17 @@ def mock_s3():
 class TestExport(CeleryTestCase):
 
     def test_local_export(self):
-        session = self.session
         cell_fixture_fields = (
             'radio', 'cid', 'lat', 'lon', 'mnc', 'mcc', 'lac')
-        cell_key = {'radio': Radio.gsm, 'mcc': 1, 'mnc': 2, 'lac': 4}
+        base_cell = CellFactory.build(radio=Radio.gsm)
+        cell_key = {'radio': Radio.gsm, 'mcc': base_cell.mcc,
+                    'mnc': base_cell.mnc, 'lac': base_cell.lac}
         cells = set()
 
         for cid in range(190, 200):
-            cell = dict(cid=cid, lat=1.0, lon=2.0, **cell_key)
-            session.add(Cell(**cell))
+            cell = dict(cid=cid, lat=base_cell.lat,
+                        lon=base_cell.lon, **cell_key)
+            CellFactory(**cell)
 
             cell['radio'] = 'GSM'
             cell_strings = [
@@ -71,14 +70,14 @@ class TestExport(CeleryTestCase):
             cells.add(cell_tuple)
 
         # add one incomplete / unprocessed cell
-        session.add(Cell(cid=210, lat=None, lon=None, **cell_key))
-        session.commit()
+        CellFactory(cid=210, lat=None, lon=None, **cell_key)
+        self.session.commit()
 
         with selfdestruct_tempdir() as temp_dir:
             path = os.path.join(temp_dir, 'export.csv.gz')
             cond = Cell.__table__.c.lat.isnot(None)
             write_stations_to_csv(
-                session, Cell.__table__, CELL_COLUMNS, cond,
+                self.session, Cell.__table__, CELL_COLUMNS, cond,
                 path, make_cell_export_dict, CELL_FIELDS)
 
             with util.gzip_open(path, 'r') as gzip_file:
@@ -100,12 +99,8 @@ class TestExport(CeleryTestCase):
                 self.assertEqual(cells, exported_cells)
 
     def test_hourly_export(self):
-        session = self.session
-        k = {'radio': Radio.gsm, 'mcc': 1, 'mnc': 2, 'lac': 4,
-             'psc': None, 'lat': 1.0, 'lon': 2.0}
-        for i in range(190, 200):
-            session.add(Cell(cid=i, **k))
-        session.commit()
+        CellFactory.create_batch(10, radio=Radio.gsm)
+        self.session.commit()
 
         with mock_s3() as mock_key:
             export_modified_cells(bucket='localhost.bucket')
@@ -115,12 +110,8 @@ class TestExport(CeleryTestCase):
             self.assertRegexpMatches(method.call_args[0][0], pat)
 
     def test_daily_export(self):
-        session = self.session
-        k = {'radio': Radio.gsm, 'mcc': 1, 'mnc': 2, 'lac': 4,
-             'lat': 1.0, 'lon': 2.0}
-        for i in range(190, 200):
-            session.add(Cell(cid=i, **k))
-        session.commit()
+        CellFactory.create_batch(10, radio=Radio.gsm)
+        self.session.commit()
 
         with mock_s3() as mock_key:
             export_modified_cells(bucket='localhost.bucket', hourly=False)
@@ -131,33 +122,32 @@ class TestExport(CeleryTestCase):
 
 
 class TestImport(CeleryAppTestCase):
-    KEY = {
-        'mcc': FRANCE_MCC,
-        'mnc': VIVENDI_MNC,
-        'lac': 1234,
-    }
+
+    def setUp(self):
+        super(TestImport, self).setUp()
+        self.cell = CellFactory.build(radio=Radio.gsm)
 
     @contextmanager
     def get_test_csv(self, lo=1, hi=10, time=1408604686):
+        cell = self.cell
         line_template = ('GSM,{mcc},{mnc},{lac},{cid},{psc},{lon},'
                          '{lat},1,1,1,{time},{time},')
         lines = [line_template.format(
-            cid=i * 1010, psc='',
-            lon=PARIS_LON + i * 0.002,
-            lat=PARIS_LAT + i * 0.001,
-            time=time,
-            **self.KEY)
+            mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac, cid=i * 1010, psc='',
+            lon=cell.lon + i * 0.002,
+            lat=cell.lat + i * 0.001,
+            time=time)
             for i in range(lo, hi)]
         # add bad lines
         lines.append(line_template.format(
-            mcc=FRANCE_MCC, mnc=VIVENDI_MNC,
+            mcc=cell.mcc, mnc=cell.mnc,
             lac='', cid='', psc=12,
-            lon=PARIS_LON, lat=PARIS_LAT, time=time,
+            lon=cell.lon, lat=cell.lat, time=time,
         ))
         lines.append(line_template.format(
-            mcc=FRANCE_MCC, mnc=VIVENDI_MNC,
+            mcc=cell.mcc, mnc=cell.mnc,
             lac='', cid='', psc='',
-            lon=PARIS_LON, lat=PARIS_LAT, time=time,
+            lon=cell.lon, lat=cell.lat, time=time,
         ))
         txt = '\n'.join(lines)
 
@@ -191,13 +181,19 @@ class TestImport(CeleryAppTestCase):
         self.session = self.db_ro_session
         self.import_test_csv(session=self.session)
 
+        cell_key = {
+            'mcc': self.cell.mcc,
+            'mnc': self.cell.mnc,
+            'lac': self.cell.lac,
+        }
+
         res = self.app.post_json(
             '/v1/search?key=test',
             {
-                'radio': 'gsm',
+                'radio': Radio.gsm.name,
                 'cell': [
-                    dict(cid=3030, **self.KEY),
-                    dict(cid=4040, **self.KEY),
+                    dict(cid=3030, **cell_key),
+                    dict(cid=4040, **cell_key),
                 ]
             },
             status=200)
@@ -207,8 +203,8 @@ class TestImport(CeleryAppTestCase):
             res.json,
             {
                 'status': 'ok',
-                'lat': PARIS_LAT + 0.0035,
-                'lon': PARIS_LON + 0.007,
+                'lat': self.cell.lat + 0.0035,
+                'lon': self.cell.lon + 0.007,
                 'accuracy': CELL_MIN_ACCURACY
             })
 

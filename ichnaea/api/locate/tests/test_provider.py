@@ -285,9 +285,10 @@ class TestCellCountryProvider(ProviderTest):
         self.assertEqual(location.country_name, country.name)
 
     def test_mcc_with_multiple_countries_returns_empty_location(self):
-        cell_key = {'mcc': USA_MCC, 'mnc': 1, 'lac': 1}
+        cell = CellFactory.build(mcc=USA_MCC)
         location = self.provider.locate(
-            {'cell': [dict(cid=1, radio=Radio.gsm.name, **cell_key)]})
+            {'cell': [{'radio': cell.radio.name, 'mcc': cell.mcc,
+                       'mnc': cell.mnc, 'lac': cell.lac, 'cid': cell.cid}]})
         self.assertEqual(type(location), Country)
         self.assertFalse(location.found())
         self.assertTrue(location.query_data)
@@ -298,16 +299,14 @@ class TestWifiPositionProvider(ProviderTest):
     TestProvider = WifiPositionProvider
 
     def test_wifi(self):
-        wifis = [{'key': '001122334455'}, {'key': '112233445566'}]
-        self.session.add(Wifi(
-            key=wifis[0]['key'], lat=GB_LAT, lon=GB_LON, range=200))
-        self.session.add(Wifi(
-            key=wifis[1]['key'], lat=GB_LAT, lon=GB_LON + 0.00001, range=300))
+        wifi = WifiFactory(range=200)
+        wifi2 = WifiFactory(lat=wifi.lat, lon=wifi.lon + 0.00001, range=300)
         self.session.flush()
 
-        location = self.provider.locate({'wifi': wifis})
-        self.assertEqual(location.lat, GB_LAT)
-        self.assertEqual(location.lon, GB_LON + 0.000005)
+        location = self.provider.locate({'wifi': [
+            {'key': wifi.key}, {'key': wifi2.key}]})
+        self.assertEqual(location.lat, wifi.lat)
+        self.assertEqual(location.lon, wifi.lon + 0.000005)
         self.assertEqual(location.accuracy, WIFI_MIN_ACCURACY)
 
     def test_wifi_too_few_candidates(self):

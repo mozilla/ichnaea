@@ -20,11 +20,12 @@ from ichnaea.content.stats import (
     regions,
     transliterate,
 )
-from ichnaea.models import (
-    Cell,
-    Radio,
+from ichnaea.models import Radio
+from ichnaea.tests.base import (
+    DBTestCase,
+    TestCase,
 )
-from ichnaea.tests.base import DBTestCase, TestCase
+from ichnaea.tests.factories import CellFactory
 from ichnaea import util
 
 
@@ -180,20 +181,15 @@ class TestStats(DBTestCase):
         self.assertEqual(scores[-1]['num'], 16)
 
     def test_regions(self):
-        cell_key = {'lac': 1, 'cid': 1}
-        test_data = [
-            Cell(radio=Radio.gsm, mcc=1, mnc=1, **cell_key),
-            Cell(radio=Radio.lte, mcc=262, mnc=1, **cell_key),
-            Cell(radio=Radio.gsm, mcc=310, mnc=1, **cell_key),
-            Cell(radio=Radio.gsm, mcc=310, mnc=2, **cell_key),
-            Cell(radio=Radio.gsm, mcc=313, mnc=1, **cell_key),
-            Cell(radio=Radio.cdma, mcc=310, mnc=1, **cell_key),
-            Cell(radio=Radio.umts, mcc=244, mnc=1, **cell_key),
-            Cell(radio=Radio.lte, mcc=244, mnc=1, **cell_key),
-            Cell(radio=Radio.gsm, mcc=466, mnc=3, **cell_key),
-        ]
-        self.session.add_all(test_data)
-        self.session.commit()
+        CellFactory(radio=Radio.lte, mcc=262, mnc=1)
+        CellFactory(radio=Radio.gsm, mcc=310, mnc=1)
+        CellFactory(radio=Radio.gsm, mcc=310, mnc=2)
+        CellFactory(radio=Radio.gsm, mcc=313, mnc=1)
+        CellFactory(radio=Radio.cdma, mcc=310, mnc=1)
+        CellFactory(radio=Radio.umts, mcc=244, mnc=1)
+        CellFactory(radio=Radio.lte, mcc=244, mnc=1)
+        CellFactory(radio=Radio.gsm, mcc=466, mnc=3)
+        self.session.flush()
 
         # check the result
         expected = set(['AX', 'BM', 'DE', 'FI', 'GU', 'PR', 'TW', 'US'])

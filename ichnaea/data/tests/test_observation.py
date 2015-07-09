@@ -25,9 +25,10 @@ from ichnaea.models import (
     Wifi,
     WifiBlacklist,
 )
-from ichnaea.tests.base import (
-    CeleryTestCase,
-    PARIS_LAT, PARIS_LON, FRANCE_MCC,
+from ichnaea.tests.base import CeleryTestCase
+from ichnaea.tests.factories import (
+    CellFactory,
+    WifiFactory,
 )
 from ichnaea import util
 
@@ -50,20 +51,22 @@ class TestCell(ObservationTestCase):
 
     def test_blacklist(self):
         now = util.utcnow()
-        session = self.session
 
-        observations = [dict(mcc=FRANCE_MCC, mnc=2, lac=3, cid=i, psc=5,
-                             radio=int(Radio.gsm),
-                             lat=PARIS_LAT + i * 0.0000001,
-                             lon=PARIS_LON + i * 0.0000001)
+        cell = CellFactory.build()
+        observations = [dict(radio=int(cell.radio), mcc=cell.mcc,
+                             mnc=cell.mnc, lac=cell.lac, cid=cell.cid + i,
+                             psc=cell.psc,
+                             lat=cell.lat + i * 0.0000001,
+                             lon=cell.lon + i * 0.0000001)
                         for i in range(1, 4)]
 
         black = CellBlacklist(
-            mcc=FRANCE_MCC, mnc=2, lac=3, cid=1,
-            radio=Radio.gsm, time=now, count=1,
+            radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
+            lac=cell.lac, cid=cell.cid + 1,
+            time=now, count=1,
         )
-        session.add(black)
-        session.flush()
+        self.session.add(black)
+        self.session.flush()
 
         result = insert_measures_cell.delay(observations)
         self.assertEqual(result.get(), 2)
@@ -71,7 +74,7 @@ class TestCell(ObservationTestCase):
         self.assertEqual(self.data_queue.size(), 2)
         update_cell.delay().get()
 
-        cells = session.query(Cell).all()
+        cells = self.session.query(Cell).all()
         self.assertEqual(len(cells), 2)
 
         self.check_statcounter(StatKey.cell, 2)
@@ -80,24 +83,25 @@ class TestCell(ObservationTestCase):
     def test_blacklist_time_used_as_creation_time(self):
         now = util.utcnow()
         last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
-        session = self.session
 
-        cell_key = {'mcc': FRANCE_MCC, 'mnc': 2, 'lac': 3, 'cid': 1}
-
-        session.add(CellBlacklist(time=last_week, count=1,
-                                  radio=Radio.gsm, **cell_key))
-        session.flush()
+        cell = CellFactory.build()
+        self.session.add(
+            CellBlacklist(time=last_week, count=1,
+                          radio=cell.radio, mcc=cell.mcc,
+                          mnc=cell.mnc, lac=cell.lac, cid=cell.cid))
+        self.session.flush()
 
         # add a new entry for the previously blacklisted cell
-        obs = dict(lat=PARIS_LAT, lon=PARIS_LON,
-                   radio=int(Radio.gsm), **cell_key)
+        obs = dict(lat=cell.lat, lon=cell.lon,
+                   radio=int(cell.radio), mcc=cell.mcc, mnc=cell.mnc,
+                   lac=cell.lac, cid=cell.cid)
         insert_measures_cell.delay([obs]).get()
 
         self.assertEqual(self.data_queue.size(), 1)
         update_cell.delay().get()
 
         # the cell was inserted again
-        cells = session.query(Cell).all()
+        cells = self.session.query(Cell).all()
         self.assertEqual(len(cells), 1)
 
         # and the creation date was set to the date of the blacklist entry
@@ -107,32 +111,26 @@ class TestCell(ObservationTestCase):
         self.check_statcounter(StatKey.unique_cell, 0)
 
     def test_insert_observations(self):
-        session = self.session
         time = util.utcnow() - timedelta(days=1)
-        mcc = FRANCE_MCC
 
-        session.add(Cell(radio=Radio.gsm, mcc=mcc, mnc=2, lac=3,
-                         cid=4, psc=5, total_measures=5))
+        cell = CellFactory(radio=Radio.gsm, total_measures=5)
         user = User(nickname=u'test')
-        session.add(user)
-        session.flush()
+        self.session.add(user)
+        self.session.flush()
 
         obs = dict(
-            created=time,
-            lat=PARIS_LAT,
-            lon=PARIS_LON,
-            time=time, accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=int(Radio.gsm),
+            radio=int(cell.radio), mcc=cell.mcc, mnc=cell.mnc,
+            created=time, time=time, lat=cell.lat, lon=cell.lon,
+            accuracy=0, altitude=0, altitude_accuracy=0,
         )
         entries = [
             # Note that this first entry will be skipped as it does
             # not include (lac, cid) or (psc)
-            {'mcc': mcc, 'mnc': 2, 'signal': -100},
-
-            {'mcc': mcc, 'mnc': 2, 'lac': 3, 'cid': 4, 'psc': 5, 'asu': 8},
-            {'mcc': mcc, 'mnc': 2, 'lac': 3, 'cid': 4, 'psc': 5, 'asu': 8},
-            {'mcc': mcc, 'mnc': 2, 'lac': 3, 'cid': 4, 'psc': 5, 'asu': 15},
-            {'mcc': mcc, 'mnc': 2, 'lac': 3, 'cid': 7, 'psc': 5},
+            {'signal': -100},
+            {'lac': cell.lac, 'cid': cell.cid, 'psc': cell.psc, 'asu': 8},
+            {'lac': cell.lac, 'cid': cell.cid, 'psc': cell.psc, 'asu': 8},
+            {'lac': cell.lac, 'cid': cell.cid, 'psc': cell.psc, 'asu': 15},
+            {'lac': cell.lac, 'cid': cell.cid + 1, 'psc': cell.psc},
         ]
         for entry in entries:
             entry.update(obs)
@@ -143,13 +141,14 @@ class TestCell(ObservationTestCase):
         self.assertEqual(self.data_queue.size(), 4)
         update_cell.delay().get()
 
-        cells = session.query(Cell).all()
+        self.session.refresh(cell)
+        cells = self.session.query(Cell).all()
         self.assertEqual(len(cells), 2)
-        self._compare_sets([c.mcc for c in cells], [mcc])
-        self._compare_sets([c.mnc for c in cells], [2])
-        self._compare_sets([c.lac for c in cells], [3])
-        self._compare_sets([c.cid for c in cells], [4, 7])
-        self._compare_sets([c.psc for c in cells], [5])
+        self._compare_sets([c.mcc for c in cells], [cell.mcc])
+        self._compare_sets([c.mnc for c in cells], [cell.mnc])
+        self._compare_sets([c.lac for c in cells], [cell.lac])
+        self._compare_sets([c.cid for c in cells], [cell.cid, cell.cid + 1])
+        self._compare_sets([c.psc for c in cells], [cell.psc])
         self._compare_sets([c.total_measures for c in cells], [1, 8])
 
         score_queue = self.celery_app.data_queues['update_score']
@@ -164,27 +163,22 @@ class TestCell(ObservationTestCase):
         self.check_statcounter(StatKey.unique_cell, 1)
 
     def test_insert_observations_invalid_lac(self):
-        session = self.session
         time = util.utcnow() - timedelta(days=1)
         today = util.utcnow().date()
 
-        session.add(Cell(radio=Radio.gsm, mcc=FRANCE_MCC, mnc=2,
-                         lac=3, cid=4, total_measures=5))
-        session.add(Score(key=ScoreKey.new_cell,
-                          userid=1, time=today, value=7))
-        session.flush()
+        cell = CellFactory(total_measures=5)
+        self.session.add(Score(key=ScoreKey.new_cell,
+                               userid=1, time=today, value=7))
+        self.session.flush()
 
         obs = dict(
-            created=time,
-            lat=PARIS_LAT,
-            lon=PARIS_LON,
-            time=time, accuracy=0, altitude=0,
-            altitude_accuracy=0, radio=int(Radio.gsm))
+            radio=int(cell.radio), mcc=cell.mcc, mnc=cell.mnc, psc=cell.psc,
+            created=time, time=time, lat=cell.lat, lon=cell.lon,
+            accuracy=0, altitude=0, altitude_accuracy=0)
         entries = [
-            {'mcc': FRANCE_MCC, 'mnc': 2, 'lac': constants.MAX_LAC_ALL + 1,
-             'cid': constants.MAX_CID_ALL + 1, 'psc': 5, 'asu': 8},
-            {'mcc': FRANCE_MCC, 'mnc': 2, 'lac': None,
-             'cid': None, 'psc': 5, 'asu': 8},
+            {'lac': constants.MAX_LAC_ALL + 1,
+             'cid': constants.MAX_CID_ALL + 1, 'asu': 8},
+            {'lac': None, 'cid': None, 'asu': 8},
         ]
         for entry in entries:
             entry.update(obs)
@@ -197,14 +191,18 @@ class TestCell(ObservationTestCase):
         update_cell.delay().get()
 
         # Nothing should change in the initially created Cell record
-        cells = session.query(Cell).all()
+        self.session.refresh(cell)
+        cells = self.session.query(Cell).all()
         self.assertEqual(len(cells), 1)
         self._compare_sets([c.total_measures for c in cells], [5])
 
     def test_insert_observations_out_of_range(self):
+        cell = CellFactory.build()
+
         obs = dict(
-            lat=PARIS_LAT, lon=PARIS_LON,
-            radio=int(Radio.gsm), mcc=FRANCE_MCC, mnc=2, lac=3, cid=4)
+            lat=cell.lat, lon=cell.lon,
+            radio=int(cell.radio), mcc=cell.mcc, mnc=cell.mnc,
+            lac=cell.lac, cid=cell.cid)
         entries = [
             {'asu': 8, 'signal': -70, 'ta': 32},
             {'asu': -10, 'signal': -300, 'ta': -10},
@@ -231,14 +229,19 @@ class TestWifi(ObservationTestCase):
 
     def test_blacklist(self):
         utcnow = util.utcnow()
-        session = self.session
-        bad_key = 'ab1234567890'
-        good_key = 'cd1234567890'
-        black = WifiBlacklist(time=utcnow, count=1, key=bad_key)
-        session.add(black)
-        session.flush()
-        obs = dict(lat=1, lon=2)
-        entries = [{'key': good_key}, {'key': good_key}, {'key': bad_key}]
+
+        bad_wifi = WifiFactory.build()
+        good_wifi = WifiFactory.build()
+        black = WifiBlacklist(time=utcnow, count=1, key=bad_wifi.key)
+        self.session.add(black)
+        self.session.flush()
+
+        obs = dict(lat=good_wifi.lat, lon=good_wifi.lon)
+        entries = [
+            {'key': good_wifi.key},
+            {'key': good_wifi.key},
+            {'key': bad_wifi.key},
+        ]
         for entry in entries:
             entry.update(obs)
 
@@ -248,9 +251,9 @@ class TestWifi(ObservationTestCase):
         self.assertEqual(self.data_queue.size(), 2)
         update_wifi.delay().get()
 
-        wifis = session.query(Wifi).all()
+        wifis = self.session.query(Wifi).all()
         self.assertEqual(len(wifis), 1)
-        self._compare_sets([w.key for w in wifis], [good_key])
+        self._compare_sets([w.key for w in wifis], [good_wifi.key])
 
         self.check_statcounter(StatKey.wifi, 2)
         self.check_statcounter(StatKey.unique_wifi, 1)
@@ -258,22 +261,20 @@ class TestWifi(ObservationTestCase):
     def test_blacklist_time_used_as_creation_time(self):
         now = util.utcnow()
         last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
-        session = self.session
 
-        wifi_key = 'ab1234567890'
-
-        session.add(WifiBlacklist(time=last_week, count=1, key=wifi_key))
-        session.flush()
+        wifi = WifiFactory.build()
+        self.session.add(WifiBlacklist(time=last_week, count=1, key=wifi.key))
+        self.session.flush()
 
         # add a new entry for the previously blacklisted wifi
-        obs = dict(lat=PARIS_LAT, lon=PARIS_LON, key=wifi_key)
+        obs = dict(lat=wifi.lat, lon=wifi.lon, key=wifi.key)
         insert_measures_wifi.delay([obs]).get()
 
         self.assertEqual(self.data_queue.size(), 1)
         update_wifi.delay().get()
 
         # the wifi was inserted again
-        wifis = session.query(Wifi).all()
+        wifis = self.session.query(Wifi).all()
         self.assertEqual(len(wifis), 1)
 
         # and the creation date was set to the date of the blacklist entry
@@ -284,22 +285,22 @@ class TestWifi(ObservationTestCase):
         session = self.session
         time = util.utcnow() - timedelta(days=1)
 
-        session.add(Wifi(key='ab1234567890', total_measures=0))
+        wifi = WifiFactory(total_measures=0)
+        wifi2 = WifiFactory.build(total_measures=0)
         user = User(nickname=u'test')
         session.add(user)
         session.flush()
 
         obs = dict(
-            created=time, lat=1.0, lon=2.0,
-            time=time, accuracy=None, altitude=None,
-            altitude_accuracy=None, radio=None,
+            created=time, time=time, lat=wifi.lat, lon=wifi.lon,
+            accuracy=None, altitude=None, altitude_accuracy=None,
             heading=52.9, speed=158.5,
         )
         entries = [
-            {'key': 'ab1234567890', 'channel': 11, 'signal': -80},
-            {'key': 'ab1234567890', 'channel': 3, 'signal': -90},
-            {'key': 'ab1234567890', 'channel': 3, 'signal': -80},
-            {'key': 'cd3456789012', 'channel': 3, 'signal': -90},
+            {'key': wifi.key, 'channel': 11, 'signal': -80},
+            {'key': wifi.key, 'channel': 3, 'signal': -90},
+            {'key': wifi.key, 'channel': 3, 'signal': -80},
+            {'key': wifi2.key, 'channel': 3, 'signal': -90},
         ]
         for entry in entries:
             entry.update(obs)
@@ -309,10 +310,10 @@ class TestWifi(ObservationTestCase):
         self.assertEqual(self.data_queue.size(), 4)
         update_wifi.delay().get()
 
+        self.session.refresh(wifi)
         wifis = session.query(Wifi).all()
         self.assertEqual(len(wifis), 2)
-        self._compare_sets([w.key for w in wifis],
-                           ['ab1234567890', 'cd3456789012'])
+        self._compare_sets([w.key for w in wifis], [wifi.key, wifi2.key])
         self._compare_sets([w.total_measures for w in wifis], [1, 3])
 
         score_queue = self.celery_app.data_queues['update_score']
@@ -335,20 +336,16 @@ class TestSubmitV1Errors(ObservationTestCase):
         super(TestSubmitV1Errors, self).tearDown()
 
     def test_database_error(self):
-        session = self.session
+        self.session.execute(text('drop table wifi;'))
 
-        stmt = text('drop table wifi;')
-        session.execute(stmt)
+        wifi = WifiFactory.build()
+        wifi2 = WifiFactory.build()
 
         entries = [
-            {'lat': 1.0, 'lon': 2.0,
-             'key': 'ab:12:34:56:78:90', 'channel': 11},
-            {'lat': 1.0, 'lon': 2.0,
-             'key': 'ab:12:34:56:78:90', 'channel': 3},
-            {'lat': 1.0, 'lon': 2.0,
-             'key': 'ab:12:34:56:78:90', 'channel': 3},
-            {'lat': 1.0, 'lon': 2.0,
-             'key': 'cd:12:34:56:78:90', 'channel': 3},
+            {'lat': wifi.lat, 'lon': wifi.lon, 'key': wifi.key, 'channel': 7},
+            {'lat': wifi.lat, 'lon': wifi.lon, 'key': wifi.key, 'channel': 3},
+            {'lat': wifi.lat, 'lon': wifi.lon, 'key': wifi.key, 'channel': 3},
+            {'lat': wifi2.lat, 'lon': wifi2.lon, 'key': wifi2.key},
         ]
 
         try:
