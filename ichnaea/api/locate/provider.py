@@ -642,7 +642,7 @@ class FallbackProvider(Provider):
         )
 
     def get_ratelimit_key(self):
-        return 'fallback:{time}'.format(time=int(time.time()))
+        return 'fallback_ratelimit:{time}'.format(time=int(time.time()))
 
     def limit_reached(self):
         return self.ratelimit and rate_limit(
@@ -661,7 +661,13 @@ class FallbackProvider(Provider):
         )
 
     def _get_cache_key(self, cell_data):
-        return 'fallback_cache_{0}'.format(sorted(cell_data.items()))
+        return 'fallback_cache_cell:{radio}:{mcc}:{mnc}:{lac}:{cid}'.format(
+            radio=cell_data['radio'].name,
+            mcc=cell_data['mcc'],
+            mnc=cell_data['mnc'],
+            lac=cell_data['lac'],
+            cid=cell_data['cid'],
+        )
 
     def _get_cached_result(self, data):
         if self._should_cache(data):

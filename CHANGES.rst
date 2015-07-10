@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Explicitly limit the cell cache key to its unique id parts.
+
 - Add `fallback` key to all locate responses.
 
 - #451: Properly test and reject empty submit requests.

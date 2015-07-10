@@ -68,6 +68,26 @@ class ProviderTest(ConnectionTestCase):
             api_name='m',
         )
 
+    def model_query(self, cells=(), wifis=()):
+        query = {}
+        if cells:
+            query['cell'] = []
+            for cell in cells:
+                cell_query = {
+                    'radio': cell.radio,
+                    'mcc': cell.mcc,
+                    'mnc': cell.mnc,
+                    'lac': cell.lac,
+                }
+                if getattr(cell, 'cid', None) is not None:
+                    cell_query['cid'] = cell.cid
+                query['cell'].append(cell_query)
+        if wifis:
+            query['wifi'] = []
+            for wifi in wifis:
+                query['wifi'].append({'key': wifi.key})
+        return query
+
 
 class TestProvider(ProviderTest):
 
@@ -595,24 +615,21 @@ class TestFallbackProvider(ProviderTest):
             'fallback': 'lacf',
         }
 
+        cells = CellFactory.build_batch(2)
+        wifis = WifiFactory.build_batch(2)
+        query = self.model_query(cells=cells, wifis=wifis)
+
         self.cells = []
-        for cell in CellFactory.build_batch(2):
-            self.cells.append({
-                'radio': cell.radio,
-                'mcc': cell.mcc,
-                'mnc': cell.mnc,
-                'lac': cell.lac,
-                'cid': cell.cid,
-                'signal': -70,
-            })
+        for cell in query['cell']:
+            self.cells.append(cell)
+            self.cells[-1]['signal'] = -70
         self.cells[0]['ta'] = 1
 
         self.wifis = []
-        for wifi in WifiFactory.build_batch(2):
-            self.wifis.append({
-                'key': wifi.key,
-                'signal': -77,
-            })
+        for wifi in query['wifi']:
+            self.wifis.append(wifi)
+            self.wifis[-1]['signal'] = -77
+
         self.wifis[0]['channel'] = 6
         self.wifis[0]['frequency'] = 2437
         self.wifis[0]['snr'] = 13
@@ -889,14 +906,15 @@ class TestFallbackProvider(ProviderTest):
             self.assertTrue(location.found())
 
     def test_single_cell_results_cached_preventing_external_call(self):
+        cell = CellFactory.build()
+
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.response_location)
 
-            location = self.provider.locate({
-                'cell': self.cells[:1],
-                'wifi': [],
-            })
+            query = self.model_query(cells=[cell])
+            query['cell'][0]['signal'] = -77
+            location = self.provider.locate(query)
 
             self.assertTrue(location.found())
             self.assertEqual(mock_request.call_count, 1)
@@ -913,10 +931,9 @@ class TestFallbackProvider(ProviderTest):
                 ],
                 timer=['m.fallback.lookup'])
 
-            location = self.provider.locate({
-                'cell': self.cells[:1],
-                'wifi': [],
-            })
+            # vary the signal strength, not part of cache key
+            query['cell'][0]['signal'] = -82
+            location = self.provider.locate(query)
 
             self.assertTrue(location.found())
             self.assertEqual(mock_request.call_count, 1)
