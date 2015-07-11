@@ -233,7 +233,7 @@ tox_test:
 ifeq ($(TOXBUILD),yes)
 	make tox_install
 endif
-	cd $(TOXENVDIR); make test
+	cd $(TOXENVDIR); PYTHONDONTWRITEBYTECODE=True make test
 
 $(BIN)/sphinx-build:
 	$(INSTALL) -r requirements/docs.txt
