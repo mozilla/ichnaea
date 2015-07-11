@@ -122,7 +122,8 @@ def main(argv, _db_rw=None, _raven_client=None):
         else:
             db_rw = _db_rw
         configure_raven(
-            location_cfg.get('ichnaea', 'sentry_dsn'), _client=_raven_client)
+            location_cfg.get('ichnaea', 'sentry_dsn'),
+            transport='sync', _client=_raven_client)
 
         engine = db_rw.engine
         create_schema(engine, alembic_cfg, location_cfg)

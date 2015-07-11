@@ -141,8 +141,10 @@ class LogTestCase(TestCase):
     def setUpClass(cls):
         super(LogTestCase, cls).setUpClass()
         # Use a debug configuration
-        cls.raven_client = configure_raven('', _client=DebugRavenClient())
-        cls.stats_client = configure_stats('', _client=DebugStatsClient())
+        cls.raven_client = configure_raven(
+            None, transport='sync', _client=DebugRavenClient())
+        cls.stats_client = configure_stats(
+            None, _client=DebugStatsClient())
 
     @classmethod
     def tearDownClass(cls):

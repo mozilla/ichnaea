@@ -273,7 +273,8 @@ def main(argv, _db_rw=None,
             db = Database(conf.get('ichnaea', 'db_master'))
         bucketname = conf.get('ichnaea', 's3_assets_bucket').strip('/')
         raven_client = configure_raven(
-            conf.get('ichnaea', 'sentry_dsn'), _client=_raven_client)
+            conf.get('ichnaea', 'sentry_dsn'),
+            transport='sync', _client=_raven_client)
         stats_client = configure_stats(
             conf.get('ichnaea', 'statsd_host'), _client=_stats_client)
 

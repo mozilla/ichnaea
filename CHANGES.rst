@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Update to latest raven release and update transport configuration.
+
 - Explicitly limit the cell cache key to its unique id parts.
 
 - Add `fallback` key to all locate responses.

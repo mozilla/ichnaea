@@ -9,18 +9,21 @@ from pyramid.httpexceptions import (
     HTTPRedirection,
 )
 from raven import Client as RavenClient
+from raven.transport.gevent import GeventedHTTPTransport
+from raven.transport.http import HTTPTransport
+from raven.transport.threaded import ThreadedHTTPTransport
 from statsd.client import StatsClient
 
 from ichnaea.exceptions import BaseClientError
 
-# TODO fix for getsentry/raven-python#608
-from raven.conf import defaults
-from raven.transport import registry
-from raven.transport.gevent import GeventedHTTPTransport, Semaphore
-from raven.transport.http import HTTPTransport
-
 RAVEN_CLIENT = None
 STATS_CLIENT = None
+
+RAVEN_TRANSPORTS = {
+    'gevent': GeventedHTTPTransport,
+    'sync': HTTPTransport,
+    'threaded': ThreadedHTTPTransport,
+}
 
 
 def get_raven_client():
@@ -33,16 +36,15 @@ def set_raven_client(client):
     return RAVEN_CLIENT
 
 
-def configure_raven(config, transport='sync',
-                    _client=None):  # pragma: no cover
+def configure_raven(config, transport=None, _client=None):  # pragma: no cover
     if _client is not None:
         return set_raven_client(_client)
 
-    if config and '+' not in config.split(':')[0]:
-        # no explicit transport was specified in the dsn
-        config = '%s+%s' % (transport, config)
+    transport = RAVEN_TRANSPORTS.get(transport)
+    if not transport:
+        raise ValueError('No valid raven transport was configured.')
 
-    client = RavenClient(dsn=config)
+    client = RavenClient(dsn=config, transport=transport)
     return set_raven_client(client)
 
 
@@ -172,28 +174,3 @@ class DebugStatsClient(PingableStatsClient):
 
     def ping(self):
         return True
-
-
-# TODO Fix for https://github.com/getsentry/raven-python/issues/608
-
-class FixedGeventedHTTPTransport(GeventedHTTPTransport):
-
-    def __init__(self, parsed_url,
-                 timeout=defaults.TIMEOUT, verify_ssl=True,
-                 ca_certs=defaults.CA_BUNDLE,
-                 maximum_outstanding_requests=100):  # pragma: no cover
-        self._lock = Semaphore(maximum_outstanding_requests)
-
-        HTTPTransport.__init__(self, parsed_url, timeout=timeout,
-                               verify_ssl=verify_ssl, ca_certs=ca_certs)
-
-        self._url = self._url.split('+', 1)[-1]
-
-original_transports = tuple(registry.default_transports)
-new_transports = [transport for transport in registry.default_transports
-                  if transport is not GeventedHTTPTransport]
-new_transports.append(FixedGeventedHTTPTransport)
-
-registry.default_transports = new_transports
-
-RavenClient._registry = registry.TransportRegistry(new_transports)
