@@ -18,12 +18,13 @@ import os
 import os.path
 import sys
 
-EXCLUDES_2 = [
+# files excluded when run under Python 2.x
+PYTHON_2_INCOMPATIBLE = [
     'gunicorn/workers/_gaiohttp.py',
     'linecache2/tests/inspect_fodder2.py',
-    'raven/transport/aiohttp.py',
 ]
-EXCLUDES_3 = [
+# files excluded when run under Python 3.x
+PYTHON_3_INCOMPATIBLE = [
     'gevent/_util_py2.py',
 ]
 
@@ -32,25 +33,25 @@ def compile_files(path):
     return compile_dir(path, maxlevels=50, quiet=True)
 
 
-def remove_python3_files(path):
+def remove_incompatible_files(path):
     excludes = []
     if sys.version_info < (3, 0):
-        excludes.extend(EXCLUDES_2)
+        excludes.extend(PYTHON_2_INCOMPATIBLE)
     if sys.version_info >= (3, 0):
-        excludes.extend(EXCLUDES_3)
+        excludes.extend(PYTHON_3_INCOMPATIBLE)
 
     for e in excludes:
         fp = os.path.join(path, e)
         for extension in ('', 'c', 'o'):
             name = fp + extension
             if os.path.exists(name):
-                print('Removing file %s containing Python 3 syntax.' % name)
+                print('Removing file %s with incompatible syntax.' % name)
                 os.remove(name)
 
 
 def main():
     sp = get_python_lib()
-    remove_python3_files(sp)
+    remove_incompatible_files(sp)
     status = compile_files(sp)
     sys.exit(not status)
 

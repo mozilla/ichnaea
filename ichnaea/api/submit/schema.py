@@ -1,7 +1,11 @@
-# This API is based on both the Google geolocation API
-# https://developers.google.com/maps/documentation/business/geolocation/
-# and the W3C geolocation position interface
-# http://www.w3.org/TR/geolocation-API/#position_interface
+"""
+General submit specific colander schemata describing the public HTTP APIs.
+
+This API is based on both the `Google geolocation API
+<https://developers.google.com/maps/documentation/business/geolocation/>`_
+and the `W3C geolocation position interface
+<http://www.w3.org/TR/geolocation-API/#position_interface>`_.
+"""
 
 from ichnaea.api.schema import (
     OptionalBoundedFloatNode,

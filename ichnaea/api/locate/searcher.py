@@ -1,3 +1,8 @@
+"""
+Abstract searcher and concrete country and position searchers each using
+multiple providers to satisfy a given query.
+"""
+
 from collections import defaultdict, deque
 
 from ichnaea.api.locate.location import EmptyLocation

@@ -3,8 +3,7 @@
 
 .. automodule:: ichnaea.geocalc
 
-Functions
-+++++++++
+.. autodata:: EARTH_RADIUS
 
 .. autofunction:: add_meters_to_latitude
 

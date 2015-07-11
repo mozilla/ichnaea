@@ -1,3 +1,7 @@
+"""
+Implementation of a locate specific HTTP service view.
+"""
+
 from ichnaea.api.exceptions import LocationNotFound
 from ichnaea.api.locate.searcher import PositionSearcher
 from ichnaea.api.views import BaseAPIView
@@ -5,9 +9,12 @@ from ichnaea.api.views import BaseAPIView
 
 class BaseLocateView(BaseAPIView):
 
+    #: :exc:`ichnaea.api.exceptions.LocationNotFound`
     not_found = LocationNotFound
+
+    #: :exc:`ichnaea.api.locate.searcher.PositionSearcher`
     searcher = PositionSearcher
-    schema = None
+    schema = None  #:
 
     def prepare_query(self, request_data):
         return {
@@ -34,6 +41,9 @@ class BaseLocateView(BaseAPIView):
         return location_data
 
     def view(self, api_key):
+        """
+        Execute the view code and return a response.
+        """
         location_data = self.locate(api_key)
         if not location_data:
             raise self.not_found()

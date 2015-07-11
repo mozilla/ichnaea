@@ -1,3 +1,7 @@
+"""
+Contains celery specific one time configuration code.
+"""
+
 import os
 
 from kombu import Queue
@@ -26,7 +30,7 @@ CELERY_QUEUES = (
     Queue('celery_monitor', routing_key='celery_monitor'),
     Queue('celery_reports', routing_key='celery_reports'),
     Queue('celery_upload', routing_key='celery_upload'),
-)
+)  #: List of :class:`kombu.Queue` instances.
 
 register('internal_json', customjson.kombu_dumps, customjson.kombu_loads,
          content_type='application/x-internaljson',
@@ -34,6 +38,15 @@ register('internal_json', customjson.kombu_dumps, customjson.kombu_loads,
 
 
 def configure_celery(celery_app):
+    """
+    Configure the celery app stored in :data:`ichnaea.async.app.celery_app`.
+    This is executed both inside the master worker process and once in
+    each forked worker process.
+
+    This parses the application ini and reads in the
+    :mod:`ichnaea.async.settings`.
+    """
+
     conf = read_config()
     if conf.has_section('celery'):
         section = conf.get_map('celery')
@@ -62,6 +75,9 @@ def configure_celery(celery_app):
 
 
 def configure_data(redis_client):
+    """
+    Configure fixed set of data queues.
+    """
     data_queues = {
         'update_cell': DataQueue('update_cell', redis_client,
                                  queue_key='update_cell'),
@@ -78,6 +94,10 @@ def configure_data(redis_client):
 
 
 def configure_export(redis_client, app_config):
+    """
+    Configure export queues, based on the `[export:*]` sections from
+    the application ini file.
+    """
     export_queues = {}
     for section_name in app_config.sections():
         if section_name.startswith('export:'):
@@ -90,7 +110,20 @@ def configure_export(redis_client, app_config):
 def init_worker(celery_app, app_config,
                 _db_rw=None, _db_ro=None, _geoip_db=None,
                 _raven_client=None, _redis_client=None, _stats_client=None):
-    # currently db_ro is not set up
+    """
+    Configure the passed in celery app, usually stored in
+    :data:`ichnaea.async.app.celery_app`.
+
+    Does connection, settings and queue setup. Attaches some
+    additional functionality to the :class:`celery.Celery` instance.
+
+    This is executed inside each forked worker process.
+
+    The parameters starting with an underscore are test-only hooks
+    to provide pre-configured connection objects.
+
+    :param _db_ro: Ignored, read-only database connection isn't used.
+    """
 
     # make config file settings available
     celery_app.settings = app_config.asdict()
@@ -128,7 +161,11 @@ def init_worker(celery_app, app_config,
 
 
 def shutdown_worker(celery_app):
-    # close outbound connections / remove custom instance state
+    """
+    Close outbound connections and remove custom celery_app state.
+
+    This is executed inside each forked worker process.
+    """
     celery_app.db_rw.engine.pool.dispose()
     del celery_app.db_rw
 

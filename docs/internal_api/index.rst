@@ -4,14 +4,17 @@
 Internal Code API
 =================
 
-This section describes the internal API's used throughout the code base.
-For documentation on public HTTP API please look at :ref:`service_api`.
+This section describes the internal Python API's used throughout the code base.
+For documentation on the public HTTP API please look at :ref:`service_api`.
 
 .. toctree::
    :maxdepth: 2
 
    api/index
+   async/index
+   config
+   constants
    geocalc
    geoip
-   models/cell
-   models/constants
+   models/index
+   webapp/index

@@ -1,3 +1,7 @@
+"""
+Helper class for providing detailed query statistics.
+"""
+
 from ichnaea.log import (
     get_raven_client,
     get_stats_client,

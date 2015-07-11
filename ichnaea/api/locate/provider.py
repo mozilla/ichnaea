@@ -1,3 +1,8 @@
+"""
+Implementations of location providers returning location estimates based
+on some specific data source.
+"""
+
 import operator
 import simplejson as json
 import time

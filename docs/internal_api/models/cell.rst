@@ -1,7 +1,7 @@
 :mod:`ichnaea.models.cell`
 --------------------------
 
-.. automodule:: ichnaea.models.constants
+.. automodule:: ichnaea.models.cell
 
 Cell Networks
 +++++++++++++

@@ -1,6 +1,13 @@
-# This file contains gunicorn configuration setttings, as described at
-# http://docs.gunicorn.org/en/latest/settings.html
-# The file is loaded via the -c ichnaea.gunicorn_config command line option
+"""
+Contains :ref:`Gunicorn configuration settings <gunicorn:settings>`.
+
+This needs to be specified on the command line via the `-c` argument:
+
+.. code-block:: bash
+
+    bin/gunicorn -c ichnaea.webapp.settings ichnaea.webapp.app:wsgi_app
+
+"""
 
 # Use our own Gevent worker
 worker_class = 'ichnaea.webapp.worker.LocationGeventWorker'
@@ -30,8 +37,15 @@ loglevel = 'warning'
 
 def _statsd_host():
     from ichnaea.config import read_config
+
     conf = read_config()
-    return conf.get_map('ichnaea').get('statsd_host', None)
+    if conf.has_section('ichnaea'):
+        section = conf.get_map('ichnaea')
+    else:  # pragma: no cover
+        # happens while building docs locally and on rtfd.org
+        return
+
+    return section.get('statsd_host', None)
 
 # Set host and prefix for gunicorn's own statsd messages
 statsd_host = _statsd_host()

@@ -1,3 +1,6 @@
+"""
+Implementation of the public HTTP APIs.
+"""
 
 
 def configure_api(config):

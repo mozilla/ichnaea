@@ -1,3 +1,7 @@
+"""
+Implementation of a submit specific HTTP service view.
+"""
+
 from pyramid.httpexceptions import (
     HTTPOk,
     HTTPServiceUnavailable,
@@ -11,10 +15,10 @@ from ichnaea.data.tasks import queue_reports
 
 class BaseSubmitView(BaseAPIView):
 
-    error_on_invalidkey = False
-    transform = None
-    schema = None
-    view_name = None
+    error_on_invalidkey = False  #:
+    transform = None  #:
+    schema = None  #:
+    view_name = None  #:
 
     def __init__(self, request):
         super(BaseSubmitView, self).__init__(request)
@@ -88,6 +92,9 @@ class BaseSubmitView(BaseAPIView):
         return response
 
     def view(self, api_key):
+        """
+        Execute the view code and return a response.
+        """
         try:
             self.submit(api_key)
         except ConnectionError:  # pragma: no cover

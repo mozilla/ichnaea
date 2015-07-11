@@ -1,7 +1,10 @@
 include Makefile
+include MANIFEST.in
 include *.ini
+include *.json
 include *.rst
 
+recursive-include alembic *
 recursive-include ichnaea *
-recursive-exclude ichnaea *.pyc *.pyo .DS_Store
+recursive-exclude ichnaea *.pyc *.pyo .DS_Store __pycache__
 recursive-exclude ichnaea/content/static/tiles *

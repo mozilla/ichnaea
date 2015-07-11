@@ -1,3 +1,7 @@
+"""
+Contains SQLAlchemy database models and colander validation schemata.
+"""
+
 from ichnaea.models.base import _Model
 
 # import all models, to make sure they are all registered

@@ -1,3 +1,9 @@
+"""
+Helper functions and classes around GeoIP lookups, based on Maxmind's
+`maxminddb <https://pypi.python.org/pypi/maxminddb>`_ and
+`geoip2 <https://pypi.python.org/pypi/geoip2>`_ Python packages.
+"""
+
 from collections import namedtuple
 import time
 
@@ -33,6 +39,11 @@ def configure_geoip(filename, mode=MODE_AUTO,
 
     If no geoip database file of the correct type can be found, returns
     a :class:`~ichnaea.geoip.GeoIPNull` dummy implementation instead.
+
+    :param raven_client: A configured raven/sentry client.
+    :type raven_client: :class:`raven.base.Client`
+
+    :param _client: Test-only hook to provide a pre-configured client.
     """
 
     if _client is not None:
@@ -70,7 +81,11 @@ def geoip_accuracy(country_code, city=False):
     Returns the best accuracy guess for the given GeoIP record.
 
     :param country_code: A two-letter ISO country code.
-    :param city: A boolean indicating whether or not we have a city record.
+    :type country_code: str
+
+    :param city: Do we have a city record or a country record.
+    :type city: bool
+
     :returns: An accuracy guess in meters.
     :rtype: int
     """
@@ -91,8 +106,8 @@ def geoip_accuracy(country_code, city=False):
 
 class GeoIPWrapper(Reader):
     """
-    A wrapper around the geoip2.Reader class with two lookup functions
-    which return `None` instead of raising errors.
+    A wrapper around the :class:`geoip2.database.Reader` class with two lookup
+    functions which return `None` instead of raising errors.
     """
 
     lookup_exceptions = (
@@ -102,7 +117,8 @@ class GeoIPWrapper(Reader):
     def __init__(self, filename, mode=MODE_AUTO):
         """
         Takes the absolute path to a geoip database on the local filesystem
-        and an additional mode, which defaults to `MODE_AUTO`.
+        and an additional mode, which defaults to
+        :data:`maxminddb.const.MODE_AUTO`.
 
         :raises: :exc:`maxminddb.InvalidDatabaseError`
         """
@@ -129,6 +145,10 @@ class GeoIPWrapper(Reader):
         return True
 
     def check_extension(self):
+        """
+        :returns: True if the C extension was installed correctly.
+        :rtype: bool
+        """
         builtin_module = 'builtins'
         if PY2:  # pragma: no cover
             builtin_module = '__builtin__'
@@ -139,12 +159,14 @@ class GeoIPWrapper(Reader):
 
     def city_lookup(self, addr):
         """
-        Returns a geoip city record.
+        Returns a GeoIP city record.
 
         This method returns `None` instead of throwing exceptions in
         case of invalid or unknown addresses.
 
         :param addr: IP address (e.g. '203.0.113.30')
+        :type addr: str
+
         :rtype: :class:`geoip2.models.City`
         """
         try:
@@ -160,6 +182,8 @@ class GeoIPWrapper(Reader):
         Looks up information for the given IP address.
 
         :param addr: IP address (e.g. '203.0.113.30')
+        :type addr: str
+
         :returns: A dictionary with city, country data and location data.
         :rtype: dict
         """
@@ -190,8 +214,10 @@ class GeoIPWrapper(Reader):
         Looks up a country code and name for the given IP address.
 
         :param addr: IP address (e.g. 203.0.113.30)
+        :type addr: str
+
         :returns: A country object or `None` for invalid or unknown addresses.
-        :rtype: :class:`~ichnaea.geoip.Country`
+        :rtype: :class:`ichnaea.geoip.Country`
         """
         record = self.city_lookup(addr)
         if not record:

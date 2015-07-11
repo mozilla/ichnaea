@@ -1,3 +1,7 @@
+"""
+Contains :ref:`celery settings <celery:configuration>`.
+"""
+
 import os
 
 always_eager = bool(os.environ.get('CELERY_ALWAYS_EAGER', False))

@@ -3,14 +3,20 @@
 
 .. automodule:: ichnaea.api.locate.searcher
 
-Classes
-+++++++
-
 .. autoclass:: Searcher
     :members:
+    :member-order: bysource
+
+    .. automethod:: __init__
 
 .. autoclass:: CountrySearcher
     :members:
+    :member-order: bysource
+
+    .. automethod:: __init__
 
 .. autoclass:: PositionSearcher
     :members:
+    :member-order: bysource
+
+    .. automethod:: __init__

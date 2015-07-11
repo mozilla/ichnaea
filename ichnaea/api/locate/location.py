@@ -1,3 +1,7 @@
+"""
+Classes representing an abstract location or a concrete country or position.
+"""
+
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 from ichnaea.geocalc import distance
 

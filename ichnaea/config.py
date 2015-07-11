@@ -1,3 +1,7 @@
+"""
+Contains helper functionality for reading and parsing configuration files.
+"""
+
 import os
 
 from configparser import (
@@ -11,6 +15,12 @@ from six import PY2, string_types
 class Config(ConfigParser):
 
     def __init__(self, filename):
+        """
+        A :class:`configparser.ConfigParser` subclass with added
+        functionality.
+
+        :param filename: The path to a configuration file.
+        """
         ConfigParser.__init__(self)
         # let's read the file
         if isinstance(filename, string_types):
@@ -21,6 +31,10 @@ class Config(ConfigParser):
             self.read_file(filename)
 
     def get(self, section, option, default=None):
+        """
+        A get method which returns the default argument when the option
+        cannot be found instead of raising an exception.
+        """
         try:
             value = ConfigParser.get(self, section, option)
         except (NoOptionError, NoSectionError):  # pragma: no cover
@@ -28,14 +42,21 @@ class Config(ConfigParser):
         return value
 
     def get_map(self, section):
-        # Additional convenience API
+        """
+        Return a config section as a dictionary.
+        """
         return dict(self.items(section))
 
     def optionxform(self, option):
-        # Avoid lower-casing the option names
+        """
+        Disable automatic lowercasing of option names.
+        """
         return option
 
     def asdict(self):  # pragma: no cover
+        """
+        Return the entire config as a dict of dicts.
+        """
         result = {}
         for section in self.sections():
             result[section] = self.get_map(section)
@@ -45,11 +66,18 @@ class Config(ConfigParser):
 class DummyConfig(object):
 
     def __init__(self, settings):
+        """
+        A stub implementation of :class:`ichnaea.config.Config` used
+        in tests.
+
+        :param settings: A dict of dicts representing the parsed config
+                         settings.
+        """
         self.settings = settings
 
-    def get(self, section, option):
+    def get(self, section, option, default=None):
         section_values = self.get_map(section)
-        return section_values.get(option)
+        return section_values.get(option, default)
 
     def get_map(self, section):
         return self.settings.get(section)
@@ -64,9 +92,18 @@ class DummyConfig(object):
         return result
 
 
-def read_config(filename=None):
+def read_config(filename=None, envvar='ICHNAEA_CFG', fallback='ichnaea.ini'):
+    """
+    Reads a configuration file from three possible locations:
+
+    1. from the passed in filename,
+    2. from the environment variable passed as `envvar`
+    3. from the `fallback` file in the current working directory.
+
+    :rtype: :class:`ichnaea.config.Config`
+    """
     if filename is None:
-        filename = os.environ.get('ICHNAEA_CFG', 'ichnaea.ini')
+        filename = os.environ.get(envvar, fallback)
         if PY2:  # pragma: no cover
             filename = filename.decode('utf-8')
     return Config(filename)

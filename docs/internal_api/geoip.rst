@@ -3,15 +3,9 @@
 
 .. automodule:: ichnaea.geoip
 
-Functions
-+++++++++
-
 .. autofunction:: configure_geoip
 
 .. autofunction:: geoip_accuracy
-
-Classes
-+++++++
 
 .. autoclass:: Country()
 

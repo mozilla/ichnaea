@@ -1,3 +1,7 @@
+"""
+Contains helper functions for various geo related calculations.
+"""
+
 import math
 from country_bounding_boxes import country_subunits_by_iso_code
 from six import string_types
@@ -5,7 +9,7 @@ from six import string_types
 from ichnaea import constants
 
 
-EARTH_RADIUS = 6371  # radius of earth in km
+EARTH_RADIUS = 6371  #: Earth radius in km.
 
 _radius_cache = {}
 
@@ -81,7 +85,7 @@ def distance(lat1, lon1, lat2, lon2):
 def centroid(points):
     """
     Compute the centroid (average lat and lon) from a set of points
-    ((lat,lon) pairs).
+    ((lat, lon) pairs).
     """
     lat_avg = sum([p[0] for p in points]) / len(points)
     lon_avg = sum([p[1] for p in points]) / len(points)
@@ -91,7 +95,7 @@ def centroid(points):
 def range_to_points(point, points):
     """
     Compute the maximum distance, in km, from a (lat, lon) point to any
-    of the points in a set of points ((lat,lon) pairs).
+    of the points in a set of points ((lat, lon) pairs).
 
     """
     (p_lat, p_lon) = point
@@ -100,7 +104,7 @@ def range_to_points(point, points):
 
 def location_is_in_country(lat, lon, country_code, margin=0):
     """
-    Return whether or not a given lat, lon pair is inside one of the
+    Return whether or not a given (lat, lon) pair is inside one of the
     country subunits associated with a given alpha2 country code.
 
     """
@@ -129,8 +133,8 @@ def add_meters_to_latitude(lat, distance):
     distance in meters.
 
     The new latitude is bounded by our globally defined
-    :data:`~ichnaea.models.constants.MIN_LAT` and
-    :data:`~ichnaea.models.constants.MAX_LAT`.
+    :data:`ichnaea.constants.MIN_LAT` and
+    :data:`ichnaea.constants.MAX_LAT`.
     """
     # A suitable estimate for surface level calculations is
     # 111,111m = 1 degree latitude
@@ -144,8 +148,8 @@ def add_meters_to_longitude(lat, lon, distance):
     distance in meters.
 
     The new longitude is bounded by our globally defined
-    :data:`~ichnaea.models.constants.MIN_LON` and
-    :data:`~ichnaea.models.constants.MAX_LON`.
+    :data:`ichnaea.constants.MIN_LON` and
+    :data:`ichnaea.constants.MAX_LON`.
     """
     # A suitable estimate for surface level calculations is
     # 111,111m = 1 degree latitude

@@ -1,3 +1,7 @@
+"""
+Contains web app specific one time configuration code.
+"""
+
 from pyramid.config import Configurator
 from pyramid.tweens import EXCVIEW
 
@@ -19,9 +23,31 @@ from ichnaea.log import (
 from ichnaea.monitor import configure_monitor
 
 
-def main(global_config, app_config, init=False,
+def main(app_config, ping_connections=False,
          _db_rw=None, _db_ro=None, _geoip_db=None,
          _raven_client=None, _redis_client=None, _stats_client=None):
+    """
+    Configure the web app stored in :data:`ichnaea.webapp.app._APP`.
+
+    Does connection, logging and view config setup. Attaches some
+    additional functionality to the :class:`pyramid.registry.Registry`
+    instance.
+
+    At startup ping all outbound connections like the database
+    once, to ensure they are actually up and responding.
+
+    The parameters starting with an underscore are test-only hooks
+    to provide pre-configured connection objects.
+
+    :param app_config: The parsed application ini.
+    :type app_config: :class:`ichnaea.config.Config`
+
+    :param ping_connections: If True, ping and test outside connections.
+    :type ping_connections: bool
+
+    :returns: A configured WSGI app, the result of calling
+              :meth:`pyramid.config.Configurator.make_wsgi_app`.
+    """
 
     configure_logging()
 
@@ -66,7 +92,7 @@ def main(global_config, app_config, init=False,
     config.add_renderer('json', customjson.Renderer())
 
     # Should we try to initialize and establish the outbound connections?
-    if init:  # pragma: no cover
+    if ping_connections:  # pragma: no cover
         registry.db_ro.ping()
         registry.redis_client.ping()
         registry.stats_client.ping()

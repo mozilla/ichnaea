@@ -1,9 +1,9 @@
-:mod:`ichnaea.api.locate.stats`
+:mod:`ichnaea.api.submit.views`
 -------------------------------
 
-.. automodule:: ichnaea.api.locate.stats
+.. automodule:: ichnaea.api.submit.views
 
-.. autoclass:: StatsLogger
+.. autoclass:: BaseSubmitView
     :members:
     :member-order: bysource
 

@@ -1,3 +1,7 @@
+"""
+General locate specific colander schemata describing the public HTTP APIs.
+"""
+
 import colander
 
 from ichnaea.api.schema import InternalMapping

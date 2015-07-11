@@ -124,7 +124,6 @@ def _make_app(app_config=TEST_CONFIG,
               _db_rw=None, _db_ro=None, _geoip_db=None,
               _raven_client=None, _redis_client=None, _stats_client=None):
     wsgiapp = main(
-        {},
         app_config,
         _db_rw=_db_rw,
         _db_ro=_db_ro,
