@@ -14,6 +14,7 @@ For documentation on the public HTTP API please look at :ref:`service_api`.
    async/index
    config
    constants
+   exceptions
    geocalc
    geoip
    models/index

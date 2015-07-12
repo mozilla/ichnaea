@@ -1,4 +1,10 @@
-from ichnaea.api.exceptions import ParseError
+import mock
+from redis import RedisError
+
+from ichnaea.api.exceptions import (
+    ParseError,
+    ServiceUnavailable,
+)
 from ichnaea.customjson import dumps
 from ichnaea.models import Radio
 from ichnaea import util
@@ -8,6 +14,7 @@ class BaseSubmitTest(object):
 
     url = None
     metric = None
+    metric_url = None
     status = None
 
     nickname = b'World Tr\xc3\xa4veler'.decode('utf-8')
@@ -29,14 +36,14 @@ class BaseSubmitTest(object):
             url += '?key=%s' % api_key
         return self.app.post_json(url, {'items': items}, status=status, **kw)
 
-    def _post_one_cell(self, nickname=None, email=None):
+    def _post_one_cell(self, nickname=None, email=None, status=status):
         cell, query = self._one_cell_query()
         headers = {}
         if nickname:
             headers['X-Nickname'] = nickname.encode('utf-8')
         if email:
             headers['X-Email'] = email.encode('utf-8')
-        return self._post([query], headers=headers)
+        return self._post([query], headers=headers, status=status)
 
     def test_gzip(self):
         cell, query = self._one_cell_query()
@@ -75,6 +82,20 @@ class BaseSubmitTest(object):
         res = self.app.post_json(self.url, [1], status=400)
         self.assertEqual(res.json, ParseError.json_body())
 
+    def test_error_redis_failure(self):
+        mock_task = mock.Mock()
+        mock_task.side_effect = RedisError()
+
+        with mock.patch('ichnaea.async.task.BaseTask.apply', mock_task):
+            res = self._post_one_cell(status=503)
+            self.assertEqual(res.json, ServiceUnavailable.json_body())
+
+        self.assertTrue(mock_task.called)
+        self.check_stats(counter=[
+            self.metric_url + '.503',
+            ('items.uploaded.batches', 0),
+        ])
+
     def test_headers_email_without_nickname(self):
         self._post_one_cell(nickname=None, email=self.email)
         item = self.queue.dequeue(self.queue.queue_key())[0]
@@ -111,11 +132,10 @@ class BaseSubmitTest(object):
             counter=['items.api_log.test.uploaded.batches',
                      'items.uploaded.batches',
                      self.metric + '.api_key.test',
-                     'request%s.%s' % (self.url.replace('/', '.'),
-                                       self.status)],
+                     self.metric_url + '.' + str(self.status)],
             timer=['items.api_log.test.uploaded.batch_size',
                    'items.uploaded.batch_size',
-                   'request' + self.url.replace('/', '.')])
+                   self.metric_url])
 
     def test_radio_duplicated(self):
         cell, query = self._one_cell_query(radio=False)

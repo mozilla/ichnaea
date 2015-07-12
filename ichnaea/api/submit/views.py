@@ -2,13 +2,13 @@
 Implementation of a submit specific HTTP service view.
 """
 
-from pyramid.httpexceptions import (
-    HTTPOk,
-    HTTPServiceUnavailable,
-)
 from redis import RedisError
 
-from ichnaea.api.exceptions import ParseError
+from ichnaea.api.exceptions import (
+    ParseError,
+    ServiceUnavailable,
+    UploadSuccess,
+)
 from ichnaea.api.views import BaseAPIView
 from ichnaea.data.tasks import queue_reports
 
@@ -19,6 +19,9 @@ class BaseSubmitView(BaseAPIView):
     transform = None  #:
     schema = None  #:
     view_name = None  #:
+
+    #: :exc:`ichnaea.api.exceptions.UploadSuccess`
+    success = UploadSuccess
 
     def __init__(self, request):
         super(BaseSubmitView, self).__init__(request)
@@ -48,7 +51,7 @@ class BaseSubmitView(BaseAPIView):
             self.stats_client.timing(
                 'items.api_log.%s.uploaded.batch_size' % api_key_name, value)
 
-    def preprocess(self, api_key):
+    def preprocess(self):
         try:
             request_data, errors = self.preprocess_request()
 
@@ -61,12 +64,11 @@ class BaseSubmitView(BaseAPIView):
             self.raven_client.captureException()
             raise
 
-        self.emit_upload_metrics(len(request_data['items']), api_key)
         return request_data
 
     def submit(self, api_key):
         # may raise HTTP error
-        request_data = self.preprocess(api_key)
+        request_data = self.preprocess()
 
         # data pipeline using new internal data format
         transform = self.transform()
@@ -85,11 +87,7 @@ class BaseSubmitView(BaseAPIView):
                 },
                 expires=21600)
 
-    def success(self):
-        response = HTTPOk()
-        response.content_type = 'application/json'
-        response.body = b'{}'
-        return response
+        self.emit_upload_metrics(len(request_data['items']), api_key)
 
     def view(self, api_key):
         """
@@ -97,7 +95,7 @@ class BaseSubmitView(BaseAPIView):
         """
         try:
             self.submit(api_key)
-        except RedisError:  # pragma: no cover
-            return HTTPServiceUnavailable()
+        except RedisError:
+            raise ServiceUnavailable()
 
         return self.success()

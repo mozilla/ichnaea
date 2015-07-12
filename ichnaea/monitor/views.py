@@ -59,7 +59,7 @@ class HeartbeatView(BaseView):
         try:
             return {'status': 'OK', 'hostname': LOCAL_FQDN}
         except Exception:  # pragma: no cover
-            return HTTPServiceUnavailable()
+            raise HTTPServiceUnavailable()
 
 
 class MonitorView(BaseView):

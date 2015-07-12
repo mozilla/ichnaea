@@ -1,5 +1,4 @@
-from pyramid.httpexceptions import HTTPNoContent
-
+from ichnaea.api.exceptions import UploadSuccessV1
 from ichnaea.api.submit.submit_v1.schema import SubmitV1Schema
 from ichnaea.api.submit.views import BaseSubmitView
 from ichnaea.models.transform import ReportTransform
@@ -59,5 +58,5 @@ class SubmitV1View(BaseSubmitView):
     transform = SubmitV1Transform
     view_name = 'submit'
 
-    def success(self):
-        return HTTPNoContent()
+    #: :exc:`ichnaea.api.exceptions.UploadSuccessV1`
+    success = UploadSuccessV1

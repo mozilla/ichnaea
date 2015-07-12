@@ -107,11 +107,11 @@ def log_tween_factory(handler, registry):
         except HTTPClientError:
             # ignore general client side errors
             raise
-        except Exception as exc:  # pragma: no cover
+        except Exception as exc:
             timer_send()
             if isinstance(exc, HTTPException):
                 status = exc.status_code
-            else:
+            else:  # pragma: no cover
                 status = 500
             counter_send(status)
             raven_client.captureException()

@@ -3,7 +3,27 @@
 
 .. automodule:: ichnaea.api.exceptions
 
+.. autoexception:: JSONException
+    :members:
+    :member-order: bysource
+
+.. autoexception:: UploadSuccess
+    :members:
+    :member-order: bysource
+
+.. autoexception:: UploadSuccessV1
+    :members:
+    :member-order: bysource
+
 .. autoexception:: BaseAPIError
+    :members:
+    :member-order: bysource
+
+.. autoexception:: BaseAPIClientError
+    :members:
+    :member-order: bysource
+
+.. autoexception:: BaseAPIServiceError
     :members:
     :member-order: bysource
 
@@ -24,5 +44,9 @@
     :member-order: bysource
 
 .. autoexception:: ParseError
+    :members:
+    :member-order: bysource
+
+.. autoexception:: ServiceUnavailable
     :members:
     :member-order: bysource

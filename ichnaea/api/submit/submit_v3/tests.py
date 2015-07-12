@@ -13,6 +13,7 @@ class TestSubmitV3(BaseSubmitTest, CeleryAppTestCase):
 
     url = '/v2/geosubmit'
     metric = 'geosubmit2'
+    metric_url = 'request.v2.geosubmit'
     status = 200
     radio_id = 'radioType'
     cells_id = 'cellTowers'
