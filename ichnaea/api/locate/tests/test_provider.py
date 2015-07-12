@@ -28,19 +28,8 @@ from ichnaea.api.locate.provider import (
     Provider,
     WifiPositionProvider,
 )
-from ichnaea.models import (
-    ApiKey,
-    Radio,
-    Wifi,
-)
-from ichnaea.tests.base import (
-    CANADA_MCC,
-    ConnectionTestCase,
-    GB_LAT,
-    GB_LON,
-    GB_MCC,
-    USA_MCC,
-)
+from ichnaea.models import ApiKey
+from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import (
     CellAreaFactory,
     CellFactory,
@@ -68,8 +57,9 @@ class ProviderTest(ConnectionTestCase):
             api_name='m',
         )
 
-    def model_query(self, cells=(), wifis=()):
+    def model_query(self, cells=(), wifis=(), geoip=False, fallbacks=None):
         query = {}
+
         if cells:
             query['cell'] = []
             for cell in cells:
@@ -82,10 +72,18 @@ class ProviderTest(ConnectionTestCase):
                 if getattr(cell, 'cid', None) is not None:
                     cell_query['cid'] = cell.cid
                 query['cell'].append(cell_query)
+
         if wifis:
             query['wifi'] = []
             for wifi in wifis:
                 query['wifi'].append({'key': wifi.key})
+
+        if geoip:
+            query['geoip'] = geoip
+
+        if fallbacks:
+            query['fallbacks'] = fallbacks
+
         return query
 
 
@@ -93,58 +91,40 @@ class TestProvider(ProviderTest):
 
     def test_log_hit(self):
         self.provider.log_hit()
-        self.check_stats(
-            counter=[
-                'm.test_hit',
-            ],
-        )
+        self.check_stats(counter=[
+            'm.test_hit',
+        ])
 
     def test_log_success(self):
         self.provider.log_success()
-        self.check_stats(
-            counter=[
-                'm.api_log.test.test_hit',
-            ],
-        )
+        self.check_stats(counter=[
+            'm.api_log.test.test_hit',
+        ])
 
     def test_log_failure(self):
         self.provider.log_failure()
-        self.check_stats(
-            counter=[
-                'm.api_log.test.test_miss',
-            ],
-        )
+        self.check_stats(counter=[
+            'm.api_log.test.test_miss',
+        ])
 
     def test_should_locate_is_true_if_no_fallback_set(self):
-        self.assertTrue(
-            self.provider.should_locate({'fallbacks': {}}, EmptyLocation()))
+        query = self.model_query(fallbacks={})
+        self.assertTrue(self.provider.should_locate(query, EmptyLocation()))
 
     def test_should_not_locate_if_fallback_field_is_set(self):
         self.provider.fallback_field = 'fallback'
-        self.assertFalse(
-            self.provider.should_locate(
-                {'fallbacks': {'fallback': 0}},
-                EmptyLocation(),
-            ),
-        )
+        query = self.model_query(fallbacks={'fallback': False})
+        self.assertFalse(self.provider.should_locate(query, EmptyLocation()))
 
     def test_should_locate_if_a_different_fallback_field_is_set(self):
         self.provider.fallback_field = 'fallback'
-        self.assertTrue(
-            self.provider.should_locate(
-                {'fallbacks': {'another_fallback': 0}},
-                EmptyLocation(),
-            ),
-        )
+        query = self.model_query(fallbacks={'another_fallback': False})
+        self.assertTrue(self.provider.should_locate(query, EmptyLocation()))
 
     def test_should_locate_ignore_invalid_values(self):
         self.provider.fallback_field = 'fallback'
-        self.assertTrue(
-            self.provider.should_locate(
-                {'fallbacks': {'fallback': 'asdf'}},
-                EmptyLocation(),
-            ),
-        )
+        query = self.model_query(fallbacks={'fallback': 'asdf'})
+        self.assertTrue(self.provider.should_locate(query, EmptyLocation()))
 
 
 class TestCellPositionProvider(ProviderTest):
@@ -152,66 +132,59 @@ class TestCellPositionProvider(ProviderTest):
     TestProvider = CellPositionProvider
 
     def test_locate_with_no_data_returns_none(self):
-        location = self.provider.locate({})
+        query = self.model_query()
+        location = self.provider.locate(query)
+
         self.assertFalse(location.found())
 
     def test_locate_finds_cell_with_same_cid(self):
-        cell_key = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1}
-        self.session.add(self.TestProvider.model(
-            lat=GB_LAT, lon=GB_LON, range=6000,
-            radio=Radio.gsm, cid=1, **cell_key))
+        cell = CellFactory()
         self.session.flush()
 
-        location = self.provider.locate(
-            {'cell': [dict(cid=1, radio=Radio.gsm.name, **cell_key)]})
+        query = self.model_query(cells=[cell])
+        location = self.provider.locate(query)
+
         self.assertEqual(type(location), Position)
-        self.assertEqual(location.lat, GB_LAT)
-        self.assertEqual(location.lon, GB_LON)
-        self.assertEqual(location.accuracy, 6000)
+        self.assertAlmostEqual(location.lat, cell.lat)
+        self.assertAlmostEqual(location.lon, cell.lon)
+        self.assertEqual(location.accuracy, cell.range)
 
     def test_locate_fails_to_find_cell_with_wrong_cid(self):
-        cell_key = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1}
-        self.session.add(self.TestProvider.model(
-            lat=GB_LAT, lon=GB_LON, range=6000,
-            radio=Radio.gsm, cid=1, **cell_key))
+        cell = CellFactory()
         self.session.flush()
+        cell.cid += 1
 
-        location = self.provider.locate(
-            {'cell': [dict(cid=2, radio=Radio.gsm.name, **cell_key)]})
+        query = self.model_query(cells=[cell])
+        location = self.provider.locate(query)
+
         self.assertFalse(location.found())
         self.assertTrue(location.query_data)
 
     def test_multiple_cells_combined(self):
-        cell_key = {'mcc': GB_MCC, 'mnc': 1, 'lac': 1}
-        self.session.add(self.TestProvider.model(
-            lat=GB_LAT + 0.1, lon=GB_LON + 0.1, range=6000,
-            radio=Radio.gsm, cid=1, **cell_key))
-        self.session.add(self.TestProvider.model(
-            lat=GB_LAT + 0.3, lon=GB_LON + 0.3, range=6000,
-            radio=Radio.gsm, cid=2, **cell_key))
+        cell = CellFactory()
+        cell2 = CellFactory(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
+                            lac=cell.lac, cid=cell.cid + 1,
+                            lat=cell.lat + 0.02, lon=cell.lon + 0.02)
         self.session.flush()
 
-        location = self.provider.locate({'cell': [
-            dict(cid=1, radio=Radio.gsm.name, **cell_key),
-            dict(cid=2, radio=Radio.gsm.name, **cell_key),
-        ]})
+        query = self.model_query(cells=[cell, cell2])
+        location = self.provider.locate(query)
+
         self.assertEqual(type(location), Position)
-        self.assertEqual(location.lat, GB_LAT + 0.2)
-        self.assertEqual(location.lon, GB_LON + 0.2)
+        self.assertAlmostEqual(location.lat, cell.lat + 0.01)
+        self.assertAlmostEqual(location.lon, cell.lon + 0.01)
 
     def test_no_db_query_for_incomplete_keys(self):
-        cell = CellFactory()
-        self.session.flush()
+        cells = CellFactory.build_batch(5)
+        cells[0].radio = None
+        cells[1].mcc = None
+        cells[2].mnc = None
+        cells[3].lac = None
+        cells[4].cid = None
 
         with self.db_call_checker() as check_db_calls:
-            location = self.provider.locate({'cell': [
-                dict(radio='', mcc=cell.mcc,
-                     mnc=cell.mnc, lac=cell.lac, cid=cell.cid),
-                dict(radio=cell.radio.name, mcc=cell.mcc,
-                     mnc=cell.mnc, lac=None, cid=cell.cid),
-                dict(radio=cell.radio.name, mcc=cell.mcc,
-                     mnc=cell.mnc, lac=cell.lac, cid=None),
-            ]})
+            query = self.model_query(cells=cells)
+            location = self.provider.locate(query)
             check_db_calls(rw=0, ro=0)
 
         self.assertEqual(type(location), Position)
@@ -223,71 +196,55 @@ class TestCellAreaPositionProvider(ProviderTest):
     TestProvider = CellAreaPositionProvider
 
     def test_provider_should_not_locate_if_lacf_disabled(self):
-        cell_key = {'mcc': GB_MCC, 'mnc': 1}
-        query_data = {
-            'cell': [
-                dict(radio=Radio.gsm.name, lac=1, cid=1, **cell_key),
-                dict(radio=Radio.gsm.name, lac=2, cid=1, **cell_key),
-            ],
-            'fallbacks': {
-                'lacf': 0,
-            }
-        }
-        self.assertFalse(
-            self.provider.should_locate(query_data, EmptyLocation()))
+        cells = CellFactory.build_batch(2)
+
+        query = self.model_query(
+            cells=cells,
+            fallbacks={'lacf': False},
+        )
+        self.assertFalse(self.provider.should_locate(query, EmptyLocation()))
 
     def test_no_db_query_for_incomplete_keys(self):
-        area = CellAreaFactory()
-        self.session.flush()
+        cells = CellFactory.build_batch(4)
+        cells[0].radio = None
+        cells[1].mcc = None
+        cells[2].mnc = None
+        cells[3].lac = None
 
         with self.db_call_checker() as check_db_calls:
-            location = self.provider.locate({'cell': [
-                dict(radio=area.radio.name, mcc=area.mcc,
-                     mnc=area.mnc, lac=None, cid=1),
-                dict(radio='', mcc=area.mcc,
-                     mnc=area.mnc, lac=area.lac, cid=2),
-            ]})
+            query = self.model_query(cells=cells)
+            location = self.provider.locate(query)
             check_db_calls(rw=0, ro=0)
 
         self.assertEqual(type(location), Position)
         self.assertFalse(location.found())
 
     def test_shortest_range_lac_used(self):
-        cell_key = {'mcc': GB_MCC, 'mnc': 1}
-        self.session.add(self.TestProvider.model(
-            lat=GB_LAT, lon=GB_LON, range=25000,
-            radio=Radio.gsm, lac=1, **cell_key))
-        self.session.add(self.TestProvider.model(
-            lat=GB_LAT, lon=GB_LON, range=30000,
-            radio=Radio.gsm, lac=2, **cell_key))
+        area = CellAreaFactory(range=25000)
+        area2 = CellAreaFactory(range=30000, lat=area.lat + 0.2)
         self.session.flush()
 
-        location = self.provider.locate({'cell': [
-            dict(radio=Radio.gsm.name, lac=1, cid=1, **cell_key),
-            dict(radio=Radio.gsm.name, lac=2, cid=1, **cell_key),
-        ]})
+        query = self.model_query(cells=[area, area2])
+        location = self.provider.locate(query)
+
         self.assertEqual(type(location), Position)
-        self.assertEqual(location.lat, GB_LAT)
-        self.assertEqual(location.lon, GB_LON)
-        self.assertEqual(location.accuracy, 25000)
+        self.assertAlmostEqual(location.lat, area.lat)
+        self.assertAlmostEqual(location.lon, area.lon)
+        self.assertEqual(location.accuracy, area.range)
 
     def test_minimum_range_returned(self):
-        cell_key = {'mcc': GB_MCC, 'mnc': 1}
-        self.session.add(self.TestProvider.model(
-            lat=GB_LAT, lon=GB_LON, range=LAC_MIN_ACCURACY - 2000,
-            radio=Radio.gsm, lac=1, **cell_key))
-        self.session.add(self.TestProvider.model(
-            lat=GB_LAT, lon=GB_LON, range=LAC_MIN_ACCURACY + 3000,
-            radio=Radio.gsm, lac=2, **cell_key))
+        areas = CellAreaFactory.create_batch(2)
+        areas[0].range = LAC_MIN_ACCURACY - 2000
+        areas[1].range = LAC_MIN_ACCURACY + 3000
+        areas[1].lat = areas[0].lat + 0.2
         self.session.flush()
 
-        location = self.provider.locate({'cell': [
-            dict(radio=Radio.gsm.name, lac=1, cid=1, **cell_key),
-            dict(radio=Radio.gsm.name, lac=2, cid=1, **cell_key),
-        ]})
+        query = self.model_query(cells=areas)
+        location = self.provider.locate(query)
+
         self.assertEqual(type(location), Position)
-        self.assertEqual(location.lat, GB_LAT)
-        self.assertEqual(location.lon, GB_LON)
+        self.assertAlmostEqual(location.lat, areas[0].lat)
+        self.assertAlmostEqual(location.lon, areas[0].lon)
         self.assertEqual(location.accuracy, LAC_MIN_ACCURACY)
 
 
@@ -296,19 +253,22 @@ class TestCellCountryProvider(ProviderTest):
     TestProvider = CellCountryProvider
 
     def test_locate_finds_country_from_mcc(self):
-        country = mobile_codes.mcc(str(CANADA_MCC))[0]
-        cell_key = {'mcc': CANADA_MCC, 'mnc': 1, 'lac': 1}
-        location = self.provider.locate(
-            {'cell': [dict(cid=1, radio=Radio.gsm.name, **cell_key)]})
+        country = mobile_codes.mcc('235')[0]
+        cell = CellFactory.build(mcc=235)
+
+        query = self.model_query(cells=[cell])
+        location = self.provider.locate(query)
+
         self.assertEqual(type(location), Country)
         self.assertEqual(location.country_code, country.alpha2)
         self.assertEqual(location.country_name, country.name)
 
     def test_mcc_with_multiple_countries_returns_empty_location(self):
-        cell = CellFactory.build(mcc=USA_MCC)
-        location = self.provider.locate(
-            {'cell': [{'radio': cell.radio.name, 'mcc': cell.mcc,
-                       'mnc': cell.mnc, 'lac': cell.lac, 'cid': cell.cid}]})
+        cell = CellFactory.build(mcc=234)
+
+        query = self.model_query(cells=[cell])
+        location = self.provider.locate(query)
+
         self.assertEqual(type(location), Country)
         self.assertFalse(location.found())
         self.assertTrue(location.query_data)
@@ -323,215 +283,179 @@ class TestWifiPositionProvider(ProviderTest):
         wifi2 = WifiFactory(lat=wifi.lat, lon=wifi.lon + 0.00001, range=300)
         self.session.flush()
 
-        location = self.provider.locate({'wifi': [
-            {'key': wifi.key}, {'key': wifi2.key}]})
-        self.assertEqual(location.lat, wifi.lat)
-        self.assertEqual(location.lon, wifi.lon + 0.000005)
+        query = self.model_query(wifis=[wifi, wifi2])
+        location = self.provider.locate(query)
+
+        self.assertAlmostEqual(location.lat, wifi.lat)
+        self.assertAlmostEqual(location.lon, wifi.lon + 0.000005)
         self.assertEqual(location.accuracy, WIFI_MIN_ACCURACY)
 
     def test_wifi_too_few_candidates(self):
-        wifis = [
-            Wifi(key='001122334455', lat=1.0, lon=1.0),
-            Wifi(key='112233445566', lat=1.001, lon=1.002),
-        ]
-        self.session.add_all(wifis)
+        wifis = WifiFactory.create_batch(2)
         self.session.flush()
 
-        location = self.provider.locate({'wifi': [{'key': '001122334455'}]})
+        query = self.model_query(wifis=[wifis[0]])
+        location = self.provider.locate(query)
+
         self.assertFalse(location.found())
         self.assertFalse(location.query_data)
 
     def test_wifi_too_few_matches(self):
-        wifis = [
-            Wifi(key='001122334455', lat=1.0, lon=1.0),
-            Wifi(key='112233445566', lat=1.001, lon=1.002),
-            Wifi(key='223344556677', lat=None, lon=None),
-        ]
-        self.session.add_all(wifis)
+        wifis = WifiFactory.create_batch(3)
+        wifis[0].lat = None
         self.session.flush()
 
-        location = self.provider.locate(
-            {'wifi': [{'key': '001122334455'}, {'key': '223344556677'}]})
+        query = self.model_query(wifis=wifis[:2])
+        location = self.provider.locate(query)
+
         self.assertFalse(location.found())
         self.assertTrue(location.query_data)
 
     def test_wifi_too_similar_bssids_by_arithmetic_difference(self):
-        wifis = [
-            Wifi(key='00000000001f', lat=1.0, lon=1.0),
-            Wifi(key='000000000020', lat=1.0, lon=1.0),
-        ]
-        self.session.add_all(wifis)
+        wifi = WifiFactory(key='00000000001f')
+        wifi2 = WifiFactory(key='000000000020')
         self.session.flush()
 
-        location = self.provider.locate(
-            {'wifi': [{'key': '00000000001f'}, {'key': '000000000020'}]})
+        query = self.model_query(wifis=[wifi, wifi2])
+        location = self.provider.locate(query)
+
         self.assertFalse(location.found())
         self.assertFalse(location.query_data)
 
     def test_wifi_too_similar_bssids_by_hamming_distance(self):
-        wifis = [
-            Wifi(key='000000000058', lat=1.0, lon=1.0),
-            Wifi(key='00000000005c', lat=1.0, lon=1.0),
-        ]
-        self.session.add_all(wifis)
+        wifi = WifiFactory(key='000000000058')
+        wifi2 = WifiFactory(key='00000000005c')
         self.session.flush()
 
-        location = self.provider.locate(
-            {'wifi': [{'key': '000000000058'}, {'key': '00000000005c'}]})
+        query = self.model_query(wifis=[wifi, wifi2])
+        location = self.provider.locate(query)
+
         self.assertFalse(location.found())
         self.assertFalse(location.query_data)
 
     def test_wifi_similar_bssids_but_enough_clusters(self):
-        wifis = [
-            Wifi(key='00000000001f', lat=1.0, lon=1.0),
-            Wifi(key='000000000020', lat=1.0, lon=1.0),
-            Wifi(key='000000000058', lat=1.00004, lon=1.00004),
-            Wifi(key='00000000005c', lat=1.00004, lon=1.00004),
-        ]
-        self.session.add_all(wifis)
+        wifi11 = WifiFactory(key='00000000001f')
+        wifi12 = WifiFactory(key='000000000020',
+                             lat=wifi11.lat, lon=wifi11.lon)
+        wifi21 = WifiFactory(key='000000000058',
+                             lat=wifi11.lat + 0.00004,
+                             lon=wifi11.lon + 0.00004)
+        wifi22 = WifiFactory(key='00000000005c',
+                             lat=wifi21.lat, lon=wifi21.lon)
         self.session.flush()
 
-        location = self.provider.locate({'wifi': [
-            {'key': '00000000001f'},
-            {'key': '000000000020'},
-            {'key': '000000000058'},
-            {'key': '00000000005c'},
-        ]})
-        self.assertEqual(location.lat, 1.00002)
-        self.assertEqual(location.lon, 1.00002)
-        self.assertEqual(location.accuracy, 100.0)
+        query = self.model_query(wifis=[wifi11, wifi12, wifi21, wifi22])
+        location = self.provider.locate(query)
+
+        self.assertAlmostEqual(location.lat, wifi11.lat + 0.00002)
+        self.assertAlmostEqual(location.lon, wifi11.lon + 0.00002)
+        self.assertEqual(location.accuracy, WIFI_MIN_ACCURACY)
 
     def test_wifi_similar_bssids_but_enough_found_clusters(self):
-        wifis = [
-            Wifi(key='00000000001f', lat=1.0, lon=1.0),
-            Wifi(key='000000000024', lat=1.00004, lon=1.00004),
+        wifi = WifiFactory(key='00000000001f')
+        wifi2 = WifiFactory(key='000000000024',
+                            lat=wifi.lat + 0.00004, lon=wifi.lon + 0.00004)
+        other_wifi = [
+            WifiFactory.build(key='000000000020'),
+            WifiFactory.build(key='000000000021'),
+            WifiFactory.build(key='000000000022'),
+            WifiFactory.build(key='000000000023'),
         ]
-        self.session.add_all(wifis)
         self.session.flush()
 
-        location = self.provider.locate({'wifi': [
-            {'key': '00000000001f'},
-            {'key': '000000000020'},
-            {'key': '000000000021'},
-            {'key': '000000000022'},
-            {'key': '000000000023'},
-            {'key': '000000000024'},
-        ]})
-        self.assertEqual(location.lat, 1.00002)
-        self.assertEqual(location.lon, 1.00002)
-        self.assertEqual(location.accuracy, 100.0)
+        query = self.model_query(wifis=[wifi, wifi2] + other_wifi)
+        location = self.provider.locate(query)
+
+        self.assertAlmostEqual(location.lat, wifi.lat + 0.00002)
+        self.assertAlmostEqual(location.lon, wifi.lon + 0.00002)
+        self.assertEqual(location.accuracy, WIFI_MIN_ACCURACY)
 
     def test_wifi_ignore_outlier(self):
-        wifis = [
-            Wifi(key='001122334455', lat=1.0, lon=1.0),
-            Wifi(key='112233445566', lat=1.001, lon=1.002),
-            Wifi(key='223344556677', lat=1.002, lon=1.004),
-            Wifi(key='334455667788', lat=2.0, lon=2.0),
-        ]
-        self.session.add_all(wifis)
+        wifis = WifiFactory.create_batch(4)
+        wifis[1].lat = wifis[0].lat + 0.0001
+        wifis[1].lon = wifis[0].lon
+        wifis[2].lat = wifis[0].lat + 0.0002
+        wifis[2].lon = wifis[0].lon
+        wifis[3].lat = wifis[0].lat + 1.0
         self.session.flush()
 
-        location = self.provider.locate({
-            'wifi': [
-                {'key': '001122334455'}, {'key': '112233445566'},
-                {'key': '223344556677'}, {'key': '334455667788'},
-            ]})
-        self.assertEqual(location.lat, 1.001)
-        self.assertEqual(location.lon, 1.002)
-        self.assertEqual(location.accuracy, 248.6090897)
+        query = self.model_query(wifis=wifis)
+        location = self.provider.locate(query)
+
+        self.assertAlmostEqual(location.lat, wifis[0].lat + 0.0001)
+        self.assertAlmostEqual(location.lon, wifis[0].lon)
+        self.assertEqual(location.accuracy, WIFI_MIN_ACCURACY)
 
     def test_wifi_prefer_cluster_with_better_signals(self):
-        wifis = [
-            Wifi(key='a1' * 6, lat=1.0, lon=1.0),
-            Wifi(key='b2' * 6, lat=1.001, lon=1.002),
-            Wifi(key='c3' * 6, lat=1.002, lon=1.004),
-            Wifi(key='d4' * 6, lat=2.0, lon=2.0),
-            Wifi(key='e5' * 6, lat=2.001, lon=2.002),
-            Wifi(key='f6' * 6, lat=2.002, lon=2.004),
-        ]
-        self.session.add_all(wifis)
+        wifi11 = WifiFactory()
+        wifi12 = WifiFactory(lat=wifi11.lat + 0.0002, lon=wifi11.lon)
+        wifi21 = WifiFactory(lat=wifi11.lat + 1.0, lon=wifi11.lon + 1.0)
+        wifi22 = WifiFactory(lat=wifi21.lat + 0.0002, lon=wifi21.lon)
         self.session.flush()
 
-        location = self.provider.locate({
-            'wifi': [
-                {'key': 'A1' * 6, 'signal': -100},
-                {'key': 'D4' * 6, 'signal': -80},
-                {'key': 'B2' * 6, 'signal': -100},
-                {'key': 'E5' * 6, 'signal': -90},
-                {'key': 'C3' * 6, 'signal': -100},
-                {'key': 'F6' * 6, 'signal': -54},
-            ]})
-        self.assertEqual(location.lat, 2.001)
-        self.assertEqual(location.lon, 2.002)
-        self.assertEqual(location.accuracy, 248.51819)
+        query = self.model_query(wifis=[wifi11, wifi12, wifi21, wifi22])
+        query['wifi'][0]['signal'] = -100
+        query['wifi'][1]['signal'] = -80
+        query['wifi'][2]['signal'] = -100
+        query['wifi'][3]['signal'] = -54
+        location = self.provider.locate(query)
+
+        self.assertAlmostEqual(location.lat, wifi21.lat + 0.0001)
+        self.assertAlmostEqual(location.lon, wifi21.lon)
+        self.assertEqual(location.accuracy, WIFI_MIN_ACCURACY)
 
     def test_wifi_prefer_larger_cluster_over_high_signal(self):
-        wifis = [Wifi(key=('0%X' % i).lower() * 6,
-                      lat=1 + i * 0.000010,
-                      lon=1 + i * 0.000012)
-                 for i in range(1, 6)]
-        wifis += [
-            Wifi(key='d4' * 6, lat=2.0, lon=2.0),
-            Wifi(key='e5' * 6, lat=2.001, lon=2.002),
-            Wifi(key='f6' * 6, lat=2.002, lon=2.004),
-        ]
-        self.session.add_all(wifis)
+        wifi = WifiFactory()
+        wifis = WifiFactory.create_batch(3, lat=wifi.lat, lon=wifi.lon)
+        wifis2 = WifiFactory.create_batch(3, lat=wifi.lat + 1.0, lon=wifi.lon)
         self.session.flush()
 
-        observations = [dict(key=('0%X' % i) * 6,
-                             signal=-80)
-                        for i in range(1, 6)]
-        observations += [
-            dict(key='D4' * 6, signal=-75),
-            dict(key='E5' * 6, signal=-74),
-            dict(key='F6' * 6, signal=-73)
-        ]
-        random.shuffle(observations)
+        query = self.model_query(wifis=[wifi] + wifis + wifis2)
+        for entry in query['wifi'][:-3]:
+            entry['signal'] = -80
+        for entry in query['wifi'][-3:]:
+            entry['signal'] = -70
+        random.shuffle(query['wifi'])
+        location = self.provider.locate(query)
 
-        location = self.provider.locate({'wifi': observations})
-        self.assertEqual(location.lat, 1.00003)
-        self.assertEqual(location.lon, 1.000036)
+        self.assertAlmostEqual(location.lat, wifi.lat)
+        self.assertAlmostEqual(location.lon, wifi.lon)
         self.assertEqual(location.accuracy, WIFI_MIN_ACCURACY)
 
     def test_wifi_only_use_top_five_signals_in_noisy_cluster(self):
         # all these should wind up in the same cluster since
         # clustering threshold is 500m and the 10 wifis are
         # spaced in increments of (+1m, +1.2m)
-        wifis = [Wifi(key=('0%X'.lower() % i) * 6,
-                      lat=1 + i * 0.000010,
-                      lon=1 + i * 0.000012)
-                 for i in range(1, 11)]
-        self.session.add_all(wifis)
-        self.session.commit()
-        observations = [dict(key=('0%X' % i) * 6,
-                             signal=-80)
-                        for i in range(6, 11)]
-        observations += [
-            dict(key='010101010101', signal=-75),
-            dict(key='020202020202', signal=-74),
-            dict(key='030303030303', signal=-73),
-            dict(key='040404040404', signal=-72),
-            dict(key='050505050505', signal=-71),
-        ]
-        random.shuffle(observations)
+        wifi = WifiFactory.build()
+        wifis = []
+        for i in range(0, 10):
+            wifis.append(WifiFactory(lat=wifi.lat + i * 0.00001,
+                                     lon=wifi.lon + i * 0.000012))
 
-        location = self.provider.locate({'wifi': observations})
-        self.assertEqual(location.lat, 1.00003)
-        self.assertEqual(location.lon, 1.000036)
+        self.session.flush()
+
+        query = self.model_query(wifis=wifis)
+        for i, entry in enumerate(query['wifi']):
+            entry['signal'] = -70 - i
+        random.shuffle(query['wifi'])
+        location = self.provider.locate(query)
+
+        self.assertAlmostEqual(location.lat, wifi.lat + 0.00002)
+        self.assertAlmostEqual(location.lon, wifi.lon + 0.000024)
         self.assertEqual(location.accuracy, WIFI_MIN_ACCURACY)
 
     def test_wifi_not_closeby(self):
+        wifi = WifiFactory()
         wifis = [
-            Wifi(key='101010101010', lat=1.0, lon=1.0),
-            Wifi(key='202020202020', lat=1.001, lon=1.002),
-            Wifi(key='303030303030', lat=2.002, lon=2.004),
-            Wifi(key='404040404040', lat=2.0, lon=2.0),
+            WifiFactory(lat=wifi.lat + 0.00001, lon=wifi.lon),
+            WifiFactory(lat=wifi.lat + 1.0, lon=wifi.lon),
+            WifiFactory(lat=wifi.lat + 1.00001, lon=wifi.lon),
         ]
-        self.session.add_all(wifis)
         self.session.flush()
 
-        location = self.provider.locate(
-            {'wifi': [{'key': '101010101010'}, {'key': '303030303030'}]})
+        query = self.model_query(wifis=[wifi, wifis[1]])
+        location = self.provider.locate(query)
+
         self.assertFalse(location.found())
         self.assertTrue(location.query_data)
 
@@ -541,35 +465,40 @@ class TestGeoIPPositionProvider(ProviderTest):
     TestProvider = GeoIPPositionProvider
 
     def test_geoip_provider_should_not_locate_if_ipf_disabled(self):
-        query_data = {
-            'geoip': '127.0.0.1',
-            'fallbacks': {
-                'ipf': 0,
-            }
-        }
-        self.assertFalse(
-            self.provider.should_locate(query_data, EmptyLocation()))
+        query = self.model_query(
+            geoip='127.0.0.1',
+            fallbacks={'ipf': False},
+        )
+        self.assertFalse(self.provider.should_locate(query, EmptyLocation()))
 
     def test_geoip_unknown(self):
-        location = self.provider.locate({'geoip': '127.0.0.1'})
+        query = self.model_query(geoip='127.0.0.1')
+        location = self.provider.locate(query)
+
         self.assertEqual(type(location), Position)
         self.assertFalse(location.found())
         self.assertTrue(location.query_data)
 
     def test_geoip_city(self):
         london = self.geoip_data['London']
-        location = self.provider.locate({'geoip': london['ip']})
+
+        query = self.model_query(geoip=london['ip'])
+        location = self.provider.locate(query)
+
         self.assertEqual(type(location), Position)
-        self.assertEqual(location.lat, london['latitude'])
-        self.assertEqual(location.lon, london['longitude'])
+        self.assertAlmostEqual(location.lat, london['latitude'])
+        self.assertAlmostEqual(location.lon, london['longitude'])
         self.assertEqual(location.accuracy, london['accuracy'])
 
     def test_geoip_country(self):
         bhutan = self.geoip_data['Bhutan']
-        location = self.provider.locate({'geoip': bhutan['ip']})
+
+        query = self.model_query(geoip=bhutan['ip'])
+        location = self.provider.locate(query)
+
         self.assertEqual(type(location), Position)
-        self.assertEqual(location.lat, bhutan['latitude'])
-        self.assertEqual(location.lon, bhutan['longitude'])
+        self.assertAlmostEqual(location.lat, bhutan['latitude'])
+        self.assertAlmostEqual(location.lon, bhutan['longitude'])
         self.assertEqual(location.accuracy, bhutan['accuracy'])
 
 
@@ -578,14 +507,19 @@ class TestGeoIPCountryProvider(ProviderTest):
     TestProvider = GeoIPCountryProvider
 
     def test_geoip_unknown(self):
-        location = self.provider.locate({'geoip': '127.0.0.1'})
+        query = self.model_query(geoip='127.0.0.1')
+        location = self.provider.locate(query)
+
         self.assertEqual(type(location), Country)
         self.assertFalse(location.found())
         self.assertTrue(location.query_data)
 
     def test_geoip_country(self):
         bhutan = self.geoip_data['Bhutan']
-        location = self.provider.locate({'geoip': bhutan['ip']})
+
+        query = self.model_query(geoip=bhutan['ip'])
+        location = self.provider.locate(query)
+
         self.assertEqual(type(location), Country)
         self.assertEqual(location.country_code, bhutan['country_code'])
         self.assertEqual(location.country_name, bhutan['country_name'])
@@ -615,44 +549,25 @@ class TestFallbackProvider(ProviderTest):
             'fallback': 'lacf',
         }
 
-        cells = CellFactory.build_batch(2)
-        wifis = WifiFactory.build_batch(2)
-        query = self.model_query(cells=cells, wifis=wifis)
-
-        self.cells = []
-        for cell in query['cell']:
-            self.cells.append(cell)
-            self.cells[-1]['signal'] = -70
-        self.cells[0]['ta'] = 1
-
-        self.wifis = []
-        for wifi in query['wifi']:
-            self.wifis.append(wifi)
-            self.wifis[-1]['signal'] = -77
-
-        self.wifis[0]['channel'] = 6
-        self.wifis[0]['frequency'] = 2437
-        self.wifis[0]['snr'] = 13
-
     def test_successful_call_returns_location(self):
+        cell = CellFactory.build()
+
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.response_location)
 
-            query_data = {
-                'cell': self.cells,
-                'wifi': self.wifis,
-                'fallbacks': {
-                    'lacf': 1,
-                    'ipf': 0,
+            query = self.model_query(
+                cells=[cell],
+                fallbacks={
+                    'lacf': True,
+                    'ipf': False,
                 }
-            }
-
-            location = self.provider.locate(query_data)
+            )
+            location = self.provider.locate(query)
 
             request_json = mock_request.request_history[0].json()
 
-        self.assertEqual(request_json['fallbacks'], {'lacf': 1})
+        self.assertEqual(request_json['fallbacks'], {'lacf': True})
         self.assertTrue(location.found())
         self.assertEqual(
             location.lat, self.response_location['location']['lat'])
@@ -665,6 +580,8 @@ class TestFallbackProvider(ProviderTest):
             timer=['m.fallback.lookup'])
 
     def test_failed_call_returns_empty_location(self):
+        cell = CellFactory.build()
+
         with requests_mock.Mocker() as mock_request:
             def raise_request_exception(request, context):
                 raise RequestException()
@@ -672,76 +589,74 @@ class TestFallbackProvider(ProviderTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=raise_request_exception)
 
-            location = self.provider.locate({
-                'cell': self.cells,
-                'wifi': self.wifis,
-            })
+            query = self.model_query(cells=[cell])
+            location = self.provider.locate(query)
 
         self.assertFalse(location.found())
 
     def test_invalid_json_returns_empty_location(self):
+        cell = CellFactory.build()
+
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=['invalid json'])
 
-            location = self.provider.locate({
-                'cell': self.cells,
-                'wifi': self.wifis,
-            })
+            query = self.model_query(cells=[cell])
+            location = self.provider.locate(query)
 
         self.assertFalse(location.found())
 
     def test_malformed_json_returns_empty_location(self):
+        cell = CellFactory.build()
+
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, content=b'[invalid json')
 
-            location = self.provider.locate({
-                'cell': self.cells,
-                'wifi': self.wifis,
-            })
+            query = self.model_query(cells=[cell])
+            location = self.provider.locate(query)
 
         self.assertFalse(location.found())
 
     def test_403_response_returns_empty_location(self):
+        cell = CellFactory.build()
+
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, status_code=403)
 
-            location = self.provider.locate({
-                'cell': self.cells,
-                'wifi': self.wifis,
-            })
+            query = self.model_query(cells=[cell])
+            location = self.provider.locate(query)
 
         self.assertFalse(location.found())
         self.check_raven([('HTTPError', 1)])
         self.check_stats(counter=['m.fallback.lookup_status.403'])
 
     def test_404_response_returns_empty_location(self):
+        cell = CellFactory.build()
+
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY,
                 json=LocationNotFound.json_body(),
                 status_code=404)
 
-            location = self.provider.locate({
-                'cell': self.cells,
-                'wifi': self.wifis,
-            })
+            query = self.model_query(cells=[cell])
+            location = self.provider.locate(query)
 
         self.assertFalse(location.found())
         self.check_raven([('HTTPError', 0)])
         self.check_stats(counter=['m.fallback.lookup_status.404'])
 
     def test_500_response_returns_empty_location(self):
+        cell = CellFactory.build()
+
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, status_code=500)
 
-            location = self.provider.locate({
-                'cell': self.cells,
-                'wifi': self.wifis,
-            })
+            query = self.model_query(cells=[cell])
+            location = self.provider.locate(query)
 
         self.assertFalse(location.found())
         self.check_raven([('HTTPError', 1)])
@@ -750,89 +665,82 @@ class TestFallbackProvider(ProviderTest):
             timer=['m.fallback.lookup'])
 
     def test_no_call_made_when_not_allowed_for_apikey(self):
+        cells = CellFactory.build_batch(2)
+        wifis = WifiFactory.build_batch(2)
         self.provider.api_key.allow_fallback = False
 
-        query_data = {
-            'cell': self.cells,
-            'wifi': self.wifis,
-        }
-        location = EmptyLocation()
-
-        self.assertFalse(self.provider.should_locate(query_data, location))
+        query = self.model_query(cells=cells, wifis=wifis)
+        self.assertFalse(self.provider.should_locate(query, EmptyLocation()))
 
     def test_should_not_provide_location_if_one_wifi_provided(self):
-        self.assertFalse(self.provider.should_locate({
-            'cell': [],
-            'wifi': self.wifis[:1],
-        }, EmptyLocation()))
+        wifi = WifiFactory.build()
+
+        query = self.model_query(wifis=[wifi])
+        self.assertFalse(self.provider.should_locate(query, EmptyLocation()))
 
     def test_should_not_provide_location_without_cell_or_wifi_data(self):
         self.assertFalse(self.provider.should_locate({}, EmptyLocation()))
 
     def test_should_not_provide_location_if_malformed_cell(self):
-        malformed_cell = CellFactory.build(mcc=99999)
-        self.assertFalse(self.provider.should_locate({
-            'cell': [malformed_cell],
-            'wifi': [],
-        }, EmptyLocation()))
+        malformed_cell = CellFactory.build()
+        malformed_cell.mcc = 99999
+
+        query = self.model_query(cells=[malformed_cell])
+        self.assertFalse(self.provider.should_locate(query, EmptyLocation()))
 
     def test_should_not_provide_location_if_malformed_wifi(self):
-        malformed_wifi = {'key': 'abcd'}
-        self.assertFalse(self.provider.should_locate({
-            'cell': [],
-            'wifi': [self.wifis[0], malformed_wifi],
-        }, EmptyLocation()))
+        wifi = WifiFactory.build()
+        malformed_wifi = WifiFactory.build()
+        malformed_wifi.key = 'abcd'
+
+        query = self.model_query(wifis=[wifi, malformed_wifi])
+        self.assertFalse(self.provider.should_locate(query, EmptyLocation()))
 
     def test_should_provide_location_if_only_empty_location_found(self):
-        self.assertTrue(self.provider.should_locate({
-            'cell': [],
-            'wifi': self.wifis,
-        }, EmptyLocation()))
+        wifis = WifiFactory.build_batch(2)
+
+        query = self.model_query(wifis=wifis)
+        self.assertTrue(self.provider.should_locate(query, EmptyLocation()))
 
     def test_should_provide_location_if_only_geoip_location_found(self):
         london = self.geoip_data['London']
-        geoip_location = Position(
+        wifis = WifiFactory.build_batch(2)
+        geoip_pos = Position(
             source=DataSource.GeoIP,
             lat=london['latitude'],
             lon=london['longitude'],
             accuracy=london['accuracy'],
         )
 
-        query_data = {
-            'cell': [],
-            'geoip': london['ip'],
-            'wifi': self.wifis,
-        }
-
-        self.assertTrue(
-            self.provider.should_locate(query_data, geoip_location))
+        query = self.model_query(wifis=wifis, geoip=london['ip'])
+        self.assertTrue(self.provider.should_locate(query, geoip_pos))
 
     def test_should_not_provide_location_if_non_geoip_location_found(self):
-        internal_location = Position(
+        wifis = WifiFactory.build_batch(2)
+        internal_pos = Position(
             source=DataSource.Internal, lat=1.0, lon=1.0, accuracy=1.0)
 
-        query_data = {
-            'cell': [],
-            'wifi': self.wifis,
-        }
-
-        self.assertFalse(
-            self.provider.should_locate(query_data, internal_location))
+        query = self.model_query(wifis=wifis)
+        self.assertFalse(self.provider.should_locate(query, internal_pos))
 
     def test_rate_limiting_allows_calls_below_ratelimit(self):
+        cells = CellFactory.build_batch(2)
+        wifis = WifiFactory.build_batch(2)
+
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.response_location)
 
             for _ in range(self.provider.ratelimit):
-                location = self.provider.locate({
-                    'cell': self.cells,
-                    'wifi': self.wifis,
-                })
+                query = self.model_query(cells=cells, wifis=wifis)
+                location = self.provider.locate(query)
 
                 self.assertTrue(location.found())
 
     def test_rate_limiting_blocks_calls_above_ratelimit(self):
+        cells = CellFactory.build_batch(2)
+        wifis = WifiFactory.build_batch(2)
+
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.response_location)
@@ -840,14 +748,13 @@ class TestFallbackProvider(ProviderTest):
             ratelimit_key = self.provider.get_ratelimit_key()
             self.redis_client.set(ratelimit_key, self.provider.ratelimit)
 
-            location = self.provider.locate({
-                'cell': self.cells,
-                'wifi': self.wifis,
-            })
+            query = self.model_query(cells=cells, wifis=wifis)
+            location = self.provider.locate(query)
 
             self.assertFalse(location.found())
 
     def test_redis_failure_during_ratelimit_prevents_external_call(self):
+        cell = CellFactory.build()
         mock_redis_client = mock.Mock()
         mock_redis_client.pipeline.side_effect = RedisError()
 
@@ -857,16 +764,15 @@ class TestFallbackProvider(ProviderTest):
 
             with mock.patch.object(self.provider, 'redis_client',
                                    mock_redis_client):
-                location = self.provider.locate({
-                    'cell': self.cells[:1],
-                    'wifi': [],
-                })
+                query = self.model_query(cells=[cell])
+                location = self.provider.locate(query)
 
             self.assertTrue(mock_redis_client.pipeline.called)
             self.assertFalse(mock_request.called)
             self.assertFalse(location.found())
 
     def test_redis_failure_during_get_cache_allows_external_call(self):
+        cell = CellFactory.build()
         mock_redis_client = mock.Mock()
         mock_redis_client.pipeline.return_value = mock.Mock()
         mock_redis_client.pipeline.return_value.__enter__ = mock.Mock()
@@ -879,16 +785,15 @@ class TestFallbackProvider(ProviderTest):
 
             with mock.patch.object(self.provider, 'redis_client',
                                    mock_redis_client):
-                location = self.provider.locate({
-                    'cell': self.cells[:1],
-                    'wifi': [],
-                })
+                query = self.model_query(cells=[cell])
+                location = self.provider.locate(query)
 
             self.assertTrue(mock_redis_client.get.called)
             self.assertTrue(mock_request.called)
             self.assertTrue(location.found())
 
     def test_redis_failure_during_set_cache_returns_location(self):
+        cell = CellFactory.build()
         mock_redis_client = mock.Mock()
         mock_redis_client.pipeline.return_value = mock.Mock()
         mock_redis_client.pipeline.return_value.__enter__ = mock.Mock()
@@ -902,10 +807,8 @@ class TestFallbackProvider(ProviderTest):
 
             with mock.patch.object(self.provider, 'redis_client',
                                    mock_redis_client):
-                location = self.provider.locate({
-                    'cell': self.cells[:1],
-                    'wifi': [],
-                })
+                query = self.model_query(cells=[cell])
+                location = self.provider.locate(query)
 
             self.assertTrue(mock_redis_client.get.called)
             self.assertTrue(mock_redis_client.set.called)
@@ -958,6 +861,8 @@ class TestFallbackProvider(ProviderTest):
                 timer=['m.fallback.lookup'])
 
     def test_empty_result_from_fallback_cached(self):
+        cell = CellFactory.build()
+
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST',
@@ -966,10 +871,8 @@ class TestFallbackProvider(ProviderTest):
                 status_code=404
             )
 
-            location = self.provider.locate({
-                'cell': self.cells[:1],
-                'wifi': [],
-            })
+            query = self.model_query(cells=[cell])
+            location = self.provider.locate(query)
 
             self.assertFalse(location.found())
             self.assertEqual(mock_request.call_count, 1)
@@ -980,10 +883,8 @@ class TestFallbackProvider(ProviderTest):
                 ],
                 timer=['m.fallback.lookup'])
 
-            location = self.provider.locate({
-                'cell': self.cells[:1],
-                'wifi': [],
-            })
+            query = self.model_query(cells=[cell])
+            location = self.provider.locate(query)
 
             self.assertFalse(location.found())
             self.assertEqual(mock_request.call_count, 1)
@@ -995,6 +896,7 @@ class TestFallbackProvider(ProviderTest):
                 timer=['m.fallback.lookup'])
 
     def test_dont_set_cache_value_retrieved_from_cache(self):
+        cell = CellFactory.build()
         mock_redis_client = mock.Mock()
         mock_redis_client.pipeline.return_value = mock.Mock()
         mock_redis_client.pipeline.return_value.__enter__ = mock.Mock()
@@ -1007,16 +909,15 @@ class TestFallbackProvider(ProviderTest):
 
             with mock.patch.object(self.provider, 'redis_client',
                                    mock_redis_client):
-                location = self.provider.locate({
-                    'cell': self.cells[:1],
-                    'wifi': [],
-                })
+                query = self.model_query(cells=[cell])
+                location = self.provider.locate(query)
 
             self.assertTrue(mock_redis_client.get.called)
             self.assertFalse(mock_redis_client.set.called)
             self.assertTrue(location.found())
 
     def test_cache_expire_set_to_0_disables_caching(self):
+        cell = CellFactory.build()
         mock_redis_client = mock.Mock()
         mock_redis_client.pipeline.return_value = mock.Mock()
         mock_redis_client.pipeline.return_value.__enter__ = mock.Mock()
@@ -1030,16 +931,16 @@ class TestFallbackProvider(ProviderTest):
 
             with mock.patch.object(self.provider, 'redis_client',
                                    mock_redis_client):
-                location = self.provider.locate({
-                    'cell': self.cells[:1],
-                    'wifi': [],
-                })
+                query = self.model_query(cells=[cell])
+                location = self.provider.locate(query)
 
             self.assertFalse(mock_redis_client.get.called)
             self.assertFalse(mock_redis_client.set.called)
             self.assertTrue(location.found())
 
     def test_dont_cache_when_wifi_keys_present(self):
+        cell = CellFactory.build()
+        wifis = WifiFactory.build_batch(2)
         mock_redis_client = mock.Mock()
         mock_redis_client.pipeline.return_value = mock.Mock()
         mock_redis_client.pipeline.return_value.__enter__ = mock.Mock()
@@ -1052,10 +953,9 @@ class TestFallbackProvider(ProviderTest):
 
             with mock.patch.object(self.provider, 'redis_client',
                                    mock_redis_client):
-                location = self.provider.locate({
-                    'cell': self.cells[:1],
-                    'wifi': self.wifis,
-                })
+
+                query = self.model_query(cells=[cell], wifis=wifis)
+                location = self.provider.locate(query)
 
             self.assertFalse(mock_redis_client.get.called)
             self.assertFalse(mock_redis_client.set.called)
