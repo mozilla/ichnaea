@@ -4,6 +4,7 @@ Implementation of a locate specific HTTP service view.
 
 from ichnaea.api.exceptions import LocationNotFound
 from ichnaea.api.locate.searcher import PositionSearcher
+from ichnaea.api.locate.query import Query
 from ichnaea.api.views import BaseAPIView
 
 
@@ -17,12 +18,12 @@ class BaseLocateView(BaseAPIView):
     schema = None  #:
 
     def prepare_query(self, request_data):
-        return {
-            'geoip': self.request.client_addr,
-            'cell': request_data.get('cell', []),
-            'wifi': request_data.get('wifi', []),
-            'fallbacks': request_data.get('fallbacks', {}),
-        }
+        return Query(
+            geoip=self.request.client_addr,
+            cell=request_data.get('cell'),
+            wifi=request_data.get('wifi'),
+            fallbacks=request_data.get('fallbacks'),
+        )
 
     def locate(self, api_key):
         request_data, errors = self.preprocess_request()

@@ -85,15 +85,20 @@ class Provider(StatsLogger):
         )
         super(Provider, self).__init__(*args, **kwargs)
 
-    def should_locate(self, data, location):
+    def should_locate(self, query, location):
         """
-        Given location query data and a possible location
+        Given a location query and a possible location
         found by another provider, check if this provider should
         attempt to perform a location search.
+
+        :param query: A location query.
+        :type query: :class:`~ichnaea.api.locate.query.Query`
+
+        :rtype: bool
         """
         if self.fallback_field is not None:
             try:
-                fallbacks = data.get('fallbacks', {})
+                fallbacks = query.fallbacks
                 if fallbacks:
                     return bool(fallbacks.get(self.fallback_field, True))
             except ValueError:  # pragma: no cover
@@ -101,9 +106,12 @@ class Provider(StatsLogger):
 
         return True
 
-    def locate(self, data):  # pragma: no cover
+    def locate(self, query):  # pragma: no cover
         """
-        Provide a location given the provided query data (dict).
+        Provide a location given the provided query.
+
+        :param query: A location query.
+        :type query: :class:`~ichnaea.api.locate.query.Query`
 
         :rtype: :class:`~ichnaea.api.locate.location.Location`
         """
@@ -167,10 +175,10 @@ class BaseCellProvider(Provider):
     location_type = Position
     validator = CellLookup
 
-    def _clean_cell_keys(self, data):
-        """Pre-process cell data."""
+    def _clean_cell_keys(self, query):
+        """Pre-process cell query."""
         cell_keys = []
-        for cell in data.get('cell', ()):
+        for cell in query.cell:
             cell = self.validator.validate(cell)
             if cell:
                 cell_key = self.validator.to_hashkey(cell)
@@ -234,9 +242,9 @@ class BaseCellProvider(Provider):
             avg_lat, avg_lon, queried_cells, CELL_MIN_ACCURACY)
         return self.location_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
-    def locate(self, data):
+    def locate(self, query):
         location = self.location_type(query_data=False)
-        cell_keys = self._clean_cell_keys(data)
+        cell_keys = self._clean_cell_keys(query)
         if cell_keys:
             location.query_data = True
             queried_cells = self._query_database(cell_keys)
@@ -390,11 +398,11 @@ class WifiPositionProvider(Provider):
             bs, bssid_difference, DISTANCE_THRESHOLD)
         return [c[0] for c in clusters]
 
-    def _get_clean_wifi_keys(self, data):
+    def _get_clean_wifi_keys(self, query):
         wifis = []
 
-        # Pre-process wifi data
-        for wifi in data.get('wifi', ()):
+        # Pre-process wifi query
+        for wifi in query.wifi:
             wifi = WifiLookup.validate(wifi)
             if wifi:
                 wifis.append(wifi)
@@ -482,10 +490,10 @@ class WifiPositionProvider(Provider):
         return (len(self._filter_bssids_by_similarity(list(wifi_keys))) >=
                 MIN_WIFIS_IN_QUERY)
 
-    def locate(self, data):
+    def locate(self, query):
         location = self.location_type(query_data=False)
 
-        wifis, wifi_signals, wifi_keys = self._get_clean_wifi_keys(data)
+        wifis, wifi_signals, wifi_keys = self._get_clean_wifi_keys(query)
 
         if len(wifi_keys) >= MIN_WIFIS_IN_QUERY:
             if self._sufficient_data(wifi_keys):
@@ -509,18 +517,13 @@ class BaseGeoIPProvider(Provider):
     log_name = 'geoip'
     source = DataSource.GeoIP
 
-    def locate(self, data):
-        """Provide a location given the provided client IP address.
-
-        :rtype: :class:`~ichnaea.api.locate.location.Location`
-        """
-        # Always consider there to be GeoIP data, even if no client_addr
-        # was provided
+    def locate(self, query):
+        # Always consider there to be GeoIP data, even if no
+        # client_addr was provided
         location = self.location_type(query_data=True)
-        client_addr = data.get('geoip', None)
 
-        if client_addr and self.geoip_db is not None:
-            geoip = self.geoip_db.geoip_lookup(client_addr)
+        if query.geoip and self.geoip_db is not None:
+            geoip = self.geoip_db.geoip_lookup(query.geoip)
             if geoip:
                 if geoip['city']:
                     self.stat_count('geoip_city_found')
@@ -606,40 +609,40 @@ class FallbackProvider(Provider):
 
         return result
 
-    def _prepare_data(self, data):
+    def _prepare_outbound_query(self, query):
         cell_queries = []
-        for cell in data.get('cell', []):
+        for cell in query.cell:
             cell_query = self._prepare_cell(cell)
             if cell_query:
                 cell_queries.append(cell_query)
 
         wifi_queries = []
-        for wifi in data.get('wifi', []):
+        for wifi in query.wifi:
             wifi_query = self._prepare_wifi(wifi)
             if wifi_query:
                 wifi_queries.append(wifi_query)
 
-        query = {}
+        outbound_query = {}
         if cell_queries:
-            query['cellTowers'] = cell_queries
+            outbound_query['cellTowers'] = cell_queries
         if wifi_queries:
-            query['wifiAccessPoints'] = wifi_queries
-        if 'fallbacks' in data and data['fallbacks']:
-            query['fallbacks'] = {
+            outbound_query['wifiAccessPoints'] = wifi_queries
+        if query.fallbacks:
+            outbound_query['fallbacks'] = {
                 # We only send the lacf fallback for now
-                'lacf': data['fallbacks'].get('lacf', 0),
+                'lacf': query.fallbacks.get('lacf', False),
             }
 
-        return query
+        return outbound_query
 
-    def should_locate(self, data, location):
+    def should_locate(self, query, location):
         empty_location = not location.found()
         weak_location = (location.source is not None and
                          location.source >= DataSource.GeoIP)
 
-        query_data = self._prepare_data(data)
-        cell_found = query_data.get('cellTowers', [])
-        wifi_found = len(query_data.get('wifiAccessPoints', [])) > 1
+        outbound_query = self._prepare_outbound_query(query)
+        cell_found = outbound_query.get('cellTowers', [])
+        wifi_found = len(outbound_query.get('wifiAccessPoints', [])) > 1
         return (
             self.api_key.allow_fallback and
             (empty_location or weak_location) and
@@ -658,26 +661,23 @@ class FallbackProvider(Provider):
             fail_on_error=True,
         )
 
-    def _should_cache(self, data):
-        return (
-            self.cache_expire and
-            len(data.get('cell', [])) == 1 and
-            len(data.get('wifi', [])) == 0
-        )
+    def _should_cache(self, query):
+        return (self.cache_expire and
+                len(query.cell) == 1 and
+                len(query.wifi) == 0)
 
-    def _get_cache_key(self, cell_data):
+    def _get_cache_key(self, cell_query):
         return 'fallback_cache_cell:{radio}:{mcc}:{mnc}:{lac}:{cid}'.format(
-            radio=cell_data['radio'].name,
-            mcc=cell_data['mcc'],
-            mnc=cell_data['mnc'],
-            lac=cell_data['lac'],
-            cid=cell_data['cid'],
+            radio=cell_query['radio'].name,
+            mcc=cell_query['mcc'],
+            mnc=cell_query['mnc'],
+            lac=cell_query['lac'],
+            cid=cell_query['cid'],
         )
 
-    def _get_cached_result(self, data):
-        if self._should_cache(data):
-            all_cell_data = data.get('cell', [])
-            cache_key = self._get_cache_key(all_cell_data[0])
+    def _get_cached_result(self, query):
+        if self._should_cache(query):
+            cache_key = self._get_cache_key(query.cell[0])
             try:
                 cached_cell = self.redis_client.get(cache_key)
                 if cached_cell:
@@ -688,10 +688,9 @@ class FallbackProvider(Provider):
             except RedisError:
                 self.raven_client.captureException()
 
-    def _set_cached_result(self, data, result):
-        if self._should_cache(data):
-            all_cell_data = data.get('cell', [])
-            cache_key = self._get_cache_key(all_cell_data[0])
+    def _set_cached_result(self, query, result):
+        if self._should_cache(query):
+            cache_key = self._get_cache_key(query.cell[0])
             try:
                 self.redis_client.set(
                     cache_key,
@@ -701,15 +700,15 @@ class FallbackProvider(Provider):
             except RedisError:
                 self.raven_client.captureException()
 
-    def _make_external_call(self, data):
-        query_data = self._prepare_data(data)
+    def _make_external_call(self, query):
+        outbound_query = self._prepare_outbound_query(query)
 
         try:
             with self.stat_timer('fallback.lookup'):
                 response = requests.post(
                     self.url,
                     headers={'User-Agent': 'ichnaea'},
-                    json=query_data,
+                    json=outbound_query,
                     timeout=5.0,
                     verify=False,
                 )
@@ -725,15 +724,15 @@ class FallbackProvider(Provider):
         except (json.JSONDecodeError, requests.exceptions.RequestException):
             self.raven_client.captureException()
 
-    def locate(self, data):
+    def locate(self, query):
         location = self.location_type(query_data=False)
 
         if not self.limit_reached():
 
-            cached_location = self._get_cached_result(data)
+            cached_location = self._get_cached_result(query)
             location_data = (
                 cached_location or
-                self._make_external_call(data)
+                self._make_external_call(query)
             )
 
             if location_data and location_data is not self.LOCATION_NOT_FOUND:
@@ -747,6 +746,6 @@ class FallbackProvider(Provider):
                     self.raven_client.captureException()
 
             if cached_location is None:
-                self._set_cached_result(data, location_data)
+                self._set_cached_result(query, location_data)
 
         return location

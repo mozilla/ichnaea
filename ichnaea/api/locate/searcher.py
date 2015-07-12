@@ -52,14 +52,14 @@ class Searcher(StatsLogger):
                 )
                 self.all_providers.append((provider_group, provider_instance))
 
-    def _search(self, data):
+    def _search(self, query):
         best_location = EmptyLocation()
         best_location_provider = None
         all_locations = defaultdict(deque)
 
         for provider_group, provider in self.all_providers:
-            if provider.should_locate(data, best_location):
-                provider_location = provider.locate(data)
+            if provider.should_locate(query, best_location):
+                provider_location = provider.locate(query)
                 all_locations[provider_group].appendleft(
                     (provider, provider_location))
 
@@ -104,9 +104,13 @@ class Searcher(StatsLogger):
     def _prepare(self, location):  # pragma: no cover
         raise NotImplementedError()
 
-    def search(self, data):
-        """Provide a type specific search location or return None."""
-        location = self._search(data)
+    def search(self, query):
+        """Provide a type specific search location or return None.
+
+        :param query: A location query.
+        :type query: :class:`~ichnaea.api.locate.query.Query`
+        """
+        location = self._search(query)
         if location.found():
             return self._prepare(location)
 

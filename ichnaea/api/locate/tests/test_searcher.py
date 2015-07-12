@@ -1,6 +1,7 @@
 from ichnaea.models import ApiKey
 from ichnaea.api.locate.location import Location
 from ichnaea.api.locate.provider import Provider
+from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.searcher import (
     CountrySearcher,
     PositionSearcher,
@@ -13,7 +14,7 @@ class SearcherTest(ConnectionTestCase):
 
     searcher = None
 
-    def _make_query(self, data=None, TestLocation=None,  # NOQA
+    def _make_query(self, query=None, TestLocation=None,  # NOQA
                     TestProvider=None, TestSearcher=None):
 
         if not TestLocation:
@@ -33,7 +34,7 @@ class SearcherTest(ConnectionTestCase):
                 location_type = TestLocation
                 log_name = 'test'
 
-                def locate(self, data):
+                def locate(self, query):
                     return self.location_type()
 
         if not TestSearcher:
@@ -45,7 +46,7 @@ class SearcherTest(ConnectionTestCase):
                 def _prepare(self, location):
                     return location
 
-        data = data or {}
+        query = query or Query()
 
         return TestSearcher(
             session_db=self.session,
@@ -54,7 +55,7 @@ class SearcherTest(ConnectionTestCase):
             settings={},
             api_key=ApiKey(shortname='test', log=True),
             api_name='m',
-        ).search(data)
+        ).search(query)
 
 
 class TestSearcher(SearcherTest):
@@ -125,20 +126,20 @@ class TestSearcher(SearcherTest):
             location_type = TestLocation
             log_name = 'test1'
 
-            def should_locate(self, data, location):
+            def should_locate(self, query, location):
                 return True
 
-            def locate(self, data):
+            def locate(self, query):
                 return self.location_type()
 
         class TestProvider2(Provider):
             location_type = TestLocation
             log_name = 'test2'
 
-            def should_locate(self, data, location):
+            def should_locate(self, query, location):
                 return False
 
-            def locate(self, data):
+            def locate(self, query):
                 raise Exception('The searcher should not reach this point.')
 
         class TestSearcher(Searcher):
@@ -181,14 +182,14 @@ class TestSearcher(SearcherTest):
             location_type = TestLocation
             log_name = 'test1'
 
-            def locate(self, data):
+            def locate(self, query):
                 return self.location_type()
 
         class TestProvider2(Provider):
             location_type = TestLocation
             log_name = 'test2'
 
-            def locate(self, data):
+            def locate(self, query):
                 raise Exception('The searcher should not reach this point.')
 
         class TestSearcher(Searcher):
@@ -231,7 +232,7 @@ class TestSearcher(SearcherTest):
             location_type = TestLocation1
             log_name = 'test1'
 
-            def locate(self, data):
+            def locate(self, query):
                 return self.location_type(query_data=True)
 
         class TestLocation2(Location):
@@ -249,7 +250,7 @@ class TestSearcher(SearcherTest):
             location_type = TestLocation2
             log_name = 'test2'
 
-            def locate(self, data):
+            def locate(self, query):
                 return self.location_type(query_data=True)
 
         class TestSearcher(Searcher):
@@ -293,7 +294,7 @@ class TestPositionSearcher(SearcherTest):
             log_name = 'test'
             fallback_field = 'fallback'
 
-            def locate(self, data):
+            def locate(self, query):
                 return self.location_type(lat=1.0, lon=1.0, accuracy=1000)
 
         class TestSearcher(PositionSearcher):
@@ -327,7 +328,7 @@ class TestCountrySearcher(SearcherTest):
             location_type = TestLocation
             log_name = 'test'
 
-            def locate(self, data):
+            def locate(self, query):
                 return self.location_type(
                     country_name='country', country_code='CO')
 

@@ -28,6 +28,7 @@ from ichnaea.api.locate.provider import (
     Provider,
     WifiPositionProvider,
 )
+from ichnaea.api.locate.query import Query
 from ichnaea.models import ApiKey
 from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import (
@@ -96,7 +97,12 @@ class ProviderTest(ConnectionTestCase):
         if fallbacks:
             query['fallbacks'] = fallbacks
 
-        return query
+        return Query(
+            geoip=query.get('geoip'),
+            cell=query.get('cell'),
+            wifi=query.get('wifi'),
+            fallbacks=query.get('fallbacks'),
+        )
 
     def check_model_location(self, location, model, used=None, **kw):
         type_ = self.TestProvider.location_type
@@ -432,10 +438,10 @@ class TestWifiPositionProvider(ProviderTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi11, wifi12, wifi21, wifi22])
-        query['wifi'][0]['signal'] = -100
-        query['wifi'][1]['signal'] = -80
-        query['wifi'][2]['signal'] = -100
-        query['wifi'][3]['signal'] = -54
+        query.wifi[0]['signal'] = -100
+        query.wifi[1]['signal'] = -80
+        query.wifi[2]['signal'] = -100
+        query.wifi[3]['signal'] = -54
         location = self.provider.locate(query)
         self.check_model_location(
             location, wifi21,
@@ -448,11 +454,11 @@ class TestWifiPositionProvider(ProviderTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi] + wifis + wifis2)
-        for entry in query['wifi'][:-3]:
+        for entry in query.wifi[:-3]:
             entry['signal'] = -80
-        for entry in query['wifi'][-3:]:
+        for entry in query.wifi[-3:]:
             entry['signal'] = -70
-        random.shuffle(query['wifi'])
+        random.shuffle(query.wifi)
         location = self.provider.locate(query)
         self.check_model_location(location, wifi)
 
@@ -469,9 +475,9 @@ class TestWifiPositionProvider(ProviderTest):
         self.session.flush()
 
         query = self.model_query(wifis=wifis)
-        for i, entry in enumerate(query['wifi']):
+        for i, entry in enumerate(query.wifi):
             entry['signal'] = -70 - i
-        random.shuffle(query['wifi'])
+        random.shuffle(query.wifi)
         location = self.provider.locate(query)
         self.check_model_location(
             location, wifi,
@@ -824,7 +830,7 @@ class TestFallbackProvider(GeoIPProviderTest):
                 'POST', requests_mock.ANY, json=self.fallback_location)
 
             query = self.model_query(cells=[cell])
-            query['cell'][0]['signal'] = -77
+            query.cell[0]['signal'] = -77
             location = self.provider.locate(query)
             self.check_model_location(location, self.fallback_model)
 
@@ -837,7 +843,7 @@ class TestFallbackProvider(GeoIPProviderTest):
                 timer=['m.fallback.lookup'])
 
             # vary the signal strength, not part of cache key
-            query['cell'][0]['signal'] = -82
+            query.cell[0]['signal'] = -82
             location = self.provider.locate(query)
             self.check_model_location(location, self.fallback_model)
 

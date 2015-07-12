@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #433: Introduce a new `api.locate.query.Query` class.
+
 - Handle any RedisError, e.g. TimeoutError and not just ConnectionErrors.
 
 - Update to latest raven release and update transport configuration.

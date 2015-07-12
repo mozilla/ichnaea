@@ -7,6 +7,7 @@
    :maxdepth: 1
 
    location
+   query
    provider
    searcher
    schema
