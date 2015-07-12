@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #433: Move query data validation into Query class.
+
 - #433: Introduce a new `api.locate.query.Query` class.
 
 - Handle any RedisError, e.g. TimeoutError and not just ConnectionErrors.

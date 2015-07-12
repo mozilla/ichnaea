@@ -7,7 +7,6 @@ import operator
 import simplejson as json
 import time
 from collections import defaultdict, namedtuple
-from enum import IntEnum
 from functools import partial
 
 import mobile_codes
@@ -28,33 +27,19 @@ from ichnaea.models import (
     OCIDCellArea,
     Wifi,
 )
-from ichnaea.api.locate.location import Position, Country
-from ichnaea.api.locate.schema import (
-    CellAreaLookup,
-    CellLookup,
-    WifiLookup,
+from ichnaea.api.locate.constants import (
+    DataSource,
+    MAX_WIFI_CLUSTER_KM,
+    MIN_WIFIS_IN_QUERY,
+    MIN_WIFIS_IN_CLUSTER,
+    MAX_WIFIS_IN_CLUSTER,
 )
+from ichnaea.api.locate.location import Position, Country
 from ichnaea.api.locate.stats import StatsLogger
 from ichnaea.rate_limit import rate_limit
 
-
-# parameters for wifi clustering
-MAX_WIFI_CLUSTER_KM = 0.5
-MIN_WIFIS_IN_QUERY = 2
-MIN_WIFIS_IN_CLUSTER = 2
-MAX_WIFIS_IN_CLUSTER = 5
-
 # helper class used in searching
 Network = namedtuple('Network', ['key', 'lat', 'lon', 'range'])
-
-
-# Data sources for location information. A smaller integer value
-# represents a better overall quality of the data source.
-class DataSource(IntEnum):
-    Internal = 1
-    OCID = 2
-    Fallback = 3
-    GeoIP = 4
 
 
 class Provider(StatsLogger):
@@ -173,16 +158,14 @@ class BaseCellProvider(Provider):
     model = None
     log_name = 'cell'
     location_type = Position
-    validator = CellLookup
+    query_field = 'cell'
 
     def _clean_cell_keys(self, query):
         """Pre-process cell query."""
         cell_keys = []
-        for cell in query.cell:
-            cell = self.validator.validate(cell)
-            if cell:
-                cell_key = self.validator.to_hashkey(cell)
-                cell_keys.append(cell_key)
+        for cell in getattr(query, self.query_field):
+            cell_key = self.model.to_hashkey(cell)
+            cell_keys.append(cell_key)
 
         return cell_keys
 
@@ -276,8 +259,8 @@ class CellAreaPositionProvider(BaseCellProvider):
     """
     model = CellArea
     log_name = 'cell_lac'
-    validator = CellAreaLookup
     fallback_field = 'lacf'
+    query_field = 'cell_area'
 
     def _prepare(self, queried_cells):
         # take the smallest LAC of any the user is inside
@@ -301,6 +284,7 @@ class CellCountryProvider(BaseCellProvider):
     using any DB models.
     """
     location_type = Country
+    model = CellArea
 
     def _query_database(self, cell_keys):
         countries = []
@@ -399,13 +383,7 @@ class WifiPositionProvider(Provider):
         return [c[0] for c in clusters]
 
     def _get_clean_wifi_keys(self, query):
-        wifis = []
-
-        # Pre-process wifi query
-        for wifi in query.wifi:
-            wifi = WifiLookup.validate(wifi)
-            if wifi:
-                wifis.append(wifi)
+        wifis = query.wifi
 
         # Estimate signal strength at -100 dBm if none is provided,
         # which is worse than the 99th percentile of wifi dBms we
@@ -564,11 +542,7 @@ class FallbackProvider(Provider):
             settings=settings, *args, **kwargs)
 
     def _prepare_cell(self, cell):
-        validated_cell = CellLookup.validate(cell)
-        if validated_cell is None:
-            return None
-
-        radio = validated_cell.get('radio', None)
+        radio = cell.get('radio', None)
         if radio is not None:
             radio = radio.name
             if radio == 'umts':
@@ -586,16 +560,12 @@ class FallbackProvider(Provider):
         if radio:
             result['radioType'] = radio
         for source, target in cell_map.items():
-            if validated_cell.get(source):
-                result[target] = validated_cell[source]
+            if cell.get(source):
+                result[target] = cell[source]
 
         return result
 
     def _prepare_wifi(self, wifi):
-        validated_wifi = WifiLookup.validate(wifi)
-        if validated_wifi is None:
-            return None
-
         result = {}
         wifi_map = {
             'key': 'macAddress',
@@ -604,8 +574,8 @@ class FallbackProvider(Provider):
             'snr': 'signalToNoiseRatio',
         }
         for source, target in wifi_map.items():
-            if validated_wifi.get(source):
-                result[target] = validated_wifi[source]
+            if wifi.get(source):
+                result[target] = wifi[source]
 
         return result
 

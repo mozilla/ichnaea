@@ -6,6 +6,7 @@
 .. toctree::
    :maxdepth: 1
 
+   constants
    location
    query
    provider

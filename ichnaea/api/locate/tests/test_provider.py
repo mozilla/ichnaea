@@ -12,6 +12,7 @@ from ichnaea.constants import (
     WIFI_MIN_ACCURACY,
 )
 from ichnaea.api.exceptions import LocationNotFound
+from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.location import (
     EmptyLocation,
     Country,
@@ -21,7 +22,6 @@ from ichnaea.api.locate.provider import (
     CellAreaPositionProvider,
     CellCountryProvider,
     CellPositionProvider,
-    DataSource,
     FallbackProvider,
     GeoIPCountryProvider,
     GeoIPPositionProvider,
