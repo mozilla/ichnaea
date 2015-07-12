@@ -102,7 +102,6 @@ GEOIP_DATA = {
     },
 }
 
-CANADA_MCC = 302
 USA_MCC = 310
 ATT_MNC = 150
 
