@@ -2,7 +2,7 @@
 Code representing a location query.
 """
 
-import ipaddr
+import six
 
 from ichnaea.api.locate.constants import MIN_WIFIS_IN_QUERY
 from ichnaea.api.locate.schema import (
@@ -10,6 +10,11 @@ from ichnaea.api.locate.schema import (
     CellLookup,
     WifiLookup,
 )
+
+if six.PY2:
+    from ipaddr import IPAddress as ip_address  # NOQA
+else:
+    from ipaddress import ip_address
 
 
 class Query(object):
@@ -44,7 +49,7 @@ class Query(object):
         if not value:
             value = None
         try:
-            valid = str(ipaddr.IPAddress(value))
+            valid = str(ip_address(value))
         except ValueError:
             valid = None
         self._geoip = valid
