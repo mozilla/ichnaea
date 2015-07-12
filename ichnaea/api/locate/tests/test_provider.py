@@ -4,7 +4,7 @@ import random
 import mock
 import requests_mock
 import simplejson as json
-from redis import ConnectionError
+from redis import RedisError
 from requests.exceptions import RequestException
 
 from ichnaea.constants import (
@@ -849,7 +849,7 @@ class TestFallbackProvider(ProviderTest):
 
     def test_redis_failure_during_ratelimit_prevents_external_call(self):
         mock_redis_client = mock.Mock()
-        mock_redis_client.pipeline.side_effect = ConnectionError()
+        mock_redis_client.pipeline.side_effect = RedisError()
         self.provider.redis_client = mock_redis_client
 
         with requests_mock.Mocker() as mock_request:
@@ -869,7 +869,7 @@ class TestFallbackProvider(ProviderTest):
         mock_redis_client.pipeline.return_value = mock.Mock()
         mock_redis_client.pipeline.return_value.__enter__ = mock.Mock()
         mock_redis_client.pipeline.return_value.__exit__ = mock.Mock()
-        mock_redis_client.get.side_effect = ConnectionError()
+        mock_redis_client.get.side_effect = RedisError()
         self.provider.redis_client = mock_redis_client
 
         with requests_mock.Mocker() as mock_request:
@@ -890,7 +890,7 @@ class TestFallbackProvider(ProviderTest):
         mock_redis_client.pipeline.return_value.__enter__ = mock.Mock()
         mock_redis_client.pipeline.return_value.__exit__ = mock.Mock()
         mock_redis_client.get.return_value = None
-        mock_redis_client.set.side_effect = ConnectionError()
+        mock_redis_client.set.side_effect = RedisError()
         self.provider.redis_client = mock_redis_client
 
         with requests_mock.Mocker() as mock_request:

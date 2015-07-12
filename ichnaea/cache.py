@@ -3,7 +3,7 @@ import re
 
 import redis
 from redis.connection import SocketBuffer
-from redis.exceptions import ConnectionError
+from redis.exceptions import RedisError
 from six.moves.urllib.parse import urlparse
 
 from ichnaea.customjson import (
@@ -76,7 +76,7 @@ class RedisClient(redis.StrictRedis):
         """
         try:
             self.execute_command('PING')
-        except ConnectionError:
+        except RedisError:
             return False
         return True
 

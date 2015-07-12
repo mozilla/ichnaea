@@ -6,7 +6,7 @@ from pyramid.httpexceptions import (
     HTTPOk,
     HTTPServiceUnavailable,
 )
-from redis import ConnectionError
+from redis import RedisError
 
 from ichnaea.api.exceptions import ParseError
 from ichnaea.api.views import BaseAPIView
@@ -97,7 +97,7 @@ class BaseSubmitView(BaseAPIView):
         """
         try:
             self.submit(api_key)
-        except ConnectionError:  # pragma: no cover
+        except RedisError:  # pragma: no cover
             return HTTPServiceUnavailable()
 
         return self.success()

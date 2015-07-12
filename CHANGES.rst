@@ -13,6 +13,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Handle any RedisError, e.g. TimeoutError and not just ConnectionErrors.
+
 - Update to latest raven release and update transport configuration.
 
 - Explicitly limit the cell cache key to its unique id parts.

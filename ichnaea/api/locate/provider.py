@@ -12,7 +12,7 @@ from functools import partial
 
 import mobile_codes
 import requests
-from redis import ConnectionError
+from redis import RedisError
 from sqlalchemy.orm import load_only
 
 from ichnaea.constants import (
@@ -685,7 +685,7 @@ class FallbackProvider(Provider):
                     return json.loads(cached_cell)
                 else:
                     self.stat_count('fallback.cache.miss')
-            except ConnectionError:
+            except RedisError:
                 self.raven_client.captureException()
 
     def _set_cached_result(self, data, result):
@@ -698,7 +698,7 @@ class FallbackProvider(Provider):
                     json.dumps(result),
                     ex=self.cache_expire,
                 )
-            except ConnectionError:
+            except RedisError:
                 self.raven_client.captureException()
 
     def _make_external_call(self, data):

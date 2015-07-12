@@ -1,4 +1,4 @@
-from redis import ConnectionError
+from redis import RedisError
 
 
 def rate_limit(redis_client, key, maxreq=0, expire=86400, fail_on_error=False):
@@ -9,6 +9,6 @@ def rate_limit(redis_client, key, maxreq=0, expire=86400, fail_on_error=False):
                 pipeline.expire(key, expire)
                 count, expire = pipeline.execute()
                 return count > maxreq
-        except ConnectionError:  # pragma: no cover
+        except RedisError:  # pragma: no cover
             # If we cannot connect to Redis, disable rate limitation.
             return fail_on_error
