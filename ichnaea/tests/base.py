@@ -102,9 +102,6 @@ GEOIP_DATA = {
     },
 }
 
-USA_MCC = 310
-ATT_MNC = 150
-
 GB_LAT = 51.5
 GB_LON = -0.1
 GB_MCC = 234

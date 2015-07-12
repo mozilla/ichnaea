@@ -19,10 +19,7 @@ from ichnaea.models import (
     Wifi,
     WifiBlacklist,
 )
-from ichnaea.tests.base import (
-    CeleryTestCase,
-    USA_MCC, ATT_MNC,
-)
+from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
     CellFactory,
     CellBlacklistFactory,
@@ -150,7 +147,7 @@ class TestCell(CeleryTestCase):
             time = now - timedelta(days=days_ago)
 
             obs = dict(radio=int(Radio.gsm),
-                       mcc=USA_MCC, mnc=ATT_MNC, lac=456, cid=123,
+                       mcc=310, mnc=150, lac=456, cid=123,
                        time=time,
                        lat=points[month % 4][0],
                        lon=points[month % 4][1])
