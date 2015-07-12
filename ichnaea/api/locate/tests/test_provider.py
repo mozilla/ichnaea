@@ -850,17 +850,19 @@ class TestFallbackProvider(ProviderTest):
     def test_redis_failure_during_ratelimit_prevents_external_call(self):
         mock_redis_client = mock.Mock()
         mock_redis_client.pipeline.side_effect = RedisError()
-        self.provider.redis_client = mock_redis_client
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.response_location)
 
-            location = self.provider.locate({
-                'cell': self.cells[:1],
-                'wifi': [],
-            })
+            with mock.patch.object(self.provider, 'redis_client',
+                                   mock_redis_client):
+                location = self.provider.locate({
+                    'cell': self.cells[:1],
+                    'wifi': [],
+                })
 
+            self.assertTrue(mock_redis_client.pipeline.called)
             self.assertFalse(mock_request.called)
             self.assertFalse(location.found())
 
@@ -870,17 +872,19 @@ class TestFallbackProvider(ProviderTest):
         mock_redis_client.pipeline.return_value.__enter__ = mock.Mock()
         mock_redis_client.pipeline.return_value.__exit__ = mock.Mock()
         mock_redis_client.get.side_effect = RedisError()
-        self.provider.redis_client = mock_redis_client
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.response_location)
 
-            location = self.provider.locate({
-                'cell': self.cells[:1],
-                'wifi': [],
-            })
+            with mock.patch.object(self.provider, 'redis_client',
+                                   mock_redis_client):
+                location = self.provider.locate({
+                    'cell': self.cells[:1],
+                    'wifi': [],
+                })
 
+            self.assertTrue(mock_redis_client.get.called)
             self.assertTrue(mock_request.called)
             self.assertTrue(location.found())
 
@@ -891,17 +895,20 @@ class TestFallbackProvider(ProviderTest):
         mock_redis_client.pipeline.return_value.__exit__ = mock.Mock()
         mock_redis_client.get.return_value = None
         mock_redis_client.set.side_effect = RedisError()
-        self.provider.redis_client = mock_redis_client
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.response_location)
 
-            location = self.provider.locate({
-                'cell': self.cells[:1],
-                'wifi': [],
-            })
+            with mock.patch.object(self.provider, 'redis_client',
+                                   mock_redis_client):
+                location = self.provider.locate({
+                    'cell': self.cells[:1],
+                    'wifi': [],
+                })
 
+            self.assertTrue(mock_redis_client.get.called)
+            self.assertTrue(mock_redis_client.set.called)
             self.assertTrue(mock_request.called)
             self.assertTrue(location.found())
 
@@ -993,19 +1000,21 @@ class TestFallbackProvider(ProviderTest):
         mock_redis_client.pipeline.return_value.__enter__ = mock.Mock()
         mock_redis_client.pipeline.return_value.__exit__ = mock.Mock()
         mock_redis_client.get.return_value = json.dumps(self.response_location)
-        self.provider.redis_client = mock_redis_client
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.response_location)
 
-            location = self.provider.locate({
-                'cell': self.cells[:1],
-                'wifi': [],
-            })
+            with mock.patch.object(self.provider, 'redis_client',
+                                   mock_redis_client):
+                location = self.provider.locate({
+                    'cell': self.cells[:1],
+                    'wifi': [],
+                })
 
-            self.assertTrue(location.found())
+            self.assertTrue(mock_redis_client.get.called)
             self.assertFalse(mock_redis_client.set.called)
+            self.assertTrue(location.found())
 
     def test_cache_expire_set_to_0_disables_caching(self):
         mock_redis_client = mock.Mock()
@@ -1013,21 +1022,22 @@ class TestFallbackProvider(ProviderTest):
         mock_redis_client.pipeline.return_value.__enter__ = mock.Mock()
         mock_redis_client.pipeline.return_value.__exit__ = mock.Mock()
         mock_redis_client.get.return_value = json.dumps(self.response_location)
-        self.provider.redis_client = mock_redis_client
         self.provider.cache_expire = 0
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.response_location)
 
-            location = self.provider.locate({
-                'cell': self.cells[:1],
-                'wifi': [],
-            })
+            with mock.patch.object(self.provider, 'redis_client',
+                                   mock_redis_client):
+                location = self.provider.locate({
+                    'cell': self.cells[:1],
+                    'wifi': [],
+                })
 
-            self.assertTrue(location.found())
             self.assertFalse(mock_redis_client.get.called)
             self.assertFalse(mock_redis_client.set.called)
+            self.assertTrue(location.found())
 
     def test_dont_cache_when_wifi_keys_present(self):
         mock_redis_client = mock.Mock()
@@ -1035,17 +1045,18 @@ class TestFallbackProvider(ProviderTest):
         mock_redis_client.pipeline.return_value.__enter__ = mock.Mock()
         mock_redis_client.pipeline.return_value.__exit__ = mock.Mock()
         mock_redis_client.get.return_value = json.dumps(self.response_location)
-        self.provider.redis_client = mock_redis_client
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.response_location)
 
-            location = self.provider.locate({
-                'cell': self.cells[:1],
-                'wifi': self.wifis,
-            })
+            with mock.patch.object(self.provider, 'redis_client',
+                                   mock_redis_client):
+                location = self.provider.locate({
+                    'cell': self.cells[:1],
+                    'wifi': self.wifis,
+                })
 
-            self.assertTrue(location.found())
             self.assertFalse(mock_redis_client.get.called)
             self.assertFalse(mock_redis_client.set.called)
+            self.assertTrue(location.found())
