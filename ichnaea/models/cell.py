@@ -42,12 +42,12 @@ from ichnaea.models.station import (
 
 
 class Radio(IntEnum):
-    __order__ = 'gsm cdma umts wcdma lte'
+    __order__ = 'gsm cdma wcdma umts lte'
 
     gsm = 0
     cdma = 1
-    umts = 2
     wcdma = 2
+    umts = 2
     lte = 3
 
     @classmethod
@@ -150,13 +150,15 @@ class ValidCellAreaKeySchema(FieldSchema, CopyingSchema):
             raise colander.Invalid(schema, (
                 'Check against the list of all known valid mccs'))
 
-        if data['radio'] in Radio._gsm_family() and data['mnc'] > 999:
+        if (data['radio'] in Radio._gsm_family() and
+                data['mnc'] is not None and
+                data.get('mnc', 0) > 999):
             raise colander.Invalid(schema, (
                 'Skip GSM/LTE/UMTS towers with an invalid MNC'))
 
         if (data['radio'] in Radio._gsm_family() and
                 data['lac'] is not None and
-                data['lac'] > constants.MAX_LAC_GSM_UMTS_LTE):
+                data.get('lac', 0) > constants.MAX_LAC_GSM_UMTS_LTE):
             raise colander.Invalid(schema, (
                 'LAC is out of range for GSM/UMTS/LTE.'))
 
@@ -215,7 +217,7 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
             # If the cell id > 65535 then it must be a WCDMA tower
             if (data['radio'] == Radio.gsm and
                     data.get('cid') is not None and
-                    data['cid'] > constants.MAX_CID_GSM):
+                    data.get('cid', 0) > constants.MAX_CID_GSM):
                 data['radio'] = Radio.wcdma
 
             # Treat cid=65535 without a valid lac as an unspecified value
@@ -243,12 +245,14 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
                 'psc (psc-only to use in backfill)'))
 
         if (data['radio'] == Radio.cdma and
-                data['cid'] > constants.MAX_CID_CDMA):
+                data['cid'] is not None and
+                data.get('cid', 0) > constants.MAX_CID_CDMA):
             raise colander.Invalid(schema, (
                 'CID is out of range for CDMA.'))
 
         if (data['radio'] == Radio.lte and
-                data['cid'] > constants.MAX_CID_LTE):
+                data['cid'] is not None and
+                data.get('cid', 0) > constants.MAX_CID_LTE):
             raise colander.Invalid(schema, (
                 'CID is out of range for LTE.'))
 

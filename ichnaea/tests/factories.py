@@ -56,10 +56,10 @@ class FuzzyWifiKey(fuzzy.BaseFuzzyAttribute):
 
 class CellAreaKeyFactor(BaseFactory):
 
-    radio = Radio.gsm
+    radio = fuzzy.FuzzyChoice([Radio.gsm, Radio.wcdma, Radio.lte])
     mcc = GB_MCC
     mnc = GB_MNC
-    lac = fuzzy.FuzzyInteger(100, 999)
+    lac = fuzzy.FuzzyInteger(1, 60000)
 
 
 class CellAreaPositionFactory(CellAreaKeyFactor):
@@ -71,12 +71,12 @@ class CellAreaPositionFactory(CellAreaKeyFactor):
 
 class CellKeyFactor(CellAreaKeyFactor):
 
-    cid = fuzzy.FuzzyInteger(1000, 9999)
+    cid = fuzzy.FuzzyInteger(1, 60000)
 
 
 class CellPositionFactory(CellKeyFactor, CellAreaPositionFactory):
 
-    psc = fuzzy.FuzzyInteger(100, 500)
+    psc = fuzzy.FuzzyInteger(1, 500)
     range = CELL_MIN_ACCURACY
 
 

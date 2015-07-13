@@ -186,7 +186,7 @@ class TestStats(DBTestCase):
         CellFactory(radio=Radio.gsm, mcc=310, mnc=2)
         CellFactory(radio=Radio.gsm, mcc=313, mnc=1)
         CellFactory(radio=Radio.cdma, mcc=310, mnc=1)
-        CellFactory(radio=Radio.umts, mcc=244, mnc=1)
+        CellFactory(radio=Radio.wcdma, mcc=244, mnc=1)
         CellFactory(radio=Radio.lte, mcc=244, mnc=1)
         CellFactory(radio=Radio.gsm, mcc=466, mnc=3)
         self.session.flush()

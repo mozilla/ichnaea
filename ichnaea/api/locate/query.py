@@ -11,9 +11,9 @@ from ichnaea.api.locate.schema import (
     WifiLookup,
 )
 
-if six.PY2:
+if six.PY2:  # pragma: no cover
     from ipaddr import IPAddress as ip_address  # NOQA
-else:
+else:  # pragma: no cover
     from ipaddress import ip_address
 
 

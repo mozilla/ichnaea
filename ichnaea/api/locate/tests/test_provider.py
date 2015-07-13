@@ -1,5 +1,4 @@
 import mobile_codes
-import random
 
 import mock
 import requests_mock
@@ -416,19 +415,17 @@ class TestWifiPositionProvider(ProviderTest):
             lat=wifi.lat + 0.00002, lon=wifi.lon + 0.00002)
 
     def test_wifi_ignore_outlier(self):
-        wifis = WifiFactory.create_batch(4)
-        wifis[1].lat = wifis[0].lat + 0.0001
-        wifis[1].lon = wifis[0].lon
-        wifis[2].lat = wifis[0].lat + 0.0002
-        wifis[2].lon = wifis[0].lon
-        wifis[3].lat = wifis[0].lat + 1.0
+        wifi = WifiFactory()
+        wifis = WifiFactory.create_batch(3, lat=wifi.lat, lon=wifi.lon)
+        wifis[0].lat = wifi.lat + 0.0001
+        wifis[1].lat = wifi.lat + 0.0002
+        wifis[2].lat = wifi.lat + 1.0
         self.session.flush()
 
-        query = self.model_query(wifis=wifis)
+        query = self.model_query(wifis=[wifi] + wifis)
         location = self.provider.locate(query)
         self.check_model_location(
-            location, wifis[0],
-            lat=wifis[0].lat + 0.0001)
+            location, wifi, lat=wifi.lat + 0.0001)
 
     def test_wifi_prefer_cluster_with_better_signals(self):
         wifi11 = WifiFactory()
@@ -444,8 +441,7 @@ class TestWifiPositionProvider(ProviderTest):
         query.wifi[3]['signal'] = -54
         location = self.provider.locate(query)
         self.check_model_location(
-            location, wifi21,
-            lat=wifi21.lat + 0.0001)
+            location, wifi21, lat=wifi21.lat + 0.0001)
 
     def test_wifi_prefer_larger_cluster_over_high_signal(self):
         wifi = WifiFactory()
@@ -458,7 +454,6 @@ class TestWifiPositionProvider(ProviderTest):
             entry['signal'] = -80
         for entry in query.wifi[-3:]:
             entry['signal'] = -70
-        random.shuffle(query.wifi)
         location = self.provider.locate(query)
         self.check_model_location(location, wifi)
 
@@ -477,7 +472,6 @@ class TestWifiPositionProvider(ProviderTest):
         query = self.model_query(wifis=wifis)
         for i, entry in enumerate(query.wifi):
             entry['signal'] = -70 - i
-        random.shuffle(query.wifi)
         location = self.provider.locate(query)
         self.check_model_location(
             location, wifi,

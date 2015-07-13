@@ -238,7 +238,7 @@ class TestCell(CeleryTestCase):
 
         cell1 = CellFactory(total_measures=3)
         lat1, lon1 = (cell1.lat, cell1.lon)
-        key1 = dict(lac=cell1.lac, cid=cell1.cid)
+        key1 = dict(radio=cell1.radio, lac=cell1.lac, cid=cell1.cid)
         obs_factory(lat=lat1, lon=lon1, created=now, **key1)
         obs_factory(lat=lat1 + 0.004, lon=lon1 + 0.006, created=now, **key1)
         obs_factory(lat=lat1 + 0.006, lon=lon1 + 0.009, created=now, **key1)
@@ -248,15 +248,15 @@ class TestCell(CeleryTestCase):
 
         cell2 = CellFactory(lat=lat1 + 1.0, lon=lon1 + 1.0, total_measures=3)
         lat2, lon2 = (cell2.lat, cell2.lon)
-        key2 = dict(lac=cell2.lac, cid=cell2.cid)
+        key2 = dict(radio=cell2.radio, lac=cell2.lac, cid=cell2.cid)
         obs_factory(lat=lat2 + 0.001, lon=lon2 + 0.002, created=now, **key2)
         obs_factory(lat=lat2 + 0.003, lon=lon2 + 0.006, created=now, **key2)
 
         cell3 = CellFactory(total_measures=100000)
         lat3, lon3 = (cell3.lat, cell3.lon)
+        key3 = dict(radio=cell3.radio, lac=cell3.lac, cid=cell3.cid)
         for i in range(10):
-            obs_factory(lat=lat3 + 1.0, lon=lon3 + 1.0,
-                        **dict(lac=cell3.lac, cid=cell3.cid))
+            obs_factory(lat=lat3 + 1.0, lon=lon3 + 1.0, **key3)
 
         self.data_queue.enqueue(observations)
         self.session.commit()

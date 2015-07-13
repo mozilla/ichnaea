@@ -196,7 +196,10 @@ def regions(session):
                 'gsm': 0, 'cdma': 0, 'umts': 0, 'lte': 0,
             }
             for radio, value in item.items():
-                region[radio.name] = int(value)
+                radio_name = radio.name
+                if radio_name == 'wcdma':
+                    radio_name = 'umts'
+                region[radio_name] = int(value)
             region['total'] = int(sum(item.values()))
             if alpha2 not in regions:
                 regions[alpha2] = region

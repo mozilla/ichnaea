@@ -544,9 +544,9 @@ class FallbackProvider(Provider):
     def _prepare_cell(self, cell):
         radio = cell.get('radio', None)
         if radio is not None:
-            radio = radio.name
-            if radio == 'umts':
-                radio = 'wcdma'
+            radio_name = radio.name
+            if radio_name == 'umts':  # pragma: no cover
+                radio_name = 'wcdma'
 
         result = {}
         cell_map = {
@@ -557,8 +557,8 @@ class FallbackProvider(Provider):
             'signal': 'signalStrength',
             'ta': 'timingAdvance',
         }
-        if radio:
-            result['radioType'] = radio
+        if radio_name:
+            result['radioType'] = radio_name
         for source, target in cell_map.items():
             if cell.get(source):
                 result[target] = cell[source]
