@@ -18,7 +18,7 @@ from ichnaea.tests.factories import (
 )
 
 
-class TestLocateV1Schema(TestCase):
+class TestSchema(TestCase):
 
     def test_empty(self):
         schema = LocateV1Schema()
@@ -97,7 +97,7 @@ class LocateV1Base(BaseLocateTest, AppTestCase):
         return query
 
 
-class TestLocateV1(LocateV1Base, CommonLocateTest, CommonPositionTest):
+class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
 
     def test_cell(self):
         cell = CellFactory()
@@ -146,7 +146,7 @@ class TestLocateV1(LocateV1Base, CommonLocateTest, CommonPositionTest):
                      self.metric + '.api_log.test.wifi_hit'])
 
 
-class TestLocateV1Errors(LocateV1Base, CommonLocateErrorTest):
+class TestError(LocateV1Base, CommonLocateErrorTest):
 
     def test_database_error(self):
-        super(TestLocateV1Errors, self).test_database_error(db_errors=5)
+        super(TestError, self).test_database_error(db_errors=5)

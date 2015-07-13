@@ -42,7 +42,7 @@ class CountryBase(BaseLocateTest, AppTestCase):
             self.assertEqual(data['fallback'], fallback)
 
 
-class TestCountry(CountryBase, CommonLocateTest):
+class TestView(CountryBase, CommonLocateTest):
 
     track_connection_events = True
 
@@ -75,14 +75,14 @@ class TestCountry(CountryBase, CommonLocateTest):
         )
 
     def test_no_api_key(self):
-        super(TestCountry, self).test_no_api_key(status=200, response='ok')
+        super(TestView, self).test_no_api_key(status=200, response='ok')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
             counter=[(self.metric + '.api_key.no_api_key', 0)],
         )
 
     def test_unknown_api_key(self):
-        super(TestCountry, self).test_unknown_api_key(
+        super(TestView, self).test_unknown_api_key(
             status=200, response='ok')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(
@@ -120,11 +120,11 @@ class TestCountry(CountryBase, CommonLocateTest):
             counter=[self.metric + '.miss'])
 
     def test_get(self):
-        super(TestCountry, self).test_get()
+        super(TestView, self).test_get()
         self.check_db_calls(rw=0, ro=0)
 
 
-class TestCountryErrors(CountryBase, CommonLocateErrorTest):
+class TestError(CountryBase, CommonLocateErrorTest):
 
     def test_database_error(self):
-        super(TestCountryErrors, self).test_database_error(db_errors=0)
+        super(TestError, self).test_database_error(db_errors=0)

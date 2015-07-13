@@ -18,7 +18,7 @@ from ichnaea.tests.factories import (
 )
 
 
-class TestLocateV2Schema(TestCase):
+class TestSchema(TestCase):
 
     def test_invalid_radio_field(self):
         schema = LocateV2Schema()
@@ -73,7 +73,7 @@ class LocateV2Base(BaseLocateTest, AppTestCase):
             self.assertEqual(data['fallback'], fallback)
 
 
-class TestLocateV2(LocateV2Base, CommonLocateTest, CommonPositionTest):
+class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
 
     def test_cell(self):
         cell = CellFactory()
@@ -223,7 +223,7 @@ class TestLocateV2(LocateV2Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, cell)
 
 
-class TestLocateV2Errors(LocateV2Base, CommonLocateErrorTest):
+class TestError(LocateV2Base, CommonLocateErrorTest):
 
     def test_database_error(self):
-        super(TestLocateV2Errors, self).test_database_error(db_errors=5)
+        super(TestError, self).test_database_error(db_errors=5)

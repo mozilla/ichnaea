@@ -30,7 +30,7 @@ class SchemaTest(TestCase):
         return request
 
 
-class TestReportV1Schema(SchemaTest):
+class TestReportSchema(SchemaTest):
 
     def test_empty(self):
         schema = ReportV1Schema()
@@ -44,7 +44,7 @@ class TestReportV1Schema(SchemaTest):
         schema.deserialize({'lat': wifi.lat, 'lon': wifi.lon, 'wifi': [{}]})
 
 
-class TestSubmitV1Schema(SchemaTest):
+class TestSubmitSchema(SchemaTest):
 
     def test_empty(self):
         with self.assertRaises(colander.Invalid):
@@ -60,7 +60,7 @@ class TestSubmitV1Schema(SchemaTest):
         self.assertEqual(len(data['items']), 1)
 
 
-class TestSubmitV1(BaseSubmitTest, CeleryAppTestCase):
+class TestView(BaseSubmitTest, CeleryAppTestCase):
 
     url = '/v1/submit'
     metric = 'submit'

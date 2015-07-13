@@ -9,7 +9,7 @@ from ichnaea.tests.factories import (
 )
 
 
-class TestSubmitV2(BaseSubmitTest, CeleryAppTestCase):
+class TestView(BaseSubmitTest, CeleryAppTestCase):
 
     url = '/v1/geosubmit'
     metric = 'geosubmit'
