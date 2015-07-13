@@ -5,18 +5,20 @@ multiple providers to satisfy a given query.
 
 from collections import defaultdict, deque
 
-from ichnaea.api.locate.location import EmptyLocation
-from ichnaea.api.locate.provider import (
+from ichnaea.api.locate.geoip import (
+    GeoIPCountryProvider,
+    GeoIPPositionProvider,
+)
+from ichnaea.api.locate.cell import (
     CellAreaPositionProvider,
     CellCountryProvider,
     CellPositionProvider,
-    FallbackProvider,
-    GeoIPCountryProvider,
-    GeoIPPositionProvider,
     OCIDCellAreaPositionProvider,
     OCIDCellPositionProvider,
-    WifiPositionProvider,
 )
+from ichnaea.api.locate.fallback import FallbackProvider
+from ichnaea.api.locate.location import EmptyLocation
+from ichnaea.api.locate.wifi import WifiPositionProvider
 from ichnaea.api.locate.stats import StatsLogger
 
 

@@ -10,6 +10,10 @@
    location
    query
    provider
+   cell
+   fallback
+   geoip
+   wifi
    searcher
    schema
    stats
