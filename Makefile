@@ -113,9 +113,6 @@ build_req: $(PYTHON) pip mysql build_maxmind
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/test-c.txt
 	$(INSTALL) -r requirements/test.txt
-ifeq ($(PYTHON_2),no)
-	$(INSTALL) -r requirements/override-3.txt
-endif
 
 build_dev: $(PYTHON)
 	$(PYTHON) setup.py develop

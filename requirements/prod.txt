@@ -12,7 +12,7 @@ celery==3.1.18
 certifi==2015.04.28
 colander==1.0
 configparser==3.5.0b2
-country-bounding-boxes==0.2.2
+country-bounding-boxes==0.2.3
 enum34==1.0.4
 filechunkio==1.6
 geoip2==2.2.0
