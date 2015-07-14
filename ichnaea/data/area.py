@@ -26,6 +26,11 @@ class CellAreaUpdater(DataTask):
             update_task.delay(area_key)
         return len(area_keys)
 
+    def _extreme_value(self, func, column, cells):
+        values = [getattr(cell, column, None) for cell in cells]
+        values = [value for value in values if value is not None]
+        return func(values)
+
     def update(self, area_key):
         # Select all cells in this area and derive a bounding box for them
         cell_query = (self.cell_model.querykey(self.session, area_key)
@@ -42,10 +47,10 @@ class CellAreaUpdater(DataTask):
             area = area_query.first()
 
             points = [(c.lat, c.lon) for c in cells]
-            min_lat = min([c.min_lat for c in cells])
-            min_lon = min([c.min_lon for c in cells])
-            max_lat = max([c.max_lat for c in cells])
-            max_lon = max([c.max_lon for c in cells])
+            min_lat = self._extreme_value(min, 'min_lat', cells)
+            min_lon = self._extreme_value(min, 'min_lon', cells)
+            max_lat = self._extreme_value(max, 'max_lat', cells)
+            max_lon = self._extreme_value(max, 'max_lon', cells)
 
             bbox_points = [(min_lat, min_lon),
                            (min_lat, max_lon),
