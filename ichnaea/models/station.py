@@ -11,14 +11,19 @@ from ichnaea.models.base import (
     ValidPositionSchema,
     ValidTimeTrackingSchema,
 )
+from ichnaea.models import constants
+from ichnaea.models.schema import (
+    CopyingSchema,
+    FieldSchema,
+)
 from ichnaea.models.sa_types import TZDateTime as DateTime
 
 
-class ValidStationSchema(ValidPositionSchema, ValidTimeTrackingSchema):
-    """A schema which validates the fields present in a station."""
+class ValidBaseStationSchema(ValidPositionSchema, ValidTimeTrackingSchema):
+    """A schema which validates the fields present in a base station."""
 
-    total_measures = colander.SchemaNode(colander.Integer(), missing=0)
     range = colander.SchemaNode(colander.Integer(), missing=0)
+    total_measures = colander.SchemaNode(colander.Integer(), missing=0)
 
 
 class BaseStationMixin(PositionMixin, TimeTrackingMixin):
@@ -27,13 +32,42 @@ class BaseStationMixin(PositionMixin, TimeTrackingMixin):
     total_measures = Column(Integer(unsigned=True))
 
 
-class StationMixin(BaseStationMixin):
+class ValidBboxSchema(FieldSchema, CopyingSchema):
+    """A schema which validates fields present in a bounding box."""
+
+    max_lat = colander.SchemaNode(
+        colander.Float(),
+        missing=None,
+        validator=colander.Range(constants.MIN_LAT, constants.MAX_LAT))
+    min_lat = colander.SchemaNode(
+        colander.Float(),
+        missing=None,
+        validator=colander.Range(constants.MIN_LAT, constants.MAX_LAT))
+
+    max_lon = colander.SchemaNode(
+        colander.Float(),
+        missing=None,
+        validator=colander.Range(constants.MIN_LON, constants.MAX_LON))
+    min_lon = colander.SchemaNode(
+        colander.Float(),
+        missing=None,
+        validator=colander.Range(constants.MIN_LON, constants.MAX_LON))
+
+
+class BboxMixin(object):
 
     max_lat = Column(Double(asdecimal=False))
     min_lat = Column(Double(asdecimal=False))
 
     max_lon = Column(Double(asdecimal=False))
     min_lon = Column(Double(asdecimal=False))
+
+
+class ValidStationSchema(ValidBaseStationSchema, ValidBboxSchema):
+    """A schema which validates the fields present in a station."""
+
+
+class StationMixin(BaseStationMixin, BboxMixin):
 
     new_measures = Column(Integer(unsigned=True))
 

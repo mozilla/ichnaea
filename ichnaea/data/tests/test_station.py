@@ -504,50 +504,46 @@ class TestWifi(CeleryTestCase):
                 self.assertEqual(update_result.get(), (0, 0))
 
     def test_update_wifi(self):
-        wifis = WifiFactory.create_batch(2)
         obs = []
         obs_factory = WifiObservationFactory
         # first wifi
-        wifi = wifis[0]
-        wifi.total_measures = 3
-        lat1, lon1 = (wifi.lat, wifi.lon)
+        wifi1 = WifiFactory(lat=None, lon=None, total_measures=3)
+        new_pos = WifiFactory.build()
+        lat1, lon1 = (new_pos.lat, new_pos.lon)
         obs.extend([
-            obs_factory(lat=wifi.lat,
-                        lon=wifi.lon, key=wifi.key),
-            obs_factory(lat=wifi.lat + 0.002,
-                        lon=wifi.lon + 0.003, key=wifi.key),
-            obs_factory(lat=wifi.lat + 0.004,
-                        lon=wifi.lon + 0.006, key=wifi.key),
+            obs_factory(lat=lat1,
+                        lon=lon1, key=wifi1.key),
+            obs_factory(lat=lat1 + 0.002,
+                        lon=lon1 + 0.003, key=wifi1.key),
+            obs_factory(lat=lat1 + 0.004,
+                        lon=lon1 + 0.006, key=wifi1.key),
         ])
-        wifi.lat = None
-        wifi.lon = None
         # second wifi
-        wifi = wifis[1]
-        wifi.total_measures = 2
-        wifi.lat += 1.0
-        wifi.lon += 1.0
-        lat2, lon2 = (wifi.lat, wifi.lon)
+        wifi2 = WifiFactory(lat=lat1 + 1.0, lon=lon1 + 1.0, total_measures=2)
+        lat2, lon2 = (wifi2.lat, wifi2.lon)
         obs.extend([
-            obs_factory(lat=wifi.lat + 0.002,
-                        lon=wifi.lon + 0.004, key=wifi.key),
-            obs_factory(lat=wifi.lat + 0.002,
-                        lon=wifi.lon + 0.004, key=wifi.key),
+            obs_factory(lat=lat2 + 0.002,
+                        lon=lon2 + 0.004, key=wifi2.key),
+            obs_factory(lat=lat2 + 0.002,
+                        lon=lon2 + 0.004, key=wifi2.key),
         ])
         self.data_queue.enqueue(obs)
-        self.session.commit()
+        self.session.flush()
 
         result = update_wifi.delay()
         self.assertEqual(result.get(), (2, 0))
         self.check_stats(
             timer=['task.data.update_wifi'],
         )
+        self.session.refresh(wifi1)
+        self.session.refresh(wifi2)
 
         found = dict(self.session.query(Wifi.key, Wifi).all())
-        self.assertEqual(set(found.keys()), set([wifis[0].key, wifis[1].key]))
-        self.assertAlmostEqual(found[wifis[0].key].lat, lat1 + 0.002)
-        self.assertAlmostEqual(found[wifis[0].key].lon, lon1 + 0.003)
-        self.assertAlmostEqual(found[wifis[1].key].lat, lat2 + 0.001)
-        self.assertAlmostEqual(found[wifis[1].key].lon, lon2 + 0.002)
+        self.assertEqual(set(found.keys()), set([wifi1.key, wifi2.key]))
+        self.assertAlmostEqual(found[wifi1.key].lat, lat1 + 0.002)
+        self.assertAlmostEqual(found[wifi1.key].lon, lon1 + 0.003)
+        self.assertAlmostEqual(found[wifi2.key].lat, lat2 + 0.001)
+        self.assertAlmostEqual(found[wifi2.key].lon, lon2 + 0.002)
 
     def test_max_min_range_update(self):
         wifi = WifiFactory(range=100, total_measures=4)

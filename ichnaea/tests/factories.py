@@ -54,7 +54,26 @@ class FuzzyWifiKey(fuzzy.BaseFuzzyAttribute):
         return 'a82066{num:06d}'.format(num=num)
 
 
-class CellAreaKeyFactor(BaseFactory):
+class BboxFactory(BaseFactory):
+
+    @factory.lazy_attribute
+    def min_lat(self):
+        return self.lat
+
+    @factory.lazy_attribute
+    def max_lat(self):
+        return self.lat
+
+    @factory.lazy_attribute
+    def min_lon(self):
+        return self.lon
+
+    @factory.lazy_attribute
+    def max_lon(self):
+        return self.lon
+
+
+class CellAreaKeyFactory(BaseFactory):
 
     radio = fuzzy.FuzzyChoice([Radio.gsm, Radio.wcdma, Radio.lte])
     mcc = GB_MCC
@@ -62,37 +81,37 @@ class CellAreaKeyFactor(BaseFactory):
     lac = fuzzy.FuzzyInteger(1, 60000)
 
 
-class CellAreaPositionFactory(CellAreaKeyFactor):
+class CellAreaPositionFactory(CellAreaKeyFactory):
 
     lat = GB_LAT
     lon = GB_LON
     range = LAC_MIN_ACCURACY
 
 
-class CellKeyFactor(CellAreaKeyFactor):
+class CellKeyFactory(CellAreaKeyFactory):
 
     cid = fuzzy.FuzzyInteger(1, 60000)
 
 
-class CellPositionFactory(CellKeyFactor, CellAreaPositionFactory):
+class CellPositionFactory(CellKeyFactory, CellAreaPositionFactory):
 
     psc = fuzzy.FuzzyInteger(1, 500)
     range = CELL_MIN_ACCURACY
 
 
-class CellFactory(CellPositionFactory):
+class CellFactory(CellPositionFactory, BboxFactory):
 
     class Meta:
         model = Cell.create
 
 
-class CellAreaFactory(CellAreaPositionFactory):
+class CellAreaFactory(CellAreaPositionFactory, BboxFactory):
 
     class Meta:
         model = CellArea.create
 
 
-class CellBlacklistFactory(CellKeyFactor):
+class CellBlacklistFactory(CellKeyFactory):
 
     class Meta:
         model = CellBlacklist
@@ -128,7 +147,7 @@ class WifiPositionFactory(WifiKeyFactory):
     range = WIFI_MIN_ACCURACY
 
 
-class WifiFactory(WifiPositionFactory):
+class WifiFactory(WifiPositionFactory, BboxFactory):
 
     class Meta:
         model = Wifi.create

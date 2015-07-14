@@ -39,7 +39,7 @@ class TestCellArea(DBTestCase):
 
     def test_fields(self):
         session = self.session
-        session.add(CellArea(
+        session.add(CellArea.create(
             radio=Radio.cdma, mcc=GB_MCC, mnc=GB_MNC, lac=1234, range=10,
             lat=GB_LAT, lon=GB_LON, avg_cell_range=10, num_cells=15))
         session.flush()
@@ -102,7 +102,7 @@ class TestOCIDCellArea(DBTestCase):
 
     def test_fields(self):
         session = self.session
-        session.add(OCIDCellArea(
+        session.add(OCIDCellArea.create(
             radio=Radio.umts, mcc=GB_MCC, mnc=GB_MNC, lac=1234, range=10,
             lat=GB_LAT, lon=GB_LON, avg_cell_range=10, num_cells=15))
         session.flush()

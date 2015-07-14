@@ -36,6 +36,7 @@ from ichnaea.models.schema import (
 from ichnaea.models.station import (
     BaseStationMixin,
     StationMixin,
+    ValidBaseStationSchema,
     StationBlacklistMixin,
     ValidStationSchema,
 )
@@ -326,7 +327,7 @@ class Cell(CellMixin, StationMixin, CreationMixin, _Model):
     _valid_schema = ValidCellSchema
 
 
-class ValidOCIDCellSchema(ValidCellKeySchema, ValidStationSchema):
+class ValidOCIDCellSchema(ValidCellKeySchema, ValidBaseStationSchema):
     """A schema which validates the fields present in a OCID cell."""
 
     changeable = colander.SchemaNode(colander.Boolean(), missing=True)
