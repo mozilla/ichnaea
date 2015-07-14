@@ -62,7 +62,7 @@ CLEANCSS = cd $(CSS_ROOT) && $(NODE_BIN)/cleancss -d --source-map
 UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
 
 
-.PHONY: all bower js mysql init_db css js test clean shell docs \
+.PHONY: all bower js mysql pip init_db css js test clean shell docs \
 	build build_dev build_maxmind build_req \
 	release release_install release_compile \
 	tox_install tox_test
@@ -86,7 +86,9 @@ ifeq ($(TRAVIS), true)
 else
 	virtualenv-2.6 .
 endif
-	bin/pip install -U pip --disable-pip-version-check
+
+pip:
+	bin/pip install --disable-pip-version-check -r requirements/build.txt
 
 $(TOXINIDIR)/libmaxminddb/bootstrap:
 	git clone --recursive git://github.com/maxmind/libmaxminddb
@@ -102,11 +104,11 @@ $(TOXINIDIR)/lib/libmaxminddb.0.dylib: \
 	cd libmaxminddb; make
 	cd libmaxminddb; make install
 
-build_maxmind: $(PYTHON) $(TOXINIDIR)/lib/libmaxminddb.0.dylib
+build_maxmind: $(PYTHON) pip $(TOXINIDIR)/lib/libmaxminddb.0.dylib
 	CFLAGS=-I$(TOXINIDIR)/include LDFLAGS=-L$(TOXINIDIR)/lib \
 		$(INSTALL) --no-use-wheel maxminddb==$(MAXMINDDB_VERSION)
 
-build_req: $(PYTHON) mysql build_maxmind
+build_req: $(PYTHON) pip mysql build_maxmind
 	$(INSTALL) -r requirements/prod-c.txt
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/test-c.txt
@@ -121,6 +123,7 @@ build_dev: $(PYTHON)
 build: build_req build_dev
 
 release_install:
+	$(INSTALL) -r requirements/build.txt
 	$(INSTALL) -r requirements/prod-c.txt
 	$(INSTALL) -r requirements/prod.txt
 	$(PYTHON) setup.py install
