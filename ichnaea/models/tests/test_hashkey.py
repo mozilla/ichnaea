@@ -43,6 +43,11 @@ class TestHashKey(TestCase):
         self.assertEqual(double.one, 1)
         self.assertEqual(double.two, 2)
 
+    def test_no_extra_attributes(self):
+        single = Single(one=1, extra=2)
+        self.assertEqual(single.one, 1)
+        self.assertRaises(AttributeError, getattr, single, 'extra')
+
     def test_no_positional_args(self):
         self.assertRaises(TypeError, Single, 1)
         self.assertRaises(TypeError, Single, 'one')

@@ -265,13 +265,6 @@ class CellKeyMixin(CellAreaKeyMixin):
     cid = Column(Integer(unsigned=True), autoincrement=False)
 
 
-class CellKeyPscMixin(CellKeyMixin):
-
-    _hashkey_cls = CellKeyPsc
-
-    psc = Column(SmallInteger, autoincrement=False)
-
-
 class ValidCellSignalSchema(FieldSchema, CopyingSchema):
     """
     A schema which validates the fields related to cell signal
@@ -299,9 +292,9 @@ class ValidCellSignalSchema(FieldSchema, CopyingSchema):
         return super(ValidCellSignalSchema, self).deserialize(data)
 
 
-class CellMixin(CellKeyPscMixin):
+class CellMixin(CellKeyMixin):
 
-    _hashkey_cls = CellKey
+    psc = Column(SmallInteger, autoincrement=False)
 
 
 class ValidCellSchema(ValidCellKeySchema, ValidStationSchema):
