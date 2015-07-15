@@ -1,5 +1,4 @@
 from collections import defaultdict
-import operator
 import uuid
 
 from ichnaea.data.base import DataTask
@@ -130,36 +129,12 @@ class ReportQueue(DataTask):
         self.process_score(userid, positions)
 
     def process_report(self, data):
-        def add_missing_dict_entries(dst, src):
-            # x.update(y) overwrites entries in x with those in y;
-            # We want to only add those not already present.
-            # We also only want to copy the top-level base report data
-            # and not any nested values like cell or wifi.
-            for (key, value) in src.items():
-                if key != 'radio' and key not in dst \
-                   and not isinstance(value, (tuple, list, dict)):
-                    dst[key] = value
+        def add_missing_entries(obs, report):
+            for field in report._fields:
+                obs[field] = getattr(report, field, None)
 
-        def better_cell_obs(new, old):
-            comparators = [
-                ('ta', operator.lt),
-                ('signal', operator.gt),
-                ('asu', operator.gt),
-            ]
-            for field, better in comparators:
-                if (None not in (old[field], new[field]) and
-                        better(new[field], old[field])):
-                    return True
-            return False
-
-        def better_wifi_obs(new, old):
-            if (None not in (old['signal'], new['signal']) and
-                    new['signal'] > old['signal']):
-                return True
-            return False
-
-        report_data = Report.validate(data)
-        if report_data is None:
+        report = Report.create(**data)
+        if report is None:
             return ([], [])
 
         cell_observations = {}
@@ -172,11 +147,11 @@ class ReportQueue(DataTask):
                 cell = CellReport.validate(cell)
                 if cell is None:
                     continue
-                add_missing_dict_entries(cell, report_data)
+                add_missing_entries(cell, report)
                 cell_key = CellObservation.to_hashkey(cell)
                 if cell_key in cell_observations:
                     existing = cell_observations[cell_key]
-                    if better_cell_obs(cell, existing):
+                    if CellObservation.better_data(cell, existing):
                         cell_observations[cell_key] = cell
                 else:
                     cell_observations[cell_key] = cell
@@ -189,11 +164,11 @@ class ReportQueue(DataTask):
                 wifi = WifiReport.validate(wifi)
                 if wifi is None:
                     continue
-                add_missing_dict_entries(wifi, report_data)
+                add_missing_entries(wifi, report)
                 wifi_key = WifiObservation.to_hashkey(wifi)
                 if wifi_key in wifi_observations:
                     existing = wifi_observations[wifi_key]
-                    if better_wifi_obs(wifi, existing):
+                    if WifiObservation.better_data(wifi, existing):
                         wifi_observations[wifi_key] = wifi
                 else:
                     wifi_observations[wifi_key] = wifi

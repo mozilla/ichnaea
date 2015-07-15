@@ -1,3 +1,4 @@
+import operator
 import uuid
 
 import colander
@@ -148,6 +149,19 @@ class CellReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
     )
 
     @classmethod
+    def better_data(cls, new, old):
+        comparators = [
+            ('ta', operator.lt),
+            ('signal', operator.gt),
+            ('asu', operator.gt),
+        ]
+        for field, better in comparators:
+            if (None not in (old[field], new[field]) and
+                    better(new[field], old[field])):
+                return True
+        return False
+
+    @classmethod
     def _from_json_value(cls, value):
         value = decode_radio_dict(value)
         return super(CellReport, cls)._from_json_value(value)
@@ -195,6 +209,13 @@ class WifiReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
         'signal',
         'snr',
     )
+
+    @classmethod
+    def better_data(cls, new, old):
+        if (None not in (old['signal'], new['signal']) and
+                new['signal'] > old['signal']):
+            return True
+        return False
 
 
 class ValidWifiObservationSchema(ValidWifiReportSchema, ValidReportSchema):
