@@ -5,9 +5,6 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.mysql import (
-    SMALLINT as SmallInteger,
-)
 
 from ichnaea.models.base import (
     _Model,
@@ -70,13 +67,6 @@ class ValidWifiKeySchema(FieldSchema, CopyingSchema):
     """A schema which validates the fields present in a a wifi key."""
 
     key = WifiKeyNode(colander.String())
-
-
-class WifiSignalMixin(object):
-
-    channel = Column(SmallInteger)
-    signal = Column(SmallInteger)
-    snr = Column(SmallInteger)
 
 
 class ValidWifiSignalSchema(FieldSchema, CopyingSchema):

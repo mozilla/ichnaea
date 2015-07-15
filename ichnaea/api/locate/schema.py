@@ -5,22 +5,25 @@ General locate specific colander schemata describing the public HTTP APIs.
 import colander
 
 from ichnaea.api.schema import InternalMapping
-from ichnaea.models.base import ValidationMixin
+from ichnaea.models.base import (
+    CreationMixin,
+    ValidationMixin,
+)
 from ichnaea.models.cell import (
     CellAreaKey,
-    CellAreaKeyMixin,
     CellKey,
-    CellKeyPscMixin,
-    CellSignalMixin,
     ValidCellAreaKeySchema,
     ValidCellKeySchema,
     ValidCellSignalSchema,
 )
+from ichnaea.models.hashkey import (
+    HashKey,
+    HashKeyMixin,
+)
 from ichnaea.models.wifi import (
     ValidWifiKeySchema,
     ValidWifiSignalSchema,
-    WifiKeyMixin,
-    WifiSignalMixin,
+    WifiKey,
 )
 
 
@@ -33,10 +36,19 @@ class ValidCellAreaLookupSchema(ValidCellAreaKeySchema, ValidCellSignalSchema):
             raise colander.Invalid(schema, ('LAC is required in lookups.'))
 
 
-class CellAreaLookup(CellAreaKeyMixin, CellSignalMixin, ValidationMixin):
+class CellAreaLookup(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
 
     _hashkey_cls = CellAreaKey
     _valid_schema = ValidCellAreaLookupSchema
+    _fields = (
+        'radio',
+        'mcc',
+        'mnc',
+        'lac',
+        'asu',
+        'signal',
+        'ta',
+    )
 
 
 class ValidCellLookupSchema(ValidCellKeySchema, ValidCellSignalSchema):
@@ -48,19 +60,37 @@ class ValidCellLookupSchema(ValidCellKeySchema, ValidCellSignalSchema):
             raise colander.Invalid(schema, ('CID is required in lookups.'))
 
 
-class CellLookup(CellKeyPscMixin, CellSignalMixin, ValidationMixin):
+class CellLookup(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
 
     _hashkey_cls = CellKey
     _valid_schema = ValidCellLookupSchema
+    _fields = (
+        'radio',
+        'mcc',
+        'mnc',
+        'lac',
+        'cid',
+        'psc',
+        'asu',
+        'signal',
+        'ta',
+    )
 
 
 class ValidWifiLookupSchema(ValidWifiKeySchema, ValidWifiSignalSchema):
     """A schema which validates the fields in a wifi lookup."""
 
 
-class WifiLookup(WifiKeyMixin, WifiSignalMixin, ValidationMixin):
+class WifiLookup(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
 
+    _hashkey_cls = WifiKey
     _valid_schema = ValidWifiLookupSchema
+    _fields = (
+        'key',
+        'channel',
+        'signal',
+        'snr',
+    )
 
 
 class BaseLocateSchema(colander.MappingSchema):

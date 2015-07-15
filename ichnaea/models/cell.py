@@ -10,7 +10,6 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import (
     INTEGER as Integer,
     SMALLINT as SmallInteger,
-    TINYINT as TinyInteger,
 )
 
 from ichnaea import geocalc
@@ -271,13 +270,6 @@ class CellKeyPscMixin(CellKeyMixin):
     _hashkey_cls = CellKeyPsc
 
     psc = Column(SmallInteger, autoincrement=False)
-
-
-class CellSignalMixin(object):
-
-    asu = Column(SmallInteger)
-    signal = Column(SmallInteger)
-    ta = Column(TinyInteger)
 
 
 class ValidCellSignalSchema(FieldSchema, CopyingSchema):
