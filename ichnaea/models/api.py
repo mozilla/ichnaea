@@ -11,7 +11,7 @@ from sqlalchemy.orm import load_only
 from ichnaea.models.base import _Model
 from ichnaea.models.hashkey import (
     HashKey,
-    HashKeyMixin,
+    HashKeyQueryMixin,
 )
 
 
@@ -20,7 +20,7 @@ class ApiHashKey(HashKey):
     _fields = ('valid_key', )
 
 
-class ApiKey(HashKeyMixin, _Model):
+class ApiKey(HashKeyQueryMixin, _Model):
     __tablename__ = 'api_key'
 
     _hashkey_cls = ApiHashKey

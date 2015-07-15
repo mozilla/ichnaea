@@ -10,22 +10,20 @@ class HashKey(JSONMixin):
 
     _fields = ()
 
-    def __init__(self, *args, **kw):
-        values = {}
-        for i, value in enumerate(args):  # pragma: no cover
-            values[self._fields[i]] = value
+    def __init__(self, **kw):
         for field in self._fields:
             if field in kw:
-                values[field] = kw[field]
-            else:  # pragma: no cover
-                values[field] = None
-        for key, value in values.items():
-            setattr(self, key, value)
+                setattr(self, field, kw[field])
+            else:
+                setattr(self, field, None)
 
     def __eq__(self, other):
         if isinstance(other, HashKey):
             return self.__dict__ == other.__dict__
-        return False  # pragma: no cover
+        return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def __hash__(self):
         # emulate a tuple hash
@@ -44,22 +42,17 @@ class HashKeyMixin(object):
     _query_batch = 100
 
     @classmethod
-    def _to_hashkey(cls, *args, **kw):
-        if args:
-            obj = args[0]
-        else:
+    def _to_hashkey(cls, obj=_sentinel, **kw):
+        if obj is _sentinel:
             obj = kw
-        if isinstance(obj, cls._hashkey_cls):  # pragma: no cover
+        if isinstance(obj, cls._hashkey_cls):
             return obj
-        fields = cls._hashkey_cls._fields
         if isinstance(obj, dict):
             return cls._hashkey_cls(**obj)
-        elif isinstance(obj, string_types) and len(fields) == 1:
-            # if we get a single string argument and the underlying
-            # model has only a single hashkey field, match them up
-            return cls._hashkey_cls(**{fields[0]: obj})
+        if isinstance(obj, (bytes, int) + string_types):
+            raise TypeError('Expected dict, hashkey or model object.')
         values = {}
-        for field in fields:
+        for field in cls._hashkey_cls._fields:
             values[field] = getattr(obj, field, None)
         return cls._hashkey_cls(**values)
 
@@ -69,6 +62,9 @@ class HashKeyMixin(object):
 
     def hashkey(self):
         return self._to_hashkey(self)
+
+
+class HashKeyQueryMixin(HashKeyMixin):
 
     @classmethod
     def joinkey(cls, key):

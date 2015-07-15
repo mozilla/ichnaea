@@ -39,7 +39,8 @@ def insert_measures(self, items=None, email=None, ip=None, nickname=None,
     reports = kombu_loads(items)
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
-            api_key = api_key_text and ApiKey.getkey(session, api_key_text)
+            api_key = api_key_text and ApiKey.getkey(
+                session, {'valid_key': api_key_text})
 
             queue = ReportQueue(self, session, pipe,
                                 api_key=api_key,

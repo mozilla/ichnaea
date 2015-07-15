@@ -326,7 +326,7 @@ class CommonPositionTest(BaseLocateTest):
     def test_fallback(self):
         cells = CellFactory.build_batch(2, radio=Radio.wcdma)
         wifis = WifiFactory.build_batch(3)
-        api_key = ApiKey.getkey(self.session, 'test')
+        api_key = ApiKey.getkey(self.session, {'valid_key': 'test'})
         api_key.allow_fallback = True
         self.session.flush()
 
@@ -362,7 +362,7 @@ class CommonPositionTest(BaseLocateTest):
     def test_fallback_used_when_geoip_also_present(self):
         cells = CellFactory.build_batch(2, radio=Radio.wcdma)
         wifis = WifiFactory.build_batch(3)
-        api_key = ApiKey.getkey(self.session, 'test')
+        api_key = ApiKey.getkey(self.session, {'valid_key': 'test'})
         api_key.allow_fallback = True
         self.session.flush()
 

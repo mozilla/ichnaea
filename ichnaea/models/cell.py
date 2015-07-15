@@ -25,7 +25,7 @@ from ichnaea.models.base import (
 from ichnaea.models import constants
 from ichnaea.models.hashkey import (
     HashKey,
-    HashKeyMixin,
+    HashKeyQueryMixin,
 )
 from ichnaea.models.sa_types import TinyIntEnum
 from ichnaea.models.schema import (
@@ -164,7 +164,7 @@ class ValidCellAreaKeySchema(FieldSchema, CopyingSchema):
                 'LAC is out of range for GSM/UMTS/LTE.'))
 
 
-class CellAreaKeyMixin(HashKeyMixin):
+class CellAreaKeyMixin(HashKeyQueryMixin):
 
     _hashkey_cls = CellAreaKey
     _query_batch = 25

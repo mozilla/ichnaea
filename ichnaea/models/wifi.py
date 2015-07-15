@@ -17,7 +17,7 @@ from ichnaea.models.base import (
 from ichnaea.models import constants
 from ichnaea.models.hashkey import (
     HashKey,
-    HashKeyMixin,
+    HashKeyQueryMixin,
 )
 from ichnaea.models.schema import (
     CopyingSchema,
@@ -36,7 +36,7 @@ class WifiKey(HashKey):
     _fields = ('key', )
 
 
-class WifiKeyMixin(HashKeyMixin):
+class WifiKeyMixin(HashKeyQueryMixin):
 
     _hashkey_cls = WifiKey
     _query_batch = 100

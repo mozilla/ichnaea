@@ -36,7 +36,7 @@ class BaseAPIView(BaseView):
                 raise InvalidAPIKey()
         try:
             api_key = ApiKey.getkey(self.request.db_ro_session,
-                                    api_key_text)
+                                    {'valid_key': api_key_text})
         except Exception:  # pragma: no cover
             # if we cannot connect to backend DB, skip api key check
             self.raven_client.captureException()

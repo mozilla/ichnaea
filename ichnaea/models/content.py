@@ -15,7 +15,7 @@ from sqlalchemy.dialects.mysql import (
 from ichnaea.models.base import _Model
 from ichnaea.models.hashkey import (
     HashKey,
-    HashKeyMixin,
+    HashKeyQueryMixin,
 )
 from ichnaea.models.sa_types import TinyIntEnum
 
@@ -43,7 +43,7 @@ class MapStatHashKey(HashKey):
     _fields = ('lat', 'lon')
 
 
-class MapStat(HashKeyMixin, _Model):
+class MapStat(HashKeyQueryMixin, _Model):
     __tablename__ = 'mapstat'
 
     _indices = (
@@ -83,7 +83,7 @@ class ScoreHashKey(HashKey):
         return value
 
 
-class Score(HashKeyMixin, _Model):
+class Score(HashKeyQueryMixin, _Model):
     __tablename__ = 'score'
 
     _indices = (
@@ -141,7 +141,7 @@ class StatHashKey(HashKey):
     _fields = ('key', 'time')
 
 
-class Stat(HashKeyMixin, _Model):
+class Stat(HashKeyQueryMixin, _Model):
     __tablename__ = 'stat'
 
     _indices = (
