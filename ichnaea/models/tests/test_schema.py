@@ -1,5 +1,4 @@
 from datetime import timedelta
-import uuid
 
 from pytz import UTC
 
@@ -95,32 +94,6 @@ class TestCellValidation(ValidationTest):
             else:
                 cell[k] = v
         return (obs, cell)
-
-    def test_report_empty(self):
-        obs, cell = self.get_sample(report_id='')
-        result = self.check_normalized_cell(obs, cell, {})
-        self.assertTrue(isinstance(result['report_id'], uuid.UUID))
-        self.assertEqual(result['report_id'].version, 1)
-
-    def test_report_none(self):
-        obs, cell = self.get_sample(report_id=None)
-        result = self.check_normalized_cell(obs, cell, {})
-        self.assertTrue(isinstance(result['report_id'], uuid.UUID))
-        self.assertEqual(result['report_id'].version, 1)
-
-    def test_report_id(self):
-        report_id = uuid.uuid1()
-        obs, cell = self.get_sample(report_id=report_id)
-        self.check_normalized_cell(obs, cell, dict(report_id=report_id))
-
-    def test_report_id_string(self):
-        report_id = uuid.uuid1()
-        obs, cell = self.get_sample(report_id=report_id.hex)
-        self.check_normalized_cell(obs, cell, dict(report_id=report_id))
-
-    def test_report_id_number(self):
-        obs, cell = self.get_sample(report_id=12)
-        self.check_normalized_cell(obs, cell, None)
 
     def test_all_radio_values(self):
         radio_pairs = [

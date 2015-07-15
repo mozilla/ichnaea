@@ -1,5 +1,4 @@
 from collections import defaultdict
-import uuid
 
 from ichnaea.data.base import DataTask
 from ichnaea.models import (
@@ -48,7 +47,6 @@ class ReportQueue(DataTask):
         cell_observations = []
         wifi_observations = []
         for i, report in enumerate(reports):
-            report['report_id'] = uuid.uuid1()
             cell, wifi = self.process_report(report)
             cell_observations.extend(cell)
             wifi_observations.extend(wifi)

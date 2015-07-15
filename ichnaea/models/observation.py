@@ -1,5 +1,4 @@
 import operator
-import uuid
 
 import colander
 import mobile_codes
@@ -34,16 +33,6 @@ from ichnaea.models.wifi import (
 )
 
 
-class ReportIDNode(colander.SchemaNode):
-    """
-    A node containing a valid report_id.
-    ex: 489cc8dc9d3d11e4a87d02442b52e5a0
-    """
-
-    def preparer(self, cstruct):
-        return cstruct or uuid.uuid1()
-
-
 class RoundToMonthDateNode(colander.SchemaNode):
     """
     A node which takes a string date or date and
@@ -53,23 +42,6 @@ class RoundToMonthDateNode(colander.SchemaNode):
 
     def preparer(self, cstruct):
         return normalized_time(cstruct)
-
-
-class UUIDType(colander.String):
-    """
-    A UUIDType will return a uuid object from either a uuid or a string.
-    """
-
-    def deserialize(self, node, cstruct):
-        if not cstruct:
-            return colander.null
-        if isinstance(cstruct, uuid.UUID):
-            return cstruct
-        try:
-            cstruct = uuid.UUID(hex=cstruct)
-        except (AttributeError, TypeError, ValueError):
-            raise colander.Invalid(node, '%r is not a valid uuid' % cstruct)
-        return cstruct
 
 
 class ValidReportSchema(ValidPositionSchema):
@@ -90,7 +62,6 @@ class ValidReportSchema(ValidPositionSchema):
     speed = DefaultNode(
         colander.Float(), missing=None, validator=colander.Range(
             0, constants.MAX_SPEED))
-    report_id = ReportIDNode(UUIDType())
     created = colander.SchemaNode(DateTimeFromString(), missing=None)
     time = RoundToMonthDateNode(DateTimeFromString(), missing=None)
 
@@ -101,7 +72,6 @@ class Report(HashKey, CreationMixin, ValidationMixin):
     _fields = (
         'lat',
         'lon',
-        'report_id',
         'created',  # the insertion time
         'time',  # the time of observation
         'accuracy',
