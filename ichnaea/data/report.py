@@ -44,84 +44,59 @@ class ReportQueue(DataTask):
 
     def process_reports(self, reports, userid=None):
         positions = set()
-        cell_observations = []
-        wifi_observations = []
-        for i, report in enumerate(reports):
+        observations = {'cell': [], 'wifi': []}
+
+        for report in reports:
             cell, wifi = self.process_report(report)
-            cell_observations.extend(cell)
-            wifi_observations.extend(wifi)
-            if (cell or wifi) and report.get('lat') and report.get('lon'):
+            if cell:
+                observations['cell'].extend(cell)
+            if wifi:
+                observations['wifi'].extend(wifi)
+            if (cell or wifi):
                 positions.add((report['lat'], report['lon']))
 
-        if cell_observations:
-            # group by and create task per cell key
-            self.stats_client.incr('items.uploaded.cell_observations',
-                                   len(cell_observations))
-            if self.api_key and self.api_key.log:
-                self.stats_client.incr(
-                    'items.api_log.%s.uploaded.'
-                    'cell_observations' % self.api_key.name,
-                    len(cell_observations))
+        for name, log_name, task in (
+                ('cell', 'cell_observations', self.insert_cell_task),
+                ('wifi', 'wifi_observations', self.insert_wifi_task)):
 
-            cells = defaultdict(list)
-            for obs in cell_observations:
-                cells[CellObservation.to_hashkey(obs)].append(obs)
+            if observations[name]:
+                # group by and create task per small batch of keys
+                self.stats_client.incr('items.uploaded.%s' % log_name,
+                                       len(observations[name]))
 
-            # Create a task per group of 100 cell keys at a time.
-            # Grouping them helps in avoiding per-task overhead.
-            cells = list(cells.values())
-            batch_size = 100
-            countdown = 0
-            for i in range(0, len(cells), batch_size):
-                values = []
-                for observations in cells[i:i + batch_size]:
-                    values.extend([encode_radio_dict(o) for o in observations])
-                # insert observations, expire the task if it wasn't processed
-                # after six hours to avoid queue overload, also delay
-                # each task by one second more, to get a more even workload
-                # and avoid parallel updates of the same underlying stations
-                self.insert_cell_task.apply_async(
-                    args=[values],
-                    kwargs={'userid': userid},
-                    expires=21600,
-                    countdown=countdown)
-                countdown += 1
+                if self.api_key and self.api_key.log:
+                    self.stats_client.incr(
+                        'items.api_log.%s.uploaded.%s' % (
+                            self.api_key.name, log_name),
+                        len(observations[name]))
 
-        if wifi_observations:
-            # group by WiFi key
-            self.stats_client.incr('items.uploaded.wifi_observations',
-                                   len(wifi_observations))
-            if self.api_key and self.api_key.log:
-                self.stats_client.incr(
-                    'items.api_log.%s.uploaded.'
-                    'wifi_observations' % self.api_key.name,
-                    len(wifi_observations))
+                station_obs = defaultdict(list)
+                for obs in observations[name]:
+                    station_obs[obs.hashkey()].append(obs.__dict__)
 
-            wifis = defaultdict(list)
-            for obs in wifi_observations:
-                wifis[WifiObservation.to_hashkey(obs)].append(obs)
+                batch_size = 100
+                countdown = 0
+                stations = list(station_obs.values())
 
-            # Create a task per group of 100 WiFi keys at a time.
-            # We tend to get a huge number of unique WiFi networks per
-            # batch upload, with one to very few observations per WiFi.
-            # Grouping them helps in avoiding per-task overhead.
-            wifis = list(wifis.values())
-            batch_size = 100
-            countdown = 0
-            for i in range(0, len(wifis), batch_size):
-                values = []
-                for observations in wifis[i:i + batch_size]:
-                    values.extend(observations)
-                # insert observations, expire the task if it wasn't processed
-                # after six hours to avoid queue overload, also delay
-                # each task by one second more, to get a more even workload
-                # and avoid parallel updates of the same underlying stations
-                self.insert_wifi_task.apply_async(
-                    args=[values],
-                    kwargs={'userid': userid},
-                    expires=21600,
-                    countdown=countdown)
-                countdown += 1
+                for i in range(0, len(stations), batch_size):
+                    values = []
+                    for obs_batch in stations[i:i + batch_size]:
+                        if name == 'cell':
+                            values.extend(
+                                [encode_radio_dict(o) for o in obs_batch])
+                        elif name == 'wifi':
+                            values.extend(obs_batch)
+                    # insert observations, expire the task if it wasn't
+                    # processed after six hours to avoid queue overload,
+                    # also delay each task by one second more, to get a
+                    # more even workload and avoid parallel updates of
+                    # the same underlying stations
+                    task.apply_async(
+                        args=[values],
+                        kwargs={'userid': userid},
+                        expires=21600,
+                        countdown=countdown)
+                    countdown += 1
 
         self.process_mapstat(positions)
         self.process_score(userid, positions)
@@ -129,7 +104,7 @@ class ReportQueue(DataTask):
     def process_report(self, data):
         report = Report.create(**data)
         if report is None:
-            return ([], [])
+            return (None, None)
 
         observations = {'cell': {}, 'wifi': {}}
 
@@ -157,11 +132,7 @@ class ReportQueue(DataTask):
 
                     observations[name][item_key] = item_obs
 
-                # don't expose observation classes to the outside yet
-                observations[name] = [
-                    obs.__dict__ for obs in observations[name].values()]
-
-        return (observations['cell'], observations['wifi'])
+        return (observations['cell'].values(), observations['wifi'].values())
 
     def process_mapstat(self, positions):
         if not positions:

@@ -50,6 +50,13 @@ class ValidReportSchema(ValidPositionSchema):
         colander.Float(), missing=None, validator=colander.Range(
             0, constants.MAX_SPEED))
 
+    def validator(self, node, cstruct):
+        super(ValidReportSchema, self).validator(node, cstruct)
+        for field in ('lat', 'lon'):
+            if (cstruct[field] is None or
+                    cstruct[field] is colander.null):  # pragma: no cover
+                raise colander.Invalid(node, 'Report %s is required.' % field)
+
 
 class Report(HashKey, CreationMixin, ValidationMixin):
 
