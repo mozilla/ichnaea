@@ -37,7 +37,7 @@ class FallbackProvider(Provider):
             settings=settings, *args, **kwargs)
 
     def _prepare_cell(self, cell):
-        radio = cell.get('radio', None)
+        radio = cell.radio
         if radio is not None:
             radio_name = radio.name
             if radio_name == 'umts':  # pragma: no cover
@@ -55,8 +55,9 @@ class FallbackProvider(Provider):
         if radio_name:
             result['radioType'] = radio_name
         for source, target in cell_map.items():
-            if cell.get(source):
-                result[target] = cell[source]
+            source_value = getattr(cell, source, None)
+            if source_value is not None:
+                result[target] = source_value
 
         return result
 
@@ -69,8 +70,9 @@ class FallbackProvider(Provider):
             'snr': 'signalToNoiseRatio',
         }
         for source, target in wifi_map.items():
-            if wifi.get(source):
-                result[target] = wifi[source]
+            source_value = getattr(wifi, source, None)
+            if source_value is not None:
+                result[target] = source_value
 
         return result
 
@@ -134,11 +136,11 @@ class FallbackProvider(Provider):
 
     def _get_cache_key(self, cell_query):
         return 'fallback_cache_cell:{radio}:{mcc}:{mnc}:{lac}:{cid}'.format(
-            radio=cell_query['radio'].name,
-            mcc=cell_query['mcc'],
-            mnc=cell_query['mnc'],
-            lac=cell_query['lac'],
-            cid=cell_query['cid'],
+            radio=cell_query.radio.name,
+            mcc=cell_query.mcc,
+            mnc=cell_query.mnc,
+            lac=cell_query.lac,
+            cid=cell_query.cid,
         )
 
     def _get_cached_result(self, query):

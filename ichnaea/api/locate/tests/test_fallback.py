@@ -308,7 +308,7 @@ class TestFallbackProvider(GeoIPProviderTest):
                 'POST', requests_mock.ANY, json=self.fallback_location)
 
             query = self.model_query(cells=[cell])
-            query.cell[0]['signal'] = -77
+            query.cell[0].signal = -77
             location = self.provider.locate(query)
             self.check_model_location(location, self.fallback_model)
 
@@ -321,7 +321,7 @@ class TestFallbackProvider(GeoIPProviderTest):
                 timer=['m.fallback.lookup'])
 
             # vary the signal strength, not part of cache key
-            query.cell[0]['signal'] = -82
+            query.cell[0].signal = -82
             location = self.provider.locate(query)
             self.check_model_location(location, self.fallback_model)
 

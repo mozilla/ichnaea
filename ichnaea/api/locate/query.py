@@ -72,10 +72,10 @@ class Query(object):
         filtered_areas = []
         filtered_cells = []
         for value in values:
-            valid_area = CellAreaLookup.validate(value)
+            valid_area = CellAreaLookup.create(**value)
             if valid_area:
                 filtered_areas.append(valid_area)
-            valid_cell = CellLookup.validate(value)
+            valid_cell = CellLookup.create(**value)
             if valid_cell:
                 filtered_cells.append(valid_cell)
         self._cell_area = filtered_areas
@@ -94,7 +94,7 @@ class Query(object):
 
         filtered = []
         for value in values:
-            valid = WifiLookup.validate(value)
+            valid = WifiLookup.create(**value)
             if valid:
                 filtered.append(valid)
         if len(filtered) < MIN_WIFIS_IN_QUERY:

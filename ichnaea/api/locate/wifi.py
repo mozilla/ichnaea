@@ -106,7 +106,7 @@ class WifiPositionProvider(Provider):
         # which is worse than the 99th percentile of wifi dBms we
         # see in practice (-98).
 
-        wifi_signals = dict([(w['key'], w['signal'] or -100) for w in wifis])
+        wifi_signals = dict([(w.key, w.signal or -100) for w in wifis])
         wifi_keys = set(wifi_signals.keys())
 
         return (wifis, wifi_signals, wifi_keys)

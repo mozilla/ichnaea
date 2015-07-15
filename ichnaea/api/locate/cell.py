@@ -44,12 +44,7 @@ class BaseCellProvider(Provider):
 
     def _clean_cell_keys(self, query):
         """Pre-process cell query."""
-        cell_keys = []
-        for cell in getattr(query, self.query_field):
-            cell_key = self.model.to_hashkey(cell)
-            cell_keys.append(cell_key)
-
-        return cell_keys
+        return [cell.hashkey() for cell in getattr(query, self.query_field)]
 
     def _query_database(self, cell_keys):
         """Query the cell model."""
@@ -69,22 +64,21 @@ class BaseCellProvider(Provider):
 
     def _filter_cells(self, found_cells):
         # Group all found_cells by location area
-        lacs = defaultdict(list)
+        areas = defaultdict(list)
         for cell in found_cells:
-            cellarea_key = (cell.radio, cell.mcc, cell.mnc, cell.lac)
-            lacs[cellarea_key].append(cell)
+            areas[CellArea.to_hashkey(cell)].append(cell)
 
         def sort_lac(v):
-            # use the lac with the most values,
+            # use the area with the most values,
             # or the one with the smallest range
             return (len(v), -min([e.range for e in v]))
 
         # If we get data from multiple location areas, use the one
-        # with the most data points in it. That way a lac with a cell
-        # hit will have two entries and win over a lac with only the
-        # lac entry.
-        lac = sorted(lacs.values(), key=sort_lac, reverse=True)
-        if not lac:
+        # with the most data points in it. That way an area with a cell
+        # hit will have two entries and win over an area with only the
+        # area entry.
+        areas = sorted(areas.values(), key=sort_lac, reverse=True)
+        if not areas:
             return []
 
         return [Network(
@@ -92,7 +86,7 @@ class BaseCellProvider(Provider):
             lat=cell.lat,
             lon=cell.lon,
             range=cell.range,
-        ) for cell in lac[0]]
+        ) for cell in areas[0]]
 
     def _prepare(self, queried_cells):
         """

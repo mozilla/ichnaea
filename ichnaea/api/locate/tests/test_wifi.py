@@ -110,10 +110,10 @@ class TestWifiPositionProvider(ProviderTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi11, wifi12, wifi21, wifi22])
-        query.wifi[0]['signal'] = -100
-        query.wifi[1]['signal'] = -80
-        query.wifi[2]['signal'] = -100
-        query.wifi[3]['signal'] = -54
+        query.wifi[0].signal = -100
+        query.wifi[1].signal = -80
+        query.wifi[2].signal = -100
+        query.wifi[3].signal = -54
         location = self.provider.locate(query)
         self.check_model_location(
             location, wifi21, lat=wifi21.lat + 0.0001)
@@ -126,9 +126,9 @@ class TestWifiPositionProvider(ProviderTest):
 
         query = self.model_query(wifis=[wifi] + wifis + wifis2)
         for entry in query.wifi[:-3]:
-            entry['signal'] = -80
+            entry.signal = -80
         for entry in query.wifi[-3:]:
-            entry['signal'] = -70
+            entry.signal = -70
         location = self.provider.locate(query)
         self.check_model_location(location, wifi)
 
@@ -146,7 +146,7 @@ class TestWifiPositionProvider(ProviderTest):
 
         query = self.model_query(wifis=wifis)
         for i, entry in enumerate(query.wifi):
-            entry['signal'] = -70 - i
+            entry.signal = -70 - i
         location = self.provider.locate(query)
         self.check_model_location(
             location, wifi,
