@@ -1,11 +1,9 @@
 from datetime import datetime
 import time
-import uuid
 
 from enum import IntEnum
 import pytz
 
-from sqlalchemy import BINARY
 from sqlalchemy.dialects.mysql import (
     DATETIME as DateTime,
     TINYINT as TinyInteger,
@@ -49,20 +47,4 @@ class TZDateTime(TypeDecorator):
         if value is not None:
             ts = time.mktime(value.timetuple())
             value = datetime.fromtimestamp(ts).replace(tzinfo=pytz.UTC)
-        return value
-
-
-class UUIDColumn(TypeDecorator):
-    """A binary type storing UUID's."""
-
-    impl = BINARY
-
-    def process_bind_param(self, value, dialect):
-        if isinstance(value, uuid.UUID):
-            value = value.bytes
-        return value
-
-    def process_result_value(self, value, dialect):
-        if value is not None:
-            value = uuid.UUID(bytes=value)
         return value

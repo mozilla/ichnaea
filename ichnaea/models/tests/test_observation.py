@@ -23,24 +23,22 @@ class TestCellObservation(DBTestCase):
 
     def test_fields(self):
         report_id = uuid.uuid1()
-        self.session.add(CellObservation.create(
+        obs = CellObservation.create(
             radio=Radio.gsm, mcc=GB_MCC, mnc=5, lac=12345, cid=23456,
             report_id=report_id, lat=GB_LAT, lon=GB_LON,
-            asu=26, signal=-61, ta=10))
-        self.session.flush()
+            asu=26, signal=-61, ta=10)
 
-        result = self.session.query(CellObservation).first()
-        self.assertEqual(result.report_id, report_id)
-        self.assertEqual(result.lat, GB_LAT)
-        self.assertEqual(result.lon, GB_LON)
-        self.assertEqual(result.radio, Radio.gsm)
-        self.assertEqual(result.mcc, GB_MCC)
-        self.assertEqual(result.mnc, 5)
-        self.assertEqual(result.lac, 12345)
-        self.assertEqual(result.cid, 23456)
-        self.assertEqual(result.asu, 26)
-        self.assertEqual(result.signal, -61)
-        self.assertEqual(result.ta, 10)
+        self.assertEqual(obs.report_id, report_id)
+        self.assertEqual(obs.lat, GB_LAT)
+        self.assertEqual(obs.lon, GB_LON)
+        self.assertEqual(obs.radio, Radio.gsm)
+        self.assertEqual(obs.mcc, GB_MCC)
+        self.assertEqual(obs.mnc, 5)
+        self.assertEqual(obs.lac, 12345)
+        self.assertEqual(obs.cid, 23456)
+        self.assertEqual(obs.asu, 26)
+        self.assertEqual(obs.signal, -61)
+        self.assertEqual(obs.ta, 10)
 
     def test_customjson(self):
         now = util.utcnow()
@@ -74,18 +72,16 @@ class TestWifiObservation(DBTestCase):
     def test_fields(self):
         key = '3680873e9b83'
         report_id = uuid.uuid1()
-        self.session.add(WifiObservation.create(
+        obs = WifiObservation.create(
             key=key, report_id=report_id, lat=GB_LAT, lon=GB_LON,
-            channel=5, signal=-45))
-        self.session.flush()
+            channel=5, signal=-45)
 
-        result = self.session.query(WifiObservation).first()
-        self.assertEqual(result.report_id, report_id)
-        self.assertEqual(result.lat, GB_LAT)
-        self.assertEqual(result.lon, GB_LON)
-        self.assertEqual(result.key, key)
-        self.assertEqual(result.channel, 5)
-        self.assertEqual(result.signal, -45)
+        self.assertEqual(obs.report_id, report_id)
+        self.assertEqual(obs.lat, GB_LAT)
+        self.assertEqual(obs.lon, GB_LON)
+        self.assertEqual(obs.key, key)
+        self.assertEqual(obs.channel, 5)
+        self.assertEqual(obs.signal, -45)
 
     def test_customjson(self):
         key = '3680873e9b83'

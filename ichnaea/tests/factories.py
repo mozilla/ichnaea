@@ -2,6 +2,7 @@ from inspect import ismethod
 
 import factory
 from factory.alchemy import SQLAlchemyModelFactory
+from factory.base import Factory
 from factory import fuzzy
 
 from ichnaea.constants import (
@@ -30,7 +31,20 @@ from ichnaea.tests.base import (
 )
 
 
-class BaseFactory(SQLAlchemyModelFactory):
+class BaseMemoryFactory(Factory):
+
+    class Meta:
+        strategy = factory.CREATE_STRATEGY
+
+    @classmethod
+    def _create(cls, constructor, *args, **kwargs):
+        """Create an instance of the model, and save it to the database."""
+        if ismethod(constructor) and '_raise_invalid' not in kwargs:
+            kwargs['_raise_invalid'] = True
+        return constructor(*args, **kwargs)
+
+
+class BaseSQLFactory(SQLAlchemyModelFactory):
 
     class Meta:
         strategy = factory.CREATE_STRATEGY
@@ -54,7 +68,7 @@ class FuzzyWifiKey(fuzzy.BaseFuzzyAttribute):
         return 'a82066{num:06d}'.format(num=num)
 
 
-class BboxFactory(BaseFactory):
+class BboxFactory(Factory):
 
     @factory.lazy_attribute
     def min_lat(self):
@@ -73,7 +87,7 @@ class BboxFactory(BaseFactory):
         return self.lon
 
 
-class CellAreaKeyFactory(BaseFactory):
+class CellAreaKeyFactory(Factory):
 
     radio = fuzzy.FuzzyChoice([Radio.gsm, Radio.wcdma, Radio.lte])
     mcc = GB_MCC
@@ -99,43 +113,43 @@ class CellPositionFactory(CellKeyFactory, CellAreaPositionFactory):
     range = CELL_MIN_ACCURACY
 
 
-class CellFactory(CellPositionFactory, BboxFactory):
+class CellFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
 
     class Meta:
         model = Cell.create
 
 
-class CellAreaFactory(CellAreaPositionFactory, BboxFactory):
+class CellAreaFactory(CellAreaPositionFactory, BboxFactory, BaseSQLFactory):
 
     class Meta:
         model = CellArea.create
 
 
-class CellBlacklistFactory(CellKeyFactory):
+class CellBlacklistFactory(CellKeyFactory, BaseSQLFactory):
 
     class Meta:
         model = CellBlacklist
 
 
-class OCIDCellFactory(CellPositionFactory):
+class OCIDCellFactory(CellPositionFactory, BaseSQLFactory):
 
     class Meta:
         model = OCIDCell.create
 
 
-class OCIDCellAreaFactory(CellAreaPositionFactory):
+class OCIDCellAreaFactory(CellAreaPositionFactory, BaseSQLFactory):
 
     class Meta:
         model = OCIDCellArea.create
 
 
-class CellObservationFactory(CellPositionFactory):
+class CellObservationFactory(CellPositionFactory, BaseMemoryFactory):
 
     class Meta:
         model = CellObservation.create
 
 
-class WifiKeyFactory(BaseFactory):
+class WifiKeyFactory(Factory):
 
     key = FuzzyWifiKey()
 
@@ -147,19 +161,19 @@ class WifiPositionFactory(WifiKeyFactory):
     range = WIFI_MIN_ACCURACY
 
 
-class WifiFactory(WifiPositionFactory, BboxFactory):
+class WifiFactory(WifiPositionFactory, BboxFactory, BaseSQLFactory):
 
     class Meta:
         model = Wifi.create
 
 
-class WifiBlacklistFactory(WifiKeyFactory):
+class WifiBlacklistFactory(WifiKeyFactory, BaseSQLFactory):
 
     class Meta:
         model = WifiBlacklist
 
 
-class WifiObservationFactory(WifiPositionFactory):
+class WifiObservationFactory(WifiPositionFactory, BaseMemoryFactory):
 
     class Meta:
         model = WifiObservation.create

@@ -2,22 +2,10 @@ import uuid
 
 import colander
 import mobile_codes
-from sqlalchemy import (
-    Column,
-    Float,
-    Index,
-)
-from sqlalchemy.dialects.mysql import (
-    INTEGER as Integer,
-)
 
 from ichnaea import geocalc
 from ichnaea.models.base import (
-    _Model,
-    BigIdMixin,
     CreationMixin,
-    JSONMixin,
-    PositionMixin,
     ValidationMixin,
     ValidPositionSchema,
 )
@@ -25,24 +13,21 @@ from ichnaea.models.cell import (
     decode_radio_dict,
     encode_radio_dict,
     CellKeyPsc,
-    CellKeyPscMixin,
-    CellSignalMixin,
     ValidCellKeySchema,
     ValidCellSignalSchema,
 )
 from ichnaea.models import constants
+from ichnaea.models.hashkey import (
+    HashKey,
+    HashKeyMixin,
+)
 from ichnaea.models.schema import (
     DateTimeFromString,
     DefaultNode,
     normalized_time,
 )
-from ichnaea.models.sa_types import (
-    TZDateTime as DateTime,
-    UUIDColumn,
-)
 from ichnaea.models.wifi import (
-    WifiKeyMixin,
-    WifiSignalMixin,
+    WifiKey,
     ValidWifiKeySchema,
     ValidWifiSignalSchema,
 )
@@ -109,51 +94,36 @@ class ValidReportSchema(ValidPositionSchema):
     time = RoundToMonthDateNode(DateTimeFromString(), missing=None)
 
 
-class Report(PositionMixin, ValidationMixin):
+class Report(HashKey, CreationMixin, ValidationMixin):
 
     _valid_schema = ValidReportSchema
-
-    report_id = Column(UUIDColumn(length=16))
-
-    created = Column(DateTime)  # the insert time of the record into the DB
-    time = Column(DateTime)  # the time of observation of this data
-
-    accuracy = Column(Integer)
-    altitude = Column(Integer)
-    altitude_accuracy = Column(Integer)
-
-    # http://dev.w3.org/geo/api/spec-source.html#heading
-    heading = Column(Float)
-
-    # http://dev.w3.org/geo/api/spec-source.html#speed
-    speed = Column(Float)
+    _fields = (
+        'lat',
+        'lon',
+        'report_id',
+        'created',  # the insertion time
+        'time',  # the time of observation
+        'accuracy',
+        'altitude',
+        'altitude_accuracy',
+        'heading',
+        'speed',
+    )
 
 
-class ObservationMixin(CreationMixin, BigIdMixin, JSONMixin, Report):
+class ObservationMixin(Report):
 
-    @classmethod
-    def _column_names(cls):
-        return [col.name for col in cls.__table__.columns]
-
-    @classmethod
-    def create(cls, _raise_invalid=False, **kw):
-        validated = cls.validate(kw, _raise_invalid=_raise_invalid)
-        if validated is None:  # pragma: no cover
-            return None
-        return cls(**validated)
-
-    @classmethod
-    def _from_json_value(cls, value):
-        value = decode_radio_dict(value)
-        return cls(**value)
+    _fields = (
+        'id',
+    ) + Report._fields
 
     def _to_json_value(self):
+        # create a sparse representation of this instance
         dct = {}
-        for name in self._column_names():
-            value = getattr(self, name, None)
+        for field in self._fields:
+            value = getattr(self, field, None)
             if value is not None:
-                dct[name] = value
-        dct = encode_radio_dict(dct)
+                dct[field] = value
         return dct
 
 
@@ -161,10 +131,31 @@ class ValidCellReportSchema(ValidCellKeySchema, ValidCellSignalSchema):
     """A schema which validates the cell specific fields in a report."""
 
 
-class CellReport(CellKeyPscMixin, CellSignalMixin, ValidationMixin):
+class CellReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
 
     _hashkey_cls = CellKeyPsc
     _valid_schema = ValidCellReportSchema
+    _fields = (
+        'radio',
+        'mcc',
+        'mnc',
+        'lac',
+        'cid',
+        'psc',
+        'asu',
+        'signal',
+        'ta',
+    )
+
+    @classmethod
+    def _from_json_value(cls, value):
+        value = decode_radio_dict(value)
+        return super(CellReport, cls)._from_json_value(value)
+
+    def _to_json_value(self):
+        dct = super(CellReport, self)._to_json_value()
+        dct = encode_radio_dict(dct)
+        return dct
 
 
 class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
@@ -184,35 +175,33 @@ class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
                 'the bounding boxes for the MCC'))
 
 
-class CellObservation(ObservationMixin, CellReport, _Model):
-    __tablename__ = 'cell_measure'
+class CellObservation(CellReport, ObservationMixin):
 
-    _indices = (
-        Index('cell_measure_created_idx', 'created'),
-        Index('cell_measure_key_idx', 'radio', 'mcc', 'mnc', 'lac', 'cid'),
-    )
     _valid_schema = ValidCellObservationSchema
+    _fields = CellReport._fields + ObservationMixin._fields
 
 
 class ValidWifiReportSchema(ValidWifiKeySchema, ValidWifiSignalSchema):
     """A schema which validates the wifi specific fields in a report."""
 
 
-class WifiReport(WifiKeyMixin, WifiSignalMixin, ValidationMixin):
+class WifiReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
 
+    _hashkey_cls = WifiKey
     _valid_schema = ValidWifiReportSchema
+    _fields = (
+        'key',
+        'channel',
+        'signal',
+        'snr',
+    )
 
 
 class ValidWifiObservationSchema(ValidWifiReportSchema, ValidReportSchema):
     """A schema which validates the fields in wifi observation."""
 
 
-class WifiObservation(ObservationMixin, WifiReport, _Model):
-    __tablename__ = 'wifi_measure'
+class WifiObservation(WifiReport, ObservationMixin):
 
-    _indices = (
-        Index('wifi_measure_created_idx', 'created'),
-        Index('wifi_measure_key_idx', 'key'),
-        Index('wifi_measure_key_created_idx', 'key', 'created'),
-    )
     _valid_schema = ValidWifiObservationSchema
+    _fields = WifiReport._fields + ObservationMixin._fields

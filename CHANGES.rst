@@ -10,8 +10,12 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 1a320a751cf: Remove observation tables.
+
 Changes
 ~~~~~~~
+
+- #287: Replace observation models with non-db-model classes.
 
 - #433: Move query data validation into Query class.
 
