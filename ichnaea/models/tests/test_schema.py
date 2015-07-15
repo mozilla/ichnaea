@@ -1,14 +1,9 @@
-from datetime import timedelta
-
-from pytz import UTC
-
 from ichnaea.models import (
     Radio,
     CellObservation,
     WifiObservation,
 )
 from ichnaea.models import constants
-from ichnaea.models.schema import normalized_time
 from ichnaea.tests.base import TestCase
 from ichnaea import util
 
@@ -237,12 +232,6 @@ class TestCellValidation(ValidationTest):
         for signal in valid_signals:
             obs, cell = self.get_sample(signal=signal)
             self.check_normalized_cell(obs, cell, {'signal': signal})
-
-    def test_valid_time(self):
-        now = util.utcnow()
-        first_of_month = now.replace(day=1, hour=0, minute=0, second=0)
-        obs, cell = self.get_sample(time=now)
-        self.check_normalized_cell(obs, cell, {'time': first_of_month})
 
     def test_invalid_accuracy(self):
         invalid_accuracies = [-10, -1, 5000000]
@@ -545,27 +534,3 @@ class TestWifiValidation(ValidationTest):
             wifi = self.check_normalized_wifi(obs, wifi,
                                               dict(channel=chan))
             self.assertFalse('frequency' in wifi)
-
-    def test_normalize_time(self):
-        now = util.utcnow()
-        first_args = dict(day=1, hour=0, minute=0, second=0,
-                          microsecond=0, tzinfo=UTC)
-        now_enc = now.replace(**first_args)
-        two_weeks_ago = now - timedelta(14)
-        short_format = now.date().isoformat()
-
-        entries = [
-            ('', now_enc),
-            (now, now_enc),
-            (now.date(), now_enc),
-            (two_weeks_ago, two_weeks_ago.replace(**first_args)),
-            (short_format, now_enc),
-            ('2011-01-01T11:12:13.456Z', now_enc),
-            ('2070-01-01T11:12:13.456Z', now_enc),
-            ('10-10-10', now_enc),
-            ('2011-10-13T.Z', now_enc),
-        ]
-
-        for entry in entries:
-            in_, expected = entry
-            self.assertEqual(normalized_time(in_), expected)

@@ -1,5 +1,3 @@
-import datetime
-
 from ichnaea.customjson import (
     kombu_dumps,
     kombu_loads,
@@ -15,7 +13,6 @@ from ichnaea.tests.base import (
     GB_LON,
     GB_MCC,
 )
-from ichnaea import util
 
 
 class TestCellObservation(DBTestCase):
@@ -38,10 +35,9 @@ class TestCellObservation(DBTestCase):
         self.assertEqual(obs.ta, 10)
 
     def test_customjson(self):
-        now = util.utcnow()
         obs = CellObservation.create(
             radio=Radio.gsm, mcc=GB_MCC, mnc=5, lac=12345, cid=23456,
-            lat=GB_LAT, lon=GB_LON, created=now)
+            lat=GB_LAT, lon=GB_LON)
 
         json_data = kombu_dumps(obs)
         self.assertTrue('accuracy' not in json_data)
@@ -57,8 +53,6 @@ class TestCellObservation(DBTestCase):
         self.assertEqual(result.cid, 23456)
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
-        self.assertEqual(type(result.created), datetime.datetime)
-        self.assertEqual(result.created, now)
 
 
 class TestWifiObservation(DBTestCase):
@@ -77,9 +71,8 @@ class TestWifiObservation(DBTestCase):
 
     def test_customjson(self):
         key = '3680873e9b83'
-        now = util.utcnow()
         obs = WifiObservation.create(
-            key=key, lat=GB_LAT, lon=GB_LON, created=now)
+            key=key, lat=GB_LAT, lon=GB_LON)
 
         json_data = kombu_dumps(obs)
         self.assertTrue('accuracy' not in json_data)
@@ -90,5 +83,3 @@ class TestWifiObservation(DBTestCase):
         self.assertEqual(result.key, key)
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
-        self.assertEqual(type(result.created), datetime.datetime)
-        self.assertEqual(result.created, now)

@@ -22,26 +22,13 @@ from ichnaea.models.hashkey import (
     HashKeyMixin,
 )
 from ichnaea.models.schema import (
-    DateTimeFromString,
     DefaultNode,
-    normalized_time,
 )
 from ichnaea.models.wifi import (
     WifiKey,
     ValidWifiKeySchema,
     ValidWifiSignalSchema,
 )
-
-
-class RoundToMonthDateNode(colander.SchemaNode):
-    """
-    A node which takes a string date or date and
-    rounds it to the first of the month.
-    ex: 2015-01-01
-    """
-
-    def preparer(self, cstruct):
-        return normalized_time(cstruct)
 
 
 class ValidReportSchema(ValidPositionSchema):
@@ -62,8 +49,6 @@ class ValidReportSchema(ValidPositionSchema):
     speed = DefaultNode(
         colander.Float(), missing=None, validator=colander.Range(
             0, constants.MAX_SPEED))
-    created = colander.SchemaNode(DateTimeFromString(), missing=None)
-    time = RoundToMonthDateNode(DateTimeFromString(), missing=None)
 
 
 class Report(HashKey, CreationMixin, ValidationMixin):
@@ -72,21 +57,12 @@ class Report(HashKey, CreationMixin, ValidationMixin):
     _fields = (
         'lat',
         'lon',
-        'created',  # the insertion time
-        'time',  # the time of observation
         'accuracy',
         'altitude',
         'altitude_accuracy',
         'heading',
         'speed',
     )
-
-
-class ObservationMixin(Report):
-
-    _fields = (
-        'id',
-    ) + Report._fields
 
     def _to_json_value(self):
         # create a sparse representation of this instance
@@ -159,10 +135,10 @@ class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
                 'the bounding boxes for the MCC'))
 
 
-class CellObservation(CellReport, ObservationMixin):
+class CellObservation(CellReport, Report):
 
     _valid_schema = ValidCellObservationSchema
-    _fields = CellReport._fields + ObservationMixin._fields
+    _fields = CellReport._fields + Report._fields
 
 
 class ValidWifiReportSchema(ValidWifiKeySchema, ValidWifiSignalSchema):
@@ -192,7 +168,7 @@ class ValidWifiObservationSchema(ValidWifiReportSchema, ValidReportSchema):
     """A schema which validates the fields in wifi observation."""
 
 
-class WifiObservation(WifiReport, ObservationMixin):
+class WifiObservation(WifiReport, Report):
 
     _valid_schema = ValidWifiObservationSchema
-    _fields = WifiReport._fields + ObservationMixin._fields
+    _fields = WifiReport._fields + Report._fields

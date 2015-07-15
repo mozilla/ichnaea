@@ -1,45 +1,7 @@
 import copy
-from datetime import date, datetime, timedelta
+from datetime import datetime
 
 import colander
-import iso8601
-from pytz import UTC
-from six import string_types, binary_type
-
-from ichnaea import util
-
-
-def normalized_time(time):
-    """
-    Takes a string representation of a time value or a date and converts
-    it into a datetime.
-
-    It rounds down a date to the first of the month.
-
-    It takes any date greater than 60 days into the past
-    or in the future and sets it to the current date.
-    """
-    now = util.utcnow()
-    if not time:
-        time = now
-    elif isinstance(time, string_types + (binary_type, )):
-        try:
-            time = iso8601.parse_date(time)
-        except (iso8601.ParseError, TypeError):
-            time = now
-    elif type(time) == date:
-        time = datetime(time.year, time.month, time.day, tzinfo=UTC)
-
-    # don't accept future time values or
-    # time values more than 60 days in the past
-    min_time = now - timedelta(days=60)
-    if time > now or time < min_time:
-        time = now
-
-    # cut down the time to a monthly resolution
-    time = time.replace(day=1, hour=0, minute=0, second=0,
-                        microsecond=0, tzinfo=UTC)
-    return time
 
 
 class DateTimeFromString(colander.DateTime):

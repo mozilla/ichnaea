@@ -19,7 +19,6 @@ from ichnaea.models import (
     WifiBlacklist,
     WifiObservation,
 )
-from ichnaea.models.cell import decode_radio_dict
 from ichnaea import util
 
 
@@ -52,9 +51,6 @@ class ObservationQueue(DataTask):
         StatCounter(self.stat_obs_key, day).incr(self.pipe, obs)
         StatCounter(self.stat_station_key, day).incr(self.pipe, stations)
 
-    def pre_process_entry(self, entry):
-        entry['created'] = self.utcnow
-
     def queue_scores(self, userid, new_stations):
         # Credit the user with discovering any new stations.
         if userid is None or new_stations <= 0:
@@ -78,8 +74,6 @@ class ObservationQueue(DataTask):
         # Process entries and group by validated station key
         station_observations = defaultdict(list)
         for entry in entries:
-            self.pre_process_entry(entry)
-
             obs = self.observation_model.create(**entry)
             if not obs:
                 drop_counter['malformed'] += 1
@@ -163,10 +157,6 @@ class CellObservationQueue(ObservationQueue):
     observation_model = CellObservation
     blacklist_model = CellBlacklist
     queue_name = 'update_cell'
-
-    def pre_process_entry(self, entry):
-        ObservationQueue.pre_process_entry(self, entry)
-        decode_radio_dict(entry)
 
     def incomplete_observation(self, key):
         # We want to store certain incomplete observations
