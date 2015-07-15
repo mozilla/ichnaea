@@ -73,6 +73,13 @@ class Report(HashKey, CreationMixin, ValidationMixin):
                 dct[field] = value
         return dct
 
+    @classmethod
+    def combine(cls, *reports):
+        values = {}
+        for report in reports:
+            values.update(report.__dict__)
+        return cls(**values)
+
 
 class ValidCellReportSchema(ValidCellKeySchema, ValidCellSignalSchema):
     """A schema which validates the cell specific fields in a report."""
@@ -101,16 +108,18 @@ class CellReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
         'ta',
     )
 
-    @classmethod
-    def better_data(cls, new, old):
+    def better(self, other):
+        """Is self better than the other?"""
         comparators = [
             ('ta', operator.lt),
             ('signal', operator.gt),
             ('asu', operator.gt),
         ]
-        for field, better in comparators:
-            if (None not in (old[field], new[field]) and
-                    better(new[field], old[field])):
+        for field, better_than in comparators:
+            old_value = getattr(self, field, None)
+            new_value = getattr(other, field, None)
+            if (None not in (old_value, new_value) and
+                    better_than(old_value, new_value)):
                 return True
         return False
 
@@ -169,10 +178,12 @@ class WifiReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
         'snr',
     )
 
-    @classmethod
-    def better_data(cls, new, old):
-        if (None not in (old['signal'], new['signal']) and
-                new['signal'] > old['signal']):
+    def better(self, other):
+        """Is self better than the other?"""
+        old_value = getattr(self, 'signal', None)
+        new_value = getattr(other, 'signal', None)
+        if (None not in (old_value, new_value) and
+                old_value > new_value):
             return True
         return False
 

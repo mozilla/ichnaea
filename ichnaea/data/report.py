@@ -127,51 +127,41 @@ class ReportQueue(DataTask):
         self.process_score(userid, positions)
 
     def process_report(self, data):
-        def add_missing_entries(obs, report):
-            for field in report._fields:
-                obs[field] = getattr(report, field, None)
-
         report = Report.create(**data)
         if report is None:
             return ([], [])
 
-        cell_observations = {}
-        wifi_observations = {}
+        observations = {'cell': {}, 'wifi': {}}
 
-        if data.get('cell'):
-            # flatten report / cell data into a single dict
-            for cell in data['cell']:
-                # only validate the additional fields
-                cell = CellReport.validate(cell)
-                if cell is None:
-                    continue
-                add_missing_entries(cell, report)
-                cell_key = CellObservation.to_hashkey(cell)
-                if cell_key in cell_observations:
-                    existing = cell_observations[cell_key]
-                    if CellObservation.better_data(cell, existing):
-                        cell_observations[cell_key] = cell
-                else:
-                    cell_observations[cell_key] = cell
-        cell_observations = cell_observations.values()
+        for name, report_cls, obs_cls in (
+                ('cell', CellReport, CellObservation),
+                ('wifi', WifiReport, WifiObservation)):
+            observations[name] = {}
 
-        # flatten report / wifi data into a single dict
-        if data.get('wifi'):
-            for wifi in data['wifi']:
-                # only validate the additional fields
-                wifi = WifiReport.validate(wifi)
-                if wifi is None:
-                    continue
-                add_missing_entries(wifi, report)
-                wifi_key = WifiObservation.to_hashkey(wifi)
-                if wifi_key in wifi_observations:
-                    existing = wifi_observations[wifi_key]
-                    if WifiObservation.better_data(wifi, existing):
-                        wifi_observations[wifi_key] = wifi
-                else:
-                    wifi_observations[wifi_key] = wifi
-            wifi_observations = wifi_observations.values()
-        return (cell_observations, wifi_observations)
+            if data.get(name):
+                for item in data[name]:
+                    # validate the cell/wifi specific fields
+                    item_report = report_cls.create(**item)
+                    if item_report is None:
+                        continue
+
+                    # combine general and specific report data into one
+                    item_obs = obs_cls.combine(report, item_report)
+                    item_key = item_obs.hashkey()
+
+                    # if we have better data for the same key, ignore
+                    existing = observations[name].get(item_key)
+                    if existing is not None:
+                        if existing.better(item_obs):
+                            continue
+
+                    observations[name][item_key] = item_obs
+
+                # don't expose observation classes to the outside yet
+                observations[name] = [
+                    obs.__dict__ for obs in observations[name].values()]
+
+        return (observations['cell'], observations['wifi'])
 
     def process_mapstat(self, positions):
         if not positions:
