@@ -16,7 +16,17 @@ class DateTimeFromString(colander.DateTime):
         return super(DateTimeFromString, self).deserialize(schema, cstruct)
 
 
-class DefaultNode(colander.SchemaNode):
+class ValidatorNode(colander.SchemaNode):
+    """
+    A ValidatorNode is a schema node which defines validator as a callable
+    method, so all subclasses can rely on calling it via super().
+    """
+
+    def validator(self, node, cstruct):
+        pass
+
+
+class DefaultNode(ValidatorNode):
     """
     A DefaultNode will use its ``missing`` value
     if it fails to validate during deserialization.
@@ -31,7 +41,7 @@ class DefaultNode(colander.SchemaNode):
             return self.missing
 
 
-class CopyingSchema(colander.MappingSchema):
+class CopyingSchema(colander.MappingSchema, ValidatorNode):
     """
     A Schema which makes a copy of the passed in dict to validate.
     """
@@ -40,7 +50,7 @@ class CopyingSchema(colander.MappingSchema):
         return super(CopyingSchema, self).deserialize(copy.copy(data))
 
 
-class FieldSchema(colander.MappingSchema):
+class FieldSchema(colander.MappingSchema, ValidatorNode):
     """
     A schema which provides an interface to its fields through the
     .fields[field_name] interface.

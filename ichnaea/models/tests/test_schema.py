@@ -167,8 +167,7 @@ class TestCellValidation(ValidationTest):
         for lac in self.invalid_lacs:
             for psc in self.valid_pscs:
                 obs, cell = self.get_sample(lac=lac, psc=psc)
-                self.check_normalized_cell(
-                    obs, cell, dict(lac=None, psc=psc))
+                self.check_normalized_cell(obs, cell, None)
 
     def test_invalid_cid_with_an_invalid_psc(self):
         for cid in self.invalid_cids:
@@ -180,8 +179,7 @@ class TestCellValidation(ValidationTest):
         for cid in self.invalid_cids:
             for psc in self.valid_pscs:
                 obs, cell = self.get_sample(cid=cid, psc=psc)
-                self.check_normalized_cell(
-                    obs, cell, dict(cid=None, psc=psc))
+                self.check_normalized_cell(obs, cell, None)
 
     def test_invalid_latitude(self):
         invalid_latitudes = [constants.MIN_LAT - 0.1, constants.MAX_LAT + 0.1]
@@ -277,7 +275,7 @@ class TestCellValidation(ValidationTest):
 
     def test_cid_65535_without_a_valid_lac_sets_cid_to_invalid(self):
         obs, cell = self.get_sample(lac=None, cid=65535, psc=1)
-        self.check_normalized_cell(obs, cell, {'cid': None})
+        self.check_normalized_cell(obs, cell, None)
 
     def test_unknown_lac_cid_is_65535_and_missing_psc(self):
         obs, cell = self.get_sample(lac=None, cid=65535, psc=None)

@@ -84,7 +84,6 @@ class ObservationQueue(DataTask):
         # Process observations one station at a time
         for key, observations in station_observations.items():
             first_blacklisted = None
-            incomplete = False
             station = self.station_model.getkey(self.session, key)
 
             if station is None:
@@ -94,15 +93,12 @@ class ObservationQueue(DataTask):
                     drop_counter['blacklisted'] += len(observations)
                     continue
 
-                incomplete = self.incomplete_observation(key)
-                if not incomplete and not first_blacklisted:
+                if not first_blacklisted:
                     # We discovered an actual new complete station.
                     new_stations += 1
 
-            # Don't make stations for incomplete observations
-            # and don't queue their data for processing
             # TODO: station creation happens too early
-            if not incomplete and observations:
+            if observations:
                 all_observations.extend(observations)
                 self.create_station(station, key, first_blacklisted)
 
@@ -125,9 +121,6 @@ class ObservationQueue(DataTask):
                 return (True, black.time)
             return (False, black.time)
         return (False, None)
-
-    def incomplete_observation(self, key):
-        return False
 
     def create_station(self, station, key, first_blacklisted):
         if station is None:
@@ -157,16 +150,6 @@ class CellObservationQueue(ObservationQueue):
     observation_model = CellObservation
     blacklist_model = CellBlacklist
     queue_name = 'update_cell'
-
-    def incomplete_observation(self, key):
-        # We want to store certain incomplete observations
-        # even though they should not lead to the creation of a station
-        # entry; these are cell observations with a missing value for
-        # LAC and/or CID, and will be inferred from neighboring cells.
-        for field in ('radio', 'mcc', 'mnc', 'lac', 'cid'):
-            if getattr(key, field, None) is None:
-                return True
-        return False
 
 
 class WifiObservationQueue(ObservationQueue):

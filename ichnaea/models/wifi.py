@@ -20,6 +20,7 @@ from ichnaea.models.schema import (
     CopyingSchema,
     DefaultNode,
     FieldSchema,
+    ValidatorNode,
 )
 from ichnaea.models.station import (
     StationMixin,
@@ -41,7 +42,7 @@ class WifiKeyMixin(HashKeyQueryMixin):
     key = Column(String(12))
 
 
-class WifiKeyNode(colander.SchemaNode):
+class WifiKeyNode(ValidatorNode):
     """
     A node containing a valid wifi key.
     ex: 01005e901000
@@ -56,9 +57,12 @@ class WifiKeyNode(colander.SchemaNode):
         return cstruct and cstruct.lower() or colander.null
 
     def validator(self, node, cstruct):
+        super(WifiKeyNode, self).validator(node, cstruct)
+
         valid = (len(cstruct) == 12 and
                  constants.INVALID_WIFI_REGEX.match(cstruct) and
                  constants.VALID_WIFI_REGEX.match(cstruct))
+
         if not valid:
             raise colander.Invalid(node, 'Invalid wifi key')
 

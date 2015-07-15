@@ -77,6 +77,13 @@ class Report(HashKey, CreationMixin, ValidationMixin):
 class ValidCellReportSchema(ValidCellKeySchema, ValidCellSignalSchema):
     """A schema which validates the cell specific fields in a report."""
 
+    def validator(self, node, cstruct):
+        super(ValidCellReportSchema, self).validator(node, cstruct)
+        for field in ('radio', 'mcc', 'mnc', 'lac', 'cid'):
+            if (cstruct[field] is None or
+                    cstruct[field] is colander.null):
+                raise colander.Invalid(node, 'Cell %s is required.' % field)
+
 
 class CellReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
 
@@ -121,16 +128,16 @@ class CellReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
 class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
     """A schema which validates the fields present in a cell observation."""
 
-    def validator(self, schema, data):
-        super(ValidCellObservationSchema, self).validator(schema, data)
+    def validator(self, node, cstruct):
+        super(ValidCellObservationSchema, self).validator(node, cstruct)
 
         in_country = False
-        for code in mobile_codes.mcc(str(data['mcc'])):
+        for code in mobile_codes.mcc(str(cstruct['mcc'])):
             in_country = in_country or geocalc.location_is_in_country(
-                data['lat'], data['lon'], code.alpha2, 1)
+                cstruct['lat'], cstruct['lon'], code.alpha2, 1)
 
         if not in_country:
-            raise colander.Invalid(schema, (
+            raise colander.Invalid(node, (
                 'Lat/lon must be inside one of '
                 'the bounding boxes for the MCC'))
 
@@ -143,6 +150,12 @@ class CellObservation(CellReport, Report):
 
 class ValidWifiReportSchema(ValidWifiKeySchema, ValidWifiSignalSchema):
     """A schema which validates the wifi specific fields in a report."""
+
+    def validator(self, node, cstruct):
+        super(ValidWifiReportSchema, self).validator(node, cstruct)
+        if (cstruct['key'] is None or
+                cstruct['key'] is colander.null):  # pragma: no cover
+            raise colander.Invalid(node, 'Wifi key is required.')
 
 
 class WifiReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):

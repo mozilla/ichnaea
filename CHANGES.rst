@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #395: Move `incomplete_observation` logic onto colander schema.
+
 - #287: Replace observation models with non-db-model classes.
 
 - #433: Move query data validation into Query class.

@@ -30,10 +30,11 @@ from ichnaea.models.wifi import (
 class ValidCellAreaLookupSchema(ValidCellAreaKeySchema, ValidCellSignalSchema):
     """A schema which validates the fields in a cell area lookup."""
 
-    def validator(self, schema, data):
-        super(ValidCellAreaLookupSchema, self).validator(schema, data)
-        if data['lac'] is None:
-            raise colander.Invalid(schema, ('LAC is required in lookups.'))
+    def validator(self, node, cstruct):
+        super(ValidCellAreaLookupSchema, self).validator(node, cstruct)
+
+        if cstruct['lac'] is None:
+            raise colander.Invalid(node, ('LAC is required in lookups.'))
 
 
 class CellAreaLookup(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
@@ -54,10 +55,11 @@ class CellAreaLookup(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
 class ValidCellLookupSchema(ValidCellKeySchema, ValidCellSignalSchema):
     """A schema which validates the fields in a cell lookup."""
 
-    def validator(self, schema, data):
-        super(ValidCellLookupSchema, self).validator(schema, data)
-        if data['cid'] is None:
-            raise colander.Invalid(schema, ('CID is required in lookups.'))
+    def validator(self, node, cstruct):
+        super(ValidCellLookupSchema, self).validator(node, cstruct)
+
+        if cstruct['cid'] is None:
+            raise colander.Invalid(node, ('CID is required in lookups.'))
 
 
 class CellLookup(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):

@@ -88,8 +88,11 @@ class RadioNode(DefaultNode):
     """
 
     def validator(self, node, cstruct):
+        super(RadioNode, self).validator(node, cstruct)
+
         if type(cstruct) is Radio:
             return True
+
         raise colander.Invalid(node, 'Invalid radio type')  # pragma: no cover
 
 
@@ -145,21 +148,23 @@ class ValidCellAreaKeySchema(FieldSchema, CopyingSchema):
         validator=colander.Range(
             constants.MIN_LAC, constants.MAX_LAC_ALL))
 
-    def validator(self, schema, data):
-        if data['mcc'] not in constants.ALL_VALID_MCCS:
-            raise colander.Invalid(schema, (
+    def validator(self, node, cstruct):
+        super(ValidCellAreaKeySchema, self).validator(node, cstruct)
+
+        if cstruct['mcc'] not in constants.ALL_VALID_MCCS:
+            raise colander.Invalid(node, (
                 'Check against the list of all known valid mccs'))
 
-        if (data['radio'] in Radio._gsm_family() and
-                data['mnc'] is not None and
-                data.get('mnc', 0) > 999):
-            raise colander.Invalid(schema, (
+        if (cstruct['radio'] in Radio._gsm_family() and
+                cstruct['mnc'] is not None and
+                cstruct.get('mnc', 0) > 999):
+            raise colander.Invalid(node, (
                 'Skip GSM/LTE/UMTS towers with an invalid MNC'))
 
-        if (data['radio'] in Radio._gsm_family() and
-                data['lac'] is not None and
-                data.get('lac', 0) > constants.MAX_LAC_GSM_UMTS_LTE):
-            raise colander.Invalid(schema, (
+        if (cstruct['radio'] in Radio._gsm_family() and
+                cstruct['lac'] is not None and
+                cstruct.get('lac', 0) > constants.MAX_LAC_GSM_UMTS_LTE):
+            raise colander.Invalid(node, (
                 'LAC is out of range for GSM/UMTS/LTE.'))
 
 
@@ -227,33 +232,33 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
 
         return super(ValidCellKeySchema, self).deserialize(data)
 
-    def validator(self, schema, data):
-        super(ValidCellKeySchema, self).validator(schema, data)
+    def validator(self, node, cstruct):
+        super(ValidCellKeySchema, self).validator(node, cstruct)
 
-        lac_missing = data.get('lac') is None
-        cid_missing = data.get('cid') is None
-        psc_missing = data.get('psc') is None
+        lac_missing = cstruct.get('lac') is None
+        cid_missing = cstruct.get('cid') is None
+        psc_missing = cstruct.get('psc') is None
 
-        if data['radio'] == Radio.cdma and (lac_missing or cid_missing):
-            raise colander.Invalid(schema, (
+        if cstruct['radio'] == Radio.cdma and (lac_missing or cid_missing):
+            raise colander.Invalid(node, (
                 'Skip CDMA towers missing lac or cid '
                 '(no psc on CDMA exists to backfill using inference)'))
 
         if (lac_missing or cid_missing) and psc_missing:
-            raise colander.Invalid(schema, (
+            raise colander.Invalid(node, (
                 'Must have (lac and cid) or '
                 'psc (psc-only to use in backfill)'))
 
-        if (data['radio'] == Radio.cdma and
-                data['cid'] is not None and
-                data.get('cid', 0) > constants.MAX_CID_CDMA):
-            raise colander.Invalid(schema, (
+        if (cstruct['radio'] == Radio.cdma and
+                cstruct['cid'] is not None and
+                cstruct.get('cid', 0) > constants.MAX_CID_CDMA):
+            raise colander.Invalid(node, (
                 'CID is out of range for CDMA.'))
 
-        if (data['radio'] == Radio.lte and
-                data['cid'] is not None and
-                data.get('cid', 0) > constants.MAX_CID_LTE):
-            raise colander.Invalid(schema, (
+        if (cstruct['radio'] == Radio.lte and
+                cstruct['cid'] is not None and
+                cstruct.get('cid', 0) > constants.MAX_CID_LTE):
+            raise colander.Invalid(node, (
                 'CID is out of range for LTE.'))
 
 
