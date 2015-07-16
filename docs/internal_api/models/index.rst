@@ -6,5 +6,7 @@
 .. toctree::
    :maxdepth: 1
 
+   base
    cell
    constants
+   hashkey

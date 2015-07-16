@@ -19,9 +19,12 @@ else:  # pragma: no cover
 
 class Query(object):
 
-    def __init__(self, geoip=None, cell=None, wifi=None, fallbacks=None):
+    def __init__(self, fallbacks=None, geoip=None, cell=None, wifi=None):
         """
         A class representing a concrete location query.
+
+        :param fallbacks: A dictionary of fallback options.
+        :type fallbacks: dict
 
         :param geoip: An IP address, e.g. 127.0.0.1.
         :type geoip: str
@@ -31,10 +34,8 @@ class Query(object):
 
         :param wifi: A list of wifi query dicts.
         :type wifi: list
-
-        :param fallbacks: A dictionary of fallback options.
-        :type fallbacks: dict
         """
+        self.fallbacks = fallbacks
         self.geoip = geoip
         self.cell = cell
         self.wifi = wifi
@@ -42,6 +43,7 @@ class Query(object):
 
     @property
     def geoip(self):
+        """The validated geoip."""
         return self._geoip
 
     @geoip.setter
@@ -56,10 +58,24 @@ class Query(object):
 
     @property
     def cell(self):
+        """
+        The validated list of
+        :class:`~ichnaea.api.locate.schema.CellLookup` instances.
+
+        If the same cell network is supplied multiple times, this chooses only
+        the best entry for each unique network.
+        """
         return self._cell
 
     @property
     def cell_area(self):
+        """
+        The validated list of
+        :class:`~ichnaea.api.locate.schema.CellAreaLookup` instances.
+
+        If the same cell area is supplied multiple times, this chooses only
+        the best entry for each unique area.
+        """
         return self._cell_area
 
     @cell.setter
@@ -83,6 +99,16 @@ class Query(object):
 
     @property
     def wifi(self):
+        """
+        The validated list of
+        :class:`~ichnaea.api.locate.schema.WifiLookup` instances.
+
+        If the same Wifi network is supplied multiple times, this chooses only
+        the best entry for each unique network.
+
+        If fewer than :data:`~ichnaea.api.locate.constants.MIN_WIFIS_IN_QUERY`
+        unique valid Wifi networks are found, returns an empty list.
+        """
         return self._wifi
 
     @wifi.setter

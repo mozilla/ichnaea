@@ -10,9 +10,10 @@ class TestQuery(ConnectionTestCase):
 
     def test_empty(self):
         query = Query()
+        self.assertEqual(query.fallbacks, {})
+        self.assertEqual(query.geoip, None)
         self.assertEqual(query.cell, [])
         self.assertEqual(query.cell_area, [])
-        self.assertEqual(query.geoip, None)
         self.assertEqual(query.wifi, [])
 
     def test_cell(self):

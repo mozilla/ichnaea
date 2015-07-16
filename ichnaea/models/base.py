@@ -1,3 +1,7 @@
+"""
+Model and schema related common classes.
+"""
+
 import colander
 from pyramid.path import DottedNameResolver
 from sqlalchemy import Column
@@ -21,56 +25,75 @@ from ichnaea.models.sa_types import TZDateTime as DateTime
 MYSQL_SETTINGS = {
     'mysql_engine': 'InnoDB',
     'mysql_charset': 'utf8',
-}
+}  #: Common MySQL database settings.
 RESOLVER = DottedNameResolver('ichnaea')
 
 
 class BaseModel(object):
+    """A base model with a common set of database settings."""
 
-    _indices = ()
-    _settings = MYSQL_SETTINGS
+    _indices = ()  #:
+    _settings = MYSQL_SETTINGS  #:
 
     @declared_attr
     def __table_args__(cls):  # NOQA
         return cls._indices + (cls._settings, )
 
-
 _Model = declarative_base(cls=BaseModel)
 
 
 class JSONMixin(object):
+    """
+    A mixin class that supports round-tripping of the actual class
+    via our customjson format back into an instance of the class.
+    """
 
     @property
     def _dottedname(self):
+        """"Returns a fully qualified import path to this class."""
         klass = self.__class__
         return '%s:%s' % (klass.__module__, klass.__name__)
 
     @staticmethod
     def _from_json(dct):
+        """Instantiate a class based on the provided JSON dictionary."""
         data = dct['__class__']
         klass = RESOLVER.resolve(data['name'])
         return klass._from_json_value(data['value'])
 
     @classmethod
     def _from_json_value(cls, value):
+        """Instantiate this class based on the provided values."""
         return cls(**value)
 
     def _to_json(self):
+        """"
+        Returns a dictionary representation of this class dotted name
+        and its instance state.
+        """
         return {'__class__': {
             'name': self._dottedname,
             'value': self._to_json_value(),
         }}
 
     def _to_json_value(self):
+        """"Returns a dictionary representation of the instance state."""
         return self.__dict__
 
 
 class ValidationMixin(object):
+    """
+    A mixin to tie a class and its valid colander schema together.
+    """
 
-    _valid_schema = None
+    _valid_schema = None  #:
 
     @classmethod
     def validate(cls, entry, _raise_invalid=False, **kw):
+        """
+        Returns a validated subset of the passed in entry dictionary,
+        based on the classes _valid_schema, otherwise returns None.
+        """
         try:
             validated = cls._valid_schema().deserialize(entry, **kw)
         except colander.Invalid:
@@ -81,9 +104,17 @@ class ValidationMixin(object):
 
 
 class CreationMixin(ValidationMixin):
+    """
+    A mixin with a custom create constructor that validates the
+    keyword arguments before creating an instance of the class.
+    """
 
     @classmethod
     def create(cls, _raise_invalid=False, **kw):
+        """
+        Returns an instance of this class, if the passed in keyword
+        arguments passed schema validation, otherwise returns None.
+        """
         validated = cls.validate(kw, _raise_invalid=_raise_invalid)
         if validated is None:  # pragma: no cover
             return None
@@ -91,6 +122,7 @@ class CreationMixin(ValidationMixin):
 
 
 class BigIdMixin(object):
+    """A database model mixin representing a biginteger auto-inc id."""
 
     id = Column(BigInteger(unsigned=True),
                 primary_key=True, autoincrement=True)
@@ -104,6 +136,7 @@ class ValidTimeTrackingSchema(FieldSchema, CopyingSchema):
 
 
 class TimeTrackingMixin(object):
+    """A database model mixin with created and modified datetime fields."""
 
     created = Column(DateTime)
     modified = Column(DateTime)
@@ -123,6 +156,7 @@ class ValidPositionSchema(FieldSchema, CopyingSchema):
 
 
 class PositionMixin(object):
+    """A database model mixin with lat and lon float fields."""
 
     lat = Column(Double(asdecimal=False))
     lon = Column(Double(asdecimal=False))
