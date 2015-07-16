@@ -120,7 +120,7 @@ build_dev: $(PYTHON)
 build: build_req build_dev
 
 release_install:
-	$(INSTALL) -r requirements/build.txt
+	$(PIP) install --no-deps -r requirements/build.txt
 	$(INSTALL) -r requirements/prod-c.txt
 	$(INSTALL) -r requirements/prod.txt
 	$(PYTHON) setup.py install
