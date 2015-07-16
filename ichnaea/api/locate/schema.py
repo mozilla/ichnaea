@@ -22,6 +22,7 @@ from ichnaea.models.hashkey import (
     HashKey,
     HashKeyMixin,
 )
+from ichnaea.models.schema import DefaultNode
 from ichnaea.models.wifi import (
     ValidWifiKeySchema,
     ValidWifiSignalSchema,
@@ -136,6 +137,25 @@ class WifiLookup(BaseLookup):
                 old_value > new_value):
             return True
         return False
+
+
+class FallbackSchema(colander.MappingSchema):
+    """
+    A schema validating the fields present in fallback options.
+    """
+
+    lacf = DefaultNode(colander.Boolean(), missing=True)
+    ipf = DefaultNode(colander.Boolean(), missing=True)
+
+
+class FallbackLookup(HashKey, CreationMixin, ValidationMixin):
+    """A model class representing fallback lookup options."""
+
+    _valid_schema = FallbackSchema
+    _fields = (
+        'ipf',
+        'lacf',
+    )
 
 
 class BaseLocateSchema(colander.MappingSchema):

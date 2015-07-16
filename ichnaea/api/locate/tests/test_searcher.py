@@ -292,7 +292,7 @@ class TestPositionSearcher(SearcherTest):
         class TestProvider(Provider):
             location_type = TestLocation
             log_name = 'test'
-            fallback_field = 'fallback'
+            fallback_field = 'ipf'
 
             def locate(self, query):
                 return self.location_type(lat=1.0, lon=1.0, accuracy=1000)
@@ -306,7 +306,7 @@ class TestPositionSearcher(SearcherTest):
         self.assertEqual(location['lat'], 1.0)
         self.assertEqual(location['lon'], 1.0)
         self.assertEqual(location['accuracy'], 1000)
-        self.assertEqual(location['fallback'], 'fallback')
+        self.assertEqual(location['fallback'], 'ipf')
 
 
 class TestCountrySearcher(SearcherTest):

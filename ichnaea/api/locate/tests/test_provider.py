@@ -69,10 +69,10 @@ class ProviderTest(ConnectionTestCase):
             query['fallbacks'] = fallbacks
 
         return Query(
+            fallback=query.get('fallbacks'),
             geoip=query.get('geoip'),
             cell=query.get('cell'),
             wifi=query.get('wifi'),
-            fallbacks=query.get('fallbacks'),
         )
 
     def check_model_location(self, location, model, used=None, **kw):
@@ -163,16 +163,16 @@ class TestProvider(ProviderTest):
         self.check_should_locate(query, True)
 
     def test_should_not_locate_if_fallback_field_is_set(self):
-        self.provider.fallback_field = 'fallback'
-        query = self.model_query(fallbacks={'fallback': False})
+        self.provider.fallback_field = 'ipf'
+        query = self.model_query(fallbacks={'ipf': False})
         self.check_should_locate(query, False)
 
     def test_should_locate_if_a_different_fallback_field_is_set(self):
-        self.provider.fallback_field = 'fallback'
-        query = self.model_query(fallbacks={'another_fallback': False})
+        self.provider.fallback_field = 'ipf'
+        query = self.model_query(fallbacks={'invalid': False})
         self.check_should_locate(query, True)
 
     def test_should_locate_ignore_invalid_values(self):
-        self.provider.fallback_field = 'fallback'
-        query = self.model_query(fallbacks={'fallback': 'asdf'})
+        self.provider.fallback_field = 'ipf'
+        query = self.model_query(fallbacks={'ipf': 'asdf'})
         self.check_should_locate(query, True)

@@ -19,10 +19,10 @@ class BaseLocateView(BaseAPIView):
 
     def prepare_query(self, request_data):
         return Query(
+            fallback=request_data.get('fallbacks'),
             geoip=self.request.client_addr,
             cell=request_data.get('cell'),
             wifi=request_data.get('wifi'),
-            fallbacks=request_data.get('fallbacks'),
         )
 
     def locate(self, api_key):

@@ -11,12 +11,14 @@ from colander import (
 )
 
 from ichnaea.api.schema import (
-    FallbackSchema,
     InternalMapping,
     InternalMixin,
     InternalSchemaNode,
 )
-from ichnaea.api.locate.schema import BaseLocateSchema
+from ichnaea.api.locate.schema import (
+    BaseLocateSchema,
+    FallbackSchema,
+)
 
 RADIO_STRINGS = ['gsm', 'cdma', 'wcdma', 'lte']
 

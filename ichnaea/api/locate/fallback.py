@@ -94,11 +94,10 @@ class FallbackProvider(Provider):
             outbound_query['cellTowers'] = cell_queries
         if wifi_queries:
             outbound_query['wifiAccessPoints'] = wifi_queries
-        if query.fallbacks:
-            outbound_query['fallbacks'] = {
-                # We only send the lacf fallback for now
-                'lacf': query.fallbacks.get('lacf', False),
-            }
+        outbound_query['fallbacks'] = {
+            # We only send the lacf fallback for now
+            'lacf': query.fallback.lacf,
+        }
 
         return outbound_query
 

@@ -53,12 +53,7 @@ class Provider(StatsLogger):
         :rtype: bool
         """
         if self.fallback_field is not None:
-            try:
-                fallbacks = query.fallbacks
-                if fallbacks:
-                    return bool(fallbacks.get(self.fallback_field, True))
-            except ValueError:  # pragma: no cover
-                self.raven_client.captureException()
+            return bool(getattr(query.fallback, self.fallback_field, True))
 
         return True
 

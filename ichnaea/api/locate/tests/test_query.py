@@ -25,15 +25,17 @@ class TestQuery(ConnectionTestCase):
 
     def test_empty(self):
         query = Query()
-        self.assertEqual(query.fallbacks, {})
+        self.assertEqual(query.fallback.ipf, True)
+        self.assertEqual(query.fallback.lacf, True)
         self.assertEqual(query.geoip, None)
         self.assertEqual(query.cell, [])
         self.assertEqual(query.cell_area, [])
         self.assertEqual(query.wifi, [])
 
-    def test_fallbacks(self):
-        query = Query(fallbacks={'ipf': False})
-        self.assertEqual(query.fallbacks, {'ipf': False})
+    def test_fallback(self):
+        query = Query(fallback={'ipf': False})
+        self.assertEqual(query.fallback.ipf, False)
+        self.assertEqual(query.fallback.lacf, True)
 
     def test_geoip(self):
         london_ip = self.geoip_data['London']['ip']

@@ -35,6 +35,14 @@
     :members:
     :member-order: bysource
 
+.. autoclass:: FallbackSchema
+    :members:
+    :member-order: bysource
+
+.. autoclass:: FallbackLookup
+    :members:
+    :member-order: bysource
+
 .. autoclass:: BaseLocateSchema
     :members:
     :member-order: bysource

@@ -8,12 +8,13 @@ from ichnaea.api.locate.constants import MIN_WIFIS_IN_QUERY
 from ichnaea.api.locate.schema import (
     CellAreaLookup,
     CellLookup,
+    FallbackLookup,
     WifiLookup,
 )
 
 try:
     from collections import OrderedDict
-except ImportError:
+except ImportError:  # pragma: no cover
     from ordereddict import OrderedDict
 
 if six.PY2:  # pragma: no cover
@@ -24,12 +25,12 @@ else:  # pragma: no cover
 
 class Query(object):
 
-    def __init__(self, fallbacks=None, geoip=None, cell=None, wifi=None):
+    def __init__(self, fallback=None, geoip=None, cell=None, wifi=None):
         """
         A class representing a concrete location query.
 
-        :param fallbacks: A dictionary of fallback options.
-        :type fallbacks: dict
+        :param fallback: A dictionary of fallback options.
+        :type fallback: dict
 
         :param geoip: An IP address, e.g. 127.0.0.1.
         :type geoip: str
@@ -40,23 +41,27 @@ class Query(object):
         :param wifi: A list of wifi query dicts.
         :type wifi: list
         """
-        self.fallbacks = fallbacks
+        self.fallback = fallback
         self.geoip = geoip
         self.cell = cell
         self.wifi = wifi
 
     @property
-    def fallbacks(self):
+    def fallback(self):
         """
-        A dictionary of fallback options.
+        A validated
+        :class:`~ichnaea.api.locate.schema.FallbackLookup` instance.
         """
-        return self._fallbacks
+        return self._fallback
 
-    @fallbacks.setter
-    def fallbacks(self, values):
+    @fallback.setter
+    def fallback(self, values):
         if not values:
             values = {}
-        self._fallbacks = values
+        valid = FallbackLookup.create(**values)
+        if valid is None:  # pragma: no cover
+            valid = FallbackLookup.create()
+        self._fallback = valid
 
     @property
     def geoip(self):
@@ -119,8 +124,8 @@ class Query(object):
                     pass
                 else:
                     filtered_cells[valid_cell.hashkey()] = valid_cell
-        self._cell_area = filtered_areas.values()
-        self._cell = filtered_cells.values()
+        self._cell_area = list(filtered_areas.values())
+        self._cell = list(filtered_cells.values())
 
     @property
     def wifi(self):
@@ -155,4 +160,4 @@ class Query(object):
 
         if len(filtered) < MIN_WIFIS_IN_QUERY:
             filtered = {}
-        self._wifi = filtered.values()
+        self._wifi = list(filtered.values())

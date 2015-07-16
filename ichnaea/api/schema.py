@@ -4,8 +4,6 @@ import time
 
 import colander
 import iso8601
-from colander import Mapping, MappingSchema, SchemaNode
-from colander import Boolean
 
 
 class BoundedFloat(colander.Float):
@@ -91,12 +89,6 @@ class OptionalStringNode(OptionalNode):
     schema_type = colander.String
 
 
-class FallbackSchema(MappingSchema):
-
-    lacf = SchemaNode(Boolean(), missing=True)
-    ipf = SchemaNode(Boolean(), missing=True)
-
-
 class InternalMixin(object):
 
     def __init__(self, *args, **kwargs):
@@ -104,11 +96,11 @@ class InternalMixin(object):
         super(InternalMixin, self).__init__(*args, **kwargs)
 
 
-class InternalSchemaNode(InternalMixin, SchemaNode):
+class InternalSchemaNode(InternalMixin, colander.SchemaNode):
     pass
 
 
-class InternalMapping(Mapping):
+class InternalMapping(colander.Mapping):
 
     def _impl(self, node, *args, **kwargs):
         result = super(InternalMapping, self)._impl(node, *args, **kwargs)
