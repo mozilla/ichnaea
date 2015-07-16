@@ -11,6 +11,11 @@ from ichnaea.api.locate.schema import (
     WifiLookup,
 )
 
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
+
 if six.PY2:  # pragma: no cover
     from ipaddr import IPAddress as ip_address  # NOQA
 else:  # pragma: no cover
@@ -39,7 +44,19 @@ class Query(object):
         self.geoip = geoip
         self.cell = cell
         self.wifi = wifi
-        self.fallbacks = fallbacks
+
+    @property
+    def fallbacks(self):
+        """
+        A dictionary of fallback options.
+        """
+        return self._fallbacks
+
+    @fallbacks.setter
+    def fallbacks(self, values):
+        if not values:
+            values = {}
+        self._fallbacks = values
 
     @property
     def geoip(self):
@@ -85,17 +102,25 @@ class Query(object):
         values = list(values)
         self._cell_unvalidated = values
 
-        filtered_areas = []
-        filtered_cells = []
+        filtered_areas = OrderedDict()
+        filtered_cells = OrderedDict()
         for value in values:
             valid_area = CellAreaLookup.create(**value)
             if valid_area:
-                filtered_areas.append(valid_area)
+                existing = filtered_areas.get(valid_area.hashkey())
+                if existing is not None and existing.better(valid_area):
+                    pass
+                else:
+                    filtered_areas[valid_area.hashkey()] = valid_area
             valid_cell = CellLookup.create(**value)
             if valid_cell:
-                filtered_cells.append(valid_cell)
-        self._cell_area = filtered_areas
-        self._cell = filtered_cells
+                existing = filtered_cells.get(valid_cell.hashkey())
+                if existing is not None and existing.better(valid_cell):
+                    pass
+                else:
+                    filtered_cells[valid_cell.hashkey()] = valid_cell
+        self._cell_area = filtered_areas.values()
+        self._cell = filtered_cells.values()
 
     @property
     def wifi(self):
@@ -118,21 +143,16 @@ class Query(object):
         values = list(values)
         self._wifi_unvalidated = values
 
-        filtered = []
+        filtered = OrderedDict()
         for value in values:
-            valid = WifiLookup.create(**value)
-            if valid:
-                filtered.append(valid)
+            valid_wifi = WifiLookup.create(**value)
+            if valid_wifi:
+                existing = filtered.get(valid_wifi.hashkey())
+                if existing is not None and existing.better(valid_wifi):
+                    pass
+                else:
+                    filtered[valid_wifi.hashkey()] = valid_wifi
+
         if len(filtered) < MIN_WIFIS_IN_QUERY:
-            filtered = []
-        self._wifi = filtered
-
-    @property
-    def fallbacks(self):
-        return self._fallbacks
-
-    @fallbacks.setter
-    def fallbacks(self, values):
-        if not values:
-            values = {}
-        self._fallbacks = values
+            filtered = {}
+        self._wifi = filtered.values()
