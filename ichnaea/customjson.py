@@ -1,3 +1,4 @@
+"""Custom extensions to JSON de/encoding."""
 from calendar import timegm
 from datetime import date, datetime
 from uuid import UUID
@@ -10,6 +11,7 @@ from ichnaea.models.base import JSONMixin
 
 
 def encode_datetime(obj):
+    """Encode a date or datetime object into a ISO string."""
     if isinstance(obj, datetime):
         return obj.strftime('%Y-%m-%dT%H:%M:%S.%f')
     elif isinstance(obj, date):
@@ -64,6 +66,10 @@ def custom_iterencode(value):
 
 
 def dumps(value):
+    """
+    Dump an object to JSON, with support for handling date/datetime
+    objects and providing a nicer float representation.
+    """
     if isinstance(value, dict) \
        and 'accuracy' in value: \
 
@@ -111,10 +117,12 @@ def dumps(value):
 
 
 def loads(value, encoding='utf-8'):
+    """Load and decode a value from JSON."""
     return json.loads(value, encoding=encoding)
 
 
-class Renderer(object):
+class JSONRenderer(object):
+    """A JSON renderer using :func:`~ichnaea.customjson.dumps`."""
 
     def __call__(self, info):
         def _render(value, system):
@@ -154,9 +162,17 @@ def kombu_object_hook(dct):
 
 
 def kombu_dumps(value):
+    """
+    Dump an object into a special internal JSON format with support
+    for roundtripping date, datetime, uuid and any
+    :class:`ichnaea.models.base.JSONMixin` subclasses.
+    """
     return json.dumps(value, default=kombu_default,
                       namedtuple_as_object=True, separators=(',', ':'))
 
 
 def kombu_loads(value):
+    """
+    Load a bytes object in internal JSON format.
+    """
     return json.loads(value, object_hook=kombu_object_hook)

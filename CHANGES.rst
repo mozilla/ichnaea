@@ -1,8 +1,12 @@
+=========
 Changelog
 =========
 
 1.3 (unreleased)
-----------------
+================
+
+Untagged
+********
 
 Migrations
 ~~~~~~~~~~
@@ -12,15 +16,15 @@ Changes
 
 
 1.2 (2015-07-15)
-----------------
+================
+
+20150716174000
+**************
 
 Changes
 ~~~~~~~
 
 - Add a database migration test from a fresh SQL structure dump.
-
-20150716174000
-**************
 
 Migrations
 ~~~~~~~~~~
@@ -515,7 +519,7 @@ Changes
 - Close the database connections even if exceptions occurred.
 
 1.1 (2014-10-27)
-----------------
+================
 
 20141027122000
 **************
@@ -775,11 +779,11 @@ Changes
 
 
 1.0 (2014-07-14)
-----------------
+================
 
 - Initial production release.
 
 0.1 (2013-11-22)
-----------------
+================
 
 - Initial prototype.

@@ -1,3 +1,4 @@
+"""Generally useful helper functionality."""
 from datetime import datetime
 import gzip
 from io import BytesIO
@@ -32,6 +33,10 @@ else:  # pragma: no cover
 
 
 def gzip_open(filename, mode):  # pragma: no cover
+    """Open a gzip file with an API consistent across Python 2/3.
+
+    :param mode: Either `r` or `w` for read or write access.
+    """
     # open with either mode r or w
     if six.PY2:
         return GzipFile(filename, mode)
@@ -41,6 +46,7 @@ def gzip_open(filename, mode):  # pragma: no cover
 
 
 def encode_gzip(data, encoding='utf-8'):
+    """Encode the passed in data with gzip."""
     if isinstance(data, six.string_types):
         data = data.encode(encoding)
     out = BytesIO()
@@ -50,6 +56,10 @@ def encode_gzip(data, encoding='utf-8'):
 
 
 def decode_gzip(data, encoding='utf-8'):
+    """Decode the bytes data and return a Unicode string.
+
+    :raises: OSError
+    """
     try:
         with GzipFile(None, mode='rb', fileobj=BytesIO(data)) as gzip_file:
             out = gzip_file.read()
@@ -59,4 +69,5 @@ def decode_gzip(data, encoding='utf-8'):
 
 
 def utcnow():
+    """Return the current time in UTC with a UTC timezone set."""
     return datetime.utcnow().replace(microsecond=0, tzinfo=UTC)

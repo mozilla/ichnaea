@@ -89,7 +89,7 @@ def main(app_config, ping_connections=False,
     config.add_request_method(db_ro_session, property=True)
 
     # replace json renderer with custom json variant
-    config.add_renderer('json', customjson.Renderer())
+    config.add_renderer('json', customjson.JSONRenderer())
 
     # Should we try to initialize and establish the outbound connections?
     if ping_connections:  # pragma: no cover

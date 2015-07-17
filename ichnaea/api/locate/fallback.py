@@ -125,7 +125,7 @@ class FallbackProvider(Provider):
             self.get_ratelimit_key(),
             maxreq=self.ratelimit,
             expire=self.rate_limit_expire,
-            fail_on_error=True,
+            on_error=True,
         )
 
     def _should_cache(self, query):

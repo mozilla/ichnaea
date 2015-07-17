@@ -14,6 +14,7 @@ from ichnaea.data.tasks import queue_reports
 
 
 class BaseSubmitView(BaseAPIView):
+    """Common base class for all submit related views."""
 
     error_on_invalidkey = False  #:
     transform = None  #:

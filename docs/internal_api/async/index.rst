@@ -8,4 +8,6 @@
 
    app
    config
+   schedule
    settings
+   task

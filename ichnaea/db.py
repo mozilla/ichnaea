@@ -1,3 +1,5 @@
+"""Database related functionality."""
+
 from contextlib import contextmanager
 
 from sqlalchemy import (
@@ -15,6 +17,7 @@ from sqlalchemy.sql.expression import Insert
 
 @compiles(Insert)
 def on_duplicate(insert, compiler, **kw):
+    """Custom MySQL insert on_duplicate support."""
     s = compiler.visit_insert(insert, **kw)
     if 'on_duplicate' in insert.kwargs:
         return s + ' ON DUPLICATE KEY UPDATE ' + insert.kwargs['on_duplicate']
@@ -22,6 +25,11 @@ def on_duplicate(insert, compiler, **kw):
 
 
 def configure_db(uri, _db=None):
+    """
+    Configure and return a :class:`~ichnaea.db.Database` instance.
+
+    :param _db: Test-only hook to provide a pre-configured db.
+    """
     if _db is not None:
         return _db
     return Database(uri)
@@ -32,6 +40,7 @@ def configure_db(uri, _db=None):
 # rollback in case of errors
 
 def db_rw_session(request):  # pragma: no cover
+    """Attach a database read/write session to the request."""
     session = getattr(request, '_db_rw_session', None)
     if session is None:
         db = request.registry.db_rw
@@ -40,6 +49,7 @@ def db_rw_session(request):  # pragma: no cover
 
 
 def db_ro_session(request):
+    """Attach a database read-only session to the request."""
     session = getattr(request, '_db_ro_session', None)
     if session is None:
         db = request.registry.db_ro
@@ -49,6 +59,12 @@ def db_ro_session(request):
 
 @contextmanager
 def db_worker_session(database, commit=True):
+    """
+    Return a database session usable as a context manager.
+
+    :param commit: Should the session be committed or aborted at the end?
+    :type commit: bool
+    """
     try:
         session = database.session()
         yield session
@@ -62,6 +78,7 @@ def db_worker_session(database, commit=True):
 
 
 def db_tween_factory(handler, registry):
+    """A database tween, doing automatic session management."""
 
     def db_tween(request):
         response = None
@@ -93,8 +110,12 @@ def db_tween_factory(handler, registry):
 
 
 class Database(object):
+    """A class representing an active database."""
 
     def __init__(self, uri):
+        """
+        :param uri: A database connection string.
+        """
         options = {
             'pool_recycle': 3600,
             'pool_size': 10,
@@ -111,16 +132,26 @@ class Database(object):
             bind=self.engine, class_=HookedSession,
             autocommit=False, autoflush=False)
 
-    def ping(self):  # pragma: no cover
+    def ping(self):
+        """
+        Check database connectivity.
+        On success returns `True`, otherwise `False`.
+        """
         with db_worker_session(self, commit=False) as session:
             success = session.ping()
         return success
 
     def session(self):
+        """Return a session for this database."""
         return self.session_factory()
 
 
 class HookedSession(Session):
+    """A custom database session providing a post commit hook."""
+
+    def __init__(self, *args, **kw):
+        # disable automatic docstring
+        return super(HookedSession, self).__init__(*args, **kw)
 
     def on_post_commit(self, function, *args, **kw):
         """
@@ -135,6 +166,7 @@ class HookedSession(Session):
         event.listen(self, 'after_transaction_end', wrapper, once=True)
 
     def ping(self):
+        """Use this active session to check the database connectivity."""
         try:
             self.execute(select([func.now()])).first()
         except exc.OperationalError:
@@ -146,7 +178,7 @@ class HookedSession(Session):
 def clear_result_on_pool_checkin(conn, conn_record):
     """
     PyMySQL Connection objects hold a reference to their most recent
-    Result object, which can cause large datasets to remain in memory.
+    result object, which can cause large datasets to remain in memory.
     Explicitly clear it when returning a connection to the pool.
     """
     if conn and conn._result:
@@ -155,11 +187,11 @@ def clear_result_on_pool_checkin(conn, conn_record):
 
 @event.listens_for(Pool, 'checkout')
 def check_connection(dbapi_conn, conn_record, conn_proxy):
-    '''
-    Listener for Pool checkout events that pings every connection before using.
-    Implements pessimistic disconnect handling strategy. See also:
-    http://docs.sqlalchemy.org/en/rel_0_9/core/pooling.html#disconnect-handling-pessimistic
-    '''
+    """
+    Listener for pool checkout events that pings every connection before
+    using it. Implements the `pessimistic disconnect handling strategy
+    <https://docs.sqlalchemy.org/en/latest/core/pooling.html#disconnect-handling-pessimistic>`_.
+    """
     try:
         # dbapi_con.ping() ends up calling mysql_ping()
         # http://dev.mysql.com/doc/refman/5.6/en/mysql-ping.html

@@ -43,15 +43,13 @@ test_requires = requires + [
 
 with open(os.path.join(here, 'README.rst')) as f:
     README = f.read()
-with open(os.path.join(here, 'CHANGES.rst')) as f:
-    CHANGES = f.read()
 
 
 setup(
     name='ichnaea',
     version=__version__,
     description='Mozilla Location Service - Ichnaea',
-    long_description=README + '\n\n' + CHANGES,
+    long_description=README,
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",

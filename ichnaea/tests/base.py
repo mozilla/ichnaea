@@ -21,10 +21,10 @@ from ichnaea.async.config import (
     init_worker,
     shutdown_worker,
 )
-from ichnaea.cache import redis_client
+from ichnaea.cache import configure_redis
 from ichnaea.config import DummyConfig
 from ichnaea.constants import GEOIP_CITY_ACCURACY
-from ichnaea.db import Database
+from ichnaea.db import configure_db
 from ichnaea.geocalc import maximum_country_radius
 from ichnaea.geoip import configure_geoip
 from ichnaea.log import (
@@ -108,11 +108,11 @@ GB_MNC = 30
 
 
 def _make_db(uri=SQLURI):
-    return Database(uri)
+    return configure_db(uri)
 
 
 def _make_redis(uri=REDIS_URI):
-    return redis_client(uri)
+    return configure_redis(uri)
 
 
 def _make_app(app_config=TEST_CONFIG,

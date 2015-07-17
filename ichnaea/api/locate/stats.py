@@ -9,12 +9,13 @@ from ichnaea.log import (
 
 
 class StatsLogger(object):
+    """
+    A StatsLogger sends counted and timed named statistics to
+    a statistic aggregator client.
+    """
 
     def __init__(self, api_key, api_name):
         """
-        A StatsLogger sends counted and timed named statistics to
-        a statistic aggregator client.
-
         :param api_key: An ApiKey instance for the calling user
         :type api_key: ApiKey
         :param api_name: Name of the API, used as stats prefix
@@ -27,9 +28,11 @@ class StatsLogger(object):
         self.stats_client = get_stats_client()
 
     def stat_count(self, stat):
+        """Emit a api_key specific stat counter."""
         self.stats_client.incr('{api}.{stat}'.format(
             api=self.api_name, stat=stat))
 
     def stat_timer(self, stat):
+        """Emit a api_key specific stat timer."""
         return self.stats_client.timer('{api}.{stat}'.format(
             api=self.api_name, stat=stat))

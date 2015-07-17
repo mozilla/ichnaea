@@ -1,6 +1,6 @@
-:mod:`ichnaea.exceptions`
+:mod:`ichnaea.customjson`
 -------------------------
 
-.. automodule:: ichnaea.exceptions
+.. automodule:: ichnaea.customjson
     :members:
     :member-order: bysource

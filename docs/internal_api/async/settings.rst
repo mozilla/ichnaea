@@ -2,3 +2,5 @@
 -----------------------------
 
 .. automodule:: ichnaea.async.settings
+    :members:
+    :member-order: bysource

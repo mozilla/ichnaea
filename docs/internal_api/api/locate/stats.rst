@@ -2,9 +2,5 @@
 -------------------------------
 
 .. automodule:: ichnaea.api.locate.stats
-
-.. autoclass:: StatsLogger
     :members:
     :member-order: bysource
-
-    .. automethod:: __init__

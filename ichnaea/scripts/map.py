@@ -14,7 +14,7 @@ from sqlalchemy import text
 
 from ichnaea.config import read_config
 from ichnaea.db import (
-    Database,
+    configure_db,
     db_worker_session,
 )
 from ichnaea.log import (
@@ -267,16 +267,15 @@ def main(argv, _db_rw=None,
 
     if args.create:
         conf = read_config()
-        if _db_rw:
-            db = _db_rw
-        else:  # pragma: no cover
-            db = Database(conf.get('ichnaea', 'db_master'))
-        bucketname = conf.get('ichnaea', 's3_assets_bucket').strip('/')
+        db = configure_db(
+            conf.get('ichnaea', 'db_master'), _db=_db_rw)
         raven_client = configure_raven(
             conf.get('ichnaea', 'sentry_dsn'),
             transport='sync', _client=_raven_client)
         stats_client = configure_stats(
             conf.get('ichnaea', 'statsd_host'), _client=_stats_client)
+
+        bucketname = conf.get('ichnaea', 's3_assets_bucket').strip('/')
 
         upload = False
         if args.upload:  # pragma: no cover

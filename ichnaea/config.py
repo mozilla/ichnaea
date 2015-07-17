@@ -13,12 +13,13 @@ from six import PY2, string_types
 
 
 class Config(ConfigParser):
+    """
+    A :class:`configparser.ConfigParser` subclass with added
+    functionality.
+    """
 
     def __init__(self, filename):
         """
-        A :class:`configparser.ConfigParser` subclass with added
-        functionality.
-
         :param filename: The path to a configuration file.
         """
         ConfigParser.__init__(self)
@@ -64,12 +65,12 @@ class Config(ConfigParser):
 
 
 class DummyConfig(object):
+    """
+    A stub implementation of :class:`ichnaea.config.Config` used in tests.
+    """
 
     def __init__(self, settings):
         """
-        A stub implementation of :class:`ichnaea.config.Config` used
-        in tests.
-
         :param settings: A dict of dicts representing the parsed config
                          settings.
         """
@@ -94,7 +95,7 @@ class DummyConfig(object):
 
 def read_config(filename=None, envvar='ICHNAEA_CFG', fallback='ichnaea.ini'):
     """
-    Reads a configuration file from three possible locations:
+    Read a configuration file from three possible locations:
 
     1. from the passed in filename,
     2. from the environment variable passed as `envvar`

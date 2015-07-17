@@ -9,7 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 
 from ichnaea.config import read_config
-from ichnaea.db import Database
+from ichnaea.db import configure_db
 from ichnaea.log import configure_raven
 
 # make sure all models are imported
@@ -117,10 +117,8 @@ def main(argv, _db_rw=None, _raven_client=None):
         alembic_cfg = Config(alembic_ini)
         alembic_section = alembic_cfg.get_section('alembic')
 
-        if _db_rw is None:
-            db_rw = Database(alembic_section['sqlalchemy.url'])
-        else:
-            db_rw = _db_rw
+        db_rw = configure_db(
+            alembic_section['sqlalchemy.url'], _db=_db_rw)
         configure_raven(
             location_cfg.get('ichnaea', 'sentry_dsn'),
             transport='sync', _client=_raven_client)

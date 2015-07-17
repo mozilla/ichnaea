@@ -2,3 +2,5 @@
 ------------------------------
 
 .. automodule:: ichnaea.webapp.settings
+    :members:
+    :member-order: bysource

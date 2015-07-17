@@ -1,6 +1,6 @@
-:mod:`ichnaea.webapp.config`
+:mod:`ichnaea.webapp.worker`
 ----------------------------
 
-.. automodule:: ichnaea.webapp.config
+.. automodule:: ichnaea.webapp.worker
     :members:
     :member-order: bysource

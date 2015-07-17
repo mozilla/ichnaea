@@ -1,3 +1,4 @@
+"""Functionality related to statsd, sentry and freeform logging."""
 from collections import deque
 import logging
 import socket
@@ -16,27 +17,36 @@ from statsd.client import StatsClient
 
 from ichnaea.exceptions import BaseClientError
 
-RAVEN_CLIENT = None
-STATS_CLIENT = None
+RAVEN_CLIENT = None  #: The globally configured raven client.
+STATS_CLIENT = None  #: The globally configured statsd client.
 
 RAVEN_TRANSPORTS = {
     'gevent': GeventedHTTPTransport,
     'sync': HTTPTransport,
     'threaded': ThreadedHTTPTransport,
-}
+}  #: Mapping of raven transport names to classes.
 
 
 def get_raven_client():
+    """Return the globally configured raven client."""
     return RAVEN_CLIENT
 
 
 def set_raven_client(client):
+    """Set the global raven client."""
     global RAVEN_CLIENT
     RAVEN_CLIENT = client
     return RAVEN_CLIENT
 
 
 def configure_raven(config, transport=None, _client=None):  # pragma: no cover
+    """
+    Configure, globally set and return a :class:`raven.Client` instance.
+
+    :param transport: The transport to use, one of the
+                      :data:`RAVEN_TRANSPORTS` keys.
+    :param _client: Test-only hook to provide a pre-configured client.
+    """
     if _client is not None:
         return set_raven_client(_client)
 
@@ -49,16 +59,24 @@ def configure_raven(config, transport=None, _client=None):  # pragma: no cover
 
 
 def get_stats_client():
+    """Return the globally configured statsd client."""
     return STATS_CLIENT
 
 
 def set_stats_client(client):
+    """Set the global statsd client."""
     global STATS_CLIENT
     STATS_CLIENT = client
     return STATS_CLIENT
 
 
 def configure_stats(config, _client=None):  # pragma: no cover
+    """
+    Configure, globally set and return a
+    :class:`~ichnaea.log.PingableStatsClient` instance.
+
+    :param _client: Test-only hook to provide a pre-configured client.
+    """
     if _client is not None:
         return set_stats_client(_client)
 
@@ -75,14 +93,17 @@ def configure_stats(config, _client=None):  # pragma: no cover
 
 
 def quote_statsd_path(path):
+    """Convert a URI to a statsd acceptable metric name."""
     return path.replace('/', '.').lstrip('.').replace('@', '-')
 
 
 def configure_logging():
+    """Configure basic Python logging."""
     logging.basicConfig()
 
 
 def log_tween_factory(handler, registry):
+    """A logging tween, doing automatic statsd and raven collection."""
 
     def log_tween(request):
         raven_client = registry.raven_client
@@ -126,6 +147,7 @@ def log_tween_factory(handler, registry):
 
 
 class DebugRavenClient(RavenClient):
+    """An in-memory raven client with an inspectable message queue."""
 
     def __init__(self, *args, **kw):
         super(DebugRavenClient, self).__init__(*args, **kw)
@@ -142,8 +164,12 @@ class DebugRavenClient(RavenClient):
 
 
 class PingableStatsClient(StatsClient):
+    """A pingable statsd client."""
 
     def ping(self):
+        """
+        Ping the Statsd server. On success return `True`, otherwise `False`.
+        """
         stat = 'monitor.ping:1c'
         if self._prefix:  # pragma: no cover
             stat = '%s.%s' % (self._prefix, stat)
@@ -155,6 +181,7 @@ class PingableStatsClient(StatsClient):
 
 
 class DebugStatsClient(PingableStatsClient):
+    """An in-memory statsd client with an inspectable message queue."""
 
     def __init__(self, host='localhost', port=8125, prefix=None,
                  maxudpsize=512):

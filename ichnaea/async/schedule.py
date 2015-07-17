@@ -1,3 +1,8 @@
+"""
+Contains the `Celery Beat schedule
+<http://celery.rtfd.org/en/latest/userguide/periodic-tasks.html>`_.
+"""
+
 from datetime import timedelta
 
 from celery.schedules import crontab
@@ -91,4 +96,4 @@ CELERYBEAT_SCHEDULE = {
         'options': {'expires': 57},
     },
 
-}
+}  #:

@@ -9,17 +9,17 @@ from ichnaea.customjson import (
     dumps,
     kombu_dumps,
     kombu_loads,
-    Renderer,
+    JSONRenderer,
 )
 from ichnaea.tests.base import TestCase
 from ichnaea import util
 
 
-class TestRenderer(TestCase):
+class TestJSONRenderer(TestCase):
 
     def setUp(self):
-        super(TestRenderer, self).setUp()
-        self.render = Renderer()(None)
+        super(TestJSONRenderer, self).setUp()
+        self.render = JSONRenderer()(None)
 
     def test_basic(self):
         self.assertEqual(self.render({'a': 1}, {}), '{"a": 1}')

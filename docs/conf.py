@@ -52,6 +52,8 @@ intersphinx_mapping = {
     'raven': ('https://raven.readthedocs.org/en/latest/', None),
 }
 
+autoclass_content = 'both'
+
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 

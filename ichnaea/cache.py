@@ -1,3 +1,7 @@
+"""
+Functionality related to using Redis as a cache and a queue.
+"""
+
 from contextlib import contextmanager
 import re
 
@@ -31,12 +35,14 @@ SocketBuffer.close = close
 
 
 def configure_redis(redis_url, _client=None):
+    """
+    Configure and return a :class:`~ichnaea.cache.RedisClient` instance.
+
+    :param _client: Test-only hook to provide a pre-configured client.
+    """
     if redis_url is None or _client is not None:
         return _client
-    return redis_client(redis_url)
 
-
-def redis_client(redis_url):
     url = urlparse(redis_url)
     netloc = url.netloc.split(':')
     host = netloc[0]
@@ -62,6 +68,12 @@ def redis_client(redis_url):
 
 @contextmanager
 def redis_pipeline(redis_client, execute=True):
+    """
+    Return a Redis pipeline usable as a context manager.
+
+    :param execute: Should the pipeline be executed or aborted at the end?
+    :type execute: bool
+    """
     with redis_client.pipeline() as pipe:
         yield pipe
         if execute:
@@ -69,10 +81,11 @@ def redis_pipeline(redis_client, execute=True):
 
 
 class RedisClient(redis.StrictRedis):
+    """A strict pingable RedisClient."""
 
     def ping(self):
         """
-        Ping the Redis server, but also catch exceptions.
+        Ping the Redis server. On success return `True`, otherwise `False`.
         """
         try:
             self.execute_command('PING')

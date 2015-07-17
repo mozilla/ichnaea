@@ -12,10 +12,16 @@ For documentation on the public HTTP API please look at :ref:`service_api`.
 
    api/index
    async/index
+   cache
    config
    constants
+   customjson
+   db
    exceptions
    geocalc
    geoip
+   log
    models/index
+   rate_limit
+   util
    webapp/index

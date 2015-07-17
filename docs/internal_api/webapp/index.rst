@@ -9,3 +9,5 @@
    app
    config
    settings
+   view
+   worker

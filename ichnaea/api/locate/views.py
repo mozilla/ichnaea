@@ -9,6 +9,7 @@ from ichnaea.api.views import BaseAPIView
 
 
 class BaseLocateView(BaseAPIView):
+    """Common base class for all locate related views."""
 
     #: :exc:`ichnaea.api.exceptions.LocationNotFound`
     not_found = LocationNotFound

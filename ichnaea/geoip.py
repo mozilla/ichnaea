@@ -35,9 +35,9 @@ VALID_COUNTRIES = frozenset(iso3166.countries_by_alpha2.keys())
 def configure_geoip(filename, mode=MODE_AUTO,
                     raven_client=None, _client=None):
     """
-    Configures and returns a :class:`~ichnaea.geoip.GeoIPWrapper` instance.
+    Configure and return a :class:`~ichnaea.geoip.GeoIPWrapper` instance.
 
-    If no geoip database file of the correct type can be found, returns
+    If no geoip database file of the correct type can be found, return
     a :class:`~ichnaea.geoip.GeoIPNull` dummy implementation instead.
 
     :param raven_client: A configured raven/sentry client.
@@ -78,7 +78,7 @@ def configure_geoip(filename, mode=MODE_AUTO,
 
 def geoip_accuracy(country_code, city=False):
     """
-    Returns the best accuracy guess for the given GeoIP record.
+    Return the best accuracy guess for the given GeoIP record.
 
     :param country_code: A two-letter ISO country code.
     :type country_code: str
@@ -112,7 +112,7 @@ class GeoIPWrapper(Reader):
 
     lookup_exceptions = (
         AddressNotFoundError, GeoIP2Error, InvalidDatabaseError, ValueError)
-    valid_countries = VALID_COUNTRIES
+    valid_countries = VALID_COUNTRIES  #: A set of valid country codes.
 
     def __init__(self, filename, mode=MODE_AUTO):
         """
@@ -159,10 +159,10 @@ class GeoIPWrapper(Reader):
 
     def city_lookup(self, addr):
         """
-        Returns a GeoIP city record.
+        Return a GeoIP city record.
 
-        This method returns `None` instead of throwing exceptions in
-        case of invalid or unknown addresses.
+        Return `None` instead of throwing exceptions in case of
+        invalid or unknown addresses.
 
         :param addr: IP address (e.g. '203.0.113.30')
         :type addr: str
@@ -179,7 +179,7 @@ class GeoIPWrapper(Reader):
 
     def geoip_lookup(self, addr):
         """
-        Looks up information for the given IP address.
+        Look up information for the given IP address.
 
         :param addr: IP address (e.g. '203.0.113.30')
         :type addr: str
@@ -211,7 +211,7 @@ class GeoIPWrapper(Reader):
 
     def country_lookup(self, addr):
         """
-        Looks up a country code and name for the given IP address.
+        Look up a country code and name for the given IP address.
 
         :param addr: IP address (e.g. 203.0.113.30)
         :type addr: str
@@ -240,7 +240,7 @@ class GeoIPNull(object):
     A dummy implementation of the :class:`~ichnaea.geoip.GeoIPWrapper` API.
     """
 
-    valid_countries = VALID_COUNTRIES
+    valid_countries = VALID_COUNTRIES  #: A set of valid country codes.
 
     def geoip_lookup(self, addr):
         """

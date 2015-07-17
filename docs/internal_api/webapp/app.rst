@@ -2,7 +2,7 @@
 -------------------------
 
 .. automodule:: ichnaea.webapp.app
+    :members:
+    :member-order: bysource
 
 .. autodata:: _APP
-
-.. autofunction:: wsgi_app

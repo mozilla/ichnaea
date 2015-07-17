@@ -2,3 +2,5 @@
 --------------------------------
 
 .. automodule:: ichnaea.api.submit.schema
+    :members:
+    :member-order: bysource

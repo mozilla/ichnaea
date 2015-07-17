@@ -1,6 +1,6 @@
-:mod:`ichnaea.geoip`
+:mod:`ichnaea.cache`
 --------------------
 
-.. automodule:: ichnaea.geoip
+.. automodule:: ichnaea.cache
     :members:
     :member-order: bysource
