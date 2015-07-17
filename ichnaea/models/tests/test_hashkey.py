@@ -1,6 +1,6 @@
-from ichnaea.customjson import (
-    kombu_dumps,
-    kombu_loads,
+from ichnaea.internaljson import (
+    internal_dumps,
+    internal_loads,
 )
 from ichnaea.models.hashkey import (
     HashKey,
@@ -90,7 +90,7 @@ class TestHashKey(TestCase):
 
     def test_json(self):
         double = Double(one=1.1, two='two')
-        new_double = kombu_loads(kombu_dumps(double))
+        new_double = internal_loads(internal_dumps(double))
         self.assertTrue(isinstance(new_double, Double))
         self.assertEqual(double, new_double)
 

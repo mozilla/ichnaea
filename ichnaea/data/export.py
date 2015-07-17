@@ -11,7 +11,7 @@ import simplejson
 import pytz
 from six.moves.urllib.parse import urlparse
 
-from ichnaea.customjson import kombu_dumps
+from ichnaea.internaljson import internal_dumps
 from ichnaea.data.base import DataTask
 from ichnaea.models.transform import ReportTransform
 from ichnaea import util
@@ -232,7 +232,7 @@ class InternalUploader(ReportUploader):
                     'api_key_text': group.api_key,
                     'email': group.email,
                     'ip': group.ip,
-                    'items': kombu_dumps(reports),
+                    'items': internal_dumps(reports),
                     'nickname': group.nickname,
                 },
                 expires=21600)

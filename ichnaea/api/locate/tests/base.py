@@ -394,6 +394,17 @@ class CommonPositionTest(BaseLocateTest):
                      self.metric + '.api_log.test.fallback_hit'],
         )
 
+    def test_floatjson(self):
+        cell = CellFactory(lat=51.5, lon=(3.3 / 3 + 0.0001))
+        self.session.flush()
+
+        query = self.model_query(cells=[cell])
+        res = self._call(body=query)
+        self.check_model_response(res, cell)
+        middle = '1.1001,' in res.text
+        end = '1.1001}' in res.text
+        self.assertTrue(middle or end, res.text)
+
 
 class CommonLocateErrorTest(BaseLocateTest):
     # this is a standalone class to ensure DB isolation for dropping tables

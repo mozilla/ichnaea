@@ -15,11 +15,12 @@ For documentation on the public HTTP API please look at :ref:`service_api`.
    cache
    config
    constants
-   customjson
    db
    exceptions
+   floatjson
    geocalc
    geoip
+   internaljson
    log
    models/index
    rate_limit

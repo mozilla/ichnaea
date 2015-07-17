@@ -14,7 +14,7 @@ from ichnaea.cache import (
     ExportQueue,
 )
 from ichnaea.config import read_config
-from ichnaea import customjson
+from ichnaea import internaljson
 from ichnaea.db import configure_db
 from ichnaea.geoip import configure_geoip
 from ichnaea.log import (
@@ -32,7 +32,9 @@ CELERY_QUEUES = (
     Queue('celery_upload', routing_key='celery_upload'),
 )  #: List of :class:`kombu.Queue` instances.
 
-register('internal_json', customjson.kombu_dumps, customjson.kombu_loads,
+register('internal_json',
+         internaljson.internal_dumps,
+         internaljson.internal_loads,
          content_type='application/x-internaljson',
          content_encoding='utf-8')
 

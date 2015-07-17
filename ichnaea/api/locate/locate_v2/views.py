@@ -1,8 +1,8 @@
 from ichnaea.api.locate.locate_v2.schema import LocateV2Schema
-from ichnaea.api.locate.views import BaseLocateView
+from ichnaea.api.locate.views import BasePositionView
 
 
-class LocateV2View(BaseLocateView):
+class LocateV2View(BasePositionView):
 
     route = '/v1/geolocate'
     view_name = 'geolocate'

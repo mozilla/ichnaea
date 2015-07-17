@@ -1,6 +1,6 @@
 from ichnaea.async.app import celery_app
 from ichnaea.async.task import BaseTask
-from ichnaea.customjson import kombu_loads
+from ichnaea.internaljson import internal_loads
 from ichnaea.data.area import (
     CellAreaUpdater,
     OCIDCellAreaUpdater,
@@ -36,7 +36,7 @@ def insert_measures(self, items=None, email=None, ip=None, nickname=None,
     if not items:  # pragma: no cover
         return 0
 
-    reports = kombu_loads(items)
+    reports = internal_loads(items)
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
             api_key = api_key_text and ApiKey.getkey(

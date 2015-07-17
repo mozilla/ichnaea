@@ -1,0 +1,71 @@
+"""
+A JSON dumps function and Renderer which use a prettier float representation.
+This avoids seeing `1.1` as `'1.1000000000000001'` inside the returned JSON.
+"""
+from ichnaea.constants import DEGREE_DECIMAL_PLACES
+
+
+def custom_iterencode(value):
+    from simplejson.encoder import (
+        _make_iterencode,
+        encode_basestring,
+        FLOAT_REPR,
+        JSONEncoder,
+        PosInf,
+    )
+
+    j = JSONEncoder()
+
+    def floatstr(o, allow_nan=j.allow_nan, ignore_nan=j.ignore_nan,
+                 _repr=FLOAT_REPR, _inf=PosInf,
+                 _neginf=-PosInf):  # pragma: no cover
+        if o != o:
+            text = 'NaN'
+        elif o == _inf:
+            text = 'Infinity'
+        elif o == _neginf:
+            text = '-Infinity'
+        else:
+            # use str(round()) instead of repr()
+            return str(round(o, DEGREE_DECIMAL_PLACES))
+        if ignore_nan:
+            text = 'null'
+        elif not allow_nan:
+            raise ValueError(
+                'Out of range float values are not JSON compliant: ' +
+                repr(o))
+
+        return text
+
+    markers = {}
+    _encoder = encode_basestring
+    _one_shot = False
+    _iterencode = _make_iterencode(
+        markers, j.default, _encoder, j.indent, floatstr,
+        j.key_separator, j.item_separator, j.sort_keys,
+        j.skipkeys, _one_shot, j.use_decimal,
+        j.namedtuple_as_object, j.tuple_as_array,
+        j.int_as_string_bitcount, j.item_sort_key,
+        j.encoding, j.for_json,
+    )
+
+    return _iterencode(value, 0)
+
+
+def float_dumps(value):
+    """
+    Dump an object to JSON providing a nicer float representation.
+    """
+    return u''.join(custom_iterencode(value))
+
+
+class FloatJSONRenderer(object):
+    """A JSON renderer using :func:`~ichnaea.floatjson.float_dumps`."""
+
+    def __call__(self, info):
+        def _render(value, system):
+            request = system.get('request')
+            if request is not None:
+                request.response.content_type = 'application/json'
+            return float_dumps(value)
+        return _render

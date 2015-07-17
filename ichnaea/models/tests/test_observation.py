@@ -1,6 +1,6 @@
-from ichnaea.customjson import (
-    kombu_dumps,
-    kombu_loads,
+from ichnaea.internaljson import (
+    internal_dumps,
+    internal_loads,
 )
 from ichnaea.models import (
     CellObservation,
@@ -34,15 +34,12 @@ class TestCellObservation(DBTestCase):
         self.assertEqual(obs.signal, -61)
         self.assertEqual(obs.ta, 10)
 
-    def test_customjson(self):
+    def test_internaljson(self):
         obs = CellObservation.create(
             radio=Radio.gsm, mcc=GB_MCC, mnc=5, lac=12345, cid=23456,
             lat=GB_LAT, lon=GB_LON)
 
-        json_data = kombu_dumps(obs)
-        self.assertTrue('accuracy' not in json_data)
-
-        result = kombu_loads(json_data)
+        result = internal_loads(internal_dumps(obs))
         self.assertTrue(type(result), CellObservation)
         self.assertTrue(result.accuracy is None)
         self.assertEqual(type(result.radio), Radio)
@@ -69,15 +66,12 @@ class TestWifiObservation(DBTestCase):
         self.assertEqual(obs.channel, 5)
         self.assertEqual(obs.signal, -45)
 
-    def test_customjson(self):
+    def test_internaljson(self):
         key = '3680873e9b83'
         obs = WifiObservation.create(
             key=key, lat=GB_LAT, lon=GB_LON)
 
-        json_data = kombu_dumps(obs)
-        self.assertTrue('accuracy' not in json_data)
-
-        result = kombu_loads(json_data)
+        result = internal_loads(internal_dumps(obs))
         self.assertTrue(type(result), WifiObservation)
         self.assertTrue(result.accuracy is None)
         self.assertEqual(result.key, key)

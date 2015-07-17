@@ -14,8 +14,7 @@ class BaseLocateView(BaseAPIView):
     #: :exc:`ichnaea.api.exceptions.LocationNotFound`
     not_found = LocationNotFound
 
-    #: :exc:`ichnaea.api.locate.searcher.PositionSearcher`
-    searcher = PositionSearcher
+    searcher = None  #:
     schema = None  #:
 
     def prepare_query(self, request_data):
@@ -51,3 +50,13 @@ class BaseLocateView(BaseAPIView):
             raise self.not_found()
 
         return self.prepare_location_data(location_data)
+
+
+class BasePositionView(BaseLocateView):
+    """Common base class for all position related views."""
+
+    #: Use renderer with prettier float output.
+    renderer = 'floatjson'
+
+    #: :exc:`ichnaea.api.locate.searcher.PositionSearcher`
+    searcher = PositionSearcher

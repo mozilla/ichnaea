@@ -6,7 +6,7 @@ from pyramid.config import Configurator
 from pyramid.tweens import EXCVIEW
 
 from ichnaea.api import configure_api
-from ichnaea import customjson
+from ichnaea import floatjson
 from ichnaea.cache import configure_redis
 from ichnaea.content.views import configure_content
 from ichnaea.db import (
@@ -88,8 +88,8 @@ def main(app_config, ping_connections=False,
     config.add_request_method(db_rw_session, property=True)
     config.add_request_method(db_ro_session, property=True)
 
-    # replace json renderer with custom json variant
-    config.add_renderer('json', customjson.JSONRenderer())
+    # Add special JSON renderer with nicer float representation
+    config.add_renderer('floatjson', floatjson.FloatJSONRenderer())
 
     # Should we try to initialize and establish the outbound connections?
     if ping_connections:  # pragma: no cover

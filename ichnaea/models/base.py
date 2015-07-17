@@ -45,7 +45,7 @@ _Model = declarative_base(cls=BaseModel)
 class JSONMixin(object):
     """
     A mixin class that supports round-tripping of the actual class
-    via our customjson format back into an instance of the class.
+    via our internal JSON format back into an instance of the class.
     """
 
     @property

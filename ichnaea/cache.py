@@ -10,9 +10,9 @@ from redis.connection import SocketBuffer
 from redis.exceptions import RedisError
 from six.moves.urllib.parse import urlparse
 
-from ichnaea.customjson import (
-    kombu_dumps,
-    kombu_loads,
+from ichnaea.internaljson import (
+    internal_dumps,
+    internal_loads,
 )
 
 EXPORT_QUEUE_PREFIX = 'queue_export_'
@@ -109,7 +109,7 @@ class BaseQueue(object):
             else:
                 # special case for deleting everything
                 pipe.ltrim(queue_key, 1, 0)
-            result = [kombu_loads(item) for item in pipe.execute()[0]]
+            result = [internal_loads(item) for item in pipe.execute()[0]]
         return result
 
     def _push(self, pipe, items, queue_key, batch=100, expire=False):
@@ -121,7 +121,7 @@ class BaseQueue(object):
             items = items[batch:]
 
     def _enqueue(self, items, queue_key, batch=100, expire=False, pipe=None):
-        data = [str(kombu_dumps(item)) for item in items]
+        data = [str(internal_dumps(item)) for item in items]
         if pipe is not None:
             self._push(pipe, data, queue_key, batch=batch, expire=expire)
         else:

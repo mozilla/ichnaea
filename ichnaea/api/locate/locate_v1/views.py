@@ -1,9 +1,9 @@
 from ichnaea.api.exceptions import LocationNotFoundV1
 from ichnaea.api.locate.locate_v1.schema import LocateV1Schema
-from ichnaea.api.locate.views import BaseLocateView
+from ichnaea.api.locate.views import BasePositionView
 
 
-class LocateV1View(BaseLocateView):
+class LocateV1View(BasePositionView):
 
     not_found = LocationNotFoundV1
     route = '/v1/search'

@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Split customjson into internal and external pretty float version.
 
 1.2 (2015-07-15)
 ================

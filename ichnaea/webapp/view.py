@@ -9,6 +9,7 @@ class BaseView(object):
     on class attributes.
     """
 
+    renderer = 'json'  #: The name of the renderer to use.
     route = None  #: The url path for this view, e.g. `/hello`.
 
     @classmethod
@@ -23,7 +24,7 @@ class BaseView(object):
         path = cls.route
         name = path.lstrip('/').replace('/', '_')
         config.add_route(name, path)
-        config.add_view(cls, route_name=name, renderer='json')
+        config.add_view(cls, route_name=name, renderer=cls.renderer)
 
     def __init__(self, request):
         """

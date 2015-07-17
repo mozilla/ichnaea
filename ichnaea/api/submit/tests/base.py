@@ -1,11 +1,11 @@
 import mock
 from redis import RedisError
+from simplejson import dumps
 
 from ichnaea.api.exceptions import (
     ParseError,
     ServiceUnavailable,
 )
-from ichnaea.customjson import dumps
 from ichnaea.models import Radio
 from ichnaea import util
 

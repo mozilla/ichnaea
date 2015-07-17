@@ -20,7 +20,7 @@ from ichnaea.content.stats import (
     leaders_weekly,
     regions,
 )
-from ichnaea.customjson import dumps, loads
+from ichnaea.internaljson import internal_dumps, internal_loads
 from ichnaea.models.content import StatKey
 from ichnaea import util
 
@@ -189,7 +189,7 @@ class ContentViews(Layout):
         cache_key = CACHE_KEYS['downloads']
         cached = redis_client.get(cache_key)
         if cached:
-            data = loads(cached)
+            data = internal_loads(cached)
         else:
             settings = self.request.registry.settings
             assets_bucket = settings['ichnaea']['s3_assets_bucket']
@@ -197,7 +197,7 @@ class ContentViews(Layout):
             raven_client = self.request.registry.raven_client
             data = s3_list_downloads(assets_bucket, assets_url, raven_client)
             # cache the download files, expire after 10 minutes
-            redis_client.set(cache_key, dumps(data), ex=600)
+            redis_client.set(cache_key, internal_dumps(data), ex=600)
         return {'page_title': 'Downloads', 'files': data}
 
     @view_config(renderer='templates/optout.pt',
@@ -218,7 +218,7 @@ class ContentViews(Layout):
         cached = redis_client.get(cache_key)
 
         if cached:
-            data = loads(cached)
+            data = internal_loads(cached)
         else:
             session = self.request.db_ro_session
             data = list(enumerate(leaders(session)))
@@ -229,7 +229,7 @@ class ContentViews(Layout):
                     'nickname': l[1]['nickname'],
                     'anchor': l[1]['nickname'],
                 } for l in data]
-            redis_client.set(cache_key, dumps(data), ex=600)
+            redis_client.set(cache_key, internal_dumps(data), ex=600)
 
         half = len(data) // 2 + len(data) % 2
         leaders1 = data[:half]
@@ -248,7 +248,7 @@ class ContentViews(Layout):
         cached = redis_client.get(cache_key)
 
         if cached:
-            data = loads(cached)
+            data = internal_loads(cached)
         else:
             session = self.request.db_ro_session
             data = {
@@ -267,7 +267,7 @@ class ContentViews(Layout):
                     'leaders1': value[:half],
                     'leaders2': value[half:],
                 }
-            redis_client.set(cache_key, dumps(data), ex=3600)
+            redis_client.set(cache_key, internal_dumps(data), ex=3600)
 
         return {
             'page_title': 'Weekly Leaderboard',
@@ -293,7 +293,7 @@ class ContentViews(Layout):
         cache_key = CACHE_KEYS['stats_cell_json']
         cached = redis_client.get(cache_key)
         if cached:
-            data = loads(cached)
+            data = internal_loads(cached)
         else:
             session = self.request.db_ro_session
             mls_data = histogram(session, StatKey.unique_cell)
@@ -302,7 +302,7 @@ class ContentViews(Layout):
                 {'title': 'MLS Cells', 'data': mls_data[0]},
                 {'title': 'OCID Cells', 'data': ocid_data[0]},
             ]
-            redis_client.set(cache_key, dumps(data), ex=3600)
+            redis_client.set(cache_key, internal_dumps(data), ex=3600)
         return {'series': data}
 
     @view_config(
@@ -312,11 +312,11 @@ class ContentViews(Layout):
         cache_key = CACHE_KEYS['stats_wifi_json']
         cached = redis_client.get(cache_key)
         if cached:
-            data = loads(cached)
+            data = internal_loads(cached)
         else:
             session = self.request.db_ro_session
             data = histogram(session, StatKey.unique_wifi)
-            redis_client.set(cache_key, dumps(data), ex=3600)
+            redis_client.set(cache_key, internal_dumps(data), ex=3600)
         return {'series': [{'title': 'MLS WiFi', 'data': data[0]}]}
 
     @view_config(renderer='templates/stats.pt',
@@ -326,7 +326,7 @@ class ContentViews(Layout):
         cache_key = CACHE_KEYS['stats']
         cached = redis_client.get(cache_key)
         if cached:
-            data = loads(cached)
+            data = internal_loads(cached)
         else:
             session = self.request.db_ro_session
             data = {
@@ -346,7 +346,7 @@ class ContentViews(Layout):
                 data['metrics1'].append({'name': name, 'value': metrics[mid]})
             for mid, name in metric_names[3:]:
                 data['metrics2'].append({'name': name, 'value': metrics[mid]})
-            redis_client.set(cache_key, dumps(data), ex=3600)
+            redis_client.set(cache_key, internal_dumps(data), ex=3600)
 
         result = {'page_title': 'Statistics'}
         result.update(data)
@@ -364,11 +364,11 @@ class ContentViews(Layout):
         cache_key = CACHE_KEYS['stats_regions']
         cached = redis_client.get(cache_key)
         if cached:
-            data = loads(cached)
+            data = internal_loads(cached)
         else:
             session = self.request.db_ro_session
             data = regions(session)
-            redis_client.set(cache_key, dumps(data), ex=3600)
+            redis_client.set(cache_key, internal_dumps(data), ex=3600)
 
         return {'page_title': 'Cell Statistics', 'metrics': data}
 

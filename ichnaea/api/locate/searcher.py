@@ -20,6 +20,7 @@ from ichnaea.api.locate.fallback import FallbackProvider
 from ichnaea.api.locate.location import EmptyLocation
 from ichnaea.api.locate.wifi import WifiPositionProvider
 from ichnaea.api.locate.stats import StatsLogger
+from ichnaea.constants import DEGREE_DECIMAL_PLACES
 
 
 class Searcher(StatsLogger):
@@ -143,9 +144,9 @@ class PositionSearcher(Searcher):
 
     def _prepare(self, location):
         return {
-            'lat': location.lat,
-            'lon': location.lon,
-            'accuracy': location.accuracy,
+            'lat': round(location.lat, DEGREE_DECIMAL_PLACES),
+            'lon': round(location.lon, DEGREE_DECIMAL_PLACES),
+            'accuracy': round(location.accuracy, DEGREE_DECIMAL_PLACES),
             'fallback': location.fallback,
         }
 
