@@ -1,9 +1,0 @@
-MarkupSafe==0.23
-SQLAlchemy==1.0.6
-billiard==3.3.0.20
-gevent==1.0.2 ; python_version < '3.0'
-gevent==1.1a1 ; python_version >= '3.0'
-greenlet==0.4.7
-setproctitle==1.1.8
-simplejson==3.7.3
-zope.interface==4.1.2

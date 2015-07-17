@@ -109,9 +109,7 @@ build_maxmind: $(PYTHON) pip $(TOXINIDIR)/lib/libmaxminddb.0.dylib
 		$(INSTALL) --no-use-wheel maxminddb==$(MAXMINDDB_VERSION)
 
 build_req: $(PYTHON) pip mysql build_maxmind
-	$(INSTALL) -r requirements/prod-c.txt
 	$(INSTALL) -r requirements/prod.txt
-	$(INSTALL) -r requirements/test-c.txt
 	$(INSTALL) -r requirements/test.txt
 
 build_dev: $(PYTHON)
@@ -121,7 +119,6 @@ build: build_req build_dev
 
 release_install:
 	$(PIP) install --no-deps -r requirements/build.txt
-	$(INSTALL) -r requirements/prod-c.txt
 	$(INSTALL) -r requirements/prod.txt
 	$(PYTHON) setup.py install
 
