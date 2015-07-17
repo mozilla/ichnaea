@@ -33,9 +33,9 @@ copyright = u'2013-2015, Mozilla'
 # built documents.
 #
 # The short X.Y version.
-version = '1.2'
+version = '1.3'
 # The full version, including alpha/beta/rc tags.
-release = '1.2'
+release = '1.3'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
