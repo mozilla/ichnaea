@@ -47,7 +47,6 @@ DATA_DIRECTORY = os.path.join(TEST_DIRECTORY, 'data')
 GEOIP_TEST_FILE = os.path.join(DATA_DIRECTORY, 'GeoIP2-City-Test.mmdb')
 GEOIP_BAD_FILE = os.path.join(
     DATA_DIRECTORY, 'GeoIP2-Connection-Type-Test.mmdb')
-SQL_BASE_STRUCTURE = os.path.join(DATA_DIRECTORY, 'base_structure.sql')
 
 SQLURI = os.environ.get('SQLURI')
 REDIS_URI = os.environ.get('REDIS_URI', 'redis://localhost:6379/1')

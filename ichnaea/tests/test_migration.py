@@ -1,3 +1,5 @@
+import os.path
+
 from alembic import command as alembic_command
 from alembic.autogenerate import compare_metadata
 from alembic.config import Config
@@ -12,9 +14,9 @@ from ichnaea.models import _Model  # NOQA
 
 from ichnaea.tests.base import (
     _make_db,
+    DATA_DIRECTORY,
     DBTestCase,
     setup_package,
-    SQL_BASE_STRUCTURE,
     TestCase,
 )
 
@@ -25,6 +27,9 @@ _compare_attrs = {
     sqltypes.Integer: ('display_width', 'unsigned', 'zerofill'),
     sqltypes.String: ('binary', 'charset', 'collation', 'length', 'unicode'),
 }
+
+SQL_BASE11 = os.path.join(DATA_DIRECTORY, 'base11.sql')
+SQL_BASE12 = os.path.join(DATA_DIRECTORY, 'base12.sql')
 
 
 def db_compare_type(context, inspected_column,
@@ -52,17 +57,20 @@ def db_compare_type(context, inspected_column,
     raise AssertionError('Unsupported DB type comparison.')
 
 
-class TestMigration(TestCase):
+class MigrationTest(object):
+
+    base = None
+    rev = None
 
     def setUp(self):
-        super(TestMigration, self).setUp()
+        super(MigrationTest, self).setUp()
         self.db = _make_db()
         # capture state of fresh database
         self.head_metadata = self.inspect_db()
         DBTestCase.cleanup_tables(self.db.engine)
 
     def tearDown(self):
-        super(TestMigration, self).tearDown()
+        super(MigrationTest, self).tearDown()
         self.db.engine.pool.dispose()
         del self.db
         # setup normal database schema again
@@ -93,22 +101,31 @@ class TestMigration(TestCase):
         return metadata
 
     def setup_base_db(self):
-        with open(SQL_BASE_STRUCTURE) as fd:
+        with open(self.base) as fd:
             sql_text = fd.read()
         with self.db.engine.connect() as conn:
             conn.execute(sql_text)
 
     def run_migration(self, target='head'):
-        engine = self.db.engine
-        with engine.connect() as conn:
+        with self.db.engine.connect() as conn:
             trans = conn.begin()
             alembic_command.upgrade(self.alembic_config(), target)
             trans.commit()
+
+    def stamp_db(self):
+        if self.rev:
+            with self.db.engine.connect() as conn:
+                trans = conn.begin()
+                alembic_command.stamp(self.alembic_config(), self.rev)
+                trans.commit()
 
     def test_migration(self):
         self.setup_base_db()
         # we have no alembic base revision
         self.assertTrue(self.current_db_revision() is None)
+
+        # stamp the database with the correct version
+        self.stamp_db()
 
         # run the migration, afterwards the DB is stamped
         self.run_migration()
@@ -130,3 +147,15 @@ class TestMigration(TestCase):
             metadata_diff = compare_metadata(context, self.head_metadata)
 
         self.assertEqual(metadata_diff, [])
+
+
+class TestMigration11(MigrationTest, TestCase):
+
+    base = SQL_BASE11
+    rev = None
+
+
+class TestMigration12(MigrationTest, TestCase):
+
+    base = SQL_BASE12
+    rev = '1a320a751cf'

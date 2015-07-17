@@ -173,10 +173,11 @@ class CellAreaKeyMixin(HashKeyQueryMixin):
     _hashkey_cls = CellAreaKey
     _query_batch = 25
 
-    radio = Column(TinyIntEnum(Radio), autoincrement=False)
-    mcc = Column(SmallInteger, autoincrement=False)
-    mnc = Column(SmallInteger, autoincrement=False)
-    lac = Column(SmallInteger(unsigned=True), autoincrement=False)
+    radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
+    mcc = Column(SmallInteger, autoincrement=False, default=None)
+    mnc = Column(SmallInteger, autoincrement=False, default=None)
+    lac = Column(SmallInteger(unsigned=True),
+                 autoincrement=False, default=None)
 
 
 class ValidCellAreaSchema(ValidCellAreaKeySchema,
@@ -267,7 +268,7 @@ class CellKeyMixin(CellAreaKeyMixin):
     _hashkey_cls = CellKey
     _query_batch = 20
 
-    cid = Column(Integer(unsigned=True), autoincrement=False)
+    cid = Column(Integer(unsigned=True), autoincrement=False, default=None)
 
 
 class ValidCellSignalSchema(FieldSchema, CopyingSchema):

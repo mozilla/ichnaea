@@ -7,13 +7,10 @@ Changelog
 Untagged
 ********
 
-Migrations
-~~~~~~~~~~
-
-
 Changes
 ~~~~~~~
 
+- Add a database migration test from a fresh SQL structure dump.
 
 20150716174000
 **************
