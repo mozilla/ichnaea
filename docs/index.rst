@@ -51,6 +51,14 @@ The developers of ``ichnaea`` can frequently be found on the `Mozilla IRC
 network <https://wiki.mozilla.org/IRC>`_ in the #geo channel.
 
 
+Development CI Status
+=====================
+
+.. image:: https://travis-ci.org/mozilla/ichnaea.svg?branch=master
+    :alt: Travis CI build report
+    :target: https://travis-ci.org/mozilla/ichnaea
+
+
 License
 =======
 

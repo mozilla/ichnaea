@@ -16,12 +16,4 @@ License
 
 ``ichnaea`` is offered under the Apache License 2.0.
 
-
-Current Development CI Status
-=============================
-
-.. image:: https://travis-ci.org/mozilla/ichnaea.svg?branch=master
-    :alt: Travis CI build report
-    :target: https://travis-ci.org/mozilla/ichnaea
-
 .. _the full docs: https://mozilla-ichnaea.readthedocs.org/
