@@ -7,7 +7,7 @@ from ichnaea.api.exceptions import (
     ParseError,
 )
 from ichnaea.models.api import ApiKey
-from ichnaea.rate_limit import rate_limit
+from ichnaea.rate_limit import rate_limit_exceeded
 from ichnaea import util
 from ichnaea.webapp.view import BaseView
 
@@ -50,7 +50,7 @@ class BaseAPIView(BaseView):
                 time=util.utcnow().strftime('%Y%m%d')
             )
 
-            should_limit = rate_limit(
+            should_limit = rate_limit_exceeded(
                 self.redis_client,
                 rate_key,
                 maxreq=api_key.maxreq

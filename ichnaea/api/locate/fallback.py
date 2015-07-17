@@ -14,7 +14,7 @@ from ichnaea.api.locate.constants import (
 )
 from ichnaea.api.locate.location import Position
 from ichnaea.api.locate.provider import Provider
-from ichnaea.rate_limit import rate_limit
+from ichnaea.rate_limit import rate_limit_exceeded
 
 
 class FallbackProvider(Provider):
@@ -120,7 +120,7 @@ class FallbackProvider(Provider):
         return 'fallback_ratelimit:{time}'.format(time=int(time.time()))
 
     def limit_reached(self):
-        return self.ratelimit and rate_limit(
+        return self.ratelimit and rate_limit_exceeded(
             self.redis_client,
             self.get_ratelimit_key(),
             maxreq=self.ratelimit,
