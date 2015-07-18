@@ -1,4 +1,3 @@
-from ichnaea.models import ApiKey
 from ichnaea.api.locate.location import Location
 from ichnaea.api.locate.provider import Provider
 from ichnaea.api.locate.query import Query
@@ -8,13 +7,19 @@ from ichnaea.api.locate.searcher import (
     Searcher,
 )
 from ichnaea.tests.base import ConnectionTestCase
+from ichnaea.tests.factories import ApiKeyFactory
 
 
 class SearcherTest(ConnectionTestCase):
 
     searcher = None
 
-    def _make_query(self, query=None, TestLocation=None,  # NOQA
+    def setUp(self):
+        super(SearcherTest, self).setUp()
+        self.api_key = ApiKeyFactory(shortname='test')
+        self.api_name = 'm'
+
+    def _make_query(self, TestLocation=None,  # NOQA
                     TestProvider=None, TestSearcher=None):
 
         if not TestLocation:
@@ -46,15 +51,18 @@ class SearcherTest(ConnectionTestCase):
                 def _prepare(self, location):
                     return location
 
-        query = query or Query()
+        query = Query(api_key=self.api_key,
+                      api_name=self.api_name,
+                      session=self.session,
+                      stats_client=self.stats_client)
 
         return TestSearcher(
             session_db=self.session,
             geoip_db=self.geoip_db,
             redis_client=None,
             settings={},
-            api_key=ApiKey(shortname='test', log=True),
-            api_name='m',
+            api_key=self.api_key,
+            api_name=self.api_name,
         ).search(query)
 
 

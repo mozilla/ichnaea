@@ -17,17 +17,19 @@ class BaseLocateView(BaseAPIView):
     searcher = None  #:
     schema = None  #:
 
-    def prepare_query(self, request_data):
-        return Query(
+    def locate(self, api_key):
+        request_data, errors = self.preprocess_request()
+
+        query = Query(
             fallback=request_data.get('fallbacks'),
             geoip=self.request.client_addr,
             cell=request_data.get('cell'),
             wifi=request_data.get('wifi'),
+            api_key=api_key,
+            api_name=self.view_name,
+            session=self.request.db_ro_session,
+            stats_client=self.stats_client,
         )
-
-    def locate(self, api_key):
-        request_data, errors = self.preprocess_request()
-        query = self.prepare_query(request_data)
 
         return self.searcher(
             session_db=self.request.db_ro_session,

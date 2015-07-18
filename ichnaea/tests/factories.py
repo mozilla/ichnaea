@@ -1,4 +1,5 @@
 from inspect import ismethod
+import uuid
 
 import factory
 from factory.alchemy import SQLAlchemyModelFactory
@@ -11,6 +12,7 @@ from ichnaea.constants import (
     WIFI_MIN_ACCURACY,
 )
 from ichnaea.models import (
+    ApiKey,
     Cell,
     CellArea,
     CellBlacklist,
@@ -61,11 +63,34 @@ class BaseSQLFactory(SQLAlchemyModelFactory):
         return obj
 
 
+class FuzzyUUID(fuzzy.BaseFuzzyAttribute):
+
+    def fuzz(self):
+        return uuid.uuid4().hex
+
+
 class FuzzyWifiKey(fuzzy.BaseFuzzyAttribute):
 
     def fuzz(self):
         num = fuzzy.random.randint(100000, 999999)
         return 'a82066{num:06d}'.format(num=num)
+
+
+class ApiKeyFactory(BaseSQLFactory):
+
+    class Meta:
+        model = ApiKey
+
+    valid_key = FuzzyUUID()
+    maxreq = 0
+    log = True
+    allow_fallback = False
+    email = None
+    description = None
+
+    @factory.lazy_attribute
+    def shortname(self):
+        return self.valid_key
 
 
 class BboxFactory(Factory):

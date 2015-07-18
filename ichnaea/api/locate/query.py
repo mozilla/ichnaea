@@ -25,7 +25,9 @@ else:  # pragma: no cover
 
 class Query(object):
 
-    def __init__(self, fallback=None, geoip=None, cell=None, wifi=None):
+    def __init__(self, fallback=None, geoip=None, cell=None, wifi=None,
+                 api_key=None, api_name=None,
+                 session=None, stats_client=None):
         """
         A class representing a concrete location query.
 
@@ -40,11 +42,27 @@ class Query(object):
 
         :param wifi: A list of wifi query dicts.
         :type wifi: list
+
+        :param api_key: An ApiKey instance for the current query.
+        :type api_key: :class:`ichnaea.models.api.ApiKey`
+
+        :param api_name: Name of the API, used as a stats prefix
+            (for example 'geolocate')
+        :type api_name: str
+
+        :param session: An open database session.
+
+        :param stats_client: A stats client.
+        :type stats_client: :class:`~ichnaea.log.PingableStatsClient`
         """
         self.fallback = fallback
         self.geoip = geoip
         self.cell = cell
         self.wifi = wifi
+        self.api_key = api_key
+        self.api_name = api_name
+        self.session = session
+        self.stats_client = stats_client
 
     @property
     def fallback(self):
@@ -161,3 +179,15 @@ class Query(object):
         if len(filtered) < MIN_WIFIS_IN_QUERY:
             filtered = {}
         self._wifi = list(filtered.values())
+
+    def stat_count(self, stat):
+        """Emit an api_name specific stat counter."""
+        self.stats_client.incr('{api}.{stat}'.format(
+            api=self.api_name, stat=stat))
+
+    def stat_timer(self, stat):
+        """
+        Return a context manager to capture an api_name specific stat timer.
+        """
+        return self.stats_client.timer('{api}.{stat}'.format(
+            api=self.api_name, stat=stat))

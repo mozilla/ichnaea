@@ -1,6 +1,7 @@
 from ichnaea.api.locate.query import Query
 from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import (
+    ApiKeyFactory,
     CellFactory,
     WifiFactory,
 )
@@ -31,6 +32,10 @@ class TestQuery(ConnectionTestCase):
         self.assertEqual(query.cell, [])
         self.assertEqual(query.cell_area, [])
         self.assertEqual(query.wifi, [])
+        self.assertEqual(query.api_key, None)
+        self.assertEqual(query.api_name, None)
+        self.assertEqual(query.session, None)
+        self.assertEqual(query.stats_client, None)
 
     def test_fallback(self):
         query = Query(fallback={'ipf': False})
@@ -145,3 +150,32 @@ class TestQuery(ConnectionTestCase):
         wifi_query = {'key': wifi.key}
         query = Query(wifi=[wifi_query, {'key': 'foo'}])
         self.assertEqual(len(query.wifi), 0)
+
+    def test_api_key(self):
+        api_key = ApiKeyFactory()
+        query = Query(api_key=api_key)
+        self.assertEqual(query.api_key.valid_key, api_key.valid_key)
+        self.assertEqual(query.api_key, api_key)
+
+    def test_api_name(self):
+        query = Query(api_name='some_api')
+        self.assertEqual(query.api_name, 'some_api')
+
+    def test_session(self):
+        query = Query(session=self.session)
+        self.assertEqual(query.session, self.session)
+
+    def test_stats_client(self):
+        query = Query(stats_client=self.stats_client)
+        self.assertEqual(query.stats_client, self.stats_client)
+
+    def test_stat_count(self):
+        query = Query(api_name='some_api', stats_client=self.stats_client)
+        query.stat_count('test')
+        self.check_stats(counter=['some_api.test'])
+
+    def test_stat_timer(self):
+        query = Query(api_name='some_api', stats_client=self.stats_client)
+        with query.stat_timer('test'):
+            pass
+        self.check_stats(timer=['some_api.test'])

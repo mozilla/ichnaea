@@ -5,8 +5,8 @@ from ichnaea.api.locate.location import (
 )
 from ichnaea.api.locate.provider import Provider
 from ichnaea.api.locate.query import Query
-from ichnaea.models import ApiKey
 from ichnaea.tests.base import ConnectionTestCase
+from ichnaea.tests.factories import ApiKeyFactory
 
 
 class DummyModel(object):
@@ -31,14 +31,16 @@ class ProviderTest(ConnectionTestCase):
 
     def setUp(self):
         super(ProviderTest, self).setUp()
+        self.api_key = ApiKeyFactory(shortname='test')
+        self.api_name = 'm'
 
         self.provider = self.TestProvider(
             session_db=self.session,
             geoip_db=self.geoip_db,
             redis_client=self.redis_client,
             settings=self.settings,
-            api_key=ApiKey(shortname='test', log=True),
-            api_name='m',
+            api_key=self.api_key,
+            api_name=self.api_name,
         )
 
     def model_query(self, cells=(), wifis=(), geoip=False, fallbacks=None):
@@ -73,6 +75,10 @@ class ProviderTest(ConnectionTestCase):
             geoip=query.get('geoip'),
             cell=query.get('cell'),
             wifi=query.get('wifi'),
+            api_key=self.api_key,
+            api_name=self.api_name,
+            session=self.session,
+            stats_client=self.stats_client,
         )
 
     def check_model_location(self, location, model, used=None, **kw):

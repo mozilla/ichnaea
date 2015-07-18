@@ -19,26 +19,24 @@ from ichnaea.api.locate.cell import (
 from ichnaea.api.locate.fallback import FallbackProvider
 from ichnaea.api.locate.location import EmptyLocation
 from ichnaea.api.locate.wifi import WifiPositionProvider
-from ichnaea.api.locate.stats import StatsLogger
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 
 
-class Searcher(StatsLogger):
+class Searcher(object):
     """
     A Searcher will use a collection of Provider classes
     to attempt to identify a user's location. It will loop over them
     in the order they are specified and use the most accurate location.
+
+    First we attempt a "zoom-in" from cell-lac, to cell
+    to wifi, tightening our estimate each step only so
+    long as it doesn't contradict the existing best-estimate.
     """
-    # First we attempt a "zoom-in" from cell-lac, to cell
-    # to wifi, tightening our estimate each step only so
-    # long as it doesn't contradict the existing best-estimate.
 
     provider_classes = ()
 
-    def __init__(self, session_db, geoip_db,
-                 redis_client, settings, *args, **kwargs):
-        super(Searcher, self).__init__(*args, **kwargs)
-
+    def __init__(self, session_db, geoip_db, redis_client, settings,
+                 api_key=None, api_name=None):
         self.all_providers = []
         for provider_group, providers in self.provider_classes:
             for provider in providers:
@@ -50,8 +48,8 @@ class Searcher(StatsLogger):
                     geoip_db=geoip_db,
                     redis_client=redis_client,
                     settings=provider_settings,
-                    api_key=self.api_key,
-                    api_name=self.api_name,
+                    api_key=api_key,
+                    api_name=api_name,
                 )
                 self.all_providers.append((provider_group, provider_instance))
 
@@ -77,7 +75,7 @@ class Searcher(StatsLogger):
                     break
 
         if not best_location.found():
-            self.stat_count('miss')
+            query.stat_count('miss')
         else:
             best_location_provider.log_hit()
 
