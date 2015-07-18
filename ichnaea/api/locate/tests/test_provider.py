@@ -35,10 +35,11 @@ class ProviderTest(ConnectionTestCase):
         self.api_name = 'm'
 
         self.provider = self.TestProvider(
+            settings=self.settings,
             geoip_db=self.geoip_db,
             raven_client=self.raven_client,
             redis_client=self.redis_client,
-            settings=self.settings,
+            stats_client=self.stats_client,
         )
 
     def model_query(self, cells=(), wifis=(), geoip=False,

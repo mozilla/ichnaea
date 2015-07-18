@@ -16,6 +16,10 @@ from sqlalchemy.schema import (
 )
 from webtest import TestApp
 
+from ichnaea.api.locate.searcher import (
+    configure_country_searcher,
+    configure_position_searcher,
+)
 from ichnaea.async.app import celery_app
 from ichnaea.async.config import (
     init_worker,
@@ -117,7 +121,8 @@ def _make_redis(uri=REDIS_URI):
 
 def _make_app(app_config=TEST_CONFIG,
               _db_rw=None, _db_ro=None, _geoip_db=None,
-              _raven_client=None, _redis_client=None, _stats_client=None):
+              _raven_client=None, _redis_client=None, _stats_client=None,
+              _country_searcher=None, _position_searcher=None):
     wsgiapp = main(
         app_config,
         _db_rw=_db_rw,
@@ -125,7 +130,10 @@ def _make_app(app_config=TEST_CONFIG,
         _geoip_db=_geoip_db,
         _raven_client=_raven_client,
         _redis_client=_redis_client,
-        _stats_client=_stats_client)
+        _stats_client=_stats_client,
+        _country_searcher=_country_searcher,
+        _position_searcher=_position_searcher,
+    )
     return TestApp(wsgiapp)
 
 
@@ -476,7 +484,27 @@ class ConnectionTestCase(DBTestCase, GeoIPTestCase, RedisTestCase):
     pass
 
 
-class AppTestCase(ConnectionTestCase):
+class APITestCase(ConnectionTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super(APITestCase, cls).setUpClass()
+        for name, func in (('country_searcher', configure_country_searcher),
+                           ('position_searcher', configure_position_searcher)):
+            searcher = func(
+                TEST_CONFIG,
+                geoip_db=cls.geoip_db, raven_client=cls.raven_client,
+                redis_client=cls.redis_client, stats_client=cls.stats_client)
+            setattr(cls, name, searcher)
+
+    @classmethod
+    def tearDownClass(cls):
+        super(APITestCase, cls).tearDownClass()
+        del cls.country_searcher
+        del cls.position_searcher
+
+
+class AppTestCase(APITestCase):
 
     default_session = 'db_ro_session'
 
@@ -490,7 +518,8 @@ class AppTestCase(ConnectionTestCase):
                             _raven_client=cls.raven_client,
                             _redis_client=cls.redis_client,
                             _stats_client=cls.stats_client,
-                            )
+                            _country_searcher=cls.country_searcher,
+                            _position_searcher=cls.position_searcher)
 
     @classmethod
     def tearDownClass(cls):

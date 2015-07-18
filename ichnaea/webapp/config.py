@@ -6,7 +6,10 @@ from pyramid.config import Configurator
 from pyramid.tweens import EXCVIEW
 
 from ichnaea.api.config import configure_api
-from ichnaea import floatjson
+from ichnaea.api.locate.searcher import (
+    configure_country_searcher,
+    configure_position_searcher,
+)
 from ichnaea.cache import configure_redis
 from ichnaea.content.views import configure_content
 from ichnaea.db import (
@@ -14,6 +17,7 @@ from ichnaea.db import (
     db_rw_session,
     db_ro_session,
 )
+from ichnaea import floatjson
 from ichnaea.geoip import configure_geoip
 from ichnaea.log import (
     configure_logging,
@@ -25,7 +29,8 @@ from ichnaea.monitor import configure_monitor
 
 def main(app_config, ping_connections=False,
          _db_rw=None, _db_ro=None, _geoip_db=None,
-         _raven_client=None, _redis_client=None, _stats_client=None):
+         _raven_client=None, _redis_client=None, _stats_client=None,
+         _country_searcher=None, _position_searcher=None):
     """
     Configure the web app stored in :data:`ichnaea.webapp.app._APP`.
 
@@ -73,15 +78,27 @@ def main(app_config, ping_connections=False,
         app_config.get('ichnaea', 'sentry_dsn'),
         transport='gevent', _client=_raven_client)
 
-    registry.redis_client = configure_redis(
+    registry.redis_client = redis_client = configure_redis(
         app_config.get('ichnaea', 'redis_url'), _client=_redis_client)
 
-    registry.stats_client = configure_stats(
+    registry.stats_client = stats_client = configure_stats(
         app_config.get('ichnaea', 'statsd_host'), _client=_stats_client)
 
-    registry.geoip_db = configure_geoip(
+    registry.geoip_db = geoip_db = configure_geoip(
         app_config.get('ichnaea', 'geoip_db_path'), raven_client=raven_client,
         _client=_geoip_db)
+
+    for name, func, default in (('country_searcher',
+                                 configure_country_searcher,
+                                 _country_searcher),
+                                ('position_searcher',
+                                 configure_position_searcher,
+                                 _position_searcher)):
+        searcher = func(app_config,
+                        geoip_db=geoip_db, raven_client=raven_client,
+                        redis_client=redis_client, stats_client=stats_client,
+                        _searcher=default)
+        setattr(registry, name, searcher)
 
     config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)
     config.add_tween('ichnaea.log.log_tween_factory', under=EXCVIEW)

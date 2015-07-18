@@ -27,11 +27,13 @@ class Provider(object):
     location_type = None
     source = DataSource.Internal
 
-    def __init__(self, geoip_db, raven_client, redis_client, settings):
+    def __init__(self, settings,
+                 geoip_db, raven_client, redis_client, stats_client):
+        self.settings = settings
         self.geoip_db = geoip_db
         self.raven_client = raven_client
         self.redis_client = redis_client
-        self.settings = settings
+        self.stats_client = stats_client
         self.location_type = partial(
             self.location_type,
             source=self.source,

@@ -42,11 +42,15 @@ class Config(ConfigParser):
             value = default
         return value
 
-    def get_map(self, section):
+    def get_map(self, section, default=None):
         """
         Return a config section as a dictionary.
         """
-        return dict(self.items(section))
+        try:
+            value = dict(self.items(section))
+        except (NoOptionError, NoSectionError):  # pragma: no cover
+            value = default
+        return value
 
     def optionxform(self, option):
         """
@@ -80,8 +84,8 @@ class DummyConfig(object):
         section_values = self.get_map(section)
         return section_values.get(option, default)
 
-    def get_map(self, section):
-        return self.settings.get(section)
+    def get_map(self, section, default=None):
+        return self.settings.get(section, default)
 
     def sections(self):
         return list(self.settings.keys())

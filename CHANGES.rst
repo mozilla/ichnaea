@@ -14,6 +14,10 @@ Migrations
 Changes
 ~~~~~~~
 
+- Set up and configure locate searchers and providers once during startup.
+
+- Move all per-query state onto the locate query instance.
+
 - Split customjson into internal and external pretty float version.
 
 1.2 (2015-07-15)

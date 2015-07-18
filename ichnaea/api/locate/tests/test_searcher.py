@@ -6,6 +6,7 @@ from ichnaea.api.locate.searcher import (
     PositionSearcher,
     Searcher,
 )
+from ichnaea.config import DummyConfig
 from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import ApiKeyFactory
 
@@ -57,10 +58,11 @@ class SearcherTest(ConnectionTestCase):
                       stats_client=self.stats_client)
 
         return TestSearcher(
+            settings=DummyConfig({}),
             geoip_db=self.geoip_db,
             raven_client=self.raven_client,
             redis_client=self.redis_client,
-            settings={},
+            stats_client=self.stats_client,
         ).search(query)
 
 

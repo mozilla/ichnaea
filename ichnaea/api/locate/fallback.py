@@ -28,13 +28,12 @@ class FallbackProvider(Provider):
     source = DataSource.Fallback
     LOCATION_NOT_FOUND = True
 
-    def __init__(self, settings, *args, **kwargs):
-        self.url = settings['url']
+    def __init__(self, settings, *args, **kw):
+        self.url = settings.get('url')
         self.ratelimit = int(settings.get('ratelimit', 0))
         self.rate_limit_expire = int(settings.get('ratelimit_expire', 0))
         self.cache_expire = int(settings.get('cache_expire', 0))
-        super(FallbackProvider, self).__init__(
-            settings=settings, *args, **kwargs)
+        super(FallbackProvider, self).__init__(settings, *args, **kw)
 
     def _prepare_cell(self, cell):
         radio = cell.radio

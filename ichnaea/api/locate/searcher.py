@@ -22,6 +22,43 @@ from ichnaea.api.locate.wifi import WifiPositionProvider
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 
 
+def _configure_searcher(klass, settings, geoip_db=None, raven_client=None,
+                        redis_client=None, stats_client=None, _searcher=None):
+    if _searcher is not None:
+        return _searcher
+    return klass(settings, geoip_db, raven_client, redis_client, stats_client)
+
+
+def configure_country_searcher(settings, geoip_db=None, raven_client=None,
+                               redis_client=None, stats_client=None,
+                               _searcher=None):
+    """
+    Configure and return a configured
+    :class:`~ichnaea.api.locate.searcher.CountrySearcher` instance.
+
+    :param _searcher: Test-only hook to provide a pre-configured searcher.
+    """
+    return _configure_searcher(
+        CountrySearcher, settings, geoip_db=geoip_db,
+        raven_client=raven_client, redis_client=redis_client,
+        stats_client=stats_client, _searcher=_searcher)
+
+
+def configure_position_searcher(settings, geoip_db=None, raven_client=None,
+                                redis_client=None, stats_client=None,
+                                _searcher=None):
+    """
+    Configure and return a configured
+    :class:`~ichnaea.api.locate.searcher.PositionSearcher` instance.
+
+    :param _searcher: Test-only hook to provide a pre-configured searcher.
+    """
+    return _configure_searcher(
+        PositionSearcher, settings, geoip_db=geoip_db,
+        raven_client=raven_client, redis_client=redis_client,
+        stats_client=stats_client, _searcher=_searcher)
+
+
 class Searcher(object):
     """
     A Searcher will use a collection of Provider classes
@@ -35,18 +72,20 @@ class Searcher(object):
 
     provider_classes = ()
 
-    def __init__(self, geoip_db, raven_client, redis_client, settings):
+    def __init__(self, settings,
+                 geoip_db, raven_client, redis_client, stats_client):
         self.all_providers = []
         for provider_group, providers in self.provider_classes:
             for provider in providers:
-                provider_settings = settings.get(
+                provider_settings = settings.get_map(
                     'locate:{provider_group}'.format(
                         provider_group=provider_group), {})
                 provider_instance = provider(
+                    settings=provider_settings,
                     geoip_db=geoip_db,
                     raven_client=raven_client,
                     redis_client=redis_client,
-                    settings=provider_settings,
+                    stats_client=stats_client,
                 )
                 self.all_providers.append((provider_group, provider_instance))
 
