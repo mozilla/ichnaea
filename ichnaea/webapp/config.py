@@ -5,7 +5,7 @@ Contains web app specific one time configuration code.
 from pyramid.config import Configurator
 from pyramid.tweens import EXCVIEW
 
-from ichnaea.api import configure_api
+from ichnaea.api.config import configure_api
 from ichnaea import floatjson
 from ichnaea.cache import configure_redis
 from ichnaea.content.views import configure_content

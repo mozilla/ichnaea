@@ -16,5 +16,4 @@
    wifi
    searcher
    schema
-   stats
    views

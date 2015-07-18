@@ -6,6 +6,8 @@
 .. toctree::
    :maxdepth: 1
 
+   config
    exceptions
    locate/index
    submit/index
+   views

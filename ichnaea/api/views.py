@@ -1,3 +1,7 @@
+"""
+Implementation of a API specific HTTP service view.
+"""
+
 import colander
 import simplejson as json
 
@@ -13,9 +17,10 @@ from ichnaea.webapp.view import BaseView
 
 
 class BaseAPIView(BaseView):
+    """Common base class for all API related views."""
 
-    check_api_key = True
-    error_on_invalidkey = True
+    check_api_key = True  #: Should API keys be checked?
+    error_on_invalidkey = True  #: Deny access for invalid API keys?
 
     def __init__(self, request):
         super(BaseAPIView, self).__init__(request)
@@ -99,8 +104,9 @@ class BaseAPIView(BaseView):
         return (validated_data, errors)
 
     def __call__(self):
+        """Execute the view and return a response."""
         if self.check_api_key:
             return self.check()
         else:
-            api_key = ApiKey(valid_key=None)
+            api_key = ApiKey(valid_key=None, allow_fallback=False, log=False)
             return self.view(api_key)
