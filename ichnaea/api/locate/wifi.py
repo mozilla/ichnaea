@@ -111,11 +111,11 @@ class WifiPositionProvider(Provider):
 
         return (wifis, wifi_signals, wifi_keys)
 
-    def _query_database(self, wifi_keys):
+    def _query_database(self, query, wifi_keys):
         try:
             load_fields = ('key', 'lat', 'lon', 'range')
             wifi_iter = Wifi.iterkeys(
-                self.session_db,
+                query.session,
                 [Wifi.to_hashkey(key=key) for key in wifi_keys],
                 extra=lambda query: query.options(load_only(*load_fields))
                                          .filter(Wifi.lat.isnot(None))
@@ -194,7 +194,7 @@ class WifiPositionProvider(Provider):
             if self._sufficient_data(wifi_keys):
                 location.query_data = True
 
-            queried_wifis = self._query_database(wifi_keys)
+            queried_wifis = self._query_database(query, wifi_keys)
             clusters = self._get_clusters(wifi_signals, queried_wifis)
 
             if clusters:

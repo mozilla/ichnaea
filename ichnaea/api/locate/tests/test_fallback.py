@@ -13,6 +13,7 @@ from ichnaea.api.locate.tests.test_provider import (
     GeoIPProviderTest,
 )
 from ichnaea.tests.factories import (
+    ApiKeyFactory,
     CellFactory,
     WifiFactory,
 )
@@ -31,7 +32,7 @@ class TestFallbackProvider(GeoIPProviderTest):
     def setUp(self):
         super(TestFallbackProvider, self).setUp()
 
-        self.provider.api_key.allow_fallback = True
+        self.api_key = ApiKeyFactory(shortname='test', allow_fallback=True)
         self.fallback_model = DummyModel(
             lat=51.5366, lon=0.03989, accuracy=1500)
 
@@ -65,7 +66,7 @@ class TestFallbackProvider(GeoIPProviderTest):
                 fallbacks={
                     'lacf': True,
                     'ipf': False,
-                }
+                },
             )
             location = self.provider.locate(query)
             self.check_model_location(location, self.fallback_model)
@@ -160,11 +161,11 @@ class TestFallbackProvider(GeoIPProviderTest):
             timer=['m.fallback.lookup'])
 
     def test_no_call_made_when_not_allowed_for_apikey(self):
+        api_key = ApiKeyFactory(allow_fallback=False)
         cells = CellFactory.build_batch(2)
         wifis = WifiFactory.build_batch(2)
-        self.provider.api_key.allow_fallback = False
 
-        query = self.model_query(cells=cells, wifis=wifis)
+        query = self.model_query(cells=cells, wifis=wifis, api_key=api_key)
         self.check_should_locate(query, False)
 
     def test_should_not_provide_location_if_one_wifi_provided(self):

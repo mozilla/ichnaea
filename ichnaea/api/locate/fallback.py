@@ -111,7 +111,7 @@ class FallbackProvider(Provider):
         wifi_found = (len(outbound_query.get(
             'wifiAccessPoints', [])) >= MIN_WIFIS_IN_QUERY)
         return (
-            self.api_key.allow_fallback and
+            query.api_key.allow_fallback and
             (empty_location or weak_location) and
             (cell_found or wifi_found)
         )
@@ -148,10 +148,10 @@ class FallbackProvider(Provider):
             try:
                 cached_cell = self.redis_client.get(cache_key)
                 if cached_cell:
-                    self.stat_count('fallback.cache.hit')
+                    query.stat_count('fallback.cache.hit')
                     return json.loads(cached_cell)
                 else:
-                    self.stat_count('fallback.cache.miss')
+                    query.stat_count('fallback.cache.miss')
             except RedisError:
                 self.raven_client.captureException()
 
@@ -171,7 +171,7 @@ class FallbackProvider(Provider):
         outbound_query = self._prepare_outbound_query(query)
 
         try:
-            with self.stat_timer('fallback.lookup'):
+            with query.stat_timer('fallback.lookup'):
                 response = requests.post(
                     self.url,
                     headers={'User-Agent': 'ichnaea'},
@@ -179,7 +179,8 @@ class FallbackProvider(Provider):
                     timeout=5.0,
                     verify=False,
                 )
-            self.stat_count('fallback.lookup_status.%s' % response.status_code)
+            query.stat_count('fallback.lookup_status.' +
+                             str(response.status_code))
             if response.status_code != 404:
                 # don't log exceptions for normal not found responses
                 response.raise_for_status()

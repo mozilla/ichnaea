@@ -5,15 +5,14 @@ Base implementation of a location provider.
 from collections import namedtuple
 from functools import partial
 
-from ichnaea.geocalc import distance
 from ichnaea.api.locate.constants import DataSource
-from ichnaea.api.locate.stats import StatsLogger
+from ichnaea.geocalc import distance
 
 # helper class used in searching
 Network = namedtuple('Network', ['key', 'lat', 'lon', 'range'])
 
 
-class Provider(StatsLogger):
+class Provider(object):
     """
     A Provider provides an interface for a class
     which will provide a location given a set of query data.
@@ -28,18 +27,16 @@ class Provider(StatsLogger):
     location_type = None
     source = DataSource.Internal
 
-    def __init__(self, session_db, geoip_db,
-                 redis_client, settings, *args, **kwargs):
-        self.session_db = session_db
+    def __init__(self, geoip_db, raven_client, redis_client, settings):
         self.geoip_db = geoip_db
-        self.settings = settings
+        self.raven_client = raven_client
         self.redis_client = redis_client
+        self.settings = settings
         self.location_type = partial(
             self.location_type,
             source=self.source,
             fallback=self.fallback_field,
         )
-        super(Provider, self).__init__(*args, **kwargs)
 
     def should_locate(self, query, location):
         """
@@ -87,24 +84,24 @@ class Provider(StatsLogger):
             accuracy = float(accuracy)
         return max(accuracy, minimum)
 
-    def log_hit(self):
+    def log_hit(self, query):
         """Log a stat metric for a successful provider lookup."""
-        self.stat_count('{metric}_hit'.format(metric=self.log_name))
+        query.stat_count('{metric}_hit'.format(metric=self.log_name))
 
-    def log_success(self):
+    def log_success(self, query):
         """
         Log a stat metric for a request in which the user provided
         relevant data for this provider and the lookup was successful.
         """
-        if self.api_key.log:
-            self.stat_count('api_log.{key}.{metric}_hit'.format(
-                key=self.api_key.name, metric=self.log_name))
+        if query.api_key.log:
+            query.stat_count('api_log.{key}.{metric}_hit'.format(
+                key=query.api_key.name, metric=self.log_name))
 
-    def log_failure(self):
+    def log_failure(self, query):
         """
         Log a stat metric for a request in which the user provided
         relevant data for this provider and the lookup failed.
         """
-        if self.api_key.log:
-            self.stat_count('api_log.{key}.{metric}_miss'.format(
-                key=self.api_key.name, metric=self.log_name))
+        if query.api_key.log:
+            query.stat_count('api_log.{key}.{metric}_miss'.format(
+                key=query.api_key.name, metric=self.log_name))

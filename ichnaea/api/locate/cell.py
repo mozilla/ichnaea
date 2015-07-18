@@ -46,12 +46,12 @@ class BaseCellProvider(Provider):
         """Pre-process cell query."""
         return [cell.hashkey() for cell in getattr(query, self.query_field)]
 
-    def _query_database(self, cell_keys):
+    def _query_database(self, query, cell_keys):
         """Query the cell model."""
         try:
             load_fields = ('lat', 'lon', 'range')
             cell_iter = self.model.iterkeys(
-                self.session_db,
+                query.session,
                 cell_keys,
                 extra=lambda query: query.options(load_only(*load_fields))
                                          .filter(self.model.lat.isnot(None))
@@ -106,7 +106,7 @@ class BaseCellProvider(Provider):
         cell_keys = self._clean_cell_keys(query)
         if cell_keys:
             location.query_data = True
-            queried_cells = self._query_database(cell_keys)
+            queried_cells = self._query_database(query, cell_keys)
             if queried_cells:
                 location = self._prepare(queried_cells)
         return location
@@ -167,7 +167,7 @@ class CellCountryProvider(BaseCellProvider):
     location_type = Country
     model = CellArea
 
-    def _query_database(self, cell_keys):
+    def _query_database(self, query, cell_keys):
         countries = []
         for key in cell_keys:
             countries.extend(mobile_codes.mcc(str(key.mcc)))

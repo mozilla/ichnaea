@@ -35,15 +35,14 @@ class ProviderTest(ConnectionTestCase):
         self.api_name = 'm'
 
         self.provider = self.TestProvider(
-            session_db=self.session,
             geoip_db=self.geoip_db,
+            raven_client=self.raven_client,
             redis_client=self.redis_client,
             settings=self.settings,
-            api_key=self.api_key,
-            api_name=self.api_name,
         )
 
-    def model_query(self, cells=(), wifis=(), geoip=False, fallbacks=None):
+    def model_query(self, cells=(), wifis=(), geoip=False,
+                    fallbacks=None, api_key=None):
         query = {}
 
         if cells:
@@ -75,7 +74,7 @@ class ProviderTest(ConnectionTestCase):
             geoip=query.get('geoip'),
             cell=query.get('cell'),
             wifi=query.get('wifi'),
-            api_key=self.api_key,
+            api_key=api_key or self.api_key,
             api_name=self.api_name,
             session=self.session,
             stats_client=self.stats_client,
@@ -147,19 +146,22 @@ class GeoIPProviderTest(ProviderTest):
 class TestProvider(ProviderTest):
 
     def test_log_hit(self):
-        self.provider.log_hit()
+        query = self.model_query()
+        self.provider.log_hit(query)
         self.check_stats(counter=[
             'm.test_hit',
         ])
 
     def test_log_success(self):
-        self.provider.log_success()
+        query = self.model_query()
+        self.provider.log_success(query)
         self.check_stats(counter=[
             'm.api_log.test.test_hit',
         ])
 
     def test_log_failure(self):
-        self.provider.log_failure()
+        query = self.model_query()
+        self.provider.log_failure(query)
         self.check_stats(counter=[
             'm.api_log.test.test_miss',
         ])

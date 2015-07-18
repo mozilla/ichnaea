@@ -32,12 +32,10 @@ class BaseLocateView(BaseAPIView):
         )
 
         return self.searcher(
-            session_db=self.request.db_ro_session,
             geoip_db=self.request.registry.geoip_db,
+            raven_client=self.raven_client,
             redis_client=self.request.registry.redis_client,
             settings=self.request.registry.settings,
-            api_key=api_key,
-            api_name=self.view_name,
         ).search(query)
 
     def prepare_location_data(self, location_data):  # pragma: no cover

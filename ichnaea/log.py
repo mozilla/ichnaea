@@ -27,7 +27,7 @@ RAVEN_TRANSPORTS = {
 }  #: Mapping of raven transport names to classes.
 
 
-def get_raven_client():
+def get_raven_client():  # pragma: no cover
     """Return the globally configured raven client."""
     return RAVEN_CLIENT
 
@@ -58,7 +58,7 @@ def configure_raven(config, transport=None, _client=None):  # pragma: no cover
     return set_raven_client(client)
 
 
-def get_stats_client():
+def get_stats_client():  # pragma: no cover
     """Return the globally configured statsd client."""
     return STATS_CLIENT
 

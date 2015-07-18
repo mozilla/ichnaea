@@ -35,8 +35,7 @@ class Searcher(object):
 
     provider_classes = ()
 
-    def __init__(self, session_db, geoip_db, redis_client, settings,
-                 api_key=None, api_name=None):
+    def __init__(self, geoip_db, raven_client, redis_client, settings):
         self.all_providers = []
         for provider_group, providers in self.provider_classes:
             for provider in providers:
@@ -44,12 +43,10 @@ class Searcher(object):
                     'locate:{provider_group}'.format(
                         provider_group=provider_group), {})
                 provider_instance = provider(
-                    session_db=session_db,
                     geoip_db=geoip_db,
+                    raven_client=raven_client,
                     redis_client=redis_client,
                     settings=provider_settings,
-                    api_key=api_key,
-                    api_name=api_name,
                 )
                 self.all_providers.append((provider_group, provider_instance))
 
@@ -77,7 +74,7 @@ class Searcher(object):
         if not best_location.found():
             query.stat_count('miss')
         else:
-            best_location_provider.log_hit()
+            best_location_provider.log_hit(query)
 
         # Log a hit/miss metric for the first data source for
         # which the user provided sufficient data.
@@ -95,9 +92,9 @@ class Searcher(object):
                         found_provider = provider
                         break
                 if found_provider:
-                    found_provider.log_success()
+                    found_provider.log_success(query)
                 else:
-                    first_provider.log_failure()
+                    first_provider.log_failure(query)
                 break
 
         return best_location

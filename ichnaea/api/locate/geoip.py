@@ -29,9 +29,9 @@ class BaseGeoIPProvider(Provider):
             geoip = self.geoip_db.geoip_lookup(query.geoip)
             if geoip:
                 if geoip['city']:
-                    self.stat_count('geoip_city_found')
+                    query.stat_count('geoip_city_found')
                 else:
-                    self.stat_count('geoip_country_found')
+                    query.stat_count('geoip_country_found')
 
                 location = self.location_type(
                     lat=geoip['latitude'],

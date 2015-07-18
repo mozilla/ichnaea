@@ -57,12 +57,10 @@ class SearcherTest(ConnectionTestCase):
                       stats_client=self.stats_client)
 
         return TestSearcher(
-            session_db=self.session,
             geoip_db=self.geoip_db,
-            redis_client=None,
+            raven_client=self.raven_client,
+            redis_client=self.redis_client,
             settings={},
-            api_key=self.api_key,
-            api_name=self.api_name,
         ).search(query)
 
 
