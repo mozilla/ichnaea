@@ -6,7 +6,7 @@ import operator
 
 import colander
 
-from ichnaea.api.schema import InternalMapping
+from ichnaea.api.schema import InternalMappingSchema
 from ichnaea.models.base import (
     CreationMixin,
     ValidationMixin,
@@ -158,19 +158,16 @@ class FallbackLookup(HashKey, CreationMixin, ValidationMixin):
     )
 
 
-class BaseLocateSchema(colander.MappingSchema):
+class BaseLocateSchema(InternalMappingSchema):
     """A base schema for all locate related schemata."""
-
-    schema_type = InternalMapping
 
     def deserialize(self, data):
         data = super(BaseLocateSchema, self).deserialize(data)
 
         if 'radio' in data:
-            radio = data.get('radio', None)
             for cell in data.get('cell', ()):
-                if 'radio' not in cell:
-                    cell['radio'] = radio
+                if 'radio' not in cell or not cell['radio']:
+                    cell['radio'] = data['radio']
 
             del data['radio']
 

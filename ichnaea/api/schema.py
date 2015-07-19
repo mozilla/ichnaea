@@ -50,45 +50,6 @@ class UnixTimeFromString(colander.String):
         return timestamp
 
 
-class OptionalMapping(colander.Mapping):
-
-    unknown = 'ignore'
-
-
-class OptionalMappingSchema(colander.Schema):
-
-    schema_type = OptionalMapping
-
-
-class OptionalSequence(colander.Sequence):
-    pass
-
-
-class OptionalSequenceSchema(colander.Schema):
-
-    schema_type = OptionalSequence
-
-
-class OptionalNode(colander.SchemaNode):
-
-    missing = colander.drop
-
-
-class OptionalBoundedFloatNode(OptionalNode):
-
-    schema_type = BoundedFloat
-
-
-class OptionalIntNode(OptionalNode):
-
-    schema_type = colander.Integer
-
-
-class OptionalStringNode(OptionalNode):
-
-    schema_type = colander.String
-
-
 class InternalMixin(object):
 
     def __init__(self, *args, **kwargs):
@@ -109,7 +70,63 @@ class InternalMapping(colander.Mapping):
             subnode_internal_name = getattr(
                 subnode, 'internal_name', subnode.name) or subnode.name
 
-            if result[subnode.name]:
-                internal_result[subnode_internal_name] = result[subnode.name]
+            subnode_value = result.get(subnode.name, subnode.missing)
+            if subnode_value is colander.drop:
+                continue
+            else:
+                internal_result[subnode_internal_name] = subnode_value
 
         return internal_result
+
+
+class InternalMappingSchema(InternalMixin, colander.MappingSchema):
+
+    schema_type = InternalMapping
+
+
+class InternalSequence(colander.Sequence):
+    pass
+
+
+class InternalSequenceSchema(InternalMixin, colander.SequenceSchema):
+
+    schema_type = InternalSequence
+
+
+class OptionalMapping(InternalMapping):
+
+    unknown = 'ignore'
+
+
+class OptionalMappingSchema(InternalMappingSchema):
+
+    schema_type = OptionalMapping
+
+
+class OptionalSequence(InternalSequence):
+    pass
+
+
+class OptionalSequenceSchema(InternalSequenceSchema):
+
+    schema_type = OptionalSequence
+
+
+class OptionalNode(InternalSchemaNode):
+
+    missing = colander.drop
+
+
+class OptionalBoundedFloatNode(OptionalNode):
+
+    schema_type = BoundedFloat
+
+
+class OptionalIntNode(OptionalNode):
+
+    schema_type = colander.Integer
+
+
+class OptionalStringNode(OptionalNode):
+
+    schema_type = colander.String

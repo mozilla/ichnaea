@@ -23,7 +23,7 @@ class TestSchema(TestCase):
     def test_empty(self):
         schema = LocateV1Schema()
         data = schema.deserialize({})
-        self.assertEqual(data, {})
+        self.assertEqual(data, {'cell': (), 'fallbacks': None, 'wifi': ()})
 
     def test_empty_cell_entry(self):
         schema = LocateV1Schema()

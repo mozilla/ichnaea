@@ -1,9 +1,9 @@
-from colander import MappingSchema, SchemaNode, SequenceSchema
-from colander import Integer, String, OneOf
+import colander
 
 from ichnaea.api.schema import (
-    InternalMapping,
+    InternalMappingSchema,
     InternalSchemaNode,
+    InternalSequenceSchema,
 )
 from ichnaea.api.locate.schema import (
     BaseLocateSchema,
@@ -14,47 +14,47 @@ from ichnaea.api.locate.schema import (
 RADIO_STRINGS = ['gsm', 'cdma', 'umts', 'wcdma', 'lte']
 
 
-class CellSchema(MappingSchema):
-    schema_type = InternalMapping
+class CellSchema(InternalMappingSchema):
 
-    radio = SchemaNode(String(),
-                       validator=OneOf(RADIO_STRINGS), missing=None)
-    mcc = SchemaNode(Integer(), missing=None)
-    mnc = SchemaNode(Integer(), missing=None)
-    lac = SchemaNode(Integer(), missing=None)
-    cid = SchemaNode(Integer(), missing=None)
+    radio = InternalSchemaNode(
+        colander.String(),
+        validator=colander.OneOf(RADIO_STRINGS), missing=None)
+    mcc = InternalSchemaNode(colander.Integer(), missing=None)
+    mnc = InternalSchemaNode(colander.Integer(), missing=None)
+    lac = InternalSchemaNode(colander.Integer(), missing=None)
+    cid = InternalSchemaNode(colander.Integer(), missing=None)
 
-    asu = SchemaNode(Integer(), missing=None)
-    psc = SchemaNode(Integer(), missing=None)
-    signal = SchemaNode(Integer(), missing=None)
-    ta = SchemaNode(Integer(), missing=None)
+    asu = InternalSchemaNode(colander.Integer(), missing=None)
+    psc = InternalSchemaNode(colander.Integer(), missing=None)
+    signal = InternalSchemaNode(colander.Integer(), missing=None)
+    ta = InternalSchemaNode(colander.Integer(), missing=None)
 
 
-class CellsSchema(SequenceSchema):
+class CellsSchema(InternalSequenceSchema):
 
     cell = CellSchema()
 
 
-class WifiSchema(MappingSchema):
-    schema_type = InternalMapping
+class WifiSchema(InternalMappingSchema):
 
-    key = SchemaNode(String(), missing=None)
-    frequency = SchemaNode(Integer(), missing=None)
-    channel = SchemaNode(Integer(), missing=None)
-    signal = SchemaNode(Integer(), missing=None)
+    key = InternalSchemaNode(colander.String(), missing=None)
+    frequency = InternalSchemaNode(colander.Integer(), missing=None)
+    channel = InternalSchemaNode(colander.Integer(), missing=None)
+    signal = InternalSchemaNode(colander.Integer(), missing=None)
     signalToNoiseRatio = InternalSchemaNode(
-        Integer(), missing=None, internal_name='snr')
+        colander.Integer(), missing=None, internal_name='snr')
 
 
-class WifisSchema(SequenceSchema):
+class WifisSchema(InternalSequenceSchema):
 
     wifi = WifiSchema()
 
 
 class LocateV1Schema(BaseLocateSchema):
 
-    radio = SchemaNode(String(),
-                       validator=OneOf(RADIO_STRINGS), missing=None)
+    radio = InternalSchemaNode(
+        colander.String(),
+        validator=colander.OneOf(RADIO_STRINGS), missing=None)
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())
     fallbacks = FallbackSchema(missing=None)

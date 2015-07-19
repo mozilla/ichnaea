@@ -20,6 +20,17 @@ from ichnaea.tests.factories import (
 
 class TestSchema(TestCase):
 
+    def test_empty(self):
+        schema = LocateV2Schema()
+        data = schema.deserialize({})
+        self.assertEqual(data, {
+            'carrier': None,
+            'cell': (),
+            'fallbacks': None,
+            'homeMobileCountryCode': None,
+            'homeMobileNetworkCode': None,
+            'wifi': ()})
+
     def test_invalid_radio_field(self):
         schema = LocateV2Schema()
         with self.assertRaises(colander.Invalid):
