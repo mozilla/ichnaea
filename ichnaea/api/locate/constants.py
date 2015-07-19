@@ -1,4 +1,4 @@
-from enum import IntEnum
+from enum import Enum, IntEnum
 
 MAX_WIFI_CLUSTER_KM = 0.5
 """
@@ -35,3 +35,42 @@ class DataSource(IntEnum):
     OCID = 2
     Fallback = 3
     GeoIP = 4
+
+
+class DataAccuracy(Enum):
+    """
+    Describes the possible and actual accuracy class of a location query.
+
+    Instances of this class can be compared based on their value or can
+    be compared to int/float values.
+    """
+
+    high = 1000.0  #: High accuracy, probably WiFi based.
+    medium = 40000.0  #: Medium accuracy, probably cell based.
+    low = float('inf')  #: Low accuracy, large cell, cell area or GeoIP.
+
+    def __eq__(self, other):
+        if isinstance(other, DataAccuracy):
+            return self is other
+        if isinstance(other, (int, float)):
+            return self.value == float(other)
+        return super(DataAccuracy, self).__eq__(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __lt__(self, other):
+        if isinstance(other, DataAccuracy):
+            return self.value < other.value
+        if isinstance(other, (int, float)):
+            return self.value < float(other)
+        return super(DataAccuracy, self).__lt__(other)
+
+    def __le__(self, other):
+        return self == other or self < other
+
+    def __gt__(self, other):
+        return not self <= other
+
+    def __ge__(self, other):
+        return not self < other

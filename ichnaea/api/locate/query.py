@@ -4,7 +4,10 @@ Code representing a location query.
 
 import six
 
-from ichnaea.api.locate.constants import MIN_WIFIS_IN_QUERY
+from ichnaea.api.locate.constants import (
+    DataAccuracy,
+    MIN_WIFIS_IN_QUERY,
+)
 from ichnaea.api.locate.schema import (
     CellAreaLookup,
     CellLookup,
@@ -195,6 +198,14 @@ class Query(object):
         if len(filtered) < MIN_WIFIS_IN_QUERY:
             filtered = {}
         self._wifi = list(filtered.values())
+
+    @property
+    def expected_accuracy(self):
+        if self.wifi:
+            return DataAccuracy.high
+        if self.cell:
+            return DataAccuracy.medium
+        return DataAccuracy.low
 
     def internal_query(self):
         """Returns a dictionary of this query in our internal format."""

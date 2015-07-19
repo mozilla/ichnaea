@@ -1,7 +1,9 @@
+from ichnaea.api.locate.constants import DataAccuracy
 from ichnaea.api.locate.query import Query
 from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
+    CellAreaFactory,
     CellFactory,
     WifiFactory,
 )
@@ -12,16 +14,18 @@ class QueryTest(object):
     def cell_model_query(self, cells):
         query = []
         for cell in cells:
-            query.append({
+            cell_query = {
                 'radio': cell.radio.name,
                 'mcc': cell.mcc,
                 'mnc': cell.mnc,
                 'lac': cell.lac,
-                'cid': cell.cid,
-                'psc': cell.psc,
                 'signal': -90,
                 'ta': 1,
-            })
+            }
+            if getattr(cell, 'cid', None):
+                cell_query['cid'] = cell.cid
+                cell_query['psc'] = cell.psc
+            query.append(cell_query)
         return query
 
     def wifi_model_query(self, wifis):
@@ -50,6 +54,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(query.api_name, None)
         self.assertEqual(query.session, None)
         self.assertEqual(query.stats_client, None)
+        self.assertEqual(query.expected_accuracy, DataAccuracy.low)
 
     def test_fallback(self):
         query = Query(fallback={'ipf': False})
@@ -60,6 +65,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
         london_ip = self.geoip_data['London']['ip']
         query = Query(geoip=london_ip)
         self.assertEqual(query.geoip, london_ip)
+        self.assertEqual(query.expected_accuracy, DataAccuracy.low)
 
     def test_geoip_malformed(self):
         query = Query(geoip='127.0.0.0.0.1')
@@ -71,6 +77,8 @@ class TestQuery(QueryTest, ConnectionTestCase):
         query = Query(cell=cell_query)
 
         self.assertEqual(len(query.cell), 1)
+        self.assertEqual(query.expected_accuracy, DataAccuracy.medium)
+
         query_cell = query.cell[0]
         for key, value in cell_query[0].items():
             query_value = getattr(query_cell, key, None)
@@ -104,6 +112,15 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(len(query.cell), 1)
         self.assertEqual(query.cell[0].signal, -90)
 
+    def test_cell_area(self):
+        cell = CellAreaFactory.build()
+        cell_query = self.cell_model_query([cell])
+        query = Query(cell=cell_query)
+
+        self.assertEqual(len(query.cell), 0)
+        self.assertEqual(len(query.cell_area), 1)
+        self.assertEqual(query.expected_accuracy, DataAccuracy.low)
+
     def test_cell_area_duplicated(self):
         cell = CellFactory.build()
         cell_query = self.cell_model_query([cell, cell, cell])
@@ -117,7 +134,9 @@ class TestQuery(QueryTest, ConnectionTestCase):
         wifis = WifiFactory.build_batch(2)
         wifi_keys = [wifi.key for wifi in wifis]
         query = Query(wifi=self.wifi_model_query(wifis))
+
         self.assertEqual(len(query.wifi), 2)
+        self.assertEqual(query.expected_accuracy, DataAccuracy.high)
 
         for wifi in query.wifi:
             self.assertEqual(wifi.channel, 11)
@@ -157,6 +176,15 @@ class TestQuery(QueryTest, ConnectionTestCase):
         wifi_query = {'key': wifi.key}
         query = Query(wifi=[wifi_query, {'key': 'foo'}])
         self.assertEqual(len(query.wifi), 0)
+
+    def test_mixed_cell_wifi(self):
+        cells = CellFactory.build_batch(1)
+        wifis = WifiFactory.build_batch(2)
+
+        query = Query(
+            cell=self.cell_model_query(cells),
+            wifi=self.wifi_model_query(wifis))
+        self.assertEqual(query.expected_accuracy, DataAccuracy.high)
 
     def test_api_key(self):
         api_key = ApiKeyFactory.build()
