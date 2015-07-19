@@ -257,3 +257,35 @@ class TestQueryStats(QueryTest, ConnectionTestCase):
             'l.query.key.all.cell.many',
             'l.query.key.all.wifi.many',
         ])
+
+
+class TestProviderStats(QueryTest, ConnectionTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestProviderStats, cls).setUpClass()
+        cls.api_key = ApiKeyFactory.build(shortname='key', log=True)
+        cls.london_ip = cls.geoip_data['London']['ip']
+
+    def _make_query(self, provider, result, api_key=None, **kw):
+        query = Query(
+            api_key=api_key or self.api_key,
+            api_type='l',
+            stats_client=self.stats_client,
+            **kw)
+        query.emit_provider_stats(provider, result)
+        return query
+
+    def test_country(self):
+        self._make_query('internal', 'high_hit')
+        self.check_stats(counter=[
+            'l.source.key.none.internal.high_hit',
+            'l.source.key.all.internal.high_hit',
+        ])
+
+    def test_no_country(self):
+        self._make_query('ocid', 'high_miss', geoip=self.london_ip)
+        self.check_stats(counter=[
+            ('l.source.key.none.ocid.high_miss', 0),
+            'l.source.key.all.ocid.high_miss',
+        ])

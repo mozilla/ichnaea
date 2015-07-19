@@ -246,6 +246,18 @@ class Query(object):
                 metric = '.{name}.{num}'.format(name=name, num=num)
                 self.emit_country_stat(prefix, metric)
 
+    def emit_provider_stats(self, provider, result):
+        """Emit stats about a specific provider."""
+
+        pre = '{api_type}.source.{key}.'.format(
+            api_type=self.api_type,
+            key=self.api_key.name)
+
+        post = '.{provider}.{result}'.format(
+            provider=provider, result=result)
+
+        self.emit_country_stat(pre, post)
+
     def stat_count(self, stat):
         """Emit an api_name specific stat counter."""
         self.stats_client.incr('{api}.{stat}'.format(
