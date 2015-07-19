@@ -20,6 +20,7 @@ class BaseSubmitView(BaseAPIView):
     transform = None  #:
     schema = None  #:
     view_name = None  #:
+    view_type = 'submit'  #:
 
     #: :exc:`ichnaea.api.exceptions.UploadSuccess`
     success = UploadSuccess

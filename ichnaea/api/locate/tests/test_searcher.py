@@ -17,8 +17,9 @@ class SearcherTest(ConnectionTestCase):
 
     def setUp(self):
         super(SearcherTest, self).setUp()
-        self.api_key = ApiKeyFactory(shortname='test')
+        self.api_key = ApiKeyFactory.build(shortname='test')
         self.api_name = 'm'
+        self.api_type = 'l'
 
     def _make_query(self, TestLocation=None,  # NOQA
                     TestProvider=None, TestSearcher=None):
@@ -54,6 +55,7 @@ class SearcherTest(ConnectionTestCase):
 
         query = Query(api_key=self.api_key,
                       api_name=self.api_name,
+                      api_type=self.api_type,
                       session=self.session,
                       stats_client=self.stats_client)
 

@@ -7,7 +7,7 @@ from ichnaea.tests.factories import (
 )
 
 
-class TestQuery(ConnectionTestCase):
+class QueryTest(object):
 
     def cell_model_query(self, cells):
         query = []
@@ -23,6 +23,20 @@ class TestQuery(ConnectionTestCase):
                 'ta': 1,
             })
         return query
+
+    def wifi_model_query(self, wifis):
+        query = []
+        for wifi in wifis:
+            query.append({
+                'key': wifi.key,
+                'channel': 11,
+                'signal': -85,
+                'snr': 13,
+            })
+        return query
+
+
+class TestQuery(QueryTest, ConnectionTestCase):
 
     def test_empty(self):
         query = Query()
@@ -101,21 +115,14 @@ class TestQuery(ConnectionTestCase):
 
     def test_wifi(self):
         wifis = WifiFactory.build_batch(2)
-        wifi_query = []
-        wifi_keys = []
-        for wifi in wifis:
-            wifi_keys.append(wifi.key)
-            wifi_query.append({
-                'key': wifi.key,
-                'signal': -85,
-                'channel': 11,
-            })
-        query = Query(wifi=wifi_query)
+        wifi_keys = [wifi.key for wifi in wifis]
+        query = Query(wifi=self.wifi_model_query(wifis))
         self.assertEqual(len(query.wifi), 2)
 
         for wifi in query.wifi:
-            self.assertEqual(wifi.signal, -85)
             self.assertEqual(wifi.channel, 11)
+            self.assertEqual(wifi.signal, -85)
+            self.assertEqual(wifi.snr, 13)
             self.assertTrue(wifi.key in wifi_keys)
 
     def test_wifi_single(self):
@@ -152,7 +159,7 @@ class TestQuery(ConnectionTestCase):
         self.assertEqual(len(query.wifi), 0)
 
     def test_api_key(self):
-        api_key = ApiKeyFactory()
+        api_key = ApiKeyFactory.build()
         query = Query(api_key=api_key)
         self.assertEqual(query.api_key.valid_key, api_key.valid_key)
         self.assertEqual(query.api_key, api_key)
@@ -179,3 +186,74 @@ class TestQuery(ConnectionTestCase):
         with query.stat_timer('test'):
             pass
         self.check_stats(timer=['some_api.test'])
+
+
+class TestQueryStats(QueryTest, ConnectionTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestQueryStats, cls).setUpClass()
+        cls.api_key = ApiKeyFactory.build(shortname='key', log=True)
+        cls.london_ip = cls.geoip_data['London']['ip']
+
+    def _make_query(self, api_key=None, cell=(), wifi=(), **kw):
+        query = Query(
+            api_key=api_key or self.api_key,
+            api_type='l',
+            cell=self.cell_model_query(cell),
+            wifi=self.wifi_model_query(wifi),
+            stats_client=self.stats_client,
+            **kw)
+        query.emit_query_stats()
+        return query
+
+    def test_no_log(self):
+        api_key = ApiKeyFactory.build(shortname='key', log=False)
+        self._make_query(api_key=api_key)
+        self.check_stats(total=0)
+
+    def test_no_api_key_shortname(self):
+        api_key = ApiKeyFactory.build(shortname=None, log=True)
+        self._make_query(api_key=api_key)
+        self.check_stats(counter=[
+            'l.query.%s.none.cell.none' % api_key.valid_key,
+            'l.query.%s.none.wifi.none' % api_key.valid_key,
+            'l.query.%s.all.cell.none' % api_key.valid_key,
+            'l.query.%s.all.wifi.none' % api_key.valid_key,
+        ])
+
+    def test_empty(self):
+        self._make_query()
+        self.check_stats(counter=[
+            'l.query.key.none.cell.none',
+            'l.query.key.none.wifi.none',
+            'l.query.key.all.cell.none',
+            'l.query.key.all.wifi.none',
+        ])
+
+    def test_geoip_only(self):
+        self._make_query(geoip=self.london_ip)
+        self.check_stats(counter=[
+            ('l.query.key.none.geoip.only', 0),
+            'l.query.key.all.geoip.only',
+        ])
+
+    def test_one(self):
+        cells = CellFactory.build_batch(1)
+        wifis = WifiFactory.build_batch(1)
+
+        self._make_query(cell=cells, wifi=wifis, geoip=self.london_ip)
+        self.check_stats(total=2, counter=[
+            'l.query.key.all.cell.one',
+            'l.query.key.all.wifi.one',
+        ])
+
+    def test_many(self):
+        cells = CellFactory.build_batch(2)
+        wifis = WifiFactory.build_batch(3)
+
+        self._make_query(cell=cells, wifi=wifis, geoip=self.london_ip)
+        self.check_stats(total=2, counter=[
+            'l.query.key.all.cell.many',
+            'l.query.key.all.wifi.many',
+        ])

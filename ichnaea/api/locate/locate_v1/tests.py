@@ -41,6 +41,7 @@ class LocateV1Base(BaseLocateTest, AppTestCase):
 
     url = '/v1/search'
     metric = 'search'
+    metric_type = 'locate'
     metric_url = 'request.v1.search'
     not_found = LocationNotFoundV1
 

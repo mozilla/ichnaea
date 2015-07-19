@@ -27,6 +27,7 @@ class BaseLocateTest(object):
     url = None
     apikey_metrics = True
     metric = None
+    metric_type = None
     metric_url = None
     not_found = LocationNotFound
 
@@ -149,8 +150,9 @@ class CommonLocateTest(BaseLocateTest):
         if self.apikey_metrics:
             self.check_stats(
                 counter=[(self.metric + '.api_key.test', 1),
-                         (self.metric + '.api_log.test.geoip_hit', 1)],
-            )
+                         (self.metric + '.api_log.test.geoip_hit', 1),
+                         (self.metric_type + '.query.test.all.geoip.only', 1),
+                         ])
 
     def test_error_no_json(self):
         res = self._call('\xae', method='post', status=400)
@@ -217,7 +219,9 @@ class CommonPositionTest(BaseLocateTest):
         self.check_stats(
             counter=[self.metric + '.api_key.test',
                      self.metric + '.api_log.test.cell_miss',
-                     self.metric_url + '.' + str(self.not_found.code)],
+                     self.metric_url + '.' + str(self.not_found.code),
+                     self.metric_type + '.query.test.all.cell.one',
+                     ],
             timer=[self.metric_url])
 
     def test_cell_lte_radio(self):
@@ -244,8 +248,7 @@ class CommonPositionTest(BaseLocateTest):
         self.check_stats(
             counter=[self.metric_url + '.200',
                      self.metric + '.api_key.test',
-                     self.metric + '.api_log.test.cell_lac_hit']
-        )
+                     self.metric + '.api_log.test.cell_lac_hit'])
 
     def test_cellarea_when_lacf_enabled(self):
         cell = CellAreaFactory()
@@ -305,7 +308,9 @@ class CommonPositionTest(BaseLocateTest):
         self.check_stats(
             counter=[self.metric + '.api_key.test',
                      self.metric + '.api_log.test.wifi_miss',
-                     self.metric_url + '.' + str(self.not_found.code)],
+                     self.metric_url + '.' + str(self.not_found.code),
+                     self.metric_type + '.query.test.all.wifi.many',
+                     ],
             timer=[self.metric_url])
 
     def test_ip_fallback_disabled(self):

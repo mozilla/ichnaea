@@ -22,11 +22,17 @@ if six.PY2:  # pragma: no cover
 else:  # pragma: no cover
     from ipaddress import ip_address
 
+METRIC_MAPPING = {
+    0: 'none',
+    1: 'one',
+    2: 'many',
+}
+
 
 class Query(object):
 
     def __init__(self, fallback=None, geoip=None, cell=None, wifi=None,
-                 api_key=None, api_name=None,
+                 api_key=None, api_name=None, api_type=None,
                  session=None, stats_client=None):
         """
         A class representing a concrete location query.
@@ -50,6 +56,9 @@ class Query(object):
             (for example 'geolocate')
         :type api_name: str
 
+        :param api_type: The type of query API, for example `locate`.
+        :type api_type: str
+
         :param session: An open database session.
 
         :param stats_client: A stats client.
@@ -61,6 +70,7 @@ class Query(object):
         self.wifi = wifi
         self.api_key = api_key
         self.api_name = api_name
+        self.api_type = api_type
         self.session = session
         self.stats_client = stats_client
 
@@ -203,6 +213,37 @@ class Query(object):
                 fallback_data[field] = getattr(self.fallback, field)
             result['fallbacks'] = fallback_data
         return result
+
+    def emit_query_stats(self):
+        """Emit stats about the data contained in this query."""
+        if not self.api_key.log or not self.api_type:
+            return
+
+        cells = len(self.cell)
+        wifis = len(self._wifi_unvalidated)
+
+        if self.geoip:
+            country = ''
+        else:
+            country = 'none'
+
+        prefix = '{api_type}.query.{key}.'.format(
+            api_type=self.api_type,
+            key=self.api_key.name)
+        all_prefix = prefix + 'all.'
+        country_prefix = prefix + country + '.'
+
+        if self.geoip and not (cells or wifis):
+            self.stats_client.incr(all_prefix + 'geoip.only')
+            if country:  # pragma: no cover
+                self.stats_client.incr(country_prefix + 'geoip.only')
+        else:
+            for name, length in (('cell', cells), ('wifi', wifis)):
+                num = METRIC_MAPPING[min(length, 2)]
+                metric = '{name}.{num}'.format(name=name, num=num)
+                self.stats_client.incr(all_prefix + metric)
+                if country:
+                    self.stats_client.incr(country_prefix + metric)
 
     def stat_count(self, stat):
         """Emit an api_name specific stat counter."""

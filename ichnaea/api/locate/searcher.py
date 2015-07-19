@@ -147,6 +147,7 @@ class Searcher(object):
         :param query: A location query.
         :type query: :class:`~ichnaea.api.locate.query.Query`
         """
+        query.emit_query_stats()
         location = self._search(query)
         if location.found():
             return self._prepare(location)

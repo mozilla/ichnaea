@@ -31,8 +31,9 @@ class ProviderTest(ConnectionTestCase):
 
     def setUp(self):
         super(ProviderTest, self).setUp()
-        self.api_key = ApiKeyFactory(shortname='test')
+        self.api_key = ApiKeyFactory.build(shortname='test')
         self.api_name = 'm'
+        self.api_type = 'l'
 
         self.provider = self.TestProvider(
             settings=self.settings,
@@ -77,6 +78,7 @@ class ProviderTest(ConnectionTestCase):
             wifi=query.get('wifi'),
             api_key=api_key or self.api_key,
             api_name=self.api_name,
+            api_type=self.api_type,
             session=self.session,
             stats_client=self.stats_client,
         )

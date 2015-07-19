@@ -21,6 +21,7 @@ class BaseAPIView(BaseView):
 
     check_api_key = True  #: Should API keys be checked?
     error_on_invalidkey = True  #: Deny access for invalid API keys?
+    view_type = None  #: The type of view, for example submit or locate.
 
     def __init__(self, request):
         super(BaseAPIView, self).__init__(request)

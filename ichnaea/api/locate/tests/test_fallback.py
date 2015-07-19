@@ -32,7 +32,8 @@ class TestFallbackProvider(GeoIPProviderTest):
     def setUp(self):
         super(TestFallbackProvider, self).setUp()
 
-        self.api_key = ApiKeyFactory(shortname='test', allow_fallback=True)
+        self.api_key = ApiKeyFactory.build(
+            shortname='test', allow_fallback=True)
         self.fallback_model = DummyModel(
             lat=51.5366, lon=0.03989, accuracy=1500)
 
@@ -161,7 +162,7 @@ class TestFallbackProvider(GeoIPProviderTest):
             timer=['m.fallback.lookup'])
 
     def test_no_call_made_when_not_allowed_for_apikey(self):
-        api_key = ApiKeyFactory(allow_fallback=False)
+        api_key = ApiKeyFactory.build(allow_fallback=False)
         cells = CellFactory.build_batch(2)
         wifis = WifiFactory.build_batch(2)
 

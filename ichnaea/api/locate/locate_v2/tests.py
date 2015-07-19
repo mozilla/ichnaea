@@ -52,6 +52,7 @@ class LocateV2Base(BaseLocateTest, AppTestCase):
 
     url = '/v1/geolocate'
     metric = 'geolocate'
+    metric_type = 'locate'
     metric_url = 'request.v1.geolocate'
 
     @property

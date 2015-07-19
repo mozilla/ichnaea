@@ -15,6 +15,7 @@ class CountryBase(BaseLocateTest, AppTestCase):
     url = '/v1/country'
     apikey_metrics = False
     metric = 'country'
+    metric_type = 'country'
     metric_url = 'request.v1.country'
 
     @property

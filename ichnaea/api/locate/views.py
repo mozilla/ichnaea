@@ -26,6 +26,7 @@ class BaseLocateView(BaseAPIView):
             wifi=request_data.get('wifi'),
             api_key=api_key,
             api_name=self.view_name,
+            api_type=self.view_type,
             session=self.request.db_ro_session,
             stats_client=self.stats_client,
         )
@@ -51,5 +52,6 @@ class BasePositionView(BaseLocateView):
     """Common base class for all position related views."""
 
     #: Use renderer with prettier float output.
-    renderer = 'floatjson'
-    searcher = 'position_searcher'
+    renderer = 'floatjson'  #:
+    searcher = 'position_searcher'  #:
+    view_type = 'locate'  #:

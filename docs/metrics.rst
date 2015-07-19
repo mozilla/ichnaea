@@ -140,6 +140,39 @@ In addition to ``geolocate`` response counters, equivalent counters
 exist for the ``search`` API endpoint.
 
 
+API Query Counters
+------------------
+
+For each incoming API query we log stats about the data contained in
+the query under the following two prefixes:
+
+``<api_type>.query.<api_shortname>.all.``,
+``<api_type>.query.<api_shortname>.<country_code>.``
+
+`api_type` describes the type of API being used, independent of the
+version number of the API. So `v1/country` gets logged as `country`
+and both `v1/search` and `v1/geolocate` get logged as `locate`.
+
+`country_code` is either a two-letter ISO3166 code like `de` or the
+special value `none` if the country of the incoming request could not
+be determined. The value for `all` will be always be logged, even for
+the `none` case.
+
+Under these two prefixes, there are a number of metrics:
+
+``geoip.only`` : counter
+
+If the query contained only GeoIP data and nothing else, only log this
+metrics and none of the following.
+
+``cell.none``, ``cell.one``, ``cell.many``,
+``wifi.none``, ``wifi.one``, ``wifi.many``, : counter
+
+If the query contained any cell or wifi data, one cell and one wifi
+metric gets logged. The metrics depend on the number of valid stations
+for each of the two.
+
+
 Data Pipeline Stats
 -------------------
 
