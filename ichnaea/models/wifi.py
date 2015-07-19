@@ -103,7 +103,9 @@ class ValidWifiSignalSchema(FieldSchema, CopyingSchema):
                     (constants.MIN_WIFI_CHANNEL < channel <
                      constants.MAX_WIFI_CHANNEL)):
                 # if no explicit channel was given, calculate
-                freq = data.get('frequency', 0)
+                freq = data.get('frequency', None)
+                if freq is None:
+                    freq = 0
 
                 if 2411 < freq < 2473:
                     # 2.4 GHz band
