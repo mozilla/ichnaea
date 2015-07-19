@@ -180,6 +180,30 @@ class Query(object):
             filtered = {}
         self._wifi = list(filtered.values())
 
+    def internal_query(self):
+        """Returns a dictionary of this query in our internal format."""
+        result = {}
+        if self.cell:
+            result['cell'] = []
+            for cell in self.cell:
+                cell_data = {}
+                for field in cell._fields:
+                    cell_data[field] = getattr(cell, field)
+                result['cell'].append(cell_data)
+        if self.wifi:
+            result['wifi'] = []
+            for wifi in self.wifi:
+                wifi_data = {}
+                for field in wifi._fields:
+                    wifi_data[field] = getattr(wifi, field)
+                result['wifi'].append(wifi_data)
+        if self.fallback:
+            fallback_data = {}
+            for field in self.fallback._fields:
+                fallback_data[field] = getattr(self.fallback, field)
+            result['fallbacks'] = fallback_data
+        return result
+
     def stat_count(self, stat):
         """Emit an api_name specific stat counter."""
         self.stats_client.incr('{api}.{stat}'.format(

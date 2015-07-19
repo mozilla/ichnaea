@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use a colander schema to describe the outbound fallback provider query.
+
 - Set up and configure locate searchers and providers once during startup.
 
 - Move all per-query state onto the locate query instance.

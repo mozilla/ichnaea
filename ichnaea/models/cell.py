@@ -117,6 +117,19 @@ class RadioType(colander.Integer):
         return cstruct
 
 
+class RadioStringType(colander.String):
+    """
+    A RadioType will return a Radio IntEnum as a string.
+    """
+
+    def deserialize(self, node, cstruct):
+        if isinstance(cstruct, Radio):
+            return cstruct.name
+
+        raise colander.Invalid(  # pragma: no cover
+            node, ('%r is not a valid radio type' % cstruct))
+
+
 class CellAreaKey(CellHashKey):
 
     _fields = ('radio', 'mcc', 'mnc', 'lac')

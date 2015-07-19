@@ -4,17 +4,64 @@ Implementation of a fallback provider using an external web service.
 
 import time
 
+import colander
 import requests
 from redis import RedisError
 import simplejson as json
 
-from ichnaea.api.locate.constants import (
-    DataSource,
-    MIN_WIFIS_IN_QUERY,
+from ichnaea.api.schema import (
+    OptionalMappingSchema,
+    OptionalNode,
+    OptionalSequenceSchema,
 )
+from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.location import Position
 from ichnaea.api.locate.provider import Provider
+from ichnaea.models.cell import RadioStringType
 from ichnaea.rate_limit import rate_limit_exceeded
+
+
+class OutboundCellSchema(OptionalMappingSchema):
+
+    radio = OptionalNode(RadioStringType(), internal_name='radioType')
+    mcc = OptionalNode(colander.Integer(), internal_name='mobileCountryCode')
+    mnc = OptionalNode(colander.Integer(), internal_name='mobileNetworkCode')
+    lac = OptionalNode(colander.Integer(), internal_name='locationAreaCode')
+    cid = OptionalNode(colander.Integer(), internal_name='cellId')
+    signal = OptionalNode(colander.Integer(), internal_name='signalStrength')
+    ta = OptionalNode(colander.Integer(), internal_name='timingAdvance')
+
+
+class OutboundCellsSchema(OptionalSequenceSchema):
+
+    cell = OutboundCellSchema()
+
+
+class OutboundWifiSchema(OptionalMappingSchema):
+
+    key = OptionalNode(colander.String(), internal_name='macAddress')
+    channel = OptionalNode(colander.Integer(), internal_name='channel')
+    signal = OptionalNode(colander.Integer(), internal_name='signalStrength')
+    snr = OptionalNode(colander.Integer(), internal_name='signalToNoiseRatio')
+
+
+class OutboundWifisSchema(OptionalSequenceSchema):
+
+    wifi = OutboundWifiSchema()
+
+
+class OutboundFallbackSchema(OptionalMappingSchema):
+
+    lacf = OptionalNode(colander.Boolean())
+
+
+class OutboundSchema(OptionalMappingSchema):
+
+    cell = OutboundCellsSchema(
+        missing=colander.drop, internal_name='cellTowers')
+    wifi = OutboundWifisSchema(
+        missing=colander.drop, internal_name='wifiAccessPoints')
+    fallbacks = OutboundFallbackSchema(missing=colander.drop)
 
 
 class FallbackProvider(Provider):
@@ -26,7 +73,7 @@ class FallbackProvider(Provider):
     log_name = 'fallback'
     location_type = Position
     source = DataSource.Fallback
-    LOCATION_NOT_FOUND = True
+    LOCATION_NOT_FOUND = 404  #: Magic constant to cache not found.
 
     def __init__(self, settings, *args, **kw):
         self.url = settings.get('url')
@@ -35,84 +82,15 @@ class FallbackProvider(Provider):
         self.cache_expire = int(settings.get('cache_expire', 0))
         super(FallbackProvider, self).__init__(settings, *args, **kw)
 
-    def _prepare_cell(self, cell):
-        radio = cell.radio
-        if radio is not None:
-            radio_name = radio.name
-            if radio_name == 'umts':  # pragma: no cover
-                radio_name = 'wcdma'
-
-        result = {}
-        cell_map = {
-            'mcc': 'mobileCountryCode',
-            'mnc': 'mobileNetworkCode',
-            'lac': 'locationAreaCode',
-            'cid': 'cellId',
-            'signal': 'signalStrength',
-            'ta': 'timingAdvance',
-        }
-        if radio_name:
-            result['radioType'] = radio_name
-        for source, target in cell_map.items():
-            source_value = getattr(cell, source, None)
-            if source_value is not None:
-                result[target] = source_value
-
-        return result
-
-    def _prepare_wifi(self, wifi):
-        result = {}
-        wifi_map = {
-            'key': 'macAddress',
-            'channel': 'channel',
-            'signal': 'signalStrength',
-            'snr': 'signalToNoiseRatio',
-        }
-        for source, target in wifi_map.items():
-            source_value = getattr(wifi, source, None)
-            if source_value is not None:
-                result[target] = source_value
-
-        return result
-
-    def _prepare_outbound_query(self, query):
-        cell_queries = []
-        for cell in query.cell:
-            cell_query = self._prepare_cell(cell)
-            if cell_query:
-                cell_queries.append(cell_query)
-
-        wifi_queries = []
-        for wifi in query.wifi:
-            wifi_query = self._prepare_wifi(wifi)
-            if wifi_query:
-                wifi_queries.append(wifi_query)
-
-        outbound_query = {}
-        if cell_queries:
-            outbound_query['cellTowers'] = cell_queries
-        if wifi_queries:
-            outbound_query['wifiAccessPoints'] = wifi_queries
-        outbound_query['fallbacks'] = {
-            # We only send the lacf fallback for now
-            'lacf': query.fallback.lacf,
-        }
-
-        return outbound_query
-
     def should_locate(self, query, location):
         empty_location = not location.found()
         weak_location = (location.source is not None and
                          location.source >= DataSource.GeoIP)
 
-        outbound_query = self._prepare_outbound_query(query)
-        cell_found = outbound_query.get('cellTowers', [])
-        wifi_found = (len(outbound_query.get(
-            'wifiAccessPoints', [])) >= MIN_WIFIS_IN_QUERY)
         return (
             query.api_key.allow_fallback and
             (empty_location or weak_location) and
-            (cell_found or wifi_found)
+            (bool(query.cell) or bool(query.wifi))
         )
 
     def get_ratelimit_key(self):
@@ -167,14 +145,22 @@ class FallbackProvider(Provider):
                 self.raven_client.captureException()
 
     def _make_external_call(self, query):
-        outbound_query = self._prepare_outbound_query(query)
+        outbound = None
+        try:
+            internal_query = query.internal_query()
+            outbound = OutboundSchema().deserialize(internal_query)
+        except colander.Invalid:  # pragma: no cover
+            self.raven_client.captureException()
+
+        if not outbound:  # pragma: no cover
+            return
 
         try:
             with query.stat_timer('fallback.lookup'):
                 response = requests.post(
                     self.url,
                     headers={'User-Agent': 'ichnaea'},
-                    json=outbound_query,
+                    json=outbound,
                     timeout=5.0,
                     verify=False,
                 )
@@ -202,7 +188,7 @@ class FallbackProvider(Provider):
                 self._make_external_call(query)
             )
 
-            if location_data and location_data is not self.LOCATION_NOT_FOUND:
+            if location_data and location_data != self.LOCATION_NOT_FOUND:
                 try:
                     location = self.location_type(
                         lat=location_data['location']['lat'],
