@@ -31,6 +31,8 @@ METRIC_MAPPING = {
 
 class Query(object):
 
+    country = None
+
     def __init__(self, fallback=None, geoip=None, cell=None, wifi=None,
                  api_key=None, api_name=None, api_type=None,
                  session=None, stats_client=None):
@@ -104,6 +106,10 @@ class Query(object):
             valid = str(ip_address(value))
         except ValueError:
             valid = None
+        if valid:
+            self.country = None  # undecided
+        else:
+            self.country = 'none'
         self._geoip = valid
 
     @property
@@ -214,6 +220,12 @@ class Query(object):
             result['fallbacks'] = fallback_data
         return result
 
+    def emit_country_stat(self, pre, post):
+        """Emit a all/country stats pair."""
+        self.stats_client.incr(pre + 'all' + post)
+        if self.country:
+            self.stats_client.incr(pre + self.country + post)
+
     def emit_query_stats(self):
         """Emit stats about the data contained in this query."""
         if not self.api_key.log or not self.api_type:
@@ -222,28 +234,17 @@ class Query(object):
         cells = len(self.cell)
         wifis = len(self._wifi_unvalidated)
 
-        if self.geoip:
-            country = ''
-        else:
-            country = 'none'
-
         prefix = '{api_type}.query.{key}.'.format(
             api_type=self.api_type,
             key=self.api_key.name)
-        all_prefix = prefix + 'all.'
-        country_prefix = prefix + country + '.'
 
         if self.geoip and not (cells or wifis):
-            self.stats_client.incr(all_prefix + 'geoip.only')
-            if country:  # pragma: no cover
-                self.stats_client.incr(country_prefix + 'geoip.only')
+            self.emit_country_stat(prefix, '.geoip.only')
         else:
             for name, length in (('cell', cells), ('wifi', wifis)):
                 num = METRIC_MAPPING[min(length, 2)]
-                metric = '{name}.{num}'.format(name=name, num=num)
-                self.stats_client.incr(all_prefix + metric)
-                if country:
-                    self.stats_client.incr(country_prefix + metric)
+                metric = '.{name}.{num}'.format(name=name, num=num)
+                self.emit_country_stat(prefix, metric)
 
     def stat_count(self, stat):
         """Emit an api_name specific stat counter."""
