@@ -14,7 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
-- #287: Add new detailed query metrics.
+- #433: Add new detailed query metrics.
 
 - Use a colander schema to describe the outbound fallback provider query.
 
