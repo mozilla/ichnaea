@@ -128,7 +128,7 @@ class TestImport(CeleryAppTestCase):
         self.cell = CellFactory.build(radio=Radio.gsm)
 
     @contextmanager
-    def get_test_csv(self, lo=1, hi=10, time=1408604686):
+    def get_csv(self, lo=1, hi=10, time=1408604686):
         cell = self.cell
         line_template = ('GSM,{mcc},{mnc},{lac},{cid},{psc},{lon},'
                          '{lat},1,1,1,{time},{time},')
@@ -157,13 +157,13 @@ class TestImport(CeleryAppTestCase):
                 gzip_file.write(txt)
             yield path
 
-    def import_test_csv(self, lo=1, hi=10, time=1408604686, session=None):
+    def import_csv(self, lo=1, hi=10, time=1408604686, session=None):
         session = session or self.session
-        with self.get_test_csv(lo=lo, hi=hi, time=time) as path:
+        with self.get_csv(lo=lo, hi=hi, time=time) as path:
             import_ocid_cells(path, session=session)
 
     def test_local_import(self):
-        self.import_test_csv()
+        self.import_csv()
         cells = self.session.query(OCIDCell).all()
         self.assertEqual(len(cells), 9)
 
@@ -179,7 +179,7 @@ class TestImport(CeleryAppTestCase):
 
     def test_local_import_with_query(self):
         self.session = self.db_ro_session
-        self.import_test_csv(session=self.session)
+        self.import_csv(session=self.session)
 
         cell_key = {
             'mcc': self.cell.mcc,
@@ -215,7 +215,7 @@ class TestImport(CeleryAppTestCase):
         new_date = datetime.fromtimestamp(new_time).replace(tzinfo=UTC)
         today = util.utcnow().date()
 
-        self.import_test_csv(time=old_time)
+        self.import_csv(time=old_time)
         cells = self.session.query(OCIDCell).all()
         self.assertEqual(len(cells), 9)
         update_statcounter.delay(ago=0).get()
@@ -228,7 +228,7 @@ class TestImport(CeleryAppTestCase):
             self.session.query(OCIDCellArea).count(), len(lacs))
 
         # update some entries
-        self.import_test_csv(lo=5, hi=13, time=new_time)
+        self.import_csv(lo=5, hi=13, time=new_time)
 
         cells = (self.session.query(OCIDCell)
                              .order_by(OCIDCell.modified).all())
@@ -250,7 +250,7 @@ class TestImport(CeleryAppTestCase):
         self.assertEqual(Stat.getkey(self.session, stat_key).value, 12)
 
     def test_local_import_latest_through_http(self):
-        with self.get_test_csv() as path:
+        with self.get_csv() as path:
             with open(path, 'rb') as gzip_file:
                 with requests_mock.Mocker() as req_m:
                     req_m.register_uri('GET', re.compile('.*'), body=gzip_file)

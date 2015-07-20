@@ -1,24 +1,22 @@
 """
 Abstract searcher and concrete country and position searchers each using
-multiple providers to satisfy a given query.
+multiple sources to satisfy a given query.
 """
 
-from collections import defaultdict, deque
-
+from ichnaea.api.locate.fallback import FallbackPositionSource
 from ichnaea.api.locate.geoip import (
-    GeoIPCountryProvider,
-    GeoIPPositionProvider,
+    GeoIPCountrySource,
+    GeoIPPositionSource,
 )
-from ichnaea.api.locate.cell import (
-    CellAreaPositionProvider,
-    CellCountryProvider,
-    CellPositionProvider,
-    OCIDCellAreaPositionProvider,
-    OCIDCellPositionProvider,
+from ichnaea.api.locate.internal import (
+    InternalCountrySource,
+    InternalPositionSource,
 )
-from ichnaea.api.locate.fallback import FallbackProvider
-from ichnaea.api.locate.result import EmptyResult
-from ichnaea.api.locate.wifi import WifiPositionProvider
+from ichnaea.api.locate.ocid import OCIDPositionSource
+from ichnaea.api.locate.result import (
+    Country,
+    Position,
+)
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 
 
@@ -61,96 +59,70 @@ def configure_position_searcher(settings, geoip_db=None, raven_client=None,
 
 class Searcher(object):
     """
-    A Searcher will use a collection of Provider classes
+    A Searcher will use a collection of data sources
     to attempt to satisfy a user's query. It will loop over them
     in the order they are specified and use the most accurate result.
-
-    First we attempt a "zoom-in" from cell-lac, to cell
-    to wifi, tightening our estimate each step only so
-    long as it doesn't contradict the existing best-estimate.
     """
 
-    provider_classes = ()
+    result_type = None  #: :class:`ichnaea.api.locate.result.Result`
+    sources = ()  #:
+    source_classes = ()  #:
 
     def __init__(self, settings,
                  geoip_db, raven_client, redis_client, stats_client):
-        self.all_providers = []
-        for provider_group, providers in self.provider_classes:
-            for provider in providers:
-                provider_settings = settings.get_map(
-                    'locate:{provider_group}'.format(
-                        provider_group=provider_group), {})
-                provider_instance = provider(
-                    settings=provider_settings,
-                    geoip_db=geoip_db,
-                    raven_client=raven_client,
-                    redis_client=redis_client,
-                    stats_client=stats_client,
-                )
-                self.all_providers.append((provider_group, provider_instance))
+        self.sources = []
+        for name, source in self.source_classes:
+            source_settings = settings.get_map('locate:%s' % name, {})
+            source_instance = source(
+                settings=source_settings,
+                geoip_db=geoip_db,
+                raven_client=raven_client,
+                redis_client=redis_client,
+                stats_client=stats_client,
+            )
+            self.sources.append((name, source_instance))
 
     def _search(self, query):
-        best_result = EmptyResult()
-        best_provider = None
-        all_results = defaultdict(deque)
+        result = self.result_type()
 
-        for provider_group, provider in self.all_providers:
-            if provider.should_search(query, best_result):
-                provider_result = provider.search(query)
-                all_results[provider_group].appendleft(
-                    (provider, provider_result))
+        for name, source in self.sources:
+            if source.should_search(query, result):
+                source_result = source.search(query)
 
-                if provider_result.more_accurate(best_result):
+                if source_result.more_accurate(result):
                     # If this result is more accurate than our previous one,
                     # we'll use it.
-                    best_result = provider_result
-                    best_provider = provider
+                    result = source_result
 
-                if best_result.accurate_enough():
+                if result.accurate_enough():
                     # Stop the loop, if we have a good quality result.
                     break
 
-        if not best_result.found():
-            query.stat_count('miss')
-        else:
-            best_provider.log_hit(query)
+        return result
 
-        # Log a hit/miss metric for the first data source for
-        # which the user provided sufficient data.
-        # We check each provider group in reverse order
-        # (most accurate to least).
-        for provider_group, providers in reversed(self.provider_classes):
-            group_results = all_results[provider_group]
-            if any([res.query_data for (prov, res) in group_results]):
-                # Claim a success if at least one result for a logging
-                # group was a success.
-                first_provider, first_result = group_results[0]
-                found_provider = None
-                for (provider, result) in group_results:
-                    if result.found():
-                        found_provider = provider
-                        break
-                if found_provider:
-                    found_provider.log_success(query)
-                else:
-                    first_provider.log_failure(query)
-                break
+    def format_result(self, result):  # pragma: no cover
+        """
+        Converts the result object into a dictionary representation.
 
-        return best_result
-
-    def _prepare(self, result):  # pragma: no cover
+        :param result: A query result.
+        :type result: :class:`~ichnaea.api.locate.result.Result`
+        """
         raise NotImplementedError()
 
     def search(self, query):
-        """Provide a type specific query result or return None.
+        """
+        Provide a type specific query result or return None.
 
         :param query: A query.
         :type query: :class:`~ichnaea.api.locate.query.Query`
+
+        :returns: A result_type specific dict.
         """
         query.emit_query_stats()
         result = self._search(query)
+        query.emit_result_stats(result)
         if result.found():
-            return self._prepare(result)
+            return self.format_result(result)
 
 
 class PositionSearcher(Searcher):
@@ -159,25 +131,15 @@ class PositionSearcher(Searcher):
     a longitude and an accuracy in meters.
     """
 
-    provider_classes = (
-        ('geoip', (
-            GeoIPPositionProvider,
-        )),
-        ('cell', (
-            OCIDCellAreaPositionProvider,
-            CellAreaPositionProvider,
-            OCIDCellPositionProvider,
-            CellPositionProvider,
-        )),
-        ('wifi', (
-            WifiPositionProvider,
-        )),
-        ('fallback', (
-            FallbackProvider,
-        )),
+    result_type = Position
+    source_classes = (
+        ('geoip', GeoIPPositionSource),
+        ('internal', InternalPositionSource),
+        ('ocid', OCIDPositionSource),
+        ('fallback', FallbackPositionSource),
     )
 
-    def _prepare(self, result):
+    def format_result(self, result):
         return {
             'lat': round(result.lat, DEGREE_DECIMAL_PLACES),
             'lon': round(result.lon, DEGREE_DECIMAL_PLACES),
@@ -191,12 +153,13 @@ class CountrySearcher(Searcher):
     A CountrySearcher will return a country name and code.
     """
 
-    provider_classes = (
-        ('cell', (CellCountryProvider,)),
-        ('geoip', (GeoIPCountryProvider,)),
+    result_type = Country
+    source_classes = (
+        ('internal', InternalCountrySource),
+        ('geoip', GeoIPCountrySource),
     )
 
-    def _prepare(self, result):
+    def format_result(self, result):
         return {
             'country_code': result.country_code,
             'country_name': result.country_name,

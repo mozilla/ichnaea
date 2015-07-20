@@ -1,5 +1,10 @@
 from enum import Enum, IntEnum
 
+EARTH_CIRCUMFERENCE = 40000000.0
+"""
+Approximate circumference of the Earth in meters.
+"""
+
 MAX_WIFI_CLUSTER_KM = 0.5
 """
 Maximum distance between WiFi networks to be considered close enough
@@ -31,10 +36,10 @@ class DataSource(IntEnum):
     represents a preferred data source.
     """
 
-    Internal = 1
-    OCID = 2
-    Fallback = 3
-    GeoIP = 4
+    internal = 1
+    ocid = 2
+    fallback = 3
+    geoip = 4
 
 
 class DataAccuracy(Enum):
@@ -43,11 +48,31 @@ class DataAccuracy(Enum):
 
     Instances of this class can be compared based on their value or can
     be compared to int/float values.
+
+    These values are related to :data:`~ichnaea.constants.CELL_MIN_ACCURACY`
+    and :data:`~ichnaea.constants.GEOIP_CITY_ACCURACY` and adjustments
+    in one need to be reflected in the other.
     """
 
     high = 1000.0  #: High accuracy, probably WiFi based.
     medium = 40000.0  #: Medium accuracy, probably cell based.
-    low = float('inf')  #: Low accuracy, large cell, cell area or GeoIP.
+    low = EARTH_CIRCUMFERENCE  #: Low accuracy, large cell, cell area or GeoIP.
+    none = float('inf')  # No accuracy at all.
+
+    @classmethod
+    def from_number(cls, num):
+        """
+        Return a specific DataAccuracy enum value based on a float/int
+        argument.
+        """
+        num = float(num)
+        if num <= cls.high.value:
+            return cls.high
+        elif num <= cls.medium.value:
+            return cls.medium
+        elif num <= cls.low.value:
+            return cls.low
+        return cls.none
 
     def __eq__(self, other):
         if isinstance(other, DataAccuracy):

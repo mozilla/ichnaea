@@ -1,27 +1,135 @@
+from ichnaea.api.locate.constants import (
+    DataAccuracy,
+    DataSource,
+)
 from ichnaea.api.locate.result import (
     Country,
+    Result,
     Position,
 )
 from ichnaea.tests.base import TestCase
 
 
+class TestResult(TestCase):
+
+    def test_repr(self):
+        result = Result(country_code='DE', lat=1.0)
+        rep = repr(result)
+        self.assertTrue(rep.startswith('Result'), rep)
+        self.assertFalse('DE' in rep, rep)
+        self.assertFalse('1.0' in rep, rep)
+
+    def test_not_found(self):
+        self.assertFalse(Result().found())
+
+    def test_agrees_with(self):
+        self.assertTrue(Result().agrees_with(Result()))
+
+    def test_accurate_enough(self):
+        self.assertFalse(Result().accurate_enough())
+
+    def test_more_accurate(self):
+        self.assertFalse(Result().more_accurate(Result()))
+
+    def test_data_accuracy(self):
+        self.assertEqual(Result().data_accuracy, DataAccuracy.none)
+
+
+class TestCountry(TestCase):
+
+    def test_repr(self):
+        country = Country(country_code='DE', country_name='Germany')
+        rep = repr(country)
+        self.assertTrue(rep.startswith('Country'), rep)
+        self.assertTrue('DE' in rep, rep)
+        self.assertTrue('Germany' in rep, rep)
+
+    def test_found(self):
+        country = Country(country_code='CA', country_name='Canada')
+        self.assertTrue(country.found())
+
+    def test_not_found(self):
+        for (country_code, country_name) in (
+                ('CA', None), (None, 'Canada'), (None, None)):
+            country = Country(
+                country_code=country_code, country_name=country_name)
+            self.assertFalse(country.found())
+
+    def test_agrees_with(self):
+        country1 = Country(country_code='CA')
+        country2 = Country(country_code='CA')
+        self.assertTrue(country1.agrees_with(country2))
+
+    def test_disagrees_with(self):
+        country1 = Country(country_code='CA')
+        country2 = Country(country_code='DE')
+        self.assertFalse(country1.agrees_with(country2))
+
+    def test_accurate_enough(self):
+        country = Country(country_code='CA', country_name='Canada')
+        self.assertTrue(country.accurate_enough())
+
+    def test_not_accurate_enough(self):
+        country = Country()
+        self.assertFalse(country.accurate_enough())
+
+    def test_more_accurate_than_empty(self):
+        country1 = Country(country_code='CA', country_name='Canada')
+        country2 = Country()
+        self.assertTrue(country1.more_accurate(country2))
+
+    def test_less_accurate_than_empty(self):
+        country1 = Country(country_code='CA', country_name='Canada')
+        country2 = Country()
+        self.assertFalse(country2.more_accurate(country1))
+
+    def test_more_accurate_source(self):
+        country1 = Country(country_code='CA', country_name='Canada',
+                           source=DataSource.internal)
+        country2 = Country(country_code='CA', country_name='Canada',
+                           source=DataSource.ocid)
+        self.assertTrue(country1.more_accurate(country2))
+
+    def test_less_accurate_same(self):
+        country1 = Country(country_code='CA', country_name='Canada',
+                           source=DataSource.internal)
+        country2 = Country(country_code='CA', country_name='Canada',
+                           source=DataSource.internal)
+        self.assertFalse(country1.more_accurate(country2))
+
+    def test_data_accuracy(self):
+        self.assertEqual(
+            Country().data_accuracy, DataAccuracy.none)
+        self.assertEqual(
+            Country(country_code='DE', country_name='Germany').data_accuracy,
+            DataAccuracy.low)
+
+
 class TestPosition(TestCase):
 
-    def test_found_when_lat_lon_set(self):
-        position = Position(lat=1.0, lon=1.0)
+    def test_repr(self):
+        position = Position(lat=1.0, lon=-1.1, accuracy=100.0)
+        rep = repr(position)
+        self.assertTrue(rep.startswith('Position'), rep)
+        self.assertTrue('1.0' in rep, rep)
+        self.assertTrue('-1.1' in rep, rep)
+        self.assertTrue('100.0' in rep, rep)
+
+    def test_found(self):
+        position = Position(lat=1.0, lon=1.0, accuracy=10.0)
         self.assertTrue(position.found())
 
-    def test_not_found_when_lat_or_lon_is_None(self):
+    def test_not_found(self):
         for (lat, lon) in ((1.0, None), (None, 1.0), (None, None)):
-            position = Position(lat=lat, lon=lon)
+            position = Position(lat=lat, lon=lon, accuracy=10.0)
             self.assertFalse(position.found())
 
-    def test_agrees_with_other_when_distance_within_accuracy(self):
+    def test_agrees_closeby(self):
         position1 = Position(lat=1.0, lon=1.0, accuracy=1000)
         position2 = Position(lat=1.001, lon=1.001, accuracy=1000)
         self.assertTrue(position1.agrees_with(position2))
 
-    def test_does_not_agree_with_other_outside_accuracy(self):
+    def test_does_not_agree_far_away(self):
         position1 = Position(lat=1.0, lon=1.0, accuracy=100)
         position2 = Position(lat=1.001, lon=1.001, accuracy=100)
         self.assertFalse(position1.agrees_with(position2))
@@ -30,74 +138,36 @@ class TestPosition(TestCase):
         position = Position()
         self.assertFalse(position.accurate_enough())
 
-    def test_not_more_accurate_if_not_found(self):
-        position1 = Position(lat=1.0, lon=1.0)
+    def test_more_accurate_than_empty(self):
+        position1 = Position(lat=1.0, lon=1.0, accuracy=10.0)
+        position2 = Position()
+        self.assertTrue(position1.more_accurate(position2))
+
+    def test_less_accurate_than_empty(self):
+        position1 = Position(lat=1.0, lon=1.0, accuracy=10.0)
         position2 = Position()
         self.assertFalse(position2.more_accurate(position1))
 
-    def test_more_accurate_if_other_not_found(self):
-        position1 = Position(lat=1.0, lon=1.0)
-        position2 = Position()
+    def test_more_accurate_source(self):
+        position1 = Position(lat=1.0, lon=1.0, accuracy=10.0,
+                             source=DataSource.internal)
+        position2 = Position(lat=1.0, lon=1.0, accuracy=10.0,
+                             source=DataSource.ocid)
         self.assertTrue(position1.more_accurate(position2))
 
-    def test_more_accurate_if_from_preferred_source(self):
-        position1 = Position(lat=1.0, lon=1.0, source=1)
-        position2 = Position(lat=1.0, lon=1.0, source=2)
-        self.assertTrue(position1.more_accurate(position2))
-
-    def test_more_accurate_if_agrees_and_lower_accuracy(self):
+    def test_more_accurate_closeby(self):
         position1 = Position(lat=1.0, lon=1.0, accuracy=500)
         position2 = Position(lat=1.0, lon=1.0, accuracy=1000)
         self.assertTrue(position1.more_accurate(position2))
 
-
-class TestCountry(TestCase):
-
-    def test_found_when_country_code_and_name_set(self):
-        country = Country(country_code='CA', country_name='Canada')
-        self.assertTrue(country.found())
-
-    def test_not_found_when_country_code_or_name_missing(self):
-        for (country_code, country_name) in (
-                ('CA', None), (None, 'Canada'), (None, None)):
-            country = Country(
-                country_code=country_code, country_name=country_name)
-            self.assertFalse(country.found())
-
-    def test_agrees_with_same_country_code(self):
-        country1 = Country(country_code='CA')
-        country2 = Country(country_code='CA')
-        self.assertTrue(country1.agrees_with(country2))
-
-    def test_not_agrees_with_different_country_code(self):
-        country1 = Country(country_code='CA')
-        country2 = Country(country_code='DE')
-        self.assertFalse(country1.agrees_with(country2))
-
-    def test_accurate_enough_if_found(self):
-        country = Country(country_code='CA', country_name='Canada')
-        self.assertTrue(country.accurate_enough())
-
-    def test_not_accurate_enough_if_not_found(self):
-        country = Country()
-        self.assertFalse(country.accurate_enough())
-
-    def test_not_more_accurate_if_not_found(self):
-        country1 = Country(country_code='CA', country_name='Canada')
-        country2 = Country()
-        self.assertFalse(country2.more_accurate(country1))
-
-    def test_more_accurate_if_other_not_found(self):
-        country1 = Country(country_code='CA', country_name='Canada')
-        country2 = Country()
-        self.assertTrue(country1.more_accurate(country2))
-
-    def test_more_accurate_if_from_preferred_source(self):
-        country1 = Country(country_code='CA', country_name='Canada', source=1)
-        country2 = Country(country_code='CA', country_name='Canada', source=2)
-        self.assertTrue(country1.more_accurate(country2))
-
-    def test_not_more_accurate_if_from_same_source_and_same_value(self):
-        country1 = Country(country_code='CA', country_name='Canada', source=1)
-        country2 = Country(country_code='CA', country_name='Canada', source=1)
-        self.assertFalse(country1.more_accurate(country2))
+    def test_data_accuracy(self):
+        self.assertEqual(
+            Position().data_accuracy, DataAccuracy.none)
+        self.assertEqual(
+            Position(accuracy=0.0).data_accuracy, DataAccuracy.high)
+        self.assertEqual(
+            Position(accuracy=100).data_accuracy, DataAccuracy.high)
+        self.assertEqual(
+            Position(accuracy=30000.0).data_accuracy, DataAccuracy.medium)
+        self.assertEqual(
+            Position(accuracy=10 ** 6).data_accuracy, DataAccuracy.low)

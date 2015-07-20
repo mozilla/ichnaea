@@ -38,7 +38,7 @@ class Query(object):
     _ip = None
 
     def __init__(self, fallback=None, ip=None, cell=None, wifi=None,
-                 api_key=None, api_name=None, api_type=None,
+                 api_key=None, api_type=None,
                  session=None, geoip_db=None, stats_client=None):
         """
         A class representing a concrete query.
@@ -57,10 +57,6 @@ class Query(object):
 
         :param api_key: An ApiKey instance for the current query.
         :type api_key: :class:`ichnaea.models.api.ApiKey`
-
-        :param api_name: Name of the API, used as a stats prefix
-            (for example 'geolocate')
-        :type api_name: str
 
         :param api_type: The type of query API, for example `locate`.
         :type api_type: str
@@ -82,7 +78,8 @@ class Query(object):
         self.cell = cell
         self.wifi = wifi
         self.api_key = api_key
-        self.api_name = api_name
+        if api_type not in (None, 'country', 'locate'):
+            raise ValueError('Invalid api_type.')
         self.api_type = api_type
 
     @property
@@ -166,7 +163,9 @@ class Query(object):
         If the same cell area is supplied multiple times, this chooses only
         the best entry for each unique area.
         """
-        return self._cell_area
+        if self.fallback.lacf:
+            return self._cell_area
+        return []
 
     @cell.setter
     def cell(self, values):
@@ -232,11 +231,24 @@ class Query(object):
 
     @property
     def expected_accuracy(self):
+        accuracies = [DataAccuracy.none]
+
         if self.wifi:
-            return DataAccuracy.high
+            if self.api_type == 'country':
+                accuracies.append(DataAccuracy.none)
+            else:
+                accuracies.append(DataAccuracy.high)
         if self.cell:
-            return DataAccuracy.medium
-        return DataAccuracy.low
+            if self.api_type == 'country':
+                accuracies.append(DataAccuracy.low)
+            else:
+                accuracies.append(DataAccuracy.medium)
+        if ((self.cell_area and self.fallback.lacf) or
+                (self.ip and self.fallback.ipf)):
+            accuracies.append(DataAccuracy.low)
+
+        # return the best possible (smallest) accuracy
+        return min(accuracies)
 
     def internal_query(self):
         """Returns a dictionary of this query in our internal format."""
@@ -262,8 +274,16 @@ class Query(object):
             result['fallbacks'] = fallback_data
         return result
 
-    def emit_country_stat(self, pre, post):
-        """Emit a all/country stats pair."""
+    def collect_metrics(self):
+        """Should detailed metrics be collected for this query?"""
+        allowed = bool(self.api_key and self.api_key.log and self.api_type)
+        possible_result = bool(self.expected_accuracy != DataAccuracy.none)
+        # don't report stats if there is really no data at all
+        # in the query
+        return allowed and possible_result
+
+    def _emit_country_stat(self, pre, post):
+        # Emit a all/country stats pair
         self.stats_client.incr(pre + 'all' + post)
         country = self.country
         if not country:
@@ -273,7 +293,7 @@ class Query(object):
 
     def emit_query_stats(self):
         """Emit stats about the data contained in this query."""
-        if not self.api_key.log or not self.api_type:
+        if not self.collect_metrics():
             return
 
         cells = len(self.cell)
@@ -284,33 +304,53 @@ class Query(object):
             key=self.api_key.name)
 
         if self.ip and not (cells or wifis):
-            self.emit_country_stat(prefix, '.geoip.only')
+            self._emit_country_stat(prefix, '.geoip.only')
         else:
             for name, length in (('cell', cells), ('wifi', wifis)):
                 num = METRIC_MAPPING[min(length, 2)]
                 metric = '.{name}.{num}'.format(name=name, num=num)
-                self.emit_country_stat(prefix, metric)
+                self._emit_country_stat(prefix, metric)
 
-    def emit_provider_stats(self, provider, result):
-        """Emit stats about a specific provider."""
+    def emit_result_stats(self, result):
+        """Emit stats about how well the result satisfied the query."""
+        if not self.collect_metrics():
+            return
+
+        if self.api_type == 'country':
+            # TODO: enable result stats for country API
+            return
+
+        if result.data_accuracy <= self.expected_accuracy:
+            status = 'hit'
+        else:
+            status = 'miss'
+
+        pre = '{api_type}.result.{key}.'.format(
+            api_type=self.api_type,
+            key=self.api_key.name)
+
+        post = '.{category}.{status}'.format(
+            category=self.expected_accuracy.name, status=status)
+
+        self._emit_country_stat(pre, post)
+
+    def emit_source_stats(self, source, result):
+        """Emit stats about how well the result satisfied the query."""
+        if not self.collect_metrics():
+            return
 
         pre = '{api_type}.source.{key}.'.format(
             api_type=self.api_type,
             key=self.api_key.name)
 
-        post = '.{provider}.{result}'.format(
-            provider=provider, result=result)
+        if result.data_accuracy <= self.expected_accuracy:
+            status = 'hit'
+        else:
+            status = 'miss'
 
-        self.emit_country_stat(pre, post)
+        post = '.{source_name}.{category}.{status}'.format(
+            source_name=source.name,
+            category=self.expected_accuracy.name,
+            status=status)
 
-    def stat_count(self, stat):
-        """Emit an api_name specific stat counter."""
-        self.stats_client.incr('{api}.{stat}'.format(
-            api=self.api_name, stat=stat))
-
-    def stat_timer(self, stat):
-        """
-        Return a context manager to capture an api_name specific stat timer.
-        """
-        return self.stats_client.timer('{api}.{stat}'.format(
-            api=self.api_name, stat=stat))
+        self._emit_country_stat(pre, post)

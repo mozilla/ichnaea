@@ -21,6 +21,10 @@ MIN_LON = -180.0  #: Minimum unrestricted longitude.
 
 # Empirical 95th percentile accuracy of ichnaea's responses,
 # from feedback testing of observations as queries.
+# These values are related to
+# :class:`~ichnaea.api.locate.constants.DataAccuracy`
+# and adjustments in one need to be reflected in the other.
+
 WIFI_MIN_ACCURACY = 100  #: Minimum accuracy returned for Wifi queries.
 CELL_MIN_ACCURACY = 5000  #: Minimum accuracy returned for cell queries.
 LAC_MIN_ACCURACY = 20000  #: Minimum accuracy returned for cell area queries.

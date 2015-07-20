@@ -24,7 +24,6 @@ class WifiPositionProvider(Provider):
     the WiFi models and a series of clustering algorithms.
     """
 
-    log_name = 'wifi'
     result_type = Position
 
     def _cluster_elements(self, items, distance_fn, threshold):
@@ -183,19 +182,12 @@ class WifiPositionProvider(Provider):
                                            sample, WIFI_MIN_ACCURACY)
         return self.result_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
-    def _sufficient_data(self, wifi_keys):
-        return (len(self._filter_bssids_by_similarity(list(wifi_keys))) >=
-                MIN_WIFIS_IN_QUERY)
-
     def search(self, query):
-        result = self.result_type(query_data=False)
+        result = self.result_type()
 
         wifis, wifi_signals, wifi_keys = self._get_clean_wifi_keys(query)
 
         if len(wifi_keys) >= MIN_WIFIS_IN_QUERY:
-            if self._sufficient_data(wifi_keys):
-                result.query_data = True
-
             queried_wifis = self._query_database(query, wifi_keys)
             clusters = self._get_clusters(wifi_signals, queried_wifis)
 

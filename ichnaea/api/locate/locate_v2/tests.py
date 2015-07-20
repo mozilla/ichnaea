@@ -38,7 +38,7 @@ class TestSchema(TestCase):
                 'radioType': 'umts',
             }]})
 
-    def test_multiple_radio_fields_uses_radioType(self):
+    def test_multiple_radio_fields(self):
         schema = LocateV2Schema()
         data = schema.deserialize({'cellTowers': [{
             'radio': 'gsm',
@@ -100,11 +100,11 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         res = self._call(body=query)
         self.check_model_response(res, cell)
 
-        self.check_stats(
-            counter=[self.metric_url + '.200',
-                     self.metric + '.api_key.test',
-                     self.metric + '.api_log.test.cell_hit']
-        )
+        self.check_stats(counter=[
+            self.metric + '.api_key.test',
+            self.metric_url + '.200',
+            self.metric_type + '.result.test.all.medium.hit',
+            self.metric_type + '.source.test.all.internal.medium.hit'])
 
     def test_partial_cell(self):
         cell = CellFactory()
@@ -144,10 +144,11 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         res = self._call(body=query)
         self.check_model_response(res, wifi, lat=wifi.lat + offset)
 
-        self.check_stats(
-            counter=[self.metric + '.wifi_hit',
-                     self.metric + '.api_key.test',
-                     self.metric + '.api_log.test.wifi_hit'])
+        self.check_stats(counter=[
+            self.metric + '.api_key.test',
+            self.metric_url + '.200',
+            self.metric_type + '.result.test.all.high.hit',
+            self.metric_type + '.source.test.all.internal.high.hit'])
 
     def test_cell_mcc_mnc_strings(self):
         # mcc and mnc are officially defined as strings, where '01' is
@@ -205,7 +206,7 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         res = self._call(body=query)
         self.check_model_response(res, cell)
 
-    def test_inconsistent_cell_radio_in_towers(self):
+    def test_inconsistent_cell_radio(self):
         cell = CellFactory(radio=Radio.wcdma, range=15000)
         cell2 = CellFactory(radio=Radio.gsm, range=35000,
                             lat=cell.lat + 0.0002, lon=cell.lon)
@@ -221,7 +222,7 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         res = self._call(body=query)
         self.check_model_response(res, cell)
 
-    def test_inconsistent_cell_radio_type_in_towers(self):
+    def test_inconsistent_cell_radio_type(self):
         cell = CellFactory(radio=Radio.wcdma, range=15000)
         cell2 = CellFactory(radio=Radio.gsm, range=35000,
                             lat=cell.lat + 0.0002, lon=cell.lon)

@@ -11,8 +11,138 @@ aggregating and viewing them on a compatible dashboard.
 This document describes the metrics collected.
 
 
-API Key Counters
-----------------
+API Query Metrics
+-----------------
+
+For each incoming API query we log metrics about the data contained in
+the query under the following two prefixes:
+
+``<api_type>.query.<api_shortname>.all.``,
+``<api_type>.query.<api_shortname>.<country_code>.``
+
+`api_type` describes the type of API being used, independent of the
+version number of the API. So `v1/country` gets logged as `country`
+and both `v1/search` and `v1/geolocate` get logged as `locate`.
+
+`country_code` is either a two-letter ISO3166 code like `de` or the
+special value `none` if the country origin of the incoming request
+could not be determined. The value for `all` will be always be logged,
+even for the `none` case.
+
+Under these two prefixes, there are a number of metrics:
+
+``geoip.only`` : counter
+
+    If the query contained only GeoIP data and nothing else, only log
+    this metric and none of the following.
+
+``cell.none``, ``cell.one``, ``cell.many``,
+``wifi.none``, ``wifi.one``, ``wifi.many`` : counter
+
+    If the query contained any cell or wifi networks, one cell and one
+    wifi metric gets logged. The metrics depend on the number of valid
+    stations for each of the two.
+
+
+API Source Metrics
+------------------
+
+TODO - describe metrics collected about each individual source of
+location data, like our internal database or OpenCellIDs data.
+
+
+API Result Metrics
+------------------
+
+Similar to the API query metrics we also collect metrics about each
+result of an API query. This follows the same per API type and per
+country rules under the prefixes:
+
+``<api_type>.result.<api_shortname>.all.``,
+``<api_type>.result.<api_shortname>.<country_code>.``
+
+Under these two prefixes we collect metrics that measure if we satisfied
+the incoming API query in the best possible fashion. Incoming queries
+can generally contain WiFi networks, cell networks, an IP address or any
+mixture thereof. If the query contained only cell networks, we do not
+expect to get a high accuracy result, as there is too little data in the
+query to do so.
+
+We express this by classifying each incoming query into one of four
+categories:
+
+High Accuracy (``high``)
+    A query containing at least two WiFi networks.
+
+Medium Accuracy (``medium``)
+    A query containing no WiFi networks but at least one cell network.
+
+Low Accuracy (``low``)
+    A query containing no networks but only the IP address of the client.
+
+No Accuracy (``none``)
+    A query containing no usable information, for example an IP-only
+    query that explicitly disables the IP fallback.
+
+A query containing multiple data types gets put into the best possible
+category, so for example any query containing cell data will at least
+be of medium accuracy.
+
+One we have determined the expected accuracy category for the query, we
+compare it to the accuracy category of the result we determined. If we
+can deliver an equal or better category we consider the status to be
+a `hit`. If we don't satisfy the expected category we consider the
+result to be a `miss`.
+
+For each result we then log exactly one of the following result metrics:
+
+``high.hit``, ``high.miss``,
+``medium.hit``, ``medium.miss``,
+``low.hit``, ``low.miss`` : counter
+
+We don't log metrics for the uncommon case of ``none`` or no expected
+accuracy.
+
+One special case exists for cell networks. If we cannot find an exact
+cell match, we might fall back to a cell area based estimate. If the
+range of the cell area is fairly small we consider this to be a
+``medium.hit``. But if the size of the cell area is extremely large, in
+the order of tens of kilometers to hundreds of kilometers, we consider
+it to be a ``medium.miss``.
+
+In the past we only collected stats based on whether or not cell based
+data was used to answer a cell based query and counted it as a
+cell-based success, even if the provided accuracy was really bad.
+
+
+Fallback Source Metrics
+-----------------------
+
+The external fallback source has a couple extra metrics to observe the
+performance of outbound network calls and the effectiveness of its cache.
+
+``locate.fallback.cache.hit``,
+``locate.fallback.cache.miss``,
+``locate.fallback.cache.bypassed`` : counter
+
+    Counts the number of hits and misses for the fallback cache. Since
+    the cache only works for single cell based queries, there is also a
+    third metric for all requests bypassing the cache.
+
+``locate.fallback.lookup`` : timer
+
+    Measures the time it takes to do each outbound network request.
+
+``locate.fallback.lookup_status.<code>`` : counter
+
+    Counts the HTTP response codes for all outbound requests. There is
+    one counter per HTTP response code, for example `200`.
+
+
+API Key Metrics
+---------------
+
+TODO: Redo these to better fit with the new API query/source/result metrics.
 
 Several families of counters exist based on API keys. These have the prefixes:
 
@@ -35,146 +165,8 @@ are named:
   - ``<api_endpoint>.unknown_api_key``
 
 
-Response Counters
------------------
-
-For each API endpoint, and for each type of location datum that can be
-found in response to a query (``cell``, ``cell_lac``, ``wifi`` and
-``geoip``) a set of counters is produced to track how often a query commits
-to using ("hits") the given type of data on the given API.
-
-Some of these counters are "mutually exclusive" with respect to one
-another; which is to say that for every query *exactly one* of them will be
-incremented.
-
-For the ``geolocate`` API, the following counters are emitted:
-
-``geolocate.cell_hit`` : counter
-
-    Counts any geolocation query response that was based primarily on a
-    cell record. This counter is mutually exclusive with
-    ``geolocate.wifi_hit``, ``geolocate.cell_lac_hit``, and
-    ``geolocate.geoip_hit``.
-
-``geolocate.cell_lac_hit`` : counter
-
-    Counts any geolocation query response that was based primarily on a
-    cell LAC record. This counter is mutually exclusive with
-    ``geolocate.wifi_hit``, ``geolocate.cell_hit``, and
-    ``geolocate.geoip_hit``.
-
-``geolocate.wifi_hit`` : counter
-
-    Counts any geolocation query response that was based primarily on
-    wifi records. This counter is mutually exclusive with
-    ``geolocate.cell_hit``, ``geolocate.cell_lac_hit``, and
-    ``geolocate.geoip_hit``.
-
-``geolocate.geoip_city_found`` : counter
-
-    Counts any geolocation query for which GeoIP lookup of the query
-    source produced a city-level record, whether or not that city was
-    used in the response. This counter is mutually exclusive with
-    ``geolocate.geoip_country_found``.
-
-``geolocate.geoip_country_found`` : counter
-
-    Counts any geolocation query for which GeoIP lookup of the query source
-    produced only a country-level record, whether or not that country was
-    used in the response. This counter is mutually exclusive with
-    ``geolocate.geoip_city_found``.
-
-``geolocate.geoip_hit`` : counter
-
-    Counts any geolocation query response that was based primarily on a
-    GeoIP record. This counter is mutually exclusive with
-    ``geolocate.cell_hit``, ``geolocate.cell_lac_hit``, and
-    ``geolocate.wifi_hit``.
-
-``geolocate.miss`` : counter
-
-    Counts any geolocation query which did not find enough information
-    in the database to make any sort of guess at a location, and thus
-    returned an empty response.
-
-
-In addition to ``geolocate`` response-type counters, equivalent counters
-exist for the ``search`` API endpoint.
-
-
-Per API Key Response Counters
------------------------------
-
-In addition to the above mentioned response counters, additional
-extended stats are provided for some API keys. These counters track if
-the best possible response was given for each query. Exactly one counter
-is used per response. For example if WiFi information was provided in the
-request and the service did not respond with a WiFi based result, a
-"wifi_miss" metric is emitted, independent of whether a cell based or geoip
-based response was provided instead.
-
-``geolocate.api_log.<api_shortname>.wifi_hit``,
-``geolocate.api_log.<api_shortname>.wifi_miss``, : counter
-
-    Counts the number of requests that did contain WiFi data and were
-    responded to with a WiFi based result (hit) and those that did not
-    (miss).
-
-``geolocate.api_log.<api_shortname>.cell_hit``,
-``geolocate.api_log.<api_shortname>.cell_lac_hit``,
-``geolocate.api_log.<api_shortname>.cell_miss``, : counter
-
-    Counts the number of requests that did contain cell data and were
-    responded to with a cell (hit) or a cell location area (lac_hit) result
-    and those that were not answered with any cell based data (miss).
-
-``geolocate.api_log.<api_shortname>.geoip_hit``,
-``geolocate.api_log.<api_shortname>.geoip_miss``, : counter
-
-    Counts the number of requests that did contain neither cell nor WiFi
-    data and were successfully answered with a geoip result (hit) and
-    those were no position estimate could be given (miss).
-
-
-In addition to ``geolocate`` response counters, equivalent counters
-exist for the ``search`` API endpoint.
-
-
-API Query Counters
-------------------
-
-For each incoming API query we log stats about the data contained in
-the query under the following two prefixes:
-
-``<api_type>.query.<api_shortname>.all.``,
-``<api_type>.query.<api_shortname>.<country_code>.``
-
-`api_type` describes the type of API being used, independent of the
-version number of the API. So `v1/country` gets logged as `country`
-and both `v1/search` and `v1/geolocate` get logged as `locate`.
-
-`country_code` is either a two-letter ISO3166 code like `de` or the
-special value `none` if the country of the incoming request could not
-be determined. The value for `all` will be always be logged, even for
-the `none` case.
-
-Under these two prefixes, there are a number of metrics:
-
-``geoip.only`` : counter
-
-If the query contained only GeoIP data and nothing else, only log this
-metrics and none of the following.
-
-``cell.none``, ``cell.one``, ``cell.many``,
-``wifi.none``, ``wifi.one``, ``wifi.many``, : counter
-
-If the query contained any cell or wifi data, one cell and one wifi
-metric gets logged. The metrics depend on the number of valid stations
-for each of the two.
-
-
-Data Pipeline Stats
--------------------
+Data Pipeline Metrics
+---------------------
 
 When a batch of reports is accepted at one of the submission API
 endpoints, it is decomposed into a number of "items" -- wifi or cell
@@ -252,11 +244,12 @@ we also have a number of per API key stats for uploaded data.
 
     Count the number of uploaded cell and wifi observations for this API key.
 
-Export Stats
-------------
+
+Export Metrics
+--------------
 
 Incoming reports can also be sent to a number of different export targets.
-We keep stats on how those individual export targets perform.
+We keep metrics about how those individual export targets perform.
 
 ``items.export.<export_key>.batches`` : counter
 
@@ -272,20 +265,26 @@ We keep stats on how those individual export targets perform.
     A status can either be a simple `success` and `failure` or a HTTP
     response code like 200, 400, etc.
 
+
 Internal Monitoring
 -------------------
 
 ``queue.celery_default``,
+``queue.celery_export``,
 ``queue.celery_incoming``,
 ``queue.celery_insert``,
-``queue.celery_monitor``, : gauges
+``queue.celery_monitor``,
+``queue.celery_reports``,
+``queue.celery_upload`` : gauges
 
     These gauges measure the number of tasks in each of the Redis queues.
     They are sampled at an approximate per-minute interval.
 
 ``queue.update_cell``,
-``queue.update_cell_lac``,
-``queue.update_wifi``, : gauges
+``queue.update_cell_area``,
+``queue.update_mapstat``,
+``queue.update_score``,
+``queue.update_wifi`` : gauges
 
     These gauges measure the number of items in the Redis update queues.
     These queues are used to keep track of which observations still need to
@@ -327,7 +326,7 @@ component based on the response code. Rather, they aggregate over all
 response codes for a given HTTP path.
 
 
-Task timers
+Task Timers
 -----------
 
 Ichnaea's ingress and data-maintenance actions are managed by a Celery

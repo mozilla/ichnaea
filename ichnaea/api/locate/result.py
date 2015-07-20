@@ -3,75 +3,77 @@ Classes representing an abstract query result
 or a concrete country or position result.
 """
 
+from ichnaea.api.locate.constants import DataAccuracy
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 from ichnaea.geocalc import distance
 
 
 class Result(object):
-    """The result of a query from one provider."""
+    """An empty query result."""
+
+    _required = ()  #: The list of required attributes.
 
     def __init__(self, accuracy=None, country_code=None, country_name=None,
-                 fallback=None, lat=None, lon=None, query_data=True,
-                 source=None):
+                 fallback=None, lat=None, lon=None, source=None):
         self.accuracy = self._round(accuracy)
         self.country_code = country_code
         self.country_name = country_name
         self.fallback = fallback
         self.lat = self._round(lat)
         self.lon = self._round(lon)
-        self.query_data = query_data
         self.source = source
+
+    def __repr__(self):  # pragma: no cover
+        values = []
+        for field in self._required:
+            values.append('%s:%s' % (field, getattr(self, field, '')))
+        return '{klass}<{values}>'.format(
+            klass=self.__class__.__name__,
+            values=', '.join(values),
+        )
 
     def _round(self, value):
         if value is not None:
             value = round(value, DEGREE_DECIMAL_PLACES)
         return value
 
-    def found(self):  # pragma: no cover
-        """Does this result include any data?"""
-        raise NotImplementedError
-
-    def agrees_with(self, other):  # pragma: no cover
-        """Does this result match the other result?"""
-        raise NotImplementedError
-
-    def accurate_enough(self):  # pragma: no cover
-        """Is this result accurate enough to return it?"""
-        raise NotImplementedError
-
-    def more_accurate(self, other):  # pragma: no cover
-        """Is this result better than the passed in result?"""
-        raise NotImplementedError
-
-
-class EmptyResult(Result):
-    """An undefined result."""
+    @property
+    def data_accuracy(self):
+        """Return the accuracy class of this result."""
+        return DataAccuracy.none
 
     def found(self):
-        return False
+        """Does this result include any data?"""
+        if not self._required:
+            return False
+        for field in self._required:
+            if getattr(self, field, None) is None:
+                return False
+        return True
 
-    def agrees_with(self, other):  # pragma: no cover
+    def agrees_with(self, other):
+        """Does this result match the other result?"""
         return True
 
     def accurate_enough(self):
+        """Is this result accurate enough to return it?"""
         return False
 
-    def more_accurate(self, other):  # pragma: no cover
+    def more_accurate(self, other):
+        """Is this result better than the passed in result?"""
         return False
 
 
 class Position(Result):
     """The position returned by a position query."""
 
-    def __repr__(self):  # pragma: no cover
-        return 'Position<lat: {lat}, lon: {lon}, accuracy: {accuracy}>'.format(
-            lat=self.lat,
-            lon=self.lon,
-            accuracy=self.accuracy,
-        )
+    _required = ('lat', 'lon', 'accuracy')  #:
 
-    def found(self):
-        return None not in (self.lat, self.lon)
+    @property
+    def data_accuracy(self):
+        if self.accuracy is None:
+            return DataAccuracy.none
+        return DataAccuracy.from_number(self.accuracy)
 
     def agrees_with(self, other):
         dist = distance(other.lat, other.lon, self.lat, self.lon) * 1000
@@ -98,14 +100,13 @@ class Position(Result):
 class Country(Result):
     """The country returned by a country query."""
 
-    def __repr__(self):  # pragma: no cover
-        return 'Country<name: {name}, code: {code}>'.format(
-            name=self.country_name,
-            code=self.country_code,
-        )
+    _required = ('country_code', 'country_name')  #:
 
-    def found(self):
-        return None not in (self.country_code, self.country_name)
+    @property
+    def data_accuracy(self):
+        if not self.found():
+            return DataAccuracy.none
+        return DataAccuracy.low
 
     def agrees_with(self, other):
         return self.country_code == other.country_code

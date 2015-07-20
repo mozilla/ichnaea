@@ -80,7 +80,7 @@ class TestCell(ObservationTestCase):
         self.check_statcounter(StatKey.cell, 2)
         self.check_statcounter(StatKey.unique_cell, 2)
 
-    def test_blacklist_time_used_as_creation_time(self):
+    def test_created_from_blacklist_time(self):
         now = util.utcnow()
         last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
 
@@ -110,7 +110,7 @@ class TestCell(ObservationTestCase):
         self.check_statcounter(StatKey.cell, 1)
         self.check_statcounter(StatKey.unique_cell, 0)
 
-    def test_insert_observations(self):
+    def test_insert_obs(self):
         time = util.utcnow() - timedelta(days=1)
 
         cell = CellFactory(radio=Radio.gsm, total_measures=5)
@@ -162,7 +162,7 @@ class TestCell(ObservationTestCase):
         self.check_statcounter(StatKey.cell, 4)
         self.check_statcounter(StatKey.unique_cell, 1)
 
-    def test_insert_observations_invalid_lac(self):
+    def test_insert_obs_invalid_lac(self):
         time = util.utcnow() - timedelta(days=1)
         today = util.utcnow().date()
 
@@ -196,7 +196,7 @@ class TestCell(ObservationTestCase):
         self.assertEqual(len(cells), 1)
         self._compare_sets([c.total_measures for c in cells], [5])
 
-    def test_insert_observations_out_of_range(self):
+    def test_insert_obs_out_of_range(self):
         cell = CellFactory.build()
 
         obs = dict(
@@ -258,7 +258,7 @@ class TestWifi(ObservationTestCase):
         self.check_statcounter(StatKey.wifi, 2)
         self.check_statcounter(StatKey.unique_wifi, 1)
 
-    def test_blacklist_time_used_as_creation_time(self):
+    def test_created_from_blacklist_time(self):
         now = util.utcnow()
         last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
 
@@ -281,7 +281,7 @@ class TestWifi(ObservationTestCase):
         self.assertEqual(wifis[0].created, last_week)
         self.check_statcounter(StatKey.unique_wifi, 0)
 
-    def test_insert_observations(self):
+    def test_insert_obs(self):
         session = self.session
         time = util.utcnow() - timedelta(days=1)
 

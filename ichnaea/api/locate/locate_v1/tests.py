@@ -114,11 +114,10 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
 
         self.check_stats(
             timer=[self.metric_url],
-            counter=[(self.metric + '.api_key.test', 1),
-                     (self.metric + '.cell_hit', 1),
-                     (self.metric_url + '.200', 1),
-                     (self.metric + '.api_log.test.cell_hit', 1)],
-        )
+            counter=[self.metric + '.api_key.test',
+                     self.metric_type + '.result.test.all.medium.hit',
+                     self.metric_type + '.source.test.all.internal.medium.hit',
+                     self.metric_url + '.200'])
 
     def test_wifi(self):
         wifi = WifiFactory()
@@ -141,10 +140,10 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         res = self._call(body=query)
         self.check_model_response(res, wifi, lat=wifi.lat + offset)
 
-        self.check_stats(
-            counter=[self.metric + '.wifi_hit',
-                     self.metric + '.api_key.test',
-                     self.metric + '.api_log.test.wifi_hit'])
+        self.check_stats(counter=[
+            self.metric + '.api_key.test',
+            self.metric_type + '.result.test.all.high.hit',
+            self.metric_type + '.source.test.all.internal.high.hit'])
 
 
 class TestError(LocateV1Base, CommonLocateErrorTest):

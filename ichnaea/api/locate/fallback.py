@@ -1,5 +1,5 @@
 """
-Implementation of a fallback provider using an external web service.
+Implementation of a fallback source using an external web service.
 """
 
 import time
@@ -15,8 +15,7 @@ from ichnaea.api.schema import (
     OptionalSequenceSchema,
 )
 from ichnaea.api.locate.constants import DataSource
-from ichnaea.api.locate.provider import Provider
-from ichnaea.api.locate.result import Position
+from ichnaea.api.locate.source import PositionSource
 from ichnaea.models.cell import RadioStringType
 from ichnaea.rate_limit import rate_limit_exceeded
 
@@ -64,15 +63,13 @@ class OutboundSchema(OptionalMappingSchema):
     fallbacks = OutboundFallbackSchema(missing=colander.drop)
 
 
-class FallbackProvider(Provider):
+class FallbackPositionSource(PositionSource):
     """
-    A FallbackProvider implements a search using
+    A FallbackPositionSource implements a search using
     an external web service.
     """
 
-    log_name = 'fallback'
-    result_type = Position
-    source = DataSource.Fallback
+    source = DataSource.fallback
     LOCATION_NOT_FOUND = 404  #: Magic constant to cache not found.
 
     def __init__(self, settings, *args, **kw):
@@ -80,26 +77,21 @@ class FallbackProvider(Provider):
         self.ratelimit = int(settings.get('ratelimit', 0))
         self.rate_limit_expire = int(settings.get('ratelimit_expire', 0))
         self.cache_expire = int(settings.get('cache_expire', 0))
-        super(FallbackProvider, self).__init__(settings, *args, **kw)
+        super(FallbackPositionSource, self).__init__(settings, *args, **kw)
 
-    def should_search(self, query, result):
-        empty_result = not result.found()
-        weak_result = (result.source is not None and
-                       result.source >= DataSource.GeoIP)
+    def _stat_count(self, stat):
+        self.stats_client.incr('locate.fallback.' + stat)
 
-        return (
-            query.api_key.allow_fallback and
-            (empty_result or weak_result) and
-            (bool(query.cell) or bool(query.wifi))
-        )
+    def _stat_timer(self, stat):
+        return self.stats_client.timer('locate.fallback.' + stat)
 
-    def get_ratelimit_key(self):
+    def _get_ratelimit_key(self):
         return 'fallback_ratelimit:{time}'.format(time=int(time.time()))
 
-    def limit_reached(self):
+    def _limit_reached(self):
         return self.ratelimit and rate_limit_exceeded(
             self.redis_client,
-            self.get_ratelimit_key(),
+            self._get_ratelimit_key(),
             maxreq=self.ratelimit,
             expire=self.rate_limit_expire,
             on_error=True,
@@ -125,12 +117,14 @@ class FallbackProvider(Provider):
             try:
                 cached_cell = self.redis_client.get(cache_key)
                 if cached_cell:
-                    query.stat_count('fallback.cache.hit')
+                    self._stat_count('cache.hit')
                     return json.loads(cached_cell)
                 else:
-                    query.stat_count('fallback.cache.miss')
+                    self._stat_count('cache.miss')
             except RedisError:
                 self.raven_client.captureException()
+        else:
+            self._stat_count('cache.bypassed')
 
     def _set_cached_result(self, query, result):
         if self._should_cache(query):
@@ -156,7 +150,7 @@ class FallbackProvider(Provider):
             return
 
         try:
-            with query.stat_timer('fallback.lookup'):
+            with self._stat_timer('lookup'):
                 response = requests.post(
                     self.url,
                     headers={'User-Agent': 'ichnaea'},
@@ -164,8 +158,8 @@ class FallbackProvider(Provider):
                     timeout=5.0,
                     verify=False,
                 )
-            query.stat_count('fallback.lookup_status.' +
-                             str(response.status_code))
+
+            self._stat_count('lookup_status.' + str(response.status_code))
             if response.status_code != 404:
                 # don't log exceptions for normal not found responses
                 response.raise_for_status()
@@ -177,11 +171,22 @@ class FallbackProvider(Provider):
         except (json.JSONDecodeError, requests.exceptions.RequestException):
             self.raven_client.captureException()
 
+    def should_search(self, query, result):
+        empty_result = not result.found()
+        weak_result = (result.source is not None and
+                       result.source >= DataSource.geoip)
+
+        return (
+            query.api_key.allow_fallback and
+            (empty_result or weak_result) and
+            (bool(query.cell) or bool(query.wifi))
+        )
+
     def search(self, query):
-        result = self.result_type(query_data=False)
+        result = self.result_type()
+        source_used = False
 
-        if not self.limit_reached():
-
+        if not self._limit_reached():
             cached_result = self._get_cached_result(query)
             result_data = (
                 cached_result or
@@ -195,10 +200,14 @@ class FallbackProvider(Provider):
                         lon=result_data['location']['lng'],
                         accuracy=result_data['accuracy'],
                     )
+                    source_used = True
                 except (KeyError, TypeError):
                     self.raven_client.captureException()
 
             if cached_result is None:
                 self._set_cached_result(query, result_data)
+
+        if source_used:
+            query.emit_source_stats(self.source, result)
 
         return result

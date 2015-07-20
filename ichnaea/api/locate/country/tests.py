@@ -94,9 +94,6 @@ class TestView(CountryBase, CommonLocateTest):
         res = self._call(body={'wifiAccessPoints': []}, ip=self.test_ip)
         self.check_response(res, 'ok')
         self.check_db_calls(rw=0, ro=0)
-        self.check_stats(
-            counter=[self.metric + '.geoip_city_found',
-                     self.metric + '.geoip_hit'])
 
     def test_cell(self):
         # create a cell in the UK
@@ -105,8 +102,6 @@ class TestView(CountryBase, CommonLocateTest):
         res = self._call(body=query)
         self.check_model_response(res, cell, country='GB')
         self.check_db_calls(rw=0, ro=0)
-        self.check_stats(
-            counter=[self.metric + '.cell_hit'])
 
     def test_wifi(self):
         wifis = WifiFactory.build_batch(2)
@@ -117,8 +112,6 @@ class TestView(CountryBase, CommonLocateTest):
             status=404)
         self.check_response(res, 'not_found')
         self.check_db_calls(rw=0, ro=0)
-        self.check_stats(
-            counter=[self.metric + '.miss'])
 
     def test_get(self):
         super(TestView, self).test_get()

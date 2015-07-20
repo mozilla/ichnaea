@@ -6,11 +6,11 @@ from requests.exceptions import RequestException
 
 from ichnaea.api.exceptions import LocationNotFound
 from ichnaea.api.locate.constants import DataSource
-from ichnaea.api.locate.fallback import FallbackProvider
+from ichnaea.api.locate.fallback import FallbackPositionSource
 from ichnaea.api.locate.result import Position
-from ichnaea.api.locate.tests.test_provider import (
+from ichnaea.api.locate.tests.base import (
+    BaseSourceTest,
     DummyModel,
-    GeoIPProviderTest,
 )
 from ichnaea.tests.factories import (
     ApiKeyFactory,
@@ -19,9 +19,9 @@ from ichnaea.tests.factories import (
 )
 
 
-class TestFallbackProvider(GeoIPProviderTest):
+class TestSource(BaseSourceTest):
 
-    TestProvider = FallbackProvider
+    TestSource = FallbackPositionSource
     settings = {
         'url': 'http://127.0.0.1:9/?api',
         'ratelimit': '10',
@@ -30,7 +30,7 @@ class TestFallbackProvider(GeoIPProviderTest):
     }
 
     def setUp(self):
-        super(TestFallbackProvider, self).setUp()
+        super(TestSource, self).setUp()
 
         self.api_key = ApiKeyFactory.build(
             shortname='test', allow_fallback=True)
@@ -55,7 +55,7 @@ class TestFallbackProvider(GeoIPProviderTest):
         client.set.return_value = mock.Mock()
         return client
 
-    def test_successful_call(self):
+    def test_success(self):
         cell = CellFactory.build()
 
         with requests_mock.Mocker() as mock_request:
@@ -64,22 +64,22 @@ class TestFallbackProvider(GeoIPProviderTest):
 
             query = self.model_query(
                 cells=[cell],
-                fallbacks={
+                fallback={
                     'lacf': True,
                     'ipf': False,
                 },
             )
-            result = self.provider.search(query)
+            result = self.source.search(query)
             self.check_model_result(result, self.fallback_model)
 
             request_json = mock_request.request_history[0].json()
 
         self.assertEqual(request_json['fallbacks'], {'lacf': True})
         self.check_stats(
-            counter=['m.fallback.lookup_status.200'],
-            timer=['m.fallback.lookup'])
+            counter=['locate.fallback.lookup_status.200'],
+            timer=['locate.fallback.lookup'])
 
-    def test_failed_call_returns_empty_result(self):
+    def test_failed_call(self):
         cell = CellFactory.build()
 
         with requests_mock.Mocker() as mock_request:
@@ -90,10 +90,10 @@ class TestFallbackProvider(GeoIPProviderTest):
                 'POST', requests_mock.ANY, json=raise_request_exception)
 
             query = self.model_query(cells=[cell])
-            result = self.provider.search(query)
+            result = self.source.search(query)
             self.check_model_result(result, None)
 
-    def test_invalid_json_returns_empty_result(self):
+    def test_invalid_json(self):
         cell = CellFactory.build()
 
         with requests_mock.Mocker() as mock_request:
@@ -101,10 +101,10 @@ class TestFallbackProvider(GeoIPProviderTest):
                 'POST', requests_mock.ANY, json=['invalid json'])
 
             query = self.model_query(cells=[cell])
-            result = self.provider.search(query)
+            result = self.source.search(query)
             self.check_model_result(result, None)
 
-    def test_malformed_json_returns_empty_result(self):
+    def test_malformed_json(self):
         cell = CellFactory.build()
 
         with requests_mock.Mocker() as mock_request:
@@ -112,10 +112,10 @@ class TestFallbackProvider(GeoIPProviderTest):
                 'POST', requests_mock.ANY, content=b'[invalid json')
 
             query = self.model_query(cells=[cell])
-            result = self.provider.search(query)
+            result = self.source.search(query)
             self.check_model_result(result, None)
 
-    def test_403_response_returns_empty_result(self):
+    def test_403_response(self):
         cell = CellFactory.build()
 
         with requests_mock.Mocker() as mock_request:
@@ -123,13 +123,13 @@ class TestFallbackProvider(GeoIPProviderTest):
                 'POST', requests_mock.ANY, status_code=403)
 
             query = self.model_query(cells=[cell])
-            result = self.provider.search(query)
+            result = self.source.search(query)
             self.check_model_result(result, None)
 
         self.check_raven([('HTTPError', 1)])
-        self.check_stats(counter=['m.fallback.lookup_status.403'])
+        self.check_stats(counter=['locate.fallback.lookup_status.403'])
 
-    def test_404_response_returns_empty_result(self):
+    def test_404_response(self):
         cell = CellFactory.build()
 
         with requests_mock.Mocker() as mock_request:
@@ -139,13 +139,13 @@ class TestFallbackProvider(GeoIPProviderTest):
                 status_code=404)
 
             query = self.model_query(cells=[cell])
-            result = self.provider.search(query)
+            result = self.source.search(query)
             self.check_model_result(result, None)
 
         self.check_raven([('HTTPError', 0)])
-        self.check_stats(counter=['m.fallback.lookup_status.404'])
+        self.check_stats(counter=['locate.fallback.lookup_status.404'])
 
-    def test_500_response_returns_empty_result(self):
+    def test_500_response(self):
         cell = CellFactory.build()
 
         with requests_mock.Mocker() as mock_request:
@@ -153,15 +153,15 @@ class TestFallbackProvider(GeoIPProviderTest):
                 'POST', requests_mock.ANY, status_code=500)
 
             query = self.model_query(cells=[cell])
-            result = self.provider.search(query)
+            result = self.source.search(query)
             self.check_model_result(result, None)
 
         self.check_raven([('HTTPError', 1)])
         self.check_stats(
-            counter=['m.fallback.lookup_status.500'],
-            timer=['m.fallback.lookup'])
+            counter=['locate.fallback.lookup_status.500'],
+            timer=['locate.fallback.lookup'])
 
-    def test_no_call_made_when_not_allowed_for_apikey(self):
+    def test_api_key_disallows(self):
         api_key = ApiKeyFactory.build(allow_fallback=False)
         cells = CellFactory.build_batch(2)
         wifis = WifiFactory.build_batch(2)
@@ -169,24 +169,24 @@ class TestFallbackProvider(GeoIPProviderTest):
         query = self.model_query(cells=cells, wifis=wifis, api_key=api_key)
         self.check_should_search(query, False)
 
-    def test_should_not_provide_result_if_one_wifi_provided(self):
+    def test_check_one_wifi(self):
         wifi = WifiFactory.build()
 
         query = self.model_query(wifis=[wifi])
         self.check_should_search(query, False)
 
-    def test_should_not_provide_result_without_cell_or_wifi_data(self):
+    def test_check_empty(self):
         query = self.model_query()
         self.check_should_search(query, False)
 
-    def test_should_not_provide_result_if_malformed_cell(self):
+    def test_check_invalid_cell(self):
         malformed_cell = CellFactory.build()
         malformed_cell.mcc = 99999
 
         query = self.model_query(cells=[malformed_cell])
         self.check_should_search(query, False)
 
-    def test_should_not_provide_result_if_malformed_wifi(self):
+    def test_check_invalid_wifi(self):
         wifi = WifiFactory.build()
         malformed_wifi = WifiFactory.build()
         malformed_wifi.key = 'abcd'
@@ -194,59 +194,59 @@ class TestFallbackProvider(GeoIPProviderTest):
         query = self.model_query(wifis=[wifi, malformed_wifi])
         self.check_should_search(query, False)
 
-    def test_should_provide_result_if_only_empty_result_found(self):
+    def test_check_empty_result(self):
         wifis = WifiFactory.build_batch(2)
 
         query = self.model_query(wifis=wifis)
         self.check_should_search(query, True)
 
-    def test_should_provide_result_if_only_geoip_result_found(self):
+    def test_check_geoip_result(self):
         london = self.london_model
         wifis = WifiFactory.build_batch(2)
         geoip_pos = Position(
-            source=DataSource.GeoIP,
+            source=DataSource.geoip,
             lat=london.lat,
             lon=london.lon,
             accuracy=london.range)
 
-        query = self.model_query(wifis=wifis, geoip=london.ip)
+        query = self.model_query(wifis=wifis, ip=london.ip)
         self.check_should_search(query, True, result=geoip_pos)
 
-    def test_should_not_provide_result_if_non_geoip_result_found(self):
+    def test_check_already_good_result(self):
         wifis = WifiFactory.build_batch(2)
         internal_pos = Position(
-            source=DataSource.Internal, lat=1.0, lon=1.0, accuracy=1.0)
+            source=DataSource.internal, lat=1.0, lon=1.0, accuracy=1.0)
 
         query = self.model_query(wifis=wifis)
         self.check_should_search(query, False, result=internal_pos)
 
-    def test_rate_limiting_allows_calls_below_ratelimit(self):
+    def test_rate_limit_allow(self):
         cell = CellFactory()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            for _ in range(self.provider.ratelimit):
+            for _ in range(self.source.ratelimit):
                 query = self.model_query(cells=[cell])
-                result = self.provider.search(query)
+                result = self.source.search(query)
                 self.check_model_result(result, self.fallback_model)
 
-    def test_rate_limiting_blocks_calls_above_ratelimit(self):
+    def test_rate_limit_blocks(self):
         cell = CellFactory()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            ratelimit_key = self.provider.get_ratelimit_key()
-            self.redis_client.set(ratelimit_key, self.provider.ratelimit)
+            ratelimit_key = self.source._get_ratelimit_key()
+            self.redis_client.set(ratelimit_key, self.source.ratelimit)
 
             query = self.model_query(cells=[cell])
-            result = self.provider.search(query)
+            result = self.source.search(query)
             self.check_model_result(result, None)
 
-    def test_redis_failure_during_ratelimit_prevents_external_call(self):
+    def test_rate_limit_redis_failure(self):
         cell = CellFactory.build()
         mock_redis_client = self._mock_redis_client()
         mock_redis_client.pipeline.side_effect = RedisError()
@@ -255,16 +255,16 @@ class TestFallbackProvider(GeoIPProviderTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            with mock.patch.object(self.provider, 'redis_client',
+            with mock.patch.object(self.source, 'redis_client',
                                    mock_redis_client):
                 query = self.model_query(cells=[cell])
-                result = self.provider.search(query)
+                result = self.source.search(query)
                 self.check_model_result(result, None)
 
             self.assertTrue(mock_redis_client.pipeline.called)
             self.assertFalse(mock_request.called)
 
-    def test_redis_failure_during_get_cache_allows_external_call(self):
+    def test_get_cache_redis_failure(self):
         cell = CellFactory.build()
         mock_redis_client = self._mock_redis_client()
         mock_redis_client.get.side_effect = RedisError()
@@ -273,16 +273,16 @@ class TestFallbackProvider(GeoIPProviderTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            with mock.patch.object(self.provider, 'redis_client',
+            with mock.patch.object(self.source, 'redis_client',
                                    mock_redis_client):
                 query = self.model_query(cells=[cell])
-                result = self.provider.search(query)
+                result = self.source.search(query)
                 self.check_model_result(result, self.fallback_model)
 
             self.assertTrue(mock_redis_client.get.called)
             self.assertTrue(mock_request.called)
 
-    def test_redis_failure_during_set_cache_returns_result(self):
+    def test_set_cache_redis_failure(self):
         cell = CellFactory.build()
         mock_redis_client = self._mock_redis_client()
         mock_redis_client.get.return_value = None
@@ -292,17 +292,17 @@ class TestFallbackProvider(GeoIPProviderTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            with mock.patch.object(self.provider, 'redis_client',
+            with mock.patch.object(self.source, 'redis_client',
                                    mock_redis_client):
                 query = self.model_query(cells=[cell])
-                result = self.provider.search(query)
+                result = self.source.search(query)
                 self.check_model_result(result, self.fallback_model)
 
             self.assertTrue(mock_redis_client.get.called)
             self.assertTrue(mock_redis_client.set.called)
             self.assertTrue(mock_request.called)
 
-    def test_single_cell_results_cached_preventing_external_call(self):
+    def test_cache_single_cell(self):
         cell = CellFactory.build()
 
         with requests_mock.Mocker() as mock_request:
@@ -311,31 +311,31 @@ class TestFallbackProvider(GeoIPProviderTest):
 
             query = self.model_query(cells=[cell])
             query.cell[0].signal = -77
-            result = self.provider.search(query)
+            result = self.source.search(query)
             self.check_model_result(result, self.fallback_model)
 
             self.assertEqual(mock_request.call_count, 1)
             self.check_stats(
                 counter=[
-                    'm.fallback.lookup_status.200',
-                    'm.fallback.cache.miss',
+                    'locate.fallback.lookup_status.200',
+                    'locate.fallback.cache.miss',
                 ],
-                timer=['m.fallback.lookup'])
+                timer=['locate.fallback.lookup'])
 
             # vary the signal strength, not part of cache key
             query.cell[0].signal = -82
-            result = self.provider.search(query)
+            result = self.source.search(query)
             self.check_model_result(result, self.fallback_model)
 
             self.assertEqual(mock_request.call_count, 1)
             self.check_stats(
                 counter=[
-                    'm.fallback.lookup_status.200',
-                    'm.fallback.cache.hit',
+                    'locate.fallback.lookup_status.200',
+                    'locate.fallback.cache.hit',
                 ],
-                timer=['m.fallback.lookup'])
+                timer=['locate.fallback.lookup'])
 
-    def test_empty_result_from_fallback_cached(self):
+    def test_cache_empty_result(self):
         cell = CellFactory.build()
 
         with requests_mock.Mocker() as mock_request:
@@ -347,30 +347,30 @@ class TestFallbackProvider(GeoIPProviderTest):
             )
 
             query = self.model_query(cells=[cell])
-            result = self.provider.search(query)
+            result = self.source.search(query)
             self.check_model_result(result, None)
 
             self.assertEqual(mock_request.call_count, 1)
             self.check_stats(
                 counter=[
-                    'm.fallback.lookup_status.404',
-                    'm.fallback.cache.miss',
+                    'locate.fallback.lookup_status.404',
+                    'locate.fallback.cache.miss',
                 ],
-                timer=['m.fallback.lookup'])
+                timer=['locate.fallback.lookup'])
 
             query = self.model_query(cells=[cell])
-            result = self.provider.search(query)
+            result = self.source.search(query)
             self.check_model_result(result, None)
 
             self.assertEqual(mock_request.call_count, 1)
             self.check_stats(
                 counter=[
-                    'm.fallback.lookup_status.404',
-                    'm.fallback.cache.hit',
+                    'locate.fallback.lookup_status.404',
+                    'locate.fallback.cache.hit',
                 ],
-                timer=['m.fallback.lookup'])
+                timer=['locate.fallback.lookup'])
 
-    def test_dont_set_cache_value_retrieved_from_cache(self):
+    def test_dont_recache(self):
         cell = CellFactory.build()
         mock_redis_client = self._mock_redis_client()
         mock_redis_client.get.return_value = json.dumps(self.fallback_result)
@@ -379,35 +379,35 @@ class TestFallbackProvider(GeoIPProviderTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            with mock.patch.object(self.provider, 'redis_client',
+            with mock.patch.object(self.source, 'redis_client',
                                    mock_redis_client):
                 query = self.model_query(cells=[cell])
-                result = self.provider.search(query)
+                result = self.source.search(query)
                 self.check_model_result(result, self.fallback_model)
 
             self.assertTrue(mock_redis_client.get.called)
             self.assertFalse(mock_redis_client.set.called)
 
-    def test_cache_expire_set_to_0_disables_caching(self):
+    def test_cache_expire_0(self):
         cell = CellFactory.build()
         mock_redis_client = self._mock_redis_client()
         mock_redis_client.get.return_value = json.dumps(self.fallback_result)
-        self.provider.cache_expire = 0
+        self.source.cache_expire = 0
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            with mock.patch.object(self.provider, 'redis_client',
+            with mock.patch.object(self.source, 'redis_client',
                                    mock_redis_client):
                 query = self.model_query(cells=[cell])
-                result = self.provider.search(query)
+                result = self.source.search(query)
                 self.check_model_result(result, self.fallback_model)
 
             self.assertFalse(mock_redis_client.get.called)
             self.assertFalse(mock_redis_client.set.called)
 
-    def test_dont_cache_when_wifi_keys_present(self):
+    def test_cache_no_wifi(self):
         cell = CellFactory.build()
         wifis = WifiFactory.build_batch(2)
         mock_redis_client = self._mock_redis_client()
@@ -417,12 +417,17 @@ class TestFallbackProvider(GeoIPProviderTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            with mock.patch.object(self.provider, 'redis_client',
+            with mock.patch.object(self.source, 'redis_client',
                                    mock_redis_client):
 
                 query = self.model_query(cells=[cell], wifis=wifis)
-                result = self.provider.search(query)
+                result = self.source.search(query)
                 self.check_model_result(result, self.fallback_model)
 
             self.assertFalse(mock_redis_client.get.called)
             self.assertFalse(mock_redis_client.set.called)
+
+        self.check_stats(counter=[
+            'locate.fallback.lookup_status.200',
+            'locate.fallback.cache.bypassed',
+        ])

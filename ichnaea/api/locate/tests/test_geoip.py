@@ -1,47 +1,40 @@
 from ichnaea.api.locate.geoip import (
-    GeoIPCountryProvider,
-    GeoIPPositionProvider,
+    GeoIPCountrySource,
+    GeoIPPositionSource,
 )
-from ichnaea.api.locate.tests.test_provider import GeoIPProviderTest
+from ichnaea.api.locate.tests.base import BaseSourceTest
 
 
-class TestGeoIPPositionProvider(GeoIPProviderTest):
+class SourceTest(object):
 
-    TestProvider = GeoIPPositionProvider
-
-    def test_geoip_provider_should_not_search_if_ipf_disabled(self):
-        query = self.model_query(
-            geoip='127.0.0.1',
-            fallbacks={'ipf': False},
+    def test_no_fallback(self):
+        query = self.make_query(
+            ip=self.london_model.ip,
+            fallback={'ipf': False},
         )
         self.check_should_search(query, False)
 
-    def test_geoip_unknown(self):
-        query = self.model_query(geoip='127.0.0.1')
-        result = self.provider.search(query)
-        self.check_model_result(result, None, used=True)
+    def test_unknown(self):
+        query = self.make_query(ip='127.0.0.1')
+        result = self.source.search(query)
+        self.assertFalse(result.found())
 
-    def test_geoip_city(self):
-        query = self.model_query(geoip=self.london_model.ip)
-        result = self.provider.search(query)
+    def test_city(self):
+        query = self.make_query(ip=self.london_model.ip)
+        result = self.source.search(query)
         self.check_model_result(result, self.london_model)
 
-    def test_geoip_country(self):
-        query = self.model_query(geoip=self.bhutan_model.ip)
-        result = self.provider.search(query)
+    def test_country(self):
+        query = self.make_query(ip=self.bhutan_model.ip)
+        result = self.source.search(query)
         self.check_model_result(result, self.bhutan_model)
 
 
-class TestGeoIPCountryProvider(GeoIPProviderTest):
+class TestPositionSource(SourceTest, BaseSourceTest):
 
-    TestProvider = GeoIPCountryProvider
+    TestSource = GeoIPPositionSource
 
-    def test_geoip_unknown(self):
-        query = self.model_query(geoip='127.0.0.1')
-        result = self.provider.search(query)
-        self.check_model_result(result, None, used=True)
 
-    def test_geoip_country(self):
-        query = self.model_query(geoip=self.bhutan_model.ip)
-        result = self.provider.search(query)
-        self.check_model_result(result, self.bhutan_model)
+class TestCountrySource(SourceTest, BaseSourceTest):
+
+    TestSource = GeoIPCountrySource

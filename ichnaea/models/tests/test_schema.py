@@ -47,10 +47,10 @@ class ValidationTest(TestCase):
         return result
 
 
-class TestCellValidation(ValidationTest):
+class TestCell(ValidationTest):
 
     def setUp(self):
-        super(TestCellValidation, self).setUp()
+        super(TestCell, self).setUp()
         self.invalid_lacs = [constants.MIN_LAC - 1, constants.MAX_LAC_ALL + 1]
         self.invalid_cids = [constants.MIN_CID - 1, constants.MAX_CID_ALL + 1]
 
@@ -90,7 +90,7 @@ class TestCellValidation(ValidationTest):
                 cell[k] = v
         return (obs, cell)
 
-    def test_all_radio_values(self):
+    def test_radio_values(self):
         radio_pairs = [
             ('gsm', {'radio': Radio.gsm}),
             (Radio.gsm.name, {'radio': Radio.gsm}),
@@ -108,7 +108,7 @@ class TestCellValidation(ValidationTest):
             obs, cell = self.get_sample(radio=radio)
             self.check_normalized_cell(obs, cell, expect)
 
-    def test_all_valid_lat_lon_mcc_mnc_groups(self):
+    def test_lat_lon_mcc_mnc_groups(self):
         valid_lat_lon_mcc_triples = [
             (FREMONT_LAT, FREMONT_LON, USA_MCC),
             (SAO_PAULO_LAT, SAO_PAULO_LON, BRAZIL_MCC),
@@ -146,7 +146,7 @@ class TestCellValidation(ValidationTest):
             obs, cell = self.get_sample(mnc=mnc)
             self.check_normalized_cell(obs, cell, None)
 
-    def test_valid_lac_cid_pairs_with_invalid_psc(self):
+    def test_valid_lac_cid_invalid_psc(self):
         valid_lacs = [constants.MIN_LAC, constants.MAX_LAC_GSM_UMTS_LTE]
         valid_cids = [constants.MIN_CID, constants.MAX_CID_ALL]
         for lac in valid_lacs:
@@ -157,25 +157,25 @@ class TestCellValidation(ValidationTest):
                     self.check_normalized_cell(
                         obs, cell, dict(lac=lac, cid=cid, psc=None))
 
-    def test_invalid_lac_with_an_invalid_psc(self):
+    def test_invalid_lac_invalid_psc(self):
         for lac in self.invalid_lacs:
             for psc in self.invalid_pscs:
                 obs, cell = self.get_sample(lac=lac, psc=psc)
                 self.check_normalized_cell(obs, cell, None)
 
-    def test_invalid_lac_with_a_valid_psc(self):
+    def test_invalid_lac_valid_psc(self):
         for lac in self.invalid_lacs:
             for psc in self.valid_pscs:
                 obs, cell = self.get_sample(lac=lac, psc=psc)
                 self.check_normalized_cell(obs, cell, None)
 
-    def test_invalid_cid_with_an_invalid_psc(self):
+    def test_invalid_cid_and_psc(self):
         for cid in self.invalid_cids:
             for psc in self.invalid_pscs:
                 obs, cell = self.get_sample(cid=cid, psc=psc)
                 self.check_normalized_cell(obs, cell, None)
 
-    def test_invalid_cid_with_a_valid_psc(self):
+    def test_invalid_cid_valid_psc(self):
         for cid in self.invalid_cids:
             for psc in self.valid_pscs:
                 obs, cell = self.get_sample(cid=cid, psc=psc)
@@ -269,19 +269,19 @@ class TestCellValidation(ValidationTest):
             obs, cell = self.get_sample(signal=signal)
             self.check_normalized_cell(obs, cell, {'signal': None})
 
-    def test_asu_signal_field_mix_up(self):
+    def test_asu_signal_field_mix(self):
         obs, cell = self.get_sample(asu=-75, signal=0)
         self.check_normalized_cell(obs, cell, {'signal': -75})
 
-    def test_cid_65535_without_a_valid_lac_sets_cid_to_invalid(self):
+    def test_cid_65535_invalid_lac(self):
         obs, cell = self.get_sample(lac=None, cid=65535, psc=1)
         self.check_normalized_cell(obs, cell, None)
 
-    def test_unknown_lac_cid_is_65535_and_missing_psc(self):
+    def test_unknown_lac_cid_65535_missing_psc(self):
         obs, cell = self.get_sample(lac=None, cid=65535, psc=None)
         self.check_normalized_cell(obs, cell, None)
 
-    def test_cdma_cell_records_must_have_full_cell_id(self):
+    def test_cdma_cell_full_cellid(self):
         entries = [
             # (data-in, data-out)
             ({'lac': 3, 'cid': 4}, {'lac': 3, 'cid': 4}),
@@ -295,7 +295,7 @@ class TestCellValidation(ValidationTest):
                 radio=Radio.cdma.name, **entry[0])
             self.check_normalized_cell(obs, cell, entry[1])
 
-    def test_records_fail_the_lac_or_cid_and_psc_check(self):
+    def test_lac_or_cid_and_psc(self):
         entries = [
             {'lac': None, 'cid': None},
             {'lac': 3, 'cid': None},
@@ -306,11 +306,11 @@ class TestCellValidation(ValidationTest):
             obs, cell = self.get_sample(**entry)
             self.check_normalized_cell(obs, cell, None)
 
-    def test_mnc_above_1000_for_a_gsm_network(self):
+    def test_mnc_above_1000_gsm_network(self):
         obs, cell = self.get_sample(radio=Radio.gsm.name, mnc=1001)
         self.check_normalized_cell(obs, cell, None)
 
-    def test_wrong_gsm_radio_type_is_corrected_for_large_cid(self):
+    def test_wrong_gsm_radio_type_large_cid(self):
         obs, cell = self.get_sample(radio=Radio.gsm.name, cid=65536)
         self.check_normalized_cell(
             obs, cell, {'radio': Radio.umts})
@@ -351,34 +351,34 @@ class TestCellValidation(ValidationTest):
             radio=Radio.lte.name, cid=invalid_cid)
         self.check_normalized_cell(obs, cell, None)
 
-    def test_valid_lac_for_gsm_family_is_less_or_equal_to_65533(self):
+    def test_valid_lac_for_gsm_family(self):
         valid_lac = constants.MAX_LAC_GSM_UMTS_LTE
         for radio in Radio._gsm_family():
             obs, cell = self.get_sample(
                 radio=radio.name, lac=valid_lac)
             self.check_normalized_cell(obs, cell, {'lac': valid_lac})
 
-    def test_invalid_lac_for_gsm_family_is_greater_than_65533(self):
+    def test_invalid_lac_for_gsm_family(self):
         invalid_lac = constants.MAX_LAC_GSM_UMTS_LTE + 1
         for radio in Radio._gsm_family():
             obs, cell = self.get_sample(
                 radio=radio.name, lac=invalid_lac)
             self.check_normalized_cell(obs, cell, None)
 
-    def test_valid_lac_for_cdma_is_less_or_equal_to_65534(self):
+    def test_valid_lac_for_cdma(self):
         valid_lac = constants.MAX_LAC_ALL
         obs, cell = self.get_sample(
             radio=Radio.cdma.name, lac=valid_lac)
         self.check_normalized_cell(obs, cell, {'lac': valid_lac})
 
-    def test_invalid_lac_for_cdma_is_greater_than_65534(self):
+    def test_invalid_lac_for_cdma(self):
         invalid_lac = constants.MAX_LAC_ALL + 1
         obs, cell = self.get_sample(
             radio=Radio.cdma.name, lac=invalid_lac)
         self.check_normalized_cell(obs, cell, None)
 
 
-class TestWifiValidation(ValidationTest):
+class TestWifi(ValidationTest):
 
     def check_normalized_wifi(self, obs, wifi, expect):
         return self.check_normalized(
@@ -448,7 +448,7 @@ class TestWifiValidation(ValidationTest):
             obs, wifi = self.get_sample(key=key)
             self.check_normalized_wifi(obs, wifi, None)
 
-    def test_valid_frequency_channel_pairs(self):
+    def test_valid_frequency_channel(self):
         valid_frequency_channels = [
             (2412, 1),
             (2427, 4),
@@ -512,7 +512,7 @@ class TestWifiValidation(ValidationTest):
                 obs, wifi, dict(channel=channel))
             self.assertFalse('frequency' in wifi)
 
-    def test_invalid_channel_is_corrected_by_valid_frequency(self):
+    def test_invalid_channel_valid_frequency(self):
         invalid_channels = [-10, -1, 201, 2500]
 
         for channel in invalid_channels:
@@ -523,7 +523,7 @@ class TestWifiValidation(ValidationTest):
                                               dict(channel=chan))
             self.assertFalse('frequency' in wifi)
 
-    def test_invalid_frequency_has_no_effect_and_is_dropped(self):
+    def test_invalid_frequency(self):
         invalid_frequencies = [-1, 2000, 2411, 2473, 5168, 5826, 6000]
 
         for frequency in invalid_frequencies:

@@ -3,7 +3,6 @@
 from collections import namedtuple
 from functools import partial
 
-from ichnaea.api.locate.constants import DataSource
 from ichnaea.geocalc import distance
 
 # helper class used in searching
@@ -14,16 +13,11 @@ class Provider(object):
     """
     A Provider provides an interface for a class,
     which will provide a result given a set of query data.
-
-    .. attribute:: log_name
-
-        The name to use in logging statements, for example 'cell_lac'
     """
 
-    fallback_field = None
-    log_name = None
-    result_type = None
-    source = DataSource.Internal
+    fallback_field = None  #:
+    result_type = None  #:
+    source = None  #:
 
     def __init__(self, settings,
                  geoip_db, raven_client, redis_client, stats_client):
@@ -82,25 +76,3 @@ class Provider(object):
         if accuracy is not None:
             accuracy = float(accuracy)
         return max(accuracy, minimum)
-
-    def log_hit(self, query):
-        """Log a stat metric for a successful provider lookup."""
-        query.stat_count('{metric}_hit'.format(metric=self.log_name))
-
-    def log_success(self, query):
-        """
-        Log a stat metric for a request in which the user provided
-        relevant data for this provider and the lookup was successful.
-        """
-        if query.api_key.log:
-            query.stat_count('api_log.{key}.{metric}_hit'.format(
-                key=query.api_key.name, metric=self.log_name))
-
-    def log_failure(self, query):
-        """
-        Log a stat metric for a request in which the user provided
-        relevant data for this provider and the lookup failed.
-        """
-        if query.api_key.log:
-            query.stat_count('api_log.{key}.{metric}_miss'.format(
-                key=query.api_key.name, metric=self.log_name))

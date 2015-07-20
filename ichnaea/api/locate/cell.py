@@ -3,7 +3,6 @@
 from collections import defaultdict
 import operator
 
-import mobile_codes
 from sqlalchemy.orm import load_only
 
 from ichnaea.api.locate.constants import DataSource
@@ -11,10 +10,7 @@ from ichnaea.api.locate.provider import (
     Network,
     Provider,
 )
-from ichnaea.api.locate.result import (
-    Country,
-    Position,
-)
+from ichnaea.api.locate.result import Position
 from ichnaea.constants import (
     CELL_MIN_ACCURACY,
     LAC_MIN_ACCURACY,
@@ -40,7 +36,6 @@ class BaseCellProvider(Provider):
     """
 
     model = None
-    log_name = 'cell'
     result_type = Position
     query_field = 'cell'
 
@@ -104,10 +99,9 @@ class BaseCellProvider(Provider):
         return self.result_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
     def search(self, query):
-        result = self.result_type(query_data=False)
+        result = self.result_type()
         cell_keys = self._clean_cell_keys(query)
         if cell_keys:
-            result.query_data = True
             queried_cells = self._query_database(query, cell_keys)
             if queried_cells:
                 result = self._prepare(queried_cells)
@@ -129,7 +123,7 @@ class OCIDCellPositionProvider(BaseCellProvider):
     """
 
     model = OCIDCell
-    source = DataSource.OCID
+    source = DataSource.ocid
 
 
 class CellAreaPositionProvider(BaseCellProvider):
@@ -139,7 +133,6 @@ class CellAreaPositionProvider(BaseCellProvider):
     """
 
     model = CellArea
-    log_name = 'cell_lac'
     fallback_field = 'lacf'
     query_field = 'cell_area'
 
@@ -157,27 +150,4 @@ class OCIDCellAreaPositionProvider(CellAreaPositionProvider):
     """
 
     model = OCIDCellArea
-    source = DataSource.OCID
-
-
-class CellCountryProvider(BaseCellProvider):
-    """
-    A CellCountryProvider implements a cell country search without
-    using any DB models.
-    """
-
-    result_type = Country
-    model = CellArea
-
-    def _query_database(self, query, cell_keys):
-        countries = []
-        for key in cell_keys:
-            countries.extend(mobile_codes.mcc(str(key.mcc)))
-        if len(set([c.alpha2 for c in countries])) != 1:
-            # refuse to guess country if there are multiple choices
-            return []
-        return countries[0]
-
-    def _prepare(self, obj):
-        return self.result_type(country_code=obj.alpha2,
-                                country_name=obj.name)
+    source = DataSource.ocid

@@ -25,7 +25,6 @@ class BaseLocateView(BaseAPIView):
             cell=request_data.get('cell'),
             wifi=request_data.get('wifi'),
             api_key=api_key,
-            api_name=self.view_name,
             api_type=self.view_type,
             session=self.request.db_ro_session,
             geoip_db=self.request.registry.geoip_db,

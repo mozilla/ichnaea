@@ -1,37 +1,30 @@
-"""Implementation of a search provider using a GeoIP database."""
+"""Implementation of a GeoIP based search source."""
 
 from ichnaea.api.locate.constants import DataSource
-from ichnaea.api.locate.result import (
-    Country,
-    Position,
+from ichnaea.api.locate.source import (
+    CountrySource,
+    PositionSource,
+    Source,
 )
-from ichnaea.api.locate.provider import Provider
 
 
-class BaseGeoIPProvider(Provider):
-    """
-    A BaseGeoIPProvider implements a search using
-    a GeoIP database lookup.
-    """
+class GeoIPSource(Source):
+    """A GeoIPSource returns search results based on a GeoIP database."""
 
     fallback_field = 'ipf'
-    log_name = 'geoip'
-    source = DataSource.GeoIP
+    source = DataSource.geoip
 
     def search(self, query):
-        # Always consider there to be GeoIP data, even if no
-        # client_addr was provided
-        result = self.result_type(query_data=True)
+        result = self.result_type()
+        source_used = False
+
+        if query.ip:
+            source_used = True
 
         # The GeoIP record is already available on the query object,
         # there's no need to do a lookup again.
         geoip = query.geoip
         if geoip:
-            if geoip['city']:
-                query.stat_count('geoip_city_found')
-            else:
-                query.stat_count('geoip_country_found')
-
             result = self.result_type(
                 lat=geoip['latitude'],
                 lon=geoip['longitude'],
@@ -40,12 +33,15 @@ class BaseGeoIPProvider(Provider):
                 country_name=geoip['country_name'],
             )
 
+        if source_used:
+            query.emit_source_stats(self.source, result)
+
         return result
 
 
-class GeoIPPositionProvider(BaseGeoIPProvider):
-    result_type = Position
+class GeoIPCountrySource(GeoIPSource, CountrySource):
+    """A GeoIPSource returning country results."""
 
 
-class GeoIPCountryProvider(BaseGeoIPProvider):
-    result_type = Country
+class GeoIPPositionSource(GeoIPSource, PositionSource):
+    """A GeoIPSource returning position results."""

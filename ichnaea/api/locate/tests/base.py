@@ -10,16 +10,139 @@ from ichnaea.api.exceptions import (
     LocationNotFound,
     ParseError,
 )
+from ichnaea.api.locate.query import Query
+from ichnaea.api.locate.result import (
+    Country,
+    Position,
+)
 from ichnaea.models import (
     ApiKey,
     Radio,
 )
+from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import (
+    ApiKeyFactory,
     CellAreaFactory,
     CellFactory,
     WifiFactory,
 )
 from ichnaea import util
+
+
+class DummyModel(object):
+
+    def __init__(self, lat=None, lon=None, accuracy=None,
+                 alpha2=None, name=None, ip=None):
+        self.lat = lat
+        self.lon = lon
+        self.range = accuracy
+        self.alpha2 = alpha2
+        self.name = name
+        self.ip = ip
+
+
+class BaseSourceTest(ConnectionTestCase):
+
+    api_type = 'locate'
+    settings = None
+    TestSource = None
+
+    @classmethod
+    def setUpClass(cls):
+        super(BaseSourceTest, cls).setUpClass()
+        bhutan = cls.geoip_data['Bhutan']
+        cls.bhutan_model = DummyModel(
+            lat=bhutan['latitude'],
+            lon=bhutan['longitude'],
+            accuracy=bhutan['accuracy'],
+            alpha2=bhutan['country_code'],
+            name=bhutan['country_name'],
+            ip=bhutan['ip'])
+        london = cls.geoip_data['London']
+        cls.london_model = DummyModel(
+            lat=london['latitude'],
+            lon=london['longitude'],
+            accuracy=london['accuracy'],
+            alpha2=london['country_code'],
+            name=london['country_name'],
+            ip=london['ip'])
+
+    def setUp(self):
+        super(BaseSourceTest, self).setUp()
+        self.api_key = ApiKeyFactory.build(shortname='test')
+        self.source = self.TestSource(
+            settings=self.settings,
+            geoip_db=self.geoip_db,
+            raven_client=self.raven_client,
+            redis_client=self.redis_client,
+            stats_client=self.stats_client,
+        )
+
+    def make_query(self, **kw):
+        api_key = kw.pop('api_key', self.api_key)
+        return Query(
+            api_key=api_key,
+            api_type=self.api_type,
+            session=self.session,
+            geoip_db=self.geoip_db,
+            stats_client=self.stats_client,
+            **kw)
+
+    def model_query(self, cells=(), wifis=(), **kw):
+        query_cell = []
+        if cells:
+            for cell in cells:
+                cell_query = {
+                    'radio': cell.radio,
+                    'mcc': cell.mcc,
+                    'mnc': cell.mnc,
+                    'lac': cell.lac,
+                }
+                if getattr(cell, 'cid', None) is not None:
+                    cell_query['cid'] = cell.cid
+                query_cell.append(cell_query)
+
+        query_wifi = []
+        if wifis:
+            for wifi in wifis:
+                query_wifi.append({'key': wifi.key})
+
+        return self.make_query(
+            cell=query_cell,
+            wifi=query_wifi,
+            **kw)
+
+    def check_should_search(self, query, should, result=None):
+        if result is None:
+            result = self.source.result_type()
+        self.assertIs(self.source.should_search(query, result), should)
+
+    def check_model_result(self, result, model, **kw):
+        type_ = self.TestSource.result_type
+
+        if not model:
+            self.assertFalse(result.found())
+            self.assertEqual(type(result), type_)
+            return
+
+        if type_ is Position:
+            check_func = self.assertAlmostEqual
+            expected = {
+                'lat': kw.get('lat', model.lat),
+                'lon': kw.get('lon', model.lon),
+                'accuracy': kw.get('accuracy', model.range),
+            }
+        elif type_ is Country:
+            check_func = self.assertEqual
+            expected = {
+                'country_code': model.alpha2,
+                'country_name': model.name,
+            }
+
+        self.assertTrue(result.found())
+        self.assertEqual(type(result), type_)
+        for key, value in expected.items():
+            check_func
 
 
 class BaseLocateTest(object):
@@ -143,16 +266,12 @@ class CommonLocateTest(BaseLocateTest):
 
         self.check_stats(
             timer=[(self.metric_url, 1)],
-            counter=[(self.metric + '.geoip_hit', 1),
-                     (self.metric_url + '.200', 1),
-                     (self.metric + '.geoip_city_found', 1)],
-        )
+            counter=[self.metric_url + '.200'])
         if self.apikey_metrics:
-            self.check_stats(
-                counter=[(self.metric + '.api_key.test', 1),
-                         (self.metric + '.api_log.test.geoip_hit', 1),
-                         (self.metric_type + '.query.test.all.geoip.only', 1),
-                         ])
+            self.check_stats(counter=[
+                self.metric_type + '.query.test.all.geoip.only',
+                self.metric_type + '.result.test.all.low.hit',
+                self.metric_type + '.source.test.all.geoip.low.hit'])
 
     def test_error_no_json(self):
         res = self._call('\xae', method='post', status=400)
@@ -216,13 +335,15 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query, status=self.not_found.code)
         self.check_response(res, 'not_found')
 
-        self.check_stats(
-            counter=[self.metric + '.api_key.test',
-                     self.metric + '.api_log.test.cell_miss',
-                     self.metric_url + '.' + str(self.not_found.code),
-                     self.metric_type + '.query.test.all.cell.one',
-                     ],
-            timer=[self.metric_url])
+        self.check_stats(counter=[
+            self.metric + '.api_key.test',
+            self.metric_url + '.' + str(self.not_found.code),
+            self.metric_type + '.query.test.all.cell.one',
+            self.metric_type + '.result.test.all.medium.miss',
+            self.metric_type + '.source.test.all.internal.medium.miss',
+        ], timer=[
+            self.metric_url,
+        ])
 
     def test_cell_lte_radio(self):
         cell = CellFactory(radio=Radio.lte)
@@ -233,9 +354,9 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query)
         self.check_model_response(res, cell)
 
-        self.check_stats(
-            counter=[self.metric_url + '.200',
-                     self.metric + '.api_key.test'])
+        self.check_stats(counter=[
+            self.metric_url + '.200',
+            self.metric + '.api_key.test'])
 
     def test_cellarea(self):
         cell = CellAreaFactory()
@@ -245,12 +366,14 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query)
         self.check_model_response(res, cell, fallback='lacf')
 
-        self.check_stats(
-            counter=[self.metric_url + '.200',
-                     self.metric + '.api_key.test',
-                     self.metric + '.api_log.test.cell_lac_hit'])
+        self.check_stats(counter=[
+            self.metric_url + '.200',
+            self.metric + '.api_key.test',
+            self.metric_type + '.query.test.all.cell.none',
+            self.metric_type + '.result.test.all.low.hit',
+            self.metric_type + '.source.test.all.internal.low.hit'])
 
-    def test_cellarea_when_lacf_enabled(self):
+    def test_cellarea_with_lacf(self):
         cell = CellAreaFactory()
         self.session.flush()
 
@@ -260,13 +383,14 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query)
         self.check_model_response(res, cell, fallback='lacf')
 
-        self.check_stats(
-            counter=[self.metric_url + '.200',
-                     self.metric + '.api_key.test',
-                     self.metric + '.api_log.test.cell_lac_hit']
-        )
+        self.check_stats(counter=[
+            self.metric_url + '.200',
+            self.metric + '.api_key.test',
+            self.metric_type + '.query.test.all.cell.none',
+            self.metric_type + '.result.test.all.low.hit',
+            self.metric_type + '.source.test.all.internal.low.hit'])
 
-    def test_cellarea_when_lacf_disabled(self):
+    def test_cellarea_without_lacf(self):
         cell = CellAreaFactory()
         self.session.flush()
 
@@ -276,12 +400,11 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query, status=self.not_found.code)
         self.check_response(res, 'not_found')
 
-        self.check_stats(
-            counter=[self.metric_url + '.' + str(self.not_found.code),
-                     self.metric + '.api_key.test']
-        )
+        self.check_stats(counter=[
+            self.metric_url + '.' + str(self.not_found.code),
+            self.metric + '.api_key.test'])
 
-    def test_cellarea_when_different_fallback_set(self):
+    def test_cellarea_with_different_fallback(self):
         cell = CellAreaFactory()
         self.session.flush()
 
@@ -291,11 +414,12 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query)
         self.check_model_response(res, cell, fallback='lacf')
 
-        self.check_stats(
-            counter=[self.metric_url + '.200',
-                     self.metric + '.api_key.test',
-                     self.metric + '.api_log.test.cell_lac_hit']
-        )
+        self.check_stats(counter=[
+            self.metric_url + '.200',
+            self.metric + '.api_key.test',
+            self.metric_type + '.query.test.all.cell.none',
+            self.metric_type + '.result.test.all.low.hit',
+            self.metric_type + '.source.test.all.internal.low.hit'])
 
     def test_wifi_not_found(self):
         wifis = WifiFactory.build_batch(2)
@@ -305,13 +429,15 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query, status=self.not_found.code)
         self.check_response(res, 'not_found')
 
-        self.check_stats(
-            counter=[self.metric + '.api_key.test',
-                     self.metric + '.api_log.test.wifi_miss',
-                     self.metric_url + '.' + str(self.not_found.code),
-                     self.metric_type + '.query.test.all.wifi.many',
-                     ],
-            timer=[self.metric_url])
+        self.check_stats(counter=[
+            self.metric + '.api_key.test',
+            self.metric_url + '.' + str(self.not_found.code),
+            self.metric_type + '.query.test.all.wifi.many',
+            self.metric_type + '.result.test.all.high.miss',
+            self.metric_type + '.source.test.all.internal.high.miss',
+        ], timer=[
+            self.metric_url,
+        ])
 
     def test_ip_fallback_disabled(self):
         res = self._call(body={
@@ -322,11 +448,12 @@ class CommonPositionTest(BaseLocateTest):
             status=self.not_found.code)
         self.check_response(res, 'not_found')
 
-        self.check_stats(
-            timer=[self.metric_url],
-            counter=[self.metric + '.api_key.test',
-                     self.metric_url + '.' + str(self.not_found.code)],
-        )
+        self.check_stats(counter=[
+            self.metric + '.api_key.test',
+            self.metric_url + '.' + str(self.not_found.code),
+        ], timer=[
+            self.metric_url,
+        ])
 
     def test_fallback(self):
         cells = CellFactory.build_batch(2, radio=Radio.wcdma)
@@ -356,15 +483,18 @@ class CommonPositionTest(BaseLocateTest):
 
         self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
 
-        self.check_stats(
-            timer=[self.metric_url],
-            counter=[self.metric + '.api_key.test',
-                     self.metric + '.fallback_hit',
-                     self.metric_url + '.200',
-                     self.metric + '.api_log.test.fallback_hit'],
-        )
+        self.check_stats(counter=[
+            self.metric + '.api_key.test',
+            self.metric_type + '.query.test.all.cell.many',
+            self.metric_type + '.query.test.all.wifi.many',
+            self.metric_type + '.result.test.all.high.hit',
+            self.metric_type + '.source.test.all.fallback.high.hit',
+            self.metric_url + '.200',
+        ], timer=[
+            self.metric_url,
+        ])
 
-    def test_fallback_used_when_geoip_also_present(self):
+    def test_fallback_used_with_geoip(self):
         cells = CellFactory.build_batch(2, radio=Radio.wcdma)
         wifis = WifiFactory.build_batch(3)
         api_key = ApiKey.getkey(self.session, {'valid_key': 'test'})
@@ -391,13 +521,14 @@ class CommonPositionTest(BaseLocateTest):
 
         self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
 
-        self.check_stats(
-            timer=[self.metric_url],
-            counter=[self.metric + '.api_key.test',
-                     self.metric + '.fallback_hit',
-                     self.metric_url + '.200',
-                     self.metric + '.api_log.test.fallback_hit'],
-        )
+        self.check_stats(counter=[
+            self.metric + '.api_key.test',
+            self.metric_type + '.result.test.all.high.hit',
+            self.metric_type + '.source.test.all.fallback.high.hit',
+            self.metric_url + '.200',
+        ], timer=[
+            self.metric_url,
+        ])
 
     def test_floatjson(self):
         cell = CellFactory(lat=51.5, lon=(3.3 / 3 + 0.0001))
@@ -431,10 +562,12 @@ class CommonLocateErrorTest(BaseLocateTest):
         self.check_response(res, 'ok')
 
         self.check_stats(
+            counter=[self.metric_url + '.200'],
             timer=[self.metric_url],
-            counter=[
-                self.metric_url + '.200',
-                self.metric + '.geoip_hit',
-            ],
         )
+        if self.apikey_metrics:
+            self.check_stats(counter=[
+                self.metric_type + '.result.test.all.high.miss',
+            ])
+
         self.check_raven([('ProgrammingError', db_errors)])

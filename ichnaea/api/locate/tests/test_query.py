@@ -1,5 +1,9 @@
-from ichnaea.api.locate.constants import DataAccuracy
+from ichnaea.api.locate.constants import (
+    DataAccuracy,
+    DataSource,
+)
 from ichnaea.api.locate.query import Query
+from ichnaea.api.locate.result import Position
 from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
@@ -9,7 +13,13 @@ from ichnaea.tests.factories import (
 )
 
 
-class QueryTest(object):
+class QueryTest(ConnectionTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super(QueryTest, cls).setUpClass()
+        cls.api_key = ApiKeyFactory.build(shortname='key', log=True)
+        cls.london_ip = cls.geoip_data['London']['ip']
 
     def cell_model_query(self, cells):
         query = []
@@ -51,25 +61,27 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(query.cell_area, [])
         self.assertEqual(query.wifi, [])
         self.assertEqual(query.api_key, None)
-        self.assertEqual(query.api_name, None)
+        self.assertEqual(query.api_type, None)
         self.assertEqual(query.session, None)
         self.assertEqual(query.geoip_db, None)
         self.assertEqual(query.stats_client, None)
-        self.assertEqual(query.expected_accuracy, DataAccuracy.low)
+        self.assertEqual(query.expected_accuracy, DataAccuracy.none)
 
     def test_fallback(self):
-        query = Query(fallback={'ipf': False})
+        query = Query(fallback={'ipf': False}, ip=self.london_ip)
         self.assertEqual(query.fallback.ipf, False)
         self.assertEqual(query.fallback.lacf, True)
+        self.assertEqual(query.ip, self.london_ip)
+        self.assertEqual(query.expected_accuracy, DataAccuracy.none)
+        self.assertTrue(query.geoip is None)
 
     def test_geoip(self):
-        london_ip = self.geoip_data['London']['ip']
-        query = Query(ip=london_ip, geoip_db=self.geoip_db)
+        query = Query(ip=self.london_ip, geoip_db=self.geoip_db)
         self.assertEqual(query.country, 'GB')
         self.assertEqual(query.geoip['city'], True)
         self.assertEqual(query.geoip['country_code'], 'GB')
         self.assertEqual(query.geoip['country_name'], 'United Kingdom')
-        self.assertEqual(query.ip, london_ip)
+        self.assertEqual(query.ip, self.london_ip)
         self.assertEqual(query.expected_accuracy, DataAccuracy.low)
 
     def test_geoip_malformed(self):
@@ -119,6 +131,12 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(len(query.cell), 1)
         self.assertEqual(query.cell[0].signal, -90)
 
+    def test_cell_country(self):
+        cell = CellFactory.build()
+        cell_query = self.cell_model_query([cell])
+        query = Query(cell=cell_query, api_type='country')
+        self.assertEqual(query.expected_accuracy, DataAccuracy.low)
+
     def test_cell_area(self):
         cell = CellAreaFactory.build()
         cell_query = self.cell_model_query([cell])
@@ -136,6 +154,28 @@ class TestQuery(QueryTest, ConnectionTestCase):
         query = Query(cell=cell_query)
         self.assertEqual(len(query.cell), 3)
         self.assertEqual(len(query.cell_area), 1)
+
+    def test_cell_area_no_fallback(self):
+        cell = CellAreaFactory.build()
+        cell_query = self.cell_model_query([cell])
+        query = Query(cell=cell_query, fallback={'lacf': False})
+
+        self.assertEqual(len(query.cell), 0)
+        self.assertEqual(len(query.cell_area), 0)
+        self.assertEqual(query.expected_accuracy, DataAccuracy.none)
+
+    def test_cell_area_country(self):
+        cell = CellAreaFactory.build()
+        cell_query = self.cell_model_query([cell])
+        query = Query(cell=cell_query, api_type='country')
+        self.assertEqual(query.expected_accuracy, DataAccuracy.low)
+
+    def test_cell_area_country_no_fallback(self):
+        cell = CellAreaFactory.build()
+        cell_query = self.cell_model_query([cell])
+        query = Query(cell=cell_query, api_type='country',
+                      fallback={'lacf': False})
+        self.assertEqual(query.expected_accuracy, DataAccuracy.none)
 
     def test_wifi(self):
         wifis = WifiFactory.build_batch(2)
@@ -184,6 +224,12 @@ class TestQuery(QueryTest, ConnectionTestCase):
         query = Query(wifi=[wifi_query, {'key': 'foo'}])
         self.assertEqual(len(query.wifi), 0)
 
+    def test_wifi_country(self):
+        wifis = WifiFactory.build_batch(2)
+        query = Query(
+            wifi=self.wifi_model_query(wifis), api_type='country')
+        self.assertEqual(query.expected_accuracy, DataAccuracy.none)
+
     def test_mixed_cell_wifi(self):
         cells = CellFactory.build_batch(1)
         wifis = WifiFactory.build_batch(2)
@@ -199,9 +245,13 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(query.api_key.valid_key, api_key.valid_key)
         self.assertEqual(query.api_key, api_key)
 
-    def test_api_name(self):
-        query = Query(api_name='some_api')
-        self.assertEqual(query.api_name, 'some_api')
+    def test_api_type(self):
+        query = Query(api_type='locate')
+        self.assertEqual(query.api_type, 'locate')
+
+    def test_api_type_failure(self):
+        with self.assertRaises(ValueError):
+            Query(api_type='something')
 
     def test_session(self):
         query = Query(session=self.session)
@@ -211,30 +261,14 @@ class TestQuery(QueryTest, ConnectionTestCase):
         query = Query(stats_client=self.stats_client)
         self.assertEqual(query.stats_client, self.stats_client)
 
-    def test_stat_count(self):
-        query = Query(api_name='some_api', stats_client=self.stats_client)
-        query.stat_count('test')
-        self.check_stats(counter=['some_api.test'])
 
-    def test_stat_timer(self):
-        query = Query(api_name='some_api', stats_client=self.stats_client)
-        with query.stat_timer('test'):
-            pass
-        self.check_stats(timer=['some_api.test'])
+class TestQueryStats(QueryTest):
 
-
-class TestQueryStats(QueryTest, ConnectionTestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestQueryStats, cls).setUpClass()
-        cls.api_key = ApiKeyFactory.build(shortname='key', log=True)
-        cls.london_ip = cls.geoip_data['London']['ip']
-
-    def _make_query(self, api_key=None, cell=(), wifi=(), **kw):
+    def _make_query(self, api_key=None, api_type='locate',
+                    cell=(), wifi=(), **kw):
         query = Query(
             api_key=api_key or self.api_key,
-            api_type='l',
+            api_type=api_type,
             cell=self.cell_model_query(cell),
             wifi=self.wifi_model_query(wifi),
             geoip_db=self.geoip_db,
@@ -250,28 +284,26 @@ class TestQueryStats(QueryTest, ConnectionTestCase):
 
     def test_no_api_key_shortname(self):
         api_key = ApiKeyFactory.build(shortname=None, log=True)
-        self._make_query(api_key=api_key)
+        cell = CellFactory.build()
+        self._make_query(api_key=api_key, cell=[cell])
         self.check_stats(counter=[
-            'l.query.%s.none.cell.none' % api_key.valid_key,
-            'l.query.%s.none.wifi.none' % api_key.valid_key,
-            'l.query.%s.all.cell.none' % api_key.valid_key,
-            'l.query.%s.all.wifi.none' % api_key.valid_key,
+            'locate.query.%s.none.cell.one' % api_key.valid_key,
+            'locate.query.%s.none.wifi.none' % api_key.valid_key,
+            'locate.query.%s.all.cell.one' % api_key.valid_key,
+            'locate.query.%s.all.wifi.none' % api_key.valid_key,
         ])
 
     def test_empty(self):
-        self._make_query()
+        self._make_query(ip=self.london_ip)
         self.check_stats(counter=[
-            'l.query.key.none.cell.none',
-            'l.query.key.none.wifi.none',
-            'l.query.key.all.cell.none',
-            'l.query.key.all.wifi.none',
+            'locate.query.key.all.geoip.only',
         ])
 
     def test_geoip_only(self):
         self._make_query(ip=self.london_ip)
         self.check_stats(counter=[
-            ('l.query.key.none.geoip.only', 0),
-            'l.query.key.all.geoip.only',
+            ('locate.query.key.none.geoip.only', 0),
+            'locate.query.key.all.geoip.only',
         ])
 
     def test_one(self):
@@ -280,8 +312,8 @@ class TestQueryStats(QueryTest, ConnectionTestCase):
 
         self._make_query(cell=cells, wifi=wifis, ip=self.london_ip)
         self.check_stats(total=2, counter=[
-            'l.query.key.all.cell.one',
-            'l.query.key.all.wifi.one',
+            'locate.query.key.all.cell.one',
+            'locate.query.key.all.wifi.one',
         ])
 
     def test_many(self):
@@ -290,39 +322,115 @@ class TestQueryStats(QueryTest, ConnectionTestCase):
 
         self._make_query(cell=cells, wifi=wifis, ip=self.london_ip)
         self.check_stats(total=2, counter=[
-            'l.query.key.all.cell.many',
-            'l.query.key.all.wifi.many',
+            'locate.query.key.all.cell.many',
+            'locate.query.key.all.wifi.many',
         ])
 
 
-class TestProviderStats(QueryTest, ConnectionTestCase):
+class TestResultStats(QueryTest):
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestProviderStats, cls).setUpClass()
-        cls.api_key = ApiKeyFactory.build(shortname='key', log=True)
-        cls.london_ip = cls.geoip_data['London']['ip']
-
-    def _make_query(self, provider, result, api_key=None, **kw):
+    def _make_query(self, result, api_key=None, api_type='locate',
+                    cell=(), wifi=(), **kw):
         query = Query(
             api_key=api_key or self.api_key,
-            api_type='l',
+            api_type=api_type,
+            cell=self.cell_model_query(cell),
+            wifi=self.wifi_model_query(wifi),
             geoip_db=self.geoip_db,
             stats_client=self.stats_client,
             **kw)
-        query.emit_provider_stats(provider, result)
+        query.emit_result_stats(result)
         return query
 
-    def test_country(self):
-        self._make_query('internal', 'high_hit')
+    def test_no_log(self):
+        api_key = ApiKeyFactory.build(shortname='key', log=False)
+        self._make_query(Position(), api_key=api_key)
+        self.check_stats(total=0)
+
+    def test_country_api(self):
+        self._make_query(Position(), api_type='country', ip=self.london_ip)
+        self.check_stats(total=0)
+
+    def test_none(self):
+        self._make_query(
+            Position(), ip=self.london_ip, fallback={'ipf': False})
+        self.check_stats(total=0)
+
+    def test_low_miss(self):
+        self._make_query(Position(), ip=self.london_ip)
+        self.check_stats(counter=['locate.result.key.all.low.miss'])
+
+    def test_low_hit(self):
+        self._make_query(Position(accuracy=60000.0), ip=self.london_ip)
+        self.check_stats(counter=['locate.result.key.all.low.hit'])
+
+    def test_medium_miss(self):
+        cells = CellFactory.build_batch(1)
+        self._make_query(Position(), cell=cells)
+        self.check_stats(counter=['locate.result.key.all.medium.miss'])
+
+    def test_medium_miss_low(self):
+        cells = CellFactory.build_batch(1)
+        self._make_query(Position(accuracy=60000.0), cell=cells)
+        self.check_stats(counter=['locate.result.key.all.medium.miss'])
+
+    def test_medium_hit(self):
+        cells = CellFactory.build_batch(1)
+        self._make_query(Position(accuracy=30000.0), cell=cells)
+        self.check_stats(counter=['locate.result.key.all.medium.hit'])
+
+    def test_high_miss(self):
+        wifis = WifiFactory.build_batch(2)
+        self._make_query(Position(accuracy=1500.0), wifi=wifis)
+        self.check_stats(counter=['locate.result.key.all.high.miss'])
+
+    def test_high_hit(self):
+        wifis = WifiFactory.build_batch(2)
+        self._make_query(Position(accuracy=1000.0), wifi=wifis)
+        self.check_stats(counter=['locate.result.key.all.high.hit'])
+
+    def test_mixed_miss(self):
+        wifis = WifiFactory.build_batch(2)
+        self._make_query(Position(accuracy=1001.0),
+                         wifi=wifis, ip=self.london_ip)
+        self.check_stats(counter=['locate.result.key.all.high.miss'])
+
+    def test_mixed_hit(self):
+        cells = CellFactory.build_batch(2)
+        self._make_query(Position(accuracy=500.0),
+                         cell=cells, ip=self.london_ip)
+        self.check_stats(counter=['locate.result.key.all.medium.hit'])
+
+
+class TestSourceStats(QueryTest, ConnectionTestCase):
+
+    def _make_query(self, source, result, api_key=None, api_type='locate',
+                    cell=(), wifi=(), **kw):
+        query = Query(
+            api_key=api_key or self.api_key,
+            api_type=api_type,
+            cell=self.cell_model_query(cell),
+            wifi=self.wifi_model_query(wifi),
+            geoip_db=self.geoip_db,
+            stats_client=self.stats_client,
+            **kw)
+        query.emit_source_stats(source, result)
+        return query
+
+    def test_high_hit(self):
+        wifis = WifiFactory.build_batch(2)
+        self._make_query(
+            DataSource.internal, Position(accuracy=100.0), wifi=wifis)
         self.check_stats(counter=[
-            'l.source.key.none.internal.high_hit',
-            'l.source.key.all.internal.high_hit',
+            'locate.source.key.none.internal.high.hit',
+            'locate.source.key.all.internal.high.hit',
         ])
 
-    def test_no_country(self):
-        self._make_query('ocid', 'high_miss', ip=self.london_ip)
+    def test_high_miss(self):
+        wifis = WifiFactory.build_batch(2)
+        self._make_query(
+            DataSource.ocid, Position(accuracy=10000.0), wifi=wifis)
         self.check_stats(counter=[
-            ('l.source.key.none.ocid.high_miss', 0),
-            'l.source.key.all.ocid.high_miss',
+            'locate.source.key.none.ocid.high.miss',
+            'locate.source.key.all.ocid.high.miss',
         ])

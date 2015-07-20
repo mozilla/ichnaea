@@ -8,7 +8,7 @@ from ichnaea.tests.base import TestCase
 
 class TestInternalSchemaNode(TestCase):
 
-    def test_internal_schema_node_uses_internal_name(self):
+    def test_internal_name(self):
 
         class SampleSchema(MappingSchema):
             schema_type = InternalMapping
