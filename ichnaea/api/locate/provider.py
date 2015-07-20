@@ -1,6 +1,4 @@
-"""
-Base implementation of a location provider.
-"""
+"""Base implementation of a search provider."""
 
 from collections import namedtuple
 from functools import partial
@@ -14,8 +12,8 @@ Network = namedtuple('Network', ['key', 'lat', 'lon', 'range'])
 
 class Provider(object):
     """
-    A Provider provides an interface for a class
-    which will provide a location given a set of query data.
+    A Provider provides an interface for a class,
+    which will provide a result given a set of query data.
 
     .. attribute:: log_name
 
@@ -24,7 +22,7 @@ class Provider(object):
 
     fallback_field = None
     log_name = None
-    location_type = None
+    result_type = None
     source = DataSource.Internal
 
     def __init__(self, settings,
@@ -34,19 +32,18 @@ class Provider(object):
         self.raven_client = raven_client
         self.redis_client = redis_client
         self.stats_client = stats_client
-        self.location_type = partial(
-            self.location_type,
+        self.result_type = partial(
+            self.result_type,
             source=self.source,
             fallback=self.fallback_field,
         )
 
-    def should_locate(self, query, location):
+    def should_search(self, query, result):
         """
-        Given a location query and a possible location
-        found by another provider, check if this provider should
-        attempt to perform a location search.
+        Given a query and a possible result found by another provider,
+        check if this provider should attempt to perform a search.
 
-        :param query: A location query.
+        :param query: A query.
         :type query: :class:`~ichnaea.api.locate.query.Query`
 
         :rtype: bool
@@ -56,14 +53,14 @@ class Provider(object):
 
         return True
 
-    def locate(self, query):  # pragma: no cover
+    def search(self, query):  # pragma: no cover
         """
-        Provide a location given the provided query.
+        Provide a result given the provided query.
 
-        :param query: A location query.
+        :param query: A query.
         :type query: :class:`~ichnaea.api.locate.query.Query`
 
-        :rtype: :class:`~ichnaea.api.locate.location.Location`
+        :rtype: :class:`~ichnaea.api.locate.result.Result`
         """
         raise NotImplementedError()
 
@@ -78,7 +75,7 @@ class Provider(object):
         else:
             # Terrible approximation, but hopefully better
             # than the old approximation, "worst-case range":
-            # this one takes the maximum distance from location
+            # this one takes the maximum distance from position
             # to any of the provided points.
             accuracy = max([distance(lat, lon, p.lat, p.lon) * 1000
                             for p in points])

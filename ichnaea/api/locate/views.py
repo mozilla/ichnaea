@@ -34,18 +34,18 @@ class BaseLocateView(BaseAPIView):
         searcher = getattr(self.request.registry, self.searcher)
         return searcher.search(query)
 
-    def prepare_location_data(self, location_data):  # pragma: no cover
-        return location_data
+    def prepare_response(self, response_data):  # pragma: no cover
+        return response_data
 
     def view(self, api_key):
         """
         Execute the view code and return a response.
         """
-        location_data = self.locate(api_key)
-        if not location_data:
+        result = self.locate(api_key)
+        if not result:
             raise self.not_found()
 
-        return self.prepare_location_data(location_data)
+        return self.prepare_response(result)
 
 
 class BasePositionView(BaseLocateView):

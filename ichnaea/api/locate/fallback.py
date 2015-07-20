@@ -15,8 +15,8 @@ from ichnaea.api.schema import (
     OptionalSequenceSchema,
 )
 from ichnaea.api.locate.constants import DataSource
-from ichnaea.api.locate.location import Position
 from ichnaea.api.locate.provider import Provider
+from ichnaea.api.locate.result import Position
 from ichnaea.models.cell import RadioStringType
 from ichnaea.rate_limit import rate_limit_exceeded
 
@@ -71,7 +71,7 @@ class FallbackProvider(Provider):
     """
 
     log_name = 'fallback'
-    location_type = Position
+    result_type = Position
     source = DataSource.Fallback
     LOCATION_NOT_FOUND = 404  #: Magic constant to cache not found.
 
@@ -82,14 +82,14 @@ class FallbackProvider(Provider):
         self.cache_expire = int(settings.get('cache_expire', 0))
         super(FallbackProvider, self).__init__(settings, *args, **kw)
 
-    def should_locate(self, query, location):
-        empty_location = not location.found()
-        weak_location = (location.source is not None and
-                         location.source >= DataSource.GeoIP)
+    def should_search(self, query, result):
+        empty_result = not result.found()
+        weak_result = (result.source is not None and
+                       result.source >= DataSource.GeoIP)
 
         return (
             query.api_key.allow_fallback and
-            (empty_location or weak_location) and
+            (empty_result or weak_result) and
             (bool(query.cell) or bool(query.wifi))
         )
 
@@ -177,28 +177,28 @@ class FallbackProvider(Provider):
         except (json.JSONDecodeError, requests.exceptions.RequestException):
             self.raven_client.captureException()
 
-    def locate(self, query):
-        location = self.location_type(query_data=False)
+    def search(self, query):
+        result = self.result_type(query_data=False)
 
         if not self.limit_reached():
 
-            cached_location = self._get_cached_result(query)
-            location_data = (
-                cached_location or
+            cached_result = self._get_cached_result(query)
+            result_data = (
+                cached_result or
                 self._make_external_call(query)
             )
 
-            if location_data and location_data != self.LOCATION_NOT_FOUND:
+            if result_data and result_data != self.LOCATION_NOT_FOUND:
                 try:
-                    location = self.location_type(
-                        lat=location_data['location']['lat'],
-                        lon=location_data['location']['lng'],
-                        accuracy=location_data['accuracy'],
+                    result = self.result_type(
+                        lat=result_data['location']['lat'],
+                        lon=result_data['location']['lng'],
+                        accuracy=result_data['accuracy'],
                     )
                 except (KeyError, TypeError):
                     self.raven_client.captureException()
 
-            if cached_location is None:
-                self._set_cached_result(query, location_data)
+            if cached_result is None:
+                self._set_cached_result(query, result_data)
 
-        return location
+        return result

@@ -8,16 +8,16 @@ class LocateV2View(BasePositionView):
     view_name = 'geolocate'
     schema = LocateV2Schema
 
-    def prepare_location_data(self, location_data):
+    def prepare_response(self, result):
         response = {
             'location': {
-                'lat': location_data['lat'],
-                'lng': location_data['lon'],
+                'lat': result['lat'],
+                'lng': result['lon'],
             },
-            'accuracy': float(location_data['accuracy']),
+            'accuracy': float(result['accuracy']),
         }
 
-        if location_data['fallback']:
-            response['fallback'] = location_data['fallback']
+        if result['fallback']:
+            response['fallback'] = result['fallback']
 
         return response

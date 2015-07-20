@@ -6,14 +6,14 @@
 .. toctree::
    :maxdepth: 1
 
-   constants
-   location
-   query
-   provider
    cell
+   constants
    fallback
    geoip
-   wifi
+   provider
+   query
+   result
    searcher
    schema
    views
+   wifi

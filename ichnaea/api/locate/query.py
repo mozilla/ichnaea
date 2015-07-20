@@ -1,6 +1,4 @@
-"""
-Code representing a location query.
-"""
+"""Code representing a query."""
 
 import six
 
@@ -40,7 +38,7 @@ class Query(object):
                  api_key=None, api_name=None, api_type=None,
                  session=None, stats_client=None):
         """
-        A class representing a concrete location query.
+        A class representing a concrete query.
 
         :param fallback: A dictionary of fallback options.
         :type fallback: dict

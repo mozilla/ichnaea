@@ -17,7 +17,7 @@ from ichnaea.api.locate.cell import (
     OCIDCellPositionProvider,
 )
 from ichnaea.api.locate.fallback import FallbackProvider
-from ichnaea.api.locate.location import EmptyLocation
+from ichnaea.api.locate.result import EmptyResult
 from ichnaea.api.locate.wifi import WifiPositionProvider
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 
@@ -62,8 +62,8 @@ def configure_position_searcher(settings, geoip_db=None, raven_client=None,
 class Searcher(object):
     """
     A Searcher will use a collection of Provider classes
-    to attempt to identify a user's location. It will loop over them
-    in the order they are specified and use the most accurate location.
+    to attempt to satisfy a user's query. It will loop over them
+    in the order they are specified and use the most accurate result.
 
     First we attempt a "zoom-in" from cell-lac, to cell
     to wifi, tightening our estimate each step only so
@@ -90,44 +90,44 @@ class Searcher(object):
                 self.all_providers.append((provider_group, provider_instance))
 
     def _search(self, query):
-        best_location = EmptyLocation()
-        best_location_provider = None
-        all_locations = defaultdict(deque)
+        best_result = EmptyResult()
+        best_provider = None
+        all_results = defaultdict(deque)
 
         for provider_group, provider in self.all_providers:
-            if provider.should_locate(query, best_location):
-                provider_location = provider.locate(query)
-                all_locations[provider_group].appendleft(
-                    (provider, provider_location))
+            if provider.should_search(query, best_result):
+                provider_result = provider.search(query)
+                all_results[provider_group].appendleft(
+                    (provider, provider_result))
 
-                if provider_location.more_accurate(best_location):
-                    # If this location is more accurate than our previous one,
+                if provider_result.more_accurate(best_result):
+                    # If this result is more accurate than our previous one,
                     # we'll use it.
-                    best_location = provider_location
-                    best_location_provider = provider
+                    best_result = provider_result
+                    best_provider = provider
 
-                if best_location.accurate_enough():
-                    # Stop the loop, if we have a good quality location.
+                if best_result.accurate_enough():
+                    # Stop the loop, if we have a good quality result.
                     break
 
-        if not best_location.found():
+        if not best_result.found():
             query.stat_count('miss')
         else:
-            best_location_provider.log_hit(query)
+            best_provider.log_hit(query)
 
         # Log a hit/miss metric for the first data source for
         # which the user provided sufficient data.
         # We check each provider group in reverse order
         # (most accurate to least).
         for provider_group, providers in reversed(self.provider_classes):
-            group_locations = all_locations[provider_group]
-            if any([l.query_data for (p, l) in group_locations]):
-                # Claim a success if at least one location for a logging
+            group_results = all_results[provider_group]
+            if any([res.query_data for (prov, res) in group_results]):
+                # Claim a success if at least one result for a logging
                 # group was a success.
-                first_provider, first_location = group_locations[0]
+                first_provider, first_result = group_results[0]
                 found_provider = None
-                for (provider, location) in group_locations:
-                    if location.found():
+                for (provider, result) in group_results:
+                    if result.found():
                         found_provider = provider
                         break
                 if found_provider:
@@ -136,21 +136,21 @@ class Searcher(object):
                     first_provider.log_failure(query)
                 break
 
-        return best_location
+        return best_result
 
-    def _prepare(self, location):  # pragma: no cover
+    def _prepare(self, result):  # pragma: no cover
         raise NotImplementedError()
 
     def search(self, query):
-        """Provide a type specific search location or return None.
+        """Provide a type specific query result or return None.
 
-        :param query: A location query.
+        :param query: A query.
         :type query: :class:`~ichnaea.api.locate.query.Query`
         """
         query.emit_query_stats()
-        location = self._search(query)
-        if location.found():
-            return self._prepare(location)
+        result = self._search(query)
+        if result.found():
+            return self._prepare(result)
 
 
 class PositionSearcher(Searcher):
@@ -177,12 +177,12 @@ class PositionSearcher(Searcher):
         )),
     )
 
-    def _prepare(self, location):
+    def _prepare(self, result):
         return {
-            'lat': round(location.lat, DEGREE_DECIMAL_PLACES),
-            'lon': round(location.lon, DEGREE_DECIMAL_PLACES),
-            'accuracy': round(location.accuracy, DEGREE_DECIMAL_PLACES),
-            'fallback': location.fallback,
+            'lat': round(result.lat, DEGREE_DECIMAL_PLACES),
+            'lon': round(result.lon, DEGREE_DECIMAL_PLACES),
+            'accuracy': round(result.accuracy, DEGREE_DECIMAL_PLACES),
+            'fallback': result.fallback,
         }
 
 
@@ -196,9 +196,9 @@ class CountrySearcher(Searcher):
         ('geoip', (GeoIPCountryProvider,)),
     )
 
-    def _prepare(self, location):
+    def _prepare(self, result):
         return {
-            'country_code': location.country_code,
-            'country_name': location.country_name,
-            'fallback': location.fallback,
+            'country_code': result.country_code,
+            'country_name': result.country_name,
+            'fallback': result.fallback,
         }

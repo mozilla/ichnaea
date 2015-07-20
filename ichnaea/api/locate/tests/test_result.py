@@ -1,4 +1,4 @@
-from ichnaea.api.locate.location import (
+from ichnaea.api.locate.result import (
     Country,
     Position,
 )
@@ -36,9 +36,9 @@ class TestPosition(TestCase):
         self.assertFalse(position2.more_accurate(position1))
 
     def test_more_accurate_if_other_not_found(self):
-        location1 = Position(lat=1.0, lon=1.0)
-        location2 = Position()
-        self.assertTrue(location1.more_accurate(location2))
+        position1 = Position(lat=1.0, lon=1.0)
+        position2 = Position()
+        self.assertTrue(position1.more_accurate(position2))
 
     def test_more_accurate_if_from_preferred_source(self):
         position1 = Position(lat=1.0, lon=1.0, source=1)

@@ -1,13 +1,14 @@
 """
-Classes representing an abstract location or a concrete country or position.
+Classes representing an abstract query result
+or a concrete country or position result.
 """
 
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 from ichnaea.geocalc import distance
 
 
-class Location(object):
-    """A location returned by a location provider."""
+class Result(object):
+    """The result of a query from one provider."""
 
     def __init__(self, accuracy=None, country_code=None, country_name=None,
                  fallback=None, lat=None, lon=None, query_data=True,
@@ -27,24 +28,24 @@ class Location(object):
         return value
 
     def found(self):  # pragma: no cover
-        """Does this location include any data?"""
+        """Does this result include any data?"""
         raise NotImplementedError
 
     def agrees_with(self, other):  # pragma: no cover
-        """Does this location match the other location?"""
+        """Does this result match the other result?"""
         raise NotImplementedError
 
     def accurate_enough(self):  # pragma: no cover
-        """Is this location accurate enough to return it?"""
+        """Is this result accurate enough to return it?"""
         raise NotImplementedError
 
     def more_accurate(self, other):  # pragma: no cover
-        """Is this location better than the passed in location?"""
+        """Is this result better than the passed in result?"""
         raise NotImplementedError
 
 
-class EmptyLocation(Location):
-    """An undefined location."""
+class EmptyResult(Result):
+    """An undefined result."""
 
     def found(self):
         return False
@@ -59,7 +60,7 @@ class EmptyLocation(Location):
         return False
 
 
-class Position(Location):
+class Position(Result):
     """The position returned by a position query."""
 
     def __repr__(self):  # pragma: no cover
@@ -94,7 +95,7 @@ class Position(Location):
         return (self.agrees_with(other) and self.accuracy < other.accuracy)
 
 
-class Country(Location):
+class Country(Result):
     """The country returned by a country query."""
 
     def __repr__(self):  # pragma: no cover

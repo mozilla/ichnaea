@@ -1,9 +1,7 @@
-"""
-Implementation of a location provider using a GeoIP database.
-"""
+"""Implementation of a search provider using a GeoIP database."""
 
 from ichnaea.api.locate.constants import DataSource
-from ichnaea.api.locate.location import (
+from ichnaea.api.locate.result import (
     Country,
     Position,
 )
@@ -20,10 +18,10 @@ class BaseGeoIPProvider(Provider):
     log_name = 'geoip'
     source = DataSource.GeoIP
 
-    def locate(self, query):
+    def search(self, query):
         # Always consider there to be GeoIP data, even if no
         # client_addr was provided
-        location = self.location_type(query_data=True)
+        result = self.result_type(query_data=True)
 
         if query.geoip and self.geoip_db is not None:
             geoip = self.geoip_db.geoip_lookup(query.geoip)
@@ -33,7 +31,7 @@ class BaseGeoIPProvider(Provider):
                 else:
                     query.stat_count('geoip_country_found')
 
-                location = self.location_type(
+                result = self.result_type(
                     lat=geoip['latitude'],
                     lon=geoip['longitude'],
                     accuracy=geoip['accuracy'],
@@ -41,12 +39,12 @@ class BaseGeoIPProvider(Provider):
                     country_name=geoip['country_name'],
                 )
 
-        return location
+        return result
 
 
 class GeoIPPositionProvider(BaseGeoIPProvider):
-    location_type = Position
+    result_type = Position
 
 
 class GeoIPCountryProvider(BaseGeoIPProvider):
-    location_type = Country
+    result_type = Country

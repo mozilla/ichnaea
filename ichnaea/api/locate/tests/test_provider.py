@@ -1,10 +1,10 @@
-from ichnaea.api.locate.location import (
-    EmptyLocation,
-    Country,
-    Position,
-)
 from ichnaea.api.locate.provider import Provider
 from ichnaea.api.locate.query import Query
+from ichnaea.api.locate.result import (
+    Country,
+    EmptyResult,
+    Position,
+)
 from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import ApiKeyFactory
 
@@ -26,7 +26,7 @@ class ProviderTest(ConnectionTestCase):
     settings = {}
 
     class TestProvider(Provider):
-        location_type = Position
+        result_type = Position
         log_name = 'test'
 
     def setUp(self):
@@ -83,19 +83,19 @@ class ProviderTest(ConnectionTestCase):
             stats_client=self.stats_client,
         )
 
-    def check_model_location(self, location, model, used=None, **kw):
-        type_ = self.TestProvider.location_type
+    def check_model_result(self, result, model, used=None, **kw):
+        type_ = self.TestProvider.result_type
         if used is None:
             if model is None:
-                self.assertFalse(location.query_data)
+                self.assertFalse(result.query_data)
             else:
-                self.assertTrue(location.query_data)
+                self.assertTrue(result.query_data)
         else:
-            self.assertIs(location.query_data, used)
+            self.assertIs(result.query_data, used)
 
         if not model:
-            self.assertFalse(location.found())
-            self.assertEqual(type(location), type_)
+            self.assertFalse(result.found())
+            self.assertEqual(type(result), type_)
             return
 
         if type_ is Position:
@@ -112,15 +112,15 @@ class ProviderTest(ConnectionTestCase):
                 'country_name': model.name,
             }
 
-        self.assertTrue(location.found())
-        self.assertEqual(type(location), type_)
+        self.assertTrue(result.found())
+        self.assertEqual(type(result), type_)
         for key, value in expected.items():
-            check_func(getattr(location, key), value)
+            check_func(getattr(result, key), value)
 
-    def check_should_locate(self, query, should, location=None):
-        if location is None:
-            location = EmptyLocation()
-        self.assertIs(self.provider.should_locate(query, location), should)
+    def check_should_search(self, query, should, result=None):
+        if result is None:
+            result = EmptyResult()
+        self.assertIs(self.provider.should_search(query, result), should)
 
 
 class GeoIPProviderTest(ProviderTest):
@@ -169,21 +169,21 @@ class TestProvider(ProviderTest):
             'm.api_log.test.test_miss',
         ])
 
-    def test_should_locate_is_true_if_no_fallback_set(self):
+    def test_should_search_is_true_if_no_fallback_set(self):
         query = self.model_query(fallbacks={})
-        self.check_should_locate(query, True)
+        self.check_should_search(query, True)
 
-    def test_should_not_locate_if_fallback_field_is_set(self):
+    def test_should_not_search_if_fallback_field_is_set(self):
         self.provider.fallback_field = 'ipf'
         query = self.model_query(fallbacks={'ipf': False})
-        self.check_should_locate(query, False)
+        self.check_should_search(query, False)
 
-    def test_should_locate_if_a_different_fallback_field_is_set(self):
+    def test_should_search_if_a_different_fallback_field_is_set(self):
         self.provider.fallback_field = 'ipf'
         query = self.model_query(fallbacks={'invalid': False})
-        self.check_should_locate(query, True)
+        self.check_should_search(query, True)
 
-    def test_should_locate_ignore_invalid_values(self):
+    def test_should_search_ignore_invalid_values(self):
         self.provider.fallback_field = 'ipf'
         query = self.model_query(fallbacks={'ipf': 'asdf'})
-        self.check_should_locate(query, True)
+        self.check_should_search(query, True)

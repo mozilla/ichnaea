@@ -1,6 +1,6 @@
-from ichnaea.api.locate.location import Location
 from ichnaea.api.locate.provider import Provider
 from ichnaea.api.locate.query import Query
+from ichnaea.api.locate.result import Result
 from ichnaea.api.locate.searcher import (
     CountrySearcher,
     PositionSearcher,
@@ -21,11 +21,11 @@ class SearcherTest(ConnectionTestCase):
         self.api_name = 'm'
         self.api_type = 'l'
 
-    def _make_query(self, TestLocation=None,  # NOQA
+    def _make_query(self, TestResult=None,  # NOQA
                     TestProvider=None, TestSearcher=None):
 
-        if not TestLocation:
-            class TestLocation(Location):
+        if not TestResult:
+            class TestResult(Result):
 
                 def accurate_enough(self):
                     return False
@@ -38,11 +38,11 @@ class SearcherTest(ConnectionTestCase):
 
         if not TestProvider:
             class TestProvider(Provider):
-                location_type = TestLocation
+                result_type = TestResult
                 log_name = 'test'
 
-                def locate(self, query):
-                    return self.location_type()
+                def search(self, query):
+                    return self.result_type()
 
         if not TestSearcher:
             class TestSearcher(Searcher):
@@ -50,8 +50,8 @@ class SearcherTest(ConnectionTestCase):
                     ('test', (TestProvider,)),
                 )
 
-                def _prepare(self, location):
-                    return location
+                def _prepare(self, result):
+                    return result
 
         query = Query(api_key=self.api_key,
                       api_name=self.api_name,
@@ -75,8 +75,8 @@ class TestSearcher(SearcherTest):
         class TestSearcher(Searcher):
             provider_classes = ()
 
-        location = self._make_query(TestSearcher=TestSearcher)
-        self.assertTrue(location is None)
+        result = self._make_query(TestSearcher=TestSearcher)
+        self.assertTrue(result is None)
         self.check_stats(
             counter=[
                 'm.miss',
@@ -84,9 +84,9 @@ class TestSearcher(SearcherTest):
             ],
         )
 
-    def test_returns_none_when_provider_returns_no_location(self):
-        location = self._make_query()
-        self.assertTrue(location is None)
+    def test_returns_none_when_provider_returns_no_result(self):
+        result = self._make_query()
+        self.assertTrue(result is None)
         self.check_stats(
             counter=[
                 'm.miss',
@@ -95,9 +95,9 @@ class TestSearcher(SearcherTest):
             ],
         )
 
-    def test_returns_location_when_provider_location_found(self):
+    def test_returns_result_when_provider_result_found(self):
 
-        class TestLocation(Location):
+        class TestResult(Result):
 
             def accurate_enough(self):
                 return False
@@ -108,8 +108,8 @@ class TestSearcher(SearcherTest):
             def more_accurate(self, other):
                 return True
 
-        location = self._make_query(TestLocation=TestLocation)
-        self.assertTrue(isinstance(location, TestLocation))
+        result = self._make_query(TestResult=TestResult)
+        self.assertTrue(isinstance(result, TestResult))
         self.check_stats(
             counter=[
                 'm.test_hit',
@@ -119,9 +119,9 @@ class TestSearcher(SearcherTest):
             ],
         )
 
-    def test_only_searches_providers_when_should_locate_is_true(self):
+    def test_only_searches_providers_when_should_search_is_true(self):
 
-        class TestLocation(Location):
+        class TestResult(Result):
 
             def accurate_enough(self):
                 return False
@@ -133,23 +133,23 @@ class TestSearcher(SearcherTest):
                 return True
 
         class TestProvider1(Provider):
-            location_type = TestLocation
+            result_type = TestResult
             log_name = 'test1'
 
-            def should_locate(self, query, location):
+            def should_search(self, query, result):
                 return True
 
-            def locate(self, query):
-                return self.location_type()
+            def search(self, query):
+                return self.result_type()
 
         class TestProvider2(Provider):
-            location_type = TestLocation
+            result_type = TestResult
             log_name = 'test2'
 
-            def should_locate(self, query, location):
+            def should_search(self, query, result):
                 return False
 
-            def locate(self, query):
+            def search(self, query):
                 raise Exception('The searcher should not reach this point.')
 
         class TestSearcher(Searcher):
@@ -160,11 +160,11 @@ class TestSearcher(SearcherTest):
                 )),
             )
 
-            def _prepare(self, location):
-                return location
+            def _prepare(self, result):
+                return result
 
-        location = self._make_query(TestSearcher=TestSearcher)
-        self.assertTrue(isinstance(location, TestLocation))
+        result = self._make_query(TestSearcher=TestSearcher)
+        self.assertTrue(isinstance(result, TestResult))
         self.check_stats(
             counter=[
                 'm.test1_hit',
@@ -175,9 +175,9 @@ class TestSearcher(SearcherTest):
             ],
         )
 
-    def test_accurate_enough_location_halts_search(self):
+    def test_accurate_enough_result_halts_search(self):
 
-        class TestLocation(Location):
+        class TestResult(Result):
 
             def accurate_enough(self):
                 return True
@@ -189,17 +189,17 @@ class TestSearcher(SearcherTest):
                 return True
 
         class TestProvider1(Provider):
-            location_type = TestLocation
+            result_type = TestResult
             log_name = 'test1'
 
-            def locate(self, query):
-                return self.location_type()
+            def search(self, query):
+                return self.result_type()
 
         class TestProvider2(Provider):
-            location_type = TestLocation
+            result_type = TestResult
             log_name = 'test2'
 
-            def locate(self, query):
+            def search(self, query):
                 raise Exception('The searcher should not reach this point.')
 
         class TestSearcher(Searcher):
@@ -210,11 +210,11 @@ class TestSearcher(SearcherTest):
                 )),
             )
 
-            def _prepare(self, location):
-                return location
+            def _prepare(self, result):
+                return result
 
-        location = self._make_query(TestSearcher=TestSearcher)
-        self.assertTrue(isinstance(location, TestLocation))
+        result = self._make_query(TestSearcher=TestSearcher)
+        self.assertTrue(isinstance(result, TestResult))
         self.check_stats(
             counter=[
                 'm.test1_hit',
@@ -227,7 +227,7 @@ class TestSearcher(SearcherTest):
 
     def test_last_group_gets_logged_if_had_data(self):
 
-        class TestLocation1(Location):
+        class TestResult1(Result):
 
             def accurate_enough(self):
                 return False
@@ -239,13 +239,13 @@ class TestSearcher(SearcherTest):
                 return True
 
         class TestProvider1(Provider):
-            location_type = TestLocation1
+            result_type = TestResult1
             log_name = 'test1'
 
-            def locate(self, query):
-                return self.location_type(query_data=True)
+            def search(self, query):
+                return self.result_type(query_data=True)
 
-        class TestLocation2(Location):
+        class TestResult2(Result):
 
             def accurate_enough(self):
                 return False
@@ -257,11 +257,11 @@ class TestSearcher(SearcherTest):
                 return False
 
         class TestProvider2(Provider):
-            location_type = TestLocation2
+            result_type = TestResult2
             log_name = 'test2'
 
-            def locate(self, query):
-                return self.location_type(query_data=True)
+            def search(self, query):
+                return self.result_type(query_data=True)
 
         class TestSearcher(Searcher):
             provider_classes = (
@@ -269,11 +269,11 @@ class TestSearcher(SearcherTest):
                 ('group2', (TestProvider2, )),
             )
 
-            def _prepare(self, location):
-                return location
+            def _prepare(self, result):
+                return result
 
-        location = self._make_query(TestSearcher=TestSearcher)
-        self.assertTrue(isinstance(location, TestLocation1))
+        result = self._make_query(TestSearcher=TestSearcher)
+        self.assertTrue(isinstance(result, TestResult1))
         self.check_stats(
             counter=[
                 'm.test1_hit',
@@ -288,7 +288,7 @@ class TestPositionSearcher(SearcherTest):
 
     def test_returns_lat_lon_accuracy(self):
 
-        class TestLocation(Location):
+        class TestResult(Result):
 
             def accurate_enough(self):
                 return False
@@ -300,30 +300,30 @@ class TestPositionSearcher(SearcherTest):
                 return True
 
         class TestProvider(Provider):
-            location_type = TestLocation
+            result_type = TestResult
             log_name = 'test'
             fallback_field = 'ipf'
 
-            def locate(self, query):
-                return self.location_type(lat=1.0, lon=1.0, accuracy=1000)
+            def search(self, query):
+                return self.result_type(lat=1.0, lon=1.0, accuracy=1000)
 
         class TestSearcher(PositionSearcher):
             provider_classes = (
                 ('test', (TestProvider,)),
             )
 
-        location = self._make_query(TestSearcher=TestSearcher)
-        self.assertEqual(location['lat'], 1.0)
-        self.assertEqual(location['lon'], 1.0)
-        self.assertEqual(location['accuracy'], 1000)
-        self.assertEqual(location['fallback'], 'ipf')
+        result = self._make_query(TestSearcher=TestSearcher)
+        self.assertAlmostEqual(result['lat'], 1.0)
+        self.assertAlmostEqual(result['lon'], 1.0)
+        self.assertEqual(result['accuracy'], 1000)
+        self.assertEqual(result['fallback'], 'ipf')
 
 
 class TestCountrySearcher(SearcherTest):
 
     def test_returns_country_name_and_code(self):
 
-        class TestLocation(Location):
+        class TestResult(Result):
 
             def accurate_enough(self):
                 return False
@@ -335,11 +335,11 @@ class TestCountrySearcher(SearcherTest):
                 return True
 
         class TestProvider(Provider):
-            location_type = TestLocation
+            result_type = TestResult
             log_name = 'test'
 
-            def locate(self, query):
-                return self.location_type(
+            def search(self, query):
+                return self.result_type(
                     country_name='country', country_code='CO')
 
         class TestSearcher(CountrySearcher):
@@ -347,6 +347,6 @@ class TestCountrySearcher(SearcherTest):
                 ('test', (TestProvider,)),
             )
 
-        location = self._make_query(TestSearcher=TestSearcher)
-        self.assertEqual(location['country_name'], 'country')
-        self.assertEqual(location['country_code'], 'CO')
+        result = self._make_query(TestSearcher=TestSearcher)
+        self.assertEqual(result['country_name'], 'country')
+        self.assertEqual(result['country_code'], 'CO')

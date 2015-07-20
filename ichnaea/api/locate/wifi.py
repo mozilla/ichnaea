@@ -1,3 +1,5 @@
+"""Implementation of a search provider using a wifi database."""
+
 from sqlalchemy.orm import load_only
 
 from ichnaea.api.locate.constants import (
@@ -6,11 +8,11 @@ from ichnaea.api.locate.constants import (
     MIN_WIFIS_IN_CLUSTER,
     MAX_WIFIS_IN_CLUSTER,
 )
-from ichnaea.api.locate.location import Position
 from ichnaea.api.locate.provider import (
     Network,
     Provider,
 )
+from ichnaea.api.locate.result import Position
 from ichnaea.constants import WIFI_MIN_ACCURACY
 from ichnaea.geocalc import distance
 from ichnaea.models import Wifi
@@ -23,7 +25,7 @@ class WifiPositionProvider(Provider):
     """
 
     log_name = 'wifi'
-    location_type = Position
+    result_type = Position
 
     def _cluster_elements(self, items, distance_fn, threshold):
         """
@@ -161,12 +163,12 @@ class WifiPositionProvider(Provider):
         # So we're trying to select a cluster that's most-likely good data,
         # which we assume to be the one with the most points in it.
         #
-        # The reason we take a subset of those points when estimating location
-        # is that we're doing a (non-weighted) centroid calculation, which is
-        # itself unbalanced by distant elements. Even if we did a weighted
-        # centroid here, using radio intensity as a proxy for distance has an
-        # error that increases significantly with distance, so we'd have to
-        # underweight pretty heavily.
+        # The reason we take a subset of those points when estimating a
+        # position is that we're doing a (non-weighted) centroid calculation,
+        # which is itself unbalanced by distant elements. Even if we did a
+        # weighted centroid here, using radio intensity as a proxy for
+        # distance has an error that increases significantly with distance,
+        # so we'd have to underweight pretty heavily.
 
         return [c for c in clusters if len(c) >= MIN_WIFIS_IN_CLUSTER]
 
@@ -179,25 +181,25 @@ class WifiPositionProvider(Provider):
         avg_lon = sum([n.lon for n in sample]) / length
         accuracy = self._estimate_accuracy(avg_lat, avg_lon,
                                            sample, WIFI_MIN_ACCURACY)
-        return self.location_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
+        return self.result_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
     def _sufficient_data(self, wifi_keys):
         return (len(self._filter_bssids_by_similarity(list(wifi_keys))) >=
                 MIN_WIFIS_IN_QUERY)
 
-    def locate(self, query):
-        location = self.location_type(query_data=False)
+    def search(self, query):
+        result = self.result_type(query_data=False)
 
         wifis, wifi_signals, wifi_keys = self._get_clean_wifi_keys(query)
 
         if len(wifi_keys) >= MIN_WIFIS_IN_QUERY:
             if self._sufficient_data(wifi_keys):
-                location.query_data = True
+                result.query_data = True
 
             queried_wifis = self._query_database(query, wifi_keys)
             clusters = self._get_clusters(wifi_signals, queried_wifis)
 
             if clusters:
-                location = self._prepare(clusters)
+                result = self._prepare(clusters)
 
-        return location
+        return result

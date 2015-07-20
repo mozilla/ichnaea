@@ -39,7 +39,7 @@ class DataSource(IntEnum):
 
 class DataAccuracy(Enum):
     """
-    Describes the possible and actual accuracy class of a location query.
+    Describes the possible and actual accuracy class of a locate query.
 
     Instances of this class can be compared based on their value or can
     be compared to int/float values.

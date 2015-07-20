@@ -14,9 +14,9 @@ class TestWifiPositionProvider(ProviderTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2])
-        location = self.provider.locate(query)
-        self.check_model_location(
-            location, wifi,
+        result = self.provider.search(query)
+        self.check_model_result(
+            result, wifi,
             lon=wifi.lon + 0.000005, accuracy=WIFI_MIN_ACCURACY)
 
     def test_wifi_too_few_candidates(self):
@@ -24,8 +24,8 @@ class TestWifiPositionProvider(ProviderTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifis[0]])
-        location = self.provider.locate(query)
-        self.check_model_location(location, None)
+        result = self.provider.search(query)
+        self.check_model_result(result, None)
 
     def test_wifi_too_few_matches(self):
         wifis = WifiFactory.create_batch(3)
@@ -33,8 +33,8 @@ class TestWifiPositionProvider(ProviderTest):
         self.session.flush()
 
         query = self.model_query(wifis=wifis[:2])
-        location = self.provider.locate(query)
-        self.check_model_location(location, None, used=True)
+        result = self.provider.search(query)
+        self.check_model_result(result, None, used=True)
 
     def test_wifi_too_similar_bssids_by_arithmetic_difference(self):
         wifi = WifiFactory(key='00000000001f')
@@ -42,8 +42,8 @@ class TestWifiPositionProvider(ProviderTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2])
-        location = self.provider.locate(query)
-        self.check_model_location(location, None)
+        result = self.provider.search(query)
+        self.check_model_result(result, None)
 
     def test_wifi_too_similar_bssids_by_hamming_distance(self):
         wifi = WifiFactory(key='000000000058')
@@ -51,8 +51,8 @@ class TestWifiPositionProvider(ProviderTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2])
-        location = self.provider.locate(query)
-        self.check_model_location(location, None)
+        result = self.provider.search(query)
+        self.check_model_result(result, None)
 
     def test_wifi_similar_bssids_but_enough_clusters(self):
         wifi11 = WifiFactory(key='00000000001f')
@@ -66,9 +66,9 @@ class TestWifiPositionProvider(ProviderTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi11, wifi12, wifi21, wifi22])
-        location = self.provider.locate(query)
-        self.check_model_location(
-            location, wifi11,
+        result = self.provider.search(query)
+        self.check_model_result(
+            result, wifi11,
             lat=wifi11.lat + 0.00002, lon=wifi11.lon + 0.00002)
 
     def test_wifi_similar_bssids_but_enough_found_clusters(self):
@@ -84,9 +84,9 @@ class TestWifiPositionProvider(ProviderTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2] + other_wifi)
-        location = self.provider.locate(query)
-        self.check_model_location(
-            location, wifi,
+        result = self.provider.search(query)
+        self.check_model_result(
+            result, wifi,
             lat=wifi.lat + 0.00002, lon=wifi.lon + 0.00002)
 
     def test_wifi_ignore_outlier(self):
@@ -98,9 +98,9 @@ class TestWifiPositionProvider(ProviderTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi] + wifis)
-        location = self.provider.locate(query)
-        self.check_model_location(
-            location, wifi, lat=wifi.lat + 0.0001)
+        result = self.provider.search(query)
+        self.check_model_result(
+            result, wifi, lat=wifi.lat + 0.0001)
 
     def test_wifi_prefer_cluster_with_better_signals(self):
         wifi11 = WifiFactory()
@@ -114,9 +114,9 @@ class TestWifiPositionProvider(ProviderTest):
         query.wifi[1].signal = -80
         query.wifi[2].signal = -100
         query.wifi[3].signal = -54
-        location = self.provider.locate(query)
-        self.check_model_location(
-            location, wifi21, lat=wifi21.lat + 0.0001)
+        result = self.provider.search(query)
+        self.check_model_result(
+            result, wifi21, lat=wifi21.lat + 0.0001)
 
     def test_wifi_prefer_larger_cluster_over_high_signal(self):
         wifi = WifiFactory()
@@ -129,8 +129,8 @@ class TestWifiPositionProvider(ProviderTest):
             entry.signal = -80
         for entry in query.wifi[-3:]:
             entry.signal = -70
-        location = self.provider.locate(query)
-        self.check_model_location(location, wifi)
+        result = self.provider.search(query)
+        self.check_model_result(result, wifi)
 
     def test_wifi_only_use_top_five_signals_in_noisy_cluster(self):
         # all these should wind up in the same cluster since
@@ -147,9 +147,9 @@ class TestWifiPositionProvider(ProviderTest):
         query = self.model_query(wifis=wifis)
         for i, entry in enumerate(query.wifi):
             entry.signal = -70 - i
-        location = self.provider.locate(query)
-        self.check_model_location(
-            location, wifi,
+        result = self.provider.search(query)
+        self.check_model_result(
+            result, wifi,
             lat=wifi.lat + 0.00002,
             lon=wifi.lon + 0.000024)
 
@@ -163,5 +163,5 @@ class TestWifiPositionProvider(ProviderTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifis[1]])
-        location = self.provider.locate(query)
-        self.check_model_location(location, None, used=True)
+        result = self.provider.search(query)
+        self.check_model_result(result, None, used=True)

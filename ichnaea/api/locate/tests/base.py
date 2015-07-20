@@ -336,7 +336,7 @@ class CommonPositionTest(BaseLocateTest):
         self.session.flush()
 
         with requests_mock.Mocker() as mock:
-            response_location = {
+            response_result = {
                 'location': {
                     'lat': 1.0,
                     'lng': 1.0,
@@ -344,7 +344,7 @@ class CommonPositionTest(BaseLocateTest):
                 'accuracy': 100,
             }
             mock.register_uri(
-                'POST', requests_mock.ANY, json=response_location)
+                'POST', requests_mock.ANY, json=response_result)
 
             query = self.model_query(cells=cells, wifis=wifis)
             res = self._call(body=query)
@@ -372,7 +372,7 @@ class CommonPositionTest(BaseLocateTest):
         self.session.flush()
 
         with requests_mock.Mocker() as mock:
-            response_location = {
+            response_result = {
                 'location': {
                     'lat': 1.0,
                     'lng': 1.0,
@@ -380,7 +380,7 @@ class CommonPositionTest(BaseLocateTest):
                 'accuracy': 100,
             }
             mock.register_uri(
-                'POST', requests_mock.ANY, json=response_location)
+                'POST', requests_mock.ANY, json=response_result)
 
             query = self.model_query(cells=cells, wifis=wifis)
             res = self._call(body=query, ip=self.test_ip)

@@ -17,27 +17,27 @@ class TestCellPositionProvider(ProviderTest):
 
     TestProvider = CellPositionProvider
 
-    def test_locate_with_no_data_returns_none(self):
+    def test_search_with_no_data_returns_none(self):
         query = self.model_query()
-        location = self.provider.locate(query)
-        self.check_model_location(location, None)
+        result = self.provider.search(query)
+        self.check_model_result(result, None)
 
-    def test_locate_finds_cell_with_same_cid(self):
+    def test_search_finds_cell_with_same_cid(self):
         cell = CellFactory()
         self.session.flush()
 
         query = self.model_query(cells=[cell])
-        location = self.provider.locate(query)
-        self.check_model_location(location, cell)
+        result = self.provider.search(query)
+        self.check_model_result(result, cell)
 
-    def test_locate_fails_to_find_cell_with_wrong_cid(self):
+    def test_search_fails_to_find_cell_with_wrong_cid(self):
         cell = CellFactory()
         self.session.flush()
         cell.cid += 1
 
         query = self.model_query(cells=[cell])
-        location = self.provider.locate(query)
-        self.check_model_location(location, None, used=True)
+        result = self.provider.search(query)
+        self.check_model_result(result, None, used=True)
 
     def test_multiple_cells_combined(self):
         cell = CellFactory()
@@ -47,9 +47,9 @@ class TestCellPositionProvider(ProviderTest):
         self.session.flush()
 
         query = self.model_query(cells=[cell, cell2])
-        location = self.provider.locate(query)
-        self.check_model_location(
-            location, cell,
+        result = self.provider.search(query)
+        self.check_model_result(
+            result, cell,
             lat=cell.lat + 0.01, lon=cell.lon + 0.01)
 
     def test_no_db_query_for_incomplete_keys(self):
@@ -62,8 +62,8 @@ class TestCellPositionProvider(ProviderTest):
 
         with self.db_call_checker() as check_db_calls:
             query = self.model_query(cells=cells)
-            location = self.provider.locate(query)
-            self.check_model_location(location, None)
+            result = self.provider.search(query)
+            self.check_model_result(result, None)
             check_db_calls(rw=0, ro=0)
 
 
@@ -71,14 +71,14 @@ class TestCellAreaPositionProvider(ProviderTest):
 
     TestProvider = CellAreaPositionProvider
 
-    def test_provider_should_not_locate_if_lacf_disabled(self):
+    def test_provider_should_not_search_if_lacf_disabled(self):
         cells = CellFactory.build_batch(2)
 
         query = self.model_query(
             cells=cells,
             fallbacks={'lacf': False},
         )
-        self.check_should_locate(query, False)
+        self.check_should_search(query, False)
 
     def test_no_db_query_for_incomplete_keys(self):
         cells = CellFactory.build_batch(4)
@@ -89,8 +89,8 @@ class TestCellAreaPositionProvider(ProviderTest):
 
         with self.db_call_checker() as check_db_calls:
             query = self.model_query(cells=cells)
-            location = self.provider.locate(query)
-            self.check_model_location(location, None)
+            result = self.provider.search(query)
+            self.check_model_result(result, None)
             check_db_calls(rw=0, ro=0)
 
     def test_shortest_range_lac_used(self):
@@ -99,8 +99,8 @@ class TestCellAreaPositionProvider(ProviderTest):
         self.session.flush()
 
         query = self.model_query(cells=[area, area2])
-        location = self.provider.locate(query)
-        self.check_model_location(location, area)
+        result = self.provider.search(query)
+        self.check_model_result(result, area)
 
     def test_minimum_range_returned(self):
         areas = CellAreaFactory.create_batch(2)
@@ -110,9 +110,9 @@ class TestCellAreaPositionProvider(ProviderTest):
         self.session.flush()
 
         query = self.model_query(cells=areas)
-        location = self.provider.locate(query)
-        self.check_model_location(
-            location, areas[0],
+        result = self.provider.search(query)
+        self.check_model_result(
+            result, areas[0],
             accuracy=LAC_MIN_ACCURACY)
 
 
@@ -120,17 +120,17 @@ class TestCellCountryProvider(ProviderTest):
 
     TestProvider = CellCountryProvider
 
-    def test_locate_finds_country_from_mcc(self):
+    def test_search_finds_country_from_mcc(self):
         country = mobile_codes.mcc('235')[0]
         cell = CellFactory.build(mcc=235)
 
         query = self.model_query(cells=[cell])
-        location = self.provider.locate(query)
-        self.check_model_location(location, country)
+        result = self.provider.search(query)
+        self.check_model_result(result, country)
 
-    def test_mcc_with_multiple_countries_returns_empty_location(self):
+    def test_mcc_with_multiple_countries_returns_empty_result(self):
         cell = CellFactory.build(mcc=234)
 
         query = self.model_query(cells=[cell])
-        location = self.provider.locate(query)
-        self.check_model_location(location, None, used=True)
+        result = self.provider.search(query)
+        self.check_model_result(result, None, used=True)

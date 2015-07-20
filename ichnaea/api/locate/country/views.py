@@ -11,13 +11,13 @@ class CountryView(LocateV2View):
     view_name = 'country'  #:
     view_type = 'country'  #:
 
-    def prepare_location_data(self, location_data):
+    def prepare_response(self, result):
         response = {
-            'country_code': location_data['country_code'],
-            'country_name': location_data['country_name'],
+            'country_code': result['country_code'],
+            'country_name': result['country_name'],
         }
 
-        if location_data['fallback']:
-            response['fallback'] = location_data['fallback']
+        if result['fallback']:
+            response['fallback'] = result['fallback']
 
         return response

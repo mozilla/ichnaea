@@ -10,15 +10,15 @@ class LocateV1View(BasePositionView):
     schema = LocateV1Schema
     view_name = 'search'
 
-    def prepare_location_data(self, location_data):
+    def prepare_response(self, result):
         response = {
             'status': 'ok',
-            'lat': location_data['lat'],
-            'lon': location_data['lon'],
-            'accuracy': location_data['accuracy'],
+            'lat': result['lat'],
+            'lon': result['lon'],
+            'accuracy': int(result['accuracy']),
         }
 
-        if location_data['fallback']:
-            response['fallback'] = location_data['fallback']
+        if result['fallback']:
+            response['fallback'] = result['fallback']
 
         return response
