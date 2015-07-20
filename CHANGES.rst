@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #433: Move GeoIP lookup onto the query object.
+
 - #433: Add new detailed query metrics.
 
 - Use a colander schema to describe the outbound fallback provider query.

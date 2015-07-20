@@ -46,13 +46,14 @@ class TestQuery(QueryTest, ConnectionTestCase):
         query = Query()
         self.assertEqual(query.fallback.ipf, True)
         self.assertEqual(query.fallback.lacf, True)
-        self.assertEqual(query.geoip, None)
+        self.assertEqual(query.ip, None)
         self.assertEqual(query.cell, [])
         self.assertEqual(query.cell_area, [])
         self.assertEqual(query.wifi, [])
         self.assertEqual(query.api_key, None)
         self.assertEqual(query.api_name, None)
         self.assertEqual(query.session, None)
+        self.assertEqual(query.geoip_db, None)
         self.assertEqual(query.stats_client, None)
         self.assertEqual(query.expected_accuracy, DataAccuracy.low)
 
@@ -63,13 +64,19 @@ class TestQuery(QueryTest, ConnectionTestCase):
 
     def test_geoip(self):
         london_ip = self.geoip_data['London']['ip']
-        query = Query(geoip=london_ip)
-        self.assertEqual(query.geoip, london_ip)
+        query = Query(ip=london_ip, geoip_db=self.geoip_db)
+        self.assertEqual(query.country, 'GB')
+        self.assertEqual(query.geoip['city'], True)
+        self.assertEqual(query.geoip['country_code'], 'GB')
+        self.assertEqual(query.geoip['country_name'], 'United Kingdom')
+        self.assertEqual(query.ip, london_ip)
         self.assertEqual(query.expected_accuracy, DataAccuracy.low)
 
     def test_geoip_malformed(self):
-        query = Query(geoip='127.0.0.0.0.1')
+        query = Query(ip='127.0.0.0.0.1', geoip_db=self.geoip_db)
+        self.assertEqual(query.country, None)
         self.assertEqual(query.geoip, None)
+        self.assertEqual(query.ip, None)
 
     def test_cell(self):
         cell = CellFactory.build()
@@ -230,6 +237,7 @@ class TestQueryStats(QueryTest, ConnectionTestCase):
             api_type='l',
             cell=self.cell_model_query(cell),
             wifi=self.wifi_model_query(wifi),
+            geoip_db=self.geoip_db,
             stats_client=self.stats_client,
             **kw)
         query.emit_query_stats()
@@ -260,7 +268,7 @@ class TestQueryStats(QueryTest, ConnectionTestCase):
         ])
 
     def test_geoip_only(self):
-        self._make_query(geoip=self.london_ip)
+        self._make_query(ip=self.london_ip)
         self.check_stats(counter=[
             ('l.query.key.none.geoip.only', 0),
             'l.query.key.all.geoip.only',
@@ -270,7 +278,7 @@ class TestQueryStats(QueryTest, ConnectionTestCase):
         cells = CellFactory.build_batch(1)
         wifis = WifiFactory.build_batch(1)
 
-        self._make_query(cell=cells, wifi=wifis, geoip=self.london_ip)
+        self._make_query(cell=cells, wifi=wifis, ip=self.london_ip)
         self.check_stats(total=2, counter=[
             'l.query.key.all.cell.one',
             'l.query.key.all.wifi.one',
@@ -280,7 +288,7 @@ class TestQueryStats(QueryTest, ConnectionTestCase):
         cells = CellFactory.build_batch(2)
         wifis = WifiFactory.build_batch(3)
 
-        self._make_query(cell=cells, wifi=wifis, geoip=self.london_ip)
+        self._make_query(cell=cells, wifi=wifis, ip=self.london_ip)
         self.check_stats(total=2, counter=[
             'l.query.key.all.cell.many',
             'l.query.key.all.wifi.many',
@@ -299,6 +307,7 @@ class TestProviderStats(QueryTest, ConnectionTestCase):
         query = Query(
             api_key=api_key or self.api_key,
             api_type='l',
+            geoip_db=self.geoip_db,
             stats_client=self.stats_client,
             **kw)
         query.emit_provider_stats(provider, result)
@@ -312,7 +321,7 @@ class TestProviderStats(QueryTest, ConnectionTestCase):
         ])
 
     def test_no_country(self):
-        self._make_query('ocid', 'high_miss', geoip=self.london_ip)
+        self._make_query('ocid', 'high_miss', ip=self.london_ip)
         self.check_stats(counter=[
             ('l.source.key.none.ocid.high_miss', 0),
             'l.source.key.all.ocid.high_miss',

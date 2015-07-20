@@ -73,13 +73,14 @@ class ProviderTest(ConnectionTestCase):
 
         return Query(
             fallback=query.get('fallbacks'),
-            geoip=query.get('geoip'),
+            ip=query.get('geoip'),
             cell=query.get('cell'),
             wifi=query.get('wifi'),
             api_key=api_key or self.api_key,
             api_name=self.api_name,
             api_type=self.api_type,
             session=self.session,
+            geoip_db=self.geoip_db,
             stats_client=self.stats_client,
         )
 

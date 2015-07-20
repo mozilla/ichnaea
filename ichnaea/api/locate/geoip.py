@@ -23,21 +23,22 @@ class BaseGeoIPProvider(Provider):
         # client_addr was provided
         result = self.result_type(query_data=True)
 
-        if query.geoip and self.geoip_db is not None:
-            geoip = self.geoip_db.geoip_lookup(query.geoip)
-            if geoip:
-                if geoip['city']:
-                    query.stat_count('geoip_city_found')
-                else:
-                    query.stat_count('geoip_country_found')
+        # The GeoIP record is already available on the query object,
+        # there's no need to do a lookup again.
+        geoip = query.geoip
+        if geoip:
+            if geoip['city']:
+                query.stat_count('geoip_city_found')
+            else:
+                query.stat_count('geoip_country_found')
 
-                result = self.result_type(
-                    lat=geoip['latitude'],
-                    lon=geoip['longitude'],
-                    accuracy=geoip['accuracy'],
-                    country_code=geoip['country_code'],
-                    country_name=geoip['country_name'],
-                )
+            result = self.result_type(
+                lat=geoip['latitude'],
+                lon=geoip['longitude'],
+                accuracy=geoip['accuracy'],
+                country_code=geoip['country_code'],
+                country_name=geoip['country_name'],
+            )
 
         return result
 

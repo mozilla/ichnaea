@@ -32,19 +32,22 @@ METRIC_MAPPING = {
 
 class Query(object):
 
-    country = None
+    _country = None
+    _fallback = None
+    _geoip = None
+    _ip = None
 
-    def __init__(self, fallback=None, geoip=None, cell=None, wifi=None,
+    def __init__(self, fallback=None, ip=None, cell=None, wifi=None,
                  api_key=None, api_name=None, api_type=None,
-                 session=None, stats_client=None):
+                 session=None, geoip_db=None, stats_client=None):
         """
         A class representing a concrete query.
 
         :param fallback: A dictionary of fallback options.
         :type fallback: dict
 
-        :param geoip: An IP address, e.g. 127.0.0.1.
-        :type geoip: str
+        :param ip: An IP address, e.g. 127.0.0.1.
+        :type ip: str
 
         :param cell: A list of cell query dicts.
         :type cell: list
@@ -64,18 +67,23 @@ class Query(object):
 
         :param session: An open database session.
 
+        :param geoip_db: A geoip database.
+        :type geoip_db: :class:`~ichnaea.geoip.GeoIPWrapper`
+
         :param stats_client: A stats client.
         :type stats_client: :class:`~ichnaea.log.PingableStatsClient`
         """
+        self.geoip_db = geoip_db
+        self.session = session
+        self.stats_client = stats_client
+
         self.fallback = fallback
-        self.geoip = geoip
+        self.ip = ip
         self.cell = cell
         self.wifi = wifi
         self.api_key = api_key
         self.api_name = api_name
         self.api_type = api_type
-        self.session = session
-        self.stats_client = stats_client
 
     @property
     def fallback(self):
@@ -95,23 +103,48 @@ class Query(object):
         self._fallback = valid
 
     @property
+    def country(self):
+        """
+        The two letter country code of origin for this query.
+
+        Can return None, if no country could be determined.
+        """
+        return self._country
+
+    @property
     def geoip(self):
-        """The validated geoip."""
+        """
+        A GeoIP database entry for the originating IP address.
+
+        Can return None if no database match could be found.
+        """
         return self._geoip
 
-    @geoip.setter
-    def geoip(self, value):
+    @property
+    def ip(self):
+        """The validated IP address."""
+        return self._ip
+
+    @ip.setter
+    def ip(self, value):
         if not value:
             value = None
         try:
             valid = str(ip_address(value))
         except ValueError:
             valid = None
+        self._ip = valid
         if valid:
-            self.country = None  # undecided
-        else:
-            self.country = 'none'
-        self._geoip = valid
+            country = None
+            geoip = None
+            if self.geoip_db:
+                geoip = self.geoip_db.geoip_lookup(valid)
+                if geoip:
+                    country = geoip.get('country_code')
+                    if country:
+                        country = country.upper()
+            self._geoip = geoip
+            self._country = country
 
     @property
     def cell(self):
@@ -232,8 +265,11 @@ class Query(object):
     def emit_country_stat(self, pre, post):
         """Emit a all/country stats pair."""
         self.stats_client.incr(pre + 'all' + post)
-        if self.country:
-            self.stats_client.incr(pre + self.country + post)
+        country = self.country
+        if not country:
+            country = 'none'
+            # TODO don't emit actual country based stats yet
+            self.stats_client.incr(pre + country + post)
 
     def emit_query_stats(self):
         """Emit stats about the data contained in this query."""
@@ -247,7 +283,7 @@ class Query(object):
             api_type=self.api_type,
             key=self.api_key.name)
 
-        if self.geoip and not (cells or wifis):
+        if self.ip and not (cells or wifis):
             self.emit_country_stat(prefix, '.geoip.only')
         else:
             for name, length in (('cell', cells), ('wifi', wifis)):
