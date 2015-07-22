@@ -1,15 +1,11 @@
-"""Implementation of a search provider using a cell database."""
+"""Search implementation using a cell database."""
 
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 import operator
 
 from sqlalchemy.orm import load_only
 
 from ichnaea.api.locate.constants import DataSource
-from ichnaea.api.locate.provider import (
-    Network,
-    Provider,
-)
 from ichnaea.api.locate.result import Position
 from ichnaea.constants import (
     CELL_MIN_ACCURACY,
@@ -19,41 +15,33 @@ from ichnaea.geocalc import estimate_accuracy
 from ichnaea.models import (
     Cell,
     CellArea,
-    OCIDCell,
-    OCIDCellArea,
 )
 
+Network = namedtuple('Network', ['key', 'lat', 'lon', 'range'])
 
-class BaseCellProvider(Provider):
+
+class CellPositionMixin(object):
     """
-    An BaseCellProvider provides an interface and
-    partial implementation of a search using a
-    model which has a Cell-like set of fields.
-
-    .. attribute:: model
-
-        A model which has a Cell interface to be used
-        in the search.
+    A CellPositionMixin implements a position search using the cell models.
     """
 
-    model = None
+    cell_model = Cell
+    cell_area_model = CellArea
     result_type = Position
-    query_field = 'cell'
+    source = DataSource.internal
 
-    def _clean_cell_keys(self, query):
-        """Pre-process cell query."""
-        return [cell.hashkey() for cell in getattr(query, self.query_field)]
+    def _clean_cell_keys(self, query, query_field):
+        return [cell.hashkey() for cell in getattr(query, query_field)]
 
-    def _query_database(self, query, cell_keys):
-        """Query the cell model."""
+    def _query_cell_database(self, query, cell_keys, model):
         try:
             load_fields = ('lat', 'lon', 'range')
-            cell_iter = self.model.iterkeys(
+            cell_iter = model.iterkeys(
                 query.session,
                 cell_keys,
                 extra=lambda query: query.options(load_only(*load_fields))
-                                         .filter(self.model.lat.isnot(None))
-                                         .filter(self.model.lon.isnot(None)))
+                                         .filter(model.lat.isnot(None))
+                                         .filter(model.lon.isnot(None)))
 
             return self._filter_cells(list(cell_iter))
         except Exception:
@@ -86,12 +74,8 @@ class BaseCellProvider(Provider):
             range=cell.range,
         ) for cell in areas[0]]
 
-    def _prepare(self, queried_cells):
-        """
-        Combine the queried_cells into an estimated result.
-
-        :rtype: :class:`~ichnaea.api.locate.result.Result`
-        """
+    def _prepare_cell(self, queried_cells):
+        # Combine the queried_cells into an estimated result
         length = len(queried_cells)
         avg_lat = sum([c.lat for c in queried_cells]) / length
         avg_lon = sum([c.lon for c in queried_cells]) / length
@@ -99,56 +83,29 @@ class BaseCellProvider(Provider):
             avg_lat, avg_lon, queried_cells, CELL_MIN_ACCURACY)
         return self.result_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
-    def search(self, query):
-        result = self.result_type()
-        cell_keys = self._clean_cell_keys(query)
-        if cell_keys:
-            queried_cells = self._query_database(query, cell_keys)
-            if queried_cells:
-                result = self._prepare(queried_cells)
-        return result
-
-
-class CellPositionProvider(BaseCellProvider):
-    """
-    A CellPositionProvider implements a cell search using the Cell model.
-    """
-
-    model = Cell
-
-
-class OCIDCellPositionProvider(BaseCellProvider):
-    """
-    A OCIDCellPositionProvider implements a cell search using
-    the OCID Cell model.
-    """
-
-    model = OCIDCell
-    source = DataSource.ocid
-
-
-class CellAreaPositionProvider(BaseCellProvider):
-    """
-    A CellAreaPositionProvider implements a cell search
-    using the CellArea model.
-    """
-
-    model = CellArea
-    fallback_field = 'lacf'
-    query_field = 'cell_area'
-
-    def _prepare(self, queried_cells):
+    def _prepare_cell_area(self, queried_cells):
         # take the smallest LAC of any the user is inside
         lac = sorted(queried_cells, key=operator.attrgetter('range'))[0]
         accuracy = float(max(LAC_MIN_ACCURACY, lac.range))
-        return self.result_type(lat=lac.lat, lon=lac.lon, accuracy=accuracy)
+        return self.result_type(
+            lat=lac.lat, lon=lac.lon, accuracy=accuracy, fallback='lacf')
 
+    def search_cell(self, query):
+        result = self.result_type()
+        cell_keys = self._clean_cell_keys(query, 'cell')
+        if cell_keys:
+            queried_cells = self._query_cell_database(
+                query, cell_keys, self.cell_model)
+            if queried_cells:
+                result = self._prepare_cell(queried_cells)
+        return result
 
-class OCIDCellAreaPositionProvider(CellAreaPositionProvider):
-    """
-    A OCIDCellAreaPositionProvider implements a cell search
-    using the OCIDCellArea model.
-    """
-
-    model = OCIDCellArea
-    source = DataSource.ocid
+    def search_cell_area(self, query):
+        result = self.result_type()
+        cell_keys = self._clean_cell_keys(query, 'cell_area')
+        if cell_keys:
+            queried_cells = self._query_cell_database(
+                query, cell_keys, self.cell_area_model)
+            if queried_cells:
+                result = self._prepare_cell_area(queried_cells)
+        return result

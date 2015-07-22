@@ -10,10 +10,12 @@
    constants
    fallback
    geoip
-   provider
+   internal
+   ocid
    query
    result
-   searcher
    schema
+   searcher
+   source
    views
    wifi

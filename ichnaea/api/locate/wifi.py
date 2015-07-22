@@ -1,5 +1,7 @@
 """Search implementation using a wifi database."""
 
+from collections import namedtuple
+
 from sqlalchemy.orm import load_only
 
 from ichnaea.api.locate.constants import (
@@ -8,7 +10,6 @@ from ichnaea.api.locate.constants import (
     MIN_WIFIS_IN_CLUSTER,
     MAX_WIFIS_IN_CLUSTER,
 )
-from ichnaea.api.locate.provider import Network
 from ichnaea.api.locate.result import Position
 from ichnaea.constants import WIFI_MIN_ACCURACY
 from ichnaea.geocalc import (
@@ -16,6 +17,8 @@ from ichnaea.geocalc import (
     estimate_accuracy,
 )
 from ichnaea.models import Wifi
+
+Network = namedtuple('Network', ['key', 'lat', 'lon', 'range'])
 
 
 class WifiPositionMixin(object):
@@ -113,7 +116,7 @@ class WifiPositionMixin(object):
 
         return (wifis, wifi_signals, wifi_keys)
 
-    def _query_database(self, query, wifi_keys):
+    def _query_wifi_database(self, query, wifi_keys):
         try:
             load_fields = ('key', 'lat', 'lon', 'range')
             wifi_iter = Wifi.iterkeys(
@@ -189,7 +192,7 @@ class WifiPositionMixin(object):
         wifis, wifi_signals, wifi_keys = self._get_clean_wifi_keys(query)
 
         if len(wifi_keys) >= MIN_WIFIS_IN_QUERY:
-            queried_wifis = self._query_database(query, wifi_keys)
+            queried_wifis = self._query_wifi_database(query, wifi_keys)
             clusters = self._get_clusters(wifi_signals, queried_wifis)
 
             if clusters:

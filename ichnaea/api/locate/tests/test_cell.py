@@ -1,7 +1,5 @@
-from ichnaea.api.locate.cell import (
-    CellAreaPositionProvider,
-    CellPositionProvider,
-)
+from ichnaea.api.locate.cell import CellPositionMixin
+from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.constants import LAC_MIN_ACCURACY
 from ichnaea.tests.factories import (
@@ -12,7 +10,23 @@ from ichnaea.tests.factories import (
 
 class TestCellPosition(BaseSourceTest):
 
-    TestSource = CellPositionProvider
+    class TestSource(CellPositionMixin, PositionSource):
+
+        def search(self, query):
+            result = self.result_type()
+            if not (query.cell or query.cell_area):
+                return result
+
+            for func in (self.search_cell, self.search_cell_area):
+                new_result = func(query)
+                if new_result.more_accurate(result):
+                    result = new_result
+
+                if result.accurate_enough():  # pragma: no cover
+                    break
+
+            query.emit_source_stats(self.source, result)
+            return result
 
     def test_empty(self):
         query = self.model_query()
@@ -50,35 +64,7 @@ class TestCellPosition(BaseSourceTest):
             lat=cell.lat + 0.01, lon=cell.lon + 0.01)
 
     def test_incomplete_keys(self):
-        cells = CellFactory.build_batch(5)
-        cells[0].radio = None
-        cells[1].mcc = None
-        cells[2].mnc = None
-        cells[3].lac = None
-        cells[4].cid = None
-
-        with self.db_call_checker() as check_db_calls:
-            query = self.model_query(cells=cells)
-            result = self.source.search(query)
-            self.check_model_result(result, None)
-            check_db_calls(rw=0, ro=0)
-
-
-class TestCellAreaPosition(BaseSourceTest):
-
-    TestSource = CellAreaPositionProvider
-
-    def test_no_area_fallback(self):
-        cells = CellFactory.build_batch(2)
-
-        query = self.model_query(
-            cells=cells,
-            fallback={'lacf': False},
-        )
-        self.check_should_search(query, False)
-
-    def test_incomplete_keys(self):
-        cells = CellFactory.build_batch(4)
+        cells = CellAreaFactory.build_batch(4)
         cells[0].radio = None
         cells[1].mcc = None
         cells[2].mnc = None
