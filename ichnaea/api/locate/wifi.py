@@ -14,7 +14,10 @@ from ichnaea.api.locate.provider import (
 )
 from ichnaea.api.locate.result import Position
 from ichnaea.constants import WIFI_MIN_ACCURACY
-from ichnaea.geocalc import distance
+from ichnaea.geocalc import (
+    distance,
+    estimate_accuracy,
+)
 from ichnaea.models import Wifi
 
 
@@ -178,8 +181,8 @@ class WifiPositionProvider(Provider):
         length = len(sample)
         avg_lat = sum([n.lat for n in sample]) / length
         avg_lon = sum([n.lon for n in sample]) / length
-        accuracy = self._estimate_accuracy(avg_lat, avg_lon,
-                                           sample, WIFI_MIN_ACCURACY)
+        accuracy = estimate_accuracy(avg_lat, avg_lon,
+                                     sample, WIFI_MIN_ACCURACY)
         return self.result_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
     def search(self, query):

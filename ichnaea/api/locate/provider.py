@@ -3,8 +3,6 @@
 from collections import namedtuple
 from functools import partial
 
-from ichnaea.geocalc import distance
-
 # helper class used in searching
 Network = namedtuple('Network', ['key', 'lat', 'lon', 'range'])
 
@@ -57,22 +55,3 @@ class Provider(object):
         :rtype: :class:`~ichnaea.api.locate.result.Result`
         """
         raise NotImplementedError()
-
-    def _estimate_accuracy(self, lat, lon, points, minimum):
-        """
-        Return the maximum range between a position (lat/lon) and a
-        list of secondary positions (points). But at least use the
-        specified minimum value.
-        """
-        if len(points) == 1:
-            accuracy = points[0].range
-        else:
-            # Terrible approximation, but hopefully better
-            # than the old approximation, "worst-case range":
-            # this one takes the maximum distance from position
-            # to any of the provided points.
-            accuracy = max([distance(lat, lon, p.lat, p.lon) * 1000
-                            for p in points])
-        if accuracy is not None:
-            accuracy = float(accuracy)
-        return max(accuracy, minimum)

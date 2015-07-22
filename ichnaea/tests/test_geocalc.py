@@ -1,15 +1,64 @@
+from collections import namedtuple
+
 from ichnaea.geocalc import (
     _radius_cache,
-    distance,
-    maximum_country_radius,
-)
-from ichnaea.geocalc import (
-    bound,
     add_meters_to_latitude,
-    add_meters_to_longitude
+    add_meters_to_longitude,
+    bound,
+    distance,
+    estimate_accuracy,
+    maximum_country_radius,
 )
 from ichnaea import constants
 from ichnaea.tests.base import TestCase
+
+Circle = namedtuple('Circle', 'lat lon range')
+
+
+class TestAddMetersToLatitude(TestCase):
+
+    def test_returns_min_lat(self):
+        self.assertEqual(add_meters_to_latitude(1.0, -(10 ** 10)),
+                         constants.MIN_LAT)
+
+    def test_returns_max_lat(self):
+        self.assertEqual(add_meters_to_latitude(1.0, 10 ** 10),
+                         constants.MAX_LAT)
+
+    def test_adds_meters_to_latitude(self):
+        self.assertAlmostEqual(add_meters_to_latitude(1.0, 1000),
+                               1.009000009, 9)
+
+
+class TestAddMetersToLongitude(TestCase):
+
+    def test_returns_min_lon(self):
+        self.assertEqual(add_meters_to_longitude(1.0, 1.0, -(10 ** 10)),
+                         constants.MIN_LON)
+
+    def test_returns_max_lon(self):
+        self.assertEqual(add_meters_to_longitude(1.0, 1.0, 10 ** 10),
+                         constants.MAX_LON)
+
+    def test_adds_meters_to_longitude(self):
+        self.assertAlmostEqual(add_meters_to_longitude(1.0, 1.0, 1000),
+                               1.0166573581, 9)
+
+
+class TestBound(TestCase):
+
+    def test_max_below_min_raises_exception(self):
+        with self.assertRaises(Exception):
+            bound(0, 0, -1)
+
+    def test_returns_between_min_max(self):
+        self.assertEqual(bound(0, 1, 2), 1)
+
+    def test_returns_below_max(self):
+        self.assertEqual(bound(0, 3, 2), 2)
+
+    def test_returns_above_min(self):
+        self.assertEqual(bound(0, -1, 2), 0)
 
 
 class TestDistance(TestCase):
@@ -51,6 +100,17 @@ class TestDistance(TestCase):
         delta = distance(lat1, lon1, lat2, lon2)
         sdelta = '%0.4f' % delta
         self.assertEqual(sdelta, '8901.7476')
+
+
+class TestEstimateAccuracy(TestCase):
+
+    def test_same(self):
+        self.assertEqual(estimate_accuracy(
+            1.0, 1.0, [Circle(1.0, 1.0, 100.0)], 0), 100.0)
+
+    def test_minimum(self):
+        self.assertEqual(estimate_accuracy(
+            1.0, 1.0, [Circle(1.0, 1.0, 100.0)], 333), 333.0)
 
 
 class TestMaximumRadius(TestCase):
@@ -106,49 +166,3 @@ class TestMaximumRadius(TestCase):
         r = maximum_country_radius('AAA')
         self.assertTrue(r is None)
         self.assertFalse('AAA' in _radius_cache)
-
-
-class TestBound(TestCase):
-
-    def test_max_below_min_raises_exception(self):
-        with self.assertRaises(Exception):
-            bound(0, 0, -1)
-
-    def test_returns_between_min_max(self):
-        self.assertEqual(bound(0, 1, 2), 1)
-
-    def test_returns_below_max(self):
-        self.assertEqual(bound(0, 3, 2), 2)
-
-    def test_returns_above_min(self):
-        self.assertEqual(bound(0, -1, 2), 0)
-
-
-class TestAddMetersToLatitude(TestCase):
-
-    def test_returns_min_lat(self):
-        self.assertEqual(add_meters_to_latitude(1.0, -(10 ** 10)),
-                         constants.MIN_LAT)
-
-    def test_returns_max_lat(self):
-        self.assertEqual(add_meters_to_latitude(1.0, 10 ** 10),
-                         constants.MAX_LAT)
-
-    def test_adds_meters_to_latitude(self):
-        self.assertAlmostEqual(add_meters_to_latitude(1.0, 1000),
-                               1.009000009, 9)
-
-
-class TestAddMetersToLongitude(TestCase):
-
-    def test_returns_min_lon(self):
-        self.assertEqual(add_meters_to_longitude(1.0, 1.0, -(10 ** 10)),
-                         constants.MIN_LON)
-
-    def test_returns_max_lon(self):
-        self.assertEqual(add_meters_to_longitude(1.0, 1.0, 10 ** 10),
-                         constants.MAX_LON)
-
-    def test_adds_meters_to_longitude(self):
-        self.assertAlmostEqual(add_meters_to_longitude(1.0, 1.0, 1000),
-                               1.0166573581, 9)

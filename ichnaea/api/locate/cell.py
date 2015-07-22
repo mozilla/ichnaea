@@ -15,6 +15,7 @@ from ichnaea.constants import (
     CELL_MIN_ACCURACY,
     LAC_MIN_ACCURACY,
 )
+from ichnaea.geocalc import estimate_accuracy
 from ichnaea.models import (
     Cell,
     CellArea,
@@ -94,7 +95,7 @@ class BaseCellProvider(Provider):
         length = len(queried_cells)
         avg_lat = sum([c.lat for c in queried_cells]) / length
         avg_lon = sum([c.lon for c in queried_cells]) / length
-        accuracy = self._estimate_accuracy(
+        accuracy = estimate_accuracy(
             avg_lat, avg_lon, queried_cells, CELL_MIN_ACCURACY)
         return self.result_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
