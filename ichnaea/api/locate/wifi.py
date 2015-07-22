@@ -1,4 +1,4 @@
-"""Implementation of a search provider using a wifi database."""
+"""Search implementation using a wifi database."""
 
 from sqlalchemy.orm import load_only
 
@@ -8,10 +8,7 @@ from ichnaea.api.locate.constants import (
     MIN_WIFIS_IN_CLUSTER,
     MAX_WIFIS_IN_CLUSTER,
 )
-from ichnaea.api.locate.provider import (
-    Network,
-    Provider,
-)
+from ichnaea.api.locate.provider import Network
 from ichnaea.api.locate.result import Position
 from ichnaea.constants import WIFI_MIN_ACCURACY
 from ichnaea.geocalc import (
@@ -21,12 +18,13 @@ from ichnaea.geocalc import (
 from ichnaea.models import Wifi
 
 
-class WifiPositionProvider(Provider):
+class WifiPositionMixin(object):
     """
-    A WifiPositionProvider implements a position search using
+    A WifiPositionMixin implements a position search using
     the WiFi models and a series of clustering algorithms.
     """
 
+    raven_client = None
     result_type = Position
 
     def _cluster_elements(self, items, distance_fn, threshold):
@@ -185,7 +183,7 @@ class WifiPositionProvider(Provider):
                                      sample, WIFI_MIN_ACCURACY)
         return self.result_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
-    def search(self, query):
+    def search_wifi(self, query):
         result = self.result_type()
 
         wifis, wifi_signals, wifi_keys = self._get_clean_wifi_keys(query)

@@ -1,12 +1,16 @@
+from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
-from ichnaea.api.locate.wifi import WifiPositionProvider
+from ichnaea.api.locate.wifi import WifiPositionMixin
 from ichnaea.constants import WIFI_MIN_ACCURACY
 from ichnaea.tests.factories import WifiFactory
 
 
 class TestWifi(BaseSourceTest):
 
-    TestSource = WifiPositionProvider
+    class TestSource(PositionSource, WifiPositionMixin):
+
+        def search(self, query):
+            return self.search_wifi(query)
 
     def test_wifi(self):
         wifi = WifiFactory(range=200)
