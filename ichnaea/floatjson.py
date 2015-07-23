@@ -14,9 +14,9 @@ def custom_iterencode(value):
         PosInf,
     )
 
-    j = JSONEncoder()
+    jenc = JSONEncoder()
 
-    def floatstr(o, allow_nan=j.allow_nan, ignore_nan=j.ignore_nan,
+    def floatstr(o, allow_nan=jenc.allow_nan, ignore_nan=jenc.ignore_nan,
                  _repr=FLOAT_REPR, _inf=PosInf,
                  _neginf=-PosInf):  # pragma: no cover
         if o != o:
@@ -26,8 +26,12 @@ def custom_iterencode(value):
         elif o == _neginf:
             text = '-Infinity'
         else:
+            if type(o) != float:
+                # See #118, do not trust custom str/repr
+                o = float(o)
             # use str(round()) instead of repr()
             return str(round(o, DEGREE_DECIMAL_PLACES))
+
         if ignore_nan:
             text = 'null'
         elif not allow_nan:
@@ -41,12 +45,12 @@ def custom_iterencode(value):
     _encoder = encode_basestring
     _one_shot = False
     _iterencode = _make_iterencode(
-        markers, j.default, _encoder, j.indent, floatstr,
-        j.key_separator, j.item_separator, j.sort_keys,
-        j.skipkeys, _one_shot, j.use_decimal,
-        j.namedtuple_as_object, j.tuple_as_array,
-        j.int_as_string_bitcount, j.item_sort_key,
-        j.encoding, j.for_json,
+        markers, jenc.default, _encoder, jenc.indent, floatstr,
+        jenc.key_separator, jenc.item_separator, jenc.sort_keys,
+        jenc.skipkeys, _one_shot, jenc.use_decimal,
+        jenc.namedtuple_as_object, jenc.tuple_as_array,
+        jenc.int_as_string_bitcount, jenc.item_sort_key,
+        jenc.encoding, jenc.for_json, jenc.iterable_as_array,
     )
 
     return _iterencode(value, 0)

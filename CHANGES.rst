@@ -26,6 +26,9 @@ Changes
 
 - Split customjson into internal and external pretty float version.
 
+- Update to latest versions of alembic, setproctitle, simplejson and
+  SQLAlchemy.
+
 1.2 (2015-07-15)
 ================
 
@@ -90,7 +93,7 @@ Changes
 
 - Switch to using bower for CSS/JS dependency management.
 
-- Updated to latest versions of all CSS and JS dependencies.
+- Update to latest versions of all CSS and JS dependencies.
 
 - Update to latest versions of geoip2, SQLAlchemy and unittest2.
 
