@@ -65,7 +65,7 @@ UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
 .PHONY: all bower js mysql pip init_db css js test clean shell docs \
 	build build_dev build_maxmind build_req \
 	release release_install release_compile \
-	tox_install tox_test
+	tox_install tox_test pypi_release pypi_upload
 
 all: build init_db
 
@@ -238,3 +238,11 @@ $(BIN)/sphinx-build:
 docs: $(BIN)/sphinx-build
 	git submodule update --recursive --init
 	cd docs; SPHINXBUILD=$(SPHINXBUILD) make html
+
+pypi_release:
+	rm -rf $(HERE)/dist
+	$(PYTHON) setup.py egg_info -RDb '' sdist --formats=zip
+	gpg --detach-sign -a $(HERE)/dist/ichnaea*.zip
+
+pypi_upload:
+	twine upload $(HERE)/dist/*
