@@ -5,42 +5,6 @@ __version__ = '1.3'
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-requires = [
-    'alembic',
-    'boto',
-    'celery',
-    'colander',
-    'configparser',
-    'country-bounding-boxes',
-    'filechunkio',
-    'gevent',
-    'geoip2',
-    'gunicorn',
-    'iso3166',
-    'mobile-codes',
-    'PyMySQL',
-    'pyramid',
-    'pyramid-chameleon',
-    'pytz',
-    'raven',
-    'redis',
-    'requests',
-    'setproctitle',
-    'simplejson',
-    'six',
-    'statsd',
-    'SQLAlchemy',
-]
-
-test_requires = requires + [
-    'coverage',
-    'mock',
-    'nose',
-    'requests-mock',
-    'unittest2',
-    'Webtest',
-]
-
 with open(os.path.join(here, 'README.rst')) as f:
     README = f.read()
 
@@ -71,13 +35,6 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
-    install_requires=requires,
-    tests_require=test_requires,
-    test_suite="ichnaea",
-    extras_require={
-        'test': test_requires,
-        ':python_version=="2.6"': ['argparse'],
-    },
     entry_points="""\
     [console_scripts]
     location_initdb = ichnaea.scripts.initdb:console_entry
