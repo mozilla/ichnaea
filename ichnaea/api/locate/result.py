@@ -55,7 +55,7 @@ class Result(object):
         """Does this result match the other result?"""
         return True
 
-    def accurate_enough(self):
+    def accurate_enough(self, query):
         """Is this result accurate enough to return it?"""
         return False
 
@@ -79,8 +79,12 @@ class Position(Result):
         dist = distance(other.lat, other.lon, self.lat, self.lon) * 1000
         return dist <= other.accuracy
 
-    def accurate_enough(self):
-        # For position data we currently always want to continue.
+    def accurate_enough(self, query):
+        """
+        We are accurate enough once we meet the expected query accuracy.
+        """
+        if self.data_accuracy <= query.expected_accuracy:
+            return True
         return False
 
     def more_accurate(self, other):
@@ -111,7 +115,7 @@ class Country(Result):
     def agrees_with(self, other):
         return self.country_code == other.country_code
 
-    def accurate_enough(self):
+    def accurate_enough(self, query):
         return self.found()
 
     def more_accurate(self, other):

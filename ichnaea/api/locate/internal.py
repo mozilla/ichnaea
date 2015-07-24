@@ -58,15 +58,15 @@ class InternalPositionSource(CellPositionMixin,
     def search(self, query):
         result = self.result_type()
         for should, search in (
-                (self.should_search_cell, self.search_cell),
-                (self.should_search_wifi, self.search_wifi)):
+                (self.should_search_wifi, self.search_wifi),
+                (self.should_search_cell, self.search_cell)):
 
             if should(query, result):
                 new_result = search(query)
                 if new_result.more_accurate(result):
                     result = new_result
 
-                if result.accurate_enough():  # pragma: no cover
+                if result.accurate_enough(query):
                     break
 
         query.emit_source_stats(self.source, result)

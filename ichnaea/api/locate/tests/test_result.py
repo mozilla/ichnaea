@@ -2,12 +2,14 @@ from ichnaea.api.locate.constants import (
     DataAccuracy,
     DataSource,
 )
+from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
     Country,
     Result,
     Position,
 )
 from ichnaea.tests.base import TestCase
+from ichnaea.tests.factories import WifiFactory
 
 
 class TestResult(TestCase):
@@ -26,7 +28,7 @@ class TestResult(TestCase):
         self.assertTrue(Result().agrees_with(Result()))
 
     def test_accurate_enough(self):
-        self.assertFalse(Result().accurate_enough())
+        self.assertFalse(Result().accurate_enough(Query()))
 
     def test_more_accurate(self):
         self.assertFalse(Result().more_accurate(Result()))
@@ -67,11 +69,11 @@ class TestCountry(TestCase):
 
     def test_accurate_enough(self):
         country = Country(country_code='CA', country_name='Canada')
-        self.assertTrue(country.accurate_enough())
+        self.assertTrue(country.accurate_enough(Query()))
 
     def test_not_accurate_enough(self):
         country = Country()
-        self.assertFalse(country.accurate_enough())
+        self.assertFalse(country.accurate_enough(Query()))
 
     def test_more_accurate_than_empty(self):
         country1 = Country(country_code='CA', country_name='Canada')
@@ -134,9 +136,19 @@ class TestPosition(TestCase):
         position2 = Position(lat=1.001, lon=1.001, accuracy=100)
         self.assertFalse(position1.agrees_with(position2))
 
-    def test_never_accurate_enough(self):
-        position = Position()
-        self.assertFalse(position.accurate_enough())
+    def test_accurate_enough(self):
+        wifis = WifiFactory.build_batch(2)
+        wifi_query = [{'key': wifi.key} for wifi in wifis]
+        position = Position(lat=1.0, lon=1.0, accuracy=100.0)
+        query = Query(api_type='locate', wifi=wifi_query)
+        self.assertTrue(position.accurate_enough(query))
+
+    def test_not_accurate_enough(self):
+        wifis = WifiFactory.build_batch(2)
+        wifi_query = [{'key': wifi.key} for wifi in wifis]
+        position = Position(lat=1.0, lon=1.0, accuracy=1500.0)
+        query = Query(api_type='locate', wifi=wifi_query)
+        self.assertFalse(position.accurate_enough(query))
 
     def test_more_accurate_than_empty(self):
         position1 = Position(lat=1.0, lon=1.0, accuracy=10.0)

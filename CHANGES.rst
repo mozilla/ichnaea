@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Consider Wifi based query results accurate enough to satisfy queries.
+
 - Stop maintaining separate Python dependency list in setup.py.
 
 - #433: Move GeoIP lookup onto the query object.

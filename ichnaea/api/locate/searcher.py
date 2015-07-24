@@ -94,7 +94,7 @@ class Searcher(object):
                     # we'll use it.
                     result = source_result
 
-                if result.accurate_enough():
+                if result.accurate_enough(query):
                     # Stop the loop, if we have a good quality result.
                     break
 
