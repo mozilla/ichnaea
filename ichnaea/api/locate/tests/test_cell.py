@@ -1,5 +1,4 @@
-from ichnaea.api.locate.cell import CellPositionMixin
-from ichnaea.api.locate.source import PositionSource
+from ichnaea.api.locate.cell import CellPositionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.constants import LAC_MIN_ACCURACY
 from ichnaea.tests.factories import (
@@ -10,28 +9,19 @@ from ichnaea.tests.factories import (
 
 class TestCellPosition(BaseSourceTest):
 
-    class TestSource(CellPositionMixin, PositionSource):
+    TestSource = CellPositionSource
 
-        def search(self, query):
-            result = self.result_type()
-            if not (query.cell or query.cell_area):
-                return result
-
-            for func in (self.search_cell, self.search_cell_area):
-                new_result = func(query)
-                if new_result.more_accurate(result):
-                    result = new_result
-
-                if result.accurate_enough():  # pragma: no cover
-                    break
-
-            query.emit_source_stats(self.source, result)
-            return result
+    def test_check_empty(self):
+        query = self.model_query()
+        result = self.source.result_type()
+        self.assertFalse(self.source.should_search(query, result))
 
     def test_empty(self):
         query = self.model_query()
-        result = self.source.search(query)
-        self.check_model_result(result, None)
+        with self.db_call_checker() as check_db_calls:
+            result = self.source.search(query)
+            self.check_model_result(result, None)
+            check_db_calls(rw=0, ro=0)
 
     def test_cell(self):
         cell = CellFactory()
@@ -72,8 +62,8 @@ class TestCellPosition(BaseSourceTest):
 
         with self.db_call_checker() as check_db_calls:
             query = self.model_query(cells=cells)
-            result = self.source.search(query)
-            self.check_model_result(result, None)
+            result = self.source.result_type()
+            self.assertFalse(self.source.should_search(query, result))
             check_db_calls(rw=0, ro=0)
 
     def test_smallest_area(self):

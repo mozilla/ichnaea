@@ -43,23 +43,31 @@ class InternalPositionSource(CellPositionMixin,
                              WifiPositionMixin, PositionSource):
     """A position source based on our own crowd-sourced internal data."""
 
+    fallback_field = None  #:
     source = DataSource.internal  #:
+
+    def should_search(self, query, result):
+        if not PositionSource.should_search(
+                self, query, result):  # pragma: no cover
+            return False
+        if not (self.should_search_cell(query, result) or
+                self.should_search_wifi(query, result)):
+            return False
+        return True
 
     def search(self, query):
         result = self.result_type()
-        if not (query.wifi or query.cell or query.cell_area):
-            return result
+        for should, search in (
+                (self.should_search_cell, self.search_cell),
+                (self.should_search_wifi, self.search_wifi)):
 
-        for func in (self.search_cell,
-                     self.search_cell_area,
-                     self.search_wifi):
+            if should(query, result):
+                new_result = search(query)
+                if new_result.more_accurate(result):
+                    result = new_result
 
-            new_result = func(query)
-            if new_result.more_accurate(result):
-                result = new_result
-
-            if result.accurate_enough():  # pragma: no cover
-                break
+                if result.accurate_enough():  # pragma: no cover
+                    break
 
         query.emit_source_stats(self.source, result)
         return result

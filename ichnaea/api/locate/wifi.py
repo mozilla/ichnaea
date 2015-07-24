@@ -1,15 +1,17 @@
 """Search implementation using a wifi database."""
 
 from collections import namedtuple
-
-from sqlalchemy.orm import load_only
+from operator import attrgetter
 
 from ichnaea.api.locate.constants import (
+    DataSource,
     MAX_WIFI_CLUSTER_KM,
     MIN_WIFIS_IN_CLUSTER,
     MAX_WIFIS_IN_CLUSTER,
 )
+from ichnaea.api.locate.db import query_database
 from ichnaea.api.locate.result import Position
+from ichnaea.api.locate.source import PositionSource
 from ichnaea.constants import WIFI_MIN_ACCURACY
 from ichnaea.geocalc import (
     distance,
@@ -17,7 +19,7 @@ from ichnaea.geocalc import (
 )
 from ichnaea.models import Wifi
 
-Network = namedtuple('Network', ['key', 'lat', 'lon', 'range'])
+Network = namedtuple('Network', 'key lat lon range signal')
 
 
 def cluster_elements(items, distance_fn, threshold):
@@ -25,7 +27,7 @@ def cluster_elements(items, distance_fn, threshold):
     Generic pairwise clustering routine.
 
     :param items: A list of elements to cluster.
-    :param distance_fn: A pairwise distance_fnance function over elements.
+    :param distance_fn: A pairwise distance function over elements.
     :param threshold: A numeric threshold for clustering;
                       clusters P, Q will be joined if
                       distance_fn(a,b) <= threshold,
@@ -60,7 +62,7 @@ def cluster_elements(items, distance_fn, threshold):
     return [[items[i] for i in c] for c in clusters]
 
 
-def filter_bssids_by_similarity(bs):
+def filter_bssids_by_similarity(bssids, distance_threshold=2):
     """
     Cluster BSSIDs by "similarity" (hamming or arithmetic distance);
     return one BSSID from each cluster. The distance threshold is
@@ -68,8 +70,6 @@ def filter_bssids_by_similarity(bs):
     if they are within a numeric difference of 2 of one another or
     a hamming distance of 2.
     """
-
-    DISTANCE_THRESHOLD = 2
 
     def bytes_of_hex_string(hs):
         return [int(hs[i:i + 2], 16) for i in range(0, len(hs), 2)]
@@ -92,109 +92,93 @@ def filter_bssids_by_similarity(bs):
                    (a, b) in zip(abytes, bbytes))
 
     clusters = cluster_elements(
-        bs, bssid_difference, DISTANCE_THRESHOLD)
-    return [c[0] for c in clusters]
+        bssids, bssid_difference, distance_threshold)
+    return [cluster[0] for cluster in clusters]
 
 
-def get_clusters(wifi_signals, queried_wifis):
+def get_clusters(wifis, lookups):
     """
-    Filter out BSSIDs that are numerically very similar, assuming they're
-    multiple interfaces on the same base station or such.
+    Given a list of wifi models and wifi lookups, return
+    a list of clusters of nearby wifi networks.
     """
-    dissimilar_keys = set(filter_bssids_by_similarity(
-        [w.key for w in queried_wifis]))
+
+    # Filter out BSSIDs that are numerically very similar, assuming
+    # they are multiple interfaces on the same base station or such.
+    dissimilar_keys = set(filter_bssids_by_similarity([w.key for w in wifis]))
+
+    # Create a dict of wifi keys mapped to their signal strength.
+    # Estimate signal strength at -100 dBm if none is provided,
+    # which is worse than the 99th percentile of wifi dBms we
+    # see in practice (-98).
+    wifi_signals = {}
+    for lookup in lookups:
+        if lookup.key in dissimilar_keys:
+            wifi_signals[lookup.key] = lookup.signal or -100
 
     wifi_networks = [
-        Network(w.key, w.lat, w.lon, w.range)
-        for w in queried_wifis if w.key in dissimilar_keys]
+        Network(w.key, w.lat, w.lon, w.range, wifi_signals[w.key])
+        for w in wifis if w.key in dissimilar_keys]
 
     # Sort networks by signal strengths in query.
-    wifi_networks.sort(key=lambda a: wifi_signals[a.key], reverse=True)
+    wifi_networks.sort(key=attrgetter('signal'), reverse=True)
+
+    def wifi_distance(one, two):
+        return distance(one.lat, one.lon, two.lat, two.lon)
 
     clusters = cluster_elements(
-        wifi_networks,
-        lambda a, b: distance(a.lat, a.lon, b.lat, b.lon),
-        MAX_WIFI_CLUSTER_KM)
+        wifi_networks, wifi_distance, MAX_WIFI_CLUSTER_KM)
 
-    # The second loop selects a cluster and estimates the position of that
-    # cluster. The selected cluster is the one with the most points, larger
-    # than MIN_WIFIS_IN_CLUSTER; its position is estimated taking up-to
-    # MAX_WIFIS_IN_CLUSTER worth of points from the cluster, which is
-    # pre-sorted in signal-strength order due to the way we built the
-    # clusters.
-    #
-    # The reasoning here is that if we have >1 cluster at all, we probably
-    # have some bad data -- likely an AP or set of APs associated with a
-    # single antenna that moved -- since a user shouldn't be able to hear
-    # multiple groups 500m apart.
-    #
-    # So we're trying to select a cluster that's most-likely good data,
-    # which we assume to be the one with the most points in it.
-    #
-    # The reason we take a subset of those points when estimating a
-    # position is that we're doing a (non-weighted) centroid calculation,
-    # which is itself unbalanced by distant elements. Even if we did a
-    # weighted centroid here, using radio intensity as a proxy for
-    # distance has an error that increases significantly with distance,
-    # so we'd have to underweight pretty heavily.
-
+    # Only consider clusters that have at least 2 found networks
+    # inside them. Otherwise someone could use a combination of
+    # one real network and one fake and therefor not found network to
+    # get the position of the real network.
     return [c for c in clusters if len(c) >= MIN_WIFIS_IN_CLUSTER]
 
 
 def pick_best_cluster(clusters):
     """
     Out of the list of possible clusters, pick the best one.
+
+    Currently we pick the cluster with the most found networks inside
+    it. If we find more than one cluster, we have some stale data in
+    our database, as a device shouldn't be able to pick up signals from
+    networks more than :data:`ichnaea.api.locate.constants.MAX_WIFI_CLUSTER_KM`
+    apart. We assume that the majority of our data is correct and
+    discard the minority match.
+
+    The list of clusters is pre-sorted by signal strength, so given
+    two clusters with two networks each, the cluster with the better
+    signal strength readings wins.
     """
-    clusters.sort(key=lambda a: len(a), reverse=True)
-    return clusters[0]
+    def sort_cluster(cluster):
+        return len(cluster)
+
+    return sorted(clusters, key=sort_cluster, reverse=True)[0]
 
 
 def aggregate_cluster_position(cluster, result_type):
     """
     Given a single cluster, return the aggregate position of the user
     inside the cluster.
+
+    We take at most
+    :data:`ichnaea.api.locate.constants.MAX_WIFIS_IN_CLUSTER`
+    of of the networks in the cluster when estimating the aggregate
+    position.
+
+    The reason is that we're doing a (non-weighted) centroid calculation,
+    which is itself unbalanced by distant elements. Even if we did a
+    weighted centroid here, using radio intensity as a proxy for
+    distance has an error that increases significantly with distance,
+    so we'd have to underweight pretty heavily.
     """
     sample = cluster[:min(len(cluster), MAX_WIFIS_IN_CLUSTER)]
-    length = len(sample)
+    length = float(len(sample))
     avg_lat = sum([n.lat for n in sample]) / length
     avg_lon = sum([n.lon for n in sample]) / length
     accuracy = estimate_accuracy(avg_lat, avg_lon,
                                  sample, WIFI_MIN_ACCURACY)
     return result_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
-
-
-def wifi_keys_and_signals(wifis):
-    """
-    Given a list of WiFiLookup instances, return a dict of wifi keys
-    mapped to their signal strength and a set of wifi keys.
-
-    Estimate signal strength at -100 dBm if none is provided,
-    which is worse than the 99th percentile of wifi dBms we
-    see in practice (-98).
-    """
-    wifi_signals = dict([(w.key, w.signal or -100) for w in wifis])
-    wifi_keys = set(wifi_signals.keys())
-    return (wifi_signals, wifi_keys)
-
-
-def query_database(query, wifi_keys, raven_client):
-    """
-    Given a location query and a list of wifi_keys, query the database
-    and return a list of Wifi model objects.
-    """
-    try:
-        load_fields = ('key', 'lat', 'lon', 'range')
-        wifi_iter = Wifi.iterkeys(
-            query.session,
-            [Wifi.to_hashkey(key=key) for key in wifi_keys],
-            extra=lambda query: query.options(load_only(*load_fields))
-                                     .filter(Wifi.lat.isnot(None))
-                                     .filter(Wifi.lon.isnot(None)))
-
-        return list(wifi_iter)
-    except Exception:
-        raven_client.captureException()
-        return []
 
 
 class WifiPositionMixin(object):
@@ -206,19 +190,38 @@ class WifiPositionMixin(object):
     raven_client = None
     result_type = Position
 
+    def should_search_wifi(self, query, result):
+        return bool(query.wifi)
+
     def search_wifi(self, query):
         result = self.result_type()
-
         if not query.wifi:
             return result
 
-        wifi_signals, wifi_keys = wifi_keys_and_signals(query.wifi)
+        wifis = query_database(
+            query, query.wifi, Wifi, self.raven_client,
+            load_fields=('key', 'lat', 'lon', 'range'))
 
-        queried_wifis = query_database(query, wifi_keys, self.raven_client)
-        clusters = get_clusters(wifi_signals, queried_wifis)
-
+        clusters = get_clusters(wifis, query.wifi)
         if clusters:
             cluster = pick_best_cluster(clusters)
             result = aggregate_cluster_position(cluster, self.result_type)
 
         return result
+
+
+class WifiPositionSource(WifiPositionMixin, PositionSource):
+    """
+    Implements a search using our wifi data.
+
+    This source is only used in tests.
+    """
+
+    fallback_field = None  #:
+    source = DataSource.internal
+
+    def should_search(self, query, result):
+        return self.should_search_wifi(query, result)
+
+    def search(self, query):
+        return self.search_wifi(query)

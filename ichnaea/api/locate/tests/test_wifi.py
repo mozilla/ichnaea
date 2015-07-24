@@ -1,16 +1,12 @@
-from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
-from ichnaea.api.locate.wifi import WifiPositionMixin
+from ichnaea.api.locate.wifi import WifiPositionSource
 from ichnaea.constants import WIFI_MIN_ACCURACY
 from ichnaea.tests.factories import WifiFactory
 
 
 class TestWifi(BaseSourceTest):
 
-    class TestSource(PositionSource, WifiPositionMixin):
-
-        def search(self, query):
-            return self.search_wifi(query)
+    TestSource = WifiPositionSource
 
     def test_wifi(self):
         wifi = WifiFactory(range=200)
@@ -22,6 +18,18 @@ class TestWifi(BaseSourceTest):
         self.check_model_result(
             result, wifi,
             lon=wifi.lon + 0.000005, accuracy=WIFI_MIN_ACCURACY)
+
+    def test_check_empty(self):
+        query = self.model_query()
+        result = self.source.result_type()
+        self.assertFalse(self.source.should_search(query, result))
+
+    def test_empty(self):
+        query = self.model_query()
+        with self.db_call_checker() as check_db_calls:
+            result = self.source.search(query)
+            self.check_model_result(result, None)
+            check_db_calls(rw=0, ro=0)
 
     def test_few_candidates(self):
         wifis = WifiFactory.create_batch(2)

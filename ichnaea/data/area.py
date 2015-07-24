@@ -12,7 +12,7 @@ from ichnaea import util
 class CellAreaUpdater(DataTask):
 
     cell_model = Cell
-    cell_area_model = CellArea
+    area_model = CellArea
 
     def __init__(self, task, session):
         DataTask.__init__(self, task, session)
@@ -38,7 +38,7 @@ class CellAreaUpdater(DataTask):
                                      .filter(self.cell_model.lon.isnot(None)))
         cells = cell_query.all()
 
-        area_query = self.cell_area_model.querykey(self.session, area_key)
+        area_query = self.area_model.querykey(self.session, area_key)
         if len(cells) == 0:
             # If there are no more underlying cells, delete the area entry
             area_query.delete()
@@ -70,7 +70,7 @@ class CellAreaUpdater(DataTask):
             avg_cell_range = int(sum(
                 [cell.range for cell in cells]) / float(num_cells))
             if area is None:
-                area = self.cell_area_model(
+                area = self.area_model(
                     created=self.utcnow,
                     modified=self.utcnow,
                     lat=ctr_lat,
@@ -92,4 +92,4 @@ class CellAreaUpdater(DataTask):
 class OCIDCellAreaUpdater(CellAreaUpdater):
 
     cell_model = OCIDCell
-    cell_area_model = OCIDCellArea
+    area_model = OCIDCellArea

@@ -8,6 +8,7 @@
 
    cell
    constants
+   db
    fallback
    geoip
    internal
