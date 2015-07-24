@@ -1,6 +1,7 @@
 """Functionality related to statsd, sentry and freeform logging."""
 from collections import deque
 import logging
+from random import random
 import socket
 import time
 
@@ -13,7 +14,10 @@ from raven import Client as RavenClient
 from raven.transport.gevent import GeventedHTTPTransport
 from raven.transport.http import HTTPTransport
 from raven.transport.threaded import ThreadedHTTPTransport
-from statsd.client import StatsClient
+from datadog.dogstatsd.base import (
+    DogStatsd,
+    imap,
+)
 
 from ichnaea.exceptions import BaseClientError
 
@@ -88,13 +92,17 @@ def configure_stats(config, _client=None):  # pragma: no cover
     if len(parts) > 1:
         port = int(parts[1])
 
-    client = PingableStatsClient(host=host, port=port, prefix='location')
+    client = PingableStatsClient(
+        host=host, port=port, metric_prefix='location')
     return set_stats_client(client)
 
 
 def quote_statsd_path(path):
     """Convert a URI to a statsd acceptable metric name."""
-    return path.replace('/', '.').lstrip('.').replace('@', '-')
+    metric = path.replace('/', '.').lstrip('.').replace('@', '-')
+    if metric:
+        return 'request.' + metric
+    return 'request'
 
 
 def configure_logging():
@@ -113,10 +121,10 @@ def log_tween_factory(handler, registry):
 
         def timer_send():
             duration = int(round((time.time() - start) * 1000))
-            stats_client.timing('request.' + statsd_path, duration)
+            stats_client.timing(statsd_path, duration)
 
         def counter_send(status_code):
-            stats_client.incr('request.%s.%s' % (statsd_path, status_code))
+            stats_client.incr('%s.%s' % (statsd_path, status_code))
 
         try:
             response = handler(request)
@@ -163,41 +171,78 @@ class DebugRavenClient(RavenClient):
         self.msgs.append(data)
 
 
-class PingableStatsClient(StatsClient):
+class PingableStatsClient(DogStatsd):
     """A pingable statsd client."""
+
+    def __init__(self, host='localhost', port=8125, max_buffer_size=50,
+                 metric_prefix=None, tag_prefix=None, tag_support=False):
+        super(PingableStatsClient, self).__init__(
+            host=host, port=port, max_buffer_size=max_buffer_size)
+        self.metric_prefix = metric_prefix
+        self.tag_prefix = tag_prefix
+        self.tag_support = tag_support
 
     def ping(self):
         """
         Ping the Statsd server. On success return `True`, otherwise `False`.
         """
         stat = 'monitor.ping:1c'
-        if self._prefix:  # pragma: no cover
-            stat = '%s.%s' % (self._prefix, stat)
+        if self.metric_prefix:  # pragma: no cover
+            stat = '%s.%s' % (self.metric_prefix, stat)
         try:
-            self._sock.sendto(stat.encode('ascii'), self._addr)
+            (self.socket or self.get_socket()).send(stat.encode(self.encoding))
         except socket.error:
             return False
         return True  # pragma: no cover
+
+    def _report(self, metric, metric_type, value, tags, sample_rate):
+        if sample_rate != 1 and random() > sample_rate:  # pragma: no cover
+            return
+
+        payload = []
+        if self.metric_prefix:  # pragma: no cover
+            # add support for custom metric prefix
+            payload.append(self.metric_prefix + '.')
+
+        payload.extend([metric, ":", value, "|", metric_type])
+        if sample_rate != 1:  # pragma: no cover
+            payload.extend(["|@", sample_rate])
+        if tags and self.tag_support:  # pragma: no cover
+            payload.extend(["|#", ",".join(tags)])
+
+        encoded = "".join(imap(str, payload))
+        self._send(encoded)
+
+    def incr(self, metric, value=1):
+        return self.increment(metric, value=value)
+
+    def timer(self, metric):
+        return self.timed(metric)
+
+    def timing(self, metric, value, tags=None, sample_rate=1):
+        if isinstance(value, float):
+            # workaround for bug in DataDog/datadogpy#67
+            value = int(round(1000 * value))
+        super(PingableStatsClient, self).timing(
+            metric, value, tags=tags, sample_rate=sample_rate)
 
 
 class DebugStatsClient(PingableStatsClient):
     """An in-memory statsd client with an inspectable message queue."""
 
-    def __init__(self, host='localhost', port=8125, prefix=None,
-                 maxudpsize=512):
-        self._host = host
-        self._port = port
-        self._addr = None
-        self._sock = None
-        self._prefix = prefix
-        self._maxudpsize = maxudpsize
+    def __init__(self, host='localhost', port=8125, max_buffer_size=50,
+                 metric_prefix=None, tag_prefix=None, tag_support=False):
+        super(DebugStatsClient, self).__init__(
+            host=host, port=port, max_buffer_size=max_buffer_size,
+            metric_prefix=metric_prefix, tag_prefix=tag_prefix,
+            tag_support=tag_support)
         self.msgs = deque(maxlen=100)
 
     def _clear(self):
         self.msgs.clear()
 
-    def _send(self, data):
-        self.msgs.append(data)
+    def _send_to_server(self, packet):
+        self.msgs.append(packet)
 
     def ping(self):
         return True
