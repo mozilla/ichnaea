@@ -27,7 +27,7 @@ class BaseSubmitTest(object):
     def _assert_queue_size(self, expected):
         self.assertEqual(self.queue.size(self.queue.queue_key()), expected)
 
-    def _one_cell_query(self, radio=True):  # pragma: no cover
+    def _one_cell_query(self, radio=True):
         raise NotImplementedError()
 
     def _post(self, items, api_key=None, status=status, **kw):

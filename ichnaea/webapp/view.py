@@ -32,7 +32,7 @@ class BaseView(object):
         """
         self.request = request
 
-    def __call__(self):  # pragma: no cover
+    def __call__(self):
         """
         Call and execute the view, returning a response.
         """

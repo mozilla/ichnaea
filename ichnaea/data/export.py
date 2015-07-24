@@ -150,7 +150,7 @@ class ReportUploader(DataTask):
         self.stats_client.incr(self.stats_prefix + 'batches')
         return result
 
-    def send(self, url, data):  # pragma: no cover
+    def send(self, url, data):
         raise NotImplementedError
 
 

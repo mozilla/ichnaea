@@ -47,7 +47,7 @@ class Source(object):
 
         return True
 
-    def search(self, query):  # pragma: no cover
+    def search(self, query):
         """Provide a type specific possibly empty query result.
 
         :param query: A query.

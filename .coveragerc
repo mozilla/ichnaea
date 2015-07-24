@@ -1,0 +1,14 @@
+[run]
+source = ichnaea
+
+[report]
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError()
+omit =
+    */tests/*
+    *tests.py
+    ichnaea/scripts/initdb.py
+    ichnaea/webapp/app.py
+    ichnaea/webapp/settings.py
+    ichnaea/webapp/worker.py

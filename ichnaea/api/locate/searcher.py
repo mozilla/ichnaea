@@ -100,7 +100,7 @@ class Searcher(object):
 
         return result
 
-    def format_result(self, result):  # pragma: no cover
+    def format_result(self, result):
         """
         Converts the result object into a dictionary representation.
 

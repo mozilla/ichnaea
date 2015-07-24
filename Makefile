@@ -21,6 +21,7 @@ ifeq ($(TRAVIS), true)
 	PYTHON = python
 	PIP = pip
 	NOSE = nosetests
+	COVERALLS = coveralls
 	SPHINXBUILD = sphinx-build
 else
 	MYSQL_USER ?= root
@@ -30,6 +31,7 @@ else
 	PYTHON = $(BIN)/python
 	PIP = $(BIN)/pip
 	NOSE = $(BIN)/nosetests
+	COVERALLS = $(BIN)/coveralls
 	SPHINXBUILD = $(BIN)/sphinx-build
 endif
 
@@ -40,8 +42,7 @@ ifeq ($(findstring 3.,$(TRAVIS_PYTHON_VERSION)), 3.)
 endif
 
 ifeq ($(TESTS), ichnaea)
-	TEST_ARG = ichnaea --with-coverage --cover-package ichnaea \
-	--cover-branches --cover-erase
+	TEST_ARG = ichnaea --with-coverage --cover-package ichnaea --cover-erase
 else
 	TEST_ARG = --tests=$(TESTS)
 endif
@@ -65,7 +66,7 @@ UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
 .PHONY: all bower js mysql pip init_db css js test clean shell docs \
 	build build_dev build_maxmind build_req \
 	release release_install release_compile \
-	tox_install tox_test pypi_release pypi_upload
+	tox_install tox_test pypi_release pypi_upload coveralls
 
 all: build init_db
 
@@ -234,6 +235,9 @@ endif
 
 $(BIN)/sphinx-build:
 	$(INSTALL) -r requirements/docs.txt
+
+coveralls:
+	$(COVERALLS)
 
 docs: $(BIN)/sphinx-build
 	git submodule update --recursive --init

@@ -37,7 +37,7 @@ class BaseLookup(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
     _valid_schema = None  #:
     _fields = ()  #:
 
-    def better(self, other):  # pragma: no cover
+    def better(self, other):
         """Is self better than the other?"""
         raise NotImplementedError()
 
