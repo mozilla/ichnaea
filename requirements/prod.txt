@@ -6,21 +6,25 @@ billiard==3.3.0.20
 boto==2.38.0
 celery==3.1.18
 certifi==2015.04.28
+cffi==1.1.2
 Chameleon==2.22
 colander==1.0
 configparser==3.5.0b2
 country-bounding-boxes==0.2.3
+cryptography==0.9.3
 datadog==0.7.0
 decorator==4.0.0
-enum34==1.0.4
+enum34==1.0.4 ; python_version < '3.0'
 filechunkio==1.6
 geoip2==2.2.0
 gevent==1.0.2 ; python_version < '3.0'
 gevent==1.1a1 ; python_version >= '3.0'
 greenlet==0.4.7
 gunicorn==19.2.1  # rq.filter: !=19.3.0
+idna==2.0
 importlib==1.0.3 ; python_version < '3.0'
 ipaddr==2.1.11 ; python_version < '3.0'
+ipaddress==1.0.14 ; python_version < '3.0'
 iso3166==0.7
 iso8601==0.1.10
 kombu==3.0.26
@@ -29,9 +33,13 @@ Mako==1.0.1
 MarkupSafe==0.23
 maxminddb==1.2.0  # optional C extension, version also in Makefile
 mobile-codes==0.7
-ordereddict==1.1
+ndg-httpsclient==0.4.0
+ordereddict==1.1 ; python_version < '3.0'
 PasteDeploy==1.5.2
+pyasn1==0.1.8
+pycparser==2.14
 PyMySQL==0.6.3  # rq.filter: !=0.6.4,!=0.6.5,!=0.6.6
+pyopenssl==0.15.1
 pyramid==1.5.7
 pyramid-chameleon==0.3
 pytz==2015.4

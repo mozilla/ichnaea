@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add dependencies pyopenssl, ndg-httpsclient and pyasn1.
+
 - Switch to datadog statsd client library.
 
 - Consider Wifi based query results accurate enough to satisfy queries.
