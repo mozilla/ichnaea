@@ -67,7 +67,7 @@ class Query(object):
         :type geoip_db: :class:`~ichnaea.geoip.GeoIPWrapper`
 
         :param stats_client: A stats client.
-        :type stats_client: :class:`~ichnaea.log.PingableStatsClient`
+        :type stats_client: :class:`~ichnaea.log.StatsClient`
         """
         self.geoip_db = geoip_db
         self.session = session

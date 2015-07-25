@@ -1,5 +1,4 @@
 from ichnaea.geoip import GeoIPNull
-from ichnaea.log import PingableStatsClient
 from ichnaea.tests.base import (
     _make_db,
     _make_redis,
@@ -39,7 +38,7 @@ class TestMonitor(AppTestCase):
         response = app.get('/__monitor__', status=200)
         self.assertEqual(response.content_type, 'application/json')
         data = response.json
-        timed_services = set(['database', 'geoip', 'redis', 'stats'])
+        timed_services = set(['database', 'geoip', 'redis'])
         self.assertEqual(set(data.keys()), timed_services)
 
         for name in timed_services:
@@ -65,16 +64,12 @@ class TestMonitorErrors(AppTestCase):
         redis_uri = 'redis://127.0.0.1:9/15'
         self.broken_redis = _make_redis(redis_uri)
         self.app.app.registry.redis_client = self.broken_redis
-        # create broken stats client
-        self.broken_stats = PingableStatsClient(host='127.0.0.1', port=0)
-        self.app.app.registry.stats_client = self.broken_stats
 
     def tearDown(self):
         super(TestMonitorErrors, self).tearDown()
         del self.broken_db
         self.broken_redis.connection_pool.disconnect()
         del self.broken_redis
-        del self.broken_stats
 
     def test_database_error(self):
         res = self.app.get('/__monitor__', status=503)
@@ -91,8 +86,3 @@ class TestMonitorErrors(AppTestCase):
         res = self.app.get('/__monitor__', status=503)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json['redis'], {'up': False, 'time': 0})
-
-    def test_stats_error(self):
-        res = self.app.get('/__monitor__', status=503)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json['stats'], {'up': False, 'time': 0})

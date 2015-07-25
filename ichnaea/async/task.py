@@ -105,5 +105,5 @@ class BaseTask(Task):
 
     @property
     def stats_client(self):
-        """Exposes a :class:`~ichnaea.log.PingableStatsClient`."""
+        """Exposes a :class:`~ichnaea.log.StatsClient`."""
         return self.app.stats_client

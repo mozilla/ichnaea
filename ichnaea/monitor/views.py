@@ -47,10 +47,6 @@ def check_redis(request):
     return _check_timed(request.registry.redis_client.ping)
 
 
-def check_stats(request):
-    return _check_timed(request.registry.stats_client.ping)
-
-
 class HeartbeatView(BaseView):
 
     route = '/__heartbeat__'
@@ -71,7 +67,6 @@ class MonitorView(BaseView):
             'database': check_database,
             'geoip': check_geoip,
             'redis': check_redis,
-            'stats': check_stats,
         }
         failed = False
         result = {}

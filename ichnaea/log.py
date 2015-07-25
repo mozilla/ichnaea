@@ -2,7 +2,6 @@
 from collections import deque
 import logging
 from random import random
-import socket
 import time
 
 from pyramid.httpexceptions import (
@@ -77,7 +76,7 @@ def set_stats_client(client):
 def configure_stats(config, _client=None):  # pragma: no cover
     """
     Configure, globally set and return a
-    :class:`~ichnaea.log.PingableStatsClient` instance.
+    :class:`~ichnaea.log.StatsClient` instance.
 
     :param _client: Test-only hook to provide a pre-configured client.
     """
@@ -92,8 +91,7 @@ def configure_stats(config, _client=None):  # pragma: no cover
     if len(parts) > 1:
         port = int(parts[1])
 
-    client = PingableStatsClient(
-        host=host, port=port, metric_prefix='location')
+    client = StatsClient(host=host, port=port, metric_prefix='location')
     return set_stats_client(client)
 
 
@@ -171,29 +169,16 @@ class DebugRavenClient(RavenClient):
         self.msgs.append(data)
 
 
-class PingableStatsClient(DogStatsd):
-    """A pingable statsd client."""
+class StatsClient(DogStatsd):
+    """A statsd client."""
 
     def __init__(self, host='localhost', port=8125, max_buffer_size=50,
                  metric_prefix=None, tag_prefix=None, tag_support=False):
-        super(PingableStatsClient, self).__init__(
+        super(StatsClient, self).__init__(
             host=host, port=port, max_buffer_size=max_buffer_size)
         self.metric_prefix = metric_prefix
         self.tag_prefix = tag_prefix
         self.tag_support = tag_support
-
-    def ping(self):
-        """
-        Ping the Statsd server. On success return `True`, otherwise `False`.
-        """
-        stat = 'monitor.ping:1c'
-        if self.metric_prefix:  # pragma: no cover
-            stat = '%s.%s' % (self.metric_prefix, stat)
-        try:
-            self.get_socket().send(stat.encode(self.encoding))
-        except socket.error:
-            return False
-        return True  # pragma: no cover
 
     def _report(self, metric, metric_type, value, tags, sample_rate):
         if sample_rate != 1 and random() > sample_rate:  # pragma: no cover
@@ -223,11 +208,11 @@ class PingableStatsClient(DogStatsd):
         if isinstance(value, float):
             # workaround for bug in DataDog/datadogpy#67
             value = int(round(1000 * value))
-        super(PingableStatsClient, self).timing(
+        super(StatsClient, self).timing(
             metric, value, tags=tags, sample_rate=sample_rate)
 
 
-class DebugStatsClient(PingableStatsClient):
+class DebugStatsClient(StatsClient):
     """An in-memory statsd client with an inspectable message queue."""
 
     def __init__(self, host='localhost', port=8125, max_buffer_size=50,
@@ -243,6 +228,3 @@ class DebugStatsClient(PingableStatsClient):
 
     def _send_to_server(self, packet):
         self.msgs.append(packet)
-
-    def ping(self):
-        return True
