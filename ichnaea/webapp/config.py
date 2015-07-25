@@ -112,6 +112,5 @@ def main(app_config, ping_connections=False,
     if ping_connections:  # pragma: no cover
         registry.db_ro.ping()
         registry.redis_client.ping()
-        registry.stats_client.ping()
 
     return config.make_wsgi_app()
