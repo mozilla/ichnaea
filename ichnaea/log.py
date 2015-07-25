@@ -190,7 +190,7 @@ class PingableStatsClient(DogStatsd):
         if self.metric_prefix:  # pragma: no cover
             stat = '%s.%s' % (self.metric_prefix, stat)
         try:
-            (self.socket or self.get_socket()).send(stat.encode(self.encoding))
+            self.get_socket().send(stat.encode(self.encoding))
         except socket.error:
             return False
         return True  # pragma: no cover
