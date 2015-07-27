@@ -6,7 +6,7 @@ import pytz
 
 from ichnaea.api.exceptions import ParseError
 from ichnaea.api.submit.submit_v1.schema import (
-    ReportV1Schema,
+    ReportsV1Schema,
     SubmitV1Schema,
 )
 from ichnaea.api.submit.tests.base import BaseSubmitTest
@@ -30,18 +30,19 @@ class SchemaTest(TestCase):
         return request
 
 
-class TestReportSchema(SchemaTest):
+class TestReportsSchema(SchemaTest):
 
     def test_empty(self):
-        schema = ReportV1Schema()
-        data = schema.deserialize({})
-        self.assertFalse('lat' in data)
-        self.assertFalse('lon' in data)
+        schema = ReportsV1Schema()
+        data = schema.deserialize([{}])
+        self.assertEqual(data, [])
 
     def test_empty_wifi_entry(self):
-        schema = ReportV1Schema()
+        schema = ReportsV1Schema()
         wifi = WifiFactory.build()
-        schema.deserialize({'lat': wifi.lat, 'lon': wifi.lon, 'wifi': [{}]})
+        data = schema.deserialize(
+            [{'lat': wifi.lat, 'lon': wifi.lon, 'wifi': [{}]}])
+        self.assertEqual(data, [])
 
 
 class TestSubmitSchema(SchemaTest):
@@ -55,7 +56,8 @@ class TestSubmitSchema(SchemaTest):
         schema = SubmitV1Schema()
         wifi = WifiFactory.build()
         data = schema.deserialize(
-            {'items': [{'lat': wifi.lat, 'lon': wifi.lon, 'wifi': [{}]}]})
+            {'items': [{'lat': wifi.lat, 'lon': wifi.lon,
+                        'wifi': [{'key': 'ab'}]}]})
         self.assertTrue('items' in data)
         self.assertEqual(len(data['items']), 1)
 
@@ -91,7 +93,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
             'altitude_accuracy': 7,
             'radio': cell.radio.name,
             'cell': [{
-                'radio': cell.radio.name, 'mcc': cell.mcc,
+                'radio': 'umts', 'mcc': cell.mcc,
                 'mnc': cell.mnc, 'lac': cell.lac, 'cid': cell.cid}],
         }], api_key='test')
         self.assertEqual(res.body, b'')

@@ -63,15 +63,15 @@ class InternalSchemaNode(InternalMixin, colander.SchemaNode):
 
 class InternalMapping(colander.Mapping):
 
-    def _impl(self, node, *args, **kwargs):
-        result = super(InternalMapping, self)._impl(node, *args, **kwargs)
+    def _impl(self, node, *args, **kw):
+        result = super(InternalMapping, self)._impl(node, *args, **kw)
         internal_result = {}
         for subnode in node.children:
             subnode_internal_name = getattr(
                 subnode, 'internal_name', subnode.name) or subnode.name
 
             subnode_value = result.get(subnode.name, subnode.missing)
-            if subnode_value is colander.drop:
+            if subnode_value in (colander.drop, colander.null):
                 continue
             else:
                 internal_result[subnode_internal_name] = subnode_value
@@ -85,7 +85,16 @@ class InternalMappingSchema(InternalMixin, colander.MappingSchema):
 
 
 class InternalSequence(colander.Sequence):
-    pass
+
+    def _impl(self, node, *args, **kw):
+        result = super(InternalSequence, self)._impl(node, *args, **kw)
+        internal_result = []
+        for value in result:
+            if value in (colander.drop, colander.null):
+                continue
+            else:
+                internal_result.append(value)
+        return internal_result
 
 
 class InternalSequenceSchema(InternalMixin, colander.SequenceSchema):

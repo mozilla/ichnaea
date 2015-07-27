@@ -7,6 +7,8 @@ and the `W3C geolocation position interface
 <http://www.w3.org/TR/geolocation-API/#position_interface>`_.
 """
 
+import colander
+
 from ichnaea.api.schema import (
     OptionalBoundedFloatNode,
     OptionalMappingSchema,
@@ -25,6 +27,12 @@ class BluetoothBeaconSchema(OptionalMappingSchema):
     age = OptionalIntNode()
     name = OptionalStringNode()
     signalStrength = OptionalIntNode()
+
+    def deserialize(self, data):
+        data = super(BluetoothBeaconSchema, self).deserialize(data)
+        if 'macAddress' not in data:
+            return colander.null
+        return data
 
 
 class BluetoothBeaconsSchema(OptionalSequenceSchema):
@@ -62,7 +70,14 @@ class WifiAccessPointSchema(OptionalMappingSchema):
     radioType = OptionalStringNode()
     signalStrength = OptionalIntNode()
     signalToNoiseRatio = OptionalIntNode()
-    ssid = OptionalStringNode()
+    # ssid is not mapped on purpose
+    # ssid = OptionalStringNode()
+
+    def deserialize(self, data):
+        data = super(WifiAccessPointSchema, self).deserialize(data)
+        if 'macAddress' not in data:
+            return colander.null
+        return data
 
 
 class WifiAccessPointsSchema(OptionalSequenceSchema):
@@ -94,3 +109,25 @@ class ReportSchema(OptionalMappingSchema):
     timestamp = OptionalNode(UnixTimeFromInteger())
 
     wifiAccessPoints = WifiAccessPointsSchema(missing=())
+
+    def deserialize(self, data):
+        data = super(ReportSchema, self).deserialize(data)
+        if data in (colander.drop, colander.null):  # pragma: no cover
+            return data
+
+        if not (data.get('bluetoothBeacons') or
+                data.get('cellTowers') or
+                data.get('wifiAccessPoints')):
+            return colander.null
+
+        top_radio = data.get('radioType', None)
+        for cell in data.get('cellTowers', ()):
+            if 'radioType' not in cell or not cell['radioType'] and top_radio:
+                cell['radioType'] = top_radio
+            if cell.get('radioType') == 'umts':
+                cell['radioType'] = 'wcdma'
+
+        if 'radioType' in data:
+            del data['radioType']
+
+        return data

@@ -6,7 +6,6 @@ from ichnaea.api.schema import (
 from ichnaea.api.submit.schema import (
     BluetoothBeaconsSchema,
     CellTowerSchema,
-    ConnectionSchema,
     PositionSchema,
     ReportSchema,
 )
@@ -26,8 +25,10 @@ class ReportV3Schema(ReportSchema):
 
     bluetoothBeacons = BluetoothBeaconsSchema(missing=())
     cellTowers = CellTowersV3Schema(missing=())
-    connection = ConnectionSchema(missing=None)
     position = PositionSchema(missing=None)
+
+    # connection is not mapped on purpose
+    # connection = ConnectionSchema(missing=None)
 
 
 class ReportsV3Schema(OptionalSequenceSchema):

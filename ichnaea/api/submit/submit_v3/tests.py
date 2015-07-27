@@ -171,6 +171,9 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
                 'age': 3,
                 'signalStrength': -90,
                 'xtra_field': 4,
+            }, {
+                'name': 'beacon-2',
+                'signalStrength': -92,
             }],
             'wifiAccessPoints': [{
                 'signalStrength': -52,
@@ -192,7 +195,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertEqual(blues[0]['signalStrength'], -90),
         self.assertFalse('xtra_field' in blues[0])
         wifis = report['wifiAccessPoints']
-        self.assertEqual(len(wifis), 1)
+        self.assertEqual(len(wifis), 0)
 
     def test_batches(self):
         batch = 110

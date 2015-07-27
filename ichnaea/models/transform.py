@@ -52,7 +52,7 @@ class ReportTransform(object):
         if value:
             if key_map[1] is None:
                 report.update(value)
-            else:
+            else:  # pragma: no cover
                 report[key_map[1]] = value
         return value
 
@@ -68,14 +68,9 @@ class ReportTransform(object):
 
     def _parse_cells(self, item, report, key_map, field_map):
         cells = []
-        item_radio = item.get(self.radio_id[0])
         for cell_item in item.get(key_map[0], ()):
             cell = self._map_dict(cell_item, field_map)
             if cell:
-                if not cell.get(self.radio_id[1]) and item_radio:
-                    cell[self.radio_id[1]] = item_radio
-                if cell.get(self.radio_id[1]) == 'umts':
-                    cell[self.radio_id[1]] = 'wcdma'
                 cells.append(cell)
         if cells:
             report[key_map[1]] = cells
@@ -97,12 +92,3 @@ class ReportTransform(object):
         if blues or cells or wifis:
             return report
         return {}
-
-    def transform_many(self, items):
-        reports = []
-        for item in items:
-            report = self.transform_one(item)
-            if report:
-                reports.append(report)
-
-        return reports

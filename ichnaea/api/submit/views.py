@@ -17,7 +17,6 @@ class BaseSubmitView(BaseAPIView):
     """Common base class for all submit related views."""
 
     error_on_invalidkey = False  #:
-    transform = None  #:
     schema = None  #:
     view_name = None  #:
     view_type = 'submit'  #:
@@ -73,8 +72,7 @@ class BaseSubmitView(BaseAPIView):
         request_data = self.preprocess()
 
         # data pipeline using new internal data format
-        transform = self.transform()
-        reports = transform.transform_many(request_data['items'])
+        reports = request_data['items']
         for i in range(0, len(reports), 100):
             batch = reports[i:i + 100]
             # insert reports, expire the task if it wasn't processed
@@ -89,7 +87,7 @@ class BaseSubmitView(BaseAPIView):
                 },
                 expires=21600)
 
-        self.emit_upload_metrics(len(request_data['items']), api_key)
+        self.emit_upload_metrics(len(reports), api_key)
 
     def view(self, api_key):
         """

@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use colander to map external to internal names in submit schemata.
+
 - Add dependencies pyopenssl, ndg-httpsclient and pyasn1.
 
 - Switch to datadog statsd client library.
