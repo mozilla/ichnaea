@@ -11,8 +11,13 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- The statsd configuration moved from the `statsd_host` option in the
+  application ini file into its own section called `statsd`.
+
 Changes
 ~~~~~~~
+
+- Add support for statsd metric tagging.
 
 - Use colander to map external to internal names in submit schemata.
 

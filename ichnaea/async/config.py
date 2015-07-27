@@ -142,7 +142,7 @@ def init_worker(celery_app, app_config,
         app_config.get('ichnaea', 'redis_url'), _client=_redis_client)
 
     celery_app.stats_client = configure_stats(
-        app_config.get('ichnaea', 'statsd_host'), _client=_stats_client)
+        app_config, _client=_stats_client)
 
     celery_app.geoip_db = configure_geoip(
         app_config.get('ichnaea', 'geoip_db_path'), raven_client=raven_client,

@@ -165,7 +165,8 @@ class LogTestCase(TestCase):
         self.raven_client._clear()
         self.stats_client._clear()
 
-    def find_stats_messages(self, msg_type, msg_name, msg_value=None):
+    def find_stats_messages(self, msg_type, msg_name,
+                            msg_value=None, msg_tags=(), _client=None):
         data = {
             'counter': [],
             'timer': [],
@@ -174,28 +175,39 @@ class LogTestCase(TestCase):
             'meter': [],
             'set': [],
         }
-        for msg in self.stats_client.msgs:
+        if _client is None:
+            client = self.stats_client
+        else:
+            client = _client
+
+        for msg in client.msgs:
+            tags = ()
+            if '|#' in msg:
+                parts = msg.split('|#')
+                tags = parts[-1].split(',')
+                msg = parts[0]
             suffix = msg.split('|')[-1]
             name, value = msg.split('|')[0].split(':')
             value = int(value)
             if suffix == 'g':
-                data['gauge'].append((name, value))
+                data['gauge'].append((name, value, tags))
             elif suffix == 'ms':
-                data['timer'].append((name, value))
+                data['timer'].append((name, value, tags))
             elif suffix.startswith('c'):
-                data['counter'].append((name, value))
+                data['counter'].append((name, value, tags))
             elif suffix == 'h':
-                data['histogram'].append((name, value))
+                data['histogram'].append((name, value, tags))
             elif suffix == 'm':
-                data['meter'].append((name, value))
+                data['meter'].append((name, value, tags))
             elif suffix == 's':
-                data['set'].append((name, value))
+                data['set'].append((name, value, tags))
 
         result = []
         for msg in data.get(msg_type):
             if msg[0] == msg_name:
                 if msg_value is None or msg[1] == msg_value:
-                    result.append((msg[0], msg[1]))
+                    if not msg_tags or msg[2] == msg_tags:
+                        result.append((msg[0], msg[1], msg[2]))
         return result
 
     def check_raven(self, expected=None):
@@ -228,7 +240,7 @@ class LogTestCase(TestCase):
         self.assertEqual(len(self._unexpected_errors), 0,
                          self._unexpected_errors)
 
-    def check_stats(self, total=None, **kw):
+    def check_stats(self, _client=None, total=None, **kw):
         """Checks a partial specification of messages to be found in
         the stats message stream.
 
@@ -249,6 +261,9 @@ class LogTestCase(TestCase):
               if v is a 3-tuple (n, match, value), select messages with
               name == n and value == value
 
+              if v is a 4-tuple (n, match, value, tags), select messages with
+              name == n and value == value and tags == tags
+
            the selected messages are then checked depending on the type
            of match:
 
@@ -268,14 +283,18 @@ class LogTestCase(TestCase):
            with 'name':'search.api_key.test'and  exactly two counters with
            'name':'items.uploaded.batches'.
         """
+        if _client is None:
+            client = self.stats_client
+        else:
+            client = _client
         if total is not None:
-            self.assertEqual(total, len(self.stats_client.msgs),
-                             self.stats_client.msgs)
+            self.assertEqual(total, len(client.msgs), client.msgs)
 
         for (msg_type, preds) in kw.items():
             for pred in preds:
                 match = 1
                 value = None
+                tags = ()
                 if isinstance(pred, str):
                     name = pred
                 elif isinstance(pred, tuple):
@@ -283,13 +302,16 @@ class LogTestCase(TestCase):
                         (name, match) = pred
                     elif len(pred) == 3:
                         (name, match, value) = pred
+                    elif len(pred) == 4:
+                        (name, match, value, tags) = pred
                     else:
-                        raise TypeError('wanted 2 or 3-element tuple, got %s'
+                        raise TypeError('wanted 2, 3 or 4 tuple, got %s'
                                         % type(pred))
                 else:
                     raise TypeError('wanted str or tuple, got %s'
                                     % type(pred))
-                msgs = self.find_stats_messages(msg_type, name, value)
+                msgs = self.find_stats_messages(
+                    msg_type, name, value, tags, _client=client)
                 if isinstance(match, int):
                     self.assertEqual(match, len(msgs),
                                      msg='%s %s not found' % (msg_type, name))

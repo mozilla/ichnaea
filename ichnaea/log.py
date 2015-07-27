@@ -9,6 +9,7 @@ from pyramid.httpexceptions import (
     HTTPClientError,
     HTTPRedirection,
 )
+from pyramid.settings import asbool
 from raven import Client as RavenClient
 from raven.transport.gevent import GeventedHTTPTransport
 from raven.transport.http import HTTPTransport
@@ -73,7 +74,7 @@ def set_stats_client(client):
     return STATS_CLIENT
 
 
-def configure_stats(config, _client=None):  # pragma: no cover
+def configure_stats(app_config, _client=None):  # pragma: no cover
     """
     Configure, globally set and return a
     :class:`~ichnaea.log.StatsClient` instance.
@@ -83,15 +84,24 @@ def configure_stats(config, _client=None):  # pragma: no cover
     if _client is not None:
         return set_stats_client(_client)
 
-    if not config:
-        config = 'localhost:8125'
-    parts = config.split(':')
-    host = parts[0]
-    port = 8125
-    if len(parts) > 1:
-        port = int(parts[1])
+    if not app_config:
+        host = 'localhost'
+        port = 8125
+        metric_prefix = 'location'
+        tag_prefix = 'location'
+        tag_support = False
+    else:
+        section = app_config.get_map('statsd', {})
+        host = section.get('host', 'localhost').strip()
+        port = int(section.get('port', 8125))
+        metric_prefix = section.get('metric_prefix', 'location').strip()
+        tag_prefix = section.get('tag_prefix', '').strip()
+        tag_support = asbool(section.get('tag_support', 'false').strip())
 
-    client = StatsClient(host=host, port=port, metric_prefix='location')
+    client = StatsClient(
+        host=host, port=port, metric_prefix=metric_prefix,
+        tag_prefix=tag_prefix, tag_support=tag_support)
+
     return set_stats_client(client)
 
 
@@ -185,24 +195,34 @@ class StatsClient(DogStatsd):
             return
 
         payload = []
-        if self.metric_prefix:  # pragma: no cover
+        if self.metric_prefix:
             # add support for custom metric prefix
             payload.append(self.metric_prefix + '.')
 
-        payload.extend([metric, ":", value, "|", metric_type])
-        if sample_rate != 1:  # pragma: no cover
-            payload.extend(["|@", sample_rate])
-        if tags and self.tag_support:  # pragma: no cover
-            payload.extend(["|#", ",".join(tags)])
+        if tags and self.tag_prefix:
+            # add support for custom tag prefix
+            tags = [self.tag_prefix + '_' + tag for tag in tags]
 
-        encoded = "".join(imap(str, payload))
+        if tags and not self.tag_support:
+            # append tags to the metric name
+            tags = '.'.join([tag.replace(':', '_') for tag in tags])
+            if tags:
+                metric += '.' + tags
+
+        payload.extend([metric, ':', value, '|', metric_type])
+
+        if sample_rate != 1:  # pragma: no cover
+            payload.extend(['|@', sample_rate])
+
+        if tags and self.tag_support:
+            # normal tag support
+            payload.extend(['|#', ','.join(tags)])
+
+        encoded = ''.join(imap(str, payload))
         self._send(encoded)
 
-    def incr(self, metric, value=1):
-        return self.increment(metric, value=value)
-
-    def timer(self, metric):
-        return self.timed(metric)
+    def incr(self, *args, **kw):
+        return self.increment(*args, **kw)
 
     def timing(self, metric, value, tags=None, sample_rate=1):
         if isinstance(value, float):

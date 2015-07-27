@@ -181,7 +181,7 @@ def generate(db, bucketname, raven_client, stats_client,
     with tempdir() as workdir:
         csv = os.path.join(workdir, 'map.csv')
 
-        with stats_client.timer('datamaps.export_to_csv'):
+        with stats_client.timed('datamaps.export_to_csv'):
             with db_worker_session(db, commit=False) as session:
                 result_rows = export_to_csv(session, csv)
 
@@ -194,7 +194,7 @@ def generate(db, bucketname, raven_client, stats_client,
             output=shapes,
             input=csv)
 
-        with stats_client.timer('datamaps.encode'):
+        with stats_client.timed('datamaps.encode'):
             system_call(cmd)
 
         # render tiles
@@ -232,11 +232,11 @@ def generate(db, bucketname, raven_client, stats_client,
             extra='',
             suffix='')
 
-        with stats_client.timer('datamaps.render'):
+        with stats_client.timed('datamaps.render'):
             system_call(zoom_all_cmd)
 
         if upload:  # pragma: no cover
-            with stats_client.timer('datamaps.upload_to_s3'):
+            with stats_client.timed('datamaps.upload_to_s3'):
                 result = upload_to_s3(bucketname, tiles)
 
             for metric, value in result.items():
@@ -272,8 +272,7 @@ def main(argv, _db_rw=None,
         raven_client = configure_raven(
             conf.get('ichnaea', 'sentry_dsn'),
             transport='sync', _client=_raven_client)
-        stats_client = configure_stats(
-            conf.get('ichnaea', 'statsd_host'), _client=_stats_client)
+        stats_client = configure_stats(conf, _client=_stats_client)
 
         bucketname = conf.get('ichnaea', 's3_assets_bucket').strip('/')
 
@@ -294,7 +293,7 @@ def main(argv, _db_rw=None,
             output = os.path.abspath(args.output)
 
         try:
-            with stats_client.timer('datamaps.total_time'):
+            with stats_client.timed('datamaps.total_time'):
                 generate(db, bucketname, raven_client, stats_client,
                          upload=upload,
                          concurrency=concurrency,

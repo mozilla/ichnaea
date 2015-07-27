@@ -246,7 +246,7 @@ class GeosubmitUploader(ReportUploader):
             'Content-Type': 'application/json',
             'User-Agent': 'ichnaea',
         }
-        with self.stats_client.timer(self.stats_prefix + 'upload'):
+        with self.stats_client.timed(self.stats_prefix + 'upload'):
             response = requests.post(
                 url,
                 data=util.encode_gzip(data),
@@ -291,7 +291,7 @@ class S3Uploader(ReportUploader):
         key_name += uuid.uuid1().hex + '.json.gz'
 
         try:
-            with self.stats_client.timer(self.stats_prefix + 'upload'):
+            with self.stats_client.timed(self.stats_prefix + 'upload'):
                 conn = boto.connect_s3()
                 bucket = conn.get_bucket(self.bucket)
                 key = boto.s3.key.Key(bucket)

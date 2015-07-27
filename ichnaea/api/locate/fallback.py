@@ -82,8 +82,8 @@ class FallbackPositionSource(PositionSource):
     def _stat_count(self, stat):
         self.stats_client.incr('locate.fallback.' + stat)
 
-    def _stat_timer(self, stat):
-        return self.stats_client.timer('locate.fallback.' + stat)
+    def _stat_timed(self, stat):
+        return self.stats_client.timed('locate.fallback.' + stat)
 
     def _get_ratelimit_key(self):
         return 'fallback_ratelimit:{time}'.format(time=int(time.time()))
@@ -150,7 +150,7 @@ class FallbackPositionSource(PositionSource):
             return
 
         try:
-            with self._stat_timer('lookup'):
+            with self._stat_timed('lookup'):
                 response = requests.post(
                     self.url,
                     headers={'User-Agent': 'ichnaea'},

@@ -82,7 +82,7 @@ def main(app_config, ping_connections=False,
         app_config.get('ichnaea', 'redis_url'), _client=_redis_client)
 
     registry.stats_client = stats_client = configure_stats(
-        app_config.get('ichnaea', 'statsd_host'), _client=_stats_client)
+        app_config, _client=_stats_client)
 
     registry.geoip_db = geoip_db = configure_geoip(
         app_config.get('ichnaea', 'geoip_db_path'), raven_client=raven_client,
