@@ -25,7 +25,7 @@ CELERY_DEFAULT_QUEUE = 'celery_default'
 #: All modules being searched for @task decorators.
 CELERY_IMPORTS = [
     'ichnaea.data.tasks',
-    'ichnaea.export.tasks',
+    'ichnaea.export.tasks',  # BBB
     'ichnaea.monitor.tasks',  # BBB
 ]
 

@@ -19,6 +19,7 @@ from ichnaea.data.observation import (
     CellObservationQueue,
     WifiObservationQueue,
 )
+from ichnaea.data import ocid
 from ichnaea.data.report import ReportQueue
 from ichnaea.data.score import ScoreUpdater
 from ichnaea.data.station import (
@@ -70,6 +71,25 @@ def insert_measures_wifi(self, entries, userid=None, utcnow=None):
             queue = WifiObservationQueue(self, session, pipe, utcnow=utcnow)
             length = queue.insert(entries, userid=userid)
     return length
+
+
+@celery_app.task(base=BaseTask, bind=True)
+def export_modified_cells(self, hourly=True, _bucket=None):
+    ocid.export_modified_cells(self, hourly=hourly, _bucket=_bucket)
+
+
+@celery_app.task(base=BaseTask, bind=True)
+def import_latest_ocid_cells(self, diff=True):
+    ocid.import_latest_ocid_cells(
+        self, diff=diff, update_area_task=update_area)
+
+
+@celery_app.task(base=BaseTask, bind=True)
+def import_ocid_cells(self, filename=None):
+    with self.redis_pipeline() as pipe:
+        with self.db_session() as session:
+            ocid.import_ocid_cells(
+                session, pipe, filename=filename, update_area_task=update_area)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')

@@ -10,18 +10,19 @@ from pytz import UTC
 import requests_mock
 import six
 
-from ichnaea.constants import CELL_MIN_ACCURACY
-from ichnaea.data.tasks import update_statcounter
-from ichnaea.export.tasks import (
-    export_modified_cells,
-    import_ocid_cells,
-    import_latest_ocid_cells,
-    write_stations_to_csv,
-    make_cell_export_dict,
-    selfdestruct_tempdir,
+from ichnaea.data.ocid import (
     CELL_COLUMNS,
     CELL_FIELDS,
     CELL_HEADER_DICT,
+    make_cell_export_dict,
+    selfdestruct_tempdir,
+    write_stations_to_csv,
+)
+from ichnaea.data.tasks import (
+    export_modified_cells,
+    import_ocid_cells,
+    import_latest_ocid_cells,
+    update_statcounter,
 )
 from ichnaea.models import (
     Cell,
@@ -103,7 +104,7 @@ class TestExport(CeleryTestCase):
         self.session.commit()
 
         with mock_s3() as mock_key:
-            export_modified_cells(bucket='localhost.bucket')
+            export_modified_cells(_bucket='localhost.bucket')
             pat = r'MLS-diff-cell-export-\d+-\d+-\d+T\d+0000\.csv\.gz'
             self.assertRegexpMatches(mock_key.key, pat)
             method = mock_key.set_contents_from_filename
@@ -114,7 +115,7 @@ class TestExport(CeleryTestCase):
         self.session.commit()
 
         with mock_s3() as mock_key:
-            export_modified_cells(bucket='localhost.bucket', hourly=False)
+            export_modified_cells(_bucket='localhost.bucket', hourly=False)
             pat = r'MLS-full-cell-export-\d+-\d+-\d+T000000\.csv\.gz'
             self.assertRegexpMatches(mock_key.key, pat)
             method = mock_key.set_contents_from_filename
@@ -157,10 +158,9 @@ class TestImport(CeleryAppTestCase):
                 gzip_file.write(txt)
             yield path
 
-    def import_csv(self, lo=1, hi=10, time=1408604686, session=None):
-        session = session or self.session
+    def import_csv(self, lo=1, hi=10, time=1408604686):
         with self.get_csv(lo=lo, hi=hi, time=time) as path:
-            import_ocid_cells(path, session=session)
+            import_ocid_cells(filename=path)
 
     def test_local_import(self):
         self.import_csv()
@@ -176,37 +176,6 @@ class TestImport(CeleryAppTestCase):
         today = util.utcnow().date()
         stat_key = Stat.to_hashkey(key=StatKey.unique_ocid_cell, time=today)
         self.assertEqual(Stat.getkey(self.session, stat_key).value, 9)
-
-    def test_local_import_with_query(self):
-        self.session = self.db_ro_session
-        self.import_csv(session=self.session)
-
-        cell_key = {
-            'mcc': self.cell.mcc,
-            'mnc': self.cell.mnc,
-            'lac': self.cell.lac,
-        }
-
-        res = self.app.post_json(
-            '/v1/search?key=test',
-            {
-                'radio': Radio.gsm.name,
-                'cell': [
-                    dict(cid=3030, **cell_key),
-                    dict(cid=4040, **cell_key),
-                ]
-            },
-            status=200)
-
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(
-            res.json,
-            {
-                'status': 'ok',
-                'lat': self.cell.lat + 0.0035,
-                'lon': self.cell.lon + 0.007,
-                'accuracy': CELL_MIN_ACCURACY
-            })
 
     def test_local_import_delta(self):
         old_time = 1407000000
@@ -229,6 +198,7 @@ class TestImport(CeleryAppTestCase):
 
         # update some entries
         self.import_csv(lo=5, hi=13, time=new_time)
+        self.session.commit()
 
         cells = (self.session.query(OCIDCell)
                              .order_by(OCIDCell.modified).all())

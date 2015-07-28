@@ -36,19 +36,19 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(minute=3),
     },
     'ocid-hourly-cell-delta-import': {
-        'task': 'ichnaea.export.tasks.import_latest_ocid_cells',
+        'task': 'ichnaea.data.tasks.import_latest_ocid_cells',
         'args': (True, ),
         'schedule': crontab(minute=52),
         'options': {'expires': 2700},
     },
     's3-hourly-cell-delta-export': {
-        'task': 'ichnaea.export.tasks.export_modified_cells',
+        'task': 'ichnaea.data.tasks.export_modified_cells',
         'args': (True, ),
         'schedule': crontab(minute=3),
         'options': {'expires': 2700},
     },
     's3-daily-cell-full-export': {
-        'task': 'ichnaea.export.tasks.export_modified_cells',
+        'task': 'ichnaea.data.tasks.export_modified_cells',
         'args': (False, ),
         'schedule': crontab(hour=0, minute=13),
         'options': {'expires': 39600},
