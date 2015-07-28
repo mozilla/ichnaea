@@ -17,6 +17,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Let task and datamaps metrics use tags.
+
 - Add support for statsd metric tagging.
 
 - Use colander to map external to internal names in submit schemata.

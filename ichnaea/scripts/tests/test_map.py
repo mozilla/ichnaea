@@ -60,10 +60,10 @@ class TestMap(CeleryTestCase):
             self.assertTrue(mock_calls[1][1][0].startswith('enumerate'))
             self.assertTrue(mock_calls[2][1][0].startswith('enumerate'))
         self.check_stats(
-            timer=['datamaps.export_to_csv',
-                   'datamaps.csv_rows',
-                   'datamaps.encode',
-                   'datamaps.render'])
+            timer=[('datamaps', ['count:csv_rows']),
+                   ('datamaps', ['func:encode']),
+                   ('datamaps', ['func:export_to_csv']),
+                   ('datamaps', ['func:render'])])
 
     def test_generate_explicit_output(self):
         with tempdir() as temp_dir:

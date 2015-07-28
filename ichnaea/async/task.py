@@ -41,7 +41,7 @@ class BaseTask(Task):
         Execute the task, capture a statsd timer for the task duration and
         automatically report exceptions into Sentry.
         """
-        with self.stats_client.timed('task.' + self.shortname):
+        with self.stats_client.timed('task', tags=['name:' + self.shortname]):
             try:
                 result = super(BaseTask, self).__call__(*args, **kw)
             except Exception as exc:

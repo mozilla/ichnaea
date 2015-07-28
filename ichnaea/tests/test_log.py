@@ -36,19 +36,11 @@ class TestStatsAPI(LogTestCase):
             gauge=['metric'],
             timer=['metric'])
 
-    def test_one_tag(self):
-        self.stats_client.incr('metric', 1, tags=['t1:v1'])
-        self.check_stats(counter=[('metric.t1_v1', 1, 1)])
-
-    def test_mutiple_tags(self):
-        self.stats_client.incr('metric', 1, tags=['t2:v2', 't1:v1'])
-        self.check_stats(counter=[('metric.t2_v2.t1_v1', 1, 1)])
-
 
 class TestStatsTags(LogTestCase):
 
-    def _make_client(self, **kw):
-        return DebugStatsClient(tag_support=True, **kw)
+    def _make_client(self, tag_support=True, **kw):
+        return DebugStatsClient(tag_support=tag_support, **kw)
 
     def test_one_tag(self):
         client = self._make_client()
@@ -77,6 +69,20 @@ class TestStatsTags(LogTestCase):
         self.check_stats(
             _client=client,
             counter=[('metric', 1, 1, ['pre_t2:v2', 'pre_t1:v1'])])
+
+    def test_one_tag_fallback(self):
+        client = self._make_client(tag_support=False)
+        client.incr('metric', 1, tags=['t1:v1'])
+        self.check_stats(
+            _client=client,
+            counter=[('metric.t1_v1', 1, 1)])
+
+    def test_mutiple_tags_fallback(self):
+        client = self._make_client(tag_support=False)
+        client.incr('metric', 1, tags=['t2:v2', 't1:v1'])
+        self.check_stats(
+            _client=client,
+            counter=[('metric.t2_v2.t1_v1', 1, 1)])
 
 
 class TestStatsPrefix(LogTestCase):

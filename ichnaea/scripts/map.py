@@ -181,11 +181,11 @@ def generate(db, bucketname, raven_client, stats_client,
     with tempdir() as workdir:
         csv = os.path.join(workdir, 'map.csv')
 
-        with stats_client.timed('datamaps.export_to_csv'):
+        with stats_client.timed('datamaps', tags=['func:export_to_csv']):
             with db_worker_session(db, commit=False) as session:
                 result_rows = export_to_csv(session, csv)
 
-        stats_client.timing('datamaps.csv_rows', result_rows)
+        stats_client.timing('datamaps', result_rows, tags=['count:csv_rows'])
 
         # create shapefile / quadtree
         shapes = os.path.join(workdir, 'shapes')
@@ -194,7 +194,7 @@ def generate(db, bucketname, raven_client, stats_client,
             output=shapes,
             input=csv)
 
-        with stats_client.timed('datamaps.encode'):
+        with stats_client.timed('datamaps', tags=['func:encode']):
             system_call(cmd)
 
         # render tiles
@@ -232,15 +232,16 @@ def generate(db, bucketname, raven_client, stats_client,
             extra='',
             suffix='')
 
-        with stats_client.timed('datamaps.render'):
+        with stats_client.timed('datamaps', tags=['func:render']):
             system_call(zoom_all_cmd)
 
         if upload:  # pragma: no cover
-            with stats_client.timed('datamaps.upload_to_s3'):
+            with stats_client.timed('datamaps', tags=['func:upload_to_s3']):
                 result = upload_to_s3(bucketname, tiles)
 
             for metric, value in result.items():
-                stats_client.timing('datamaps.%s' % metric, value)
+                stats_client.timing('datamaps', value,
+                                    tags=['count:%s' % metric])
 
 
 def main(argv, _db_rw=None,
@@ -293,7 +294,7 @@ def main(argv, _db_rw=None,
             output = os.path.abspath(args.output)
 
         try:
-            with stats_client.timed('datamaps.total_time'):
+            with stats_client.timed('datamaps', tags=['func:main']):
                 generate(db, bucketname, raven_client, stats_client,
                          upload=upload,
                          concurrency=concurrency,

@@ -10,6 +10,14 @@ aggregating and viewing them on a compatible dashboard.
 
 This document describes the metrics collected.
 
+The code emits most metrics using the statsd tags extension. A metric
+name of ``task#name:function,version:old`` therefor means a statsd metric
+called `task` will be emitted with two tags `name:function` and
+`version:old`. If the statsd backend does not support tags, the
+statsd client can be configured with a `tag_support = false` option.
+In this case the above metric would be emitted as:
+``task.name_function.version_old``.
+
 
 API Query Metrics
 -----------------
@@ -335,8 +343,8 @@ emits a timer indicating its execution time.
 
 For example:
 
-  - ``task.data.update_statcounter``
-  - ``task.data.upload_reports``
+  - ``task#name:data.update_statcounter``
+  - ``task#name:data.upload_reports``
 
 
 Datamaps Timers
@@ -348,19 +356,18 @@ to monitor its operation.
 
 This includes timers to track the individual steps of the generation process:
 
-  - ``datamaps.export_to_csv``
-  - ``datamaps.encode``
-  - ``datamaps.render``
-  - ``datamaps.upload_to_s3``
+  - ``datamaps#func:export_to_csv``
+  - ``datamaps#func:encode``
+  - ``datamaps#func:main``
+  - ``datamaps#func:render``
+  - ``datamaps#func:upload_to_s3``
 
-A gauge to plot the number of rows in the mapstat table:
+And pseudo-timers to track the number of CSV rows, image tiles and
+S3 operations:
 
-  - ``datamaps.csv_rows``
-
-And pseudo-timers to track the number of image tiles and S3 operations:
-
-  - ``datamaps.s3_list``
-  - ``datamaps.s3_put``
-  - ``datamaps.tile_new``
-  - ``datamaps.tile_changed``
-  - ``datamaps.tile_unchanged``
+  - ``datamaps#count:csv_rows``
+  - ``datamaps#count:s3_list``
+  - ``datamaps#count:s3_put``
+  - ``datamaps#count:tile_new``
+  - ``datamaps#count:tile_changed``
+  - ``datamaps#count:tile_unchanged``

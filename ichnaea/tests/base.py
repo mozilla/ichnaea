@@ -146,7 +146,7 @@ class LogTestCase(TestCase):
         cls.raven_client = configure_raven(
             None, transport='sync', _client=DebugRavenClient())
         cls.stats_client = configure_stats(
-            None, _client=DebugStatsClient())
+            None, _client=DebugStatsClient(tag_support=True))
 
     @classmethod
     def tearDownClass(cls):
@@ -243,45 +243,6 @@ class LogTestCase(TestCase):
     def check_stats(self, _client=None, total=None, **kw):
         """Checks a partial specification of messages to be found in
         the stats message stream.
-
-        Keyword arguments:
-        total --  (optional) exact count of messages expected in stream.
-        kw  --  for all remaining keyword args of the form k:v :
-
-            select messages of type k, comparing the
-            message fields against v subject to type-dependent
-            interpretation:
-
-              if v is a str, select messages with name == v
-              and let match = 1
-
-              if v is a 2-tuple (n, match), select messages with
-              name == n
-
-              if v is a 3-tuple (n, match, value), select messages with
-              name == n and value == value
-
-              if v is a 4-tuple (n, match, value, tags), select messages with
-              name == n and value == value and tags == tags
-
-           the selected messages are then checked depending on the type
-           of match:
-
-              if match is an int, assert match messages were selected
-
-        Examples:
-
-           check_stats(
-               total=4,
-               timer=['request.v1.search'],
-               counter=['search.api_key.test',
-                        ('items.uploaded.batches', 2)],
-           )
-
-           This call will check for exactly 4 messages, exactly one timer
-           with 'name':'request.v1.search', exactly one counter
-           with 'name':'search.api_key.test'and  exactly two counters with
-           'name':'items.uploaded.batches'.
         """
         if _client is None:
             client = self.stats_client
@@ -300,8 +261,14 @@ class LogTestCase(TestCase):
                 elif isinstance(pred, tuple):
                     if len(pred) == 2:
                         (name, match) = pred
+                        if isinstance(match, list):
+                            tags = match
+                            match = 1
                     elif len(pred) == 3:
                         (name, match, value) = pred
+                        if isinstance(value, list):
+                            tags = value
+                            value = None
                     elif len(pred) == 4:
                         (name, match, value, tags) = pred
                     else:

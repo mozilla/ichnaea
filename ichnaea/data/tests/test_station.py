@@ -121,9 +121,9 @@ class TestCell(CeleryTestCase):
         self.check_stats(
             timer=[
                 # We made duplicate calls
-                ('task.data.update_cell', 2),
+                ('task', 2, ['name:data.update_cell']),
                 # One of those would've scheduled a remove_cell task
-                ('task.data.remove_cell', 1)
+                ('task', 1, ['name:data.remove_cell'])
             ])
 
     def test_blacklist_temporary_and_permanent(self):
@@ -263,9 +263,6 @@ class TestCell(CeleryTestCase):
 
         result = update_cell.delay()
         self.assertEqual(result.get(), (3, 0))
-        self.check_stats(
-            timer=['task.data.update_cell'],
-        )
 
         cells = self.session.query(Cell).all()
         self.assertEqual(len(cells), 3)
@@ -401,9 +398,9 @@ class TestWifi(CeleryTestCase):
         self.check_stats(
             timer=[
                 # We made duplicate calls
-                ('task.data.update_wifi', 2),
+                ('task', 2, ['name:data.update_wifi']),
                 # One of those would've scheduled a remove_wifi task
-                ('task.data.remove_wifi', 1)
+                ('task', 1, ['name:data.remove_wifi'])
             ])
 
     def test_blacklist_temporary_and_permanent(self):
@@ -532,9 +529,6 @@ class TestWifi(CeleryTestCase):
 
         result = update_wifi.delay()
         self.assertEqual(result.get(), (2, 0))
-        self.check_stats(
-            timer=['task.data.update_wifi'],
-        )
         self.session.refresh(wifi1)
         self.session.refresh(wifi2)
 
