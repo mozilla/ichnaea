@@ -14,6 +14,7 @@ from ichnaea.data.export import (
     S3Uploader,
 )
 from ichnaea.data.mapstat import MapStatUpdater
+from ichnaea.data import monitor
 from ichnaea.data.observation import (
     CellObservationQueue,
     WifiObservationQueue,
@@ -69,6 +70,21 @@ def insert_measures_wifi(self, entries, userid=None, utcnow=None):
             queue = WifiObservationQueue(self, session, pipe, utcnow=utcnow)
             length = queue.insert(entries, userid=userid)
     return length
+
+
+@celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
+def monitor_api_key_limits(self):
+    return monitor.monitor_api_key_limits(self)
+
+
+@celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
+def monitor_ocid_import(self):
+    return monitor.monitor_ocid_import(self)
+
+
+@celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
+def monitor_queue_length(self):
+    return monitor.monitor_queue_length(self)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export')

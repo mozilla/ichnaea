@@ -13,17 +13,17 @@ CELERYBEAT_SCHEDULE = {
     # Monitoring tasks
 
     'monitor-queue-length': {
-        'task': 'ichnaea.monitor.tasks.monitor_queue_length',
+        'task': 'ichnaea.data.tasks.monitor_queue_length',
         'schedule': timedelta(seconds=60),
         'options': {'expires': 57},
     },
     'monitor-ocid-import': {
-        'task': 'ichnaea.monitor.tasks.monitor_ocid_import',
+        'task': 'ichnaea.data.tasks.monitor_ocid_import',
         'schedule': timedelta(seconds=600),
         'options': {'expires': 570},
     },
     'monitor-api-key-limits': {
-        'task': 'ichnaea.monitor.tasks.monitor_api_key_limits',
+        'task': 'ichnaea.data.tasks.monitor_api_key_limits',
         'schedule': timedelta(seconds=600),
         'options': {'expires': 570},
     },

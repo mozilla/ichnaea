@@ -2,7 +2,7 @@ from datetime import timedelta
 from random import randint
 
 from ichnaea.models import ApiKey
-from ichnaea.monitor.tasks import (
+from ichnaea.data.tasks import (
     monitor_api_key_limits,
     monitor_ocid_import,
     monitor_queue_length,

@@ -26,7 +26,7 @@ CELERY_DEFAULT_QUEUE = 'celery_default'
 CELERY_IMPORTS = [
     'ichnaea.data.tasks',
     'ichnaea.export.tasks',
-    'ichnaea.monitor.tasks',
+    'ichnaea.monitor.tasks',  # BBB
 ]
 
 #: Optimization for a mix of fast and slow tasks.
