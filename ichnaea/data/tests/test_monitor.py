@@ -29,9 +29,9 @@ class TestMonitorTasks(CeleryTestCase):
         result = monitor_api_key_limits.delay().get()
         self.assertEqual(result, {'no_key_1': 13})
 
-        self.check_stats(
-            gauge=['apilimit.no_key_1'],
-        )
+        self.check_stats(gauge=[
+            ('api.limit', ['key:no_key_1']),
+        ])
 
     def test_monitor_api_keys_multiple(self):
         redis_client = self.redis_client
@@ -63,11 +63,11 @@ class TestMonitorTasks(CeleryTestCase):
 
         result = monitor_api_key_limits.delay().get()
 
-        self.check_stats(
-            gauge=['apilimit.test',
-                   'apilimit.shortname_1',
-                   'apilimit.no_key_2'],
-        )
+        self.check_stats(gauge=[
+            ('api.limit', ['key:test']),
+            ('api.limit', ['key:shortname_1']),
+            ('api.limit', ['key:no_key_2']),
+        ])
         self.assertDictEqual(
             result, {'test': 11, 'shortname_1': 12, 'no_key_2': 15})
 
@@ -82,9 +82,9 @@ class TestMonitorTasks(CeleryTestCase):
             self.session.flush()
             results.append(monitor_ocid_import.delay().get())
 
-        self.check_stats(
-            gauge=[('table.ocid_cell_age', len(expected))],
-        )
+        self.check_stats(gauge=[
+            ('table', len(expected), ['name:ocid_cell_age']),
+        ])
         for result, expect in zip(results, expected):
             # The values should be almost equal, ignoring differences
             # less than 10 seconds (or 9999 milliseconds / 4 places)
@@ -101,6 +101,6 @@ class TestMonitorTasks(CeleryTestCase):
         result = monitor_queue_length.delay().get()
 
         self.check_stats(
-            gauge=[('queue.' + k, 1, v) for k, v in data.items()],
+            gauge=[('queue', 1, v, ['name:' + k]) for k, v in data.items()],
         )
         self.assertEqual(result, data)

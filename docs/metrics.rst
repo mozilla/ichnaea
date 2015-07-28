@@ -277,28 +277,34 @@ We keep metrics about how those individual export targets perform.
 Internal Monitoring
 -------------------
 
-``queue.celery_default``,
-``queue.celery_export``,
-``queue.celery_incoming``,
-``queue.celery_insert``,
-``queue.celery_monitor``,
-``queue.celery_reports``,
-``queue.celery_upload`` : gauges
+``api.limit#key:<apikey_shortname>`` : gauge
+
+    One gauge is created per API key that has rate limiting enabled on it.
+    This gauge measures how many requests have been done for each such
+    API key for the current day.
+
+``queue#name:celery_default``,
+``queue#name:celery_export``,
+``queue#name:celery_incoming``,
+``queue#name:celery_insert``,
+``queue#name:celery_monitor``,
+``queue#name:celery_reports``,
+``queue#name:celery_upload`` : gauges
 
     These gauges measure the number of tasks in each of the Redis queues.
     They are sampled at an approximate per-minute interval.
 
-``queue.update_cell``,
-``queue.update_cell_area``,
-``queue.update_mapstat``,
-``queue.update_score``,
-``queue.update_wifi`` : gauges
+``queue#name:update_cell``,
+``queue#name:update_cell_area``,
+``queue#name:update_mapstat``,
+``queue#name:update_score``,
+``queue#name:update_wifi`` : gauges
 
     These gauges measure the number of items in the Redis update queues.
     These queues are used to keep track of which observations still need to
     be acted upon and integrated into the aggregate station data.
 
-``table.ocid_cell_age`` : gauges
+``table#name:ocid_cell_age`` : gauge
 
     This gauge measures when the last entry was added to the table. It
     represents this as `now() - max(created)` and converts it to a
@@ -333,6 +339,7 @@ HTTP Timers
 
 In addition to the HTTP counters, every legitimate, routed request
 emits a ``request#path:<path>,method:<method>`` timer.
+
 These timers have the same structure as the HTTP counters, except they
 do not have the response code tag.
 
@@ -341,7 +348,7 @@ Task Timers
 -----------
 
 Our data ingress and data maintenance actions are managed by a Celery
-queue of *tasks*. These tasks are executed asynchronously, and each task
+queue of tasks. These tasks are executed asynchronously, and each task
 emits a timer indicating its execution time.
 
 For example:
@@ -357,20 +364,20 @@ We include a script to generate a data map from the gathered map
 statistics. This script includes a number of timers and pseudo-timers
 to monitor its operation.
 
-This includes timers to track the individual steps of the generation process:
+``datamaps#func:export_to_csv``,
+``datamaps#func:encode``,
+``datamaps#func:main``,
+``datamaps#func:render``,
+``datamaps#func:upload_to_s3`` : timers
 
-  - ``datamaps#func:export_to_csv``
-  - ``datamaps#func:encode``
-  - ``datamaps#func:main``
-  - ``datamaps#func:render``
-  - ``datamaps#func:upload_to_s3``
+    These timers track the individual functions of the generation process.
 
-And pseudo-timers to track the number of CSV rows, image tiles and
-S3 operations:
+``datamaps#count:csv_rows``,
+``datamaps#count:s3_list``,
+``datamaps#count:s3_put``,
+``datamaps#count:tile_new``,
+``datamaps#count:tile_changed``,
+``datamaps#count:tile_unchanged`` : timers
 
-  - ``datamaps#count:csv_rows``
-  - ``datamaps#count:s3_list``
-  - ``datamaps#count:s3_put``
-  - ``datamaps#count:tile_new``
-  - ``datamaps#count:tile_changed``
-  - ``datamaps#count:tile_unchanged``
+    Pseudo-timers to track the number of CSV rows, image tiles and
+    S3 operations.
