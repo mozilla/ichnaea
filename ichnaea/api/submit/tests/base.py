@@ -13,8 +13,8 @@ from ichnaea import util
 class BaseSubmitTest(object):
 
     url = None
-    metric = None
     metric_path = None
+    metric_type = 'submit'
     status = None
 
     nickname = b'World Tr\xc3\xa4veler'.decode('utf-8')
@@ -112,17 +112,15 @@ class BaseSubmitTest(object):
         cell, query = self._one_cell_query()
         self._post([query], api_key=None)
         self.check_stats(counter=[
-            (self.metric + '.no_api_key', 1),
-            (self.metric + '.unknown_api_key', 0),
+            (self.metric_type + '.request', [self.metric_path, 'key:none']),
         ])
 
     def test_log_api_key_unknown(self):
         cell, query = self._one_cell_query()
         self._post([query], api_key='invalidkey')
         self.check_stats(counter=[
-            (self.metric + '.api_key.invalidkey', 0),
-            (self.metric + '.no_api_key', 0),
-            (self.metric + '.unknown_api_key', 1),
+            (self.metric_type + '.request', [self.metric_path, 'key:invalid']),
+            (self.metric_type + '.request', 0, [self.metric_path, 'key:none']),
         ])
 
     def test_log_stats(self):
@@ -131,7 +129,7 @@ class BaseSubmitTest(object):
         self.check_stats(counter=[
             'items.api_log.test.uploaded.batches',
             'items.uploaded.batches',
-            self.metric + '.api_key.test',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post',
                          'status:%s' % self.status]),
         ], timer=[

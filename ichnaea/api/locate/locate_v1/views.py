@@ -5,10 +5,10 @@ from ichnaea.api.locate.views import BasePositionView
 
 class LocateV1View(BasePositionView):
 
-    not_found = LocationNotFoundV1
-    route = '/v1/search'
-    schema = LocateV1Schema
-    view_name = 'search'
+    metric_path = 'v1.search'  #:
+    not_found = LocationNotFoundV1  #:
+    route = '/v1/search'  #:
+    schema = LocateV1Schema  #:
 
     def prepare_response(self, result):
         response = {

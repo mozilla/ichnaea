@@ -3,12 +3,12 @@ from ichnaea.api.locate.locate_v2.views import LocateV2View
 
 class CountryView(LocateV2View):
 
-    # TODO: Disable API key checks and logging, for the initial wave
+    # TODO: Enable API key checks and logging, after the initial wave
     check_api_key = False  #:
     error_on_invalidkey = False  #:
-    searcher = 'country_searcher'  #:
+    metric_path = 'v1.country'  #:
     route = '/v1/country'  #:
-    view_name = 'country'  #:
+    searcher = 'country_searcher'  #:
     view_type = 'country'  #:
 
     def prepare_response(self, result):

@@ -149,7 +149,6 @@ class BaseLocateTest(object):
 
     url = None
     apikey_metrics = True
-    metric = None
     metric_path = None
     metric_type = None
     not_found = LocationNotFound
@@ -283,13 +282,16 @@ class CommonLocateTest(BaseLocateTest):
         res = self._call('\xae', method='post', status=400)
         self.check_response(res, 'parse_error')
         if self.apikey_metrics:
-            self.check_stats(counter=[self.metric + '.api_key.test'])
+            self.check_stats(counter=[
+                (self.metric_type + '.request',
+                    [self.metric_path, 'key:test']),
+            ])
 
     def test_error_no_mapping(self):
         res = self._call([1], status=400)
         self.check_response(res, 'parse_error')
 
-    def test_error_unknown_key(self):
+    def test_error_invalid_key(self):
         res = self._call({'foo': 0}, ip=self.test_ip, status=200)
         self.check_response(res, 'ok')
 
@@ -297,13 +299,19 @@ class CommonLocateTest(BaseLocateTest):
         res = self._call(api_key=None, ip=self.test_ip, status=status)
         self.check_response(res, response)
         if self.apikey_metrics:
-            self.check_stats(counter=[self.metric + '.no_api_key'])
+            self.check_stats(counter=[
+                (self.metric_type + '.request',
+                    [self.metric_path, 'key:none']),
+            ])
 
-    def test_unknown_api_key(self, status=400, response='invalid_key'):
+    def test_invalid_api_key(self, status=400, response='invalid_key'):
         res = self._call(api_key='invalid', ip=self.test_ip, status=status)
         self.check_response(res, response)
         if self.apikey_metrics:
-            self.check_stats(counter=[self.metric + '.unknown_api_key'])
+            self.check_stats(counter=[
+                (self.metric_type + '.request',
+                    [self.metric_path, 'key:invalid']),
+            ])
 
     def test_gzip(self):
         cell = CellFactory.build()
@@ -341,7 +349,7 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query, status=self.not_found.code)
         self.check_response(res, 'not_found')
         self.check_stats(counter=[
-            self.metric + '.api_key.test',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post',
                          'status:%s' % self.not_found.code]),
             self.metric_type + '.query.test.all.cell.one',
@@ -360,7 +368,7 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query)
         self.check_model_response(res, cell)
         self.check_stats(counter=[
-            self.metric + '.api_key.test',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post', 'status:200']),
         ])
 
@@ -372,7 +380,7 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query)
         self.check_model_response(res, cell, fallback='lacf')
         self.check_stats(counter=[
-            self.metric + '.api_key.test',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post', 'status:200']),
             self.metric_type + '.query.test.all.cell.none',
             self.metric_type + '.result.test.all.low.hit',
@@ -388,7 +396,7 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query)
         self.check_model_response(res, cell, fallback='lacf')
         self.check_stats(counter=[
-            self.metric + '.api_key.test',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post', 'status:200']),
             self.metric_type + '.query.test.all.cell.none',
             self.metric_type + '.result.test.all.low.hit',
@@ -404,7 +412,7 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query, status=self.not_found.code)
         self.check_response(res, 'not_found')
         self.check_stats(counter=[
-            self.metric + '.api_key.test',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post',
                          'status:%s' % self.not_found.code]),
         ])
@@ -419,7 +427,7 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query)
         self.check_model_response(res, cell, fallback='lacf')
         self.check_stats(counter=[
-            self.metric + '.api_key.test',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post', 'status:200']),
             self.metric_type + '.query.test.all.cell.none',
             self.metric_type + '.result.test.all.low.hit',
@@ -433,7 +441,7 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query, status=self.not_found.code)
         self.check_response(res, 'not_found')
         self.check_stats(counter=[
-            self.metric + '.api_key.test',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post',
                          'status:%s' % self.not_found.code]),
             self.metric_type + '.query.test.all.wifi.many',
@@ -452,7 +460,7 @@ class CommonPositionTest(BaseLocateTest):
             status=self.not_found.code)
         self.check_response(res, 'not_found')
         self.check_stats(counter=[
-            self.metric + '.api_key.test',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post',
                          'status:%s' % self.not_found.code]),
         ], timer=[
@@ -487,7 +495,7 @@ class CommonPositionTest(BaseLocateTest):
 
         self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
         self.check_stats(counter=[
-            self.metric + '.api_key.test',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post', 'status:200']),
             self.metric_type + '.query.test.all.cell.many',
             self.metric_type + '.query.test.all.wifi.many',
@@ -524,7 +532,7 @@ class CommonPositionTest(BaseLocateTest):
 
         self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
         self.check_stats(counter=[
-            self.metric + '.api_key.test',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post', 'status:200']),
             self.metric_type + '.result.test.all.high.hit',
             self.metric_type + '.source.test.all.fallback.high.hit',

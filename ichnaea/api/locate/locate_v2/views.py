@@ -4,9 +4,9 @@ from ichnaea.api.locate.views import BasePositionView
 
 class LocateV2View(BasePositionView):
 
-    route = '/v1/geolocate'
-    view_name = 'geolocate'
-    schema = LocateV2Schema
+    metric_path = 'v1.geolocate'  #:
+    route = '/v1/geolocate'  #:
+    schema = LocateV2Schema  #:
 
     def prepare_response(self, result):
         response = {

@@ -21,6 +21,7 @@ class BaseAPIView(BaseView):
 
     check_api_key = True  #: Should API keys be checked?
     error_on_invalidkey = True  #: Deny access for invalid API keys?
+    metric_path = None  #: Dotted URL path, for example v1.submit.
     view_type = None  #: The type of view, for example submit or locate.
 
     def __init__(self, request):
@@ -29,15 +30,18 @@ class BaseAPIView(BaseView):
         self.redis_client = request.registry.redis_client
         self.stats_client = request.registry.stats_client
 
-    def log_count(self, msg, **kw):
-        self.stats_client.incr(msg.format(view_name=self.view_name, **kw))
+    def log_count(self, apikey_shortname):
+        self.stats_client.incr(
+            self.view_type + '.request',
+            tags=['path:' + self.metric_path,
+                  'key:' + apikey_shortname])
 
     def check(self):
         api_key = None
         api_key_text = self.request.GET.get('key', None)
 
         if api_key_text is None:
-            self.log_count('{view_name}.no_api_key')
+            self.log_count('none')
             if self.error_on_invalidkey:
                 raise InvalidAPIKey()
         try:
@@ -48,8 +52,7 @@ class BaseAPIView(BaseView):
             self.raven_client.captureException()
 
         if api_key is not None:
-            self.log_count('{view_name}.api_key.{api_key}',
-                           api_key=api_key.name)
+            self.log_count(api_key.name)
 
             rate_key = 'apilimit:{key}:{time}'.format(
                 key=api_key_text,
@@ -66,7 +69,7 @@ class BaseAPIView(BaseView):
                 raise DailyLimitExceeded()
         else:
             if api_key_text is not None:
-                self.log_count('{view_name}.unknown_api_key')
+                self.log_count('invalid')
             if self.error_on_invalidkey:
                 raise InvalidAPIKey()
 

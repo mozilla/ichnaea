@@ -12,7 +12,6 @@ from ichnaea.tests.factories import (
 class TestView(BaseSubmitTest, CeleryAppTestCase):
 
     url = '/v1/geosubmit'
-    metric = 'geosubmit'
     metric_path = 'path:v1.geosubmit'
     status = 200
     radio_id = 'radioType'

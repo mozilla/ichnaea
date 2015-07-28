@@ -12,7 +12,6 @@ class BaseLocateView(BaseAPIView):
 
     #: :exc:`ichnaea.api.exceptions.LocationNotFound`
     not_found = LocationNotFound
-
     searcher = None  #:
     schema = None  #:
 

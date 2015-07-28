@@ -19,6 +19,28 @@ In this case the above metric would be emitted as:
 ``task.name_function.version_old``.
 
 
+API Key Metrics
+---------------
+
+These are metrics that track how many times each specific public API
+is used and which clients identified by their API keys do so.
+
+These metrics can help in deciding when to remove a deprecated API.
+
+``country.request#path:v1.country,key:<apikey_shortname>``,
+``locate.request#path:v1.search,key:<apikey_shortname>``,
+``locate.request#path:v1.geolocate,key:<apikey_shortname>``,
+``submit.request#path:v1.submit,key:<apikey_shortname>``,
+``submit.request#path:v1.geosubmit,key:<apikey_shortname>``,
+``submit.request#path:v2.geosubmit,key:<apikey_shortname>`` : counters
+
+    These metrics count how many times a specific API was called by a
+    specific API key expressed via the API keys short name.
+
+    Two special short names exist for tracking invalid (``invalid``)
+    and no (``none``) provided API keys.
+
+
 API Query Metrics
 -----------------
 
@@ -145,32 +167,6 @@ performance of outbound network calls and the effectiveness of its cache.
 
     Counts the HTTP response codes for all outbound requests. There is
     one counter per HTTP response code, for example `200`.
-
-
-API Key Metrics
----------------
-
-TODO: Redo these to better fit with the new API query/source/result metrics.
-
-Several families of counters exist based on API keys. These have the prefixes:
-
-  - ``geolocate.api_key.*``
-  - ``search.api_key.*``
-  - ``geosubmit.api_key.*``
-  - ``geosubmit2.api_key.*``
-  - ``submit.api_key.*``
-
-Each immediate sub-component of the metric name after the prefix is the name
-of an API key, which is a counter of the number of times a request to each
-named API endpoint (``geolocate``, ``geosubmit``, etc.) came in using the
-named API key.
-
-In addition, each API endpoint has two counters measuring requests that
-fail to provide an API key, or provide an unknown API key. These counters
-are named:
-
-  - ``<api_endpoint>.no_api_key``
-  - ``<api_endpoint>.unknown_api_key``
 
 
 Data Pipeline Metrics

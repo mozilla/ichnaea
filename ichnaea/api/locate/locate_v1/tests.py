@@ -40,7 +40,6 @@ class TestSchema(TestCase):
 class LocateV1Base(BaseLocateTest, AppTestCase):
 
     url = '/v1/search'
-    metric = 'search'
     metric_path = 'path:v1.search'
     metric_type = 'locate'
     not_found = LocationNotFoundV1
@@ -112,7 +111,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         res = self._call(body=query)
         self.check_model_response(res, cell)
         self.check_stats(counter=[
-            self.metric + '.api_key.test',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post', 'status:200']),
             self.metric_type + '.result.test.all.medium.hit',
             self.metric_type + '.source.test.all.internal.medium.hit',
@@ -142,7 +141,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, wifi, lat=wifi.lat + offset)
 
         self.check_stats(counter=[
-            self.metric + '.api_key.test',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             self.metric_type + '.result.test.all.high.hit',
             self.metric_type + '.source.test.all.internal.high.hit'])
 

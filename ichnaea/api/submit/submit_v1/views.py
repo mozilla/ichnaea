@@ -5,9 +5,9 @@ from ichnaea.api.submit.views import BaseSubmitView
 
 class SubmitV1View(BaseSubmitView):
 
-    route = '/v1/submit'
-    schema = SubmitV1Schema
-    view_name = 'submit'
+    metric_path = 'v1.submit'  #:
+    route = '/v1/submit'  #:
+    schema = SubmitV1Schema  #:
 
     #: :exc:`ichnaea.api.exceptions.UploadSuccessV1`
     success = UploadSuccessV1

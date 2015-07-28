@@ -18,7 +18,6 @@ class BaseSubmitView(BaseAPIView):
 
     error_on_invalidkey = False  #:
     schema = None  #:
-    view_name = None  #:
     view_type = 'submit'  #:
 
     #: :exc:`ichnaea.api.exceptions.UploadSuccess`

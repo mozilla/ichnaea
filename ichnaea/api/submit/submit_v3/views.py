@@ -4,6 +4,6 @@ from ichnaea.api.submit.views import BaseSubmitView
 
 class SubmitV3View(BaseSubmitView):
 
-    route = '/v2/geosubmit'
-    schema = SubmitV3Schema
-    view_name = 'geosubmit2'
+    metric_path = 'v2.geosubmit'  #:
+    route = '/v2/geosubmit'  #:
+    schema = SubmitV3Schema  #:
