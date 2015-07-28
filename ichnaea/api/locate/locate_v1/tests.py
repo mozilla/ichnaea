@@ -41,8 +41,8 @@ class LocateV1Base(BaseLocateTest, AppTestCase):
 
     url = '/v1/search'
     metric = 'search'
+    metric_path = 'path:v1.search'
     metric_type = 'locate'
-    metric_url = 'request.v1.search'
     not_found = LocationNotFoundV1
 
     @property
@@ -111,13 +111,14 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
 
         res = self._call(body=query)
         self.check_model_response(res, cell)
-
-        self.check_stats(
-            timer=[self.metric_url],
-            counter=[self.metric + '.api_key.test',
-                     self.metric_type + '.result.test.all.medium.hit',
-                     self.metric_type + '.source.test.all.internal.medium.hit',
-                     self.metric_url + '.200'])
+        self.check_stats(counter=[
+            self.metric + '.api_key.test',
+            ('request', [self.metric_path, 'method:post', 'status:200']),
+            self.metric_type + '.result.test.all.medium.hit',
+            self.metric_type + '.source.test.all.internal.medium.hit',
+        ], timer=[
+            ('request', [self.metric_path, 'method:post']),
+        ])
 
     def test_wifi(self):
         wifi = WifiFactory()

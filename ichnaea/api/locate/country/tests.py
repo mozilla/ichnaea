@@ -15,8 +15,8 @@ class CountryBase(BaseLocateTest, AppTestCase):
     url = '/v1/country'
     apikey_metrics = False
     metric = 'country'
+    metric_path = 'path:v1.country'
     metric_type = 'country'
-    metric_url = 'request.v1.country'
 
     @property
     def ip_response(self):
@@ -51,29 +51,32 @@ class TestView(CountryBase, CommonLocateTest):
         res = self._call(ip=self.test_ip)
         self.check_response(res, 'ok')
         self.check_db_calls(rw=0, ro=0)
-        self.check_stats(
-            counter=[self.metric_url + '.200'],
-            timer=[self.metric_url],
-        )
+        self.check_stats(counter=[
+            ('request', [self.metric_path, 'method:post', 'status:200']),
+        ], timer=[
+            ('request', [self.metric_path, 'method:post']),
+        ])
 
     def test_geoip_miss(self):
         res = self._call(ip='127.0.0.1', status=404)
         self.check_response(res, 'not_found')
         self.check_db_calls(rw=0, ro=0)
-        self.check_stats(
-            counter=[self.metric_url + '.404'],
-            timer=[self.metric_url],
-        )
+        self.check_stats(counter=[
+            ('request', [self.metric_path, 'method:post', 'status:404']),
+        ], timer=[
+            ('request', [self.metric_path, 'method:post']),
+        ])
 
     def test_known_api_key(self):
         res = self._call(api_key='test', ip=self.test_ip)
         self.check_response(res, 'ok')
         self.check_db_calls(rw=0, ro=0)
-        self.check_stats(
-            counter=[(self.metric_url + '.200', 1),
-                     (self.metric + '.api_key.test', 0)],
-            timer=[self.metric_url],
-        )
+        self.check_stats(counter=[
+            ('request', [self.metric_path, 'method:post', 'status:200']),
+            (self.metric + '.api_key.test', 0),
+        ], timer=[
+            ('request', [self.metric_path, 'method:post']),
+        ])
 
     def test_no_api_key(self):
         super(TestView, self).test_no_api_key(status=200, response='ok')

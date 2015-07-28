@@ -309,35 +309,38 @@ Internal Monitoring
 HTTP Counters
 -------------
 
-Every legitimate, routed request to Ichnaea, whether to an API endpoint or
-to static content, also increments a ``request.*`` counter. The path
-of the counter is the based on the path of the HTTP request, with slashes
-replaced with periods, followed by a final component named by the response
-code produced by the request.
+Every legitimate, routed request, whether to an API endpoint or
+to static content, increments a
+``request#path:<path>,method:<method>,status:<code>`` counter.
+
+The path of the counter is the based on the path of the HTTP
+request, with slashes replaced with periods. The method tag contains
+the lowercased HTTP method of the request. The status tag contains
+the response code produced by the request.
 
 For example, a GET of ``/stats/regions`` that results in an HTTP 200
-status code, will increment the counter ``request.stats.regions.200``.
+status code, will increment the counter
+``request#path:stats.regions,method:get,status:200``.
 
-Response codes in the 400 range (eg. 404) are only generated for HTTP paths
-referring to API endpoints. Logging them for unknown and invalid paths would
-overwhelm the system with all the random paths the friendly Internet bots
-army sends along.
+Response codes in the 400 range (eg. 404) are only generated for HTTP
+paths referring to API endpoints. Logging them for unknown and invalid
+paths would overwhelm the system with all the random paths the friendly
+Internet bot army sends along.
 
 
 HTTP Timers
 -----------
 
-In addition to the HTTP counters, every legitimate, routed request to
-Ichnaea emits an ``request.*`` *timer*. These timers have the same
-name structure as the HTTP counters, except they do not have a final
-component based on the response code. Rather, they aggregate over all
-response codes for a given HTTP path.
+In addition to the HTTP counters, every legitimate, routed request
+emits a ``request#path:<path>,method:<method>`` timer.
+These timers have the same structure as the HTTP counters, except they
+do not have the response code tag.
 
 
 Task Timers
 -----------
 
-Ichnaea's ingress and data-maintenance actions are managed by a Celery
+Our data ingress and data maintenance actions are managed by a Celery
 queue of *tasks*. These tasks are executed asynchronously, and each task
 emits a timer indicating its execution time.
 
@@ -350,7 +353,7 @@ For example:
 Datamaps Timers
 ---------------
 
-Ichnaea includes a script to generate a data map from the gathered map
+We include a script to generate a data map from the gathered map
 statistics. This script includes a number of timers and pseudo-timers
 to monitor its operation.
 

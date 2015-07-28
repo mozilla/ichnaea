@@ -150,8 +150,8 @@ class BaseLocateTest(object):
     url = None
     apikey_metrics = True
     metric = None
+    metric_path = None
     metric_type = None
-    metric_url = None
     not_found = LocationNotFound
 
     @property
@@ -255,6 +255,11 @@ class CommonLocateTest(BaseLocateTest):
     def test_get(self):
         res = self._call(ip=self.test_ip, method='get', status=200)
         self.check_response(res, 'ok')
+        self.check_stats(counter=[
+            ('request', [self.metric_path, 'method:get', 'status:200']),
+        ], timer=[
+            ('request', [self.metric_path, 'method:get']),
+        ])
 
     def test_empty_body(self):
         res = self._call('', ip=self.test_ip, method='post', status=200)
@@ -263,10 +268,11 @@ class CommonLocateTest(BaseLocateTest):
     def test_empty_json(self):
         res = self._call(ip=self.test_ip, status=200)
         self.check_response(res, 'ok')
-
-        self.check_stats(
-            timer=[(self.metric_url, 1)],
-            counter=[self.metric_url + '.200'])
+        self.check_stats(counter=[
+            ('request', [self.metric_path, 'method:post', 'status:200']),
+        ], timer=[
+            ('request', [self.metric_path, 'method:post']),
+        ])
         if self.apikey_metrics:
             self.check_stats(counter=[
                 self.metric_type + '.query.test.all.geoip.only',
@@ -334,15 +340,15 @@ class CommonPositionTest(BaseLocateTest):
         query = self.model_query(cells=[cell])
         res = self._call(body=query, status=self.not_found.code)
         self.check_response(res, 'not_found')
-
         self.check_stats(counter=[
             self.metric + '.api_key.test',
-            self.metric_url + '.' + str(self.not_found.code),
+            ('request', [self.metric_path, 'method:post',
+                         'status:%s' % self.not_found.code]),
             self.metric_type + '.query.test.all.cell.one',
             self.metric_type + '.result.test.all.medium.miss',
             self.metric_type + '.source.test.all.internal.medium.miss',
         ], timer=[
-            self.metric_url,
+            ('request', [self.metric_path, 'method:post']),
         ])
 
     def test_cell_lte_radio(self):
@@ -353,10 +359,10 @@ class CommonPositionTest(BaseLocateTest):
 
         res = self._call(body=query)
         self.check_model_response(res, cell)
-
         self.check_stats(counter=[
-            self.metric_url + '.200',
-            self.metric + '.api_key.test'])
+            self.metric + '.api_key.test',
+            ('request', [self.metric_path, 'method:post', 'status:200']),
+        ])
 
     def test_cellarea(self):
         cell = CellAreaFactory()
@@ -365,10 +371,9 @@ class CommonPositionTest(BaseLocateTest):
         query = self.model_query(cells=[cell])
         res = self._call(body=query)
         self.check_model_response(res, cell, fallback='lacf')
-
         self.check_stats(counter=[
-            self.metric_url + '.200',
             self.metric + '.api_key.test',
+            ('request', [self.metric_path, 'method:post', 'status:200']),
             self.metric_type + '.query.test.all.cell.none',
             self.metric_type + '.result.test.all.low.hit',
             self.metric_type + '.source.test.all.internal.low.hit'])
@@ -382,10 +387,9 @@ class CommonPositionTest(BaseLocateTest):
 
         res = self._call(body=query)
         self.check_model_response(res, cell, fallback='lacf')
-
         self.check_stats(counter=[
-            self.metric_url + '.200',
             self.metric + '.api_key.test',
+            ('request', [self.metric_path, 'method:post', 'status:200']),
             self.metric_type + '.query.test.all.cell.none',
             self.metric_type + '.result.test.all.low.hit',
             self.metric_type + '.source.test.all.internal.low.hit'])
@@ -399,10 +403,11 @@ class CommonPositionTest(BaseLocateTest):
 
         res = self._call(body=query, status=self.not_found.code)
         self.check_response(res, 'not_found')
-
         self.check_stats(counter=[
-            self.metric_url + '.' + str(self.not_found.code),
-            self.metric + '.api_key.test'])
+            self.metric + '.api_key.test',
+            ('request', [self.metric_path, 'method:post',
+                         'status:%s' % self.not_found.code]),
+        ])
 
     def test_cellarea_with_different_fallback(self):
         cell = CellAreaFactory()
@@ -413,10 +418,9 @@ class CommonPositionTest(BaseLocateTest):
 
         res = self._call(body=query)
         self.check_model_response(res, cell, fallback='lacf')
-
         self.check_stats(counter=[
-            self.metric_url + '.200',
             self.metric + '.api_key.test',
+            ('request', [self.metric_path, 'method:post', 'status:200']),
             self.metric_type + '.query.test.all.cell.none',
             self.metric_type + '.result.test.all.low.hit',
             self.metric_type + '.source.test.all.internal.low.hit'])
@@ -428,15 +432,15 @@ class CommonPositionTest(BaseLocateTest):
 
         res = self._call(body=query, status=self.not_found.code)
         self.check_response(res, 'not_found')
-
         self.check_stats(counter=[
             self.metric + '.api_key.test',
-            self.metric_url + '.' + str(self.not_found.code),
+            ('request', [self.metric_path, 'method:post',
+                         'status:%s' % self.not_found.code]),
             self.metric_type + '.query.test.all.wifi.many',
             self.metric_type + '.result.test.all.high.miss',
             self.metric_type + '.source.test.all.internal.high.miss',
         ], timer=[
-            self.metric_url,
+            ('request', [self.metric_path, 'method:post']),
         ])
 
     def test_ip_fallback_disabled(self):
@@ -447,12 +451,12 @@ class CommonPositionTest(BaseLocateTest):
             ip=self.test_ip,
             status=self.not_found.code)
         self.check_response(res, 'not_found')
-
         self.check_stats(counter=[
             self.metric + '.api_key.test',
-            self.metric_url + '.' + str(self.not_found.code),
+            ('request', [self.metric_path, 'method:post',
+                         'status:%s' % self.not_found.code]),
         ], timer=[
-            self.metric_url,
+            ('request', [self.metric_path, 'method:post']),
         ])
 
     def test_fallback(self):
@@ -482,16 +486,15 @@ class CommonPositionTest(BaseLocateTest):
             self.assertEqual(send_json['cellTowers'][0]['radioType'], 'wcdma')
 
         self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
-
         self.check_stats(counter=[
             self.metric + '.api_key.test',
+            ('request', [self.metric_path, 'method:post', 'status:200']),
             self.metric_type + '.query.test.all.cell.many',
             self.metric_type + '.query.test.all.wifi.many',
             self.metric_type + '.result.test.all.high.hit',
             self.metric_type + '.source.test.all.fallback.high.hit',
-            self.metric_url + '.200',
         ], timer=[
-            self.metric_url,
+            ('request', [self.metric_path, 'method:post']),
         ])
 
     def test_fallback_used_with_geoip(self):
@@ -520,14 +523,13 @@ class CommonPositionTest(BaseLocateTest):
             self.assertEqual(len(send_json['wifiAccessPoints']), 3)
 
         self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
-
         self.check_stats(counter=[
             self.metric + '.api_key.test',
+            ('request', [self.metric_path, 'method:post', 'status:200']),
             self.metric_type + '.result.test.all.high.hit',
             self.metric_type + '.source.test.all.fallback.high.hit',
-            self.metric_url + '.200',
         ], timer=[
-            self.metric_url,
+            ('request', [self.metric_path, 'method:post']),
         ])
 
     def test_floatjson(self):
@@ -560,11 +562,11 @@ class CommonLocateErrorTest(BaseLocateTest):
         query = self.model_query(cells=cells, wifis=wifis)
         res = self._call(body=query, ip=self.test_ip)
         self.check_response(res, 'ok')
-
-        self.check_stats(
-            counter=[self.metric_url + '.200'],
-            timer=[self.metric_url],
-        )
+        self.check_stats(counter=[
+            ('request', [self.metric_path, 'method:post', 'status:200']),
+        ], timer=[
+            ('request', [self.metric_path, 'method:post']),
+        ])
         if self.apikey_metrics:
             self.check_stats(counter=[
                 self.metric_type + '.result.test.all.high.miss',

@@ -17,7 +17,7 @@ Migrations
 Changes
 ~~~~~~~
 
-- Let task and datamaps metrics use tags.
+- Let task, datamaps and HTTP counter/timer metrics use tags.
 
 - Add support for statsd metric tagging.
 

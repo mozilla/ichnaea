@@ -107,10 +107,7 @@ def configure_stats(app_config, _client=None):  # pragma: no cover
 
 def quote_statsd_path(path):
     """Convert a URI to a statsd acceptable metric name."""
-    metric = path.replace('/', '.').lstrip('.').replace('@', '-')
-    if metric:
-        return 'request.' + metric
-    return 'request'
+    return path.replace('/', '.').lstrip('.').replace('@', '-')
 
 
 def configure_logging():
@@ -125,14 +122,18 @@ def log_tween_factory(handler, registry):
         raven_client = registry.raven_client
         stats_client = registry.stats_client
         start = time.time()
-        statsd_path = quote_statsd_path(request.path)
+        statsd_tags = [
+            'path:%s' % quote_statsd_path(request.path),
+            'method:%s' % request.method.lower(),
+        ]
 
         def timer_send():
             duration = int(round((time.time() - start) * 1000))
-            stats_client.timing(statsd_path, duration)
+            stats_client.timing('request', duration, tags=statsd_tags)
 
         def counter_send(status_code):
-            stats_client.incr('%s.%s' % (statsd_path, status_code))
+            stats_client.incr('request',
+                              tags=statsd_tags + ['status:%s' % status_code])
 
         try:
             response = handler(request)

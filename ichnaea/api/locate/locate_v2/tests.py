@@ -52,8 +52,8 @@ class LocateV2Base(BaseLocateTest, AppTestCase):
 
     url = '/v1/geolocate'
     metric = 'geolocate'
+    metric_path = 'path:v1.geolocate'
     metric_type = 'locate'
-    metric_url = 'request.v1.geolocate'
 
     @property
     def ip_response(self):
@@ -99,12 +99,14 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
 
         res = self._call(body=query)
         self.check_model_response(res, cell)
-
         self.check_stats(counter=[
             self.metric + '.api_key.test',
-            self.metric_url + '.200',
+            ('request', [self.metric_path, 'method:post', 'status:200']),
             self.metric_type + '.result.test.all.medium.hit',
-            self.metric_type + '.source.test.all.internal.medium.hit'])
+            self.metric_type + '.source.test.all.internal.medium.hit',
+        ], timer=[
+            ('request', [self.metric_path, 'method:post']),
+        ])
 
     def test_partial_cell(self):
         cell = CellFactory()
@@ -146,9 +148,12 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
 
         self.check_stats(counter=[
             self.metric + '.api_key.test',
-            self.metric_url + '.200',
+            ('request', [self.metric_path, 'method:post', 'status:200']),
             self.metric_type + '.result.test.all.high.hit',
-            self.metric_type + '.source.test.all.internal.high.hit'])
+            self.metric_type + '.source.test.all.internal.high.hit',
+        ], timer=[
+            ('request', [self.metric_path, 'method:post']),
+        ])
 
     def test_cell_mcc_mnc_strings(self):
         # mcc and mnc are officially defined as strings, where '01' is

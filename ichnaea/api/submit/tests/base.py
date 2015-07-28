@@ -14,7 +14,7 @@ class BaseSubmitTest(object):
 
     url = None
     metric = None
-    metric_url = None
+    metric_path = None
     status = None
 
     nickname = b'World Tr\xc3\xa4veler'.decode('utf-8')
@@ -92,7 +92,7 @@ class BaseSubmitTest(object):
 
         self.assertTrue(mock_task.called)
         self.check_stats(counter=[
-            self.metric_url + '.503',
+            ('request', [self.metric_path, 'method:post', 'status:503']),
             ('items.uploaded.batches', 0),
         ])
 
@@ -128,14 +128,17 @@ class BaseSubmitTest(object):
     def test_log_stats(self):
         cell, query = self._one_cell_query()
         self._post([query], api_key='test')
-        self.check_stats(
-            counter=['items.api_log.test.uploaded.batches',
-                     'items.uploaded.batches',
-                     self.metric + '.api_key.test',
-                     self.metric_url + '.' + str(self.status)],
-            timer=['items.api_log.test.uploaded.batch_size',
-                   'items.uploaded.batch_size',
-                   self.metric_url])
+        self.check_stats(counter=[
+            'items.api_log.test.uploaded.batches',
+            'items.uploaded.batches',
+            self.metric + '.api_key.test',
+            ('request', [self.metric_path, 'method:post',
+                         'status:%s' % self.status]),
+        ], timer=[
+            'items.api_log.test.uploaded.batch_size',
+            'items.uploaded.batch_size',
+            ('request', [self.metric_path, 'method:post']),
+        ])
 
     def test_radio_duplicated(self):
         cell, query = self._one_cell_query(radio=False)

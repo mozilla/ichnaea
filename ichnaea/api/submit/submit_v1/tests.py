@@ -66,7 +66,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
 
     url = '/v1/submit'
     metric = 'submit'
-    metric_url = 'request.v1.submit'
+    metric_path = 'path:v1.submit'
     status = 204
     radio_id = 'radio'
     cells_id = 'cell'

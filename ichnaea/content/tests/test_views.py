@@ -153,10 +153,10 @@ class TestFunctionalContent(AppTestCase):
 
     def test_image_file(self):
         self.app.get('/static/css/images/icons-000000@2x.png', status=200)
-        quoted_path = 'request.static.css.images.icons-000000-2x.png'
+        quoted_path = 'path:static.css.images.icons-000000-2x.png'
         self.check_stats(
-            counter=[(quoted_path + '.200', 1)],
-            timer=[(quoted_path, 1)])
+            counter=[('request', [quoted_path, 'method:get', 'status:200'])],
+            timer=[('request', [quoted_path, 'method:get'])])
 
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)
