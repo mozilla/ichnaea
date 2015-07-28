@@ -12,18 +12,20 @@ This document describes the metrics collected.
 
 The code emits most metrics using the statsd tags extension. A metric
 name of ``task#name:function,version:old`` therefor means a statsd metric
-called `task` will be emitted with two tags `name:function` and
-`version:old`. If the statsd backend does not support tags, the
-statsd client can be configured with a `tag_support = false` option.
+called ``task`` will be emitted with two tags ``name:function`` and
+``version:old``. If the statsd backend does not support tags, the
+statsd client can be configured with a ``tag_support = false`` option.
 In this case the above metric would be emitted as:
 ``task.name_function.version_old``.
 
 
-API Key Metrics
----------------
+API Request Metrics
+-------------------
 
 These are metrics that track how many times each specific public API
-is used and which clients identified by their API keys do so.
+is used and which clients identified by their API keys do so. They are
+grouped by the type of the API, where type is one of `country`, `locate`
+and `submit`, independent of the specific version of that API.
 
 These metrics can help in deciding when to remove a deprecated API.
 
@@ -35,7 +37,10 @@ These metrics can help in deciding when to remove a deprecated API.
 ``submit.request#path:v2.geosubmit,key:<apikey_shortname>`` : counters
 
     These metrics count how many times a specific API was called by a
-    specific API key expressed via the API keys short name.
+    specific API key expressed via the API keys short name. The API key
+    short name is a human readable alias that can be configured for each
+    API key. If no alias is configured, this will use the actual API key,
+    often a UUID.
 
     Two special short names exist for tracking invalid (``invalid``)
     and no (``none``) provided API keys.

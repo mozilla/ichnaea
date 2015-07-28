@@ -115,7 +115,7 @@ class BaseSubmitTest(object):
             (self.metric_type + '.request', [self.metric_path, 'key:none']),
         ])
 
-    def test_log_api_key_unknown(self):
+    def test_log_api_key_invalid(self):
         cell, query = self._one_cell_query()
         self._post([query], api_key='invalidkey')
         self.check_stats(counter=[
