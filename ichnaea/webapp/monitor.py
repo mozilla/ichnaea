@@ -1,3 +1,6 @@
+"""
+Heartbeat and monitor views to check service and backend health.
+"""
 import socket
 import time
 
@@ -6,22 +9,6 @@ from pyramid.httpexceptions import HTTPServiceUnavailable
 from ichnaea.webapp.view import BaseView
 
 LOCAL_FQDN = socket.getfqdn()
-
-
-class Timer(object):
-
-    def __init__(self):
-        self.start = None
-        self.ms = None
-
-    def __enter__(self):
-        self.start = time.time()
-        return self
-
-    def __exit__(self, typ, value, tb):
-        if self.start is not None:
-            dt = time.time() - self.start
-            self.ms = int(round(1000 * dt))
 
 
 def _check_timed(ping_function):
@@ -47,11 +34,42 @@ def check_redis(request):
     return _check_timed(request.registry.redis_client.ping)
 
 
-class HeartbeatView(BaseView):
+def configure_monitor(config):
+    """Configure monitor related views and set up routes."""
+    HeartbeatView.configure(config)
+    MonitorView.configure(config)
 
-    route = '/__heartbeat__'
+
+class Timer(object):
+
+    def __init__(self):
+        self.start = None
+        self.ms = None
+
+    def __enter__(self):
+        self.start = time.time()
+        return self
+
+    def __exit__(self, typ, value, tb):
+        if self.start is not None:
+            dt = time.time() - self.start
+            self.ms = int(round(1000 * dt))
+
+
+class HeartbeatView(BaseView):
+    """
+    A heartbeat view which returns a successful response if the service
+    is reachable and works at all. If any of the backend connections are
+    broken, this view will still respond with a success, allowing the
+    service to operate in a degraded mode.
+
+    This view is typically used in load balancer health checks.
+    """
+
+    route = '/__heartbeat__'  #:
 
     def __call__(self):
+        """Return a response with a 200 or 503 status."""
         try:
             return {'status': 'OK', 'hostname': LOCAL_FQDN}
         except Exception:  # pragma: no cover
@@ -59,10 +77,21 @@ class HeartbeatView(BaseView):
 
 
 class MonitorView(BaseView):
+    """
+    A monitor view which returns a successful response if the service
+    and all its backend connections work.
 
-    route = '/__monitor__'
+    The view actively checks the database, geoip and redis connections.
+    """
+
+    route = '/__monitor__'  #:
 
     def __call__(self):
+        """
+        Return a response with a 200 or 503 status, including
+        a JSON body listing the status and timing information for
+        most outbound connections.
+        """
         services = {
             'database': check_database,
             'geoip': check_geoip,

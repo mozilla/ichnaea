@@ -8,6 +8,7 @@
 
    app
    config
+   monitor
    settings
    view
    worker

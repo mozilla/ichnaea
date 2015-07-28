@@ -24,7 +24,7 @@ from ichnaea.log import (
     configure_raven,
     configure_stats,
 )
-from ichnaea.monitor import configure_monitor
+from ichnaea.webapp.monitor import configure_monitor
 
 
 def main(app_config, ping_connections=False,
