@@ -88,7 +88,7 @@ def configure_stats(app_config, _client=None):  # pragma: no cover
         host = 'localhost'
         port = 8125
         metric_prefix = 'location'
-        tag_prefix = 'location'
+        tag_prefix = ''
         tag_support = False
     else:
         section = app_config.get_map('statsd', {})
@@ -187,6 +187,8 @@ class StatsClient(DogStatsd):
         super(StatsClient, self).__init__(
             host=host, port=port, max_buffer_size=max_buffer_size)
         self.metric_prefix = metric_prefix
+        if tag_prefix:
+            tag_prefix += '_'
         self.tag_prefix = tag_prefix
         self.tag_support = tag_support
 
@@ -201,7 +203,7 @@ class StatsClient(DogStatsd):
 
         if tags and self.tag_prefix:
             # add support for custom tag prefix
-            tags = [self.tag_prefix + '_' + tag for tag in tags]
+            tags = [self.tag_prefix + tag for tag in tags]
 
         if tags and not self.tag_support:
             # append tags to the metric name
