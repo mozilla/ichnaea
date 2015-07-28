@@ -111,10 +111,13 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         res = self._call(body=query)
         self.check_model_response(res, cell)
         self.check_stats(counter=[
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post', 'status:200']),
-            self.metric_type + '.result.test.all.medium.hit',
-            self.metric_type + '.source.test.all.internal.medium.hit',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
+            (self.metric_type + '.result',
+                ['key:test', 'country:none', 'accuracy:medium', 'status:hit']),
+            (self.metric_type + '.source',
+                ['key:test', 'country:none', 'source:internal',
+                 'accuracy:medium', 'status:hit']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
@@ -142,8 +145,12 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
 
         self.check_stats(counter=[
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
-            self.metric_type + '.result.test.all.high.hit',
-            self.metric_type + '.source.test.all.internal.high.hit'])
+            (self.metric_type + '.result',
+                ['key:test', 'country:none', 'accuracy:high', 'status:hit']),
+            (self.metric_type + '.source',
+                ['key:test', 'country:none', 'source:internal',
+                 'accuracy:high', 'status:hit']),
+        ])
 
 
 class TestError(LocateV1Base, CommonLocateErrorTest):

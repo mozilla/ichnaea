@@ -79,11 +79,11 @@ class FallbackPositionSource(PositionSource):
         self.cache_expire = int(settings.get('cache_expire', 0))
         super(FallbackPositionSource, self).__init__(settings, *args, **kw)
 
-    def _stat_count(self, stat):
-        self.stats_client.incr('locate.fallback.' + stat)
+    def _stat_count(self, stat, tags):
+        self.stats_client.incr('locate.fallback.' + stat, tags=tags)
 
-    def _stat_timed(self, stat):
-        return self.stats_client.timed('locate.fallback.' + stat)
+    def _stat_timed(self, stat, tags):
+        return self.stats_client.timed('locate.fallback.' + stat, tags=tags)
 
     def _get_ratelimit_key(self):
         return 'fallback_ratelimit:{time}'.format(time=int(time.time()))
@@ -117,14 +117,14 @@ class FallbackPositionSource(PositionSource):
             try:
                 cached_cell = self.redis_client.get(cache_key)
                 if cached_cell:
-                    self._stat_count('cache.hit')
+                    self._stat_count('cache', tags=['status:hit'])
                     return json.loads(cached_cell)
                 else:
-                    self._stat_count('cache.miss')
+                    self._stat_count('cache', tags=['status:miss'])
             except RedisError:
                 self.raven_client.captureException()
         else:
-            self._stat_count('cache.bypassed')
+            self._stat_count('cache', tags=['status:bypassed'])
 
     def _set_cached_result(self, query, result):
         if self._should_cache(query):
@@ -150,7 +150,7 @@ class FallbackPositionSource(PositionSource):
             return
 
         try:
-            with self._stat_timed('lookup'):
+            with self._stat_timed('lookup', tags=()):
                 response = requests.post(
                     self.url,
                     headers={'User-Agent': 'ichnaea'},
@@ -159,12 +159,16 @@ class FallbackPositionSource(PositionSource):
                     verify=False,
                 )
 
-            self._stat_count('lookup_status.' + str(response.status_code))
-            if response.status_code != 404:
+            self._stat_count(
+                'lookup', tags=['status:' + str(response.status_code)])
+
+            if response.status_code == 404:
                 # don't log exceptions for normal not found responses
-                response.raise_for_status()
-            else:
                 return self.LOCATION_NOT_FOUND
+            else:
+                # raise_for_status is a no-op for successful 200 responses
+                # so this only raises for 5xx responses
+                response.raise_for_status()
 
             return response.json()
 

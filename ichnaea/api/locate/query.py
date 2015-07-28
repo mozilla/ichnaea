@@ -282,14 +282,20 @@ class Query(object):
         # in the query
         return allowed and possible_result
 
-    def _emit_country_stat(self, pre, post):
-        # Emit a all/country stats pair
-        self.stats_client.incr(pre + 'all' + post)
-        country = self.country
-        if not country:
+    def _emit_country_stat(self, metric, extra_tags):
+        # Emit a country specific stat
+        if not self.country:
             country = 'none'
-            # TODO don't emit actual country based stats yet
-            self.stats_client.incr(pre + country + post)
+        else:
+            # TODO emit actual country based stats
+            country = 'xx'
+
+        metric = '%s.%s' % (self.api_type, metric)
+        tags = [
+            'key:%s' % self.api_key.name,
+            'country:%s' % country,
+        ]
+        self.stats_client.incr(metric, tags=tags + extra_tags)
 
     def emit_query_stats(self):
         """Emit stats about the data contained in this query."""
@@ -298,18 +304,15 @@ class Query(object):
 
         cells = len(self.cell)
         wifis = len(self._wifi_unvalidated)
+        tags = []
 
-        prefix = '{api_type}.query.{key}.'.format(
-            api_type=self.api_type,
-            key=self.api_key.name)
+        if not self.ip:
+            tags.append('geoip:false')
 
-        if self.ip and not (cells or wifis):
-            self._emit_country_stat(prefix, '.geoip.only')
-        else:
-            for name, length in (('cell', cells), ('wifi', wifis)):
-                num = METRIC_MAPPING[min(length, 2)]
-                metric = '.{name}.{num}'.format(name=name, num=num)
-                self._emit_country_stat(prefix, metric)
+        for name, length in (('cell', cells), ('wifi', wifis)):
+            num = METRIC_MAPPING[min(length, 2)]
+            tags.append('{name}:{num}'.format(name=name, num=num))
+        self._emit_country_stat('query', tags)
 
     def emit_result_stats(self, result):
         """Emit stats about how well the result satisfied the query."""
@@ -321,36 +324,30 @@ class Query(object):
             return
 
         if result.data_accuracy <= self.expected_accuracy:
+            # equal or better / smaller accuracy
             status = 'hit'
         else:
             status = 'miss'
 
-        pre = '{api_type}.result.{key}.'.format(
-            api_type=self.api_type,
-            key=self.api_key.name)
-
-        post = '.{category}.{status}'.format(
-            category=self.expected_accuracy.name, status=status)
-
-        self._emit_country_stat(pre, post)
+        tags = [
+            'accuracy:%s' % self.expected_accuracy.name,
+            'status:%s' % status,
+        ]
+        self._emit_country_stat('result', tags)
 
     def emit_source_stats(self, source, result):
         """Emit stats about how well the result satisfied the query."""
         if not self.collect_metrics():
             return
 
-        pre = '{api_type}.source.{key}.'.format(
-            api_type=self.api_type,
-            key=self.api_key.name)
-
         if result.data_accuracy <= self.expected_accuracy:
             status = 'hit'
         else:
             status = 'miss'
 
-        post = '.{source_name}.{category}.{status}'.format(
-            source_name=source.name,
-            category=self.expected_accuracy.name,
-            status=status)
-
-        self._emit_country_stat(pre, post)
+        tags = [
+            'source:%s' % source.name,
+            'accuracy:%s' % self.expected_accuracy.name,
+            'status:%s' % status,
+        ]
+        self._emit_country_stat('source', tags)

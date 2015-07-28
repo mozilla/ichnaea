@@ -287,23 +287,16 @@ class TestQueryStats(QueryTest):
         cell = CellFactory.build()
         self._make_query(api_key=api_key, cell=[cell])
         self.check_stats(counter=[
-            'locate.query.%s.none.cell.one' % api_key.valid_key,
-            'locate.query.%s.none.wifi.none' % api_key.valid_key,
-            'locate.query.%s.all.cell.one' % api_key.valid_key,
-            'locate.query.%s.all.wifi.none' % api_key.valid_key,
+            ('locate.query',
+                ['key:%s' % api_key.valid_key,
+                 'country:none', 'geoip:false', 'cell:one', 'wifi:none']),
         ])
 
     def test_empty(self):
         self._make_query(ip=self.london_ip)
         self.check_stats(counter=[
-            'locate.query.key.all.geoip.only',
-        ])
-
-    def test_geoip_only(self):
-        self._make_query(ip=self.london_ip)
-        self.check_stats(counter=[
-            ('locate.query.key.none.geoip.only', 0),
-            'locate.query.key.all.geoip.only',
+            ('locate.query',
+                ['key:key', 'country:xx', 'cell:none', 'wifi:none']),
         ])
 
     def test_one(self):
@@ -311,9 +304,9 @@ class TestQueryStats(QueryTest):
         wifis = WifiFactory.build_batch(1)
 
         self._make_query(cell=cells, wifi=wifis, ip=self.london_ip)
-        self.check_stats(total=2, counter=[
-            'locate.query.key.all.cell.one',
-            'locate.query.key.all.wifi.one',
+        self.check_stats(total=1, counter=[
+            ('locate.query',
+                ['key:key', 'country:xx', 'cell:one', 'wifi:one']),
         ])
 
     def test_many(self):
@@ -321,9 +314,9 @@ class TestQueryStats(QueryTest):
         wifis = WifiFactory.build_batch(3)
 
         self._make_query(cell=cells, wifi=wifis, ip=self.london_ip)
-        self.check_stats(total=2, counter=[
-            'locate.query.key.all.cell.many',
-            'locate.query.key.all.wifi.many',
+        self.check_stats(total=1, counter=[
+            ('locate.query',
+                ['key:key', 'country:xx', 'cell:many', 'wifi:many']),
         ])
 
 
@@ -358,48 +351,75 @@ class TestResultStats(QueryTest):
 
     def test_low_miss(self):
         self._make_query(Position(), ip=self.london_ip)
-        self.check_stats(counter=['locate.result.key.all.low.miss'])
+        self.check_stats(counter=[
+            ('locate.result',
+                ['key:key', 'country:xx', 'accuracy:low', 'status:miss']),
+        ])
 
     def test_low_hit(self):
         self._make_query(Position(accuracy=60000.0), ip=self.london_ip)
-        self.check_stats(counter=['locate.result.key.all.low.hit'])
+        self.check_stats(counter=[
+            ('locate.result',
+                ['key:key', 'country:xx', 'accuracy:low', 'status:hit']),
+        ])
 
     def test_medium_miss(self):
         cells = CellFactory.build_batch(1)
         self._make_query(Position(), cell=cells)
-        self.check_stats(counter=['locate.result.key.all.medium.miss'])
+        self.check_stats(counter=[
+            ('locate.result',
+                ['key:key', 'country:none', 'accuracy:medium', 'status:miss']),
+        ])
 
     def test_medium_miss_low(self):
         cells = CellFactory.build_batch(1)
         self._make_query(Position(accuracy=60000.0), cell=cells)
-        self.check_stats(counter=['locate.result.key.all.medium.miss'])
+        self.check_stats(counter=[
+            ('locate.result',
+                ['key:key', 'country:none', 'accuracy:medium', 'status:miss']),
+        ])
 
     def test_medium_hit(self):
         cells = CellFactory.build_batch(1)
         self._make_query(Position(accuracy=30000.0), cell=cells)
-        self.check_stats(counter=['locate.result.key.all.medium.hit'])
+        self.check_stats(counter=[
+            ('locate.result',
+                ['key:key', 'country:none', 'accuracy:medium', 'status:hit']),
+        ])
 
     def test_high_miss(self):
         wifis = WifiFactory.build_batch(2)
         self._make_query(Position(accuracy=1500.0), wifi=wifis)
-        self.check_stats(counter=['locate.result.key.all.high.miss'])
+        self.check_stats(counter=[
+            ('locate.result',
+                ['key:key', 'country:none', 'accuracy:high', 'status:miss']),
+        ])
 
     def test_high_hit(self):
         wifis = WifiFactory.build_batch(2)
         self._make_query(Position(accuracy=1000.0), wifi=wifis)
-        self.check_stats(counter=['locate.result.key.all.high.hit'])
+        self.check_stats(counter=[
+            ('locate.result',
+                ['key:key', 'country:none', 'accuracy:high', 'status:hit']),
+        ])
 
     def test_mixed_miss(self):
         wifis = WifiFactory.build_batch(2)
         self._make_query(Position(accuracy=1001.0),
                          wifi=wifis, ip=self.london_ip)
-        self.check_stats(counter=['locate.result.key.all.high.miss'])
+        self.check_stats(counter=[
+            ('locate.result',
+                ['key:key', 'country:xx', 'accuracy:high', 'status:miss']),
+        ])
 
     def test_mixed_hit(self):
         cells = CellFactory.build_batch(2)
         self._make_query(Position(accuracy=500.0),
                          cell=cells, ip=self.london_ip)
-        self.check_stats(counter=['locate.result.key.all.medium.hit'])
+        self.check_stats(counter=[
+            ('locate.result',
+                ['key:key', 'country:xx', 'accuracy:medium', 'status:hit']),
+        ])
 
 
 class TestSourceStats(QueryTest, ConnectionTestCase):
@@ -422,8 +442,9 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
         self._make_query(
             DataSource.internal, Position(accuracy=100.0), wifi=wifis)
         self.check_stats(counter=[
-            'locate.source.key.none.internal.high.hit',
-            'locate.source.key.all.internal.high.hit',
+            ('locate.source',
+                ['key:key', 'country:none', 'source:internal',
+                 'accuracy:high', 'status:hit']),
         ])
 
     def test_high_miss(self):
@@ -431,6 +452,7 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
         self._make_query(
             DataSource.ocid, Position(accuracy=10000.0), wifi=wifis)
         self.check_stats(counter=[
-            'locate.source.key.none.ocid.high.miss',
-            'locate.source.key.all.ocid.high.miss',
+            ('locate.source',
+                ['key:key', 'country:none', 'source:ocid',
+                 'accuracy:high', 'status:miss']),
         ])

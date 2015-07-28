@@ -50,10 +50,9 @@ API Query Metrics
 -----------------
 
 For each incoming API query we log metrics about the data contained in
-the query under the following two prefixes:
+the query with the metric name and tags:
 
-``<api_type>.query.<api_shortname>.all.``,
-``<api_type>.query.<api_shortname>.<country_code>.``
+``<api_type>.query#key<api_shortname>,country:<country_code>`` : counter
 
 `api_type` describes the type of API being used, independent of the
 version number of the API. So `v1/country` gets logged as `country`
@@ -61,29 +60,23 @@ and both `v1/search` and `v1/geolocate` get logged as `locate`.
 
 `country_code` is either a two-letter ISO3166 code like `de` or the
 special value `none` if the country origin of the incoming request
-could not be determined. The value for `all` will be always be logged,
-even for the `none` case.
+could not be determined.
 
-Under these two prefixes, there are a number of metrics:
+We extend the metric with additional tags based on the data contained
+in it:
 
-``geoip.only`` : counter
+``#geoip:false`` : tag
 
-    If the query contained only GeoIP data and nothing else, only log
-    this metric and none of the following.
+    This tag only gets added if there was no valid client IP address
+    for this query. Since almost all queries contain a client IP address
+    we usually skip this tag.
 
-``cell.none``, ``cell.one``, ``cell.many``,
-``wifi.none``, ``wifi.one``, ``wifi.many`` : counter
+``#cell:none``, ``#cell:one``, ``#cell:many``,
+``#wifi:none``, ``#wifi:one``, ``#wifi:many`` : tags
 
     If the query contained any cell or wifi networks, one cell and one
-    wifi metric gets logged. The metrics depend on the number of valid
+    wifi tag get added. The tags depend on the number of valid
     stations for each of the two.
-
-
-API Source Metrics
-------------------
-
-TODO - describe metrics collected about each individual source of
-location data, like our internal database or OpenCellIDs data.
 
 
 API Result Metrics
@@ -91,31 +84,29 @@ API Result Metrics
 
 Similar to the API query metrics we also collect metrics about each
 result of an API query. This follows the same per API type and per
-country rules under the prefixes:
+country rules under the prefix / tag combination:
 
-``<api_type>.result.<api_shortname>.all.``,
-``<api_type>.result.<api_shortname>.<country_code>.``
+``<api_type>.result#key:<api_shortname>,country:<country_code>``
 
-Under these two prefixes we collect metrics that measure if we satisfied
-the incoming API query in the best possible fashion. Incoming queries
-can generally contain WiFi networks, cell networks, an IP address or any
-mixture thereof. If the query contained only cell networks, we do not
-expect to get a high accuracy result, as there is too little data in the
-query to do so.
+The result metrics measure if we satisfied the incoming API query in
+the best possible fashion. Incoming queries can generally contain
+an IP address, cell networks, WiFi networks or any combination thereof.
+If the query contained only cell networks, we do not expect to get a
+high accuracy result, as there is too little data in the query to do so.
 
 We express this by classifying each incoming query into one of four
 categories:
 
-High Accuracy (``high``)
+High Accuracy (``#accuracy:high``)
     A query containing at least two WiFi networks.
 
-Medium Accuracy (``medium``)
+Medium Accuracy (``#accuracy:medium``)
     A query containing no WiFi networks but at least one cell network.
 
-Low Accuracy (``low``)
+Low Accuracy (``#accuracy:low``)
     A query containing no networks but only the IP address of the client.
 
-No Accuracy (``none``)
+No Accuracy (``#accuracy:none``)
     A query containing no usable information, for example an IP-only
     query that explicitly disables the IP fallback.
 
@@ -129,11 +120,11 @@ can deliver an equal or better category we consider the status to be
 a `hit`. If we don't satisfy the expected category we consider the
 result to be a `miss`.
 
-For each result we then log exactly one of the following result metrics:
+For each result we then log exactly one of the following tag combinations:
 
-``high.hit``, ``high.miss``,
-``medium.hit``, ``medium.miss``,
-``low.hit``, ``low.miss`` : counter
+``#accuracy:high,status:hit``, ``#accuracy:high,status:miss``,
+``#accuracy:medium,status:hit``, ``#accuracy:medium,status:miss``,
+``#accuracy:low,status:hit``, ``#accuracy:low,status:miss`` : tags
 
 We don't log metrics for the uncommon case of ``none`` or no expected
 accuracy.
@@ -141,13 +132,43 @@ accuracy.
 One special case exists for cell networks. If we cannot find an exact
 cell match, we might fall back to a cell area based estimate. If the
 range of the cell area is fairly small we consider this to be a
-``medium.hit``. But if the size of the cell area is extremely large, in
-the order of tens of kilometers to hundreds of kilometers, we consider
-it to be a ``medium.miss``.
+``#accuracy:medium,status:hit``. But if the size of the cell area is
+extremely large, in the order of tens of kilometers to hundreds of
+kilometers, we consider it to be a ``#accuracy:medium,status:miss``.
 
 In the past we only collected stats based on whether or not cell based
 data was used to answer a cell based query and counted it as a
 cell-based success, even if the provided accuracy was really bad.
+
+
+API Source Metrics
+------------------
+
+In addition to the final API result, we also collect metrics about each
+individual data source we use to answer queries under the
+``<api_type>.source#key:<api_shortname>,country:<country_code>`` metric.
+
+Data sources can be one of:
+
+``internal``
+    Data from our own crowd-sourcing effort.
+
+``ocid``
+    Data from our OpenCellID partner.
+
+``fallback``
+    Data from the optional external fallback provider.
+
+``geoip``
+    Data from a GeoIP database.
+
+Each request may use one or multiple of these sources to deliver a result.
+We log the same metrics as mentioned above for the result, but in addition
+tag each metric with an additional ``source:<source>`` tag.
+
+All of this combined might lead to a tagged metric like:
+
+``locate.source#key:test,country:de,source:ocid,accuracy:medium,status:hit``
 
 
 Fallback Source Metrics
@@ -156,9 +177,9 @@ Fallback Source Metrics
 The external fallback source has a couple extra metrics to observe the
 performance of outbound network calls and the effectiveness of its cache.
 
-``locate.fallback.cache.hit``,
-``locate.fallback.cache.miss``,
-``locate.fallback.cache.bypassed`` : counter
+``locate.fallback.cache#status:hit``,
+``locate.fallback.cache#status:miss``,
+``locate.fallback.cache#status:bypassed`` : counter
 
     Counts the number of hits and misses for the fallback cache. Since
     the cache only works for single cell based queries, there is also a
@@ -168,7 +189,7 @@ performance of outbound network calls and the effectiveness of its cache.
 
     Measures the time it takes to do each outbound network request.
 
-``locate.fallback.lookup_status.<code>`` : counter
+``locate.fallback.lookup#status:<code>`` : counter
 
     Counts the HTTP response codes for all outbound requests. There is
     one counter per HTTP response code, for example `200`.

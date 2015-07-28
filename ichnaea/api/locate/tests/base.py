@@ -274,9 +274,14 @@ class CommonLocateTest(BaseLocateTest):
         ])
         if self.apikey_metrics:
             self.check_stats(counter=[
-                self.metric_type + '.query.test.all.geoip.only',
-                self.metric_type + '.result.test.all.low.hit',
-                self.metric_type + '.source.test.all.geoip.low.hit'])
+                (self.metric_type + '.query',
+                    ['key:test', 'country:xx', 'cell:none', 'wifi:none']),
+                (self.metric_type + '.result',
+                    ['key:test', 'country:xx', 'accuracy:low', 'status:hit']),
+                (self.metric_type + '.source',
+                    ['key:test', 'country:xx', 'source:geoip',
+                     'accuracy:low', 'status:hit']),
+            ])
 
     def test_error_no_json(self):
         res = self._call('\xae', method='post', status=400)
@@ -349,12 +354,18 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query, status=self.not_found.code)
         self.check_response(res, 'not_found')
         self.check_stats(counter=[
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post',
                          'status:%s' % self.not_found.code]),
-            self.metric_type + '.query.test.all.cell.one',
-            self.metric_type + '.result.test.all.medium.miss',
-            self.metric_type + '.source.test.all.internal.medium.miss',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
+            (self.metric_type + '.query',
+                ['key:test', 'country:none',
+                 'geoip:false', 'cell:one', 'wifi:none']),
+            (self.metric_type + '.result',
+                ['key:test', 'country:none',
+                 'accuracy:medium', 'status:miss']),
+            (self.metric_type + '.source',
+                ['key:test', 'country:none', 'source:internal',
+                 'accuracy:medium', 'status:miss']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
@@ -380,11 +391,17 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query)
         self.check_model_response(res, cell, fallback='lacf')
         self.check_stats(counter=[
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post', 'status:200']),
-            self.metric_type + '.query.test.all.cell.none',
-            self.metric_type + '.result.test.all.low.hit',
-            self.metric_type + '.source.test.all.internal.low.hit'])
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
+            (self.metric_type + '.query',
+                ['key:test', 'country:none',
+                 'geoip:false', 'cell:none', 'wifi:none']),
+            (self.metric_type + '.result',
+                ['key:test', 'country:none', 'accuracy:low', 'status:hit']),
+            (self.metric_type + '.source',
+                ['key:test', 'country:none', 'source:internal',
+                 'accuracy:low', 'status:hit']),
+        ])
 
     def test_cellarea_with_lacf(self):
         cell = CellAreaFactory()
@@ -396,11 +413,17 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query)
         self.check_model_response(res, cell, fallback='lacf')
         self.check_stats(counter=[
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post', 'status:200']),
-            self.metric_type + '.query.test.all.cell.none',
-            self.metric_type + '.result.test.all.low.hit',
-            self.metric_type + '.source.test.all.internal.low.hit'])
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
+            (self.metric_type + '.query',
+                ['key:test', 'country:none',
+                 'geoip:false', 'cell:none', 'wifi:none']),
+            (self.metric_type + '.result',
+                ['key:test', 'country:none', 'accuracy:low', 'status:hit']),
+            (self.metric_type + '.source',
+                ['key:test', 'country:none', 'source:internal',
+                 'accuracy:low', 'status:hit']),
+        ])
 
     def test_cellarea_without_lacf(self):
         cell = CellAreaFactory()
@@ -412,9 +435,9 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query, status=self.not_found.code)
         self.check_response(res, 'not_found')
         self.check_stats(counter=[
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post',
                          'status:%s' % self.not_found.code]),
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
         ])
 
     def test_cellarea_with_different_fallback(self):
@@ -427,11 +450,11 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query)
         self.check_model_response(res, cell, fallback='lacf')
         self.check_stats(counter=[
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post', 'status:200']),
-            self.metric_type + '.query.test.all.cell.none',
-            self.metric_type + '.result.test.all.low.hit',
-            self.metric_type + '.source.test.all.internal.low.hit'])
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
+            (self.metric_type + '.result',
+                ['key:test', 'country:none', 'accuracy:low', 'status:hit']),
+        ])
 
     def test_wifi_not_found(self):
         wifis = WifiFactory.build_batch(2)
@@ -441,12 +464,17 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(body=query, status=self.not_found.code)
         self.check_response(res, 'not_found')
         self.check_stats(counter=[
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post',
                          'status:%s' % self.not_found.code]),
-            self.metric_type + '.query.test.all.wifi.many',
-            self.metric_type + '.result.test.all.high.miss',
-            self.metric_type + '.source.test.all.internal.high.miss',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
+            (self.metric_type + '.query',
+                ['key:test', 'country:none',
+                 'geoip:false', 'cell:none', 'wifi:many']),
+            (self.metric_type + '.result',
+                ['key:test', 'country:none', 'accuracy:high', 'status:miss']),
+            (self.metric_type + '.source',
+                ['key:test', 'country:none', 'source:internal',
+                 'accuracy:high', 'status:miss']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
@@ -460,9 +488,9 @@ class CommonPositionTest(BaseLocateTest):
             status=self.not_found.code)
         self.check_response(res, 'not_found')
         self.check_stats(counter=[
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post',
                          'status:%s' % self.not_found.code]),
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
@@ -495,12 +523,19 @@ class CommonPositionTest(BaseLocateTest):
 
         self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
         self.check_stats(counter=[
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post', 'status:200']),
-            self.metric_type + '.query.test.all.cell.many',
-            self.metric_type + '.query.test.all.wifi.many',
-            self.metric_type + '.result.test.all.high.hit',
-            self.metric_type + '.source.test.all.fallback.high.hit',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
+            (self.metric_type + '.query',
+                ['key:test', 'country:none',
+                 'geoip:false', 'cell:many', 'wifi:many']),
+            (self.metric_type + '.result',
+                ['key:test', 'country:none', 'accuracy:high', 'status:hit']),
+            (self.metric_type + '.source',
+                ['key:test', 'country:none', 'source:internal',
+                 'accuracy:high', 'status:miss']),
+            (self.metric_type + '.source',
+                ['key:test', 'country:none', 'source:fallback',
+                 'accuracy:high', 'status:hit']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
@@ -532,10 +567,13 @@ class CommonPositionTest(BaseLocateTest):
 
         self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
         self.check_stats(counter=[
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
             ('request', [self.metric_path, 'method:post', 'status:200']),
-            self.metric_type + '.result.test.all.high.hit',
-            self.metric_type + '.source.test.all.fallback.high.hit',
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
+            (self.metric_type + '.result',
+                ['key:test', 'country:xx', 'accuracy:high', 'status:hit']),
+            (self.metric_type + '.source',
+                ['key:test', 'country:xx', 'source:fallback',
+                 'accuracy:high', 'status:hit']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
@@ -577,7 +615,9 @@ class CommonLocateErrorTest(BaseLocateTest):
         ])
         if self.apikey_metrics:
             self.check_stats(counter=[
-                self.metric_type + '.result.test.all.high.miss',
+                (self.metric_type + '.result',
+                    ['key:test', 'country:xx',
+                     'accuracy:high', 'status:miss']),
             ])
 
         self.check_raven([('ProgrammingError', db_errors)])

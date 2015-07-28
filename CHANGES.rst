@@ -17,7 +17,7 @@ Migrations
 Changes
 ~~~~~~~
 
-- Let the API key metrics use tags.
+- Let all public API and fallback source metrics use tags.
 
 - Let task, datamaps, monitor and HTTP counter/timer metrics use tags.
 

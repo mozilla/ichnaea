@@ -75,9 +75,11 @@ class TestSource(BaseSourceTest):
             request_json = mock_request.request_history[0].json()
 
         self.assertEqual(request_json['fallbacks'], {'lacf': True})
-        self.check_stats(
-            counter=['locate.fallback.lookup_status.200'],
-            timer=['locate.fallback.lookup'])
+        self.check_stats(counter=[
+            ('locate.fallback.lookup', ['status:200']),
+        ], timer=[
+            'locate.fallback.lookup',
+        ])
 
     def test_failed_call(self):
         cell = CellFactory.build()
@@ -127,7 +129,9 @@ class TestSource(BaseSourceTest):
             self.check_model_result(result, None)
 
         self.check_raven([('HTTPError', 1)])
-        self.check_stats(counter=['locate.fallback.lookup_status.403'])
+        self.check_stats(counter=[
+            ('locate.fallback.lookup', ['status:403']),
+        ])
 
     def test_404_response(self):
         cell = CellFactory.build()
@@ -143,7 +147,9 @@ class TestSource(BaseSourceTest):
             self.check_model_result(result, None)
 
         self.check_raven([('HTTPError', 0)])
-        self.check_stats(counter=['locate.fallback.lookup_status.404'])
+        self.check_stats(counter=[
+            ('locate.fallback.lookup', ['status:404']),
+        ])
 
     def test_500_response(self):
         cell = CellFactory.build()
@@ -157,9 +163,11 @@ class TestSource(BaseSourceTest):
             self.check_model_result(result, None)
 
         self.check_raven([('HTTPError', 1)])
-        self.check_stats(
-            counter=['locate.fallback.lookup_status.500'],
-            timer=['locate.fallback.lookup'])
+        self.check_stats(counter=[
+            ('locate.fallback.lookup', ['status:500']),
+        ], timer=[
+            'locate.fallback.lookup',
+        ])
 
     def test_api_key_disallows(self):
         api_key = ApiKeyFactory.build(allow_fallback=False)
@@ -315,12 +323,12 @@ class TestSource(BaseSourceTest):
             self.check_model_result(result, self.fallback_model)
 
             self.assertEqual(mock_request.call_count, 1)
-            self.check_stats(
-                counter=[
-                    'locate.fallback.lookup_status.200',
-                    'locate.fallback.cache.miss',
-                ],
-                timer=['locate.fallback.lookup'])
+            self.check_stats(counter=[
+                ('locate.fallback.cache', ['status:miss']),
+                ('locate.fallback.lookup', ['status:200']),
+            ], timer=[
+                'locate.fallback.lookup',
+            ])
 
             # vary the signal strength, not part of cache key
             query.cell[0].signal = -82
@@ -328,12 +336,12 @@ class TestSource(BaseSourceTest):
             self.check_model_result(result, self.fallback_model)
 
             self.assertEqual(mock_request.call_count, 1)
-            self.check_stats(
-                counter=[
-                    'locate.fallback.lookup_status.200',
-                    'locate.fallback.cache.hit',
-                ],
-                timer=['locate.fallback.lookup'])
+            self.check_stats(counter=[
+                ('locate.fallback.cache', ['status:hit']),
+                ('locate.fallback.lookup', ['status:200']),
+            ], timer=[
+                'locate.fallback.lookup',
+            ])
 
     def test_cache_empty_result(self):
         cell = CellFactory.build()
@@ -351,24 +359,24 @@ class TestSource(BaseSourceTest):
             self.check_model_result(result, None)
 
             self.assertEqual(mock_request.call_count, 1)
-            self.check_stats(
-                counter=[
-                    'locate.fallback.lookup_status.404',
-                    'locate.fallback.cache.miss',
-                ],
-                timer=['locate.fallback.lookup'])
+            self.check_stats(counter=[
+                ('locate.fallback.cache', ['status:miss']),
+                ('locate.fallback.lookup', ['status:404']),
+            ], timer=[
+                'locate.fallback.lookup',
+            ])
 
             query = self.model_query(cells=[cell])
             result = self.source.search(query)
             self.check_model_result(result, None)
 
             self.assertEqual(mock_request.call_count, 1)
-            self.check_stats(
-                counter=[
-                    'locate.fallback.lookup_status.404',
-                    'locate.fallback.cache.hit',
-                ],
-                timer=['locate.fallback.lookup'])
+            self.check_stats(counter=[
+                ('locate.fallback.cache', ['status:hit']),
+                ('locate.fallback.lookup', ['status:404']),
+            ], timer=[
+                'locate.fallback.lookup',
+            ])
 
     def test_dont_recache(self):
         cell = CellFactory.build()
@@ -428,6 +436,8 @@ class TestSource(BaseSourceTest):
             self.assertFalse(mock_redis_client.set.called)
 
         self.check_stats(counter=[
-            'locate.fallback.lookup_status.200',
-            'locate.fallback.cache.bypassed',
+            ('locate.fallback.cache', ['status:bypassed']),
+            ('locate.fallback.lookup', ['status:200']),
+        ], timer=[
+            'locate.fallback.lookup',
         ])
