@@ -34,17 +34,20 @@ class ObservationQueue(DataTask):
             utcnow = util.utcnow()
         self.utcnow = utcnow
 
-    def stat_count(self, action, what, count):
+    def stat_count(self, action, count, reason=None):
         if count != 0:
+            tags = ['type:%s' % self.station_type]
+            if reason:
+                tags.append('reason:%s' % reason)
             self.stats_client.incr(
-                'items.{action}.{station_type}_{what}'.format(
-                    action=action, station_type=self.station_type, what=what),
-                count)
+                'data.observation.%s' % action,
+                count,
+                tags=tags)
 
     def emit_stats(self, added, dropped):
-        self.stat_count('inserted', 'observations', added)
-        for name, count in dropped.items():
-            self.stat_count('dropped', 'ingress_' + name, dropped[name])
+        self.stat_count('insert', added)
+        for reason, count in dropped.items():
+            self.stat_count('drop', dropped[reason], reason=reason)
 
     def emit_statcounters(self, obs, stations):
         day = self.utcnow.date()

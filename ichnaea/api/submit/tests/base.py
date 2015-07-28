@@ -92,8 +92,8 @@ class BaseSubmitTest(object):
 
         self.assertTrue(mock_task.called)
         self.check_stats(counter=[
+            ('data.upload.batch', 0),
             ('request', [self.metric_path, 'method:post', 'status:503']),
-            ('items.uploaded.batches', 0),
         ])
 
     def test_headers_email_without_nickname(self):
@@ -127,14 +127,12 @@ class BaseSubmitTest(object):
         cell, query = self._one_cell_query()
         self._post([query], api_key='test')
         self.check_stats(counter=[
-            'items.api_log.test.uploaded.batches',
-            'items.uploaded.batches',
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
+            ('data.upload.batch', 1),
+            ('data.upload.batch', ['key:test']),
             ('request', [self.metric_path, 'method:post',
                          'status:%s' % self.status]),
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
         ], timer=[
-            'items.api_log.test.uploaded.batch_size',
-            'items.uploaded.batch_size',
             ('request', [self.metric_path, 'method:post']),
         ])
 

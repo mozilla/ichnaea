@@ -156,8 +156,11 @@ class StationUpdater(DataTask):
 
         if moving_keys:
             self.stats_client.incr(
-                'items.blacklisted.%s_moving' % self.station_type,
-                len(moving_keys))
+                'data.station.blacklist',
+                len(moving_keys),
+                tags=['type:%s' % self.station_type,
+                      'action:add',
+                      'reason:moving'])
             self.remove_task.delay(moving_keys)
 
     def update(self, batch=10):

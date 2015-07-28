@@ -39,17 +39,10 @@ class BaseSubmitView(BaseAPIView):
         return (email, nickname)
 
     def emit_upload_metrics(self, value, api_key):
-        # count the number of batches and emit a pseudo-timer to capture
-        # the number of reports per batch
-        self.stats_client.incr('items.uploaded.batches')
-        self.stats_client.timing('items.uploaded.batch_size', value)
-
+        tags = ()
         if api_key.log:
-            api_key_name = api_key.name
-            self.stats_client.incr(
-                'items.api_log.%s.uploaded.batches' % api_key_name)
-            self.stats_client.timing(
-                'items.api_log.%s.uploaded.batch_size' % api_key_name, value)
+            tags = ['key:%s' % api_key.name]
+        self.stats_client.incr('data.upload.batch', tags=tags)
 
     def preprocess(self):
         try:

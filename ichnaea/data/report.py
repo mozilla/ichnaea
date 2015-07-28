@@ -34,11 +34,10 @@ class ReportQueue(DataTask):
 
         self.process_reports(reports, userid=userid)
 
-        self.stats_client.incr('items.uploaded.reports', length)
+        tags = ()
         if self.api_key and self.api_key.log:
-            self.stats_client.incr(
-                'items.api_log.%s.uploaded.reports' % self.api_key.name,
-                length)
+            tags = ['key:%s' % self.api_key.name]
+        self.stats_client.incr('data.upload.report', length, tags=tags)
 
         return length
 
@@ -55,20 +54,19 @@ class ReportQueue(DataTask):
             if (cell or wifi):
                 positions.add((report['lat'], report['lon']))
 
-        for name, log_name, task in (
-                ('cell', 'cell_observations', self.insert_cell_task),
-                ('wifi', 'wifi_observations', self.insert_wifi_task)):
+        for name, task in (('cell', self.insert_cell_task),
+                           ('wifi', self.insert_wifi_task)):
 
             if observations[name]:
                 # group by and create task per small batch of keys
-                self.stats_client.incr('items.uploaded.%s' % log_name,
-                                       len(observations[name]))
-
+                tags = ['type:%s' % name]
                 if self.api_key and self.api_key.log:
-                    self.stats_client.incr(
-                        'items.api_log.%s.uploaded.%s' % (
-                            self.api_key.name, log_name),
-                        len(observations[name]))
+                    tags.append('key:%s' % self.api_key.name)
+
+                self.stats_client.incr(
+                    'data.observation.upload',
+                    len(observations[name]),
+                    tags=tags)
 
                 station_obs = defaultdict(list)
                 for obs in observations[name]:

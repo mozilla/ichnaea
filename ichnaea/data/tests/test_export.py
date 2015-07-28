@@ -226,11 +226,12 @@ class TestGeosubmitUploader(BaseExportTest):
         gotten = [report['position']['accuracy'] for report in send_reports]
         self.assertEqual(set(expect), set(gotten))
 
-        self.check_stats(
-            counter=[('items.export.test.batches', 1, 1),
-                     ('items.export.test.upload_status.200', 1)],
-            timer=['items.export.test.upload'],
-        )
+        self.check_stats(counter=[
+            ('data.export.batch', 1, 1, ['key:test']),
+            ('data.export.upload', 1, ['key:test', 'status:200']),
+        ], timer=[
+            ('data.export.upload', ['key:test']),
+        ])
 
 
 class TestInternalUploader(BaseExportTest):
@@ -267,12 +268,12 @@ class TestInternalUploader(BaseExportTest):
         self.assertEqual(self.session.query(Wifi).count(), 24)
 
         self.check_stats(counter=[
-            ('items.export.internal.batches', 1, 1),
-            ('items.api_log.test.uploaded.cell_observations', 1, 3),
-            ('items.api_log.test.uploaded.wifi_observations', 1, 6),
-            ('items.api_log.no_key.uploaded.cell_observations', 0),
-            ('items.api_log.e5444-794.uploaded.cell_observations', 1, 6),
-            ('items.api_log.e5444-794.uploaded.wifi_observations', 1, 12),
+            ('data.export.batch', 1, 1, ['key:internal']),
+            ('data.observation.upload', 1, 3, ['type:cell', 'key:test']),
+            ('data.observation.upload', 1, 6, ['type:wifi', 'key:test']),
+            ('data.observation.upload', 0, ['type:cell', 'key:no_key']),
+            ('data.observation.upload', 1, 6, ['type:cell', 'key:e5444-794']),
+            ('data.observation.upload', 1, 12, ['type:wifi', 'key:e5444-794']),
         ])
 
     def test_upload_cell(self):
@@ -428,9 +429,10 @@ class TestInternalUploader(BaseExportTest):
         update_cell.delay().get()
         update_wifi.delay().get()
 
-        self.check_stats(
-            counter=[('items.api_log.test.uploaded.reports', 1, 3),
-                     ('items.uploaded.reports', 1, 3)])
+        self.check_stats(counter=[
+            ('data.upload.report', 1, 3),
+            ('data.upload.report', 1, 3, ['key:test']),
+        ])
 
 
 class TestS3Uploader(BaseExportTest):
@@ -497,8 +499,9 @@ class TestS3Uploader(BaseExportTest):
         gotten = [report['position']['accuracy'] for report in send_reports]
         self.assertEqual(set(expect), set(gotten))
 
-        self.check_stats(
-            counter=[('items.export.backup.batches', 4, 1),
-                     ('items.export.backup.upload_status.success', 4)],
-            timer=[('items.export.backup.upload', 4)],
-        )
+        self.check_stats(counter=[
+            ('data.export.batch', 4, 1, ['key:backup']),
+            ('data.export.upload', 4, ['key:backup', 'status:success']),
+        ], timer=[
+            ('data.export.upload', 4, ['key:backup']),
+        ])

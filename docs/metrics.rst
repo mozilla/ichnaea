@@ -171,8 +171,8 @@ All of this combined might lead to a tagged metric like:
 ``locate.source#key:test,country:de,source:ocid,accuracy:medium,status:hit``
 
 
-Fallback Source Metrics
------------------------
+API Fallback Source Metrics
+---------------------------
 
 The external fallback source has a couple extra metrics to observe the
 performance of outbound network calls and the effectiveness of its cache.
@@ -205,25 +205,30 @@ normalization, consistency-checking and eventually (possibly) integration
 into aggregate station estimates held in the main database tables.
 Along the way several counters measure the steps involved:
 
-``items.uploaded.batches`` : counter
+``data.upload.batch``,
+``data.upload.batch#key:<api_shortname>`` : counters
 
     Counts the number of "batches" of reports accepted to the data
     processing pipeline by an API endpoint. A batch generally
-    corresponds to the set of items uploaded in a single HTTP POST to the
-    ``submit`` or ``geosubmit`` APIs. In other words this metric counts
+    corresponds to the set of reports uploaded in a single HTTP POST to
+    one of the submit APIs. In other words this metric counts
     "submissions that make it past coarse-grained checks" such as API-key
     and JSON schema validity checking.
 
-``items.uploaded.batch_size`` : timer
+    The metric is either emitted per tracked API key, or for everything
+    else without a key tag.
 
-    Pseudo-timer counting the number of reports per uploaded batch.
-    Typically client software uploads 50 reports per batch.
-
-``items.uploaded.reports`` : counter
+``data.upload.report``,
+``data.upload.report#key:<api_shortname>`` : counters
 
     Counts the number of reports accepted into the data processing pipeline.
+    The metric is either emitted per tracked API key, or for everything
+    else without a key tag.
 
-``items.uploaded.cell_observations``, ``items.uploaded.wifi_observations`` : counters
+``data.observation.upload#type:cell``,
+``data.observation.upload#type:cell,key:<api_shortname>``,
+``data.observation.upload#type:wifi``,
+``data.observation.upload#type:wifi,key:<api_shortname>`` : counters
 
     Count the number of cell or wifi observations entering the data
     processing pipeline; before normalization and blacklist processing
@@ -231,65 +236,55 @@ Along the way several counters measure the steps involved:
     wifi observations inside each submitted batch", as each batch is
     decomposed into individual observations.
 
-``items.dropped.cell_ingress_malformed``, ``items.dropped.wifi_ingress_malformed`` : counters
+    The metrics are either emitted per tracked API key, or for everything
+    else without a key tag.
+
+``data.observation.drop#type:cell,reason:malformed``,
+``data.observation.drop#type:wifi,reason:malformed`` : counters
 
     Count incoming cell or wifi observations that were discarded before
     integration due to some internal consistency, range or
     validity-condition error encountered while attempting to normalize the
     observation.
 
-``items.dropped.cell_ingress_blacklisted``, ``items.dropped.wifi_ingress_blacklisted`` : counters
+``data.observation.drop#type:cell,reason:blacklisted``,
+``data.observation.drop#type:wifi,reason:blacklisted`` : counters
 
     Count incoming cell or wifi observations that were discarded before
     integration due to the presence of a blacklist record for the station
     (see next metric).
 
-``items.blacklisted.cell_moving``, ``items.blacklisted.wifi_moving`` : counters
-
-    Count any cell or wifi that is blacklisted due to the acceptance of
-    multiple observations at sufficiently different locations. In these
-    cases, Ichnaea decides that the station is "moving" (such as a picocell
-    or mobile hotspot on a public transit vehicle) and blacklists it, to
-    avoid estimating query positions using the station.
-
-``items.inserted.cell_observations``, ``items.inserted.wifi_observations`` : counters
+``data.observation.insert#type:cell``,
+``data.observation.insert#type:wifi`` : counters
 
     Count cell or wifi observations that are successfully normalized,
     integrated and not discarded due to consistency errors.
 
-In addition to these global stats on the data processing pipeline,
-we also have a number of per API key stats for uploaded data.
+``data.station.blacklist#type:cell,action:add,reason:moving``,
+``data.station.blacklist#type:wifi,action:add,reason:moving`` : counters
 
-``items.api_log.<api_shortname>.uploaded.batches``,
-``items.api_log.<api_shortname>.uploaded.reports`` : counters
-
-    Count the number of batches and reports for this API key.
-
-``items.api_log.<api_shortname>.uploaded.batch_size`` : timer
-
-    Count the batch size for submissions for this API key.
-
-``items.api_log.<api_shortname>.uploaded.cell_observations``,
-``items.api_log.<api_shortname>.uploaded.wifi_observations`` : counters
-
-    Count the number of uploaded cell and wifi observations for this API key.
+    Count any cell or wifi that is blacklisted due to the acceptance of
+    multiple observations at sufficiently different locations. In these
+    cases, we decide that the station is "moving" (such as a picocell
+    or mobile hotspot on a public transit vehicle) and blacklist it, to
+    avoid estimating query positions using the station.
 
 
-Export Metrics
---------------
+Data Pipeline Export Metrics
+----------------------------
 
 Incoming reports can also be sent to a number of different export targets.
 We keep metrics about how those individual export targets perform.
 
-``items.export.<export_key>.batches`` : counter
+``data.export.batch#key:<export_key>`` : counter
 
     Count the number of batches sent to the export target.
 
-``items.export.<export_key>.upload`` : timer
+``data.export.upload#key:<export_key>`` : timer
 
     Track how long the upload operation took per export target.
 
-``items.export.<export_key>.upload_status.<status>`` : counter
+``data.export.upload#key:<export_key>,status:<status>`` : counter
 
     Track the upload status of the current job. One counter per status.
     A status can either be a simple `success` and `failure` or a HTTP

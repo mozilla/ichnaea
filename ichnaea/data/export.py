@@ -139,7 +139,8 @@ class ReportUploader(DataTask):
         DataTask.__init__(self, task, session)
         self.export_queue_name = export_queue_name
         self.export_queue = task.app.export_queues[export_queue_name]
-        self.stats_prefix = 'items.export.%s.' % export_queue_name
+        self.stats_prefix = 'data.export.'
+        self.stats_tags = ['key:%s' % export_queue_name]
         self.url = self.export_queue.url
         self.queue_key = queue_key
         if not self.queue_key:  # pragma: no cover
@@ -147,7 +148,8 @@ class ReportUploader(DataTask):
 
     def upload(self, data):
         result = self.send(self.url, data)
-        self.stats_client.incr(self.stats_prefix + 'batches')
+        self.stats_client.incr(
+            self.stats_prefix + 'batch', tags=self.stats_tags)
         return result
 
     def send(self, url, data):
@@ -246,7 +248,8 @@ class GeosubmitUploader(ReportUploader):
             'Content-Type': 'application/json',
             'User-Agent': 'ichnaea',
         }
-        with self.stats_client.timed(self.stats_prefix + 'upload'):
+        with self.stats_client.timed(self.stats_prefix + 'upload',
+                                     tags=self.stats_tags):
             response = requests.post(
                 url,
                 data=util.encode_gzip(data),
@@ -257,9 +260,9 @@ class GeosubmitUploader(ReportUploader):
 
         # log upload_status and trigger exception for bad responses
         # this causes the task to be re-tried
-        response_code = response.status_code
         self.stats_client.incr(
-            '%supload_status.%s' % (self.stats_prefix, response_code))
+            self.stats_prefix + 'upload',
+            tags=self.stats_tags + ['status:%s' % response.status_code])
         response.raise_for_status()
         return True
 
@@ -291,7 +294,8 @@ class S3Uploader(ReportUploader):
         key_name += uuid.uuid1().hex + '.json.gz'
 
         try:
-            with self.stats_client.timed(self.stats_prefix + 'upload'):
+            with self.stats_client.timed(self.stats_prefix + 'upload',
+                                         tags=self.stats_tags):
                 conn = boto.connect_s3()
                 bucket = conn.get_bucket(self.bucket)
                 key = boto.s3.key.Key(bucket)
@@ -302,11 +306,13 @@ class S3Uploader(ReportUploader):
                 key.close()
 
             self.stats_client.incr(
-                '%supload_status.success' % self.stats_prefix)
+                self.stats_prefix + 'upload',
+                tags=self.stats_tags + ['status:success'])
             return True
         except Exception:  # pragma: no cover
             self.raven_client.captureException()
 
             self.stats_client.incr(
-                '%supload_status.failure' % self.stats_prefix)
+                self.stats_prefix + 'upload',
+                tags=self.stats_tags + ['status:failure'])
             return False
