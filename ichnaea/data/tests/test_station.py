@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from ichnaea.constants import (
     PERMANENT_BLOCKLIST_THRESHOLD,
+    TEMPORARY_BLOCKLIST_DURATION,
 )
 from ichnaea.data.tasks import (
     insert_measures_cell,
@@ -16,6 +17,8 @@ from ichnaea.models import (
     CellArea,
     CellBlocklist,
     Radio,
+    StatCounter,
+    StatKey,
     Wifi,
     WifiBlocklist,
 )
@@ -31,11 +34,80 @@ from ichnaea.tests.factories import (
 from ichnaea import util
 
 
-class TestCell(CeleryTestCase):
+class StationTest(CeleryTestCase):
+
+    def _compare_sets(self, one, two):
+        self.assertEqual(set(one), set(two))
+
+    def check_statcounter(self, stat_key, value):
+        stat_counter = StatCounter(stat_key, util.utcnow())
+        self.assertEqual(stat_counter.get(self.redis_client), value)
+
+
+class TestCell(StationTest):
 
     def setUp(self):
         super(TestCell, self).setUp()
         self.data_queue = self.celery_app.data_queues['update_cell']
+
+    def test_blocklist(self):
+        now = util.utcnow()
+
+        cell = CellFactory.build()
+        observations = [dict(radio=int(cell.radio), mcc=cell.mcc,
+                             mnc=cell.mnc, lac=cell.lac, cid=cell.cid + i,
+                             psc=cell.psc,
+                             lat=cell.lat + i * 0.0000001,
+                             lon=cell.lon + i * 0.0000001)
+                        for i in range(1, 4)]
+
+        block = CellBlocklist(
+            radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
+            lac=cell.lac, cid=cell.cid + 1,
+            time=now, count=1,
+        )
+        self.session.add(block)
+        self.session.flush()
+
+        insert_measures_cell.delay(observations).get()
+        self.assertEqual(self.data_queue.size(), 3)
+        update_cell.delay().get()
+
+        cells = self.session.query(Cell).all()
+        self.assertEqual(len(cells), 2)
+
+        self.check_statcounter(StatKey.cell, 2)
+        self.check_statcounter(StatKey.unique_cell, 2)
+
+    def test_created_from_blocklist_time(self):
+        now = util.utcnow()
+        last_week = now - TEMPORARY_BLOCKLIST_DURATION - timedelta(days=1)
+
+        cell = CellFactory.build()
+        self.session.add(
+            CellBlocklist(time=last_week, count=1,
+                          radio=cell.radio, mcc=cell.mcc,
+                          mnc=cell.mnc, lac=cell.lac, cid=cell.cid))
+        self.session.flush()
+
+        # add a new entry for the previously blocklisted cell
+        obs = dict(lat=cell.lat, lon=cell.lon,
+                   radio=int(cell.radio), mcc=cell.mcc, mnc=cell.mnc,
+                   lac=cell.lac, cid=cell.cid)
+        insert_measures_cell.delay([obs]).get()
+
+        self.assertEqual(self.data_queue.size(), 1)
+        update_cell.delay().get()
+
+        # the cell was inserted again
+        cells = self.session.query(Cell).all()
+        self.assertEqual(len(cells), 1)
+
+        # and the creation date was set to the date of the blocklist entry
+        self.assertEqual(cells[0].created, last_week)
+
+        self.check_statcounter(StatKey.cell, 1)
+        self.check_statcounter(StatKey.unique_cell, 0)
 
     def test_blocklist_moving_cells(self):
         now = util.utcnow()
@@ -154,8 +226,7 @@ class TestCell(CeleryTestCase):
 
             # insert_result is num-accepted-observations, override
             # utcnow to set creation date
-            insert_result = insert_measures_cell.delay(
-                [obs], utcnow=time)
+            insert_result = insert_measures_cell.delay([obs], utcnow=time)
 
             # update_result is (num-stations, num-moving-stations)
             update_result = update_cell.delay()
@@ -191,13 +262,12 @@ class TestCell(CeleryTestCase):
             if month < N / 2:
                 # We still haven't exceeded the threshold, so the
                 # observation was admitted.
-                self.assertEqual(insert_result.get(), 1)
+                insert_result.get()
                 if month % 2 == 0:
                     # The station was (re)created.
                     self.assertEqual(update_result.get(), (1, 0))
                     # Rescan lacs to update entries
-                    self.assertEqual(
-                        scan_areas.delay().get(), 1)
+                    self.assertEqual(scan_areas.delay().get(), 1)
                     # One cell + one cell-LAC record should exist.
                     self.assertEqual(self.session.query(Cell).count(), 1)
                     self.assertEqual(self.session.query(CellArea).count(), 1)
@@ -206,8 +276,7 @@ class TestCell(CeleryTestCase):
                     # thereby activating the blocklist and deleting the cell.
                     self.assertEqual(update_result.get(), (1, 1))
                     # Rescan lacs to delete orphaned lac entry
-                    self.assertEqual(
-                        scan_areas.delay().get(), 1)
+                    self.assertEqual(scan_areas.delay().get(), 1)
                     self.assertEqual(bl.count, ((month + 1) / 2))
                     self.assertEqual(
                         self.session.query(CellBlocklist).count(), 1)
@@ -217,14 +286,12 @@ class TestCell(CeleryTestCase):
                     # to be sure it is dropped by the now-active blocklist.
                     next_day = time + timedelta(days=1)
                     obs['time'] = next_day
-                    self.assertEqual(
-                        0, insert_measures_cell.delay([obs],
-                                                      utcnow=next_day).get())
-
+                    insert_measures_cell.delay([obs], utcnow=next_day).get()
+                    self.assertEqual(update_result.get(), (1, 1))
             else:
                 # Blocklist has exceeded threshold, gone to permanent mode,
                 # so no observation accepted, no stations seen.
-                self.assertEqual(insert_result.get(), 0)
+                insert_result.get()
                 self.assertEqual(update_result.get(), (0, 0))
 
     def test_update_cell(self):
@@ -312,11 +379,63 @@ class TestCell(CeleryTestCase):
         self.assertEqual(cell.total_measures, 5)
 
 
-class TestWifi(CeleryTestCase):
+class TestWifi(StationTest):
 
     def setUp(self):
         super(TestWifi, self).setUp()
         self.data_queue = self.celery_app.data_queues['update_wifi']
+
+    def test_blocklist(self):
+        utcnow = util.utcnow()
+
+        bad_wifi = WifiFactory.build()
+        good_wifi = WifiFactory.build()
+        block = WifiBlocklist(time=utcnow, count=1, key=bad_wifi.key)
+        self.session.add(block)
+        self.session.flush()
+
+        obs = dict(lat=good_wifi.lat, lon=good_wifi.lon)
+        entries = [
+            {'key': good_wifi.key},
+            {'key': good_wifi.key},
+            {'key': bad_wifi.key},
+        ]
+        for entry in entries:
+            entry.update(obs)
+
+        insert_measures_wifi.delay(entries).get()
+        self.assertEqual(self.data_queue.size(), 3)
+        update_wifi.delay().get()
+
+        wifis = self.session.query(Wifi).all()
+        self.assertEqual(len(wifis), 1)
+        self._compare_sets([w.key for w in wifis], [good_wifi.key])
+
+        self.check_statcounter(StatKey.wifi, 2)
+        self.check_statcounter(StatKey.unique_wifi, 1)
+
+    def test_created_from_blocklist_time(self):
+        now = util.utcnow()
+        last_week = now - TEMPORARY_BLOCKLIST_DURATION - timedelta(days=1)
+
+        wifi = WifiFactory.build()
+        self.session.add(WifiBlocklist(time=last_week, count=1, key=wifi.key))
+        self.session.flush()
+
+        # add a new entry for the previously blocklisted wifi
+        obs = dict(lat=wifi.lat, lon=wifi.lon, key=wifi.key)
+        insert_measures_wifi.delay([obs]).get()
+
+        self.assertEqual(self.data_queue.size(), 1)
+        update_wifi.delay().get()
+
+        # the wifi was inserted again
+        wifis = self.session.query(Wifi).all()
+        self.assertEqual(len(wifis), 1)
+
+        # and the creation date was set to the date of the blocklist entry
+        self.assertEqual(wifis[0].created, last_week)
+        self.check_statcounter(StatKey.unique_wifi, 0)
 
     def test_blocklist_moving_wifis(self):
         now = util.utcnow()
@@ -471,7 +590,7 @@ class TestWifi(CeleryTestCase):
             if month < N / 2:
                 # We still haven't exceeded the threshold, so the
                 # observation was admitted.
-                self.assertEqual(insert_result.get(), 1)
+                insert_result.get()
                 if month % 2 == 0:
                     # The station was (re)created.
                     self.assertEqual(update_result.get(), (1, 0))
@@ -490,14 +609,12 @@ class TestWifi(CeleryTestCase):
                     # to be sure it is dropped by the now-active blocklist.
                     next_day = time + timedelta(days=1)
                     obs['time'] = next_day
-                    self.assertEqual(
-                        0, insert_measures_wifi.delay([obs],
-                                                      utcnow=next_day).get())
-
+                    insert_measures_wifi.delay([obs], utcnow=next_day).get()
+                    self.assertEqual(update_result.get(), (1, 1))
             else:
                 # Blocklist has exceeded threshold, gone to permanent mode,
                 # so no observation accepted, no stations seen.
-                self.assertEqual(insert_result.get(), 0)
+                insert_result.get()
                 self.assertEqual(update_result.get(), (0, 0))
 
     def test_update_wifi(self):

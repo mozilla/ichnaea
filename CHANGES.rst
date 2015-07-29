@@ -17,6 +17,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Move blocklist and station creation logic into update_station tasks.
+
 - Add new `ratelimit_interval` option to `locate:fallback` section.
 
 - Set up a HTTPS connection pool used by the fallback source.

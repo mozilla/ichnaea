@@ -1,9 +1,5 @@
 from datetime import timedelta
 
-from sqlalchemy.exc import ProgrammingError
-from sqlalchemy import text
-
-from ichnaea.constants import TEMPORARY_BLOCKLIST_DURATION
 from ichnaea.data.tasks import (
     insert_measures_cell,
     insert_measures_wifi,
@@ -13,7 +9,6 @@ from ichnaea.data.tasks import (
 from ichnaea.models import (
     constants,
     Cell,
-    CellBlocklist,
     Radio,
     Score,
     ScoreKey,
@@ -21,7 +16,6 @@ from ichnaea.models import (
     StatKey,
     User,
     Wifi,
-    WifiBlocklist,
 )
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
@@ -46,67 +40,6 @@ class TestCell(ObservationTestCase):
     def setUp(self):
         super(TestCell, self).setUp()
         self.data_queue = self.celery_app.data_queues['update_cell']
-
-    def test_blocklist(self):
-        now = util.utcnow()
-
-        cell = CellFactory.build()
-        observations = [dict(radio=int(cell.radio), mcc=cell.mcc,
-                             mnc=cell.mnc, lac=cell.lac, cid=cell.cid + i,
-                             psc=cell.psc,
-                             lat=cell.lat + i * 0.0000001,
-                             lon=cell.lon + i * 0.0000001)
-                        for i in range(1, 4)]
-
-        block = CellBlocklist(
-            radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
-            lac=cell.lac, cid=cell.cid + 1,
-            time=now, count=1,
-        )
-        self.session.add(block)
-        self.session.flush()
-
-        result = insert_measures_cell.delay(observations)
-        self.assertEqual(result.get(), 2)
-
-        self.assertEqual(self.data_queue.size(), 2)
-        update_cell.delay().get()
-
-        cells = self.session.query(Cell).all()
-        self.assertEqual(len(cells), 2)
-
-        self.check_statcounter(StatKey.cell, 2)
-        self.check_statcounter(StatKey.unique_cell, 2)
-
-    def test_created_from_blocklist_time(self):
-        now = util.utcnow()
-        last_week = now - TEMPORARY_BLOCKLIST_DURATION - timedelta(days=1)
-
-        cell = CellFactory.build()
-        self.session.add(
-            CellBlocklist(time=last_week, count=1,
-                          radio=cell.radio, mcc=cell.mcc,
-                          mnc=cell.mnc, lac=cell.lac, cid=cell.cid))
-        self.session.flush()
-
-        # add a new entry for the previously blocklisted cell
-        obs = dict(lat=cell.lat, lon=cell.lon,
-                   radio=int(cell.radio), mcc=cell.mcc, mnc=cell.mnc,
-                   lac=cell.lac, cid=cell.cid)
-        insert_measures_cell.delay([obs]).get()
-
-        self.assertEqual(self.data_queue.size(), 1)
-        update_cell.delay().get()
-
-        # the cell was inserted again
-        cells = self.session.query(Cell).all()
-        self.assertEqual(len(cells), 1)
-
-        # and the creation date was set to the date of the blocklist entry
-        self.assertEqual(cells[0].created, last_week)
-
-        self.check_statcounter(StatKey.cell, 1)
-        self.check_statcounter(StatKey.unique_cell, 0)
 
     def test_insert_obs(self):
         time = util.utcnow() - timedelta(days=1)
@@ -225,60 +158,6 @@ class TestWifi(ObservationTestCase):
         super(TestWifi, self).setUp()
         self.data_queue = self.celery_app.data_queues['update_wifi']
 
-    def test_blocklist(self):
-        utcnow = util.utcnow()
-
-        bad_wifi = WifiFactory.build()
-        good_wifi = WifiFactory.build()
-        block = WifiBlocklist(time=utcnow, count=1, key=bad_wifi.key)
-        self.session.add(block)
-        self.session.flush()
-
-        obs = dict(lat=good_wifi.lat, lon=good_wifi.lon)
-        entries = [
-            {'key': good_wifi.key},
-            {'key': good_wifi.key},
-            {'key': bad_wifi.key},
-        ]
-        for entry in entries:
-            entry.update(obs)
-
-        result = insert_measures_wifi.delay(entries)
-        self.assertEqual(result.get(), 2)
-
-        self.assertEqual(self.data_queue.size(), 2)
-        update_wifi.delay().get()
-
-        wifis = self.session.query(Wifi).all()
-        self.assertEqual(len(wifis), 1)
-        self._compare_sets([w.key for w in wifis], [good_wifi.key])
-
-        self.check_statcounter(StatKey.wifi, 2)
-        self.check_statcounter(StatKey.unique_wifi, 1)
-
-    def test_created_from_blocklist_time(self):
-        now = util.utcnow()
-        last_week = now - TEMPORARY_BLOCKLIST_DURATION - timedelta(days=1)
-
-        wifi = WifiFactory.build()
-        self.session.add(WifiBlocklist(time=last_week, count=1, key=wifi.key))
-        self.session.flush()
-
-        # add a new entry for the previously blocklisted wifi
-        obs = dict(lat=wifi.lat, lon=wifi.lon, key=wifi.key)
-        insert_measures_wifi.delay([obs]).get()
-
-        self.assertEqual(self.data_queue.size(), 1)
-        update_wifi.delay().get()
-
-        # the wifi was inserted again
-        wifis = self.session.query(Wifi).all()
-        self.assertEqual(len(wifis), 1)
-
-        # and the creation date was set to the date of the blocklist entry
-        self.assertEqual(wifis[0].created, last_week)
-        self.check_statcounter(StatKey.unique_wifi, 0)
-
     def test_insert_obs(self):
         session = self.session
         time = util.utcnow() - timedelta(days=1)
@@ -324,36 +203,3 @@ class TestWifi(ObservationTestCase):
 
         self.check_statcounter(StatKey.wifi, 4)
         self.check_statcounter(StatKey.unique_wifi, 1)
-
-
-class TestSubmitV1Errors(ObservationTestCase):
-    # this is a standalone class to ensure DB isolation for dropping tables
-
-    def tearDown(self):
-        self.setup_tables(self.db_rw.engine)
-        super(TestSubmitV1Errors, self).tearDown()
-
-    def test_database_error(self):
-        self.session.execute(text('drop table wifi;'))
-
-        wifi = WifiFactory.build()
-        wifi2 = WifiFactory.build()
-
-        entries = [
-            {'lat': wifi.lat, 'lon': wifi.lon, 'key': wifi.key, 'channel': 7},
-            {'lat': wifi.lat, 'lon': wifi.lon, 'key': wifi.key, 'channel': 3},
-            {'lat': wifi.lat, 'lon': wifi.lon, 'key': wifi.key, 'channel': 3},
-            {'lat': wifi2.lat, 'lon': wifi2.lon, 'key': wifi2.key},
-        ]
-
-        try:
-            insert_measures_wifi.delay(entries)
-        except ProgrammingError:
-            pass
-        except Exception as exc:
-            self.fail('Unexpected exception caught: %s' % repr(exc))
-
-        self.check_raven([('ProgrammingError', 1)])
-
-        self.check_statcounter(StatKey.wifi, 0)
-        self.check_statcounter(StatKey.unique_wifi, 0)

@@ -1,5 +1,9 @@
 from collections import defaultdict
 
+from ichnaea.constants import (
+    PERMANENT_BLOCKLIST_THRESHOLD,
+    TEMPORARY_BLOCKLIST_DURATION,
+)
 from ichnaea.data.base import DataTask
 from ichnaea.geocalc import (
     distance,
@@ -10,6 +14,8 @@ from ichnaea.models import (
     CellArea,
     CellBlocklist,
     CellObservation,
+    StatCounter,
+    StatKey,
     Wifi,
     WifiBlocklist,
     WifiObservation,
@@ -62,6 +68,50 @@ class StationUpdater(DataTask):
         self.updated_areas = set()
         self.update_task = update_task
         self.data_queue = self.task.app.data_queues[self.queue_name]
+        self.utcnow = util.utcnow()
+
+    def stat_count(self, action, count, reason=None):
+        if count != 0:
+            tags = ['type:%s' % self.station_type]
+            if reason:
+                tags.append('reason:%s' % reason)
+            self.stats_client.incr(
+                'data.observation.%s' % action,
+                count,
+                tags=tags)
+
+    def emit_stats(self, added, dropped):
+        self.stat_count('insert', added)
+        for reason, count in dropped.items():
+            self.stat_count('drop', dropped[reason], reason=reason)
+
+    def emit_statcounters(self, obs, stations):
+        day = self.utcnow.date()
+        StatCounter(self.stat_obs_key, day).incr(self.pipe, obs)
+        StatCounter(self.stat_station_key, day).incr(self.pipe, stations)
+
+    def create_station(self, station_key, first_blocked, observations):
+        created = self.utcnow
+        if first_blocked:
+            # if the station did previously exist, retain at least the
+            # time it was first put on a blocklist as the creation date
+            created = first_blocked
+        values = {
+            'created': created,
+            'modified': self.utcnow,
+            'range': 0,
+            'total_measures': 0,
+        }
+        values.update(station_key.__dict__)
+
+        if self.station_type == 'cell':
+            # pass on extra psc column which is not actually part
+            # of the stations hash key
+            values['psc'] = observations[-1].psc
+
+        station = self.station_model(**values)
+        self.session.add(station)
+        return station
 
     def calculate_new_position(self, station, observations):
         # This function returns True if the station was found to be moving.
@@ -134,25 +184,30 @@ class StationUpdater(DataTask):
                   (max_lat, max_lon)]
 
         station.range = range_to_points(ctr, points) * 1000.0
-        station.modified = util.utcnow()
+        station.modified = self.utcnow
 
-    def blocklist_stations(self, stations):
+    def blocklisted_station(self, block):
+        age = self.utcnow - block.time
+        temporary = age < TEMPORARY_BLOCKLIST_DURATION
+        permanent = block.count >= PERMANENT_BLOCKLIST_THRESHOLD
+        if temporary or permanent:
+            return (True, block.time, block)
+        return (False, block.time, block)
+
+    def blocklist_stations(self, moving):
         moving_keys = []
-        utcnow = util.utcnow()
-        for station in stations:
-            station_key = self.blocklist_model.to_hashkey(station)
-            query = self.blocklist_model.querykey(self.session, station_key)
-            blocked = query.first()
-            moving_keys.append(station_key)
-            if blocked:
-                blocked.time = utcnow
-                blocked.count += 1
+        for station, block in moving:
+            block_key = self.blocklist_model.to_hashkey(station)
+            moving_keys.append(block_key)
+            if block:
+                block.time = self.utcnow
+                block.count += 1
             else:
-                blocked = self.blocklist_model(
-                    time=utcnow,
+                block = self.blocklist_model(
+                    time=self.utcnow,
                     count=1,
-                    **station_key.__dict__)
-                self.session.add(blocked)
+                    **block_key.__dict__)
+                self.session.add(block)
 
         if moving_keys:
             self.stats_client.incr(
@@ -165,6 +220,9 @@ class StationUpdater(DataTask):
 
     def update(self, batch=10):
         all_observations = self.data_queue.dequeue(batch=batch)
+        drop_counter = defaultdict(int)
+        added = 0
+        new_stations = 0
         station_obs = defaultdict(list)
 
         for obs in all_observations:
@@ -173,29 +231,55 @@ class StationUpdater(DataTask):
         if not station_obs:
             return (0, 0)
 
-        stations = list(self.station_model.iterkeys(
-            self.session, list(station_obs.keys())))
+        stations = {}
+        for station in self.station_model.iterkeys(self.session,
+                                                   list(station_obs.keys())):
+            stations[station.hashkey()] = station
 
-        if not stations:  # pragma: no cover
-            # TODO: This task depends on the station records to be
-            # pre-created, move that logic into this task later on.
-            return (0, 0)
+        blocklist = {}
+        for block in self.blocklist_model.iterkeys(self.session,
+                                                   list(station_obs.keys())):
+            blocklist[block.hashkey()] = self.blocklisted_station(block)
 
         moving_stations = set()
-        for station in stations:
-            observations = station_obs.get(station.hashkey())
-            if observations:
-                moving = self.calculate_new_position(station, observations)
-                if moving:
-                    moving_stations.add(station)
+        for station_key, observations in station_obs.items():
+            blocked, first_blocked, block = blocklist.get(
+                station_key, (False, None, None))
 
-                # track potential updates to dependent areas
-                self.add_area_update(station)
+            if not any(observations):
+                continue
+
+            if blocked:
+                # Drop observations for blocklisted stations.
+                drop_counter['blocklisted'] += len(observations)
+                continue
+
+            station = stations.get(station_key, None)
+            if station is None:
+                # We discovered an actual new complete station.
+                if not first_blocked:
+                    new_stations += 1
+                # Actually create new station
+                station = self.create_station(
+                    station_key, first_blocked, observations)
+                stations[station.hashkey()] = station
+
+            moving = self.calculate_new_position(station, observations)
+            if moving:
+                moving_stations.add((station, block))
+            else:
+                added += len(observations)
+
+            # track potential updates to dependent areas
+            self.add_area_update(station)
 
         self.queue_area_updates()
 
         if moving_stations:
             self.blocklist_stations(moving_stations)
+
+        self.emit_stats(added, drop_counter)
+        self.emit_statcounters(added, new_stations)
 
         if self.data_queue.enough_data(batch=batch):  # pragma: no cover
             self.update_task.apply_async(
@@ -218,6 +302,8 @@ class CellUpdater(StationUpdater):
     max_dist_km = 150
     observation_model = CellObservation
     queue_name = 'update_cell'
+    stat_obs_key = StatKey.cell
+    stat_station_key = StatKey.unique_cell
     station_model = Cell
     station_type = 'cell'
 
@@ -236,5 +322,7 @@ class WifiUpdater(StationUpdater):
     max_dist_km = 5
     observation_model = WifiObservation
     queue_name = 'update_wifi'
+    stat_obs_key = StatKey.wifi
+    stat_station_key = StatKey.unique_wifi
     station_model = Wifi
     station_type = 'wifi'

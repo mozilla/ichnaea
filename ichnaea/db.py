@@ -70,7 +70,7 @@ def db_worker_session(database, commit=True):
         yield session
         if commit:
             session.commit()
-    except Exception:
+    except Exception:  # pragma: no cover
         session.rollback()
         raise
     finally:

@@ -44,10 +44,10 @@ class BaseTask(Task):
         with self.stats_client.timed('task', tags=['name:' + self.shortname]):
             try:
                 result = super(BaseTask, self).__call__(*args, **kw)
-            except Exception as exc:
+            except Exception as exc:  # pragma: no cover
                 self.raven_client.captureException()
                 if self._auto_retry and not self.app.conf.CELERY_ALWAYS_EAGER:
-                    raise self.retry(exc=exc)  # pragma: no cover
+                    raise self.retry(exc=exc)
                 raise
         return result
 
