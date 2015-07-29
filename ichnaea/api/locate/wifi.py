@@ -200,6 +200,8 @@ class WifiPositionMixin(object):
 
         wifis = query_database(
             query, query.wifi, Wifi, self.raven_client,
+            # TODO load the extra key field, as its not the actual
+            # primary key yet
             load_fields=('key', 'lat', 'lon', 'range'))
 
         clusters = get_clusters(wifis, query.wifi)

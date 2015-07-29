@@ -119,6 +119,9 @@ def log_tween_factory(handler, registry):
             # shortcut handling for static assets
             try:
                 return handler(request)
+            except HTTPException:  # pragma: no cover
+                # don't capture exceptions for normal responses
+                raise
             except Exception:  # pragma: no cover
                 registry.raven_client.captureException()
                 raise

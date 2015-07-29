@@ -65,22 +65,27 @@ class BaseSubmitTest(object):
     def test_error_get(self):
         res = self.app.get(self.url, status=400)
         self.assertEqual(res.json, ParseError.json_body())
+        self.check_raven([('ParseError', 1)])
 
     def test_error_empty_body(self):
         res = self.app.post(self.url, '', status=400)
         self.assertEqual(res.json, ParseError.json_body())
+        self.check_raven([('ParseError', 1)])
 
     def test_error_empty_json(self):
         res = self.app.post_json(self.url, {}, status=400)
         self.assertEqual(res.json, ParseError.json_body())
+        self.check_raven([('ParseError', 1)])
 
     def test_error_no_json(self):
         res = self.app.post(self.url, '\xae', status=400)
         self.assertEqual(res.json, ParseError.json_body())
+        self.check_raven([('ParseError', 1)])
 
     def test_error_no_mapping(self):
         res = self.app.post_json(self.url, [1], status=400)
         self.assertEqual(res.json, ParseError.json_body())
+        self.check_raven([('ParseError', 1)])
 
     def test_error_redis_failure(self):
         mock_task = mock.Mock()

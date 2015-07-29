@@ -81,23 +81,24 @@ class TestExport(CeleryTestCase):
                 self.session, Cell.__table__, CELL_COLUMNS, cond,
                 path, make_cell_export_dict, CELL_FIELDS)
 
-            with util.gzip_open(path, 'r') as gzip_file:
-                reader = csv.DictReader(gzip_file, CELL_FIELDS)
+            with util.gzip_open(path, 'r') as gzip_wrapper:
+                with gzip_wrapper as gzip_file:
+                    reader = csv.DictReader(gzip_file, CELL_FIELDS)
 
-                header = six.next(reader)
-                self.assertTrue('area' in header.values())
-                self.assertEqual(header, CELL_HEADER_DICT)
+                    header = six.next(reader)
+                    self.assertTrue('area' in header.values())
+                    self.assertEqual(header, CELL_HEADER_DICT)
 
-                exported_cells = set()
-                for exported_cell in reader:
-                    exported_cell_filtered = [
-                        (field, value) for (field, value)
-                        in exported_cell.items()
-                        if field in cell_fixture_fields]
-                    exported_cell = tuple(sorted(exported_cell_filtered))
-                    exported_cells.add(exported_cell)
+                    exported_cells = set()
+                    for exported_cell in reader:
+                        exported_cell_filtered = [
+                            (field, value) for (field, value)
+                            in exported_cell.items()
+                            if field in cell_fixture_fields]
+                        exported_cell = tuple(sorted(exported_cell_filtered))
+                        exported_cells.add(exported_cell)
 
-                self.assertEqual(cells, exported_cells)
+                    self.assertEqual(cells, exported_cells)
 
     def test_hourly_export(self):
         CellFactory.create_batch(10, radio=Radio.gsm)
@@ -106,9 +107,9 @@ class TestExport(CeleryTestCase):
         with mock_s3() as mock_key:
             export_modified_cells(_bucket='localhost.bucket')
             pat = r'MLS-diff-cell-export-\d+-\d+-\d+T\d+0000\.csv\.gz'
-            self.assertRegexpMatches(mock_key.key, pat)
+            self.assertRegex(mock_key.key, pat)
             method = mock_key.set_contents_from_filename
-            self.assertRegexpMatches(method.call_args[0][0], pat)
+            self.assertRegex(method.call_args[0][0], pat)
 
     def test_daily_export(self):
         CellFactory.create_batch(10, radio=Radio.gsm)
@@ -117,9 +118,9 @@ class TestExport(CeleryTestCase):
         with mock_s3() as mock_key:
             export_modified_cells(_bucket='localhost.bucket', hourly=False)
             pat = r'MLS-full-cell-export-\d+-\d+-\d+T000000\.csv\.gz'
-            self.assertRegexpMatches(mock_key.key, pat)
+            self.assertRegex(mock_key.key, pat)
             method = mock_key.set_contents_from_filename
-            self.assertRegexpMatches(method.call_args[0][0], pat)
+            self.assertRegex(method.call_args[0][0], pat)
 
 
 class TestImport(CeleryAppTestCase):
@@ -154,8 +155,9 @@ class TestImport(CeleryAppTestCase):
 
         with selfdestruct_tempdir() as d:
             path = os.path.join(d, 'import.csv.gz')
-            with util.gzip_open(path, 'w') as gzip_file:
-                gzip_file.write(txt)
+            with util.gzip_open(path, 'w') as gzip_wrapper:
+                with gzip_wrapper as gzip_file:
+                    gzip_file.write(txt)
             yield path
 
     def import_csv(self, lo=1, hi=10, time=1408604686):

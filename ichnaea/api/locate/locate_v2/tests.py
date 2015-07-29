@@ -77,8 +77,8 @@ class LocateV2Base(BaseLocateTest, AppTestCase):
 
         data = response.json
         location = data['location']
-        self.assertAlmostEquals(location['lat'], expected['lat'])
-        self.assertAlmostEquals(location['lng'], expected['lon'])
+        self.assertAlmostEqual(location['lat'], expected['lat'])
+        self.assertAlmostEqual(location['lng'], expected['lon'])
         self.assertAlmostEqual(data['accuracy'], expected['accuracy'])
         if fallback is not None:
             self.assertEqual(data['fallback'], fallback)

@@ -1,4 +1,5 @@
 """Generally useful helper functionality."""
+from contextlib import contextmanager
 from datetime import datetime
 import gzip
 from io import BytesIO
@@ -32,6 +33,7 @@ else:  # pragma: no cover
     GzipFile = gzip.GzipFile
 
 
+@contextmanager
 def gzip_open(filename, mode):  # pragma: no cover
     """Open a gzip file with an API consistent across Python 2/3.
 
@@ -39,10 +41,10 @@ def gzip_open(filename, mode):  # pragma: no cover
     """
     # open with either mode r or w
     if six.PY2:
-        return GzipFile(filename, mode)
+        yield GzipFile(filename, mode)
     else:
-        fd = open(filename, mode + 'b')
-        return gzip.open(fd, mode=mode + 't', encoding='utf-8')
+        with open(filename, mode + 'b') as fd:
+            yield gzip.open(fd, mode=mode + 't', encoding='utf-8')
 
 
 def encode_gzip(data, encoding='utf-8'):

@@ -68,8 +68,8 @@ class LocateV1Base(BaseLocateTest, AppTestCase):
 
         data = response.json
         self.assertEqual(data['status'], 'ok')
-        self.assertAlmostEquals(data['lat'], expected['lat'])
-        self.assertAlmostEquals(data['lon'], expected['lon'])
+        self.assertAlmostEqual(data['lat'], expected['lat'])
+        self.assertAlmostEqual(data['lon'], expected['lon'])
         self.assertAlmostEqual(data['accuracy'], expected['accuracy'])
         if fallback is not None:
             self.assertEqual(data['fallback'], fallback)

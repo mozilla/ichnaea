@@ -129,23 +129,24 @@ def make_ocid_cell_import_dict(row):
 
 def write_stations_to_csv(session, table, columns,
                           cond, path, make_dict, fields):
-    with util.gzip_open(path, 'w') as gzip_file:
-        writer = csv.DictWriter(gzip_file, fields, extrasaction='ignore')
-        limit = 10000
-        offset = 0
-        # Write header row
-        writer.writerow(CELL_HEADER_DICT)
-        while True:
-            query = (select(columns=columns).where(cond)
-                                            .limit(limit)
-                                            .offset(offset)
-                                            .order_by(table.c.created))
-            rows = session.execute(query).fetchall()
-            if rows:
-                writer.writerows([make_dict(row) for row in rows])
-                offset += limit
-            else:
-                break
+    with util.gzip_open(path, 'w') as gzip_wrapper:
+        with gzip_wrapper as gzip_file:
+            writer = csv.DictWriter(gzip_file, fields, extrasaction='ignore')
+            limit = 10000
+            offset = 0
+            # Write header row
+            writer.writerow(CELL_HEADER_DICT)
+            while True:
+                query = (select(columns=columns).where(cond)
+                                                .limit(limit)
+                                                .offset(offset)
+                                                .order_by(table.c.created))
+                rows = session.execute(query).fetchall()
+                if rows:
+                    writer.writerows([make_dict(row) for row in rows])
+                    offset += limit
+                else:
+                    break
 
 
 def write_stations_to_s3(path, bucketname):
@@ -208,41 +209,42 @@ def import_stations(session, pipe, filename, fields, update_area_task):
         else:  # pragma: no cover
             session.flush()
 
-    with util.gzip_open(filename, 'r') as gzip_file:
-        csv_reader = csv.DictReader(gzip_file, fields)
-        batch = 10000
-        rows = []
-        area_keys = set()
-        ins = OCIDCell.__table__.insert(
-            on_duplicate=((
-                'changeable = values(changeable), '
-                'modified = values(modified), '
-                'total_measures = values(total_measures), '
-                'lat = values(lat), '
-                'lon = values(lon), '
-                'psc = values(psc), '
-                '`range` = values(`range`)')))
+    with util.gzip_open(filename, 'r') as gzip_wrapper:
+        with gzip_wrapper as gzip_file:
+            csv_reader = csv.DictReader(gzip_file, fields)
+            batch = 10000
+            rows = []
+            area_keys = set()
+            ins = OCIDCell.__table__.insert(
+                on_duplicate=((
+                    'changeable = values(changeable), '
+                    'modified = values(modified), '
+                    'total_measures = values(total_measures), '
+                    'lat = values(lat), '
+                    'lon = values(lon), '
+                    'psc = values(psc), '
+                    '`range` = values(`range`)')))
 
-        for row in csv_reader:
-            # skip any header row
-            if csv_reader.line_num == 1 and \
-               'radio' in row.values():  # pragma: no cover
-                continue
+            for row in csv_reader:
+                # skip any header row
+                if csv_reader.line_num == 1 and \
+                   'radio' in row.values():  # pragma: no cover
+                    continue
 
-            data = make_ocid_cell_import_dict(row)
-            if data is not None:
-                rows.append(data)
-                area_keys.add(CellArea.to_hashkey(data))
+                data = make_ocid_cell_import_dict(row)
+                if data is not None:
+                    rows.append(data)
+                    area_keys.add(CellArea.to_hashkey(data))
 
-            if len(rows) == batch:  # pragma: no cover
-                commit_batch(ins, rows, commit=False)
-                rows = []
+                if len(rows) == batch:  # pragma: no cover
+                    commit_batch(ins, rows, commit=False)
+                    rows = []
 
-        if rows:
-            commit_batch(ins, rows)
+            if rows:
+                commit_batch(ins, rows)
 
-        for area_key in area_keys:
-            update_area_task.delay(area_key, cell_type='ocid')
+            for area_key in area_keys:
+                update_area_task.delay(area_key, cell_type='ocid')
 
 
 def import_ocid_cells(session, pipe, filename=None, update_area_task=None):
