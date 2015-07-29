@@ -17,6 +17,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Disable statsd request metrics for static assets.
+
 - Let all internal data pipeline metrics use tags.
 
 - Let all public API and fallback source metrics use tags.

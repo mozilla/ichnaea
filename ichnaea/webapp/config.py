@@ -62,6 +62,9 @@ def main(app_config, ping_connections=False,
     # add support for pt templates
     config.include('pyramid_chameleon')
 
+    # add a config setting to skip logging for some views
+    config.registry.skip_logging = set()
+
     configure_api(config)
     configure_content(config)
     configure_monitor(config)
@@ -107,6 +110,9 @@ def main(app_config, ping_connections=False,
 
     # Add special JSON renderer with nicer float representation
     config.add_renderer('floatjson', floatjson.FloatJSONRenderer())
+
+    # freeze skip logging set
+    config.registry.skip_logging = frozenset(config.registry.skip_logging)
 
     # Should we try to initialize and establish the outbound connections?
     if ping_connections:  # pragma: no cover

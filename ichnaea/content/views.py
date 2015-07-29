@@ -67,10 +67,13 @@ def map_tiles_url(base_url):
 def configure_content(config):
     config.add_view(favicon_view, name='favicon.ico',
                     http_cache=(86400, {'public': True}))
+    config.registry.skip_logging.add('/favicon.ico')
     config.add_view(robotstxt_view, name='robots.txt',
                     http_cache=(86400, {'public': True}))
+    config.registry.skip_logging.add('/robots.txt')
     config.add_view(touchicon_view, name='apple-touch-icon-precomposed.png',
                     http_cache=(86400, {'public': True}))
+    config.registry.skip_logging.add('/apple-touch-icon-precomposed.png')
     config.add_static_view(
         name='static', path='ichnaea.content:static', cache_max_age=3600)
 

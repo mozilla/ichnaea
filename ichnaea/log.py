@@ -105,11 +105,6 @@ def configure_stats(app_config, _client=None):  # pragma: no cover
     return set_stats_client(client)
 
 
-def quote_statsd_path(path):
-    """Convert a URI to a statsd acceptable metric name."""
-    return path.replace('/', '.').lstrip('.').replace('@', '-')
-
-
 def configure_logging():
     """Configure basic Python logging."""
     logging.basicConfig()
@@ -119,11 +114,21 @@ def log_tween_factory(handler, registry):
     """A logging tween, doing automatic statsd and raven collection."""
 
     def log_tween(request):
-        raven_client = registry.raven_client
+        if (request.path in registry.skip_logging or
+                request.path.startswith('/static')):
+            # shortcut handling for static assets
+            try:
+                return handler(request)
+            except Exception:  # pragma: no cover
+                registry.raven_client.captureException()
+                raise
+
         stats_client = registry.stats_client
         start = time.time()
         statsd_tags = [
-            'path:%s' % quote_statsd_path(request.path),
+            # Convert a URI to a statsd acceptable metric name
+            'path:%s' % request.path.replace(
+                '/', '.').lstrip('.').replace('@', '-'),
             'method:%s' % request.method.lower(),
         ]
 
@@ -137,6 +142,9 @@ def log_tween_factory(handler, registry):
 
         try:
             response = handler(request)
+            timer_send()
+            counter_send(response.status_code)
+            return response
         except (BaseClientError, HTTPRedirection) as exc:
             # don't capture exceptions
             timer_send()
@@ -152,13 +160,8 @@ def log_tween_factory(handler, registry):
             else:  # pragma: no cover
                 status = 500
             counter_send(status)
-            raven_client.captureException()
+            registry.raven_client.captureException()
             raise
-        else:
-            timer_send()
-            counter_send(response.status_code)
-
-        return response
 
     return log_tween
 

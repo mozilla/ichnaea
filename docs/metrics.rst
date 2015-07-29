@@ -332,9 +332,9 @@ Internal Monitoring
 HTTP Counters
 -------------
 
-Every legitimate, routed request, whether to an API endpoint or
-to static content, increments a
-``request#path:<path>,method:<method>,status:<code>`` counter.
+Every legitimate, routed request to an API endpoint or to a content
+view increments a ``request#path:<path>,method:<method>,status:<code>``
+counter.
 
 The path of the counter is the based on the path of the HTTP
 request, with slashes replaced with periods. The method tag contains

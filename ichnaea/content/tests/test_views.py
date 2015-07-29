@@ -83,6 +83,13 @@ class TestFunctionalContent(AppTestCase):
         self.app.get('/map', status=200)
         self.app.get('/privacy', status=200)
         self.app.get('/stats', status=200)
+        self.check_stats(counter=[
+            ('request', ['path:', 'method:get', 'status:200']),
+            ('request', ['path:map', 'method:get', 'status:200']),
+        ], timer=[
+            ('request', ['path:', 'method:get']),
+            ('request', ['path:map', 'method:get']),
+        ])
 
     def test_csp(self):
         result = self.app.get('/', status=200)
@@ -129,9 +136,11 @@ class TestFunctionalContent(AppTestCase):
 
     def test_favicon(self):
         self.app.get('/favicon.ico', status=200)
+        self.check_stats(total=0)
 
     def test_touchicon(self):
         self.app.get('/apple-touch-icon-precomposed.png', status=200)
+        self.check_stats(total=0)
 
     def test_hsts_header(self):
         result = self.app.get('/', status=200)
@@ -143,23 +152,15 @@ class TestFunctionalContent(AppTestCase):
 
     def test_not_found(self):
         self.app.get('/nobody-is-home', status=404)
-
-        self.check_stats(
-            # No counters for URLs that are invalid
-            counter=[('request.nobody-is-home.404', 0)],
-
-            # No timers for invalid urls either
-            timer=[('request.nobody-is-home', 0)])
+        self.check_stats(total=0)
 
     def test_image_file(self):
         self.app.get('/static/css/images/icons-000000@2x.png', status=200)
-        quoted_path = 'path:static.css.images.icons-000000-2x.png'
-        self.check_stats(
-            counter=[('request', [quoted_path, 'method:get', 'status:200'])],
-            timer=[('request', [quoted_path, 'method:get'])])
+        self.check_stats(total=0)
 
     def test_robots_txt(self):
         self.app.get('/robots.txt', status=200)
+        self.check_stats(total=0)
 
     def test_map_json(self):
         result = self.app.get('/map.json', status=200)
