@@ -115,9 +115,10 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.result',
                 ['key:test', 'country:none', 'accuracy:medium', 'status:hit']),
-            (self.metric_type + '.source',
-                ['key:test', 'country:none', 'source:internal',
-                 'accuracy:medium', 'status:hit']),
+            # TODO
+            # (self.metric_type + '.source',
+            #     ['key:test', 'country:none', 'source:internal',
+            #      'accuracy:medium', 'status:hit']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
@@ -147,9 +148,10 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.result',
                 ['key:test', 'country:none', 'accuracy:high', 'status:hit']),
-            (self.metric_type + '.source',
-                ['key:test', 'country:none', 'source:internal',
-                 'accuracy:high', 'status:hit']),
+            # TODO
+            # (self.metric_type + '.source',
+            #     ['key:test', 'country:none', 'source:internal',
+            #      'accuracy:high', 'status:hit']),
         ])
 
 

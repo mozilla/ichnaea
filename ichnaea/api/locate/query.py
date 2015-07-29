@@ -277,9 +277,9 @@ class Query(object):
     def collect_metrics(self):
         """Should detailed metrics be collected for this query?"""
         allowed = bool(self.api_key and self.api_key.log and self.api_type)
-        possible_result = bool(self.expected_accuracy != DataAccuracy.none)
         # don't report stats if there is really no data at all
         # in the query
+        possible_result = bool(self.expected_accuracy != DataAccuracy.none)
         return allowed and possible_result
 
     def _emit_country_stat(self, metric, extra_tags):
@@ -335,9 +335,13 @@ class Query(object):
         ]
         self._emit_country_stat('result', tags)
 
-    def emit_source_stats(self, source, result):
+    def emit_source_stats(self, source, result):  # pragma: no cover
         """Emit stats about how well the result satisfied the query."""
         if not self.collect_metrics():
+            return
+
+        if self.api_type in ('country', 'locate'):
+            # TODO: enable source stats for all APIs
             return
 
         if result.data_accuracy <= self.expected_accuracy:

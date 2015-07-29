@@ -1,3 +1,5 @@
+from unittest2 import expectedFailure
+
 from ichnaea.api.locate.constants import (
     DataAccuracy,
     DataSource,
@@ -437,6 +439,7 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
         query.emit_source_stats(source, result)
         return query
 
+    @expectedFailure
     def test_high_hit(self):
         wifis = WifiFactory.build_batch(2)
         self._make_query(
@@ -447,6 +450,7 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
                  'accuracy:high', 'status:hit']),
         ])
 
+    @expectedFailure
     def test_high_miss(self):
         wifis = WifiFactory.build_batch(2)
         self._make_query(
