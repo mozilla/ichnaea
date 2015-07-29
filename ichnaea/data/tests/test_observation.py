@@ -3,9 +3,7 @@ from datetime import timedelta
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy import text
 
-from ichnaea.constants import (
-    TEMPORARY_BLACKLIST_DURATION,
-)
+from ichnaea.constants import TEMPORARY_BLOCKLIST_DURATION
 from ichnaea.data.tasks import (
     insert_measures_cell,
     insert_measures_wifi,
@@ -15,7 +13,7 @@ from ichnaea.data.tasks import (
 from ichnaea.models import (
     constants,
     Cell,
-    CellBlacklist,
+    CellBlocklist,
     Radio,
     Score,
     ScoreKey,
@@ -23,7 +21,7 @@ from ichnaea.models import (
     StatKey,
     User,
     Wifi,
-    WifiBlacklist,
+    WifiBlocklist,
 )
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
@@ -49,7 +47,7 @@ class TestCell(ObservationTestCase):
         super(TestCell, self).setUp()
         self.data_queue = self.celery_app.data_queues['update_cell']
 
-    def test_blacklist(self):
+    def test_blocklist(self):
         now = util.utcnow()
 
         cell = CellFactory.build()
@@ -60,12 +58,12 @@ class TestCell(ObservationTestCase):
                              lon=cell.lon + i * 0.0000001)
                         for i in range(1, 4)]
 
-        black = CellBlacklist(
+        block = CellBlocklist(
             radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
             lac=cell.lac, cid=cell.cid + 1,
             time=now, count=1,
         )
-        self.session.add(black)
+        self.session.add(block)
         self.session.flush()
 
         result = insert_measures_cell.delay(observations)
@@ -80,18 +78,18 @@ class TestCell(ObservationTestCase):
         self.check_statcounter(StatKey.cell, 2)
         self.check_statcounter(StatKey.unique_cell, 2)
 
-    def test_created_from_blacklist_time(self):
+    def test_created_from_blocklist_time(self):
         now = util.utcnow()
-        last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
+        last_week = now - TEMPORARY_BLOCKLIST_DURATION - timedelta(days=1)
 
         cell = CellFactory.build()
         self.session.add(
-            CellBlacklist(time=last_week, count=1,
+            CellBlocklist(time=last_week, count=1,
                           radio=cell.radio, mcc=cell.mcc,
                           mnc=cell.mnc, lac=cell.lac, cid=cell.cid))
         self.session.flush()
 
-        # add a new entry for the previously blacklisted cell
+        # add a new entry for the previously blocklisted cell
         obs = dict(lat=cell.lat, lon=cell.lon,
                    radio=int(cell.radio), mcc=cell.mcc, mnc=cell.mnc,
                    lac=cell.lac, cid=cell.cid)
@@ -104,7 +102,7 @@ class TestCell(ObservationTestCase):
         cells = self.session.query(Cell).all()
         self.assertEqual(len(cells), 1)
 
-        # and the creation date was set to the date of the blacklist entry
+        # and the creation date was set to the date of the blocklist entry
         self.assertEqual(cells[0].created, last_week)
 
         self.check_statcounter(StatKey.cell, 1)
@@ -227,13 +225,13 @@ class TestWifi(ObservationTestCase):
         super(TestWifi, self).setUp()
         self.data_queue = self.celery_app.data_queues['update_wifi']
 
-    def test_blacklist(self):
+    def test_blocklist(self):
         utcnow = util.utcnow()
 
         bad_wifi = WifiFactory.build()
         good_wifi = WifiFactory.build()
-        black = WifiBlacklist(time=utcnow, count=1, key=bad_wifi.key)
-        self.session.add(black)
+        block = WifiBlocklist(time=utcnow, count=1, key=bad_wifi.key)
+        self.session.add(block)
         self.session.flush()
 
         obs = dict(lat=good_wifi.lat, lon=good_wifi.lon)
@@ -258,15 +256,15 @@ class TestWifi(ObservationTestCase):
         self.check_statcounter(StatKey.wifi, 2)
         self.check_statcounter(StatKey.unique_wifi, 1)
 
-    def test_created_from_blacklist_time(self):
+    def test_created_from_blocklist_time(self):
         now = util.utcnow()
-        last_week = now - TEMPORARY_BLACKLIST_DURATION - timedelta(days=1)
+        last_week = now - TEMPORARY_BLOCKLIST_DURATION - timedelta(days=1)
 
         wifi = WifiFactory.build()
-        self.session.add(WifiBlacklist(time=last_week, count=1, key=wifi.key))
+        self.session.add(WifiBlocklist(time=last_week, count=1, key=wifi.key))
         self.session.flush()
 
-        # add a new entry for the previously blacklisted wifi
+        # add a new entry for the previously blocklisted wifi
         obs = dict(lat=wifi.lat, lon=wifi.lon, key=wifi.key)
         insert_measures_wifi.delay([obs]).get()
 
@@ -277,7 +275,7 @@ class TestWifi(ObservationTestCase):
         wifis = self.session.query(Wifi).all()
         self.assertEqual(len(wifis), 1)
 
-        # and the creation date was set to the date of the blacklist entry
+        # and the creation date was set to the date of the blocklist entry
         self.assertEqual(wifis[0].created, last_week)
         self.check_statcounter(StatKey.unique_wifi, 0)
 

@@ -1,7 +1,7 @@
 from ichnaea.models.cell import (
     Cell,
     CellArea,
-    CellBlacklist,
+    CellBlocklist,
     OCIDCell,
     OCIDCellArea,
     Radio,
@@ -56,16 +56,16 @@ class TestCellArea(DBTestCase):
         self.assertEqual(result.num_cells, 15)
 
 
-class TestCellBlacklist(DBTestCase):
+class TestCellBlocklist(DBTestCase):
 
     def test_fields(self):
         session = self.session
-        session.add(CellBlacklist(
+        session.add(CellBlocklist(
             radio=Radio.lte, mcc=GB_MCC, mnc=GB_MNC,
             lac=1234, cid=23456, count=2))
         session.flush()
 
-        result = session.query(CellBlacklist).first()
+        result = session.query(CellBlocklist).first()
         self.assertEqual(result.radio, Radio.lte)
         self.assertEqual(result.mcc, GB_MCC)
         self.assertEqual(result.mnc, GB_MNC)

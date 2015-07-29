@@ -89,7 +89,7 @@ installed into `lib/pythonX.Y/site-packages/`.
 
 The step will also compile all py files to pyc files and remove any files
 from the tree which aren't compatible with the active Python version
-(blacklist in the `compile.py` script). The removal step ensures that
+(blocklist in the `compile.py` script). The removal step ensures that
 any build tools (for example rpmbuild / mock) that typically call
 `compileall.compile_dir` will work, without breaking on the incompatible
 files.

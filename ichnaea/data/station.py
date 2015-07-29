@@ -8,10 +8,10 @@ from ichnaea.geocalc import (
 from ichnaea.models import (
     Cell,
     CellArea,
-    CellBlacklist,
+    CellBlocklist,
     CellObservation,
     Wifi,
-    WifiBlacklist,
+    WifiBlocklist,
     WifiObservation,
 )
 from ichnaea import util
@@ -136,27 +136,27 @@ class StationUpdater(DataTask):
         station.range = range_to_points(ctr, points) * 1000.0
         station.modified = util.utcnow()
 
-    def blacklist_stations(self, stations):
+    def blocklist_stations(self, stations):
         moving_keys = []
         utcnow = util.utcnow()
         for station in stations:
-            station_key = self.blacklist_model.to_hashkey(station)
-            query = self.blacklist_model.querykey(self.session, station_key)
-            blacklisted_station = query.first()
+            station_key = self.blocklist_model.to_hashkey(station)
+            query = self.blocklist_model.querykey(self.session, station_key)
+            blocked = query.first()
             moving_keys.append(station_key)
-            if blacklisted_station:
-                blacklisted_station.time = utcnow
-                blacklisted_station.count += 1
+            if blocked:
+                blocked.time = utcnow
+                blocked.count += 1
             else:
-                blacklisted_station = self.blacklist_model(
+                blocked = self.blocklist_model(
                     time=utcnow,
                     count=1,
                     **station_key.__dict__)
-                self.session.add(blacklisted_station)
+                self.session.add(blocked)
 
         if moving_keys:
             self.stats_client.incr(
-                'data.station.blacklist',
+                'data.station.blocklist',
                 len(moving_keys),
                 tags=['type:%s' % self.station_type,
                       'action:add',
@@ -195,7 +195,7 @@ class StationUpdater(DataTask):
         self.queue_area_updates()
 
         if moving_stations:
-            self.blacklist_stations(moving_stations)
+            self.blocklist_stations(moving_stations)
 
         if self.data_queue.enough_data(batch=batch):  # pragma: no cover
             self.update_task.apply_async(
@@ -214,7 +214,7 @@ class StationUpdater(DataTask):
 
 class CellUpdater(StationUpdater):
 
-    blacklist_model = CellBlacklist
+    blocklist_model = CellBlocklist
     max_dist_km = 150
     observation_model = CellObservation
     queue_name = 'update_cell'
@@ -232,7 +232,7 @@ class CellUpdater(StationUpdater):
 
 class WifiUpdater(StationUpdater):
 
-    blacklist_model = WifiBlacklist
+    blocklist_model = WifiBlocklist
     max_dist_km = 5
     observation_model = WifiObservation
     queue_name = 'update_wifi'

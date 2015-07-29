@@ -72,7 +72,7 @@ class StationMixin(BaseStationMixin, BboxMixin):
     new_measures = Column(Integer(unsigned=True))
 
 
-class StationBlacklistMixin(object):
+class StationBlocklistMixin(object):
 
     time = Column(DateTime)
     count = Column(Integer)

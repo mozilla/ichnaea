@@ -24,7 +24,7 @@ from ichnaea.models.schema import (
 )
 from ichnaea.models.station import (
     StationMixin,
-    StationBlacklistMixin,
+    StationBlocklistMixin,
     ValidStationSchema,
 )
 
@@ -139,7 +139,7 @@ class Wifi(WifiMixin, StationMixin, CreationMixin, _Model):
     _valid_schema = ValidWifiSchema
 
 
-class WifiBlacklist(WifiMixin, StationBlacklistMixin, _Model):
+class WifiBlocklist(WifiMixin, StationBlocklistMixin, _Model):
     __tablename__ = 'wifi_blacklist'
 
     _indices = (

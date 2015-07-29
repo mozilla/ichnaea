@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from ichnaea.constants import (
-    PERMANENT_BLACKLIST_THRESHOLD,
+    PERMANENT_BLOCKLIST_THRESHOLD,
 )
 from ichnaea.data.tasks import (
     insert_measures_cell,
@@ -14,18 +14,18 @@ from ichnaea.data.tasks import (
 from ichnaea.models import (
     Cell,
     CellArea,
-    CellBlacklist,
+    CellBlocklist,
     Radio,
     Wifi,
-    WifiBlacklist,
+    WifiBlocklist,
 )
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
     CellFactory,
-    CellBlacklistFactory,
+    CellBlocklistFactory,
     CellObservationFactory,
     WifiFactory,
-    WifiBlacklistFactory,
+    WifiBlocklistFactory,
     WifiObservationFactory,
 )
 from ichnaea import util
@@ -37,7 +37,7 @@ class TestCell(CeleryTestCase):
         super(TestCell, self).setUp()
         self.data_queue = self.celery_app.data_queues['update_cell']
 
-    def test_blacklist_moving_cells(self):
+    def test_blocklist_moving_cells(self):
         now = util.utcnow()
         obs = []
         obs_factory = CellObservationFactory
@@ -93,10 +93,10 @@ class TestCell(CeleryTestCase):
                         lon=cell.lon, **cell_key),
         ])
         moving.add(cell.hashkey())
-        # an already blacklisted cell
+        # an already blocklisted cell
         cell = cells[4]
         cell_key = cell.hashkey().__dict__
-        CellBlacklistFactory(time=now, count=1, **cell_key)
+        CellBlocklistFactory(time=now, count=1, **cell_key)
         obs.extend([
             obs_factory(lat=cell.lat,
                         lon=cell.lon, **cell_key),
@@ -111,8 +111,8 @@ class TestCell(CeleryTestCase):
         result = update_cell.delay()
         self.assertEqual(result.get(), (4, 3))
 
-        black = self.session.query(CellBlacklist).all()
-        self.assertEqual(set([b.hashkey() for b in black]), moving)
+        block = self.session.query(CellBlocklist).all()
+        self.assertEqual(set([b.hashkey() for b in block]), moving)
 
         # test duplicate call
         result = update_cell.delay()
@@ -126,11 +126,11 @@ class TestCell(CeleryTestCase):
                 ('task', 1, ['name:data.remove_cell'])
             ])
 
-    def test_blacklist_temporary_and_permanent(self):
+    def test_blocklist_temporary_and_permanent(self):
         # This test simulates a cell that moves once a month, for 2 years.
-        # The first 2 * PERMANENT_BLACKLIST_THRESHOLD (12) moves should be
+        # The first 2 * PERMANENT_BLOCKLIST_THRESHOLD (12) moves should be
         # temporary, forgotten after a week; after that it should be
-        # permanently blacklisted.
+        # permanently blocklisted.
 
         now = util.utcnow()
         # Station moves between these 4 points, all in the USA:
@@ -141,7 +141,7 @@ class TestCell(CeleryTestCase):
             (25.0, -80.0),  # Miami
         ]
 
-        N = 4 * PERMANENT_BLACKLIST_THRESHOLD
+        N = 4 * PERMANENT_BLOCKLIST_THRESHOLD
         for month in range(0, N):
             days_ago = (N - (month + 1)) * 30
             time = now - timedelta(days=days_ago)
@@ -160,28 +160,28 @@ class TestCell(CeleryTestCase):
             # update_result is (num-stations, num-moving-stations)
             update_result = update_cell.delay()
 
-            # Assuming PERMANENT_BLACKLIST_THRESHOLD == 6:
+            # Assuming PERMANENT_BLOCKLIST_THRESHOLD == 6:
             #
             # 0th insert will create the station
-            # 1st insert will create first blacklist entry, delete station
+            # 1st insert will create first blocklist entry, delete station
             # 2nd insert will recreate the station at new position
-            # 3rd insert will update blacklist, re-delete station
+            # 3rd insert will update blocklist, re-delete station
             # 4th insert will recreate the station at new position
-            # 5th insert will update blacklist, re-delete station
+            # 5th insert will update blocklist, re-delete station
             # 6th insert will recreate the station at new position
             # ...
-            # 11th insert will make blacklisting permanent, re-delete station
+            # 11th insert will make blocklisting permanent, re-delete station
             # 12th insert will not recreate station
             # 13th insert will not recreate station
             # ...
             # 23rd insert will not recreate station
 
-            bl = self.session.query(CellBlacklist).all()
+            bl = self.session.query(CellBlocklist).all()
             if month == 0:
                 self.assertEqual(len(bl), 0)
             else:
                 self.assertEqual(len(bl), 1)
-                # force the blacklist back in time to whenever the
+                # force the blocklist back in time to whenever the
                 # observation was supposedly inserted.
                 bl = bl[0]
                 bl.time = time
@@ -203,18 +203,18 @@ class TestCell(CeleryTestCase):
                     self.assertEqual(self.session.query(CellArea).count(), 1)
                 else:
                     # The station existed and was seen moving,
-                    # thereby activating the blacklist and deleting the cell.
+                    # thereby activating the blocklist and deleting the cell.
                     self.assertEqual(update_result.get(), (1, 1))
                     # Rescan lacs to delete orphaned lac entry
                     self.assertEqual(
                         scan_areas.delay().get(), 1)
                     self.assertEqual(bl.count, ((month + 1) / 2))
                     self.assertEqual(
-                        self.session.query(CellBlacklist).count(), 1)
+                        self.session.query(CellBlocklist).count(), 1)
                     self.assertEqual(self.session.query(Cell).count(), 0)
 
                     # Try adding one more observation 1 day later
-                    # to be sure it is dropped by the now-active blacklist.
+                    # to be sure it is dropped by the now-active blocklist.
                     next_day = time + timedelta(days=1)
                     obs['time'] = next_day
                     self.assertEqual(
@@ -222,7 +222,7 @@ class TestCell(CeleryTestCase):
                                                       utcnow=next_day).get())
 
             else:
-                # Blacklist has exceeded threshold, gone to permanent mode,
+                # Blocklist has exceeded threshold, gone to permanent mode,
                 # so no observation accepted, no stations seen.
                 self.assertEqual(insert_result.get(), 0)
                 self.assertEqual(update_result.get(), (0, 0))
@@ -318,7 +318,7 @@ class TestWifi(CeleryTestCase):
         super(TestWifi, self).setUp()
         self.data_queue = self.celery_app.data_queues['update_wifi']
 
-    def test_blacklist_moving_wifis(self):
+    def test_blocklist_moving_wifis(self):
         now = util.utcnow()
         obs = []
         obs_factory = WifiObservationFactory
@@ -371,9 +371,9 @@ class TestWifi(CeleryTestCase):
                         lon=wifi.lon, key=wifi.key),
         ])
         moving.add(wifi.hashkey())
-        # an already blacklisted wifi
+        # an already blocklisted wifi
         wifi = wifis[4]
-        WifiBlacklistFactory(key=wifi.key, time=now, count=1)
+        WifiBlocklistFactory(key=wifi.key, time=now, count=1)
         obs.extend([
             obs_factory(lat=wifi.lat,
                         lon=wifi.lon, key=wifi.key),
@@ -388,8 +388,8 @@ class TestWifi(CeleryTestCase):
         result = update_wifi.delay()
         self.assertEqual(result.get(), (4, 3))
 
-        black = self.session.query(WifiBlacklist).all()
-        self.assertEqual(set([b.hashkey() for b in black]), moving)
+        block = self.session.query(WifiBlocklist).all()
+        self.assertEqual(set([b.hashkey() for b in block]), moving)
 
         # test duplicate call
         result = update_wifi.delay()
@@ -403,11 +403,11 @@ class TestWifi(CeleryTestCase):
                 ('task', 1, ['name:data.remove_wifi'])
             ])
 
-    def test_blacklist_temporary_and_permanent(self):
+    def test_blocklist_temporary_and_permanent(self):
         # This test simulates a wifi that moves once a month, for 2 years.
-        # The first 2 * PERMANENT_BLACKLIST_THRESHOLD (12) moves should be
+        # The first 2 * PERMANENT_BLOCKLIST_THRESHOLD (12) moves should be
         # temporary, forgotten after a week; after that it should be
-        # permanently blacklisted.
+        # permanently blocklisted.
 
         now = util.utcnow()
         # Station moves between these 4 points, all in the USA:
@@ -422,7 +422,7 @@ class TestWifi(CeleryTestCase):
             (25.0, -80.0),
         ]
 
-        N = PERMANENT_BLACKLIST_THRESHOLD * 4
+        N = PERMANENT_BLOCKLIST_THRESHOLD * 4
         for month in range(0, N):
             days_ago = (N - (month + 1)) * 30
             time = now - timedelta(days=days_ago)
@@ -440,28 +440,28 @@ class TestWifi(CeleryTestCase):
             # update_result is (num-stations, num-moving-stations)
             update_result = update_wifi.delay()
 
-            # Assuming PERMANENT_BLACKLIST_THRESHOLD == 6:
+            # Assuming PERMANENT_BLOCKLIST_THRESHOLD == 6:
             #
             # 0th insert will create the station
-            # 1st insert will create first blacklist entry, delete station
+            # 1st insert will create first blocklist entry, delete station
             # 2nd insert will recreate the station at new position
-            # 3rd insert will update blacklist, re-delete station
+            # 3rd insert will update blocklist, re-delete station
             # 4th insert will recreate the station at new position
-            # 5th insert will update blacklist, re-delete station
+            # 5th insert will update blocklist, re-delete station
             # 6th insert will recreate the station at new position
             # ...
-            # 11th insert will make blacklisting permanent, re-delete station
+            # 11th insert will make blocklisting permanent, re-delete station
             # 12th insert will not recreate station
             # 13th insert will not recreate station
             # ...
             # 23rd insert will not recreate station
 
-            bl = self.session.query(WifiBlacklist).all()
+            bl = self.session.query(WifiBlocklist).all()
             if month == 0:
                 self.assertEqual(len(bl), 0)
             else:
                 self.assertEqual(len(bl), 1)
-                # force the blacklist back in time to whenever the
+                # force the blocklist back in time to whenever the
                 # observation was supposedly inserted.
                 bl = bl[0]
                 bl.time = time
@@ -479,15 +479,15 @@ class TestWifi(CeleryTestCase):
                     self.assertEqual(self.session.query(Wifi).count(), 1)
                 else:
                     # The station existed and was seen moving,
-                    # thereby activating the blacklist.
+                    # thereby activating the blocklist.
                     self.assertEqual(update_result.get(), (1, 1))
                     self.assertEqual(bl.count, ((month + 1) / 2))
                     self.assertEqual(
-                        self.session.query(WifiBlacklist).count(), 1)
+                        self.session.query(WifiBlocklist).count(), 1)
                     self.assertEqual(self.session.query(Wifi).count(), 0)
 
                     # Try adding one more observation 1 day later
-                    # to be sure it is dropped by the now-active blacklist.
+                    # to be sure it is dropped by the now-active blocklist.
                     next_day = time + timedelta(days=1)
                     obs['time'] = next_day
                     self.assertEqual(
@@ -495,7 +495,7 @@ class TestWifi(CeleryTestCase):
                                                       utcnow=next_day).get())
 
             else:
-                # Blacklist has exceeded threshold, gone to permanent mode,
+                # Blocklist has exceeded threshold, gone to permanent mode,
                 # so no observation accepted, no stations seen.
                 self.assertEqual(insert_result.get(), 0)
                 self.assertEqual(update_result.get(), (0, 0))

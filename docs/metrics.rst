@@ -231,7 +231,7 @@ Along the way several counters measure the steps involved:
 ``data.observation.upload#type:wifi,key:<api_shortname>`` : counters
 
     Count the number of cell or wifi observations entering the data
-    processing pipeline; before normalization and blacklist processing
+    processing pipeline; before normalization and blocklist processing
     have been applied. In other words this metric counts "total cell or
     wifi observations inside each submitted batch", as each batch is
     decomposed into individual observations.
@@ -247,11 +247,11 @@ Along the way several counters measure the steps involved:
     validity-condition error encountered while attempting to normalize the
     observation.
 
-``data.observation.drop#type:cell,reason:blacklisted``,
-``data.observation.drop#type:wifi,reason:blacklisted`` : counters
+``data.observation.drop#type:cell,reason:blocklisted``,
+``data.observation.drop#type:wifi,reason:blocklisted`` : counters
 
     Count incoming cell or wifi observations that were discarded before
-    integration due to the presence of a blacklist record for the station
+    integration due to the presence of a blocklist record for the station
     (see next metric).
 
 ``data.observation.insert#type:cell``,
@@ -260,13 +260,13 @@ Along the way several counters measure the steps involved:
     Count cell or wifi observations that are successfully normalized,
     integrated and not discarded due to consistency errors.
 
-``data.station.blacklist#type:cell,action:add,reason:moving``,
-``data.station.blacklist#type:wifi,action:add,reason:moving`` : counters
+``data.station.blocklist#type:cell,action:add,reason:moving``,
+``data.station.blocklist#type:wifi,action:add,reason:moving`` : counters
 
-    Count any cell or wifi that is blacklisted due to the acceptance of
+    Count any cell or wifi that is blocklisted due to the acceptance of
     multiple observations at sufficiently different locations. In these
     cases, we decide that the station is "moving" (such as a picocell
-    or mobile hotspot on a public transit vehicle) and blacklist it, to
+    or mobile hotspot on a public transit vehicle) and blocklist it, to
     avoid estimating query positions using the station.
 
 

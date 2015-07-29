@@ -2,7 +2,7 @@ from sqlalchemy.exc import IntegrityError
 
 from ichnaea.models.wifi import (
     Wifi,
-    WifiBlacklist,
+    WifiBlocklist,
 )
 from ichnaea.tests.base import (
     DBTestCase,
@@ -25,19 +25,19 @@ class TestWifi(DBTestCase):
         self.assertEqual(result.range, 200)
 
 
-class TestWifiBlacklist(DBTestCase):
+class TestWifiBlocklist(DBTestCase):
 
     def test_fields(self):
-        self.session.add(WifiBlacklist(key='3680873e9b83', count=2))
+        self.session.add(WifiBlocklist(key='3680873e9b83', count=2))
         self.session.flush()
 
-        result = self.session.query(WifiBlacklist).first()
+        result = self.session.query(WifiBlocklist).first()
         self.assertEqual(result.key, '3680873e9b83')
         self.assertEqual(result.count, 2)
 
     def test_unique_key(self):
-        self.session.add(WifiBlacklist(key='3680873e9b83'))
+        self.session.add(WifiBlocklist(key='3680873e9b83'))
         self.session.flush()
 
-        self.session.add(WifiBlacklist(key='3680873e9b83'))
+        self.session.add(WifiBlocklist(key='3680873e9b83'))
         self.assertRaises(IntegrityError, self.session.flush)

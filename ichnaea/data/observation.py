@@ -3,20 +3,20 @@ from collections import defaultdict
 from sqlalchemy.orm import load_only
 
 from ichnaea.constants import (
-    PERMANENT_BLACKLIST_THRESHOLD,
-    TEMPORARY_BLACKLIST_DURATION,
+    PERMANENT_BLOCKLIST_THRESHOLD,
+    TEMPORARY_BLOCKLIST_DURATION,
 )
 from ichnaea.data.base import DataTask
 from ichnaea.models import (
     Cell,
-    CellBlacklist,
+    CellBlocklist,
     CellObservation,
     Score,
     ScoreKey,
     StatCounter,
     StatKey,
     Wifi,
-    WifiBlacklist,
+    WifiBlocklist,
     WifiObservation,
 )
 from ichnaea import util
@@ -86,24 +86,24 @@ class ObservationQueue(DataTask):
 
         # Process observations one station at a time
         for key, observations in station_observations.items():
-            first_blacklisted = None
+            first_blocklisted = None
             station = self.station_model.getkey(self.session, key)
 
             if station is None:
-                # Drop observations for blacklisted stations.
-                blacklisted, first_blacklisted = self.blacklisted_station(key)
-                if blacklisted:
-                    drop_counter['blacklisted'] += len(observations)
+                # Drop observations for blocklisted stations.
+                blocklisted, first_blocklisted = self.blocklisted_station(key)
+                if blocklisted:
+                    drop_counter['blocklisted'] += len(observations)
                     continue
 
-                if not first_blacklisted:
+                if not first_blocklisted:
                     # We discovered an actual new complete station.
                     new_stations += 1
 
             # TODO: station creation happens too early
             if observations:
                 all_observations.extend(observations)
-                self.create_station(station, key, first_blacklisted)
+                self.create_station(station, key, first_blocklisted)
 
         added = len(all_observations)
         self.emit_stats(added, drop_counter)
@@ -112,26 +112,26 @@ class ObservationQueue(DataTask):
 
         return all_observations
 
-    def blacklisted_station(self, key):
-        query = (self.blacklist_model.querykey(self.session, key)
+    def blocklisted_station(self, key):
+        query = (self.blocklist_model.querykey(self.session, key)
                                      .options(load_only('count', 'time')))
-        black = query.first()
-        if black is not None:
-            age = self.utcnow - black.time
-            temp_blacklisted = age < TEMPORARY_BLACKLIST_DURATION
-            perm_blacklisted = black.count >= PERMANENT_BLACKLIST_THRESHOLD
-            if temp_blacklisted or perm_blacklisted:
-                return (True, black.time)
-            return (False, black.time)
+        block = query.first()
+        if block is not None:
+            age = self.utcnow - block.time
+            temp_blocklisted = age < TEMPORARY_BLOCKLIST_DURATION
+            perm_blocklisted = block.count >= PERMANENT_BLOCKLIST_THRESHOLD
+            if temp_blocklisted or perm_blocklisted:
+                return (True, block.time)
+            return (False, block.time)
         return (False, None)
 
-    def create_station(self, station, key, first_blacklisted):
+    def create_station(self, station, key, first_blocklisted):
         if station is None:
             created = self.utcnow
-            if first_blacklisted:
+            if first_blocklisted:
                 # if the station did previously exist, retain at least the
-                # time it was first put on a blacklist as the creation date
-                created = first_blacklisted
+                # time it was first put on a blocklist as the creation date
+                created = first_blocklisted
             stmt = self.station_model.__table__.insert(
                 on_duplicate='total_measures = total_measures'  # no-op change
             ).values(
@@ -151,7 +151,7 @@ class CellObservationQueue(ObservationQueue):
     station_type = 'cell'
     station_model = Cell
     observation_model = CellObservation
-    blacklist_model = CellBlacklist
+    blocklist_model = CellBlocklist
     queue_name = 'update_cell'
 
 
@@ -163,5 +163,5 @@ class WifiObservationQueue(ObservationQueue):
     station_type = 'wifi'
     station_model = Wifi
     observation_model = WifiObservation
-    blacklist_model = WifiBlacklist
+    blocklist_model = WifiBlocklist
     queue_name = 'update_wifi'

@@ -9,7 +9,7 @@ from ichnaea.models.api import ApiKey  # NOQA
 from ichnaea.models.cell import (  # NOQA
     Cell,
     CellArea,
-    CellBlacklist,
+    CellBlocklist,
     OCIDCell,
     OCIDCellArea,
     Radio,
@@ -32,7 +32,7 @@ from ichnaea.models.observation import (  # NOQA
 )
 from ichnaea.models.wifi import (  # NOQA
     Wifi,
-    WifiBlacklist,
+    WifiBlocklist,
 )
 
 __all__ = (_Model, )

@@ -15,13 +15,13 @@ from ichnaea.models import (
     ApiKey,
     Cell,
     CellArea,
-    CellBlacklist,
+    CellBlocklist,
     CellObservation,
     OCIDCell,
     OCIDCellArea,
     Radio,
     Wifi,
-    WifiBlacklist,
+    WifiBlocklist,
     WifiObservation,
 )
 from ichnaea.tests.base import (
@@ -150,10 +150,10 @@ class CellAreaFactory(CellAreaPositionFactory, BboxFactory, BaseSQLFactory):
         model = CellArea.create
 
 
-class CellBlacklistFactory(CellKeyFactory, BaseSQLFactory):
+class CellBlocklistFactory(CellKeyFactory, BaseSQLFactory):
 
     class Meta:
-        model = CellBlacklist
+        model = CellBlocklist
 
 
 class OCIDCellFactory(CellPositionFactory, BaseSQLFactory):
@@ -192,10 +192,10 @@ class WifiFactory(WifiPositionFactory, BboxFactory, BaseSQLFactory):
         model = Wifi.create
 
 
-class WifiBlacklistFactory(WifiKeyFactory, BaseSQLFactory):
+class WifiBlocklistFactory(WifiKeyFactory, BaseSQLFactory):
 
     class Meta:
-        model = WifiBlacklist
+        model = WifiBlocklist
 
 
 class WifiObservationFactory(WifiPositionFactory, BaseMemoryFactory):

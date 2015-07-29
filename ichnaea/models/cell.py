@@ -36,7 +36,7 @@ from ichnaea.models.station import (
     BaseStationMixin,
     StationMixin,
     ValidBaseStationSchema,
-    StationBlacklistMixin,
+    StationBlocklistMixin,
     ValidStationSchema,
 )
 
@@ -381,7 +381,7 @@ class OCIDCellArea(CellAreaMixin, _Model):
     )
 
 
-class CellBlacklist(CellKeyMixin, StationBlacklistMixin, _Model):
+class CellBlocklist(CellKeyMixin, StationBlocklistMixin, _Model):
     __tablename__ = 'cell_blacklist'
 
     _indices = (

@@ -45,16 +45,16 @@ for Russia:
 ``geocalc.distance(60.0, 100.0, 41.199278, 27.351944) == 5220613 meters``
 """
 
-TEMPORARY_BLACKLIST_DURATION = timedelta(days=7)
+TEMPORARY_BLOCKLIST_DURATION = timedelta(days=7)
 """
-Time during which each temporary blacklisting (detection of station
+Time during which each temporary blocklisting (detection of station
 movement) causes observations to be dropped on the floor.
 """
 
-PERMANENT_BLACKLIST_THRESHOLD = 6
+PERMANENT_BLOCKLIST_THRESHOLD = 6
 """
-Number of temporary blacklistings that result in a permanent
-blacklisting; in other words, number of times a station can
+Number of temporary blocklistings that result in a permanent
+blocklisting; in other words, number of times a station can
 legitimately move to a new location before we permanently give
 up trying to figure out its fixed location.
 """
