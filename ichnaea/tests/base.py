@@ -31,6 +31,7 @@ from ichnaea.constants import GEOIP_CITY_ACCURACY
 from ichnaea.db import configure_db
 from ichnaea.geocalc import maximum_country_radius
 from ichnaea.geoip import configure_geoip
+from ichnaea.http import configure_http_session
 from ichnaea.log import (
     configure_raven,
     configure_stats,
@@ -120,7 +121,7 @@ def _make_redis(uri=REDIS_URI):
 
 
 def _make_app(app_config=TEST_CONFIG,
-              _db_rw=None, _db_ro=None, _geoip_db=None,
+              _db_rw=None, _db_ro=None, _http_session=None, _geoip_db=None,
               _raven_client=None, _redis_client=None, _stats_client=None,
               _country_searcher=None, _position_searcher=None):
     wsgiapp = main(
@@ -128,6 +129,7 @@ def _make_app(app_config=TEST_CONFIG,
         _db_rw=_db_rw,
         _db_ro=_db_ro,
         _geoip_db=_geoip_db,
+        _http_session=_http_session,
         _raven_client=_raven_client,
         _redis_client=_redis_client,
         _stats_client=_stats_client,
@@ -429,6 +431,20 @@ class DBTestCase(LogTestCase):
             trans.commit()
 
 
+class HTTPTestCase(object):
+
+    @classmethod
+    def setUpClass(cls):
+        super(HTTPTestCase, cls).setUpClass()
+        cls.http_session = configure_http_session(size=1)
+
+    @classmethod
+    def tearDownClass(cls):
+        super(HTTPTestCase, cls).tearDownClass()
+        cls.http_session.close()
+        del cls.http_session
+
+
 class GeoIPTestCase(LogTestCase):
 
     geoip_data = GEOIP_DATA
@@ -469,7 +485,8 @@ class RedisTestCase(LogTestCase):
         self.redis_client.flushdb()
 
 
-class ConnectionTestCase(DBTestCase, GeoIPTestCase, RedisTestCase):
+class ConnectionTestCase(DBTestCase, GeoIPTestCase,
+                         HTTPTestCase, RedisTestCase):
     pass
 
 
@@ -503,6 +520,7 @@ class AppTestCase(APITestCase):
         cls.app = _make_app(app_config=TEST_CONFIG,
                             _db_rw=cls.db_rw,
                             _db_ro=cls.db_ro,
+                            _http_session=cls.http_session,
                             _geoip_db=cls.geoip_db,
                             _raven_client=cls.raven_client,
                             _redis_client=cls.redis_client,

@@ -26,6 +26,7 @@ class BaseLocateView(BaseAPIView):
             api_key=api_key,
             api_type=self.view_type,
             session=self.request.db_ro_session,
+            http_session=self.request.registry.http_session,
             geoip_db=self.request.registry.geoip_db,
             stats_client=self.stats_client,
         )

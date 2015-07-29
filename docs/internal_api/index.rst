@@ -20,6 +20,7 @@ For documentation on the public HTTP API please look at :ref:`service_api`.
    floatjson
    geocalc
    geoip
+   http
    internaljson
    log
    models/index

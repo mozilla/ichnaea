@@ -17,6 +17,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Set up a HTTPS connection pool used by the fallback source.
+
 - Disable statsd request metrics for static assets.
 
 - Let all internal data pipeline metrics use tags.

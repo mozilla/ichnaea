@@ -38,8 +38,8 @@ class Query(object):
     _ip = None
 
     def __init__(self, fallback=None, ip=None, cell=None, wifi=None,
-                 api_key=None, api_type=None,
-                 session=None, geoip_db=None, stats_client=None):
+                 api_key=None, api_type=None, session=None,
+                 http_session=None, geoip_db=None, stats_client=None):
         """
         A class representing a concrete query.
 
@@ -63,6 +63,8 @@ class Query(object):
 
         :param session: An open database session.
 
+        :param http_session: An open HTTP/S session.
+
         :param geoip_db: A geoip database.
         :type geoip_db: :class:`~ichnaea.geoip.GeoIPWrapper`
 
@@ -70,6 +72,7 @@ class Query(object):
         :type stats_client: :class:`~ichnaea.log.StatsClient`
         """
         self.geoip_db = geoip_db
+        self.http_session = http_session
         self.session = session
         self.stats_client = stats_client
 

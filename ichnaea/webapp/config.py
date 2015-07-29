@@ -19,6 +19,7 @@ from ichnaea.db import (
 )
 from ichnaea import floatjson
 from ichnaea.geoip import configure_geoip
+from ichnaea.http import configure_http_session
 from ichnaea.log import (
     configure_logging,
     configure_raven,
@@ -28,7 +29,7 @@ from ichnaea.webapp.monitor import configure_monitor
 
 
 def main(app_config, ping_connections=False,
-         _db_rw=None, _db_ro=None, _geoip_db=None,
+         _db_rw=None, _db_ro=None, _geoip_db=None, _http_session=None,
          _raven_client=None, _redis_client=None, _stats_client=None,
          _country_searcher=None, _position_searcher=None):
     """
@@ -86,6 +87,8 @@ def main(app_config, ping_connections=False,
 
     registry.stats_client = stats_client = configure_stats(
         app_config, _client=_stats_client)
+
+    registry.http_session = configure_http_session(_session=_http_session)
 
     registry.geoip_db = geoip_db = configure_geoip(
         app_config.get('ichnaea', 'geoip_db_path'), raven_client=raven_client,

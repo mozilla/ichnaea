@@ -5,7 +5,7 @@ Implementation of a fallback source using an external web service.
 import time
 
 import colander
-import requests
+from requests.exceptions import RequestException
 from redis import RedisError
 import simplejson as json
 
@@ -151,7 +151,7 @@ class FallbackPositionSource(PositionSource):
 
         try:
             with self._stat_timed('lookup', tags=()):
-                response = requests.post(
+                response = query.http_session.post(
                     self.url,
                     headers={'User-Agent': 'ichnaea'},
                     json=outbound,
@@ -172,7 +172,7 @@ class FallbackPositionSource(PositionSource):
 
             return response.json()
 
-        except (json.JSONDecodeError, requests.exceptions.RequestException):
+        except (json.JSONDecodeError, RequestException):
             self.raven_client.captureException()
 
     def should_search(self, query, result):

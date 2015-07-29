@@ -50,6 +50,7 @@ intersphinx_mapping = {
     'pyramid': ('https://pyramid.readthedocs.org/en/latest/', None),
     'python': ('https://docs.python.org/2.7', None),
     'raven': ('https://raven.readthedocs.org/en/latest/', None),
+    'requests': ('https://requests.readthedocs.org/en/latest/', None),
 }
 
 autoclass_content = 'both'

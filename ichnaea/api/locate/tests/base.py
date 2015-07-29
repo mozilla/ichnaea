@@ -84,6 +84,7 @@ class BaseSourceTest(ConnectionTestCase):
             api_key=api_key,
             api_type=self.api_type,
             session=self.session,
+            http_session=self.http_session,
             geoip_db=self.geoip_db,
             stats_client=self.stats_client,
             **kw)

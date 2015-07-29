@@ -63,6 +63,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(query.api_key, None)
         self.assertEqual(query.api_type, None)
         self.assertEqual(query.session, None)
+        self.assertEqual(query.http_session, None)
         self.assertEqual(query.geoip_db, None)
         self.assertEqual(query.stats_client, None)
         self.assertEqual(query.expected_accuracy, DataAccuracy.none)
