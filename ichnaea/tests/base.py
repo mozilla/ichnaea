@@ -81,6 +81,7 @@ TEST_CONFIG = DummyConfig({
         'url': 'http://127.0.0.1:9/?api',
         'ratelimit': '10',
         'ratelimit_expire': '60',
+        'ratelimit_interval': '5',
         'cache_expire': '60',
     },
 })

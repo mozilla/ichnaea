@@ -17,6 +17,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add new `ratelimit_interval` option to `locate:fallback` section.
+
 - Set up a HTTPS connection pool used by the fallback source.
 
 - Disable statsd request metrics for static assets.

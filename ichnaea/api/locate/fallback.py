@@ -75,7 +75,8 @@ class FallbackPositionSource(PositionSource):
     def __init__(self, settings, *args, **kw):
         self.url = settings.get('url')
         self.ratelimit = int(settings.get('ratelimit', 0))
-        self.rate_limit_expire = int(settings.get('ratelimit_expire', 0))
+        self.ratelimit_expire = int(settings.get('ratelimit_expire', 0))
+        self.ratelimit_interval = int(settings.get('ratelimit_interval', 1))
         self.cache_expire = int(settings.get('cache_expire', 0))
         super(FallbackPositionSource, self).__init__(settings, *args, **kw)
 
@@ -86,14 +87,15 @@ class FallbackPositionSource(PositionSource):
         return self.stats_client.timed('locate.fallback.' + stat, tags=tags)
 
     def _get_ratelimit_key(self):
-        return 'fallback_ratelimit:{time}'.format(time=int(time.time()))
+        now = int(time.time())
+        return 'fallback_ratelimit:%s' % (now // self.ratelimit_interval)
 
     def _limit_reached(self):
         return self.ratelimit and rate_limit_exceeded(
             self.redis_client,
             self._get_ratelimit_key(),
             maxreq=self.ratelimit,
-            expire=self.rate_limit_expire,
+            expire=self.ratelimit_expire,
             on_error=True,
         )
 
