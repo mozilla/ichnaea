@@ -34,6 +34,7 @@ setup(
     ],
     keywords="web services geo location",
     packages=find_packages(),
+    include_package_data=True,
     entry_points={
         'console_scripts': [
             'location_initdb=ichnaea.scripts.initdb:console_entry',
