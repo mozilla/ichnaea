@@ -18,8 +18,13 @@ class ObservationQueue(DataTask):
         all_observations = []
 
         for entry in entries:
-            obs = self.observation_model.create(**entry)
-            if not obs:  # pragma: no cover
+            if isinstance(entry, self.observation_model):
+                obs = entry
+            elif isinstance(entry, dict):  # pragma: no cover
+                obs = self.observation_model.create(**entry)
+                if not obs:
+                    continue
+            else:  # pragma: no cover
                 continue
 
             all_observations.append(obs)

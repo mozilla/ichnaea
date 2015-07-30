@@ -15,7 +15,6 @@ from ichnaea.models import (
     WifiObservation,
     WifiReport,
 )
-from ichnaea.models.cell import encode_radio_dict
 
 
 class ReportQueue(DataTask):
@@ -98,7 +97,7 @@ class ReportQueue(DataTask):
         for name, model in (('cell', Cell),
                             ('wifi', Wifi)):
             for obs in observations[name]:
-                station_obs[name][model.to_hashkey(obs)].append(obs.__dict__)
+                station_obs[name][model.to_hashkey(obs)].append(obs)
 
         # determine scores for stations
         for name, model, block_model in (('cell', Cell, CellBlocklist),
@@ -119,11 +118,7 @@ class ReportQueue(DataTask):
                 for i in range(0, len(stations), batch_size):
                     values = []
                     for obs_batch in stations[i:i + batch_size]:
-                        if name == 'cell':
-                            values.extend(
-                                [encode_radio_dict(o) for o in obs_batch])
-                        elif name == 'wifi':
-                            values.extend(obs_batch)
+                        values.extend(obs_batch)
                     # insert observations, expire the task if it wasn't
                     # processed after six hours to avoid queue overload,
                     # also delay each task by one second more, to get a
