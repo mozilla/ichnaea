@@ -311,7 +311,6 @@ Internal Monitoring
 ``queue#name:celery_default``,
 ``queue#name:celery_export``,
 ``queue#name:celery_incoming``,
-``queue#name:celery_insert``,
 ``queue#name:celery_monitor``,
 ``queue#name:celery_reports``,
 ``queue#name:celery_upload`` : gauges

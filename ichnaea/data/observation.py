@@ -9,22 +9,22 @@ class ObservationQueue(DataTask):
 
     queue_name = None
 
-    def __init__(self, task, session, pipe):
+    def __init__(self, task, session, pipe):  # pragma: no cover
         DataTask.__init__(self, task, session)
         self.pipe = pipe
         self.data_queue = self.task.app.data_queues[self.queue_name]
 
-    def insert(self, entries):
+    def insert(self, entries):  # pragma: no cover
         all_observations = []
 
         for entry in entries:
             if isinstance(entry, self.observation_model):
                 obs = entry
-            elif isinstance(entry, dict):  # pragma: no cover
+            elif isinstance(entry, dict):
                 obs = self.observation_model.create(**entry)
                 if not obs:
                     continue
-            else:  # pragma: no cover
+            else:
                 continue
 
             all_observations.append(obs)

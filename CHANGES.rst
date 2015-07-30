@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Deprecate `insert_measure_*` tasks.
+
 - Move new station score bookkeeping into insert_measures task.
 
 20150730143600

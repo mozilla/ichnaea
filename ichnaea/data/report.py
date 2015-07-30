@@ -20,16 +20,15 @@ from ichnaea.models import (
 class ReportQueue(DataTask):
 
     def __init__(self, task, session, pipe, api_key=None,
-                 email=None, ip=None, nickname=None,
-                 insert_cell_task=None, insert_wifi_task=None):
+                 email=None, ip=None, nickname=None):
         DataTask.__init__(self, task, session)
         self.pipe = pipe
         self.api_key = api_key
         self.email = email
         self.ip = ip
         self.nickname = nickname
-        self.insert_cell_task = insert_cell_task
-        self.insert_wifi_task = insert_wifi_task
+        self.cell_queue = self.task.app.data_queues['update_cell']
+        self.wifi_queue = self.task.app.data_queues['update_wifi']
 
     def emit_stats(self, reports, malformed_reports, obs_count):
         api_tag = []
@@ -106,30 +105,10 @@ class ReportQueue(DataTask):
                 if not self.known_station(model, block_model, station_key):
                     new_station_count[name] += 1
 
-        for name, task in (('cell', self.insert_cell_task),
-                           ('wifi', self.insert_wifi_task)):
-
-            if station_obs[name]:
-                # group by and create task per small batch of keys
-                batch_size = 100
-                countdown = 0
-                stations = list(station_obs[name].values())
-
-                for i in range(0, len(stations), batch_size):
-                    values = []
-                    for obs_batch in stations[i:i + batch_size]:
-                        values.extend(obs_batch)
-                    # insert observations, expire the task if it wasn't
-                    # processed after six hours to avoid queue overload,
-                    # also delay each task by one second more, to get a
-                    # more even workload and avoid parallel updates of
-                    # the same underlying stations
-                    task.apply_async(
-                        args=[values],
-                        kwargs={'userid': userid},
-                        expires=21600,
-                        countdown=countdown)
-                    countdown += 1
+        for name, queue in (('cell', self.cell_queue),
+                            ('wifi', self.wifi_queue)):
+            if observations[name]:
+                queue.enqueue(list(observations[name]), pipe=self.pipe)
 
         self.process_mapstat(positions)
         self.process_score(userid, positions, new_station_count)

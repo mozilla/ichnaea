@@ -5,8 +5,6 @@ from ichnaea.constants import (
     TEMPORARY_BLOCKLIST_DURATION,
 )
 from ichnaea.data.tasks import (
-    insert_measures_cell,
-    insert_measures_wifi,
     update_cell,
     update_wifi,
     remove_wifi,
@@ -16,7 +14,6 @@ from ichnaea.models import (
     Cell,
     CellArea,
     CellBlocklist,
-    Radio,
     StatCounter,
     StatKey,
     Wifi,
@@ -52,24 +49,18 @@ class TestCell(StationTest):
 
     def test_blocklist(self):
         now = util.utcnow()
-
-        cell = CellFactory.build()
-        observations = [dict(radio=int(cell.radio), mcc=cell.mcc,
-                             mnc=cell.mnc, lac=cell.lac, cid=cell.cid + i,
-                             psc=cell.psc,
-                             lat=cell.lat + i * 0.0000001,
-                             lon=cell.lon + i * 0.0000001)
-                        for i in range(1, 4)]
+        observations = CellObservationFactory.build_batch(3)
+        obs = observations[0]
 
         block = CellBlocklist(
-            radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
-            lac=cell.lac, cid=cell.cid + 1,
+            radio=obs.radio, mcc=obs.mcc, mnc=obs.mnc,
+            lac=obs.lac, cid=obs.cid,
             time=now, count=1,
         )
         self.session.add(block)
         self.session.flush()
 
-        insert_measures_cell.delay(observations).get()
+        self.data_queue.enqueue(observations)
         self.assertEqual(self.data_queue.size(), 3)
         update_cell.delay().get()
 
@@ -83,19 +74,15 @@ class TestCell(StationTest):
         now = util.utcnow()
         last_week = now - TEMPORARY_BLOCKLIST_DURATION - timedelta(days=1)
 
-        cell = CellFactory.build()
+        obs = CellObservationFactory.build()
         self.session.add(
             CellBlocklist(time=last_week, count=1,
-                          radio=cell.radio, mcc=cell.mcc,
-                          mnc=cell.mnc, lac=cell.lac, cid=cell.cid))
+                          radio=obs.radio, mcc=obs.mcc,
+                          mnc=obs.mnc, lac=obs.lac, cid=obs.cid))
         self.session.flush()
 
         # add a new entry for the previously blocklisted cell
-        obs = dict(lat=cell.lat, lon=cell.lon,
-                   radio=int(cell.radio), mcc=cell.mcc, mnc=cell.mnc,
-                   lac=cell.lac, cid=cell.cid)
-        insert_measures_cell.delay([obs]).get()
-
+        self.data_queue.enqueue([obs])
         self.assertEqual(self.data_queue.size(), 1)
         update_cell.delay().get()
 
@@ -213,22 +200,16 @@ class TestCell(StationTest):
             (25.0, -80.0),  # Miami
         ]
 
+        obs = CellObservationFactory(
+            mcc=310, lat=points[0][0], lon=points[0][1])
+
         N = 4 * PERMANENT_BLOCKLIST_THRESHOLD
         for month in range(0, N):
             days_ago = (N - (month + 1)) * 30
             time = now - timedelta(days=days_ago)
 
-            obs = dict(radio=int(Radio.gsm),
-                       mcc=310, mnc=150, lac=456, cid=123,
-                       time=time,
-                       lat=points[month % 4][0],
-                       lon=points[month % 4][1])
-
-            # insert_result is num-accepted-observations
-            insert_result = insert_measures_cell.delay([obs])
-
-            # update_result is (num-stations, num-moving-stations)
-            update_result = update_cell.delay()
+            obs.lat = points[month % 4][0]
+            obs.lon = points[month % 4][1]
 
             # Assuming PERMANENT_BLOCKLIST_THRESHOLD == 6:
             #
@@ -246,25 +227,24 @@ class TestCell(StationTest):
             # ...
             # 23rd insert will not recreate station
 
-            bl = self.session.query(CellBlocklist).all()
-            if month == 0:
-                self.assertEqual(len(bl), 0)
+            blocks = self.session.query(CellBlocklist).all()
+            if month < 2:
+                self.assertEqual(len(blocks), 0)
             else:
-                self.assertEqual(len(bl), 1)
+                self.assertEqual(len(blocks), 1)
                 # force the blocklist back in time to whenever the
                 # observation was supposedly inserted.
-                bl = bl[0]
-                bl.time = time
-                self.session.add(bl)
+                block = blocks[0]
+                block.time = time
                 self.session.commit()
 
             if month < N / 2:
                 # We still haven't exceeded the threshold, so the
                 # observation was admitted.
-                insert_result.get()
+                self.data_queue.enqueue([obs])
                 if month % 2 == 0:
                     # The station was (re)created.
-                    self.assertEqual(update_result.get(), (1, 0))
+                    self.assertEqual(update_cell.delay().get(), (1, 0))
                     # Rescan lacs to update entries
                     self.assertEqual(scan_areas.delay().get(), 1)
                     # One cell + one cell-LAC record should exist.
@@ -273,25 +253,24 @@ class TestCell(StationTest):
                 else:
                     # The station existed and was seen moving,
                     # thereby activating the blocklist and deleting the cell.
-                    self.assertEqual(update_result.get(), (1, 1))
+                    self.assertEqual(update_cell.delay().get(), (1, 1))
                     # Rescan lacs to delete orphaned lac entry
                     self.assertEqual(scan_areas.delay().get(), 1)
-                    self.assertEqual(bl.count, ((month + 1) / 2))
+                    if month > 1:
+                        self.assertEqual(block.count, ((month + 1) / 2))
                     self.assertEqual(
                         self.session.query(CellBlocklist).count(), 1)
                     self.assertEqual(self.session.query(Cell).count(), 0)
 
                     # Try adding one more observation
                     # to be sure it is dropped by the now-active blocklist.
-                    next_day = time + timedelta(days=1)
-                    obs['time'] = next_day
-                    insert_measures_cell.delay([obs]).get()
-                    self.assertEqual(update_result.get(), (1, 1))
+                    self.data_queue.enqueue([obs])
+                    self.assertEqual(update_cell.delay().get(), (0, 0))
             else:
                 # Blocklist has exceeded threshold, gone to permanent mode,
                 # so no observation accepted, no stations seen.
-                insert_result.get()
-                self.assertEqual(update_result.get(), (0, 0))
+                self.data_queue.enqueue([obs])
+                self.assertEqual(update_cell.delay().get(), (0, 0))
 
     def test_update_cell(self):
         now = util.utcnow()
@@ -387,22 +366,14 @@ class TestWifi(StationTest):
     def test_blocklist(self):
         utcnow = util.utcnow()
 
-        bad_wifi = WifiFactory.build()
-        good_wifi = WifiFactory.build()
+        bad_wifi = WifiObservationFactory.build()
+        good_wifi = WifiObservationFactory.build()
         block = WifiBlocklist(time=utcnow, count=1, key=bad_wifi.key)
         self.session.add(block)
         self.session.flush()
 
-        obs = dict(lat=good_wifi.lat, lon=good_wifi.lon)
-        entries = [
-            {'key': good_wifi.key},
-            {'key': good_wifi.key},
-            {'key': bad_wifi.key},
-        ]
-        for entry in entries:
-            entry.update(obs)
-
-        insert_measures_wifi.delay(entries).get()
+        observations = [good_wifi, bad_wifi, good_wifi]
+        self.data_queue.enqueue(observations)
         self.assertEqual(self.data_queue.size(), 3)
         update_wifi.delay().get()
 
@@ -417,14 +388,12 @@ class TestWifi(StationTest):
         now = util.utcnow()
         last_week = now - TEMPORARY_BLOCKLIST_DURATION - timedelta(days=1)
 
-        wifi = WifiFactory.build()
-        self.session.add(WifiBlocklist(time=last_week, count=1, key=wifi.key))
+        obs = WifiObservationFactory()
+        self.session.add(WifiBlocklist(time=last_week, count=1, key=obs.key))
         self.session.flush()
 
         # add a new entry for the previously blocklisted wifi
-        obs = dict(lat=wifi.lat, lon=wifi.lon, key=wifi.key)
-        insert_measures_wifi.delay([obs]).get()
-
+        self.data_queue.enqueue([obs])
         self.assertEqual(self.data_queue.size(), 1)
         update_wifi.delay().get()
 
@@ -540,21 +509,15 @@ class TestWifi(StationTest):
             (25.0, -80.0),
         ]
 
+        obs = WifiObservationFactory()
+
         N = PERMANENT_BLOCKLIST_THRESHOLD * 4
         for month in range(0, N):
             days_ago = (N - (month + 1)) * 30
             time = now - timedelta(days=days_ago)
 
-            obs = dict(key='ab1234567890',
-                       time=time,
-                       lat=points[month % 4][0],
-                       lon=points[month % 4][1])
-
-            # insert_result is num-accepted-observations
-            insert_result = insert_measures_wifi.delay([obs])
-
-            # update_result is (num-stations, num-moving-stations)
-            update_result = update_wifi.delay()
+            obs.lat = points[month % 4][0]
+            obs.lon = points[month % 4][1]
 
             # Assuming PERMANENT_BLOCKLIST_THRESHOLD == 6:
             #
@@ -573,44 +536,44 @@ class TestWifi(StationTest):
             # 23rd insert will not recreate station
 
             blocks = self.session.query(WifiBlocklist).all()
-            if month == 0:
+            if month < 2:
                 self.assertEqual(len(blocks), 0)
             else:
                 self.assertEqual(len(blocks), 1)
                 # force the blocklist back in time to whenever the
                 # observation was supposedly inserted.
-                blocks[0].time = time
+                block = blocks[0]
+                block.time = time
                 self.session.commit()
 
             if month < N / 2:
                 # We still haven't exceeded the threshold, so the
                 # observation was admitted.
-                insert_result.get()
+                self.data_queue.enqueue([obs])
                 if month % 2 == 0:
                     # The station was (re)created.
-                    self.assertEqual(update_result.get(), (1, 0))
+                    self.assertEqual(update_wifi.delay().get(), (1, 0))
                     # One wifi record should exist.
                     self.assertEqual(self.session.query(Wifi).count(), 1)
                 else:
                     # The station existed and was seen moving,
                     # thereby activating the blocklist.
-                    self.assertEqual(update_result.get(), (1, 1))
-                    self.assertEqual(blocks[0].count, ((month + 1) / 2))
+                    self.assertEqual(update_wifi.delay().get(), (1, 1))
+                    if month > 1:
+                        self.assertEqual(block.count, ((month + 1) / 2))
                     self.assertEqual(
                         self.session.query(WifiBlocklist).count(), 1)
                     self.assertEqual(self.session.query(Wifi).count(), 0)
 
                     # Try adding one more observation
                     # to be sure it is dropped by the now-active blocklist.
-                    next_day = time + timedelta(days=1)
-                    obs['time'] = next_day
-                    insert_measures_wifi.delay([obs]).get()
-                    self.assertEqual(update_result.get(), (1, 1))
+                    self.data_queue.enqueue([obs])
+                    self.assertEqual(update_wifi.delay().get(), (0, 0))
             else:
                 # Blocklist has exceeded threshold, gone to permanent mode,
                 # so no observation accepted, no stations seen.
-                insert_result.get()
-                self.assertEqual(update_result.get(), (0, 0))
+                self.data_queue.enqueue([obs])
+                self.assertEqual(update_wifi.delay().get(), (0, 0))
 
     def test_update_wifi(self):
         obs = []

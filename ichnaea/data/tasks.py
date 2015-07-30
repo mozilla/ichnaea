@@ -48,15 +48,13 @@ def insert_measures(self, items=None, email=None, ip=None, nickname=None,
                                 api_key=api_key,
                                 email=email,
                                 ip=ip,
-                                nickname=nickname,
-                                insert_cell_task=insert_measures_cell,
-                                insert_wifi_task=insert_measures_wifi)
+                                nickname=nickname)
             length = queue.insert(reports)
     return length
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_insert')
-def insert_measures_cell(self, entries, userid=None):
+def insert_measures_cell(self, entries, userid=None):  # pragma: no cover
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
             queue = CellObservationQueue(self, session, pipe)
@@ -65,7 +63,7 @@ def insert_measures_cell(self, entries, userid=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_insert')
-def insert_measures_wifi(self, entries, userid=None):
+def insert_measures_wifi(self, entries, userid=None):  # pragma: no cover
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
             queue = WifiObservationQueue(self, session, pipe)
