@@ -213,17 +213,20 @@ class StationUpdater(DataTask):
     def blocklist_stations(self, moving):
         moving_keys = []
         for station_key, block in moving:
+            moving_keys.append(station_key)
             block_key = self.blocklist_model.to_hashkey(station_key)
-            moving_keys.append(block_key)
             if block:
                 block.time = self.utcnow
                 block.count += 1
             else:
-                block = self.blocklist_model(
+                stmt = self.blocklist_model.__table__.insert(
+                    on_duplicate='time = time'  # no-op change
+                ).values(
                     time=self.utcnow,
                     count=1,
-                    **block_key.__dict__)
-                self.session.add(block)
+                    **block_key.__dict__
+                )
+                self.session.execute(stmt)
 
         if moving_keys:
             self.stats_client.incr(
