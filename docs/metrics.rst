@@ -205,8 +205,8 @@ normalization, consistency-checking and eventually (possibly) integration
 into aggregate station estimates held in the main database tables.
 Along the way several counters measure the steps involved:
 
-``data.upload.batch``,
-``data.upload.batch#key:<api_shortname>`` : counters
+``data.batch.upload``,
+``data.batch.upload#key:<api_shortname>`` : counters
 
     Counts the number of "batches" of reports accepted to the data
     processing pipeline by an API endpoint. A batch generally
@@ -218,12 +218,18 @@ Along the way several counters measure the steps involved:
     The metric is either emitted per tracked API key, or for everything
     else without a key tag.
 
-``data.upload.report``,
-``data.upload.report#key:<api_shortname>`` : counters
+``data.report.upload``,
+``data.report.upload#key:<api_shortname>`` : counters
 
     Counts the number of reports accepted into the data processing pipeline.
     The metric is either emitted per tracked API key, or for everything
     else without a key tag.
+
+``data.report.drop#reason:malformed``,
+``data.report.drop#reason:malformed,key:<api_shortname>`` : counter
+
+    Count incoming reports that were discarded due to some internal
+    consistency, range or validity-condition error.
 
 ``data.observation.upload#type:cell``,
 ``data.observation.upload#type:cell,key:<api_shortname>``,
@@ -240,7 +246,9 @@ Along the way several counters measure the steps involved:
     else without a key tag.
 
 ``data.observation.drop#type:cell,reason:malformed``,
-``data.observation.drop#type:wifi,reason:malformed`` : counters
+``data.observation.drop#type:cell,reason:malformed,key:<api_shortname>``,
+``data.observation.drop#type:wifi,reason:malformed``
+``data.observation.drop#type:wifi,reason:malformed,key:<api_shortname>`` : counters
 
     Count incoming cell or wifi observations that were discarded before
     integration due to some internal consistency, range or

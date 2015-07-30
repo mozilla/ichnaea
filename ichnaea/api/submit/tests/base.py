@@ -97,7 +97,7 @@ class BaseSubmitTest(object):
 
         self.assertTrue(mock_task.called)
         self.check_stats(counter=[
-            ('data.upload.batch', 0),
+            ('data.batch.upload', 0),
             ('request', [self.metric_path, 'method:post', 'status:503']),
         ])
 
@@ -132,8 +132,8 @@ class BaseSubmitTest(object):
         cell, query = self._one_cell_query()
         self._post([query], api_key='test')
         self.check_stats(counter=[
-            ('data.upload.batch', 1),
-            ('data.upload.batch', ['key:test']),
+            ('data.batch.upload', 1),
+            ('data.batch.upload', ['key:test']),
             ('request', [self.metric_path, 'method:post',
                          'status:%s' % self.status]),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),

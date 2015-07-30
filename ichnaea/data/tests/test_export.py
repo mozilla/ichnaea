@@ -323,6 +323,12 @@ class TestInternalUploader(BaseExportTest):
         schedule_export_reports.delay().get()
         update_cell.delay().get()
         self.assertEqual(self.session.query(Cell).count(), 0)
+        self.check_stats(counter=[
+            ('data.report.upload', 1, 1, ['key:test']),
+            ('data.report.drop', 1, 1, ['reason:malformed', 'key:test']),
+            ('data.observation.drop', 1, 1,
+                ['type:cell', 'reason:malformed', 'key:test']),
+        ])
 
     def test_upload_wifi(self):
         reports = self.add_reports(cell_factor=0, wifi_factor=1)
@@ -364,6 +370,12 @@ class TestInternalUploader(BaseExportTest):
         schedule_export_reports.delay().get()
         update_wifi.delay().get()
         self.assertEqual(self.session.query(Wifi).count(), 0)
+        self.check_stats(counter=[
+            ('data.report.upload', 1, 1, ['key:test']),
+            ('data.report.drop', 1, 1, ['reason:malformed', 'key:test']),
+            ('data.observation.drop', 1, 1,
+                ['type:wifi', 'reason:malformed', 'key:test']),
+        ])
 
     def test_upload_bluetooth(self):
         self.add_reports(blue_factor=1, cell_factor=0, wifi_factor=0)
@@ -380,6 +392,12 @@ class TestInternalUploader(BaseExportTest):
         schedule_export_reports.delay().get()
         update_cell.delay().get()
         self.assertEqual(self.session.query(Cell).count(), 1)
+        self.check_stats(counter=[
+            ('data.report.upload', 1, 2, ['key:test']),
+            ('data.report.drop', 1, 1, ['reason:malformed', 'key:test']),
+            ('data.observation.insert', 1, 1, ['type:cell']),
+            ('data.observation.upload', 1, 1, ['type:cell', 'key:test']),
+        ])
 
     def test_nickname(self):
         self.add_reports(wifi_factor=0, nickname=self.nickname)
@@ -430,8 +448,12 @@ class TestInternalUploader(BaseExportTest):
         update_wifi.delay().get()
 
         self.check_stats(counter=[
-            ('data.upload.report', 1, 3),
-            ('data.upload.report', 1, 3, ['key:test']),
+            ('data.report.upload', 1, 3),
+            ('data.report.upload', 1, 3, ['key:test']),
+            ('data.observation.insert', 1, 3, ['type:cell']),
+            ('data.observation.insert', 1, 6, ['type:wifi']),
+            ('data.observation.upload', 1, 3, ['type:cell', 'key:test']),
+            ('data.observation.upload', 1, 6, ['type:wifi', 'key:test']),
         ])
 
 

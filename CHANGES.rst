@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Make report and observation drop metrics more consistent.
 
 20150730111000
 **************

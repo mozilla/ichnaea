@@ -28,46 +28,66 @@ class ReportQueue(DataTask):
         self.insert_cell_task = insert_cell_task
         self.insert_wifi_task = insert_wifi_task
 
+    def emit_stats(self, reports, malformed_reports, obs_count):
+        api_tag = []
+        if self.api_key and self.api_key.log:
+            api_tag = ['key:%s' % self.api_key.name]
+
+        if reports > 0:
+            self.stats_client.incr(
+                'data.report.upload', reports, tags=api_tag)
+
+        if malformed_reports > 0:
+            self.stats_client.incr(
+                'data.report.drop', malformed_reports,
+                tags=['reason:malformed'] + api_tag)
+
+        for name, stats in obs_count.items():
+            for action, count in stats.items():
+                if count > 0:
+                    tags = ['type:%s' % name]
+                    if action == 'drop':
+                        tags.append('reason:malformed')
+                    self.stats_client.incr(
+                        'data.observation.%s' % action,
+                        count,
+                        tags=tags + api_tag)
+
     def insert(self, reports):
         length = len(reports)
         userid = self.process_user(self.nickname, self.email)
-
         self.process_reports(reports, userid=userid)
-
-        tags = ()
-        if self.api_key and self.api_key.log:
-            tags = ['key:%s' % self.api_key.name]
-        self.stats_client.incr('data.upload.report', length, tags=tags)
-
         return length
 
     def process_reports(self, reports, userid=None):
+        malformed_reports = 0
         positions = set()
         observations = {'cell': [], 'wifi': []}
+        obs_count = {
+            'cell': {'upload': 0, 'drop': 0},
+            'wifi': {'upload': 0, 'drop': 0},
+        }
 
         for report in reports:
-            cell, wifi = self.process_report(report)
+            cell, wifi, malformed_obs = self.process_report(report)
             if cell:
                 observations['cell'].extend(cell)
+                obs_count['cell']['upload'] += len(cell)
             if wifi:
                 observations['wifi'].extend(wifi)
+                obs_count['wifi']['upload'] += len(wifi)
             if (cell or wifi):
                 positions.add((report['lat'], report['lon']))
+            else:
+                malformed_reports += 1
+            for name in ('cell', 'wifi'):
+                obs_count[name]['drop'] += malformed_obs[name]
 
         for name, task in (('cell', self.insert_cell_task),
                            ('wifi', self.insert_wifi_task)):
 
             if observations[name]:
                 # group by and create task per small batch of keys
-                tags = ['type:%s' % name]
-                if self.api_key and self.api_key.log:
-                    tags.append('key:%s' % self.api_key.name)
-
-                self.stats_client.incr(
-                    'data.observation.upload',
-                    len(observations[name]),
-                    tags=tags)
-
                 station_obs = defaultdict(list)
                 for obs in observations[name]:
                     station_obs[obs.hashkey()].append(obs.__dict__)
@@ -98,13 +118,19 @@ class ReportQueue(DataTask):
 
         self.process_mapstat(positions)
         self.process_score(userid, positions)
+        self.emit_stats(
+            len(reports),
+            malformed_reports,
+            obs_count,
+        )
 
     def process_report(self, data):
+        malformed = {'cell': 0, 'wifi': 0}
+        observations = {'cell': {}, 'wifi': {}}
+
         report = Report.create(**data)
         if report is None:
-            return (None, None)
-
-        observations = {'cell': {}, 'wifi': {}}
+            return (None, None, malformed)
 
         for name, report_cls, obs_cls in (
                 ('cell', CellReport, CellObservation),
@@ -116,6 +142,7 @@ class ReportQueue(DataTask):
                     # validate the cell/wifi specific fields
                     item_report = report_cls.create(**item)
                     if item_report is None:
+                        malformed[name] += 1
                         continue
 
                     # combine general and specific report data into one
@@ -130,7 +157,11 @@ class ReportQueue(DataTask):
 
                     observations[name][item_key] = item_obs
 
-        return (observations['cell'].values(), observations['wifi'].values())
+        return (
+            observations['cell'].values(),
+            observations['wifi'].values(),
+            malformed,
+        )
 
     def process_mapstat(self, positions):
         if not positions:

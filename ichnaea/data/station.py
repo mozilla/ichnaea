@@ -71,7 +71,7 @@ class StationUpdater(DataTask):
         self.utcnow = util.utcnow()
 
     def stat_count(self, action, count, reason=None):
-        if count != 0:
+        if count > 0:
             tags = ['type:%s' % self.station_type]
             if reason:
                 tags.append('reason:%s' % reason)

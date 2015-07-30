@@ -26,14 +26,6 @@ class ObservationQueue(DataTask):
             utcnow = util.utcnow()
         self.utcnow = utcnow
 
-    def emit_drop_stats(self, dropped):
-        if dropped != 0:
-            tags = [
-                'type:%s' % self.station_type,
-                'reason:malformed',
-            ]
-            self.stats_client.incr('data.observation.drop', dropped, tags=tags)
-
     def queue_scores(self, userid, new_stations):
         # Credit the user with discovering any new stations.
         if userid is None or new_stations <= 0:
@@ -55,7 +47,6 @@ class ObservationQueue(DataTask):
 
     def _insert(self, entries, userid=None):
         all_observations = []
-        malformed = 0
         new_stations = 0
 
         # Process entries and group by validated station key
@@ -63,7 +54,6 @@ class ObservationQueue(DataTask):
         for entry in entries:
             obs = self.observation_model.create(**entry)
             if not obs:
-                malformed += 1
                 continue
 
             station_observations[obs.hashkey()].append(obs)
@@ -78,7 +68,6 @@ class ObservationQueue(DataTask):
             if observations:
                 all_observations.extend(observations)
 
-        self.emit_drop_stats(malformed)
         self.queue_scores(userid, new_stations)
 
         return all_observations

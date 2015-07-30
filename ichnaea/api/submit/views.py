@@ -42,7 +42,7 @@ class BaseSubmitView(BaseAPIView):
         tags = ()
         if api_key.log:
             tags = ['key:%s' % api_key.name]
-        self.stats_client.incr('data.upload.batch', tags=tags)
+        self.stats_client.incr('data.batch.upload', tags=tags)
 
     def preprocess(self):
         try:
