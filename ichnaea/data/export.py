@@ -1,19 +1,12 @@
-from collections import (
-    defaultdict,
-    namedtuple,
-)
-from datetime import datetime
+from collections import namedtuple
 import uuid
 
 import boto
 import requests
 import simplejson
-import pytz
 from six.moves.urllib.parse import urlparse
 
-from ichnaea.internaljson import internal_dumps
 from ichnaea.data.base import DataTask
-from ichnaea.models.transform import ReportTransform
 from ichnaea import util
 
 MetadataGroup = namedtuple('MetadataGroup', 'api_key email ip nickname')
@@ -154,90 +147,6 @@ class ReportUploader(DataTask):
 
     def send(self, url, data):
         raise NotImplementedError
-
-
-class InternalTransform(ReportTransform):
-
-    time_id = 'timestamp'
-
-    position_id = ('position', None)
-    position_map = [
-        ('latitude', 'lat'),
-        ('longitude', 'lon'),
-        'accuracy',
-        'altitude',
-        ('altitudeAccuracy', 'altitude_accuracy'),
-        'age',
-        'heading',
-        'pressure',
-        'speed',
-        'source',
-    ]
-
-    cell_id = ('cellTowers', 'cell')
-    cell_map = [
-        ('radioType', 'radio'),
-        ('mobileCountryCode', 'mcc'),
-        ('mobileNetworkCode', 'mnc'),
-        ('locationAreaCode', 'lac'),
-        ('cellId', 'cid'),
-        'age',
-        'asu',
-        ('primaryScramblingCode', 'psc'),
-        'serving',
-        ('signalStrength', 'signal'),
-        ('timingAdvance', 'ta'),
-    ]
-
-    wifi_id = ('wifiAccessPoints', 'wifi')
-    wifi_map = [
-        ('macAddress', 'key'),
-        ('radioType', 'radio'),
-        'age',
-        'channel',
-        'frequency',
-        'signalToNoiseRatio',
-        ('signalStrength', 'signal'),
-    ]
-
-
-class InternalUploader(ReportUploader):
-
-    @staticmethod
-    def _task():
-        # avoiding import cycle problems, sigh!
-        from ichnaea.data.tasks import insert_measures
-        return insert_measures
-
-    def _format_report(self, item):
-        transform = InternalTransform()
-        report = transform.transform_one(item)
-
-        timestamp = report.pop('timestamp', None)
-        if timestamp:
-            dt = datetime.utcfromtimestamp(timestamp / 1000.0)
-            report['time'] = dt.replace(microsecond=0, tzinfo=pytz.UTC)
-
-        return report
-
-    def send(self, url, data):
-        groups = defaultdict(list)
-        for item in simplejson.loads(data):
-            group = MetadataGroup(**item['metadata'])
-            report = self._format_report(item['report'])
-            if report:
-                groups[group].append(report)
-
-        for group, reports in groups.items():
-            self._task().apply_async(
-                kwargs={
-                    'api_key_text': group.api_key,
-                    'email': group.email,
-                    'ip': group.ip,
-                    'items': internal_dumps(reports),
-                    'nickname': group.nickname,
-                },
-                expires=21600)
 
 
 class GeosubmitUploader(ReportUploader):

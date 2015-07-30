@@ -7,12 +7,12 @@ from ichnaea.data.area import (
 )
 from ichnaea.data.export import (
     GeosubmitUploader,
-    InternalUploader,
     ExportQueue,
     ExportScheduler,
     ReportExporter,
     S3Uploader,
 )
+from ichnaea.data.internal import InternalUploader
 from ichnaea.data.mapstat import MapStatUpdater
 from ichnaea.data import monitor
 from ichnaea.data.observation import (
