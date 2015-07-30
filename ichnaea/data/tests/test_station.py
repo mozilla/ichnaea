@@ -224,9 +224,8 @@ class TestCell(StationTest):
                        lat=points[month % 4][0],
                        lon=points[month % 4][1])
 
-            # insert_result is num-accepted-observations, override
-            # utcnow to set creation date
-            insert_result = insert_measures_cell.delay([obs], utcnow=time)
+            # insert_result is num-accepted-observations
+            insert_result = insert_measures_cell.delay([obs])
 
             # update_result is (num-stations, num-moving-stations)
             update_result = update_cell.delay()
@@ -282,11 +281,11 @@ class TestCell(StationTest):
                         self.session.query(CellBlocklist).count(), 1)
                     self.assertEqual(self.session.query(Cell).count(), 0)
 
-                    # Try adding one more observation 1 day later
+                    # Try adding one more observation
                     # to be sure it is dropped by the now-active blocklist.
                     next_day = time + timedelta(days=1)
                     obs['time'] = next_day
-                    insert_measures_cell.delay([obs], utcnow=next_day).get()
+                    insert_measures_cell.delay([obs]).get()
                     self.assertEqual(update_result.get(), (1, 1))
             else:
                 # Blocklist has exceeded threshold, gone to permanent mode,
@@ -551,9 +550,8 @@ class TestWifi(StationTest):
                        lat=points[month % 4][0],
                        lon=points[month % 4][1])
 
-            # insert_result is num-accepted-observations, override
-            # utcnow to set creation date
-            insert_result = insert_measures_wifi.delay([obs], utcnow=time)
+            # insert_result is num-accepted-observations
+            insert_result = insert_measures_wifi.delay([obs])
 
             # update_result is (num-stations, num-moving-stations)
             update_result = update_wifi.delay()
@@ -602,11 +600,11 @@ class TestWifi(StationTest):
                         self.session.query(WifiBlocklist).count(), 1)
                     self.assertEqual(self.session.query(Wifi).count(), 0)
 
-                    # Try adding one more observation 1 day later
+                    # Try adding one more observation
                     # to be sure it is dropped by the now-active blocklist.
                     next_day = time + timedelta(days=1)
                     obs['time'] = next_day
-                    insert_measures_wifi.delay([obs], utcnow=next_day).get()
+                    insert_measures_wifi.delay([obs]).get()
                     self.assertEqual(update_result.get(), (1, 1))
             else:
                 # Blocklist has exceeded threshold, gone to permanent mode,

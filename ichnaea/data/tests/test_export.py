@@ -17,6 +17,7 @@ from ichnaea.data.tasks import (
 from ichnaea.models import (
     ApiKey,
     Cell,
+    ScoreKey,
     User,
     Wifi,
 )
@@ -405,6 +406,11 @@ class TestInternalUploader(BaseExportTest):
 
         queue = self.celery_app.data_queues['update_score']
         self.assertEqual(queue.size(), 2)
+        scores = queue.dequeue()
+        score_keys = set([score['hashkey'].key for score in scores])
+        self.assertEqual(
+            score_keys, set([ScoreKey.location, ScoreKey.new_cell]))
+
         users = self.session.query(User).all()
         self.assertEqual(len(users), 1)
         self.assertEqual(users[0].nickname, self.nickname)

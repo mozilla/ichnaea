@@ -2,12 +2,16 @@ from collections import defaultdict
 
 from ichnaea.data.base import DataTask
 from ichnaea.models import (
+    Cell,
+    CellBlocklist,
     CellObservation,
     CellReport,
     Report,
     Score,
     ScoreKey,
     User,
+    Wifi,
+    WifiBlocklist,
     WifiObservation,
     WifiReport,
 )
@@ -53,6 +57,11 @@ class ReportQueue(DataTask):
                         count,
                         tags=tags + api_tag)
 
+    def known_station(self, model, block_model, station_key):
+        model_query = model.querykey(self.session, station_key)
+        block_query = block_model.querykey(self.session, station_key)
+        return bool(model_query.count()) or bool(block_query.count())
+
     def insert(self, reports):
         length = len(reports)
         userid = self.process_user(self.nickname, self.email)
@@ -67,6 +76,7 @@ class ReportQueue(DataTask):
             'cell': {'upload': 0, 'drop': 0},
             'wifi': {'upload': 0, 'drop': 0},
         }
+        new_station_count = {'cell': 0, 'wifi': 0}
 
         for report in reports:
             cell, wifi, malformed_obs = self.process_report(report)
@@ -83,18 +93,28 @@ class ReportQueue(DataTask):
             for name in ('cell', 'wifi'):
                 obs_count[name]['drop'] += malformed_obs[name]
 
+        # group by unique station key
+        station_obs = {'cell': defaultdict(list), 'wifi': defaultdict(list)}
+        for name, model in (('cell', Cell),
+                            ('wifi', Wifi)):
+            for obs in observations[name]:
+                station_obs[name][model.to_hashkey(obs)].append(obs.__dict__)
+
+        # determine scores for stations
+        for name, model, block_model in (('cell', Cell, CellBlocklist),
+                                         ('wifi', Wifi, WifiBlocklist)):
+            for station_key in station_obs[name].keys():
+                if not self.known_station(model, block_model, station_key):
+                    new_station_count[name] += 1
+
         for name, task in (('cell', self.insert_cell_task),
                            ('wifi', self.insert_wifi_task)):
 
-            if observations[name]:
+            if station_obs[name]:
                 # group by and create task per small batch of keys
-                station_obs = defaultdict(list)
-                for obs in observations[name]:
-                    station_obs[obs.hashkey()].append(obs.__dict__)
-
                 batch_size = 100
                 countdown = 0
-                stations = list(station_obs.values())
+                stations = list(station_obs[name].values())
 
                 for i in range(0, len(stations), batch_size):
                     values = []
@@ -117,7 +137,7 @@ class ReportQueue(DataTask):
                     countdown += 1
 
         self.process_mapstat(positions)
-        self.process_score(userid, positions)
+        self.process_score(userid, positions, new_station_count)
         self.emit_stats(
             len(reports),
             malformed_reports,
@@ -171,16 +191,31 @@ class ReportQueue(DataTask):
         positions = [{'lat': lat, 'lon': lon} for lat, lon in positions]
         queue.enqueue(positions, pipe=self.pipe)
 
-    def process_score(self, userid, positions):
+    def process_score(self, userid, positions, new_station_count):
         if userid is None or len(positions) <= 0:
             return
 
         queue = self.task.app.data_queues['update_score']
+        scores = []
+
         key = Score.to_hashkey(
             userid=userid,
             key=ScoreKey.location,
             time=None)
-        queue.enqueue([{'hashkey': key, 'value': len(positions)}])
+        scores.append({'hashkey': key, 'value': len(positions)})
+
+        for name, score_key in (('cell', ScoreKey.new_cell),
+                                ('wifi', ScoreKey.new_wifi)):
+            count = new_station_count[name]
+            if count <= 0:
+                continue
+            key = Score.to_hashkey(
+                userid=userid,
+                key=score_key,
+                time=None)
+            scores.append({'hashkey': key, 'value': count})
+
+        queue.enqueue(scores)
 
     def process_user(self, nickname, email):
         userid = None
