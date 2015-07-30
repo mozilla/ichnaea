@@ -553,8 +553,7 @@ class TestWifi(StationTest):
 
             # insert_result is num-accepted-observations, override
             # utcnow to set creation date
-            insert_result = insert_measures_wifi.delay(
-                [obs], utcnow=time)
+            insert_result = insert_measures_wifi.delay([obs], utcnow=time)
 
             # update_result is (num-stations, num-moving-stations)
             update_result = update_wifi.delay()
@@ -575,16 +574,14 @@ class TestWifi(StationTest):
             # ...
             # 23rd insert will not recreate station
 
-            bl = self.session.query(WifiBlocklist).all()
+            blocks = self.session.query(WifiBlocklist).all()
             if month == 0:
-                self.assertEqual(len(bl), 0)
+                self.assertEqual(len(blocks), 0)
             else:
-                self.assertEqual(len(bl), 1)
+                self.assertEqual(len(blocks), 1)
                 # force the blocklist back in time to whenever the
                 # observation was supposedly inserted.
-                bl = bl[0]
-                bl.time = time
-                self.session.add(bl)
+                blocks[0].time = time
                 self.session.commit()
 
             if month < N / 2:
@@ -600,7 +597,7 @@ class TestWifi(StationTest):
                     # The station existed and was seen moving,
                     # thereby activating the blocklist.
                     self.assertEqual(update_result.get(), (1, 1))
-                    self.assertEqual(bl.count, ((month + 1) / 2))
+                    self.assertEqual(blocks[0].count, ((month + 1) / 2))
                     self.assertEqual(
                         self.session.query(WifiBlocklist).count(), 1)
                     self.assertEqual(self.session.query(Wifi).count(), 0)

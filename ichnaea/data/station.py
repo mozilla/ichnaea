@@ -90,30 +90,8 @@ class StationUpdater(DataTask):
         StatCounter(self.stat_obs_key, day).incr(self.pipe, obs)
         StatCounter(self.stat_station_key, day).incr(self.pipe, stations)
 
-    def create_station(self, station_key, first_blocked, observations):
-        created = self.utcnow
-        if first_blocked:
-            # if the station did previously exist, retain at least the
-            # time it was first put on a blocklist as the creation date
-            created = first_blocked
-        values = {
-            'created': created,
-            'modified': self.utcnow,
-            'range': 0,
-            'total_measures': 0,
-        }
-        values.update(station_key.__dict__)
-
-        if self.station_type == 'cell':
-            # pass on extra psc column which is not actually part
-            # of the stations hash key
-            values['psc'] = observations[-1].psc
-
-        station = self.station_model(**values)
-        self.session.add(station)
-        return station
-
-    def calculate_new_position(self, station, observations):
+    def create_or_update_station(self, station, station_key,
+                                 first_blocked, observations):
         # This function returns True if the station was found to be moving.
         length = len(observations)
         latitudes = [obs.lat for obs in observations]
@@ -121,20 +99,44 @@ class StationUpdater(DataTask):
         new_lat = sum(latitudes) / length
         new_lon = sum(longitudes) / length
 
-        if station.lat and station.lon:
+        values = {
+            'modified': self.utcnow,
+        }
+        if self.station_type == 'cell':
+            # pass on extra psc column which is not actually part
+            # of the stations hash key
+            values['psc'] = observations[-1].psc
+
+        created = self.utcnow
+        if station is None:
+            if first_blocked:
+                # if the station did previously exist, retain at least the
+                # time it was first put on a blocklist as the creation date
+                created = first_blocked
+            values.update({
+                'created': created,
+                'range': 0,
+                'total_measures': 0,
+            })
+            values.update(station_key.__dict__)
+
+        if station is not None and station.lat and station.lon:
             latitudes.append(station.lat)
             longitudes.append(station.lon)
             existing_station = True
         else:
-            station.lat = new_lat
-            station.lon = new_lon
+            values['lat'] = new_lat
+            values['lon'] = new_lon
             existing_station = False
 
         # calculate extremes of observations, existing location estimate
         # and existing extreme values
         def extreme(vals, attr, function):
             new = function(vals)
-            old = getattr(station, attr, None)
+            if station is not None:
+                old = getattr(station, attr, None)
+            else:
+                old = None
             if old is not None:
                 return function(new, old)
             else:
@@ -150,41 +152,55 @@ class StationUpdater(DataTask):
         # and new observations; if too big, station is moving
         box_dist = distance(min_lat, min_lon, max_lat, max_lon)
 
-        if existing_station:
+        # TODO: If we get a too large box_dist, we should not create
+        # a new station record with the impossibly big distance,
+        # so moving the box_dist > self.max_dist_km here
 
+        if existing_station:
             if box_dist > self.max_dist_km:
                 # Signal a moving station and return early without updating
                 # the station since it will be deleted by caller momentarily
                 return True
-
             # limit the maximum weight of the old station estimate
             old_weight = min(station.total_measures,
                              self.MAX_OLD_OBSERVATIONS)
             new_weight = old_weight + length
 
-            station.lat = ((station.lat * old_weight) +
-                           (new_lat * length)) / new_weight
-            station.lon = ((station.lon * old_weight) +
-                           (new_lon * length)) / new_weight
+            values['lat'] = ((station.lat * old_weight) +
+                             (new_lat * length)) / new_weight
+            values['lon'] = ((station.lon * old_weight) +
+                             (new_lon * length)) / new_weight
 
         # increase total counter, new isn't used
-        station.total_measures = station.total_measures + length
+        if station is not None:
+            values['total_measures'] = station.total_measures + length
+        else:
+            values['total_measures'] = length
 
         # update max/min lat/lon columns
-        station.min_lat = min_lat
-        station.min_lon = min_lon
-        station.max_lat = max_lat
-        station.max_lon = max_lon
+        values['min_lat'] = min_lat
+        values['min_lon'] = min_lon
+        values['max_lat'] = max_lat
+        values['max_lon'] = max_lon
 
         # give radio-range estimate between extreme values and centroid
-        ctr = (station.lat, station.lon)
+        ctr = (values['lat'], values['lon'])
         points = [(min_lat, min_lon),
                   (min_lat, max_lon),
                   (max_lat, min_lon),
                   (max_lat, max_lon)]
 
-        station.range = range_to_points(ctr, points) * 1000.0
-        station.modified = self.utcnow
+        values['range'] = range_to_points(ctr, points) * 1000.0
+
+        if station is None:
+            stmt = self.station_model.__table__.insert(
+                on_duplicate='total_measures = total_measures'  # no-op change
+            ).values(**values)
+            self.session.execute(stmt)
+        else:
+            for key, value in values.items():
+                setattr(station, key, value)
+        return False
 
     def blocklisted_station(self, block):
         age = self.utcnow - block.time
@@ -196,8 +212,8 @@ class StationUpdater(DataTask):
 
     def blocklist_stations(self, moving):
         moving_keys = []
-        for station, block in moving:
-            block_key = self.blocklist_model.to_hashkey(station)
+        for station_key, block in moving:
+            block_key = self.blocklist_model.to_hashkey(station_key)
             moving_keys.append(block_key)
             if block:
                 block.time = self.utcnow
@@ -255,23 +271,22 @@ class StationUpdater(DataTask):
                 continue
 
             station = stations.get(station_key, None)
-            if station is None:
-                # We discovered an actual new complete station.
-                if not first_blocked:
-                    new_stations += 1
-                # Actually create new station
-                station = self.create_station(
-                    station_key, first_blocked, observations)
-                stations[station.hashkey()] = station
+            if station is None and not first_blocked:
+                # We discovered an actual new never before seen station.
+                new_stations += 1
 
-            moving = self.calculate_new_position(station, observations)
+            moving = self.create_or_update_station(
+                station, station_key, first_blocked, observations)
             if moving:
-                moving_stations.add((station, block))
+                moving_stations.add((station_key, block))
             else:
                 added += len(observations)
+                if station is None:
+                    # make the return counter happy
+                    stations[station_key] = True
 
             # track potential updates to dependent areas
-            self.add_area_update(station)
+            self.add_area_update(station_key)
 
         self.queue_area_updates()
 
@@ -289,7 +304,7 @@ class StationUpdater(DataTask):
 
         return (len(stations), len(moving_stations))
 
-    def add_area_update(self, station):
+    def add_area_update(self, station_key):
         pass
 
     def queue_area_updates(self):
@@ -307,8 +322,9 @@ class CellUpdater(StationUpdater):
     station_model = Cell
     station_type = 'cell'
 
-    def add_area_update(self, station):
-        self.updated_areas.add(CellArea.to_hashkey(station))
+    def add_area_update(self, station_key):
+        area_key = CellArea.to_hashkey(station_key)
+        self.updated_areas.add(area_key)
 
     def queue_area_updates(self):
         if self.updated_areas:
