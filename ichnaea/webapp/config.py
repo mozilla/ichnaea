@@ -74,16 +74,16 @@ def main(app_config, ping_connections=False,
     registry = config.registry
 
     registry.db_rw = configure_db(
-        app_config.get('ichnaea', 'db_master'), _db=_db_rw)
+        app_config.get('database', 'rw_url'), _db=_db_rw)
     registry.db_ro = configure_db(
-        app_config.get('ichnaea', 'db_slave'), _db=_db_ro)
+        app_config.get('database', 'ro_url'), _db=_db_ro)
 
     registry.raven_client = raven_client = configure_raven(
-        app_config.get('ichnaea', 'sentry_dsn'),
+        app_config.get('sentry', 'dsn'),
         transport='gevent', _client=_raven_client)
 
     registry.redis_client = redis_client = configure_redis(
-        app_config.get('ichnaea', 'redis_url'), _client=_redis_client)
+        app_config.get('cache', 'cache_url'), _client=_redis_client)
 
     registry.stats_client = stats_client = configure_stats(
         app_config, _client=_stats_client)
@@ -91,7 +91,7 @@ def main(app_config, ping_connections=False,
     registry.http_session = configure_http_session(_session=_http_session)
 
     registry.geoip_db = geoip_db = configure_geoip(
-        app_config.get('ichnaea', 'geoip_db_path'), raven_client=raven_client,
+        app_config.get('geoip', 'db_path'), raven_client=raven_client,
         _client=_geoip_db)
 
     for name, func, default in (('country_searcher',

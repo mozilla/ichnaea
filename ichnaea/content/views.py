@@ -87,7 +87,7 @@ def configure_content(config):
 
     config.scan('ichnaea.content.views')
 
-    assets_url = config.registry.settings['ichnaea'].get('assets_url', None)
+    assets_url = config.registry.settings.get('assets', {}).get('url', None)
     config.registry.tiles_url = tiles_url = map_tiles_url(assets_url)
     result = urlparse.urlsplit(tiles_url)
     tiles = urlparse.urlunparse((result.scheme, result.netloc, '', '', '', ''))
@@ -195,8 +195,8 @@ class ContentViews(Layout):
             data = internal_loads(cached)
         else:
             settings = self.request.registry.settings
-            assets_bucket = settings['ichnaea']['s3_assets_bucket']
-            assets_url = settings['ichnaea']['assets_url']
+            assets_bucket = settings['assets']['bucket']
+            assets_url = settings['assets']['url']
             raven_client = self.request.registry.raven_client
             data = s3_list_downloads(assets_bucket, assets_url, raven_client)
             # cache the download files, expire after 10 minutes

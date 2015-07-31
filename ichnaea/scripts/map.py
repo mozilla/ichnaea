@@ -269,13 +269,13 @@ def main(argv, _db_rw=None,
     if args.create:
         conf = read_config()
         db = configure_db(
-            conf.get('ichnaea', 'db_master'), _db=_db_rw)
+            conf.get('database', 'rw_url'), _db=_db_rw)
         raven_client = configure_raven(
-            conf.get('ichnaea', 'sentry_dsn'),
+            conf.get('sentry', 'dsn'),
             transport='sync', _client=_raven_client)
         stats_client = configure_stats(conf, _client=_stats_client)
 
-        bucketname = conf.get('ichnaea', 's3_assets_bucket').strip('/')
+        bucketname = conf.get('assets', 'bucket').strip('/')
 
         upload = False
         if args.upload:  # pragma: no cover

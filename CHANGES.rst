@@ -11,6 +11,9 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- The structure of the application ini file changed and the `ichnaea`
+  section was replaced by a number of new more specific sections.
+
 Changes
 ~~~~~~~
 

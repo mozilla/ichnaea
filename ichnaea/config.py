@@ -81,7 +81,7 @@ class DummyConfig(object):
         self.settings = settings
 
     def get(self, section, option, default=None):
-        section_values = self.get_map(section)
+        section_values = self.get_map(section, {})
         return section_values.get(option, default)
 
     def get_map(self, section, default=None):

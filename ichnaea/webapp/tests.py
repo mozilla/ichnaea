@@ -14,10 +14,12 @@ from ichnaea.tests.base import (
 class TestApp(ConnectionTestCase):
 
     def test_db_config(self):
-        app_config = DummyConfig({'ichnaea': {
-            'db_master': SQLURI,
-            'db_slave': SQLURI,
-        }})
+        app_config = DummyConfig({
+            'database': {
+                'rw_url': SQLURI,
+                'ro_url': SQLURI,
+            },
+        })
         app = _make_app(app_config=app_config,
                         _raven_client=self.raven_client,
                         _redis_client=self.redis_client,
@@ -48,9 +50,11 @@ class TestApp(ConnectionTestCase):
         self.assertTrue(app.app.registry.db_ro is db_ro)
 
     def test_redis_config(self):
-        app_config = DummyConfig({'ichnaea': {
-            'redis_url': REDIS_URI,
-        }})
+        app_config = DummyConfig({
+            'cache': {
+                'cache_url': REDIS_URI,
+            },
+        })
         app = _make_app(app_config=app_config,
                         _db_rw=self.db_rw,
                         _db_ro=self.db_ro,

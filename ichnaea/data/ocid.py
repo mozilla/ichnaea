@@ -159,7 +159,7 @@ def write_stations_to_s3(path, bucketname):
 
 def export_modified_cells(task, hourly=True, _bucket=None):
     if _bucket is None:  # pragma: no cover
-        bucket = task.app.settings['ichnaea']['s3_assets_bucket']
+        bucket = task.app.settings['assets']['bucket']
     else:
         bucket = _bucket
 
@@ -253,8 +253,8 @@ def import_ocid_cells(session, pipe, filename=None, update_area_task=None):
 
 def import_latest_ocid_cells(task, diff=True, update_area_task=None,
                              _filename=None):
-    url = task.app.settings['ichnaea']['ocid_url']
-    apikey = task.app.settings['ichnaea']['ocid_apikey']
+    url = task.app.settings['import:ocid']['url']
+    apikey = task.app.settings['import:ocid']['apikey']
     if not url or not apikey:  # pragma: no cover
         return
 

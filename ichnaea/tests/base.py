@@ -61,11 +61,9 @@ SESSION = {}
 # Some test-data constants
 
 TEST_CONFIG = DummyConfig({
-    'ichnaea': {
-        'assets_url': 'http://127.0.0.1:7001/static/',
-        's3_assets_bucket': 'localhost.bucket',
-        'ocid_url': 'http://127.0.0.1:9/downloads/',
-        'ocid_apikey': 'xxxxxxxx-yyyy-xxxx-yyyy-xxxxxxxxxxxx',
+    'assets': {
+        'bucket': 'localhost.bucket',
+        'url': 'http://127.0.0.1:7001/static/',
     },
     'export:test': {
         'url': None,
@@ -76,6 +74,10 @@ TEST_CONFIG = DummyConfig({
         'url': 'internal://',
         'metadata': 'true',
         'batch': '0',
+    },
+    'import:ocid': {
+        'url': 'http://127.0.0.1:9/downloads/',
+        'apikey': 'xxxxxxxx-yyyy-xxxx-yyyy-xxxxxxxxxxxx',
     },
     'locate:fallback': {
         'url': 'http://127.0.0.1:9/?api',

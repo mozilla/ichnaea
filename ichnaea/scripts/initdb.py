@@ -36,11 +36,11 @@ def add_test_api_key(conn):
 def add_users(conn, location_cfg):
     # We don't take into account hostname or database restrictions
     # the users / grants, but use global privileges.
-    ichnaea_section = location_cfg.get_map('ichnaea')
+    database_section = location_cfg.get_map('database')
 
     creds = {}
-    creds['rw'] = _db_creds(ichnaea_section.get('db_master'))
-    creds['ro'] = _db_creds(ichnaea_section.get('db_slave'))
+    creds['rw'] = _db_creds(database_section.get('rw_url'))
+    creds['ro'] = _db_creds(database_section.get('ro_url'))
 
     stmt = text('SELECT user FROM mysql.user')
     result = conn.execute(stmt)
@@ -120,7 +120,7 @@ def main(argv, _db_rw=None, _raven_client=None):
         db_rw = configure_db(
             alembic_section['sqlalchemy.url'], _db=_db_rw)
         configure_raven(
-            location_cfg.get('ichnaea', 'sentry_dsn'),
+            location_cfg.get('sentry', 'dsn'),
             transport='sync', _client=_raven_client)
 
         engine = db_rw.engine

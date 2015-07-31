@@ -35,22 +35,30 @@ errorlog = '-'
 loglevel = 'warning'
 
 
-def _statsd_host():
+def _statsd_config():
     from ichnaea.config import read_config
 
     conf = read_config()
-    if conf.has_section('ichnaea'):
-        section = conf.get_map('ichnaea')
+    if conf.has_section('statsd'):
+        section = conf.get_map('statsd')
     else:  # pragma: no cover
         # happens while building docs locally and on rtfd.org
-        return
+        return (None, None, None)
 
-    return section.get('statsd_host', None)
+    url = None
+    host = section.get('host', None)
+    port = section.get('port', '8125')
+    if host:
+        url = '%s:%s' % (host, port)
+
+    return (
+        url,
+        section.get('metric_prefix', 'location'),
+    )
 
 # Set host and prefix for gunicorn's own statsd messages
-statsd_host = _statsd_host()
-statsd_prefix = 'location'
-del _statsd_host
+statsd_host, statsd_prefix = _statsd_config()
+del _statsd_config
 
 
 def post_worker_init(worker):

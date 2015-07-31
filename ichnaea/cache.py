@@ -34,16 +34,16 @@ SocketBuffer._old_close = SocketBuffer.close
 SocketBuffer.close = close
 
 
-def configure_redis(redis_url, _client=None):
+def configure_redis(cache_url, _client=None):
     """
     Configure and return a :class:`~ichnaea.cache.RedisClient` instance.
 
     :param _client: Test-only hook to provide a pre-configured client.
     """
-    if redis_url is None or _client is not None:
+    if cache_url is None or _client is not None:
         return _client
 
-    url = urlparse(redis_url)
+    url = urlparse(cache_url)
     netloc = url.netloc.split(':')
     host = netloc[0]
     if len(netloc) > 1:

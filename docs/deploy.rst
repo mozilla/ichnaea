@@ -54,8 +54,8 @@ The default configuration in ichnaea.ini assumes that you are running
 a Statsd instance listening for UDP messages on port 8125.
 
 To get the app to log exceptions to Sentry, you will need to obtain the
-DSN for your Sentry instance. Edit ichnaea.ini and in the `ichnaea` section
-put your real DSN into the `sentry_dsn` setting.
+DSN for your Sentry instance. Edit ichnaea.ini and in the `sentry` section
+put your real DSN into the `dsn` setting.
 
 Installation of Statsd and Sentry are outside the scope of this documentation.
 
