@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Avoid using a metric tag called `name` as it conflicts with a default tag.
+
 - Deprecate `insert_measure_*` tasks.
 
 - Move new station score bookkeeping into insert_measures task.

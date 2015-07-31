@@ -83,7 +83,7 @@ class TestMonitorTasks(CeleryTestCase):
             results.append(monitor_ocid_import.delay().get())
 
         self.check_stats(gauge=[
-            ('table', len(expected), ['name:ocid_cell_age']),
+            ('table', len(expected), ['table:ocid_cell_age']),
         ])
         for result, expect in zip(results, expected):
             # The values should be almost equal, ignoring differences
@@ -101,6 +101,6 @@ class TestMonitorTasks(CeleryTestCase):
         result = monitor_queue_length.delay().get()
 
         self.check_stats(
-            gauge=[('queue', 1, v, ['name:' + k]) for k, v in data.items()],
+            gauge=[('queue', 1, v, ['queue:' + k]) for k, v in data.items()],
         )
         self.assertEqual(result, data)

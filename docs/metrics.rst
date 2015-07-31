@@ -308,27 +308,27 @@ Internal Monitoring
     This gauge measures how many requests have been done for each such
     API key for the current day.
 
-``queue#name:celery_default``,
-``queue#name:celery_export``,
-``queue#name:celery_incoming``,
-``queue#name:celery_monitor``,
-``queue#name:celery_reports``,
-``queue#name:celery_upload`` : gauges
+``queue#queue:celery_default``,
+``queue#queue:celery_export``,
+``queue#queue:celery_incoming``,
+``queue#queue:celery_monitor``,
+``queue#queue:celery_reports``,
+``queue#queue:celery_upload`` : gauges
 
     These gauges measure the number of tasks in each of the Redis queues.
     They are sampled at an approximate per-minute interval.
 
-``queue#name:update_cell``,
-``queue#name:update_cell_area``,
-``queue#name:update_mapstat``,
-``queue#name:update_score``,
-``queue#name:update_wifi`` : gauges
+``queue#queue:update_cell``,
+``queue#queue:update_cell_area``,
+``queue#queue:update_mapstat``,
+``queue#queue:update_score``,
+``queue#queue:update_wifi`` : gauges
 
     These gauges measure the number of items in the Redis update queues.
     These queues are used to keep track of which observations still need to
     be acted upon and integrated into the aggregate station data.
 
-``table#name:ocid_cell_age`` : gauge
+``table#table:ocid_cell_age`` : gauge
 
     This gauge measures when the last entry was added to the table. It
     represents this as `now() - max(created)` and converts it to a
@@ -377,8 +377,8 @@ emits a timer indicating its execution time.
 
 For example:
 
-  - ``task#name:data.update_statcounter``
-  - ``task#name:data.upload_reports``
+  - ``task#task:data.update_statcounter``
+  - ``task#task:data.upload_reports``
 
 
 Datamaps Timers

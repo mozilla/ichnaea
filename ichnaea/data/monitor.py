@@ -55,7 +55,7 @@ def monitor_ocid_import(task):
             diff = now - max_created
             result = (diff.days * 86400 + diff.seconds) * 1000
 
-        stats_client.gauge('table', result, tags=['name:ocid_cell_age'])
+        stats_client.gauge('table', result, tags=['table:ocid_cell_age'])
     except Exception:  # pragma: no cover
         # Log but ignore the exception
         task.raven_client.captureException()
@@ -69,7 +69,7 @@ def monitor_queue_length(task):
         stats_client = task.stats_client
         for name in task.app.all_queues:
             result[name] = value = redis_client.llen(name)
-            stats_client.gauge('queue', value, tags=['name:' + name])
+            stats_client.gauge('queue', value, tags=['queue:' + name])
     except Exception:  # pragma: no cover
         # Log but ignore the exception
         task.raven_client.captureException()

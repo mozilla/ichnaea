@@ -180,9 +180,9 @@ class TestCell(StationTest):
         self.check_stats(
             timer=[
                 # We made duplicate calls
-                ('task', 2, ['name:data.update_cell']),
+                ('task', 2, ['task:data.update_cell']),
                 # One of those would've scheduled a remove_cell task
-                ('task', 1, ['name:data.remove_cell'])
+                ('task', 1, ['task:data.remove_cell'])
             ])
 
     def test_blocklist_temporary_and_permanent(self):
@@ -485,9 +485,9 @@ class TestWifi(StationTest):
         self.check_stats(
             timer=[
                 # We made duplicate calls
-                ('task', 2, ['name:data.update_wifi']),
+                ('task', 2, ['task:data.update_wifi']),
                 # One of those would've scheduled a remove_wifi task
-                ('task', 1, ['name:data.remove_wifi'])
+                ('task', 1, ['task:data.remove_wifi'])
             ])
 
     def test_blocklist_temporary_and_permanent(self):
