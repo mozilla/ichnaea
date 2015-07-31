@@ -33,6 +33,7 @@ Table of contents
    api/index
    import_export
    deploy
+   config
    development
    testing
    calculation

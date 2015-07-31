@@ -80,8 +80,8 @@ Run the following command to get the code:
 
 .. code-block:: bash
 
-   git clone https://github.com/mozilla/ichnaea
-   cd ichnaea
+    git clone https://github.com/mozilla/ichnaea
+    cd ichnaea
 
 In order to run the code you need to have Python 2.6, 2.7 or 3.4 installed
 on your system. The default Makefile also assumes a `virtualenv-2.6`
@@ -96,7 +96,7 @@ Specify the database connection string and run make:
     SQLURI=mysql+pymysql://root:mysql@localhost/location make
 
 Adjust the location.ini file with your database connection strings.
-You can use the same database for the master and slave connections.
+You can use the same database for the read-write and read-only connections.
 
 For the celery broker, result backend and API rate limit tracking you need
 to setup a Redis server via a connection string like `redis://127.0.0.1/0`.
@@ -105,13 +105,14 @@ Now you can run the web app on for example port 7001:
 
 .. code-block:: bash
 
-   bin/gunicorn -b 127.0.0.1:7001 -c ichnaea.webapp.settings \
-       ichnaea.webapp.app:wsgi_app
+    ICHNAEA_CFG=location.ini bin/gunicorn -b 127.0.0.1:7001 \
+        -c ichnaea.webapp.settings ichnaea.webapp.app:wsgi_app
 
 The celery processes are started via:
 
 .. code-block:: bash
 
-   bin/celery -A ichnaea.async.app:celery_app beat
-   bin/celery -A ichnaea.async.app:celery_app worker -Ofair --no-execv \
-       --without-mingle --without-gossip
+    ICHNAEA_CFG=location.ini bin/celery -A ichnaea.async.app:celery_app beat
+
+    ICHNAEA_CFG=location.ini bin/celery -A ichnaea.async.app:celery_app worker \
+        -Ofair --no-execv --without-mingle --without-gossip
