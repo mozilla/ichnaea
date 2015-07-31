@@ -36,7 +36,7 @@ by using the celery `call` command. For example:
 
 .. code-block:: bash
 
-    ICHNAEA_CFG=ichnaea.ini bin/celery -A ichnaea.async.app:celery_app call \
+    ICHNAEA_CFG=location.ini bin/celery -A ichnaea.async.app:celery_app call \
     ichnaea.data.tasks.update_cell --args='[1000, ]’
 
 You then need to run the celery worker process and it will pick up the task
@@ -44,7 +44,7 @@ from the queue and execute it:
 
 .. code-block:: bash
 
-    ICHNAEA_CFG=ichnaea.ini bin/celery \
+    ICHNAEA_CFG=location.ini bin/celery \
     -A ichnaea.async.app:celery_app worker -c 1
 
 

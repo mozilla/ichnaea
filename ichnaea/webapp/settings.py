@@ -43,7 +43,7 @@ def _statsd_config():
         section = conf.get_map('statsd')
     else:  # pragma: no cover
         # happens while building docs locally and on rtfd.org
-        return (None, None, None)
+        return (None, None)
 
     url = None
     host = section.get('host', None)

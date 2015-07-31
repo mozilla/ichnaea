@@ -50,11 +50,11 @@ Statsd / Sentry
 The application uses Statsd to aggregate stats and Sentry to log
 exception messages.
 
-The default configuration in ichnaea.ini assumes that you are running
+The default configuration in location.ini assumes that you are running
 a Statsd instance listening for UDP messages on port 8125.
 
 To get the app to log exceptions to Sentry, you will need to obtain the
-DSN for your Sentry instance. Edit ichnaea.ini and in the `sentry` section
+DSN for your Sentry instance. Edit location.ini and in the `sentry` section
 put your real DSN into the `dsn` setting.
 
 Installation of Statsd and Sentry are outside the scope of this documentation.
@@ -95,7 +95,7 @@ Specify the database connection string and run make:
 
     SQLURI=mysql+pymysql://root:mysql@localhost/location make
 
-Adjust the ichnaea.ini file with your database connection strings.
+Adjust the location.ini file with your database connection strings.
 You can use the same database for the master and slave connections.
 
 For the celery broker, result backend and API rate limit tracking you need

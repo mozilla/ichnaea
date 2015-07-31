@@ -100,14 +100,14 @@ def main(argv, _db_rw=None, _raven_client=None):
         # Either use explicit config file location or fallback
         # on environment variable or finally file in current directory
         if not args.location_ini:
-            location_ini = os.environ.get('ICHNAEA_CFG', 'ichnaea.ini')
+            location_ini = os.environ.get('ICHNAEA_CFG', 'location.ini')
         else:
             location_ini = args.location_ini
         location_ini = os.path.abspath(location_ini)
         location_cfg = read_config(filename=location_ini)
 
         # Either use explicit config file location or fallback
-        # to a file in the same directory as the ichnaea.ini
+        # to a file in the same directory as the location.ini
         if not args.alembic_ini:
             alembic_ini = os.path.join(
                 os.path.dirname(location_ini), 'alembic.ini')

@@ -97,7 +97,7 @@ class DummyConfig(object):
         return result
 
 
-def read_config(filename=None, envvar='ICHNAEA_CFG', fallback='ichnaea.ini'):
+def read_config(filename=None, envvar='ICHNAEA_CFG', fallback='location.ini'):
     """
     Read a configuration file from three possible locations:
 
