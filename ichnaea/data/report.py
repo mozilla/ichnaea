@@ -1,5 +1,7 @@
 from collections import defaultdict
 
+from sqlalchemy.orm import load_only
+
 from ichnaea.data.base import DataTask
 from ichnaea.models import (
     Cell,
@@ -55,10 +57,38 @@ class ReportQueue(DataTask):
                         count,
                         tags=tags + api_tag)
 
-    def known_station(self, model, block_model, station_key):
-        model_query = model.querykey(self.session, station_key)
-        block_query = block_model.querykey(self.session, station_key)
-        return bool(model_query.count()) or bool(block_query.count())
+    def new_stations(self, model, block_model, station_keys):
+        if len(station_keys) == 0:
+            return 0
+
+        # assume all stations are unknown
+        unknown_keys = set(station_keys)
+
+        # first check the station table, which is more likely to contain
+        # stations
+        station_iter = model.iterkeys(
+            self.session,
+            list(unknown_keys),
+            # only load the columns required for the hashkey
+            extra=lambda query: query.options(
+                load_only(*tuple(model._hashkey_cls._fields))))
+        # subtract all stations which are found in the station table
+        unknown_keys -= set([station.hashkey() for station in station_iter])
+        if len(unknown_keys) == 0:  # pragma: no cover
+            return 0
+
+        # Only check the blocklist table for the still unknown keys.
+        # There is no need to check for the already found keys again.
+        block_iter = block_model.iterkeys(
+            self.session,
+            list(unknown_keys),
+            # only load the columns required for the hashkey
+            extra=lambda query: query.options(
+                load_only(*tuple(block_model._hashkey_cls._fields))))
+        # subtract all stations which are found in the blocklist table
+        unknown_keys -= set([block.hashkey() for block in block_iter])
+
+        return len(unknown_keys)
 
     def insert(self, reports):
         length = len(reports)
@@ -101,9 +131,8 @@ class ReportQueue(DataTask):
         # determine scores for stations
         for name, model, block_model in (('cell', Cell, CellBlocklist),
                                          ('wifi', Wifi, WifiBlocklist)):
-            for station_key in station_obs[name].keys():
-                if not self.known_station(model, block_model, station_key):
-                    new_station_count[name] += 1
+            new_station_count[name] += self.new_stations(
+                model, block_model, list(station_obs[name].keys()))
 
         for name, queue in (('cell', self.cell_queue),
                             ('wifi', self.wifi_queue)):
