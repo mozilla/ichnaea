@@ -190,9 +190,12 @@ class StatsClient(DogStatsd):
     """A statsd client."""
 
     def __init__(self, host='localhost', port=8125, max_buffer_size=50,
+                 constant_tags=None,
                  metric_prefix=None, tag_prefix=None, tag_support=False):
         super(StatsClient, self).__init__(
-            host=host, port=port, max_buffer_size=max_buffer_size)
+            host=host, port=port,
+            max_buffer_size=max_buffer_size,
+            constant_tags=constant_tags)
         self.metric_prefix = metric_prefix
         if tag_prefix:
             tag_prefix += '_'
@@ -207,6 +210,16 @@ class StatsClient(DogStatsd):
         if self.metric_prefix:
             # add support for custom metric prefix
             payload.append(self.metric_prefix + '.')
+
+        if not tags:
+            tags = []
+
+        # Append all client level tags to every metric
+        if self.constant_tags:  # pragma: no cover
+            if tags:
+                tags += self.constant_tags
+            else:
+                tags = self.constant_tags
 
         if tags and self.tag_prefix:
             # add support for custom tag prefix

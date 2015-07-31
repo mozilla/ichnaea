@@ -39,7 +39,7 @@ class BaseSubmitView(BaseAPIView):
         return (email, nickname)
 
     def emit_upload_metrics(self, value, api_key):
-        tags = ()
+        tags = None
         if api_key.log:
             tags = ['key:%s' % api_key.name]
         self.stats_client.incr('data.batch.upload', tags=tags)

@@ -12,7 +12,7 @@ colander==1.0
 configparser==3.5.0b2
 country-bounding-boxes==0.2.3
 cryptography==0.9.3
-datadog==0.7.0
+datadog==0.8.0
 decorator==4.0.2
 enum34==1.0.4 ; python_version < '3.0'
 filechunkio==1.6

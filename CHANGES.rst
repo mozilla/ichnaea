@@ -18,6 +18,8 @@ Changes
 
 - Move new station score bookkeeping into insert_measures task.
 
+- Update to latest version of datadog.
+
 20150730143600
 **************
 

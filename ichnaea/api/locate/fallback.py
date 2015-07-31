@@ -152,7 +152,7 @@ class FallbackPositionSource(PositionSource):
             return
 
         try:
-            with self._stat_timed('lookup', tags=()):
+            with self._stat_timed('lookup', tags=None):
                 response = query.http_session.post(
                     self.url,
                     headers={'User-Agent': 'ichnaea'},
