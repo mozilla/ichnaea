@@ -65,8 +65,9 @@ class BaseSubmitView(BaseAPIView):
 
         # data pipeline using new internal data format
         reports = request_data['items']
-        for i in range(0, len(reports), 100):
-            batch = reports[i:i + 100]
+        batch_size = 50
+        for i in range(0, len(reports), batch_size):
+            batch = reports[i:i + batch_size]
             # insert reports, expire the task if it wasn't processed
             # after six hours to avoid queue overload
             queue_reports.apply_async(
