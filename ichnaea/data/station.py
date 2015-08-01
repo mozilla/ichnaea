@@ -92,7 +92,11 @@ class StationUpdater(DataTask):
 
     def create_or_update_station(self, station, station_key,
                                  first_blocked, observations):
-        # This function returns True if the station was found to be moving.
+        # This function returns a tuple, the first element is True,
+        # if the station was found to be moving.
+        # The second element is either None or a dict of values,
+        # if the station is new and should result in a table insert
+
         length = len(observations)
         latitudes = [obs.lat for obs in observations]
         longitudes = [obs.lon for obs in observations]
@@ -160,7 +164,7 @@ class StationUpdater(DataTask):
             if box_dist > self.max_dist_km:
                 # Signal a moving station and return early without updating
                 # the station since it will be deleted by caller momentarily
-                return True
+                return (True, None)
             # limit the maximum weight of the old station estimate
             old_weight = min(station.total_measures,
                              self.MAX_OLD_OBSERVATIONS)
@@ -171,7 +175,7 @@ class StationUpdater(DataTask):
             values['lon'] = ((station.lon * old_weight) +
                              (new_lon * length)) / new_weight
 
-        # increase total counter, new isn't used
+        # increase total counter
         if station is not None:
             values['total_measures'] = station.total_measures + length
         else:
@@ -193,14 +197,13 @@ class StationUpdater(DataTask):
         values['range'] = range_to_points(ctr, points) * 1000.0
 
         if station is None:
-            stmt = self.station_model.__table__.insert(
-                on_duplicate='total_measures = total_measures'  # no-op change
-            ).values(**values)
-            self.session.execute(stmt)
+            # return new values so station can be created outside
+            return (False, values)
         else:
+            # update station, which is part of the session
             for key, value in values.items():
                 setattr(station, key, value)
-        return False
+        return (False, None)
 
     def blocklisted_station(self, block):
         age = self.utcnow - block.time
@@ -260,6 +263,7 @@ class StationUpdater(DataTask):
                                                    list(station_obs.keys())):
             blocklist[block.hashkey()] = self.blocklisted_station(block)
 
+        new_station_values = []
         moving_stations = set()
         for station_key, observations in station_obs.items():
             blocked, first_blocked, block = blocklist.get(
@@ -278,18 +282,28 @@ class StationUpdater(DataTask):
                 # We discovered an actual new never before seen station.
                 new_stations += 1
 
-            moving = self.create_or_update_station(
+            moving, new_values = self.create_or_update_station(
                 station, station_key, first_blocked, observations)
             if moving:
                 moving_stations.add((station_key, block))
             else:
                 added += len(observations)
-                if station is None:
-                    # make the return counter happy
-                    stations[station_key] = True
+                if new_values:
+                    new_station_values.append(new_values)
 
             # track potential updates to dependent areas
             self.add_area_update(station_key)
+
+        if new_station_values:
+            # do a batch insert of new stations
+            stmt = self.station_model.__table__.insert(
+                on_duplicate='total_measures = total_measures'  # no-op change
+            )
+            # but limit the batch depending on each model
+            ins_batch = self.station_model._insert_batch
+            for i in range(0, len(new_station_values), ins_batch):
+                batch_values = new_station_values[i:i + ins_batch]
+                self.session.execute(stmt.values(batch_values))
 
         self.queue_area_updates()
 
@@ -305,7 +319,7 @@ class StationUpdater(DataTask):
                 countdown=2,
                 expires=10)
 
-        return (len(stations), len(moving_stations))
+        return (len(stations) + len(new_station_values), len(moving_stations))
 
     def add_area_update(self, station_key):
         pass

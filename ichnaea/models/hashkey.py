@@ -89,6 +89,7 @@ class HashKeyQueryMixin(HashKeyMixin):
     the primary key columns of the model.
     """
 
+    _insert_batch = 50  #:
     _query_batch = 100  #:
 
     @classmethod
