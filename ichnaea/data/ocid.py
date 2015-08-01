@@ -194,6 +194,7 @@ def export_modified_cells(task, hourly=True, _bucket=None):
 
 def import_stations(session, pipe, filename, fields, update_area_task):
     today = util.utcnow().date()
+    area_keys = set()
 
     def commit_batch(ins, rows, commit=True):
         result = session.execute(ins, rows)
@@ -214,7 +215,6 @@ def import_stations(session, pipe, filename, fields, update_area_task):
             csv_reader = csv.DictReader(gzip_file, fields)
             batch = 10000
             rows = []
-            area_keys = set()
             ins = OCIDCell.__table__.insert(
                 on_duplicate=((
                     'changeable = values(changeable), '
@@ -243,8 +243,11 @@ def import_stations(session, pipe, filename, fields, update_area_task):
             if rows:
                 commit_batch(ins, rows)
 
-            for area_key in area_keys:
-                update_area_task.delay(area_key, cell_type='ocid')
+    area_keys = list(area_keys)
+    batch_size = 10
+    for i in range(0, len(area_keys), batch_size):
+        area_batch = area_keys[i:i + batch_size]
+        update_area_task.delay(area_batch, cell_type='ocid')
 
 
 def import_ocid_cells(session, pipe, filename=None, update_area_task=None):

@@ -21,9 +21,11 @@ class CellAreaUpdater(DataTask):
 
     def scan(self, update_task, batch=100):
         redis_areas = self.data_queue.dequeue(batch=batch)
-        area_keys = set(redis_areas)
-        for area_key in area_keys:
-            update_task.delay(area_key)
+        area_keys = list(set(redis_areas))
+        batch_size = 10
+        for i in range(0, len(area_keys), batch_size):
+            area_batch = area_keys[i:i + batch_size]
+            update_task.delay(area_batch)
         return len(area_keys)
 
     def _extreme_value(self, func, column, cells):
@@ -31,7 +33,15 @@ class CellAreaUpdater(DataTask):
         values = [value for value in values if value is not None]
         return func(values)
 
-    def update(self, area_key):
+    def update(self, area_keys):
+        if isinstance(area_keys, (list, tuple)):
+            for area_key in area_keys:
+                self.update_area(area_key)
+        else:  # pragma: no cover
+            # BBB the task used to be called with a single area key
+            self.update_area(area_keys)
+
+    def update_area(self, area_key):
         # Select all cells in this area and derive a bounding box for them
         cell_query = (self.cell_model.querykey(self.session, area_key)
                                      .filter(self.cell_model.lat.isnot(None))
