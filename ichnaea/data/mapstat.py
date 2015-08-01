@@ -20,11 +20,14 @@ class MapStatUpdater(DataTask):
         if not positions:
             return 0
 
-        found = set()
-        wanted = set()
+        scaled_positions = set()
         for position in positions:
-            wanted.add(MapStat.to_hashkey(lat=MapStat.scale(position['lat']),
-                                          lon=MapStat.scale(position['lon'])))
+            scaled_positions.add(
+                MapStat.scale(position['lat'], position['lon']))
+
+        wanted = set()
+        for scaled in scaled_positions:
+            wanted.add(MapStat.to_hashkey(lat=scaled[0], lon=scaled[1]))
 
         stat_iter = MapStat.iterkeys(
             self.session, list(wanted),

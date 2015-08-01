@@ -64,8 +64,11 @@ class MapStat(HashKeyQueryMixin, _Model):
     lon = Column(Integer)
 
     @classmethod
-    def scale(cls, float_value):
-        return int(float_value * cls._scaling_factor)
+    def scale(cls, lat_value, lon_value):
+        return (
+            int(lat_value * cls._scaling_factor),
+            int(lon_value * cls._scaling_factor),
+        )
 
 
 class ScoreHashKey(HashKey):
