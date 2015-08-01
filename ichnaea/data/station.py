@@ -90,12 +90,14 @@ class StationUpdater(DataTask):
         StatCounter(self.stat_obs_key, day).incr(self.pipe, obs)
         StatCounter(self.stat_station_key, day).incr(self.pipe, stations)
 
-    def create_or_update_station(self, station, station_key,
-                                 first_blocked, observations):
-        # This function returns a tuple, the first element is True,
+    def new_station_values(self, station, station_key,
+                           first_blocked, observations):
+        # This function returns a 3-tuple, the first element is True,
         # if the station was found to be moving.
         # The second element is either None or a dict of values,
         # if the station is new and should result in a table insert
+        # The third element is either None or a dict of values
+        # if the station did exist and should be updated
 
         length = len(observations)
         latitudes = [obs.lat for obs in observations]
@@ -106,6 +108,7 @@ class StationUpdater(DataTask):
         values = {
             'modified': self.utcnow,
         }
+        values.update(station_key.__dict__)
         if self.station_type == 'cell':
             # pass on extra psc column which is not actually part
             # of the stations hash key
@@ -122,7 +125,10 @@ class StationUpdater(DataTask):
                 'range': 0,
                 'total_measures': 0,
             })
-            values.update(station_key.__dict__)
+        elif self.station_type == 'wifi':
+            # the primary key for wifi is not actually the hashkey
+            values['id'] = station.id
+            del values['key']
 
         if station is not None and station.lat and station.lon:
             latitudes.append(station.lat)
@@ -164,7 +170,7 @@ class StationUpdater(DataTask):
             if box_dist > self.max_dist_km:
                 # Signal a moving station and return early without updating
                 # the station since it will be deleted by caller momentarily
-                return (True, None)
+                return (True, None, None)
             # limit the maximum weight of the old station estimate
             old_weight = min(station.total_measures,
                              self.MAX_OLD_OBSERVATIONS)
@@ -197,13 +203,12 @@ class StationUpdater(DataTask):
         values['range'] = range_to_points(ctr, points) * 1000.0
 
         if station is None:
-            # return new values so station can be created outside
-            return (False, values)
+            # return new values
+            return (False, values, None)
         else:
-            # update station, which is part of the session
-            for key, value in values.items():
-                setattr(station, key, value)
-        return (False, None)
+            # return updated values, remove station from session
+            self.session.expunge(station)
+            return (False, None, values)
 
     def blocklisted_station(self, block):
         age = self.utcnow - block.time
@@ -272,6 +277,7 @@ class StationUpdater(DataTask):
             blocklist[block.hashkey()] = self.blocklisted_station(block)
 
         new_station_values = []
+        changed_station_values = []
         moving_stations = set()
         for station_key, observations in station_obs.items():
             blocked, first_blocked, block = blocklist.get(
@@ -290,7 +296,7 @@ class StationUpdater(DataTask):
                 # We discovered an actual new never before seen station.
                 new_stations += 1
 
-            moving, new_values = self.create_or_update_station(
+            moving, new_values, changed_values = self.new_station_values(
                 station, station_key, first_blocked, observations)
             if moving:
                 moving_stations.add((station_key, block))
@@ -298,6 +304,8 @@ class StationUpdater(DataTask):
                 added += len(observations)
                 if new_values:
                     new_station_values.append(new_values)
+                if changed_values:
+                    changed_station_values.append(changed_values)
 
             # track potential updates to dependent areas
             self.add_area_update(station_key)
@@ -313,7 +321,16 @@ class StationUpdater(DataTask):
                 batch_values = new_station_values[i:i + ins_batch]
                 self.session.execute(stmt.values(batch_values))
 
-        self.queue_area_updates()
+        if changed_station_values:
+            # do a batch update of changed stations
+            ins_batch = self.station_model._insert_batch
+            for i in range(0, len(changed_station_values), ins_batch):
+                batch_values = changed_station_values[i:i + ins_batch]
+                self.session.bulk_update_mappings(
+                    self.station_model, batch_values)
+
+        if self.updated_areas:
+            self.queue_area_updates()
 
         if moving_stations:
             self.blocklist_stations(moving_stations)
@@ -332,7 +349,7 @@ class StationUpdater(DataTask):
     def add_area_update(self, station_key):
         pass
 
-    def queue_area_updates(self):
+    def queue_area_updates(self):  # pragma: no cover
         pass
 
 
@@ -352,9 +369,8 @@ class CellUpdater(StationUpdater):
         self.updated_areas.add(area_key)
 
     def queue_area_updates(self):
-        if self.updated_areas:
-            data_queue = self.task.app.data_queues['update_cellarea']
-            data_queue.enqueue(self.updated_areas, pipe=self.pipe)
+        data_queue = self.task.app.data_queues['update_cellarea']
+        data_queue.enqueue(self.updated_areas, pipe=self.pipe)
 
 
 class WifiUpdater(StationUpdater):

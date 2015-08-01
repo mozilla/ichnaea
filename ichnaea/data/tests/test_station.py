@@ -600,12 +600,10 @@ class TestWifi(StationTest):
                         lon=lon2 + 0.004, key=wifi2.key),
         ])
         self.data_queue.enqueue(obs)
-        self.session.flush()
+        self.session.commit()
 
         result = update_wifi.delay()
         self.assertEqual(result.get(), (2, 0))
-        self.session.refresh(wifi1)
-        self.session.refresh(wifi2)
 
         found = dict(self.session.query(Wifi.key, Wifi).all())
         self.assertEqual(set(found.keys()), set([wifi1.key, wifi2.key]))
