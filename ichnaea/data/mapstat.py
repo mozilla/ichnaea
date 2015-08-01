@@ -32,11 +32,24 @@ class MapStatUpdater(DataTask):
 
         found = set([stat.hashkey() for stat in stat_iter])
 
+        new_stat_values = []
         for key in (wanted - found):
+            new_stat_values.append({
+                'lat': key.lat,
+                'lon': key.lon,
+                'time': today,
+            })
+
+        if new_stat_values:
+            # do a batch insert of new stats
             stmt = MapStat.__table__.insert(
-                on_duplicate='id = id').values(
-                time=today, lat=key.lat, lon=key.lon)
-            self.session.execute(stmt)
+                on_duplicate='id = id'  # no-op change
+            )
+            # but limit the batch depending on the model
+            ins_batch = MapStat._insert_batch
+            for i in range(0, len(new_stat_values), ins_batch):
+                batch_values = new_stat_values[i:i + ins_batch]
+                self.session.execute(stmt.values(batch_values))
 
         if queue.size() >= batch:
             self.task.apply_async(

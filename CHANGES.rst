@@ -17,6 +17,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Optimize various tasks by doing batch queries and inserts.
+
 - Avoid using a metric tag called `name` as it conflicts with a default tag.
 
 - Deprecate `insert_measure_*` tasks.

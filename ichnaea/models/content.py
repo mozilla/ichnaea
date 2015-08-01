@@ -51,6 +51,7 @@ class MapStat(HashKeyQueryMixin, _Model):
         Index('idx_mapstat_time', 'time'),
     )
     _hashkey_cls = MapStatHashKey
+    _insert_batch = 100
     _query_batch = 50
     _scaling_factor = 1000
 
@@ -97,18 +98,6 @@ class Score(HashKeyQueryMixin, _Model):
     key = Column(TinyIntEnum(ScoreKey), autoincrement=False)
     time = Column(Date)
     value = Column(Integer)
-
-    @classmethod
-    def incr(cls, session, key, value):
-        score = cls.getkey(session, key)
-        if score is not None:
-            score.value += int(value)
-        else:
-            stmt = cls.__table__.insert(
-                on_duplicate='value = value + %s' % int(value)).values(
-                userid=key.userid, key=key.key, time=key.time, value=value)
-            session.execute(stmt)
-        return value
 
 
 class StatCounter(object):
