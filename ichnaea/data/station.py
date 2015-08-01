@@ -215,21 +215,29 @@ class StationUpdater(DataTask):
 
     def blocklist_stations(self, moving):
         moving_keys = []
+        new_block_values = []
         for station_key, block in moving:
             moving_keys.append(station_key)
-            block_key = self.blocklist_model.to_hashkey(station_key)
             if block:
                 block.time = self.utcnow
                 block.count += 1
             else:
-                stmt = self.blocklist_model.__table__.insert(
-                    on_duplicate='time = time'  # no-op change
-                ).values(
+                block_key = self.blocklist_model.to_hashkey(station_key)
+                new_block_values.append(dict(
                     time=self.utcnow,
                     count=1,
                     **block_key.__dict__
-                )
-                self.session.execute(stmt)
+                ))
+        if new_block_values:
+            # do a batch insert of new blocks
+            stmt = self.blocklist_model.__table__.insert(
+                on_duplicate='time = time'  # no-op change
+            )
+            # but limit the batch depending on each model
+            ins_batch = self.blocklist_model._insert_batch
+            for i in range(0, len(new_block_values), ins_batch):
+                batch_values = new_block_values[i:i + ins_batch]
+                self.session.execute(stmt.values(batch_values))
 
         if moving_keys:
             self.stats_client.incr(

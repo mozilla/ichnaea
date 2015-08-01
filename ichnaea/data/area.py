@@ -70,7 +70,9 @@ class CellAreaUpdater(DataTask):
             avg_cell_range = int(sum(
                 [cell.range for cell in cells]) / float(num_cells))
             if area is None:
-                area = self.area_model(
+                stmt = self.area_model.__table__.insert(
+                    on_duplicate='num_cells = num_cells'  # no-op change
+                ).values(
                     created=self.utcnow,
                     modified=self.utcnow,
                     lat=ctr_lat,
@@ -78,8 +80,9 @@ class CellAreaUpdater(DataTask):
                     range=rng,
                     avg_cell_range=avg_cell_range,
                     num_cells=num_cells,
-                    **area_key.__dict__)
-                self.session.add(area)
+                    **area_key.__dict__
+                )
+                self.session.execute(stmt)
             else:
                 area.modified = self.utcnow
                 area.lat = ctr_lat
