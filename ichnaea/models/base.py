@@ -27,6 +27,7 @@ MYSQL_SETTINGS = {
     'mysql_charset': 'utf8',
 }  #: Common MySQL database settings.
 RESOLVER = DottedNameResolver('ichnaea')
+RESOLVER_CACHE = {}
 
 
 class BaseModel(object):
@@ -58,7 +59,11 @@ class JSONMixin(object):
     def _from_json(dct):
         """Instantiate a class based on the provided JSON dictionary."""
         data = dct['__class__']
-        klass = RESOLVER.resolve(data['name'])
+        name = data['name']
+        global RESOLVER_CACHE
+        klass = RESOLVER_CACHE.get(name, None)
+        if klass is None:
+            RESOLVER_CACHE[name] = klass = RESOLVER.resolve(name)
         return klass._from_json_value(data['value'])
 
     @classmethod
