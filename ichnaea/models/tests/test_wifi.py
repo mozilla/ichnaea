@@ -1,7 +1,6 @@
 from sqlalchemy.exc import (
     IntegrityError,
-    InternalError,
-    StatementError,
+    SQLAlchemyError,
 )
 
 from ichnaea.models.wifi import (
@@ -41,13 +40,13 @@ class TestWifiShard(DBTestCase):
     def test_create_empty(self):
         wifi = WifiShard0()
         self.session.add(wifi)
-        with self.assertRaises(InternalError):
+        with self.assertRaises(SQLAlchemyError):
             self.session.flush()
 
     def test_create_fail(self):
         wifi = WifiShard0(mac='abc')
         self.session.add(wifi)
-        with self.assertRaises(StatementError):
+        with self.assertRaises(SQLAlchemyError):
             self.session.flush()
 
     def test_fields(self):
