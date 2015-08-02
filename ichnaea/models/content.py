@@ -149,12 +149,13 @@ class Stat(HashKeyQueryMixin, _Model):
     @classmethod
     def incr(cls, session, key, value, old=0):
         stat = cls.getkey(session, key)
+        value = int(value)
         if stat is not None:
-            stat.value += int(value)
+            stat.value += value
         else:
             stmt = cls.__table__.insert(
-                on_duplicate='value = value + %s' % int(value)).values(
-                key=key.key, time=key.time, value=old + value)
+                mysql_on_duplicate='value = value + %s' % value
+            ).values(key=key.key, time=key.time, value=old + value)
             session.execute(stmt)
         return value
 

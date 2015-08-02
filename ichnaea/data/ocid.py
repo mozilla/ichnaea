@@ -216,14 +216,14 @@ def import_stations(session, pipe, filename, fields, update_area_task):
             batch = 10000
             rows = []
             ins = OCIDCell.__table__.insert(
-                on_duplicate=((
+                mysql_on_duplicate=(
                     'changeable = values(changeable), '
                     'modified = values(modified), '
                     'total_measures = values(total_measures), '
                     'lat = values(lat), '
                     'lon = values(lon), '
                     'psc = values(psc), '
-                    '`range` = values(`range`)')))
+                    '`range` = values(`range`)'))
 
             for row in csv_reader:
                 # skip any header row

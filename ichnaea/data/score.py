@@ -35,12 +35,13 @@ class ScoreUpdater(DataTask):
 
         for key, value in score_values.items():
             score = scores.get(key, None)
+            value = int(value)
             if score is not None:
-                score.value += int(value)
+                score.value += value
             else:
                 stmt = Score.__table__.insert(
-                    on_duplicate='value = value + %s' % int(value)).values(
-                    value=value, **key.__dict__)
+                    mysql_on_duplicate='value = value + %s' % value
+                ).values(value=value, **key.__dict__)
                 self.session.execute(stmt)
 
         if self.queue.size() >= batch:

@@ -15,13 +15,16 @@ from sqlalchemy.sql import func, select
 from sqlalchemy.sql.expression import Insert
 
 
-@compiles(Insert)
+@compiles(Insert, 'mysql')
 def on_duplicate(insert, compiler, **kw):
     """Custom MySQL insert on_duplicate support."""
-    s = compiler.visit_insert(insert, **kw)
-    if 'on_duplicate' in insert.kwargs:
-        return s + ' ON DUPLICATE KEY UPDATE ' + insert.kwargs['on_duplicate']
-    return s
+    stmt = compiler.visit_insert(insert, **kw)
+    my_var = insert.dialect_kwargs.get('mysql_on_duplicate', None)
+    if my_var:
+        stmt += ' ON DUPLICATE KEY UPDATE %s' % my_var
+    return stmt
+
+Insert.argument_for('mysql', 'on_duplicate', None)
 
 
 def configure_db(uri, _db=None):

@@ -236,7 +236,7 @@ class StationUpdater(DataTask):
         if new_block_values:
             # do a batch insert of new blocks
             stmt = self.blocklist_model.__table__.insert(
-                on_duplicate='time = time'  # no-op change
+                mysql_on_duplicate='time = time'  # no-op
             )
             # but limit the batch depending on each model
             ins_batch = self.blocklist_model._insert_batch
@@ -313,7 +313,7 @@ class StationUpdater(DataTask):
         if new_station_values:
             # do a batch insert of new stations
             stmt = self.station_model.__table__.insert(
-                on_duplicate='total_measures = total_measures'  # no-op change
+                mysql_on_duplicate='total_measures = total_measures'  # no-op
             )
             # but limit the batch depending on each model
             ins_batch = self.station_model._insert_batch

@@ -81,7 +81,7 @@ class CellAreaUpdater(DataTask):
                 [cell.range for cell in cells]) / float(num_cells))
             if area is None:
                 stmt = self.area_model.__table__.insert(
-                    on_duplicate='num_cells = num_cells'  # no-op change
+                    mysql_on_duplicate='num_cells = num_cells'  # no-op
                 ).values(
                     created=self.utcnow,
                     modified=self.utcnow,

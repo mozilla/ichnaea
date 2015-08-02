@@ -21,10 +21,5 @@ def setup_package(module):
     warnings.resetwarnings()
     warnings.simplefilter('default')
 
-    # ignore warning for ichnaea.db.on_duplicate hack
-    from sqlalchemy.exc import SAWarning
-    warnings.filterwarnings(
-        'ignore', ".*SQLAlchemy dialect named 'on'$", SAWarning)
-
     from ichnaea.tests.base import setup_package
     return setup_package(module)

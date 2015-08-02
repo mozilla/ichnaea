@@ -46,7 +46,7 @@ class MapStatUpdater(DataTask):
         if new_stat_values:
             # do a batch insert of new stats
             stmt = MapStat.__table__.insert(
-                on_duplicate='id = id'  # no-op change
+                mysql_on_duplicate='id = id'  # no-op
             )
             # but limit the batch depending on the model
             ins_batch = MapStat._insert_batch
