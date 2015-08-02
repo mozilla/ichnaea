@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 4860cb8e54f5: Add new sharded wifi tables.
+
 - The structure of the application ini file changed and the `ichnaea`
   section was replaced by a number of new more specific sections.
 

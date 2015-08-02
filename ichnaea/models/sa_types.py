@@ -1,14 +1,32 @@
+from base64 import (
+    b16decode,
+    b16encode,
+)
 from datetime import datetime
 import time
 
 from enum import IntEnum
 import pytz
-
+from sqlalchemy import BINARY
 from sqlalchemy.dialects.mysql import (
     DATETIME as DateTime,
     TINYINT as TinyInteger,
 )
 from sqlalchemy.types import TypeDecorator
+
+
+class MacColumn(TypeDecorator):
+    """A binary type storing MAC's."""
+
+    impl = BINARY
+
+    def process_bind_param(self, value, dialect):
+        if not (value and len(value) == 12):
+            raise ValueError('Invalid MAC: %r' % value)
+        return b16decode(value, casefold=True)
+
+    def process_result_value(self, value, dialect):
+        return b16encode(value).decode('ascii')
 
 
 class TinyIntEnum(TypeDecorator):

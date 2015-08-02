@@ -1,14 +1,71 @@
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import (
+    IntegrityError,
+    InternalError,
+    StatementError,
+)
 
 from ichnaea.models.wifi import (
+    StationSource,
     Wifi,
     WifiBlocklist,
+    WifiShard,
+    WifiShard0,
+    WifiShardF,
 )
 from ichnaea.tests.base import (
     DBTestCase,
     GB_LAT,
     GB_LON,
 )
+
+
+class TestWifiShard(DBTestCase):
+
+    def test_shard(self):
+        self.assertIs(WifiShard.shard_model('111101123456'), WifiShard0)
+        self.assertIs(WifiShard.shard_model('0000f0123456'), WifiShardF)
+
+    def test_shard_empty(self):
+        self.assertIs(WifiShard.shard_model(None), None)
+        self.assertIs(WifiShard.shard_model(''), None)
+
+    def test_create(self):
+        wifi = WifiShard0(mac='111101123456')
+        self.session.add(wifi)
+        self.session.flush()
+
+        wifis = (self.session.query(WifiShard0)
+                             .filter(WifiShard0.mac == '111101123456')).all()
+        self.assertEqual(wifis[0].mac, '111101123456')
+
+    def test_create_empty(self):
+        wifi = WifiShard0()
+        self.session.add(wifi)
+        with self.assertRaises(InternalError):
+            self.session.flush()
+
+    def test_create_fail(self):
+        wifi = WifiShard0(mac='abc')
+        self.session.add(wifi)
+        with self.assertRaises(StatementError):
+            self.session.flush()
+
+    def test_fields(self):
+        self.session.add(WifiShard.shard_model('111101123456')(
+            mac='111101123456', lat=GB_LAT, lon=GB_LON, radius=200,
+            country='GB', samples=10, source=StationSource.gnss))
+        self.session.flush()
+
+        wifi = self.session.query(WifiShard0).first()
+        self.assertEqual(wifi.mac, '111101123456')
+        self.assertEqual(wifi.lat, GB_LAT)
+        self.assertEqual(wifi.lon, GB_LON)
+        self.assertEqual(wifi.radius, 200)
+        self.assertEqual(wifi.range, 200)
+        self.assertEqual(wifi.country, 'GB')
+        self.assertEqual(wifi.samples, 10)
+        self.assertEqual(wifi.total_measures, 10)
+        self.assertEqual(wifi.source, StationSource.gnss)
 
 
 class TestWifi(DBTestCase):
