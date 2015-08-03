@@ -17,8 +17,8 @@ from ichnaea.models import (
     StatCounter,
     StatKey,
     Wifi,
-    WifiBlocklist,
     WifiObservation,
+    WifiShard,
 )
 from ichnaea import util
 
@@ -211,47 +211,13 @@ class StationUpdater(DataTask):
             return (False, None, values)
 
     def blocklisted_station(self, block):
-        age = self.utcnow - block.time
-        temporary = age < TEMPORARY_BLOCKLIST_DURATION
-        permanent = block.count >= PERMANENT_BLOCKLIST_THRESHOLD
-        if temporary or permanent:
-            return (True, block.time, block)
-        return (False, block.time, block)
+        raise NotImplementedError()
+
+    def blocklisted_stations(self, block):
+        raise NotImplementedError()
 
     def blocklist_stations(self, moving):
-        moving_keys = []
-        new_block_values = []
-        for station_key, block in moving:
-            moving_keys.append(station_key)
-            if block:
-                block.time = self.utcnow
-                block.count += 1
-            else:
-                block_key = self.blocklist_model.to_hashkey(station_key)
-                new_block_values.append(dict(
-                    time=self.utcnow,
-                    count=1,
-                    **block_key.__dict__
-                ))
-        if new_block_values:
-            # do a batch insert of new blocks
-            stmt = self.blocklist_model.__table__.insert(
-                mysql_on_duplicate='time = time'  # no-op
-            )
-            # but limit the batch depending on each model
-            ins_batch = self.blocklist_model._insert_batch
-            for i in range(0, len(new_block_values), ins_batch):
-                batch_values = new_block_values[i:i + ins_batch]
-                self.session.execute(stmt.values(batch_values))
-
-        if moving_keys:
-            self.stats_client.incr(
-                'data.station.blocklist',
-                len(moving_keys),
-                tags=['type:%s' % self.station_type,
-                      'action:add',
-                      'reason:moving'])
-            self.remove_task.delay(moving_keys)
+        raise NotImplementedError()
 
     def update(self, batch=10):
         all_observations = self.data_queue.dequeue(batch=batch)
@@ -271,10 +237,7 @@ class StationUpdater(DataTask):
                                                    list(station_obs.keys())):
             stations[station.hashkey()] = station
 
-        blocklist = {}
-        for block in self.blocklist_model.iterkeys(self.session,
-                                                   list(station_obs.keys())):
-            blocklist[block.hashkey()] = self.blocklisted_station(block)
+        blocklist = self.blocklisted_stations(station_obs.keys())
 
         new_station_values = []
         changed_station_values = []
@@ -372,10 +335,60 @@ class CellUpdater(StationUpdater):
         data_queue = self.task.app.data_queues['update_cellarea']
         data_queue.enqueue(self.updated_areas, pipe=self.pipe)
 
+    def blocklisted_station(self, block):
+        age = self.utcnow - block.time
+        temporary = age < TEMPORARY_BLOCKLIST_DURATION
+        permanent = block.count >= PERMANENT_BLOCKLIST_THRESHOLD
+        if temporary or permanent:
+            return (True, block.time, block)
+        return (False, block.time, block)
+
+    def blocklisted_stations(self, station_keys):
+        blocklist = {}
+        for block in self.blocklist_model.iterkeys(
+                self.session, list(station_keys)):
+            blocklist[block.hashkey()] = self.blocklisted_station(block)
+        return blocklist
+
+    def blocklist_stations(self, moving):
+        moving_keys = []
+        new_block_values = []
+        for station_key, block in moving:
+            moving_keys.append(station_key)
+            if block:
+                block.time = self.utcnow
+                block.count += 1
+            else:
+                block_key = self.blocklist_model.to_hashkey(station_key)
+                new_block_values.append(dict(
+                    time=self.utcnow,
+                    count=1,
+                    **block_key.__dict__
+                ))
+        if new_block_values:
+            # do a batch insert of new blocks
+            stmt = self.blocklist_model.__table__.insert(
+                mysql_on_duplicate='time = time'  # no-op
+            )
+            # but limit the batch depending on each model
+            ins_batch = self.blocklist_model._insert_batch
+            for i in range(0, len(new_block_values), ins_batch):
+                batch_values = new_block_values[i:i + ins_batch]
+                self.session.execute(stmt.values(batch_values))
+
+        if moving_keys:
+            self.stats_client.incr(
+                'data.station.blocklist',
+                len(moving_keys),
+                tags=['type:%s' % self.station_type,
+                      'action:add',
+                      'reason:moving'])
+            self.remove_task.delay(moving_keys)
+
 
 class WifiUpdater(StationUpdater):
 
-    blocklist_model = WifiBlocklist
+    blocklist_model = WifiShard
     max_dist_km = 5
     observation_model = WifiObservation
     queue_name = 'update_wifi'
@@ -383,3 +396,68 @@ class WifiUpdater(StationUpdater):
     stat_station_key = StatKey.unique_wifi
     station_model = Wifi
     station_type = 'wifi'
+
+    def blocklisted_station(self, block):
+        temporary = False
+        if block.block_last:
+            age = self.utcnow.date() - block.block_last
+            temporary = age < TEMPORARY_BLOCKLIST_DURATION
+
+        permanent = False
+        if block.block_count:
+            permanent = block.block_count >= PERMANENT_BLOCKLIST_THRESHOLD
+
+        if temporary or permanent:
+            return (True, block.block_first, block)
+        return (False, block.block_first, block)
+
+    def blocklisted_stations(self, station_keys):
+        blocklist = {}
+        macs = [key.key for key in station_keys]
+        shards = defaultdict(list)
+        for mac in macs:
+            shards[WifiShard.shard_model(mac)].append(mac)
+        blocks = []
+        for shard, macs in shards.items():
+            result = self.session.query(shard).filter(shard.mac.in_(macs))
+            blocks.extend(result.all())
+        for block in blocks:
+            blocklist[self.station_model.to_hashkey(
+                key=block.mac)] = self.blocklisted_station(block)
+        return blocklist
+
+    def blocklist_stations(self, moving):
+        moving_keys = []
+        new_block_values = []
+        today = self.utcnow.date()
+        for station_key, block in moving:
+            moving_keys.append(station_key)
+            if block:
+                block.block_last = today
+                block.block_count += 1
+            else:
+                new_block_values.append(dict(
+                    mac=station_key.key,
+                    block_first=today,
+                    block_last=today,
+                    block_count=1,
+                ))
+        if new_block_values:
+            shards = defaultdict(list)
+            for value in new_block_values:
+                shards[WifiShard.shard_model(value['mac'])].append(value)
+
+            for shard, values in shards.items():
+                stmt = shard.__table__.insert(
+                    mysql_on_duplicate='block_count = block_count'  # no-op
+                )
+                self.session.execute(stmt.values(values))
+
+        if moving_keys:
+            self.stats_client.incr(
+                'data.station.blocklist',
+                len(moving_keys),
+                tags=['type:%s' % self.station_type,
+                      'action:add',
+                      'reason:moving'])
+            self.remove_task.delay(moving_keys)

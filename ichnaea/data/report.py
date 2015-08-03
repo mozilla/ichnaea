@@ -13,9 +13,9 @@ from ichnaea.models import (
     ScoreKey,
     User,
     Wifi,
-    WifiBlocklist,
     WifiObservation,
     WifiReport,
+    WifiShard,
 )
 
 
@@ -79,14 +79,25 @@ class ReportQueue(DataTask):
 
         # Only check the blocklist table for the still unknown keys.
         # There is no need to check for the already found keys again.
-        block_iter = block_model.iterkeys(
-            self.session,
-            list(unknown_keys),
-            # only load the columns required for the hashkey
-            extra=lambda query: query.options(
-                load_only(*tuple(block_model._hashkey_cls._fields))))
-        # subtract all stations which are found in the blocklist table
-        unknown_keys -= set([block.hashkey() for block in block_iter])
+        if block_model is WifiShard:
+            macs = [key.key for key in unknown_keys]
+            shards = defaultdict(list)
+            for mac in macs:
+                shards[WifiShard.shard_model(mac)].append(mac)
+            for shard, macs in shards.items():
+                query = (self.session.query(shard.mac)
+                                     .filter(shard.mac.in_(macs)))
+                unknown_keys -= set([
+                    model.to_hashkey(key=r.mac) for r in query.all()])
+        else:
+            block_iter = block_model.iterkeys(
+                self.session,
+                list(unknown_keys),
+                # only load the columns required for the hashkey
+                extra=lambda query: query.options(
+                    load_only(*tuple(block_model._hashkey_cls._fields))))
+            # subtract all stations which are found in the blocklist table
+            unknown_keys -= set([block.hashkey() for block in block_iter])
 
         return len(unknown_keys)
 
@@ -130,7 +141,7 @@ class ReportQueue(DataTask):
 
         # determine scores for stations
         for name, model, block_model in (('cell', Cell, CellBlocklist),
-                                         ('wifi', Wifi, WifiBlocklist)):
+                                         ('wifi', Wifi, WifiShard)):
             new_station_count[name] += self.new_stations(
                 model, block_model, list(station_obs[name].keys()))
 

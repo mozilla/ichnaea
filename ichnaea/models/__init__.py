@@ -32,7 +32,7 @@ from ichnaea.models.observation import (  # NOQA
 )
 from ichnaea.models.wifi import (  # NOQA
     Wifi,
-    WifiBlocklist,
+    WifiShard,
 )
 
 __all__ = (_Model, )

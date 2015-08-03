@@ -17,7 +17,7 @@ from ichnaea.models import (
     StatCounter,
     StatKey,
     Wifi,
-    WifiBlocklist,
+    WifiShard,
 )
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
@@ -25,7 +25,7 @@ from ichnaea.tests.factories import (
     CellBlocklistFactory,
     CellObservationFactory,
     WifiFactory,
-    WifiBlocklistFactory,
+    WifiShardFactory,
     WifiObservationFactory,
 )
 from ichnaea import util
@@ -368,8 +368,11 @@ class TestWifi(StationTest):
 
         bad_wifi = WifiObservationFactory.build()
         good_wifi = WifiObservationFactory.build()
-        block = WifiBlocklist(time=utcnow, count=1, key=bad_wifi.key)
-        self.session.add(block)
+        WifiShardFactory(
+            mac=bad_wifi.key,
+            block_last=utcnow.date(),
+            block_first=utcnow.date(),
+            block_count=1)
         self.session.flush()
 
         observations = [good_wifi, bad_wifi, good_wifi]
@@ -389,7 +392,11 @@ class TestWifi(StationTest):
         last_week = now - TEMPORARY_BLOCKLIST_DURATION - timedelta(days=1)
 
         obs = WifiObservationFactory()
-        self.session.add(WifiBlocklist(time=last_week, count=1, key=obs.key))
+        WifiShardFactory(
+            mac=obs.key,
+            block_first=last_week.date(),
+            block_last=last_week.date(),
+            block_count=1)
         self.session.flush()
 
         # add a new entry for the previously blocklisted wifi
@@ -402,7 +409,7 @@ class TestWifi(StationTest):
         self.assertEqual(len(wifis), 1)
 
         # and the creation date was set to the date of the blocklist entry
-        self.assertEqual(wifis[0].created, last_week)
+        self.assertEqual(wifis[0].created.date(), last_week.date())
         self.check_statcounter(StatKey.unique_wifi, 0)
 
     def test_blocklist_moving_wifis(self):
@@ -436,7 +443,7 @@ class TestWifi(StationTest):
             obs_factory(lat=wifi.lat + 0.07,
                         lon=wifi.lon, key=wifi.key),
         ])
-        moving.add(wifi.hashkey())
+        moving.add(wifi.key)
         # a wifi with a very different prior position
         wifi = wifis[2]
         wifi.total_measures = 1
@@ -446,7 +453,7 @@ class TestWifi(StationTest):
             obs_factory(lat=wifi.lat - 4.0,
                         lon=wifi.lon + 2.0, key=wifi.key),
         ])
-        moving.add(wifi.hashkey())
+        moving.add(wifi.key)
         # another wifi with a prior known position (and negative lat)
         wifi = wifis[3]
         wifi.total_measures = 1
@@ -457,17 +464,17 @@ class TestWifi(StationTest):
             obs_factory(lat=wifi.lat - 0.16,
                         lon=wifi.lon, key=wifi.key),
         ])
-        moving.add(wifi.hashkey())
+        moving.add(wifi.key)
         # an already blocklisted wifi
         wifi = wifis[4]
-        WifiBlocklistFactory(key=wifi.key, time=now, count=1)
+        WifiShardFactory(mac=wifi.key, block_last=now.date(), block_count=1)
         obs.extend([
             obs_factory(lat=wifi.lat,
                         lon=wifi.lon, key=wifi.key),
             obs_factory(lat=wifi.lat + 0.1,
                         lon=wifi.lon, key=wifi.key),
         ])
-        moving.add(wifi.hashkey())
+        moving.add(wifi.key)
 
         self.data_queue.enqueue(obs)
         self.session.commit()
@@ -475,8 +482,13 @@ class TestWifi(StationTest):
         result = update_wifi.delay()
         self.assertEqual(result.get(), (4, 3))
 
-        block = self.session.query(WifiBlocklist).all()
-        self.assertEqual(set([b.hashkey() for b in block]), moving)
+        shards = set()
+        for mac in moving:
+            shards.add(WifiShard.shard_model(mac))
+        blocks = []
+        for shard in shards:
+            blocks.extend(self.session.query(shard).all())
+        self.assertEqual(set([b.mac for b in blocks]), moving)
 
         # test duplicate call
         result = update_wifi.delay()
@@ -510,6 +522,7 @@ class TestWifi(StationTest):
         ]
 
         obs = WifiObservationFactory()
+        shard = WifiShard.shard_model(obs.key)
 
         N = PERMANENT_BLOCKLIST_THRESHOLD * 4
         for month in range(0, N):
@@ -535,7 +548,7 @@ class TestWifi(StationTest):
             # ...
             # 23rd insert will not recreate station
 
-            blocks = self.session.query(WifiBlocklist).all()
+            blocks = self.session.query(shard).all()
             if month < 2:
                 self.assertEqual(len(blocks), 0)
             else:
@@ -543,7 +556,7 @@ class TestWifi(StationTest):
                 # force the blocklist back in time to whenever the
                 # observation was supposedly inserted.
                 block = blocks[0]
-                block.time = time
+                block.block_last = time.date()
                 self.session.commit()
 
             if month < N / 2:
@@ -560,9 +573,9 @@ class TestWifi(StationTest):
                     # thereby activating the blocklist.
                     self.assertEqual(update_wifi.delay().get(), (1, 1))
                     if month > 1:
-                        self.assertEqual(block.count, ((month + 1) / 2))
+                        self.assertEqual(block.block_count, ((month + 1) / 2))
                     self.assertEqual(
-                        self.session.query(WifiBlocklist).count(), 1)
+                        self.session.query(shard).count(), 1)
                     self.assertEqual(self.session.query(Wifi).count(), 0)
 
                     # Try adding one more observation

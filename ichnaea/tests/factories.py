@@ -21,7 +21,7 @@ from ichnaea.models import (
     OCIDCellArea,
     Radio,
     Wifi,
-    WifiBlocklist,
+    WifiShard,
     WifiObservation,
 )
 from ichnaea.tests.base import (
@@ -192,10 +192,15 @@ class WifiFactory(WifiPositionFactory, BboxFactory, BaseSQLFactory):
         model = Wifi.create
 
 
-class WifiBlocklistFactory(WifiKeyFactory, BaseSQLFactory):
+class WifiMacFactory(Factory):
+
+    mac = FuzzyWifiKey()
+
+
+class WifiShardFactory(WifiMacFactory, BaseSQLFactory):
 
     class Meta:
-        model = WifiBlocklist
+        model = WifiShard.create
 
 
 class WifiObservationFactory(WifiPositionFactory, BaseMemoryFactory):
