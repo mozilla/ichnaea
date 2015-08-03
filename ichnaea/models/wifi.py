@@ -1,5 +1,6 @@
 import colander
 from enum import IntEnum
+from six import string_types
 from sqlalchemy import (
     Column,
     Date,
@@ -21,6 +22,8 @@ from ichnaea.models.base import (
     CreationMixin,
     PositionMixin,
     TimeTrackingMixin,
+    ValidPositionSchema,
+    ValidTimeTrackingSchema,
 )
 from ichnaea.models.hashkey import (
     HashKey,
@@ -32,6 +35,7 @@ from ichnaea.models.sa_types import (
 )
 from ichnaea.models.schema import (
     CopyingSchema,
+    DateFromString,
     DefaultNode,
     FieldSchema,
     ValidatorNode,
@@ -40,6 +44,7 @@ from ichnaea.models.station import (
     BboxMixin,
     StationMixin,
     StationBlocklistMixin,
+    ValidBboxSchema,
     ValidStationSchema,
 )
 
@@ -177,9 +182,60 @@ class StationSource(IntEnum):
     query = 9  #: Position estimate based on query data.
 
 
+class StationSourceNode(DefaultNode):
+    """A node containing a valid station source."""
+
+    def validator(self, node, cstruct):
+        super(StationSourceNode, self).validator(node, cstruct)
+
+        if type(cstruct) is StationSource:
+            return True
+
+        raise colander.Invalid(  # pragma: no cover
+            node, 'Invalid station source')
+
+
+class StationSourceType(colander.Integer):
+    """
+    A StationSourceType will return a StationSource IntEnum object.
+    """
+
+    def deserialize(self, node, cstruct):  # pragma: no cover
+        if cstruct is colander.null:
+            return None
+        if isinstance(cstruct, StationSource):
+            return cstruct
+        try:
+            if isinstance(cstruct, string_types):
+                cstruct = StationSource[cstruct]
+            else:
+                cstruct = StationSource(cstruct)
+        except (KeyError, ValueError):
+            raise colander.Invalid(node, (
+                '%r is not a valid station source' % cstruct))
+        return cstruct
+
+
 class WifiMac(HashKey):
 
     _fields = ('mac', )
+
+
+class ValidWifiShardSchema(ValidBboxSchema,
+                           ValidPositionSchema,
+                           ValidTimeTrackingSchema):
+    """A schema which validates the fields in a wifi shard."""
+
+    mac = WifiKeyNode(colander.String())
+    radius = colander.SchemaNode(colander.Integer(), missing=0)
+
+    country = colander.SchemaNode(colander.String(), missing=None)
+    samples = colander.SchemaNode(colander.Integer(), missing=0)
+    source = StationSourceNode(StationSourceType(), missing=None)
+
+    block_first = colander.SchemaNode(DateFromString(), missing=None)
+    block_last = colander.SchemaNode(DateFromString(), missing=None)
+    block_count = colander.SchemaNode(colander.Integer(), missing=0)
 
 
 class WifiShard(HashKeyQueryMixin,
@@ -190,6 +246,7 @@ class WifiShard(HashKeyQueryMixin,
 
     _hashkey_cls = WifiMac
     _query_batch = 100
+    _valid_schema = ValidWifiShardSchema
 
     mac = Column(MacColumn(6))
     radius = Column(Integer(unsigned=True))
@@ -212,6 +269,19 @@ class WifiShard(HashKeyQueryMixin,
             Index('%s_latlon_idx' % cls.__tablename__, 'lat', 'lon'),
         )
         return _indices + (cls._settings, )
+
+    @classmethod
+    def create(cls, _raise_invalid=False, **kw):
+        """
+        Returns an instance of the correct shard model class, if the
+        passed in keyword arguments pass schema validation,
+        otherwise returns None.
+        """
+        validated = cls.validate(kw, _raise_invalid=_raise_invalid)
+        if validated is None:  # pragma: no cover
+            return None
+        shard = cls.shard_model(validated['mac'])
+        return shard(**validated)
 
     @property
     def range(self):

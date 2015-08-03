@@ -1,7 +1,20 @@
 import copy
-from datetime import datetime
+from datetime import date, datetime
 
 import colander
+
+
+class DateFromString(colander.Date):
+    """
+    A DateFromString will return a date object
+    from either a date object or a string.
+    """
+
+    def deserialize(self, schema, cstruct):
+        if type(cstruct) == date:
+            return cstruct
+        return super(DateFromString, self).deserialize(
+            schema, cstruct)  # pragma: no cover
 
 
 class DateTimeFromString(colander.DateTime):

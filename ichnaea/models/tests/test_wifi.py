@@ -1,12 +1,10 @@
 from sqlalchemy.exc import (
-    IntegrityError,
     SQLAlchemyError,
 )
 
 from ichnaea.models.wifi import (
     StationSource,
     Wifi,
-    WifiBlocklist,
     WifiShard,
     WifiShard0,
     WifiShardF,
@@ -16,6 +14,7 @@ from ichnaea.tests.base import (
     GB_LAT,
     GB_LON,
 )
+from ichnaea import util
 
 
 class TestWifiShard(DBTestCase):
@@ -32,7 +31,7 @@ class TestWifiShard(DBTestCase):
         self.assertIs(WifiShard.shard_model(''), None)
         self.assertIs(WifiShard.shard_model(None), None)
 
-    def test_create(self):
+    def test_init(self):
         wifi = WifiShard0(mac='111101123456')
         self.session.add(wifi)
         self.session.flush()
@@ -41,34 +40,50 @@ class TestWifiShard(DBTestCase):
                              .filter(WifiShard0.mac == '111101123456')).all()
         self.assertEqual(wifis[0].mac, '111101123456')
 
-    def test_create_empty(self):
+    def test_init_empty(self):
         wifi = WifiShard0()
         self.session.add(wifi)
         with self.assertRaises(SQLAlchemyError):
             self.session.flush()
 
-    def test_create_fail(self):
+    def test_init_fail(self):
         wifi = WifiShard0(mac='abc')
         self.session.add(wifi)
         with self.assertRaises(SQLAlchemyError):
             self.session.flush()
 
     def test_fields(self):
-        self.session.add(WifiShard.shard_model('111101123456')(
-            mac='111101123456', lat=GB_LAT, lon=GB_LON, radius=200,
-            country='GB', samples=10, source=StationSource.gnss))
+        now = util.utcnow()
+        today = now.date()
+        self.session.add(WifiShard.create(
+            mac='111101123456', created=now, modified=now,
+            lat=GB_LAT, max_lat=GB_LAT, min_lat=GB_LAT,
+            lon=GB_LON, max_lon=GB_LON, min_lon=GB_LON,
+            radius=200, country='GB', samples=10, source=StationSource.gnss,
+            block_first=today, block_last=today, block_count=1,
+            _raise_invalid=True,
+        ))
         self.session.flush()
 
         wifi = self.session.query(WifiShard0).first()
         self.assertEqual(wifi.mac, '111101123456')
+        self.assertEqual(wifi.created, now)
+        self.assertEqual(wifi.modified, now)
         self.assertEqual(wifi.lat, GB_LAT)
+        self.assertEqual(wifi.max_lat, GB_LAT)
+        self.assertEqual(wifi.min_lat, GB_LAT)
         self.assertEqual(wifi.lon, GB_LON)
+        self.assertEqual(wifi.max_lon, GB_LON)
+        self.assertEqual(wifi.min_lon, GB_LON)
         self.assertEqual(wifi.radius, 200)
         self.assertEqual(wifi.range, 200)
         self.assertEqual(wifi.country, 'GB')
         self.assertEqual(wifi.samples, 10)
         self.assertEqual(wifi.total_measures, 10)
         self.assertEqual(wifi.source, StationSource.gnss)
+        self.assertEqual(wifi.block_first, today)
+        self.assertEqual(wifi.block_last, today)
+        self.assertEqual(wifi.block_count, 1)
 
     def test_mac_unhex(self):
         stmt = 'insert into wifi_shard_0 (mac) values (unhex("111101123456"))'
@@ -97,21 +112,3 @@ class TestWifi(DBTestCase):
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
         self.assertEqual(result.range, 200)
-
-
-class TestWifiBlocklist(DBTestCase):
-
-    def test_fields(self):
-        self.session.add(WifiBlocklist(key='3680873e9b83', count=2))
-        self.session.flush()
-
-        result = self.session.query(WifiBlocklist).first()
-        self.assertEqual(result.key, '3680873e9b83')
-        self.assertEqual(result.count, 2)
-
-    def test_unique_key(self):
-        self.session.add(WifiBlocklist(key='3680873e9b83'))
-        self.session.flush()
-
-        self.session.add(WifiBlocklist(key='3680873e9b83'))
-        self.assertRaises(IntegrityError, self.session.flush)
