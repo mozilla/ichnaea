@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 2127f9dd0ed7: Move wifi blocklist entries into wifi shard tables.
+
 - 4860cb8e54f5: Add new sharded wifi tables.
 
 - The structure of the application ini file changed and the `ichnaea`

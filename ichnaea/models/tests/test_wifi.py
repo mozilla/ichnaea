@@ -20,13 +20,17 @@ from ichnaea.tests.base import (
 
 class TestWifiShard(DBTestCase):
 
-    def test_shard(self):
+    def test_shard_id(self):
+        self.assertEqual(WifiShard.shard_id('111101123456'), '0')
+        self.assertEqual(WifiShard.shard_id('0000f0123456'), 'f')
+        self.assertEqual(WifiShard.shard_id(''), None)
+        self.assertEqual(WifiShard.shard_id(None), None)
+
+    def test_shard_model(self):
         self.assertIs(WifiShard.shard_model('111101123456'), WifiShard0)
         self.assertIs(WifiShard.shard_model('0000f0123456'), WifiShardF)
-
-    def test_shard_empty(self):
-        self.assertIs(WifiShard.shard_model(None), None)
         self.assertIs(WifiShard.shard_model(''), None)
+        self.assertIs(WifiShard.shard_model(None), None)
 
     def test_create(self):
         wifi = WifiShard0(mac='111101123456')
@@ -65,6 +69,20 @@ class TestWifiShard(DBTestCase):
         self.assertEqual(wifi.samples, 10)
         self.assertEqual(wifi.total_measures, 10)
         self.assertEqual(wifi.source, StationSource.gnss)
+
+    def test_mac_unhex(self):
+        stmt = 'insert into wifi_shard_0 (mac) values (unhex("111101123456"))'
+        self.session.execute(stmt)
+        self.session.flush()
+        wifi = self.session.query(WifiShard0).one()
+        self.assertEqual(wifi.mac, '111101123456')
+
+    def test_mac_hex(self):
+        self.session.add(WifiShard0(mac='111101123456'))
+        self.session.flush()
+        stmt = 'select hex(`mac`) from wifi_shard_0'
+        row = self.session.execute(stmt).fetchone()
+        self.assertEqual(row, ('111101123456', ))
 
 
 class TestWifi(DBTestCase):

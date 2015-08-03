@@ -224,6 +224,15 @@ class WifiShard(HashKeyQueryMixin,
         return self.samples
 
     @classmethod
+    def shard_id(cls, mac):
+        """
+        Given a BSSID/MAC return the correct shard id for this data.
+        """
+        if not mac:
+            return None
+        return mac.lower()[4]
+
+    @classmethod
     def shard_model(cls, mac):
         """
         Given a BSSID/MAC return the correct DB model class for this

@@ -23,10 +23,10 @@ class MacColumn(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if not (value and len(value) == 12):
             raise ValueError('Invalid MAC: %r' % value)
-        return b16decode(value, casefold=True)
+        return b16decode(value.upper())
 
     def process_result_value(self, value, dialect):
-        return b16encode(value).decode('ascii')
+        return b16encode(value).decode('ascii').lower()
 
 
 class TinyIntEnum(TypeDecorator):
