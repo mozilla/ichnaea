@@ -54,8 +54,8 @@ class TestExport(CeleryTestCase):
     def test_local_export(self):
         cell_fixture_fields = (
             'radio', 'cid', 'lat', 'lon', 'mnc', 'mcc', 'lac')
-        base_cell = CellFactory.build(radio=Radio.gsm)
-        cell_key = {'radio': Radio.gsm, 'mcc': base_cell.mcc,
+        base_cell = CellFactory.build(radio=Radio.wcdma)
+        cell_key = {'radio': Radio.wcdma, 'mcc': base_cell.mcc,
                     'mnc': base_cell.mnc, 'lac': base_cell.lac}
         cells = set()
 
@@ -64,7 +64,7 @@ class TestExport(CeleryTestCase):
                         lon=base_cell.lon, **cell_key)
             CellFactory(**cell)
 
-            cell['radio'] = 'GSM'
+            cell['radio'] = 'UMTS'
             cell_strings = [
                 (field, str(value)) for (field, value) in cell.items()]
             cell_tuple = tuple(sorted(cell_strings))
@@ -127,12 +127,12 @@ class TestImport(CeleryAppTestCase):
 
     def setUp(self):
         super(TestImport, self).setUp()
-        self.cell = CellFactory.build(radio=Radio.gsm)
+        self.cell = CellFactory.build(radio=Radio.wcdma)
 
     @contextmanager
     def get_csv(self, lo=1, hi=10, time=1408604686):
         cell = self.cell
-        line_template = ('GSM,{mcc},{mnc},{lac},{cid},{psc},{lon},'
+        line_template = ('UMTS,{mcc},{mnc},{lac},{cid},{psc},{lon},'
                          '{lat},1,1,1,{time},{time},')
         lines = [line_template.format(
             mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac, cid=i * 1010, psc='',

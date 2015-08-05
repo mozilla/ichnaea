@@ -82,6 +82,8 @@ def make_cell_export_dict(row):
     radio = row[indices['radio']]
 
     data['radio'] = radio.name.upper()
+    if data['radio'] == 'WCDMA':
+        data['radio'] = 'UMTS'
     data['created'] = row[indices['created']]
     data['updated'] = row[indices['modified']]
     data['samples'] = row[indices['total_measures']]
