@@ -40,10 +40,6 @@ INSERT IGNORE INTO wifi_shard_{id}
         op.execute(sa.text(ins_stmt.format(id=shard_id)))
         op.execute(sa.text(flush_stmt.format(id=shard_id)))
 
-    log.info('Delete rows from wifi_blacklist')
-    delete_stmt = 'DELETE FROM wifi_blacklist'
-    op.execute(sa.text(delete_stmt))
-
 
 def downgrade():
     pass
