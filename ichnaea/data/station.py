@@ -433,11 +433,14 @@ class WifiUpdater(StationUpdater):
         for station_key, block in moving:
             moving_keys.append(station_key)
             if block:
+                block.modified = self.utcnow
                 block.block_last = today
                 block.block_count += 1
             else:
                 new_block_values.append(dict(
                     mac=station_key.key,
+                    created=self.utcnow,
+                    modified=self.utcnow,
                     block_first=today,
                     block_last=today,
                     block_count=1,

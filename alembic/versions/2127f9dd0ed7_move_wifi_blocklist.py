@@ -20,8 +20,11 @@ def upgrade():
     log.info('Move wifi blocklist rows to wifi shard tables.')
     ins_stmt = """\
 INSERT IGNORE INTO wifi_shard_{id}
-    (`mac`, `block_first`, `block_last`, `block_count`)
-    (SELECT UNHEX(`key`) as mac,
+    (`mac`, `created`, `modified`, `block_first`, `block_last`, `block_count`)
+    (SELECT
+        UNHEX(`key`) as mac,
+        `time` as created,
+        `time` as modified,
         DATE(`time`) as block_first,
         DATE(`time`) as block_last,
         `count` as block_count

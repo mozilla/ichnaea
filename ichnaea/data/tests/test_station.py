@@ -370,8 +370,9 @@ class TestWifi(StationTest):
         good_wifi = WifiObservationFactory.build()
         WifiShardFactory(
             mac=bad_wifi.key,
-            block_last=utcnow.date(),
+            created=utcnow,
             block_first=utcnow.date(),
+            block_last=utcnow.date(),
             block_count=1)
         self.session.flush()
 
@@ -394,6 +395,7 @@ class TestWifi(StationTest):
         obs = WifiObservationFactory()
         WifiShardFactory(
             mac=obs.key,
+            created=None,
             block_first=last_week.date(),
             block_last=last_week.date(),
             block_count=1)
