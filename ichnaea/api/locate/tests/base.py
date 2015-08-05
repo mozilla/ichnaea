@@ -267,10 +267,12 @@ class CommonLocateTest(BaseLocateTest):
         if self.apikey_metrics:
             # ensure that a apiuser hyperloglog entry was added for today
             today = util.utcnow().date().strftime('%Y-%m-%d')
-            key = 'apiuser:%s:test:%s' % (self.metric_type, today)
-            self.assertEqual(self.redis_client.keys('apiuser:*'), [key])
+            expected = 'apiuser:%s:test:%s' % (self.metric_type, today)
+            self.assertEqual(
+                [key.decode('ascii') for key in self.redis_client.keys(
+                    'apiuser:*')], [expected])
             # check that the ttl was set
-            ttl = self.redis_client.ttl(key)
+            ttl = self.redis_client.ttl(expected)
             self.assertTrue(7 * 24 * 3600 < ttl <= 8 * 24 * 3600)
 
     def test_empty_json(self):

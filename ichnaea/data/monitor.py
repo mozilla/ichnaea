@@ -59,7 +59,7 @@ def monitor_api_users(task):
     try:
         for key in redis_client.scan_iter(
                 match='apiuser:*', count=100):
-            _, api_type, api_name, day = key.split(':')
+            _, api_type, api_name, day = key.decode('ascii').split(':')
             if day not in days.values():
                 # delete older entries
                 redis_client.delete(key)

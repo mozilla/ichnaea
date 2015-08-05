@@ -147,7 +147,7 @@ class BaseSubmitTest(object):
         ])
         today = util.utcnow().date()
         self.assertEqual(
-            self.redis_client.keys('apiuser:*'),
+            [k.decode('ascii') for k in self.redis_client.keys('apiuser:*')],
             ['apiuser:submit:test:%s' % today.strftime('%Y-%m-%d')])
 
     def test_radio_duplicated(self):
