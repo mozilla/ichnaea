@@ -21,6 +21,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Enable locate source level metrics.
+
 - #457: Fix cell export to again use UMTS as the radio type string.
 
 - Optimize various tasks by doing batch queries and inserts.

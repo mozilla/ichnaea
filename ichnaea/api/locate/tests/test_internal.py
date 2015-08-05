@@ -22,10 +22,9 @@ class TestCountrySource(BaseSourceTest):
         result = self.source.search(query)
         self.check_model_result(result, country)
         self.check_stats(counter=[
-            # TODO
-            # (self.api_type + '.source',
-            #     ['key:test', 'country:none', 'source:internal',
-            #      'accuracy:low', 'status:hit']),
+            (self.api_type + '.source',
+                ['key:test', 'country:none', 'source:internal',
+                 'accuracy:low', 'status:hit']),
         ])
 
     def test_ambiguous_mcc(self):
@@ -34,10 +33,9 @@ class TestCountrySource(BaseSourceTest):
         result = self.source.search(query)
         self.check_model_result(result, None)
         self.check_stats(counter=[
-            # TODO
-            # (self.api_type + '.source',
-            #     ['key:test', 'country:none', 'source:internal',
-            #      'accuracy:low', 'status:miss']),
+            (self.api_type + '.source',
+                ['key:test', 'country:none', 'source:internal',
+                 'accuracy:low', 'status:miss']),
         ])
 
     def test_wifi(self):

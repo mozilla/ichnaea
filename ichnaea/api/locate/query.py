@@ -343,10 +343,6 @@ class Query(object):
         if not self.collect_metrics():
             return
 
-        if self.api_type in ('country', 'locate'):
-            # TODO: enable source stats for all APIs
-            return
-
         if result.data_accuracy <= self.expected_accuracy:
             status = 'hit'
         else:

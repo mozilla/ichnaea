@@ -443,10 +443,9 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
         self._make_query(
             DataSource.internal, Position(accuracy=100.0), wifi=wifis)
         self.check_stats(counter=[
-            # TODO
-            # ('locate.source',
-            #     ['key:key', 'country:none', 'source:internal',
-            #      'accuracy:high', 'status:hit']),
+            ('locate.source',
+                ['key:key', 'country:none', 'source:internal',
+                 'accuracy:high', 'status:hit']),
         ])
 
     def test_high_miss(self):
@@ -454,8 +453,7 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
         self._make_query(
             DataSource.ocid, Position(accuracy=10000.0), wifi=wifis)
         self.check_stats(counter=[
-            # TODO
-            # ('locate.source',
-            #     ['key:key', 'country:none', 'source:ocid',
-            #      'accuracy:high', 'status:miss']),
+            ('locate.source',
+                ['key:key', 'country:none', 'source:ocid',
+                 'accuracy:high', 'status:miss']),
         ])

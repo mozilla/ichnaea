@@ -279,10 +279,9 @@ class CommonLocateTest(BaseLocateTest):
                     ['key:test', 'country:xx', 'cell:none', 'wifi:none']),
                 (self.metric_type + '.result',
                     ['key:test', 'country:xx', 'accuracy:low', 'status:hit']),
-                # TODO
-                # (self.metric_type + '.source',
-                #     ['key:test', 'country:xx', 'source:geoip',
-                #      'accuracy:low', 'status:hit']),
+                (self.metric_type + '.source',
+                    ['key:test', 'country:xx', 'source:geoip',
+                     'accuracy:low', 'status:hit']),
             ])
 
     def test_error_no_json(self):
@@ -365,10 +364,9 @@ class CommonPositionTest(BaseLocateTest):
             (self.metric_type + '.result',
                 ['key:test', 'country:none',
                  'accuracy:medium', 'status:miss']),
-            # TODO
-            # (self.metric_type + '.source',
-            #     ['key:test', 'country:none', 'source:internal',
-            #      'accuracy:medium', 'status:miss']),
+            (self.metric_type + '.source',
+                ['key:test', 'country:none', 'source:internal',
+                 'accuracy:medium', 'status:miss']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
@@ -401,10 +399,9 @@ class CommonPositionTest(BaseLocateTest):
                  'geoip:false', 'cell:none', 'wifi:none']),
             (self.metric_type + '.result',
                 ['key:test', 'country:none', 'accuracy:low', 'status:hit']),
-            # TODO
-            # (self.metric_type + '.source',
-            #     ['key:test', 'country:none', 'source:internal',
-            #      'accuracy:low', 'status:hit']),
+            (self.metric_type + '.source',
+                ['key:test', 'country:none', 'source:internal',
+                 'accuracy:low', 'status:hit']),
         ])
 
     def test_cellarea_with_lacf(self):
@@ -424,10 +421,9 @@ class CommonPositionTest(BaseLocateTest):
                  'geoip:false', 'cell:none', 'wifi:none']),
             (self.metric_type + '.result',
                 ['key:test', 'country:none', 'accuracy:low', 'status:hit']),
-            # TODO
-            # (self.metric_type + '.source',
-            #     ['key:test', 'country:none', 'source:internal',
-            #      'accuracy:low', 'status:hit']),
+            (self.metric_type + '.source',
+                ['key:test', 'country:none', 'source:internal',
+                 'accuracy:low', 'status:hit']),
         ])
 
     def test_cellarea_without_lacf(self):
@@ -477,10 +473,9 @@ class CommonPositionTest(BaseLocateTest):
                  'geoip:false', 'cell:none', 'wifi:many']),
             (self.metric_type + '.result',
                 ['key:test', 'country:none', 'accuracy:high', 'status:miss']),
-            # TODO
-            # (self.metric_type + '.source',
-            #     ['key:test', 'country:none', 'source:internal',
-            #      'accuracy:high', 'status:miss']),
+            (self.metric_type + '.source',
+                ['key:test', 'country:none', 'source:internal',
+                 'accuracy:high', 'status:miss']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
@@ -536,13 +531,12 @@ class CommonPositionTest(BaseLocateTest):
                  'geoip:false', 'cell:many', 'wifi:many']),
             (self.metric_type + '.result',
                 ['key:test', 'country:none', 'accuracy:high', 'status:hit']),
-            # TODO
-            # (self.metric_type + '.source',
-            #     ['key:test', 'country:none', 'source:internal',
-            #      'accuracy:high', 'status:miss']),
-            # (self.metric_type + '.source',
-            #     ['key:test', 'country:none', 'source:fallback',
-            #      'accuracy:high', 'status:hit']),
+            (self.metric_type + '.source',
+                ['key:test', 'country:none', 'source:internal',
+                 'accuracy:high', 'status:miss']),
+            (self.metric_type + '.source',
+                ['key:test', 'country:none', 'source:fallback',
+                 'accuracy:high', 'status:hit']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
@@ -578,10 +572,9 @@ class CommonPositionTest(BaseLocateTest):
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.result',
                 ['key:test', 'country:xx', 'accuracy:high', 'status:hit']),
-            # TODO
-            # (self.metric_type + '.source',
-            #     ['key:test', 'country:xx', 'source:fallback',
-            #      'accuracy:high', 'status:hit']),
+            (self.metric_type + '.source',
+                ['key:test', 'country:xx', 'source:fallback',
+                 'accuracy:high', 'status:hit']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
