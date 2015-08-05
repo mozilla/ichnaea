@@ -56,20 +56,6 @@ class TestStatsTags(LogTestCase):
             _client=client,
             counter=[('metric', 1, 1, ['t2:v2', 't1:v1'])])
 
-    def test_one_tag_prefix(self):
-        client = self._make_client(tag_prefix='pre')
-        client.incr('metric', 1, tags=['tag:value'])
-        self.check_stats(
-            _client=client,
-            counter=[('metric', 1, 1, ['pre_tag:value'])])
-
-    def test_multiple_tags_prefix(self):
-        client = self._make_client(tag_prefix='pre')
-        client.incr('metric', 1, tags=['t2:v2', 't1:v1'])
-        self.check_stats(
-            _client=client,
-            counter=[('metric', 1, 1, ['pre_t2:v2', 'pre_t1:v1'])])
-
     def test_one_tag_fallback(self):
         client = self._make_client(tag_support=False)
         client.incr('metric', 1, tags=['t1:v1'])
@@ -100,10 +86,3 @@ class TestStatsPrefix(LogTestCase):
             counter=['pre.metric.one'],
             gauge=['pre.metric'],
             timer=['pre.metric.two.two'])
-
-    def metric_and_tag_prefix(self):
-        client = self._make_client(metric_prefix='met', tag_prefix='tag')
-        client.incr('metric', 1, tags=['t1:v1'])
-        self.check_stats(
-            _client=client,
-            counter=[('met.metric.tag_t1_v1')])

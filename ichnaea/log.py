@@ -88,19 +88,17 @@ def configure_stats(app_config, _client=None):  # pragma: no cover
         host = 'localhost'
         port = 8125
         metric_prefix = 'location'
-        tag_prefix = ''
         tag_support = False
     else:
         section = app_config.get_map('statsd', {})
         host = section.get('host', 'localhost').strip()
         port = int(section.get('port', 8125))
         metric_prefix = section.get('metric_prefix', 'location').strip()
-        tag_prefix = section.get('tag_prefix', '').strip()
         tag_support = asbool(section.get('tag_support', 'false').strip())
 
     client = StatsClient(
         host=host, port=port, metric_prefix=metric_prefix,
-        tag_prefix=tag_prefix, tag_support=tag_support)
+        tag_support=tag_support)
 
     return set_stats_client(client)
 
@@ -190,16 +188,12 @@ class StatsClient(DogStatsd):
     """A statsd client."""
 
     def __init__(self, host='localhost', port=8125, max_buffer_size=50,
-                 constant_tags=None,
-                 metric_prefix=None, tag_prefix=None, tag_support=False):
+                 constant_tags=None, metric_prefix=None, tag_support=False):
         super(StatsClient, self).__init__(
             host=host, port=port,
             max_buffer_size=max_buffer_size,
             constant_tags=constant_tags)
         self.metric_prefix = metric_prefix
-        if tag_prefix:
-            tag_prefix += '_'
-        self.tag_prefix = tag_prefix
         self.tag_support = tag_support
 
     def _report(self, metric, metric_type, value, tags, sample_rate):
@@ -220,10 +214,6 @@ class StatsClient(DogStatsd):
                 tags += self.constant_tags
             else:
                 tags = self.constant_tags
-
-        if tags and self.tag_prefix:
-            # add support for custom tag prefix
-            tags = [self.tag_prefix + tag for tag in tags]
 
         if tags and not self.tag_support:
             # append tags to the metric name
@@ -258,11 +248,10 @@ class DebugStatsClient(StatsClient):
     """An in-memory statsd client with an inspectable message queue."""
 
     def __init__(self, host='localhost', port=8125, max_buffer_size=50,
-                 metric_prefix=None, tag_prefix=None, tag_support=False):
+                 metric_prefix=None, tag_support=False):
         super(DebugStatsClient, self).__init__(
             host=host, port=port, max_buffer_size=max_buffer_size,
-            metric_prefix=metric_prefix, tag_prefix=tag_prefix,
-            tag_support=tag_support)
+            metric_prefix=metric_prefix, tag_support=tag_support)
         self.msgs = deque(maxlen=100)
 
     def _clear(self):
