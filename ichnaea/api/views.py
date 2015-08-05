@@ -4,6 +4,7 @@ Implementation of a API specific HTTP service view.
 
 import colander
 import simplejson as json
+import six
 
 from ichnaea.api.exceptions import (
     DailyLimitExceeded,
@@ -14,6 +15,11 @@ from ichnaea.models.api import ApiKey
 from ichnaea.rate_limit import rate_limit_exceeded
 from ichnaea import util
 from ichnaea.webapp.view import BaseView
+
+if six.PY2:  # pragma: no cover
+    from ipaddr import IPAddress as ip_address  # NOQA
+else:  # pragma: no cover
+    from ipaddress import ip_address
 
 
 class BaseAPIView(BaseView):
@@ -30,18 +36,40 @@ class BaseAPIView(BaseView):
         self.redis_client = request.registry.redis_client
         self.stats_client = request.registry.stats_client
 
-    def log_count(self, apikey_shortname):
+    def log_unique_ip(self, apikey_shortname):
+        try:
+            ip = str(ip_address(self.request.client_addr))
+        except ValueError:  # pragma: no cover
+            ip = None
+        if ip:
+            redis_key = 'apiuser:{api_type}:{api_name}:{date}'.format(
+                api_type=self.view_type,
+                api_name=apikey_shortname,
+                date=util.utcnow().date().strftime('%Y-%m-%d'),
+            )
+            with self.redis_client.pipeline() as pipe:
+                pipe.pfadd(redis_key, ip)
+                pipe.expire(redis_key, 691200)  # 8 days
+                pipe.execute()
+
+    def log_count(self, apikey_shortname, apikey_log):
         self.stats_client.incr(
             self.view_type + '.request',
             tags=['path:' + self.metric_path,
                   'key:' + apikey_shortname])
+
+        if self.request.client_addr and apikey_log:
+            try:
+                self.log_unique_ip(apikey_shortname)
+            except Exception:  # pragma: no cover
+                self.raven_client.captureException()
 
     def check(self):
         api_key = None
         api_key_text = self.request.GET.get('key', None)
 
         if api_key_text is None:
-            self.log_count('none')
+            self.log_count('none', False)
             if self.error_on_invalidkey:
                 raise InvalidAPIKey()
         try:
@@ -52,7 +80,7 @@ class BaseAPIView(BaseView):
             self.raven_client.captureException()
 
         if api_key is not None:
-            self.log_count(api_key.name)
+            self.log_count(api_key.name, api_key.log)
 
             rate_key = 'apilimit:{key}:{time}'.format(
                 key=api_key_text,
@@ -69,7 +97,7 @@ class BaseAPIView(BaseView):
                 raise DailyLimitExceeded()
         else:
             if api_key_text is not None:
-                self.log_count('invalid')
+                self.log_count('invalid', False)
             if self.error_on_invalidkey:
                 raise InvalidAPIKey()
 

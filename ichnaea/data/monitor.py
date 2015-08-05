@@ -1,3 +1,6 @@
+from collections import defaultdict
+from datetime import timedelta
+
 from sqlalchemy import func
 from sqlalchemy.orm import load_only
 
@@ -36,6 +39,46 @@ def monitor_api_key_limits(task):
             value = int(v)
             result[name] = value
             task.stats_client.gauge('api.limit', value, tags=['key:' + name])
+    except Exception:  # pragma: no cover
+        # Log but ignore the exception
+        task.raven_client.captureException()
+    return result
+
+
+def monitor_api_users(task):
+    redis_client = task.redis_client
+    stats_client = task.stats_client
+    days = {}
+    today = util.utcnow().date()
+    for i in range(0, 7):
+        day = today - timedelta(days=i)
+        days[i] = day.strftime('%Y-%m-%d')
+
+    metrics = defaultdict(list)
+    result = {}
+    try:
+        for key in redis_client.scan_iter(
+                match='apiuser:*', count=100):
+            _, api_type, api_name, day = key.split(':')
+            if day not in days.values():
+                # delete older entries
+                redis_client.delete(key)
+                continue
+
+            if day == days[0]:
+                metrics[(api_type, api_name, '1d')].append(key)
+
+            metrics[(api_type, api_name, '7d')].append(key)
+
+        for parts, keys in metrics.items():
+            api_type, api_name, interval = parts
+            value = redis_client.pfcount(*keys)
+
+            stats_client.gauge(
+                '%s.user' % api_type, value,
+                tags=['key:%s' % api_name, 'interval:%s' % interval])
+            result['%s:%s:%s' % parts] = value
+
     except Exception:  # pragma: no cover
         # Log but ignore the exception
         task.raven_client.captureException()

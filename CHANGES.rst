@@ -21,6 +21,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add new metrics for counting unique IPs per API endpoint / API key.
+
 - Enable locate source level metrics.
 
 - #457: Fix cell export to again use UMTS as the radio type string.

@@ -96,6 +96,11 @@ def monitor_api_key_limits(self):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
+def monitor_api_users(self):
+    return monitor.monitor_api_users(self)
+
+
+@celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
 def monitor_ocid_import(self):
     return monitor.monitor_ocid_import(self)
 

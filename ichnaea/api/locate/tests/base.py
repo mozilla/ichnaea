@@ -264,6 +264,14 @@ class CommonLocateTest(BaseLocateTest):
     def test_empty_body(self):
         res = self._call('', ip=self.test_ip, method='post', status=200)
         self.check_response(res, 'ok')
+        if self.apikey_metrics:
+            # ensure that a apiuser hyperloglog entry was added for today
+            today = util.utcnow().date().strftime('%Y-%m-%d')
+            key = 'apiuser:%s:test:%s' % (self.metric_type, today)
+            self.assertEqual(self.redis_client.keys('apiuser:*'), [key])
+            # check that the ttl was set
+            ttl = self.redis_client.ttl(key)
+            self.assertTrue(7 * 24 * 3600 < ttl <= 8 * 24 * 3600)
 
     def test_empty_json(self):
         res = self._call(ip=self.test_ip, status=200)
@@ -309,6 +317,7 @@ class CommonLocateTest(BaseLocateTest):
                 (self.metric_type + '.request',
                     [self.metric_path, 'key:none']),
             ])
+        self.assertEqual(self.redis_client.keys('apiuser:*'), [])
 
     def test_invalid_api_key(self, status=400, response='invalid_key'):
         res = self._call(api_key='invalid', ip=self.test_ip, status=status)
@@ -318,6 +327,7 @@ class CommonLocateTest(BaseLocateTest):
                 (self.metric_type + '.request',
                     [self.metric_path, 'key:invalid']),
             ])
+        self.assertEqual(self.redis_client.keys('apiuser:*'), [])
 
     def test_gzip(self):
         cell = CellFactory.build()

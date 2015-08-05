@@ -46,6 +46,28 @@ These metrics can help in deciding when to remove a deprecated API.
     and no (``none``) provided API keys.
 
 
+API User Metrics
+----------------
+
+For all API requests including the submit-type APIs we gather metrics
+about the number of unique users based on the users IP addresses.
+
+These metrics are gathered under the metric prefix:
+
+``<api_type>.user#key<api_shortname>`` : gauge
+
+They have an additional tag to determine the time interval for which
+the unique users are aggregated for:
+
+``#interval:1d``, ``interval:7d`` : tags
+
+    Unique users per day or last 7 days.
+
+Technically these metrics are based on HyperLogLog cardinality numbers
+maintained in a Redis service. They should be accurate to about 1% of
+the actual number.
+
+
 API Query Metrics
 -----------------
 

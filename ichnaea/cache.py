@@ -93,6 +93,11 @@ class RedisClient(redis.StrictRedis):
             return False
         return True
 
+    def pfcount(self, *keys):
+        # Workaround for missing multiple key support:
+        # https://github.com/andymccurdy/redis-py/pull/594
+        return self.execute_command('PFCOUNT', *keys)
+
 
 class BaseQueue(object):
 

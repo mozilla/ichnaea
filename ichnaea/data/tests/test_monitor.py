@@ -4,6 +4,7 @@ from random import randint
 from ichnaea.models import ApiKey
 from ichnaea.data.tasks import (
     monitor_api_key_limits,
+    monitor_api_users,
     monitor_ocid_import,
     monitor_queue_length,
 )
@@ -104,3 +105,73 @@ class TestMonitorTasks(CeleryTestCase):
             gauge=[('queue', 1, v, ['queue:' + k]) for k, v in data.items()],
         )
         self.assertEqual(result, data)
+
+
+class TestMonitorAPIUsersTasks(CeleryTestCase):
+
+    def setUp(self):
+        super(TestMonitorAPIUsersTasks, self).setUp()
+        self.today = util.utcnow().date()
+        self.today_str = util.utcnow().date().strftime('%Y-%m-%d')
+        self.bhutan_ip = self.geoip_data['Bhutan']['ip']
+        self.london_ip = self.geoip_data['London']['ip']
+
+    def test_empty(self):
+        result = monitor_api_users.delay().get()
+        self.assertEqual(result, {})
+
+    def test_one_day(self):
+        self.redis_client.pfadd(
+            'apiuser:submit:test:' + self.today_str,
+            self.bhutan_ip, self.london_ip)
+        self.redis_client.pfadd(
+            'apiuser:submit:valid_key:' + self.today_str,
+            self.bhutan_ip)
+        self.redis_client.pfadd(
+            'apiuser:locate:valid_key:' + self.today_str,
+            self.bhutan_ip)
+
+        result = monitor_api_users.delay().get()
+        self.assertEqual(result, {
+            'submit:test:1d': 2,
+            'submit:test:7d': 2,
+            'submit:valid_key:1d': 1,
+            'submit:valid_key:7d': 1,
+            'locate:valid_key:1d': 1,
+            'locate:valid_key:7d': 1,
+        })
+
+        self.check_stats(gauge=[
+            ('submit.user', 1, 2, ['key:test', 'interval:1d']),
+            ('submit.user', 1, 2, ['key:test', 'interval:7d']),
+            ('submit.user', 1, 1, ['key:valid_key', 'interval:1d']),
+            ('submit.user', 1, 1, ['key:valid_key', 'interval:7d']),
+            ('locate.user', 1, 1, ['key:valid_key', 'interval:1d']),
+            ('locate.user', 1, 1, ['key:valid_key', 'interval:7d']),
+        ])
+
+    def test_many_days(self):
+        days_6 = (self.today - timedelta(days=6)).strftime('%Y-%m-%d')
+        days_7 = (self.today - timedelta(days=7)).strftime('%Y-%m-%d')
+        self.redis_client.pfadd(
+            'apiuser:submit:test:' + self.today_str,
+            '127.0.0.1', self.bhutan_ip)
+        # add the same IPs + one new one again
+        self.redis_client.pfadd(
+            'apiuser:submit:test:' + days_6,
+            '127.0.0.1', self.bhutan_ip, self.london_ip)
+        # add one entry which is too old
+        self.redis_client.pfadd(
+            'apiuser:submit:test:' + days_7, self.bhutan_ip)
+
+        monitor_api_users.delay().get()
+        self.check_stats(gauge=[
+            ('submit.user', 1, 2, ['key:test', 'interval:1d']),
+            # we count unique IPs over the entire 7 day period,
+            # so it's just 3 uniques
+            ('submit.user', 1, 3, ['key:test', 'interval:7d']),
+        ])
+
+        # the too old key was deleted manually
+        self.assertFalse(
+            self.redis_client.exists('apiuser:submit:test:' + days_7))

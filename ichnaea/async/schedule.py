@@ -22,6 +22,11 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(seconds=600),
         'options': {'expires': 570},
     },
+    'monitor-api-users': {
+        'task': 'ichnaea.data.tasks.monitor_api_users',
+        'schedule': timedelta(seconds=600),
+        'options': {'expires': 570},
+    },
     'monitor-api-key-limits': {
         'task': 'ichnaea.data.tasks.monitor_api_key_limits',
         'schedule': timedelta(seconds=600),

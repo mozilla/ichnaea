@@ -34,7 +34,10 @@ class BaseSubmitTest(object):
         url = self.url
         if api_key:
             url += '?key=%s' % api_key
-        return self.app.post_json(url, {'items': items}, status=status, **kw)
+        extra = {'HTTP_X_FORWARDED_FOR': self.geoip_data['London']['ip']}
+        return self.app.post_json(
+            url, {'items': items},
+            status=status, extra_environ=extra, **kw)
 
     def _post_one_cell(self, nickname=None, email=None, status=status):
         cell, query = self._one_cell_query()
@@ -119,6 +122,7 @@ class BaseSubmitTest(object):
         self.check_stats(counter=[
             (self.metric_type + '.request', [self.metric_path, 'key:none']),
         ])
+        self.assertEqual(self.redis_client.keys('apiuser:*'), [])
 
     def test_log_api_key_invalid(self):
         cell, query = self._one_cell_query()
@@ -127,6 +131,7 @@ class BaseSubmitTest(object):
             (self.metric_type + '.request', [self.metric_path, 'key:invalid']),
             (self.metric_type + '.request', 0, [self.metric_path, 'key:none']),
         ])
+        self.assertEqual(self.redis_client.keys('apiuser:*'), [])
 
     def test_log_stats(self):
         cell, query = self._one_cell_query()
@@ -140,6 +145,10 @@ class BaseSubmitTest(object):
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
+        today = util.utcnow().date()
+        self.assertEqual(
+            self.redis_client.keys('apiuser:*'),
+            ['apiuser:submit:test:%s' % today.strftime('%Y-%m-%d')])
 
     def test_radio_duplicated(self):
         cell, query = self._one_cell_query(radio=False)
