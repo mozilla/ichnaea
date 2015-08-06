@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Retry outbound connections once to counter expired keep alive connections.
 
 20150806105100
 **************
