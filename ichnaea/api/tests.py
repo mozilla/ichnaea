@@ -1,9 +1,15 @@
+import time
+
 from colander import MappingSchema, String
 from pyramid.request import Request
 
 from ichnaea.api import exceptions as api_exceptions
+from ichnaea.api.rate_limit import rate_limit_exceeded
 from ichnaea.api.schema import InternalSchemaNode, InternalMapping
-from ichnaea.tests.base import TestCase
+from ichnaea.tests.base import (
+    RedisTestCase,
+    TestCase,
+)
 
 
 class TestInternalSchemaNode(TestCase):
@@ -65,3 +71,42 @@ class TestExceptions(TestCase):
         error = api_exceptions.ParseError
         response = self._check(error, 400)
         self.assertTrue('parseError' in response.text)
+
+
+class TestLimiter(RedisTestCase):
+
+    def test_limiter_maxrequests(self):
+        api_key = 'key_a'
+        maxreq = 5
+        expire = 1
+        for i in range(maxreq):
+            self.assertFalse(rate_limit_exceeded(
+                self.redis_client,
+                api_key,
+                maxreq=maxreq,
+                expire=expire,
+            ))
+        self.assertTrue(rate_limit_exceeded(
+            self.redis_client,
+            api_key,
+            maxreq=maxreq,
+            expire=expire,
+        ))
+
+    def test_limiter_expiry(self):
+        api_key = 'key_b'
+        maxreq = 100
+        expire = 1
+        self.assertFalse(rate_limit_exceeded(
+            self.redis_client,
+            api_key,
+            maxreq=maxreq,
+            expire=expire,
+        ))
+        time.sleep(1)
+        self.assertFalse(rate_limit_exceeded(
+            self.redis_client,
+            api_key,
+            maxreq=maxreq,
+            expire=expire,
+        ))

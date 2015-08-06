@@ -11,8 +11,8 @@ from ichnaea.api.exceptions import (
     InvalidAPIKey,
     ParseError,
 )
+from ichnaea.api.rate_limit import rate_limit_exceeded
 from ichnaea.models.api import ApiKey
-from ichnaea.rate_limit import rate_limit_exceeded
 from ichnaea import util
 from ichnaea.webapp.view import BaseView
 

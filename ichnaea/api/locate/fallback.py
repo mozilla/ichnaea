@@ -16,8 +16,8 @@ from ichnaea.api.schema import (
 )
 from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.source import PositionSource
+from ichnaea.api.rate_limit import rate_limit_exceeded
 from ichnaea.models.cell import RadioStringType
-from ichnaea.rate_limit import rate_limit_exceeded
 
 
 class OutboundCellSchema(OptionalMappingSchema):

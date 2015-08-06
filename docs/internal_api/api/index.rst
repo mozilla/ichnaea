@@ -9,5 +9,6 @@
    config
    exceptions
    locate/index
+   rate_limit
    submit/index
    views

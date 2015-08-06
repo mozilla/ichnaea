@@ -24,6 +24,5 @@ For documentation on the public HTTP API please look at :ref:`service_api`.
    internaljson
    log
    models/index
-   rate_limit
    util
    webapp/index
