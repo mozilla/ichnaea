@@ -1,11 +1,13 @@
 # Disable deprecation warnings in production mode
+import sys
 import warnings
 warnings.simplefilter('ignore', DeprecationWarning)
 
 # Enable pyopenssl based SSL stack
-from requests.packages.urllib3.contrib import pyopenssl  # NOQA
-pyopenssl.inject_into_urllib3()
-del pyopenssl
+if sys.version_info < (3, 0):  # pragma: no cover
+    from requests.packages.urllib3.contrib import pyopenssl
+    pyopenssl.inject_into_urllib3()
+    del pyopenssl
 
 
 def setup_package(module):
@@ -24,3 +26,5 @@ def setup_package(module):
 
     from ichnaea.tests.base import setup_package
     return setup_package(module)
+
+__all__ = ('setup_package', )
