@@ -5,8 +5,8 @@ what exceptions and stats to log on a per request basis.
 
 
 class BaseClientError(Exception):
-    """Base class for client errors."""
+    """Base class for client side errors."""
 
 
 class BaseServiceError(Exception):
-    """Base class service errors."""
+    """Base class for service side errors."""
