@@ -23,7 +23,7 @@ class TestSource(BaseSourceTest):
 
     TestSource = FallbackPositionSource
     settings = {
-        'url': 'http://127.0.0.1:9/?api',
+        'url': 'https://localhost:9/?api',
         'ratelimit': '3',
         'ratelimit_expire': '60',
         'ratelimit_interval': '2',

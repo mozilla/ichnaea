@@ -158,7 +158,6 @@ class FallbackPositionSource(PositionSource):
                     headers={'User-Agent': 'ichnaea'},
                     json=outbound,
                     timeout=5.0,
-                    verify=False,
                 )
 
             self._stat_count(

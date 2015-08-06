@@ -164,7 +164,6 @@ class GeosubmitUploader(ReportUploader):
                 data=util.encode_gzip(data),
                 headers=headers,
                 timeout=60.0,
-                verify=False,  # TODO switch this back on
             )
 
         # log upload_status and trigger exception for bad responses

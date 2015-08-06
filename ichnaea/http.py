@@ -1,5 +1,6 @@
 """Setup and configuration of a HTTP/S request pool."""
 
+import certifi
 from requests.adapters import HTTPAdapter
 from requests.sessions import Session
 
@@ -22,4 +23,5 @@ def configure_http_session(size=20, _session=None):
     session = Session()
     session.mount("http://", adapter)
     session.mount("https://", adapter)
+    session.verify = certifi.where()
     return session

@@ -21,6 +21,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Enable SSL verification for outbound network requests.
+
 - Add new metrics for counting unique IPs per API endpoint / API key.
 
 - Enable locate source level metrics.

@@ -2,9 +2,10 @@
 import warnings
 warnings.simplefilter('ignore', DeprecationWarning)
 
-# TODO: Disable SSL warnings for now
-from requests.packages import urllib3  # NOQA
-urllib3.disable_warnings()
+# Enable pyopenssl based SSL stack
+from requests.packages.urllib3.contrib import pyopenssl  # NOQA
+pyopenssl.inject_into_urllib3()
+del pyopenssl
 
 
 def setup_package(module):
