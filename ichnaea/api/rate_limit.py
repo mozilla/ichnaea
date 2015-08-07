@@ -16,10 +16,10 @@ def rate_limit_exceeded(redis_client, key,
     """
     if maxreq:
         try:
-            with redis_client.pipeline() as pipeline:
-                pipeline.incr(key, 1)
-                pipeline.expire(key, expire)
-                count, expire = pipeline.execute()
+            with redis_client.pipeline() as pipe:
+                pipe.incr(key, 1)
+                pipe.expire(key, expire)
+                count, expire = pipe.execute()
                 return count > maxreq
         except RedisError:  # pragma: no cover
             # If we cannot connect to Redis, return error value.

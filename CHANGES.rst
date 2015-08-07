@@ -14,6 +14,10 @@ Migrations
 Changes
 ~~~~~~~
 
+- Cache Wifi-only based fallback position results.
+
+- Don't rate limit cache lookups for the fallback position source.
+
 - Retry outbound connections once to counter expired keep alive connections.
 
 20150806105100

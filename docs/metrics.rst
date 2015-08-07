@@ -201,11 +201,15 @@ performance of outbound network calls and the effectiveness of its cache.
 
 ``locate.fallback.cache#status:hit``,
 ``locate.fallback.cache#status:miss``,
-``locate.fallback.cache#status:bypassed`` : counter
+``locate.fallback.cache#status:bypassed``,
+``locate.fallback.cache#status:inconsistent``,
+``locate.fallback.cache#status:failure`` : counter
 
-    Counts the number of hits and misses for the fallback cache. Since
-    the cache only works for single cell based queries, there is also a
-    third metric for all requests bypassing the cache.
+    Counts the number of hits and misses for the fallback cache. If
+    the query should not be cached, a `bypassed` status is used.
+    If the cached values couldn't be read, a `failure` status is used.
+    If the cached values didn't agree on a consistent position,
+    a `inconsistent` status is used.
 
 ``locate.fallback.lookup`` : timer
 
