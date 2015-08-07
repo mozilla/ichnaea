@@ -2,6 +2,8 @@
 --------------------------
 
 .. automodule:: ichnaea.models.cell
+    :members:
+    :member-order: bysource
 
 Cell Networks
 +++++++++++++

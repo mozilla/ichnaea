@@ -10,6 +10,8 @@ from ichnaea.models.cell import (  # NOQA
     Cell,
     CellArea,
     CellBlocklist,
+    decode_cellid,
+    encode_cellid,
     OCIDCell,
     OCIDCellArea,
     Radio,
@@ -31,6 +33,8 @@ from ichnaea.models.observation import (  # NOQA
     WifiReport,
 )
 from ichnaea.models.wifi import (  # NOQA
+    decode_mac,
+    encode_mac,
     Wifi,
     WifiShard,
 )

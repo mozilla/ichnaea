@@ -1,3 +1,6 @@
+import base64
+import struct
+
 import colander
 from enum import IntEnum
 from six import string_types
@@ -39,6 +42,49 @@ from ichnaea.models.station import (
     StationBlocklistMixin,
     ValidStationSchema,
 )
+
+CELLID_STRUCT = struct.Struct('!bHHHI')
+"""
+A compact representation of a full cell id as a byte sequence.
+
+Consists of a single byte for the radio type, three 16 bit unsigned
+integers for the mcc, mnc and lac parts and a final 32 bit unsigned
+integer for the cid part.
+"""
+
+
+def decode_cellid(value, codec=None):
+    """
+    Decode a byte sequence representing a cell id into a five-tuple
+    of a Radio integer enum and four integers.
+
+    If ``codec='base64'``, decode the value from a base64 sequence first.
+    """
+    if codec == 'base64':
+        value = base64.b64decode(value)
+    radio, mcc, mnc, lac, cid = CELLID_STRUCT.unpack(value)
+    return (Radio(radio), mcc, mnc, lac, cid)
+
+
+def encode_cellid(radio, mcc, mnc, lac, cid, codec=None):
+    """
+    Given a five-tuple of cell id parts, return a compact 11 byte
+    sequence representing the cell id.
+
+    If the radio type is given as CDMA, clobbers the mcc value and
+    uses 0 instead, as the mcc is not part of the unique cell id key
+    for CDMA radio networks.
+
+    If ``codec='base64'``, return the value as a base64 encoded sequence.
+    """
+    if radio == Radio.cdma:
+        mcc = 0
+    if isinstance(radio, Radio):
+        radio = int(radio)
+    value = CELLID_STRUCT.pack(radio, mcc, mnc, lac, cid)
+    if codec == 'base64':
+        value = base64.b64encode(value)
+    return value
 
 
 class Radio(IntEnum):

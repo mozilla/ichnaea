@@ -10,3 +10,4 @@
    cell
    constants
    hashkey
+   wifi

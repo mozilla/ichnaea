@@ -1,3 +1,5 @@
+import base64
+
 import colander
 from enum import IntEnum
 from six import string_types
@@ -49,6 +51,31 @@ from ichnaea.models.station import (
 )
 
 WIFI_SHARDS = {}
+
+
+def decode_mac(value, codec=None):
+    """
+    Decode a 6 byte sequence representing a 48 bit MAC address into a
+    hexadecimal, lowercased ASCII string of 12 bytes.
+
+    If ``codec='base64'``, decode the value from a base64 sequence first.
+    """
+    if codec == 'base64':
+        value = base64.b64decode(value)
+    return base64.b16encode(value).decode('ascii').lower()
+
+
+def encode_mac(value, codec=None):
+    """
+    Given a 12 byte hexadecimal string, return a compact 6 byte
+    sequence representing the MAC address.
+
+    If ``codec='base64'``, return the value as a base64 encoded sequence.
+    """
+    value = base64.b16decode(value.upper())
+    if codec == 'base64':
+        value = base64.b64encode(value)
+    return value
 
 
 class WifiKey(HashKey):
