@@ -83,6 +83,18 @@ def redis_pipeline(redis_client, execute=True):
 class RedisClient(redis.StrictRedis):
     """A strict pingable RedisClient."""
 
+    cache_keys = {
+        'downloads': b'cache:downloads',
+        'fallback_cell': b'cache:fallback:cell:',
+        'fallback_wifi': b'cache:fallback:wifi:',
+        'leaders': b'cache:leaders',
+        'leaders_weekly': b'cache:leaders_weekly',
+        'stats': b'cache:stats',
+        'stats_regions': b'cache:stats_regions',
+        'stats_cell_json': b'cache:stats_cell_json',
+        'stats_wifi_json': b'cache:stats_wifi_json',
+    }
+
     def ping(self):
         """
         Ping the Redis server. On success return `True`, otherwise `False`.

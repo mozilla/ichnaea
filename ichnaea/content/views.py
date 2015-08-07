@@ -45,16 +45,6 @@ TILES_PATTERN = '{z}/{x}/{y}.png'
 LOCAL_TILES = LOCAL_TILES_BASE + TILES_PATTERN
 BASE_MAP_KEY = 'mozilla-webprod.map-05ad0a21'
 
-CACHE_KEYS = {
-    'downloads': 'cache_download_files_2',
-    'leaders': 'cache_leaders_2',
-    'leaders_weekly': 'cache_leaders_weekly',
-    'stats': 'cache_stats',
-    'stats_regions': 'cache_stats_regions',
-    'stats_cell_json': 'cache_stats_cell_json',
-    'stats_wifi_json': 'cache_stats_wifi_json',
-}
-
 
 def map_tiles_url(base_url):
     if base_url is None:
@@ -189,7 +179,7 @@ class ContentViews(Layout):
                  name='downloads', http_cache=3600)
     def downloads_view(self):
         redis_client = self.request.registry.redis_client
-        cache_key = CACHE_KEYS['downloads']
+        cache_key = redis_client.cache_keys['downloads']
         cached = redis_client.get(cache_key)
         if cached:
             data = internal_loads(cached)
@@ -217,7 +207,7 @@ class ContentViews(Layout):
                  route_name='leaders', http_cache=3600)
     def leaders_view(self):
         redis_client = self.request.registry.redis_client
-        cache_key = CACHE_KEYS['leaders']
+        cache_key = redis_client.cache_keys['leaders']
         cached = redis_client.get(cache_key)
 
         if cached:
@@ -247,7 +237,7 @@ class ContentViews(Layout):
                  route_name='leaders_weekly', http_cache=3600)
     def leaders_weekly_view(self):
         redis_client = self.request.registry.redis_client
-        cache_key = CACHE_KEYS['leaders_weekly']
+        cache_key = redis_client.cache_keys['leaders_weekly']
         cached = redis_client.get(cache_key)
 
         if cached:
@@ -293,7 +283,7 @@ class ContentViews(Layout):
         renderer='json', name='stats_cell.json', http_cache=3600)
     def stats_cell_json(self):
         redis_client = self.request.registry.redis_client
-        cache_key = CACHE_KEYS['stats_cell_json']
+        cache_key = redis_client.cache_keys['stats_cell_json']
         cached = redis_client.get(cache_key)
         if cached:
             data = internal_loads(cached)
@@ -312,7 +302,7 @@ class ContentViews(Layout):
         renderer='json', name='stats_wifi.json', http_cache=3600)
     def stats_wifi_json(self):
         redis_client = self.request.registry.redis_client
-        cache_key = CACHE_KEYS['stats_wifi_json']
+        cache_key = redis_client.cache_keys['stats_wifi_json']
         cached = redis_client.get(cache_key)
         if cached:
             data = internal_loads(cached)
@@ -326,7 +316,7 @@ class ContentViews(Layout):
                  route_name='stats', http_cache=3600)
     def stats_view(self):
         redis_client = self.request.registry.redis_client
-        cache_key = CACHE_KEYS['stats']
+        cache_key = redis_client.cache_keys['stats']
         cached = redis_client.get(cache_key)
         if cached:
             data = internal_loads(cached)
@@ -364,7 +354,7 @@ class ContentViews(Layout):
                  route_name='stats_regions', http_cache=3600)
     def stats_regions_view(self):
         redis_client = self.request.registry.redis_client
-        cache_key = CACHE_KEYS['stats_regions']
+        cache_key = redis_client.cache_keys['stats_regions']
         cached = redis_client.get(cache_key)
         if cached:
             data = internal_loads(cached)
