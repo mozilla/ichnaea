@@ -39,3 +39,5 @@ class ReportsV3Schema(OptionalSequenceSchema):
 class SubmitV3Schema(OptionalMappingSchema):
 
     items = ReportsV3Schema()
+
+SUBMIT_V3_SCHEMA = SubmitV3Schema()

@@ -83,3 +83,5 @@ class LocateV2Schema(BaseLocateSchema):
     cellTowers = CellTowersSchema(missing=(), internal_name='cell')
     wifiAccessPoints = WifiAccessPointsSchema(missing=(), internal_name='wifi')
     fallbacks = FallbackSchema(missing=None)
+
+LOCATE_V2_SCHEMA = LocateV2Schema()

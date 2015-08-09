@@ -88,7 +88,7 @@ class CellAreaLookup(BaseCellLookup):
     """A model class representing a cell area lookup."""
 
     _hashkey_cls = CellAreaKey
-    _valid_schema = ValidCellAreaLookupSchema
+    _valid_schema = ValidCellAreaLookupSchema()
     _fields = BaseCellLookup._fields
 
 
@@ -106,7 +106,7 @@ class CellLookup(BaseCellLookup):
     """A model class representing a cell lookup."""
 
     _hashkey_cls = CellKey
-    _valid_schema = ValidCellLookupSchema
+    _valid_schema = ValidCellLookupSchema()
     _fields = BaseCellLookup._key_fields + (
         'cid',
         'psc',
@@ -121,7 +121,7 @@ class WifiLookup(BaseLookup):
     """A model class representing a cell lookup."""
 
     _hashkey_cls = WifiKey
-    _valid_schema = ValidWifiLookupSchema
+    _valid_schema = ValidWifiLookupSchema()
     _fields = (
         'key',
         'channel',
@@ -151,7 +151,7 @@ class FallbackSchema(colander.MappingSchema):
 class FallbackLookup(HashKey, CreationMixin, ValidationMixin):
     """A model class representing fallback lookup options."""
 
-    _valid_schema = FallbackSchema
+    _valid_schema = FallbackSchema()
     _fields = (
         'ipf',
         'lacf',

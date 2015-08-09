@@ -1,7 +1,7 @@
 import colander
 
 from ichnaea.api.exceptions import LocationNotFoundV1
-from ichnaea.api.locate.locate_v1.schema import LocateV1Schema
+from ichnaea.api.locate.locate_v1.schema import LOCATE_V1_SCHEMA
 from ichnaea.api.locate.tests.base import (
     BaseLocateTest,
     CommonLocateErrorTest,
@@ -20,20 +20,19 @@ from ichnaea.tests.factories import (
 
 class TestSchema(TestCase):
 
+    schema = LOCATE_V1_SCHEMA
+
     def test_empty(self):
-        schema = LocateV1Schema()
-        data = schema.deserialize({})
+        data = self.schema.deserialize({})
         self.assertEqual(data, {'cell': (), 'fallbacks': None, 'wifi': ()})
 
     def test_empty_cell_entry(self):
-        schema = LocateV1Schema()
-        data = schema.deserialize({'cell': [{}]})
+        data = self.schema.deserialize({'cell': [{}]})
         self.assertTrue('cell' in data)
 
     def test_wrong_cell_data(self):
-        schema = LocateV1Schema()
         with self.assertRaises(colander.Invalid):
-            schema.deserialize(
+            self.schema.deserialize(
                 {'cell': [{'mcc': 'a', 'mnc': 2, 'lac': 3, 'cid': 4}]})
 
 

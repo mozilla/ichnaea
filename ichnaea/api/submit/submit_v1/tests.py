@@ -7,7 +7,7 @@ import pytz
 from ichnaea.api.exceptions import ParseError
 from ichnaea.api.submit.submit_v1.schema import (
     ReportsV1Schema,
-    SubmitV1Schema,
+    SUBMIT_V1_SCHEMA,
 )
 from ichnaea.api.submit.tests.base import BaseSubmitTest
 from ichnaea.models import Radio
@@ -32,30 +32,30 @@ class SchemaTest(TestCase):
 
 class TestReportsSchema(SchemaTest):
 
+    schema = ReportsV1Schema()
+
     def test_empty(self):
-        schema = ReportsV1Schema()
-        data = schema.deserialize([{}])
+        data = self.schema.deserialize([{}])
         self.assertEqual(data, [])
 
     def test_empty_wifi_entry(self):
-        schema = ReportsV1Schema()
         wifi = WifiFactory.build()
-        data = schema.deserialize(
+        data = self.schema.deserialize(
             [{'lat': wifi.lat, 'lon': wifi.lon, 'wifi': [{}]}])
         self.assertEqual(data, [])
 
 
 class TestSubmitSchema(SchemaTest):
 
+    schema = SUBMIT_V1_SCHEMA
+
     def test_empty(self):
         with self.assertRaises(colander.Invalid):
-            schema = SubmitV1Schema()
-            schema.deserialize({})
+            self.schema.deserialize({})
 
     def test_minimal(self):
-        schema = SubmitV1Schema()
         wifi = WifiFactory.build()
-        data = schema.deserialize(
+        data = self.schema.deserialize(
             {'items': [{'lat': wifi.lat, 'lon': wifi.lon,
                         'wifi': [{'key': 'ab'}]}]})
         self.assertTrue('items' in data)

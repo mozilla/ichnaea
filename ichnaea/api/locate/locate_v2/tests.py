@@ -1,7 +1,7 @@
 import colander
 
 from ichnaea.models import Radio
-from ichnaea.api.locate.locate_v2.schema import LocateV2Schema
+from ichnaea.api.locate.locate_v2.schema import LOCATE_V2_SCHEMA
 from ichnaea.api.locate.tests.base import (
     BaseLocateTest,
     CommonLocateErrorTest,
@@ -20,9 +20,10 @@ from ichnaea.tests.factories import (
 
 class TestSchema(TestCase):
 
+    schema = LOCATE_V2_SCHEMA
+
     def test_empty(self):
-        schema = LocateV2Schema()
-        data = schema.deserialize({})
+        data = self.schema.deserialize({})
         self.assertEqual(data, {
             'carrier': None,
             'cell': (),
@@ -32,15 +33,13 @@ class TestSchema(TestCase):
             'wifi': ()})
 
     def test_invalid_radio_field(self):
-        schema = LocateV2Schema()
         with self.assertRaises(colander.Invalid):
-            schema.deserialize({'cellTowers': [{
+            self.schema.deserialize({'cellTowers': [{
                 'radioType': 'umts',
             }]})
 
     def test_multiple_radio_fields(self):
-        schema = LocateV2Schema()
-        data = schema.deserialize({'cellTowers': [{
+        data = self.schema.deserialize({'cellTowers': [{
             'radio': 'gsm',
             'radioType': 'cdma',
         }]})

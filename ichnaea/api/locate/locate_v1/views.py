@@ -1,5 +1,5 @@
 from ichnaea.api.exceptions import LocationNotFoundV1
-from ichnaea.api.locate.locate_v1.schema import LocateV1Schema
+from ichnaea.api.locate.locate_v1.schema import LOCATE_V1_SCHEMA
 from ichnaea.api.locate.views import BasePositionView
 
 
@@ -8,7 +8,7 @@ class LocateV1View(BasePositionView):
     metric_path = 'v1.search'  #:
     not_found = LocationNotFoundV1  #:
     route = '/v1/search'  #:
-    schema = LocateV1Schema  #:
+    schema = LOCATE_V1_SCHEMA  #:
 
     def prepare_response(self, result):
         response = {

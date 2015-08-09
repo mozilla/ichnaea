@@ -100,7 +100,7 @@ class ValidationMixin(object):
         based on the classes _valid_schema, otherwise returns None.
         """
         try:
-            validated = cls._valid_schema().deserialize(entry, **kw)
+            validated = cls._valid_schema.deserialize(entry, **kw)
         except colander.Invalid:
             if _raise_invalid:  # pragma: no cover
                 raise

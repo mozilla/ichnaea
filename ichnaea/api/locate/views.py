@@ -13,7 +13,6 @@ class BaseLocateView(BaseAPIView):
     #: :exc:`ichnaea.api.exceptions.LocationNotFound`
     not_found = LocationNotFound
     searcher = None  #:
-    schema = None  #:
 
     def locate(self, api_key):
         request_data, errors = self.preprocess_request()

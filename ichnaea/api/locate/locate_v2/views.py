@@ -1,4 +1,4 @@
-from ichnaea.api.locate.locate_v2.schema import LocateV2Schema
+from ichnaea.api.locate.locate_v2.schema import LOCATE_V2_SCHEMA
 from ichnaea.api.locate.views import BasePositionView
 
 
@@ -6,7 +6,7 @@ class LocateV2View(BasePositionView):
 
     metric_path = 'v1.geolocate'  #:
     route = '/v1/geolocate'  #:
-    schema = LocateV2Schema  #:
+    schema = LOCATE_V2_SCHEMA  #:
 
     def prepare_response(self, result):
         response = {

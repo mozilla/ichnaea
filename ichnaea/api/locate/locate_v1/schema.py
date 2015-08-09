@@ -58,3 +58,5 @@ class LocateV1Schema(BaseLocateSchema):
     cell = CellsSchema(missing=())
     wifi = WifisSchema(missing=())
     fallbacks = FallbackSchema(missing=None)
+
+LOCATE_V1_SCHEMA = LocateV1Schema()

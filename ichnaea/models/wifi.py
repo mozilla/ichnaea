@@ -185,7 +185,7 @@ class Wifi(WifiMixin, StationMixin, CreationMixin, _Model):
         UniqueConstraint('key', name='wifi_key_unique'),
         Index('wifi_created_idx', 'created'),
     )
-    _valid_schema = ValidWifiSchema
+    _valid_schema = ValidWifiSchema()
 
 
 class WifiBlocklist(WifiMixin, StationBlocklistMixin, _Model):
@@ -273,7 +273,7 @@ class WifiShard(HashKeyQueryMixin,
 
     _hashkey_cls = WifiMac
     _query_batch = 100
-    _valid_schema = ValidWifiShardSchema
+    _valid_schema = ValidWifiShardSchema()
 
     mac = Column(MacColumn(6))
     radius = Column(Integer(unsigned=True))

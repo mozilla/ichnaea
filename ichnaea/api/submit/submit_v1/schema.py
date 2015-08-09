@@ -129,3 +129,5 @@ class ReportsV1Schema(OptionalSequenceSchema):
 class SubmitV1Schema(OptionalMappingSchema):
 
     items = ReportsV1Schema()
+
+SUBMIT_V1_SCHEMA = SubmitV1Schema()

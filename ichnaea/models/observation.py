@@ -60,7 +60,7 @@ class ValidReportSchema(ValidPositionSchema):
 
 class Report(HashKey, CreationMixin, ValidationMixin):
 
-    _valid_schema = ValidReportSchema
+    _valid_schema = ValidReportSchema()
     _fields = (
         'lat',
         'lon',
@@ -102,7 +102,7 @@ class ValidCellReportSchema(ValidCellKeySchema, ValidCellSignalSchema):
 class CellReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
 
     _hashkey_cls = CellKeyPsc
-    _valid_schema = ValidCellReportSchema
+    _valid_schema = ValidCellReportSchema()
     _fields = (
         'radio',
         'mcc',
@@ -160,7 +160,7 @@ class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
 
 class CellObservation(CellReport, Report):
 
-    _valid_schema = ValidCellObservationSchema
+    _valid_schema = ValidCellObservationSchema()
     _fields = CellReport._fields + Report._fields
 
 
@@ -177,7 +177,7 @@ class ValidWifiReportSchema(ValidWifiKeySchema, ValidWifiSignalSchema):
 class WifiReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
 
     _hashkey_cls = WifiKey
-    _valid_schema = ValidWifiReportSchema
+    _valid_schema = ValidWifiReportSchema()
     _fields = (
         'key',
         'channel',
@@ -201,5 +201,5 @@ class ValidWifiObservationSchema(ValidWifiReportSchema, ValidReportSchema):
 
 class WifiObservation(WifiReport, Report):
 
-    _valid_schema = ValidWifiObservationSchema
+    _valid_schema = ValidWifiObservationSchema()
     _fields = WifiReport._fields + Report._fields

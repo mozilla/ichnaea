@@ -11,8 +11,8 @@ from ichnaea.api.locate.fallback import (
     ExternalResult,
     FallbackCache,
     FallbackPositionSource,
-    OutboundSchema,
-    ResultSchema,
+    OUTBOUND_SCHEMA,
+    RESULT_SCHEMA,
 )
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import Position
@@ -51,9 +51,7 @@ class TestExternalResult(TestCase):
 
 class TestResultSchema(TestCase):
 
-    def setUp(self):
-        super(TestResultSchema, self).setUp()
-        self.schema = ResultSchema()
+    schema = RESULT_SCHEMA
 
     def test_empty(self):
         with self.assertRaises(colander.Invalid):
@@ -102,9 +100,7 @@ class TestResultSchema(TestCase):
 
 class TestOutboundSchema(TestCase):
 
-    def setUp(self):
-        super(TestOutboundSchema, self).setUp()
-        self.schema = OutboundSchema()
+    schema = OUTBOUND_SCHEMA
 
     def test_empty(self):
         self.assertEqual(self.schema.deserialize({}), {})

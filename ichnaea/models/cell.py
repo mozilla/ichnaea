@@ -252,7 +252,7 @@ class ValidCellAreaSchema(ValidCellAreaKeySchema,
 class CellAreaMixin(CellAreaKeyMixin, TimeTrackingMixin,
                     PositionMixin, CreationMixin):
 
-    _valid_schema = ValidCellAreaSchema
+    _valid_schema = ValidCellAreaSchema()
 
     range = Column(Integer)
     avg_cell_range = Column(Integer)
@@ -374,7 +374,7 @@ class Cell(CellMixin, StationMixin, CreationMixin, _Model):
         Index('cell_created_idx', 'created'),
         Index('cell_modified_idx', 'modified'),
     )
-    _valid_schema = ValidCellSchema
+    _valid_schema = ValidCellSchema()
 
 
 class ValidOCIDCellSchema(ValidCellKeySchema, ValidBaseStationSchema):
@@ -390,7 +390,7 @@ class OCIDCell(CellMixin, BaseStationMixin, CreationMixin, _Model):
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
         Index('ocid_cell_created_idx', 'created'),
     )
-    _valid_schema = ValidOCIDCellSchema
+    _valid_schema = ValidOCIDCellSchema()
 
     changeable = Column(Boolean)
 

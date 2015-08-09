@@ -17,7 +17,6 @@ class BaseSubmitView(BaseAPIView):
     """Common base class for all submit related views."""
 
     error_on_invalidkey = False  #:
-    schema = None  #:
     view_type = 'submit'  #:
 
     #: :exc:`ichnaea.api.exceptions.UploadSuccess`

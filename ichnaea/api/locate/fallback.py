@@ -68,6 +68,8 @@ class ResultSchema(InternalMappingSchema):
             'lon': data['location']['lon'],
         }
 
+RESULT_SCHEMA = ResultSchema()
+
 
 class OutboundCellSchema(OptionalMappingSchema):
 
@@ -110,6 +112,8 @@ class OutboundSchema(OptionalMappingSchema):
     wifi = OutboundWifisSchema(
         missing=colander.drop, internal_name='wifiAccessPoints')
     fallbacks = OutboundFallbackSchema(missing=colander.drop)
+
+OUTBOUND_SCHEMA = OutboundSchema()
 
 
 class FallbackCache(object):
@@ -279,6 +283,8 @@ class FallbackPositionSource(PositionSource):
     an external web service.
     """
 
+    outbound_schema = OUTBOUND_SCHEMA
+    result_schema = RESULT_SCHEMA
     source = DataSource.fallback
 
     def __init__(self, settings, *args, **kw):
@@ -321,7 +327,7 @@ class FallbackPositionSource(PositionSource):
         outbound = None
         try:
             internal_query = query.internal_query()
-            outbound = OutboundSchema().deserialize(internal_query)
+            outbound = self.outbound_schema.deserialize(internal_query)
         except colander.Invalid:  # pragma: no cover
             self.raven_client.captureException()
 
@@ -350,7 +356,7 @@ class FallbackPositionSource(PositionSource):
 
             validated = None
             try:
-                validated = ResultSchema().deserialize(response.json())
+                validated = self.result_schema.deserialize(response.json())
             except colander.Invalid:  # pragma: no cover
                 self.raven_client.captureException()
 

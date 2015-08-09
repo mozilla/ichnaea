@@ -59,3 +59,5 @@ class ReportsV2Schema(OptionalSequenceSchema):
 
 class SubmitV2Schema(OptionalMappingSchema):
     items = ReportsV2Schema()
+
+SUBMIT_V2_SCHEMA = SubmitV2Schema()
