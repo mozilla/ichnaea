@@ -1,3 +1,4 @@
+include LICENSE
 include Makefile
 include MANIFEST.in
 include *.ini
