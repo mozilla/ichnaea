@@ -109,7 +109,7 @@ class InternalTransform(object):
             report[key_map[1]] = cells
         return cells
 
-    def transform_one(self, item):
+    def __call__(self, item):
         report = {}
         self._parse_dict(item, report, self.position_id, self.position_map)
 
@@ -127,6 +127,8 @@ class InternalTransform(object):
 
 class InternalUploader(ReportUploader):
 
+    transform = InternalTransform()
+
     @staticmethod
     def _task():
         # avoiding import cycle problems, sigh!
@@ -134,8 +136,7 @@ class InternalUploader(ReportUploader):
         return insert_measures
 
     def _format_report(self, item):
-        transform = InternalTransform()
-        report = transform.transform_one(item)
+        report = self.transform(item)
 
         timestamp = report.pop('timestamp', None)
         if timestamp:

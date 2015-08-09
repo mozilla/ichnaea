@@ -24,5 +24,6 @@ For documentation on the public HTTP API please look at :ref:`service_api`.
    internaljson
    log
    models/index
+   queue
    util
    webapp/index

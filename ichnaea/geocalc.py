@@ -51,7 +51,6 @@ def bound(low, value, high):
     If value is above high, return high.
     If low is below high, raise an exception.
     """
-    assert low <= high
     return max(low, min(value, high))
 
 

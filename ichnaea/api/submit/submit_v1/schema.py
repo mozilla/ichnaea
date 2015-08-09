@@ -90,9 +90,7 @@ class ReportV1Schema(BaseReportV1Schema):
         if data in (colander.drop, colander.null):  # pragma: no cover
             return data
 
-        if not (data.get('bluetoothBeacons') or
-                data.get('cellTowers') or
-                data.get('wifiAccessPoints')):
+        if not (data.get('cellTowers') or data.get('wifiAccessPoints')):
             return colander.null
 
         top_radio = data.get('radioType', None)

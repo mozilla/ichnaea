@@ -1,4 +1,4 @@
-"""Setup and configuration of a HTTP/S request pool."""
+"""Setup and configuration of a HTTP/S connection pool."""
 
 import certifi
 from requests.adapters import HTTPAdapter

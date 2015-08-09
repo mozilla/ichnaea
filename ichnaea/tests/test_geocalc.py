@@ -47,10 +47,6 @@ class TestAddMetersToLongitude(TestCase):
 
 class TestBound(TestCase):
 
-    def test_max_below_min_raises_exception(self):
-        with self.assertRaises(Exception):
-            bound(0, 0, -1)
-
     def test_returns_between_min_max(self):
         self.assertEqual(bound(0, 1, 2), 1)
 

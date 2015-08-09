@@ -8,11 +8,7 @@ from kombu import Queue
 from kombu.serialization import register
 
 from ichnaea.async.schedule import CELERYBEAT_SCHEDULE
-from ichnaea.cache import (
-    configure_redis,
-    DataQueue,
-    ExportQueue,
-)
+from ichnaea.cache import configure_redis
 from ichnaea.config import read_config
 from ichnaea import internaljson
 from ichnaea.db import configure_db
@@ -20,6 +16,10 @@ from ichnaea.geoip import configure_geoip
 from ichnaea.log import (
     configure_raven,
     configure_stats,
+)
+from ichnaea.queue import (
+    DataQueue,
+    ExportQueue,
 )
 
 CELERY_QUEUES = (
