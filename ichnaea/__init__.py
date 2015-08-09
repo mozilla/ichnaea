@@ -1,4 +1,5 @@
 # Disable deprecation warnings in production mode
+import os.path
 import sys
 import warnings
 warnings.simplefilter('ignore', DeprecationWarning)
@@ -9,6 +10,8 @@ if sys.version_info < (3, 0):  # pragma: no cover
     from requests.packages.urllib3.contrib import pyopenssl
     pyopenssl.inject_into_urllib3()
     del pyopenssl
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_package(module):

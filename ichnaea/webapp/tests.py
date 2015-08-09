@@ -146,3 +146,15 @@ class TestMonitorErrors(AppTestCase):
         res = self.app.get('/__monitor__', status=503)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json['redis'], {'up': False, 'time': 0})
+
+
+class TestVersion(AppTestCase):
+
+    def test_ok(self):
+        app = self.app
+        response = app.get('/__version__', status=200)
+        self.assertEqual(response.content_type, 'application/json')
+        data = response.json
+        self.assertEqual(
+            set(data.keys()), set(['commit', 'source', 'tag', 'version']))
+        self.assertEqual(data['source'], 'https://github.com/mozilla/ichnaea')

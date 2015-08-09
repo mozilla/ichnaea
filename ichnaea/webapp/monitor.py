@@ -1,14 +1,32 @@
 """
 Heartbeat and monitor views to check service and backend health.
 """
+import os.path
 import socket
 import time
 
+import pkg_resources
 from pyramid.httpexceptions import HTTPServiceUnavailable
+import simplejson
 
+from ichnaea import ROOT
 from ichnaea.webapp.view import BaseView
 
 LOCAL_FQDN = socket.getfqdn()
+VERSION = pkg_resources.get_distribution('ichnaea').version
+VERSION_FILE = os.path.join(ROOT, 'version.json')
+VERSION_INFO = {
+    'commit': 'HEAD',
+    'source': 'https://github.com/mozilla/ichnaea',
+    'tag': 'master',
+    'version': VERSION,
+}
+
+if os.path.isfile(VERSION_FILE):
+    with open(VERSION_FILE, 'r') as fd:
+        data = simplejson.load(fd)
+    VERSION_INFO['commit'] = data.get('commit', None)
+    VERSION_INFO['tag'] = data.get('tag', None)
 
 
 def _check_timed(ping_function):
@@ -38,6 +56,7 @@ def configure_monitor(config):
     """Configure monitor related views and set up routes."""
     HeartbeatView.configure(config)
     MonitorView.configure(config)
+    VersionView.configure(config)
 
 
 class Timer(object):
@@ -117,3 +136,18 @@ class MonitorView(BaseView):
             return response
 
         return result
+
+
+class VersionView(BaseView):
+    """
+    A view which returns information about the running software version.
+    """
+
+    route = '/__version__'  #:
+
+    def __call__(self):
+        """
+        Return a response with a 200 status, including a JSON body
+        describing the installed software versions.
+        """
+        return VERSION_INFO

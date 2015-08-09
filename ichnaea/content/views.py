@@ -376,10 +376,16 @@ def touchicon_view(request):
 
 _robots_response = Response(
     content_type='text/plain',
-    body='User-agent: *\n'
-         'Disallow: /leaders\n'
-         'Disallow: /static/\n'
-         'Disallow: /v1/\n'
+    body='''\
+User-agent: *
+Disallow: /leaders
+Disallow: /static/
+Disallow: /v1/
+Disallow: /v2/
+Disallow: /__heartbeat__
+Disallow: /__monitor__
+Disallow: /__version__
+'''
 )
 
 

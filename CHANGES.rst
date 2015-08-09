@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add a new `__version__` route.
+
 - Cache Wifi-only based fallback position results.
 
 - Don't rate limit cache lookups for the fallback position source.
