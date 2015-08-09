@@ -1,14 +1,10 @@
 from datetime import datetime
 
 import colander
-from pyramid.testing import DummyRequest
 import pytz
 
 from ichnaea.api.exceptions import ParseError
-from ichnaea.api.submit.submit_v1.schema import (
-    ReportsV1Schema,
-    SUBMIT_V1_SCHEMA,
-)
+from ichnaea.api.submit.submit_v1.schema import SUBMIT_V1_SCHEMA
 from ichnaea.api.submit.tests.base import BaseSubmitTest
 from ichnaea.models import Radio
 from ichnaea.tests.base import (
@@ -22,36 +18,20 @@ from ichnaea.tests.factories import (
 from ichnaea import util
 
 
-class SchemaTest(TestCase):
-
-    def _make_request(self, body):
-        request = DummyRequest()
-        request.body = body
-        return request
-
-
-class TestReportsSchema(SchemaTest):
-
-    schema = ReportsV1Schema()
-
-    def test_empty(self):
-        data = self.schema.deserialize([{}])
-        self.assertEqual(data, [])
-
-    def test_empty_wifi_entry(self):
-        wifi = WifiFactory.build()
-        data = self.schema.deserialize(
-            [{'lat': wifi.lat, 'lon': wifi.lon, 'wifi': [{}]}])
-        self.assertEqual(data, [])
-
-
-class TestSubmitSchema(SchemaTest):
+class TestSubmitSchema(TestCase):
 
     schema = SUBMIT_V1_SCHEMA
 
     def test_empty(self):
         with self.assertRaises(colander.Invalid):
             self.schema.deserialize({})
+
+    def test_empty_wifi_entry(self):
+        wifi = WifiFactory.build()
+        data = self.schema.deserialize({'items': [
+            {'lat': wifi.lat, 'lon': wifi.lon, 'wifi': [{}]},
+        ]})
+        self.assertEqual(data, {'items': []})
 
     def test_minimal(self):
         wifi = WifiFactory.build()

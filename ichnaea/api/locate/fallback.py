@@ -44,15 +44,14 @@ class ExternalResult(namedtuple('ExternalResult',
         return False
 
 
-class ResultLocationSchema(InternalMappingSchema):
-
-    lat = InternalSchemaNode(BoundedFloat())
-    lng = InternalSchemaNode(BoundedFloat(), internal_name='lon')
-
-
 class ResultSchema(InternalMappingSchema):
 
-    location = ResultLocationSchema()
+    @colander.instantiate()
+    class location(InternalMappingSchema):  # NOQA
+
+        lat = InternalSchemaNode(BoundedFloat())
+        lng = InternalSchemaNode(BoundedFloat(), internal_name='lon')
+
     accuracy = InternalSchemaNode(colander.Integer())
     fallback = OptionalNode(colander.String(), missing=None)
 
@@ -71,47 +70,50 @@ class ResultSchema(InternalMappingSchema):
 RESULT_SCHEMA = ResultSchema()
 
 
-class OutboundCellSchema(OptionalMappingSchema):
-
-    radio = OptionalNode(RadioStringType(), internal_name='radioType')
-    mcc = OptionalNode(colander.Integer(), internal_name='mobileCountryCode')
-    mnc = OptionalNode(colander.Integer(), internal_name='mobileNetworkCode')
-    lac = OptionalNode(colander.Integer(), internal_name='locationAreaCode')
-    cid = OptionalNode(colander.Integer(), internal_name='cellId')
-    signal = OptionalNode(colander.Integer(), internal_name='signalStrength')
-    ta = OptionalNode(colander.Integer(), internal_name='timingAdvance')
-
-
-class OutboundCellsSchema(OptionalSequenceSchema):
-
-    cell = OutboundCellSchema()
-
-
-class OutboundWifiSchema(OptionalMappingSchema):
-
-    key = OptionalNode(colander.String(), internal_name='macAddress')
-    channel = OptionalNode(colander.Integer(), internal_name='channel')
-    signal = OptionalNode(colander.Integer(), internal_name='signalStrength')
-    snr = OptionalNode(colander.Integer(), internal_name='signalToNoiseRatio')
-
-
-class OutboundWifisSchema(OptionalSequenceSchema):
-
-    wifi = OutboundWifiSchema()
-
-
-class OutboundFallbackSchema(OptionalMappingSchema):
-
-    lacf = OptionalNode(colander.Boolean())
-
-
 class OutboundSchema(OptionalMappingSchema):
 
-    cell = OutboundCellsSchema(
-        missing=colander.drop, internal_name='cellTowers')
-    wifi = OutboundWifisSchema(
-        missing=colander.drop, internal_name='wifiAccessPoints')
-    fallbacks = OutboundFallbackSchema(missing=colander.drop)
+    @colander.instantiate(missing=colander.drop)
+    class fallbacks(OptionalMappingSchema):  # NOQA
+
+        lacf = OptionalNode(colander.Boolean())
+
+    @colander.instantiate(missing=colander.drop,
+                          internal_name='cellTowers')  # NOQA
+    class cell(OptionalSequenceSchema):
+
+        @colander.instantiate()
+        class SequenceItem(OptionalMappingSchema):
+
+            radio = OptionalNode(
+                RadioStringType(), internal_name='radioType')
+            mcc = OptionalNode(
+                colander.Integer(), internal_name='mobileCountryCode')
+            mnc = OptionalNode(
+                colander.Integer(), internal_name='mobileNetworkCode')
+            lac = OptionalNode(
+                colander.Integer(), internal_name='locationAreaCode')
+            cid = OptionalNode(
+                colander.Integer(), internal_name='cellId')
+            signal = OptionalNode(
+                colander.Integer(), internal_name='signalStrength')
+            ta = OptionalNode(
+                colander.Integer(), internal_name='timingAdvance')
+
+    @colander.instantiate(missing=colander.drop,
+                          internal_name='wifiAccessPoints')  # NOQA
+    class wifi(OptionalSequenceSchema):
+
+        @colander.instantiate()
+        class SequenceItem(OptionalMappingSchema):
+
+            key = OptionalNode(
+                colander.String(), internal_name='macAddress')
+            channel = OptionalNode(
+                colander.Integer(), internal_name='channel')
+            signal = OptionalNode(
+                colander.Integer(), internal_name='signalStrength')
+            snr = OptionalNode(
+                colander.Integer(), internal_name='signalToNoiseRatio')
 
 OUTBOUND_SCHEMA = OutboundSchema()
 

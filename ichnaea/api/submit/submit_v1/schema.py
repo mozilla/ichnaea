@@ -27,11 +27,6 @@ class CellV1Schema(OptionalMappingSchema):
     ta = OptionalIntNode(internal_name='timingAdvance')
 
 
-class CellsV1Schema(OptionalSequenceSchema):
-
-    cell = CellV1Schema()
-
-
 class WifiV1Schema(OptionalMappingSchema):
 
     key = OptionalStringNode(internal_name='macAddress')
@@ -48,11 +43,6 @@ class WifiV1Schema(OptionalMappingSchema):
         if 'macAddress' not in data:
             return colander.null
         return data
-
-
-class WifisV1Schema(OptionalSequenceSchema):
-
-    wifi = WifiV1Schema()
 
 
 class BaseReportV1Schema(OptionalMappingSchema):
@@ -87,8 +77,13 @@ class ReportV1Schema(BaseReportV1Schema):
         'source',
     )
 
-    cell = CellsV1Schema(internal_name='cellTowers', missing=())
-    wifi = WifisV1Schema(internal_name='wifiAccessPoints', missing=())
+    @colander.instantiate(internal_name='cellTowers', missing=())
+    class cell(OptionalSequenceSchema):  # NOQA
+        sequence_item = CellV1Schema()
+
+    @colander.instantiate(internal_name='wifiAccessPoints', missing=())
+    class wifi(OptionalSequenceSchema):  # NOQA
+        sequence_item = WifiV1Schema()
 
     def deserialize(self, data):
         data = super(ReportV1Schema, self).deserialize(data)
@@ -121,13 +116,12 @@ class ReportV1Schema(BaseReportV1Schema):
         return data
 
 
-class ReportsV1Schema(OptionalSequenceSchema):
-
-    report = ReportV1Schema()
-
-
 class SubmitV1Schema(OptionalMappingSchema):
 
-    items = ReportsV1Schema()
+    @colander.instantiate()
+    class items(OptionalSequenceSchema):  # NOQA
+
+        report = ReportV1Schema()
+
 
 SUBMIT_V1_SCHEMA = SubmitV1Schema()

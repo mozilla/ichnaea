@@ -12,16 +12,6 @@ from ichnaea.api.submit.schema import (
 )
 
 
-class CellTowerV2Schema(CellTowerSchema):
-
-    psc = OptionalIntNode(internal_name='primaryScramblingCode')
-
-
-class CellTowersV2Schema(OptionalSequenceSchema):
-
-    cell = CellTowerV2Schema()
-
-
 class ReportV2Schema(PositionSchema, ReportSchema):
 
     _position_fields = (
@@ -37,7 +27,13 @@ class ReportV2Schema(PositionSchema, ReportSchema):
         'source',
     )
 
-    cellTowers = CellTowersV2Schema(missing=())
+    @colander.instantiate(missing=())
+    class cellTowers(OptionalSequenceSchema):  # NOQA
+
+        @colander.instantiate()
+        class SequenceItem(CellTowerSchema):
+
+            psc = OptionalIntNode(internal_name='primaryScramblingCode')
 
     def deserialize(self, data):
         data = super(ReportV2Schema, self).deserialize(data)
@@ -53,11 +49,11 @@ class ReportV2Schema(PositionSchema, ReportSchema):
         return data
 
 
-class ReportsV2Schema(OptionalSequenceSchema):
-    report = ReportV2Schema()
-
-
 class SubmitV2Schema(OptionalMappingSchema):
-    items = ReportsV2Schema()
+
+    @colander.instantiate()
+    class items(OptionalSequenceSchema):  # NOQA
+        report = ReportV2Schema()
+
 
 SUBMIT_V2_SCHEMA = SubmitV2Schema()

@@ -1,3 +1,5 @@
+import colander
+
 from ichnaea.api.schema import (
     OptionalIntNode,
     OptionalMappingSchema,
@@ -11,33 +13,28 @@ from ichnaea.api.submit.schema import (
 )
 
 
-class CellTowerV3Schema(CellTowerSchema):
-
-    primaryScramblingCode = OptionalIntNode()
-
-
 class CellTowersV3Schema(OptionalSequenceSchema):
 
-    cell = CellTowerV3Schema()
+    @colander.instantiate()
+    class SequenceItem(CellTowerSchema):
 
-
-class ReportV3Schema(ReportSchema):
-
-    bluetoothBeacons = BluetoothBeaconsSchema(missing=())
-    cellTowers = CellTowersV3Schema(missing=())
-    position = PositionSchema(missing=None)
-
-    # connection is not mapped on purpose
-    # connection = ConnectionSchema(missing=None)
-
-
-class ReportsV3Schema(OptionalSequenceSchema):
-
-    report = ReportV3Schema()
+        primaryScramblingCode = OptionalIntNode()
 
 
 class SubmitV3Schema(OptionalMappingSchema):
 
-    items = ReportsV3Schema()
+    @colander.instantiate()
+    class items(OptionalSequenceSchema):  # NOQA
+
+        @colander.instantiate()
+        class SequenceItem(ReportSchema):
+
+            bluetoothBeacons = BluetoothBeaconsSchema(missing=())
+            cellTowers = CellTowersV3Schema(missing=())
+            position = PositionSchema(missing=None)
+
+            # connection is not mapped on purpose
+            # connection = ConnectionSchema(missing=None)
+
 
 SUBMIT_V3_SCHEMA = SubmitV3Schema()
