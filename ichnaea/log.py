@@ -105,7 +105,10 @@ def configure_stats(app_config, _client=None):  # pragma: no cover
 
 def configure_logging():
     """Configure basic Python logging."""
-    logging.basicConfig()
+    logging.basicConfig(
+        format='%(asctime)s - %(levelname)-5.5s [%(name)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+    )
 
 
 def log_tween_factory(handler, registry):

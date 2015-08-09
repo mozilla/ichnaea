@@ -2,6 +2,7 @@
 import sys
 import warnings
 warnings.simplefilter('ignore', DeprecationWarning)
+warnings.simplefilter('ignore', PendingDeprecationWarning)
 
 # Enable pyopenssl based SSL stack
 if sys.version_info < (3, 0):  # pragma: no cover
