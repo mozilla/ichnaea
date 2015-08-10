@@ -198,9 +198,10 @@ class WifiBlocklist(WifiMixin, StationBlocklistMixin, _Model):
 
 class StationSource(IntEnum):
     """
-    The station source states on what kind of data the station
-    record is based on. A lower integer value hints at a better quality
-    of the observation data that went into this station record.
+    The :term:`station` source states on what kind of data the
+    :term:`station` record is based on. A lower integer value hints at
+    a better quality of the observation data that went into this
+    :term:`station` record.
     """
 
     fixed = 0  #: Outside knowledge about the true position of the station.

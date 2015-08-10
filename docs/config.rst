@@ -224,8 +224,8 @@ Import
 ------
 
 The project supports importing cell data on a regular basis from the
-OpenCellID (OCID) project, using the :ref:`cell import/export <import_export>`
-data format.
+:term:`OpenCellID` (OCID) project, using the
+:ref:`cell import/export <import_export>` data format.
 
 .. code-block:: ini
 
@@ -238,15 +238,15 @@ and an ``apikey`` need to be configured for accessing an HTML overview
 page listing the available download files using a specific file name pattern
 for daily full and hourly differential files.
 
-For the OpenCellID service, the url must end with a slash.
+For the :term:`OpenCellID` service, the URL must end with a slash.
 
 
 Locate Fallback
 ---------------
 
-The project can use not only its own internal data source, OCID cell data
-and GeoIP database, but also an external web service to answer location
-queries.
+The project can use not only its own internal data source, :term:`OCID`
+cell data and GeoIP database, but also an external web service to answer
+location queries.
 
 The exactly named ``locate:fallback`` section describes settings related
 to this external fallback service.

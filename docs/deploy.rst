@@ -33,15 +33,15 @@ Amazon S3
 =========
 
 The application uses Amazon S3 for various tasks, including backup of
-observations, export of the aggregated cell table and hosting of the
-data map image tiles.
+:term:`observations`, export of the aggregated cell table and hosting of
+the data map image tiles.
 
 All of these are triggered by asynchronous jobs and you can disable them
 if you are not hosted in an Amazon environment.
 
 If you use Amazon S3 you might want to configure a lifecycle policy to
-delete old export files after a couple of days and observation data after
-one year.
+delete old export files after a couple of days and :term:`observation`
+data after one year.
 
 
 Statsd / Sentry

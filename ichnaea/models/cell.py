@@ -378,7 +378,7 @@ class Cell(CellMixin, StationMixin, CreationMixin, _Model):
 
 
 class ValidOCIDCellSchema(ValidCellKeySchema, ValidBaseStationSchema):
-    """A schema which validates the fields present in a OCID cell."""
+    """A schema which validates the fields present in a :term:`OCID` cell."""
 
     changeable = colander.SchemaNode(colander.Boolean(), missing=True)
 

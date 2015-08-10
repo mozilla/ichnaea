@@ -12,7 +12,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.viewcode',
+    'sphinx.ext.linkcode',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -55,6 +55,8 @@ intersphinx_mapping = {
 
 autoclass_content = 'both'
 
+modindex_common_prefix = ['ichnaea.']
+
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
@@ -69,6 +71,16 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
+
+
+def linkcode_resolve(domain, info):
+    if domain != 'py':
+        return None
+    if not info['module']:
+        return None
+    filename = info['module'].replace('.', '/')
+    return "https://github.com/mozilla/ichnaea/tree/master/%s.py" % filename
+
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Ichnaeadoc'

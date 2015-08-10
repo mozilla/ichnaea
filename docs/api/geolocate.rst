@@ -6,7 +6,8 @@ Geolocate
 
 Purpose
     Determine the current location based on data provided about nearby
-    cell or WiFi networks.
+    cell or WiFi networks and based on the IP address used to access
+    the service.
 
 
 Request

@@ -1,4 +1,4 @@
-"""Search implementation using the OCID cell database."""
+"""Search implementation using the :term:`OCID` cell database."""
 
 from ichnaea.api.locate.cell import CellPositionSource
 from ichnaea.api.locate.constants import DataSource
@@ -9,7 +9,7 @@ from ichnaea.models import (
 
 
 class OCIDPositionSource(CellPositionSource):
-    """Implements a search using the OCID cell data."""
+    """Implements a search using the :term:`OCID` cell data."""
 
     cell_model = OCIDCell
     area_model = OCIDCellArea

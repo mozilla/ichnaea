@@ -4,15 +4,17 @@ Ichnaea
 
 ``Ichnaea`` is a service to provide geolocation coordinates
 from other sources of data (cell or WiFi networks, GeoIP, etc.).
+It is using both :term:`Cell-ID` and Wi-Fi based positioning (:term:`WPS`)
+approaches.
 
 Mozilla hosts an instance of this service, called the `Mozilla Location
-Service or MLS <https://wiki.mozilla.org/CloudServices/Location>`_.
-
+Service <https://wiki.mozilla.org/CloudServices/Location>`_
+(:term:`MLS`).
 
 You can interact with the service in two ways:
 
 - If you know where you are, submit information about the radio environment
-  to the service
+  to the service to increase its quality.
 
 - or locate yourself, based on the radio environment around you.
 
@@ -39,6 +41,7 @@ Table of contents
    calculation
    metrics
    internal_api/index
+   glossary
    changelog
 
 

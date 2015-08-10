@@ -6,10 +6,10 @@ Data Import / Export
 
 Ichnaea supports automatic, periodic CSV (comma separated values) export
 of aggregate cell data (position estimates) and periodic import of
-the same type of data from the OpenCellID project.
+the same type of data from the :term:`OpenCellID` project.
 
 The data exchange format was created in collaboration with the
-`OpenCellID <http://opencellid.org>`_ project.
+:term:`OpenCellID` project.
 
 Records should be written one record to a line, with `\\n` (0x0A) as line
 separator.
@@ -22,8 +22,8 @@ network. The remaining fields contain information about this network.
 
 The data format does not specify the means and exact algorithms by which the
 position estimate or range calculation was done. The algorithms might be
-unique and changing for each source of the data, though both MLS and
-OpenCellID currently use similar and comparable techniques.
+unique and changing for each source of the data, though both ichnaea and
+:term:`OpenCellID` currently use similar and comparable techniques.
 
 The fields in the CSV file are as follows:
 
@@ -40,28 +40,28 @@ Cell Fields
 
 ``net``
 
-    For GSM, UMTS and LTE networks, this is the Mobile Network Code (MNC). For
-    CDMA networks, this is the System Identification number (SID). An integer,
+    For GSM, UMTS and LTE networks, this is the mobile network code (MNC). For
+    CDMA networks, this is the system identification number (SID). An integer,
     for example `4`, the MNC used by Vodaphone in the Netherlands.
 
 ``area``
 
-    For GSM and UMTS networks, this is the Location Area Code (LAC). For LTE
-    networks, this is the Tracking Area Code (TAC). For CDMA networks, this is
-    the Network Idenfitication number (NID). An integer, for example `2035`.
+    For GSM and UMTS networks, this is the location area code (LAC). For LTE
+    networks, this is the tracking area code (TAC). For CDMA networks, this is
+    the network identification number (NID). An integer, for example `2035`.
 
 ``cell``
 
-    For GSM and LTE networks, this is the Cell ID (CID). For UMTS networks
-    this is the UTRAN Cell ID / LCID, which is the concatenation of 2 or 4
-    bytes of Radio Network Controller (RNC) code and 4 bytes of Cell ID.
-    For CDMA networks this is the Base station Identifier number (BID).
-    An integer, for example `32345`
+    For GSM and LTE networks, this is the cell id or cell identity (CID).
+    For UMTS networks this is the UTRAN cell id, which is the concatenation
+    of 2 bytes of radio network controller (RNC) code and 2 bytes of cell id.
+    For CDMA networks this is the base station identifier (BID).
+    An integer, for example `32345`.
 
 ``unit``
 
-    For UMTS networks, this is the Primary Scrambling Code (PSC). For LTE
-    networks, this is the Physical Cell ID (PCI). For GSM and CDMA networks,
+    For UMTS networks, this is the primary scrambling code (PSC). For LTE
+    networks, this is the physical cell id (PCI). For GSM and CDMA networks,
     this is empty. An integer, for example `312`.
 
 ``lon``
@@ -78,19 +78,20 @@ Cell Fields
 
     Estimate of radio range, in meters. This is an estimate on how large each
     cell area is, as a radius around the estimated position and is based on
-    the observations or a knowledgeable source. An integer, for example `2500`.
+    the :term:`observations` or a knowledgeable source.
+    An integer, for example `2500`.
 
 ``samples``
 
-    Total number of observations used to calculate the estimated position,
-    range and averageSignal. An integer, for example `1200`.
+    Total number of :term:`observations` used to calculate the estimated
+    position, range and averageSignal. An integer, for example `1200`.
 
 ``changeable``
 
-    Whether or not this cell is a position estimate based on radio
-    observations, and therefore subject to change in the future, or is an
-    exact location entered from a knowledgeable source. A boolean value,
-    encoded as either `1` (for "changeable") or `0` (for "exact").
+    Whether or not this cell is a position estimate based on
+    :term:`observations`, and therefore subject to change in the future,
+    or is an exact location entered from a knowledgeable source. A boolean
+    value, encoded as either `1` (for "changeable") or `0` (for "exact").
 
 ``created``
 
@@ -109,5 +110,5 @@ Cell Fields
     Average signal strength from all observations for the cell network.
     An integer value, in dBm. For example, `-72`.
 
-    This field is only used by the OpenCellID project and historically has
-    been used as a hint towards the quality of the position estimate.
+    This field is only used by the :term:`OpenCellID` project and historically
+    has been used as a hint towards the quality of the position estimate.

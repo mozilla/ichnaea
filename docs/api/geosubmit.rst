@@ -64,8 +64,8 @@ Geosubmit requests are submitted using a POST request with a JSON body:
 Field Definition
 ----------------
 
-Requests always need to contain a batch of reports. Each report
-must contain at least one entry in the `cellTowers` array or
+Requests always need to contain a batch of :term:`reports`. Each
+:term:`report` must contain at least one entry in the `cellTowers` array or
 two entries in the `wifiAccessPoints` array.
 
 Most of the fields are optional. For WiFi records only the `macAddress` field

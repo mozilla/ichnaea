@@ -7,8 +7,9 @@ Search (Deprecated)
     Please use the :ref:`api_geolocate_latest` API instead.
 
 Purpose
-    Determine the current location based on provided data about nearby
-    cell or WiFi networks.
+    Determine the current location based on data provided about nearby
+    cell or WiFi networks and based on the IP address used to access
+    the service.
 
 
 Request

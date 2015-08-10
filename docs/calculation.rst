@@ -7,8 +7,8 @@ Calculation
 There's two general approaches to calculate positions from signal sources,
 without the cooperation of the signal sources or mobile networks.
 
-1. Determine the location of signal sources from observations, then
-   compare / trilaterate user locations.
+1. Determine the location of signal sources from :term:`observations`,
+   then compare / trilaterate user locations.
 
 2. Generate signal fingerprints for a fine-grained grid of the world.
    Find best match for a observed fingerprint.
@@ -79,9 +79,9 @@ serving cell only. In GSM networks the phone does not know the full cell
 ids of any neighboring cells, unless it associates with the new cell as
 part of a hand-over, forgetting the cell id of the old cell.
 
-So we are limited to a basic Cell-ID approach, meaning we assume that the
-user is at the center of the current GSM cell area and use the cell radius
-as the accuracy.
+So we are limited to a basic :term:`Cell-ID` approach, meaning we assume
+that the user is at the center of the current GSM cell area and use the
+cell radius as the accuracy.
 
 GSM cells are restricted to a maximum range of 35km, but there are rare
 exceptions using the GSM extended range of 120km.

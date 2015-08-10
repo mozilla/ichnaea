@@ -98,7 +98,7 @@ in it:
 
     If the query contained any cell or wifi networks, one cell and one
     wifi tag get added. The tags depend on the number of valid
-    stations for each of the two.
+    :term:`stations` for each of the two.
 
 
 API Result Metrics
@@ -176,7 +176,7 @@ Data sources can be one of:
     Data from our own crowd-sourcing effort.
 
 ``ocid``
-    Data from our OpenCellID partner.
+    Data from our :term:`OpenCellID` partner.
 
 ``fallback``
     Data from the optional external fallback provider.
@@ -226,18 +226,18 @@ Data Pipeline Metrics
 
 When a batch of reports is accepted at one of the submission API
 endpoints, it is decomposed into a number of "items" -- wifi or cell
-observations -- each of which then works its way through a process of
+:term:`observations` -- each of which then works its way through a process of
 normalization, consistency-checking and eventually (possibly) integration
-into aggregate station estimates held in the main database tables.
+into aggregate :term:`station` estimates held in the main database tables.
 Along the way several counters measure the steps involved:
 
 ``data.batch.upload``,
 ``data.batch.upload#key:<api_shortname>`` : counters
 
-    Counts the number of "batches" of reports accepted to the data
+    Counts the number of "batches" of :term:`reports` accepted to the data
     processing pipeline by an API endpoint. A batch generally
-    corresponds to the set of reports uploaded in a single HTTP POST to
-    one of the submit APIs. In other words this metric counts
+    corresponds to the set of :term:`reports` uploaded in a single HTTP POST
+    to one of the submit APIs. In other words this metric counts
     "submissions that make it past coarse-grained checks" such as API-key
     and JSON schema validity checking.
 
@@ -247,14 +247,14 @@ Along the way several counters measure the steps involved:
 ``data.report.upload``,
 ``data.report.upload#key:<api_shortname>`` : counters
 
-    Counts the number of reports accepted into the data processing pipeline.
-    The metric is either emitted per tracked API key, or for everything
-    else without a key tag.
+    Counts the number of :term:`reports` accepted into the data processing
+    pipeline. The metric is either emitted per tracked API key, or for
+    everything else without a key tag.
 
 ``data.report.drop#reason:malformed``,
 ``data.report.drop#reason:malformed,key:<api_shortname>`` : counter
 
-    Count incoming reports that were discarded due to some internal
+    Count incoming :term:`reports` that were discarded due to some internal
     consistency, range or validity-condition error.
 
 ``data.observation.upload#type:cell``,
@@ -262,11 +262,11 @@ Along the way several counters measure the steps involved:
 ``data.observation.upload#type:wifi``,
 ``data.observation.upload#type:wifi,key:<api_shortname>`` : counters
 
-    Count the number of cell or wifi observations entering the data
+    Count the number of cell or wifi :term:`observations` entering the data
     processing pipeline; before normalization and blocklist processing
     have been applied. In other words this metric counts "total cell or
-    wifi observations inside each submitted batch", as each batch is
-    decomposed into individual observations.
+    wifi :term:`observations` inside each submitted batch", as each batch is
+    decomposed into individual :term:`observations`.
 
     The metrics are either emitted per tracked API key, or for everything
     else without a key tag.
@@ -276,39 +276,39 @@ Along the way several counters measure the steps involved:
 ``data.observation.drop#type:wifi,reason:malformed``
 ``data.observation.drop#type:wifi,reason:malformed,key:<api_shortname>`` : counters
 
-    Count incoming cell or wifi observations that were discarded before
+    Count incoming cell or wifi :term:`observations` that were discarded before
     integration due to some internal consistency, range or
     validity-condition error encountered while attempting to normalize the
-    observation.
+    :term:`observation`.
 
 ``data.observation.drop#type:cell,reason:blocklisted``,
 ``data.observation.drop#type:wifi,reason:blocklisted`` : counters
 
-    Count incoming cell or wifi observations that were discarded before
-    integration due to the presence of a blocklist record for the station
-    (see next metric).
+    Count incoming cell or wifi :term:`observations` that were discarded before
+    integration due to the presence of a blocklist record for the
+    :term:`station` (see next metric).
 
 ``data.observation.insert#type:cell``,
 ``data.observation.insert#type:wifi`` : counters
 
-    Count cell or wifi observations that are successfully normalized,
+    Count cell or wifi :term:`observations` that are successfully normalized,
     integrated and not discarded due to consistency errors.
 
 ``data.station.blocklist#type:cell,action:add,reason:moving``,
 ``data.station.blocklist#type:wifi,action:add,reason:moving`` : counters
 
     Count any cell or wifi that is blocklisted due to the acceptance of
-    multiple observations at sufficiently different locations. In these
-    cases, we decide that the station is "moving" (such as a picocell
-    or mobile hotspot on a public transit vehicle) and blocklist it, to
-    avoid estimating query positions using the station.
+    multiple :term:`observations` at sufficiently different locations. In
+    these cases, we decide that the :term:`station` is "moving" (such as a
+    picocell or mobile hotspot on a public transit vehicle) and blocklist
+    it, to avoid estimating query positions using the :term:`station`.
 
 
 Data Pipeline Export Metrics
 ----------------------------
 
-Incoming reports can also be sent to a number of different export targets.
-We keep metrics about how those individual export targets perform.
+Incoming :term:`reports` can also be sent to a number of different export
+targets. We keep metrics about how those individual export targets perform.
 
 ``data.export.batch#key:<export_key>`` : counter
 
@@ -351,15 +351,16 @@ Internal Monitoring
 ``queue#queue:update_wifi`` : gauges
 
     These gauges measure the number of items in the Redis update queues.
-    These queues are used to keep track of which observations still need to
-    be acted upon and integrated into the aggregate station data.
+    These queues are used to keep track of which :term:`observations`
+    still need to be acted upon and integrated into the aggregate
+    :term:`station` data.
 
 ``table#table:ocid_cell_age`` : gauge
 
-    This gauge measures when the last entry was added to the table. It
-    represents this as `now() - max(created)` and converts it to a
-    millisecond value. This metric is useful to see if the ocid_import
-    jobs are run on a regular basis.
+    This gauge measures when the last entry was added to the :term:`OCID`
+    table. It represents this as `now() - max(created)` and converts it
+    to a millisecond value. This metric is useful to see if the
+    ocid_import jobs are run on a regular basis.
 
 
 HTTP Counters
