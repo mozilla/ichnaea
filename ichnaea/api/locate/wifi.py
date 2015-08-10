@@ -3,13 +3,14 @@
 from collections import namedtuple
 from operator import attrgetter
 
+from sqlalchemy.orm import load_only
+
 from ichnaea.api.locate.constants import (
     DataSource,
     MAX_WIFI_CLUSTER_KM,
     MIN_WIFIS_IN_CLUSTER,
     MAX_WIFIS_IN_CLUSTER,
 )
-from ichnaea.api.locate.db import query_database
 from ichnaea.api.locate.result import Position
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.constants import WIFI_MIN_ACCURACY
@@ -181,6 +182,29 @@ def aggregate_cluster_position(cluster, result_type):
     return result_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
 
 
+def query_database(query, raven_client):
+    macs = [lookup.key for lookup in query.wifi]
+    if not macs:  # pragma: no cover
+        return []
+
+    try:
+        # Load the extra key field, as its not the actual
+        # primary key yet
+        load_fields = ('key', 'lat', 'lon', 'range')
+        model = Wifi
+        result = (query.session.query(model)
+                               .filter(model.key.in_(macs))
+                               .filter(model.lat.isnot(None))
+                               .filter(model.lon.isnot(None))
+                               .options(load_only(*load_fields))
+                  ).all()
+
+        return result
+    except Exception:
+        raven_client.captureException()
+    return []
+
+
 class WifiPositionMixin(object):
     """
     A WifiPositionMixin implements a position search using
@@ -198,12 +222,7 @@ class WifiPositionMixin(object):
         if not query.wifi:
             return result
 
-        wifis = query_database(
-            query, query.wifi, Wifi, self.raven_client,
-            # TODO load the extra key field, as its not the actual
-            # primary key yet
-            load_fields=('key', 'lat', 'lon', 'range'))
-
+        wifis = query_database(query, self.raven_client)
         clusters = get_clusters(wifis, query.wifi)
         if clusters:
             cluster = pick_best_cluster(clusters)
