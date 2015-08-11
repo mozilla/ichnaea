@@ -23,9 +23,11 @@ class MacColumn(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if not (value and len(value) == 12):
             raise ValueError('Invalid MAC: %r' % value)
-        return b16decode(value.upper())
+        return b16decode(value.upper().encode('ascii'))
 
     def process_result_value(self, value, dialect):
+        if value is None:  # pragma: no cover
+            return value
         return b16encode(value).decode('ascii').lower()
 
 

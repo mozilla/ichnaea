@@ -38,7 +38,7 @@ ordereddict==1.1 ; python_version < '3.0'
 PasteDeploy==1.5.2
 pyasn1==0.1.8
 pycparser==2.14
-PyMySQL==0.6.3  # rq.filter: !=0.6.4,!=0.6.5,!=0.6.6
+PyMySQL==0.6.6
 pyopenssl==0.15.1
 pyramid==1.5.7
 pyramid-chameleon==0.3
