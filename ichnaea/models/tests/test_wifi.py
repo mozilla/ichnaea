@@ -116,7 +116,6 @@ class TestWifiShard(DBTestCase):
         self.assertEqual(wifi.range, 200)
         self.assertEqual(wifi.country, 'GB')
         self.assertEqual(wifi.samples, 10)
-        self.assertEqual(wifi.total_measures, 10)
         self.assertEqual(wifi.source, StationSource.gnss)
         self.assertEqual(wifi.block_first, today)
         self.assertEqual(wifi.block_last, today)
@@ -141,11 +140,27 @@ class TestWifi(DBTestCase):
 
     def test_fields(self):
         self.session.add(Wifi.create(
-            key='3680873e9b83', lat=GB_LAT, lon=GB_LON, range=200))
+            key='3680873e9b83', lat=GB_LAT, lon=GB_LON, range=200,
+            total_measures=10))
         self.session.flush()
 
         result = self.session.query(Wifi).first()
         self.assertEqual(result.key, '3680873e9b83')
+        self.assertEqual(result.mac, '3680873e9b83')
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
         self.assertEqual(result.range, 200)
+        self.assertEqual(result.radius, 200)
+        self.assertEqual(result.total_measures, 10)
+        self.assertEqual(result.samples, 10)
+
+        result.mac = '000080123456'
+        result.radius = 100
+        result.samples = 5
+        self.session.flush()
+        self.session.expunge(result)
+
+        result = self.session.query(Wifi).first()
+        self.assertEqual(result.key, '000080123456')
+        self.assertEqual(result.range, 100)
+        self.assertEqual(result.total_measures, 5)

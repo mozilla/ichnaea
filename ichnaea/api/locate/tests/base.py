@@ -106,7 +106,7 @@ class BaseSourceTest(ConnectionTestCase):
         query_wifi = []
         if wifis:
             for wifi in wifis:
-                query_wifi.append({'key': wifi.key})
+                query_wifi.append({'key': wifi.mac})
 
         return self.make_query(
             cell=query_cell,
@@ -244,7 +244,7 @@ class BaseLocateTest(object):
             query['wifiAccessPoints'] = []
             for wifi in wifis:
                 query['wifiAccessPoints'].append({
-                    'macAddress': wifi.key,
+                    'macAddress': wifi.mac,
                 })
         return query
 

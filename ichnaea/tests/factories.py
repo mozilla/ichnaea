@@ -76,6 +76,13 @@ class FuzzyWifiKey(fuzzy.BaseFuzzyAttribute):
         return 'a82066{num:06d}'.format(num=num)
 
 
+class FuzzyWifiMac(fuzzy.BaseFuzzyAttribute):
+
+    def fuzz(self):
+        num = fuzzy.random.randint(10000000, 99999999)
+        return 'a820{num:08d}'.format(num=num)
+
+
 class ApiKeyFactory(BaseSQLFactory):
 
     class Meta:
@@ -194,10 +201,14 @@ class WifiFactory(WifiPositionFactory, BboxFactory, BaseSQLFactory):
 
 class WifiMacFactory(Factory):
 
-    mac = FuzzyWifiKey()
+    mac = FuzzyWifiMac()
 
 
 class WifiShardFactory(WifiMacFactory, BaseSQLFactory):
+
+    lat = GB_LAT
+    lon = GB_LON
+    radius = WIFI_MIN_ACCURACY
 
     class Meta:
         model = WifiShard.create

@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use both old and new wifi tables in locate logic.
+
 - Add a new `__version__` route.
 
 - Cache Wifi-only based fallback position results.

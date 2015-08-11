@@ -1,7 +1,16 @@
+from datetime import timedelta
+
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.api.locate.wifi import WifiPositionSource
-from ichnaea.constants import WIFI_MIN_ACCURACY
-from ichnaea.tests.factories import WifiFactory
+from ichnaea.constants import (
+    PERMANENT_BLOCKLIST_THRESHOLD,
+    WIFI_MIN_ACCURACY,
+)
+from ichnaea.tests.factories import (
+    WifiFactory,
+    WifiShardFactory,
+)
+from ichnaea import util
 
 
 class TestWifi(BaseSourceTest):
@@ -10,10 +19,70 @@ class TestWifi(BaseSourceTest):
 
     def test_wifi(self):
         wifi = WifiFactory(range=200)
+        wifi2 = WifiShardFactory(
+            lat=wifi.lat, lon=wifi.lon + 0.00001, radius=300,
+            block_count=1, block_last=None)
+        self.session.flush()
+
+        query = self.model_query(wifis=[wifi, wifi2])
+        result = self.source.search(query)
+        self.check_model_result(
+            result, wifi,
+            lon=wifi.lon + 0.000005, accuracy=WIFI_MIN_ACCURACY)
+
+    def test_wifi_no_position(self):
+        wifi = WifiShardFactory()
+        wifi2 = WifiShardFactory(lat=wifi.lat, lon=wifi.lon)
+        wifi3 = WifiShardFactory(lat=None, lon=wifi.lon, radius=None)
+        self.session.flush()
+
+        query = self.model_query(wifis=[wifi, wifi2, wifi3])
+        result = self.source.search(query)
+        self.check_model_result(result, wifi)
+
+    def test_wifi_temp_blocked(self):
+        today = util.utcnow().date()
+        yesterday = today - timedelta(days=1)
+        wifi = WifiFactory(range=200)
+        wifi2 = WifiShardFactory(
+            lat=wifi.lat, lon=wifi.lon + 0.00001, radius=300,
+            block_count=1, block_last=yesterday)
+        self.session.flush()
+
+        query = self.model_query(wifis=[wifi, wifi2])
+        result = self.source.search(query)
+        self.check_model_result(result, None)
+
+    def test_wifi_permanent_blocked(self):
+        wifi = WifiFactory(range=200)
+        wifi2 = WifiShardFactory(
+            lat=wifi.lat, lon=wifi.lon + 0.00001, radius=300,
+            block_count=PERMANENT_BLOCKLIST_THRESHOLD, block_last=None)
+        self.session.flush()
+
+        query = self.model_query(wifis=[wifi, wifi2])
+        result = self.source.search(query)
+        self.check_model_result(result, None)
+
+    def test_wifi_old(self):
+        wifi = WifiFactory(range=200)
         wifi2 = WifiFactory(lat=wifi.lat, lon=wifi.lon + 0.00001, range=300)
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2])
+        result = self.source.search(query)
+        self.check_model_result(
+            result, wifi,
+            lon=wifi.lon + 0.000005, accuracy=WIFI_MIN_ACCURACY)
+
+    def test_wifi_shard_prefer(self):
+        wifi = WifiFactory(range=200)
+        wifi2 = WifiFactory(lat=wifi.lat, lon=wifi.lon, range=200)
+        wifi3 = WifiShardFactory(
+            mac=wifi2.mac, lat=wifi.lat, lon=wifi.lon + 0.00001, radius=300)
+        self.session.flush()
+
+        query = self.model_query(wifis=[wifi, wifi2, wifi3])
         result = self.source.search(query)
         self.check_model_result(
             result, wifi,

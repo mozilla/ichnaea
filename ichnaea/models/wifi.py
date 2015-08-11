@@ -187,6 +187,36 @@ class Wifi(WifiMixin, StationMixin, CreationMixin, _Model):
     )
     _valid_schema = ValidWifiSchema()
 
+    @property
+    def mac(self):
+        # BBB: alias
+        return self.key
+
+    @mac.setter
+    def mac(self, value):
+        # BBB: alias
+        self.key = value
+
+    @property
+    def radius(self):
+        # BBB: alias
+        return self.range
+
+    @radius.setter
+    def radius(self, value):
+        # BBB: alias
+        self.range = value
+
+    @property
+    def samples(self):
+        # BBB: alias
+        return self.total_measures
+
+    @samples.setter
+    def samples(self, value):
+        # BBB: alias
+        self.total_measures = value
+
 
 class WifiBlocklist(WifiMixin, StationBlocklistMixin, _Model):
     __tablename__ = 'wifi_blacklist'
@@ -298,6 +328,11 @@ class WifiShard(HashKeyQueryMixin,
         )
         return _indices + (cls._settings, )
 
+    @property
+    def range(self):
+        # BBB: alias
+        return self.radius
+
     @classmethod
     def create(cls, _raise_invalid=False, **kw):
         """
@@ -310,16 +345,6 @@ class WifiShard(HashKeyQueryMixin,
             return None
         shard = cls.shard_model(validated['mac'])
         return shard(**validated)
-
-    @property
-    def range(self):
-        # BBB: alias
-        return self.radius
-
-    @property
-    def total_measures(self):
-        # BBB: alias
-        return self.samples
 
     @classmethod
     def shard_id(cls, mac):

@@ -1,9 +1,10 @@
 """Search implementation using a wifi database."""
 
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 from operator import attrgetter
 
 from sqlalchemy.orm import load_only
+from sqlalchemy.sql import or_
 
 from ichnaea.api.locate.constants import (
     DataSource,
@@ -13,14 +14,22 @@ from ichnaea.api.locate.constants import (
 )
 from ichnaea.api.locate.result import Position
 from ichnaea.api.locate.source import PositionSource
-from ichnaea.constants import WIFI_MIN_ACCURACY
+from ichnaea.constants import (
+    PERMANENT_BLOCKLIST_THRESHOLD,
+    TEMPORARY_BLOCKLIST_DURATION,
+    WIFI_MIN_ACCURACY,
+)
 from ichnaea.geocalc import (
     distance,
     estimate_accuracy,
 )
-from ichnaea.models import Wifi
+from ichnaea.models import (
+    Wifi,
+    WifiShard,
+)
+from ichnaea import util
 
-Network = namedtuple('Network', 'key lat lon range signal')
+Network = namedtuple('Network', 'key lat lon radius signal')
 
 
 def cluster_elements(items, distance_fn, threshold):
@@ -105,7 +114,7 @@ def get_clusters(wifis, lookups):
 
     # Filter out BSSIDs that are numerically very similar, assuming
     # they are multiple interfaces on the same base station or such.
-    dissimilar_keys = set(filter_bssids_by_similarity([w.key for w in wifis]))
+    dissimilar_macs = set(filter_bssids_by_similarity([w.mac for w in wifis]))
 
     # Create a dict of wifi keys mapped to their signal strength.
     # Estimate signal strength at -100 dBm if none is provided,
@@ -113,12 +122,12 @@ def get_clusters(wifis, lookups):
     # see in practice (-98).
     wifi_signals = {}
     for lookup in lookups:
-        if lookup.key in dissimilar_keys:
-            wifi_signals[lookup.key] = lookup.signal or -100
+        if lookup.mac in dissimilar_macs:
+            wifi_signals[lookup.mac] = lookup.signal or -100
 
     wifi_networks = [
-        Network(w.key, w.lat, w.lon, w.range, wifi_signals[w.key])
-        for w in wifis if w.key in dissimilar_keys]
+        Network(w.mac, w.lat, w.lon, w.radius, wifi_signals[w.mac])
+        for w in wifis if w.mac in dissimilar_macs]
 
     # Sort networks by signal strengths in query.
     wifi_networks.sort(key=attrgetter('signal'), reverse=True)
@@ -183,23 +192,53 @@ def aggregate_cluster_position(cluster, result_type):
 
 
 def query_database(query, raven_client):
-    macs = [lookup.key for lookup in query.wifi]
+    macs = dict([(lookup.mac, None) for lookup in query.wifi])
     if not macs:  # pragma: no cover
         return []
 
-    try:
-        # Load the extra key field, as its not the actual
-        # primary key yet
-        load_fields = ('key', 'lat', 'lon', 'range')
-        model = Wifi
-        result = (query.session.query(model)
-                               .filter(model.key.in_(macs))
-                               .filter(model.lat.isnot(None))
-                               .filter(model.lon.isnot(None))
-                               .options(load_only(*load_fields))
-                  ).all()
+    today = util.utcnow().date()
+    temp_blocked = today - TEMPORARY_BLOCKLIST_DURATION
 
-        return result
+    try:
+        load_fields = ('lat', 'lon', 'radius')
+        shards = defaultdict(list)
+        for mac in macs.keys():
+            shards[WifiShard.shard_model(mac)].append(mac)
+
+        for shard, shard_macs in shards.items():
+            results = (
+                query.session.query(shard)
+                             .filter(shard.mac.in_(shard_macs))
+                             .filter(shard.lat.isnot(None))
+                             .filter(shard.lon.isnot(None))
+                             .filter(or_(
+                                 shard.block_count.is_(None),
+                                 shard.block_count <
+                                     PERMANENT_BLOCKLIST_THRESHOLD))
+                             .filter(or_(
+                                 shard.block_last.is_(None),
+                                 shard.block_last < temp_blocked))
+                             .options(load_only(*load_fields))
+            ).all()
+            for result in results:
+                macs[result.mac] = result
+
+        # Limit the query to the not found networks
+        not_found_macs = [mac for mac, value in macs.items() if value is None]
+
+        # Load the extra key field, as its not the actual primary key
+        load_fields = ('key', 'lat', 'lon', 'range')
+        results = (
+            query.session.query(Wifi)
+                         .filter(Wifi.key.in_(not_found_macs))
+                         .filter(Wifi.lat.isnot(None))
+                         .filter(Wifi.lon.isnot(None))
+                         .options(load_only(*load_fields))
+        ).all()
+        for result in results:
+            macs[result.key] = result
+
+        return [value for value in macs.values() if value is not None]
     except Exception:
         raven_client.captureException()
     return []

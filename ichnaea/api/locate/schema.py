@@ -138,6 +138,10 @@ class WifiLookup(BaseLookup):
             return True
         return False
 
+    @property
+    def mac(self):
+        return self.key
+
 
 class FallbackSchema(colander.MappingSchema):
     """
