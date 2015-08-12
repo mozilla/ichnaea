@@ -253,7 +253,7 @@ class WifiPositionMixin(object):
     raven_client = None
     result_type = Position
 
-    def should_search_wifi(self, query, result):
+    def should_search_wifi(self, query, results):
         return bool(query.wifi)
 
     def search_wifi(self, query):
@@ -280,8 +280,8 @@ class WifiPositionSource(WifiPositionMixin, PositionSource):
     fallback_field = None  #:
     source = DataSource.internal
 
-    def should_search(self, query, result):
-        return self.should_search_wifi(query, result)
+    def should_search(self, query, results):
+        return self.should_search_wifi(query, results)
 
     def search(self, query):
         return self.search_wifi(query)

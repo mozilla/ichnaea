@@ -14,6 +14,7 @@ from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
     Country,
     Position,
+    ResultList,
 )
 from ichnaea.models import (
     ApiKey,
@@ -113,10 +114,12 @@ class BaseSourceTest(ConnectionTestCase):
             wifi=query_wifi,
             **kw)
 
-    def check_should_search(self, query, should, result=None):
-        if result is None:
-            result = self.source.result_type()
-        self.assertIs(self.source.should_search(query, result), should)
+    def check_should_search(self, query, should, results=None):
+        if results is None:
+            results = ResultList(self.source.result_type())
+        elif isinstance(results, list):
+            results = ResultList(results)
+        self.assertIs(self.source.should_search(query, results), should)
 
     def check_model_result(self, result, model, **kw):
         type_ = self.TestSource.result_type
@@ -509,7 +512,10 @@ class CommonPositionTest(BaseLocateTest):
         ])
 
     def test_fallback(self):
-        cells = CellFactory.build_batch(2, radio=Radio.wcdma)
+        # this tests a cell + wifi based query which gets a cell based
+        # internal result and continues on to the fallback to get a
+        # better wifi based result
+        cells = CellFactory.create_batch(2, radio=Radio.wcdma)
         wifis = WifiFactory.build_batch(3)
         api_key = ApiKey.getkey(self.session, {'valid_key': 'test'})
         api_key.allow_fallback = True
@@ -554,7 +560,7 @@ class CommonPositionTest(BaseLocateTest):
         ])
 
     def test_fallback_used_with_geoip(self):
-        cells = CellFactory.build_batch(2, radio=Radio.wcdma)
+        cells = CellFactory.create_batch(2, radio=Radio.wcdma)
         wifis = WifiFactory.build_batch(3)
         api_key = ApiKey.getkey(self.session, {'valid_key': 'test'})
         api_key.allow_fallback = True

@@ -46,12 +46,12 @@ class InternalPositionSource(CellPositionMixin,
     fallback_field = None  #:
     source = DataSource.internal  #:
 
-    def should_search(self, query, result):
+    def should_search(self, query, results):
         if not PositionSource.should_search(
-                self, query, result):  # pragma: no cover
+                self, query, results):  # pragma: no cover
             return False
-        if not (self.should_search_cell(query, result) or
-                self.should_search_wifi(query, result)):
+        if not (self.should_search_cell(query, results) or
+                self.should_search_wifi(query, results)):
             return False
         return True
 

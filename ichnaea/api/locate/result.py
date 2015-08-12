@@ -7,6 +7,11 @@ from ichnaea.api.locate.constants import DataAccuracy
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 from ichnaea.geocalc import distance
 
+try:
+    from collections import OrderedDict
+except ImportError:  # pragma: no cover
+    from ordereddict import OrderedDict
+
 
 class Result(object):
     """An empty query result."""
@@ -62,6 +67,52 @@ class Result(object):
     def more_accurate(self, other):
         """Is this result better than the passed in result?"""
         return False
+
+
+class ResultList(object):
+    """A collection of query results."""
+
+    def __init__(self, result=None):
+        self._results = []
+        if result is not None:
+            self.add(result)
+
+    def add(self, result):
+        """Add one or more results to the collection."""
+        if isinstance(result, Result):
+            self._results.append(result)
+        else:
+            self._results.extend(list(result))
+
+    def __len__(self):
+        return len(self._results)
+
+    def __getitem__(self, index):
+        return self._results[index]
+
+    def satisfies(self, query):
+        """
+        Is one of the results in the collection good enough to satisfy
+        the expected query data accuracy.
+        """
+        for result in self:
+            if result.accurate_enough(query):
+                return True
+        return False
+
+    def best(self):
+        """
+        Return the best result in the collection.
+        """
+        accurate_results = OrderedDict()
+        for result in self:
+            accuracy = result.data_accuracy
+            if accuracy in accurate_results:
+                accurate_results[accuracy].append(result)
+            else:
+                accurate_results[accuracy] = [result]
+        best_accuracy = min(accurate_results.keys())
+        return accurate_results[best_accuracy][0]
 
 
 class Position(Result):

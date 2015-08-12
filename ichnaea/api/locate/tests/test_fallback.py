@@ -511,7 +511,7 @@ class TestSource(BaseSourceTest):
             accuracy=london.range)
 
         query = self.model_query(wifis=wifis, ip=london.ip)
-        self.check_should_search(query, True, result=geoip_pos)
+        self.check_should_search(query, True, results=[geoip_pos])
 
     def test_check_already_good_result(self):
         wifis = WifiFactory.build_batch(2)
@@ -519,7 +519,7 @@ class TestSource(BaseSourceTest):
             source=DataSource.internal, lat=1.0, lon=1.0, accuracy=1.0)
 
         query = self.model_query(wifis=wifis)
-        self.check_should_search(query, False, result=internal_pos)
+        self.check_should_search(query, False, results=[internal_pos])
 
     def test_rate_limit_allow(self):
         cell = CellFactory()

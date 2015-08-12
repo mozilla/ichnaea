@@ -98,7 +98,7 @@ class CellPositionMixin(object):
     area_model = CellArea
     result_type = Position
 
-    def should_search_cell(self, query, result):
+    def should_search_cell(self, query, results):
         if not (query.cell or query.cell_area):
             return False
         return True
@@ -137,8 +137,8 @@ class CellPositionSource(CellPositionMixin, PositionSource):
     fallback_field = None  #:
     source = DataSource.internal
 
-    def should_search(self, query, result):
-        return self.should_search_cell(query, result)
+    def should_search(self, query, results):
+        return self.should_search_cell(query, results)
 
     def search(self, query):
         result = self.search_cell(query)

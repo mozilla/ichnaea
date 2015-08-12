@@ -87,7 +87,7 @@ class TestSearcher(SearcherTest):
 
         class TestSource(CountrySource):
 
-            def should_search(self, query, result):
+            def should_search(self, query, results):
                 return False
 
             def search(self, query):
@@ -110,7 +110,7 @@ class TestSearcher(SearcherTest):
         class TestSource2(TestCountrySource):
             source = DataSource.geoip
 
-            def should_search(self, query, result):
+            def should_search(self, query, results):
                 return True
 
             def search(self, query):

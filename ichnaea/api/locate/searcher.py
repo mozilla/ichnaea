@@ -16,6 +16,7 @@ from ichnaea.api.locate.ocid import OCIDPositionSource
 from ichnaea.api.locate.result import (
     Country,
     Position,
+    ResultList,
 )
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 
@@ -83,22 +84,16 @@ class Searcher(object):
             self.sources.append((name, source_instance))
 
     def _search(self, query):
-        result = self.result_type()
+        results = ResultList(result=self.result_type())
 
         for name, source in self.sources:
-            if source.should_search(query, result):
-                source_result = source.search(query)
-
-                if source_result.more_accurate(result):
-                    # If this result is more accurate than our previous one,
-                    # we'll use it.
-                    result = source_result
-
-                if result.accurate_enough(query):
-                    # Stop the loop, if we have a good quality result.
+            if source.should_search(query, results):
+                results.add(source.search(query))
+                if results.satisfies(query):
+                    # If we have a good enough result, stop.
                     break
 
-        return result
+        return results.best()
 
     def format_result(self, result):
         """

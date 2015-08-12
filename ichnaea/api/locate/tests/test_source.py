@@ -3,6 +3,7 @@ from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
     Country,
     Position,
+    ResultList,
 )
 from ichnaea.api.locate.source import (
     CountrySource,
@@ -45,7 +46,7 @@ class SourceTest(object):
     def test_should_search(self):
         query = self._make_query()
         empty = self.source.result_type()
-        self.assertTrue(self.source.should_search(query, empty))
+        self.assertTrue(self.source.should_search(query, ResultList(empty)))
 
 
 class TestCountrySource(SourceTest, ConnectionTestCase):

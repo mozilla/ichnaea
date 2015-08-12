@@ -370,15 +370,11 @@ class FallbackPositionSource(PositionSource):
         except (simplejson.JSONDecodeError, RequestException):
             self.raven_client.captureException()
 
-    def should_search(self, query, result):
-        empty_result = not result.found()
-        weak_result = (result.source is not None and
-                       result.source >= DataSource.geoip)
-
+    def should_search(self, query, results):
         return (
             query.api_key.allow_fallback and
-            (empty_result or weak_result) and
-            (bool(query.cell) or bool(query.wifi))
+            (bool(query.cell) or bool(query.wifi)) and
+            not results.satisfies(query)
         )
 
     def search(self, query):

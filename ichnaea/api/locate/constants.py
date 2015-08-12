@@ -1,5 +1,7 @@
 from enum import Enum, IntEnum
 
+_MAX_INT = 2 ** 32 - 1
+
 EARTH_CIRCUMFERENCE = 40000000.0
 """
 Approximate circumference of the Earth in meters.
@@ -99,3 +101,9 @@ class DataAccuracy(Enum):
 
     def __ge__(self, other):
         return not self < other
+
+    def __hash__(self):
+        if self is DataAccuracy.none:
+            # a value different from all other ones
+            return _MAX_INT
+        return int(self.value)

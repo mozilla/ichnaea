@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from ichnaea.api.locate.result import ResultList
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.api.locate.wifi import WifiPositionSource
 from ichnaea.constants import (
@@ -91,7 +92,7 @@ class TestWifi(BaseSourceTest):
     def test_check_empty(self):
         query = self.model_query()
         result = self.source.result_type()
-        self.assertFalse(self.source.should_search(query, result))
+        self.assertFalse(self.source.should_search(query, ResultList(result)))
 
     def test_empty(self):
         query = self.model_query()

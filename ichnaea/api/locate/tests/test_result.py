@@ -5,8 +5,9 @@ from ichnaea.api.locate.constants import (
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
     Country,
-    Result,
     Position,
+    Result,
+    ResultList,
 )
 from ichnaea.tests.base import TestCase
 from ichnaea.tests.factories import WifiFactory
@@ -35,6 +36,43 @@ class TestResult(TestCase):
 
     def test_data_accuracy(self):
         self.assertEqual(Result().data_accuracy, DataAccuracy.none)
+
+
+class TestResultList(TestCase):
+
+    def test_init(self):
+        results = ResultList(Result())
+        self.assertEqual(len(results), 1)
+
+    def test_add(self):
+        results = ResultList()
+        results.add(Result())
+        self.assertEqual(len(results), 1)
+
+    def test_add_many(self):
+        results = ResultList(Result())
+        results.add((Result(), Result()))
+        self.assertEqual(len(results), 3)
+
+    def test_len(self):
+        results = ResultList()
+        results.add(Result())
+        results.add(Result())
+        self.assertEqual(len(results), 2)
+
+    def test_getitem(self):
+        result = Result()
+        results = ResultList()
+        results.add(result)
+        self.assertEqual(results[0], result)
+
+    def test_iterable(self):
+        result = Result()
+        results = ResultList()
+        results.add(result)
+        results.add(result)
+        for res in results:
+            self.assertEqual(res, result)
 
 
 class TestCountry(TestCase):

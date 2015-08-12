@@ -32,13 +32,16 @@ class Source(object):
             fallback=self.fallback_field,
         )
 
-    def should_search(self, query, result):
+    def should_search(self, query, results):
         """
         Given a query and a possible result found by another source,
         check if this source should attempt to perform a search.
 
         :param query: A query.
         :type query: :class:`~ichnaea.api.locate.query.Query`
+
+        :param results: All results found by other sources.
+        :type results: :class:`~ichnaea.api.locate.result.ResultList`
 
         :rtype: bool
         """

@@ -14,6 +14,9 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use data_accuracy as the criteria to decide if more locate sources
+  should be consulted.
+
 - Use both old and new wifi tables in locate logic.
 
 - Add a new `__version__` route.
