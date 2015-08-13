@@ -5,7 +5,6 @@ or a concrete country or position result.
 
 from ichnaea.api.locate.constants import DataAccuracy
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
-from ichnaea.geocalc import distance
 
 try:
     from collections import OrderedDict
@@ -56,16 +55,8 @@ class Result(object):
                 return False
         return True
 
-    def agrees_with(self, other):
-        """Does this result match the other result?"""
-        return True
-
     def accurate_enough(self, query):
         """Is this result accurate enough to return it?"""
-        return False
-
-    def more_accurate(self, other):
-        """Is this result better than the passed in result?"""
         return False
 
 
@@ -77,12 +68,12 @@ class ResultList(object):
         if result is not None:
             self.add(result)
 
-    def add(self, result):
+    def add(self, results):
         """Add one or more results to the collection."""
-        if isinstance(result, Result):
-            self._results.append(result)
+        if isinstance(results, Result):
+            self._results.append(results)
         else:
-            self._results.extend(list(result))
+            self._results.extend(list(results))
 
     def __len__(self):
         return len(self._results)
@@ -126,10 +117,6 @@ class Position(Result):
             return DataAccuracy.none
         return DataAccuracy.from_number(self.accuracy)
 
-    def agrees_with(self, other):
-        dist = distance(other.lat, other.lon, self.lat, self.lon) * 1000
-        return dist <= other.accuracy
-
     def accurate_enough(self, query):
         """
         We are accurate enough once we meet the expected query accuracy.
@@ -137,19 +124,6 @@ class Position(Result):
         if self.data_accuracy <= query.expected_accuracy:
             return True
         return False
-
-    def more_accurate(self, other):
-        """
-        Are we more accurate than the passed in other position and fit into
-        the other's position range?
-        """
-        if not self.found():
-            return False
-        if not other.found():
-            return True
-        if (self.source != other.source) and (self.source < other.source):
-            return True
-        return (self.agrees_with(other) and self.accuracy < other.accuracy)
 
 
 class Country(Result):
@@ -163,17 +137,5 @@ class Country(Result):
             return DataAccuracy.none
         return DataAccuracy.low
 
-    def agrees_with(self, other):
-        return self.country_code == other.country_code
-
     def accurate_enough(self, query):
         return self.found()
-
-    def more_accurate(self, other):
-        if not self.found():
-            return False
-        if not other.found():
-            return True
-        if self.source < other.source:
-            return True
-        return False

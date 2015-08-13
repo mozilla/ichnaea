@@ -4,6 +4,7 @@ import mobile_codes
 
 from ichnaea.api.locate.cell import CellPositionMixin
 from ichnaea.api.locate.constants import DataSource
+from ichnaea.api.locate.result import ResultList
 from ichnaea.api.locate.source import (
     CountrySource,
     PositionSource,
@@ -56,18 +57,16 @@ class InternalPositionSource(CellPositionMixin,
         return True
 
     def search(self, query):
-        result = self.result_type()
+        results = ResultList(self.result_type())
         for should, search in (
                 (self.should_search_wifi, self.search_wifi),
                 (self.should_search_cell, self.search_cell)):
 
-            if should(query, result):
-                new_result = search(query)
-                if new_result.more_accurate(result):
-                    result = new_result
-
-                if result.accurate_enough(query):
+            if should(query, results):
+                results.add(search(query))
+                if results.satisfies(query):
+                    # If we have a good enough result, stop.
                     break
 
-        query.emit_source_stats(self.source, result)
-        return result
+        query.emit_source_stats(self.source, results.best())
+        return results

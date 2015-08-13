@@ -1,4 +1,4 @@
-from enum import Enum, IntEnum
+from enum import Enum
 
 _MAX_INT = 2 ** 32 - 1
 
@@ -32,16 +32,15 @@ the aggregate result.
 """
 
 
-class DataSource(IntEnum):
+class DataSource(Enum):
     """
-    Data sources for location information. A smaller integer value
-    represents a preferred data source.
+    Data sources for location information. The names are used in metrics.
     """
 
-    internal = 1
-    ocid = 2
-    fallback = 3
-    geoip = 4
+    internal = 1  #: Internal crowd-sourced data.
+    ocid = 2  #: Data from :term:`OCID` project.
+    fallback = 3  #: Data from external fallback web service.
+    geoip = 4  #: GeoIP database.
 
 
 class DataAccuracy(Enum):
