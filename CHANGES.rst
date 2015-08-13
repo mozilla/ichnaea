@@ -5,11 +5,8 @@ Changelog
 1.3 (unreleased)
 ================
 
-Untagged
-********
-
-Migrations
-~~~~~~~~~~
+20150813105600
+**************
 
 Changes
 ~~~~~~~
