@@ -3,6 +3,8 @@ Abstract searcher and concrete country and position searchers each using
 multiple sources to satisfy a given query.
 """
 
+from collections import defaultdict
+
 from ichnaea.api.locate.fallback import FallbackPositionSource
 from ichnaea.api.locate.geoip import (
     GeoIPCountrySource,
@@ -83,16 +85,16 @@ class Searcher(object):
             )
             self.sources.append((name, source_instance))
 
+    def _best_result(self, results):
+        raise NotImplementedError()
+
     def _search(self, query):
         results = ResultList(result=self.result_type())
         for name, source in self.sources:
             if source.should_search(query, results):
                 results.add(source.search(query))
-                if results.satisfies(query):
-                    # If we have a good enough result, stop.
-                    break
 
-        return results.best()
+        return self._best_result(results)
 
     def format_result(self, result):
         """
@@ -141,6 +143,9 @@ class PositionSearcher(Searcher):
             'fallback': result.fallback,
         }
 
+    def _best_result(self, results):
+        return results.best()
+
 
 class CountrySearcher(Searcher):
     """
@@ -159,3 +164,28 @@ class CountrySearcher(Searcher):
             'country_name': result.country_name,
             'fallback': result.fallback,
         }
+
+    def _best_result(self, results):
+        found = [res for res in results if not res.empty()]
+        if len(results) == 1 or len(found) == 0:
+            return results[0]
+
+        if len(found) == 1:
+            return found[0]
+
+        # group by country code
+        grouped = defaultdict(list)
+        for result in found:
+            grouped[result.country_code].append(result)
+
+        countries = []
+        for code, values in grouped.items():
+            country = grouped[code][0]
+            countries.append(
+                (len(values), country.accuracy, country))
+
+        # pick the country with the most entries,
+        # break tie by country with the largest radius
+        countries = sorted(countries, reverse=True)
+
+        return countries[0][2]

@@ -19,8 +19,8 @@ class TestCountrySource(BaseSourceTest):
         country = mobile_codes.mcc('235')[0]
         cell = CellFactory.build(mcc=235)
         query = self.model_query(cells=[cell])
-        result = self.source.search(query)
-        self.check_model_result(result, country)
+        results = self.source.search(query)
+        self.check_model_result(results, country)
         self.check_stats(counter=[
             (self.api_type + '.source',
                 ['key:test', 'country:none', 'source:internal',
@@ -28,18 +28,19 @@ class TestCountrySource(BaseSourceTest):
         ])
 
     def test_ambiguous_mcc(self):
+        countries = mobile_codes.mcc('234')
         cell = CellFactory.build(mcc=234)
         query = self.model_query(cells=[cell])
-        result = self.source.search(query)
-        self.check_model_result(result, None)
+        results = self.source.search(query)
+        self.check_model_result(results, countries)
         self.check_stats(counter=[
             (self.api_type + '.source',
                 ['key:test', 'country:none', 'source:internal',
-                 'accuracy:low', 'status:miss']),
+                 'accuracy:low', 'status:hit']),
         ])
 
     def test_wifi(self):
         wifis = WifiFactory.build_batch(2)
         query = self.model_query(wifis=wifis)
-        result = self.source.search(query)
-        self.check_model_result(result, None)
+        results = self.source.search(query)
+        self.check_model_result(results, None)

@@ -35,6 +35,14 @@ class TestResultList(TestCase):
         results = ResultList(Result())
         self.assertEqual(len(results), 1)
 
+    def test_repr(self):
+        results = ResultList([Position(lat=1.0), Position(lat=2.0)])
+        rep = repr(results)
+        self.assertTrue(rep.startswith('ResultList'), rep)
+        self.assertTrue('Position<' in rep, rep)
+        self.assertTrue('lat:1.0' in rep, rep)
+        self.assertTrue('lat:2.0' in rep, rep)
+
     def test_add(self):
         results = ResultList()
         results.add(Result())

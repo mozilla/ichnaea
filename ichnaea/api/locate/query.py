@@ -338,7 +338,7 @@ class Query(object):
         ]
         self._emit_country_stat('result', tags)
 
-    def emit_source_stats(self, source, result):  # pragma: no cover
+    def emit_source_stats(self, source, result):
         """Emit stats about how well the result satisfied the query."""
         if not self.collect_metrics():
             return

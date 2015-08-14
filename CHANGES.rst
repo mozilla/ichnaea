@@ -14,6 +14,9 @@ Migrations
 Changes
 ~~~~~~~
 
+- Return multiple results from MCC based country source.
+
+- Move best country result selection into searcher logic.
 
 20150813105600
 **************

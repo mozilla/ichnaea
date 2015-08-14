@@ -1,4 +1,3 @@
-from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.searcher import (
     CountrySearcher,
@@ -95,28 +94,6 @@ class TestSearcher(SearcherTest):
             source_classes = (
                 ('test1', TestCountrySource),
                 ('test2', TestSource),
-            )
-
-        result = self._search(TestSearcher)
-        self.assertEqual(result['country_code'], 'DE')
-
-    def test_satisfies(self):
-        class TestSource1(TestCountrySource):
-            source = DataSource.internal
-
-        class TestSource2(TestCountrySource):
-            source = DataSource.geoip
-
-            def should_search(self, query, results):
-                return True
-
-            def search(self, query):
-                raise Exception('The searcher should not reach this point.')
-
-        class TestSearcher(CountrySearcher):
-            source_classes = (
-                ('test1', TestSource1),
-                ('test1', TestSource2),
             )
 
         result = self._search(TestSearcher)

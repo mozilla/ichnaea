@@ -99,11 +99,27 @@ class TestView(CountryBase, CommonLocateTest):
         self.check_db_calls(rw=0, ro=0)
 
     def test_cell(self):
-        # create a cell in the UK
+        # cell with unique mcc to country mapping
         cell = CellFactory.create(mcc=235)
         query = self.model_query(cells=[cell])
         res = self._call(body=query)
         self.check_model_response(res, cell, country='GB')
+        self.check_db_calls(rw=0, ro=0)
+
+    def test_cell_ambiguous(self):
+        # cell with ambiguous mcc to country mapping
+        cell = CellFactory.create(mcc=234)
+        query = self.model_query(cells=[cell])
+        res = self._call(body=query)
+        self.check_model_response(res, cell, country='GB')
+        self.check_db_calls(rw=0, ro=0)
+
+    def test_cell_geoip_mismatch(self):
+        # UK GeoIP with US mcc
+        cell = CellFactory.create(mcc=310)
+        query = self.model_query(cells=[cell])
+        res = self._call(body=query, ip=self.test_ip)
+        self.check_model_response(res, cell, country='US')
         self.check_db_calls(rw=0, ro=0)
 
     def test_wifi(self):
@@ -122,6 +138,15 @@ class TestView(CountryBase, CommonLocateTest):
 
 
 class TestError(CountryBase, CommonLocateErrorTest):
+
+    @property
+    def ip_response(self):
+        return {
+            'country_code': 'GB',
+            'country_name': 'United Kingdom',
+            # actually a mcc based response
+            # 'fallback': 'ipf',
+        }
 
     def test_database_error(self):
         super(TestError, self).test_database_error(db_errors=0)

@@ -27,7 +27,7 @@ class Result(object):
         self.lon = self._round(lon)
         self.source = source
 
-    def __repr__(self):  # pragma: no cover
+    def __repr__(self):
         values = []
         for field in self._required:
             values.append('%s:%s' % (field, getattr(self, field, '')))
@@ -77,11 +77,14 @@ class ResultList(object):
         else:
             self._results.extend(list(results))
 
+    def __getitem__(self, index):
+        return self._results[index]
+
     def __len__(self):
         return len(self._results)
 
-    def __getitem__(self, index):
-        return self._results[index]
+    def __repr__(self):
+        return 'ResultList: %s' % ', '.join([repr(res) for res in self])
 
     def satisfies(self, query):
         """

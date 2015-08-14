@@ -19,7 +19,7 @@ class InternalCountrySource(CountrySource):
     source = DataSource.internal  #:
 
     def search(self, query):
-        result = self.result_type()
+        results = ResultList()
 
         codes = set()
         for cell in list(query.cell) + list(query.cell_area):
@@ -29,18 +29,19 @@ class InternalCountrySource(CountrySource):
         for code in codes:
             countries.extend(mobile_codes.mcc(str(code)))
 
-        if countries:
-            if len(countries) == 1:
-                # refuse to guess country if there are multiple choices
-                country_code = countries[0].alpha2
-                result = self.result_type(
-                    country_code=country_code,
-                    country_name=countries[0].name,
-                    accuracy=geoip_accuracy(country_code))
+        for country in countries:
+            country_code = country.alpha2
+            results.add(self.result_type(
+                country_code=country_code,
+                country_name=country.name,
+                accuracy=geoip_accuracy(country_code)))
 
-            query.emit_source_stats(self.source, result)
+        if len(results):
+            query.emit_source_stats(self.source, results[0])
+        else:
+            results.add(self.result_type())
 
-        return result
+        return results
 
 
 class InternalPositionSource(CellPositionMixin,

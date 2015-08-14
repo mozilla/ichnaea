@@ -6,6 +6,7 @@ from ichnaea.api.locate.source import (
     PositionSource,
     Source,
 )
+from ichnaea.geoip import geoip_accuracy
 
 
 class GeoIPSource(Source):
@@ -13,6 +14,10 @@ class GeoIPSource(Source):
 
     fallback_field = 'ipf'
     source = DataSource.geoip
+
+    def _geoip_result_accuracy(self, geoip):
+        # use the geoip record, includes city-based accuracy
+        return geoip['accuracy']
 
     def search(self, query):
         result = self.result_type()
@@ -28,7 +33,7 @@ class GeoIPSource(Source):
             result = self.result_type(
                 lat=geoip['latitude'],
                 lon=geoip['longitude'],
-                accuracy=geoip['accuracy'],
+                accuracy=self._geoip_result_accuracy(geoip),
                 country_code=geoip['country_code'],
                 country_name=geoip['country_name'],
             )
@@ -41,6 +46,10 @@ class GeoIPSource(Source):
 
 class GeoIPCountrySource(GeoIPSource, CountrySource):
     """A GeoIPSource returning country results."""
+
+    def _geoip_result_accuracy(self, geoip):
+        # calculate country based accuracy, ignoring city
+        return geoip_accuracy(geoip['country_code'])
 
 
 class GeoIPPositionSource(GeoIPSource, PositionSource):

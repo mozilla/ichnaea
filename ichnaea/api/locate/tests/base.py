@@ -121,32 +121,42 @@ class BaseSourceTest(ConnectionTestCase):
             results = ResultList(results)
         self.assertIs(self.source.should_search(query, results), should)
 
-    def check_model_result(self, result, model, **kw):
+    def check_model_result(self, results, models, **kw):
         type_ = self.TestSource.result_type
+        if not isinstance(results, ResultList):
+            results = ResultList(results)
 
-        if not model:
-            self.assertTrue(result.empty())
-            self.assertEqual(type(result), type_)
+        if not models:
+            for result in results:
+                self.assertTrue(result.empty())
+                self.assertEqual(type(result), type_)
             return
 
+        if not isinstance(models, list):
+            models = [models]
+
+        expected = []
         if type_ is Position:
             check_func = self.assertAlmostEqual
-            expected = {
-                'lat': kw.get('lat', model.lat),
-                'lon': kw.get('lon', model.lon),
-                'accuracy': kw.get('accuracy', model.range),
-            }
+            for model in models:
+                expected.append({
+                    'lat': kw.get('lat', model.lat),
+                    'lon': kw.get('lon', model.lon),
+                    'accuracy': kw.get('accuracy', model.range),
+                })
         elif type_ is Country:
             check_func = self.assertEqual
-            expected = {
-                'country_code': model.alpha2,
-                'country_name': model.name,
-            }
+            for model in models:
+                expected.append({
+                    'country_code': model.alpha2,
+                    'country_name': model.name,
+                })
 
-        self.assertFalse(result.empty())
-        self.assertEqual(type(result), type_)
-        for key, value in expected.items():
-            check_func
+        for expect, result in zip(expected, results):
+            self.assertFalse(result.empty())
+            self.assertEqual(type(result), type_)
+            for key, value in expect.items():
+                check_func(getattr(result, key), value)
 
 
 class BaseLocateTest(object):
@@ -335,8 +345,8 @@ class CommonLocateTest(BaseLocateTest):
         self.assertEqual(self.redis_client.keys('apiuser:*'), [])
 
     def test_gzip(self):
-        cell = CellFactory.build()
-        query = self.model_query(cells=[cell])
+        wifis = WifiFactory.build_batch(2)
+        query = self.model_query(wifis=wifis)
 
         body = util.encode_gzip(json.dumps(query))
         headers = {
