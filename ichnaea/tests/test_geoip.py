@@ -96,38 +96,6 @@ class TestGeoIPLookup(GeoIPTestCase):
         self.assertIsNone(geoip.GeoIPNull().geoip_lookup('200'))
 
 
-class TestCountryLookup(GeoIPTestCase):
-
-    def test_ok_city(self):
-        london = self.geoip_data['London']
-        # Known good value in the wee sample DB we're using
-        code = self.geoip_db.country_lookup(london['ip'])
-        self.assertEqual(
-            code, (london['country_code'], london['country_name']))
-
-    def test_ok_country(self):
-        bhutan = self.geoip_data['Bhutan']
-        code = self.geoip_db.country_lookup(bhutan['ip'])
-        self.assertEqual(
-            code, (bhutan['country_code'], bhutan['country_name']))
-
-    def test_fail(self):
-        self.assertIsNone(self.geoip_db.country_lookup('127.0.0.1'))
-
-    def test_fail_bad_ip(self):
-        self.assertIsNone(self.geoip_db.country_lookup('546.839.319.-1'))
-
-    def test_with_dummy_db(self):
-        self.assertIsNone(geoip.GeoIPNull().country_lookup('200'))
-
-    def test_valid_country(self):
-        # open a separate db instance to avoid cross-test pollution
-        db = self._open_db()
-        db.valid_countries = frozenset(['US', 'DE'])
-        london = self.geoip_data['London']
-        self.assertIsNone(db.country_lookup(london['ip']))
-
-
 class TestGeoIPAccuracy(TestCase):
 
     li_radius = 13000.0

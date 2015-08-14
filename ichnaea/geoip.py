@@ -4,7 +4,6 @@ Helper functions and classes around GeoIP lookups, based on Maxmind's
 `geoip2 <https://pypi.python.org/pypi/geoip2>`_ Python packages.
 """
 
-from collections import namedtuple
 import time
 
 import iso3166
@@ -24,11 +23,6 @@ from ichnaea.constants import (
 )
 from ichnaea.geocalc import maximum_country_radius
 
-
-Country = namedtuple('Country', 'code name')
-"""
-A named tuple consisting of a country code and name.
-"""
 VALID_COUNTRIES = frozenset(iso3166.countries_by_alpha2.keys())
 
 
@@ -157,26 +151,6 @@ class GeoIPWrapper(Reader):
                 return False
         return True
 
-    def city_lookup(self, addr):
-        """
-        Return a GeoIP city record.
-
-        Return `None` instead of throwing exceptions in case of
-        invalid or unknown addresses.
-
-        :param addr: IP address (e.g. '203.0.113.30')
-        :type addr: str
-
-        :rtype: :class:`geoip2.models.City`
-        """
-        try:
-            record = self.city(addr)
-        except self.lookup_exceptions:
-            # The GeoIP database has no data for this IP or is broken.
-            return None
-
-        return record
-
     def geoip_lookup(self, addr):
         """
         Look up information for the given IP address.
@@ -187,7 +161,12 @@ class GeoIPWrapper(Reader):
         :returns: A dictionary with city, country data and location data.
         :rtype: dict
         """
-        record = self.city_lookup(addr)
+        try:
+            record = self.city(addr)
+        except self.lookup_exceptions:
+            # The GeoIP database has no data for this IP or is broken.
+            record = None
+
         if not record:
             return None
 
@@ -209,31 +188,6 @@ class GeoIPWrapper(Reader):
             'accuracy': geoip_accuracy(country.iso_code, city=city),
         }
 
-    def country_lookup(self, addr):
-        """
-        Look up a country code and name for the given IP address.
-
-        :param addr: IP address (e.g. 203.0.113.30)
-        :type addr: str
-
-        :returns: A country object or `None` for invalid or unknown addresses.
-        :rtype: :class:`ichnaea.geoip.Country`
-        """
-        record = self.city_lookup(addr)
-        if not record:
-            return None
-
-        country = record.country
-        if not country.iso_code:  # pragma: no cover
-            return None
-
-        country_code = country.iso_code.upper()
-        if country_code not in self.valid_countries:
-            # filter out non-countries
-            return None
-
-        return Country(country_code, country.name)
-
 
 class GeoIPNull(object):
     """
@@ -243,12 +197,6 @@ class GeoIPNull(object):
     valid_countries = VALID_COUNTRIES  #: A set of valid country codes.
 
     def geoip_lookup(self, addr):
-        """
-        :returns: None
-        """
-        return None
-
-    def country_lookup(self, addr):
         """
         :returns: None
         """
