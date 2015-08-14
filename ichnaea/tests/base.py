@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import gc
 import os
 import os.path
 
@@ -563,6 +564,9 @@ class CeleryAppTestCase(AppTestCase, CeleryTestCase):
 
 
 def setup_package(module):
+    # look for memory leaks
+    gc.set_debug(gc.DEBUG_UNCOLLECTABLE)
+
     # make sure all models are imported
     from ichnaea.models import base  # NOQA
     from ichnaea.models import content  # NOQA
@@ -577,3 +581,10 @@ def setup_package(module):
     session.commit()
     session.close()
     db.engine.pool.dispose()
+
+
+def teardown_package(module):
+    if gc.garbage:
+        print('Uncollectable objects found:')
+        for obj in gc.garbage:
+            print(obj)

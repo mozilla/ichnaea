@@ -31,4 +31,12 @@ def setup_package(module):
     from ichnaea.tests.base import setup_package
     return setup_package(module)
 
-__all__ = ('setup_package', )
+
+def teardown_package(module):
+    # nosetests package level fixture setup
+
+    from ichnaea.tests.base import teardown_package
+    return teardown_package(module)
+
+
+__all__ = ('setup_package', 'teardown_package')
