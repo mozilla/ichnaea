@@ -44,7 +44,9 @@ class Result(object):
     @property
     def data_accuracy(self):
         """Return the accuracy class of this result."""
-        return DataAccuracy.none
+        if self.empty():
+            return DataAccuracy.none
+        return DataAccuracy.from_number(self.accuracy)
 
     def empty(self):
         """Does this result include any data?"""
@@ -109,12 +111,6 @@ class Position(Result):
 
     _required = ('lat', 'lon', 'accuracy')  #:
 
-    @property
-    def data_accuracy(self):
-        if self.empty():
-            return DataAccuracy.none
-        return DataAccuracy.from_number(self.accuracy)
-
     def satisfies(self, query):
         if self.data_accuracy <= query.expected_accuracy:
             return True
@@ -124,13 +120,7 @@ class Position(Result):
 class Country(Result):
     """The country returned by a country query."""
 
-    _required = ('country_code', 'country_name')  #:
-
-    @property
-    def data_accuracy(self):
-        if self.empty():
-            return DataAccuracy.none
-        return DataAccuracy.low
+    _required = ('country_code', 'country_name', 'accuracy')  #:
 
     def satisfies(self, query):
         return not self.empty()

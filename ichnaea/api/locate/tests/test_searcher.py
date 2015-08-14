@@ -16,7 +16,8 @@ from ichnaea.tests.factories import ApiKeyFactory
 class TestCountrySource(CountrySource):
 
     def search(self, query):
-        return self.result_type(country_name='country', country_code='CO')
+        return self.result_type(
+            country_name='Germany', country_code='DE', accuracy=100000.0)
 
 
 class TestEmptySource(CountrySource):
@@ -66,7 +67,6 @@ class SearcherTest(ConnectionTestCase):
 class TestSearcher(SearcherTest):
 
     def test_no_sources(self):
-
         class TestSearcher(CountrySearcher):
             source_classes = ()
 
@@ -74,7 +74,6 @@ class TestSearcher(SearcherTest):
         self.assertTrue(result is None)
 
     def test_no_result(self):
-
         class TestSearcher(CountrySearcher):
             source_classes = (
                 ('test', TestEmptySource),
@@ -84,7 +83,6 @@ class TestSearcher(SearcherTest):
         self.assertTrue(result is None)
 
     def test_should_search(self):
-
         class TestSource(CountrySource):
 
             def should_search(self, query, results):
@@ -100,10 +98,9 @@ class TestSearcher(SearcherTest):
             )
 
         result = self._search(TestSearcher)
-        self.assertEqual(result['country_code'], 'CO')
+        self.assertEqual(result['country_code'], 'DE')
 
     def test_satisfies(self):
-
         class TestSource1(TestCountrySource):
             source = DataSource.internal
 
@@ -123,13 +120,12 @@ class TestSearcher(SearcherTest):
             )
 
         result = self._search(TestSearcher)
-        self.assertEqual(result['country_code'], 'CO')
+        self.assertEqual(result['country_code'], 'DE')
 
 
 class TestPositionSearcher(SearcherTest):
 
     def test_result(self):
-
         class TestSearcher(PositionSearcher):
             source_classes = (
                 ('test', TestPositionSource),
@@ -145,12 +141,11 @@ class TestPositionSearcher(SearcherTest):
 class TestCountrySearcher(SearcherTest):
 
     def test_result(self):
-
         class TestSearcher(CountrySearcher):
             source_classes = (
                 ('test', TestCountrySource),
             )
 
         result = self._search(TestSearcher)
-        self.assertEqual(result['country_name'], 'country')
-        self.assertEqual(result['country_code'], 'CO')
+        self.assertEqual(result['country_code'], 'DE')
+        self.assertEqual(result['country_name'], 'Germany')

@@ -10,6 +10,7 @@ from ichnaea.api.locate.source import (
     PositionSource,
 )
 from ichnaea.api.locate.wifi import WifiPositionMixin
+from ichnaea.geoip import geoip_accuracy
 
 
 class InternalCountrySource(CountrySource):
@@ -31,9 +32,11 @@ class InternalCountrySource(CountrySource):
         if countries:
             if len(countries) == 1:
                 # refuse to guess country if there are multiple choices
+                country_code = countries[0].alpha2
                 result = self.result_type(
-                    country_code=countries[0].alpha2,
-                    country_name=countries[0].name)
+                    country_code=country_code,
+                    country_name=countries[0].name,
+                    accuracy=geoip_accuracy(country_code))
 
             query.emit_source_stats(self.source, result)
 

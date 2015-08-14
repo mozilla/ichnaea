@@ -76,18 +76,24 @@ class TestCountry(TestCase):
         self.assertTrue('Germany' in rep, rep)
 
     def test_empty(self):
-        country = Country(country_code='CA', country_name='Canada')
-        self.assertFalse(country.empty())
+        country = Country(
+            country_code='DE', country_name='Germany', accuracy=None)
+        self.assertTrue(country.empty())
+        country = Country(
+            country_code='DE', country_name=None, accuracy=100000.0)
+        self.assertTrue(country.empty())
+        country = Country(
+            country_code=None, country_name='Germany', accuracy=100000.0)
+        self.assertTrue(country.empty())
 
     def test_not_empty(self):
-        for (country_code, country_name) in (
-                ('CA', None), (None, 'Canada'), (None, None)):
-            country = Country(
-                country_code=country_code, country_name=country_name)
-            self.assertTrue(country.empty())
+        country = Country(
+            country_code='DE', country_name='Germany', accuracy=100000.0)
+        self.assertFalse(country.empty())
 
     def test_satisfies(self):
-        country = Country(country_code='CA', country_name='Canada')
+        country = Country(
+            country_code='DE', country_name='Germany', accuracy=100000.0)
         self.assertTrue(country.satisfies(Query()))
 
     def test_satisfies_fail(self):
@@ -95,11 +101,13 @@ class TestCountry(TestCase):
         self.assertFalse(country.satisfies(Query()))
 
     def test_data_accuracy(self):
-        self.assertEqual(
-            Country().data_accuracy, DataAccuracy.none)
-        self.assertEqual(
-            Country(country_code='DE', country_name='Germany').data_accuracy,
-            DataAccuracy.low)
+        self.assertEqual(Country().data_accuracy, DataAccuracy.none)
+        country = Country(
+            country_code='DE', country_name='Germany', accuracy=100000.0)
+        self.assertEqual(country.data_accuracy, DataAccuracy.low)
+        country = Country(
+            country_code='VA', country_name='Holy See', accuracy=1000.0)
+        self.assertEqual(country.data_accuracy, DataAccuracy.high)
 
 
 class TestPosition(TestCase):
@@ -113,13 +121,13 @@ class TestPosition(TestCase):
         self.assertTrue('100.0' in rep, rep)
 
     def test_empty(self):
-        position = Position(lat=1.0, lon=1.0, accuracy=10.0)
-        self.assertFalse(position.empty())
+        self.assertTrue(Position(lat=1.0, lon=1.0, accuracy=None).empty())
+        self.assertTrue(Position(lat=1.0, lon=None, accuracy=1.0).empty())
+        self.assertTrue(Position(lat=None, lon=1.0, accuracy=1.0).empty())
 
     def test_not_empty(self):
-        for (lat, lon) in ((1.0, None), (None, 1.0), (None, None)):
-            position = Position(lat=lat, lon=lon, accuracy=10.0)
-            self.assertTrue(position.empty())
+        self.assertFalse(Position(lat=1.0, lon=1.0, accuracy=1.0).empty())
+        self.assertFalse(Position(lat=0.0, lon=0.0, accuracy=0).empty())
 
     def test_satisfies(self):
         wifis = WifiFactory.build_batch(2)
