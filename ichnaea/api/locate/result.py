@@ -46,17 +46,17 @@ class Result(object):
         """Return the accuracy class of this result."""
         return DataAccuracy.none
 
-    def found(self):
+    def empty(self):
         """Does this result include any data?"""
         if not self._required:
-            return False
+            return True
+        all_fields = []
         for field in self._required:
-            if getattr(self, field, None) is None:
-                return False
-        return True
+            all_fields.append(getattr(self, field, None))
+        return None in all_fields
 
-    def accurate_enough(self, query):
-        """Is this result accurate enough to return it?"""
+    def satisfies(self, query):
+        """Does this result match the expected query accuracy?"""
         return False
 
 
@@ -87,14 +87,12 @@ class ResultList(object):
         the expected query data accuracy.
         """
         for result in self:
-            if result.accurate_enough(query):
+            if result.satisfies(query):
                 return True
         return False
 
     def best(self):
-        """
-        Return the best result in the collection.
-        """
+        """Return the best result in the collection."""
         accurate_results = OrderedDict()
         for result in self:
             accuracy = result.data_accuracy
@@ -113,14 +111,11 @@ class Position(Result):
 
     @property
     def data_accuracy(self):
-        if self.accuracy is None:
+        if self.empty():
             return DataAccuracy.none
         return DataAccuracy.from_number(self.accuracy)
 
-    def accurate_enough(self, query):
-        """
-        We are accurate enough once we meet the expected query accuracy.
-        """
+    def satisfies(self, query):
         if self.data_accuracy <= query.expected_accuracy:
             return True
         return False
@@ -133,9 +128,9 @@ class Country(Result):
 
     @property
     def data_accuracy(self):
-        if not self.found():
+        if self.empty():
             return DataAccuracy.none
         return DataAccuracy.low
 
-    def accurate_enough(self, query):
-        return self.found()
+    def satisfies(self, query):
+        return not self.empty()

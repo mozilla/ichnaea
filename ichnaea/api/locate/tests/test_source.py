@@ -61,7 +61,7 @@ class TestCountrySource(SourceTest, ConnectionTestCase):
     def test_empty(self):
         query = self._make_query()
         result = self.source.search(query)
-        self.assertFalse(result.found())
+        self.assertTrue(result.empty())
         self.assertTrue(isinstance(result, Country))
         self.assertEqual(result.fallback, 'ipf')
         self.assertEqual(result.source, DataSource.geoip)
@@ -80,6 +80,6 @@ class TestPositionSource(SourceTest, ConnectionTestCase):
         query = self._make_query()
         result = self.source.search(query)
         self.assertTrue(isinstance(result, Position))
-        self.assertFalse(result.found())
+        self.assertTrue(result.empty())
         self.assertEqual(result.fallback, 'fallback')
         self.assertEqual(result.source, DataSource.fallback)

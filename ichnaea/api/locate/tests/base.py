@@ -125,7 +125,7 @@ class BaseSourceTest(ConnectionTestCase):
         type_ = self.TestSource.result_type
 
         if not model:
-            self.assertFalse(result.found())
+            self.assertTrue(result.empty())
             self.assertEqual(type(result), type_)
             return
 
@@ -143,7 +143,7 @@ class BaseSourceTest(ConnectionTestCase):
                 'country_name': model.name,
             }
 
-        self.assertTrue(result.found())
+        self.assertFalse(result.empty())
         self.assertEqual(type(result), type_)
         for key, value in expected.items():
             check_func

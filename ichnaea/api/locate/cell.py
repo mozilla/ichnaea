@@ -113,7 +113,7 @@ class CellPositionMixin(object):
                 best_cells = pick_best_cells(cells, self.area_model)
                 result = aggregate_cell_position(best_cells, self.result_type)
 
-            if result.found():
+            if not result.empty():
                 return result
 
         if query.cell_area:

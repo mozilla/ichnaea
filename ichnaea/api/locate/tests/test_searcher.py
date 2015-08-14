@@ -102,7 +102,7 @@ class TestSearcher(SearcherTest):
         result = self._search(TestSearcher)
         self.assertEqual(result['country_code'], 'CO')
 
-    def test_accurate_enough(self):
+    def test_satisfies(self):
 
         class TestSource1(TestCountrySource):
             source = DataSource.internal

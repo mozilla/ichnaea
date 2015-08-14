@@ -19,11 +19,11 @@ class TestResult(TestCase):
         self.assertFalse('DE' in rep, rep)
         self.assertFalse('1.0' in rep, rep)
 
-    def test_not_found(self):
-        self.assertFalse(Result().found())
+    def test_empty(self):
+        self.assertTrue(Result().empty())
 
-    def test_accurate_enough(self):
-        self.assertFalse(Result().accurate_enough(Query()))
+    def test_satisfies(self):
+        self.assertFalse(Result().satisfies(Query()))
 
     def test_data_accuracy(self):
         self.assertEqual(Result().data_accuracy, DataAccuracy.none)
@@ -75,24 +75,24 @@ class TestCountry(TestCase):
         self.assertTrue('DE' in rep, rep)
         self.assertTrue('Germany' in rep, rep)
 
-    def test_found(self):
+    def test_empty(self):
         country = Country(country_code='CA', country_name='Canada')
-        self.assertTrue(country.found())
+        self.assertFalse(country.empty())
 
-    def test_not_found(self):
+    def test_not_empty(self):
         for (country_code, country_name) in (
                 ('CA', None), (None, 'Canada'), (None, None)):
             country = Country(
                 country_code=country_code, country_name=country_name)
-            self.assertFalse(country.found())
+            self.assertTrue(country.empty())
 
-    def test_accurate_enough(self):
+    def test_satisfies(self):
         country = Country(country_code='CA', country_name='Canada')
-        self.assertTrue(country.accurate_enough(Query()))
+        self.assertTrue(country.satisfies(Query()))
 
-    def test_not_accurate_enough(self):
+    def test_satisfies_fail(self):
         country = Country()
-        self.assertFalse(country.accurate_enough(Query()))
+        self.assertFalse(country.satisfies(Query()))
 
     def test_data_accuracy(self):
         self.assertEqual(
@@ -112,37 +112,40 @@ class TestPosition(TestCase):
         self.assertTrue('-1.1' in rep, rep)
         self.assertTrue('100.0' in rep, rep)
 
-    def test_found(self):
+    def test_empty(self):
         position = Position(lat=1.0, lon=1.0, accuracy=10.0)
-        self.assertTrue(position.found())
+        self.assertFalse(position.empty())
 
-    def test_not_found(self):
+    def test_not_empty(self):
         for (lat, lon) in ((1.0, None), (None, 1.0), (None, None)):
             position = Position(lat=lat, lon=lon, accuracy=10.0)
-            self.assertFalse(position.found())
+            self.assertTrue(position.empty())
 
-    def test_accurate_enough(self):
+    def test_satisfies(self):
         wifis = WifiFactory.build_batch(2)
         wifi_query = [{'key': wifi.key} for wifi in wifis]
         position = Position(lat=1.0, lon=1.0, accuracy=100.0)
         query = Query(api_type='locate', wifi=wifi_query)
-        self.assertTrue(position.accurate_enough(query))
+        self.assertTrue(position.satisfies(query))
 
-    def test_not_accurate_enough(self):
+    def test_satisfies_fail(self):
         wifis = WifiFactory.build_batch(2)
         wifi_query = [{'key': wifi.key} for wifi in wifis]
         position = Position(lat=1.0, lon=1.0, accuracy=1500.0)
         query = Query(api_type='locate', wifi=wifi_query)
-        self.assertFalse(position.accurate_enough(query))
+        self.assertFalse(position.satisfies(query))
 
     def test_data_accuracy(self):
+        def _position(accuracy=None):
+            return Position(lat=1.0, lon=1.0, accuracy=accuracy)
+
         self.assertEqual(
-            Position().data_accuracy, DataAccuracy.none)
+            _position().data_accuracy, DataAccuracy.none)
         self.assertEqual(
-            Position(accuracy=0.0).data_accuracy, DataAccuracy.high)
+            _position(accuracy=0.0).data_accuracy, DataAccuracy.high)
         self.assertEqual(
-            Position(accuracy=100).data_accuracy, DataAccuracy.high)
+            _position(accuracy=100).data_accuracy, DataAccuracy.high)
         self.assertEqual(
-            Position(accuracy=30000.0).data_accuracy, DataAccuracy.medium)
+            _position(accuracy=30000.0).data_accuracy, DataAccuracy.medium)
         self.assertEqual(
-            Position(accuracy=10 ** 6).data_accuracy, DataAccuracy.low)
+            _position(accuracy=10 ** 6).data_accuracy, DataAccuracy.low)

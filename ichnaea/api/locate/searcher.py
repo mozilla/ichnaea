@@ -115,7 +115,7 @@ class Searcher(object):
         query.emit_query_stats()
         result = self._search(query)
         query.emit_result_stats(result)
-        if result.found():
+        if not result.empty():
             return self.format_result(result)
 
 
