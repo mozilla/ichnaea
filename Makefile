@@ -22,6 +22,7 @@ ifeq ($(TRAVIS), true)
 	PIP = pip
 	NOSE = nosetests
 	COVERALLS = coveralls
+	CYTHON = cython
 	SPHINXBUILD = sphinx-build
 else
 	MYSQL_USER ?= root
@@ -32,6 +33,7 @@ else
 	PIP = $(BIN)/pip
 	NOSE = $(BIN)/nosetests
 	COVERALLS = $(BIN)/coveralls
+	CYTHON = $(BIN)/cython
 	SPHINXBUILD = $(BIN)/sphinx-build
 endif
 
@@ -64,7 +66,7 @@ UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
 
 
 .PHONY: all bower js mysql pip init_db css js test clean shell docs \
-	build build_dev build_maxmind build_req \
+	build build_dev build_maxmind build_cython build_req \
 	release release_install release_compile \
 	tox_install tox_test pypi_release pypi_upload coveralls
 
@@ -109,11 +111,15 @@ build_maxmind: $(PYTHON) pip $(TOXINIDIR)/lib/libmaxminddb.0.dylib
 	CFLAGS=-I$(TOXINIDIR)/include LDFLAGS=-L$(TOXINIDIR)/lib \
 		$(INSTALL) --no-use-wheel maxminddb==$(MAXMINDDB_VERSION)
 
+build_cython:
+	$(CYTHON) --no-docstrings ichnaea/_*.pyx
+	$(PYTHON) setup.py build_ext --inplace
+
 build_req: $(PYTHON) pip mysql build_maxmind
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/test.txt
 
-build_dev: $(PYTHON)
+build_dev: $(PYTHON) build_cython
 	$(PYTHON) setup.py develop
 
 build: build_req build_dev
@@ -225,12 +231,12 @@ endif
 	rm -rf $(TOXENVDIR)/ichnaea
 	cp -f $(TOXINIDIR)/lib/libmaxminddb* $(TOXENVDIR)/lib/
 	cd $(TOXENVDIR); make build_req
-	cd $(TOXENVDIR); bin/pip install -e /opt/mozilla/ichnaea/ --no-compile
 
 tox_test:
 ifeq ($(TOXBUILD),yes)
 	make tox_install
 endif
+	cd $(TOXENVDIR); bin/pip install -e /opt/mozilla/ichnaea/ --no-compile
 	cd $(TOXENVDIR); PYTHONDONTWRITEBYTECODE=True make test
 
 $(BIN)/sphinx-build:

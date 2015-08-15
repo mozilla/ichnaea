@@ -1,11 +1,13 @@
 .*
 *~
 *.db
-*.py[co]
+*.dll
 *.egg-info
 *.log
 *.log.*
 *.pid
+*.py[co]
+*.so
 *.sublime-*
 celerybeat-schedule
 coverage.xml

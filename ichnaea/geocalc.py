@@ -3,13 +3,18 @@ Contains helper functions for various geo related calculations.
 """
 
 import math
+import os
+
 from country_bounding_boxes import country_subunits_by_iso_code
 from six import string_types
 
 from ichnaea import constants
 
-
-EARTH_RADIUS = 6371.0  #: Earth radius in km.
+try:
+    from ichnaea import _geocalc
+except ImportError:  # pragma: no cover
+    if not os.environ.get('READTHEDOCS', None) == 'True':
+        raise
 
 _radius_cache = {}
 
@@ -90,19 +95,7 @@ def distance(lat1, lon1, lat2, lon2):
     could use the Vincenty formula for calculating geodesic distances
     on ellipsoids, which gives results accurate to within 1mm.
     """
-    dLon = math.radians(lon2 - lon1)
-    dLat = math.radians(lat2 - lat1)
-
-    lat1 = math.radians(lat1)
-    lat2 = math.radians(lat2)
-
-    a = math.sin(dLat / 2.0) * math.sin(dLat / 2.0) + \
-        math.cos(lat1) * \
-        math.cos(lat2) * \
-        math.sin(dLon / 2.0) * \
-        math.sin(dLon / 2.0)
-    c = 2 * math.asin(min(1, math.sqrt(a)))
-    return EARTH_RADIUS * c
+    return _geocalc.distance(lat1, lon1, lat2, lon2)
 
 
 def estimate_accuracy(lat, lon, points, minimum):

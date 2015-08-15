@@ -1,14 +1,24 @@
 from codecs import open
 import os.path
 
-from setuptools import setup, find_packages
+from setuptools import (
+    Extension,
+    find_packages,
+    setup,
+)
 
 here = os.path.abspath(os.path.dirname(__file__))
+base = os.path.join(here, 'ichnaea')
 
 with open(os.path.join(here, 'README.rst'), encoding='utf-8') as fd:
     long_description = fd.read()
 
 __version__ = '1.3'
+
+ext_modules = [
+    Extension(name='ichnaea._geocalc',
+              sources=[os.path.join(base, '_geocalc.c')]),
+]
 
 setup(
     name='ichnaea',
@@ -35,6 +45,7 @@ setup(
     keywords="web services geo location",
     packages=find_packages(),
     include_package_data=True,
+    ext_modules=ext_modules,
     zip_safe=False,
     entry_points={
         'console_scripts': [

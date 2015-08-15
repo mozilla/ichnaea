@@ -61,41 +61,28 @@ class TestDistance(TestCase):
 
     def test_simple_distance(self):
         # This is a simple case where the points are close to each other.
-
         lat1 = 44.0337065
         lon1 = -79.4908184
         lat2 = 44.0347065
         lon2 = -79.4918184
         delta = distance(lat1, lon1, lat2, lon2)
-        sdelta = '%0.4f' % delta
-        self.assertEqual(sdelta, '0.1369')
+        self.assertAlmostEqual(delta, 0.1369483, 7)
 
     def test_antipodal(self):
         # Antipodal points (opposite sides of the planet) have a round off
         # error with the standard haversine calculation which is extremely
         # old and assumes we are using fixed precision math instead of IEEE
         # floats.
-
-        lat1 = 90.0
-        lon1 = 0.0
-        lat2 = -90.0
-        lon2 = 0
-        delta = distance(lat1, lon1, lat2, lon2)
-        sdelta = '%0.4f' % delta
-        self.assertEqual(sdelta, '20015.0868')
+        self.assertAlmostEqual(distance(90.0, 0.0, -90.0, 0), 20015.086796, 7)
 
     def test_out_of_range(self):
-        # We don't always sanitize the incoming data and thus have to deal
-        # with some invalid coordinates. Make sure the distance function
-        # doesn't error out on us.
+        self.assertAlmostEqual(
+            distance(-100.0, -186.0, 0.0, 0.0), 8901.7475973, 7)
 
-        lat1 = -100.0
-        lon1 = -186.0
-        lat2 = 0.0
-        lon2 = 0.0
-        delta = distance(lat1, lon1, lat2, lon2)
-        sdelta = '%0.4f' % delta
-        self.assertEqual(sdelta, '8901.7476')
+    def test_non_float(self):
+        self.assertAlmostEqual(distance(1.0, 1.0, 1, 1.1), 11.1177991, 7)
+        with self.assertRaises(TypeError):
+            distance(None, '0.1', 1, 1.1)
 
 
 class TestEstimateAccuracy(TestCase):
