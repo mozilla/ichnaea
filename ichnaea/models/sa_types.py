@@ -58,7 +58,7 @@ class TZDateTime(TypeDecorator):
     impl = DateTime
 
     def process_bind_param(self, value, dialect):
-        if isinstance(value, datetime):
+        if isinstance(value, datetime) and value.tzinfo is not None:
             value = value.replace(tzinfo=None)
             value = datetime.fromtimestamp(time.mktime(value.timetuple()))
         return value

@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Optimize OCID cell data import.
+
 - Return multiple results from MCC based country source.
 
 - Move best country result selection into searcher logic.

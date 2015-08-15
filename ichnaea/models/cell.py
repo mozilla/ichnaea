@@ -98,7 +98,9 @@ class Radio(IntEnum):
 
     @classmethod
     def _gsm_family(cls):
-        return (cls.gsm, cls.wcdma, cls.lte)
+        return GSM_FAMILY
+
+GSM_FAMILY = (Radio.gsm, Radio.wcdma, Radio.lte)
 
 
 def encode_radio_dict(dct):
@@ -214,13 +216,13 @@ class ValidCellAreaKeySchema(FieldSchema, CopyingSchema):
             raise colander.Invalid(node, (
                 'Check against the list of all known valid mccs'))
 
-        if (cstruct['radio'] in Radio._gsm_family() and
+        if (cstruct['radio'] in GSM_FAMILY and
                 cstruct['mnc'] is not None and
                 cstruct.get('mnc', 0) > 999):
             raise colander.Invalid(node, (
                 'Skip GSM/LTE/UMTS towers with an invalid MNC'))
 
-        if (cstruct['radio'] in Radio._gsm_family() and
+        if (cstruct['radio'] in GSM_FAMILY and
                 cstruct['lac'] is not None and
                 cstruct.get('lac', 0) > constants.MAX_LAC_GSM_UMTS_LTE):
             raise colander.Invalid(node, (

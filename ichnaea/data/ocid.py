@@ -7,7 +7,6 @@ import tempfile
 
 import boto
 import requests
-from pytz import UTC
 from sqlalchemy.sql import (
     and_,
     func,
@@ -90,36 +89,37 @@ def make_cell_export_dict(row):
     return data
 
 
+def row_value(row, key, default, _type):
+    if key in row and row[key] not in (None, ''):
+        return _type(row[key])
+    return default
+
+
 def make_ocid_cell_import_dict(row):
-
-    def val(key, default, _type):
-        if key in row and row[key] != '' and row[key] is not None:
-            return _type(row[key])
-        else:
-            return default
-
-    data = dict()
-
+    data = {}
     data['created'] = datetime.fromtimestamp(
-        val('created', 0, int)).replace(tzinfo=UTC)
+        row_value(row, 'created', 0, int))
 
     data['modified'] = datetime.fromtimestamp(
-        val('updated', 0, int)).replace(tzinfo=UTC)
+        row_value(row, 'updated', 0, int))
 
-    data['lat'] = val('lat', None, float)
-    data['lon'] = val('lon', None, float)
+    data['lat'] = row_value(row, 'lat', None, float)
+    data['lon'] = row_value(row, 'lon', None, float)
 
     try:
-        data['radio'] = Radio[row['radio'].lower()]
+        radio = row['radio'].lower()
+        if radio == 'umts':
+            radio = 'wcdma'
+        data['radio'] = Radio[radio]
     except KeyError:  # pragma: no cover
-        data['radio'] = None
+        return None
 
     for field in ('mcc', 'mnc', 'lac', 'cid', 'psc'):
-        data[field] = val(field, None, int)
+        data[field] = row_value(row, field, None, int)
 
-    data['range'] = int(val('range', 0, float))
-    data['total_measures'] = val('samples', 0, int)
-    data['changeable'] = val('changeable', True, bool)
+    data['range'] = int(row_value(row, 'range', 0, float))
+    data['total_measures'] = row_value(row, 'samples', 0, int)
+    data['changeable'] = row_value(row, 'changeable', True, bool)
     validated = OCIDCell.validate(data)
     if validated is None:
         return None
@@ -270,14 +270,15 @@ def import_latest_ocid_cells(task, diff=True, update_area_task=None,
         else:  # pragma: no cover
             _filename = 'cell_towers.csv.gz'
 
-    with closing(requests.get(url,
-                              params={'apiKey': apikey,
-                                      'filename': _filename},
-                              stream=True)) as r:
-        with selfdestruct_tempdir() as temp_dir:
-            path = os.path.join(temp_dir, _filename)
-            with open(path, 'wb') as temp_file:
-                for chunk in r.iter_content(chunk_size=2 ** 20):
+    with selfdestruct_tempdir() as temp_dir:
+        path = os.path.join(temp_dir, _filename)
+        with open(path, 'wb') as temp_file:
+            with closing(requests.get(url,
+                                      params={'apiKey': apikey,
+                                              'filename': _filename},
+                                      stream=True)) as req:
+
+                for chunk in req.iter_content(chunk_size=2 ** 20):
                     temp_file.write(chunk)
                     temp_file.flush()
 
