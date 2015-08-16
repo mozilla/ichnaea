@@ -16,7 +16,7 @@ Changes
 
 - Setup basic Cython support and convert `geocalc.distance`.
 
-- Optimize OCID cell data import.
+- Optimize OCID cell data export and import.
 
 - Return multiple results from MCC based country source.
 

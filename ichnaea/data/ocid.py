@@ -7,11 +7,7 @@ import tempfile
 
 import boto
 import requests
-from sqlalchemy.sql import (
-    and_,
-    func,
-    select,
-)
+from sqlalchemy.sql import text
 
 from ichnaea.models import (
     Cell,
@@ -28,32 +24,13 @@ CELL_FIELDS = [
     'radio', 'mcc', 'mnc', 'lac', 'cid', 'psc',
     'lon', 'lat', 'range', 'samples', 'changeable',
     'created', 'updated', 'averageSignal']
-CELL_FIELD_INDICES = dict(
-    [(e, i) for (i, e) in enumerate(CELL_FIELDS)]
-)
+
 # Map our internal names to the public export names
 CELL_HEADER_DICT = dict([(field, field) for field in CELL_FIELDS])
 CELL_HEADER_DICT['mnc'] = 'net'
 CELL_HEADER_DICT['lac'] = 'area'
 CELL_HEADER_DICT['cid'] = 'cell'
 CELL_HEADER_DICT['psc'] = 'unit'
-
-# The list of cell columns, we actually need for the export
-CELL_COLUMN_NAMES = [
-    'created', 'modified', 'lat', 'lon',
-    'radio', 'mcc', 'mnc', 'lac', 'cid', 'psc',
-    'range', 'total_measures']
-
-CELL_COLUMN_NAME_INDICES = dict(
-    [(e, i) for (i, e) in enumerate(CELL_COLUMN_NAMES)]
-)
-CELL_COLUMNS = []
-for name in CELL_COLUMN_NAMES:
-    if name in ('created', 'modified'):
-        CELL_COLUMNS.append(
-            func.unix_timestamp(getattr(Cell.__table__.c, name)))
-    else:
-        CELL_COLUMNS.append(getattr(Cell.__table__.c, name))
 
 
 @contextmanager
@@ -65,28 +42,112 @@ def selfdestruct_tempdir():
         shutil.rmtree(base_path)
 
 
-def make_cell_export_dict(row):
-    data = {
-        'changeable': 1,
-        'averageSignal': '',
-    }
-    indices = CELL_COLUMN_NAME_INDICES
+def write_stations_to_csv(session, path, start_time=None, end_time=None):
+    if None in (start_time, end_time):
+        where = 'lat IS NOT NULL AND lon IS NOT NULL'
+    else:
+        where = ('lat IS NOT NULL AND lon IS NOT NULL AND '
+                 'modified >= "%s" AND modified < "%s"')
+        fmt = '%Y-%m-%d %H:%M:%S'
+        where = where % (start_time.strftime(fmt), end_time.strftime(fmt))
 
-    for field in CELL_FIELDS:
-        pos = indices.get(field, None)
-        if pos is not None:
-            data[field] = row[pos]
+    header_row = [
+        'radio', 'mcc', 'net', 'area', 'cell', 'unit',
+        'lon', 'lat', 'range', 'samples', 'changeable',
+        'created', 'updated', 'averageSignal',
+    ]
+    header_row = ','.join(header_row) + '\n'
 
-    # Fix up specific entry formatting
-    radio = row[indices['radio']]
+    table = Cell.__tablename__
+    stmt = """SELECT
+    CONCAT_WS(",",
+        CASE radio
+            WHEN 0 THEN "GSM"
+            WHEN 1 THEN "CDMA"
+            WHEN 2 THEN "UMTS"
+            WHEN 3 THEN "LTE"
+            ELSE ""
+        END,
+        `mcc`,
+        `mnc`,
+        `lac`,
+        `cid`,
+        COALESCE(`psc`, ""),
+        ROUND(`lon`, 7),
+        ROUND(`lat`, 7),
+        COALESCE(`range`, "0"),
+        COALESCE(`total_measures`, "0"),
+        "1",
+        COALESCE(UNIX_TIMESTAMP(`created`), ""),
+        COALESCE(UNIX_TIMESTAMP(`modified`), ""),
+        ""
+    ) AS `cell_value`
+FROM %s
+WHERE %s
+ORDER BY `created`
+LIMIT :l
+OFFSET :o
+""" % (table, where)
+    stmt = text(stmt)
 
-    data['radio'] = radio.name.upper()
-    if data['radio'] == 'WCDMA':
-        data['radio'] = 'UMTS'
-    data['created'] = row[indices['created']]
-    data['updated'] = row[indices['modified']]
-    data['samples'] = row[indices['total_measures']]
-    return data
+    limit = 10000
+    offset = 0
+    with util.gzip_open(path, 'w', compresslevel=5) as gzip_wrapper:
+        with gzip_wrapper as gzip_file:
+            gzip_file.write(header_row)
+            while True:
+                rows = session.execute(
+                    stmt.bindparams(o=offset, l=limit)).fetchall()
+                if rows:
+                    buf = '\r\n'.join([row.cell_value for row in rows])
+                    if buf:
+                        buf += '\r\n'
+                    gzip_file.write(buf)
+                    offset += limit
+                else:
+                    break
+
+
+def write_stations_to_s3(path, bucketname):
+    conn = boto.connect_s3()
+    bucket = conn.get_bucket(bucketname)
+    k = boto.s3.key.Key(bucket)
+    k.key = 'export/' + os.path.split(path)[-1]
+    k.set_contents_from_filename(path, reduced_redundancy=True)
+
+
+def export_modified_cells(task, hourly=True, _bucket=None):
+    if _bucket is None:  # pragma: no cover
+        bucket = task.app.settings['assets']['bucket']
+    else:
+        bucket = _bucket
+
+    if not bucket:  # pragma: no cover
+        return
+
+    now = util.utcnow()
+    start_time = None
+    end_time = None
+
+    if hourly:
+        end_time = now.replace(minute=0, second=0)
+        file_time = end_time
+        file_type = 'diff'
+        start_time = end_time - timedelta(hours=1)
+    else:
+        file_time = now.replace(hour=0, minute=0, second=0)
+        file_type = 'full'
+
+    filename = 'MLS-%s-cell-export-' % file_type
+    filename = filename + file_time.strftime('%Y-%m-%dT%H0000.csv.gz')
+
+    with selfdestruct_tempdir() as temp_dir:
+        path = os.path.join(temp_dir, filename)
+        with task.db_session(commit=False) as session:
+            write_stations_to_csv(
+                session, path,
+                start_time=start_time, end_time=end_time)
+        write_stations_to_s3(path, bucket)
 
 
 def row_value(row, key, default, _type):
@@ -127,71 +188,6 @@ def make_ocid_cell_import_dict(row):
         if validated[field] is None:
             return None
     return validated
-
-
-def write_stations_to_csv(session, table, columns,
-                          cond, path, make_dict, fields):
-    with util.gzip_open(path, 'w') as gzip_wrapper:
-        with gzip_wrapper as gzip_file:
-            writer = csv.DictWriter(gzip_file, fields, extrasaction='ignore')
-            limit = 10000
-            offset = 0
-            # Write header row
-            writer.writerow(CELL_HEADER_DICT)
-            while True:
-                query = (select(columns=columns).where(cond)
-                                                .limit(limit)
-                                                .offset(offset)
-                                                .order_by(table.c.created))
-                rows = session.execute(query).fetchall()
-                if rows:
-                    writer.writerows([make_dict(row) for row in rows])
-                    offset += limit
-                else:
-                    break
-
-
-def write_stations_to_s3(path, bucketname):
-    conn = boto.connect_s3()
-    bucket = conn.get_bucket(bucketname)
-    k = boto.s3.key.Key(bucket)
-    k.key = 'export/' + os.path.split(path)[-1]
-    k.set_contents_from_filename(path, reduced_redundancy=True)
-
-
-def export_modified_cells(task, hourly=True, _bucket=None):
-    if _bucket is None:  # pragma: no cover
-        bucket = task.app.settings['assets']['bucket']
-    else:
-        bucket = _bucket
-
-    if not bucket:  # pragma: no cover
-        return
-
-    now = util.utcnow()
-
-    if hourly:
-        end_time = now.replace(minute=0, second=0)
-        file_time = end_time
-        file_type = 'diff'
-        start_time = end_time - timedelta(hours=1)
-        cond = and_(Cell.__table__.c.modified >= start_time,
-                    Cell.__table__.c.modified < end_time,
-                    Cell.__table__.c.lat.isnot(None))
-    else:
-        file_time = now.replace(hour=0, minute=0, second=0)
-        file_type = 'full'
-        cond = Cell.__table__.c.lat.isnot(None)
-
-    filename = 'MLS-%s-cell-export-' % file_type
-    filename = filename + file_time.strftime('%Y-%m-%dT%H0000.csv.gz')
-
-    with selfdestruct_tempdir() as temp_dir:
-        path = os.path.join(temp_dir, filename)
-        with task.db_session(commit=False) as session:
-            write_stations_to_csv(session, Cell.__table__, CELL_COLUMNS, cond,
-                                  path, make_cell_export_dict, CELL_FIELDS)
-        write_stations_to_s3(path, bucket)
 
 
 def import_stations(session, pipe, filename, fields, update_area_task):

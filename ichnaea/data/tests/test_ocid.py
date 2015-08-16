@@ -11,10 +11,8 @@ import requests_mock
 import six
 
 from ichnaea.data.ocid import (
-    CELL_COLUMNS,
     CELL_FIELDS,
     CELL_HEADER_DICT,
-    make_cell_export_dict,
     selfdestruct_tempdir,
     write_stations_to_csv,
 )
@@ -25,7 +23,6 @@ from ichnaea.data.tasks import (
     update_statcounter,
 )
 from ichnaea.models import (
-    Cell,
     OCIDCell,
     OCIDCellArea,
     Radio,
@@ -63,6 +60,8 @@ class TestExport(CeleryTestCase):
             cell = dict(cid=cid, lat=base_cell.lat,
                         lon=base_cell.lon, **cell_key)
             CellFactory(**cell)
+            cell['lat'] = '%.7f' % cell['lat']
+            cell['lon'] = '%.7f' % cell['lon']
 
             cell['radio'] = 'UMTS'
             cell_strings = [
@@ -76,10 +75,7 @@ class TestExport(CeleryTestCase):
 
         with selfdestruct_tempdir() as temp_dir:
             path = os.path.join(temp_dir, 'export.csv.gz')
-            cond = Cell.__table__.c.lat.isnot(None)
-            write_stations_to_csv(
-                self.session, Cell.__table__, CELL_COLUMNS, cond,
-                path, make_cell_export_dict, CELL_FIELDS)
+            write_stations_to_csv(self.session, path)
 
             with util.gzip_open(path, 'r') as gzip_wrapper:
                 with gzip_wrapper as gzip_file:
@@ -132,8 +128,8 @@ class TestImport(CeleryAppTestCase):
     @contextmanager
     def get_csv(self, lo=1, hi=10, time=1408604686):
         cell = self.cell
-        line_template = ('UMTS,{mcc},{mnc},{lac},{cid},{psc},{lon},'
-                         '{lat},1,1,1,{time},{time},')
+        line_template = ('UMTS,{mcc},{mnc},{lac},{cid},{psc},{lon:.7f},'
+                         '{lat:.7f},1,1,1,{time},{time},')
         lines = [line_template.format(
             mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac, cid=i * 1010, psc='',
             lon=cell.lon + i * 0.002,

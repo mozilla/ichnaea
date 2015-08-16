@@ -11,8 +11,8 @@ the same type of data from the :term:`OpenCellID` project.
 The data exchange format was created in collaboration with the
 :term:`OpenCellID` project.
 
-Records should be written one record to a line, with `\\n` (0x0A) as line
-separator.
+Records should be written one record to a line, with CRLF (0x0D 0x0A)
+as line separator.
 
 A value should be written as an empty field -- two adjacent commas, for
 example -- rather than being omitted.
