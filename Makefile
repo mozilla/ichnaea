@@ -111,8 +111,10 @@ build_maxmind: $(PYTHON) pip $(TOXINIDIR)/lib/libmaxminddb.0.dylib
 	CFLAGS=-I$(TOXINIDIR)/include LDFLAGS=-L$(TOXINIDIR)/lib \
 		$(INSTALL) --no-use-wheel maxminddb==$(MAXMINDDB_VERSION)
 
-build_cython:
-	$(CYTHON) --no-docstrings ichnaea/_*.pyx
+ichnaea/_geocalc.c: ichnaea/_geocalc.pyx
+	$(CYTHON) --no-docstrings ichnaea/_geocalc.pyx
+
+build_cython: ichnaea/_geocalc.c
 	$(PYTHON) setup.py build_ext --inplace
 
 build_req: $(PYTHON) pip mysql build_maxmind
