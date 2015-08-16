@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Update data tables and stats/regions page.
+
 - Setup basic Cython support and convert `geocalc.distance`.
 
 - Optimize OCID cell data export and import.

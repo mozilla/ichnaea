@@ -13,11 +13,11 @@
     "bower_components"
   ],
   "dependencies": {
-    "datatables": "1.10.7",
+    "datatables": "1.10.8",
     "datatables-fixedheader": "2.1.2",
     "flot": "0.8.3",
     "jquery": "1.11.3",
-    "leaflet.locatecontrol": "domoritz/leaflet-locatecontrol#0.43.0",
+    "leaflet.locatecontrol": "domoritz/leaflet-locatecontrol#0.44.0",
     "leaflet-hash": "mlevans/leaflet-hash#d73fc84d8c",
     "mapbox.js": "2.2.1",
     "bedrock": "mozilla/bedrock#cca786298f"
