@@ -5,24 +5,8 @@ Functionality related to using Redis as a cache and a queue.
 from contextlib import contextmanager
 
 import redis
-from redis.connection import SocketBuffer
 from redis.exceptions import RedisError
 from six.moves.urllib.parse import urlparse
-
-
-# workaround for https://github.com/andymccurdy/redis-py/issues/633
-
-def close(self):
-    try:
-        self.purge()
-    except ValueError:  # pragma: no cover
-        pass
-    self._buffer.close()
-    self._buffer = None
-    self._sock = None
-
-SocketBuffer._old_close = SocketBuffer.close
-SocketBuffer.close = close
 
 
 def configure_redis(cache_url, _client=None):

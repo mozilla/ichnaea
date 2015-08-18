@@ -30,7 +30,7 @@ Changes
 
 - Move best country result selection into searcher logic.
 
-- Update to latest versions of alembic, cryptography and coverage.
+- Update to latest versions of alembic, cryptography, coverage and hiredis.
 
 20150813105600
 **************
