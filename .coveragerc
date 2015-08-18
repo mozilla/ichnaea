@@ -1,16 +1,14 @@
 [run]
 source = ichnaea
+concurrency = gevent
+plugins = Cython.Coverage
+omit =
+    ichnaea/scripts/initdb.py
+    ichnaea/webapp/app.py
+    ichnaea/webapp/settings.py
+    ichnaea/webapp/worker.py
 
 [report]
 exclude_lines =
     pragma: no cover
     raise NotImplementedError()
-omit =
-    */tests/*
-    *tests.py
-    ichnaea/api/locate/__init__.py
-    ichnaea/api/submit/__init__.py
-    ichnaea/scripts/initdb.py
-    ichnaea/webapp/app.py
-    ichnaea/webapp/settings.py
-    ichnaea/webapp/worker.py

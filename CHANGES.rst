@@ -24,6 +24,8 @@ Changes
 
 - Move best country result selection into searcher logic.
 
+- Update to latest versions of alembic, cryptography and coverage.
+
 20150813105600
 **************
 
