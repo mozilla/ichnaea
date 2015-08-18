@@ -92,8 +92,6 @@ class ApiKeyFactory(BaseSQLFactory):
     maxreq = 0
     log = True
     allow_fallback = False
-    email = None
-    description = None
 
     @factory.lazy_attribute
     def shortname(self):

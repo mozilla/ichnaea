@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- c1efc747c9: Remove unused api_key email/description columns.
+
 - 4f12bf0c0828: Remove standalone wifi blocklist table.
 
 Changes
