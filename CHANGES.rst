@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add a source tag for successful result metrics.
+
 - Update data tables and stats/regions page.
 
 - Setup basic Cython support and convert `geocalc.distance`.

@@ -336,6 +336,8 @@ class Query(object):
             'accuracy:%s' % self.expected_accuracy.name,
             'status:%s' % status,
         ]
+        if status == 'hit' and result.source:
+            tags.append('source:%s' % result.source.name)
         self._emit_country_stat('result', tags)
 
     def emit_source_stats(self, source, result):

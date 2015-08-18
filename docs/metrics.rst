@@ -162,13 +162,11 @@ In the past we only collected stats based on whether or not cell based
 data was used to answer a cell based query and counted it as a
 cell-based success, even if the provided accuracy was really bad.
 
+In addition to the accuracy of the result, we also tag the result
+metric with the data source that got used to provide the result,
+but only for results that met the expected accuracy.
 
-API Source Metrics
-------------------
-
-In addition to the final API result, we also collect metrics about each
-individual data source we use to answer queries under the
-``<api_type>.source#key:<api_shortname>,country:<country_code>`` metric.
+``#source:<source_name>`` : tag
 
 Data sources can be one of:
 
@@ -184,9 +182,16 @@ Data sources can be one of:
 ``geoip``
     Data from a GeoIP database.
 
+
+API Source Metrics
+------------------
+
+In addition to the final API result, we also collect metrics about each
+individual data source we use to answer queries under the
+``<api_type>.source#key:<api_shortname>,country:<country_code>`` metric.
+
 Each request may use one or multiple of these sources to deliver a result.
-We log the same metrics as mentioned above for the result, but in addition
-tag each metric with an additional ``source:<source>`` tag.
+We log the same metrics as mentioned above for the result.
 
 All of this combined might lead to a tagged metric like:
 
