@@ -29,7 +29,10 @@ from ichnaea.models.hashkey import (
     HashKey,
     HashKeyQueryMixin,
 )
-from ichnaea.models.sa_types import TinyIntEnum
+from ichnaea.models.sa_types import (
+    TinyIntEnum,
+    TZDateTime as DateTime,
+)
 from ichnaea.models.schema import (
     CopyingSchema,
     DefaultNode,
@@ -39,7 +42,6 @@ from ichnaea.models.station import (
     BaseStationMixin,
     StationMixin,
     ValidBaseStationSchema,
-    StationBlocklistMixin,
     ValidStationSchema,
 )
 
@@ -429,8 +431,11 @@ class OCIDCellArea(CellAreaMixin, _Model):
     )
 
 
-class CellBlocklist(CellKeyMixin, StationBlocklistMixin, _Model):
+class CellBlocklist(CellKeyMixin, _Model):
     __tablename__ = 'cell_blacklist'
+
+    time = Column(DateTime)
+    count = Column(Integer)
 
     _indices = (
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),

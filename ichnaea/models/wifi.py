@@ -45,7 +45,6 @@ from ichnaea.models.schema import (
 from ichnaea.models.station import (
     BboxMixin,
     StationMixin,
-    StationBlocklistMixin,
     ValidBboxSchema,
     ValidStationSchema,
 )
@@ -216,14 +215,6 @@ class Wifi(WifiMixin, StationMixin, CreationMixin, _Model):
     def samples(self, value):
         # BBB: alias
         self.total_measures = value
-
-
-class WifiBlocklist(WifiMixin, StationBlocklistMixin, _Model):
-    __tablename__ = 'wifi_blacklist'
-
-    _indices = (
-        UniqueConstraint('key', name='wifi_blacklist_key_unique'),
-    )
 
 
 class StationSource(IntEnum):

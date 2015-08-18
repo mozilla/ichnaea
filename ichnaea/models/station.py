@@ -16,7 +16,6 @@ from ichnaea.models.schema import (
     CopyingSchema,
     FieldSchema,
 )
-from ichnaea.models.sa_types import TZDateTime as DateTime
 
 
 class ValidBaseStationSchema(ValidPositionSchema, ValidTimeTrackingSchema):
@@ -70,9 +69,3 @@ class ValidStationSchema(ValidBaseStationSchema, ValidBboxSchema):
 class StationMixin(BaseStationMixin, BboxMixin):
 
     new_measures = Column(Integer(unsigned=True))
-
-
-class StationBlocklistMixin(object):
-
-    time = Column(DateTime)
-    count = Column(Integer)

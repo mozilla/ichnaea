@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 4f12bf0c0828: Remove standalone wifi blocklist table.
+
 Changes
 ~~~~~~~
 
