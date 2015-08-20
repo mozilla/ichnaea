@@ -1,5 +1,7 @@
+import numpy
+
 from ichnaea.data.base import DataTask
-from ichnaea.geocalc import centroid, range_to_points
+from ichnaea.geocalc import centroid, circle_radius
 from ichnaea.models import (
     Cell,
     CellArea,
@@ -56,7 +58,6 @@ class CellAreaUpdater(DataTask):
             # Otherwise update the area entry based on all the cells
             area = area_query.first()
 
-            points = [(c.lat, c.lon) for c in cells]
             min_lat = self._extreme_value(min, 'min_lat', cells)
             min_lon = self._extreme_value(min, 'min_lon', cells)
             max_lat = self._extreme_value(max, 'max_lat', cells)
@@ -67,13 +68,10 @@ class CellAreaUpdater(DataTask):
                            (max_lat, min_lon),
                            (max_lat, max_lon)]
 
-            ctr = centroid(points)
-            rng = range_to_points(ctr, bbox_points)
-
-            # Switch units back to meters
-            ctr_lat = ctr[0]
-            ctr_lon = ctr[1]
-            rng = int(round(rng * 1000.0))
+            ctr_lat, ctr_lon = centroid(
+                numpy.array([(c.lat, c.lon) for c in cells],
+                            dtype=numpy.float64))
+            radius = circle_radius(ctr_lat, ctr_lon, bbox_points)
 
             # Now create or update the area
             num_cells = len(cells)
@@ -87,7 +85,7 @@ class CellAreaUpdater(DataTask):
                     modified=self.utcnow,
                     lat=ctr_lat,
                     lon=ctr_lon,
-                    range=rng,
+                    range=radius,
                     avg_cell_range=avg_cell_range,
                     num_cells=num_cells,
                     **area_key.__dict__
@@ -97,7 +95,7 @@ class CellAreaUpdater(DataTask):
                 area.modified = self.utcnow
                 area.lat = ctr_lat
                 area.lon = ctr_lon
-                area.range = rng
+                area.range = radius
                 area.avg_cell_range = avg_cell_range
                 area.num_cells = num_cells
 

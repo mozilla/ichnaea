@@ -6,8 +6,8 @@ from ichnaea.constants import (
 )
 from ichnaea.data.base import DataTask
 from ichnaea.geocalc import (
+    circle_radius,
     distance,
-    range_to_points,
 )
 from ichnaea.models import (
     Cell,
@@ -282,13 +282,12 @@ class CellUpdater(StationUpdater):
         values['max_lon'] = max_lon
 
         # give radio-range estimate between extreme values and centroid
-        ctr = (values['lat'], values['lon'])
         points = [(min_lat, min_lon),
                   (min_lat, max_lon),
                   (max_lat, min_lon),
                   (max_lat, max_lon)]
 
-        values['range'] = range_to_points(ctr, points) * 1000.0
+        values['range'] = circle_radius(values['lat'], values['lon'], points)
 
         if station is None:
             # return new values
@@ -568,13 +567,12 @@ class WifiUpdater(StationUpdater):
         values['max_lon'] = max_lon
 
         # give radio-range estimate between extreme values and centroid
-        ctr = (values['lat'], values['lon'])
         points = [(min_lat, min_lon),
                   (min_lat, max_lon),
                   (max_lat, min_lon),
                   (max_lat, max_lon)]
 
-        values['range'] = range_to_points(ctr, points) * 1000.0
+        values['range'] = circle_radius(values['lat'], values['lon'], points)
 
         if station is None:
             # return new values

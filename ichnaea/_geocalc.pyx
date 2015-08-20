@@ -1,10 +1,19 @@
 from libc.math cimport asin, cos, fmin, M_PI, pow, sin, sqrt
+from numpy cimport float64_t, ndarray
 
 cdef double EARTH_RADIUS = 6371.0  #: Earth radius in km.
 
 
 cdef inline double deg2rad(double degrees):
     return degrees * M_PI / 180.0
+
+
+cpdef ndarray[float64_t, ndim=1] centroid(ndarray[float64_t, ndim=2] points):
+    """
+    Compute the centroid (average lat and lon) from a set of points
+    (two-dimensional lat/lon array).
+    """
+    return points.mean(axis=0)
 
 
 cpdef double distance(double lat1, double lon1, double lat2, double lon2):

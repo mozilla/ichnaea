@@ -62,11 +62,19 @@ def bound(low, value, high):
 def centroid(points):
     """
     Compute the centroid (average lat and lon) from a set of points
-    ((lat, lon) pairs).
+    (two-dimensional lat/lon array).
     """
-    lat_avg = sum([p[0] for p in points]) / len(points)
-    lon_avg = sum([p[1] for p in points]) / len(points)
-    return (lat_avg, lon_avg)
+    avg_lat, avg_lon = _geocalc.centroid(points)
+    return (float(avg_lat), float(avg_lon))
+
+
+def circle_radius(lat, lon, points):
+    """
+    Compute the maximum distance, in m, from a (lat, lon) point to any
+    of the points in a set of points ((lat, lon) pairs).
+    """
+    radius = max([distance(lat, lon, p[0], p[1]) for p in points])
+    return int(round(radius * 1000.0))
 
 
 def distance(lat1, lon1, lat2, lon2):
@@ -157,13 +165,3 @@ def maximum_country_radius(country_code):
         value = _radius_cache[country_code] = round(radius) * 1000.0
 
     return value
-
-
-def range_to_points(point, points):
-    """
-    Compute the maximum distance, in km, from a (lat, lon) point to any
-    of the points in a set of points ((lat, lon) pairs).
-
-    """
-    (p_lat, p_lon) = point
-    return max([distance(p_lat, p_lon, p[0], p[1]) for p in points])

@@ -1,6 +1,7 @@
 from codecs import open
 import os.path
 
+import numpy
 from setuptools import (
     Extension,
     find_packages,
@@ -16,8 +17,11 @@ with open(os.path.join(here, 'README.rst'), encoding='utf-8') as fd:
 __version__ = '1.3'
 
 ext_modules = [
-    Extension(name='ichnaea._geocalc',
-              sources=[os.path.join(base, '_geocalc.c')]),
+    Extension(
+        name='ichnaea._geocalc',
+        sources=[os.path.join(base, '_geocalc.c')],
+        include_dirs=[numpy.get_include()],
+    ),
 ]
 
 setup(
