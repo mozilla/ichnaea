@@ -9,7 +9,7 @@ from setuptools import (
 )
 
 here = os.path.abspath(os.path.dirname(__file__))
-base = os.path.join(here, 'ichnaea')
+base = os.path.relpath(os.path.join(here, 'ichnaea'), here)
 
 with open(os.path.join(here, 'README.rst'), encoding='utf-8') as fd:
     long_description = fd.read()
