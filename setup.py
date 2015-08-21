@@ -1,7 +1,7 @@
 from codecs import open
+import os
 import os.path
 
-import numpy
 from setuptools import (
     Extension,
     find_packages,
@@ -9,21 +9,25 @@ from setuptools import (
 )
 
 here = os.path.abspath(os.path.dirname(__file__))
-base = os.path.relpath(os.path.join(here, 'ichnaea'))
 
 with open(os.path.join(here, 'README.rst'), encoding='utf-8') as fd:
     long_description = fd.read()
 
 __version__ = '1.3'
 
-numpy_include = os.path.relpath(numpy.get_include())
-ext_modules = [
-    Extension(
-        name='ichnaea._geocalc',
-        sources=[os.path.join(base, '_geocalc.c')],
-        include_dirs=[numpy_include],
-    ),
-]
+if os.environ.get('READTHEDOCS', None) == 'True':
+    ext_modules = []
+else:
+    import numpy
+    base = os.path.join(here, 'ichnaea')
+    numpy_include = numpy.get_include()
+    ext_modules = [
+        Extension(
+            name='ichnaea._geocalc',
+            sources=[os.path.join(base, '_geocalc.c')],
+            include_dirs=[numpy_include],
+        ),
+    ]
 
 setup(
     name='ichnaea',
