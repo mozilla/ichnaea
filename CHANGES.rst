@@ -30,8 +30,8 @@ Changes
 
 - Move best country result selection into searcher logic.
 
-- Update to latest versions of alembic, cryptography, coverage, hiredis
-  and numpy.
+- Update to latest versions of alembic, cffi, cryptography, coverage,
+  hiredis, numpy and pip.
 
 20150813105600
 **************
