@@ -8,7 +8,7 @@ from sqlalchemy.sql import or_
 
 from ichnaea.api.locate.constants import (
     DataSource,
-    MAX_WIFI_CLUSTER_KM,
+    MAX_WIFI_CLUSTER_METERS,
     MIN_WIFIS_IN_CLUSTER,
     MAX_WIFIS_IN_CLUSTER,
 )
@@ -136,7 +136,7 @@ def get_clusters(wifis, lookups):
         return distance(one.lat, one.lon, two.lat, two.lon)
 
     clusters = cluster_elements(
-        wifi_networks, wifi_distance, MAX_WIFI_CLUSTER_KM)
+        wifi_networks, wifi_distance, MAX_WIFI_CLUSTER_METERS)
 
     # Only consider clusters that have at least 2 found networks
     # inside them. Otherwise someone could use a combination of
@@ -151,10 +151,11 @@ def pick_best_cluster(clusters):
 
     Currently we pick the cluster with the most found networks inside
     it. If we find more than one cluster, we have some stale data in
-    our database, as a device shouldn't be able to pick up signals from
-    networks more than :data:`ichnaea.api.locate.constants.MAX_WIFI_CLUSTER_KM`
-    apart. We assume that the majority of our data is correct and
-    discard the minority match.
+    our database, as a device shouldn't be able to pick up signals
+    from networks more than
+    :data:`ichnaea.api.locate.constants.MAX_WIFI_CLUSTER_METERS` apart.
+    We assume that the majority of our data is correct and discard the
+    minority match.
 
     The list of clusters is pre-sorted by signal strength, so given
     two clusters with two networks each, the cluster with the better

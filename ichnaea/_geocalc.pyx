@@ -19,7 +19,7 @@ cpdef ndarray[float64_t, ndim=1] centroid(ndarray[float64_t, ndim=2] points):
 cpdef double distance(double lat1, double lon1, double lat2, double lon2):
     """
     Compute the distance between a pair of lat/longs in meters using
-    the haversine calculation. The output distance is in kilometers.
+    the haversine calculation. The output distance is in meters.
 
     References:
       * http://en.wikipedia.org/wiki/Haversine_formula
@@ -35,4 +35,4 @@ cpdef double distance(double lat1, double lon1, double lat2, double lon2):
 
     a = pow(sin(dLat), 2) + cos(lat1) * cos(lat2) * pow(sin(dLon), 2)
     c = asin(fmin(1, sqrt(a)))
-    return 2 * EARTH_RADIUS * c
+    return 1000 * 2 * EARTH_RADIUS * c

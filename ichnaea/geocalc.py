@@ -2,6 +2,7 @@
 Contains helper functions for various geo related calculations.
 """
 
+import functools
 import math
 import os
 
@@ -68,19 +69,25 @@ def centroid(points):
     return (float(avg_lat), float(avg_lon))
 
 
-def circle_radius(lat, lon, points):
+def circle_radius(lat, lon, max_lat, max_lon, min_lat, min_lon):
     """
-    Compute the maximum distance, in m, from a (lat, lon) point to any
-    of the points in a set of points ((lat, lon) pairs).
+    Compute the maximum distance, in meters, from a (lat, lon) point
+    to any of the extreme points of a bounding box.
     """
-    radius = max([distance(lat, lon, p[0], p[1]) for p in points])
-    return int(round(radius * 1000.0))
+    edges = [(min_lat, min_lon),
+             (min_lat, max_lon),
+             (max_lat, min_lon),
+             (max_lat, max_lon)]
+
+    center_distance = functools.partial(_geocalc.distance, lat, lon)
+    radius = max([center_distance(edge[0], edge[1]) for edge in edges])
+    return int(round(radius))
 
 
 def distance(lat1, lon1, lat2, lon2):
     """
     Compute the distance between a pair of lat/longs in meters using
-    the haversine calculation. The output distance is in kilometers.
+    the haversine calculation. The output distance is in meters.
 
     Error is up to 0.55%, which works out to 5m per 1km. This is
     still better than what GPS provides so it should be 'good enough'.
@@ -119,7 +126,7 @@ def estimate_accuracy(lat, lon, points, minimum):
         # than the old approximation, "worst-case range":
         # this one takes the maximum distance from position
         # to any of the provided points.
-        accuracy = max([distance(lat, lon, p.lat, p.lon) * 1000
+        accuracy = max([distance(lat, lon, p.lat, p.lon)
                         for p in points])
     if accuracy is not None:
         accuracy = float(accuracy)
@@ -161,7 +168,7 @@ def maximum_country_radius(country_code):
         diagonals.append(distance(lat1, lon1, lat2, lon2))
     if diagonals:
         # Divide by two to get radius, round to 1 km and convert to meters
-        radius = max(diagonals) / 2.0
+        radius = max(diagonals) / 2.0 / 1000.0
         value = _radius_cache[country_code] = round(radius) * 1000.0
 
     return value

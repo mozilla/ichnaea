@@ -30,11 +30,6 @@ class CellAreaUpdater(DataTask):
             update_task.delay(area_batch)
         return len(area_keys)
 
-    def _extreme_value(self, func, column, cells):
-        values = [getattr(cell, column, None) for cell in cells]
-        values = [value for value in values if value is not None]
-        return func(values)
-
     def update(self, area_keys):
         if isinstance(area_keys, (list, tuple)):
             for area_key in area_keys:
@@ -58,25 +53,33 @@ class CellAreaUpdater(DataTask):
             # Otherwise update the area entry based on all the cells
             area = area_query.first()
 
-            min_lat = self._extreme_value(min, 'min_lat', cells)
-            min_lon = self._extreme_value(min, 'min_lon', cells)
-            max_lat = self._extreme_value(max, 'max_lat', cells)
-            max_lon = self._extreme_value(max, 'max_lon', cells)
+            cell_extremes = numpy.array([
+                (numpy.nan if cell.max_lat is None else cell.max_lat,
+                 numpy.nan if cell.max_lon is None else cell.max_lon)
+                for cell in cells] + [
+                (numpy.nan if cell.min_lat is None else cell.min_lat,
+                 numpy.nan if cell.min_lon is None else cell.min_lon)
+                for cell in cells
+            ], dtype=numpy.float64)
 
-            bbox_points = [(min_lat, min_lon),
-                           (min_lat, max_lon),
-                           (max_lat, min_lon),
-                           (max_lat, max_lon)]
+            max_lat, max_lon = numpy.nanmax(cell_extremes, axis=0)
+            min_lat, min_lon = numpy.nanmin(cell_extremes, axis=0)
 
             ctr_lat, ctr_lon = centroid(
                 numpy.array([(c.lat, c.lon) for c in cells],
                             dtype=numpy.float64))
-            radius = circle_radius(ctr_lat, ctr_lon, bbox_points)
+            radius = circle_radius(
+                ctr_lat, ctr_lon,
+                max_lat, max_lon, min_lat, min_lon)
 
             # Now create or update the area
+            cell_ranges = numpy.array([
+                (numpy.nan if cell.range is None else cell.range)
+                for cell in cells
+            ], dtype=numpy.int32)
+            avg_cell_range = int(round(numpy.nanmean(cell_ranges)))
             num_cells = len(cells)
-            avg_cell_range = int(sum(
-                [cell.range for cell in cells]) / float(num_cells))
+
             if area is None:
                 stmt = self.area_model.__table__.insert(
                     mysql_on_duplicate='num_cells = num_cells'  # no-op

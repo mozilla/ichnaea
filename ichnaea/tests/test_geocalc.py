@@ -66,21 +66,21 @@ class TestDistance(TestCase):
         lat2 = 44.0347065
         lon2 = -79.4918184
         delta = distance(lat1, lon1, lat2, lon2)
-        self.assertAlmostEqual(delta, 0.1369483, 7)
+        self.assertAlmostEqual(delta, 136.9483, 4)
 
     def test_antipodal(self):
         # Antipodal points (opposite sides of the planet) have a round off
         # error with the standard haversine calculation which is extremely
         # old and assumes we are using fixed precision math instead of IEEE
         # floats.
-        self.assertAlmostEqual(distance(90.0, 0.0, -90.0, 0), 20015.086796, 7)
+        self.assertAlmostEqual(distance(90.0, 0.0, -90.0, 0), 20015086.796, 4)
 
     def test_out_of_range(self):
         self.assertAlmostEqual(
-            distance(-100.0, -186.0, 0.0, 0.0), 8901.7475973, 7)
+            distance(-100.0, -186.0, 0.0, 0.0), 8901747.5973, 4)
 
     def test_non_float(self):
-        self.assertAlmostEqual(distance(1.0, 1.0, 1, 1.1), 11.1177991, 7)
+        self.assertAlmostEqual(distance(1.0, 1.0, 1, 1.1), 11117.7991, 4)
         with self.assertRaises(TypeError):
             distance(None, '0.1', 1, 1.1)
 

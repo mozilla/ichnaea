@@ -1,11 +1,14 @@
 from collections import defaultdict
 
+import numpy
+
 from ichnaea.constants import (
     PERMANENT_BLOCKLIST_THRESHOLD,
     TEMPORARY_BLOCKLIST_DURATION,
 )
 from ichnaea.data.base import DataTask
 from ichnaea.geocalc import (
+    centroid,
     circle_radius,
     distance,
 )
@@ -116,7 +119,7 @@ class StationUpdater(DataTask):
 class CellUpdater(StationUpdater):
 
     blocklist_model = CellBlocklist
-    max_dist_km = 150
+    max_dist_meters = 150000
     observation_model = CellObservation
     queue_name = 'update_cell'
     stat_obs_key = StatKey.cell
@@ -191,11 +194,11 @@ class CellUpdater(StationUpdater):
         # The third element is either None or a dict of values
         # if the station did exist and should be updated
 
-        length = len(observations)
-        latitudes = [obs.lat for obs in observations]
-        longitudes = [obs.lon for obs in observations]
-        new_lat = sum(latitudes) / length
-        new_lon = sum(longitudes) / length
+        obs_length = len(observations)
+        obs_positions = numpy.array(
+            [(obs.lat, obs.lon) for obs in observations],
+            dtype=numpy.float64)
+        obs_lat, obs_lon = centroid(obs_positions)
 
         values = {
             'modified': self.utcnow,
@@ -219,31 +222,21 @@ class CellUpdater(StationUpdater):
             })
 
         if station is not None and station.lat and station.lon:
-            latitudes.append(station.lat)
-            longitudes.append(station.lon)
+            obs_positions = numpy.append(obs_positions, [
+                (station.lat, station.lon),
+                (numpy.nan if station.max_lat is None else station.max_lat,
+                 numpy.nan if station.max_lon is None else station.max_lon),
+                (numpy.nan if station.min_lat is None else station.min_lat,
+                 numpy.nan if station.min_lon is None else station.min_lon),
+            ], axis=0)
             existing_station = True
         else:
-            values['lat'] = new_lat
-            values['lon'] = new_lon
+            values['lat'] = obs_lat
+            values['lon'] = obs_lon
             existing_station = False
 
-        # calculate extremes of observations, existing location estimate
-        # and existing extreme values
-        def extreme(vals, attr, function):
-            new = function(vals)
-            if station is not None:
-                old = getattr(station, attr, None)
-            else:
-                old = None
-            if old is not None:
-                return function(new, old)
-            else:
-                return new
-
-        min_lat = extreme(latitudes, 'min_lat', min)
-        min_lon = extreme(longitudes, 'min_lon', min)
-        max_lat = extreme(latitudes, 'max_lat', max)
-        max_lon = extreme(longitudes, 'max_lon', max)
+        max_lat, max_lon = numpy.nanmax(obs_positions, axis=0)
+        min_lat, min_lon = numpy.nanmin(obs_positions, axis=0)
 
         # calculate sphere-distance from opposite corners of
         # bounding box containing current location estimate
@@ -252,42 +245,39 @@ class CellUpdater(StationUpdater):
 
         # TODO: If we get a too large box_dist, we should not create
         # a new station record with the impossibly big distance,
-        # so moving the box_dist > self.max_dist_km here
+        # so moving the box_dist > self.max_dist_meters here
 
         if existing_station:
-            if box_dist > self.max_dist_km:
+            if box_dist > self.max_dist_meters:
                 # Signal a moving station and return early without updating
                 # the station since it will be deleted by caller momentarily
                 return (True, None, None)
             # limit the maximum weight of the old station estimate
             old_weight = min(station.total_measures,
                              self.MAX_OLD_OBSERVATIONS)
-            new_weight = old_weight + length
+            new_weight = old_weight + obs_length
 
             values['lat'] = ((station.lat * old_weight) +
-                             (new_lat * length)) / new_weight
+                             (obs_lat * obs_length)) / new_weight
             values['lon'] = ((station.lon * old_weight) +
-                             (new_lon * length)) / new_weight
+                             (obs_lon * obs_length)) / new_weight
 
         # increase total counter
         if station is not None:
-            values['total_measures'] = station.total_measures + length
+            values['total_measures'] = station.total_measures + obs_length
         else:
-            values['total_measures'] = length
+            values['total_measures'] = obs_length
 
         # update max/min lat/lon columns
-        values['min_lat'] = min_lat
-        values['min_lon'] = min_lon
-        values['max_lat'] = max_lat
-        values['max_lon'] = max_lon
+        values['min_lat'] = float(min_lat)
+        values['min_lon'] = float(min_lon)
+        values['max_lat'] = float(max_lat)
+        values['max_lon'] = float(max_lon)
 
         # give radio-range estimate between extreme values and centroid
-        points = [(min_lat, min_lon),
-                  (min_lat, max_lon),
-                  (max_lat, min_lon),
-                  (max_lat, max_lon)]
-
-        values['range'] = circle_radius(values['lat'], values['lon'], points)
+        values['range'] = circle_radius(
+            values['lat'], values['lon'],
+            max_lat, max_lon, min_lat, min_lon)
 
         if station is None:
             # return new values
@@ -391,7 +381,7 @@ class CellUpdater(StationUpdater):
 class WifiUpdater(StationUpdater):
 
     blocklist_model = WifiShard
-    max_dist_km = 5
+    max_dist_meters = 5000
     observation_model = WifiObservation
     queue_name = 'update_wifi'
     stat_obs_key = StatKey.wifi
@@ -476,11 +466,11 @@ class WifiUpdater(StationUpdater):
         # The third element is either None or a dict of values
         # if the station did exist and should be updated
 
-        length = len(observations)
-        latitudes = [obs.lat for obs in observations]
-        longitudes = [obs.lon for obs in observations]
-        new_lat = sum(latitudes) / length
-        new_lon = sum(longitudes) / length
+        obs_length = len(observations)
+        obs_positions = numpy.array(
+            [(obs.lat, obs.lon) for obs in observations],
+            dtype=numpy.float64)
+        obs_lat, obs_lon = centroid(obs_positions)
 
         values = {
             'modified': self.utcnow,
@@ -504,31 +494,21 @@ class WifiUpdater(StationUpdater):
             del values['key']
 
         if station is not None and station.lat and station.lon:
-            latitudes.append(station.lat)
-            longitudes.append(station.lon)
+            obs_positions = numpy.append(obs_positions, [
+                (station.lat, station.lon),
+                (numpy.nan if station.max_lat is None else station.max_lat,
+                 numpy.nan if station.max_lon is None else station.max_lon),
+                (numpy.nan if station.min_lat is None else station.min_lat,
+                 numpy.nan if station.min_lon is None else station.min_lon),
+            ], axis=0)
             existing_station = True
         else:
-            values['lat'] = new_lat
-            values['lon'] = new_lon
+            values['lat'] = obs_lat
+            values['lon'] = obs_lon
             existing_station = False
 
-        # calculate extremes of observations, existing location estimate
-        # and existing extreme values
-        def extreme(vals, attr, function):
-            new = function(vals)
-            if station is not None:
-                old = getattr(station, attr, None)
-            else:
-                old = None
-            if old is not None:
-                return function(new, old)
-            else:
-                return new
-
-        min_lat = extreme(latitudes, 'min_lat', min)
-        min_lon = extreme(longitudes, 'min_lon', min)
-        max_lat = extreme(latitudes, 'max_lat', max)
-        max_lon = extreme(longitudes, 'max_lon', max)
+        max_lat, max_lon = numpy.nanmax(obs_positions, axis=0)
+        min_lat, min_lon = numpy.nanmin(obs_positions, axis=0)
 
         # calculate sphere-distance from opposite corners of
         # bounding box containing current location estimate
@@ -537,42 +517,39 @@ class WifiUpdater(StationUpdater):
 
         # TODO: If we get a too large box_dist, we should not create
         # a new station record with the impossibly big distance,
-        # so moving the box_dist > self.max_dist_km here
+        # so moving the box_dist > self.max_dist_meters here
 
         if existing_station:
-            if box_dist > self.max_dist_km:
+            if box_dist > self.max_dist_meters:
                 # Signal a moving station and return early without updating
                 # the station since it will be deleted by caller momentarily
                 return (True, None, None)
             # limit the maximum weight of the old station estimate
             old_weight = min(station.total_measures,
                              self.MAX_OLD_OBSERVATIONS)
-            new_weight = old_weight + length
+            new_weight = old_weight + obs_length
 
             values['lat'] = ((station.lat * old_weight) +
-                             (new_lat * length)) / new_weight
+                             (obs_lat * obs_length)) / new_weight
             values['lon'] = ((station.lon * old_weight) +
-                             (new_lon * length)) / new_weight
+                             (obs_lon * obs_length)) / new_weight
 
         # increase total counter
         if station is not None:
-            values['total_measures'] = station.total_measures + length
+            values['total_measures'] = station.total_measures + obs_length
         else:
-            values['total_measures'] = length
+            values['total_measures'] = obs_length
 
         # update max/min lat/lon columns
-        values['min_lat'] = min_lat
-        values['min_lon'] = min_lon
-        values['max_lat'] = max_lat
-        values['max_lon'] = max_lon
+        values['min_lat'] = float(min_lat)
+        values['min_lon'] = float(min_lon)
+        values['max_lat'] = float(max_lat)
+        values['max_lon'] = float(max_lon)
 
         # give radio-range estimate between extreme values and centroid
-        points = [(min_lat, min_lon),
-                  (min_lat, max_lon),
-                  (max_lat, min_lon),
-                  (max_lat, max_lon)]
-
-        values['range'] = circle_radius(values['lat'], values['lon'], points)
+        values['range'] = circle_radius(
+            values['lat'], values['lon'],
+            max_lat, max_lon, min_lat, min_lon)
 
         if station is None:
             # return new values

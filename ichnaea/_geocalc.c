@@ -1409,7 +1409,7 @@ static double __pyx_f_7ichnaea_8_geocalc_distance(double __pyx_v_lat1, double __
  * 
  *     a = pow(sin(dLat), 2) + cos(lat1) * cos(lat2) * pow(sin(dLon), 2)             # <<<<<<<<<<<<<<
  *     c = asin(fmin(1, sqrt(a)))
- *     return 2 * EARTH_RADIUS * c
+ *     return 1000 * 2 * EARTH_RADIUS * c
  */
   __pyx_v_a = (pow(sin(__pyx_v_dLat), 2.0) + ((cos(__pyx_v_lat1) * cos(__pyx_v_lat2)) * pow(sin(__pyx_v_dLon), 2.0)));
 
@@ -1417,16 +1417,16 @@ static double __pyx_f_7ichnaea_8_geocalc_distance(double __pyx_v_lat1, double __
  * 
  *     a = pow(sin(dLat), 2) + cos(lat1) * cos(lat2) * pow(sin(dLon), 2)
  *     c = asin(fmin(1, sqrt(a)))             # <<<<<<<<<<<<<<
- *     return 2 * EARTH_RADIUS * c
+ *     return 1000 * 2 * EARTH_RADIUS * c
  */
   __pyx_v_c = asin(fmin(1.0, sqrt(__pyx_v_a)));
 
   /* "ichnaea/_geocalc.pyx":38
  *     a = pow(sin(dLat), 2) + cos(lat1) * cos(lat2) * pow(sin(dLon), 2)
  *     c = asin(fmin(1, sqrt(a)))
- *     return 2 * EARTH_RADIUS * c             # <<<<<<<<<<<<<<
+ *     return 1000 * 2 * EARTH_RADIUS * c             # <<<<<<<<<<<<<<
  */
-  __pyx_r = ((2.0 * __pyx_v_7ichnaea_8_geocalc_EARTH_RADIUS) * __pyx_v_c);
+  __pyx_r = ((2000.0 * __pyx_v_7ichnaea_8_geocalc_EARTH_RADIUS) * __pyx_v_c);
   goto __pyx_L0;
 
   /* "ichnaea/_geocalc.pyx":19
