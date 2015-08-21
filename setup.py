@@ -9,18 +9,19 @@ from setuptools import (
 )
 
 here = os.path.abspath(os.path.dirname(__file__))
-base = os.path.relpath(os.path.join(here, 'ichnaea'), here)
+base = os.path.relpath(os.path.join(here, 'ichnaea'))
 
 with open(os.path.join(here, 'README.rst'), encoding='utf-8') as fd:
     long_description = fd.read()
 
 __version__ = '1.3'
 
+numpy_include = os.path.relpath(numpy.get_include())
 ext_modules = [
     Extension(
         name='ichnaea._geocalc',
         sources=[os.path.join(base, '_geocalc.c')],
-        include_dirs=[numpy.get_include()],
+        include_dirs=[numpy_include],
     ),
 ]
 
