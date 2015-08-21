@@ -6,8 +6,8 @@ include *.json
 include *.rst
 
 recursive-include alembic *
-recursive-exclude alembic *.pyc *.pyo .DS_Store __pycache__
+recursive-exclude alembic *.pyc *.pyo *.so *.dll .DS_Store __pycache__
 recursive-include ichnaea *
-recursive-exclude ichnaea *.pyc *.pyo .DS_Store __pycache__
+recursive-exclude ichnaea *.pyc *.pyo *.so *.dll .DS_Store __pycache__
 recursive-exclude ichnaea/content/static/tiles *
 recursive-include requirements *
