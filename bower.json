@@ -14,7 +14,6 @@
   ],
   "dependencies": {
     "datatables": "1.10.8",
-    "datatables-fixedheader": "2.1.2",
     "flot": "0.8.3",
     "jquery": "1.11.3",
     "leaflet.locatecontrol": "domoritz/leaflet-locatecontrol#0.44.0",

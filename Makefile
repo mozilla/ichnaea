@@ -162,8 +162,8 @@ css: bower
 	cp $(BOWER_ROOT)/datatables/media/css/jquery.dataTables.css $(CSS_ROOT)
 	$(CLEANCSS) -o bundle-stat-regions.css jquery.dataTables.css
 
-	cp $(BOWER_ROOT)/fontawesome/fonts/* $(FONT_ROOT)/
-	cp $(BOWER_ROOT)/fontawesome/css/font-awesome.css $(CSS_ROOT)
+	cp $(BOWER_ROOT)/font-awesome/fonts/* $(FONT_ROOT)/
+	cp $(BOWER_ROOT)/font-awesome/css/font-awesome.css $(CSS_ROOT)
 	cp $(BOWER_ROOT)/mapbox.js/mapbox.uncompressed.css $(CSS_ROOT)
 	mkdir -p $(CSS_ROOT)/images/
 	cp -R $(BOWER_ROOT)/mapbox.js/images/*.png $(CSS_ROOT)/images/
@@ -183,10 +183,8 @@ js: bower
 		--source-map bundle-base.js.map
 
 	cp $(BOWER_ROOT)/datatables/media/js/jquery.dataTables.js $(JS_ROOT)
-	cp $(BOWER_ROOT)/datatables-fixedheader/js/dataTables.fixedHeader.js $(JS_ROOT)
 	$(UGLIFYJS) \
 		jquery.dataTables.js \
-		dataTables.fixedHeader.js \
 		stat-regions.js \
 		-o bundle-stat-regions.js -c --stats \
 		--source-map bundle-stat-regions.js.map
