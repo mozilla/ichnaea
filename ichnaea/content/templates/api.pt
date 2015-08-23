@@ -25,7 +25,7 @@
         If you are developing a native application or library for a desktop
         operating system or Android, you can in principle use this service
         via its HTTPS API. Please refer to the
-        <a href="https://mozilla-ichnaea.readthedocs.org/en/latest/">
+        <a href="https://mozilla.github.io/ichnaea/">
             development documentation</a> for the details.
         On most other operating systems, you cannot access the required
         cell and WiFi network information required to call the service API.

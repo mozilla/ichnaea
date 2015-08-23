@@ -4,18 +4,12 @@ Contains helper functions for various geo related calculations.
 
 import functools
 import math
-import os
 
 from country_bounding_boxes import country_subunits_by_iso_code
 from six import string_types
 
+from ichnaea import _geocalc
 from ichnaea import constants
-
-try:
-    from ichnaea import _geocalc
-except ImportError:  # pragma: no cover
-    if not os.environ.get('READTHEDOCS', None) == 'True':
-        raise
 
 _radius_cache = {}
 

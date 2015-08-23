@@ -8,7 +8,7 @@
     },
     "participate": {
         "home": "https://location.services.mozilla.com/",
-        "docs": "https://mozilla-ichnaea.readthedocs.org/en/latest/",
+        "docs": "https://mozilla.github.io/ichnaea/",
         "irc": "irc://irc.mozilla.org/#geo",
         "irc-contacts": ["hannosch"]
     },
