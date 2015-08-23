@@ -18,9 +18,10 @@ private-*.ini
 pyvenv.cfg
 bin/
 bower_components/
-build/
+/build/
 coverage/
 dist/
+docs/build/doctrees/
 ichnaea/content/static/tiles/
 include/
 lib/
