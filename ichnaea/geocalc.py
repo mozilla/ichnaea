@@ -58,6 +58,8 @@ def centroid(points):
     """
     Compute the centroid (average lat and lon) from a set of points
     (two-dimensional lat/lon array).
+
+    Uses :func:`ichnaea._geocalc.centroid` internally.
     """
     avg_lat, avg_lon = _geocalc.centroid(points)
     return (float(avg_lat), float(avg_lon))
@@ -83,26 +85,7 @@ def distance(lat1, lon1, lat2, lon2):
     Compute the distance between a pair of lat/longs in meters using
     the haversine calculation. The output distance is in meters.
 
-    Error is up to 0.55%, which works out to 5m per 1km. This is
-    still better than what GPS provides so it should be 'good enough'.
-
-    References:
-      * http://en.wikipedia.org/wiki/Haversine_formula
-      * http://www.movable-type.co.uk/scripts/latlong.html
-
-    Accuracy: since the earth is not quite a sphere, there are small
-    errors in using spherical geometry; the earth is actually roughly
-    ellipsoidal (or more precisely, oblate spheroidal) with a radius
-    varying between about 6378km (equatorial) and 6357km (polar),
-    and local radius of curvature varying from 6336km (equatorial
-    meridian) to 6399km (polar). 6371 km is the generally accepted
-    value for the Earth's mean radius. This means that errors from
-    assuming spherical geometry might be up to 0.55% crossing the
-    equator, though generally below 0.3%, depending on latitude and
-    direction of travel. An accuracy of better than 3m in 1km is
-    mostly good enough for me, but if you want greater accuracy, you
-    could use the Vincenty formula for calculating geodesic distances
-    on ellipsoids, which gives results accurate to within 1mm.
+    Uses :func:`ichnaea._geocalc.distance` internally.
     """
     return _geocalc.distance(lat1, lon1, lat2, lon2)
 

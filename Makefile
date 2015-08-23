@@ -112,7 +112,7 @@ build_maxmind: $(PYTHON) pip $(TOXINIDIR)/lib/libmaxminddb.0.dylib
 		$(INSTALL) --no-use-wheel maxminddb==$(MAXMINDDB_VERSION)
 
 ichnaea/_geocalc.c: ichnaea/_geocalc.pyx
-	$(CYTHON) --no-docstrings ichnaea/_geocalc.pyx
+	$(CYTHON) ichnaea/_geocalc.pyx
 
 build_cython: ichnaea/_geocalc.c
 	$(PYTHON) setup.py build_ext --inplace
