@@ -22,7 +22,7 @@ Changes
 
 - Update data tables and stats/regions page.
 
-- Setup basic Cython support and convert `geocalc.distance`.
+- Setup Cython support and convert geocalc centroid and distance functions.
 
 - Optimize OCID cell data export and import.
 
@@ -31,7 +31,7 @@ Changes
 - Move best country result selection into searcher logic.
 
 - Update to latest versions of alembic, cffi, cryptography, coverage,
-  hiredis, numpy and pip.
+  cython, hiredis, numpy and pip.
 
 20150813105600
 **************
