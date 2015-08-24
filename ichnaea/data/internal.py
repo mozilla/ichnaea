@@ -4,7 +4,6 @@ from datetime import datetime
 import pytz
 import simplejson
 
-from ichnaea.internaljson import internal_dumps
 from ichnaea.data.export import (
     MetadataGroup,
     ReportUploader,
@@ -132,8 +131,8 @@ class InternalUploader(ReportUploader):
     @staticmethod
     def _task():
         # avoiding import cycle problems, sigh!
-        from ichnaea.data.tasks import insert_measures
-        return insert_measures
+        from ichnaea.data.tasks import insert_reports
+        return insert_reports
 
     def _format_report(self, item):
         report = self.transform(item)
@@ -156,10 +155,10 @@ class InternalUploader(ReportUploader):
         for group, reports in groups.items():
             self._task().apply_async(
                 kwargs={
-                    'api_key_text': group.api_key,
+                    'api_key': group.api_key,
                     'email': group.email,
                     'ip': group.ip,
-                    'items': internal_dumps(reports),
                     'nickname': group.nickname,
+                    'reports': reports,
                 },
                 expires=21600)

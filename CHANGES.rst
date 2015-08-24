@@ -18,6 +18,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove extra internal_dumps call from insert task.
+
 - Add a source tag for successful result metrics.
 
 - Update data tables and stats/regions page.

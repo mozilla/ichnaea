@@ -30,8 +30,9 @@ from ichnaea.models import ApiKey
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_incoming')
 def insert_measures(self, items=None, email=None, ip=None, nickname=None,
-                    api_key_text=None):
-    if not items:  # pragma: no cover
+                    api_key_text=None):  # pragma: no cover
+    # BBB
+    if not items:
         return 0
 
     reports = internal_loads(items)
@@ -98,6 +99,23 @@ def schedule_export_reports(self):
 def export_reports(self, export_queue_name, queue_key=None):
     exporter = ReportExporter(self, None, export_queue_name, queue_key)
     return exporter.export(export_reports, upload_reports)
+
+
+@celery_app.task(base=BaseTask, bind=True, queue='celery_incoming')
+def insert_reports(self, reports=(),
+                   api_key=None, email=None, ip=None, nickname=None):
+    with self.redis_pipeline() as pipe:
+        with self.db_session() as session:
+            api_key = api_key and ApiKey.getkey(
+                session, {'valid_key': api_key})
+
+            queue = ReportQueue(self, session, pipe,
+                                api_key=api_key,
+                                email=email,
+                                ip=ip,
+                                nickname=nickname)
+            length = queue.insert(reports)
+    return length
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_reports')
