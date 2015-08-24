@@ -246,7 +246,6 @@ coveralls:
 	$(COVERALLS)
 
 docs: $(BIN)/sphinx-build
-	git submodule update --recursive --init
 	cd docs; SPHINXBUILD=$(SPHINXBUILD) make html
 
 pypi_release:
