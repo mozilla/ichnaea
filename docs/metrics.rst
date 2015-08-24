@@ -339,12 +339,15 @@ Internal Monitoring
     This gauge measures how many requests have been done for each such
     API key for the current day.
 
+``queue#queue:celery_cell``,
 ``queue#queue:celery_default``,
 ``queue#queue:celery_export``,
 ``queue#queue:celery_incoming``,
 ``queue#queue:celery_monitor``,
+``queue#queue:celery_ocid``,
 ``queue#queue:celery_reports``,
-``queue#queue:celery_upload`` : gauges
+``queue#queue:celery_upload``,
+``queue#queue:celery_wifi`` : gauges
 
     These gauges measure the number of tasks in each of the Redis queues.
     They are sampled at an approximate per-minute interval.

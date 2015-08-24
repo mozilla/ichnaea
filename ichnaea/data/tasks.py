@@ -50,18 +50,18 @@ def insert_measures(self, items=None, email=None, ip=None, nickname=None,
     return length
 
 
-@celery_app.task(base=BaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
 def export_modified_cells(self, hourly=True, _bucket=None):
     ocid.export_modified_cells(self, hourly=hourly, _bucket=_bucket)
 
 
-@celery_app.task(base=BaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
 def import_latest_ocid_cells(self, diff=True):
     ocid.import_latest_ocid_cells(
         self, diff=diff, update_area_task=update_area)
 
 
-@celery_app.task(base=BaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
 def import_ocid_cells(self, filename=None):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
@@ -147,7 +147,7 @@ def upload_reports(self, export_queue_name, data, queue_key=None):
         return uploader.upload(data)
 
 
-@celery_app.task(base=BaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True, queue='celery_cell')
 def remove_cell(self, cell_keys):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
@@ -155,7 +155,7 @@ def remove_cell(self, cell_keys):
     return length
 
 
-@celery_app.task(base=BaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True, queue='celery_wifi')
 def remove_wifi(self, wifi_keys):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
@@ -163,7 +163,7 @@ def remove_wifi(self, wifi_keys):
     return length
 
 
-@celery_app.task(base=BaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True, queue='celery_cell')
 def update_cell(self, batch=1000):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
@@ -175,7 +175,7 @@ def update_cell(self, batch=1000):
     return (cells, moving)
 
 
-@celery_app.task(base=BaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True, queue='celery_wifi')
 def update_wifi(self, batch=1000):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
@@ -187,7 +187,7 @@ def update_wifi(self, batch=1000):
     return (wifis, moving)
 
 
-@celery_app.task(base=BaseTask, bind=True)
+@celery_app.task(base=BaseTask, bind=True, queue='celery_cell')
 def scan_areas(self, batch=100):
     updater = CellAreaUpdater(self, None)
     length = updater.scan(update_area, batch=batch)
@@ -195,7 +195,7 @@ def scan_areas(self, batch=100):
 
 
 @celery_app.task(base=BaseTask, bind=True)
-def update_area(self, area_keys, cell_type='cell'):
+def update_area(self, area_keys, cell_type='cell', queue='celery_cell'):
     with self.db_session() as session:
         if cell_type == 'ocid':
             updater = OCIDCellAreaUpdater(self, session)

@@ -23,12 +23,15 @@ from ichnaea.queue import (
 )
 
 CELERY_QUEUES = (
+    Queue('celery_cell', routing_key='celery_cell'),
     Queue('celery_default', routing_key='celery_default'),
     Queue('celery_export', routing_key='celery_export'),
     Queue('celery_incoming', routing_key='celery_incoming'),
     Queue('celery_monitor', routing_key='celery_monitor'),
+    Queue('celery_ocid', routing_key='celery_ocid'),
     Queue('celery_reports', routing_key='celery_reports'),
     Queue('celery_upload', routing_key='celery_upload'),
+    Queue('celery_wifi', routing_key='celery_wifi'),
 )  #: List of :class:`kombu.Queue` instances.
 
 register('internal_json',
