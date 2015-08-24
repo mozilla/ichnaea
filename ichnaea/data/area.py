@@ -31,12 +31,8 @@ class CellAreaUpdater(DataTask):
         return len(area_keys)
 
     def update(self, area_keys):
-        if isinstance(area_keys, (list, tuple)):
-            for area_key in area_keys:
-                self.update_area(area_key)
-        else:  # pragma: no cover
-            # BBB the task used to be called with a single area key
-            self.update_area(area_keys)
+        for area_key in area_keys:
+            self.update_area(area_key)
 
     def update_area(self, area_key):
         # Select all cells in this area and derive a bounding box for them
