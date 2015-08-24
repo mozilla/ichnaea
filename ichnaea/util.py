@@ -34,7 +34,7 @@ else:  # pragma: no cover
 
 
 @contextmanager
-def gzip_open(filename, mode, compresslevel=9):  # pragma: no cover
+def gzip_open(filename, mode, compresslevel=6):  # pragma: no cover
     """Open a gzip file with an API consistent across Python 2/3.
 
     :param mode: Either `r` or `w` for read or write access.
@@ -48,7 +48,7 @@ def gzip_open(filename, mode, compresslevel=9):  # pragma: no cover
                             compresslevel=compresslevel, encoding='utf-8')
 
 
-def encode_gzip(data, compresslevel=9, encoding='utf-8'):
+def encode_gzip(data, compresslevel=6, encoding='utf-8'):
     """Encode the passed in data with gzip."""
     if isinstance(data, six.string_types):
         data = data.encode(encoding)

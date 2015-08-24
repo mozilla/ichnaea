@@ -161,7 +161,7 @@ class GeosubmitUploader(ReportUploader):
                                      tags=self.stats_tags):
             response = requests.post(
                 url,
-                data=util.encode_gzip(data),
+                data=util.encode_gzip(data, compresslevel=5),
                 headers=headers,
                 timeout=60.0,
             )
@@ -210,7 +210,8 @@ class S3Uploader(ReportUploader):
                 key.key = key_name
                 key.content_encoding = 'gzip'
                 key.content_type = 'application/json'
-                key.set_contents_from_string(util.encode_gzip(data))
+                key.set_contents_from_string(
+                    util.encode_gzip(data, compresslevel=7))
                 key.close()
 
             self.stats_client.incr(

@@ -18,6 +18,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Optimize gzip compression levels.
+
 - Add new celery queues (`celery_cell`, `celery_ocid`, `celery_wifi`).
 
 - Remove extra internal_dumps call from insert task.
