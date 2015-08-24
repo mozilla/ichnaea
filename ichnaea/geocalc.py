@@ -6,6 +6,7 @@ import functools
 import math
 
 from country_bounding_boxes import country_subunits_by_iso_code
+import numpy
 from six import string_types
 
 from ichnaea import _geocalc
@@ -54,6 +55,30 @@ def bound(low, value, high):
     return max(low, min(value, high))
 
 
+def aggregate_position(circles, minimum_accuracy):
+    """
+    Calculate the aggregate position based on a number of circles
+    (numpy 3-column arrays of lat/lon/radius).
+
+    Return the position and an accuracy estimate, but at least
+    use the minimum_accuracy.
+    """
+    if len(circles) == 1:
+        return (float(circles[0][0]),
+                float(circles[0][1]),
+                max(float(circles[0][2]), minimum_accuracy))
+
+    points, _ = numpy.hsplit(circles, [2])
+    lat, lon = centroid(points)
+
+    # Bad approximation. This one takes the maximum distance from
+    # the centroid any of the provided circle centers.
+    # It ignores the radius of those circles.
+    center_distance = functools.partial(_geocalc.distance, lat, lon)
+    radius = float(max([center_distance(p[0], p[1]) for p in points]))
+    return (lat, lon, max(radius, minimum_accuracy))
+
+
 def centroid(points):
     """
     Compute the centroid (average lat and lon) from a set of points
@@ -88,26 +113,6 @@ def distance(lat1, lon1, lat2, lon2):
     Uses :func:`ichnaea._geocalc.distance` internally.
     """
     return _geocalc.distance(lat1, lon1, lat2, lon2)
-
-
-def estimate_accuracy(lat, lon, points, minimum):
-    """
-    Return the maximum range between a position (lat/lon) and a
-    list of secondary positions (points). But at least use the
-    specified minimum value.
-    """
-    if len(points) == 1:
-        accuracy = points[0].range
-    else:
-        # Terrible approximation, but hopefully better
-        # than the old approximation, "worst-case range":
-        # this one takes the maximum distance from position
-        # to any of the provided points.
-        accuracy = max([distance(lat, lon, p.lat, p.lon)
-                        for p in points])
-    if accuracy is not None:
-        accuracy = float(accuracy)
-    return max(accuracy, minimum)
 
 
 def location_is_in_country(lat, lon, country_code, margin=0):

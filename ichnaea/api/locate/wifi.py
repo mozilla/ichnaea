@@ -3,6 +3,7 @@
 from collections import defaultdict, namedtuple
 from operator import attrgetter
 
+import numpy
 from sqlalchemy.orm import load_only
 from sqlalchemy.sql import or_
 
@@ -20,8 +21,8 @@ from ichnaea.constants import (
     WIFI_MIN_ACCURACY,
 )
 from ichnaea.geocalc import (
+    aggregate_position,
     distance,
-    estimate_accuracy,
 )
 from ichnaea.models import (
     Wifi,
@@ -184,12 +185,11 @@ def aggregate_cluster_position(cluster, result_type):
     so we'd have to underweight pretty heavily.
     """
     sample = cluster[:min(len(cluster), MAX_WIFIS_IN_CLUSTER)]
-    length = float(len(sample))
-    avg_lat = sum([n.lat for n in sample]) / length
-    avg_lon = sum([n.lon for n in sample]) / length
-    accuracy = estimate_accuracy(avg_lat, avg_lon,
-                                 sample, WIFI_MIN_ACCURACY)
-    return result_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
+    circles = numpy.array(
+        [(wifi.lat, wifi.lon, wifi.radius) for wifi in sample],
+        dtype=numpy.float64)
+    lat, lon, accuracy = aggregate_position(circles, WIFI_MIN_ACCURACY)
+    return result_type(lat=lat, lon=lon, accuracy=accuracy)
 
 
 def query_database(query, raven_client):

@@ -18,6 +18,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Factor out more of the `aggregate position` logic.
+
 - Optimize gzip compression levels.
 
 - Add new celery queues (`celery_cell`, `celery_ocid`, `celery_wifi`).

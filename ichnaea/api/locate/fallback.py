@@ -6,6 +6,7 @@ from collections import defaultdict, namedtuple
 import time
 
 import colander
+import numpy
 from requests.exceptions import RequestException
 from redis import RedisError
 import simplejson
@@ -22,6 +23,7 @@ from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.rate_limit import rate_limit_exceeded
 from ichnaea import floatjson
+from ichnaea.geocalc import aggregate_position
 from ichnaea.models.cell import (
     encode_cellid,
     RadioStringType,
@@ -223,10 +225,15 @@ class FallbackCache(object):
             # all the cached values agree with each other
             self._stat_count('cache', tags=['status:hit'])
             results = list(clustered_results.values())[0]
+            circles = numpy.array(
+                [(res.lat, res.lon, res.accuracy) for res in results],
+                dtype=numpy.float64)
+            lat, lon, accuracy = aggregate_position(circles, 10.0)
+            _, accuracies = numpy.hsplit(circles, [2])
             return ExternalResult(
-                lat=sum([res.lat for res in results]) / len(results),
-                lon=sum([res.lon for res in results]) / len(results),
-                accuracy=max([res.accuracy for res in results]),
+                lat=lat,
+                lon=lon,
+                accuracy=float(numpy.nanmax(accuracies)),
                 fallback=results[0].fallback,
             )
 

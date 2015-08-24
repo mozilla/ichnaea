@@ -1,18 +1,16 @@
-from collections import namedtuple
+import numpy
 
 from ichnaea.geocalc import (
     _radius_cache,
     add_meters_to_latitude,
     add_meters_to_longitude,
+    aggregate_position,
     bound,
     distance,
-    estimate_accuracy,
     maximum_country_radius,
 )
 from ichnaea import constants
 from ichnaea.tests.base import TestCase
-
-Circle = namedtuple('Circle', 'lat lon range')
 
 
 class TestAddMetersToLatitude(TestCase):
@@ -57,6 +55,19 @@ class TestBound(TestCase):
         self.assertEqual(bound(0, -1, 2), 0)
 
 
+class TestAggregatePosition(TestCase):
+
+    def test_same(self):
+        circles = numpy.array([(1.0, 1.0, 100.0)], dtype=numpy.float64)
+        self.assertEqual(aggregate_position(circles, 100.0),
+                         (1.0, 1.0, 100.0))
+
+    def test_minimum(self):
+        circles = numpy.array([(1.0, 1.0, 100.0)], dtype=numpy.float64)
+        self.assertEqual(aggregate_position(circles, 333.0),
+                         (1.0, 1.0, 333.0))
+
+
 class TestDistance(TestCase):
 
     def test_simple_distance(self):
@@ -83,17 +94,6 @@ class TestDistance(TestCase):
         self.assertAlmostEqual(distance(1.0, 1.0, 1, 1.1), 11117.7991, 4)
         with self.assertRaises(TypeError):
             distance(None, '0.1', 1, 1.1)
-
-
-class TestEstimateAccuracy(TestCase):
-
-    def test_same(self):
-        self.assertEqual(estimate_accuracy(
-            1.0, 1.0, [Circle(1.0, 1.0, 100.0)], 0), 100.0)
-
-    def test_minimum(self):
-        self.assertEqual(estimate_accuracy(
-            1.0, 1.0, [Circle(1.0, 1.0, 100.0)], 333), 333.0)
 
 
 class TestMaximumRadius(TestCase):

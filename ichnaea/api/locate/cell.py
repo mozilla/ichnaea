@@ -3,6 +3,7 @@
 from collections import defaultdict
 import operator
 
+import numpy
 from sqlalchemy.orm import load_only
 
 from ichnaea.api.locate.constants import DataSource
@@ -12,7 +13,7 @@ from ichnaea.constants import (
     CELL_MIN_ACCURACY,
     LAC_MIN_ACCURACY,
 )
-from ichnaea.geocalc import estimate_accuracy
+from ichnaea.geocalc import aggregate_position
 from ichnaea.models import (
     Cell,
     CellArea,
@@ -48,12 +49,11 @@ def aggregate_cell_position(cells, result_type):
     Given a list of cells from a single cell cluster,
     return the aggregate position of the user inside the cluster.
     """
-    length = float(len(cells))
-    avg_lat = sum([c.lat for c in cells]) / length
-    avg_lon = sum([c.lon for c in cells]) / length
-    accuracy = estimate_accuracy(
-        avg_lat, avg_lon, cells, CELL_MIN_ACCURACY)
-    return result_type(lat=avg_lat, lon=avg_lon, accuracy=accuracy)
+    circles = numpy.array(
+        [(cell.lat, cell.lon, cell.range) for cell in cells],
+        dtype=numpy.float64)
+    lat, lon, accuracy = aggregate_position(circles, CELL_MIN_ACCURACY)
+    return result_type(lat=lat, lon=lon, accuracy=accuracy)
 
 
 def aggregate_area_position(area, result_type):
