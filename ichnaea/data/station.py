@@ -197,7 +197,7 @@ class CellUpdater(StationUpdater):
         obs_length = len(observations)
         obs_positions = numpy.array(
             [(obs.lat, obs.lon) for obs in observations],
-            dtype=numpy.float64)
+            dtype=numpy.double)
         obs_lat, obs_lon = centroid(obs_positions)
 
         values = {
@@ -469,7 +469,7 @@ class WifiUpdater(StationUpdater):
         obs_length = len(observations)
         obs_positions = numpy.array(
             [(obs.lat, obs.lon) for obs in observations],
-            dtype=numpy.float64)
+            dtype=numpy.double)
         obs_lat, obs_lon = centroid(obs_positions)
 
         values = {

@@ -5,7 +5,6 @@ from ichnaea.geocalc import (
     add_meters_to_latitude,
     add_meters_to_longitude,
     aggregate_position,
-    bound,
     distance,
     maximum_country_radius,
 )
@@ -43,27 +42,15 @@ class TestAddMetersToLongitude(TestCase):
                                1.0166573581, 9)
 
 
-class TestBound(TestCase):
-
-    def test_returns_between_min_max(self):
-        self.assertEqual(bound(0, 1, 2), 1)
-
-    def test_returns_below_max(self):
-        self.assertEqual(bound(0, 3, 2), 2)
-
-    def test_returns_above_min(self):
-        self.assertEqual(bound(0, -1, 2), 0)
-
-
 class TestAggregatePosition(TestCase):
 
     def test_same(self):
-        circles = numpy.array([(1.0, 1.0, 100.0)], dtype=numpy.float64)
+        circles = numpy.array([(1.0, 1.0, 100.0)], dtype=numpy.double)
         self.assertEqual(aggregate_position(circles, 100.0),
                          (1.0, 1.0, 100.0))
 
     def test_minimum(self):
-        circles = numpy.array([(1.0, 1.0, 100.0)], dtype=numpy.float64)
+        circles = numpy.array([(1.0, 1.0, 100.0)], dtype=numpy.double)
         self.assertEqual(aggregate_position(circles, 333.0),
                          (1.0, 1.0, 333.0))
 

@@ -5,7 +5,7 @@ These are implemented in Cython / C using NumPy.
 """
 
 from libc.math cimport asin, cos, fmin, M_PI, pow, sin, sqrt
-from numpy cimport float64_t, ndarray
+from numpy cimport double_t, ndarray
 
 cdef double EARTH_RADIUS = 6371.0  #: Earth radius in km.
 
@@ -14,7 +14,7 @@ cdef inline double deg2rad(double degrees):
     return degrees * M_PI / 180.0
 
 
-cpdef ndarray[float64_t, ndim=1] centroid(ndarray[float64_t, ndim=2] points):
+cpdef ndarray[double_t, ndim=1] centroid(ndarray[double_t, ndim=2] points):
     """
     Compute the centroid (average lat and lon) from a set of points
     (two-dimensional lat/lon array).
@@ -56,3 +56,31 @@ cpdef double distance(double lat1, double lon1, double lat2, double lon2):
     a = pow(sin(dLat), 2) + cos(lat1) * cos(lat2) * pow(sin(dLon), 2)
     c = asin(fmin(1, sqrt(a)))
     return 1000 * 2 * EARTH_RADIUS * c
+
+
+cpdef double latitude_add(double lat, double distance):
+    """
+    Return a latitude in degrees which is shifted by
+    distance in meters.
+
+    A suitable estimate for surface level calculations is
+    111,111m = 1 degree latitude
+    """
+    return lat + (distance / 111111.0)
+
+
+cpdef double longitude_add(double lat, double lon, double distance):
+    """
+    Return a longitude in degrees which is shifted by
+    distance in meters.
+    """
+    return lon + (distance / (cos(lat) * 111111.0))
+
+
+cpdef double max_distance(double lat, double lon,
+                          ndarray[double_t, ndim=2] points):
+    """
+    Returns the maximum distance from the given lat/lon point to any of
+    the provided points in the points array.
+    """
+    return max([distance(lat, lon, p[0], p[1]) for p in points])

@@ -51,7 +51,7 @@ def aggregate_cell_position(cells, result_type):
     """
     circles = numpy.array(
         [(cell.lat, cell.lon, cell.range) for cell in cells],
-        dtype=numpy.float64)
+        dtype=numpy.double)
     lat, lon, accuracy = aggregate_position(circles, CELL_MIN_ACCURACY)
     return result_type(lat=lat, lon=lon, accuracy=accuracy)
 

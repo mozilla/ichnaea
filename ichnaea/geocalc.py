@@ -2,9 +2,6 @@
 Contains helper functions for various geo related calculations.
 """
 
-import functools
-import math
-
 from country_bounding_boxes import country_subunits_by_iso_code
 import numpy
 from six import string_types
@@ -24,10 +21,9 @@ def add_meters_to_latitude(lat, distance):
     :data:`ichnaea.constants.MIN_LAT` and
     :data:`ichnaea.constants.MAX_LAT`.
     """
-    # A suitable estimate for surface level calculations is
-    # 111,111m = 1 degree latitude
-    new_lat = lat + (distance / 111111.0)
-    return bound(constants.MIN_LAT, new_lat, constants.MAX_LAT)
+    return max(constants.MIN_LAT,
+               min(_geocalc.latitude_add(lat, distance),
+                   constants.MAX_LAT))
 
 
 def add_meters_to_longitude(lat, lon, distance):
@@ -39,20 +35,9 @@ def add_meters_to_longitude(lat, lon, distance):
     :data:`ichnaea.constants.MIN_LON` and
     :data:`ichnaea.constants.MAX_LON`.
     """
-    # A suitable estimate for surface level calculations is
-    # 111,111m = 1 degree latitude
-    new_lon = lon + (distance / (math.cos(lat) * 111111.0))
-    return bound(constants.MIN_LON, new_lon, constants.MAX_LON)
-
-
-def bound(low, value, high):
-    """
-    If value is between low and high, return value.
-    If value is below low, return low.
-    If value is above high, return high.
-    If low is below high, raise an exception.
-    """
-    return max(low, min(value, high))
+    return max(constants.MIN_LON,
+               min(_geocalc.longitude_add(lat, lon, distance),
+                   constants.MAX_LON))
 
 
 def aggregate_position(circles, minimum_accuracy):
@@ -72,10 +57,9 @@ def aggregate_position(circles, minimum_accuracy):
     lat, lon = centroid(points)
 
     # Bad approximation. This one takes the maximum distance from
-    # the centroid any of the provided circle centers.
+    # the centroid to any of the provided circle centers.
     # It ignores the radius of those circles.
-    center_distance = functools.partial(_geocalc.distance, lat, lon)
-    radius = float(max([center_distance(p[0], p[1]) for p in points]))
+    radius = _geocalc.max_distance(lat, lon, points)
     return (lat, lon, max(radius, minimum_accuracy))
 
 
@@ -95,13 +79,14 @@ def circle_radius(lat, lon, max_lat, max_lon, min_lat, min_lon):
     Compute the maximum distance, in meters, from a (lat, lon) point
     to any of the extreme points of a bounding box.
     """
-    edges = [(min_lat, min_lon),
-             (min_lat, max_lon),
-             (max_lat, min_lon),
-             (max_lat, max_lon)]
+    points = numpy.array([
+        (min_lat, min_lon),
+        (min_lat, max_lon),
+        (max_lat, min_lon),
+        (max_lat, max_lon),
+    ], dtype=numpy.double)
 
-    center_distance = functools.partial(_geocalc.distance, lat, lon)
-    radius = max([center_distance(edge[0], edge[1]) for edge in edges])
+    radius = _geocalc.max_distance(lat, lon, points)
     return int(round(radius))
 
 

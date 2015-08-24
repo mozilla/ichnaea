@@ -227,7 +227,7 @@ class FallbackCache(object):
             results = list(clustered_results.values())[0]
             circles = numpy.array(
                 [(res.lat, res.lon, res.accuracy) for res in results],
-                dtype=numpy.float64)
+                dtype=numpy.double)
             lat, lon, accuracy = aggregate_position(circles, 10.0)
             _, accuracies = numpy.hsplit(circles, [2])
             return ExternalResult(

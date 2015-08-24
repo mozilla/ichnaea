@@ -56,14 +56,14 @@ class CellAreaUpdater(DataTask):
                 (numpy.nan if cell.min_lat is None else cell.min_lat,
                  numpy.nan if cell.min_lon is None else cell.min_lon)
                 for cell in cells
-            ], dtype=numpy.float64)
+            ], dtype=numpy.double)
 
             max_lat, max_lon = numpy.nanmax(cell_extremes, axis=0)
             min_lat, min_lon = numpy.nanmin(cell_extremes, axis=0)
 
             ctr_lat, ctr_lon = centroid(
                 numpy.array([(c.lat, c.lon) for c in cells],
-                            dtype=numpy.float64))
+                            dtype=numpy.double))
             radius = circle_radius(
                 ctr_lat, ctr_lon,
                 max_lat, max_lon, min_lat, min_lon)

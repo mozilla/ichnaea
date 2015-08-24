@@ -187,7 +187,7 @@ def aggregate_cluster_position(cluster, result_type):
     sample = cluster[:min(len(cluster), MAX_WIFIS_IN_CLUSTER)]
     circles = numpy.array(
         [(wifi.lat, wifi.lon, wifi.radius) for wifi in sample],
-        dtype=numpy.float64)
+        dtype=numpy.double)
     lat, lon, accuracy = aggregate_position(circles, WIFI_MIN_ACCURACY)
     return result_type(lat=lat, lon=lon, accuracy=accuracy)
 
