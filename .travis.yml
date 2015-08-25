@@ -6,6 +6,16 @@ cache:
   directories:
     - libmaxminddb/
 
+addons:
+  apt:
+    packages:
+      - libatlas-dev
+      - libatlas-base-dev
+      - liblapack-dev
+      - gfortran
+      - libgmp-dev
+      - libmpfr-dev
+
 language: python
 python:
     - "2.6"

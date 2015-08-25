@@ -39,7 +39,7 @@ Changes
 - Move best country result selection into searcher logic.
 
 - Update to latest versions of alembic, cffi, cryptography, coverage,
-  cython, hiredis, numpy and pip.
+  cython, hiredis, numpy, pip and scipy.
 
 20150813105600
 **************
