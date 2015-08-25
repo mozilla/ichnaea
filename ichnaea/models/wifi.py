@@ -17,6 +17,10 @@ from sqlalchemy.dialects.mysql import (
 )
 from sqlalchemy.ext.declarative import declared_attr
 
+from ichnaea.constants import (
+    PERMANENT_BLOCKLIST_THRESHOLD,
+    TEMPORARY_BLOCKLIST_DURATION,
+)
 from ichnaea.models import constants
 from ichnaea.models.base import (
     _Model,
@@ -48,6 +52,7 @@ from ichnaea.models.station import (
     ValidBboxSchema,
     ValidStationSchema,
 )
+from ichnaea import util
 
 WIFI_SHARDS = {}
 
@@ -364,6 +369,20 @@ class WifiShard(HashKeyQueryMixin,
         if not mac:
             return None
         return WIFI_SHARDS.get(mac.lower()[4], None)
+
+    def blocked(self, today=None):
+        if (self.block_count and
+                self.block_count >= PERMANENT_BLOCKLIST_THRESHOLD):
+            return True
+
+        temporary = False
+        if self.block_last:
+            if today is None:
+                today = util.utcnow().date()
+            age = today - self.block_last
+            temporary = age < TEMPORARY_BLOCKLIST_DURATION
+
+        return bool(temporary)
 
 
 class WifiShard0(WifiShard, _Model):

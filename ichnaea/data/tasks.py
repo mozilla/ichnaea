@@ -183,8 +183,7 @@ def update_wifi(self, batch=1000):
                 self, session, pipe,
                 remove_task=remove_wifi,
                 update_task=update_wifi)
-            wifis, moving = updater.update(batch=batch)
-    return (wifis, moving)
+            updater.update(batch=batch)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell')

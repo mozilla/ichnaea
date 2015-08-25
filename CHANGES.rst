@@ -18,6 +18,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Insert new wifi networks into sharded tables.
+
 - Factor out more of the `aggregate position` logic.
 
 - Optimize gzip compression levels.

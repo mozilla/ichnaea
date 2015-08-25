@@ -11,7 +11,7 @@ from ichnaea.models import (
     Cell,
     ScoreKey,
     User,
-    Wifi,
+    WifiShard,
 )
 
 
@@ -44,9 +44,6 @@ class TestUploader(BaseExportTest):
         schedule_export_reports.delay().get()
         update_cell.delay().get()
         update_wifi.delay().get()
-
-        self.assertEqual(self.session.query(Cell).count(), 12)
-        self.assertEqual(self.session.query(Wifi).count(), 24)
 
         self.check_stats(counter=[
             ('data.export.batch', 1, 1, ['key:internal']),
@@ -123,13 +120,15 @@ class TestUploader(BaseExportTest):
 
         position = reports[0]['position']
         wifi_data = reports[0]['wifiAccessPoints'][0]
-        wifis = self.session.query(Wifi).all()
+        mac = wifi_data['macAddress']
+        shard = WifiShard.shard_model(mac)
+        wifis = self.session.query(shard).all()
         self.assertEqual(len(wifis), 1)
         wifi = wifis[0]
         self.assertEqual(wifi.lat, position['latitude'])
         self.assertEqual(wifi.lon, position['longitude'])
-        self.assertEqual(wifi.key, wifi_data['macAddress'])
-        self.assertEqual(wifi.total_measures, 1)
+        self.assertEqual(wifi.mac, wifi_data['macAddress'])
+        self.assertEqual(wifi.samples, 1)
 
     def test_wifi_duplicated(self):
         self.add_reports(cell_factor=0, wifi_factor=1)
@@ -138,6 +137,7 @@ class TestUploader(BaseExportTest):
         items = queue.dequeue(queue.queue_key())
         report = items[0]['report']
         wifi = report['wifiAccessPoints'][0]
+        mac = wifi['macAddress']
         report['wifiAccessPoints'].append(wifi.copy())
         report['wifiAccessPoints'].append(wifi.copy())
         report['wifiAccessPoints'][1]['signalStrength'] += 2
@@ -147,15 +147,15 @@ class TestUploader(BaseExportTest):
         schedule_export_reports.delay().get()
         update_wifi.delay().get()
 
-        wifis = self.session.query(Wifi).all()
+        shard = WifiShard.shard_model(mac)
+        wifis = self.session.query(shard).all()
         self.assertEqual(len(wifis), 1)
-        self.assertEqual(wifis[0].total_measures, 1)
+        self.assertEqual(wifis[0].samples, 1)
 
     def test_wifi_invalid(self):
         self.add_reports(cell_factor=0, wifi_factor=1, wifi_key='abcd')
         schedule_export_reports.delay().get()
         update_wifi.delay().get()
-        self.assertEqual(self.session.query(Wifi).count(), 0)
         self.check_stats(counter=[
             ('data.report.upload', 1, 1, ['key:test']),
             ('data.report.drop', 1, 1, ['reason:malformed', 'key:test']),

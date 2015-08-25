@@ -194,6 +194,11 @@ class WifiReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
             return True
         return False
 
+    @property
+    def mac(self):
+        # BBB: alias
+        return self.key
+
 
 class ValidWifiObservationSchema(ValidWifiReportSchema, ValidReportSchema):
     """A schema which validates the fields in wifi observation."""
