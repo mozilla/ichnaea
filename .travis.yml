@@ -28,7 +28,7 @@ notifications:
 
 script:
     - pip install -U pip
-    - make build
+    - travis_wait make build
     - make release_compile
     - make test
     - make docs
