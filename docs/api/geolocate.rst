@@ -213,6 +213,22 @@ As mentioned in the specific fields, our API has a couple of extensions.
 Response
 --------
 
+A successful response returns a position estimate and an accuracy field.
+Combined these two describe the center and radius of a circle. The users
+true position should be inside the circle with a 95th percentile
+confidence value. The accuracy is measured in meters.
+
+If the position is to be shown on a map and the returned accuracy is
+large, it may be advisable to zoom out the map, so that all of the
+circle can be seen, even if the circle itself is not shown graphically.
+That way a user should still see his true position on the map and can
+further zoom in.
+
+If instead the returned position is shown highly zoomed in, the user
+may just see an arbitrary location that they don't recognize at all.
+This typically happens when GeoIP based results are returned and the
+returned position is the center of a city or the center of a country.
+
 A successful response will be:
 
 .. code-block:: javascript
