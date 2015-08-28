@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Fix bug in block_count station update routine.
+
 20150827110300
 **************
 

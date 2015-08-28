@@ -443,6 +443,7 @@ class WifiUpdater(StationUpdater):
                 })
                 return ('new_moving', values)
             else:
+                block_count = shard_station.block_count or 0
                 values.update({
                     'mac': station_key,
                     'lat': None,
@@ -456,7 +457,7 @@ class WifiUpdater(StationUpdater):
                     'samples': None,
                     'source': None,
                     'block_last': self.today,
-                    'block_count': shard_station.block_count + 1,
+                    'block_count': block_count + 1,
                 })
                 return ('moving', values)
 
@@ -563,6 +564,7 @@ class WifiUpdater(StationUpdater):
                 box_dist = distance(min_lat, min_lon, max_lat, max_lon)
                 if box_dist > self.max_dist_meters:
                     # shard_station + disagreeing observations
+                    block_count = shard_station.block_count or 0
                     values.update({
                         'mac': station_key,
                         'lat': None,
@@ -576,7 +578,7 @@ class WifiUpdater(StationUpdater):
                         'samples': None,
                         'source': None,
                         'block_last': self.today,
-                        'block_count': shard_station.block_count + 1,
+                        'block_count': block_count + 1,
                     })
                     return ('moving', values)
                 else:
@@ -632,6 +634,7 @@ class WifiUpdater(StationUpdater):
 
                 if box_dist > self.max_dist_meters:
                     # old station + disagreeing observations
+                    block_count = shard_station.block_count or 0
                     values.update({
                         'mac': station_key,
                         'lat': None,
@@ -645,7 +648,7 @@ class WifiUpdater(StationUpdater):
                         'samples': None,
                         'source': None,
                         'block_last': self.today,
-                        'block_count': shard_station.block_count + 1,
+                        'block_count': block_count + 1,
                     })
                     return ('moving', values)
                 else:
