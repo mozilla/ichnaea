@@ -19,7 +19,7 @@ filechunkio==1.6
 geoip2==2.2.0
 gevent==1.0.2 ; python_version < '3.0'
 gevent==1.1b2 ; python_version >= '3.0'
-greenlet==0.4.7
+greenlet==0.4.9
 gunicorn==19.2.1  # rq.filter: !=19.3.0
 hiredis==0.2.0
 idna==2.0
@@ -30,7 +30,7 @@ iso3166==0.7
 iso8601==0.1.10
 kombu==3.0.26
 linecache2==1.0.0
-Mako==1.0.1
+Mako==1.0.2
 MarkupSafe==0.23
 maxminddb==1.2.0  # optional C extension, version also in Makefile
 mobile-codes==0.7
@@ -44,9 +44,9 @@ PyMySQL==0.6.6
 pyopenssl==0.15.1
 pyramid==1.5.7
 pyramid-chameleon==0.3
-python-editor==0.3
+python-editor==0.4
 pytz==2015.4
-raven==5.4.4  # rq.filter: != 5.5.0
+raven==5.6.0
 redis==2.10.3
 repoze.lru==0.6
 requests==2.7.0
