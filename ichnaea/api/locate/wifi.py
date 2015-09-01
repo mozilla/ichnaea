@@ -228,16 +228,17 @@ def query_database(query, raven_client):
         not_found_macs = [mac for mac, value in macs.items() if value is None]
 
         # Load the extra key field, as its not the actual primary key
-        load_fields = ('key', 'lat', 'lon', 'range')
-        results = (
-            query.session.query(Wifi)
-                         .filter(Wifi.key.in_(not_found_macs))
-                         .filter(Wifi.lat.isnot(None))
-                         .filter(Wifi.lon.isnot(None))
-                         .options(load_only(*load_fields))
-        ).all()
-        for result in results:
-            macs[result.key] = result
+        if not_found_macs:
+            load_fields = ('key', 'lat', 'lon', 'range')
+            results = (
+                query.session.query(Wifi)
+                             .filter(Wifi.key.in_(not_found_macs))
+                             .filter(Wifi.lat.isnot(None))
+                             .filter(Wifi.lon.isnot(None))
+                             .options(load_only(*load_fields))
+            ).all()
+            for result in results:
+                macs[result.key] = result
 
         return [value for value in macs.values() if value is not None]
     except Exception:
