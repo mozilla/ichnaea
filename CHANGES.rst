@@ -14,7 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
-- Update to latest versions of greenlet, mako and raven.
+- Update to latest versions of datadog, greenlet, mako and raven.
 
 20150828125400
 **************

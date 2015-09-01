@@ -191,11 +191,13 @@ class StatsClient(DogStatsd):
     """A statsd client."""
 
     def __init__(self, host='localhost', port=8125, max_buffer_size=50,
-                 constant_tags=None, metric_prefix=None, tag_support=False):
+                 constant_tags=None, use_ms=False,
+                 metric_prefix=None, tag_support=False):
         super(StatsClient, self).__init__(
             host=host, port=port,
             max_buffer_size=max_buffer_size,
-            constant_tags=constant_tags)
+            constant_tags=constant_tags,
+            use_ms=True)  # always enable this to be standards compliant
         self.metric_prefix = metric_prefix
         self.tag_support = tag_support
 
@@ -238,13 +240,6 @@ class StatsClient(DogStatsd):
 
     def incr(self, *args, **kw):
         return self.increment(*args, **kw)
-
-    def timing(self, metric, value, tags=None, sample_rate=1):
-        if isinstance(value, float):
-            # workaround for bug in DataDog/datadogpy#67
-            value = int(round(1000 * value))
-        super(StatsClient, self).timing(
-            metric, value, tags=tags, sample_rate=sample_rate)
 
 
 class DebugStatsClient(StatsClient):
