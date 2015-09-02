@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Stop using the wifi table.
+
 - Update to latest versions of datadog, greenlet, mako and raven.
 
 20150828125400

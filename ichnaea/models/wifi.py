@@ -12,6 +12,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.mysql import (
+    BIGINT as BigInteger,
     INTEGER as Integer,
     TINYINT as TinyInteger,
 )
@@ -24,7 +25,6 @@ from ichnaea.constants import (
 from ichnaea.models import constants
 from ichnaea.models.base import (
     _Model,
-    BigIdMixin,
     CreationMixin,
     PositionMixin,
     TimeTrackingMixin,
@@ -33,7 +33,6 @@ from ichnaea.models.base import (
 )
 from ichnaea.models.hashkey import (
     HashKey,
-    HashKeyQueryMixin,
 )
 from ichnaea.models.sa_types import (
     MacColumn,
@@ -50,7 +49,6 @@ from ichnaea.models.station import (
     BboxMixin,
     StationMixin,
     ValidBboxSchema,
-    ValidStationSchema,
 )
 from ichnaea import util
 
@@ -85,14 +83,6 @@ def encode_mac(value, codec=None):
 class WifiKey(HashKey):
 
     _fields = ('key', )
-
-
-class WifiKeyMixin(HashKeyQueryMixin):
-
-    _hashkey_cls = WifiKey
-    _query_batch = 100
-
-    key = Column(String(12))
 
 
 class WifiKeyNode(ValidatorNode):
@@ -174,52 +164,17 @@ class ValidWifiSignalSchema(FieldSchema, CopyingSchema):
         return super(ValidWifiSignalSchema, self).deserialize(data)
 
 
-class WifiMixin(BigIdMixin, WifiKeyMixin):
-    pass
-
-
-class ValidWifiSchema(ValidWifiKeySchema, ValidStationSchema):
-    """A schema which validates the fields in wifi."""
-
-
-class Wifi(WifiMixin, StationMixin, CreationMixin, _Model):
+class Wifi(StationMixin, _Model):
     __tablename__ = 'wifi'
 
     _indices = (
         UniqueConstraint('key', name='wifi_key_unique'),
         Index('wifi_created_idx', 'created'),
     )
-    _valid_schema = ValidWifiSchema()
 
-    @property
-    def mac(self):
-        # BBB: alias
-        return self.key
-
-    @mac.setter
-    def mac(self, value):
-        # BBB: alias
-        self.key = value
-
-    @property
-    def radius(self):
-        # BBB: alias
-        return self.range
-
-    @radius.setter
-    def radius(self, value):
-        # BBB: alias
-        self.range = value
-
-    @property
-    def samples(self):
-        # BBB: alias
-        return self.total_measures
-
-    @samples.setter
-    def samples(self, value):
-        # BBB: alias
-        self.total_measures = value
+    id = Column(BigInteger(unsigned=True),
+                primary_key=True, autoincrement=True)
+    key = Column(String(12))
 
 
 class StationSource(IntEnum):
@@ -270,11 +225,6 @@ class StationSourceType(colander.Integer):
         return cstruct
 
 
-class WifiMac(HashKey):
-
-    _fields = ('mac', )
-
-
 class ValidWifiShardSchema(ValidBboxSchema,
                            ValidPositionSchema,
                            ValidTimeTrackingSchema):
@@ -292,14 +242,11 @@ class ValidWifiShardSchema(ValidBboxSchema,
     block_count = colander.SchemaNode(colander.Integer(), missing=0)
 
 
-class WifiShard(HashKeyQueryMixin,
-                CreationMixin,
+class WifiShard(CreationMixin,
                 PositionMixin,
                 BboxMixin,
                 TimeTrackingMixin):
 
-    _hashkey_cls = WifiMac
-    _query_batch = 100
     _valid_schema = ValidWifiShardSchema()
 
     mac = Column(MacColumn(6))

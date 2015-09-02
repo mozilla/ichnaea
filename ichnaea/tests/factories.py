@@ -20,7 +20,6 @@ from ichnaea.models import (
     OCIDCell,
     OCIDCellArea,
     Radio,
-    Wifi,
     WifiShard,
     WifiObservation,
 )
@@ -179,40 +178,24 @@ class CellObservationFactory(CellPositionFactory, BaseMemoryFactory):
         model = CellObservation.create
 
 
-class WifiKeyFactory(Factory):
-
-    key = FuzzyWifiKey()
-
-
-class WifiPositionFactory(WifiKeyFactory):
-
-    lat = GB_LAT
-    lon = GB_LON
-    range = WIFI_MIN_ACCURACY
-
-
-class WifiFactory(WifiPositionFactory, BboxFactory, BaseSQLFactory):
-
-    class Meta:
-        model = Wifi.create
-
-
-class WifiMacFactory(Factory):
+class WifiShardFactory(BaseSQLFactory):
 
     mac = FuzzyWifiMac()
-
-
-class WifiShardFactory(WifiMacFactory, BaseSQLFactory):
-
     lat = GB_LAT
     lon = GB_LON
     radius = WIFI_MIN_ACCURACY
+    samples = 1
 
     class Meta:
         model = WifiShard.create
 
 
-class WifiObservationFactory(WifiPositionFactory, BaseMemoryFactory):
+class WifiObservationFactory(BaseMemoryFactory):
+
+    key = FuzzyWifiKey()
+    lat = GB_LAT
+    lon = GB_LON
+    range = WIFI_MIN_ACCURACY
 
     class Meta:
         model = WifiObservation.create

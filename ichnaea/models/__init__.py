@@ -35,7 +35,6 @@ from ichnaea.models.observation import (  # NOQA
 from ichnaea.models.wifi import (  # NOQA
     decode_mac,
     encode_mac,
-    Wifi,
     WifiShard,
 )
 

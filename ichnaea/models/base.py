@@ -6,7 +6,6 @@ import colander
 from pyramid.path import DottedNameResolver
 from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import (
-    BIGINT as BigInteger,
     DOUBLE as Double,
 )
 from sqlalchemy.ext.declarative import (
@@ -124,13 +123,6 @@ class CreationMixin(ValidationMixin):
         if validated is None:  # pragma: no cover
             return None
         return cls(**validated)
-
-
-class BigIdMixin(object):
-    """A database model mixin representing a biginteger auto-inc id."""
-
-    id = Column(BigInteger(unsigned=True),
-                primary_key=True, autoincrement=True)
 
 
 class ValidTimeTrackingSchema(FieldSchema, CopyingSchema):

@@ -633,9 +633,12 @@ class CommonLocateErrorTest(BaseLocateTest):
         super(CommonLocateErrorTest, self).tearDown()
 
     def test_database_error(self, db_errors=0):
-        for tablename in ('wifi', 'cell', 'cell_area',
+        for tablename in ('cell', 'cell_area',
                           'ocid_cell', 'ocid_cell_area'):
             self.session.execute(text('drop table %s;' % tablename))
+        for i in range(16):
+            self.session.execute(text(
+                'drop table wifi_shard_%s;' % hex(i)[2:]))
 
         cells = CellFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(2)

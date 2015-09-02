@@ -7,10 +7,7 @@ from ichnaea.constants import (
     PERMANENT_BLOCKLIST_THRESHOLD,
     WIFI_MIN_ACCURACY,
 )
-from ichnaea.tests.factories import (
-    WifiFactory,
-    WifiShardFactory,
-)
+from ichnaea.tests.factories import WifiShardFactory
 from ichnaea import util
 
 
@@ -19,7 +16,7 @@ class TestWifi(BaseSourceTest):
     TestSource = WifiPositionSource
 
     def test_wifi(self):
-        wifi = WifiFactory(range=200)
+        wifi = WifiShardFactory(radius=200)
         wifi2 = WifiShardFactory(
             lat=wifi.lat, lon=wifi.lon + 0.00001, radius=300,
             block_count=1, block_last=None)
@@ -44,7 +41,7 @@ class TestWifi(BaseSourceTest):
     def test_wifi_temp_blocked(self):
         today = util.utcnow().date()
         yesterday = today - timedelta(days=1)
-        wifi = WifiFactory(range=200)
+        wifi = WifiShardFactory(radius=200)
         wifi2 = WifiShardFactory(
             lat=wifi.lat, lon=wifi.lon + 0.00001, radius=300,
             block_count=1, block_last=yesterday)
@@ -55,7 +52,7 @@ class TestWifi(BaseSourceTest):
         self.check_model_result(result, None)
 
     def test_wifi_permanent_blocked(self):
-        wifi = WifiFactory(range=200)
+        wifi = WifiShardFactory(radius=200)
         wifi2 = WifiShardFactory(
             lat=wifi.lat, lon=wifi.lon + 0.00001, radius=300,
             block_count=PERMANENT_BLOCKLIST_THRESHOLD, block_last=None)
@@ -64,30 +61,6 @@ class TestWifi(BaseSourceTest):
         query = self.model_query(wifis=[wifi, wifi2])
         result = self.source.search(query)
         self.check_model_result(result, None)
-
-    def test_wifi_old(self):
-        wifi = WifiFactory(range=200)
-        wifi2 = WifiFactory(lat=wifi.lat, lon=wifi.lon + 0.00001, range=300)
-        self.session.flush()
-
-        query = self.model_query(wifis=[wifi, wifi2])
-        result = self.source.search(query)
-        self.check_model_result(
-            result, wifi,
-            lon=wifi.lon + 0.000005, accuracy=WIFI_MIN_ACCURACY)
-
-    def test_wifi_shard_prefer(self):
-        wifi = WifiFactory(range=200)
-        wifi2 = WifiFactory(lat=wifi.lat, lon=wifi.lon, range=200)
-        wifi3 = WifiShardFactory(
-            mac=wifi2.mac, lat=wifi.lat, lon=wifi.lon + 0.00001, radius=300)
-        self.session.flush()
-
-        query = self.model_query(wifis=[wifi, wifi2, wifi3])
-        result = self.source.search(query)
-        self.check_model_result(
-            result, wifi,
-            lon=wifi.lon + 0.000005, accuracy=WIFI_MIN_ACCURACY)
 
     def test_check_empty(self):
         query = self.model_query()
@@ -102,7 +75,7 @@ class TestWifi(BaseSourceTest):
             check_db_calls(rw=0, ro=0)
 
     def test_few_candidates(self):
-        wifis = WifiFactory.create_batch(2)
+        wifis = WifiShardFactory.create_batch(2)
         self.session.flush()
 
         query = self.model_query(wifis=[wifis[0]])
@@ -110,7 +83,7 @@ class TestWifi(BaseSourceTest):
         self.check_model_result(result, None)
 
     def test_few_matches(self):
-        wifis = WifiFactory.create_batch(3)
+        wifis = WifiShardFactory.create_batch(3)
         wifis[0].lat = None
         self.session.flush()
 
@@ -119,8 +92,8 @@ class TestWifi(BaseSourceTest):
         self.check_model_result(result, None)
 
     def test_arithmetic_similarity(self):
-        wifi = WifiFactory(key='00000000001f')
-        wifi2 = WifiFactory(key='000000000020')
+        wifi = WifiShardFactory(mac='00000000001f')
+        wifi2 = WifiShardFactory(mac='000000000020')
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2])
@@ -128,8 +101,8 @@ class TestWifi(BaseSourceTest):
         self.check_model_result(result, None)
 
     def test_hamming_distance_similarity(self):
-        wifi = WifiFactory(key='000000000058')
-        wifi2 = WifiFactory(key='00000000005c')
+        wifi = WifiShardFactory(mac='000000000058')
+        wifi2 = WifiShardFactory(mac='00000000005c')
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2])
@@ -137,14 +110,14 @@ class TestWifi(BaseSourceTest):
         self.check_model_result(result, None)
 
     def test_similar_many_clusters(self):
-        wifi11 = WifiFactory(key='00000000001f')
-        wifi12 = WifiFactory(key='000000000020',
-                             lat=wifi11.lat, lon=wifi11.lon)
-        wifi21 = WifiFactory(key='000000000058',
-                             lat=wifi11.lat + 0.00004,
-                             lon=wifi11.lon + 0.00004)
-        wifi22 = WifiFactory(key='00000000005c',
-                             lat=wifi21.lat, lon=wifi21.lon)
+        wifi11 = WifiShardFactory(mac='00000000001f')
+        wifi12 = WifiShardFactory(mac='000000000020',
+                                  lat=wifi11.lat, lon=wifi11.lon)
+        wifi21 = WifiShardFactory(mac='000000000058',
+                                  lat=wifi11.lat + 0.00004,
+                                  lon=wifi11.lon + 0.00004)
+        wifi22 = WifiShardFactory(mac='00000000005c',
+                                  lat=wifi21.lat, lon=wifi21.lon)
         self.session.flush()
 
         query = self.model_query(wifis=[wifi11, wifi12, wifi21, wifi22])
@@ -154,14 +127,15 @@ class TestWifi(BaseSourceTest):
             lat=wifi11.lat + 0.00002, lon=wifi11.lon + 0.00002)
 
     def test_similar_many_found_clusters(self):
-        wifi = WifiFactory(key='00000000001f')
-        wifi2 = WifiFactory(key='000000000024',
-                            lat=wifi.lat + 0.00004, lon=wifi.lon + 0.00004)
+        wifi = WifiShardFactory(mac='00000000001f')
+        wifi2 = WifiShardFactory(mac='000000000024',
+                                 lat=wifi.lat + 0.00004,
+                                 lon=wifi.lon + 0.00004)
         other_wifi = [
-            WifiFactory.build(key='000000000020'),
-            WifiFactory.build(key='000000000021'),
-            WifiFactory.build(key='000000000022'),
-            WifiFactory.build(key='000000000023'),
+            WifiShardFactory.build(mac='000000000020'),
+            WifiShardFactory.build(mac='000000000021'),
+            WifiShardFactory.build(mac='000000000022'),
+            WifiShardFactory.build(mac='000000000023'),
         ]
         self.session.flush()
 
@@ -172,8 +146,8 @@ class TestWifi(BaseSourceTest):
             lat=wifi.lat + 0.00002, lon=wifi.lon + 0.00002)
 
     def test_ignore_outlier(self):
-        wifi = WifiFactory()
-        wifis = WifiFactory.create_batch(3, lat=wifi.lat, lon=wifi.lon)
+        wifi = WifiShardFactory()
+        wifis = WifiShardFactory.create_batch(3, lat=wifi.lat, lon=wifi.lon)
         wifis[0].lat = wifi.lat + 0.0001
         wifis[1].lat = wifi.lat + 0.0002
         wifis[2].lat = wifi.lat + 1.0
@@ -185,10 +159,10 @@ class TestWifi(BaseSourceTest):
             result, wifi, lat=wifi.lat + 0.0001)
 
     def test_cluster_size_over_better_signal(self):
-        wifi11 = WifiFactory()
-        wifi12 = WifiFactory(lat=wifi11.lat + 0.0002, lon=wifi11.lon)
-        wifi21 = WifiFactory(lat=wifi11.lat + 1.0, lon=wifi11.lon + 1.0)
-        wifi22 = WifiFactory(lat=wifi21.lat + 0.0002, lon=wifi21.lon)
+        wifi11 = WifiShardFactory()
+        wifi12 = WifiShardFactory(lat=wifi11.lat + 0.0002, lon=wifi11.lon)
+        wifi21 = WifiShardFactory(lat=wifi11.lat + 1.0, lon=wifi11.lon + 1.0)
+        wifi22 = WifiShardFactory(lat=wifi21.lat + 0.0002, lon=wifi21.lon)
         self.session.flush()
 
         query = self.model_query(wifis=[wifi11, wifi12, wifi21, wifi22])
@@ -201,9 +175,11 @@ class TestWifi(BaseSourceTest):
             result, wifi21, lat=wifi21.lat + 0.0001)
 
     def test_larger_cluster_over_signal(self):
-        wifi = WifiFactory()
-        wifis = WifiFactory.create_batch(3, lat=wifi.lat, lon=wifi.lon)
-        wifis2 = WifiFactory.create_batch(3, lat=wifi.lat + 1.0, lon=wifi.lon)
+        wifi = WifiShardFactory()
+        wifis = WifiShardFactory.create_batch(
+            3, lat=wifi.lat, lon=wifi.lon)
+        wifis2 = WifiShardFactory.create_batch(
+            3, lat=wifi.lat + 1.0, lon=wifi.lon)
         self.session.flush()
 
         query = self.model_query(wifis=[wifi] + wifis + wifis2)
@@ -218,11 +194,11 @@ class TestWifi(BaseSourceTest):
         # all these should wind up in the same cluster since
         # clustering threshold is 500m and the 10 wifis are
         # spaced in increments of (+1m, +1.2m)
-        wifi = WifiFactory.build()
+        wifi = WifiShardFactory.build()
         wifis = []
         for i in range(0, 10):
-            wifis.append(WifiFactory(lat=wifi.lat + i * 0.00001,
-                                     lon=wifi.lon + i * 0.000012))
+            wifis.append(WifiShardFactory(lat=wifi.lat + i * 0.00001,
+                                          lon=wifi.lon + i * 0.000012))
 
         self.session.flush()
 
@@ -236,11 +212,11 @@ class TestWifi(BaseSourceTest):
             lon=wifi.lon + 0.000024)
 
     def test_wifi_not_closeby(self):
-        wifi = WifiFactory()
+        wifi = WifiShardFactory()
         wifis = [
-            WifiFactory(lat=wifi.lat + 0.00001, lon=wifi.lon),
-            WifiFactory(lat=wifi.lat + 1.0, lon=wifi.lon),
-            WifiFactory(lat=wifi.lat + 1.00001, lon=wifi.lon),
+            WifiShardFactory(lat=wifi.lat + 0.00001, lon=wifi.lon),
+            WifiShardFactory(lat=wifi.lat + 1.0, lon=wifi.lon),
+            WifiShardFactory(lat=wifi.lat + 1.00001, lon=wifi.lon),
         ]
         self.session.flush()
 

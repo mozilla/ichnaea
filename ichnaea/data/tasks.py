@@ -20,7 +20,6 @@ from ichnaea.data.score import ScoreUpdater
 from ichnaea.data.station import (
     CellRemover,
     CellUpdater,
-    WifiRemover,
     WifiUpdater,
 )
 from ichnaea.data.stats import StatCounterUpdater
@@ -133,11 +132,9 @@ def remove_cell(self, cell_keys):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_wifi')
-def remove_wifi(self, wifi_keys):
-    with self.redis_pipeline() as pipe:
-        with self.db_session() as session:
-            length = WifiRemover(self, session, pipe).remove(wifi_keys)
-    return length
+def remove_wifi(self, wifi_keys):  # pragma: no cover
+    # BBB
+    return 0
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell')
@@ -158,7 +155,7 @@ def update_wifi(self, batch=1000):
         with self.db_session() as session:
             updater = WifiUpdater(
                 self, session, pipe,
-                remove_task=remove_wifi,
+                remove_task=None,
                 update_task=update_wifi)
             updater.update(batch=batch)
 

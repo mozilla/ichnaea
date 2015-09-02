@@ -12,7 +12,6 @@ from ichnaea.models import (
     Score,
     ScoreKey,
     User,
-    Wifi,
     WifiObservation,
     WifiReport,
     WifiShard,
@@ -57,45 +56,44 @@ class ReportQueue(DataTask):
                         count,
                         tags=tags + api_tag)
 
-    def new_stations(self, model, block_model, station_keys):
+    def new_stations(self, name, station_keys):
         if len(station_keys) == 0:
             return 0
 
         # assume all stations are unknown
         unknown_keys = set(station_keys)
 
-        # first check the station table, which is more likely to contain
-        # stations
-        station_iter = model.iterkeys(
-            self.session,
-            list(unknown_keys),
-            # only load the columns required for the hashkey
-            extra=lambda query: query.options(
-                load_only(*tuple(model._hashkey_cls._fields))))
-        # subtract all stations which are found in the station table
-        unknown_keys -= set([station.hashkey() for station in station_iter])
-        if len(unknown_keys) == 0:  # pragma: no cover
-            return 0
-
-        # Only check the blocklist table for the still unknown keys.
-        # There is no need to check for the already found keys again.
-        if block_model is WifiShard:
-            macs = [key.key for key in unknown_keys]
+        if name == 'wifi':
+            # there is only one combined table structure
             shards = defaultdict(list)
-            for mac in macs:
+            for mac in unknown_keys:
                 shards[WifiShard.shard_model(mac)].append(mac)
             for shard, macs in shards.items():
                 query = (self.session.query(shard.mac)
                                      .filter(shard.mac.in_(macs)))
-                unknown_keys -= set([
-                    model.to_hashkey(key=r.mac) for r in query.all()])
-        else:
-            block_iter = block_model.iterkeys(
+                unknown_keys -= set([r.mac for r in query.all()])
+        elif name == 'cell':
+            # first check the station table, which is more likely to contain
+            # stations
+            station_iter = Cell.iterkeys(
                 self.session,
                 list(unknown_keys),
                 # only load the columns required for the hashkey
                 extra=lambda query: query.options(
-                    load_only(*tuple(block_model._hashkey_cls._fields))))
+                    load_only(*tuple(Cell._hashkey_cls._fields))))
+            # subtract all stations which are found in the station table
+            unknown_keys -= set([sta.hashkey() for sta in station_iter])
+            if len(unknown_keys) == 0:  # pragma: no cover
+                return 0
+
+            # Only check the blocklist table for the still unknown keys.
+            # There is no need to check for the already found keys again.
+            block_iter = CellBlocklist.iterkeys(
+                self.session,
+                list(unknown_keys),
+                # only load the columns required for the hashkey
+                extra=lambda query: query.options(
+                    load_only(*tuple(CellBlocklist._hashkey_cls._fields))))
             # subtract all stations which are found in the blocklist table
             unknown_keys -= set([block.hashkey() for block in block_iter])
 
@@ -133,17 +131,15 @@ class ReportQueue(DataTask):
                 obs_count[name]['drop'] += malformed_obs[name]
 
         # group by unique station key
-        station_obs = {'cell': defaultdict(list), 'wifi': defaultdict(list)}
-        for name, model in (('cell', Cell),
-                            ('wifi', Wifi)):
+        for name in ('cell', 'wifi'):
+            station_keys = set()
             for obs in observations[name]:
-                station_obs[name][model.to_hashkey(obs)].append(obs)
-
-        # determine scores for stations
-        for name, model, block_model in (('cell', Cell, CellBlocklist),
-                                         ('wifi', Wifi, WifiShard)):
-            new_station_count[name] += self.new_stations(
-                model, block_model, list(station_obs[name].keys()))
+                if name == 'cell':
+                    station_keys.add(Cell.to_hashkey(obs))
+                elif name == 'wifi':
+                    station_keys.add(obs.mac)
+            # determine scores for stations
+            new_station_count[name] += self.new_stations(name, station_keys)
 
         for name, queue in (('cell', self.cell_queue),
                             ('wifi', self.wifi_queue)):

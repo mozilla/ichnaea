@@ -135,28 +135,20 @@ class HashKeyQueryMixin(HashKeyMixin):
         return session.query(cls).filter(*cls.joinkey(key))
 
     @classmethod
-    def querykeys(cls, session, keys):
-        """
-        Given a database session and a list of hashkeys, returns a
-        SQLAlchemy query object with a filter set to returns the rows
-        matching the passed in hashkeys.
-        """
+    def _querykeys(cls, session, keys):
+        # Given a database session and a list of hashkeys, returns a
+        # SQLAlchemy query object with a filter set to returns the rows
+        # matching the passed in hashkeys.
         if not keys:  # pragma: no cover
             # prevent construction of queries without a key restriction
-            raise ValueError('Model.querykeys called with empty keys.')
+            raise ValueError('Model._querykeys called with empty keys.')
 
         if len(cls._hashkey_cls._fields) == 1:
             # optimize queries for hashkeys with single fields to use
             # a 'WHERE model.somefield IN (:key_1, :key_2)' query
             field = cls._hashkey_cls._fields[0]
-            key_list = []
-            for key in keys:
-                if isinstance(key, (HashKey, HashKeyMixin)):
-                    # extract plain value from class
-                    key_list.append(getattr(key, field))
-                else:
-                    key_list.append(key)
-            return session.query(cls).filter(getattr(cls, field).in_(key_list))
+            return (session.query(cls)
+                           .filter(getattr(cls, field).in_(list(keys))))
 
         key_filters = []
         for key in keys:
@@ -182,7 +174,7 @@ class HashKeyQueryMixin(HashKeyMixin):
         # return all the keys, but batch the actual query depending on
         # an appropriate batch size for each model
         for i in range(0, len(keys), cls._query_batch):
-            query = cls.querykeys(session, keys[i:i + cls._query_batch])
+            query = cls._querykeys(session, keys[i:i + cls._query_batch])
             if extra is not None:
                 query = extra(query)
             for instance in query.all():

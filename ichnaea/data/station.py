@@ -19,21 +19,17 @@ from ichnaea.models import (
     CellObservation,
     StatCounter,
     StatKey,
-    Wifi,
     WifiObservation,
     WifiShard,
 )
 from ichnaea import util
 
 
-class StationRemover(DataTask):
+class CellRemover(DataTask):
 
     def __init__(self, task, session, pipe):
-        DataTask.__init__(self, task, session)
+        super(CellRemover, self).__init__(task, session)
         self.pipe = pipe
-
-
-class CellRemover(StationRemover):
 
     def remove(self, cell_keys):
         cells_removed = 0
@@ -51,21 +47,13 @@ class CellRemover(StationRemover):
         return cells_removed
 
 
-class WifiRemover(StationRemover):
-
-    def remove(self, wifi_keys):
-        query = Wifi.querykeys(self.session, wifi_keys)
-        length = query.delete(synchronize_session=False)
-        return length
-
-
 class StationUpdater(DataTask):
 
     MAX_OLD_OBSERVATIONS = 1000
 
     def __init__(self, task, session, pipe,
                  remove_task=None, update_task=None):
-        DataTask.__init__(self, task, session)
+        super(StationUpdater, self).__init__(task, session)
         self.pipe = pipe
         self.remove_task = remove_task
         self.updated_areas = set()
@@ -389,37 +377,26 @@ class WifiUpdater(StationUpdater):
                       'action:add',
                       'reason:moving'])
 
-    def station_values(self, station_key, shard_station,
-                       observations, old_station):
+    def station_values(self, station_key, shard_station, observations):
         """
         Return two-tuple of status, value dict where status is one of:
-        `new`, `new_moving`, `moving`, `changed`, `changed_old`
+        `new`, `new_moving`, `moving`, `changed`
         """
         # cases:
         # we always get a station key and observations
         # 0. observations disagree
         # 0.a. no shard station, return new_moving
         # 0.b. shard station, return moving
-        # 1. neither shard nor old station
+        # 1. no shard station
         # 1.a. obs agree -> return new
-        # 2. no shard station, old station
-        # 2.a. obs + old station disagree -> return new_moving
-        # 2.b. obs + old station agree -> return changed_old
-        # 3. shard station, no old station
-        # 3.a. obs disagree -> return moving
-        # 3.b. obs agree -> return changed
-        # 4. both shard and old station
-        #    ignore shard station, just a blocklist entry
-        # 4.a. old station + obs disagree -> moving
-        # 4.b. old station + obs agree -> changed_old
-
+        # 2. shard station
+        # 2.a. obs disagree -> return moving
+        # 2.b. obs agree -> return changed
+        created = self.utcnow
         values = {
+            'mac': station_key,
             'modified': self.utcnow,
         }
-        created = self.utcnow
-
-        if not shard_station and old_station:
-            created = old_station.created or created
 
         obs_length = len(observations)
         obs_positions = numpy.array(
@@ -435,7 +412,6 @@ class WifiUpdater(StationUpdater):
             # the new observations are already too far apart
             if not shard_station:
                 values.update({
-                    'mac': station_key,
                     'created': created,
                     'block_first': self.today,
                     'block_last': self.today,
@@ -445,7 +421,6 @@ class WifiUpdater(StationUpdater):
             else:
                 block_count = shard_station.block_count or 0
                 values.update({
-                    'mac': station_key,
                     'lat': None,
                     'lon': None,
                     'max_lat': None,
@@ -462,225 +437,90 @@ class WifiUpdater(StationUpdater):
                 return ('moving', values)
 
         if shard_station is None:
-            if old_station is None:
-                # totally new station, only agreeing observations
-                radius = circle_radius(
-                    obs_new_lat, obs_new_lon,
-                    obs_max_lat, obs_max_lon, obs_min_lat, obs_min_lon)
+            # totally new station, only agreeing observations
+            radius = circle_radius(
+                obs_new_lat, obs_new_lon,
+                obs_max_lat, obs_max_lon, obs_min_lat, obs_min_lon)
+            values.update({
+                'created': created,
+                'lat': obs_new_lat,
+                'lon': obs_new_lon,
+                'max_lat': float(obs_max_lat),
+                'min_lat': float(obs_min_lat),
+                'max_lon': float(obs_max_lon),
+                'min_lon': float(obs_min_lon),
+                'country': None,
+                'radius': radius,
+                'samples': obs_length,
+                'source': None,
+            })
+            return ('new', values)
+        else:
+            # shard_station + new observations
+            positions = numpy.append(obs_positions, [
+                (numpy.nan if shard_station.lat is None
+                    else shard_station.lat,
+                 numpy.nan if shard_station.lon is None
+                    else shard_station.lon),
+                (numpy.nan if shard_station.max_lat is None
+                    else shard_station.max_lat,
+                 numpy.nan if shard_station.max_lon is None
+                    else shard_station.max_lon),
+                (numpy.nan if shard_station.min_lat is None
+                    else shard_station.min_lat,
+                 numpy.nan if shard_station.min_lon is None
+                    else shard_station.min_lon),
+            ], axis=0)
+            max_lat, max_lon = numpy.nanmax(positions, axis=0)
+            min_lat, min_lon = numpy.nanmin(positions, axis=0)
+            box_dist = distance(min_lat, min_lon, max_lat, max_lon)
+            if box_dist > self.max_dist_meters:
+                # shard_station + disagreeing observations
+                block_count = shard_station.block_count or 0
                 values.update({
-                    'mac': station_key,
-                    'created': created,
-                    'lat': obs_new_lat,
-                    'lon': obs_new_lon,
-                    'max_lat': float(obs_max_lat),
-                    'min_lat': float(obs_min_lat),
-                    'max_lon': float(obs_max_lon),
-                    'min_lon': float(obs_min_lon),
+                    'lat': None,
+                    'lon': None,
+                    'max_lat': None,
+                    'min_lat': None,
+                    'max_lon': None,
+                    'min_lon': None,
                     'country': None,
+                    'radius': None,
+                    'samples': None,
+                    'source': None,
+                    'block_last': self.today,
+                    'block_count': block_count + 1,
+                })
+                return ('moving', values)
+            else:
+                # shard_station + agreeing observations
+                if shard_station.lat is None or shard_station.lon is None:
+                    old_weight = 0
+                else:
+                    old_weight = min((shard_station.samples or 0),
+                                     self.MAX_OLD_OBSERVATIONS)
+                new_lat = ((obs_new_lat * obs_length +
+                            (shard_station.lat or 0.0) * old_weight) /
+                           (obs_length + old_weight))
+                new_lon = ((obs_new_lon * obs_length +
+                            (shard_station.lon or 0.0) * old_weight) /
+                           (obs_length + old_weight))
+                samples = (shard_station.samples or 0) + obs_length
+                radius = circle_radius(
+                    new_lat, new_lon, max_lat, max_lon, min_lat, min_lon)
+                values.update({
+                    'lat': new_lat,
+                    'lon': new_lon,
+                    'max_lat': float(max_lat),
+                    'min_lat': float(min_lat),
+                    'max_lon': float(max_lon),
+                    'min_lon': float(min_lon),
                     'radius': radius,
-                    'samples': obs_length,
+                    'country': None,
+                    'samples': samples,
                     'source': None,
                 })
-                return ('new', values)
-            else:
-                # old station + new observations
-                positions = numpy.append(obs_positions, [
-                    (numpy.nan if old_station.lat is None
-                        else old_station.lat,
-                     numpy.nan if old_station.lon is None
-                        else old_station.lon),
-                    (numpy.nan if old_station.max_lat is None
-                        else old_station.max_lat,
-                     numpy.nan if old_station.max_lon is None
-                        else old_station.max_lon),
-                    (numpy.nan if old_station.min_lat is None
-                        else old_station.min_lat,
-                     numpy.nan if old_station.min_lon is None
-                        else old_station.min_lon),
-                ], axis=0)
-                max_lat, max_lon = numpy.nanmax(positions, axis=0)
-                min_lat, min_lon = numpy.nanmin(positions, axis=0)
-                box_dist = distance(min_lat, min_lon, max_lat, max_lon)
-
-                if box_dist > self.max_dist_meters:
-                    # old station + disagreeing observations
-                    values.update({
-                        'mac': station_key,
-                        'created': created,
-                        'block_first': self.today,
-                        'block_last': self.today,
-                        'block_count': 1,
-                    })
-                    return ('new_moving', values)
-                else:
-                    # old station + agreeing observations
-                    if old_station.lat is None or old_station.lon is None:
-                        old_weight = 0
-                    else:
-                        old_weight = min((old_station.total_measures or 0),
-                                         self.MAX_OLD_OBSERVATIONS)
-                    new_lat = ((obs_new_lat * obs_length +
-                                (old_station.lat or 0.0) * old_weight) /
-                               (obs_length + old_weight))
-                    new_lon = ((obs_new_lon * obs_length +
-                                (old_station.lon or 0.0) * old_weight) /
-                               (obs_length + old_weight))
-                    samples = (old_station.total_measures or 0) + obs_length
-                    radius = circle_radius(
-                        new_lat, new_lon, max_lat, max_lon, min_lat, min_lon)
-                    values.update({
-                        'id': old_station.id,
-                        'key': station_key,
-                        'created': created,
-                        'lat': new_lat,
-                        'lon': new_lon,
-                        'max_lat': float(max_lat),
-                        'min_lat': float(min_lat),
-                        'max_lon': float(max_lon),
-                        'min_lon': float(min_lon),
-                        'range': radius,
-                        'total_measures': samples,
-                    })
-                    return ('changed_old', values)
-        else:
-            if old_station is None:
-                # shard_station + new observations
-                positions = numpy.append(obs_positions, [
-                    (numpy.nan if shard_station.lat is None
-                        else shard_station.lat,
-                     numpy.nan if shard_station.lon is None
-                        else shard_station.lon),
-                    (numpy.nan if shard_station.max_lat is None
-                        else shard_station.max_lat,
-                     numpy.nan if shard_station.max_lon is None
-                        else shard_station.max_lon),
-                    (numpy.nan if shard_station.min_lat is None
-                        else shard_station.min_lat,
-                     numpy.nan if shard_station.min_lon is None
-                        else shard_station.min_lon),
-                ], axis=0)
-                max_lat, max_lon = numpy.nanmax(positions, axis=0)
-                min_lat, min_lon = numpy.nanmin(positions, axis=0)
-                box_dist = distance(min_lat, min_lon, max_lat, max_lon)
-                if box_dist > self.max_dist_meters:
-                    # shard_station + disagreeing observations
-                    block_count = shard_station.block_count or 0
-                    values.update({
-                        'mac': station_key,
-                        'lat': None,
-                        'lon': None,
-                        'max_lat': None,
-                        'min_lat': None,
-                        'max_lon': None,
-                        'min_lon': None,
-                        'country': None,
-                        'radius': None,
-                        'samples': None,
-                        'source': None,
-                        'block_last': self.today,
-                        'block_count': block_count + 1,
-                    })
-                    return ('moving', values)
-                else:
-                    # shard_station + agreeing observations
-                    if shard_station.lat is None or shard_station.lon is None:
-                        old_weight = 0
-                    else:
-                        old_weight = min((shard_station.samples or 0),
-                                         self.MAX_OLD_OBSERVATIONS)
-                    new_lat = ((obs_new_lat * obs_length +
-                                (shard_station.lat or 0.0) * old_weight) /
-                               (obs_length + old_weight))
-                    new_lon = ((obs_new_lon * obs_length +
-                                (shard_station.lon or 0.0) * old_weight) /
-                               (obs_length + old_weight))
-                    samples = (shard_station.samples or 0) + obs_length
-                    radius = circle_radius(
-                        new_lat, new_lon, max_lat, max_lon, min_lat, min_lon)
-                    values.update({
-                        'mac': station_key,
-                        'lat': new_lat,
-                        'lon': new_lon,
-                        'max_lat': float(max_lat),
-                        'min_lat': float(min_lat),
-                        'max_lon': float(max_lon),
-                        'min_lon': float(min_lon),
-                        'radius': radius,
-                        'country': None,
-                        'samples': samples,
-                        'source': None,
-                    })
-                    return ('changed', values)
-            else:
-                # old_station + shard_station + observations
-                # shard_station is only a blocklist entry
-                positions = numpy.append(obs_positions, [
-                    (numpy.nan if old_station.lat is None
-                        else old_station.lat,
-                     numpy.nan if old_station.lon is None
-                        else old_station.lon),
-                    (numpy.nan if old_station.max_lat is None
-                        else old_station.max_lat,
-                     numpy.nan if old_station.max_lon is None
-                        else old_station.max_lon),
-                    (numpy.nan if old_station.min_lat is None
-                        else old_station.min_lat,
-                     numpy.nan if old_station.min_lon is None
-                        else old_station.min_lon),
-                ], axis=0)
-                max_lat, max_lon = numpy.nanmax(positions, axis=0)
-                min_lat, min_lon = numpy.nanmin(positions, axis=0)
-                box_dist = distance(min_lat, min_lon, max_lat, max_lon)
-
-                if box_dist > self.max_dist_meters:
-                    # old station + disagreeing observations
-                    block_count = shard_station.block_count or 0
-                    values.update({
-                        'mac': station_key,
-                        'lat': None,
-                        'lon': None,
-                        'max_lat': None,
-                        'min_lat': None,
-                        'max_lon': None,
-                        'min_lon': None,
-                        'country': None,
-                        'radius': None,
-                        'samples': None,
-                        'source': None,
-                        'block_last': self.today,
-                        'block_count': block_count + 1,
-                    })
-                    return ('moving', values)
-                else:
-                    # old station + agreeing observations
-                    old_weight = old_station.total_measures
-                    if (old_weight is None or old_station.lat is None or
-                            old_station.lon is None):
-                        old_weight = 0
-                    old_weight = min(old_weight, self.MAX_OLD_OBSERVATIONS)
-                    new_lat = ((obs_new_lat * obs_length +
-                                (old_station.lat or 0.0) * old_weight) /
-                               (obs_length + old_weight))
-                    new_lon = ((obs_new_lon * obs_length +
-                                (old_station.lon or 0.0) * old_weight) /
-                               (obs_length + old_weight))
-                    samples = (old_station.total_measures or 0) + obs_length
-                    radius = circle_radius(
-                        new_lat, new_lon, max_lat, max_lon, min_lat, min_lon)
-                    values.update({
-                        'id': old_station.id,
-                        'key': station_key,
-                        'created': created,
-                        'lat': new_lat,
-                        'lon': new_lon,
-                        'max_lat': float(max_lat),
-                        'min_lat': float(min_lat),
-                        'max_lon': float(max_lon),
-                        'min_lon': float(min_lon),
-                        'range': radius,
-                        'total_measures': samples,
-                    })
-                    return ('changed_old', values)
+                return ('changed', values)
 
         return (None, None)  # pragma: no cover
 
@@ -700,15 +540,6 @@ class WifiUpdater(StationUpdater):
         if not sharded_obs:
             return (0, 0)
 
-        old_stations = {}
-        for i in range(0, len(station_keys), 100):
-            key_batch = station_keys[i:i + 100]
-            rows = (self.session.query(Wifi)
-                                .filter(Wifi.key.in_(key_batch))
-                    ).all()
-            for row in rows:
-                old_stations[row.key] = row
-
         blocklist = {}
         sharded_stations = {}
         for shard, shard_items in sharded_obs.items():
@@ -723,8 +554,6 @@ class WifiUpdater(StationUpdater):
         drop_counter = defaultdict(int)
         new_stations = 0
         blocked_stations = 0
-        moving_stations = set()
-        changed_old_values = []
 
         for shard, shard_values in sharded_obs.items():
             new_values = []
@@ -738,14 +567,13 @@ class WifiUpdater(StationUpdater):
                     drop_counter['blocklisted'] += len(observations)
                     continue
 
-                old_station = old_stations.get(station_key, None)
                 shard_station = sharded_stations.get(station_key, None)
-                if old_station is None and shard_station is None:
+                if shard_station is None:
                     # We discovered an actual new never before seen station.
                     new_stations += 1
 
                 status, result = self.station_values(
-                    station_key, shard_station, observations, old_station)
+                    station_key, shard_station, observations)
 
                 if status == 'moving':
                     blocked_stations += 1
@@ -754,17 +582,12 @@ class WifiUpdater(StationUpdater):
                     blocked_stations += 1
                     new_moving_values.append(result)
 
-                if status in ('moving', 'new_moving'):
-                    if old_station is not None:
-                        moving_stations.add(station_key)
-                else:
+                if status not in ('moving', 'new_moving'):
                     added_observations += len(observations)
                     if status == 'new':
                         new_values.append(result)
                     elif status == 'changed':
                         changed_values.append(result)
-                    elif status == 'changed_old':
-                        changed_old_values.append(result)
 
                 # track potential updates to dependent areas
                 self.add_area_update(station_key)
@@ -790,13 +613,6 @@ class WifiUpdater(StationUpdater):
             if changed_values:
                 # do a batch update of changed stations
                 self.session.bulk_update_mappings(shard, changed_values)
-
-        if moving_stations:
-            self.remove_task.delay(list(moving_stations))
-
-        if changed_old_values:
-            # do a batch update of old changed stations
-            self.session.bulk_update_mappings(Wifi, changed_old_values)
 
         if self.updated_areas:  # pragma: no cover
             self.queue_area_updates()

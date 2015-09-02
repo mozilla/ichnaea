@@ -6,7 +6,6 @@ from ichnaea.models.wifi import (
     decode_mac,
     encode_mac,
     StationSource,
-    Wifi,
     WifiShard,
     WifiShard0,
     WifiShardF,
@@ -134,33 +133,3 @@ class TestWifiShard(DBTestCase):
         stmt = 'select hex(`mac`) from wifi_shard_0'
         row = self.session.execute(stmt).fetchone()
         self.assertEqual(row, ('111101123456', ))
-
-
-class TestWifi(DBTestCase):
-
-    def test_fields(self):
-        self.session.add(Wifi.create(
-            key='3680873e9b83', lat=GB_LAT, lon=GB_LON, range=200,
-            total_measures=10))
-        self.session.flush()
-
-        result = self.session.query(Wifi).first()
-        self.assertEqual(result.key, '3680873e9b83')
-        self.assertEqual(result.mac, '3680873e9b83')
-        self.assertEqual(result.lat, GB_LAT)
-        self.assertEqual(result.lon, GB_LON)
-        self.assertEqual(result.range, 200)
-        self.assertEqual(result.radius, 200)
-        self.assertEqual(result.total_measures, 10)
-        self.assertEqual(result.samples, 10)
-
-        result.mac = '000080123456'
-        result.radius = 100
-        result.samples = 5
-        self.session.flush()
-        self.session.expunge(result)
-
-        result = self.session.query(Wifi).first()
-        self.assertEqual(result.key, '000080123456')
-        self.assertEqual(result.range, 100)
-        self.assertEqual(result.total_measures, 5)

@@ -7,7 +7,6 @@ from ichnaea.constants import (
 from ichnaea.data.tasks import (
     update_cell,
     update_wifi,
-    remove_wifi,
     scan_areas,
 )
 from ichnaea.models import (
@@ -16,7 +15,6 @@ from ichnaea.models import (
     CellBlocklist,
     StatCounter,
     StatKey,
-    Wifi,
     WifiShard,
 )
 from ichnaea.tests.base import CeleryTestCase
@@ -24,7 +22,6 @@ from ichnaea.tests.factories import (
     CellFactory,
     CellBlocklistFactory,
     CellObservationFactory,
-    WifiFactory,
     WifiShardFactory,
     WifiObservationFactory,
 )
@@ -496,6 +493,7 @@ class TestWifi(StationTest):
             mac=obs.mac,
             lat=None,
             lon=None,
+            samples=0,
             created=last_week,
             modified=last_week,
             block_first=last_week.date(),
@@ -644,161 +642,3 @@ class TestWifi(StationTest):
             ('data.station.blocklist', 1, 5,
                 ['type:wifi', 'action:add', 'reason:moving']),
         ])
-
-
-class TestWifiOld(StationTest):
-
-    def setUp(self):
-        super(TestWifiOld, self).setUp()
-        self.data_queue = self.celery_app.data_queues['update_wifi']
-
-    def test_update(self):
-        utcnow = util.utcnow()
-        obs = []
-        obs_factory = WifiObservationFactory
-        # first wifi
-        wifi1 = WifiFactory(lat=None, lon=None, total_measures=3)
-        new_pos = WifiFactory.build()
-        key1, lat1, lon1 = (wifi1.key, new_pos.lat, new_pos.lon)
-        obs.extend([
-            obs_factory(lat=lat1,
-                        lon=lon1, key=key1),
-            obs_factory(lat=lat1 + 0.002,
-                        lon=lon1 + 0.003, key=key1),
-            obs_factory(lat=lat1 + 0.004,
-                        lon=lon1 + 0.006, key=key1),
-        ])
-        # second wifi
-        wifi2 = WifiFactory(lat=lat1 + 1.0, lon=lon1 + 1.0, total_measures=2)
-        key2, lat2, lon2 = (wifi2.key, wifi2.lat, wifi2.lon)
-        obs.extend([
-            obs_factory(lat=lat2 + 0.002,
-                        lon=lon2 + 0.004, key=key2),
-            obs_factory(lat=lat2 + 0.002,
-                        lon=lon2 + 0.004, key=key2),
-        ])
-        # wifi with disagreeing observations
-        wifi3 = WifiFactory()
-        key3, lat3, lon3 = (wifi3.key, wifi3.lat, wifi3.lon)
-        obs.extend([
-            obs_factory(lat=lat3 + 2.0, lon=lon3, key=key3),
-            obs_factory(lat=lat3 + 2.002, lon=lon3, key=key3),
-        ])
-        # a previously blocked wifi with agreeing observations
-        wifi4 = WifiFactory(total_measures=1)
-        key4, lat4, lon4 = (wifi4.key, wifi4.lat, wifi4.lon)
-        wifi4.lat = None
-        wifi_shard4 = WifiShardFactory(
-            mac=key4,
-            block_first=utcnow.date() - timedelta(days=20),
-            block_last=utcnow.date() - timedelta(days=10),
-            block_count=2,
-        )
-        for col in ('lat', 'lon', 'max_lat', 'min_lat', 'max_lon', 'min_lon'):
-            setattr(wifi_shard4, col, None)
-        obs.extend([
-            obs_factory(lat=lat4 + 0.002, lon=lon4, key=key4),
-            obs_factory(lat=lat4 + 0.004, lon=lon4, key=key4),
-        ])
-        # a previously blocked wifi with disagreeing observations
-        wifi5 = WifiFactory(total_measures=1)
-        key5, lat5, lon5 = (wifi5.key, wifi5.lat, wifi5.lon)
-        WifiShardFactory(
-            mac=key5,
-            lat=lat5, lon=lon5,
-            block_first=utcnow.date() - timedelta(days=20),
-            block_last=utcnow.date() - timedelta(days=10),
-            block_count=2,
-        )
-        obs.extend([
-            obs_factory(lat=lat5 + 2.002, lon=lon5, key=key5),
-            obs_factory(lat=lat5 + 2.004, lon=lon5, key=key5),
-        ])
-
-        self.data_queue.enqueue(obs)
-        self.session.commit()
-        update_wifi.delay().get()
-
-        found = self.session.query(Wifi).filter(Wifi.key == key1).one()
-        self.assertAlmostEqual(found.lat, lat1 + 0.002)
-        self.assertAlmostEqual(found.lon, lon1 + 0.003)
-
-        found = self.session.query(Wifi).filter(Wifi.key == key2).one()
-        self.assertAlmostEqual(found.lat, lat2 + 0.001)
-        self.assertAlmostEqual(found.lon, lon2 + 0.002)
-
-        found = self.session.query(Wifi).filter(Wifi.key == key4).one()
-        self.assertAlmostEqual(found.lat, lat4 + 0.003)
-        self.assertAlmostEqual(found.lon, lon4)
-
-        query = self.session.query(Wifi).filter(Wifi.key.in_([key3, key5]))
-        self.assertEqual(query.count(), 0)
-
-        shard = WifiShard.shard_model(key4)
-        wifi = self.session.query(shard).filter(shard.mac == key4).one()
-        self.assertEqual(wifi.block_last, utcnow.date() - timedelta(days=10))
-        self.assertEqual(wifi.block_count, 2)
-
-        shard = WifiShard.shard_model(key5)
-        wifi = self.session.query(shard).filter(shard.mac == key5).one()
-        self.assertEqual(wifi.block_last, utcnow.date())
-        self.assertEqual(wifi.block_count, 3)
-
-        self.check_stats(counter=[
-            ('data.station.blocklist', 1, 2,
-                ['type:wifi', 'action:add', 'reason:moving']),
-        ])
-
-    def test_max_min_range_update(self):
-        wifi = WifiFactory(range=100, total_measures=4)
-        wifi_key = wifi.key
-        wifi_lat = wifi.lat
-        wifi_lon = wifi.lon
-        wifi.max_lat = wifi.lat + 0.001
-        wifi.min_lat = wifi.lat - 0.001
-        wifi.max_lon = wifi.lon + 0.001
-        wifi.min_lon = wifi.lon - 0.001
-
-        obs_factory = WifiObservationFactory
-        obs = [
-            obs_factory(lat=wifi.lat + 0.002,
-                        lon=wifi.lon - 0.004, key=wifi_key),
-            obs_factory(lat=wifi.lat - 0.002,
-                        lon=wifi.lon + 0.01, key=wifi_key),
-        ]
-        self.data_queue.enqueue(obs)
-        self.session.commit()
-        update_wifi.delay().get()
-
-        wifis = self.session.query(Wifi).all()
-        self.assertEqual(len(wifis), 1)
-        wifi = wifis[0]
-
-        self.assertAlmostEqual(wifi.lat, wifi_lat)
-        self.assertAlmostEqual(wifi.max_lat, wifi_lat + 0.002)
-        self.assertAlmostEqual(wifi.min_lat, wifi_lat - 0.002)
-        self.assertAlmostEqual(wifi.lon, wifi_lon + 0.001)
-        self.assertAlmostEqual(wifi.max_lon, wifi_lon + 0.01)
-        self.assertAlmostEqual(wifi.min_lon, wifi_lon - 0.004)
-        self.assertEqual(wifi.radius, 662)
-        self.assertEqual(wifi.samples, 6)
-
-    def test_remove_wifi(self):
-        wifis = WifiFactory.create_batch(5)
-        wifi_keys = [wifi.key for wifi in wifis]
-        self.session.flush()
-
-        result = remove_wifi.delay(wifi_keys[:2])
-        self.assertEqual(result.get(), 2)
-
-        wifis = self.session.query(Wifi).all()
-        self.assertEqual(len(wifis), 3)
-
-        result = remove_wifi.delay(wifi_keys)
-        self.assertEqual(result.get(), 3)
-
-        result = remove_wifi.delay(wifi_keys)
-        self.assertEqual(result.get(), 0)
-
-        wifis = self.session.query(Wifi).all()
-        self.assertEqual(len(wifis), 0)

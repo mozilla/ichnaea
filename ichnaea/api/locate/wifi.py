@@ -24,10 +24,7 @@ from ichnaea.geocalc import (
     aggregate_position,
     distance,
 )
-from ichnaea.models import (
-    Wifi,
-    WifiShard,
-)
+from ichnaea.models import WifiShard
 from ichnaea import util
 
 Network = namedtuple('Network', 'key lat lon radius signal')
@@ -193,21 +190,22 @@ def aggregate_cluster_position(cluster, result_type):
 
 
 def query_database(query, raven_client):
-    macs = dict([(lookup.mac, None) for lookup in query.wifi])
+    macs = [lookup.mac for lookup in query.wifi]
     if not macs:  # pragma: no cover
         return []
 
+    result = []
     today = util.utcnow().date()
     temp_blocked = today - TEMPORARY_BLOCKLIST_DURATION
 
     try:
         load_fields = ('lat', 'lon', 'radius')
         shards = defaultdict(list)
-        for mac in macs.keys():
+        for mac in macs:
             shards[WifiShard.shard_model(mac)].append(mac)
 
         for shard, shard_macs in shards.items():
-            results = (
+            rows = (
                 query.session.query(shard)
                              .filter(shard.mac.in_(shard_macs))
                              .filter(shard.lat.isnot(None))
@@ -221,29 +219,10 @@ def query_database(query, raven_client):
                                  shard.block_last < temp_blocked))
                              .options(load_only(*load_fields))
             ).all()
-            for result in results:
-                macs[result.mac] = result
-
-        # Limit the query to the not found networks
-        not_found_macs = [mac for mac, value in macs.items() if value is None]
-
-        # Load the extra key field, as its not the actual primary key
-        if not_found_macs:
-            load_fields = ('key', 'lat', 'lon', 'range')
-            results = (
-                query.session.query(Wifi)
-                             .filter(Wifi.key.in_(not_found_macs))
-                             .filter(Wifi.lat.isnot(None))
-                             .filter(Wifi.lon.isnot(None))
-                             .options(load_only(*load_fields))
-            ).all()
-            for result in results:
-                macs[result.key] = result
-
-        return [value for value in macs.values() if value is not None]
+            result.extend(list(rows))
     except Exception:
         raven_client.captureException()
-    return []
+    return result
 
 
 class WifiPositionMixin(object):
