@@ -16,10 +16,8 @@ from ichnaea.models import (
     Cell,
     CellArea,
     CellBlocklist,
-    CellObservation,
     StatCounter,
     StatKey,
-    WifiObservation,
     WifiShard,
 )
 from ichnaea import util
@@ -50,6 +48,9 @@ class CellRemover(DataTask):
 class StationUpdater(DataTask):
 
     MAX_OLD_OBSERVATIONS = 1000
+    max_dist_meters = None
+    queue_name = None
+    station_type = None
 
     def __init__(self, task, session, pipe,
                  remove_task=None, update_task=None):
@@ -72,31 +73,20 @@ class StationUpdater(DataTask):
                 count,
                 tags=tags)
 
-    def emit_statcounters(self, obs, stations):
-        day = self.today
-        StatCounter(self.stat_obs_key, day).incr(self.pipe, obs)
-        StatCounter(self.stat_station_key, day).incr(self.pipe, stations)
-
     def update(self, batch=10):
         raise NotImplementedError()
-
-    def add_area_update(self, station_key):
-        pass
-
-    def queue_area_updates(self):  # pragma: no cover
-        pass
 
 
 class CellUpdater(StationUpdater):
 
-    blocklist_model = CellBlocklist
     max_dist_meters = 150000
-    observation_model = CellObservation
     queue_name = 'update_cell'
-    stat_obs_key = StatKey.cell
-    stat_station_key = StatKey.unique_cell
-    station_model = Cell
     station_type = 'cell'
+
+    def emit_statcounters(self, obs, stations):
+        day = self.today
+        StatCounter(StatKey.cell, day).incr(self.pipe, obs)
+        StatCounter(StatKey.unique_cell, day).incr(self.pipe, stations)
 
     def emit_stats(self, added, dropped):
         self.stat_count('insert', added)
@@ -121,7 +111,7 @@ class CellUpdater(StationUpdater):
 
     def blocklisted_stations(self, station_keys):
         blocklist = {}
-        for block in self.blocklist_model.iterkeys(
+        for block in CellBlocklist.iterkeys(
                 self.session, list(station_keys)):
             blocklist[block.hashkey()] = self.blocklisted_station(block)
         return blocklist
@@ -135,7 +125,7 @@ class CellUpdater(StationUpdater):
                 block.time = self.utcnow
                 block.count += 1
             else:
-                block_key = self.blocklist_model.to_hashkey(station_key)
+                block_key = CellBlocklist.to_hashkey(station_key)
                 new_block_values.append(dict(
                     time=self.utcnow,
                     count=1,
@@ -143,11 +133,11 @@ class CellUpdater(StationUpdater):
                 ))
         if new_block_values:
             # do a batch insert of new blocks
-            stmt = self.blocklist_model.__table__.insert(
+            stmt = CellBlocklist.__table__.insert(
                 mysql_on_duplicate='time = time'  # no-op
             )
             # but limit the batch depending on each model
-            ins_batch = self.blocklist_model._insert_batch
+            ins_batch = CellBlocklist._insert_batch
             for i in range(0, len(new_block_values), ins_batch):
                 batch_values = new_block_values[i:i + ins_batch]
                 self.session.execute(stmt.values(batch_values))
@@ -272,14 +262,13 @@ class CellUpdater(StationUpdater):
         station_obs = defaultdict(list)
 
         for obs in all_observations:
-            station_obs[self.station_model.to_hashkey(obs)].append(obs)
+            station_obs[Cell.to_hashkey(obs)].append(obs)
 
         if not station_obs:
             return (0, 0)
 
         stations = {}
-        for station in self.station_model.iterkeys(self.session,
-                                                   list(station_obs.keys())):
+        for station in Cell.iterkeys(self.session, list(station_obs.keys())):
             stations[station.hashkey()] = station
 
         blocklist = self.blocklisted_stations(station_obs.keys())
@@ -320,22 +309,21 @@ class CellUpdater(StationUpdater):
 
         if new_station_values:
             # do a batch insert of new stations
-            stmt = self.station_model.__table__.insert(
+            stmt = Cell.__table__.insert(
                 mysql_on_duplicate='total_measures = total_measures'  # no-op
             )
             # but limit the batch depending on each model
-            ins_batch = self.station_model._insert_batch
+            ins_batch = Cell._insert_batch
             for i in range(0, len(new_station_values), ins_batch):
                 batch_values = new_station_values[i:i + ins_batch]
                 self.session.execute(stmt.values(batch_values))
 
         if changed_station_values:
             # do a batch update of changed stations
-            ins_batch = self.station_model._insert_batch
+            ins_batch = Cell._insert_batch
             for i in range(0, len(changed_station_values), ins_batch):
                 batch_values = changed_station_values[i:i + ins_batch]
-                self.session.bulk_update_mappings(
-                    self.station_model, batch_values)
+                self.session.bulk_update_mappings(Cell, batch_values)
 
         if self.updated_areas:
             self.queue_area_updates()
@@ -358,21 +346,23 @@ class CellUpdater(StationUpdater):
 class WifiUpdater(StationUpdater):
 
     max_dist_meters = 5000
-    observation_model = WifiObservation
     queue_name = 'update_wifi'
-    stat_obs_key = StatKey.wifi
-    stat_station_key = StatKey.unique_wifi
-    station_model = WifiShard
     station_type = 'wifi'
 
-    def emit_stats(self, added, dropped, moving):
-        self.stat_count('insert', added)
-        for reason, count in dropped.items():
-            self.stat_count('drop', dropped[reason], reason=reason)
-        if moving:
+    def emit_stats(self, stats_counter, drop_counter):
+        day = self.today
+        StatCounter(StatKey.wifi, day).incr(
+            self.pipe, stats_counter['obs'])
+        StatCounter(StatKey.unique_wifi, day).incr(
+            self.pipe, stats_counter['new_station'])
+
+        self.stat_count('insert', stats_counter['obs'])
+        for reason, count in drop_counter.items():
+            self.stat_count('drop', drop_counter[reason], reason=reason)
+        if stats_counter['block']:
             self.stats_client.incr(
                 'data.station.blocklist',
-                moving,
+                stats_counter['block'],
                 tags=['type:%s' % self.station_type,
                       'action:add',
                       'reason:moving'])
@@ -380,7 +370,7 @@ class WifiUpdater(StationUpdater):
     def station_values(self, station_key, shard_station, observations):
         """
         Return two-tuple of status, value dict where status is one of:
-        `new`, `new_moving`, `moving`, `changed`
+        `new`, `new_moving`, `moving`, `changed`.
         """
         # cases:
         # we always get a station key and observations
@@ -515,110 +505,98 @@ class WifiUpdater(StationUpdater):
                     'min_lat': float(min_lat),
                     'max_lon': float(max_lon),
                     'min_lon': float(min_lon),
-                    'radius': radius,
                     'country': None,
+                    'radius': radius,
                     'samples': samples,
                     'source': None,
+                    # use the exact same keys as in the moving case
+                    'block_last': shard_station.block_last,
+                    'block_count': shard_station.block_count,
                 })
                 return ('changed', values)
 
         return (None, None)  # pragma: no cover
 
-    def update(self, batch=10):  # NOQA
-        all_observations = self.data_queue.dequeue(batch=batch)
+    def _shard_observations(self, observations):
         sharded_obs = {}
-        station_keys = []
-
-        for obs in all_observations:
+        for obs in observations:
             if obs is not None:
-                shard = self.station_model.shard_model(obs.mac)
+                shard = WifiShard.shard_model(obs.mac)
                 if shard not in sharded_obs:
                     sharded_obs[shard] = defaultdict(list)
                 sharded_obs[shard][obs.mac].append(obs)
-                station_keys.append(obs.mac)
+        return sharded_obs
 
-        if not sharded_obs:
-            return (0, 0)
+    def _query_stations(self, shard, shard_values):
+        macs = list(shard_values.keys())
+        rows = (self.session.query(shard)
+                            .filter(shard.mac.in_(macs))).all()
 
         blocklist = {}
-        sharded_stations = {}
-        for shard, shard_items in sharded_obs.items():
-            shard_keys = list(shard_items.keys())
-            rows = (self.session.query(shard)
-                                .filter(shard.mac.in_(shard_keys))).all()
-            for row in rows:
-                sharded_stations[row.mac] = row
-                blocklist[row.mac] = row.blocked(today=self.today)
+        stations = {}
+        for row in rows:
+            stations[row.mac] = row
+            blocklist[row.mac] = row.blocked(today=self.today)
+        return (blocklist, stations)
 
-        added_observations = 0
+    def _update_shard(self, shard, shard_values,
+                      drop_counter, stats_counter):
+        new_data = defaultdict(list)
+        blocklist, stations = self._query_stations(shard, shard_values)
+
+        for station_key, observations in shard_values.items():
+            if blocklist.get(station_key, False):
+                # Drop observations for blocklisted stations.
+                drop_counter['blocklisted'] += len(observations)
+                continue
+
+            shard_station = stations.get(station_key, None)
+            if shard_station is None:
+                # We discovered an actual new never before seen station.
+                stats_counter['new_station'] += 1
+
+            status, result = self.station_values(
+                station_key, shard_station, observations)
+            new_data[status].append(result)
+
+            if status in ('moving', 'new_moving'):
+                stats_counter['block'] += 1
+            else:
+                stats_counter['obs'] += len(observations)
+
+        if new_data['new']:
+            # do a batch insert of new stations
+            stmt = shard.__table__.insert(
+                mysql_on_duplicate='samples = samples'  # no-op
+            )
+            self.session.execute(stmt.values(new_data['new']))
+
+        if new_data['new_moving']:
+            # do a batch insert of new moving stations
+            stmt = shard.__table__.insert(
+                mysql_on_duplicate='block_count = block_count'  # no-op
+            )
+            self.session.execute(stmt.values(new_data['new_moving']))
+
+        if new_data['moving'] or new_data['changed']:
+            # do a batch update of changing and moving stations
+            self.session.bulk_update_mappings(
+                shard, new_data['changed'] + new_data['moving'])
+
+    def update(self, batch=10):
+        sharded_obs = self._shard_observations(
+            self.data_queue.dequeue(batch=batch))
+        if not sharded_obs:
+            return
+
         drop_counter = defaultdict(int)
-        new_stations = 0
-        blocked_stations = 0
+        stats_counter = defaultdict(int)
 
         for shard, shard_values in sharded_obs.items():
-            new_values = []
-            new_moving_values = []
-            moving_values = []
-            changed_values = []
+            self._update_shard(shard, shard_values,
+                               drop_counter, stats_counter)
 
-            for station_key, observations in shard_values.items():
-                if blocklist.get(station_key, False):
-                    # Drop observations for blocklisted stations.
-                    drop_counter['blocklisted'] += len(observations)
-                    continue
-
-                shard_station = sharded_stations.get(station_key, None)
-                if shard_station is None:
-                    # We discovered an actual new never before seen station.
-                    new_stations += 1
-
-                status, result = self.station_values(
-                    station_key, shard_station, observations)
-
-                if status == 'moving':
-                    blocked_stations += 1
-                    moving_values.append(result)
-                elif status == 'new_moving':
-                    blocked_stations += 1
-                    new_moving_values.append(result)
-
-                if status not in ('moving', 'new_moving'):
-                    added_observations += len(observations)
-                    if status == 'new':
-                        new_values.append(result)
-                    elif status == 'changed':
-                        changed_values.append(result)
-
-                # track potential updates to dependent areas
-                self.add_area_update(station_key)
-
-            if new_values:
-                # do a batch insert of new stations
-                stmt = shard.__table__.insert(
-                    mysql_on_duplicate='samples = samples'  # no-op
-                )
-                self.session.execute(stmt.values(new_values))
-
-            if new_moving_values:
-                # do a batch insert of new moving stations
-                stmt = shard.__table__.insert(
-                    mysql_on_duplicate='block_count = block_count'  # no-op
-                )
-                self.session.execute(stmt.values(new_moving_values))
-
-            if moving_values:
-                # do a batch update of moving stations
-                self.session.bulk_update_mappings(shard, moving_values)
-
-            if changed_values:
-                # do a batch update of changed stations
-                self.session.bulk_update_mappings(shard, changed_values)
-
-        if self.updated_areas:  # pragma: no cover
-            self.queue_area_updates()
-
-        self.emit_stats(added_observations, drop_counter, blocked_stations)
-        self.emit_statcounters(added_observations, new_stations)
+        self.emit_stats(stats_counter, drop_counter)
 
         if self.data_queue.enough_data(batch=batch):  # pragma: no cover
             self.update_task.apply_async(
