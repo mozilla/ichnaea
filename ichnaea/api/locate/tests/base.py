@@ -25,7 +25,7 @@ from ichnaea.tests.factories import (
     ApiKeyFactory,
     CellAreaFactory,
     CellFactory,
-    WifiFactory,
+    WifiShardFactory,
 )
 from ichnaea import util
 
@@ -346,7 +346,7 @@ class CommonLocateTest(BaseLocateTest):
         self.assertEqual(self.redis_client.keys('apiuser:*'), [])
 
     def test_gzip(self):
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
         query = self.model_query(wifis=wifis)
 
         body = util.encode_gzip(json.dumps(query))
@@ -487,7 +487,7 @@ class CommonPositionTest(BaseLocateTest):
         ])
 
     def test_wifi_not_found(self):
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
 
         query = self.model_query(wifis=wifis)
 
@@ -530,7 +530,7 @@ class CommonPositionTest(BaseLocateTest):
         # internal result and continues on to the fallback to get a
         # better wifi based result
         cells = CellFactory.create_batch(2, radio=Radio.wcdma)
-        wifis = WifiFactory.build_batch(3)
+        wifis = WifiShardFactory.build_batch(3)
         api_key = ApiKey.getkey(self.session, {'valid_key': 'test'})
         api_key.allow_fallback = True
         self.session.flush()
@@ -576,7 +576,7 @@ class CommonPositionTest(BaseLocateTest):
 
     def test_fallback_used_with_geoip(self):
         cells = CellFactory.create_batch(2, radio=Radio.wcdma)
-        wifis = WifiFactory.build_batch(3)
+        wifis = WifiShardFactory.build_batch(3)
         api_key = ApiKey.getkey(self.session, {'valid_key': 'test'})
         api_key.allow_fallback = True
         self.session.flush()
@@ -638,7 +638,7 @@ class CommonLocateErrorTest(BaseLocateTest):
             self.session.execute(text('drop table %s;' % tablename))
 
         cells = CellFactory.build_batch(2)
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
 
         query = self.model_query(cells=cells, wifis=wifis)
         res = self._call(body=query, ip=self.test_ip)

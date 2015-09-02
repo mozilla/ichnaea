@@ -26,7 +26,7 @@ from ichnaea.tests.base import TestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
     CellFactory,
-    WifiFactory,
+    WifiShardFactory,
 )
 
 
@@ -143,16 +143,16 @@ class TestOutboundSchema(TestCase):
         })
 
     def test_wifi(self):
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
         query = Query(wifi=[
-            {'key': wifi.key, 'signal': -90} for wifi in wifis])
+            {'key': wifi.mac, 'signal': -90} for wifi in wifis])
         data = self.schema.deserialize(query.internal_query())
         self.assertEqual(data, {
             'wifiAccessPoints': [{
-                'macAddress': wifis[0].key,
+                'macAddress': wifis[0].mac,
                 'signalStrength': -90,
             }, {
-                'macAddress': wifis[1].key,
+                'macAddress': wifis[1].mac,
                 'signalStrength': -90,
             }],
             'fallbacks': {'lacf': True},
@@ -217,7 +217,7 @@ class TestCache(QueryTest):
         ])
 
     def test_get_wifi(self):
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
         query = Query(wifi=self.wifi_model_query(wifis))
         self.assertEqual(self.cache.get(query), None)
         self.check_stats(counter=[
@@ -225,7 +225,7 @@ class TestCache(QueryTest):
         ])
 
     def test_set_wifi(self):
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
         wifi = wifis[0]
         query = Query(wifi=self.wifi_model_query(wifis))
         result = ExternalResult(wifi.lat, wifi.lon, wifi.range, None)
@@ -236,13 +236,13 @@ class TestCache(QueryTest):
         ])
 
     def test_set_wifi_inconsistent(self):
-        wifis1 = WifiFactory.build_batch(2)
+        wifis1 = WifiShardFactory.build_batch(2)
         self.cache.set(
             Query(wifi=self.wifi_model_query(wifis1)),
             ExternalResult(wifis1[0].lat, wifis1[0].lon, 100, None))
 
         # similar lat/lon, worse accuracy
-        wifis2 = WifiFactory.build_batch(
+        wifis2 = WifiShardFactory.build_batch(
             2, lat=wifis1[0].lat + 0.0001, lon=wifis1[0].lon)
         self.cache.set(
             Query(wifi=self.wifi_model_query(wifis2)),
@@ -255,7 +255,7 @@ class TestCache(QueryTest):
             ((wifis1[0].lat + wifis2[0].lat) / 2, wifis1[0].lon, 200, None))
 
         # different lat/lon
-        wifis3 = WifiFactory.build_batch(2, lat=wifis1[0].lat + 10.0)
+        wifis3 = WifiShardFactory.build_batch(2, lat=wifis1[0].lat + 10.0)
         self.cache.set(
             Query(wifi=self.wifi_model_query(wifis3)),
             ExternalResult(wifis3[0].lat, wifis3[0].lon, 300, None))
@@ -271,7 +271,7 @@ class TestCache(QueryTest):
 
     def test_get_mixed(self):
         cells = CellFactory.build_batch(1)
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
         query = Query(
             cell=self.cell_model_query(cells),
             wifi=self.wifi_model_query(wifis))
@@ -465,13 +465,13 @@ class TestSource(BaseSourceTest):
     def test_api_key_disallows(self):
         api_key = ApiKeyFactory.build(allow_fallback=False)
         cells = CellFactory.build_batch(2)
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
 
         query = self.model_query(cells=cells, wifis=wifis, api_key=api_key)
         self.check_should_search(query, False)
 
     def test_check_one_wifi(self):
-        wifi = WifiFactory.build()
+        wifi = WifiShardFactory.build()
 
         query = self.model_query(wifis=[wifi])
         self.check_should_search(query, False)
@@ -488,22 +488,22 @@ class TestSource(BaseSourceTest):
         self.check_should_search(query, False)
 
     def test_check_invalid_wifi(self):
-        wifi = WifiFactory.build()
-        malformed_wifi = WifiFactory.build()
-        malformed_wifi.key = 'abcd'
+        wifi = WifiShardFactory.build()
+        malformed_wifi = WifiShardFactory.build()
+        malformed_wifi.mac = 'abcd'
 
         query = self.model_query(wifis=[wifi, malformed_wifi])
         self.check_should_search(query, False)
 
     def test_check_empty_result(self):
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
 
         query = self.model_query(wifis=wifis)
         self.check_should_search(query, True)
 
     def test_check_geoip_result(self):
         london = self.london_model
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
         geoip_pos = Position(
             source=DataSource.geoip,
             lat=london.lat,
@@ -514,7 +514,7 @@ class TestSource(BaseSourceTest):
         self.check_should_search(query, True, results=[geoip_pos])
 
     def test_check_already_good_result(self):
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
         internal_pos = Position(
             source=DataSource.internal, lat=1.0, lon=1.0, accuracy=1.0)
 

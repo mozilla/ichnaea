@@ -13,7 +13,7 @@ from ichnaea.tests.base import (
 )
 from ichnaea.tests.factories import (
     CellFactory,
-    WifiFactory,
+    WifiShardFactory,
 )
 from ichnaea import util
 
@@ -27,14 +27,14 @@ class TestSubmitSchema(TestCase):
             self.schema.deserialize({})
 
     def test_empty_wifi_entry(self):
-        wifi = WifiFactory.build()
+        wifi = WifiShardFactory.build()
         data = self.schema.deserialize({'items': [
             {'lat': wifi.lat, 'lon': wifi.lon, 'wifi': [{}]},
         ]})
         self.assertEqual(data, {'items': []})
 
     def test_minimal(self):
-        wifi = WifiFactory.build()
+        wifi = WifiShardFactory.build()
         data = self.schema.deserialize(
             {'items': [{'lat': wifi.lat, 'lon': wifi.lon,
                         'wifi': [{'key': 'ab'}]}]})
@@ -98,12 +98,12 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertEqual(cells[0]['cellId'], cell.cid)
 
     def test_wifi(self):
-        wifi = WifiFactory.build()
+        wifi = WifiShardFactory.build()
         self._post([{
             'lat': wifi.lat,
             'lon': wifi.lon,
             'accuracy': 17,
-            'wifi': [{'key': wifi.key.upper(),
+            'wifi': [{'key': wifi.mac.upper(),
                       'frequency': 2437,
                       'signal': -70,
                       'signalToNoiseRatio': 5,
@@ -121,7 +121,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertFalse('altitude' in position)
         self.assertFalse('altitudeAccuracy' in position)
         wifis = report['wifiAccessPoints']
-        self.assertEqual(wifis[0]['macAddress'], wifi.key.upper())
+        self.assertEqual(wifis[0]['macAddress'], wifi.mac.upper())
         self.assertFalse('channel' in wifis[0])
         self.assertEqual(wifis[0]['frequency'], 2437)
         self.assertEqual(wifis[0]['signalStrength'], -70)
@@ -129,10 +129,10 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
 
     def test_batches(self):
         batch = 110
-        wifis = WifiFactory.build_batch(batch)
+        wifis = WifiShardFactory.build_batch(batch)
         items = [{'lat': wifi.lat,
                   'lon': wifi.lon,
-                  'wifi': [{'key': wifi.key}]}
+                  'wifi': [{'key': wifi.mac}]}
                  for wifi in wifis]
 
         # add a bad one, this will just be skipped
@@ -141,7 +141,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self._assert_queue_size(batch)
 
     def test_error(self):
-        wifi = WifiFactory.build()
+        wifi = WifiShardFactory.build()
         res = self.app.post_json(
             '/v1/submit',
             [{'lat': wifi.lat, 'lon': wifi.lon, 'cell': []}],
@@ -150,14 +150,14 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.check_raven(['ParseError'])
 
     def test_error_missing_latlon(self):
-        wifi = WifiFactory.build()
+        wifi = WifiShardFactory.build()
         self._post([
             {'lat': wifi.lat,
              'lon': wifi.lon,
              'accuracy': 17,
-             'wifi': [{'key': wifi.key}],
+             'wifi': [{'key': wifi.mac}],
              },
-            {'wifi': [{'key': wifi.key}],
+            {'wifi': [{'key': wifi.mac}],
              'accuracy': 16},
         ])
         self._assert_queue_size(2)

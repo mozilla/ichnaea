@@ -6,7 +6,7 @@ from ichnaea.api.locate.internal import (
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.tests.factories import (
     CellFactory,
-    WifiFactory,
+    WifiShardFactory,
 )
 
 
@@ -40,7 +40,7 @@ class TestCountrySource(BaseSourceTest):
         ])
 
     def test_wifi(self):
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
         query = self.model_query(wifis=wifis)
         results = self.source.search(query)
         self.check_model_result(results, None)

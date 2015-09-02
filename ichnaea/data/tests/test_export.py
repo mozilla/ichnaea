@@ -16,7 +16,7 @@ from ichnaea.models import ApiKey
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
     CellFactory,
-    WifiFactory,
+    WifiShardFactory,
 )
 from ichnaea import util
 
@@ -55,11 +55,11 @@ class BaseExportTest(CeleryTestCase):
             report['position']['longitude'] = pos.lon
             report['position']['accuracy'] = 17 + i
 
-            blues = WifiFactory.build_batch(blue_factor,
-                                            lat=pos.lat, lon=pos.lon)
+            blues = WifiShardFactory.build_batch(blue_factor,
+                                                 lat=pos.lat, lon=pos.lon)
             for blue in blues:
                 blue_data = {
-                    'macAddress': blue_key or blue.key,
+                    'macAddress': blue_key or blue.mac,
                     'signalStrength': -100 + i,
                 }
                 report['bluetoothBeacons'].append(blue_data)
@@ -78,11 +78,11 @@ class BaseExportTest(CeleryTestCase):
                 }
                 report['cellTowers'].append(cell_data)
 
-            wifis = WifiFactory.build_batch(wifi_factor,
-                                            lat=pos.lat, lon=pos.lon)
+            wifis = WifiShardFactory.build_batch(wifi_factor,
+                                                 lat=pos.lat, lon=pos.lon)
             for wifi in wifis:
                 wifi_data = {
-                    'macAddress': wifi_key or wifi.key,
+                    'macAddress': wifi_key or wifi.mac,
                     'signalStrength': -90 + i,
                 }
                 report['wifiAccessPoints'].append(wifi_data)

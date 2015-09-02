@@ -5,7 +5,7 @@ from ichnaea.api.submit.tests.base import BaseSubmitTest
 from ichnaea.tests.base import CeleryAppTestCase
 from ichnaea.tests.factories import (
     CellFactory,
-    WifiFactory,
+    WifiShardFactory,
 )
 
 
@@ -108,12 +108,12 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertFalse('xtra_field' in cells[0])
 
     def test_wifi(self):
-        wifi = WifiFactory.build()
+        wifi = WifiShardFactory.build()
         self._post([{
             'latitude': wifi.lat,
             'longitude': wifi.lon,
             'wifiAccessPoints': [{
-                'macAddress': wifi.key,
+                'macAddress': wifi.mac,
                 'age': 3,
                 'channel': 5,
                 'frequency': 2437,
@@ -134,7 +134,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertEqual(position['longitude'], wifi.lon)
         wifis = item['report']['wifiAccessPoints']
         self.assertEqual(len(wifis), 1)
-        self.assertEqual(wifis[0]['macAddress'], wifi.key)
+        self.assertEqual(wifis[0]['macAddress'], wifi.mac)
         self.assertEqual(wifis[0]['age'], 3),
         self.assertEqual(wifis[0]['channel'], 5),
         self.assertEqual(wifis[0]['frequency'], 2437),
@@ -145,10 +145,10 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
 
     def test_batches(self):
         batch = 110
-        wifis = WifiFactory.build_batch(batch)
+        wifis = WifiShardFactory.build_batch(batch)
         items = [{'latitude': wifi.lat,
                   'longitude': wifi.lon,
-                  'wifiAccessPoints': [{'macAddress': wifi.key}]}
+                  'wifiAccessPoints': [{'macAddress': wifi.mac}]}
                  for wifi in wifis]
 
         # add a bad one, this will just be skipped
@@ -157,7 +157,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self._assert_queue_size(batch)
 
     def test_error(self):
-        wifi = WifiFactory.build()
+        wifi = WifiShardFactory.build()
         self._post([{
             'latitude': wifi.lat,
             'longitude': wifi.lon,
@@ -168,14 +168,14 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self._assert_queue_size(0)
 
     def test_error_invalid_float(self):
-        wifi = WifiFactory.build()
+        wifi = WifiShardFactory.build()
         self._post([{
             'latitude': wifi.lat,
             'longitude': wifi.lon,
             'accuracy': float('+nan'),
             'altitude': float('-inf'),
             'wifiAccessPoints': [{
-                'macAddress': wifi.key,
+                'macAddress': wifi.mac,
             }],
         }])
 

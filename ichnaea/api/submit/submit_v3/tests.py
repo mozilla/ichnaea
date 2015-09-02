@@ -5,7 +5,7 @@ from ichnaea.api.submit.tests.base import BaseSubmitTest
 from ichnaea.tests.base import CeleryAppTestCase
 from ichnaea.tests.factories import (
     CellFactory,
-    WifiFactory,
+    WifiShardFactory,
 )
 
 
@@ -118,14 +118,14 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertFalse('xtra_field' in cells[0])
 
     def test_wifi(self):
-        wifi = WifiFactory.build()
+        wifi = WifiShardFactory.build()
         self._post([{
             'position': {
                 'latitude': wifi.lat,
                 'longitude': wifi.lon,
             },
             'wifiAccessPoints': [{
-                'macAddress': wifi.key,
+                'macAddress': wifi.mac,
                 'ssid': 'my-wifi',
                 'age': 3,
                 'channel': 5,
@@ -147,7 +147,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertEqual(position['longitude'], wifi.lon)
         wifis = item['report']['wifiAccessPoints']
         self.assertEqual(len(wifis), 1)
-        self.assertEqual(wifis[0]['macAddress'], wifi.key)
+        self.assertEqual(wifis[0]['macAddress'], wifi.mac)
         self.assertEqual(wifis[0]['age'], 3),
         self.assertEqual(wifis[0]['channel'], 5),
         self.assertEqual(wifis[0]['frequency'], 2437),
@@ -158,14 +158,14 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertFalse('xtra_field' in wifis[0])
 
     def test_bluetooth(self):
-        wifi = WifiFactory.build()
+        wifi = WifiShardFactory.build()
         self._post([{
             'position': {
                 'latitude': wifi.lat,
                 'longitude': wifi.lon,
             },
             'bluetoothBeacons': [{
-                'macAddress': wifi.key,
+                'macAddress': wifi.mac,
                 'name': 'my-beacon',
                 'age': 3,
                 'signalStrength': -90,
@@ -188,7 +188,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertEqual(position['longitude'], wifi.lon)
         blues = report['bluetoothBeacons']
         self.assertEqual(len(blues), 1)
-        self.assertEqual(blues[0]['macAddress'], wifi.key)
+        self.assertEqual(blues[0]['macAddress'], wifi.mac)
         self.assertEqual(blues[0]['age'], 3),
         self.assertEqual(blues[0]['name'], 'my-beacon'),
         self.assertEqual(blues[0]['signalStrength'], -90),
@@ -198,13 +198,13 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
 
     def test_batches(self):
         batch = 110
-        wifis = WifiFactory.build_batch(batch)
+        wifis = WifiShardFactory.build_batch(batch)
         items = [{
             'position': {
                 'latitude': wifi.lat,
                 'longitude': wifi.lon},
             'wifiAccessPoints': [
-                {'macAddress': wifi.key},
+                {'macAddress': wifi.mac},
             ]} for wifi in wifis]
 
         # add a bad one, this will just be skipped
@@ -213,7 +213,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self._assert_queue_size(batch)
 
     def test_error(self):
-        wifi = WifiFactory.build()
+        wifi = WifiShardFactory.build()
         self._post([{
             'position': {
                 'latitude': wifi.lat,

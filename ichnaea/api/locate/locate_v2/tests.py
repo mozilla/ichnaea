@@ -14,7 +14,7 @@ from ichnaea.tests.base import (
 )
 from ichnaea.tests.factories import (
     CellFactory,
-    WifiFactory,
+    WifiShardFactory,
 )
 
 
@@ -128,13 +128,13 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, cell)
 
     def test_wifi(self):
-        wifi = WifiFactory()
+        wifi = WifiShardFactory()
         offset = 0.0001
         wifis = [
             wifi,
-            WifiFactory(lat=wifi.lat + offset),
-            WifiFactory(lat=wifi.lat + offset * 2),
-            WifiFactory(lat=None, lon=None),
+            WifiShardFactory(lat=wifi.lat + offset),
+            WifiShardFactory(lat=wifi.lat + offset * 2),
+            WifiShardFactory(lat=None, lon=None),
         ]
         self.session.flush()
 

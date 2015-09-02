@@ -7,7 +7,7 @@ from ichnaea.api.locate.result import (
     ResultList,
 )
 from ichnaea.tests.base import TestCase
-from ichnaea.tests.factories import WifiFactory
+from ichnaea.tests.factories import WifiShardFactory
 
 
 class TestResult(TestCase):
@@ -138,15 +138,15 @@ class TestPosition(TestCase):
         self.assertFalse(Position(lat=0.0, lon=0.0, accuracy=0).empty())
 
     def test_satisfies(self):
-        wifis = WifiFactory.build_batch(2)
-        wifi_query = [{'key': wifi.key} for wifi in wifis]
+        wifis = WifiShardFactory.build_batch(2)
+        wifi_query = [{'key': wifi.mac} for wifi in wifis]
         position = Position(lat=1.0, lon=1.0, accuracy=100.0)
         query = Query(api_type='locate', wifi=wifi_query)
         self.assertTrue(position.satisfies(query))
 
     def test_satisfies_fail(self):
-        wifis = WifiFactory.build_batch(2)
-        wifi_query = [{'key': wifi.key} for wifi in wifis]
+        wifis = WifiShardFactory.build_batch(2)
+        wifi_query = [{'key': wifi.mac} for wifi in wifis]
         position = Position(lat=1.0, lon=1.0, accuracy=1500.0)
         query = Query(api_type='locate', wifi=wifi_query)
         self.assertFalse(position.satisfies(query))

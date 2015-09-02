@@ -455,7 +455,7 @@ class TestWifi(StationTest):
         bad_wifi = WifiObservationFactory.build()
         good_wifi = WifiObservationFactory.build()
         WifiShardFactory(
-            mac=bad_wifi.key,
+            mac=bad_wifi.mac,
             lat=None,
             lon=None,
             created=utcnow,

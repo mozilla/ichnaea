@@ -9,7 +9,7 @@ from ichnaea.tests.factories import (
     ApiKeyFactory,
     CellAreaFactory,
     CellFactory,
-    WifiFactory,
+    WifiShardFactory,
 )
 
 
@@ -43,7 +43,7 @@ class QueryTest(ConnectionTestCase):
         query = []
         for wifi in wifis:
             query.append({
-                'key': wifi.key,
+                'key': wifi.mac,
                 'channel': 11,
                 'signal': -85,
                 'snr': 13,
@@ -180,8 +180,8 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(query.expected_accuracy, DataAccuracy.none)
 
     def test_wifi(self):
-        wifis = WifiFactory.build_batch(2)
-        wifi_keys = [wifi.key for wifi in wifis]
+        wifis = WifiShardFactory.build_batch(2)
+        macs = [wifi.mac for wifi in wifis]
         query = Query(wifi=self.wifi_model_query(wifis))
 
         self.assertEqual(len(query.wifi), 2)
@@ -191,50 +191,50 @@ class TestQuery(QueryTest, ConnectionTestCase):
             self.assertEqual(wifi.channel, 11)
             self.assertEqual(wifi.signal, -85)
             self.assertEqual(wifi.snr, 13)
-            self.assertTrue(wifi.key in wifi_keys)
+            self.assertTrue(wifi.mac in macs)
 
     def test_wifi_single(self):
-        wifi = WifiFactory.build()
-        wifi_query = {'key': wifi.key}
+        wifi = WifiShardFactory.build()
+        wifi_query = {'key': wifi.mac}
         query = Query(wifi=[wifi_query])
         self.assertEqual(len(query.wifi), 0)
 
     def test_wifi_duplicates(self):
-        wifi = WifiFactory.build()
+        wifi = WifiShardFactory.build()
         query = Query(wifi=[
-            {'key': wifi.key, 'signal': -90},
-            {'key': wifi.key, 'signal': -82},
-            {'key': wifi.key, 'signal': -85},
+            {'key': wifi.mac, 'signal': -90},
+            {'key': wifi.mac, 'signal': -82},
+            {'key': wifi.mac, 'signal': -85},
         ])
         self.assertEqual(len(query.wifi), 0)
 
     def test_wifi_better(self):
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
         query = Query(wifi=[
-            {'key': wifis[0].key, 'signal': -90, 'channel': 1},
-            {'key': wifis[0].key, 'signal': -82},
-            {'key': wifis[0].key, 'signal': -85},
-            {'key': wifis[1].key, 'signal': -70},
+            {'key': wifis[0].mac, 'signal': -90, 'channel': 1},
+            {'key': wifis[0].mac, 'signal': -82},
+            {'key': wifis[0].mac, 'signal': -85},
+            {'key': wifis[1].mac, 'signal': -70},
         ])
         self.assertEqual(len(query.wifi), 2)
         self.assertEqual(
             set([wifi.signal for wifi in query.wifi]), set([-70, -82]))
 
     def test_wifi_malformed(self):
-        wifi = WifiFactory.build()
-        wifi_query = {'key': wifi.key}
+        wifi = WifiShardFactory.build()
+        wifi_query = {'key': wifi.mac}
         query = Query(wifi=[wifi_query, {'key': 'foo'}])
         self.assertEqual(len(query.wifi), 0)
 
     def test_wifi_country(self):
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
         query = Query(
             wifi=self.wifi_model_query(wifis), api_type='country')
         self.assertEqual(query.expected_accuracy, DataAccuracy.none)
 
     def test_mixed_cell_wifi(self):
         cells = CellFactory.build_batch(1)
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
 
         query = Query(
             cell=self.cell_model_query(cells),
@@ -303,7 +303,7 @@ class TestQueryStats(QueryTest):
 
     def test_one(self):
         cells = CellFactory.build_batch(1)
-        wifis = WifiFactory.build_batch(1)
+        wifis = WifiShardFactory.build_batch(1)
 
         self._make_query(cell=cells, wifi=wifis, ip=self.london_ip)
         self.check_stats(total=1, counter=[
@@ -313,7 +313,7 @@ class TestQueryStats(QueryTest):
 
     def test_many(self):
         cells = CellFactory.build_batch(2)
-        wifis = WifiFactory.build_batch(3)
+        wifis = WifiShardFactory.build_batch(3)
 
         self._make_query(cell=cells, wifi=wifis, ip=self.london_ip)
         self.check_stats(total=1, counter=[
@@ -398,7 +398,7 @@ class TestResultStats(QueryTest):
         ])
 
     def test_high_miss(self):
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
         self._make_query(self._make_result(accuracy=1500.0), wifi=wifis)
         self.check_stats(counter=[
             ('locate.result',
@@ -406,7 +406,7 @@ class TestResultStats(QueryTest):
         ])
 
     def test_high_hit(self):
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
         self._make_query(self._make_result(accuracy=1000.0), wifi=wifis)
         self.check_stats(counter=[
             ('locate.result',
@@ -414,7 +414,7 @@ class TestResultStats(QueryTest):
         ])
 
     def test_mixed_miss(self):
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
         self._make_query(
             self._make_result(accuracy=1001.0), wifi=wifis, ip=self.london_ip)
         self.check_stats(counter=[
@@ -454,7 +454,7 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
         return query
 
     def test_high_hit(self):
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
         self._make_query(
             DataSource.internal, self._make_result(accuracy=100.0), wifi=wifis)
         self.check_stats(counter=[
@@ -464,7 +464,7 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
         ])
 
     def test_high_miss(self):
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
         self._make_query(
             DataSource.ocid, self._make_result(accuracy=10000.0), wifi=wifis)
         self.check_stats(counter=[

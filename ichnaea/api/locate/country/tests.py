@@ -6,7 +6,7 @@ from ichnaea.api.locate.tests.base import (
 from ichnaea.tests.base import AppTestCase
 from ichnaea.tests.factories import (
     CellFactory,
-    WifiFactory,
+    WifiShardFactory,
 )
 
 
@@ -123,7 +123,7 @@ class TestView(CountryBase, CommonLocateTest):
         self.check_db_calls(rw=0, ro=0)
 
     def test_wifi(self):
-        wifis = WifiFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
         query = self.model_query(wifis=wifis)
         res = self._call(
             body=query,

@@ -14,7 +14,7 @@ from ichnaea.tests.base import (
 )
 from ichnaea.tests.factories import (
     CellFactory,
-    WifiFactory,
+    WifiShardFactory,
 )
 
 
@@ -91,7 +91,7 @@ class LocateV1Base(BaseLocateTest, AppTestCase):
             query['wifi'] = []
             for wifi in wifis:
                 query['wifi'].append({
-                    'key': wifi.key,
+                    'key': wifi.mac,
                 })
         return query
 
@@ -123,13 +123,13 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         ])
 
     def test_wifi(self):
-        wifi = WifiFactory()
+        wifi = WifiShardFactory()
         offset = 0.0001
         wifis = [
             wifi,
-            WifiFactory(lat=wifi.lat + offset),
-            WifiFactory(lat=wifi.lat + offset * 2),
-            WifiFactory(lat=None, lon=None),
+            WifiShardFactory(lat=wifi.lat + offset),
+            WifiShardFactory(lat=wifi.lat + offset * 2),
+            WifiShardFactory(lat=None, lon=None),
         ]
         self.session.flush()
 
