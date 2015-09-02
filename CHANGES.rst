@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- Manually run the wifi migration script in `scripts/migrate.py`.
+
 Changes
 ~~~~~~~
 

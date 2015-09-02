@@ -1,6 +1,10 @@
 """
 Manual migration script to move networks from old single wifi table
 to new sharded wifi table structure.
+
+Use via:
+
+    $ ICHNAEA_CFG=/path/to/ini /path/to/vent/python migrate 0.1 100 1000
 """
 from collections import defaultdict
 import sys
