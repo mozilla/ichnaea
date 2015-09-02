@@ -1,6 +1,5 @@
 from ichnaea.async.app import celery_app
 from ichnaea.async.task import BaseTask
-from ichnaea.internaljson import internal_loads
 from ichnaea.data.area import (
     CellAreaUpdater,
     OCIDCellAreaUpdater,
@@ -26,28 +25,6 @@ from ichnaea.data.station import (
 )
 from ichnaea.data.stats import StatCounterUpdater
 from ichnaea.models import ApiKey
-
-
-@celery_app.task(base=BaseTask, bind=True, queue='celery_incoming')
-def insert_measures(self, items=None, email=None, ip=None, nickname=None,
-                    api_key_text=None):  # pragma: no cover
-    # BBB
-    if not items:
-        return 0
-
-    reports = internal_loads(items)
-    with self.redis_pipeline() as pipe:
-        with self.db_session() as session:
-            api_key = api_key_text and ApiKey.getkey(
-                session, {'valid_key': api_key_text})
-
-            queue = ReportQueue(self, session, pipe,
-                                api_key=api_key,
-                                email=email,
-                                ip=ip,
-                                nickname=nickname)
-            length = queue.insert(reports)
-    return length
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')

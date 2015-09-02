@@ -6,7 +6,6 @@ from boto.exception import S3ResponseError
 from pyramid.decorator import reify
 from pyramid.events import NewResponse
 from pyramid.events import subscriber
-from pyramid.httpexceptions import HTTPMovedPermanently
 from pyramid.renderers import get_renderer
 from pyramid.response import FileResponse
 from pyramid.response import Response
@@ -69,9 +68,6 @@ def configure_content(config):
 
     config.add_route('leaders_weekly', '/leaders/weekly')
     config.add_route('leaders', '/leaders')
-
-    # BBB: countries is an alias for regions
-    config.add_route('stats_countries', '/stats/countries')
     config.add_route('stats_regions', '/stats/regions')
     config.add_route('stats', '/stats')
 
@@ -345,11 +341,6 @@ class ContentViews(Layout):
         result.update(data)
         return result
 
-    @view_config(route_name='stats_countries')
-    def stats_countries_view(self):
-        return HTTPMovedPermanently(
-            location=self.request.route_path('stats_regions'))
-
     @view_config(renderer='templates/stats_regions.pt',
                  route_name='stats_regions', http_cache=3600)
     def stats_regions_view(self):
@@ -378,7 +369,9 @@ _robots_response = Response(
     content_type='text/plain',
     body='''\
 User-agent: *
+Disallow: /downloads
 Disallow: /leaders
+Disallow: /stats/regions
 Disallow: /static/
 Disallow: /v1/
 Disallow: /v2/

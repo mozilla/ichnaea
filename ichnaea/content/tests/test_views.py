@@ -168,7 +168,6 @@ class TestFunctionalContent(AppTestCase):
 
     def test_stats_regions(self):
         self.app.get('/stats/regions', status=200)
-        self.app.get('/stats/countries', status=301)
 
     def test_stats_cell_json(self):
         app = self.app
