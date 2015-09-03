@@ -84,7 +84,7 @@ def write_stations_to_csv(session, path, start_time=None, end_time=None):
     ) AS `cell_value`
 FROM %s
 WHERE %s
-ORDER BY `created`
+ORDER BY `radio`, `mcc`, `mnc`, `lac`, `cid`
 LIMIT :l
 OFFSET :o
 """ % (table, where)
