@@ -25,10 +25,14 @@ from ichnaea.models.schema import (
     DefaultNode,
 )
 from ichnaea.models.wifi import (
-    WifiKey,
-    ValidWifiKeySchema,
+    WifiMacNode,
     ValidWifiSignalSchema,
 )
+
+
+class WifiKey(HashKey):
+
+    _fields = ('key', )
 
 
 class ValidReportSchema(ValidPositionSchema):
@@ -164,8 +168,10 @@ class CellObservation(CellReport, Report):
     _fields = CellReport._fields + Report._fields
 
 
-class ValidWifiReportSchema(ValidWifiKeySchema, ValidWifiSignalSchema):
+class ValidWifiReportSchema(ValidWifiSignalSchema):
     """A schema which validates the wifi specific fields in a report."""
+
+    key = WifiMacNode(colander.String())
 
     def validator(self, node, cstruct):
         super(ValidWifiReportSchema, self).validator(node, cstruct)

@@ -38,7 +38,8 @@ class WifisSchema(InternalSequenceSchema):
     @colander.instantiate()
     class SequenceItem(InternalMappingSchema):
 
-        key = InternalSchemaNode(colander.String(), missing=None)
+        key = InternalSchemaNode(
+            colander.String(), missing=None, internal_name='mac')
         frequency = InternalSchemaNode(colander.Integer(), missing=None)
         channel = InternalSchemaNode(colander.Integer(), missing=None)
         signal = InternalSchemaNode(colander.Integer(), missing=None)

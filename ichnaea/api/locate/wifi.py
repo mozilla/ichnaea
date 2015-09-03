@@ -27,7 +27,7 @@ from ichnaea.geocalc import (
 from ichnaea.models import WifiShard
 from ichnaea import util
 
-Network = namedtuple('Network', 'key lat lon radius signal')
+Network = namedtuple('Network', 'mac lat lon radius signal')
 
 
 def cluster_elements(items, distance_fn, threshold):
@@ -114,7 +114,7 @@ def get_clusters(wifis, lookups):
     # they are multiple interfaces on the same base station or such.
     dissimilar_macs = set(filter_bssids_by_similarity([w.mac for w in wifis]))
 
-    # Create a dict of wifi keys mapped to their signal strength.
+    # Create a dict of wifi macs mapped to their signal strength.
     # Estimate signal strength at -100 dBm if none is provided,
     # which is worse than the 99th percentile of wifi dBms we
     # see in practice (-98).

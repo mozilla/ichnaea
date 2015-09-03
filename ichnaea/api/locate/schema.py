@@ -24,16 +24,14 @@ from ichnaea.models.hashkey import (
 )
 from ichnaea.models.schema import DefaultNode
 from ichnaea.models.wifi import (
-    ValidWifiKeySchema,
+    WifiMacNode,
     ValidWifiSignalSchema,
-    WifiKey,
 )
 
 
-class BaseLookup(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
+class BaseLookup(HashKey, CreationMixin, ValidationMixin):
     """A base class for lookup models."""
 
-    _hashkey_cls = None  #:
     _valid_schema = None  #:
     _fields = ()  #:
 
@@ -42,9 +40,10 @@ class BaseLookup(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
         raise NotImplementedError()
 
 
-class BaseCellLookup(BaseLookup):
+class BaseCellLookup(HashKeyMixin, BaseLookup):
     """A base class for cell related lookup models."""
 
+    _hashkey_cls = None  #:
     _key_fields = (
         'radio',
         'mcc',
@@ -113,17 +112,18 @@ class CellLookup(BaseCellLookup):
     ) + BaseCellLookup._signal_fields
 
 
-class ValidWifiLookupSchema(ValidWifiKeySchema, ValidWifiSignalSchema):
+class ValidWifiLookupSchema(ValidWifiSignalSchema):
     """A schema which validates the fields in a wifi lookup."""
+
+    mac = WifiMacNode(colander.String())
 
 
 class WifiLookup(BaseLookup):
     """A model class representing a cell lookup."""
 
-    _hashkey_cls = WifiKey
     _valid_schema = ValidWifiLookupSchema()
     _fields = (
-        'key',
+        'mac',
         'channel',
         'signal',
         'snr',
@@ -137,10 +137,6 @@ class WifiLookup(BaseLookup):
                 old_value > new_value):
             return True
         return False
-
-    @property
-    def mac(self):
-        return self.key
 
 
 class FallbackSchema(colander.MappingSchema):

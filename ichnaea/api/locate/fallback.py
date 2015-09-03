@@ -108,7 +108,7 @@ class OutboundSchema(OptionalMappingSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
-            key = OptionalNode(
+            mac = OptionalNode(
                 colander.String(), internal_name='macAddress')
             channel = OptionalNode(
                 colander.Integer(), internal_name='channel')
@@ -170,7 +170,7 @@ class FallbackCache(object):
     def _cache_keys_wifi(self, wifi_query):
         keys = []
         for wifi in wifi_query:
-            keys.append(self.cache_key_wifi + encode_mac(wifi.key))
+            keys.append(self.cache_key_wifi + encode_mac(wifi.mac))
         return keys
 
     def get(self, query):

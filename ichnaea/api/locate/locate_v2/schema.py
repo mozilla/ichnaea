@@ -55,7 +55,7 @@ class WifiAccessPointsSchema(InternalSequenceSchema):
     class SequenceItem(InternalMappingSchema):
 
         macAddress = InternalSchemaNode(
-            colander.String(), missing=None, internal_name='key')
+            colander.String(), missing=None, internal_name='mac')
         age = InternalSchemaNode(colander.Integer(), missing=None)
         channel = InternalSchemaNode(colander.Integer(), missing=None)
         frequency = InternalSchemaNode(colander.Integer(), missing=None)

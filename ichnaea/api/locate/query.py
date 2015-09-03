@@ -222,11 +222,11 @@ class Query(object):
         for value in values:
             valid_wifi = WifiLookup.create(**value)
             if valid_wifi:
-                existing = filtered.get(valid_wifi.hashkey())
+                existing = filtered.get(valid_wifi.mac)
                 if existing is not None and existing.better(valid_wifi):
                     pass
                 else:
-                    filtered[valid_wifi.hashkey()] = valid_wifi
+                    filtered[valid_wifi.mac] = valid_wifi
 
         if len(filtered) < MIN_WIFIS_IN_QUERY:
             filtered = {}

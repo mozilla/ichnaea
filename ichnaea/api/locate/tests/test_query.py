@@ -43,7 +43,7 @@ class QueryTest(ConnectionTestCase):
         query = []
         for wifi in wifis:
             query.append({
-                'key': wifi.mac,
+                'mac': wifi.mac,
                 'channel': 11,
                 'signal': -85,
                 'snr': 13,
@@ -195,26 +195,26 @@ class TestQuery(QueryTest, ConnectionTestCase):
 
     def test_wifi_single(self):
         wifi = WifiShardFactory.build()
-        wifi_query = {'key': wifi.mac}
+        wifi_query = {'mac': wifi.mac}
         query = Query(wifi=[wifi_query])
         self.assertEqual(len(query.wifi), 0)
 
     def test_wifi_duplicates(self):
         wifi = WifiShardFactory.build()
         query = Query(wifi=[
-            {'key': wifi.mac, 'signal': -90},
-            {'key': wifi.mac, 'signal': -82},
-            {'key': wifi.mac, 'signal': -85},
+            {'mac': wifi.mac, 'signal': -90},
+            {'mac': wifi.mac, 'signal': -82},
+            {'mac': wifi.mac, 'signal': -85},
         ])
         self.assertEqual(len(query.wifi), 0)
 
     def test_wifi_better(self):
         wifis = WifiShardFactory.build_batch(2)
         query = Query(wifi=[
-            {'key': wifis[0].mac, 'signal': -90, 'channel': 1},
-            {'key': wifis[0].mac, 'signal': -82},
-            {'key': wifis[0].mac, 'signal': -85},
-            {'key': wifis[1].mac, 'signal': -70},
+            {'mac': wifis[0].mac, 'signal': -90, 'channel': 1},
+            {'mac': wifis[0].mac, 'signal': -82},
+            {'mac': wifis[0].mac, 'signal': -85},
+            {'mac': wifis[1].mac, 'signal': -70},
         ])
         self.assertEqual(len(query.wifi), 2)
         self.assertEqual(
@@ -222,8 +222,8 @@ class TestQuery(QueryTest, ConnectionTestCase):
 
     def test_wifi_malformed(self):
         wifi = WifiShardFactory.build()
-        wifi_query = {'key': wifi.mac}
-        query = Query(wifi=[wifi_query, {'key': 'foo'}])
+        wifi_query = {'mac': wifi.mac}
+        query = Query(wifi=[wifi_query, {'mac': 'foo'}])
         self.assertEqual(len(query.wifi), 0)
 
     def test_wifi_country(self):
