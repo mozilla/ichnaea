@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 18d72822fe20: Remove wifi table.
+
 Changes
 ~~~~~~~
 

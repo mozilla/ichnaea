@@ -9,10 +9,8 @@ from sqlalchemy import (
     Index,
     String,
     PrimaryKeyConstraint,
-    UniqueConstraint,
 )
 from sqlalchemy.dialects.mysql import (
-    BIGINT as BigInteger,
     INTEGER as Integer,
     TINYINT as TinyInteger,
 )
@@ -44,7 +42,6 @@ from ichnaea.models.schema import (
 )
 from ichnaea.models.station import (
     BboxMixin,
-    StationMixin,
     ValidBboxSchema,
 )
 from ichnaea import util
@@ -148,19 +145,6 @@ class ValidWifiSignalSchema(FieldSchema, CopyingSchema):
                     data['channel'] = None
 
         return super(ValidWifiSignalSchema, self).deserialize(data)
-
-
-class Wifi(StationMixin, _Model):
-    __tablename__ = 'wifi'
-
-    _indices = (
-        UniqueConstraint('key', name='wifi_key_unique'),
-        Index('wifi_created_idx', 'created'),
-    )
-
-    id = Column(BigInteger(unsigned=True),
-                primary_key=True, autoincrement=True)
-    key = Column(String(12))
 
 
 class StationSource(IntEnum):
