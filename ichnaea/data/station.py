@@ -29,10 +29,10 @@ class CellRemover(DataTask):
         super(CellRemover, self).__init__(task, session)
         self.pipe = pipe
 
-    def remove(self, cell_keys):
+    def __call__(self, cell_keys):
         cells_removed = 0
         changed_areas = set()
-        data_queue = self.task.app.data_queues['update_cellarea']
+        area_queue = self.task.app.data_queues['update_cellarea']
 
         for key in cell_keys:
             query = Cell.querykey(self.session, key)
@@ -40,7 +40,7 @@ class CellRemover(DataTask):
             changed_areas.add(CellArea.to_hashkey(key))
 
         if changed_areas:
-            data_queue.enqueue(changed_areas, pipe=self.pipe)
+            area_queue.enqueue(changed_areas, pipe=self.pipe)
 
         return cells_removed
 
@@ -73,7 +73,7 @@ class StationUpdater(DataTask):
                 count,
                 tags=tags)
 
-    def update(self, batch=10):
+    def __call__(self, batch=10):
         raise NotImplementedError()
 
 
@@ -254,7 +254,7 @@ class CellUpdater(StationUpdater):
             self.session.expunge(station)
             return (False, None, values)
 
-    def update(self, batch=10):
+    def __call__(self, batch=10):
         all_observations = self.data_queue.dequeue(batch=batch)
         drop_counter = defaultdict(int)
         added = 0
@@ -583,7 +583,7 @@ class WifiUpdater(StationUpdater):
             self.session.bulk_update_mappings(
                 shard, new_data['changed'] + new_data['moving'])
 
-    def update(self, batch=10):
+    def __call__(self, batch=10):
         sharded_obs = self._shard_observations(
             self.data_queue.dequeue(batch=batch))
         if not sharded_obs:

@@ -18,7 +18,7 @@ class ExportScheduler(DataTask):
         DataTask.__init__(self, task, session)
         self.export_queues = task.app.export_queues
 
-    def schedule(self, export_task):
+    def __call__(self, export_task):
         triggered = 0
         for export_queue in self.export_queues.values():
             if not export_queue.queue_prefix:
@@ -58,11 +58,7 @@ class ExportQueue(DataTask):
         self.nickname = nickname
         self.export_queues = task.app.export_queues
 
-    def insert(self, reports):
-        self.queue_export(reports)
-        return len(reports)
-
-    def queue_export(self, reports):
+    def __call__(self, reports):
         metadata = {
             'api_key': self.api_key,
             'email': self.email,
@@ -91,17 +87,17 @@ class ReportExporter(DataTask):
         if not self.queue_key:
             self.queue_key = self.export_queue.queue_key()
 
-    def export(self, export_task, upload_task):
+    def __call__(self, export_task, upload_task):
         export_queue = self.export_queue
         if not export_queue.enough_data(self.queue_key):  # pragma: no cover
-            return 0
+            return
 
         items = export_queue.dequeue(self.queue_key, batch=self.batch)
         if items and len(items) < self.batch:  # pragma: no cover
             # race condition, something emptied the queue in between
             # our llen call and fetching the items, put them back
             export_queue.enqueue(items, self.queue_key)
-            return 0
+            return
 
         if self.metadata:  # pragma: no cover
             reports = items
@@ -123,8 +119,6 @@ class ReportExporter(DataTask):
                 countdown=1,
                 expires=300)
 
-        return len(items)
-
 
 class ReportUploader(DataTask):
 
@@ -139,14 +133,13 @@ class ReportUploader(DataTask):
         if not self.queue_key:  # pragma: no cover
             self.queue_key = self.export_queue.queue_key()
 
-    def upload(self, data):
-        result = self.send(self.url, data)
+    def __call__(self, data):
+        self.send(self.url, data)
         self.stats_client.incr(
             self.stats_prefix + 'batch', tags=self.stats_tags)
-        return result
 
     def send(self, url, data):
-        raise NotImplementedError
+        raise NotImplementedError()
 
 
 class GeosubmitUploader(ReportUploader):
@@ -172,7 +165,6 @@ class GeosubmitUploader(ReportUploader):
             self.stats_prefix + 'upload',
             tags=self.stats_tags + ['status:%s' % response.status_code])
         response.raise_for_status()
-        return True
 
 
 class S3Uploader(ReportUploader):
@@ -217,11 +209,8 @@ class S3Uploader(ReportUploader):
             self.stats_client.incr(
                 self.stats_prefix + 'upload',
                 tags=self.stats_tags + ['status:success'])
-            return True
         except Exception:  # pragma: no cover
             self.raven_client.captureException()
-
             self.stats_client.incr(
                 self.stats_prefix + 'upload',
                 tags=self.stats_tags + ['status:failure'])
-            return False

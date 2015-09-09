@@ -31,6 +31,10 @@ class ReportQueue(DataTask):
         self.cell_queue = self.task.app.data_queues['update_cell']
         self.wifi_queue = self.task.app.data_queues['update_wifi']
 
+    def __call__(self, reports):
+        userid = self.process_user(self.nickname, self.email)
+        self.process_reports(reports, userid=userid)
+
     def emit_stats(self, reports, malformed_reports, obs_count):
         api_tag = []
         if self.api_key and self.api_key.log:
@@ -98,12 +102,6 @@ class ReportQueue(DataTask):
             unknown_keys -= set([block.hashkey() for block in block_iter])
 
         return len(unknown_keys)
-
-    def insert(self, reports):
-        length = len(reports)
-        userid = self.process_user(self.nickname, self.email)
-        self.process_reports(reports, userid=userid)
-        return length
 
     def process_reports(self, reports, userid=None):
         malformed_reports = 0

@@ -13,7 +13,7 @@ class MapStatUpdater(DataTask):
         DataTask.__init__(self, task, session)
         self.pipe = pipe
 
-    def update(self, batch=1000):
+    def __call__(self, batch=1000):
         queue = self.task.app.data_queues['update_mapstat']
         today = util.utcnow().date()
         positions = queue.dequeue(batch=batch)

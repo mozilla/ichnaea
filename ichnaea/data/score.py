@@ -17,7 +17,7 @@ class ScoreUpdater(DataTask):
         self.queue = self.task.app.data_queues['update_score']
         self.today = util.utcnow().date()
 
-    def update(self, batch=1000):
+    def __call__(self, batch=1000):
         score_values = defaultdict(int)
         for score in self.queue.dequeue(batch=batch):
             key = score['hashkey']

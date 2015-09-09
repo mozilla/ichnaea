@@ -163,16 +163,13 @@ class TestCell(StationTest):
 
         self.data_queue.enqueue(obs)
         self.session.commit()
-
-        result = update_cell.delay()
-        self.assertEqual(result.get(), (4, 3))
+        update_cell.delay().get()
 
         block = self.session.query(CellBlocklist).all()
         self.assertEqual(set([b.hashkey() for b in block]), moving)
 
         # test duplicate call
-        result = update_cell.delay()
-        self.assertEqual(result.get(), (0, 0))
+        update_cell.delay().get()
 
         self.check_stats(counter=[
             ('data.station.blocklist', 1, 3,

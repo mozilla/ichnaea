@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove obsolete `remove_wifi` task.
+
 20150903095100
 **************
 

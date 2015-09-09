@@ -16,7 +16,7 @@ class StatCounterUpdater(DataTask):
         self.pipe = pipe
         self.today = util.utcnow().date()
 
-    def update(self, ago=1):
+    def __call__(self, ago=1):
         day = self.today - timedelta(days=ago)
         for stat_key in StatKey:
             self.update_key(stat_key, day)
