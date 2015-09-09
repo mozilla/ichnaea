@@ -107,9 +107,7 @@ def insert_reports(self, reports=(),
                    api_key=None, email=None, ip=None, nickname=None):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
-            api_key = api_key and ApiKey.getkey(
-                session, {'valid_key': api_key})
-
+            api_key = api_key and session.query(ApiKey).get(api_key)
             ReportQueue(
                 self, session, pipe,
                 api_key=api_key,

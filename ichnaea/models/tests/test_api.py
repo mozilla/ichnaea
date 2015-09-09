@@ -9,8 +9,7 @@ class TestApiKey(DBTestCase):
         session.add(ApiKey(valid_key='foo-bar', maxreq=10, shortname='foo'))
         session.flush()
 
-        query = session.query(ApiKey).filter(ApiKey.valid_key == 'foo-bar')
-        result = query.first()
+        result = session.query(ApiKey).get('foo-bar')
         self.assertEqual(result.valid_key, 'foo-bar')
         self.assertEqual(result.maxreq, 10)
         self.assertEqual(result.shortname, 'foo')

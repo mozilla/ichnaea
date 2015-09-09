@@ -30,12 +30,10 @@ class ApiKeyLimits(object):
 
         names = {}
         if keys:
-            api_iter = ApiKey.iterkeys(
-                self.session, keys,
-                extra=lambda query: query.options(
-                    load_only('valid_key', 'shortname')))
-
-            for api_key in api_iter:
+            query = (self.session.query(ApiKey)
+                                 .filter(ApiKey.valid_key.in_(keys))
+                                 .options(load_only('shortname')))
+            for api_key in query.all():
                 names[api_key.valid_key] = api_key.name
 
         result = {}

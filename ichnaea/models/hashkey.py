@@ -98,11 +98,6 @@ class HashKeyQueryMixin(HashKeyMixin):
         Create a SQLAlchemy filter criterion for doing a primary key
         lookup.
         """
-        if not isinstance(key, HashKey):
-            if isinstance(key, HashKeyMixin):  # pragma: no cover
-                key = key.hashkey()
-            else:
-                key = cls.to_hashkey(key)
         criterion = ()
         for field in cls._hashkey_cls._fields:
             value = getattr(key, field, _sentinel)
@@ -142,13 +137,6 @@ class HashKeyQueryMixin(HashKeyMixin):
         if not keys:  # pragma: no cover
             # prevent construction of queries without a key restriction
             raise ValueError('Model._querykeys called with empty keys.')
-
-        if len(cls._hashkey_cls._fields) == 1:
-            # optimize queries for hashkeys with single fields to use
-            # a 'WHERE model.somefield IN (:key_1, :key_2)' query
-            field = cls._hashkey_cls._fields[0]
-            return (session.query(cls)
-                           .filter(getattr(cls, field).in_(list(keys))))
 
         key_filters = []
         for key in keys:
