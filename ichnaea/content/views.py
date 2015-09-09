@@ -64,7 +64,7 @@ def configure_content(config):
                     http_cache=(86400, {'public': True}))
     config.registry.skip_logging.add('/apple-touch-icon-precomposed.png')
     config.add_static_view(
-        name='static', path='ichnaea.content:static', cache_max_age=3600)
+        name='static', path='ichnaea.content:static', cache_max_age=86400)
 
     config.add_route('leaders_weekly', '/leaders/weekly')
     config.add_route('leaders', '/leaders')
@@ -185,8 +185,8 @@ class ContentViews(Layout):
             assets_url = settings['assets']['url']
             raven_client = self.request.registry.raven_client
             data = s3_list_downloads(assets_bucket, assets_url, raven_client)
-            # cache the download files, expire after 10 minutes
-            redis_client.set(cache_key, internal_dumps(data), ex=600)
+            # cache the download files
+            redis_client.set(cache_key, internal_dumps(data), ex=1800)
         return {'page_title': 'Downloads', 'files': data}
 
     @view_config(renderer='templates/optout.pt',
@@ -218,7 +218,7 @@ class ContentViews(Layout):
                     'nickname': l[1]['nickname'],
                     'anchor': l[1]['nickname'],
                 } for l in data]
-            redis_client.set(cache_key, internal_dumps(data), ex=600)
+            redis_client.set(cache_key, internal_dumps(data), ex=1800)
 
         half = len(data) // 2 + len(data) % 2
         leaders1 = data[:half]
