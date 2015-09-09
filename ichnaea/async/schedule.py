@@ -12,8 +12,8 @@ CELERYBEAT_SCHEDULE = {
 
     # Monitoring tasks
 
-    'monitor-queue-length': {
-        'task': 'ichnaea.data.tasks.monitor_queue_length',
+    'monitor-queue-size': {
+        'task': 'ichnaea.data.tasks.monitor_queue_size',
         'schedule': timedelta(seconds=60),
         'options': {'expires': 57},
     },
@@ -33,39 +33,31 @@ CELERYBEAT_SCHEDULE = {
         'options': {'expires': 570},
     },
 
-    # Hourly
+    # Daily
 
-    'update-statcounter': {
-        'task': 'ichnaea.data.tasks.update_statcounter',
-        'args': (1, ),
-        'schedule': crontab(minute=3),
-    },
-    'ocid-hourly-cell-delta-import': {
-        'task': 'ichnaea.data.tasks.import_latest_ocid_cells',
-        'args': (True, ),
-        'schedule': crontab(minute=52),
-        'options': {'expires': 2700},
-    },
-    's3-hourly-cell-delta-export': {
-        'task': 'ichnaea.data.tasks.export_modified_cells',
-        'args': (True, ),
-        'schedule': crontab(minute=3),
-        'options': {'expires': 2700},
-    },
-    's3-daily-cell-full-export': {
-        'task': 'ichnaea.data.tasks.export_modified_cells',
-        'args': (False, ),
+    'cell-export-full': {
+        'task': 'ichnaea.data.tasks.cell_export_full',
         'schedule': crontab(hour=0, minute=13),
         'options': {'expires': 39600},
     },
 
-    # Couple minutes
+    # Hourly
 
-    'continuous-cell-scan-areas': {
-        'task': 'ichnaea.data.tasks.scan_areas',
-        'schedule': timedelta(seconds=121),
-        'args': (500, ),
-        'options': {'expires': 110},
+    'cell-export-diff': {
+        'task': 'ichnaea.data.tasks.cell_export_diff',
+        'schedule': crontab(minute=3),
+        'options': {'expires': 2700},
+    },
+    'cell-import-external': {
+        'task': 'ichnaea.data.tasks.cell_import_external',
+        'args': (True, ),
+        'schedule': crontab(minute=52),
+        'options': {'expires': 2700},
+    },
+    'update-statcounter': {
+        'task': 'ichnaea.data.tasks.update_statcounter',
+        'args': (1, ),
+        'schedule': crontab(minute=3),
     },
 
     # (less than) one minute
@@ -95,6 +87,12 @@ CELERYBEAT_SCHEDULE = {
         'options': {'expires': 10},
     },
 
+    'schedule-update-cellarea': {
+        'task': 'ichnaea.data.tasks.scan_areas',
+        'schedule': timedelta(seconds=59),
+        'args': (500, ),
+        'options': {'expires': 55},
+    },
     'schedule-export-reports': {
         'task': 'ichnaea.data.tasks.schedule_export_reports',
         'schedule': timedelta(seconds=60),

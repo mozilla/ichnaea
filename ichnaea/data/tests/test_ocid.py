@@ -13,13 +13,13 @@ import six
 from ichnaea.data.ocid import (
     CELL_FIELDS,
     CELL_HEADER_DICT,
-    selfdestruct_tempdir,
     write_stations_to_csv,
 )
 from ichnaea.data.tasks import (
-    export_modified_cells,
-    import_ocid_cells,
-    import_latest_ocid_cells,
+    cell_export_full,
+    cell_export_diff,
+    cell_import_local,
+    cell_import_external,
     update_statcounter,
 )
 from ichnaea.models import (
@@ -73,7 +73,7 @@ class TestExport(CeleryTestCase):
         CellFactory(cid=210, lat=None, lon=None, **cell_key)
         self.session.commit()
 
-        with selfdestruct_tempdir() as temp_dir:
+        with util.selfdestruct_tempdir() as temp_dir:
             path = os.path.join(temp_dir, 'export.csv.gz')
             write_stations_to_csv(self.session, path)
 
@@ -96,23 +96,23 @@ class TestExport(CeleryTestCase):
 
                     self.assertEqual(cells, exported_cells)
 
-    def test_hourly_export(self):
+    def test_export_diff(self):
         CellFactory.create_batch(10, radio=Radio.gsm)
         self.session.commit()
 
         with mock_s3() as mock_key:
-            export_modified_cells(_bucket='localhost.bucket')
+            cell_export_diff(_bucket='localhost.bucket')
             pat = r'MLS-diff-cell-export-\d+-\d+-\d+T\d+0000\.csv\.gz'
             self.assertRegex(mock_key.key, pat)
             method = mock_key.set_contents_from_filename
             self.assertRegex(method.call_args[0][0], pat)
 
-    def test_daily_export(self):
+    def test_export_full(self):
         CellFactory.create_batch(10, radio=Radio.gsm)
         self.session.commit()
 
         with mock_s3() as mock_key:
-            export_modified_cells(_bucket='localhost.bucket', hourly=False)
+            cell_export_full(_bucket='localhost.bucket')
             pat = r'MLS-full-cell-export-\d+-\d+-\d+T000000\.csv\.gz'
             self.assertRegex(mock_key.key, pat)
             method = mock_key.set_contents_from_filename
@@ -149,8 +149,8 @@ class TestImport(CeleryAppTestCase):
         ))
         txt = '\n'.join(lines)
 
-        with selfdestruct_tempdir() as d:
-            path = os.path.join(d, 'import.csv.gz')
+        with util.selfdestruct_tempdir() as temp_dir:
+            path = os.path.join(temp_dir, 'import.csv.gz')
             with util.gzip_open(path, 'w') as gzip_wrapper:
                 with gzip_wrapper as gzip_file:
                     gzip_file.write(txt)
@@ -158,7 +158,7 @@ class TestImport(CeleryAppTestCase):
 
     def import_csv(self, lo=1, hi=10, time=1408604686):
         with self.get_csv(lo=lo, hi=hi, time=time) as path:
-            import_ocid_cells(filename=path)
+            cell_import_local(filename=path)
 
     def test_local_import(self):
         self.import_csv()
@@ -222,7 +222,7 @@ class TestImport(CeleryAppTestCase):
             with open(path, 'rb') as gzip_file:
                 with requests_mock.Mocker() as req_m:
                     req_m.register_uri('GET', re.compile('.*'), body=gzip_file)
-                    import_latest_ocid_cells()
+                    cell_import_external()
 
         cells = (self.session.query(OCIDCell)
                              .order_by(OCIDCell.modified).all())

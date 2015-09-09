@@ -27,22 +27,45 @@ from ichnaea.models import ApiKey
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
-def export_modified_cells(self, hourly=True, _bucket=None):
-    ocid.export_modified_cells(self, hourly=hourly, _bucket=_bucket)
+def export_modified_cells(self, hourly=True, _bucket=None):  # pragma: no cover
+    # BBB
+    ocid.CellExport(self)(hourly=True, _bucket=_bucket)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
-def import_latest_ocid_cells(self, diff=True):
-    ocid.import_latest_ocid_cells(
-        self, diff=diff, update_area_task=update_area)
+def import_latest_ocid_cells(self, diff=True):  # pragma: no cover
+    # BBB
+    ocid.ImportExternal(self, update_area_task=update_area)(diff=diff)
+
+
+@celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
+def monitor_queue_length(self):  # pragma: no cover
+    # BBB
+    return monitor.QueueSize(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
-def import_ocid_cells(self, filename=None):
+def cell_export_diff(self, _bucket=None):
+    ocid.CellExport(self)(hourly=True, _bucket=_bucket)
+
+
+@celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
+def cell_export_full(self, _bucket=None):
+    ocid.CellExport(self)(hourly=False, _bucket=_bucket)
+
+
+@celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
+def cell_import_external(self, diff=True):
+    ocid.ImportExternal(self, update_area_task=update_area)(diff=diff)
+
+
+@celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
+def cell_import_local(self, filename):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
-            ocid.import_ocid_cells(
-                session, pipe, filename=filename, update_area_task=update_area)
+            ocid.ImportLocal(
+                self, session, pipe,
+                update_area_task=update_area)(filename=filename)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
@@ -63,7 +86,7 @@ def monitor_ocid_import(self):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
-def monitor_queue_length(self):
+def monitor_queue_size(self):
     return monitor.QueueSize(self)()
 
 

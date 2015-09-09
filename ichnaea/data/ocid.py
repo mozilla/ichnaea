@@ -1,9 +1,7 @@
-from contextlib import contextmanager, closing
+from contextlib import closing
 import csv
 from datetime import datetime, timedelta
 import os
-import shutil
-import tempfile
 
 import boto
 import requests
@@ -31,15 +29,6 @@ CELL_HEADER_DICT['mnc'] = 'net'
 CELL_HEADER_DICT['lac'] = 'area'
 CELL_HEADER_DICT['cid'] = 'cell'
 CELL_HEADER_DICT['psc'] = 'unit'
-
-
-@contextmanager
-def selfdestruct_tempdir():
-    base_path = tempfile.mkdtemp()
-    try:
-        yield base_path
-    finally:
-        shutil.rmtree(base_path)
 
 
 def write_stations_to_csv(session, path, start_time=None, end_time=None):
@@ -108,177 +97,203 @@ OFFSET :o
                     break
 
 
-def write_stations_to_s3(path, bucketname):
-    conn = boto.connect_s3()
-    bucket = conn.get_bucket(bucketname)
-    k = boto.s3.key.Key(bucket)
-    k.key = 'export/' + os.path.split(path)[-1]
-    k.set_contents_from_filename(path, reduced_redundancy=True)
+class CellExport(object):
+
+    def __init__(self, task):
+        self.task = task
+        self.settings = task.app.settings['assets']
+
+    def __call__(self, hourly=True, _bucket=None):
+        if _bucket is None:  # pragma: no cover
+            bucket = self.settings['bucket']
+        else:
+            bucket = _bucket
+
+        if not bucket:  # pragma: no cover
+            return
+
+        now = util.utcnow()
+        start_time = None
+        end_time = None
+
+        if hourly:
+            end_time = now.replace(minute=0, second=0)
+            file_time = end_time
+            file_type = 'diff'
+            start_time = end_time - timedelta(hours=1)
+        else:
+            file_time = now.replace(hour=0, minute=0, second=0)
+            file_type = 'full'
+
+        filename = 'MLS-%s-cell-export-' % file_type
+        filename = filename + file_time.strftime('%Y-%m-%dT%H0000.csv.gz')
+
+        with util.selfdestruct_tempdir() as temp_dir:
+            path = os.path.join(temp_dir, filename)
+            with self.task.db_session(commit=False) as session:
+                write_stations_to_csv(
+                    session, path,
+                    start_time=start_time, end_time=end_time)
+            self.write_stations_to_s3(path, bucket)
+
+    def write_stations_to_s3(self, path, bucketname):
+        conn = boto.connect_s3()
+        bucket = conn.get_bucket(bucketname)
+        with closing(boto.s3.key.Key(bucket)) as key:
+            key.key = 'export/' + os.path.split(path)[-1]
+            key.set_contents_from_filename(path, reduced_redundancy=True)
 
 
-def export_modified_cells(task, hourly=True, _bucket=None):
-    if _bucket is None:  # pragma: no cover
-        bucket = task.app.settings['assets']['bucket']
-    else:
-        bucket = _bucket
+class ImportBase(object):
 
-    if not bucket:  # pragma: no cover
-        return
+    batch_size = 10000
+    area_batch_size = 10
 
-    now = util.utcnow()
-    start_time = None
-    end_time = None
+    def __init__(self, task, update_area_task=None):
+        self.task = task
+        self.update_area_task = update_area_task
 
-    if hourly:
-        end_time = now.replace(minute=0, second=0)
-        file_time = end_time
-        file_type = 'diff'
-        start_time = end_time - timedelta(hours=1)
-    else:
-        file_time = now.replace(hour=0, minute=0, second=0)
-        file_type = 'full'
+    def make_ocid_cell_import_dict(self, row):
 
-    filename = 'MLS-%s-cell-export-' % file_type
-    filename = filename + file_time.strftime('%Y-%m-%dT%H0000.csv.gz')
+        def row_value(row, key, default, _type):
+            if key in row and row[key] not in (None, ''):
+                return _type(row[key])
+            return default
 
-    with selfdestruct_tempdir() as temp_dir:
-        path = os.path.join(temp_dir, filename)
-        with task.db_session(commit=False) as session:
-            write_stations_to_csv(
-                session, path,
-                start_time=start_time, end_time=end_time)
-        write_stations_to_s3(path, bucket)
+        data = {}
+        data['created'] = datetime.fromtimestamp(
+            row_value(row, 'created', 0, int))
 
+        data['modified'] = datetime.fromtimestamp(
+            row_value(row, 'updated', 0, int))
 
-def row_value(row, key, default, _type):
-    if key in row and row[key] not in (None, ''):
-        return _type(row[key])
-    return default
+        data['lat'] = row_value(row, 'lat', None, float)
+        data['lon'] = row_value(row, 'lon', None, float)
 
-
-def make_ocid_cell_import_dict(row):
-    data = {}
-    data['created'] = datetime.fromtimestamp(
-        row_value(row, 'created', 0, int))
-
-    data['modified'] = datetime.fromtimestamp(
-        row_value(row, 'updated', 0, int))
-
-    data['lat'] = row_value(row, 'lat', None, float)
-    data['lon'] = row_value(row, 'lon', None, float)
-
-    try:
-        radio = row['radio'].lower()
-        if radio == 'umts':
-            radio = 'wcdma'
-        data['radio'] = Radio[radio]
-    except KeyError:  # pragma: no cover
-        return None
-
-    for field in ('mcc', 'mnc', 'lac', 'cid', 'psc'):
-        data[field] = row_value(row, field, None, int)
-
-    data['range'] = int(row_value(row, 'range', 0, float))
-    data['total_measures'] = row_value(row, 'samples', 0, int)
-    data['changeable'] = row_value(row, 'changeable', True, bool)
-    validated = OCIDCell.validate(data)
-    if validated is None:
-        return None
-    for field in ('radio', 'mcc', 'mnc', 'lac', 'cid'):
-        if validated[field] is None:
+        try:
+            radio = row['radio'].lower()
+            if radio == 'umts':
+                radio = 'wcdma'
+            data['radio'] = Radio[radio]
+        except KeyError:  # pragma: no cover
             return None
-    return validated
+
+        for field in ('mcc', 'mnc', 'lac', 'cid', 'psc'):
+            data[field] = row_value(row, field, None, int)
+
+        data['range'] = int(row_value(row, 'range', 0, float))
+        data['total_measures'] = row_value(row, 'samples', 0, int)
+        data['changeable'] = row_value(row, 'changeable', True, bool)
+        validated = OCIDCell.validate(data)
+        if validated is None:
+            return None
+        for field in ('radio', 'mcc', 'mnc', 'lac', 'cid'):
+            if validated[field] is None:
+                return None
+        return validated
+
+    def import_stations(self, session, pipe, filename):
+        today = util.utcnow().date()
+        area_keys = set()
+
+        def commit_batch(ins, rows, commit=True):
+            result = session.execute(ins, rows)
+            count = result.rowcount
+            # apply trick to avoid querying for existing rows,
+            # MySQL claims 1 row for an inserted row, 2 for an updated row
+            inserted_rows = 2 * len(rows) - count
+            changed_rows = count - len(rows)
+            assert inserted_rows + changed_rows == len(rows)
+            StatCounter(StatKey.unique_ocid_cell, today).incr(
+                pipe, inserted_rows)
+            if commit:
+                session.commit()
+            else:  # pragma: no cover
+                session.flush()
+
+        with util.gzip_open(filename, 'r') as gzip_wrapper:
+            with gzip_wrapper as gzip_file:
+                csv_reader = csv.DictReader(gzip_file, CELL_FIELDS)
+                rows = []
+                ins = OCIDCell.__table__.insert(
+                    mysql_on_duplicate=(
+                        'changeable = values(changeable), '
+                        'modified = values(modified), '
+                        'total_measures = values(total_measures), '
+                        'lat = values(lat), '
+                        'lon = values(lon), '
+                        'psc = values(psc), '
+                        '`range` = values(`range`)'))
+
+                for row in csv_reader:
+                    # skip any header row
+                    if csv_reader.line_num == 1 and \
+                       'radio' in row.values():  # pragma: no cover
+                        continue
+
+                    data = self.make_ocid_cell_import_dict(row)
+                    if data is not None:
+                        rows.append(data)
+                        area_keys.add(CellArea.to_hashkey(data))
+
+                    if len(rows) == self.batch_size:  # pragma: no cover
+                        commit_batch(ins, rows, commit=False)
+                        rows = []
+
+                if rows:
+                    commit_batch(ins, rows)
+
+        area_keys = list(area_keys)
+        for i in range(0, len(area_keys), self.area_batch_size):
+            area_batch = area_keys[i:i + self.area_batch_size]
+            self.update_area_task.delay(area_batch, cell_type='ocid')
 
 
-def import_stations(session, pipe, filename, fields, update_area_task):
-    today = util.utcnow().date()
-    area_keys = set()
+class ImportExternal(ImportBase):
 
-    def commit_batch(ins, rows, commit=True):
-        result = session.execute(ins, rows)
-        count = result.rowcount
-        # apply trick to avoid querying for existing rows,
-        # MySQL claims 1 row for an inserted row, 2 for an updated row
-        inserted_rows = 2 * len(rows) - count
-        changed_rows = count - len(rows)
-        assert inserted_rows + changed_rows == len(rows)
-        StatCounter(StatKey.unique_ocid_cell, today).incr(pipe, inserted_rows)
-        if commit:
-            session.commit()
-        else:  # pragma: no cover
-            session.flush()
+    def __init__(self, task, update_area_task=None):
+        super(ImportExternal, self).__init__(
+            task, update_area_task=update_area_task)
+        self.settings = self.task.app.settings['import:ocid']
 
-    with util.gzip_open(filename, 'r') as gzip_wrapper:
-        with gzip_wrapper as gzip_file:
-            csv_reader = csv.DictReader(gzip_file, fields)
-            batch = 10000
-            rows = []
-            ins = OCIDCell.__table__.insert(
-                mysql_on_duplicate=(
-                    'changeable = values(changeable), '
-                    'modified = values(modified), '
-                    'total_measures = values(total_measures), '
-                    'lat = values(lat), '
-                    'lon = values(lon), '
-                    'psc = values(psc), '
-                    '`range` = values(`range`)'))
+    def __call__(self, diff=True, _filename=None):
+        url = self.settings['url']
+        apikey = self.settings['apikey']
+        if not url or not apikey:  # pragma: no cover
+            return
 
-            for row in csv_reader:
-                # skip any header row
-                if csv_reader.line_num == 1 and \
-                   'radio' in row.values():  # pragma: no cover
-                    continue
+        if _filename is None:
+            if diff:
+                prev_hour = util.utcnow() - timedelta(hours=1)
+                _filename = prev_hour.strftime(
+                    'cell_towers_diff-%Y%m%d%H.csv.gz')
+            else:  # pragma: no cover
+                _filename = 'cell_towers.csv.gz'
 
-                data = make_ocid_cell_import_dict(row)
-                if data is not None:
-                    rows.append(data)
-                    area_keys.add(CellArea.to_hashkey(data))
+        with util.selfdestruct_tempdir() as temp_dir:
+            path = os.path.join(temp_dir, _filename)
+            with open(path, 'wb') as temp_file:
+                with closing(requests.get(url,
+                                          params={'apiKey': apikey,
+                                                  'filename': _filename},
+                                          stream=True)) as req:
 
-                if len(rows) == batch:  # pragma: no cover
-                    commit_batch(ins, rows, commit=False)
-                    rows = []
+                    for chunk in req.iter_content(chunk_size=2 ** 20):
+                        temp_file.write(chunk)
+                        temp_file.flush()
 
-            if rows:
-                commit_batch(ins, rows)
-
-    area_keys = list(area_keys)
-    batch_size = 10
-    for i in range(0, len(area_keys), batch_size):
-        area_batch = area_keys[i:i + batch_size]
-        update_area_task.delay(area_batch, cell_type='ocid')
+                with self.task.redis_pipeline() as pipe:
+                    with self.task.db_session() as session:
+                        self.import_stations(session, pipe, path)
 
 
-def import_ocid_cells(session, pipe, filename=None, update_area_task=None):
-    import_stations(session, pipe, filename, CELL_FIELDS, update_area_task)
+class ImportLocal(ImportBase):
 
+    def __init__(self, task, session, pipe, update_area_task=None):
+        super(ImportLocal, self).__init__(
+            task, update_area_task=update_area_task)
+        self.session = session
+        self.pipe = pipe
 
-def import_latest_ocid_cells(task, diff=True, update_area_task=None,
-                             _filename=None):
-    url = task.app.settings['import:ocid']['url']
-    apikey = task.app.settings['import:ocid']['apikey']
-    if not url or not apikey:  # pragma: no cover
-        return
-
-    if _filename is None:
-        if diff:
-            prev_hour = util.utcnow() - timedelta(hours=1)
-            _filename = prev_hour.strftime('cell_towers_diff-%Y%m%d%H.csv.gz')
-        else:  # pragma: no cover
-            _filename = 'cell_towers.csv.gz'
-
-    with selfdestruct_tempdir() as temp_dir:
-        path = os.path.join(temp_dir, _filename)
-        with open(path, 'wb') as temp_file:
-            with closing(requests.get(url,
-                                      params={'apiKey': apikey,
-                                              'filename': _filename},
-                                      stream=True)) as req:
-
-                for chunk in req.iter_content(chunk_size=2 ** 20):
-                    temp_file.write(chunk)
-                    temp_file.flush()
-
-            with task.redis_pipeline() as pipe:
-                with task.db_session() as session:
-                    import_stations(session, pipe, path, CELL_FIELDS,
-                                    update_area_task)
+    def __call__(self, filename=None):
+        self.import_stations(self.session, self.pipe, filename)

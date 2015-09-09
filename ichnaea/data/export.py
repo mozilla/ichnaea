@@ -1,4 +1,5 @@
 from collections import namedtuple
+from contextlib import closing
 import uuid
 
 import boto
@@ -198,13 +199,12 @@ class S3Uploader(ReportUploader):
                                          tags=self.stats_tags):
                 conn = boto.connect_s3()
                 bucket = conn.get_bucket(self.bucket)
-                key = boto.s3.key.Key(bucket)
-                key.key = key_name
-                key.content_encoding = 'gzip'
-                key.content_type = 'application/json'
-                key.set_contents_from_string(
-                    util.encode_gzip(data, compresslevel=7))
-                key.close()
+                with closing(boto.s3.key.Key(bucket)) as key:
+                    key.key = key_name
+                    key.content_encoding = 'gzip'
+                    key.content_type = 'application/json'
+                    key.set_contents_from_string(
+                        util.encode_gzip(data, compresslevel=7))
 
             self.stats_client.incr(
                 self.stats_prefix + 'upload',

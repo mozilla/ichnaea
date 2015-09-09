@@ -6,7 +6,7 @@ from ichnaea.data.tasks import (
     monitor_api_key_limits,
     monitor_api_users,
     monitor_ocid_import,
-    monitor_queue_length,
+    monitor_queue_size,
 )
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import OCIDCellFactory
@@ -91,7 +91,7 @@ class TestMonitorTasks(CeleryTestCase):
             # less than 10 seconds (or 9999 milliseconds / 4 places)
             self.assertAlmostEqual(result, expect, -4)
 
-    def test_monitor_queue_length(self):
+    def test_monitor_queue_size(self):
         data = {}
         for name in self.celery_app.all_queues:
             data[name] = randint(1, 10)
@@ -99,7 +99,7 @@ class TestMonitorTasks(CeleryTestCase):
         for k, v in data.items():
             self.redis_client.lpush(k, *range(v))
 
-        result = monitor_queue_length.delay().get()
+        result = monitor_queue_size.delay().get()
 
         self.check_stats(
             gauge=[('queue', 1, v, ['queue:' + k]) for k, v in data.items()],

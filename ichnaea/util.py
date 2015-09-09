@@ -3,7 +3,9 @@ from contextlib import contextmanager
 from datetime import datetime
 import gzip
 from io import BytesIO
+import shutil
 import sys
+import tempfile
 
 from pytz import UTC
 import six
@@ -70,6 +72,15 @@ def decode_gzip(data, encoding='utf-8'):
         return out.decode(encoding)
     except (IOError, OSError) as exc:
         raise OSError(str(exc))
+
+
+@contextmanager
+def selfdestruct_tempdir():
+    base_path = tempfile.mkdtemp()
+    try:
+        yield base_path
+    finally:
+        shutil.rmtree(base_path)
 
 
 def utcnow():
