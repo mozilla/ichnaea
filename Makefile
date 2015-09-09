@@ -21,7 +21,6 @@ ifeq ($(TRAVIS), true)
 	PYTHON = python
 	PIP = pip
 	NOSE = nosetests
-	COVERALLS = coveralls
 	CYTHON = cython
 	SPHINXBUILD = sphinx-build
 else
@@ -32,7 +31,6 @@ else
 	PYTHON = $(BIN)/python
 	PIP = $(BIN)/pip
 	NOSE = $(BIN)/nosetests
-	COVERALLS = $(BIN)/coveralls
 	CYTHON = $(BIN)/cython
 	SPHINXBUILD = $(BIN)/sphinx-build
 endif
@@ -68,7 +66,7 @@ UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
 .PHONY: all bower js mysql pip init_db css js test clean shell docs \
 	build build_dev build_maxmind build_cython build_req \
 	release release_install release_compile \
-	tox_install tox_test pypi_release pypi_upload coveralls
+	tox_install tox_test pypi_release pypi_upload
 
 all: build init_db
 
@@ -241,9 +239,6 @@ endif
 
 $(BIN)/sphinx-build:
 	$(INSTALL) -r requirements/docs.txt
-
-coveralls:
-	$(COVERALLS)
 
 docs: $(BIN)/sphinx-build
 	cd docs; SPHINXBUILD=$(SPHINXBUILD) make html

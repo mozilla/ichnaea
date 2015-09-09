@@ -33,9 +33,6 @@ script:
     - make test
     - make docs
 
-after_success:
-    - make coveralls
-
 # mysql is started automatically
 services:
   - redis-server
