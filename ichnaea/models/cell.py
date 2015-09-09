@@ -39,10 +39,8 @@ from ichnaea.models.schema import (
     FieldSchema,
 )
 from ichnaea.models.station import (
-    BaseStationMixin,
-    StationMixin,
-    ValidBaseStationSchema,
-    ValidStationSchema,
+    BboxMixin,
+    ValidBboxSchema,
 )
 
 CELLID_STRUCT = struct.Struct('!bHHHI')
@@ -133,9 +131,7 @@ class CellHashKey(HashKey):
 
 
 class RadioNode(DefaultNode):
-    """
-    A node containing a valid radio enum.
-    """
+    """A node containing a valid radio enum."""
 
     def validator(self, node, cstruct):
         super(RadioNode, self).validator(node, cstruct)
@@ -147,9 +143,7 @@ class RadioNode(DefaultNode):
 
 
 class RadioType(colander.Integer):
-    """
-    A RadioType will return a Radio IntEnum object.
-    """
+    """A RadioType will return a Radio IntEnum object."""
 
     def deserialize(self, node, cstruct):
         if cstruct is colander.null:  # pragma: no cover
@@ -168,9 +162,7 @@ class RadioType(colander.Integer):
 
 
 class RadioStringType(colander.String):
-    """
-    A RadioType will return a Radio IntEnum as a string.
-    """
+    """A RadioType will return a Radio IntEnum as a string."""
 
     def deserialize(self, node, cstruct):
         if isinstance(cstruct, Radio):
@@ -196,7 +188,6 @@ class CellKeyPsc(CellHashKey):
 
 
 class ValidCellAreaKeySchema(FieldSchema, CopyingSchema):
-    """A schema which validates the fields present in a cell area key."""
 
     radio = RadioNode(RadioType())
     mcc = colander.SchemaNode(
@@ -246,7 +237,6 @@ class CellAreaKeyMixin(HashKeyQueryMixin):
 class ValidCellAreaSchema(ValidCellAreaKeySchema,
                           ValidPositionSchema,
                           ValidTimeTrackingSchema):
-    """A schema which validates the fields present in a cell area."""
 
     range = colander.SchemaNode(colander.Integer(), missing=0)
     avg_cell_range = colander.SchemaNode(colander.Integer(), missing=0)
@@ -264,7 +254,6 @@ class CellAreaMixin(CellAreaKeyMixin, TimeTrackingMixin,
 
 
 class ValidCellKeySchema(ValidCellAreaKeySchema):
-    """A schema which validates the fields present in a cell key."""
 
     cid = DefaultNode(
         colander.Integer(),
@@ -366,12 +355,27 @@ class CellMixin(CellKeyMixin):
     psc = Column(SmallInteger, autoincrement=False)
 
 
-class ValidCellSchema(ValidCellKeySchema, ValidStationSchema):
-    """A schema which validates the fields in cell."""
+class ValidBaseStationSchema(ValidPositionSchema, ValidTimeTrackingSchema):
+
+    range = colander.SchemaNode(colander.Integer(), missing=0)
+    total_measures = colander.SchemaNode(colander.Integer(), missing=0)
 
 
-class Cell(CellMixin, StationMixin, CreationMixin, _Model):
+class BaseStationMixin(PositionMixin, TimeTrackingMixin):
+
+    range = Column(Integer)
+    total_measures = Column(Integer(unsigned=True))
+
+
+class ValidCellSchema(ValidCellKeySchema,
+                      ValidBaseStationSchema, ValidBboxSchema):
+    """A schema which validates the fields in a cell."""
+
+
+class Cell(CellMixin, BaseStationMixin, BboxMixin, CreationMixin, _Model):
     __tablename__ = 'cell'
+
+    new_measures = Column(Integer(unsigned=True))
 
     _indices = (
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
