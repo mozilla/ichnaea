@@ -18,6 +18,8 @@ Changes
 
 - Remove obsolete `remove_wifi` task.
 
+- Update to latest versions of certifi, cryptography and coverage.
+
 20150903095100
 **************
 
