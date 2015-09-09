@@ -34,8 +34,8 @@ def configure_redis(cache_url, _client=None):
         host=host,
         port=port,
         db=db,
-        socket_timeout=10.0,
-        socket_connect_timeout=30.0,
+        socket_timeout=30.0,
+        socket_connect_timeout=60.0,
         socket_keepalive=True,
     )
     return RedisClient(connection_pool=pool)
