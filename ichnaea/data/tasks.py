@@ -47,22 +47,24 @@ def import_ocid_cells(self, filename=None):
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
 def monitor_api_key_limits(self):
-    return monitor.monitor_api_key_limits(self)
+    with self.db_session(commit=False) as session:
+        return monitor.ApiKeyLimits(self, session)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
 def monitor_api_users(self):
-    return monitor.monitor_api_users(self)
+    return monitor.ApiUsers(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
 def monitor_ocid_import(self):
-    return monitor.monitor_ocid_import(self)
+    with self.db_session(commit=False) as session:
+        return monitor.OcidImport(self, session)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
 def monitor_queue_length(self):
-    return monitor.monitor_queue_length(self)
+    return monitor.QueueSize(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export')
