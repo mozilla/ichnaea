@@ -7,10 +7,12 @@ import boto
 import requests
 from sqlalchemy.sql import text
 
+from ichnaea import geocalc
 from ichnaea.models import (
     Cell,
     CellArea,
     OCIDCell,
+    OCIDCellArea,
     Radio,
     StatCounter,
     StatKey,
@@ -149,11 +151,20 @@ class ImportBase(object):
     batch_size = 10000
     area_batch_size = 10
 
-    def __init__(self, task, update_area_task=None):
+    def __init__(self, task, cell_type='ocid', update_area_task=None):
         self.task = task
+        self.cell_type = cell_type
         self.update_area_task = update_area_task
+        if cell_type == 'ocid':
+            self.cell_model = OCIDCell
+            self.area_model = OCIDCellArea
+            self.stat_key = StatKey.unique_ocid_cell
+        elif cell_type == 'cell':  # pragma: no cover
+            self.cell_model = Cell
+            self.area_model = CellArea
+            self.stat_key = StatKey.unique_cell
 
-    def make_ocid_cell_import_dict(self, row):
+    def make_import_dict(self, row):
 
         def row_value(row, key, default, _type):
             if key in row and row[key] not in (None, ''):
@@ -183,8 +194,19 @@ class ImportBase(object):
 
         data['range'] = int(row_value(row, 'range', 0, float))
         data['total_measures'] = row_value(row, 'samples', 0, int)
-        data['changeable'] = row_value(row, 'changeable', True, bool)
-        validated = OCIDCell.validate(data)
+        if self.cell_type == 'ocid':
+            data['changeable'] = row_value(row, 'changeable', True, bool)
+        elif self.cell_type == 'cell':  # pragma: no cover
+            data['max_lat'] = geocalc.add_meters_to_latitude(
+                data['lat'], data['range'])
+            data['min_lat'] = geocalc.add_meters_to_latitude(
+                data['lat'], -data['range'])
+            data['max_lon'] = geocalc.add_meters_to_longitude(
+                data['lat'], data['lon'], data['range'])
+            data['min_lon'] = geocalc.add_meters_to_longitude(
+                data['lat'], data['lon'], -data['range'])
+
+        validated = self.cell_model.validate(data)
         if validated is None:
             return None
         for field in ('radio', 'mcc', 'mnc', 'lac', 'cid'):
@@ -204,8 +226,7 @@ class ImportBase(object):
             inserted_rows = 2 * len(rows) - count
             changed_rows = count - len(rows)
             assert inserted_rows + changed_rows == len(rows)
-            StatCounter(StatKey.unique_ocid_cell, today).incr(
-                pipe, inserted_rows)
+            StatCounter(self.stat_key, today).incr(pipe, inserted_rows)
             if commit:
                 session.commit()
             else:  # pragma: no cover
@@ -215,15 +236,24 @@ class ImportBase(object):
             with gzip_wrapper as gzip_file:
                 csv_reader = csv.DictReader(gzip_file, CELL_FIELDS)
                 rows = []
-                ins = OCIDCell.__table__.insert(
-                    mysql_on_duplicate=(
-                        'changeable = values(changeable), '
-                        'modified = values(modified), '
-                        'total_measures = values(total_measures), '
-                        'lat = values(lat), '
-                        'lon = values(lon), '
-                        'psc = values(psc), '
-                        '`range` = values(`range`)'))
+                on_duplicate = (
+                    'modified = values(modified), '
+                    'total_measures = values(total_measures), '
+                    'lat = values(lat), '
+                    'lon = values(lon), '
+                    'psc = values(psc), '
+                    '`range` = values(`range`)')
+                if self.cell_type == 'ocid':
+                    on_duplicate += ', changeable = values(changeable)'
+                elif self.cell_type == 'cell':  # pragma: no cover
+                    on_duplicate += (
+                        ', max_lat = values(max_lat)'
+                        ', min_lat = values(min_lat)'
+                        ', max_lon = values(max_lon)'
+                        ', min_lon = values(min_lon)')
+
+                ins = self.cell_model.__table__.insert(
+                    mysql_on_duplicate=on_duplicate)
 
                 for row in csv_reader:
                     # skip any header row
@@ -231,10 +261,10 @@ class ImportBase(object):
                        'radio' in row.values():  # pragma: no cover
                         continue
 
-                    data = self.make_ocid_cell_import_dict(row)
+                    data = self.make_import_dict(row)
                     if data is not None:
                         rows.append(data)
-                        area_keys.add(CellArea.to_hashkey(data))
+                        area_keys.add(self.area_model.to_hashkey(data))
 
                     if len(rows) == self.batch_size:  # pragma: no cover
                         commit_batch(ins, rows, commit=False)
@@ -246,14 +276,14 @@ class ImportBase(object):
         area_keys = list(area_keys)
         for i in range(0, len(area_keys), self.area_batch_size):
             area_batch = area_keys[i:i + self.area_batch_size]
-            self.update_area_task.delay(area_batch, cell_type='ocid')
+            self.update_area_task.delay(area_batch, cell_type=self.cell_type)
 
 
 class ImportExternal(ImportBase):
 
-    def __init__(self, task, update_area_task=None):
+    def __init__(self, task, cell_type='ocid', update_area_task=None):
         super(ImportExternal, self).__init__(
-            task, update_area_task=update_area_task)
+            task, cell_type=cell_type, update_area_task=update_area_task)
         self.settings = self.task.app.settings['import:ocid']
 
     def __call__(self, diff=True, _filename=None):
@@ -289,9 +319,10 @@ class ImportExternal(ImportBase):
 
 class ImportLocal(ImportBase):
 
-    def __init__(self, task, session, pipe, update_area_task=None):
+    def __init__(self, task, session, pipe,
+                 cell_type='ocid', update_area_task=None):
         super(ImportLocal, self).__init__(
-            task, update_area_task=update_area_task)
+            task, cell_type=cell_type, update_area_task=update_area_task)
         self.session = session
         self.pipe = pipe
 

@@ -17,17 +17,20 @@ from ichnaea.db import (
 from ichnaea.log import configure_logging
 
 
-def load_file(db, redis_client, filename):  # pragma: no cover
+def load_file(db, redis_client, datatype, filename):  # pragma: no cover
     with redis_pipeline(redis_client) as pipe:
         with db_worker_session(db) as session:
             ocid.ImportLocal(
                 None, session, pipe,
+                cell_type=datatype,
                 update_area_task=update_area)(filename=filename)
 
 
 def main(argv, _db_rw=None, _redis_client=None):  # pragma: no cover
     parser = argparse.ArgumentParser(
         prog=argv[0], description='Load/import cell data.')
+    parser.add_argument('--datatype', default='ocid',
+                        help='Type of the data file, e.g. ocid')
     parser.add_argument('--filename',
                         help='Path to the gzipped csv file.')
 
@@ -41,13 +44,18 @@ def main(argv, _db_rw=None, _redis_client=None):  # pragma: no cover
         print('File not found.')
         sys.exit(1)
 
+    datatype = args.datatype
+    if datatype not in ('cell', 'ocid'):
+        print('Unknown data type.')
+        sys.exit(1)
+
     configure_logging()
     app_config = read_config()
     db = configure_db(app_config.get('database', 'rw_url'), _db=_db_rw)
     redis_client = configure_redis(
         app_config.get('cache', 'cache_url'), _client=_redis_client)
 
-    load_file(db, redis_client, filename)
+    load_file(db, redis_client, datatype, filename)
 
 
 def console_entry():  # pragma: no cover
