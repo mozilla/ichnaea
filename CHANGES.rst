@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add new `location_load` script to load cell dumps into a local db.
+
 - Remove obsolete `remove_wifi` task.
 
 - Update to latest versions of certifi, cryptography and coverage.

@@ -10,16 +10,18 @@ from pytz import UTC
 import requests_mock
 import six
 
+from ichnaea.cache import redis_pipeline
 from ichnaea.data.ocid import (
     CELL_FIELDS,
     CELL_HEADER_DICT,
+    ImportLocal,
     write_stations_to_csv,
 )
 from ichnaea.data.tasks import (
     cell_export_full,
     cell_export_diff,
-    cell_import_local,
     cell_import_external,
+    update_area,
     update_statcounter,
 )
 from ichnaea.models import (
@@ -158,7 +160,10 @@ class TestImport(CeleryAppTestCase):
 
     def import_csv(self, lo=1, hi=10, time=1408604686):
         with self.get_csv(lo=lo, hi=hi, time=time) as path:
-            cell_import_local(filename=path)
+            with redis_pipeline(self.redis_client) as pipe:
+                ImportLocal(
+                    None, self.session, pipe,
+                    update_area_task=update_area)(filename=path)
 
     def test_local_import(self):
         self.import_csv()
