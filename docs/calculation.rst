@@ -23,7 +23,7 @@ signal source, the weaker the signal should get.
 
 Unfortunately the signal strength is more dependent on the device type,
 how a user holds a device and changing environmental factors like trucks in
-the way. Even worth modern networks adjust their signal strength to the number
+the way. Even worse modern networks adjust their signal strength to the number
 of devices inside their reception area. This makes this data practically
 useless while looking up a users position via a single reading.
 
