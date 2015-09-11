@@ -2,44 +2,14 @@ import numpy
 
 from ichnaea.geocalc import (
     _radius_cache,
-    add_meters_to_latitude,
-    add_meters_to_longitude,
     aggregate_position,
+    country_max_radius,
     distance,
-    maximum_country_radius,
+    latitude_add,
+    longitude_add,
 )
 from ichnaea import constants
 from ichnaea.tests.base import TestCase
-
-
-class TestAddMetersToLatitude(TestCase):
-
-    def test_returns_min_lat(self):
-        self.assertEqual(add_meters_to_latitude(1.0, -(10 ** 10)),
-                         constants.MIN_LAT)
-
-    def test_returns_max_lat(self):
-        self.assertEqual(add_meters_to_latitude(1.0, 10 ** 10),
-                         constants.MAX_LAT)
-
-    def test_adds_meters_to_latitude(self):
-        self.assertAlmostEqual(add_meters_to_latitude(1.0, 1000),
-                               1.009000009, 9)
-
-
-class TestAddMetersToLongitude(TestCase):
-
-    def test_returns_min_lon(self):
-        self.assertEqual(add_meters_to_longitude(1.0, 1.0, -(10 ** 10)),
-                         constants.MIN_LON)
-
-    def test_returns_max_lon(self):
-        self.assertEqual(add_meters_to_longitude(1.0, 1.0, 10 ** 10),
-                         constants.MAX_LON)
-
-    def test_adds_meters_to_longitude(self):
-        self.assertAlmostEqual(add_meters_to_longitude(1.0, 1.0, 1000),
-                               1.0166573581, 9)
 
 
 class TestAggregatePosition(TestCase):
@@ -53,6 +23,61 @@ class TestAggregatePosition(TestCase):
         circles = numpy.array([(1.0, 1.0, 100.0)], dtype=numpy.double)
         self.assertEqual(aggregate_position(circles, 333.0),
                          (1.0, 1.0, 333.0))
+
+
+class TestCountryMaxRadius(TestCase):
+
+    li_radius = 13000.0
+    usa_radius = 2826000.0
+    vat_radius = 1000.0
+
+    def test_alpha2(self):
+        r = country_max_radius('US')
+        self.assertEqual(r, self.usa_radius)
+        cached = _radius_cache['US']
+        self.assertEqual(r, cached)
+
+        r = country_max_radius('us')
+        self.assertEqual(r, self.usa_radius)
+        self.assertFalse('us' in _radius_cache)
+
+    def test_alpha3(self):
+        r = country_max_radius('USA')
+        self.assertEqual(r, self.usa_radius)
+        cached = _radius_cache['USA']
+        self.assertEqual(r, cached)
+
+        r = country_max_radius('usa')
+        self.assertEqual(r, self.usa_radius)
+        self.assertFalse('usa' in _radius_cache)
+
+    def test_small_countries(self):
+        r = country_max_radius('LI')
+        self.assertEqual(r, self.li_radius)
+        r = country_max_radius('VAT')
+        self.assertEqual(r, self.vat_radius)
+
+    def test_malformed_country(self):
+        r = country_max_radius(None)
+        self.assertTrue(r is None)
+
+        r = country_max_radius(42)
+        self.assertTrue(r is None)
+
+        r = country_max_radius('A')
+        self.assertTrue(r is None)
+
+        r = country_max_radius('-#1-')
+        self.assertTrue(r is None)
+
+    def test_unknown_country(self):
+        r = country_max_radius('AA')
+        self.assertTrue(r is None)
+        self.assertFalse('AA' in _radius_cache)
+
+        r = country_max_radius('AAA')
+        self.assertTrue(r is None)
+        self.assertFalse('AAA' in _radius_cache)
 
 
 class TestDistance(TestCase):
@@ -83,56 +108,31 @@ class TestDistance(TestCase):
             distance(None, '0.1', 1, 1.1)
 
 
-class TestMaximumRadius(TestCase):
+class TestLatitudeAdd(TestCase):
 
-    li_radius = 13000.0
-    usa_radius = 2826000.0
-    vat_radius = 1000.0
+    def test_returns_min_lat(self):
+        self.assertEqual(latitude_add(1.0, 1.0, -(10 ** 10)),
+                         constants.MIN_LAT)
 
-    def test_alpha2(self):
-        r = maximum_country_radius('US')
-        self.assertEqual(r, self.usa_radius)
-        cached = _radius_cache['US']
-        self.assertEqual(r, cached)
+    def test_returns_max_lat(self):
+        self.assertEqual(latitude_add(1.0, 1.0, 10 ** 10),
+                         constants.MAX_LAT)
 
-        r = maximum_country_radius('us')
-        self.assertEqual(r, self.usa_radius)
-        self.assertFalse('us' in _radius_cache)
+    def test_adds_meters_to_latitude(self):
+        self.assertAlmostEqual(latitude_add(1.0, 1.0, 1000),
+                               1.009000009, 9)
 
-    def test_alpha3(self):
-        r = maximum_country_radius('USA')
-        self.assertEqual(r, self.usa_radius)
-        cached = _radius_cache['USA']
-        self.assertEqual(r, cached)
 
-        r = maximum_country_radius('usa')
-        self.assertEqual(r, self.usa_radius)
-        self.assertFalse('usa' in _radius_cache)
+class TestLongitudeAdd(TestCase):
 
-    def test_small_countries(self):
-        r = maximum_country_radius('LI')
-        self.assertEqual(r, self.li_radius)
-        r = maximum_country_radius('VAT')
-        self.assertEqual(r, self.vat_radius)
+    def test_returns_min_lon(self):
+        self.assertEqual(longitude_add(1.0, 1.0, -(10 ** 10)),
+                         constants.MIN_LON)
 
-    def test_malformed_country(self):
-        r = maximum_country_radius(None)
-        self.assertTrue(r is None)
+    def test_returns_max_lon(self):
+        self.assertEqual(longitude_add(1.0, 1.0, 10 ** 10),
+                         constants.MAX_LON)
 
-        r = maximum_country_radius(42)
-        self.assertTrue(r is None)
-
-        r = maximum_country_radius('A')
-        self.assertTrue(r is None)
-
-        r = maximum_country_radius('-#1-')
-        self.assertTrue(r is None)
-
-    def test_unknown_country(self):
-        r = maximum_country_radius('AA')
-        self.assertTrue(r is None)
-        self.assertFalse('AA' in _radius_cache)
-
-        r = maximum_country_radius('AAA')
-        self.assertTrue(r is None)
-        self.assertFalse('AAA' in _radius_cache)
+    def test_adds_meters_to_longitude(self):
+        self.assertAlmostEqual(longitude_add(1.0, 1.0, 1000),
+                               1.0166573581, 9)

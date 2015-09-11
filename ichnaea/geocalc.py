@@ -12,34 +12,6 @@ from ichnaea import constants
 _radius_cache = {}
 
 
-def add_meters_to_latitude(lat, distance):
-    """
-    Return a latitude in degrees which is shifted by
-    distance in meters.
-
-    The new latitude is bounded by our globally defined
-    :data:`ichnaea.constants.MIN_LAT` and
-    :data:`ichnaea.constants.MAX_LAT`.
-    """
-    return max(constants.MIN_LAT,
-               min(_geocalc.latitude_add(lat, distance),
-                   constants.MAX_LAT))
-
-
-def add_meters_to_longitude(lat, lon, distance):
-    """
-    Return a longitude in degrees which is shifted by
-    distance in meters.
-
-    The new longitude is bounded by our globally defined
-    :data:`ichnaea.constants.MIN_LON` and
-    :data:`ichnaea.constants.MAX_LON`.
-    """
-    return max(constants.MIN_LON,
-               min(_geocalc.longitude_add(lat, lon, distance),
-                   constants.MAX_LON))
-
-
 def aggregate_position(circles, minimum_accuracy):
     """
     Calculate the aggregate position based on a number of circles
@@ -90,21 +62,10 @@ def circle_radius(lat, lon, max_lat, max_lon, min_lat, min_lon):
     return int(round(radius))
 
 
-def distance(lat1, lon1, lat2, lon2):
-    """
-    Compute the distance between a pair of lat/longs in meters using
-    the haversine calculation. The output distance is in meters.
-
-    Uses :func:`ichnaea._geocalc.distance` internally.
-    """
-    return _geocalc.distance(lat1, lon1, lat2, lon2)
-
-
-def location_is_in_country(lat, lon, country_code, margin=0):
+def country_matches_location(lat, lon, country_code, margin=0):
     """
     Return whether or not a given (lat, lon) pair is inside one of the
     country subunits associated with a given alpha2 country code.
-
     """
     for country in country_subunits_by_iso_code(country_code):
         (lon1, lat1, lon2, lat2) = country.bbox
@@ -114,7 +75,7 @@ def location_is_in_country(lat, lon, country_code, margin=0):
     return False
 
 
-def maximum_country_radius(country_code):
+def country_max_radius(country_code):
     """
     Return the maximum radius of a circle encompassing the largest
     country subunit in meters, rounded to 1 km increments.
@@ -139,3 +100,41 @@ def maximum_country_radius(country_code):
         value = _radius_cache[country_code] = round(radius) * 1000.0
 
     return value
+
+
+def distance(lat1, lon1, lat2, lon2):
+    """
+    Compute the distance between a pair of lat/longs in meters using
+    the haversine calculation. The output distance is in meters.
+
+    Uses :func:`ichnaea._geocalc.distance` internally.
+    """
+    return _geocalc.distance(lat1, lon1, lat2, lon2)
+
+
+def latitude_add(lat, lon, meters):
+    """
+    Return a latitude in degrees which is shifted by
+    distance in meters.
+
+    The new latitude is bounded by our globally defined
+    :data:`ichnaea.constants.MIN_LAT` and
+    :data:`ichnaea.constants.MAX_LAT`.
+    """
+    return max(constants.MIN_LAT,
+               min(_geocalc.latitude_add(lat, lon, meters),
+                   constants.MAX_LAT))
+
+
+def longitude_add(lat, lon, meters):
+    """
+    Return a longitude in degrees which is shifted by
+    distance in meters.
+
+    The new longitude is bounded by our globally defined
+    :data:`ichnaea.constants.MIN_LON` and
+    :data:`ichnaea.constants.MAX_LON`.
+    """
+    return max(constants.MIN_LON,
+               min(_geocalc.longitude_add(lat, lon, meters),
+                   constants.MAX_LON))

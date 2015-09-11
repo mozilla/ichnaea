@@ -21,7 +21,7 @@ from ichnaea.constants import (
     GEOIP_CITY_ACCURACY,
     GEOIP_COUNTRY_ACCURACY,
 )
-from ichnaea.geocalc import maximum_country_radius
+from ichnaea.geocalc import country_max_radius
 
 VALID_COUNTRIES = frozenset(iso3166.countries_by_alpha2.keys())
 
@@ -85,7 +85,7 @@ def geoip_accuracy(country_code, city=False):
     """
     accuracy = None
     if country_code:
-        accuracy = maximum_country_radius(country_code)
+        accuracy = country_max_radius(country_code)
     if accuracy is None:
         # No country code or no successful radius lookup
         accuracy = GEOIP_COUNTRY_ACCURACY

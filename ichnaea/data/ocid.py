@@ -197,13 +197,13 @@ class ImportBase(object):
         if self.cell_type == 'ocid':
             data['changeable'] = row_value(row, 'changeable', True, bool)
         elif self.cell_type == 'cell':  # pragma: no cover
-            data['max_lat'] = geocalc.add_meters_to_latitude(
-                data['lat'], data['range'])
-            data['min_lat'] = geocalc.add_meters_to_latitude(
-                data['lat'], -data['range'])
-            data['max_lon'] = geocalc.add_meters_to_longitude(
+            data['max_lat'] = geocalc.latitude_add(
                 data['lat'], data['lon'], data['range'])
-            data['min_lon'] = geocalc.add_meters_to_longitude(
+            data['min_lat'] = geocalc.latitude_add(
+                data['lat'], data['lon'], -data['range'])
+            data['max_lon'] = geocalc.longitude_add(
+                data['lat'], data['lon'], data['range'])
+            data['min_lon'] = geocalc.longitude_add(
                 data['lat'], data['lon'], -data['range'])
 
         validated = self.cell_model.validate(data)

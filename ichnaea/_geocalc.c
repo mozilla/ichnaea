@@ -1137,7 +1137,7 @@ static double __pyx_v_7ichnaea_8_geocalc_EARTH_RADIUS;
 static CYTHON_INLINE double __pyx_f_7ichnaea_8_geocalc_deg2rad(double); /*proto*/
 static PyArrayObject *__pyx_f_7ichnaea_8_geocalc_centroid(PyArrayObject *, int __pyx_skip_dispatch); /*proto*/
 static double __pyx_f_7ichnaea_8_geocalc_distance(double, double, double, double, int __pyx_skip_dispatch); /*proto*/
-static double __pyx_f_7ichnaea_8_geocalc_latitude_add(double, double, int __pyx_skip_dispatch); /*proto*/
+static double __pyx_f_7ichnaea_8_geocalc_latitude_add(double, double, double, int __pyx_skip_dispatch); /*proto*/
 static double __pyx_f_7ichnaea_8_geocalc_longitude_add(double, double, double, int __pyx_skip_dispatch); /*proto*/
 static double __pyx_f_7ichnaea_8_geocalc_max_distance(double, double, PyArrayObject *, int __pyx_skip_dispatch); /*proto*/
 static __Pyx_TypeInfo __Pyx_TypeInfo_nn___pyx_t_5numpy_double_t = { "double_t", NULL, sizeof(__pyx_t_5numpy_double_t), { 0 }, 0, 'R', 0, 0 };
@@ -1178,8 +1178,8 @@ static char __pyx_k_main[] = "__main__";
 static char __pyx_k_mean[] = "mean";
 static char __pyx_k_test[] = "__test__";
 static char __pyx_k_range[] = "range";
+static char __pyx_k_meters[] = "meters";
 static char __pyx_k_points[] = "points";
-static char __pyx_k_distance[] = "distance";
 static char __pyx_k_ValueError[] = "ValueError";
 static char __pyx_k_RuntimeError[] = "RuntimeError";
 static char __pyx_k_ndarray_is_not_C_contiguous[] = "ndarray is not C contiguous";
@@ -1195,7 +1195,6 @@ static PyObject *__pyx_kp_u_Non_native_byte_order_not_suppor;
 static PyObject *__pyx_n_s_RuntimeError;
 static PyObject *__pyx_n_s_ValueError;
 static PyObject *__pyx_n_s_axis;
-static PyObject *__pyx_n_s_distance;
 static PyObject *__pyx_n_s_lat;
 static PyObject *__pyx_n_s_lat1;
 static PyObject *__pyx_n_s_lat2;
@@ -1205,6 +1204,7 @@ static PyObject *__pyx_n_s_lon2;
 static PyObject *__pyx_n_s_main;
 static PyObject *__pyx_n_s_max;
 static PyObject *__pyx_n_s_mean;
+static PyObject *__pyx_n_s_meters;
 static PyObject *__pyx_kp_u_ndarray_is_not_C_contiguous;
 static PyObject *__pyx_kp_u_ndarray_is_not_Fortran_contiguou;
 static PyObject *__pyx_n_s_points;
@@ -1213,8 +1213,8 @@ static PyObject *__pyx_n_s_test;
 static PyObject *__pyx_kp_u_unknown_dtype_code_in_numpy_pxd;
 static PyObject *__pyx_pf_7ichnaea_8_geocalc_centroid(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_points); /* proto */
 static PyObject *__pyx_pf_7ichnaea_8_geocalc_2distance(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_lat1, double __pyx_v_lon1, double __pyx_v_lat2, double __pyx_v_lon2); /* proto */
-static PyObject *__pyx_pf_7ichnaea_8_geocalc_4latitude_add(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_lat, double __pyx_v_distance); /* proto */
-static PyObject *__pyx_pf_7ichnaea_8_geocalc_6longitude_add(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_lat, double __pyx_v_lon, double __pyx_v_distance); /* proto */
+static PyObject *__pyx_pf_7ichnaea_8_geocalc_4latitude_add(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_lat, double __pyx_v_lon, double __pyx_v_meters); /* proto */
+static PyObject *__pyx_pf_7ichnaea_8_geocalc_6longitude_add(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_lat, double __pyx_v_lon, double __pyx_v_meters); /* proto */
 static PyObject *__pyx_pf_7ichnaea_8_geocalc_8max_distance(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_lat, double __pyx_v_lon, PyArrayObject *__pyx_v_points); /* proto */
 static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_pf_5numpy_7ndarray_2__releasebuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info); /* proto */
@@ -1615,13 +1615,13 @@ static PyObject *__pyx_pf_7ichnaea_8_geocalc_2distance(CYTHON_UNUSED PyObject *_
 /* "ichnaea/_geocalc.pyx":61
  * 
  * 
- * cpdef double latitude_add(double lat, double distance):             # <<<<<<<<<<<<<<
+ * cpdef double latitude_add(double lat, double lon, double meters):             # <<<<<<<<<<<<<<
  *     """
  *     Return a latitude in degrees which is shifted by
  */
 
 static PyObject *__pyx_pw_7ichnaea_8_geocalc_5latitude_add(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static double __pyx_f_7ichnaea_8_geocalc_latitude_add(double __pyx_v_lat, double __pyx_v_distance, CYTHON_UNUSED int __pyx_skip_dispatch) {
+static double __pyx_f_7ichnaea_8_geocalc_latitude_add(double __pyx_v_lat, CYTHON_UNUSED double __pyx_v_lon, double __pyx_v_meters, CYTHON_UNUSED int __pyx_skip_dispatch) {
   double __pyx_r;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("latitude_add", 0);
@@ -1629,17 +1629,17 @@ static double __pyx_f_7ichnaea_8_geocalc_latitude_add(double __pyx_v_lat, double
   /* "ichnaea/_geocalc.pyx":69
  *     111,111m = 1 degree latitude
  *     """
- *     return lat + (distance / 111111.0)             # <<<<<<<<<<<<<<
+ *     return lat + (meters / 111111.0)             # <<<<<<<<<<<<<<
  * 
  * 
  */
-  __pyx_r = (__pyx_v_lat + (__pyx_v_distance / 111111.0));
+  __pyx_r = (__pyx_v_lat + (__pyx_v_meters / 111111.0));
   goto __pyx_L0;
 
   /* "ichnaea/_geocalc.pyx":61
  * 
  * 
- * cpdef double latitude_add(double lat, double distance):             # <<<<<<<<<<<<<<
+ * cpdef double latitude_add(double lat, double lon, double meters):             # <<<<<<<<<<<<<<
  *     """
  *     Return a latitude in degrees which is shifted by
  */
@@ -1655,7 +1655,8 @@ static PyObject *__pyx_pw_7ichnaea_8_geocalc_5latitude_add(PyObject *__pyx_self,
 static char __pyx_doc_7ichnaea_8_geocalc_4latitude_add[] = "\n    Return a latitude in degrees which is shifted by\n    distance in meters.\n\n    A suitable estimate for surface level calculations is\n    111,111m = 1 degree latitude\n    ";
 static PyObject *__pyx_pw_7ichnaea_8_geocalc_5latitude_add(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   double __pyx_v_lat;
-  double __pyx_v_distance;
+  double __pyx_v_lon;
+  double __pyx_v_meters;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -1663,12 +1664,13 @@ static PyObject *__pyx_pw_7ichnaea_8_geocalc_5latitude_add(PyObject *__pyx_self,
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("latitude_add (wrapper)", 0);
   {
-    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_lat,&__pyx_n_s_distance,0};
-    PyObject* values[2] = {0,0};
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_lat,&__pyx_n_s_lon,&__pyx_n_s_meters,0};
+    PyObject* values[3] = {0,0,0};
     if (unlikely(__pyx_kwds)) {
       Py_ssize_t kw_args;
       const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
       switch (pos_args) {
+        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
         case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
         case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
         case  0: break;
@@ -1680,39 +1682,46 @@ static PyObject *__pyx_pw_7ichnaea_8_geocalc_5latitude_add(PyObject *__pyx_self,
         if (likely((values[0] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_lat)) != 0)) kw_args--;
         else goto __pyx_L5_argtuple_error;
         case  1:
-        if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_distance)) != 0)) kw_args--;
+        if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_lon)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("latitude_add", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+          __Pyx_RaiseArgtupleInvalid("latitude_add", 1, 3, 3, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        }
+        case  2:
+        if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_meters)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("latitude_add", 1, 3, 3, 2); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
         }
       }
       if (unlikely(kw_args > 0)) {
         if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "latitude_add") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
       }
-    } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+      values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
     }
     __pyx_v_lat = __pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_lat == (double)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-    __pyx_v_distance = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_distance == (double)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_lon = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_lon == (double)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_meters = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_meters == (double)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("latitude_add", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __Pyx_RaiseArgtupleInvalid("latitude_add", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   __pyx_L3_error:;
   __Pyx_AddTraceback("ichnaea._geocalc.latitude_add", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_7ichnaea_8_geocalc_4latitude_add(__pyx_self, __pyx_v_lat, __pyx_v_distance);
+  __pyx_r = __pyx_pf_7ichnaea_8_geocalc_4latitude_add(__pyx_self, __pyx_v_lat, __pyx_v_lon, __pyx_v_meters);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_7ichnaea_8_geocalc_4latitude_add(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_lat, double __pyx_v_distance) {
+static PyObject *__pyx_pf_7ichnaea_8_geocalc_4latitude_add(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_lat, double __pyx_v_lon, double __pyx_v_meters) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -1721,7 +1730,7 @@ static PyObject *__pyx_pf_7ichnaea_8_geocalc_4latitude_add(CYTHON_UNUSED PyObjec
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("latitude_add", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_7ichnaea_8_geocalc_latitude_add(__pyx_v_lat, __pyx_v_distance, 0)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_7ichnaea_8_geocalc_latitude_add(__pyx_v_lat, __pyx_v_lon, __pyx_v_meters, 0)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -1741,13 +1750,13 @@ static PyObject *__pyx_pf_7ichnaea_8_geocalc_4latitude_add(CYTHON_UNUSED PyObjec
 /* "ichnaea/_geocalc.pyx":72
  * 
  * 
- * cpdef double longitude_add(double lat, double lon, double distance):             # <<<<<<<<<<<<<<
+ * cpdef double longitude_add(double lat, double lon, double meters):             # <<<<<<<<<<<<<<
  *     """
  *     Return a longitude in degrees which is shifted by
  */
 
 static PyObject *__pyx_pw_7ichnaea_8_geocalc_7longitude_add(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static double __pyx_f_7ichnaea_8_geocalc_longitude_add(double __pyx_v_lat, double __pyx_v_lon, double __pyx_v_distance, CYTHON_UNUSED int __pyx_skip_dispatch) {
+static double __pyx_f_7ichnaea_8_geocalc_longitude_add(double __pyx_v_lat, double __pyx_v_lon, double __pyx_v_meters, CYTHON_UNUSED int __pyx_skip_dispatch) {
   double __pyx_r;
   __Pyx_RefNannyDeclarations
   double __pyx_t_1;
@@ -1759,7 +1768,7 @@ static double __pyx_f_7ichnaea_8_geocalc_longitude_add(double __pyx_v_lat, doubl
   /* "ichnaea/_geocalc.pyx":77
  *     distance in meters.
  *     """
- *     return lon + (distance / (cos(lat) * 111111.0))             # <<<<<<<<<<<<<<
+ *     return lon + (meters / (cos(lat) * 111111.0))             # <<<<<<<<<<<<<<
  * 
  * 
  */
@@ -1768,13 +1777,13 @@ static double __pyx_f_7ichnaea_8_geocalc_longitude_add(double __pyx_v_lat, doubl
     PyErr_SetString(PyExc_ZeroDivisionError, "float division");
     {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
-  __pyx_r = (__pyx_v_lon + (__pyx_v_distance / __pyx_t_1));
+  __pyx_r = (__pyx_v_lon + (__pyx_v_meters / __pyx_t_1));
   goto __pyx_L0;
 
   /* "ichnaea/_geocalc.pyx":72
  * 
  * 
- * cpdef double longitude_add(double lat, double lon, double distance):             # <<<<<<<<<<<<<<
+ * cpdef double longitude_add(double lat, double lon, double meters):             # <<<<<<<<<<<<<<
  *     """
  *     Return a longitude in degrees which is shifted by
  */
@@ -1794,7 +1803,7 @@ static char __pyx_doc_7ichnaea_8_geocalc_6longitude_add[] = "\n    Return a long
 static PyObject *__pyx_pw_7ichnaea_8_geocalc_7longitude_add(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   double __pyx_v_lat;
   double __pyx_v_lon;
-  double __pyx_v_distance;
+  double __pyx_v_meters;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -1802,7 +1811,7 @@ static PyObject *__pyx_pw_7ichnaea_8_geocalc_7longitude_add(PyObject *__pyx_self
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("longitude_add (wrapper)", 0);
   {
-    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_lat,&__pyx_n_s_lon,&__pyx_n_s_distance,0};
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_lat,&__pyx_n_s_lon,&__pyx_n_s_meters,0};
     PyObject* values[3] = {0,0,0};
     if (unlikely(__pyx_kwds)) {
       Py_ssize_t kw_args;
@@ -1825,7 +1834,7 @@ static PyObject *__pyx_pw_7ichnaea_8_geocalc_7longitude_add(PyObject *__pyx_self
           __Pyx_RaiseArgtupleInvalid("longitude_add", 1, 3, 3, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 72; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
         }
         case  2:
-        if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_distance)) != 0)) kw_args--;
+        if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_meters)) != 0)) kw_args--;
         else {
           __Pyx_RaiseArgtupleInvalid("longitude_add", 1, 3, 3, 2); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 72; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
         }
@@ -1842,7 +1851,7 @@ static PyObject *__pyx_pw_7ichnaea_8_geocalc_7longitude_add(PyObject *__pyx_self
     }
     __pyx_v_lat = __pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_lat == (double)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 72; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
     __pyx_v_lon = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_lon == (double)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 72; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-    __pyx_v_distance = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_distance == (double)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 72; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_meters = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_meters == (double)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 72; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
@@ -1852,14 +1861,14 @@ static PyObject *__pyx_pw_7ichnaea_8_geocalc_7longitude_add(PyObject *__pyx_self
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_7ichnaea_8_geocalc_6longitude_add(__pyx_self, __pyx_v_lat, __pyx_v_lon, __pyx_v_distance);
+  __pyx_r = __pyx_pf_7ichnaea_8_geocalc_6longitude_add(__pyx_self, __pyx_v_lat, __pyx_v_lon, __pyx_v_meters);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_7ichnaea_8_geocalc_6longitude_add(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_lat, double __pyx_v_lon, double __pyx_v_distance) {
+static PyObject *__pyx_pf_7ichnaea_8_geocalc_6longitude_add(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_lat, double __pyx_v_lon, double __pyx_v_meters) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -1868,7 +1877,7 @@ static PyObject *__pyx_pf_7ichnaea_8_geocalc_6longitude_add(CYTHON_UNUSED PyObje
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("longitude_add", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_7ichnaea_8_geocalc_longitude_add(__pyx_v_lat, __pyx_v_lon, __pyx_v_distance, 0)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 72; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_7ichnaea_8_geocalc_longitude_add(__pyx_v_lat, __pyx_v_lon, __pyx_v_meters, 0)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 72; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -4321,7 +4330,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_RuntimeError, __pyx_k_RuntimeError, sizeof(__pyx_k_RuntimeError), 0, 0, 1, 1},
   {&__pyx_n_s_ValueError, __pyx_k_ValueError, sizeof(__pyx_k_ValueError), 0, 0, 1, 1},
   {&__pyx_n_s_axis, __pyx_k_axis, sizeof(__pyx_k_axis), 0, 0, 1, 1},
-  {&__pyx_n_s_distance, __pyx_k_distance, sizeof(__pyx_k_distance), 0, 0, 1, 1},
   {&__pyx_n_s_lat, __pyx_k_lat, sizeof(__pyx_k_lat), 0, 0, 1, 1},
   {&__pyx_n_s_lat1, __pyx_k_lat1, sizeof(__pyx_k_lat1), 0, 0, 1, 1},
   {&__pyx_n_s_lat2, __pyx_k_lat2, sizeof(__pyx_k_lat2), 0, 0, 1, 1},
@@ -4331,6 +4339,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
   {&__pyx_n_s_max, __pyx_k_max, sizeof(__pyx_k_max), 0, 0, 1, 1},
   {&__pyx_n_s_mean, __pyx_k_mean, sizeof(__pyx_k_mean), 0, 0, 1, 1},
+  {&__pyx_n_s_meters, __pyx_k_meters, sizeof(__pyx_k_meters), 0, 0, 1, 1},
   {&__pyx_kp_u_ndarray_is_not_C_contiguous, __pyx_k_ndarray_is_not_C_contiguous, sizeof(__pyx_k_ndarray_is_not_C_contiguous), 0, 1, 0, 0},
   {&__pyx_kp_u_ndarray_is_not_Fortran_contiguou, __pyx_k_ndarray_is_not_Fortran_contiguou, sizeof(__pyx_k_ndarray_is_not_Fortran_contiguou), 0, 1, 0, 0},
   {&__pyx_n_s_points, __pyx_k_points, sizeof(__pyx_k_points), 0, 0, 1, 1},

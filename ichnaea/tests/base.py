@@ -30,7 +30,7 @@ from ichnaea.cache import configure_redis
 from ichnaea.config import DummyConfig
 from ichnaea.constants import GEOIP_CITY_ACCURACY
 from ichnaea.db import configure_db
-from ichnaea.geocalc import maximum_country_radius
+from ichnaea.geocalc import country_max_radius
 from ichnaea.geoip import configure_geoip
 from ichnaea.http import configure_http_session
 from ichnaea.log import (
@@ -106,7 +106,7 @@ GEOIP_DATA = {
         'ip': '67.43.156.1',
         'latitude': 27.5,
         'longitude': 90.5,
-        'accuracy': maximum_country_radius('BT'),
+        'accuracy': country_max_radius('BT'),
     },
 }
 

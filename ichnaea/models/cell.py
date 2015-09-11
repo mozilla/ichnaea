@@ -404,19 +404,19 @@ class OCIDCell(CellMixin, BaseStationMixin, CreationMixin, _Model):
 
     @property
     def min_lat(self):
-        return geocalc.add_meters_to_latitude(self.lat, -self.range)
+        return geocalc.latitude_add(self.lat, self.lon, -self.range)
 
     @property
     def max_lat(self):
-        return geocalc.add_meters_to_latitude(self.lat, self.range)
+        return geocalc.latitude_add(self.lat, self.lon, self.range)
 
     @property
     def min_lon(self):
-        return geocalc.add_meters_to_longitude(self.lat, self.lon, -self.range)
+        return geocalc.longitude_add(self.lat, self.lon, -self.range)
 
     @property
     def max_lon(self):
-        return geocalc.add_meters_to_longitude(self.lat, self.lon, self.range)
+        return geocalc.longitude_add(self.lat, self.lon, self.range)
 
 
 class CellArea(CellAreaMixin, _Model):

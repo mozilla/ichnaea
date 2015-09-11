@@ -153,7 +153,7 @@ class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
 
         in_country = False
         for code in mobile_codes.mcc(str(cstruct['mcc'])):
-            in_country = in_country or geocalc.location_is_in_country(
+            in_country = in_country or geocalc.country_matches_location(
                 cstruct['lat'], cstruct['lon'], code.alpha2, 1)
 
         if not in_country:

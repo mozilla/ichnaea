@@ -58,7 +58,7 @@ cpdef double distance(double lat1, double lon1, double lat2, double lon2):
     return 1000 * 2 * EARTH_RADIUS * c
 
 
-cpdef double latitude_add(double lat, double distance):
+cpdef double latitude_add(double lat, double lon, double meters):
     """
     Return a latitude in degrees which is shifted by
     distance in meters.
@@ -66,15 +66,15 @@ cpdef double latitude_add(double lat, double distance):
     A suitable estimate for surface level calculations is
     111,111m = 1 degree latitude
     """
-    return lat + (distance / 111111.0)
+    return lat + (meters / 111111.0)
 
 
-cpdef double longitude_add(double lat, double lon, double distance):
+cpdef double longitude_add(double lat, double lon, double meters):
     """
     Return a longitude in degrees which is shifted by
     distance in meters.
     """
-    return lon + (distance / (cos(lat) * 111111.0))
+    return lon + (meters / (cos(lat) * 111111.0))
 
 
 cpdef double max_distance(double lat, double lon,
