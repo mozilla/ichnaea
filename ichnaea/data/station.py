@@ -10,6 +10,7 @@ from ichnaea.data.base import DataTask
 from ichnaea.geocalc import (
     centroid,
     circle_radius,
+    country_for_location,
     distance,
 )
 from ichnaea.models import (
@@ -417,7 +418,7 @@ class WifiUpdater(StationUpdater):
                     'min_lat': None,
                     'max_lon': None,
                     'min_lon': None,
-                    'country': None,
+                    'country': shard_station.country,
                     'radius': None,
                     'samples': None,
                     'source': None,
@@ -439,7 +440,7 @@ class WifiUpdater(StationUpdater):
                 'min_lat': float(obs_min_lat),
                 'max_lon': float(obs_max_lon),
                 'min_lon': float(obs_min_lon),
-                'country': None,
+                'country': country_for_location(obs_new_lat, obs_new_lon),
                 'radius': radius,
                 'samples': obs_length,
                 'source': None,
@@ -474,7 +475,7 @@ class WifiUpdater(StationUpdater):
                     'min_lat': None,
                     'max_lon': None,
                     'min_lon': None,
-                    'country': None,
+                    'country': shard_station.country,
                     'radius': None,
                     'samples': None,
                     'source': None,
@@ -505,7 +506,7 @@ class WifiUpdater(StationUpdater):
                     'min_lat': float(min_lat),
                     'max_lon': float(max_lon),
                     'min_lon': float(min_lon),
-                    'country': None,
+                    'country': country_for_location(new_lat, new_lon),
                     'radius': radius,
                     'samples': samples,
                     'source': None,

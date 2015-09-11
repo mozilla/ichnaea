@@ -2,14 +2,41 @@
 Contains helper functions for various geo related calculations.
 """
 
-from country_bounding_boxes import country_subunits_by_iso_code
+from operator import attrgetter
+from collections import namedtuple
+
+from country_bounding_boxes import (
+    _best_guess_iso_2,
+    _best_guess_iso_3,
+    countries,
+    country_subunits_by_iso_code,
+)
 import numpy
 from six import string_types
 
 from ichnaea import _geocalc
 from ichnaea import constants
 
+_bbox_cache = []
 _radius_cache = {}
+Subunit = namedtuple('Subunit', 'bbox alpha2 alpha3 radius')
+
+
+def _fill_bbox_cache():
+    cached = []
+    for country in countries:
+        iso2 = _best_guess_iso_2(country)
+        iso3 = _best_guess_iso_3(country)
+        if not (iso2 and iso3):
+            continue
+        (lon1, lat1, lon2, lat2) = country.bbox
+        radius = _geocalc.distance(lat1, lon1, lat2, lon2) / 2.0
+        cached.append(Subunit(bbox=country.bbox,
+                              alpha2=iso2.upper(),
+                              alpha3=iso3.upper(),
+                              radius=int(radius)))
+    # sort by largest radius first
+    return list(sorted(cached, key=attrgetter('radius'), reverse=True))
 
 
 def aggregate_position(circles, minimum_accuracy):
@@ -60,6 +87,24 @@ def circle_radius(lat, lon, max_lat, max_lon, min_lat, min_lon):
 
     radius = _geocalc.max_distance(lat, lon, points)
     return int(round(radius))
+
+
+def country_for_location(lat, lon):
+    """
+    Return a ISO alpha2 country code matching the provided location.
+    If the location is found inside multiple or no countries return None.
+    """
+    res = set()
+    for subunit in _bbox_cache:
+        (lon1, lat1, lon2, lat2) = subunit.bbox
+        if (lon1 <= lon <= lon2) and (lat1 <= lat <= lat2):
+            res.add(subunit.alpha2)
+            if len(res) > 1:
+                return None
+
+    if len(res) == 1:
+        return list(res)[0]
+    return None
 
 
 def country_matches_location(lat, lon, country_code, margin=0):
@@ -138,3 +183,7 @@ def longitude_add(lat, lon, meters):
     return max(constants.MIN_LON,
                min(_geocalc.longitude_add(lat, lon, meters),
                    constants.MAX_LON))
+
+
+# fill the bbox cache
+_bbox_cache = _fill_bbox_cache()

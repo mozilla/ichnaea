@@ -3,6 +3,7 @@ import numpy
 from ichnaea.geocalc import (
     _radius_cache,
     aggregate_position,
+    country_for_location,
     country_max_radius,
     distance,
     latitude_add,
@@ -23,6 +24,18 @@ class TestAggregatePosition(TestCase):
         circles = numpy.array([(1.0, 1.0, 100.0)], dtype=numpy.double)
         self.assertEqual(aggregate_position(circles, 333.0),
                          (1.0, 1.0, 333.0))
+
+
+class TestCountryForLocation(TestCase):
+
+    def test_no_match(self):
+        self.assertEqual(country_for_location(0.0, 0.0), None)
+
+    def test_single(self):
+        self.assertEqual(country_for_location(51.5142, -0.0931), 'GB')
+
+    def test_multiple(self):
+        self.assertEqual(country_for_location(31.522, 34.455), None)
 
 
 class TestCountryMaxRadius(TestCase):

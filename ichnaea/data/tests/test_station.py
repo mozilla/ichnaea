@@ -376,6 +376,7 @@ class TestWifi(StationTest):
         self.assertAlmostEqual(wifi.lon, obs.lon)
         self.assertAlmostEqual(wifi.max_lon, obs.lon)
         self.assertAlmostEqual(wifi.min_lon, obs.lon)
+        self.assertEqual(wifi.country, 'GB')
         self.assertEqual(wifi.radius, 0)
         self.assertEqual(wifi.samples, 1)
         self.assertEqual(wifi.created.date(), utcnow.date())
@@ -428,6 +429,7 @@ class TestWifi(StationTest):
         self.assertAlmostEqual(found.max_lon, lon1 + 0.006)
         self.assertAlmostEqual(found.min_lon, lon1)
         self.assertEqual(found.modified.date(), utcnow.date())
+        self.assertEqual(found.country, 'GB')
         self.assertEqual(found.radius, 304)
         self.assertEqual(found.samples, 6)
 
@@ -441,6 +443,7 @@ class TestWifi(StationTest):
         self.assertAlmostEqual(found.min_lon, lon2)
         self.assertEqual(found.created.date(), utcnow.date() - timedelta(10))
         self.assertEqual(found.modified.date(), utcnow.date())
+        self.assertEqual(found.country, 'GB')
         self.assertEqual(found.radius, 260)
         self.assertEqual(found.samples, 4)
 
@@ -511,6 +514,7 @@ class TestWifi(StationTest):
         self.assertEqual(wifi.created.date(), last_week.date())
         self.assertAlmostEqual(wifi.lat, obs.lat)
         self.assertAlmostEqual(wifi.lon, obs.lon)
+        self.assertEqual(wifi.country, 'GB')
         self.assertEqual(wifi.samples, 1)
         self.check_statcounter(StatKey.unique_wifi, 0)
 
