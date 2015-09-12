@@ -643,3 +643,30 @@ class TestWifi(StationTest):
             ('data.station.blocklist', 1, 5,
                 ['type:wifi', 'action:add', 'reason:moving']),
         ])
+
+    def test_country(self):
+        obs = []
+        obs_factory = WifiObservationFactory
+        wifi1 = WifiShardFactory(lat=55.807, lon=1.7465, country='GB')
+        obs.append(obs_factory(
+            key=wifi1.mac,
+            lat=wifi1.lat,
+            lon=wifi1.lon + 0.001,
+        ))
+        wifi2 = WifiShardFactory(lat=50.022, lon=1.7465, country='GB')
+        obs.append(obs_factory(
+            key=wifi2.mac,
+            lat=wifi2.lat,
+            lon=wifi2.lon + 0.001,
+        ))
+
+        self.data_queue.enqueue(obs)
+        self.session.commit()
+        update_wifi.delay().get()
+
+        wifi1 = self.session.query(wifi1.__class__).get(wifi1.mac)
+        self.assertEqual(wifi1.block_count, 0)
+        self.assertEqual(wifi1.country, None)
+        wifi2 = self.session.query(wifi2.__class__).get(wifi2.mac)
+        self.assertEqual(wifi1.block_count, 0)
+        self.assertEqual(wifi2.country, 'FR')

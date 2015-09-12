@@ -11,6 +11,7 @@ from ichnaea.geocalc import (
     centroid,
     circle_radius,
     country_for_location,
+    country_matches_location,
     distance,
 )
 from ichnaea.models import (
@@ -499,6 +500,13 @@ class WifiUpdater(StationUpdater):
                 samples = (shard_station.samples or 0) + obs_length
                 radius = circle_radius(
                     new_lat, new_lon, max_lat, max_lon, min_lat, min_lon)
+                country = shard_station.country
+                if (country and not country_matches_location(
+                        new_lat, new_lon, country)):
+                    # reset country if it no longer matches
+                    country = None
+                if not country:
+                    country = country_for_location(new_lat, new_lon)
                 values.update({
                     'lat': new_lat,
                     'lon': new_lon,
@@ -506,7 +514,7 @@ class WifiUpdater(StationUpdater):
                     'min_lat': float(min_lat),
                     'max_lon': float(max_lon),
                     'min_lon': float(min_lon),
-                    'country': country_for_location(new_lat, new_lon),
+                    'country': country,
                     'radius': radius,
                     'samples': samples,
                     'source': None,
