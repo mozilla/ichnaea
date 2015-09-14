@@ -24,7 +24,7 @@ Changes
 
 - Remove obsolete `remove_wifi` task.
 
-- Update to latest versions of certifi, cryptography and coverage.
+- Update to latest versions of certifi, cryptography, coverage and Cython.
 
 20150903095100
 **************
