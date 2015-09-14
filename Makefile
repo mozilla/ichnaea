@@ -117,7 +117,7 @@ build_cython: ichnaea/_geocalc.c
 
 build_req: $(PYTHON) pip mysql build_maxmind
 	$(INSTALL) -r requirements/prod.txt
-	$(INSTALL) -r requirements/test.txt
+	$(INSTALL) -r requirements/dev.txt
 
 build_dev: $(PYTHON) build_cython
 	$(PYTHON) setup.py develop
@@ -238,7 +238,7 @@ endif
 	cd $(TOXENVDIR); PYTHONDONTWRITEBYTECODE=True make test
 
 $(BIN)/sphinx-build:
-	$(INSTALL) -r requirements/docs.txt
+	$(INSTALL) -r requirements/dev.txt
 
 docs: $(BIN)/sphinx-build
 	cd docs; SPHINXBUILD=$(SPHINXBUILD) make html

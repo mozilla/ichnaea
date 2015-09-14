@@ -11,7 +11,7 @@ version = '1.3'
 release = '1.3'
 
 autoclass_content = 'both'
-exclude_patterns = []
+exclude_patterns = ['build/html/README.rst']
 html_static_path = []
 html_theme = 'sphinx_rtd_theme'
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
