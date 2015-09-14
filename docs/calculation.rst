@@ -121,25 +121,6 @@ the timing advance. While we currently don't use this information, in
 the future it has the potential to significantly improve position
 estimates based on multiple cells.
 
-CDMA
-----
-
-CDMA networks are structured differently from the GSM family. A device
-is usually always connected to multiple cell towers at once and
-information about signal quality refers to the combined signal quality
-gotten from all connected towers.
-
-This means we usually get information about multiple cells and can do
-trilateration, leading to better position estimates. Cells sizes are
-comparable to WCDMA networks and can be in the 100km range in rural
-areas.
-
-In theory in CDMA networks the latitude and longitude of each connected
-cell tower is sent along to the client device, similar to how it sends
-accurate time data. In practice almost none of the cell towers are
-configured with this information or it is outdated or outright wrong.
-So we don't attempt to use this data.
-
 GeoIP
 -----
 

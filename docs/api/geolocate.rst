@@ -69,8 +69,7 @@ privacy restriction for WiFi based location services.
 
 Cell based position estimates require each cell record to contain at least
 the five `radioType`, `mobileCountryCode`, `mobileNetworkCode`,
-`locationAreaCode` and `cellId` values, except for CDMA networks where the
-`mobileCountryCode` field is optional.
+`locationAreaCode` and `cellId` values.
 
 Position estimates do get a lot more precise if in addition to these unique
 identifiers at least `signalStrength` data can be provided for each entry.

@@ -38,18 +38,6 @@ class TestCellIdCodec(TestCase):
         self.assertEqual(len(value), 11)
         self.assertEqual(value, b'\x02\x016\x00\x01\x00\x0c\x00\x00\x00\x00')
 
-    def test_decode_cdma(self):
-        value = decode_cellid(b'AQAAgOgAAQAAAAI=', codec='base64')
-        self.assertEqual(value, (Radio.cdma, 0, 33000, 1, 2))
-        self.assertEqual(type(value[0]), Radio)
-
-    def test_encode_cdma(self):
-        value = encode_cellid(Radio.cdma, 310, 33000, 1, 2, codec='base64')
-        self.assertEqual(value, b'AQAAgOgAAQAAAAI=')
-
-        value = encode_cellid(Radio.cdma, 240, 33000, 1, 2, codec='base64')
-        self.assertEqual(value, b'AQAAgOgAAQAAAAI=')
-
     def test_max(self):
         bit16 = 2 ** 16 - 1
         bit32 = 2 ** 32 - 1
@@ -96,12 +84,12 @@ class TestCellArea(DBTestCase):
     def test_fields(self):
         session = self.session
         session.add(CellArea.create(
-            radio=Radio.cdma, mcc=GB_MCC, mnc=GB_MNC, lac=1234, range=10,
+            radio=Radio.wcdma, mcc=GB_MCC, mnc=GB_MNC, lac=1234, range=10,
             lat=GB_LAT, lon=GB_LON, avg_cell_range=10, num_cells=15))
         session.flush()
 
         result = session.query(CellArea).first()
-        self.assertEqual(result.radio, Radio.cdma)
+        self.assertEqual(result.radio, Radio.wcdma)
         self.assertEqual(result.mcc, GB_MCC)
         self.assertEqual(result.mnc, GB_MNC)
         self.assertEqual(result.lac, 1234)

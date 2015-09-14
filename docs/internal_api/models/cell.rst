@@ -42,7 +42,7 @@ radio **(required)**
     The string `gsm`.
 
 mcc **(required)**
-    The mobile country code. An integer in the range of 0 to 999.
+    The mobile country code. An integer in the range of 1 to 999.
 
 mnc **(required)**
     The mobile network code. An integer in the range of 0 to 999.
@@ -53,7 +53,7 @@ lac **(required)**
     values indicating a deleted state.
 
 cid **(required)**
-    The cell id. An integer in the range of 0 to 65535.
+    The cell id. An integer in the range of 1 to 65535.
 
 signal
     The received signal strength (RSSI) in dBm, typically in the range of
@@ -93,7 +93,7 @@ radio **(required)**
     The string `wcdma`.
 
 mcc **(required)**
-    The mobile country code. An integer in the range of 0 to 999.
+    The mobile country code. An integer in the range of 1 to 999.
 
 mnc **(required)**
     The mobile network code. An integer in the range of 0 to 999.
@@ -104,7 +104,7 @@ lac **(required)**
     values indicating a deleted state.
 
 cid **(required)**
-    The cell id. An integer in the range of 0 to 268435455.
+    The cell id. An integer in the range of 1 to 268435455.
 
 psc
     The primary scrambling code as an integer in the range of 0 to 511
@@ -146,7 +146,7 @@ radio **(required)**
     The string `lte`.
 
 mcc **(required)**
-    The mobile country code. An integer in the range of 0 to 999.
+    The mobile country code. An integer in the range of 1 to 999.
 
 mnc **(required)**
     The mobile network code. An integer in the range of 0 to 999.
@@ -157,7 +157,7 @@ lac **(required)**
     values indicating a deleted state.
 
 cid **(required)**
-    The cell identity. An integer in the range of 0 to 268435455.
+    The cell identity. An integer in the range of 1 to 268435455.
 
 psc
     The physical cell id as an integer in the range of 0 to 503 (optional).
@@ -182,9 +182,8 @@ time a valid psc field is submitted.
 CDMA
 ~~~~
 
-If the network is either CDMA or one of the EVDO variants, the radio
-field should be specified as `cdma`. This includes `1xRTT`, `CDMA`, `eHRPD`,
-`EVDO_0`, `EVDO_A`, `EVDO_B`, `IS95A` and `IS95B`.
+We classify CDMA networks and their EVDO variants as `cdma`. This includes
+`1xRTT`, `CDMA`, `eHRPD`, `EVDO_0`, `EVDO_A`, `EVDO_B`, `IS95A` and `IS95B`.
 
 .. note:: Since CDMA networks are rare and only available in a minority
-          of countries, this project no longer supports them.
+          of countries, this project does not support them.

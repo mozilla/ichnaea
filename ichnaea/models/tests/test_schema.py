@@ -51,11 +51,11 @@ class TestCell(ValidationTest):
 
     def setUp(self):
         super(TestCell, self).setUp()
-        self.invalid_lacs = [constants.MIN_LAC - 1, constants.MAX_LAC_ALL + 1]
-        self.invalid_cids = [constants.MIN_CID - 1, constants.MAX_CID_ALL + 1]
+        self.invalid_lacs = [constants.MIN_LAC - 1, constants.MAX_LAC + 1]
+        self.invalid_cids = [constants.MIN_CID - 1, constants.MAX_CID + 1]
 
-        self.valid_pscs = [0, 120, 512]
-        self.invalid_pscs = [-1, 513, 4456]
+        self.valid_pscs = [constants.MIN_PSC, constants.MAX_PSC_LTE]
+        self.invalid_pscs = [constants.MIN_PSC - 1, constants.MAX_PSC + 1]
 
     def check_normalized_cell(self, observation, cell, expect):
         return self.check_normalized(
@@ -94,7 +94,7 @@ class TestCell(ValidationTest):
         radio_pairs = [
             ('gsm', {'radio': Radio.gsm}),
             (Radio.gsm.name, {'radio': Radio.gsm}),
-            ('cdma', {'radio': Radio.cdma}),
+            ('cdma', None),
             ('umts', {'radio': Radio.umts}),
             ('wcdma', {'radio': Radio.wcdma}),
             ('lte', {'radio': Radio.lte}),
@@ -108,24 +108,21 @@ class TestCell(ValidationTest):
             obs, cell = self.get_sample(radio=radio)
             self.check_normalized_cell(obs, cell, expect)
 
+    def test_cdma_cell(self):
+        obs, cell = self.get_sample(
+            radio=Radio.cdma.name, mcc=310, mnc=542, lac=3, cid=4)
+        self.check_normalized_cell(obs, cell, None)
+
     def test_lat_lon_mcc_mnc_groups(self):
         valid_lat_lon_mcc_triples = [
             (FREMONT_LAT, FREMONT_LON, USA_MCC),
             (SAO_PAULO_LAT, SAO_PAULO_LON, BRAZIL_MCC),
             (PARIS_LAT, PARIS_LON, FRANCE_MCC),
         ]
-        valid_mncs = [0, 542, 999]
-        valid_cdma_mncs = [0, 542, 32767]
-
         for (lat, lon, mcc) in valid_lat_lon_mcc_triples:
-            for mnc in valid_mncs:
+            for mnc in (0, 542, 999):
                 obs, cell = self.get_sample(
                     lat=lat, lon=lon, mcc=mcc, mnc=mnc)
-                self.check_normalized_cell(
-                    obs, cell, dict(lat=lat, lon=lon, mcc=mcc, mnc=mnc))
-            for mnc in valid_cdma_mncs:
-                obs, cell = self.get_sample(
-                    lat=lat, lon=lon, mcc=mcc, mnc=mnc, radio=Radio.cdma.name)
                 self.check_normalized_cell(
                     obs, cell, dict(lat=lat, lon=lon, mcc=mcc, mnc=mnc))
 
@@ -135,22 +132,18 @@ class TestCell(ValidationTest):
         self.check_normalized_cell(obs, cell, None)
 
     def test_invalid_mcc(self):
-        invalid_mccs = [-10, -1, 0, 101, 1000, 3456]
-        for mcc in invalid_mccs:
+        for mcc in [-10, -1, 0, 101, 1000, 3456]:
             obs, cell = self.get_sample(mcc=mcc)
             self.check_normalized_cell(obs, cell, None)
 
     def test_invalid_mnc(self):
-        invalid_mncs = [-10, -1, 32768, 93870]
-        for mnc in invalid_mncs:
+        for mnc in [-10, -1, 1000, 3456]:
             obs, cell = self.get_sample(mnc=mnc)
             self.check_normalized_cell(obs, cell, None)
 
     def test_valid_lac_cid_invalid_psc(self):
-        valid_lacs = [constants.MIN_LAC, constants.MAX_LAC_GSM_UMTS_LTE]
-        valid_cids = [constants.MIN_CID, constants.MAX_CID_ALL]
-        for lac in valid_lacs:
-            for cid in valid_cids:
+        for lac in [constants.MIN_LAC, constants.MAX_LAC]:
+            for cid in [constants.MIN_CID, constants.MAX_CID]:
                 for psc in self.invalid_pscs:
                     obs, cell = self.get_sample(
                         lac=lac, cid=cid, psc=psc)
@@ -281,20 +274,6 @@ class TestCell(ValidationTest):
         obs, cell = self.get_sample(lac=None, cid=65535, psc=None)
         self.check_normalized_cell(obs, cell, None)
 
-    def test_cdma_cell_full_cellid(self):
-        entries = [
-            # (data-in, data-out)
-            ({'lac': 3, 'cid': 4}, {'lac': 3, 'cid': 4}),
-            ({'lac': 3, 'cid': None}, None),
-            ({'lac': None, 'cid': 4}, None),
-            ({'lac': None, 'cid': None, 'psc': 5}, None),
-        ]
-
-        for entry in entries:
-            obs, cell = self.get_sample(
-                radio=Radio.cdma.name, **entry[0])
-            self.check_normalized_cell(obs, cell, entry[1])
-
     def test_lac_or_cid_and_psc(self):
         entries = [
             {'lac': None, 'cid': None},
@@ -306,75 +285,34 @@ class TestCell(ValidationTest):
             obs, cell = self.get_sample(**entry)
             self.check_normalized_cell(obs, cell, None)
 
-    def test_mnc_above_1000_gsm_network(self):
-        obs, cell = self.get_sample(radio=Radio.gsm.name, mnc=1001)
-        self.check_normalized_cell(obs, cell, None)
-
     def test_wrong_gsm_radio_type_large_cid(self):
         obs, cell = self.get_sample(radio=Radio.gsm.name, cid=65536)
         self.check_normalized_cell(
-            obs, cell, {'radio': Radio.umts})
+            obs, cell, {'radio': Radio.wcdma})
 
-    def test_valid_umts_cid_is_32_bit(self):
-        valid_cid = constants.MAX_CID_ALL
+    def test_valid_wcdma_cid(self):
         obs, cell = self.get_sample(
-            radio=Radio.umts.name, cid=valid_cid)
-        self.check_normalized_cell(obs, cell, {'cid': valid_cid})
+            radio=Radio.wcdma.name, cid=constants.MAX_CID)
+        self.check_normalized_cell(obs, cell, {'cid': constants.MAX_CID})
 
-    def test_invalid_umts_cid_is_not_32_bit(self):
-        invalid_cid = constants.MAX_CID_ALL + 1
+    def test_invalid_wcdma_cid(self):
         obs, cell = self.get_sample(
-            radio=Radio.umts.name, cid=invalid_cid)
+            radio=Radio.wcdma.name, cid=constants.MAX_CID + 1)
         self.check_normalized_cell(obs, cell, None)
 
-    def test_valid_cdma_cid_is_16_bit(self):
-        valid_cid = constants.MAX_CID_CDMA
+    def test_valid_lte_cid(self):
         obs, cell = self.get_sample(
-            radio=Radio.cdma.name, cid=valid_cid)
-        self.check_normalized_cell(obs, cell, {'cid': valid_cid})
+            radio=Radio.lte.name, cid=constants.MAX_CID)
+        self.check_normalized_cell(obs, cell, {'cid': constants.MAX_CID})
 
-    def test_invalid_cdma_cid_is_not_16_bit(self):
-        invalid_cid = constants.MAX_CID_CDMA + 1
+    def test_invalid_lte_cid(self):
         obs, cell = self.get_sample(
-            radio=Radio.cdma.name, cid=invalid_cid)
+            radio=Radio.lte.name, cid=constants.MAX_CID + 1)
         self.check_normalized_cell(obs, cell, None)
 
-    def test_valid_lte_cid_is_28_bit(self):
-        valid_cid = constants.MAX_CID_LTE
+    def test_invalid_lte_psc(self):
         obs, cell = self.get_sample(
-            radio=Radio.lte.name, cid=valid_cid)
-        self.check_normalized_cell(obs, cell, {'cid': valid_cid})
-
-    def test_invalid_lte_cid_is_not_28_bit(self):
-        invalid_cid = constants.MAX_CID_LTE + 1
-        obs, cell = self.get_sample(
-            radio=Radio.lte.name, cid=invalid_cid)
-        self.check_normalized_cell(obs, cell, None)
-
-    def test_valid_lac_for_gsm_family(self):
-        valid_lac = constants.MAX_LAC_GSM_UMTS_LTE
-        for radio in Radio._gsm_family():
-            obs, cell = self.get_sample(
-                radio=radio.name, lac=valid_lac)
-            self.check_normalized_cell(obs, cell, {'lac': valid_lac})
-
-    def test_invalid_lac_for_gsm_family(self):
-        invalid_lac = constants.MAX_LAC_GSM_UMTS_LTE + 1
-        for radio in Radio._gsm_family():
-            obs, cell = self.get_sample(
-                radio=radio.name, lac=invalid_lac)
-            self.check_normalized_cell(obs, cell, None)
-
-    def test_valid_lac_for_cdma(self):
-        valid_lac = constants.MAX_LAC_ALL
-        obs, cell = self.get_sample(
-            radio=Radio.cdma.name, lac=valid_lac)
-        self.check_normalized_cell(obs, cell, {'lac': valid_lac})
-
-    def test_invalid_lac_for_cdma(self):
-        invalid_lac = constants.MAX_LAC_ALL + 1
-        obs, cell = self.get_sample(
-            radio=Radio.cdma.name, lac=invalid_lac)
+            radio=Radio.lte.name, psc=constants.MAX_PSC_LTE + 1)
         self.check_normalized_cell(obs, cell, None)
 
 

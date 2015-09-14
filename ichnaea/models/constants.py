@@ -47,12 +47,19 @@ MAX_WIFI_CHANNEL = 166  #: Maximum accepted WiFi channel.
 MIN_WIFI_SIGNAL = -200  #: Minimum accepted WiFi signal strength value.
 MAX_WIFI_SIGNAL = -1  #: Maximum accepted WiFi signal strength value.
 
-MIN_CID = 1  #: Minimum accepted cell id for all radio types.
-MAX_CID_GSM = 2 ** 16 - 1  #: Maximum accepted GSM cell id.
-MAX_CID_CDMA = 2 ** 16 - 1  #: Maximum accepted CDMA base station id.
-MAX_CID_LTE = 2 ** 28 - 1  #: Maximum accepted LTE cell identity.
-MAX_CID_ALL = 2 ** 32 - 1  #: Maximum accepted cell id for other radio types.
+MIN_MCC = 1  #: Minimum accepted network code.
+MAX_MCC = 999  #: Maximum accepted network code.
 
-MIN_LAC = 1  #: Minimum accepted cell area code for all radio types.
-MAX_LAC_GSM_UMTS_LTE = 65533  #: Maximum accepted GSM family cell area code.
-MAX_LAC_ALL = 65534  #: Maximum accepted cell area code for other radio types.
+MIN_MNC = 0  #: Minimum accepted network code.
+MAX_MNC = 999  #: Maximum accepted network code.
+
+MIN_LAC = 1  #: Minimum accepted cell area code.
+MAX_LAC = 65533  #: Maximum accepted cell area code.
+
+MIN_CID = 1  #: Minimum accepted cell id.
+MAX_CID = 2 ** 28 - 1  #: Maximum accepted cell id.
+MAX_CID_GSM = 2 ** 16 - 1  #: Maximum accepted GSM cell id.
+
+MIN_PSC = 0  #: Minimum accepted psc.
+MAX_PSC = 511  #: Maximum accepted psc.
+MAX_PSC_LTE = 503  #: Maximum accepted physical cell id.

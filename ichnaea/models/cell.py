@@ -71,14 +71,8 @@ def encode_cellid(radio, mcc, mnc, lac, cid, codec=None):
     Given a five-tuple of cell id parts, return a compact 11 byte
     sequence representing the cell id.
 
-    If the radio type is given as CDMA, clobbers the mcc value and
-    uses 0 instead, as the mcc is not part of the unique cell id key
-    for CDMA radio networks.
-
     If ``codec='base64'``, return the value as a base64 encoded sequence.
     """
-    if radio == Radio.cdma:
-        mcc = 0
     if isinstance(radio, Radio):
         radio = int(radio)
     value = CELLID_STRUCT.pack(radio, mcc, mnc, lac, cid)
@@ -95,12 +89,6 @@ class Radio(IntEnum):
     wcdma = 2
     umts = 2
     lte = 3
-
-    @classmethod
-    def _gsm_family(cls):
-        return GSM_FAMILY
-
-GSM_FAMILY = (Radio.gsm, Radio.wcdma, Radio.lte)
 
 
 def encode_radio_dict(dct):
@@ -155,6 +143,8 @@ class RadioType(colander.Integer):
                 cstruct = Radio[cstruct]
             else:  # pragma: no cover
                 cstruct = Radio(cstruct)
+            if cstruct == Radio.cdma:
+                raise ValueError('Skip CDMA networks.')
         except (KeyError, ValueError):
             raise colander.Invalid(node, (
                 '%r is not a valid radio type' % cstruct))
@@ -192,15 +182,14 @@ class ValidCellAreaKeySchema(FieldSchema, CopyingSchema):
     radio = RadioNode(RadioType())
     mcc = colander.SchemaNode(
         colander.Integer(),
-        validator=colander.Range(1, 999))
+        validator=colander.Range(constants.MIN_MCC, constants.MAX_MCC))
     mnc = colander.SchemaNode(
         colander.Integer(),
-        validator=colander.Range(0, 32767))
+        validator=colander.Range(constants.MIN_MNC, constants.MAX_MNC))
     lac = DefaultNode(
         colander.Integer(),
         missing=None,
-        validator=colander.Range(
-            constants.MIN_LAC, constants.MAX_LAC_ALL))
+        validator=colander.Range(constants.MIN_LAC, constants.MAX_LAC))
 
     def validator(self, node, cstruct):
         super(ValidCellAreaKeySchema, self).validator(node, cstruct)
@@ -208,18 +197,6 @@ class ValidCellAreaKeySchema(FieldSchema, CopyingSchema):
         if cstruct['mcc'] not in constants.ALL_VALID_MCCS:
             raise colander.Invalid(node, (
                 'Check against the list of all known valid mccs'))
-
-        if (cstruct['radio'] in GSM_FAMILY and
-                cstruct['mnc'] is not None and
-                cstruct.get('mnc', 0) > 999):
-            raise colander.Invalid(node, (
-                'Skip GSM/LTE/UMTS towers with an invalid MNC'))
-
-        if (cstruct['radio'] in GSM_FAMILY and
-                cstruct['lac'] is not None and
-                cstruct.get('lac', 0) > constants.MAX_LAC_GSM_UMTS_LTE):
-            raise colander.Invalid(node, (
-                'LAC is out of range for GSM/UMTS/LTE.'))
 
 
 class CellAreaKeyMixin(HashKeyQueryMixin):
@@ -257,12 +234,12 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
 
     cid = DefaultNode(
         colander.Integer(),
-        missing=None, validator=colander.Range(
-            constants.MIN_CID, constants.MAX_CID_ALL))
+        missing=None,
+        validator=colander.Range(constants.MIN_CID, constants.MAX_CID))
     psc = DefaultNode(
         colander.Integer(),
         missing=None,
-        validator=colander.Range(0, 512))
+        validator=colander.Range(constants.MIN_PSC, constants.MAX_PSC))
 
     def deserialize(self, data):
         if data:
@@ -288,31 +265,14 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
     def validator(self, node, cstruct):
         super(ValidCellKeySchema, self).validator(node, cstruct)
 
-        lac_missing = cstruct.get('lac') is None
-        cid_missing = cstruct.get('cid') is None
-        psc_missing = cstruct.get('psc') is None
-
-        if cstruct['radio'] == Radio.cdma and (lac_missing or cid_missing):
-            raise colander.Invalid(node, (
-                'Skip CDMA towers missing lac or cid '
-                '(no psc on CDMA exists to backfill using inference)'))
-
-        if (lac_missing or cid_missing) and psc_missing:
-            raise colander.Invalid(node, (
-                'Must have (lac and cid) or '
-                'psc (psc-only to use in backfill)'))
-
-        if (cstruct['radio'] == Radio.cdma and
-                cstruct['cid'] is not None and
-                cstruct.get('cid', 0) > constants.MAX_CID_CDMA):
-            raise colander.Invalid(node, (
-                'CID is out of range for CDMA.'))
+        if ((cstruct.get('lac') is None or cstruct.get('cid') is None) and
+                cstruct.get('psc') is None):
+            raise colander.Invalid(node, ('Must have (LAC and CID) or PSC.'))
 
         if (cstruct['radio'] == Radio.lte and
-                cstruct['cid'] is not None and
-                cstruct.get('cid', 0) > constants.MAX_CID_LTE):
-            raise colander.Invalid(node, (
-                'CID is out of range for LTE.'))
+                cstruct['psc'] is not None and
+                cstruct.get('psc', 0) > constants.MAX_PSC_LTE):
+            raise colander.Invalid(node, ('PSC is out of range for LTE.'))
 
 
 class CellKeyMixin(CellAreaKeyMixin):

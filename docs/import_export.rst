@@ -32,7 +32,7 @@ Cell Fields
 
 ``radio``
 
-    Network type. One of the strings `GSM`, `UMTS`, `LTE` or `CDMA`.
+    Network type. One of the strings `GSM`, `UMTS` or `LTE`.
 
 ``mcc``
 
@@ -40,28 +40,26 @@ Cell Fields
 
 ``net``
 
-    For GSM, UMTS and LTE networks, this is the mobile network code (MNC). For
-    CDMA networks, this is the system identification number (SID). An integer,
-    for example `4`, the MNC used by Vodaphone in the Netherlands.
+    For GSM, UMTS and LTE networks, this is the mobile network code (MNC).
+    An integer, for example `4`, the MNC used by Vodaphone in the Netherlands.
 
 ``area``
 
     For GSM and UMTS networks, this is the location area code (LAC). For LTE
-    networks, this is the tracking area code (TAC). For CDMA networks, this is
-    the network identification number (NID). An integer, for example `2035`.
+    networks, this is the tracking area code (TAC).
+    An integer, for example `2035`.
 
 ``cell``
 
     For GSM and LTE networks, this is the cell id or cell identity (CID).
     For UMTS networks this is the UTRAN cell id, which is the concatenation
     of 2 bytes of radio network controller (RNC) code and 2 bytes of cell id.
-    For CDMA networks this is the base station identifier (BID).
     An integer, for example `32345`.
 
 ``unit``
 
     For UMTS networks, this is the primary scrambling code (PSC). For LTE
-    networks, this is the physical cell id (PCI). For GSM and CDMA networks,
+    networks, this is the physical cell id (PCI). For GSM networks,
     this is empty. An integer, for example `312`.
 
 ``lon``

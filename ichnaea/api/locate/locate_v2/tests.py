@@ -41,9 +41,9 @@ class TestSchema(TestCase):
     def test_multiple_radio_fields(self):
         data = self.schema.deserialize({'cellTowers': [{
             'radio': 'gsm',
-            'radioType': 'cdma',
+            'radioType': 'wcdma',
         }]})
-        self.assertEqual(data['cell'][0]['radio'], 'cdma')
+        self.assertEqual(data['cell'][0]['radio'], 'wcdma')
         self.assertFalse('radioType' in data['cell'][0])
 
 
@@ -223,7 +223,7 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         self.session.flush()
 
         query = self.model_query(cells=[cell, cell2])
-        query['radioType'] = Radio.cdma.name
+        query['radioType'] = Radio.lte.name
         query['cellTowers'][0]['radio'] = 'wcdma'
         query['cellTowers'][1]['radio'] = cell2.radio.name
         del query['cellTowers'][0]['radioType']
@@ -239,9 +239,21 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         self.session.flush()
 
         query = self.model_query(cells=[cell, cell2])
-        query['radioType'] = Radio.cdma.name
-        query['cellTowers'][0]['radio'] = 'cdma'
+        query['radioType'] = Radio.lte.name
+        query['cellTowers'][0]['radio'] = 'lte'
 
+        res = self._call(body=query)
+        self.check_model_response(res, cell)
+
+    def test_cdma_cell(self):
+        # specifying a cdma radio type works, but the information
+        # is ignored
+        cell = CellFactory(radio=Radio.gsm, range=15000)
+        cell2 = CellFactory(radio=Radio.cdma, range=35000,
+                            lat=cell.lat + 0.0002, lon=cell.lon)
+        self.session.flush()
+
+        query = self.model_query(cells=[cell, cell2])
         res = self._call(body=query)
         self.check_model_response(res, cell)
 
