@@ -33,8 +33,7 @@
             <tr>
                 <th>Country / Region</th>
                 <th class="text-right">GSM</th>
-                <th class="text-right">CDMA</th>
-                <th class="text-right">UMTS</th>
+                <th class="text-right">WCDMA</th>
                 <th class="text-right">LTE</th>
                 <th class="text-right">Total</th>
             </tr>
@@ -43,8 +42,7 @@
             <tr tal:repeat="row metrics">
                 <td data-order="${row.order}">${row.name}<tal:c condition="row.multiple"> *</tal:c></td>
                 <td class="text-right">${row.gsm}</td>
-                <td class="text-right">${row.cdma}</td>
-                <td class="text-right">${row.umts}</td>
+                <td class="text-right">${row.wcdma}</td>
                 <td class="text-right">${row.lte}</td>
                 <td class="text-right">${row.total}</td>
             </tr>

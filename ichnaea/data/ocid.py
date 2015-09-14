@@ -34,11 +34,9 @@ CELL_HEADER_DICT['psc'] = 'unit'
 
 
 def write_stations_to_csv(session, path, start_time=None, end_time=None):
-    if None in (start_time, end_time):
-        where = 'lat IS NOT NULL AND lon IS NOT NULL'
-    else:
-        where = ('lat IS NOT NULL AND lon IS NOT NULL AND '
-                 'modified >= "%s" AND modified < "%s"')
+    where = 'radio != 1 AND lat IS NOT NULL AND lon IS NOT NULL'
+    if None not in (start_time, end_time):
+        where = where + ' AND modified >= "%s" AND modified < "%s"'
         fmt = '%Y-%m-%d %H:%M:%S'
         where = where % (start_time.strftime(fmt), end_time.strftime(fmt))
 
@@ -54,7 +52,6 @@ def write_stations_to_csv(session, path, start_time=None, end_time=None):
     CONCAT_WS(",",
         CASE radio
             WHEN 0 THEN "GSM"
-            WHEN 1 THEN "CDMA"
             WHEN 2 THEN "UMTS"
             WHEN 3 THEN "LTE"
             ELSE ""
@@ -187,6 +184,10 @@ class ImportBase(object):
                 radio = 'wcdma'
             data['radio'] = Radio[radio]
         except KeyError:  # pragma: no cover
+            return None
+
+        if data['radio'] == Radio.cdma:  # pragma: no cover
+            # ignore CDMA networks
             return None
 
         for field in ('mcc', 'mnc', 'lac', 'cid', 'psc'):

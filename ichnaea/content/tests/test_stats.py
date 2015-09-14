@@ -185,7 +185,6 @@ class TestStats(DBTestCase):
         CellFactory(radio=Radio.gsm, mcc=310, mnc=1)
         CellFactory(radio=Radio.gsm, mcc=310, mnc=2)
         CellFactory(radio=Radio.gsm, mcc=313, mnc=1)
-        CellFactory(radio=Radio.cdma, mcc=310, mnc=1)
         CellFactory(radio=Radio.wcdma, mcc=244, mnc=1)
         CellFactory(radio=Radio.lte, mcc=244, mnc=1)
         CellFactory(radio=Radio.gsm, mcc=466, mnc=3)
@@ -212,25 +211,25 @@ class TestStats(DBTestCase):
 
         # a simple case with a 1:1 mapping of mcc to ISO code
         self.assertEqual(region_results['DE'],
-                         {'cdma': 0, 'gsm': 0, 'lte': 1, 'total': 1,
-                          'umts': 0, 'multiple': False, 'order': 'germany'})
+                         {'gsm': 0, 'lte': 1, 'total': 1,
+                          'wcdma': 0, 'multiple': False, 'order': 'germany'})
 
         # mcc 310 is valid for both GU/US, 313 only for US
         self.assertEqual(region_results['US'],
-                         {'cdma': 1, 'gsm': 3, 'lte': 0, 'total': 4,
-                          'umts': 0, 'multiple': True, 'order': 'united sta'})
+                         {'gsm': 3, 'lte': 0, 'total': 3,
+                          'wcdma': 0, 'multiple': True, 'order': 'united sta'})
         self.assertEqual(region_results['GU'],
-                         {'cdma': 1, 'gsm': 2, 'lte': 0, 'total': 3,
-                          'umts': 0, 'multiple': True, 'order': 'guam'})
+                         {'gsm': 2, 'lte': 0, 'total': 2,
+                          'wcdma': 0, 'multiple': True, 'order': 'guam'})
 
         # These two regions share a mcc, so we report the same data
         # for both of them
         self.assertEqual(region_results['FI'],
-                         {'cdma': 0, 'gsm': 0, 'lte': 1, 'total': 2,
-                          'umts': 1, 'multiple': True, 'order': 'finland'})
+                         {'gsm': 0, 'lte': 1, 'total': 2,
+                          'wcdma': 1, 'multiple': True, 'order': 'finland'})
         self.assertEqual(region_results['AX'],
-                         {'cdma': 0, 'gsm': 0, 'lte': 1, 'total': 2,
-                          'umts': 1, 'multiple': True, 'order': 'aland isla'})
+                         {'gsm': 0, 'lte': 1, 'total': 2,
+                          'wcdma': 1, 'multiple': True, 'order': 'aland isla'})
 
 
 class TestRegions(TestCase):

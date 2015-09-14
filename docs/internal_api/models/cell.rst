@@ -186,45 +186,5 @@ If the network is either CDMA or one of the EVDO variants, the radio
 field should be specified as `cdma`. This includes `1xRTT`, `CDMA`, `eHRPD`,
 `EVDO_0`, `EVDO_A`, `EVDO_B`, `IS95A` and `IS95B`.
 
-Example:
-
-.. code-block:: javascript
-
-    {
-        "radio": "cdma",
-        "mcc": 123,
-        "mnc": 12345,
-        "lac": 12345,
-        "cid": 12345,
-        "signal": -75,
-        "asu": 16
-    }
-
-radio **(required)**
-    The string `cdma`.
-
-mcc **(optional)**
-    Not defined. It the device is a dual GSM/CDMA device, the GSM
-    mobile country code can be used.
-
-mnc **(required)**
-    The system identifier. An integer in the range of 1 to 32767.
-    Zero is a reserved value.
-
-lac **(required)**
-    The network id. An integer in the range of 1 to 65534.
-    Zero is a reserved value indicating base stations not belonging to
-    a network. 65535 is a reserved value used in roaming detection.
-
-cid **(required)**
-    The base station id. An integer in the range of 0 to 65535.
-
-signal
-    The received signal strength (RSSI) in dBm, typically in the range of
-    -75 to -100 (optional).
-
-asu
-    The arbitrary strength unit. An integer in the range of 1 to 16 (optional).
-    Conversion rule: ``RSSI [dBm] >= -75: ASU = 16``,
-    ``RSSI [dBm] >= -82: ASU = 8``, ``RSSI [dBm] >= -90: ASU = 4``,
-    ``RSSI [dBm] >= -95: ASU = 2``, ``RSSI [dBm] >= -100: ASU = 1``.
+.. note:: Since CDMA networks are rare and only available in a minority
+          of countries, this project no longer supports them.

@@ -172,7 +172,7 @@ def regions(session):
     # We group by radio, mcc to take advantage of the index
     # and explicitly specify a small list of all valid radio values
     # to get mysql to actually use the index.
-    radios = set([radio for radio in Radio])
+    radios = set([radio for radio in Radio if radio != Radio.cdma])
     rows = session.query(Cell.radio, Cell.mcc, func.count()).filter(
         Cell.radio.in_(radios)).group_by(Cell.radio, Cell.mcc).all()
 
@@ -193,13 +193,10 @@ def regions(session):
                 'order': transliterate(name[:10].lower()),
                 'multiple': multiple,
                 'total': 0,
-                'gsm': 0, 'cdma': 0, 'umts': 0, 'lte': 0,
+                'gsm': 0, 'wcdma': 0, 'lte': 0,
             }
             for radio, value in item.items():
-                radio_name = radio.name
-                if radio_name == 'wcdma':
-                    radio_name = 'umts'
-                region[radio_name] = int(value)
+                region[radio.name] = int(value)
             region['total'] = int(sum(item.values()))
             if alpha2 not in regions:
                 regions[alpha2] = region

@@ -103,24 +103,22 @@ Cell Tower Fields
 ~~~~~~~~~~~~~~~~~
 
 radioType
-    The type of radio network. One of `gsm`, `wcdma`, `lte` or `cdma`.
+    The type of radio network. One of `gsm`, `wcdma` or `lte`.
     This is a custom extension to the GLS API, which only defines the
     top-level radioType field.
 
 mobileCountryCode
-    The mobile country code. For CMDA networks it is not defined.
-    If the device is a combined GSM/CDMA phone, the GSM mobile country
-    code might be available and used for the CDMA network.
+    The mobile country code.
 
 mobileNetworkCode
-    The mobile network code or the system id for CDMA networks.
+    The mobile network code.
 
 locationAreaCode
     The location area code for GSM and WCDMA networks. The tracking area
-    code for LTE networks. The network id for CDMA networks.
+    code for LTE networks.
 
 cellId
-    The cell id or cell identity. The base station id for CDMA networks.
+    The cell id or cell identity.
 
 age
     The number of milliseconds since this networks was last detected.

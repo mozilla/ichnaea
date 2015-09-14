@@ -63,22 +63,20 @@ Cell Fields
 ~~~~~~~~~~~
 
 radio
-    The type of radio network. One of `gsm`, `umts`, `lte` or `cdma`.
+    The type of radio network. One of `gsm`, `umts` or `lte`.
 
 mcc
-    The mobile country code. For CMDA networks it is not defined.
-    If the device is a combined GSM/CDMA phone, the GSM mobile country
-    code might be available and used for the CDMA network.
+    The mobile country code.
 
 mnc
-    The mobile network code or the system id for CDMA networks.
+    The mobile network code.
 
 lac
     The location area code for GSM and WCDMA networks. The tracking area
-    code for LTE networks. The network id for CDMA networks.
+    code for LTE networks.
 
 cid
-    The cell id or cell identity. The base station id for CDMA networks.
+    The cell id or cell identity.
 
 psc
     The primary scrambling code for WCDMA and physical cell id for LTE.

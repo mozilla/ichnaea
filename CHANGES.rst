@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Stop importing and exporting CDMA networks.
+
 - #222: Maintain a country/region code estimate for new wifi networks.
 
 - Add new `location_load` script to load cell dumps into a local db.
