@@ -28,8 +28,8 @@ _compare_attrs = {
     sqltypes.String: ('binary', 'charset', 'collation', 'length', 'unicode'),
 }
 
-SQL_BASE11 = os.path.join(DATA_DIRECTORY, 'base11.sql')
 SQL_BASE12 = os.path.join(DATA_DIRECTORY, 'base12.sql')
+SQL_BASE13 = os.path.join(DATA_DIRECTORY, 'base13.sql')
 
 
 def db_compare_type(context, inspected_column,
@@ -149,13 +149,13 @@ class MigrationTest(object):
         self.assertEqual(metadata_diff, [])
 
 
-class TestMigration11(MigrationTest, TestCase):
-
-    base = SQL_BASE11
-    rev = None
-
-
 class TestMigration12(MigrationTest, TestCase):
 
     base = SQL_BASE12
-    rev = '1a320a751cf'
+    rev = None
+
+
+class TestMigration13(MigrationTest, TestCase):
+
+    base = SQL_BASE13
+    rev = 'b24dbb9ccfe'

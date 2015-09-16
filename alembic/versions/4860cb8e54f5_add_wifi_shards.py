@@ -1,7 +1,7 @@
 """add wifi shards
 
 Revision ID: 4860cb8e54f5
-Revises: 1a320a751cf
+Revises: None
 Create Date: 2015-08-02 17:24:14.293552
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 log = logging.getLogger('alembic.migration')
 revision = '4860cb8e54f5'
-down_revision = '1a320a751cf'
+down_revision = None
 
 
 def upgrade():

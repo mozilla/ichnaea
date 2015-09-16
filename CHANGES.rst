@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Removed migrations before version 1.2.
 
 1.3 (2015-09-16)
 ================
