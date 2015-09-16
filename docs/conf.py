@@ -6,9 +6,9 @@ project = u'Ichnaea'
 copyright = u'2013-2015, Mozilla'
 
 # The short X.Y version.
-version = '1.3'
+version = '1.4'
 # The full version, including alpha/beta/rc tags.
-release = '1.3'
+release = '1.4'
 
 autoclass_content = 'both'
 exclude_patterns = ['build/html/README.rst']
