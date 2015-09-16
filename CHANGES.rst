@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- b24dbb9ccfe: Remove CDMA networks.
+
 - 18d72822fe20: Remove wifi table.
 
 Changes

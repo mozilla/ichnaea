@@ -216,7 +216,7 @@ clean:
 test: mysql
 	SQLURI=$(SQLURI) CELERY_ALWAYS_EAGER=true \
 	LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(HERE)/lib \
-	$(NOSE) -s -d -v $(TEST_ARG)
+	$(NOSE) -s -d $(TEST_ARG)
 
 tox_install:
 ifeq ($(wildcard $(TOXENVDIR)/.git/),)
