@@ -3,7 +3,10 @@ from ichnaea.api.locate.constants import (
     DataSource,
 )
 from ichnaea.api.locate.query import Query
-from ichnaea.api.locate.result import Position
+from ichnaea.api.locate.result import (
+    Country,
+    Position,
+)
 from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
@@ -298,7 +301,7 @@ class TestQueryStats(QueryTest):
         self._make_query(ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.query',
-                ['key:key', 'country:xx', 'cell:none', 'wifi:none']),
+                ['key:key', 'country:GB', 'cell:none', 'wifi:none']),
         ])
 
     def test_one(self):
@@ -308,7 +311,7 @@ class TestQueryStats(QueryTest):
         self._make_query(cell=cells, wifi=wifis, ip=self.london_ip)
         self.check_stats(total=1, counter=[
             ('locate.query',
-                ['key:key', 'country:xx', 'cell:one', 'wifi:one']),
+                ['key:key', 'country:GB', 'cell:one', 'wifi:one']),
         ])
 
     def test_many(self):
@@ -318,7 +321,7 @@ class TestQueryStats(QueryTest):
         self._make_query(cell=cells, wifi=wifis, ip=self.london_ip)
         self.check_stats(total=1, counter=[
             ('locate.query',
-                ['key:key', 'country:xx', 'cell:many', 'wifi:many']),
+                ['key:key', 'country:GB', 'cell:many', 'wifi:many']),
         ])
 
 
@@ -328,6 +331,12 @@ class TestResultStats(QueryTest):
         return Position(
             lat=self.london['latitude'],
             lon=self.london['longitude'],
+            accuracy=accuracy)
+
+    def _make_country_result(self, accuracy=100000.0):
+        return Country(
+            country_code='GB',
+            country_name='United Kingdom',
             accuracy=accuracy)
 
     def _make_query(self, result, api_key=None, api_type='locate',
@@ -350,8 +359,11 @@ class TestResultStats(QueryTest):
 
     def test_country_api(self):
         self._make_query(
-            self._make_result(), api_type='country', ip=self.london_ip)
-        self.check_stats(total=0)
+            self._make_country_result(), api_type='country', ip=self.london_ip)
+        self.check_stats(counter=[
+            ('country.result',
+                ['key:key', 'country:GB', 'accuracy:low', 'status:hit']),
+        ])
 
     def test_none(self):
         self._make_query(
@@ -362,7 +374,7 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(), ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'country:xx', 'accuracy:low', 'status:miss']),
+                ['key:key', 'country:GB', 'accuracy:low', 'status:miss']),
         ])
 
     def test_low_hit(self):
@@ -370,7 +382,7 @@ class TestResultStats(QueryTest):
             self._make_result(accuracy=60000.0), ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'country:xx', 'accuracy:low', 'status:hit']),
+                ['key:key', 'country:GB', 'accuracy:low', 'status:hit']),
         ])
 
     def test_medium_miss(self):
@@ -419,7 +431,7 @@ class TestResultStats(QueryTest):
             self._make_result(accuracy=1001.0), wifi=wifis, ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'country:xx', 'accuracy:high', 'status:miss']),
+                ['key:key', 'country:GB', 'accuracy:high', 'status:miss']),
         ])
 
     def test_mixed_hit(self):
@@ -428,7 +440,7 @@ class TestResultStats(QueryTest):
             self._make_result(accuracy=500.0), cell=cells, ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'country:xx', 'accuracy:medium', 'status:hit']),
+                ['key:key', 'country:GB', 'accuracy:medium', 'status:hit']),
         ])
 
 

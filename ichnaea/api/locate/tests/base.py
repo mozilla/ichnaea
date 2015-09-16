@@ -299,12 +299,12 @@ class CommonLocateTest(BaseLocateTest):
         if self.apikey_metrics:
             self.check_stats(counter=[
                 (self.metric_type + '.query',
-                    ['key:test', 'country:xx', 'cell:none', 'wifi:none']),
+                    ['key:test', 'country:GB', 'cell:none', 'wifi:none']),
                 (self.metric_type + '.result',
-                    ['key:test', 'country:xx',
+                    ['key:test', 'country:GB',
                      'accuracy:low', 'status:hit', 'source:geoip']),
                 (self.metric_type + '.source',
-                    ['key:test', 'country:xx', 'source:geoip',
+                    ['key:test', 'country:GB', 'source:geoip',
                      'accuracy:low', 'status:hit']),
             ])
 
@@ -604,10 +604,10 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post', 'status:200']),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.result',
-                ['key:test', 'country:xx',
+                ['key:test', 'country:GB',
                  'accuracy:high', 'status:hit', 'source:fallback']),
             (self.metric_type + '.source',
-                ['key:test', 'country:xx', 'source:fallback',
+                ['key:test', 'country:GB', 'source:fallback',
                  'accuracy:high', 'status:hit']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
@@ -654,7 +654,7 @@ class CommonLocateErrorTest(BaseLocateTest):
         if self.apikey_metrics:
             self.check_stats(counter=[
                 (self.metric_type + '.result',
-                    ['key:test', 'country:xx',
+                    ['key:test', 'country:GB',
                      'accuracy:high', 'status:miss']),
             ])
 

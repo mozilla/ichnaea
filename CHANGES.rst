@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Enable country level result metrics.
+
 - Removed migrations before version 1.2.
 
 1.3 (2015-09-16)
