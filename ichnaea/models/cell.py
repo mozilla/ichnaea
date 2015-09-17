@@ -43,6 +43,14 @@ from ichnaea.models.station import (
     ValidBboxSchema,
 )
 
+CELLAREA_STRUCT = struct.Struct('!bHHH')
+"""
+A compact representation of a full cell area id as a byte sequence.
+
+Consists of a single byte for the radio type and three 16 bit unsigned
+integers for the mcc, mnc and lac parts.
+"""
+
 CELLID_STRUCT = struct.Struct('!bHHHI')
 """
 A compact representation of a full cell id as a byte sequence.
@@ -51,6 +59,19 @@ Consists of a single byte for the radio type, three 16 bit unsigned
 integers for the mcc, mnc and lac parts and a final 32 bit unsigned
 integer for the cid part.
 """
+
+
+def decode_cellarea(value, codec=None):
+    """
+    Decode a byte sequence representing a cell area into a four-tuple
+    of a Radio integer enum and three integers.
+
+    If ``codec='base64'``, decode the value from a base64 sequence first.
+    """
+    if codec == 'base64':
+        value = base64.b64decode(value)
+    radio, mcc, mnc, lac = CELLAREA_STRUCT.unpack(value)
+    return (Radio(radio), mcc, mnc, lac)
 
 
 def decode_cellid(value, codec=None):
@@ -64,6 +85,21 @@ def decode_cellid(value, codec=None):
         value = base64.b64decode(value)
     radio, mcc, mnc, lac, cid = CELLID_STRUCT.unpack(value)
     return (Radio(radio), mcc, mnc, lac, cid)
+
+
+def encode_cellarea(radio, mcc, mnc, lac, codec=None):
+    """
+    Given a four-tuple of cell area parts, return a compact 7 byte
+    sequence representing the cell area.
+
+    If ``codec='base64'``, return the value as a base64 encoded sequence.
+    """
+    if isinstance(radio, Radio):
+        radio = int(radio)
+    value = CELLAREA_STRUCT.pack(radio, mcc, mnc, lac)
+    if codec == 'base64':
+        value = base64.b64encode(value)
+    return value
 
 
 def encode_cellid(radio, mcc, mnc, lac, cid, codec=None):

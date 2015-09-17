@@ -2,7 +2,9 @@ from ichnaea.models.cell import (
     Cell,
     CellArea,
     CellBlocklist,
+    decode_cellarea,
     decode_cellid,
+    encode_cellarea,
     encode_cellid,
     OCIDCell,
     OCIDCellArea,
@@ -18,9 +20,18 @@ from ichnaea.tests.base import (
 )
 
 
-class TestCellIdCodec(TestCase):
+class TestCellCodec(TestCase):
 
-    def test_decode(self):
+    def test_decode_area(self):
+        value = decode_cellarea(b'\x00\x016\x00\x01\x00\x00')
+        self.assertEqual(value, (Radio.gsm, 310, 1, 0))
+        self.assertEqual(type(value[0]), Radio)
+
+        value = decode_cellarea(b'\x02\x016\x00\x01\x00\x0c')
+        self.assertEqual(value, (Radio.wcdma, 310, 1, 12))
+        self.assertEqual(type(value[0]), Radio)
+
+    def test_decode_cell(self):
         value = decode_cellid(b'\x00\x016\x00\x00\x00\x01\x00\x00\x00\x01')
         self.assertEqual(value, (Radio.gsm, 310, 0, 1, 1))
         self.assertEqual(type(value[0]), Radio)
@@ -29,7 +40,16 @@ class TestCellIdCodec(TestCase):
         self.assertEqual(value, (Radio.wcdma, 310, 1, 12, 0))
         self.assertEqual(type(value[0]), Radio)
 
-    def test_encode(self):
+    def test_encode_area(self):
+        value = encode_cellarea(Radio.gsm, 310, 1, 0)
+        self.assertEqual(len(value), 7)
+        self.assertEqual(value, b'\x00\x016\x00\x01\x00\x00')
+
+        value = encode_cellarea(Radio.wcdma, 310, 1, 12)
+        self.assertEqual(len(value), 7)
+        self.assertEqual(value, b'\x02\x016\x00\x01\x00\x0c')
+
+    def test_encode_cell(self):
         value = encode_cellid(Radio.gsm, 310, 0, 1, 1)
         self.assertEqual(len(value), 11)
         self.assertEqual(value, b'\x00\x016\x00\x00\x00\x01\x00\x00\x00\x01')
@@ -42,17 +62,32 @@ class TestCellIdCodec(TestCase):
         bit16 = 2 ** 16 - 1
         bit32 = 2 ** 32 - 1
 
+        value = encode_cellarea(
+            Radio.wcdma, bit16, bit16, bit16, codec='base64')
+        self.assertEqual(value, b'Av///////w==')
+
         value = encode_cellid(
             Radio.wcdma, bit16, bit16, bit16, bit32, codec='base64')
         self.assertEqual(value, b'Av////////////8=')
+
+        value = decode_cellarea(b'Av///////w==', codec='base64')
+        self.assertEqual(value, (Radio.wcdma, bit16, bit16, bit16))
+        self.assertEqual(type(value[0]), Radio)
 
         value = decode_cellid(b'Av////////////8=', codec='base64')
         self.assertEqual(value, (Radio.wcdma, bit16, bit16, bit16, bit32))
         self.assertEqual(type(value[0]), Radio)
 
     def test_min(self):
+        value = encode_cellarea(Radio.gsm, 0, 0, 0, codec='base64')
+        self.assertEqual(value, b'AAAAAAAAAA==')
+
         value = encode_cellid(Radio.gsm, 0, 0, 0, 0, codec='base64')
         self.assertEqual(value, b'AAAAAAAAAAAAAAA=')
+
+        value = decode_cellarea(b'AAAAAAAAAA==', codec='base64')
+        self.assertEqual(value, (Radio.gsm, 0, 0, 0))
+        self.assertEqual(type(value[0]), Radio)
 
         value = decode_cellid(b'AAAAAAAAAAAAAAA=', codec='base64')
         self.assertEqual(value, (Radio.gsm, 0, 0, 0, 0))
