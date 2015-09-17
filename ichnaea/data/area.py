@@ -3,6 +3,7 @@ import numpy
 from ichnaea.data.base import DataTask
 from ichnaea.geocalc import centroid, circle_radius
 from ichnaea.models import (
+    encode_cellarea,
     Cell,
     CellArea,
     OCIDCell,
@@ -87,7 +88,16 @@ class CellAreaUpdater(DataTask):
                     range=radius,
                     avg_cell_range=avg_cell_range,
                     num_cells=num_cells,
-                    **area_key.__dict__
+                    radio=area_key.radio,
+                    mcc=area_key.mcc,
+                    mnc=area_key.mnc,
+                    lac=area_key.lac,
+                    areaid=encode_cellarea(
+                        area_key.radio,
+                        area_key.mcc,
+                        area_key.mnc,
+                        area_key.lac,
+                    ),
                 )
                 self.session.execute(stmt)
             else:

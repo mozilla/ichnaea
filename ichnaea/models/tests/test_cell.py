@@ -97,13 +97,12 @@ class TestCellCodec(TestCase):
 class TestCell(DBTestCase):
 
     def test_fields(self):
-        session = self.session
-        session.add(Cell.create(
+        self.session.add(Cell.create(
             radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=1234, cid=23456,
             lat=GB_LAT, lon=GB_LON, total_measures=15))
-        session.flush()
+        self.session.flush()
 
-        result = session.query(Cell).first()
+        result = self.session.query(Cell).first()
         self.assertEqual(result.radio, Radio.gsm)
         self.assertEqual(result.mcc, GB_MCC)
         self.assertEqual(result.mnc, GB_MNC)
@@ -116,14 +115,109 @@ class TestCell(DBTestCase):
 
 class TestCellArea(DBTestCase):
 
+    def test_areaid(self):
+        areaid = (Radio.gsm, GB_MCC, GB_MNC, 1)
+        self.session.add(CellArea(
+            areaid=areaid,
+            radio=Radio.wcdma, mcc=GB_MCC, mnc=GB_MNC, lac=1234))
+        self.session.flush()
+
+        result = self.session.query(CellArea).first()
+        self.assertEqual(result.areaid, (Radio.gsm, GB_MCC, GB_MNC, 1))
+
+        result = (self.session.query(CellArea)
+                              .filter(CellArea.areaid == areaid)).first()
+        self.assertEqual(result.areaid, (Radio.gsm, GB_MCC, GB_MNC, 1))
+
+        query = self.session.query(CellArea).filter(CellArea.areaid == (1, 2))
+        self.assertRaises(Exception, query.first)
+
+    def test_areaid_bytes(self):
+        areaid = encode_cellarea(Radio.gsm, GB_MCC, GB_MNC, 1)
+        self.session.add(CellArea(
+            areaid=areaid,
+            radio=Radio.wcdma, mcc=GB_MCC, mnc=GB_MNC, lac=1234))
+        self.session.flush()
+
+        result = self.session.query(CellArea).first()
+        self.assertEqual(result.areaid, (Radio.gsm, GB_MCC, GB_MNC, 1))
+
+        result = (self.session.query(CellArea)
+                              .filter(CellArea.areaid == areaid)).first()
+        self.assertEqual(result.areaid, (Radio.gsm, GB_MCC, GB_MNC, 1))
+
+    def test_areaid_null(self):
+        result = (self.session.query(CellArea)
+                              .filter(CellArea.areaid.is_(None))).all()
+        self.assertEqual(result, [])
+
+        self.session.add(CellArea(
+            areaid=None,
+            radio=Radio.wcdma, mcc=GB_MCC, mnc=GB_MNC, lac=1234))
+        with self.assertRaises(Exception):
+            self.session.flush()
+
+    def test_areaid_derived(self):
+        self.session.add(CellArea.create(
+            radio=Radio.wcdma, mcc=GB_MCC, mnc=GB_MNC, lac=1234))
+        self.session.flush()
+
+        result = self.session.query(CellArea).first()
+        self.assertEqual(result.areaid, (Radio.wcdma, GB_MCC, GB_MNC, 1234))
+
+    def test_areaid_explicit(self):
+        self.session.add(CellArea.create(
+            areaid=(Radio.gsm, GB_MCC, GB_MNC, 1),
+            radio=Radio.wcdma, mcc=GB_MCC, mnc=GB_MNC, lac=1234))
+        self.session.flush()
+
+        result = self.session.query(CellArea).first()
+        self.assertEqual(result.areaid, (Radio.wcdma, GB_MCC, GB_MNC, 1234))
+
+    def test_areaid_unhex(self):
+        value = '''\
+unhex(concat(
+lpad(hex({radio}), 2, 0),
+lpad(hex({mcc}), 4, 0),
+lpad(hex({mnc}), 4, 0),
+lpad(hex({lac}), 4, 0))),
+{radio}, {mcc}, {mnc}, {lac}
+'''.format(radio=int(Radio.gsm), mcc=310, mnc=1, lac=65534)
+        stmt = ('insert into cell_area '
+                '(areaid, radio, mcc, mnc, lac) '
+                'values (%s)') % value
+        self.session.execute(stmt)
+        self.session.flush()
+        cell = self.session.query(CellArea).one()
+        self.assertEqual(cell.areaid, (Radio.gsm, 310, 1, 65534))
+
+    def test_areaid_hex(self):
+        value = '''\
+cast(conv(substr(hex(`areaid`), 1, 2), 16, 10) as unsigned),
+cast(conv(substr(hex(`areaid`), 3, 4), 16, 10) as unsigned),
+cast(conv(substr(hex(`areaid`), 7, 4), 16, 10) as unsigned),
+cast(conv(substr(hex(`areaid`), 11, 4), 16, 10) as unsigned)
+'''
+        self.session.add(CellArea(
+            areaid=(Radio.gsm, 310, 1, 65534),
+            radio=Radio.gsm, mcc=310, mnc=1, lac=65534))
+        self.session.flush()
+        stmt = 'select %s from cell_area' % value
+        row = self.session.execute(stmt).fetchone()
+        self.assertEqual(row, (0, 310, 1, 65534))
+
+    def test_invalid(self):
+        self.assertEqual(CellArea.validate({'radio': 'invalid'}), None)
+
     def test_fields(self):
-        session = self.session
-        session.add(CellArea.create(
+        self.session.add(CellArea.create(
+            areaid=(Radio.wcdma, GB_MCC, GB_MNC, 1234),
             radio=Radio.wcdma, mcc=GB_MCC, mnc=GB_MNC, lac=1234, range=10,
             lat=GB_LAT, lon=GB_LON, avg_cell_range=10, num_cells=15))
-        session.flush()
+        self.session.flush()
 
-        result = session.query(CellArea).first()
+        result = self.session.query(CellArea).first()
+        self.assertEqual(result.areaid, (Radio.wcdma, GB_MCC, GB_MNC, 1234)),
         self.assertEqual(result.radio, Radio.wcdma)
         self.assertEqual(result.mcc, GB_MCC)
         self.assertEqual(result.mnc, GB_MNC)
@@ -138,13 +232,12 @@ class TestCellArea(DBTestCase):
 class TestCellBlocklist(DBTestCase):
 
     def test_fields(self):
-        session = self.session
-        session.add(CellBlocklist(
+        self.session.add(CellBlocklist(
             radio=Radio.lte, mcc=GB_MCC, mnc=GB_MNC,
             lac=1234, cid=23456, count=2))
-        session.flush()
+        self.session.flush()
 
-        result = session.query(CellBlocklist).first()
+        result = self.session.query(CellBlocklist).first()
         self.assertEqual(result.radio, Radio.lte)
         self.assertEqual(result.mcc, GB_MCC)
         self.assertEqual(result.mnc, GB_MNC)
@@ -156,13 +249,12 @@ class TestCellBlocklist(DBTestCase):
 class TestOCIDCell(DBTestCase):
 
     def test_fields(self):
-        session = self.session
-        session.add(OCIDCell.create(
+        self.session.add(OCIDCell.create(
             radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=1234, cid=23456,
             lat=GB_LAT, lon=GB_LON, range=1000, total_measures=15))
-        session.flush()
+        self.session.flush()
 
-        result = session.query(OCIDCell).first()
+        result = self.session.query(OCIDCell).first()
         self.assertEqual(result.radio, Radio.gsm)
         self.assertEqual(result.mcc, GB_MCC)
         self.assertEqual(result.mnc, GB_MNC)
@@ -180,13 +272,12 @@ class TestOCIDCell(DBTestCase):
 class TestOCIDCellArea(DBTestCase):
 
     def test_fields(self):
-        session = self.session
-        session.add(OCIDCellArea.create(
+        self.session.add(OCIDCellArea.create(
             radio=Radio.umts, mcc=GB_MCC, mnc=GB_MNC, lac=1234, range=10,
             lat=GB_LAT, lon=GB_LON, avg_cell_range=10, num_cells=15))
-        session.flush()
+        self.session.flush()
 
-        result = session.query(OCIDCellArea).first()
+        result = self.session.query(OCIDCellArea).first()
         self.assertEqual(result.radio, Radio.umts)
         self.assertEqual(result.mcc, GB_MCC)
         self.assertEqual(result.mnc, GB_MNC)

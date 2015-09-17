@@ -5,15 +5,18 @@ import colander
 from enum import IntEnum
 from six import string_types
 from sqlalchemy import (
+    BINARY,
+    Boolean,
     Column,
     Index,
-    Boolean,
     PrimaryKeyConstraint,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.mysql import (
     INTEGER as Integer,
     SMALLINT as SmallInteger,
 )
+from sqlalchemy.types import TypeDecorator
 
 from ichnaea import geocalc
 from ichnaea.models.base import (
@@ -127,6 +130,28 @@ class Radio(IntEnum):
     lte = 3
 
 
+class CellAreaColumn(TypeDecorator):
+    """A binary type storing Cell Area IDs."""
+
+    impl = BINARY
+
+    def process_bind_param(self, value, dialect):
+        if value is None or isinstance(value, bytes):
+            return value
+
+        if (isinstance(value, tuple) and len(value) != 4):
+            raise ValueError('Invalid Cell Area ID: %r' % value)
+
+        radio, mcc, mnc, lac = value
+        return CELLAREA_STRUCT.pack(int(radio), mcc, mnc, lac)
+
+    def process_result_value(self, value, dialect):
+        if value is None:  # pragma: no cover
+            return None
+        radio, mcc, mnc, lac = CELLAREA_STRUCT.unpack(value)
+        return (Radio(radio), mcc, mnc, lac)
+
+
 def encode_radio_dict(dct):
     if 'radio' in dct and type(dct['radio']) == Radio:
         dct['radio'] = int(dct['radio'])
@@ -152,6 +177,16 @@ class CellHashKey(HashKey):
         value = self.__dict__.copy()
         value['radio'] = int(value['radio'])
         return value
+
+
+class CellAreaHashKey(HashKey):
+
+    _fields = ('areaid', )
+
+
+class CellIDHashKey(HashKey):
+
+    _fields = ('cellid', )
 
 
 class RadioNode(DefaultNode):
@@ -251,6 +286,7 @@ class ValidCellAreaSchema(ValidCellAreaKeySchema,
                           ValidPositionSchema,
                           ValidTimeTrackingSchema):
 
+    # areaid is a derived value
     range = colander.SchemaNode(colander.Integer(), missing=0)
     avg_cell_range = colander.SchemaNode(colander.Integer(), missing=0)
     num_cells = colander.SchemaNode(colander.Integer(), missing=0)
@@ -261,9 +297,24 @@ class CellAreaMixin(CellAreaKeyMixin, TimeTrackingMixin,
 
     _valid_schema = ValidCellAreaSchema()
 
+    areaid = Column(CellAreaColumn(7), nullable=False)
+
     range = Column(Integer)
     avg_cell_range = Column(Integer)
     num_cells = Column(Integer(unsigned=True))
+
+    @classmethod
+    def validate(cls, entry, _raise_invalid=False, **kw):
+        validated = super(CellAreaMixin, cls).validate(
+            entry, _raise_invalid=_raise_invalid, **kw)
+        if validated is not None and 'areaid' not in validated:
+            validated['areaid'] = (
+                validated['radio'],
+                validated['mcc'],
+                validated['mnc'],
+                validated['lac'],
+            )
+        return validated
 
 
 class ValidCellKeySchema(ValidCellAreaKeySchema):
@@ -420,6 +471,7 @@ class CellArea(CellAreaMixin, _Model):
 
     _indices = (
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac'),
+        UniqueConstraint('areaid', name='cell_area_areaid_unique'),
     )
 
 
@@ -428,6 +480,7 @@ class OCIDCellArea(CellAreaMixin, _Model):
 
     _indices = (
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac'),
+        UniqueConstraint('areaid', name='ocid_cell_area_areaid_unique'),
     )
 
 

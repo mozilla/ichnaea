@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 47ed7a40413b: Add cell area id columns.
+
 Changes
 ~~~~~~~
 
