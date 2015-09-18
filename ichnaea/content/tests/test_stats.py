@@ -25,7 +25,7 @@ from ichnaea.tests.base import (
     DBTestCase,
     TestCase,
 )
-from ichnaea.tests.factories import CellFactory
+from ichnaea.tests.factories import CellAreaFactory
 from ichnaea import util
 
 
@@ -181,13 +181,12 @@ class TestStats(DBTestCase):
         self.assertEqual(scores[-1]['num'], 16)
 
     def test_regions(self):
-        CellFactory(radio=Radio.lte, mcc=262, mnc=1)
-        CellFactory(radio=Radio.gsm, mcc=310, mnc=1)
-        CellFactory(radio=Radio.gsm, mcc=310, mnc=2)
-        CellFactory(radio=Radio.gsm, mcc=313, mnc=1)
-        CellFactory(radio=Radio.wcdma, mcc=244, mnc=1)
-        CellFactory(radio=Radio.lte, mcc=244, mnc=1)
-        CellFactory(radio=Radio.gsm, mcc=466, mnc=3)
+        CellAreaFactory(radio=Radio.lte, mcc=262, num_cells=1)
+        CellAreaFactory(radio=Radio.gsm, mcc=310, num_cells=2)
+        CellAreaFactory(radio=Radio.gsm, mcc=313, num_cells=1)
+        CellAreaFactory(radio=Radio.wcdma, mcc=244, num_cells=1)
+        CellAreaFactory(radio=Radio.lte, mcc=244, num_cells=1)
+        CellAreaFactory(radio=Radio.gsm, mcc=466, num_cells=1)
         self.session.flush()
 
         # check the result

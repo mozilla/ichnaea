@@ -8,7 +8,7 @@ import mobile_codes
 from sqlalchemy import func
 
 from ichnaea.models import (
-    Cell,
+    CellArea,
     Radio,
 )
 
@@ -173,8 +173,10 @@ def regions(session):
     # and explicitly specify a small list of all valid radio values
     # to get mysql to actually use the index.
     radios = set([radio for radio in Radio if radio != Radio.cdma])
-    rows = session.query(Cell.radio, Cell.mcc, func.count()).filter(
-        Cell.radio.in_(radios)).group_by(Cell.radio, Cell.mcc).all()
+    rows = (session.query(CellArea.radio, CellArea.mcc,
+                          func.sum(CellArea.num_cells))
+                   .filter(CellArea.radio.in_(radios))
+                   .group_by(CellArea.radio, CellArea.mcc)).all()
 
     # reverse grouping by mcc, radio
     mccs = defaultdict(dict)
