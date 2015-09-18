@@ -159,13 +159,13 @@ def scan_areas(self, batch=100):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell')
-def update_area(self, area_keys, cell_type='cell'):
+def update_area(self, areaids, cell_type='cell'):
     with self.db_session() as session:
         if cell_type == 'ocid':
             updater = area.OCIDCellAreaUpdater(self, session)
         else:
             updater = area.CellAreaUpdater(self, session)
-        updater.update(area_keys)
+        updater.update(areaids)
 
 
 @celery_app.task(base=BaseTask, bind=True)

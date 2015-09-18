@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use cell area ids in update_cellarea task queue.
+
 - Enable country level result metrics.
 
 - Removed migrations before version 1.2.

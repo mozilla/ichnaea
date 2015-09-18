@@ -1,14 +1,18 @@
+import base64
+
 import numpy
 
 from ichnaea.data.base import DataTask
 from ichnaea.geocalc import centroid, circle_radius
 from ichnaea.models import (
+    decode_cellarea,
     encode_cellarea,
     Cell,
     CellArea,
     OCIDCell,
     OCIDCellArea,
 )
+from ichnaea.models.cell import CellAreaKey
 from ichnaea import util
 
 
@@ -24,25 +28,57 @@ class CellAreaUpdater(DataTask):
 
     def scan(self, update_task, batch=100):
         redis_areas = self.data_queue.dequeue(batch=batch)
-        area_keys = list(set(redis_areas))
+        # BBB deal with hashkeys and mixed ids/hashkeys
+        areaids = set()
+        for areaid in redis_areas:
+            if isinstance(areaid, CellAreaKey):  # pragma: no cover
+                areaid = encode_cellarea(
+                    areaid.radio,
+                    areaid.mcc,
+                    areaid.mnc,
+                    areaid.lac,
+                    codec='base64')
+            areaids.add(areaid)
+
+        areaids = list(areaids)
         batch_size = 10
-        for i in range(0, len(area_keys), batch_size):
-            area_batch = area_keys[i:i + batch_size]
+        for i in range(0, len(areaids), batch_size):
+            area_batch = areaids[i:i + batch_size]
             update_task.delay(area_batch)
-        return len(area_keys)
+        return len(areaids)
 
-    def update(self, area_keys):
-        for area_key in area_keys:
-            self.update_area(area_key)
+    def update(self, areaids):
+        # BBB deal with hashkeys and mixed ids/hashkeys
+        ids = set()
+        for areaid in areaids:
+            if isinstance(areaid, CellAreaKey):  # pragma: no cover
+                areaid = encode_cellarea(
+                    areaid.radio,
+                    areaid.mcc,
+                    areaid.mnc,
+                    areaid.lac,
+                    codec='base64')
+            ids.add(base64.b64decode(areaid))
+        for id_ in ids:
+            self.update_area(id_)
 
-    def update_area(self, area_key):
+    def update_area(self, areaid):
+        radio, mcc, mnc, lac = decode_cellarea(areaid)
         # Select all cells in this area and derive a bounding box for them
-        cell_query = (self.cell_model.querykey(self.session, area_key)
-                                     .filter(self.cell_model.lat.isnot(None))
-                                     .filter(self.cell_model.lon.isnot(None)))
-        cells = cell_query.all()
+        cells = (self.session.query(self.cell_model)
+                             .filter(self.cell_model.radio == radio)
+                             .filter(self.cell_model.mcc == mcc)
+                             .filter(self.cell_model.mnc == mnc)
+                             .filter(self.cell_model.lac == lac)
+                             .filter(self.cell_model.lat.isnot(None))
+                             .filter(self.cell_model.lon.isnot(None))).all()
 
-        area_query = self.area_model.querykey(self.session, area_key)
+        area_query = (self.session.query(self.area_model)
+                                  .filter(self.area_model.radio == radio)
+                                  .filter(self.area_model.mcc == mcc)
+                                  .filter(self.area_model.mnc == mnc)
+                                  .filter(self.area_model.lac == lac))
+
         if len(cells) == 0:
             # If there are no more underlying cells, delete the area entry
             area_query.delete()
@@ -88,16 +124,11 @@ class CellAreaUpdater(DataTask):
                     range=radius,
                     avg_cell_range=avg_cell_range,
                     num_cells=num_cells,
-                    radio=area_key.radio,
-                    mcc=area_key.mcc,
-                    mnc=area_key.mnc,
-                    lac=area_key.lac,
-                    areaid=encode_cellarea(
-                        area_key.radio,
-                        area_key.mcc,
-                        area_key.mnc,
-                        area_key.lac,
-                    ),
+                    radio=radio,
+                    mcc=mcc,
+                    mnc=mnc,
+                    lac=lac,
+                    areaid=areaid,
                 )
                 self.session.execute(stmt)
             else:
