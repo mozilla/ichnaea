@@ -42,7 +42,7 @@ Usually a per-country accuracy is calculated. This is the worst case
 accuracy returned for GeoIP country based queries, based on data
 for Russia:
 
-``geocalc.distance(60.0, 100.0, 41.199278, 27.351944) == 5220613 meters``
+``_geocalc.distance(60.0, 100.0, 41.199278, 27.351944) == 5220613 meters``
 """
 
 TEMPORARY_BLOCKLIST_DURATION = timedelta(days=7)

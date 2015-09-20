@@ -15,7 +15,6 @@ import numpy
 from six import string_types
 
 from ichnaea import _geocalc
-from ichnaea import constants
 
 _bbox_cache = []
 _radius_cache = {}
@@ -138,52 +137,13 @@ def country_max_radius(country_code):
     diagonals = []
     for country in country_subunits_by_iso_code(country_code):
         (lon1, lat1, lon2, lat2) = country.bbox
-        diagonals.append(distance(lat1, lon1, lat2, lon2))
+        diagonals.append(_geocalc.distance(lat1, lon1, lat2, lon2))
     if diagonals:
         # Divide by two to get radius, round to 1 km and convert to meters
         radius = max(diagonals) / 2.0 / 1000.0
         value = _radius_cache[country_code] = round(radius) * 1000.0
 
     return value
-
-
-def distance(lat1, lon1, lat2, lon2):
-    """
-    Compute the distance between a pair of lat/longs in meters using
-    the haversine calculation. The output distance is in meters.
-
-    Uses :func:`ichnaea._geocalc.distance` internally.
-    """
-    return _geocalc.distance(lat1, lon1, lat2, lon2)
-
-
-def latitude_add(lat, lon, meters):
-    """
-    Return a latitude in degrees which is shifted by
-    distance in meters.
-
-    The new latitude is bounded by our globally defined
-    :data:`ichnaea.constants.MIN_LAT` and
-    :data:`ichnaea.constants.MAX_LAT`.
-    """
-    return max(constants.MIN_LAT,
-               min(_geocalc.latitude_add(lat, lon, meters),
-                   constants.MAX_LAT))
-
-
-def longitude_add(lat, lon, meters):
-    """
-    Return a longitude in degrees which is shifted by
-    distance in meters.
-
-    The new longitude is bounded by our globally defined
-    :data:`ichnaea.constants.MIN_LON` and
-    :data:`ichnaea.constants.MAX_LON`.
-    """
-    return max(constants.MIN_LON,
-               min(_geocalc.longitude_add(lat, lon, meters),
-                   constants.MAX_LON))
-
 
 # fill the bbox cache
 _bbox_cache = _fill_bbox_cache()

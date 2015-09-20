@@ -7,10 +7,11 @@ from sqlalchemy.dialects.mysql import (
 )
 
 from ichnaea.models import constants
+from ichnaea.models.sa_types import TZDateTime as DateTime
 from ichnaea.models.schema import (
-    CopyingSchema,
+    DateTimeFromString,
     DefaultNode,
-    FieldSchema,
+    ValidatorNode,
 )
 
 
@@ -62,7 +63,7 @@ class StationSourceType(colander.Integer):
         return cstruct
 
 
-class ValidBboxSchema(FieldSchema, CopyingSchema):
+class ValidBboxSchema(colander.MappingSchema, ValidatorNode):
     """A schema which validates fields present in a bounding box."""
 
     max_lat = colander.SchemaNode(
@@ -91,3 +92,37 @@ class BboxMixin(object):
 
     max_lon = Column(Double(asdecimal=False))
     min_lon = Column(Double(asdecimal=False))
+
+
+class ValidPositionSchema(colander.MappingSchema, ValidatorNode):
+    """A schema which validates the fields present in a position."""
+
+    lat = colander.SchemaNode(
+        colander.Float(),
+        missing=None,
+        validator=colander.Range(constants.MIN_LAT, constants.MAX_LAT))
+    lon = colander.SchemaNode(
+        colander.Float(),
+        missing=None,
+        validator=colander.Range(constants.MIN_LON, constants.MAX_LON))
+
+
+class PositionMixin(object):
+    """A database model mixin with lat and lon float fields."""
+
+    lat = Column(Double(asdecimal=False))
+    lon = Column(Double(asdecimal=False))
+
+
+class ValidTimeTrackingSchema(colander.MappingSchema, ValidatorNode):
+    """A schema which validates the fields used for time tracking."""
+
+    created = colander.SchemaNode(DateTimeFromString(), missing=None)
+    modified = colander.SchemaNode(DateTimeFromString(), missing=None)
+
+
+class TimeTrackingMixin(object):
+    """A database model mixin with created and modified datetime fields."""
+
+    created = Column(DateTime)
+    modified = Column(DateTime)

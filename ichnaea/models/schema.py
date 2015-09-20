@@ -1,4 +1,3 @@
-import copy
 from datetime import date, datetime
 
 import colander
@@ -52,23 +51,3 @@ class DefaultNode(ValidatorNode):
             if self.missing is colander.required:
                 raise
             return self.missing
-
-
-class CopyingSchema(colander.MappingSchema, ValidatorNode):
-    """
-    A Schema which makes a copy of the passed in dict to validate.
-    """
-
-    def deserialize(self, data):
-        return super(CopyingSchema, self).deserialize(copy.copy(data))
-
-
-class FieldSchema(colander.MappingSchema, ValidatorNode):
-    """
-    A schema which provides an interface to its fields through the
-    .fields[field_name] interface.
-    """
-
-    @property
-    def fields(self):
-        return dict([(field.name, field) for field in self.children])

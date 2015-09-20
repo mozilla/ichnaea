@@ -21,16 +21,6 @@ MAX_ALTITUDE_ACCURACY = abs(MAX_ALTITUDE - MIN_ALTITUDE)
 MAX_HEADING = 360.0  #: Full 360 degrees.
 MAX_SPEED = 300.0  #: A bit less than speed of sound, in meters per second.
 
-ALL_VALID_MCCS = frozenset(
-    [int(country.mcc)
-     for country in mobile_codes._countries()
-     if isinstance(country.mcc, string_types)] +
-    [int(code)
-     for country in mobile_codes._countries()
-     if isinstance(country.mcc, (tuple, list))
-     for code in country.mcc]
-)  #: All valid mobile country codes.
-
 WIFI_TEST_KEY = '01005e901000'
 """
 We use a `documentation-only multi-cast address
@@ -49,6 +39,18 @@ MAX_WIFI_SIGNAL = -1  #: Maximum accepted WiFi signal strength value.
 
 MIN_MCC = 1  #: Minimum accepted network code.
 MAX_MCC = 999  #: Maximum accepted network code.
+
+ALL_VALID_MCCS = (
+    [int(country.mcc)
+     for country in mobile_codes._countries()
+     if isinstance(country.mcc, string_types)] +
+    [int(code)
+     for country in mobile_codes._countries()
+     if isinstance(country.mcc, (tuple, list))
+     for code in country.mcc]
+)  #: All valid mobile country codes.
+ALL_VALID_MCCS = frozenset(
+    [mcc for mcc in ALL_VALID_MCCS if MIN_MCC <= mcc <= MAX_MCC])
 
 MIN_MNC = 0  #: Minimum accepted network code.
 MAX_MNC = 999  #: Maximum accepted network code.

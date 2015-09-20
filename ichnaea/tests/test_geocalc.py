@@ -1,13 +1,16 @@
 import numpy
 
+from ichnaea._geocalc import (
+    bbox,
+    distance,
+    latitude_add,
+    longitude_add,
+)
 from ichnaea.geocalc import (
     _radius_cache,
     aggregate_position,
     country_for_location,
     country_max_radius,
-    distance,
-    latitude_add,
-    longitude_add,
 )
 from ichnaea import constants
 from ichnaea.tests.base import TestCase
@@ -24,6 +27,23 @@ class TestAggregatePosition(TestCase):
         circles = numpy.array([(1.0, 1.0, 100.0)], dtype=numpy.double)
         self.assertEqual(aggregate_position(circles, 333.0),
                          (1.0, 1.0, 333.0))
+
+
+class TestBbox(TestCase):
+
+    def test_null(self):
+        lat, lon = (1.0, 1.0)
+        self.assertEqual(bbox(lat, lon, 0.0), (lat, lat, lon, lon))
+
+    def test_extremes(self):
+        lat, lon = (-90.0, -181.0)
+        self.assertEqual(bbox(lat, lon, 0.0),
+                         (constants.MIN_LAT, constants.MIN_LAT,
+                          constants.MIN_LON, constants.MIN_LON))
+        lat, lon = (90.0, 181.0)
+        self.assertEqual(bbox(lat, lon, 0.0),
+                         (constants.MAX_LAT, constants.MAX_LAT,
+                          constants.MAX_LON, constants.MAX_LON))
 
 
 class TestCountryForLocation(TestCase):

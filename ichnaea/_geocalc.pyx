@@ -8,10 +8,27 @@ from libc.math cimport asin, cos, fmin, M_PI, pow, sin, sqrt
 from numpy cimport double_t, ndarray
 
 cdef double EARTH_RADIUS = 6371.0  #: Earth radius in km.
+cdef double MAX_LAT = 85.051  #: Max Web Mercator latitude
+cdef double MIN_LAT = -85.051  #: Min Web Mercator latitude
+cdef double MAX_LON = 180.0  #: Max Web Mercator longitude
+cdef double MIN_LON = -180.0  #: Min Web Mercator longitude
 
 
 cdef inline double deg2rad(double degrees):
     return degrees * M_PI / 180.0
+
+
+cpdef tuple bbox(double lat, double lon, double meters):
+    """
+    Return a bounding box around the passed in lat/lon position.
+    """
+    cdef double max_lat, min_lat, max_lon, min_lon
+
+    max_lat = latitude_add(lat, lon, meters)
+    min_lat = latitude_add(lat, lon, -meters)
+    max_lon = longitude_add(lat, lon, meters)
+    min_lon = longitude_add(lat, lon, -meters)
+    return (max_lat, min_lat, max_lon, min_lon)
 
 
 cpdef ndarray[double_t, ndim=1] centroid(ndarray[double_t, ndim=2] points):
@@ -63,18 +80,26 @@ cpdef double latitude_add(double lat, double lon, double meters):
     Return a latitude in degrees which is shifted by
     distance in meters.
 
+    The new latitude is bounded by our globally defined
+    :data:`ichnaea.constants.MIN_LAT` and
+    :data:`ichnaea.constants.MAX_LAT`.
+
     A suitable estimate for surface level calculations is
     111,111m = 1 degree latitude
     """
-    return lat + (meters / 111111.0)
+    return max(MIN_LAT, min(lat + (meters / 111111.0), MAX_LAT))
 
 
 cpdef double longitude_add(double lat, double lon, double meters):
     """
     Return a longitude in degrees which is shifted by
     distance in meters.
+
+    The new longitude is bounded by our globally defined
+    :data:`ichnaea.constants.MIN_LON` and
+    :data:`ichnaea.constants.MAX_LON`.
     """
-    return lon + (meters / (cos(lat) * 111111.0))
+    return max(MIN_LON, min(lon + (meters / (cos(lat) * 111111.0)), MAX_LON))
 
 
 cpdef double max_distance(double lat, double lon,

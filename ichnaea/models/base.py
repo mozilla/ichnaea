@@ -4,22 +4,10 @@ Model and schema related common classes.
 
 import colander
 from pyramid.path import DottedNameResolver
-from sqlalchemy import Column
-from sqlalchemy.dialects.mysql import (
-    DOUBLE as Double,
-)
 from sqlalchemy.ext.declarative import (
     declared_attr,
     declarative_base,
 )
-
-from ichnaea.models import constants
-from ichnaea.models.schema import (
-    CopyingSchema,
-    DateTimeFromString,
-    FieldSchema,
-)
-from ichnaea.models.sa_types import TZDateTime as DateTime
 
 MYSQL_SETTINGS = {
     'mysql_engine': 'InnoDB',
@@ -123,37 +111,3 @@ class CreationMixin(ValidationMixin):
         if validated is None:  # pragma: no cover
             return None
         return cls(**validated)
-
-
-class ValidTimeTrackingSchema(FieldSchema, CopyingSchema):
-    """A schema which validates the fields used for time tracking."""
-
-    created = colander.SchemaNode(DateTimeFromString(), missing=None)
-    modified = colander.SchemaNode(DateTimeFromString(), missing=None)
-
-
-class TimeTrackingMixin(object):
-    """A database model mixin with created and modified datetime fields."""
-
-    created = Column(DateTime)
-    modified = Column(DateTime)
-
-
-class ValidPositionSchema(FieldSchema, CopyingSchema):
-    """A schema which validates the fields present in a position."""
-
-    lat = colander.SchemaNode(
-        colander.Float(),
-        missing=None,
-        validator=colander.Range(constants.MIN_LAT, constants.MAX_LAT))
-    lon = colander.SchemaNode(
-        colander.Float(),
-        missing=None,
-        validator=colander.Range(constants.MIN_LON, constants.MAX_LON))
-
-
-class PositionMixin(object):
-    """A database model mixin with lat and lon float fields."""
-
-    lat = Column(Double(asdecimal=False))
-    lon = Column(Double(asdecimal=False))

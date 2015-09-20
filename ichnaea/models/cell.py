@@ -3,7 +3,6 @@ import struct
 
 import colander
 from enum import IntEnum
-from six import string_types
 from sqlalchemy import (
     BINARY,
     Boolean,
@@ -18,14 +17,10 @@ from sqlalchemy.dialects.mysql import (
 )
 from sqlalchemy.types import TypeDecorator
 
-from ichnaea import geocalc
+from ichnaea import _geocalc
 from ichnaea.models.base import (
     _Model,
     CreationMixin,
-    PositionMixin,
-    TimeTrackingMixin,
-    ValidPositionSchema,
-    ValidTimeTrackingSchema,
 )
 from ichnaea.models import constants
 from ichnaea.models.hashkey import (
@@ -37,13 +32,16 @@ from ichnaea.models.sa_types import (
     TZDateTime as DateTime,
 )
 from ichnaea.models.schema import (
-    CopyingSchema,
     DefaultNode,
-    FieldSchema,
+    ValidatorNode,
 )
 from ichnaea.models.station import (
     BboxMixin,
+    PositionMixin,
+    TimeTrackingMixin,
     ValidBboxSchema,
+    ValidPositionSchema,
+    ValidTimeTrackingSchema,
 )
 
 CELLAREA_STRUCT = struct.Struct('!bHHH')
@@ -62,6 +60,16 @@ Consists of a single byte for the radio type, three 16 bit unsigned
 integers for the mcc, mnc and lac parts and a final 32 bit unsigned
 integer for the cid part.
 """
+
+
+class Radio(IntEnum):
+    __order__ = 'gsm cdma wcdma umts lte'
+
+    gsm = 0
+    cdma = 1
+    wcdma = 2
+    umts = 2
+    lte = 3
 
 
 def decode_cellarea(value, codec=None):
@@ -120,16 +128,6 @@ def encode_cellid(radio, mcc, mnc, lac, cid, codec=None):
     return value
 
 
-class Radio(IntEnum):
-    __order__ = 'gsm cdma wcdma umts lte'
-
-    gsm = 0
-    cdma = 1
-    wcdma = 2
-    umts = 2
-    lte = 3
-
-
 class CellAreaColumn(TypeDecorator):
     """A binary type storing Cell Area IDs."""
 
@@ -150,6 +148,26 @@ class CellAreaColumn(TypeDecorator):
             return None
         radio, mcc, mnc, lac = CELLAREA_STRUCT.unpack(value)
         return (Radio(radio), mcc, mnc, lac)
+
+
+class RadioType(colander.Integer):
+    """A RadioType will return a Radio IntEnum object."""
+
+    def deserialize(self, node, cstruct):
+        if ((isinstance(cstruct, Radio) and cstruct is not Radio['cdma']) or
+                cstruct is colander.null):
+            return cstruct
+        error = False
+        try:
+            cstruct = Radio[cstruct]
+            if cstruct is Radio['cdma']:
+                error = True
+        except KeyError:
+            error = True
+        if error:
+            raise colander.Invalid(node, (
+                '%r is not a valid radio type' % cstruct))
+        return cstruct
 
 
 def encode_radio_dict(dct):
@@ -179,60 +197,6 @@ class CellHashKey(HashKey):
         return value
 
 
-class CellAreaHashKey(HashKey):
-
-    _fields = ('areaid', )
-
-
-class CellIDHashKey(HashKey):
-
-    _fields = ('cellid', )
-
-
-class RadioNode(DefaultNode):
-    """A node containing a valid radio enum."""
-
-    def validator(self, node, cstruct):
-        super(RadioNode, self).validator(node, cstruct)
-
-        if type(cstruct) is Radio:
-            return True
-
-        raise colander.Invalid(node, 'Invalid radio type')  # pragma: no cover
-
-
-class RadioType(colander.Integer):
-    """A RadioType will return a Radio IntEnum object."""
-
-    def deserialize(self, node, cstruct):
-        if cstruct is colander.null:  # pragma: no cover
-            return None
-        if isinstance(cstruct, Radio):
-            return cstruct
-        try:
-            if isinstance(cstruct, string_types):
-                cstruct = Radio[cstruct]
-            else:  # pragma: no cover
-                cstruct = Radio(cstruct)
-            if cstruct == Radio.cdma:
-                raise ValueError('Skip CDMA networks.')
-        except (KeyError, ValueError):
-            raise colander.Invalid(node, (
-                '%r is not a valid radio type' % cstruct))
-        return cstruct
-
-
-class RadioStringType(colander.String):
-    """A RadioType will return a Radio IntEnum as a string."""
-
-    def deserialize(self, node, cstruct):
-        if isinstance(cstruct, Radio):
-            return cstruct.name
-
-        raise colander.Invalid(  # pragma: no cover
-            node, ('%r is not a valid radio type' % cstruct))
-
-
 class CellAreaKey(CellHashKey):
 
     _fields = ('radio', 'mcc', 'mnc', 'lac')
@@ -243,20 +207,11 @@ class CellKey(CellHashKey):
     _fields = ('radio', 'mcc', 'mnc', 'lac', 'cid')
 
 
-class CellKeyPsc(CellHashKey):
+class ValidCellAreaKeySchema(colander.MappingSchema, ValidatorNode):
 
-    _fields = ('radio', 'mcc', 'mnc', 'lac', 'cid', 'psc')
-
-
-class ValidCellAreaKeySchema(FieldSchema, CopyingSchema):
-
-    radio = RadioNode(RadioType())
-    mcc = colander.SchemaNode(
-        colander.Integer(),
-        validator=colander.Range(constants.MIN_MCC, constants.MAX_MCC))
-    mnc = colander.SchemaNode(
-        colander.Integer(),
-        validator=colander.Range(constants.MIN_MNC, constants.MAX_MNC))
+    radio = DefaultNode(RadioType())
+    mcc = colander.SchemaNode(colander.Integer())
+    mnc = colander.SchemaNode(colander.Integer())
     lac = DefaultNode(
         colander.Integer(),
         missing=None,
@@ -269,52 +224,8 @@ class ValidCellAreaKeySchema(FieldSchema, CopyingSchema):
             raise colander.Invalid(node, (
                 'Check against the list of all known valid mccs'))
 
-
-class CellAreaKeyMixin(HashKeyQueryMixin):
-
-    _hashkey_cls = CellAreaKey
-    _query_batch = 25
-
-    radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
-    mcc = Column(SmallInteger, autoincrement=False, default=None)
-    mnc = Column(SmallInteger, autoincrement=False, default=None)
-    lac = Column(SmallInteger(unsigned=True),
-                 autoincrement=False, default=None)
-
-
-class ValidCellAreaSchema(ValidCellAreaKeySchema,
-                          ValidPositionSchema,
-                          ValidTimeTrackingSchema):
-
-    # areaid is a derived value
-    range = colander.SchemaNode(colander.Integer(), missing=0)
-    avg_cell_range = colander.SchemaNode(colander.Integer(), missing=0)
-    num_cells = colander.SchemaNode(colander.Integer(), missing=0)
-
-
-class CellAreaMixin(CellAreaKeyMixin, TimeTrackingMixin,
-                    PositionMixin, CreationMixin):
-
-    _valid_schema = ValidCellAreaSchema()
-
-    areaid = Column(CellAreaColumn(7), nullable=False)
-
-    range = Column(Integer)
-    avg_cell_range = Column(Integer)
-    num_cells = Column(Integer(unsigned=True))
-
-    @classmethod
-    def validate(cls, entry, _raise_invalid=False, **kw):
-        validated = super(CellAreaMixin, cls).validate(
-            entry, _raise_invalid=_raise_invalid, **kw)
-        if validated is not None and 'areaid' not in validated:
-            validated['areaid'] = (
-                validated['radio'],
-                validated['mcc'],
-                validated['mnc'],
-                validated['lac'],
-            )
-        return validated
+        if not (constants.MIN_MNC <= cstruct['mnc'] <= constants.MAX_MNC):
+            raise colander.Invalid(node, ('MNC out of valid range.'))
 
 
 class ValidCellKeySchema(ValidCellAreaKeySchema):
@@ -328,19 +239,23 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
         missing=None,
         validator=colander.Range(constants.MIN_PSC, constants.MAX_PSC))
 
+    def __init__(self, *args, **kw):
+        super(ValidCellKeySchema, self).__init__(*args, **kw)
+        self.radio_node = self.get('radio')
+
     def deserialize(self, data):
         if data:
+            # shallow copy
+            data = dict(data)
             # deserialize and validate radio field early
-            radio_node = self.fields['radio']
-            radio = radio_node.deserialize(data.get('radio', colander.null))
-            if radio_node.validator(radio_node, radio):
-                data['radio'] = radio
+            data['radio'] = self.radio_node.deserialize(
+                data.get('radio', colander.null))
 
             # If the cell id > 65535 then it must be a WCDMA tower
-            if (data['radio'] == Radio.gsm and
+            if (data['radio'] is Radio['gsm'] and
                     data.get('cid') is not None and
                     data.get('cid', 0) > constants.MAX_CID_GSM):
-                data['radio'] = Radio.wcdma
+                data['radio'] = Radio['wcdma']
 
             # Treat cid=65535 without a valid lac as an unspecified value
             if (data.get('lac') is None and
@@ -356,21 +271,13 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
                 cstruct.get('psc') is None):
             raise colander.Invalid(node, ('Must have (LAC and CID) or PSC.'))
 
-        if (cstruct['radio'] == Radio.lte and
-                cstruct['psc'] is not None and
+        if (cstruct['radio'] is Radio['lte'] and
+                cstruct.get('psc') is not None and
                 cstruct.get('psc', 0) > constants.MAX_PSC_LTE):
             raise colander.Invalid(node, ('PSC is out of range for LTE.'))
 
 
-class CellKeyMixin(CellAreaKeyMixin):
-
-    _hashkey_cls = CellKey
-    _query_batch = 20
-
-    cid = Column(Integer(unsigned=True), autoincrement=False, default=None)
-
-
-class ValidCellSignalSchema(FieldSchema, CopyingSchema):
+class ValidCellSignalSchema(colander.MappingSchema, ValidatorNode):
     """
     A schema which validates the fields related to cell signal
     strength and quality.
@@ -392,78 +299,53 @@ class ValidCellSignalSchema(FieldSchema, CopyingSchema):
             if (data.get('asu') is not None and
                     data.get('asu', 0) < -1 and
                     data.get('signal', None) == 0):
+                # shallow copy
+                data = dict(data)
                 data['signal'] = data['asu']
                 data['asu'] = None
         return super(ValidCellSignalSchema, self).deserialize(data)
 
 
-class CellMixin(CellKeyMixin):
+class ValidCellAreaSchema(ValidCellAreaKeySchema,
+                          ValidPositionSchema,
+                          ValidTimeTrackingSchema):
 
-    psc = Column(SmallInteger, autoincrement=False)
-
-
-class ValidBaseStationSchema(ValidPositionSchema, ValidTimeTrackingSchema):
-
+    # areaid is a derived value
     range = colander.SchemaNode(colander.Integer(), missing=0)
-    total_measures = colander.SchemaNode(colander.Integer(), missing=0)
+    avg_cell_range = colander.SchemaNode(colander.Integer(), missing=0)
+    num_cells = colander.SchemaNode(colander.Integer(), missing=0)
 
 
-class BaseStationMixin(PositionMixin, TimeTrackingMixin):
+class CellAreaMixin(PositionMixin, TimeTrackingMixin,
+                    CreationMixin, HashKeyQueryMixin):
 
+    _hashkey_cls = CellAreaKey
+    _query_batch = 25
+    _valid_schema = ValidCellAreaSchema()
+
+    radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
+    mcc = Column(SmallInteger, autoincrement=False, default=None)
+    mnc = Column(SmallInteger, autoincrement=False, default=None)
+    lac = Column(SmallInteger(unsigned=True),
+                 autoincrement=False, default=None)
+
+    areaid = Column(CellAreaColumn(7), nullable=False)
     range = Column(Integer)
-    total_measures = Column(Integer(unsigned=True))
+    avg_cell_range = Column(Integer)
+    num_cells = Column(Integer(unsigned=True))
 
-
-class ValidCellSchema(ValidCellKeySchema,
-                      ValidBaseStationSchema, ValidBboxSchema):
-    """A schema which validates the fields in a cell."""
-
-
-class Cell(CellMixin, BaseStationMixin, BboxMixin, CreationMixin, _Model):
-    __tablename__ = 'cell'
-
-    new_measures = Column(Integer(unsigned=True))
-
-    _indices = (
-        PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
-        Index('cell_created_idx', 'created'),
-        Index('cell_modified_idx', 'modified'),
-    )
-    _valid_schema = ValidCellSchema()
-
-
-class ValidOCIDCellSchema(ValidCellKeySchema, ValidBaseStationSchema):
-    """A schema which validates the fields present in a :term:`OCID` cell."""
-
-    changeable = colander.SchemaNode(colander.Boolean(), missing=True)
-
-
-class OCIDCell(CellMixin, BaseStationMixin, CreationMixin, _Model):
-    __tablename__ = 'ocid_cell'
-
-    _indices = (
-        PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
-        Index('ocid_cell_created_idx', 'created'),
-    )
-    _valid_schema = ValidOCIDCellSchema()
-
-    changeable = Column(Boolean)
-
-    @property
-    def min_lat(self):
-        return geocalc.latitude_add(self.lat, self.lon, -self.range)
-
-    @property
-    def max_lat(self):
-        return geocalc.latitude_add(self.lat, self.lon, self.range)
-
-    @property
-    def min_lon(self):
-        return geocalc.longitude_add(self.lat, self.lon, -self.range)
-
-    @property
-    def max_lon(self):
-        return geocalc.longitude_add(self.lat, self.lon, self.range)
+    @classmethod
+    def validate(cls, entry, _raise_invalid=False, **kw):
+        validated = super(CellAreaMixin, cls).validate(
+            entry, _raise_invalid=_raise_invalid, **kw)
+        if validated is not None and 'areaid' not in validated:
+            validated['areaid'] = (
+                validated['radio'],
+                validated['mcc'],
+                validated['mnc'],
+                validated['lac'],
+            )
+        return validated
 
 
 class CellArea(CellAreaMixin, _Model):
@@ -484,12 +366,105 @@ class OCIDCellArea(CellAreaMixin, _Model):
     )
 
 
-class CellBlocklist(CellKeyMixin, _Model):
+class CellBlocklist(HashKeyQueryMixin, _Model):
     __tablename__ = 'cell_blacklist'
-
-    time = Column(DateTime)
-    count = Column(Integer)
 
     _indices = (
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
     )
+
+    _hashkey_cls = CellKey
+    _query_batch = 20
+
+    radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
+    mcc = Column(SmallInteger, autoincrement=False, default=None)
+    mnc = Column(SmallInteger, autoincrement=False, default=None)
+    lac = Column(SmallInteger(unsigned=True),
+                 autoincrement=False, default=None)
+    cid = Column(Integer(unsigned=True), autoincrement=False, default=None)
+    time = Column(DateTime)
+    count = Column(Integer)
+
+
+class ValidCellSchema(ValidCellKeySchema, ValidBboxSchema,
+                      ValidPositionSchema, ValidTimeTrackingSchema):
+    """A schema which validates the fields in a cell."""
+
+    range = colander.SchemaNode(colander.Integer(), missing=0)
+    total_measures = colander.SchemaNode(colander.Integer(), missing=0)
+
+
+class Cell(BboxMixin, PositionMixin, TimeTrackingMixin,
+           CreationMixin, HashKeyQueryMixin, _Model):
+    __tablename__ = 'cell'
+
+    _indices = (
+        PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
+        Index('cell_created_idx', 'created'),
+        Index('cell_modified_idx', 'modified'),
+    )
+
+    _hashkey_cls = CellKey
+    _query_batch = 20
+    _valid_schema = ValidCellSchema()
+
+    radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
+    mcc = Column(SmallInteger, autoincrement=False, default=None)
+    mnc = Column(SmallInteger, autoincrement=False, default=None)
+    lac = Column(SmallInteger(unsigned=True),
+                 autoincrement=False, default=None)
+    cid = Column(Integer(unsigned=True), autoincrement=False, default=None)
+    psc = Column(SmallInteger, autoincrement=False)
+    range = Column(Integer)
+    total_measures = Column(Integer(unsigned=True))
+    new_measures = Column(Integer(unsigned=True))
+
+
+class ValidOCIDCellSchema(ValidCellKeySchema, ValidPositionSchema,
+                          ValidTimeTrackingSchema):
+    """A schema which validates the fields present in a :term:`OCID` cell."""
+
+    range = colander.SchemaNode(colander.Integer(), missing=0)
+    total_measures = colander.SchemaNode(colander.Integer(), missing=0)
+    changeable = colander.SchemaNode(colander.Boolean(), missing=True)
+
+
+class OCIDCell(PositionMixin, TimeTrackingMixin,
+               CreationMixin, HashKeyQueryMixin, _Model):
+    __tablename__ = 'ocid_cell'
+
+    _indices = (
+        PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
+        Index('ocid_cell_created_idx', 'created'),
+    )
+
+    _hashkey_cls = CellKey
+    _query_batch = 20
+    _valid_schema = ValidOCIDCellSchema()
+
+    radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
+    mcc = Column(SmallInteger, autoincrement=False, default=None)
+    mnc = Column(SmallInteger, autoincrement=False, default=None)
+    lac = Column(SmallInteger(unsigned=True),
+                 autoincrement=False, default=None)
+    cid = Column(Integer(unsigned=True), autoincrement=False, default=None)
+    psc = Column(SmallInteger, autoincrement=False)
+    range = Column(Integer)
+    total_measures = Column(Integer(unsigned=True))
+    changeable = Column(Boolean)
+
+    @property
+    def min_lat(self):
+        return _geocalc.latitude_add(self.lat, self.lon, -self.range)
+
+    @property
+    def max_lat(self):
+        return _geocalc.latitude_add(self.lat, self.lon, self.range)
+
+    @property
+    def min_lon(self):
+        return _geocalc.longitude_add(self.lat, self.lon, -self.range)
+
+    @property
+    def max_lon(self):
+        return _geocalc.longitude_add(self.lat, self.lon, self.range)

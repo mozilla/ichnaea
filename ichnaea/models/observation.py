@@ -7,12 +7,11 @@ from ichnaea import geocalc
 from ichnaea.models.base import (
     CreationMixin,
     ValidationMixin,
-    ValidPositionSchema,
 )
 from ichnaea.models.cell import (
     decode_radio_dict,
     encode_radio_dict,
-    CellKeyPsc,
+    CellHashKey,
     ValidCellKeySchema,
     ValidCellSignalSchema,
 )
@@ -23,6 +22,7 @@ from ichnaea.models.hashkey import (
 )
 from ichnaea.models.schema import (
     DefaultNode,
+    ValidatorNode,
 )
 from ichnaea.models.wifi import (
     WifiMacNode,
@@ -30,14 +30,25 @@ from ichnaea.models.wifi import (
 )
 
 
+class CellKeyPsc(CellHashKey):
+
+    _fields = ('radio', 'mcc', 'mnc', 'lac', 'cid', 'psc')
+
+
 class WifiKey(HashKey):
 
     _fields = ('key', )
 
 
-class ValidReportSchema(ValidPositionSchema):
+class ValidReportSchema(colander.MappingSchema, ValidatorNode):
     """A schema which validates the fields present in a report."""
 
+    lat = colander.SchemaNode(
+        colander.Float(), missing=None, validator=colander.Range(
+            constants.MIN_LAT, constants.MAX_LAT))
+    lon = colander.SchemaNode(
+        colander.Float(), missing=None, validator=colander.Range(
+            constants.MIN_LON, constants.MAX_LON))
     accuracy = DefaultNode(
         colander.Float(), missing=None, validator=colander.Range(
             0, constants.MAX_ACCURACY))

@@ -1,14 +1,16 @@
 from contextlib import closing
 import csv
 from datetime import datetime, timedelta
+from functools import partial
 import os
 
 import boto
 import requests
 from sqlalchemy.sql import text
 
-from ichnaea import geocalc
+from ichnaea import _geocalc
 from ichnaea.models import (
+    encode_cellarea,
     Cell,
     CellArea,
     OCIDCell,
@@ -19,18 +21,22 @@ from ichnaea.models import (
 )
 from ichnaea import util
 
-
-CELL_FIELDS = [
-    'radio', 'mcc', 'mnc', 'lac', 'cid', 'psc',
-    'lon', 'lat', 'range', 'samples', 'changeable',
-    'created', 'updated', 'averageSignal']
-
-# Map our internal names to the public export names
-CELL_HEADER_DICT = dict([(field, field) for field in CELL_FIELDS])
-CELL_HEADER_DICT['mnc'] = 'net'
-CELL_HEADER_DICT['lac'] = 'area'
-CELL_HEADER_DICT['cid'] = 'cell'
-CELL_HEADER_DICT['psc'] = 'unit'
+CELL_POS = {
+    'radio': 0,
+    'mcc': 1,
+    'mnc': 2,
+    'lac': 3,
+    'cid': 4,
+    'psc': 5,
+    'lon': 6,
+    'lat': 7,
+    'range': 8,
+    'samples': 9,
+    'changeable': 10,
+    'created': 11,
+    'updated': 12,
+    'averageSignal': 13,
+}
 
 
 def write_stations_to_csv(session, path, start_time=None, end_time=None):
@@ -161,53 +167,54 @@ class ImportBase(object):
             self.area_model = CellArea
             self.stat_key = StatKey.unique_cell
 
-    def make_import_dict(self, row):
+        self.import_spec = [
+            ('mcc', 1, None, int),
+            ('mnc', 2, None, int),
+            ('lac', 3, None, int),
+            ('cid', 4, None, int),
+            ('psc', 5, None, int),
+            ('lon', 6, None, float),
+            ('lat', 7, None, float),
+            ('range', 8, 0, int),
+            ('total_measures', 9, 0, int),
+            ('created', 11, 0, int),
+            ('modified', 12, 0, int),
+        ]
+        if self.cell_type == 'ocid':
+            self.import_spec.append(
+                ('changeable', 10, True, bool))
 
-        def row_value(row, key, default, _type):
-            if key in row and row[key] not in (None, ''):
-                return _type(row[key])
-            return default
-
+    @staticmethod
+    def make_import_dict(validate, cell_type, import_spec, row):
         data = {}
-        data['created'] = datetime.fromtimestamp(
-            row_value(row, 'created', 0, int))
 
-        data['modified'] = datetime.fromtimestamp(
-            row_value(row, 'updated', 0, int))
-
-        data['lat'] = row_value(row, 'lat', None, float)
-        data['lon'] = row_value(row, 'lon', None, float)
-
+        # parse radio field
+        radio = row[0].lower()
+        if radio == 'cdma':  # pragma: no cover
+            return None
+        if radio == 'umts':
+            radio = 'wcdma'
         try:
-            radio = row['radio'].lower()
-            if radio == 'umts':
-                radio = 'wcdma'
             data['radio'] = Radio[radio]
         except KeyError:  # pragma: no cover
             return None
 
-        if data['radio'] == Radio.cdma:  # pragma: no cover
-            # ignore CDMA networks
-            return None
+        for field, pos, default, _type in import_spec:
+            value = row[pos]
+            if value is None or value == '':
+                data[field] = default
+            else:
+                data[field] = _type(value)
 
-        for field in ('mcc', 'mnc', 'lac', 'cid', 'psc'):
-            data[field] = row_value(row, field, None, int)
+        data['created'] = datetime.utcfromtimestamp(data['created'])
+        data['modified'] = datetime.utcfromtimestamp(data['modified'])
 
-        data['range'] = int(row_value(row, 'range', 0, float))
-        data['total_measures'] = row_value(row, 'samples', 0, int)
-        if self.cell_type == 'ocid':
-            data['changeable'] = row_value(row, 'changeable', True, bool)
-        elif self.cell_type == 'cell':  # pragma: no cover
-            data['max_lat'] = geocalc.latitude_add(
-                data['lat'], data['lon'], data['range'])
-            data['min_lat'] = geocalc.latitude_add(
-                data['lat'], data['lon'], -data['range'])
-            data['max_lon'] = geocalc.longitude_add(
-                data['lat'], data['lon'], data['range'])
-            data['min_lon'] = geocalc.longitude_add(
-                data['lat'], data['lon'], -data['range'])
+        if cell_type == 'cell':  # pragma: no cover
+            data['max_lat'], data['min_lat'], \
+                data['max_lon'], data['min_lon'] = _geocalc.bbox(
+                    data['lat'], data['lon'], data['range'])
 
-        validated = self.cell_model.validate(data)
+        validated = validate(data)
         if validated is None:
             return None
         for field in ('radio', 'mcc', 'mnc', 'lac', 'cid'):
@@ -217,10 +224,28 @@ class ImportBase(object):
 
     def import_stations(self, session, pipe, filename):
         today = util.utcnow().date()
-        area_keys = set()
 
-        def commit_batch(ins, rows, commit=True):
-            result = session.execute(ins, rows)
+        on_duplicate = (
+            'modified = values(modified), '
+            'total_measures = values(total_measures), '
+            'lat = values(lat), '
+            'lon = values(lon), '
+            'psc = values(psc), '
+            '`range` = values(`range`)')
+        if self.cell_type == 'ocid':
+            on_duplicate += ', changeable = values(changeable)'
+        elif self.cell_type == 'cell':  # pragma: no cover
+            on_duplicate += (
+                ', max_lat = values(max_lat)'
+                ', min_lat = values(min_lat)'
+                ', max_lon = values(max_lon)'
+                ', min_lon = values(min_lon)')
+
+        table_insert = self.cell_model.__table__.insert(
+            mysql_on_duplicate=on_duplicate)
+
+        def commit_batch(rows):
+            result = session.execute(table_insert, rows)
             count = result.rowcount
             # apply trick to avoid querying for existing rows,
             # MySQL claims 1 row for an inserted row, 2 for an updated row
@@ -228,55 +253,40 @@ class ImportBase(object):
             changed_rows = count - len(rows)
             assert inserted_rows + changed_rows == len(rows)
             StatCounter(self.stat_key, today).incr(pipe, inserted_rows)
-            if commit:
-                session.commit()
-            else:  # pragma: no cover
-                session.flush()
+
+        areaids = set()
 
         with util.gzip_open(filename, 'r') as gzip_wrapper:
             with gzip_wrapper as gzip_file:
-                csv_reader = csv.DictReader(gzip_file, CELL_FIELDS)
+                csv_reader = csv.reader(gzip_file)
+                parse_row = partial(self.make_import_dict,
+                                    self.cell_model.validate,
+                                    self.cell_type,
+                                    self.import_spec)
                 rows = []
-                on_duplicate = (
-                    'modified = values(modified), '
-                    'total_measures = values(total_measures), '
-                    'lat = values(lat), '
-                    'lon = values(lon), '
-                    'psc = values(psc), '
-                    '`range` = values(`range`)')
-                if self.cell_type == 'ocid':
-                    on_duplicate += ', changeable = values(changeable)'
-                elif self.cell_type == 'cell':  # pragma: no cover
-                    on_duplicate += (
-                        ', max_lat = values(max_lat)'
-                        ', min_lat = values(min_lat)'
-                        ', max_lon = values(max_lon)'
-                        ', min_lon = values(min_lon)')
-
-                ins = self.cell_model.__table__.insert(
-                    mysql_on_duplicate=on_duplicate)
-
                 for row in csv_reader:
                     # skip any header row
-                    if csv_reader.line_num == 1 and \
-                       'radio' in row.values():  # pragma: no cover
+                    if (csv_reader.line_num == 1 and
+                            row[0] == 'radio'):  # pragma: no cover
                         continue
 
-                    data = self.make_import_dict(row)
+                    data = parse_row(row)
                     if data is not None:
                         rows.append(data)
-                        area_keys.add(self.area_model.to_hashkey(data))
+                        areaids.add((int(data['radio']), data['mcc'],
+                                    data['mnc'], data['lac']))
 
                     if len(rows) == self.batch_size:  # pragma: no cover
-                        commit_batch(ins, rows, commit=False)
+                        commit_batch(rows)
+                        session.flush()
                         rows = []
 
                 if rows:
-                    commit_batch(ins, rows)
+                    commit_batch(rows)
 
-        area_keys = list(area_keys)
-        for i in range(0, len(area_keys), self.area_batch_size):
-            area_batch = area_keys[i:i + self.area_batch_size]
+        areaids = [encode_cellarea(*id_, codec='base64') for id_ in areaids]
+        for i in range(0, len(areaids), self.area_batch_size):
+            area_batch = areaids[i:i + self.area_batch_size]
             self.update_area_task.delay(area_batch, cell_type=self.cell_type)
 
 

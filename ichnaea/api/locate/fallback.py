@@ -26,13 +26,24 @@ from ichnaea import floatjson
 from ichnaea.geocalc import aggregate_position
 from ichnaea.models.cell import (
     encode_cellid,
-    RadioStringType,
+    Radio,
 )
 from ichnaea.models.wifi import (
     encode_mac,
 )
 
 LOCATION_NOT_FOUND = '404'  #: Magic constant to cache not found.
+
+
+class RadioStringType(colander.String):
+    """A RadioType will return a Radio IntEnum as a string."""
+
+    def deserialize(self, node, cstruct):
+        if isinstance(cstruct, Radio):
+            return cstruct.name
+
+        raise colander.Invalid(  # pragma: no cover
+            node, ('%r is not a valid radio type' % cstruct))
 
 
 class ExternalResult(namedtuple('ExternalResult',

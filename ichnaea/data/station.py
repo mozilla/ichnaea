@@ -7,12 +7,12 @@ from ichnaea.constants import (
     TEMPORARY_BLOCKLIST_DURATION,
 )
 from ichnaea.data.base import DataTask
+from ichnaea._geocalc import distance
 from ichnaea.geocalc import (
     centroid,
     circle_radius,
     country_for_location,
     country_matches_location,
-    distance,
 )
 from ichnaea.models import (
     encode_cellarea,

@@ -22,28 +22,26 @@ from ichnaea.models import constants
 from ichnaea.models.base import (
     _Model,
     CreationMixin,
-    PositionMixin,
-    TimeTrackingMixin,
-    ValidPositionSchema,
-    ValidTimeTrackingSchema,
 )
 from ichnaea.models.sa_types import (
     MacColumn,
     TinyIntEnum,
 )
 from ichnaea.models.schema import (
-    CopyingSchema,
     DateFromString,
     DefaultNode,
-    FieldSchema,
     ValidatorNode,
 )
 from ichnaea.models.station import (
     BboxMixin,
+    PositionMixin,
     StationSource,
     StationSourceNode,
     StationSourceType,
+    TimeTrackingMixin,
     ValidBboxSchema,
+    ValidPositionSchema,
+    ValidTimeTrackingSchema,
 )
 from ichnaea import util
 
@@ -100,7 +98,7 @@ class WifiMacNode(ValidatorNode):
             raise colander.Invalid(node, 'Invalid wifi key')
 
 
-class ValidWifiSignalSchema(FieldSchema, CopyingSchema):
+class ValidWifiSignalSchema(colander.MappingSchema, ValidatorNode):
     """
     A schema which validates the fields related to wifi signal
     strength and quality.
@@ -129,6 +127,8 @@ class ValidWifiSignalSchema(FieldSchema, CopyingSchema):
             if (channel is None or not
                     (constants.MIN_WIFI_CHANNEL < channel <
                      constants.MAX_WIFI_CHANNEL)):
+                # shallow copy
+                data = dict(data)
                 # if no explicit channel was given, calculate
                 freq = data.get('frequency', None)
                 if freq is None:

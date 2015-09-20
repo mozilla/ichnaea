@@ -12,8 +12,6 @@ import six
 
 from ichnaea.cache import redis_pipeline
 from ichnaea.data.ocid import (
-    CELL_FIELDS,
-    CELL_HEADER_DICT,
     ImportLocal,
     write_stations_to_csv,
 )
@@ -37,6 +35,11 @@ from ichnaea.tests.base import (
 )
 from ichnaea.tests.factories import CellFactory
 from ichnaea import util
+
+CELL_FIELDS = [
+    'radio', 'mcc', 'mnc', 'lac', 'cid', 'psc',
+    'lon', 'lat', 'range', 'samples', 'changeable',
+    'created', 'updated', 'averageSignal']
 
 
 @contextmanager
@@ -85,7 +88,6 @@ class TestExport(CeleryTestCase):
 
                     header = six.next(reader)
                     self.assertTrue('area' in header.values())
-                    self.assertEqual(header, CELL_HEADER_DICT)
 
                     exported_cells = set()
                     for exported_cell in reader:
@@ -183,8 +185,8 @@ class TestImport(CeleryAppTestCase):
     def test_local_import_delta(self):
         old_time = 1407000000
         new_time = 1408000000
-        old_date = datetime.fromtimestamp(old_time).replace(tzinfo=UTC)
-        new_date = datetime.fromtimestamp(new_time).replace(tzinfo=UTC)
+        old_date = datetime.utcfromtimestamp(old_time).replace(tzinfo=UTC)
+        new_date = datetime.utcfromtimestamp(new_time).replace(tzinfo=UTC)
         today = util.utcnow().date()
 
         self.import_csv(time=old_time)
