@@ -3,7 +3,7 @@ import operator
 import colander
 import mobile_codes
 
-from ichnaea import geocalc
+from ichnaea.country import country_matches_location
 from ichnaea.models.base import (
     CreationMixin,
     ValidationMixin,
@@ -164,7 +164,7 @@ class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
 
         in_country = False
         for code in mobile_codes.mcc(str(cstruct['mcc'])):
-            in_country = in_country or geocalc.country_matches_location(
+            in_country = in_country or country_matches_location(
                 cstruct['lat'], cstruct['lon'], code.alpha2, 1.0)
 
         if not in_country:

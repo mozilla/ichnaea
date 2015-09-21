@@ -21,7 +21,7 @@ from ichnaea.constants import (
     GEOIP_CITY_ACCURACY,
     GEOIP_COUNTRY_ACCURACY,
 )
-from ichnaea.geocalc import country_max_radius
+from ichnaea.country import country_max_radius
 
 VALID_COUNTRIES = frozenset(iso3166.countries_by_alpha2.keys())
 

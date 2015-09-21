@@ -22,6 +22,7 @@ Indices and Tables
    cache
    config
    constants
+   country
    db
    exceptions
    floatjson

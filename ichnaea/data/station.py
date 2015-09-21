@@ -6,6 +6,10 @@ from ichnaea.constants import (
     PERMANENT_BLOCKLIST_THRESHOLD,
     TEMPORARY_BLOCKLIST_DURATION,
 )
+from ichnaea.country import (
+    country_for_location,
+    country_matches_location,
+)
 from ichnaea.data.base import DataTask
 from ichnaea._geocalc import (
     centroid,
@@ -13,8 +17,6 @@ from ichnaea._geocalc import (
 )
 from ichnaea.geocalc import (
     circle_radius,
-    country_for_location,
-    country_matches_location,
 )
 from ichnaea.models import (
     encode_cellarea,
