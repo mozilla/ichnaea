@@ -2,10 +2,14 @@
 A JSON dumps function and Renderer which use a prettier float representation.
 This avoids seeing `1.1` as `'1.1000000000000001'` inside the returned JSON.
 """
+import sys
+
+import simplejson
+
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 
 
-def custom_iterencode(value):
+def custom_iterencode(value):  # pragma: no cover
     from simplejson.encoder import (
         _make_iterencode,
         encode_basestring,
@@ -56,15 +60,15 @@ def custom_iterencode(value):
     return _iterencode(value, 0)
 
 
-def float_dumps(value):
-    """
-    Dump an object to JSON providing a nicer float representation.
-    """
-    return u''.join(custom_iterencode(value))
+if sys.version_info < (2, 7):  # pragma: no cover
+    def float_dumps(value):
+        return u''.join(custom_iterencode(value))
+else:  # pragma: no cover
+    float_dumps = simplejson.dumps
 
 
 class FloatJSONRenderer(object):
-    """A JSON renderer using :func:`~ichnaea.floatjson.float_dumps`."""
+    """A JSON renderer providing a nicer float representation."""
 
     def __call__(self, info):
         def _render(value, system):

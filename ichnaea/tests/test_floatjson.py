@@ -22,9 +22,5 @@ class TestFloatJSONRenderer(TestCase):
         self.assertEqual(self.render({'accuracy': 12.34}, {}),
                          '{"accuracy": 12.34}')
 
-    def test_rounded(self):
-        expect = '{"z": 1.1}'
-        self.assertEqual(self.render({'z': 3.3 / 3}, {}), expect)
-
     def test_error(self):
         self.assertRaises(TypeError, float_dumps, object())
