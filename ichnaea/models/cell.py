@@ -17,7 +17,7 @@ from sqlalchemy.dialects.mysql import (
 )
 from sqlalchemy.types import TypeDecorator
 
-from ichnaea import _geocalc
+from ichnaea import geocalc
 from ichnaea.models.base import (
     _Model,
     CreationMixin,
@@ -455,16 +455,16 @@ class OCIDCell(PositionMixin, TimeTrackingMixin,
 
     @property
     def min_lat(self):
-        return _geocalc.latitude_add(self.lat, self.lon, -self.range)
+        return geocalc.latitude_add(self.lat, self.lon, -self.range)
 
     @property
     def max_lat(self):
-        return _geocalc.latitude_add(self.lat, self.lon, self.range)
+        return geocalc.latitude_add(self.lat, self.lon, self.range)
 
     @property
     def min_lon(self):
-        return _geocalc.longitude_add(self.lat, self.lon, -self.range)
+        return geocalc.longitude_add(self.lat, self.lon, -self.range)
 
     @property
     def max_lon(self):
-        return _geocalc.longitude_add(self.lat, self.lon, self.range)
+        return geocalc.longitude_add(self.lat, self.lon, self.range)

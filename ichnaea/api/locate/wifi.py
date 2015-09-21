@@ -20,8 +20,10 @@ from ichnaea.constants import (
     TEMPORARY_BLOCKLIST_DURATION,
     WIFI_MIN_ACCURACY,
 )
-from ichnaea._geocalc import distance
-from ichnaea.geocalc import aggregate_position
+from ichnaea.geocalc import (
+    aggregate_position,
+    distance,
+)
 from ichnaea.models import WifiShard
 from ichnaea import util
 

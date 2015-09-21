@@ -26,7 +26,6 @@ Indices and Tables
    db
    exceptions
    floatjson
-   _geocalc
    geocalc
    geoip
    http

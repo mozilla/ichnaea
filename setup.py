@@ -20,8 +20,8 @@ __version__ = '1.4'
 numpy_include = numpy.get_include()
 ext_modules = [
     Extension(
-        name='ichnaea._geocalc',
-        sources=['ichnaea/_geocalc.c'],
+        name='ichnaea.geocalc',
+        sources=['ichnaea/geocalc.c'],
         include_dirs=[numpy_include],
     ),
 ]

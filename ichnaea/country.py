@@ -14,7 +14,7 @@ from country_bounding_boxes import (
 
 from six import string_types
 
-from ichnaea import _geocalc
+from ichnaea import geocalc
 
 _bbox_cache = []
 _radius_cache = {}
@@ -29,7 +29,7 @@ def _fill_bbox_cache():
         if not (iso2 and iso3):
             continue
         (lon1, lat1, lon2, lat2) = country.bbox
-        radius = _geocalc.distance(lat1, lon1, lat2, lon2) / 2.0
+        radius = geocalc.distance(lat1, lon1, lat2, lon2) / 2.0
         cached.append(Subunit(bbox=country.bbox,
                               alpha2=iso2.upper(),
                               alpha3=iso3.upper(),
@@ -87,7 +87,7 @@ def country_max_radius(country_code):
     diagonals = []
     for country in country_subunits_by_iso_code(country_code):
         (lon1, lat1, lon2, lat2) = country.bbox
-        diagonals.append(_geocalc.distance(lat1, lon1, lat2, lon2))
+        diagonals.append(geocalc.distance(lat1, lon1, lat2, lon2))
     if diagonals:
         # Divide by two to get radius, round to 1 km and convert to meters
         radius = max(diagonals) / 2.0 / 1000.0

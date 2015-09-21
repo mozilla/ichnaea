@@ -1,13 +1,11 @@
 import numpy
 
-from ichnaea._geocalc import (
+from ichnaea.geocalc import (
+    aggregate_position,
     bbox,
     distance,
     latitude_add,
     longitude_add,
-)
-from ichnaea.geocalc import (
-    aggregate_position,
 )
 from ichnaea import constants
 from ichnaea.tests.base import TestCase

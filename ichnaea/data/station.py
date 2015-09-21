@@ -11,12 +11,10 @@ from ichnaea.country import (
     country_matches_location,
 )
 from ichnaea.data.base import DataTask
-from ichnaea._geocalc import (
-    centroid,
-    distance,
-)
 from ichnaea.geocalc import (
+    centroid,
     circle_radius,
+    distance,
 )
 from ichnaea.models import (
     encode_cellarea,

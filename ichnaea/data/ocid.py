@@ -8,7 +8,7 @@ import boto
 import requests
 from sqlalchemy.sql import text
 
-from ichnaea import _geocalc
+from ichnaea import geocalc
 from ichnaea.models import (
     encode_cellarea,
     Cell,
@@ -211,7 +211,7 @@ class ImportBase(object):
 
         if cell_type == 'cell':  # pragma: no cover
             data['max_lat'], data['min_lat'], \
-                data['max_lon'], data['min_lon'] = _geocalc.bbox(
+                data['max_lon'], data['min_lon'] = geocalc.bbox(
                     data['lat'], data['lon'], data['range'])
 
         validated = validate(data)
