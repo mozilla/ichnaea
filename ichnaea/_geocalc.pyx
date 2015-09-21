@@ -31,12 +31,16 @@ cpdef tuple bbox(double lat, double lon, double meters):
     return (max_lat, min_lat, max_lon, min_lon)
 
 
-cpdef ndarray[double_t, ndim=1] centroid(ndarray[double_t, ndim=2] points):
+cpdef tuple centroid(ndarray[double_t, ndim=2] points):
     """
     Compute the centroid (average lat and lon) from a set of points
     (two-dimensional lat/lon array).
     """
-    return points.mean(axis=0)
+    cdef ndarray[double_t, ndim=1] center
+    cdef double_t avg_lat, avg_lon
+    center = points.mean(axis=0)
+    avg_lat, avg_lon = center
+    return (float(avg_lat), float(avg_lon))
 
 
 cpdef double distance(double lat1, double lon1, double lat2, double lon2):

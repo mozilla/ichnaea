@@ -52,24 +52,13 @@ def aggregate_position(circles, minimum_accuracy):
                 max(float(circles[0][2]), minimum_accuracy))
 
     points, _ = numpy.hsplit(circles, [2])
-    lat, lon = centroid(points)
+    lat, lon = _geocalc.centroid(points)
 
     # Bad approximation. This one takes the maximum distance from
     # the centroid to any of the provided circle centers.
     # It ignores the radius of those circles.
     radius = _geocalc.max_distance(lat, lon, points)
     return (lat, lon, max(radius, minimum_accuracy))
-
-
-def centroid(points):
-    """
-    Compute the centroid (average lat and lon) from a set of points
-    (two-dimensional lat/lon array).
-
-    Uses :func:`ichnaea._geocalc.centroid` internally.
-    """
-    avg_lat, avg_lon = _geocalc.centroid(points)
-    return (float(avg_lat), float(avg_lon))
 
 
 def circle_radius(lat, lon, max_lat, max_lon, min_lat, min_lon):

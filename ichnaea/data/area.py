@@ -3,7 +3,8 @@ import base64
 import numpy
 
 from ichnaea.data.base import DataTask
-from ichnaea.geocalc import centroid, circle_radius
+from ichnaea._geocalc import centroid
+from ichnaea.geocalc import circle_radius
 from ichnaea.models import (
     decode_cellarea,
     encode_cellarea,
