@@ -5,7 +5,6 @@ for any external communication with third party systems.
 """
 from calendar import timegm
 from datetime import date, datetime
-from uuid import UUID
 
 from pytz import UTC
 import simplejson as json
@@ -21,8 +20,6 @@ def internal_default(obj):
         return {'__datetime__': millis}
     elif isinstance(obj, date):
         return {'__date__': [obj.year, obj.month, obj.day]}
-    elif isinstance(obj, UUID):
-        return {'__uuid__': obj.hex}
     elif isinstance(obj, JSONMixin):
         return obj._to_json()
     raise TypeError('%r is not JSON serializable' % obj)  # pragma: no cover
@@ -34,8 +31,6 @@ def internal_object_hook(dct):
         return datetime.utcfromtimestamp(secs).replace(tzinfo=UTC)
     elif '__date__' in dct:
         return date(*dct['__date__'])
-    elif '__uuid__' in dct:
-        return UUID(hex=dct['__uuid__'])
     elif '__class__' in dct:
         return JSONMixin._from_json(dct)
     return dct
@@ -44,7 +39,7 @@ def internal_object_hook(dct):
 def internal_dumps(value):
     """
     Dump an object into a special internal JSON format with support
-    for roundtripping date, datetime, uuid and any
+    for roundtripping date, datetime and any
     :class:`ichnaea.models.base.JSONMixin` subclasses.
     """
     return json.dumps(value, default=internal_default,

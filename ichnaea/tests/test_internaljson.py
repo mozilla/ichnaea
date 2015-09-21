@@ -1,6 +1,5 @@
 from collections import namedtuple
 from datetime import date, datetime
-import uuid
 
 import pytz
 
@@ -48,23 +47,3 @@ class TestInternalJSON(TestCase):
         Named = namedtuple('Named', 'one two')
         data = internal_loads(internal_dumps({'d': Named(one=1, two=[2])}))
         self.assertEqual(data['d'], {'one': 1, 'two': [2]})
-
-    def test_uuid1(self):
-        data = internal_dumps({'d': uuid.uuid1()})
-        self.assertTrue('__uuid__' in data)
-
-    def test_uuid4(self):
-        data = internal_dumps({'d': uuid.uuid4()})
-        self.assertTrue('__uuid__' in data)
-
-    def test_uuid1_roundtrip(self):
-        test_uuid = uuid.uuid1()
-        data = internal_loads(internal_dumps({'d': test_uuid}))
-        self.assertEqual(data['d'], test_uuid)
-        self.assertEqual(data['d'].version, 1)
-
-    def test_uuid4_roundtrip(self):
-        test_uuid = uuid.uuid4()
-        data = internal_loads(internal_dumps({'d': test_uuid}))
-        self.assertEqual(data['d'], test_uuid)
-        self.assertEqual(data['d'].version, 4)
