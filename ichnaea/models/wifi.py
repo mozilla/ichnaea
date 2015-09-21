@@ -30,6 +30,7 @@ from ichnaea.models.sa_types import (
 from ichnaea.models.schema import (
     DateFromString,
     DefaultNode,
+    MacNode,
     ValidatorNode,
 )
 from ichnaea.models.station import (
@@ -71,31 +72,6 @@ def encode_mac(value, codec=None):
     if codec == 'base64':
         value = base64.b64encode(value)
     return value
-
-
-class WifiMacNode(ValidatorNode):
-    """
-    A node containing a valid wifi mac address.
-    ex: 01005e901000
-    """
-
-    def preparer(self, cstruct):
-        # Remove ':' '-' ',' from a wifi key.
-        if cstruct and (':' in cstruct or '-' in cstruct or '.' in cstruct):
-            cstruct = (cstruct.replace(':', '')
-                              .replace('-', '')
-                              .replace('.', ''))
-        return cstruct and cstruct.lower() or colander.null
-
-    def validator(self, node, cstruct):
-        super(WifiMacNode, self).validator(node, cstruct)
-
-        valid = (len(cstruct) == 12 and
-                 constants.INVALID_WIFI_REGEX.match(cstruct) and
-                 constants.VALID_WIFI_REGEX.match(cstruct))
-
-        if not valid:
-            raise colander.Invalid(node, 'Invalid wifi key')
 
 
 class ValidWifiSignalSchema(colander.MappingSchema, ValidatorNode):
@@ -153,7 +129,7 @@ class ValidWifiShardSchema(ValidBboxSchema,
                            ValidTimeTrackingSchema):
     """A schema which validates the fields in a wifi shard."""
 
-    mac = WifiMacNode(colander.String())
+    mac = MacNode(colander.String())
     radius = colander.SchemaNode(colander.Integer(), missing=0)
 
     country = colander.SchemaNode(colander.String(), missing=None)

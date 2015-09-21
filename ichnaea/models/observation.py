@@ -22,10 +22,10 @@ from ichnaea.models.hashkey import (
 )
 from ichnaea.models.schema import (
     DefaultNode,
+    MacNode,
     ValidatorNode,
 )
 from ichnaea.models.wifi import (
-    WifiMacNode,
     ValidWifiSignalSchema,
 )
 
@@ -182,13 +182,13 @@ class CellObservation(CellReport, Report):
 class ValidWifiReportSchema(ValidWifiSignalSchema):
     """A schema which validates the wifi specific fields in a report."""
 
-    key = WifiMacNode(colander.String())
+    key = MacNode(colander.String())
 
     def validator(self, node, cstruct):
         super(ValidWifiReportSchema, self).validator(node, cstruct)
         if (cstruct['key'] is None or
                 cstruct['key'] is colander.null):  # pragma: no cover
-            raise colander.Invalid(node, 'Wifi key is required.')
+            raise colander.Invalid(node, 'Wifi mac address is required.')
 
 
 class WifiReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):

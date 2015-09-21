@@ -22,9 +22,11 @@ from ichnaea.models.hashkey import (
     HashKey,
     HashKeyMixin,
 )
-from ichnaea.models.schema import DefaultNode
+from ichnaea.models.schema import (
+    DefaultNode,
+    MacNode,
+)
 from ichnaea.models.wifi import (
-    WifiMacNode,
     ValidWifiSignalSchema,
 )
 
@@ -115,7 +117,7 @@ class CellLookup(BaseCellLookup):
 class ValidWifiLookupSchema(ValidWifiSignalSchema):
     """A schema which validates the fields in a wifi lookup."""
 
-    mac = WifiMacNode(colander.String())
+    mac = MacNode(colander.String())
 
 
 class WifiLookup(BaseLookup):

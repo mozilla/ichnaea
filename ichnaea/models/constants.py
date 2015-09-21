@@ -21,15 +21,15 @@ MAX_ALTITUDE_ACCURACY = abs(MAX_ALTITUDE - MIN_ALTITUDE)
 MAX_HEADING = 360.0  #: Full 360 degrees.
 MAX_SPEED = 300.0  #: A bit less than speed of sound, in meters per second.
 
-WIFI_TEST_KEY = '01005e901000'
+WIFI_TEST_MAC = '01005e901000'
 """
 We use a `documentation-only multi-cast address
 <http://tools.ietf.org/html/rfc7042#section-2.1.1>`_
-as a test key and ignore data submissions with it.
+as a test mac address and ignore data submissions with it.
 """
 
-INVALID_WIFI_REGEX = re.compile('(?!(0{12}|f{12}|%s))' % WIFI_TEST_KEY)
-VALID_WIFI_REGEX = re.compile('([0-9a-fA-F]{12})')
+INVALID_MAC_REGEX = re.compile('(?!(0{12}|f{12}|%s))' % WIFI_TEST_MAC)
+VALID_MAC_REGEX = re.compile('([0-9a-fA-F]{12})')
 
 MIN_WIFI_CHANNEL = 0  #: Minimum accepted WiFi channel.
 MAX_WIFI_CHANNEL = 166  #: Maximum accepted WiFi channel.

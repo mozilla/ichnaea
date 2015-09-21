@@ -359,8 +359,9 @@ class TestWifi(ValidationTest):
             ('f00000000000', 'f00000000000'),
             ('000000-a00000', '000000a00000'),
             ('f1234abcd345', 'f1234abcd345'),
-            # We considered but do not ban locally administered wifi keys
-            # based on the U/L bit https://en.wikipedia.org/wiki/MAC_address
+            # We considered but do not ban locally administered WiFi
+            # mac addresses based on the U/L bit
+            # https://en.wikipedia.org/wiki/MAC_address
             ('0a:00:00:00:00:00', '0a0000000000'),
         ]
 
@@ -377,7 +378,7 @@ class TestWifi(ValidationTest):
             '00000000000g',
             '12#34:56:78:90:12',
             '[1234.56.78.9012]',
-        ] + [constants.WIFI_TEST_KEY] + [
+        ] + [constants.WIFI_TEST_MAC] + [
             c.join([str.format('{x:02x}', x=x)
                     for x in range(6)])
             for c in '!@#$%^&*()_+={}\x01\x02\x03\r\n']
