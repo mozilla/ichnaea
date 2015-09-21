@@ -61,7 +61,7 @@ class TestResultSchema(TestCase):
         data = self.schema.deserialize(
             {'location': {'lat': 1.0, 'lng': 1.0}, 'accuracy': 11.6})
         self.assertEqual(
-            data, {'lat': 1.0, 'lon': 1.0, 'accuracy': 11, 'fallback': None})
+            data, {'lat': 1.0, 'lon': 1.0, 'accuracy': 11.6, 'fallback': None})
 
     def test_accuracy_missing(self):
         with self.assertRaises(colander.Invalid):
@@ -71,31 +71,33 @@ class TestResultSchema(TestCase):
     def test_fallback(self):
         data = self.schema.deserialize(
             {'location': {'lat': 1.0, 'lng': 1.0},
-             'accuracy': 10, 'fallback': 'lacf'})
+             'accuracy': 10.0, 'fallback': 'lacf'})
         self.assertEqual(
-            data, {'lat': 1.0, 'lon': 1.0, 'accuracy': 10, 'fallback': 'lacf'})
+            data, {'lat': 1.0, 'lon': 1.0, 'accuracy': 10.0,
+                   'fallback': 'lacf'})
 
     def test_fallback_invalid(self):
         data = self.schema.deserialize(
             {'location': {'lat': 1.0, 'lng': 1.0},
-             'accuracy': 10, 'fallback': 'cidf'})
+             'accuracy': 10.0, 'fallback': 'cidf'})
         self.assertEqual(
-            data, {'lat': 1.0, 'lon': 1.0, 'accuracy': 10, 'fallback': None})
+            data, {'lat': 1.0, 'lon': 1.0, 'accuracy': 10.0, 'fallback': None})
 
     def test_fallback_missing(self):
         data = self.schema.deserialize(
-            {'location': {'lat': 1.0, 'lng': 1.0}, 'accuracy': 10})
+            {'location': {'lat': 1.0, 'lng': 1.0}, 'accuracy': 10.0})
         self.assertEqual(
-            data, {'lat': 1.0, 'lon': 1.0, 'accuracy': 10, 'fallback': None})
+            data, {'lat': 1.0, 'lon': 1.0, 'accuracy': 10.0, 'fallback': None})
 
     def test_location_incomplete(self):
         with self.assertRaises(colander.Invalid):
             self.schema.deserialize(
-                {'location': {'lng': 1.0}, 'accuracy': 10, 'fallback': 'lacf'})
+                {'location': {'lng': 1.0}, 'accuracy': 10.0,
+                 'fallback': 'lacf'})
 
     def test_location_missing(self):
         with self.assertRaises(colander.Invalid):
-            self.schema.deserialize({'accuracy': 10, 'fallback': 'lacf'})
+            self.schema.deserialize({'accuracy': 10.0, 'fallback': 'lacf'})
 
 
 class TestOutboundSchema(TestCase):
@@ -298,20 +300,20 @@ class TestSource(BaseSourceTest):
         self.api_key = ApiKeyFactory.build(
             shortname='test', allow_fallback=True)
         self.fallback_model = DummyModel(
-            lat=51.5366, lon=0.03989, accuracy=1500)
+            lat=51.5366, lon=0.03989, accuracy=1500.0)
 
         self.fallback_result = {
             'location': {
                 'lat': self.fallback_model.lat,
                 'lng': self.fallback_model.lon,
             },
-            'accuracy': self.fallback_model.range,
+            'accuracy': float(self.fallback_model.range),
             'fallback': 'lacf',
         }
         self.fallback_cached_result = floatjson.float_dumps({
             'lat': self.fallback_model.lat,
             'lon': self.fallback_model.lon,
-            'accuracy': self.fallback_model.range,
+            'accuracy': float(self.fallback_model.range),
             'fallback': 'lacf',
         })
 
@@ -508,7 +510,7 @@ class TestSource(BaseSourceTest):
             source=DataSource.geoip,
             lat=london.lat,
             lon=london.lon,
-            accuracy=london.range)
+            accuracy=float(london.range))
 
         query = self.model_query(wifis=wifis, ip=london.ip)
         self.check_should_search(query, True, results=[geoip_pos])

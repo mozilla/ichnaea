@@ -135,7 +135,7 @@ class TestPosition(TestCase):
 
     def test_not_empty(self):
         self.assertFalse(Position(lat=1.0, lon=1.0, accuracy=1.0).empty())
-        self.assertFalse(Position(lat=0.0, lon=0.0, accuracy=0).empty())
+        self.assertFalse(Position(lat=0.0, lon=0.0, accuracy=0.0).empty())
 
     def test_satisfies(self):
         wifis = WifiShardFactory.build_batch(2)

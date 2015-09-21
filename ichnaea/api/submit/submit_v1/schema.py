@@ -51,10 +51,11 @@ class BaseReportV1Schema(OptionalMappingSchema):
     lon = OptionalBoundedFloatNode(internal_name='longitude')
 
     time = OptionalNode(UnixTimeFromString(), internal_name='timestamp')
-    accuracy = OptionalIntNode()
+    accuracy = OptionalBoundedFloatNode()
     age = OptionalIntNode()
-    altitude = OptionalIntNode()
-    altitude_accuracy = OptionalIntNode(internal_name='altitudeAccuracy')
+    altitude = OptionalBoundedFloatNode()
+    altitude_accuracy = OptionalBoundedFloatNode(
+        internal_name='altitudeAccuracy')
     heading = OptionalBoundedFloatNode()
     pressure = OptionalBoundedFloatNode()
     radio = OptionalStringNode(internal_name='radioType')

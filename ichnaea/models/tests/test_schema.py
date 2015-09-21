@@ -64,9 +64,9 @@ class TestCell(ValidationTest):
 
     def get_sample(self, **kwargs):
         obs = {
-            'accuracy': 120,
-            'altitude': 220,
-            'altitude_accuracy': 10,
+            'accuracy': 120.0,
+            'altitude': 220.0,
+            'altitude_accuracy': 10.0,
             'lat': PARIS_LAT,
             'lon': PARIS_LON,
             'radio': Radio.gsm.name,
@@ -187,19 +187,19 @@ class TestCell(ValidationTest):
             self.check_normalized_cell(obs, cell, None)
 
     def test_valid_accuracy(self):
-        valid_accuracies = [0, 1, 100, 10000]
+        valid_accuracies = [0.0, 1.6, 100.1, 10000.0]
         for accuracy in valid_accuracies:
             obs, cell = self.get_sample(accuracy=accuracy)
             self.check_normalized_cell(obs, cell, {'accuracy': accuracy})
 
     def test_valid_altitude(self):
-        valid_altitudes = [-100, -1, 0, 10, 100]
+        valid_altitudes = [-100.0, -1.6, 0.0, 10.1, 100.0]
         for altitude in valid_altitudes:
             obs, cell = self.get_sample(altitude=altitude)
             self.check_normalized_cell(obs, cell, {'altitude': altitude})
 
     def test_valid_altitude_accuracy(self):
-        valid_altitude_accuracies = [0, 1, 100, 1000]
+        valid_altitude_accuracies = [0.0, 1.6, 100.1, 1000.0]
         for altitude_accuracy in valid_altitude_accuracies:
             obs, cell = self.get_sample(
                 altitude_accuracy=altitude_accuracy)
@@ -225,19 +225,19 @@ class TestCell(ValidationTest):
             self.check_normalized_cell(obs, cell, {'signal': signal})
 
     def test_invalid_accuracy(self):
-        invalid_accuracies = [-10, -1, 5000000]
+        invalid_accuracies = [-10.0, -1.2, 5000000.0]
         for accuracy in invalid_accuracies:
             obs, cell = self.get_sample(accuracy=accuracy)
             self.check_normalized_cell(obs, cell, {'accuracy': None})
 
     def test_invalid_altitude(self):
-        invalid_altitudes = [-20000, 200000]
+        invalid_altitudes = [-20000.0, 200000.0]
         for altitude in invalid_altitudes:
             obs, cell = self.get_sample(altitude=altitude)
             self.check_normalized_cell(obs, cell, {'altitude': None})
 
     def test_invalid_altitude_accuracy(self):
-        invalid_altitude_accuracies = [-10, -1, 500000]
+        invalid_altitude_accuracies = [-10.0, -1.2, 500000.0]
         for altitude_accuracy in invalid_altitude_accuracies:
             obs, cell = self.get_sample(
                 altitude_accuracy=altitude_accuracy)
@@ -325,9 +325,9 @@ class TestWifi(ValidationTest):
 
     def get_sample(self, **kwargs):
         obs = {
-            'accuracy': 120,
-            'altitude': 220,
-            'altitude_accuracy': 10,
+            'accuracy': 120.6,
+            'altitude': 220.1,
+            'altitude_accuracy': 10.0,
             'lat': 49.25,
             'lon': 123.10,
             'radio': '',

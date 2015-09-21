@@ -14,7 +14,7 @@ class LocateV2View(BasePositionView):
                 'lat': result['lat'],
                 'lng': result['lon'],
             },
-            'accuracy': float(result['accuracy']),
+            'accuracy': result['accuracy'],
         }
 
         if result['fallback']:

@@ -67,9 +67,9 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
             'lat': cell.lat,
             'lon': cell.lon,
             'time': today.strftime('%Y-%m-%d'),
-            'accuracy': 10,
-            'altitude': 123,
-            'altitude_accuracy': 7,
+            'accuracy': 10.6,
+            'altitude': 123.1,
+            'altitude_accuracy': 7.0,
             'radio': cell.radio.name,
             'cell': [{
                 'radio': 'umts', 'mcc': cell.mcc,
@@ -87,9 +87,9 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         position = report['position']
         self.assertEqual(position['latitude'], cell.lat)
         self.assertEqual(position['longitude'], cell.lon)
-        self.assertEqual(position['accuracy'], 10)
-        self.assertEqual(position['altitude'], 123)
-        self.assertEqual(position['altitudeAccuracy'], 7)
+        self.assertEqual(position['accuracy'], 10.6)
+        self.assertEqual(position['altitude'], 123.1)
+        self.assertEqual(position['altitudeAccuracy'], 7.0)
         cells = report['cellTowers']
         self.assertEqual(cells[0]['radioType'], 'wcdma')
         self.assertEqual(cells[0]['mobileCountryCode'], cell.mcc)
@@ -102,7 +102,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self._post([{
             'lat': wifi.lat,
             'lon': wifi.lon,
-            'accuracy': 17,
+            'accuracy': 17.1,
             'wifi': [{'key': wifi.mac.upper(),
                       'frequency': 2437,
                       'signal': -70,
@@ -117,7 +117,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         position = report['position']
         self.assertEqual(position['latitude'], wifi.lat)
         self.assertEqual(position['longitude'], wifi.lon)
-        self.assertEqual(position['accuracy'], 17)
+        self.assertEqual(position['accuracy'], 17.1)
         self.assertFalse('altitude' in position)
         self.assertFalse('altitudeAccuracy' in position)
         wifis = report['wifiAccessPoints']
@@ -154,10 +154,10 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self._post([
             {'lat': wifi.lat,
              'lon': wifi.lon,
-             'accuracy': 17,
+             'accuracy': 17.0,
              'wifi': [{'key': wifi.mac}],
              },
             {'wifi': [{'key': wifi.mac}],
-             'accuracy': 16},
+             'accuracy': 16.0},
         ])
         self._assert_queue_size(2)

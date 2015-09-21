@@ -53,7 +53,7 @@ class BaseExportTest(CeleryTestCase):
             }
             report['position']['latitude'] = lat or pos.lat
             report['position']['longitude'] = pos.lon
-            report['position']['accuracy'] = 17 + i
+            report['position']['accuracy'] = 17.0 + i
 
             blues = WifiShardFactory.build_batch(blue_factor,
                                                  lat=pos.lat, lon=pos.lon)

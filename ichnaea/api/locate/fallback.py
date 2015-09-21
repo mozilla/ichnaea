@@ -65,7 +65,7 @@ class ResultSchema(InternalMappingSchema):
         lat = InternalSchemaNode(BoundedFloat())
         lng = InternalSchemaNode(BoundedFloat(), internal_name='lon')
 
-    accuracy = InternalSchemaNode(colander.Integer())
+    accuracy = InternalSchemaNode(colander.Float())
     fallback = OptionalNode(colander.String(), missing=None)
 
     def deserialize(self, data):

@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #389: Treat accuracy, altitude and altitudeAccuracy as floats.
+
 - Speed up `/stats/regions` by using cell area table.
 
 - Use cell area ids in update_cellarea task queue.

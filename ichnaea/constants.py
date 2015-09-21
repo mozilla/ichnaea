@@ -25,18 +25,18 @@ MIN_LON = -180.0  #: Minimum unrestricted longitude in :term:`WSG84`.
 # :class:`~ichnaea.api.locate.constants.DataAccuracy`
 # and adjustments in one need to be reflected in the other.
 
-WIFI_MIN_ACCURACY = 100  #: Minimum accuracy returned for Wifi queries.
-CELL_MIN_ACCURACY = 5000  #: Minimum accuracy returned for cell queries.
-LAC_MIN_ACCURACY = 20000  #: Minimum accuracy returned for cell area queries.
+WIFI_MIN_ACCURACY = 100.0  #: Minimum accuracy returned for Wifi queries.
+CELL_MIN_ACCURACY = 5000.0  #: Minimum accuracy returned for cell queries.
+LAC_MIN_ACCURACY = 20000.0  #: Minimum accuracy returned for cell area queries.
 
-GEOIP_CITY_ACCURACY = 50000
+GEOIP_CITY_ACCURACY = 50000.0
 """
 Accuracy returned for GeoIP city based queries.
 
 50km is pure guesswork but should cover most cities.
 """
 
-GEOIP_COUNTRY_ACCURACY = 5000000
+GEOIP_COUNTRY_ACCURACY = 5000000.0
 """
 Usually a per-country accuracy is calculated. This is the worst case
 accuracy returned for GeoIP country based queries, based on data

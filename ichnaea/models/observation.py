@@ -51,19 +51,19 @@ class ValidReportSchema(colander.MappingSchema, ValidatorNode):
             constants.MIN_LON, constants.MAX_LON))
     accuracy = DefaultNode(
         colander.Float(), missing=None, validator=colander.Range(
-            0, constants.MAX_ACCURACY))
+            0.0, constants.MAX_ACCURACY))
     altitude = DefaultNode(
         colander.Float(), missing=None, validator=colander.Range(
             constants.MIN_ALTITUDE, constants.MAX_ALTITUDE))
     altitude_accuracy = DefaultNode(
         colander.Float(), missing=None, validator=colander.Range(
-            0, constants.MAX_ALTITUDE_ACCURACY))
+            0.0, constants.MAX_ALTITUDE_ACCURACY))
     heading = DefaultNode(
         colander.Float(), missing=None, validator=colander.Range(
-            0, constants.MAX_HEADING))
+            0.0, constants.MAX_HEADING))
     speed = DefaultNode(
         colander.Float(), missing=None, validator=colander.Range(
-            0, constants.MAX_SPEED))
+            0.0, constants.MAX_SPEED))
 
     def validator(self, node, cstruct):
         super(ValidReportSchema, self).validator(node, cstruct)
@@ -165,7 +165,7 @@ class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
         in_country = False
         for code in mobile_codes.mcc(str(cstruct['mcc'])):
             in_country = in_country or geocalc.country_matches_location(
-                cstruct['lat'], cstruct['lon'], code.alpha2, 1)
+                cstruct['lat'], cstruct['lon'], code.alpha2, 1.0)
 
         if not in_country:
             raise colander.Invalid(node, (

@@ -587,7 +587,7 @@ class CommonPositionTest(BaseLocateTest):
                     'lat': 1.0,
                     'lng': 1.0,
                 },
-                'accuracy': 100,
+                'accuracy': 100.0,
             }
             mock.register_uri(
                 'POST', requests_mock.ANY, json=response_result)

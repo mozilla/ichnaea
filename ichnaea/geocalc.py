@@ -33,7 +33,7 @@ def _fill_bbox_cache():
         cached.append(Subunit(bbox=country.bbox,
                               alpha2=iso2.upper(),
                               alpha3=iso3.upper(),
-                              radius=int(radius)))
+                              radius=radius))
     # sort by largest radius first
     return list(sorted(cached, key=attrgetter('radius'), reverse=True))
 
@@ -106,7 +106,7 @@ def country_for_location(lat, lon):
     return None
 
 
-def country_matches_location(lat, lon, country_code, margin=0):
+def country_matches_location(lat, lon, country_code, margin=0.0):
     """
     Return whether or not a given (lat, lon) pair is inside one of the
     country subunits associated with a given alpha2 country code.

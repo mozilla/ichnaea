@@ -158,7 +158,7 @@ A successful response will be:
         "status": "ok",
         "lat": -22.7539192,
         "lon": -43.4371081,
-        "accuracy": 100
+        "accuracy": 100.0
     }
 
 The latitude and longitude are numbers, with seven decimal places of
@@ -173,7 +173,7 @@ Should the response be based on a GeoIP estimate:
         "status": "ok",
         "lat": 51.0,
         "lon": -0.1,
-        "accuracy": 600000,
+        "accuracy": 600000.0,
         "fallback": "ipf"
     }
 

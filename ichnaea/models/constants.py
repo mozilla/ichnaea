@@ -12,9 +12,9 @@ from ichnaea.constants import MAX_LAT, MIN_LAT, MAX_LON, MIN_LON  # NOQA
 # Symbolic constant used in specs passed to normalization functions.
 REQUIRED = object()
 
-MAX_ACCURACY = 1000000  #: Accuracy is arbitrarily bounded to (0, 1000km).
-MIN_ALTITUDE = -10911  #: Challenger Deep, Mariana Trench.
-MAX_ALTITUDE = 100000  #: Karman Line, edge of space.
+MAX_ACCURACY = 1000000.0  #: Accuracy is arbitrarily bounded to (0, 1000km).
+MIN_ALTITUDE = -10911.0  #: Challenger Deep, Mariana Trench.
+MAX_ALTITUDE = 100000.0  #: Karman Line, edge of space.
 #: Combination of max/min altitude.
 MAX_ALTITUDE_ACCURACY = abs(MAX_ALTITUDE - MIN_ALTITUDE)
 
