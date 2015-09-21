@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #372: Add geocoding / search control to map.
+
 - Support the new `considerIp` field in the geolocate API.
 
 - #389: Treat accuracy, altitude and altitudeAccuracy as floats.

@@ -49,6 +49,9 @@ $(document).ready(function() {
         }
     }).addTo(map);
 
+    // add geocoding control
+    L.mapbox.geocoderControl('mapbox.places').addTo(map);
+
     // add tile layer
     var tiles = $('#map').data('tiles');
     L.tileLayer(tiles, {
