@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Support the new `considerIp` field in the geolocate API.
+
 - #389: Treat accuracy, altitude and altitudeAccuracy as floats.
 
 - Speed up `/stats/regions` by using cell area table.

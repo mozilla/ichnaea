@@ -68,6 +68,7 @@ class WifiAccessPointsSchema(InternalSequenceSchema):
 class LocateV2Schema(BaseLocateSchema):
 
     carrier = InternalSchemaNode(colander.String(), missing=None)
+    considerIp = InternalSchemaNode(colander.Boolean(), missing=True)
     homeMobileCountryCode = InternalSchemaNode(
         colander.Integer(), missing=None)
     homeMobileNetworkCode = InternalSchemaNode(
@@ -79,5 +80,16 @@ class LocateV2Schema(BaseLocateSchema):
     cellTowers = CellTowersSchema(missing=(), internal_name='cell')
     wifiAccessPoints = WifiAccessPointsSchema(missing=(), internal_name='wifi')
     fallbacks = FallbackSchema(missing=None)
+
+    def __init__(self, *args, **kw):
+        super(LocateV2Schema, self).__init__(*args, **kw)
+        self.fallback_defaults = self.get('fallbacks').deserialize({})
+
+    def deserialize(self, data):
+        data = super(LocateV2Schema, self).deserialize(data)
+        if data['fallbacks'] is None:
+            data['fallbacks'] = dict(self.fallback_defaults)
+            data['fallbacks']['ipf'] = data['considerIp']
+        return data
 
 LOCATE_V2_SCHEMA = LocateV2Schema()

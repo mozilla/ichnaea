@@ -19,16 +19,46 @@ Geolocate requests are submitted using a POST request to the URL::
 
 This implements almost the same interface as the `Google Maps Geolocation
 API <https://developers.google.com/maps/documentation/business/geolocation/>`_
-endpoint, hence referred to as `GLS` or Google Location Service API.
+endpoint, hence referred to as `GLS` or Google Location Service API. Our
+service implements all of the standard GLS API with a couple of additions.
 
-Our service implements all of the standard GLS API with a couple of additions.
+Geolocate requests are submitted using a POST request with a JSON body.
 
-Geolocate requests are submitted using a POST request with a JSON body:
+A minimal example using only WiFi networks:
+
+.. code-block:: javascript
+
+    {
+        "wifiAccessPoints": [{
+            "macAddress": "01:23:45:67:89:ab",
+            "signalStrength": -51
+        }, {
+            "macAddress": "01:23:45:67:89:cd"
+        }]
+    }
+
+A minimal example using a cell network:
+
+.. code-block:: javascript
+
+    {
+        "cellTowers": [{
+            "radioType": "wcdma",
+            "mobileCountryCode": 208,
+            "mobileNetworkCode": 1,
+            "locationAreaCode": 2,
+            "cellId": 1234567,
+            "signalStrength": -60
+        }]
+    }
+
+A complete example including all possible fields:
 
 .. code-block:: javascript
 
     {
         "carrier": "Telecom",
+        "considerIp": true,
         "homeMobileCountryCode": 208,
         "homeMobileNetworkCode": 1,
         "cellTowers": [{
@@ -86,6 +116,9 @@ Global Fields
 carrier
     The clear text name of the cell carrier / operator.
 
+considerIp
+    Should the clients IP address be used to locate it, defaults to true.
+
 homeMobileCountryCode
     The mobile country code stored on the SIM card.
 
@@ -138,13 +171,14 @@ WiFi Access Point Fields
 
 .. note:: Hidden WiFi networks and those whose SSID (clear text name)
           ends with the string `_nomap` must NOT be used for privacy
-          reasons.
+          reasons. It is the responsibility of the client code to filter
+          these out.
 
 macAddress
     The BSSID of the WiFi network. 
 
 age
-    The number of milliseconds since this networks was last detected.
+    The number of milliseconds since this network was last detected.
 
 channel
     The WiFi channel, often 1 - 13 for networks in the 2.4GHz range.
@@ -152,7 +186,7 @@ channel
 frequency
     The frequency in MHz of the channel over which the client is
     communicating with the access point. This is an addition to the
-    GLS API.
+    GLS API and can be used instead of the channel field.
 
 signalStrength
     The received signal strength (RSSI) in dBm.
@@ -206,6 +240,10 @@ As mentioned in the specific fields, our API has a couple of extensions.
 
 * If either the GeoIP or location area fallbacks where used to determine
   the response, an additional fallback key will be returned in the response.
+
+* The considerIp field has the same purpose as the fallbacks/ipf field.
+  It was introduced into the GLS API later on and we continue to support
+  both, with the fallbacks section taking precedence.
 
 Response
 --------

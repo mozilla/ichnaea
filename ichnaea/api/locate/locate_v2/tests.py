@@ -27,10 +27,21 @@ class TestSchema(TestCase):
         self.assertEqual(data, {
             'carrier': None,
             'cell': (),
-            'fallbacks': None,
+            'considerIp': True,
+            'fallbacks': {'ipf': True, 'lacf': True},
             'homeMobileCountryCode': None,
             'homeMobileNetworkCode': None,
             'wifi': ()})
+
+    def test_consider_ip(self):
+        data = self.schema.deserialize({'considerIp': False})
+        self.assertEqual(data['fallbacks']['ipf'], False)
+        data = self.schema.deserialize({'considerIp': 'false'})
+        self.assertEqual(data['fallbacks']['ipf'], False)
+        data = self.schema.deserialize({'considerIp': 'true'})
+        self.assertEqual(data['fallbacks']['ipf'], True)
+        data = self.schema.deserialize({'considerIp': False, 'fallbacks': {}})
+        self.assertEqual(data['fallbacks']['ipf'], True)
 
     def test_invalid_radio_field(self):
         with self.assertRaises(colander.Invalid):
