@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add a finer grained country border file in GeoJSON format.
+
 - Shard update_wifi queue/task by the underlying table shard id.
 
 - Update datatables JS library and fix default column ordering.

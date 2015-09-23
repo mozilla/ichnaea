@@ -243,6 +243,9 @@ $(BIN)/sphinx-build:
 docs: $(BIN)/sphinx-build
 	cd docs; SPHINXBUILD=$(SPHINXBUILD) make html
 
+country_json:
+	$(PYTHON) ichnaea/scripts/country.py
+
 pypi_release:
 	rm -rf $(HERE)/dist
 	$(PYTHON) setup.py egg_info -RDb '' sdist --formats=zip
