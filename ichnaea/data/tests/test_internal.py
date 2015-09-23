@@ -43,7 +43,8 @@ class TestUploader(BaseExportTest):
 
         schedule_export_reports.delay().get()
         update_cell.delay().get()
-        update_wifi.delay().get()
+        for i in range(16):
+            update_wifi.delay(shard_id='%x' % i).get()
 
         self.check_stats(counter=[
             ('data.export.batch', 1, 1, ['key:internal']),
@@ -51,13 +52,20 @@ class TestUploader(BaseExportTest):
             ('data.report.upload', 1, 3, ['key:test']),
             ('data.report.upload', 1, 6, ['key:e5444-794']),
             ('data.observation.insert', 1, 12, ['type:cell']),
-            ('data.observation.insert', 1, 24, ['type:wifi']),
             ('data.observation.upload', 1, 3, ['type:cell', 'key:test']),
             ('data.observation.upload', 1, 6, ['type:wifi', 'key:test']),
             ('data.observation.upload', 0, ['type:cell', 'key:no_key']),
             ('data.observation.upload', 1, 6, ['type:cell', 'key:e5444-794']),
             ('data.observation.upload', 1, 12, ['type:wifi', 'key:e5444-794']),
         ])
+        # we get a variable number of statsd messages and are only
+        # interested in the sum-total
+        insert_msgs = [msg for msg in self.stats_client.msgs
+                       if (msg.startswith('data.observation.insert') and
+                           'type:wifi' in msg)]
+        self.assertEqual(
+            sum([int(msg.split(':')[1].split('|')[0]) for msg in insert_msgs]),
+            24)
 
     def test_cell(self):
         reports = self.add_reports(cell_factor=1, wifi_factor=0)
@@ -116,7 +124,8 @@ class TestUploader(BaseExportTest):
     def test_wifi(self):
         reports = self.add_reports(cell_factor=0, wifi_factor=1)
         schedule_export_reports.delay().get()
-        update_wifi.delay().get()
+        for i in range(16):
+            update_wifi.delay(shard_id='%x' % i).get()
 
         position = reports[0]['position']
         wifi_data = reports[0]['wifiAccessPoints'][0]
@@ -145,7 +154,8 @@ class TestUploader(BaseExportTest):
         queue.enqueue(items, queue.queue_key())
 
         schedule_export_reports.delay().get()
-        update_wifi.delay().get()
+        for i in range(16):
+            update_wifi.delay(shard_id='%x' % i).get()
 
         shard = WifiShard.shard_model(mac)
         wifis = self.session.query(shard).all()
@@ -155,7 +165,9 @@ class TestUploader(BaseExportTest):
     def test_wifi_invalid(self):
         self.add_reports(cell_factor=0, wifi_factor=1, wifi_key='abcd')
         schedule_export_reports.delay().get()
-        update_wifi.delay().get()
+        for i in range(16):
+            update_wifi.delay(shard_id='%x' % i).get()
+
         self.check_stats(counter=[
             ('data.report.upload', 1, 1, ['key:test']),
             ('data.report.drop', 1, 1, ['reason:malformed', 'key:test']),

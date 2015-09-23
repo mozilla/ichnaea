@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import timedelta
 
 from ichnaea.constants import (
@@ -362,9 +363,12 @@ class TestWifi(StationTest):
     def test_new(self):
         utcnow = util.utcnow()
         obs = WifiObservationFactory.build()
-        self.data_queue.enqueue([obs])
-        self.assertEqual(self.data_queue.size(), 1)
-        update_wifi.delay().get()
+
+        shard_id = WifiShard.shard_id(obs.mac)
+        queue = self.celery_app.data_queues['update_wifi_' + shard_id]
+        queue.enqueue([obs])
+        self.assertEqual(queue.size(), 1)
+        update_wifi.delay(shard_id=shard_id).get()
 
         shard = WifiShard.shard_model(obs.mac)
         wifis = self.session.query(shard).all()
@@ -416,9 +420,16 @@ class TestWifi(StationTest):
             obs_factory(lat=lat2 + 0.002,
                         lon=lon2 + 0.004, key=mac2),
         ])
-        self.data_queue.enqueue(obs)
         self.session.commit()
-        update_wifi.delay().get()
+
+        sharded_obs = defaultdict(list)
+        for ob in obs:
+            sharded_obs[WifiShard.shard_id(ob.mac)].append(ob)
+
+        for shard_id, values in sharded_obs.items():
+            queue = self.celery_app.data_queues['update_wifi_' + shard_id]
+            queue.enqueue(values)
+            update_wifi.delay(shard_id=shard_id).get()
 
         shard = WifiShard.shard_model(mac1)
         found = self.session.query(shard).filter(shard.mac == mac1).one()

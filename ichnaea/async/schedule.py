@@ -87,6 +87,103 @@ CELERYBEAT_SCHEDULE = {
         'options': {'expires': 10},
     },
 
+    'update-wifi-0': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=6),
+        'args': (1000, '0'),
+        'options': {'expires': 10},
+    },
+    'update-wifi-1': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=6),
+        'args': (1000, '1'),
+        'options': {'expires': 10},
+    },
+    'update-wifi-2': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=6),
+        'args': (1000, '2'),
+        'options': {'expires': 10},
+    },
+    'update-wifi-3': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=6),
+        'args': (1000, '3'),
+        'options': {'expires': 10},
+    },
+    'update-wifi-4': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=6),
+        'args': (1000, '4'),
+        'options': {'expires': 10},
+    },
+    'update-wifi-5': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=6),
+        'args': (1000, '5'),
+        'options': {'expires': 10},
+    },
+    'update-wifi-6': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=6),
+        'args': (1000, '6'),
+        'options': {'expires': 10},
+    },
+    'update-wifi-7': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=6),
+        'args': (1000, '7'),
+        'options': {'expires': 10},
+    },
+    'update-wifi-8': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=6),
+        'args': (1000, '8'),
+        'options': {'expires': 10},
+    },
+    'update-wifi-9': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=6),
+        'args': (1000, '9'),
+        'options': {'expires': 10},
+    },
+    'update-wifi-a': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=6),
+        'args': (1000, 'a'),
+        'options': {'expires': 10},
+    },
+    'update-wifi-b': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=6),
+        'args': (1000, 'b'),
+        'options': {'expires': 10},
+    },
+    'update-wifi-c': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=6),
+        'args': (1000, 'c'),
+        'options': {'expires': 10},
+    },
+    'update-wifi-d': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=6),
+        'args': (1000, 'd'),
+        'options': {'expires': 10},
+    },
+    'update-wifi-e': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=6),
+        'args': (1000, 'e'),
+        'options': {'expires': 10},
+    },
+    'update-wifi-f': {
+        'task': 'ichnaea.data.tasks.update_wifi',
+        'schedule': timedelta(seconds=6),
+        'args': (1000, 'f'),
+        'options': {'expires': 10},
+    },
+
     'schedule-update-cellarea': {
         'task': 'ichnaea.data.tasks.scan_areas',
         'schedule': timedelta(seconds=59),

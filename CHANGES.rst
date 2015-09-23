@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Shard update_wifi queue/task by the underlying table shard id.
+
 - Update datatables JS library and fix default column ordering.
 
 - Switch to GENC dataset for region names.

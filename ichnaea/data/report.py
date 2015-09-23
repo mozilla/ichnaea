@@ -28,8 +28,7 @@ class ReportQueue(DataTask):
         self.email = email
         self.ip = ip
         self.nickname = nickname
-        self.cell_queue = self.task.app.data_queues['update_cell']
-        self.wifi_queue = self.task.app.data_queues['update_wifi']
+        self.data_queues = self.task.app.data_queues
 
     def __call__(self, reports):
         userid = self.process_user(self.nickname, self.email)
@@ -139,10 +138,18 @@ class ReportQueue(DataTask):
             # determine scores for stations
             new_station_count[name] += self.new_stations(name, station_keys)
 
-        for name, queue in (('cell', self.cell_queue),
-                            ('wifi', self.wifi_queue)):
-            if observations[name]:
-                queue.enqueue(list(observations[name]), pipe=self.pipe)
+        if observations['cell']:
+            cell_queue = self.data_queues['update_cell']
+            cell_queue.enqueue(list(observations['cell']), pipe=self.pipe)
+
+        if observations['wifi']:
+            sharded_obs = defaultdict(list)
+            for ob in observations['wifi']:
+                shard_id = WifiShard.shard_id(ob.mac)
+                sharded_obs[shard_id].append(ob)
+            for shard_id, values in sharded_obs.items():
+                wifi_queue = self.data_queues['update_wifi_%s' % shard_id]
+                wifi_queue.enqueue(list(values), pipe=self.pipe)
 
         self.process_mapstat(positions)
         self.process_score(userid, positions, new_station_count)
