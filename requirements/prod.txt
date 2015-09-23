@@ -36,7 +36,7 @@ MarkupSafe==0.23
 maxminddb==1.2.0  # optional C extension, version also in Makefile
 mobile-codes==0.7
 ndg-httpsclient==0.4.0
-numpy==1.9.2
+numpy==1.9.3
 ordereddict==1.1 ; python_version < '3.0'
 PasteDeploy==1.5.2
 pyasn1==0.1.8
@@ -46,7 +46,7 @@ pyopenssl==0.15.1
 pyramid==1.5.7
 pyramid-chameleon==0.3
 python-editor==0.4
-pytz==2015.4
+pytz==2015.6
 raven==5.7.2
 redis==2.10.3
 repoze.lru==0.6

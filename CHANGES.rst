@@ -34,7 +34,7 @@ Changes
 
 - Removed migrations before version 1.2.
 
-- Update to latest version of raven.
+- Update to latest versions of numpy, raven and pytz.
 
 1.3 (2015-09-16)
 ================
