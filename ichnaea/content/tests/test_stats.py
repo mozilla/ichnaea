@@ -2,8 +2,7 @@
 from calendar import timegm
 from datetime import date, timedelta
 
-import iso3166
-import mobile_codes
+import genc
 
 from ichnaea.models.content import (
     Score,
@@ -184,15 +183,14 @@ class TestStats(DBTestCase):
         CellAreaFactory(radio=Radio.lte, mcc=262, num_cells=1)
         CellAreaFactory(radio=Radio.gsm, mcc=310, num_cells=2)
         CellAreaFactory(radio=Radio.gsm, mcc=313, num_cells=1)
-        CellAreaFactory(radio=Radio.wcdma, mcc=244, num_cells=1)
-        CellAreaFactory(radio=Radio.lte, mcc=244, num_cells=1)
+        CellAreaFactory(radio=Radio.wcdma, mcc=242, num_cells=1)
+        CellAreaFactory(radio=Radio.lte, mcc=242, num_cells=1)
         CellAreaFactory(radio=Radio.gsm, mcc=466, num_cells=1)
         self.session.flush()
 
         # check the result
-        expected = set(['AX', 'BM', 'DE', 'FI', 'GU', 'PR', 'TW', 'US'])
+        expected = set(['BM', 'BV', 'DE', 'GU', 'NO', 'PR', 'TW', 'US'])
         result = regions(self.session)
-        self.assertEqual(len(result), len(expected))
         self.assertEqual(set([r['code'] for r in result]), expected)
 
         region_results = {}
@@ -223,27 +221,19 @@ class TestStats(DBTestCase):
 
         # These two regions share a mcc, so we report the same data
         # for both of them
-        self.assertEqual(region_results['FI'],
+        self.assertEqual(region_results['NO'],
                          {'gsm': 0, 'lte': 1, 'total': 2,
-                          'wcdma': 1, 'multiple': True, 'order': 'finland'})
-        self.assertEqual(region_results['AX'],
+                          'wcdma': 1, 'multiple': True, 'order': 'norway'})
+        self.assertEqual(region_results['BV'],
                          {'gsm': 0, 'lte': 1, 'total': 2,
-                          'wcdma': 1, 'multiple': True, 'order': 'aland isla'})
+                          'wcdma': 1, 'multiple': True, 'order': 'bouvet isl'})
 
 
-class TestRegions(TestCase):
+class TestTransliterate(TestCase):
 
-    def test_mcc_iso_match(self):
-        iso_alpha2 = set([rec.alpha2 for rec in iso3166._records])
-        mcc_alpha2 = set([rec.alpha2 for rec in mobile_codes._countries()])
-        self.assertEqual(iso_alpha2, mcc_alpha2)
-
-    def test_iso_apolitical_names(self):
-        for record in iso3166._records:
-            self.assertNotEqual(record.apolitical_name, '')
-
-    def test_transliterate(self):
-        for record in iso3166._records:
-            trans = transliterate(record.apolitical_name)
+    def test_ascii(self):
+        for record in genc.REGIONS:
+            self.assertNotEqual(record.name, '')
+            trans = transliterate(record.name)
             non_ascii = [c for c in trans if ord(c) > 127]
-            self.assertEqual(len(non_ascii), 0)
+            self.assertEqual(non_ascii, [])

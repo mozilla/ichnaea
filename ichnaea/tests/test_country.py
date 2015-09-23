@@ -1,9 +1,40 @@
+from ichnaea.constants import ALL_VALID_COUNTRIES
 from ichnaea.country import (
     _radius_cache,
+    countries_for_mcc,
     country_for_location,
+    country_matches_location,
     country_max_radius,
 )
+from ichnaea.models.constants import ALL_VALID_MCCS
 from ichnaea.tests.base import TestCase
+
+
+class TestCountriesForMcc(TestCase):
+
+    def test_no_match(self):
+        self.assertEqual(countries_for_mcc(1), [])
+
+    def test_single(self):
+        countries = countries_for_mcc(262)
+        self.assertEqual(set([c.alpha2 for c in countries]), set(['DE']))
+
+    def test_multiple(self):
+        countries = countries_for_mcc(242)
+        self.assertEqual(set([c.alpha2 for c in countries]),
+                         set(['BV', 'NO']))
+
+    def test_filtered(self):
+        # AX / Aland Islands is not in the GENC list
+        countries = countries_for_mcc(244)
+        self.assertEqual(set([c.alpha2 for c in countries]), set(['FI']))
+
+    def test_all_valid_mcc(self):
+        for mcc in ALL_VALID_MCCS:
+            countries = countries_for_mcc(mcc)
+            self.assertNotEqual(countries, [])
+            codes = set([c.alpha2 for c in countries])
+            self.assertEqual(codes - ALL_VALID_COUNTRIES, set())
 
 
 class TestCountryForLocation(TestCase):
@@ -16,6 +47,21 @@ class TestCountryForLocation(TestCase):
 
     def test_multiple(self):
         self.assertEqual(country_for_location(31.522, 34.455), None)
+
+    def test_filtered(self):
+        self.assertEqual(country_for_location(60.1, 20.0), None)
+
+
+class TestCountryMatchesLocation(TestCase):
+
+    def test_hit(self):
+        self.assertTrue(country_matches_location(51.5142, -0.0931, 'GB'))
+
+    def test_miss(self):
+        self.assertFalse(country_matches_location(0.0, 0.0, 'GB'))
+
+    def test_filtered(self):
+        self.assertFalse(country_matches_location(60.1, 20.0, 'AX'))
 
 
 class TestCountryMaxRadius(TestCase):

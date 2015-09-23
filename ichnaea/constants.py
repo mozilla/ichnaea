@@ -4,6 +4,13 @@ Contains general constants.
 
 from datetime import timedelta
 
+import genc
+
+ALL_VALID_COUNTRIES = frozenset([rec.alpha2 for rec in genc.REGIONS])
+"""
+A set of all ISO 3166 alpha2 region codes present in the GENC dataset.
+"""
+
 DEGREE_DECIMAL_PLACES = 7
 """
 We return position and accuracy values rounded to 7 :term:`decimal degrees`,

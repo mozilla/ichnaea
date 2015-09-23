@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Switch to GENC dataset for region names.
+
 - #372: Add geocoding / search control to map.
 
 - Support the new `considerIp` field in the geolocate API.

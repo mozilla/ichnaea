@@ -1,7 +1,5 @@
 """Implementation of a search source based on our internal data."""
 
-import mobile_codes
-
 from ichnaea.api.locate.cell import CellPositionMixin
 from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.result import ResultList
@@ -10,6 +8,7 @@ from ichnaea.api.locate.source import (
     PositionSource,
 )
 from ichnaea.api.locate.wifi import WifiPositionMixin
+from ichnaea.country import countries_for_mcc
 from ichnaea.geoip import geoip_accuracy
 
 
@@ -27,7 +26,7 @@ class InternalCountrySource(CountrySource):
 
         countries = []
         for code in codes:
-            countries.extend(mobile_codes.mcc(str(code)))
+            countries.extend(countries_for_mcc(code))
 
         for country in countries:
             country_code = country.alpha2

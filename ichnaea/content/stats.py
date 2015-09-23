@@ -3,15 +3,14 @@ from collections import defaultdict
 from datetime import date, timedelta
 from operator import itemgetter
 
-import iso3166
-import mobile_codes
+import genc
 from sqlalchemy import func
 
+from ichnaea.country import countries_for_mcc
 from ichnaea.models import (
     CellArea,
     Radio,
 )
-
 from ichnaea.models.content import (
     Score,
     ScoreKey,
@@ -22,7 +21,7 @@ from ichnaea.models.content import (
 from ichnaea import util
 
 transliterate_mapping = {
-    197: 'A', 229: 'a', 231: 'c', 233: 'e', 244: 'o',
+    231: 'c', 244: 'o', 8217: "'",
 }
 
 
@@ -185,14 +184,14 @@ def regions(session):
 
     regions = {}
     for mcc, item in mccs.items():
-        iso_codes = [rec.alpha2 for rec in mobile_codes.mcc(str(mcc))]
+        iso_codes = [rec.alpha2 for rec in countries_for_mcc(mcc)]
         multiple = bool(len(iso_codes) > 1)
         for alpha2 in iso_codes:
-            name = iso3166.countries_by_alpha2[alpha2].apolitical_name
+            record = genc.region_by_alpha2(alpha2)
             region = {
                 'code': alpha2,
-                'name': name,
-                'order': transliterate(name[:10].lower()),
+                'name': record.name,
+                'order': transliterate(record.name[:10]).lower(),
                 'multiple': multiple,
                 'total': 0,
                 'gsm': 0, 'wcdma': 0, 'lte': 0,

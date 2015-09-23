@@ -6,7 +6,7 @@ Helper functions and classes around GeoIP lookups, based on Maxmind's
 
 import time
 
-import iso3166
+import genc
 from geoip2.database import Reader
 from geoip2.errors import (
     AddressNotFoundError,
@@ -23,7 +23,7 @@ from ichnaea.constants import (
 )
 from ichnaea.country import country_max_radius
 
-VALID_COUNTRIES = frozenset(iso3166.countries_by_alpha2.keys())
+VALID_COUNTRIES = frozenset([region.alpha2 for region in genc.REGIONS])
 
 
 def configure_geoip(filename, mode=MODE_AUTO,

@@ -1,9 +1,11 @@
 import operator
 
 import colander
-import mobile_codes
 
-from ichnaea.country import country_matches_location
+from ichnaea.country import (
+    countries_for_mcc,
+    country_matches_location,
+)
 from ichnaea.models.base import (
     CreationMixin,
     ValidationMixin,
@@ -163,9 +165,9 @@ class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
         super(ValidCellObservationSchema, self).validator(node, cstruct)
 
         in_country = False
-        for code in mobile_codes.mcc(str(cstruct['mcc'])):
+        for region in countries_for_mcc(cstruct['mcc']):
             in_country = in_country or country_matches_location(
-                cstruct['lat'], cstruct['lon'], code.alpha2, 1.0)
+                cstruct['lat'], cstruct['lon'], region.alpha2, 1.0)
 
         if not in_country:
             raise colander.Invalid(node, (
