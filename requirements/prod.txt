@@ -51,6 +51,8 @@ raven==5.7.2
 redis==2.10.3
 repoze.lru==0.6
 requests==2.7.0
+Rtree==0.6.0 ; python_version < '2.7'  # rq.filter: <0.7.0
+Rtree==0.8.2 ; python_version >= '2.7'
 scipy==0.16.0
 setproctitle==1.1.9
 Shapely==1.5.12

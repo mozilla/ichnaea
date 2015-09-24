@@ -38,7 +38,7 @@ Changes
 
 - Removed migrations before version 1.2.
 
-- Update to latest versions of numpy, pytz, raven and Shapely.
+- Update to latest versions of numpy, pytz, raven, rtree and Shapely.
 
 1.3 (2015-09-16)
 ================

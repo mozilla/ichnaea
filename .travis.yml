@@ -9,12 +9,13 @@ cache:
 addons:
   apt:
     packages:
-      - libatlas-dev
-      - libatlas-base-dev
-      - liblapack-dev
       - gfortran
+      - libatlas-base-dev
+      - libatlas-dev
       - libgmp-dev
+      - liblapack-dev
       - libmpfr-dev
+      - libspatialindex-dev
 
 language: python
 python:

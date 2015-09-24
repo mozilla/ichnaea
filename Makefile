@@ -93,7 +93,7 @@ pip:
 
 $(TOXINIDIR)/libmaxminddb/bootstrap:
 	git clone --recursive git://github.com/maxmind/libmaxminddb
-	cd libmaxminddb; git checkout 1.0.4
+	cd libmaxminddb; git checkout 1.1.1
 	cd libmaxminddb; git submodule update --init --recursive
 
 $(TOXINIDIR)/libmaxminddb/Makefile:
