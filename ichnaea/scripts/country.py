@@ -30,7 +30,7 @@ REGION_CODE_MAP = {
     'SOL': 'SO',
 }
 ISLANDS_REGION = [
-    'AU, ''BM', 'BS', 'CA', 'CV', 'ES', 'FJ', 'FM', 'GL', 'GR', 'GU',
+    'AU, ''BM', 'BS', 'CA', 'CV', 'FJ', 'FM', 'GL', 'GR', 'GU',
     'ID', 'IS', 'JA', 'KI', 'MP', 'NC', 'NZ', 'PF, ''PH', 'SB',
     'TC', 'TO', 'TR', 'VU', 'WS',
 ]
@@ -58,7 +58,7 @@ def simplify(features):
             buf = 0.8
         else:
             buf = 0.2
-        factor = min(shape.area / 100, 0.1)
+        factor = min(shape.area / 100, 0.03)
         regions[code] = shape.buffer(buf).buffer(-buf).simplify(factor)
 
     return regions
