@@ -1,6 +1,7 @@
 import base64
 
 import numpy
+from sqlalchemy.orm import load_only
 
 from ichnaea.data.base import DataTask
 from ichnaea.geocalc import (
@@ -21,8 +22,10 @@ from ichnaea import util
 
 class CellAreaUpdater(DataTask):
 
-    cell_model = Cell
     area_model = CellArea
+    cell_model = Cell
+    cell_load_fields = (
+        'lat', 'lon', 'range', 'max_lat', 'max_lon', 'min_lat', 'min_lon')
 
     def __init__(self, task, session):
         DataTask.__init__(self, task, session)
@@ -69,6 +72,7 @@ class CellAreaUpdater(DataTask):
         radio, mcc, mnc, lac = decode_cellarea(areaid)
         # Select all cells in this area and derive a bounding box for them
         cells = (self.session.query(self.cell_model)
+                             .options(load_only(*self.cell_load_fields))
                              .filter(self.cell_model.radio == radio)
                              .filter(self.cell_model.mcc == mcc)
                              .filter(self.cell_model.mnc == mnc)
@@ -145,5 +149,6 @@ class CellAreaUpdater(DataTask):
 
 class OCIDCellAreaUpdater(CellAreaUpdater):
 
-    cell_model = OCIDCell
     area_model = OCIDCellArea
+    cell_model = OCIDCell
+    cell_load_fields = ('lat', 'lon', 'range')

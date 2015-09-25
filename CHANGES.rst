@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Speed up update_area task by only loading required cell columns.
+
 - Validate all incoming reports against the region areas.
 
 - Add a precision reverse geocoder for region lookups.
