@@ -534,7 +534,7 @@ class TestWifi(StationTest):
         obs = []
         obs_factory = WifiObservationFactory
         moving = set()
-        wifis = WifiShardFactory.create_batch(8)
+        wifis = WifiShardFactory.create_batch(7)
         wifis.append(WifiShardFactory.build())
         # a wifi without an entry and disagreeing observations
         wifi = wifis[-1]
@@ -578,19 +578,8 @@ class TestWifi(StationTest):
                         lon=wifi.lon, key=wifi.mac),
         ])
         moving.add(wifi.mac)
-        # another wifi with a prior known position (and negative lat)
-        wifi = wifis[3]
-        wifi.samples = 1
-        wifi.lat *= -1.0
-        obs.extend([
-            obs_factory(lat=wifi.lat - 0.1,
-                        lon=wifi.lon, key=wifi.mac),
-            obs_factory(lat=wifi.lat - 0.16,
-                        lon=wifi.lon, key=wifi.mac),
-        ])
-        moving.add(wifi.mac)
         # an already blocked wifi
-        wifi = wifis[4]
+        wifi = wifis[3]
         wifi.block_last = now.date()
         wifi.block_count = 1
         obs.extend([
@@ -601,7 +590,7 @@ class TestWifi(StationTest):
         ])
         moving.add(wifi.mac)
         # a permanently blocked wifi
-        wifi = wifis[5]
+        wifi = wifis[4]
         wifi_lat, wifi_lon = (wifi.lat, wifi.lon)
         wifi.block_last = now.date() - 2 * TEMPORARY_BLOCKLIST_DURATION
         wifi.block_count = PERMANENT_BLOCKLIST_THRESHOLD
@@ -612,7 +601,7 @@ class TestWifi(StationTest):
         ])
         moving.add(wifi.mac)
         # a no longer blocked wifi
-        wifi = wifis[6]
+        wifi = wifis[5]
         wifi_lat, wifi_lon = (wifi.lat, wifi.lon)
         wifi.block_last = now.date() - 2 * TEMPORARY_BLOCKLIST_DURATION
         wifi.block_count = 2
@@ -622,7 +611,7 @@ class TestWifi(StationTest):
             obs_factory(lat=wifi_lat, lon=wifi_lon, key=wifi.mac),
         ])
         # a no longer blocked wifi with disagreeing observations
-        wifi = wifis[7]
+        wifi = wifis[6]
         wifi_lat, wifi_lon = (wifi.lat, wifi.lon)
         wifi.block_last = now.date() - 2 * TEMPORARY_BLOCKLIST_DURATION
         wifi.block_count = 2
@@ -651,33 +640,31 @@ class TestWifi(StationTest):
         self.check_stats(counter=[
             ('data.observation.drop', 1, 3,
                 ['type:wifi', 'reason:blocklisted']),
-            ('data.station.blocklist', 1, 5,
+            ('data.station.blocklist', 1, 4,
                 ['type:wifi', 'action:add', 'reason:moving']),
         ])
 
     def test_country(self):
         obs = []
         obs_factory = WifiObservationFactory
-        wifi1 = WifiShardFactory(lat=55.807, lon=1.7465, country='GB')
-        obs.append(obs_factory(
-            key=wifi1.mac,
-            lat=wifi1.lat,
-            lon=wifi1.lon + 0.001,
+        wifi1 = WifiShardFactory(lat=46.2884, lon=6.77, country='FR')
+        obs.extend(obs_factory.create_batch(
+            5, key=wifi1.mac, lat=wifi1.lat, lon=wifi1.lon + 0.05,
         ))
-        wifi2 = WifiShardFactory(lat=50.022, lon=1.7465, country='GB')
-        obs.append(obs_factory(
-            key=wifi2.mac,
-            lat=wifi2.lat,
-            lon=wifi2.lon + 0.001,
+        wifi2 = WifiShardFactory(lat=46.2884, lon=7.4, country='FR')
+        obs.extend(obs_factory.create_batch(
+            5, key=wifi2.mac, lat=wifi2.lat, lon=wifi2.lon + 0.05,
         ))
 
         self.data_queue.enqueue(obs)
         self.session.commit()
         update_wifi.delay().get()
 
+        # position is really not in FR anymore, but still close enough
+        # to not re-trigger region determination
         wifi1 = self.session.query(wifi1.__class__).get(wifi1.mac)
         self.assertEqual(wifi1.block_count, 0)
-        self.assertEqual(wifi1.country, None)
+        self.assertEqual(wifi1.country, 'FR')
         wifi2 = self.session.query(wifi2.__class__).get(wifi2.mac)
         self.assertEqual(wifi1.block_count, 0)
-        self.assertEqual(wifi2.country, 'FR')
+        self.assertEqual(wifi2.country, 'CH')

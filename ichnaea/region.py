@@ -115,6 +115,25 @@ class Geocoder(object):
             distances[self._shapes[code].boundary.distance(point)] = code
         return distances[max(distances.keys())]
 
+    def any_region(self, lat, lon):
+        """
+        Is the provided lat/lon position inside any of the regions?
+
+        Returns False if the position is outside of all known regions.
+        """
+        if self._tree is None:  # pragma: no cover
+            self._fill_caches()
+
+        point = geometry.Point(lon, lat)
+        codes = [self._tree_ids[id_] for id_ in
+                 self._tree.intersection(point.bounds)]
+
+        for code in codes:
+            if self._buffered_shapes[code].contains(point):
+                return True
+
+        return False
+
     def in_region(self, lat, lon, code):
         """
         Is the provided lat/lon position inside the region associated

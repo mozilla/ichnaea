@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Validate all incoming reports against the region areas.
+
 - Add a precision reverse geocoder for region lookups.
 
 - Add a finer grained region border file in GeoJSON format.

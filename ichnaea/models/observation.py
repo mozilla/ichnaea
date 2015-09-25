@@ -74,6 +74,10 @@ class ValidReportSchema(colander.MappingSchema, ValidatorNode):
                     cstruct[field] is colander.null):  # pragma: no cover
                 raise colander.Invalid(node, 'Report %s is required.' % field)
 
+        if not GEOCODER.any_region(cstruct['lat'], cstruct['lon']):
+            raise colander.Invalid(node, (
+                'Lat/lon must be inside a region.'))
+
 
 class Report(HashKey, CreationMixin, ValidationMixin):
 

@@ -54,6 +54,11 @@ class TestCellObservation(DBTestCase):
 
 class TestWifiObservation(DBTestCase):
 
+    def test_invalid(self):
+        key = '3680873e9b83'
+        obs = WifiObservation.create(key=key, lat=0.0, lon=0.0)
+        self.assertTrue(obs is None, obs)
+
     def test_fields(self):
         key = '3680873e9b83'
         obs = WifiObservation.create(
