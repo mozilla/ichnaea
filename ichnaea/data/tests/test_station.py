@@ -132,7 +132,7 @@ class TestCell(StationTest):
         cell_key = cell.hashkey().__dict__
         cell.total_measures = 1
         obs.extend([
-            obs_factory(lat=cell.lat + 4.0,
+            obs_factory(lat=cell.lat + 3.0,
                         lon=cell.lon, **cell_key),
             obs_factory(lat=cell.lat - 0.1,
                         lon=cell.lon, **cell_key),

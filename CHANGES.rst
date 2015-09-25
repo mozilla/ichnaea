@@ -16,7 +16,9 @@ Migrations
 Changes
 ~~~~~~~
 
-- Add a finer grained country border file in GeoJSON format.
+- Add a precision reverse geocoder for region lookups.
+
+- Add a finer grained region border file in GeoJSON format.
 
 - Shard update_wifi queue/task by the underlying table shard id.
 

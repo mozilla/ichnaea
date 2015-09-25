@@ -6,10 +6,6 @@ from ichnaea.constants import (
     PERMANENT_BLOCKLIST_THRESHOLD,
     TEMPORARY_BLOCKLIST_DURATION,
 )
-from ichnaea.country import (
-    country_for_location,
-    country_matches_location,
-)
 from ichnaea.data.base import DataTask
 from ichnaea.geocalc import (
     centroid,
@@ -24,6 +20,7 @@ from ichnaea.models import (
     StatKey,
     WifiShard,
 )
+from ichnaea.region import GEOCODER
 from ichnaea import util
 
 
@@ -454,7 +451,7 @@ class WifiUpdater(StationUpdater):
                 'min_lat': float(obs_min_lat),
                 'max_lon': float(obs_max_lon),
                 'min_lon': float(obs_min_lon),
-                'country': country_for_location(obs_new_lat, obs_new_lon),
+                'country': GEOCODER.region(obs_new_lat, obs_new_lon),
                 'radius': radius,
                 'samples': obs_length,
                 'source': None,
@@ -514,12 +511,12 @@ class WifiUpdater(StationUpdater):
                 radius = circle_radius(
                     new_lat, new_lon, max_lat, max_lon, min_lat, min_lon)
                 country = shard_station.country
-                if (country and not country_matches_location(
+                if (country and not GEOCODER.in_region(
                         new_lat, new_lon, country)):
                     # reset country if it no longer matches
                     country = None
                 if not country:
-                    country = country_for_location(new_lat, new_lon)
+                    country = GEOCODER.region(new_lat, new_lon)
                 values.update({
                     'lat': new_lat,
                     'lon': new_lon,

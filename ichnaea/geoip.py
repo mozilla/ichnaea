@@ -21,7 +21,7 @@ from ichnaea.constants import (
     GEOIP_CITY_ACCURACY,
     GEOIP_COUNTRY_ACCURACY,
 )
-from ichnaea.country import country_max_radius
+from ichnaea.region import region_max_radius
 
 VALID_COUNTRIES = frozenset([region.alpha2 for region in genc.REGIONS])
 
@@ -70,12 +70,12 @@ def configure_geoip(filename, mode=MODE_AUTO,
     return db
 
 
-def geoip_accuracy(country_code, city=False):
+def geoip_accuracy(code, city=False):
     """
     Return the best accuracy guess for the given GeoIP record.
 
-    :param country_code: A two-letter ISO country code.
-    :type country_code: str
+    :param code: A two-letter ISO country code.
+    :type code: str
 
     :param city: Do we have a city record or a country record.
     :type city: bool
@@ -84,8 +84,8 @@ def geoip_accuracy(country_code, city=False):
     :rtype: int
     """
     accuracy = None
-    if country_code:
-        accuracy = country_max_radius(country_code)
+    if code:
+        accuracy = region_max_radius(code)
     if accuracy is None:
         # No country code or no successful radius lookup
         accuracy = GEOIP_COUNTRY_ACCURACY

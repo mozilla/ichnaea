@@ -2,10 +2,6 @@ import operator
 
 import colander
 
-from ichnaea.country import (
-    countries_for_mcc,
-    country_matches_location,
-)
 from ichnaea.models.base import (
     CreationMixin,
     ValidationMixin,
@@ -29,6 +25,10 @@ from ichnaea.models.schema import (
 )
 from ichnaea.models.wifi import (
     ValidWifiSignalSchema,
+)
+from ichnaea.region import (
+    regions_for_mcc,
+    GEOCODER,
 )
 
 
@@ -164,15 +164,14 @@ class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
     def validator(self, node, cstruct):
         super(ValidCellObservationSchema, self).validator(node, cstruct)
 
-        in_country = False
-        for region in countries_for_mcc(cstruct['mcc']):
-            in_country = in_country or country_matches_location(
-                cstruct['lat'], cstruct['lon'], region.alpha2, 1.0)
+        in_region = False
+        for region in regions_for_mcc(cstruct['mcc']):
+            in_region = in_region or GEOCODER.in_region(
+                cstruct['lat'], cstruct['lon'], region.alpha2)
 
-        if not in_country:
+        if not in_region:
             raise colander.Invalid(node, (
-                'Lat/lon must be inside one of '
-                'the bounding boxes for the MCC'))
+                'Lat/lon must be inside one of the regions for the MCC'))
 
 
 class CellObservation(CellReport, Report):

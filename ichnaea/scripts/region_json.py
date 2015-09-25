@@ -12,17 +12,7 @@ REGION_CODES = set([reg.alpha2 for reg in genc.REGIONS])
 REGION_CODES = REGION_CODES - set(['AQ'])
 REGION_CODE_MAP = {
     'AX': 'FI',
-    'BM': 'GB',
-    'BV': 'NO',
-    'GG': 'GB',
-    'GU': 'US',
-    'IM': 'GB',
-    'JE': 'GB',
-    'NF': 'AU',
-    'PR': 'US',
     'PS': 'XW',
-    'TC': 'GB',
-    'YT': 'FR',
     'ATC': 'AU',
     'CYN': 'CY',
     'IOA': 'AU',
@@ -94,7 +84,7 @@ def main():
     data = json.loads(jsondata)
     simplified = simplify(data['features'])
     output = to_geojson(simplified)
-    with open('ichnaea/countries.geojson', 'w') as fd:
+    with open('ichnaea/regions.geojson', 'w') as fd:
         fd.write(output)
 
 if __name__ == '__main__':

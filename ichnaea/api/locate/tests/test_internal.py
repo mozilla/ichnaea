@@ -1,6 +1,6 @@
 from ichnaea.api.locate.internal import InternalCountrySource
 from ichnaea.api.locate.tests.base import BaseSourceTest
-from ichnaea.country import countries_for_mcc
+from ichnaea.region import regions_for_mcc
 from ichnaea.tests.factories import (
     CellFactory,
     WifiShardFactory,
@@ -12,8 +12,8 @@ class TestCountrySource(BaseSourceTest):
     TestSource = InternalCountrySource
     api_type = 'country'
 
-    def test_country_from_mcc(self):
-        country = countries_for_mcc(235)[0]
+    def test_from_mcc(self):
+        country = regions_for_mcc(235)[0]
         cell = CellFactory.build(mcc=235)
         query = self.model_query(cells=[cell])
         results = self.source.search(query)
@@ -25,7 +25,7 @@ class TestCountrySource(BaseSourceTest):
         ])
 
     def test_ambiguous_mcc(self):
-        countries = countries_for_mcc(234)
+        countries = regions_for_mcc(234)
         cell = CellFactory.build(mcc=234)
         query = self.model_query(cells=[cell])
         results = self.source.search(query)

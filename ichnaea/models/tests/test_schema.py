@@ -126,7 +126,7 @@ class TestCell(ValidationTest):
                 self.check_normalized_cell(
                     obs, cell, dict(lat=lat, lon=lon, mcc=mcc, mnc=mnc))
 
-    def test_outside_of_country_lat_lon(self):
+    def test_outside_of_region_lat_lon(self):
         obs, cell = self.get_sample(
             mcc=USA_MCC, lat=PARIS_LAT, lon=PARIS_LON)
         self.check_normalized_cell(obs, cell, None)
