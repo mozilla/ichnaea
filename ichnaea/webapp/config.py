@@ -14,7 +14,6 @@ from ichnaea.cache import configure_redis
 from ichnaea.content.views import configure_content
 from ichnaea.db import (
     configure_db,
-    db_rw_session,
     db_ro_session,
 )
 from ichnaea import floatjson
@@ -108,7 +107,6 @@ def main(app_config, ping_connections=False,
 
     config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)
     config.add_tween('ichnaea.log.log_tween_factory', under=EXCVIEW)
-    config.add_request_method(db_rw_session, property=True)
     config.add_request_method(db_ro_session, property=True)
 
     # Add special JSON renderer with nicer float representation
