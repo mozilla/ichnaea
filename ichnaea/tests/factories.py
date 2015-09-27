@@ -128,7 +128,7 @@ class CellAreaPositionFactory(CellAreaKeyFactory):
 
     lat = GB_LAT
     lon = GB_LON
-    range = LAC_MIN_ACCURACY
+    range = LAC_MIN_ACCURACY / 2.0
 
 
 class CellKeyFactory(CellAreaKeyFactory):
@@ -139,7 +139,7 @@ class CellKeyFactory(CellAreaKeyFactory):
 class CellPositionFactory(CellKeyFactory, CellAreaPositionFactory):
 
     psc = fuzzy.FuzzyInteger(1, 500)
-    range = CELL_MIN_ACCURACY
+    range = CELL_MIN_ACCURACY / 2.0
 
 
 class CellFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
@@ -183,7 +183,7 @@ class WifiShardFactory(BaseSQLFactory):
     mac = FuzzyWifiMac()
     lat = GB_LAT
     lon = GB_LON
-    radius = WIFI_MIN_ACCURACY
+    radius = WIFI_MIN_ACCURACY / 2.0
     samples = 1
 
     class Meta:
@@ -195,7 +195,7 @@ class WifiObservationFactory(BaseMemoryFactory):
     key = FuzzyWifiKey()
     lat = GB_LAT
     lon = GB_LON
-    range = WIFI_MIN_ACCURACY
+    range = WIFI_MIN_ACCURACY / 2.0
 
     class Meta:
         model = WifiObservation.create

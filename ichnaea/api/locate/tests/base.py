@@ -16,8 +16,18 @@ from ichnaea.api.locate.result import (
     Position,
     ResultList,
 )
+from ichnaea.constants import (
+    CELL_MIN_ACCURACY,
+    LAC_MIN_ACCURACY,
+    WIFI_MIN_ACCURACY,
+)
 from ichnaea.models import (
     ApiKey,
+    Cell,
+    CellArea,
+    OCIDCell,
+    OCIDCellArea,
+    WifiShard,
     Radio,
 )
 from ichnaea.tests.base import ConnectionTestCase
@@ -139,10 +149,21 @@ class BaseSourceTest(ConnectionTestCase):
         if type_ is Position:
             check_func = self.assertAlmostEqual
             for model in models:
+                if isinstance(model, (Cell, OCIDCell)):
+                    model_radius = kw.get('accuracy', model.range)
+                    accuracy = max(model_radius, CELL_MIN_ACCURACY)
+                elif isinstance(model, (CellArea, OCIDCellArea)):
+                    model_radius = kw.get('accuracy', model.range)
+                    accuracy = max(model_radius, LAC_MIN_ACCURACY)
+                elif isinstance(model, WifiShard):
+                    model_radius = kw.get('accuracy', model.radius)
+                    accuracy = max(model_radius, WIFI_MIN_ACCURACY)
+                else:
+                    accuracy = kw.get('accuracy', model.range)
                 expected.append({
                     'lat': kw.get('lat', model.lat),
                     'lon': kw.get('lon', model.lon),
-                    'accuracy': kw.get('accuracy', model.range),
+                    'accuracy': accuracy,
                 })
         elif type_ is Country:
             check_func = self.assertEqual
@@ -225,8 +246,18 @@ class BaseLocateTest(object):
             else:
                 model_name = name
                 if name == 'accuracy':
-                    model_name = 'range'
-                expected[name] = getattr(model, model_name)
+                    if isinstance(model, (Cell, OCIDCell)):
+                        model_value = getattr(model, 'range')
+                        model_value = max(model_value, CELL_MIN_ACCURACY)
+                    elif isinstance(model, (CellArea, OCIDCellArea)):
+                        model_value = getattr(model, 'range')
+                        model_value = max(model_value, LAC_MIN_ACCURACY)
+                    elif isinstance(model, WifiShard):
+                        model_value = getattr(model, 'radius')
+                        model_value = max(model_value, WIFI_MIN_ACCURACY)
+                    expected[name] = model_value
+                else:
+                    expected[name] = getattr(model, model_name)
 
         if fallback is not None:
             expected_names = set(expected_names).union(set(['fallback']))

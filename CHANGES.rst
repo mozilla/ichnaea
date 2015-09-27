@@ -18,6 +18,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Improve locate accuracy by taking station circle radius into account.
+
 - Split out OCID cell area updates to their own queue.
 
 - Switch mapstat queue to compact binary queue values.

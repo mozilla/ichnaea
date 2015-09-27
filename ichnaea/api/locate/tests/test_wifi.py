@@ -5,7 +5,6 @@ from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.api.locate.wifi import WifiPositionSource
 from ichnaea.constants import (
     PERMANENT_BLOCKLIST_THRESHOLD,
-    WIFI_MIN_ACCURACY,
 )
 from ichnaea.tests.factories import WifiShardFactory
 from ichnaea import util
@@ -16,17 +15,15 @@ class TestWifi(BaseSourceTest):
     TestSource = WifiPositionSource
 
     def test_wifi(self):
-        wifi = WifiShardFactory(radius=200)
+        wifi = WifiShardFactory(radius=50)
         wifi2 = WifiShardFactory(
-            lat=wifi.lat, lon=wifi.lon + 0.00001, radius=300,
+            lat=wifi.lat, lon=wifi.lon + 0.00001, radius=30,
             block_count=1, block_last=None)
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2])
         result = self.source.search(query)
-        self.check_model_result(
-            result, wifi,
-            lon=wifi.lon + 0.000005, accuracy=WIFI_MIN_ACCURACY)
+        self.check_model_result(result, wifi, lon=wifi.lon + 0.000005)
 
     def test_wifi_no_position(self):
         wifi = WifiShardFactory()

@@ -31,6 +31,7 @@ cpdef tuple aggregate_position(ndarray[double_t, ndim=2] circles,
     """
     cdef ndarray[double_t, ndim=2] points
     cdef double lat, lon, radius
+    cdef double p_dist, p_lat, p_lon, p_radius
 
     if len(circles) == 1:
         lat = circles[0][0]
@@ -42,10 +43,16 @@ cpdef tuple aggregate_position(ndarray[double_t, ndim=2] circles,
     points, _ = numpy.hsplit(circles, [2])
     lat, lon = centroid(points)
 
-    # Bad approximation. This one takes the maximum distance from
-    # the centroid to any of the provided circle centers.
-    # It ignores the radius of those circles.
-    radius = max_distance(lat, lon, points)
+    # Given the centroid of all the circles, calculate the distance
+    # between that point and and all the centers of the provided
+    # circles. Add the radius of each of the circles to the distance,
+    # to account for the area / uncertainty range of those circles.
+
+    radius = 0.0
+    for p_lat, p_lon, p_radius in circles:
+        p_dist = distance(lat, lon, p_lat, p_lon) + p_radius
+        radius = fmax(radius, p_dist)
+
     radius = fmax(radius, minimum_accuracy)
     return (lat, lon, radius)
 

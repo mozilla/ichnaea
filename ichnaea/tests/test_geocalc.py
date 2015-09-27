@@ -23,6 +23,14 @@ class TestAggregatePosition(TestCase):
         self.assertEqual(aggregate_position(circles, 333.0),
                          (1.0, 1.0, 333.0))
 
+    def test_circle_radius(self):
+        circles = numpy.array(
+            [(1.0, 1.0, 100.0), (1.001, 1.001, 100.0)],
+            dtype=numpy.double)
+        lat, lon, radius = aggregate_position(circles, 10.0)
+        self.assertEqual((lat, lon), (1.0005, 1.0005))
+        self.assertAlmostEqual(distance(lat, lon, 1.0, 1.0) + 100.0, radius, 7)
+
 
 class TestBbox(TestCase):
 
