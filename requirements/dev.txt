@@ -1,5 +1,5 @@
 alabaster==0.7.6
-Babel==2.0
+Babel==2.1.1
 beautifulsoup4==4.4.0
 coverage==4.0
 Cython==0.23.2
