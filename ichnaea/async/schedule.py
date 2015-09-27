@@ -62,11 +62,29 @@ CELERYBEAT_SCHEDULE = {
 
     # (less than) one minute
 
+    'schedule-export-reports': {
+        'task': 'ichnaea.data.tasks.schedule_export_reports',
+        'schedule': timedelta(seconds=8),
+        'options': {'expires': 15},
+    },
+
     'update-cell': {
         'task': 'ichnaea.data.tasks.update_cell',
         'schedule': timedelta(seconds=7),
         'args': (1000, ),
         'options': {'expires': 10},
+    },
+    'schedule-update-cellarea': {
+        'task': 'ichnaea.data.tasks.scan_areas',
+        'schedule': timedelta(seconds=9),
+        'args': (100, ),
+        'options': {'expires': 15},
+    },
+    'update-cellarea-ocid': {
+        'task': 'ichnaea.data.tasks.update_cellarea_ocid',
+        'schedule': timedelta(seconds=9),
+        'args': (100, ),
+        'options': {'expires': 15},
     },
     'update-mapstat': {
         'task': 'ichnaea.data.tasks.update_mapstat',
@@ -182,18 +200,6 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(seconds=6),
         'args': (1000, 'f'),
         'options': {'expires': 10},
-    },
-
-    'schedule-update-cellarea': {
-        'task': 'ichnaea.data.tasks.scan_areas',
-        'schedule': timedelta(seconds=59),
-        'args': (500, ),
-        'options': {'expires': 55},
-    },
-    'schedule-export-reports': {
-        'task': 'ichnaea.data.tasks.schedule_export_reports',
-        'schedule': timedelta(seconds=60),
-        'options': {'expires': 57},
     },
 
 }  #:

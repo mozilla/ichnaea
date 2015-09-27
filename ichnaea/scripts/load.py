@@ -3,13 +3,14 @@ import os
 import os.path
 import sys
 
+from ichnaea.async.app import celery_app
+from ichnaea.async.config import configure_data
 from ichnaea.cache import (
     configure_redis,
     redis_pipeline,
 )
 from ichnaea.config import read_config
 from ichnaea.data import ocid
-from ichnaea.data.tasks import update_area
 from ichnaea.db import (
     configure_db,
     db_worker_session,
@@ -17,13 +18,19 @@ from ichnaea.db import (
 from ichnaea.log import configure_logging
 
 
+class FakeTask(object):
+
+    def __init__(self, app):  # pragma: no cover
+        self.app = app
+
+
 def load_file(db, redis_client, datatype, filename):  # pragma: no cover
+    celery_app.data_queues = configure_data(redis_client)
+    task = FakeTask(celery_app)
     with redis_pipeline(redis_client) as pipe:
         with db_worker_session(db) as session:
             ocid.ImportLocal(
-                None, session, pipe,
-                cell_type=datatype,
-                update_area_task=update_area)(filename=filename)
+                task, session, pipe, cell_type=datatype)(filename=filename)
 
 
 def main(argv, _db_rw=None, _redis_client=None):  # pragma: no cover

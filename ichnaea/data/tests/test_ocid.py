@@ -19,7 +19,7 @@ from ichnaea.data.tasks import (
     cell_export_full,
     cell_export_diff,
     cell_import_external,
-    update_area,
+    update_cellarea_ocid,
     update_statcounter,
 )
 from ichnaea.models import (
@@ -49,6 +49,12 @@ def mock_s3():
     with patch.object(boto, 'connect_s3', mock_conn):
         with patch('boto.s3.key.Key', lambda _: mock_key):
             yield mock_key
+
+
+class FakeTask(object):
+
+    def __init__(self, app):
+        self.app = app
 
 
 class TestExport(CeleryTestCase):
@@ -161,11 +167,11 @@ class TestImport(CeleryAppTestCase):
             yield path
 
     def import_csv(self, lo=1, hi=10, time=1408604686):
+        task = FakeTask(self.celery_app)
         with self.get_csv(lo=lo, hi=hi, time=time) as path:
             with redis_pipeline(self.redis_client) as pipe:
-                ImportLocal(
-                    None, self.session, pipe,
-                    update_area_task=update_area)(filename=path)
+                ImportLocal(task, self.session, pipe)(filename=path)
+        update_cellarea_ocid.delay().get()
 
     def test_local_import(self):
         self.import_csv()
@@ -229,8 +235,9 @@ class TestImport(CeleryAppTestCase):
             with open(path, 'rb') as gzip_file:
                 with requests_mock.Mocker() as req_m:
                     req_m.register_uri('GET', re.compile('.*'), body=gzip_file)
-                    cell_import_external()
+                    cell_import_external.delay().get()
 
+        update_cellarea_ocid.delay().get()
         cells = (self.session.query(OCIDCell)
                              .order_by(OCIDCell.modified).all())
         self.assertEqual(len(cells), 9)

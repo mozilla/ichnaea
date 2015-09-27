@@ -152,3 +152,19 @@ class OCIDCellAreaUpdater(CellAreaUpdater):
     area_model = OCIDCellArea
     cell_model = OCIDCell
     cell_load_fields = ('lat', 'lon', 'range')
+
+    def __call__(self, batch=100):
+        queue = self.task.app.data_queues['update_cellarea_ocid']
+        areaids = queue.dequeue(batch=batch)
+
+        ids = set()
+        for areaid in areaids:
+            ids.add(base64.b64decode(areaid))
+        for id_ in ids:
+            self.update_area(id_)
+
+        if queue.size() >= batch:  # pragma: no cover
+            self.task.apply_async(
+                kwargs={'batch': batch},
+                countdown=2,
+                expires=10)

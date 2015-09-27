@@ -22,7 +22,7 @@ def export_modified_cells(self, hourly=True, _bucket=None):  # pragma: no cover
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
 def import_latest_ocid_cells(self, diff=True):  # pragma: no cover
     # BBB
-    ocid.ImportExternal(self, update_area_task=update_area)(diff=diff)
+    ocid.ImportExternal(self)(diff=diff)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
@@ -43,7 +43,7 @@ def cell_export_full(self, _bucket=None):
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
 def cell_import_external(self, diff=True):
-    ocid.ImportExternal(self, update_area_task=update_area)(diff=diff)
+    ocid.ImportExternal(self)(diff=diff)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
@@ -162,11 +162,18 @@ def scan_areas(self, batch=100):
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell')
 def update_area(self, areaids, cell_type='cell'):
     with self.db_session() as session:
-        if cell_type == 'ocid':
+        if cell_type == 'ocid':  # pragma: no cover
+            # BBB
             updater = area.OCIDCellAreaUpdater(self, session)
         else:
             updater = area.CellAreaUpdater(self, session)
         updater.update(areaids)
+
+
+@celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
+def update_cellarea_ocid(self, batch=100):
+    with self.db_session() as session:
+        area.OCIDCellAreaUpdater(self, session)(batch=batch)
 
 
 @celery_app.task(base=BaseTask, bind=True)

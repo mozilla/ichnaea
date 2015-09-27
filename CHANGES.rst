@@ -18,6 +18,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Split out OCID cell area updates to their own queue.
+
 - Switch mapstat queue to compact binary queue values.
 
 - Speed up update_area task by only loading required cell columns.

@@ -152,19 +152,19 @@ class CellExport(object):
 class ImportBase(object):
 
     batch_size = 10000
-    area_batch_size = 10
 
-    def __init__(self, task, cell_type='ocid', update_area_task=None):
+    def __init__(self, task, cell_type='ocid'):
         self.task = task
         self.cell_type = cell_type
-        self.update_area_task = update_area_task
         if cell_type == 'ocid':
             self.cell_model = OCIDCell
             self.area_model = OCIDCellArea
+            self.area_queue = task.app.data_queues['update_cellarea_ocid']
             self.stat_key = StatKey.unique_ocid_cell
         elif cell_type == 'cell':  # pragma: no cover
             self.cell_model = Cell
             self.area_model = CellArea
+            self.area_queue = task.app.data_queues['update_cellarea']
             self.stat_key = StatKey.unique_cell
 
         self.import_spec = [
@@ -284,17 +284,14 @@ class ImportBase(object):
                 if rows:
                     commit_batch(rows)
 
-        areaids = [encode_cellarea(*id_, codec='base64') for id_ in areaids]
-        for i in range(0, len(areaids), self.area_batch_size):
-            area_batch = areaids[i:i + self.area_batch_size]
-            self.update_area_task.delay(area_batch, cell_type=self.cell_type)
+        self.area_queue.enqueue(
+            [encode_cellarea(*id_, codec='base64') for id_ in areaids])
 
 
 class ImportExternal(ImportBase):
 
-    def __init__(self, task, cell_type='ocid', update_area_task=None):
-        super(ImportExternal, self).__init__(
-            task, cell_type=cell_type, update_area_task=update_area_task)
+    def __init__(self, task, cell_type='ocid'):
+        super(ImportExternal, self).__init__(task, cell_type=cell_type)
         self.settings = self.task.app.settings['import:ocid']
 
     def __call__(self, diff=True, _filename=None):
@@ -330,10 +327,8 @@ class ImportExternal(ImportBase):
 
 class ImportLocal(ImportBase):
 
-    def __init__(self, task, session, pipe,
-                 cell_type='ocid', update_area_task=None):
-        super(ImportLocal, self).__init__(
-            task, cell_type=cell_type, update_area_task=update_area_task)
+    def __init__(self, task, session, pipe, cell_type='ocid'):
+        super(ImportLocal, self).__init__(task, cell_type=cell_type)
         self.session = session
         self.pipe = pipe
 
