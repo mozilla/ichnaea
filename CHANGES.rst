@@ -18,6 +18,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Switch mapstat queue to compact binary queue values.
+
 - Speed up update_area task by only loading required cell columns.
 
 - Validate all incoming reports against the region areas.

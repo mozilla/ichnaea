@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from ichnaea.data.tasks import update_mapstat
 from ichnaea.models.content import (
+    encode_datamap_grid,
     MapStat,
 )
 from ichnaea.tests.base import CeleryTestCase
@@ -18,18 +19,22 @@ class TestMapStat(CeleryTestCase):
 
     def _add(self, triples):
         for lat, lon, time in triples:
-            self.session.add(MapStat(lat=int(lat * 1000),
-                                     lon=int(lon * 1000),
-                                     time=time))
+            lat, lon = MapStat.scale(lat, lon)
+            self.session.add(MapStat(lat=lat, lon=lon, time=time))
         self.session.flush()
 
     def _check_position(self, stat, pair):
-        self.assertEqual(stat.lat, int(pair[0] * 1000))
-        self.assertEqual(stat.lon, int(pair[1] * 1000))
+        lat, lon = pair
+        lat, lon = MapStat.scale(lat, lon)
+        self.assertEqual(stat.lat, lat)
+        self.assertEqual(stat.lon, lon)
 
     def _queue(self, pairs):
-        positions = [{'lat': lat, 'lon': lon} for lat, lon in pairs]
-        self.queue.enqueue(positions)
+        grids = []
+        for lat, lon in pairs:
+            grids.append(
+                encode_datamap_grid(lat, lon, scale=True, codec='base64'))
+        self.queue.enqueue(grids)
 
     def test_empty(self):
         update_mapstat.delay().get()
@@ -79,3 +84,13 @@ class TestMapStat(CeleryTestCase):
         self.assertEqual(
             positions,
             set([(1.0, 2.0), (2.0, -3.0), (0.0, 0.0), (2.001, 3.001)]))
+
+    def test_dict_queue(self):
+        # BBB
+        self._queue([(1.0, 2.0)])
+        self.queue.enqueue([{'lat': 1.1, 'lon': 2.2}])
+        self._queue([(1.2, 2.3)])
+        update_mapstat.delay().get()
+
+        stats = self.session.query(MapStat).all()
+        self.assertEqual(len(stats), 3)

@@ -2,6 +2,7 @@ from sqlalchemy.orm import load_only
 
 from ichnaea.data.base import DataTask
 from ichnaea.models.content import (
+    decode_datamap_grid,
     MapStat,
 )
 from ichnaea import util
@@ -22,8 +23,13 @@ class MapStatUpdater(DataTask):
 
         scaled_positions = set()
         for position in positions:
-            scaled_positions.add(
-                MapStat.scale(position['lat'], position['lon']))
+            if isinstance(position, (str, bytes)):
+                lat, lon = decode_datamap_grid(position, codec='base64')
+                scaled_positions.add((lat, lon))
+            elif isinstance(position, dict):
+                # BBB
+                scaled_positions.add(
+                    MapStat.scale(position['lat'], position['lon']))
 
         wanted = set()
         for scaled in scaled_positions:

@@ -16,6 +16,7 @@ from ichnaea.models import (
     WifiReport,
     WifiShard,
 )
+from ichnaea.models.content import encode_datamap_grid
 
 
 class ReportQueue(DataTask):
@@ -203,8 +204,11 @@ class ReportQueue(DataTask):
             return
 
         queue = self.task.app.data_queues['update_mapstat']
-        positions = [{'lat': lat, 'lon': lon} for lat, lon in positions]
-        queue.enqueue(positions, pipe=self.pipe)
+        grids = set()
+        for lat, lon in positions:
+            grids.add(encode_datamap_grid(
+                lat, lon, scale=True, codec='base64'))
+        queue.enqueue(list(grids), pipe=self.pipe)
 
     def process_score(self, userid, positions, new_station_count):
         if userid is None or len(positions) <= 0:
