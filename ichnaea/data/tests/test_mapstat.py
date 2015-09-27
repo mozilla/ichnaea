@@ -41,7 +41,7 @@ class TestMapStat(CeleryTestCase):
 
         stats = self.session.query(MapStat).all()
         self.assertEqual(len(stats), 1)
-        self._check_position(stats[0], (1.234, 2.345))
+        self._check_position(stats[0], (1.235, 2.346))
         self.assertEqual(stats[0].time, self.today)
 
     def test_update(self):

@@ -1,5 +1,9 @@
+import base64
+import struct
+
 from enum import IntEnum
 from sqlalchemy import (
+    BINARY,
     Column,
     Date,
     Index,
@@ -11,6 +15,7 @@ from sqlalchemy.dialects.mysql import (
     BIGINT as BigInteger,
     INTEGER as Integer,
 )
+from sqlalchemy.types import TypeDecorator
 
 from ichnaea.models.base import _Model
 from ichnaea.models.hashkey import (
@@ -18,6 +23,15 @@ from ichnaea.models.hashkey import (
     HashKeyQueryMixin,
 )
 from ichnaea.models.sa_types import TinyIntEnum
+
+DATAMAP_GRID_SCALE = 1000
+DATAMAP_GRID_STRUCT = struct.Struct('!ii')
+"""
+A compact representation of a lat/lon grid as a byte sequence.
+
+Consists of two signed 32 bit integers to encode both the scaled
+latitude and longitude.
+"""
 
 
 class ScoreKey(IntEnum):
@@ -43,6 +57,72 @@ class MapStatHashKey(HashKey):
     _fields = ('lat', 'lon')
 
 
+def decode_datamap_grid(value, codec=None):
+    """
+    Decode a byte sequence representing a datamap grid into a tuple
+    of a scaled latitude and longitude.
+
+    If ``codec='base64'``, decode the value from a base64 sequence first.
+    """
+    if codec == 'base64':
+        value = base64.b64decode(value)
+    return DATAMAP_GRID_STRUCT.unpack(value)
+
+
+def encode_datamap_grid(lat, lon, scale=False, codec=None):
+    """
+    Given a tuple of scaled latitude/longitude integers, return a compact
+    8 byte sequence representing the datamap gird.
+
+    If ``codec='base64'``, return the value as a base64 encoded sequence.
+    """
+    if scale:
+        lat, lon = DataMap.scale(lat, lon)
+    value = DATAMAP_GRID_STRUCT.pack(lat, lon)
+    if codec == 'base64':
+        value = base64.b64encode(value)
+    return value
+
+
+class DataMapGridColumn(TypeDecorator):
+    """A binary type storing scaled lat/lon grids."""
+
+    impl = BINARY
+
+    def process_bind_param(self, value, dialect):
+        if isinstance(value, bytes):
+            if len(value) != 8:
+                raise ValueError('Invalid grid length: %r' % value)
+            return value
+        lat, lon = value
+        return DATAMAP_GRID_STRUCT.pack(lat, lon)
+
+    def process_result_value(self, value, dialect):
+        if value is None:  # pragma: no cover
+            return value
+        return DATAMAP_GRID_STRUCT.unpack(value)
+
+
+class DataMap(_Model):
+    __tablename__ = 'datamap'
+
+    _indices = (
+        Index('idx_datamap_created', 'created'),
+        Index('idx_datamap_modified', 'modified'),
+    )
+
+    grid = Column(DataMapGridColumn(8), primary_key=True)
+    created = Column(Date)
+    modified = Column(Date)
+
+    @classmethod
+    def scale(cls, lat_value, lon_value):
+        return (
+            int(round(lat_value * DATAMAP_GRID_SCALE)),
+            int(round(lon_value * DATAMAP_GRID_SCALE)),
+        )
+
+
 class MapStat(HashKeyQueryMixin, _Model):
     __tablename__ = 'mapstat'
 
@@ -66,8 +146,8 @@ class MapStat(HashKeyQueryMixin, _Model):
     @classmethod
     def scale(cls, lat_value, lon_value):
         return (
-            int(lat_value * cls._scaling_factor),
-            int(lon_value * cls._scaling_factor),
+            int(round(lat_value * cls._scaling_factor)),
+            int(round(lon_value * cls._scaling_factor)),
         )
 
 

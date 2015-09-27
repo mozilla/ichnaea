@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 26c4b3a7bc51: Add new datamap table.
+
 - 47ed7a40413b: Add cell area id columns.
 
 Changes
