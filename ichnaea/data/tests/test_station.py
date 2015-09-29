@@ -7,8 +7,8 @@ from ichnaea.constants import (
 )
 from ichnaea.data.tasks import (
     update_cell,
+    update_cellarea,
     update_wifi,
-    scan_areas,
 )
 from ichnaea.models import (
     Cell,
@@ -242,8 +242,8 @@ class TestCell(StationTest):
                 if month % 2 == 0:
                     # The station was (re)created.
                     self.assertEqual(update_cell.delay().get(), (1, 0))
-                    # Rescan lacs to update entries
-                    self.assertEqual(scan_areas.delay().get(), 1)
+                    # Update cell areas
+                    update_cellarea.delay().get()
                     # One cell + one cell-LAC record should exist.
                     self.assertEqual(self.session.query(Cell).count(), 1)
                     self.assertEqual(self.session.query(CellArea).count(), 1)
@@ -251,8 +251,8 @@ class TestCell(StationTest):
                     # The station existed and was seen moving,
                     # thereby activating the blocklist and deleting the cell.
                     self.assertEqual(update_cell.delay().get(), (1, 1))
-                    # Rescan lacs to delete orphaned lac entry
-                    self.assertEqual(scan_areas.delay().get(), 1)
+                    # Update cell areas to delete orphaned area entry
+                    update_cellarea.delay().get()
                     if month > 1:
                         self.assertEqual(block.count, ((month + 1) / 2))
                     self.assertEqual(

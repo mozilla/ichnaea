@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Merge scan_areas/update_area tasks into a single new update_cellarea task.
+
 - Remove backwards compatible tasks and area/mapstat task processing logic.
 
 20150928100200

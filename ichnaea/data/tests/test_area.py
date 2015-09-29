@@ -1,4 +1,4 @@
-from ichnaea.data.tasks import scan_areas
+from ichnaea.data.tasks import update_cellarea
 from ichnaea.models import (
     encode_cellarea,
     CellArea,
@@ -14,12 +14,11 @@ class TestArea(CeleryTestCase):
 
     def setUp(self):
         super(TestArea, self).setUp()
-        self.area_queue = self.celery_app.data_queues['update_cell_lac']
+        self.area_queue = self.celery_app.data_queues['update_cellarea']
         self.obs_queue = self.celery_app.data_queues['update_cell']
 
     def test_empty(self):
-        # test tasks with an empty queue
-        self.assertEqual(scan_areas.delay().get(), 0)
+        update_cellarea.delay().get()
 
     def test_new(self):
         cell = CellFactory()
@@ -28,7 +27,7 @@ class TestArea(CeleryTestCase):
         areaid = encode_cellarea(
             cell.radio, cell.mcc, cell.mnc, cell.lac, codec='base64')
         self.area_queue.enqueue([areaid])
-        self.assertEqual(scan_areas.delay().get(), 1)
+        update_cellarea.delay().get()
 
         area = self.session.query(CellArea).one()
         self.assertAlmostEqual(area.lat, cell.lat)
@@ -43,7 +42,7 @@ class TestArea(CeleryTestCase):
 
         areaid = encode_cellarea(*area.areaid, codec='base64')
         self.area_queue.enqueue([areaid])
-        self.assertEqual(scan_areas.delay().get(), 1)
+        update_cellarea.delay().get()
         self.assertEqual(self.session.query(CellArea).count(), 0)
 
     def test_update(self):
@@ -55,7 +54,7 @@ class TestArea(CeleryTestCase):
 
         areaid = encode_cellarea(*area.areaid, codec='base64')
         self.area_queue.enqueue([areaid])
-        self.assertEqual(scan_areas.delay().get(), 1)
+        update_cellarea.delay().get()
 
         self.session.refresh(area)
         self.assertAlmostEqual(area.lat, cell.lat)
@@ -76,7 +75,7 @@ class TestArea(CeleryTestCase):
 
         areaid = encode_cellarea(*area.areaid, codec='base64')
         self.area_queue.enqueue([areaid])
-        self.assertEqual(scan_areas.delay().get(), 1)
+        update_cellarea.delay().get()
 
         self.session.refresh(area)
         self.assertAlmostEqual(area.lat, cell.lat - 0.0001)

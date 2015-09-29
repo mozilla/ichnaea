@@ -164,7 +164,7 @@ class ImportBase(object):
         elif cell_type == 'cell':  # pragma: no cover
             self.cell_model = Cell
             self.area_model = CellArea
-            self.area_queue = task.app.data_queues['update_cell_lac']
+            self.area_queue = task.app.data_queues['update_cellarea']
             self.stat_key = StatKey.unique_cell
 
         self.import_spec = [

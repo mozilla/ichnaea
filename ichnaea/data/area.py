@@ -1,3 +1,5 @@
+import base64
+
 import numpy
 from sqlalchemy.orm import load_only
 
@@ -22,12 +24,15 @@ class CellAreaUpdater(DataTask):
     cell_model = Cell
     cell_load_fields = (
         'lat', 'lon', 'range', 'max_lat', 'max_lon', 'min_lat', 'min_lon')
+    queue_name = 'update_cellarea'
 
     def __init__(self, task, session):
         DataTask.__init__(self, task, session)
+        self.queue = self.task.app.data_queues[self.queue_name]
         self.utcnow = util.utcnow()
 
-    def scan(self, update_task, batch=100):
+    def scan(self, update_task, batch=100):  # pragma: no cover
+        # BBB
         queue = self.task.app.data_queues['update_cell_lac']
         redis_areas = queue.dequeue(batch=batch)
         areaids = list(set(redis_areas))
@@ -37,12 +42,24 @@ class CellAreaUpdater(DataTask):
             update_task.delay(area_batch)
         return len(areaids)
 
-    def update(self, areaids):
+    def update(self, areaids):  # pragma: no cover
+        # BBB
         for areaid in set(areaids):
             self.update_area(areaid)
 
+    def __call__(self, batch=100):
+        areaids = self.queue.dequeue(batch=batch)
+        for areaid in set(areaids):
+            self.update_area(base64.b64decode(areaid))
+
+        if self.queue.size() >= batch:  # pragma: no cover
+            self.task.apply_async(
+                kwargs={'batch': batch},
+                countdown=2,
+                expires=10)
+
     def update_area(self, areaid):
-        radio, mcc, mnc, lac = decode_cellarea(areaid, codec='base64')
+        radio, mcc, mnc, lac = decode_cellarea(areaid)
         # Select all cells in this area and derive a bounding box for them
         cells = (self.session.query(self.cell_model)
                              .options(load_only(*self.cell_load_fields))
@@ -85,7 +102,6 @@ class CellAreaUpdater(DataTask):
                 ctr_lat, ctr_lon,
                 max_lat, max_lon, min_lat, min_lon)
 
-            # Now create or update the area
             cell_radii = numpy.array([
                 (numpy.nan if cell.radius is None else cell.radius)
                 for cell in cells
@@ -93,6 +109,7 @@ class CellAreaUpdater(DataTask):
             avg_cell_radius = int(round(numpy.nanmean(cell_radii)))
             num_cells = len(cells)
 
+            # Now create or update the area
             if area is None:
                 stmt = self.area_model.__table__.insert(
                     mysql_on_duplicate='num_cells = num_cells'  # no-op
@@ -108,7 +125,7 @@ class CellAreaUpdater(DataTask):
                     mcc=mcc,
                     mnc=mnc,
                     lac=lac,
-                    areaid=(radio, mcc, mnc, lac),
+                    areaid=areaid,
                 )
                 self.session.execute(stmt)
             else:
@@ -125,15 +142,4 @@ class OCIDCellAreaUpdater(CellAreaUpdater):
     area_model = OCIDCellArea
     cell_model = OCIDCell
     cell_load_fields = ('lat', 'lon', 'range')
-
-    def __call__(self, batch=100):
-        queue = self.task.app.data_queues['update_cellarea_ocid']
-        areaids = queue.dequeue(batch=batch)
-        for areaid in set(areaids):
-            self.update_area(areaid)
-
-        if queue.size() >= batch:  # pragma: no cover
-            self.task.apply_async(
-                kwargs={'batch': batch},
-                countdown=2,
-                expires=10)
+    queue_name = 'update_cellarea_ocid'
