@@ -84,13 +84,3 @@ class TestMapStat(CeleryTestCase):
         self.assertEqual(
             positions,
             set([(1.0, 2.0), (2.0, -3.0), (0.0, 0.0), (2.001, 3.001)]))
-
-    def test_dict_queue(self):
-        # BBB
-        self._queue([(1.0, 2.0)])
-        self.queue.enqueue([{'lat': 1.1, 'lon': 2.2}])
-        self._queue([(1.2, 2.3)])
-        update_mapstat.delay().get()
-
-        stats = self.session.query(MapStat).all()
-        self.assertEqual(len(stats), 3)

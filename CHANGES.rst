@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove backwards compatible tasks and area/mapstat task processing logic.
 
 20150928100200
 **************

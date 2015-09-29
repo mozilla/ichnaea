@@ -1,5 +1,3 @@
-import base64
-
 import numpy
 from sqlalchemy.orm import load_only
 
@@ -10,13 +8,11 @@ from ichnaea.geocalc import (
 )
 from ichnaea.models import (
     decode_cellarea,
-    encode_cellarea,
     Cell,
     CellArea,
     OCIDCell,
     OCIDCellArea,
 )
-from ichnaea.models.cell import CellAreaKey
 from ichnaea import util
 
 
@@ -29,47 +25,24 @@ class CellAreaUpdater(DataTask):
 
     def __init__(self, task, session):
         DataTask.__init__(self, task, session)
-        self.data_queue = self.task.app.data_queues['update_cellarea']
         self.utcnow = util.utcnow()
 
     def scan(self, update_task, batch=100):
-        redis_areas = self.data_queue.dequeue(batch=batch)
-        # BBB deal with hashkeys and mixed ids/hashkeys
-        areaids = set()
-        for areaid in redis_areas:
-            if isinstance(areaid, CellAreaKey):  # pragma: no cover
-                areaid = encode_cellarea(
-                    areaid.radio,
-                    areaid.mcc,
-                    areaid.mnc,
-                    areaid.lac,
-                    codec='base64')
-            areaids.add(areaid)
-
-        areaids = list(areaids)
-        batch_size = 10
+        queue = self.task.app.data_queues['update_cellarea']
+        redis_areas = queue.dequeue(batch=batch)
+        areaids = list(set(redis_areas))
+        batch_size = 20
         for i in range(0, len(areaids), batch_size):
             area_batch = areaids[i:i + batch_size]
             update_task.delay(area_batch)
         return len(areaids)
 
     def update(self, areaids):
-        # BBB deal with hashkeys and mixed ids/hashkeys
-        ids = set()
-        for areaid in areaids:
-            if isinstance(areaid, CellAreaKey):  # pragma: no cover
-                areaid = encode_cellarea(
-                    areaid.radio,
-                    areaid.mcc,
-                    areaid.mnc,
-                    areaid.lac,
-                    codec='base64')
-            ids.add(base64.b64decode(areaid))
-        for id_ in ids:
-            self.update_area(id_)
+        for areaid in set(areaids):
+            self.update_area(areaid)
 
     def update_area(self, areaid):
-        radio, mcc, mnc, lac = decode_cellarea(areaid)
+        radio, mcc, mnc, lac = decode_cellarea(areaid, codec='base64')
         # Select all cells in this area and derive a bounding box for them
         cells = (self.session.query(self.cell_model)
                              .options(load_only(*self.cell_load_fields))
@@ -135,7 +108,7 @@ class CellAreaUpdater(DataTask):
                     mcc=mcc,
                     mnc=mnc,
                     lac=lac,
-                    areaid=areaid,
+                    areaid=(radio, mcc, mnc, lac),
                 )
                 self.session.execute(stmt)
             else:
@@ -156,12 +129,8 @@ class OCIDCellAreaUpdater(CellAreaUpdater):
     def __call__(self, batch=100):
         queue = self.task.app.data_queues['update_cellarea_ocid']
         areaids = queue.dequeue(batch=batch)
-
-        ids = set()
-        for areaid in areaids:
-            ids.add(base64.b64decode(areaid))
-        for id_ in ids:
-            self.update_area(id_)
+        for areaid in set(areaids):
+            self.update_area(areaid)
 
         if queue.size() >= batch:  # pragma: no cover
             self.task.apply_async(

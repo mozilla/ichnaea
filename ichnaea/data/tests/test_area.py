@@ -82,12 +82,3 @@ class TestArea(CeleryTestCase):
         self.assertAlmostEqual(area.lat, cell.lat - 0.0001)
         self.assertAlmostEqual(area.lon, cell.lon)
         self.assertEqual(area.num_cells, 2)
-
-    def test_remove_hashkey(self):
-        # BBB
-        area = CellAreaFactory()
-        self.session.flush()
-
-        self.area_queue.enqueue([area.hashkey()])
-        self.assertEqual(scan_areas.delay().get(), 1)
-        self.assertEqual(self.session.query(CellArea).count(), 0)

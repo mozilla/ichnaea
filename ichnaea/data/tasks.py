@@ -14,24 +14,6 @@ from ichnaea.models import ApiKey
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
-def export_modified_cells(self, hourly=True, _bucket=None):  # pragma: no cover
-    # BBB
-    ocid.CellExport(self)(hourly=True, _bucket=_bucket)
-
-
-@celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
-def import_latest_ocid_cells(self, diff=True):  # pragma: no cover
-    # BBB
-    ocid.ImportExternal(self)(diff=diff)
-
-
-@celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
-def monitor_queue_length(self):  # pragma: no cover
-    # BBB
-    return monitor.QueueSize(self)()
-
-
-@celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
 def cell_export_diff(self, _bucket=None):
     ocid.CellExport(self)(hourly=True, _bucket=_bucket)
 
@@ -160,14 +142,9 @@ def scan_areas(self, batch=100):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell')
-def update_area(self, areaids, cell_type='cell'):
+def update_area(self, areaids):
     with self.db_session() as session:
-        if cell_type == 'ocid':  # pragma: no cover
-            # BBB
-            updater = area.OCIDCellAreaUpdater(self, session)
-        else:
-            updater = area.CellAreaUpdater(self, session)
-        updater.update(areaids)
+        area.CellAreaUpdater(self, session).update(areaids)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
