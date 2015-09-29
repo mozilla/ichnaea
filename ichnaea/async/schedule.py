@@ -105,12 +105,6 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(seconds=9),
         'options': {'expires': 10},
     },
-    'update-wifi': {
-        'task': 'ichnaea.data.tasks.update_wifi',
-        'schedule': timedelta(seconds=6),
-        'args': (1000, ),
-        'options': {'expires': 10},
-    },
 
     'update-wifi-0': {
         'task': 'ichnaea.data.tasks.update_wifi',

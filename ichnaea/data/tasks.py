@@ -117,23 +117,18 @@ def update_cell(self, batch=1000):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
             cells, moving = station.CellUpdater(
-                self, session, pipe,
-                remove_task=remove_cell,
-                update_task=update_cell,
-            )(batch=batch)
+                self, session, pipe, remove_task=remove_cell)(batch=batch)
     return (cells, moving)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_wifi')
 def update_wifi(self, batch=1000, shard_id=None):
+    if shard_id is None:  # pragma: no cover
+        return
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
             station.WifiUpdater(
-                self, session, pipe,
-                shard_id=shard_id,
-                remove_task=None,
-                update_task=update_wifi,
-            )(batch=batch)
+                self, session, pipe, shard_id=shard_id)(batch=batch)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell')

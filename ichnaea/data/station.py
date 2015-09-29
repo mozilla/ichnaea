@@ -51,17 +51,12 @@ class StationUpdater(DataTask):
 
     MAX_OLD_OBSERVATIONS = 1000
     max_dist_meters = None
-    queue_name = None
     station_type = None
 
-    def __init__(self, task, session, pipe,
-                 remove_task=None, update_task=None):
+    def __init__(self, task, session, pipe):
         super(StationUpdater, self).__init__(task, session)
         self.pipe = pipe
-        self.remove_task = remove_task
         self.updated_areas = set()
-        self.update_task = update_task
-        self.data_queue = self.task.app.data_queues[self.queue_name]
         self.utcnow = util.utcnow()
         self.today = self.utcnow.date()
 
@@ -82,8 +77,12 @@ class StationUpdater(DataTask):
 class CellUpdater(StationUpdater):
 
     max_dist_meters = 150000
-    queue_name = 'update_cell'
     station_type = 'cell'
+
+    def __init__(self, task, session, pipe, remove_task=None):
+        super(CellUpdater, self).__init__(task, session, pipe)
+        self.remove_task = remove_task
+        self.data_queue = self.task.app.data_queues['update_cell']
 
     def emit_statcounters(self, obs, stations):
         day = self.today
@@ -337,7 +336,7 @@ class CellUpdater(StationUpdater):
         self.emit_statcounters(added, new_stations)
 
         if self.data_queue.enough_data(batch=batch):  # pragma: no cover
-            self.update_task.apply_async(
+            self.task.apply_async(
                 kwargs={'batch': batch},
                 countdown=2,
                 expires=10)
@@ -348,18 +347,13 @@ class CellUpdater(StationUpdater):
 class WifiUpdater(StationUpdater):
 
     max_dist_meters = 5000
-    queue_name = 'update_wifi'
     station_type = 'wifi'
 
-    def __init__(self, task, session, pipe, shard_id=None,
-                 remove_task=None, update_task=None):
-        super(WifiUpdater, self).__init__(
-            task, session, pipe,
-            remove_task=remove_task, update_task=update_task)
+    def __init__(self, task, session, pipe, shard_id=None):
+        super(WifiUpdater, self).__init__(task, session, pipe)
         self.shard_id = shard_id
-        if shard_id is not None:
-            queue_name = '%s_%s' % (self.queue_name, shard_id)
-            self.data_queue = self.task.app.data_queues[queue_name]
+        queue_name = '%s_%s' % ('update_wifi', shard_id)
+        self.data_queue = self.task.app.data_queues[queue_name]
 
     def emit_stats(self, stats_counter, drop_counter):
         day = self.today
@@ -618,7 +612,7 @@ class WifiUpdater(StationUpdater):
         self.emit_stats(stats_counter, drop_counter)
 
         if self.data_queue.enough_data(batch=batch):  # pragma: no cover
-            self.update_task.apply_async(
+            self.task.apply_async(
                 kwargs={'batch': batch, 'shard_id': self.shard_id},
                 countdown=2,
                 expires=10)

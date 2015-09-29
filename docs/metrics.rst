@@ -353,10 +353,11 @@ Internal Monitoring
     They are sampled at an approximate per-minute interval.
 
 ``queue#queue:update_cell``,
-``queue#queue:update_cell_area``,
+``queue#queue:update_cellarea``,
 ``queue#queue:update_mapstat``,
 ``queue#queue:update_score``,
-``queue#queue:update_wifi`` : gauges
+``queue#queue:update_wifi_0``,
+``queue#queue:update_wifi_f`` : gauges
 
     These gauges measure the number of items in the Redis update queues.
     These queues are used to keep track of which :term:`observations`

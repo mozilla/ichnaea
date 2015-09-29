@@ -95,8 +95,6 @@ def configure_data(redis_client):
                                     queue_key='update_mapstat'),
         'update_score': DataQueue('update_score', redis_client,
                                   queue_key='update_score'),
-        'update_wifi': DataQueue('update_wifi', redis_client,
-                                 queue_key='update_wifi'),
     }
     for shard_id in ['%x' % i for i in range(16)]:
         name = 'update_wifi_' + shard_id

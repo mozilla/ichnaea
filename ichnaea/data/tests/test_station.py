@@ -356,19 +356,20 @@ class TestCell(StationTest):
 
 class TestWifi(StationTest):
 
-    def setUp(self):
-        super(TestWifi, self).setUp()
-        self.data_queue = self.celery_app.data_queues['update_wifi']
+    def _queue_and_update(self, obs):
+        sharded_obs = defaultdict(list)
+        for ob in obs:
+            sharded_obs[WifiShard.shard_id(ob.mac)].append(ob)
+
+        for shard_id, values in sharded_obs.items():
+            queue = self.celery_app.data_queues['update_wifi_' + shard_id]
+            queue.enqueue(values)
+            update_wifi.delay(shard_id=shard_id).get()
 
     def test_new(self):
         utcnow = util.utcnow()
         obs = WifiObservationFactory.build()
-
-        shard_id = WifiShard.shard_id(obs.mac)
-        queue = self.celery_app.data_queues['update_wifi_' + shard_id]
-        queue.enqueue([obs])
-        self.assertEqual(queue.size(), 1)
-        update_wifi.delay(shard_id=shard_id).get()
+        self._queue_and_update([obs])
 
         shard = WifiShard.shard_model(obs.mac)
         wifis = self.session.query(shard).all()
@@ -421,15 +422,7 @@ class TestWifi(StationTest):
                         lon=lon2 + 0.004, key=mac2),
         ])
         self.session.commit()
-
-        sharded_obs = defaultdict(list)
-        for ob in obs:
-            sharded_obs[WifiShard.shard_id(ob.mac)].append(ob)
-
-        for shard_id, values in sharded_obs.items():
-            queue = self.celery_app.data_queues['update_wifi_' + shard_id]
-            queue.enqueue(values)
-            update_wifi.delay(shard_id=shard_id).get()
+        self._queue_and_update(obs)
 
         shard = WifiShard.shard_model(mac1)
         found = self.session.query(shard).filter(shard.mac == mac1).one()
@@ -470,12 +463,9 @@ class TestWifi(StationTest):
             block_first=utcnow.date() - timedelta(days=10),
             block_last=utcnow.date(),
             block_count=1)
-        self.session.flush()
-
-        observations = [good_wifi, bad_wifi, good_wifi]
-        self.data_queue.enqueue(observations)
-        self.assertEqual(self.data_queue.size(), 3)
-        update_wifi.delay().get()
+        obs = [good_wifi, bad_wifi, good_wifi]
+        self.session.commit()
+        self._queue_and_update(obs)
 
         shard = WifiShard.shard_model(good_wifi.mac)
         wifis = (self.session.query(shard)
@@ -510,12 +500,9 @@ class TestWifi(StationTest):
             block_first=last_week.date(),
             block_last=last_week.date(),
             block_count=1)
-        self.session.flush()
-
+        self.session.commit()
         # add a new entry for the previously blocked wifi
-        self.data_queue.enqueue([obs])
-        self.assertEqual(self.data_queue.size(), 1)
-        update_wifi.delay().get()
+        self._queue_and_update([obs])
 
         # the wifi was inserted again
         shard = WifiShard.shard_model(obs.mac)
@@ -622,10 +609,8 @@ class TestWifi(StationTest):
             obs_factory(lat=wifi_lat + 2.0, lon=wifi_lon, key=wifi.mac),
         ])
         moving.add(wifi.mac)
-
-        self.data_queue.enqueue(obs)
         self.session.commit()
-        update_wifi.delay().get()
+        self._queue_and_update(obs)
 
         shards = set()
         for mac in moving:
@@ -636,13 +621,6 @@ class TestWifi(StationTest):
                 if row.blocked():
                     blocks.append(row)
         self.assertEqual(set([b.mac for b in blocks]), moving)
-
-        self.check_stats(counter=[
-            ('data.observation.drop', 1, 3,
-                ['type:wifi', 'reason:blocklisted']),
-            ('data.station.blocklist', 1, 4,
-                ['type:wifi', 'action:add', 'reason:moving']),
-        ])
 
     def test_country(self):
         obs = []
@@ -655,10 +633,8 @@ class TestWifi(StationTest):
         obs.extend(obs_factory.create_batch(
             5, key=wifi2.mac, lat=wifi2.lat, lon=wifi2.lon + 0.05,
         ))
-
-        self.data_queue.enqueue(obs)
         self.session.commit()
-        update_wifi.delay().get()
+        self._queue_and_update(obs)
 
         # position is really not in FR anymore, but still close enough
         # to not re-trigger region determination
