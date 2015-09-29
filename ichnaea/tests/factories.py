@@ -8,7 +8,7 @@ from factory import fuzzy
 
 from ichnaea.constants import (
     CELL_MIN_ACCURACY,
-    LAC_MIN_ACCURACY,
+    CELLAREA_MIN_ACCURACY,
     WIFI_MIN_ACCURACY,
 )
 from ichnaea.models import (
@@ -128,7 +128,7 @@ class CellAreaPositionFactory(CellAreaKeyFactory):
 
     lat = GB_LAT
     lon = GB_LON
-    range = LAC_MIN_ACCURACY / 2.0
+    range = CELLAREA_MIN_ACCURACY / 2.0
 
 
 class CellKeyFactory(CellAreaKeyFactory):

@@ -321,7 +321,7 @@ class TestCell(StationTest):
                 self.assertAlmostEqual(cell.lat, expected_lat, 7)
                 self.assertAlmostEqual(cell.lon, expected_lon, 7)
 
-    def test_max_min_range_update(self):
+    def test_max_min_radius_update(self):
         cell = CellFactory(range=150, total_measures=3)
         cell_lat = cell.lat
         cell_lon = cell.lon
@@ -350,8 +350,8 @@ class TestCell(StationTest):
         self.assertAlmostEqual(cell.lon, cell_lon - 0.0016)
         self.assertAlmostEqual(cell.max_lon, cell_lon + 0.001)
         self.assertAlmostEqual(cell.min_lon, cell_lon - 0.006)
-        self.assertEqual(cell.range, 468)
-        self.assertEqual(cell.total_measures, 5)
+        self.assertEqual(cell.radius, 468)
+        self.assertEqual(cell.samples, 5)
 
 
 class TestWifi(StationTest):

@@ -1,7 +1,7 @@
 from ichnaea.api.locate.cell import CellPositionSource
 from ichnaea.api.locate.result import ResultList
 from ichnaea.api.locate.tests.base import BaseSourceTest
-from ichnaea.constants import LAC_MIN_ACCURACY
+from ichnaea.constants import CELLAREA_MIN_ACCURACY
 from ichnaea.tests.factories import (
     CellAreaFactory,
     CellFactory,
@@ -77,10 +77,10 @@ class TestCellPosition(BaseSourceTest):
         result = self.source.search(query)
         self.check_model_result(result, area)
 
-    def test_minimum_range(self):
+    def test_minimum_radius(self):
         areas = CellAreaFactory.create_batch(2)
-        areas[0].range = LAC_MIN_ACCURACY - 2000
-        areas[1].range = LAC_MIN_ACCURACY + 3000
+        areas[0].range = CELLAREA_MIN_ACCURACY - 2000
+        areas[1].range = CELLAREA_MIN_ACCURACY + 3000
         areas[1].lat = areas[0].lat + 0.2
         self.session.flush()
 
@@ -88,4 +88,4 @@ class TestCellPosition(BaseSourceTest):
         result = self.source.search(query)
         self.check_model_result(
             result, areas[0],
-            accuracy=LAC_MIN_ACCURACY)
+            accuracy=CELLAREA_MIN_ACCURACY)

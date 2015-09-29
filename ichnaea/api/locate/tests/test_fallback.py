@@ -187,7 +187,7 @@ class TestCache(QueryTest):
     def test_set_cell(self):
         cell = CellFactory.build()
         query = Query(cell=self.cell_model_query([cell]))
-        result = ExternalResult(cell.lat, cell.lon, cell.range, None)
+        result = ExternalResult(cell.lat, cell.lon, cell.radius, None)
         self.cache.set(query, result)
         keys = self.redis_client.keys('cache:fallback:cell:*')
         self.assertEqual(len(keys), 1)
@@ -230,7 +230,7 @@ class TestCache(QueryTest):
         wifis = WifiShardFactory.build_batch(2)
         wifi = wifis[0]
         query = Query(wifi=self.wifi_model_query(wifis))
-        result = ExternalResult(wifi.lat, wifi.lon, wifi.range, None)
+        result = ExternalResult(wifi.lat, wifi.lon, wifi.radius, None)
         self.cache.set(query, result)
         self.assertEqual(self.cache.get(query), result)
         self.check_stats(counter=[
@@ -307,13 +307,13 @@ class TestSource(BaseSourceTest):
                 'lat': self.fallback_model.lat,
                 'lng': self.fallback_model.lon,
             },
-            'accuracy': float(self.fallback_model.range),
+            'accuracy': float(self.fallback_model.radius),
             'fallback': 'lacf',
         }
         self.fallback_cached_result = floatjson.float_dumps({
             'lat': self.fallback_model.lat,
             'lon': self.fallback_model.lon,
-            'accuracy': float(self.fallback_model.range),
+            'accuracy': float(self.fallback_model.radius),
             'fallback': 'lacf',
         })
 
@@ -510,7 +510,7 @@ class TestSource(BaseSourceTest):
             source=DataSource.geoip,
             lat=london.lat,
             lon=london.lon,
-            accuracy=float(london.range))
+            accuracy=float(london.radius))
 
         query = self.model_query(wifis=wifis, ip=london.ip)
         self.check_should_search(query, True, results=[geoip_pos])

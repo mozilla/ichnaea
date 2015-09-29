@@ -55,30 +55,30 @@ class TestCellObservation(DBTestCase):
 class TestWifiObservation(DBTestCase):
 
     def test_invalid(self):
-        key = '3680873e9b83'
-        obs = WifiObservation.create(key=key, lat=0.0, lon=0.0)
+        mac = '3680873e9b83'
+        obs = WifiObservation.create(key=mac, lat=0.0, lon=0.0)
         self.assertTrue(obs is None, obs)
 
     def test_fields(self):
-        key = '3680873e9b83'
+        mac = '3680873e9b83'
         obs = WifiObservation.create(
-            key=key, lat=GB_LAT, lon=GB_LON,
+            key=mac, lat=GB_LAT, lon=GB_LON,
             channel=5, signal=-45)
 
         self.assertEqual(obs.lat, GB_LAT)
         self.assertEqual(obs.lon, GB_LON)
-        self.assertEqual(obs.key, key)
+        self.assertEqual(obs.mac, mac)
         self.assertEqual(obs.channel, 5)
         self.assertEqual(obs.signal, -45)
 
     def test_internaljson(self):
-        key = '3680873e9b83'
+        mac = '3680873e9b83'
         obs = WifiObservation.create(
-            key=key, lat=GB_LAT, lon=GB_LON)
+            key=mac, lat=GB_LAT, lon=GB_LON)
 
         result = internal_loads(internal_dumps(obs))
         self.assertTrue(type(result), WifiObservation)
         self.assertTrue(result.accuracy is None)
-        self.assertEqual(result.key, key)
+        self.assertEqual(result.mac, mac)
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)

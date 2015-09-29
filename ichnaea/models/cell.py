@@ -347,6 +347,16 @@ class CellAreaMixin(PositionMixin, TimeTrackingMixin,
             )
         return validated
 
+    @property
+    def radius(self):
+        # BBB: alias
+        return self.range
+
+    @property
+    def avg_cell_radius(self):
+        # BBB: alias
+        return self.avg_cell_range
+
 
 class CellArea(CellAreaMixin, _Model):
     __tablename__ = 'cell_area'
@@ -419,6 +429,16 @@ class Cell(BboxMixin, PositionMixin, TimeTrackingMixin,
     total_measures = Column(Integer(unsigned=True))
     new_measures = Column(Integer(unsigned=True))
 
+    @property
+    def radius(self):
+        # BBB: alias
+        return self.range
+
+    @property
+    def samples(self):
+        # BBB: alias
+        return self.total_measures
+
 
 class ValidOCIDCellSchema(ValidCellKeySchema, ValidPositionSchema,
                           ValidTimeTrackingSchema):
@@ -454,17 +474,27 @@ class OCIDCell(PositionMixin, TimeTrackingMixin,
     changeable = Column(Boolean)
 
     @property
+    def radius(self):
+        # BBB: alias
+        return self.range
+
+    @property
+    def samples(self):
+        # BBB: alias
+        return self.total_measures
+
+    @property
     def min_lat(self):
-        return geocalc.latitude_add(self.lat, self.lon, -self.range)
+        return geocalc.latitude_add(self.lat, self.lon, -self.radius)
 
     @property
     def max_lat(self):
-        return geocalc.latitude_add(self.lat, self.lon, self.range)
+        return geocalc.latitude_add(self.lat, self.lon, self.radius)
 
     @property
     def min_lon(self):
-        return geocalc.longitude_add(self.lat, self.lon, -self.range)
+        return geocalc.longitude_add(self.lat, self.lon, -self.radius)
 
     @property
     def max_lon(self):
-        return geocalc.longitude_add(self.lat, self.lon, self.range)
+        return geocalc.longitude_add(self.lat, self.lon, self.radius)

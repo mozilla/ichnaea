@@ -170,11 +170,6 @@ class WifiShard(CreationMixin,
         )
         return _indices + (cls._settings, )
 
-    @property
-    def range(self):
-        # BBB: alias
-        return self.radius
-
     @classmethod
     def create(cls, _raise_invalid=False, **kw):
         """

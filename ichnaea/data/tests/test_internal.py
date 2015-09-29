@@ -87,7 +87,7 @@ class TestUploader(BaseExportTest):
         self.assertEqual(cell.lac, cell_data['locationAreaCode'])
         self.assertEqual(cell.cid, cell_data['cellId'])
         self.assertEqual(cell.psc, cell_data['primaryScramblingCode'])
-        self.assertEqual(cell.total_measures, 1)
+        self.assertEqual(cell.samples, 1)
 
     def test_cell_duplicated(self):
         self.add_reports(cell_factor=1, wifi_factor=0)
@@ -107,7 +107,7 @@ class TestUploader(BaseExportTest):
 
         cells = self.session.query(Cell).all()
         self.assertEqual(len(cells), 1)
-        self.assertEqual(cells[0].total_measures, 1)
+        self.assertEqual(cells[0].samples, 1)
 
     def test_cell_invalid(self):
         self.add_reports(cell_factor=1, wifi_factor=0, cell_mcc=-2)

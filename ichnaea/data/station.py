@@ -222,7 +222,7 @@ class CellUpdater(StationUpdater):
                 # the station since it will be deleted by caller momentarily
                 return (True, None, None)
             # limit the maximum weight of the old station estimate
-            old_weight = min(station.total_measures,
+            old_weight = min(station.samples,
                              self.MAX_OLD_OBSERVATIONS)
             new_weight = old_weight + obs_length
 
@@ -233,7 +233,7 @@ class CellUpdater(StationUpdater):
 
         # increase total counter
         if station is not None:
-            values['total_measures'] = station.total_measures + obs_length
+            values['total_measures'] = station.samples + obs_length
         else:
             values['total_measures'] = obs_length
 
@@ -312,7 +312,7 @@ class CellUpdater(StationUpdater):
         if new_station_values:
             # do a batch insert of new stations
             stmt = Cell.__table__.insert(
-                mysql_on_duplicate='total_measures = total_measures'  # no-op
+                mysql_on_duplicate='psc = psc'  # no-op
             )
             # but limit the batch depending on each model
             ins_batch = Cell._insert_batch

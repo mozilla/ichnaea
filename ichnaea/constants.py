@@ -34,7 +34,7 @@ MIN_LON = -180.0  #: Minimum unrestricted longitude in :term:`WSG84`.
 
 WIFI_MIN_ACCURACY = 100.0  #: Minimum accuracy returned for Wifi queries.
 CELL_MIN_ACCURACY = 5000.0  #: Minimum accuracy returned for cell queries.
-LAC_MIN_ACCURACY = 20000.0  #: Minimum accuracy returned for cell area queries.
+CELLAREA_MIN_ACCURACY = 20000.0  #: Minimum accuracy for cell area queries.
 
 GEOIP_CITY_ACCURACY = 50000.0
 """

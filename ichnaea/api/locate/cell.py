@@ -11,7 +11,7 @@ from ichnaea.api.locate.result import Position
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.constants import (
     CELL_MIN_ACCURACY,
-    LAC_MIN_ACCURACY,
+    CELLAREA_MIN_ACCURACY,
 )
 from ichnaea.geocalc import aggregate_position
 from ichnaea.models import (
@@ -30,7 +30,7 @@ def pick_best_cells(cells, area_model):
         areas[area_model.to_hashkey(cell)].append(cell)
 
     def sort_areas(areas):
-        return (len(areas), -min([cell.range for cell in areas]))
+        return (len(areas), -min([cell.radius for cell in areas]))
 
     areas = sorted(areas.values(), key=sort_areas, reverse=True)
     return areas[0]
@@ -50,7 +50,7 @@ def aggregate_cell_position(cells, result_type):
     return the aggregate position of the user inside the cluster.
     """
     circles = numpy.array(
-        [(cell.lat, cell.lon, cell.range) for cell in cells],
+        [(cell.lat, cell.lon, cell.radius) for cell in cells],
         dtype=numpy.double)
     lat, lon, accuracy = aggregate_position(circles, CELL_MIN_ACCURACY)
     return result_type(lat=lat, lon=lon, accuracy=accuracy)
@@ -60,7 +60,7 @@ def aggregate_area_position(area, result_type):
     """
     Given a single area, return the position of the user inside it.
     """
-    accuracy = float(max(area.range, LAC_MIN_ACCURACY))
+    accuracy = float(max(area.radius, CELLAREA_MIN_ACCURACY))
     return result_type(
         lat=area.lat, lon=area.lon, accuracy=accuracy, fallback='lacf')
 

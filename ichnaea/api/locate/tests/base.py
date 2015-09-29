@@ -18,7 +18,7 @@ from ichnaea.api.locate.result import (
 )
 from ichnaea.constants import (
     CELL_MIN_ACCURACY,
-    LAC_MIN_ACCURACY,
+    CELLAREA_MIN_ACCURACY,
     WIFI_MIN_ACCURACY,
 )
 from ichnaea.models import (
@@ -46,7 +46,7 @@ class DummyModel(object):
                  alpha2=None, name=None, ip=None):
         self.lat = lat
         self.lon = lon
-        self.range = accuracy
+        self.radius = accuracy
         self.alpha2 = alpha2
         self.name = name
         self.ip = ip
@@ -150,16 +150,16 @@ class BaseSourceTest(ConnectionTestCase):
             check_func = self.assertAlmostEqual
             for model in models:
                 if isinstance(model, (Cell, OCIDCell)):
-                    model_radius = kw.get('accuracy', model.range)
+                    model_radius = kw.get('accuracy', model.radius)
                     accuracy = max(model_radius, CELL_MIN_ACCURACY)
                 elif isinstance(model, (CellArea, OCIDCellArea)):
-                    model_radius = kw.get('accuracy', model.range)
-                    accuracy = max(model_radius, LAC_MIN_ACCURACY)
+                    model_radius = kw.get('accuracy', model.radius)
+                    accuracy = max(model_radius, CELLAREA_MIN_ACCURACY)
                 elif isinstance(model, WifiShard):
                     model_radius = kw.get('accuracy', model.radius)
                     accuracy = max(model_radius, WIFI_MIN_ACCURACY)
                 else:
-                    accuracy = kw.get('accuracy', model.range)
+                    accuracy = kw.get('accuracy', model.radius)
                 expected.append({
                     'lat': kw.get('lat', model.lat),
                     'lon': kw.get('lon', model.lon),
@@ -251,7 +251,7 @@ class BaseLocateTest(object):
                         model_value = max(model_value, CELL_MIN_ACCURACY)
                     elif isinstance(model, (CellArea, OCIDCellArea)):
                         model_value = getattr(model, 'range')
-                        model_value = max(model_value, LAC_MIN_ACCURACY)
+                        model_value = max(model_value, CELLAREA_MIN_ACCURACY)
                     elif isinstance(model, WifiShard):
                         model_value = getattr(model, 'radius')
                         model_value = max(model_value, WIFI_MIN_ACCURACY)

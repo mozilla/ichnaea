@@ -86,11 +86,11 @@ class CellAreaUpdater(DataTask):
                 max_lat, max_lon, min_lat, min_lon)
 
             # Now create or update the area
-            cell_ranges = numpy.array([
-                (numpy.nan if cell.range is None else cell.range)
+            cell_radii = numpy.array([
+                (numpy.nan if cell.radius is None else cell.radius)
                 for cell in cells
             ], dtype=numpy.int32)
-            avg_cell_range = int(round(numpy.nanmean(cell_ranges)))
+            avg_cell_radius = int(round(numpy.nanmean(cell_radii)))
             num_cells = len(cells)
 
             if area is None:
@@ -102,7 +102,7 @@ class CellAreaUpdater(DataTask):
                     lat=ctr_lat,
                     lon=ctr_lon,
                     range=radius,
-                    avg_cell_range=avg_cell_range,
+                    avg_cell_range=avg_cell_radius,
                     num_cells=num_cells,
                     radio=radio,
                     mcc=mcc,
@@ -116,7 +116,7 @@ class CellAreaUpdater(DataTask):
                 area.lat = ctr_lat
                 area.lon = ctr_lon
                 area.range = radius
-                area.avg_cell_range = avg_cell_range
+                area.avg_cell_range = avg_cell_radius
                 area.num_cells = num_cells
 
 

@@ -112,7 +112,6 @@ class TestWifiShard(DBTestCase):
         self.assertEqual(wifi.max_lon, GB_LON)
         self.assertEqual(wifi.min_lon, GB_LON)
         self.assertEqual(wifi.radius, 200)
-        self.assertEqual(wifi.range, 200)
         self.assertEqual(wifi.country, 'GB')
         self.assertEqual(wifi.samples, 10)
         self.assertEqual(wifi.source, StationSource.gnss)

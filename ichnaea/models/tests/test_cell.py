@@ -110,7 +110,7 @@ class TestCell(DBTestCase):
         self.assertEqual(result.cid, 23456)
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
-        self.assertEqual(result.total_measures, 15)
+        self.assertEqual(result.samples, 15)
 
 
 class TestCellArea(DBTestCase):
@@ -224,8 +224,8 @@ cast(conv(substr(hex(`areaid`), 11, 4), 16, 10) as unsigned)
         self.assertEqual(result.lac, 1234)
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
-        self.assertEqual(result.range, 10)
-        self.assertEqual(result.avg_cell_range, 10)
+        self.assertEqual(result.radius, 10)
+        self.assertEqual(result.avg_cell_radius, 10)
         self.assertEqual(result.num_cells, 15)
 
 
@@ -262,7 +262,7 @@ class TestOCIDCell(DBTestCase):
         self.assertEqual(result.cid, 23456)
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
-        self.assertEqual(result.total_measures, 15)
+        self.assertEqual(result.samples, 15)
         self.assertAlmostEqual(result.min_lat, GB_LAT - 0.009, 7)
         self.assertAlmostEqual(result.min_lon, GB_LON - 0.02727469, 7)
         self.assertAlmostEqual(result.max_lat, GB_LAT + 0.009, 7)
@@ -284,6 +284,6 @@ class TestOCIDCellArea(DBTestCase):
         self.assertEqual(result.lac, 1234)
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
-        self.assertEqual(result.range, 10)
-        self.assertEqual(result.avg_cell_range, 10)
+        self.assertEqual(result.radius, 10)
+        self.assertEqual(result.avg_cell_radius, 10)
         self.assertEqual(result.num_cells, 15)

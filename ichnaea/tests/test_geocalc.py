@@ -67,7 +67,7 @@ class TestDistance(TestCase):
         # floats.
         self.assertAlmostEqual(distance(90.0, 0.0, -90.0, 0), 20015086.796, 4)
 
-    def test_out_of_range(self):
+    def test_out_of_max_bounds(self):
         self.assertAlmostEqual(
             distance(-100.0, -186.0, 0.0, 0.0), 8901747.5973, 4)
 
