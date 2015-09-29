@@ -29,7 +29,7 @@ class CellRemover(DataTask):
     def __init__(self, task, session, pipe):
         super(CellRemover, self).__init__(task, session)
         self.pipe = pipe
-        self.area_queue = self.task.app.data_queues['update_cellarea']
+        self.area_queue = self.task.app.data_queues['update_cell_lac']
 
     def __call__(self, cell_keys):
         cells_removed = 0
@@ -100,7 +100,7 @@ class CellUpdater(StationUpdater):
             key.radio, key.mcc, key.mnc, key.lac, codec='base64'))
 
     def queue_area_updates(self):
-        data_queue = self.task.app.data_queues['update_cellarea']
+        data_queue = self.task.app.data_queues['update_cell_lac']
         data_queue.enqueue(list(self.updated_areas), pipe=self.pipe)
 
     def blocklisted_station(self, block):

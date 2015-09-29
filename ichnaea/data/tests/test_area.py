@@ -14,7 +14,7 @@ class TestArea(CeleryTestCase):
 
     def setUp(self):
         super(TestArea, self).setUp()
-        self.area_queue = self.celery_app.data_queues['update_cellarea']
+        self.area_queue = self.celery_app.data_queues['update_cell_lac']
         self.obs_queue = self.celery_app.data_queues['update_cell']
 
     def test_empty(self):

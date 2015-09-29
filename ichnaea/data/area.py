@@ -28,7 +28,7 @@ class CellAreaUpdater(DataTask):
         self.utcnow = util.utcnow()
 
     def scan(self, update_task, batch=100):
-        queue = self.task.app.data_queues['update_cellarea']
+        queue = self.task.app.data_queues['update_cell_lac']
         redis_areas = queue.dequeue(batch=batch)
         areaids = list(set(redis_areas))
         batch_size = 20
