@@ -33,8 +33,8 @@ class TestMapStat(CeleryTestCase):
         grids = []
         for lat, lon in pairs:
             grids.append(
-                encode_datamap_grid(lat, lon, scale=True, codec='base64'))
-        self.queue.enqueue(grids)
+                encode_datamap_grid(lat, lon, scale=True))
+        self.queue.enqueue(grids, json=False)
 
     def test_empty(self):
         update_mapstat.delay().get()

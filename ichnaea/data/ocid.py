@@ -281,7 +281,7 @@ class ImportBase(object):
                     commit_batch(rows)
 
         self.area_queue.enqueue(
-            [encode_cellarea(*id_, codec='base64') for id_ in areaids])
+            [encode_cellarea(*id_) for id_ in areaids], json=False)
 
 
 class ImportExternal(ImportBase):

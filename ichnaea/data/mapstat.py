@@ -1,3 +1,5 @@
+import base64
+
 from sqlalchemy.orm import load_only
 
 from ichnaea.data.base import DataTask
@@ -17,13 +19,16 @@ class MapStatUpdater(DataTask):
     def __call__(self, batch=1000):
         queue = self.task.app.data_queues['update_mapstat']
         today = util.utcnow().date()
-        positions = queue.dequeue(batch=batch)
+        positions = queue.dequeue(batch=batch, json=False)
         if not positions:
             return 0
 
         scaled_positions = set()
         for position in positions:
-            lat, lon = decode_datamap_grid(position, codec='base64')
+            if len(position) > 8:  # pragma: no cover
+                # BBB
+                position = base64.b64decode(position.strip('"'))
+            lat, lon = decode_datamap_grid(position)
             scaled_positions.add((lat, lon))
 
         wanted = set()

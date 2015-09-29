@@ -25,8 +25,8 @@ class TestArea(CeleryTestCase):
         self.session.flush()
 
         areaid = encode_cellarea(
-            cell.radio, cell.mcc, cell.mnc, cell.lac, codec='base64')
-        self.area_queue.enqueue([areaid])
+            cell.radio, cell.mcc, cell.mnc, cell.lac)
+        self.area_queue.enqueue([areaid], json=False)
         update_cellarea.delay().get()
 
         area = self.session.query(CellArea).one()
@@ -40,8 +40,8 @@ class TestArea(CeleryTestCase):
         area = CellAreaFactory()
         self.session.flush()
 
-        areaid = encode_cellarea(*area.areaid, codec='base64')
-        self.area_queue.enqueue([areaid])
+        areaid = encode_cellarea(*area.areaid)
+        self.area_queue.enqueue([areaid], json=False)
         update_cellarea.delay().get()
         self.assertEqual(self.session.query(CellArea).count(), 0)
 
@@ -52,8 +52,8 @@ class TestArea(CeleryTestCase):
             radio=area.radio, mcc=area.mcc, mnc=area.mnc, lac=area.lac)
         self.session.commit()
 
-        areaid = encode_cellarea(*area.areaid, codec='base64')
-        self.area_queue.enqueue([areaid])
+        areaid = encode_cellarea(*area.areaid)
+        self.area_queue.enqueue([areaid], json=False)
         update_cellarea.delay().get()
 
         self.session.refresh(area)
@@ -73,8 +73,8 @@ class TestArea(CeleryTestCase):
                     max_lat=None, min_lon=None, **area_key)
         self.session.commit()
 
-        areaid = encode_cellarea(*area.areaid, codec='base64')
-        self.area_queue.enqueue([areaid])
+        areaid = encode_cellarea(*area.areaid)
+        self.area_queue.enqueue([areaid], json=False)
         update_cellarea.delay().get()
 
         self.session.refresh(area)

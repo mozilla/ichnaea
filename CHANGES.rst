@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Avoid base64/json overhead for simple queues containing byte values.
+
 - Maintain a queue TTL value and process remaining data for inactive queues.
 
 - Remove hashkey functionality from cell area models.

@@ -206,9 +206,8 @@ class ReportQueue(DataTask):
         queue = self.task.app.data_queues['update_mapstat']
         grids = set()
         for lat, lon in positions:
-            grids.add(encode_datamap_grid(
-                lat, lon, scale=True, codec='base64'))
-        queue.enqueue(list(grids), pipe=self.pipe)
+            grids.add(encode_datamap_grid(lat, lon, scale=True))
+        queue.enqueue(list(grids), pipe=self.pipe, json=False)
 
     def process_score(self, userid, positions, new_station_count):
         if userid is None or len(positions) <= 0:

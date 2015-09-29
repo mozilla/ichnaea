@@ -48,9 +48,12 @@ class CellAreaUpdater(DataTask):
             self.update_area(areaid)
 
     def __call__(self, batch=100):
-        areaids = self.queue.dequeue(batch=batch)
+        areaids = self.queue.dequeue(batch=batch, json=False)
         for areaid in set(areaids):
-            self.update_area(base64.b64decode(areaid))
+            if len(areaid) > 7:  # pragma: no cover
+                # BBB
+                areaid = base64.b64decode(areaid.strip('"'))
+            self.update_area(areaid)
 
         if self.queue.enough_data(batch=batch):  # pragma: no cover
             self.task.apply_async(

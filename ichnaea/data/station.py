@@ -39,10 +39,11 @@ class CellRemover(DataTask):
             query = Cell.querykey(self.session, key)
             cells_removed += query.delete()
             changed_areas.add(encode_cellarea(
-                key.radio, key.mcc, key.mnc, key.lac, codec='base64'))
+                key.radio, key.mcc, key.mnc, key.lac))
 
         if changed_areas:
-            self.area_queue.enqueue(list(changed_areas), pipe=self.pipe)
+            self.area_queue.enqueue(list(changed_areas),
+                                    pipe=self.pipe, json=False)
 
         return cells_removed
 
@@ -96,11 +97,12 @@ class CellUpdater(StationUpdater):
 
     def add_area_update(self, key):
         self.updated_areas.add(encode_cellarea(
-            key.radio, key.mcc, key.mnc, key.lac, codec='base64'))
+            key.radio, key.mcc, key.mnc, key.lac))
 
     def queue_area_updates(self):
         data_queue = self.task.app.data_queues['update_cellarea']
-        data_queue.enqueue(list(self.updated_areas), pipe=self.pipe)
+        data_queue.enqueue(list(self.updated_areas),
+                           pipe=self.pipe, json=False)
 
     def blocklisted_station(self, block):
         age = self.utcnow - block.time

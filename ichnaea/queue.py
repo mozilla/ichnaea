@@ -36,7 +36,7 @@ class BaseQueue(object):
         self.name = name
         self.redis_client = redis_client
 
-    def _dequeue(self, queue_key, batch):
+    def _dequeue(self, queue_key, batch, json=True):
         with self.redis_client.pipeline() as pipe:
             pipe.multi()
             pipe.lrange(queue_key, 0, batch - 1)
@@ -45,7 +45,9 @@ class BaseQueue(object):
             else:
                 # special case for deleting everything
                 pipe.ltrim(queue_key, 1, 0)
-            result = [internal_loads(item) for item in pipe.execute()[0]]
+            result = pipe.execute()[0]
+            if json:
+                result = [internal_loads(item) for item in result]
         return result
 
     def _push(self, pipe, items, queue_key, batch=100):
@@ -56,8 +58,12 @@ class BaseQueue(object):
             pipe.lpush(queue_key, *items[:batch])
             items = items[batch:]
 
-    def _enqueue(self, items, queue_key, batch=100, pipe=None):
-        data = [str(internal_dumps(item)) for item in items]
+    def _enqueue(self, items, queue_key, batch=100, pipe=None, json=True):
+        if json:
+            data = [str(internal_dumps(item)) for item in items]
+        else:
+            # make a copy, since _push is modifying the list in-place
+            data = list(items)
         if pipe is not None:
             self._push(pipe, data, queue_key, batch=batch)
         else:
@@ -89,11 +95,12 @@ class DataQueue(BaseQueue):
     def queue_key(self):
         return self._queue_key
 
-    def dequeue(self, batch=100):
-        return self._dequeue(self.queue_key(), batch)
+    def dequeue(self, batch=100, json=True):
+        return self._dequeue(self.queue_key(), batch, json=json)
 
-    def enqueue(self, items, batch=100, pipe=None):
-        self._enqueue(items, self.queue_key(), batch=batch, pipe=pipe)
+    def enqueue(self, items, batch=100, pipe=None, json=True):
+        self._enqueue(items, self.queue_key(),
+                      batch=batch, pipe=pipe, json=json)
 
     def enough_data(self, batch=0):
         size, age = self.size_age()
@@ -140,11 +147,12 @@ class ExportQueue(BaseQueue):
     def export_allowed(self, api_key):
         return (api_key not in self.skip_keys)
 
-    def dequeue(self, queue_key, batch=100):
-        return self._dequeue(queue_key, batch)
+    def dequeue(self, queue_key, batch=100, json=True):
+        return self._dequeue(queue_key, batch, json=json)
 
-    def enqueue(self, items, queue_key, batch=100, pipe=None):
-        self._enqueue(items, queue_key=queue_key, batch=batch, pipe=pipe)
+    def enqueue(self, items, queue_key, batch=100, pipe=None, json=True):
+        self._enqueue(items, queue_key=queue_key,
+                      batch=batch, pipe=pipe, json=json)
 
     def enough_data(self, queue_key):
         size, age = self.size_age(queue_key)
