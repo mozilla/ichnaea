@@ -197,11 +197,6 @@ class CellHashKey(HashKey):
         return value
 
 
-class CellAreaKey(CellHashKey):
-
-    _fields = ('radio', 'mcc', 'mnc', 'lac')
-
-
 class CellKey(CellHashKey):
 
     _fields = ('radio', 'mcc', 'mnc', 'lac', 'cid')
@@ -316,11 +311,8 @@ class ValidCellAreaSchema(ValidCellAreaKeySchema,
     num_cells = colander.SchemaNode(colander.Integer(), missing=0)
 
 
-class CellAreaMixin(PositionMixin, TimeTrackingMixin,
-                    CreationMixin, HashKeyQueryMixin):
+class CellAreaMixin(PositionMixin, TimeTrackingMixin, CreationMixin):
 
-    _hashkey_cls = CellAreaKey
-    _query_batch = 25
     _valid_schema = ValidCellAreaSchema()
 
     radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
@@ -430,6 +422,10 @@ class Cell(BboxMixin, PositionMixin, TimeTrackingMixin,
     new_measures = Column(Integer(unsigned=True))
 
     @property
+    def areaid(self):
+        return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)
+
+    @property
     def radius(self):
         # BBB: alias
         return self.range
@@ -472,6 +468,10 @@ class OCIDCell(PositionMixin, TimeTrackingMixin,
     range = Column(Integer)
     total_measures = Column(Integer(unsigned=True))
     changeable = Column(Boolean)
+
+    @property
+    def areaid(self):
+        return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)
 
     @property
     def radius(self):

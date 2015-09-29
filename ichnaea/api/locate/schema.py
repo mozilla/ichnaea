@@ -12,7 +12,8 @@ from ichnaea.models.base import (
     ValidationMixin,
 )
 from ichnaea.models.cell import (
-    CellAreaKey,
+    encode_cellarea,
+    encode_cellid,
     CellKey,
     ValidCellAreaKeySchema,
     ValidCellKeySchema,
@@ -42,10 +43,9 @@ class BaseLookup(HashKey, CreationMixin, ValidationMixin):
         raise NotImplementedError()
 
 
-class BaseCellLookup(HashKeyMixin, BaseLookup):
+class BaseCellLookup(BaseLookup):
     """A base class for cell related lookup models."""
 
-    _hashkey_cls = None  #:
     _key_fields = (
         'radio',
         'mcc',
@@ -88,9 +88,12 @@ class ValidCellAreaLookupSchema(ValidCellAreaKeySchema, ValidCellSignalSchema):
 class CellAreaLookup(BaseCellLookup):
     """A model class representing a cell area lookup."""
 
-    _hashkey_cls = CellAreaKey
     _valid_schema = ValidCellAreaLookupSchema()
     _fields = BaseCellLookup._fields
+
+    @property
+    def areaid(self):
+        return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)
 
 
 class ValidCellLookupSchema(ValidCellKeySchema, ValidCellSignalSchema):
@@ -103,7 +106,7 @@ class ValidCellLookupSchema(ValidCellKeySchema, ValidCellSignalSchema):
             raise colander.Invalid(node, ('CID is required in lookups.'))
 
 
-class CellLookup(BaseCellLookup):
+class CellLookup(HashKeyMixin, BaseCellLookup):
     """A model class representing a cell lookup."""
 
     _hashkey_cls = CellKey
@@ -112,6 +115,11 @@ class CellLookup(BaseCellLookup):
         'cid',
         'psc',
     ) + BaseCellLookup._signal_fields
+
+    @property
+    def cellid(self):
+        return encode_cellid(
+            self.radio, self.mcc, self.mnc, self.lac, self.cid)
 
 
 class ValidWifiLookupSchema(ValidWifiSignalSchema):

@@ -189,7 +189,7 @@ def aggregate_cluster_position(cluster, result_type):
     return result_type(lat=lat, lon=lon, accuracy=accuracy)
 
 
-def query_database(query, raven_client):
+def query_wifis(query, raven_client):
     macs = [lookup.mac for lookup in query.wifi]
     if not macs:  # pragma: no cover
         return []
@@ -242,7 +242,7 @@ class WifiPositionMixin(object):
         if not query.wifi:
             return result
 
-        wifis = query_database(query, self.raven_client)
+        wifis = query_wifis(query, self.raven_client)
         clusters = get_clusters(wifis, query.wifi)
         if clusters:
             cluster = pick_best_cluster(clusters)

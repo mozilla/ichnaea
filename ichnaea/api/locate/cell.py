@@ -20,14 +20,14 @@ from ichnaea.models import (
 )
 
 
-def pick_best_cells(cells, area_model):
+def pick_best_cells(cells):
     """
     Group cells by area, pick the best cell area. Either
-    the one with the most values or the smallest range.
+    the one with the most values or the smallest radius.
     """
     areas = defaultdict(list)
     for cell in cells:
-        areas[area_model.to_hashkey(cell)].append(cell)
+        areas[cell.areaid].append(cell)
 
     def sort_areas(areas):
         return (len(areas), -min([cell.radius for cell in areas]))
@@ -36,11 +36,9 @@ def pick_best_cells(cells, area_model):
     return areas[0]
 
 
-def pick_best_area(areas, area_model):
-    """
-    Sort areas by size, pick the smallest one.
-    """
-    areas = sorted(areas, key=operator.attrgetter('range'))
+def pick_best_area(areas):
+    """Sort areas by size, pick the smallest one."""
+    areas = sorted(areas, key=operator.attrgetter('radius'))
     return areas[0]
 
 
@@ -65,11 +63,9 @@ def aggregate_area_position(area, result_type):
         lat=area.lat, lon=area.lon, accuracy=accuracy, fallback='lacf')
 
 
-def query_database(query, lookups, model, raven_client):
-    """
-    Given a location query and a list of lookup instances, query the
-    database and return a list of model objects.
-    """
+def query_cells(query, lookups, model, raven_client):
+    # Given a location query and a list of lookup instances, query the
+    # database and return a list of model objects.
     hashkeys = [lookup.hashkey() for lookup in lookups]
     if not hashkeys:  # pragma: no cover
         return []
@@ -84,6 +80,25 @@ def query_database(query, lookups, model, raven_client):
                                      .filter(model.lon.isnot(None)))
 
         return list(model_iter)
+    except Exception:
+        raven_client.captureException()
+    return []
+
+
+def query_areas(query, lookups, model, raven_client):
+    areaids = [lookup.areaid for lookup in lookups]
+    if not areaids:  # pragma: no cover
+        return []
+
+    try:
+        load_fields = ('lat', 'lon', 'range')
+        areas = (query.session.query(model)
+                              .filter(model.areaid.in_(areaids))
+                              .filter(model.lat.isnot(None))
+                              .filter(model.lon.isnot(None))
+                              .options(load_only(*load_fields))).all()
+
+        return areas
     except Exception:
         raven_client.captureException()
     return []
@@ -107,20 +122,20 @@ class CellPositionMixin(object):
         result = self.result_type()
 
         if query.cell:
-            cells = query_database(
+            cells = query_cells(
                 query, query.cell, self.cell_model, self.raven_client)
             if cells:
-                best_cells = pick_best_cells(cells, self.area_model)
+                best_cells = pick_best_cells(cells)
                 result = aggregate_cell_position(best_cells, self.result_type)
 
             if not result.empty():
                 return result
 
         if query.cell_area:
-            areas = query_database(
+            areas = query_areas(
                 query, query.cell_area, self.area_model, self.raven_client)
             if areas:
-                best_area = pick_best_area(areas, self.area_model)
+                best_area = pick_best_area(areas)
                 result = aggregate_area_position(best_area, self.result_type)
 
         return result

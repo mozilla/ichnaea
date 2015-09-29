@@ -12,9 +12,7 @@ from ichnaea import geocalc
 from ichnaea.models import (
     encode_cellarea,
     Cell,
-    CellArea,
     OCIDCell,
-    OCIDCellArea,
     Radio,
     StatCounter,
     StatKey,
@@ -158,12 +156,10 @@ class ImportBase(object):
         self.cell_type = cell_type
         if cell_type == 'ocid':
             self.cell_model = OCIDCell
-            self.area_model = OCIDCellArea
             self.area_queue = task.app.data_queues['update_cellarea_ocid']
             self.stat_key = StatKey.unique_ocid_cell
         elif cell_type == 'cell':  # pragma: no cover
             self.cell_model = Cell
-            self.area_model = CellArea
             self.area_queue = task.app.data_queues['update_cellarea']
             self.stat_key = StatKey.unique_cell
 

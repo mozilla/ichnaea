@@ -182,18 +182,20 @@ class Query(object):
         for value in values:
             valid_area = CellAreaLookup.create(**value)
             if valid_area:
-                existing = filtered_areas.get(valid_area.hashkey())
+                areaid = valid_area.areaid
+                existing = filtered_areas.get(areaid)
                 if existing is not None and existing.better(valid_area):
                     pass
                 else:
-                    filtered_areas[valid_area.hashkey()] = valid_area
+                    filtered_areas[areaid] = valid_area
             valid_cell = CellLookup.create(**value)
             if valid_cell:
-                existing = filtered_cells.get(valid_cell.hashkey())
+                cellid = valid_cell.cellid
+                existing = filtered_cells.get(cellid)
                 if existing is not None and existing.better(valid_cell):
                     pass
                 else:
-                    filtered_cells[valid_cell.hashkey()] = valid_cell
+                    filtered_cells[cellid] = valid_cell
         self._cell_area = list(filtered_areas.values())
         self._cell = list(filtered_cells.values())
 

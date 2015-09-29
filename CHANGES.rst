@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove hashkey functionality from cell area models.
+
 - Remove non-sharded update_wifi queue.
 
 - Merge scan_areas/update_area tasks into a single new update_cellarea task.

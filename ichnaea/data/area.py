@@ -71,10 +71,7 @@ class CellAreaUpdater(DataTask):
                              .filter(self.cell_model.lon.isnot(None))).all()
 
         area_query = (self.session.query(self.area_model)
-                                  .filter(self.area_model.radio == radio)
-                                  .filter(self.area_model.mcc == mcc)
-                                  .filter(self.area_model.mnc == mnc)
-                                  .filter(self.area_model.lac == lac))
+                                  .filter(self.area_model.areaid == areaid))
 
         if len(cells) == 0:
             # If there are no more underlying cells, delete the area entry
@@ -109,7 +106,6 @@ class CellAreaUpdater(DataTask):
             avg_cell_radius = int(round(numpy.nanmean(cell_radii)))
             num_cells = len(cells)
 
-            # Now create or update the area
             if area is None:
                 stmt = self.area_model.__table__.insert(
                     mysql_on_duplicate='num_cells = num_cells'  # no-op
