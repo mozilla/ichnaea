@@ -44,7 +44,7 @@ class ScoreUpdater(DataTask):
                 ).values(value=value, **key.__dict__)
                 self.session.execute(stmt)
 
-        if self.queue.size() >= batch:
+        if self.queue.enough_data(batch=batch):
             self.task.apply_async(
                 kwargs={'batch': batch},
                 countdown=2,

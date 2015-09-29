@@ -17,6 +17,20 @@ WHITESPACE = re.compile('\s', flags=re.UNICODE)
 
 
 class BaseQueue(object):
+    """
+    A Redis based queue which stores items formatted via internaljson
+    in lists.
+
+    The lists maintain a TTL value corresponding to the time data has
+    been last put into the queue.
+
+    The enough_data function checks if a queue has either more than a
+    certain batch number of items in it, or if the last time it has
+    seen new data was more than an hour ago.
+    """
+
+    queue_ttl = 86400  #: Maximum TTL value for the Redis list.
+    queue_max_age = 3600  #: Maximum age that data can sit in the queue.
 
     def __init__(self, name, redis_client):
         self.name = name
@@ -34,24 +48,32 @@ class BaseQueue(object):
             result = [internal_loads(item) for item in pipe.execute()[0]]
         return result
 
-    def _push(self, pipe, items, queue_key, batch=100, expire=False):
-        if items and expire:
-            pipe.expire(queue_key, expire)
+    def _push(self, pipe, items, queue_key, batch=100):
+        if items:
+            pipe.expire(queue_key, self.queue_ttl)
 
         while items:
             pipe.lpush(queue_key, *items[:batch])
             items = items[batch:]
 
-    def _enqueue(self, items, queue_key, batch=100, expire=False, pipe=None):
+    def _enqueue(self, items, queue_key, batch=100, pipe=None):
         data = [str(internal_dumps(item)) for item in items]
         if pipe is not None:
-            self._push(pipe, data, queue_key, batch=batch, expire=expire)
+            self._push(pipe, data, queue_key, batch=batch)
         else:
             with redis_pipeline(self.redis_client) as pipe:
-                self._push(pipe, data, queue_key, batch=batch, expire=expire)
+                self._push(pipe, data, queue_key, batch=batch)
 
-    def _size(self, queue_key):
-        return self.redis_client.llen(queue_key)
+    def _size_age(self, queue_key):
+        with self.redis_client.pipeline() as pipe:
+            pipe.ttl(queue_key)
+            pipe.llen(queue_key)
+            ttl, size = pipe.execute()
+        if ttl < 0:
+            age = -1
+        else:
+            age = min(self.queue_ttl - ttl, 0)
+        return (size, age)
 
 
 class DataQueue(BaseQueue):
@@ -70,16 +92,18 @@ class DataQueue(BaseQueue):
     def dequeue(self, batch=100):
         return self._dequeue(self.queue_key(), batch)
 
-    def enqueue(self, items, batch=100, expire=86400, pipe=None):
-        self._enqueue(items, self.queue_key(),
-                      batch=batch, expire=expire, pipe=pipe)
+    def enqueue(self, items, batch=100, pipe=None):
+        self._enqueue(items, self.queue_key(), batch=batch, pipe=pipe)
 
     def enough_data(self, batch=0):
-        queue_size = self.size()
-        return (queue_size > 0) and (queue_size >= batch)
+        size, age = self.size_age()
+        return bool(size > 0 and (size >= batch or age >= self.queue_max_age))
 
     def size(self):
-        return self._size(self.queue_key())
+        return self._size_age(self.queue_key())[0]
+
+    def size_age(self):
+        return self._size_age(self.queue_key())
 
 
 class ExportQueue(BaseQueue):
@@ -119,13 +143,16 @@ class ExportQueue(BaseQueue):
     def dequeue(self, queue_key, batch=100):
         return self._dequeue(queue_key, batch)
 
-    def enqueue(self, items, queue_key, batch=100, expire=False, pipe=None):
-        self._enqueue(items, queue_key=queue_key,
-                      batch=batch, expire=expire, pipe=pipe)
+    def enqueue(self, items, queue_key, batch=100, pipe=None):
+        self._enqueue(items, queue_key=queue_key, batch=batch, pipe=pipe)
 
     def enough_data(self, queue_key):
-        queue_size = self.size(queue_key)
-        return (queue_size > 0) and (queue_size >= self.batch)
+        size, age = self.size_age(queue_key)
+        return bool(size > 0 and (
+            size >= self.batch or age >= self.queue_max_age))
 
     def size(self, queue_key):
-        return self._size(queue_key)
+        return self._size_age(queue_key)[0]
+
+    def size_age(self, queue_key):
+        return self._size_age(queue_key)

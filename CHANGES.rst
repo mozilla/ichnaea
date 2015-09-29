@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Maintain a queue TTL value and process remaining data for inactive queues.
+
 - Remove hashkey functionality from cell area models.
 
 - Remove non-sharded update_wifi queue.

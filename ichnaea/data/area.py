@@ -52,7 +52,7 @@ class CellAreaUpdater(DataTask):
         for areaid in set(areaids):
             self.update_area(base64.b64decode(areaid))
 
-        if self.queue.size() >= batch:  # pragma: no cover
+        if self.queue.enough_data(batch=batch):  # pragma: no cover
             self.task.apply_async(
                 kwargs={'batch': batch},
                 countdown=2,

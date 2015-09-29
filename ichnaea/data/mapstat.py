@@ -55,7 +55,7 @@ class MapStatUpdater(DataTask):
                 batch_values = new_stat_values[i:i + ins_batch]
                 self.session.execute(stmt.values(batch_values))
 
-        if queue.size() >= batch:
+        if queue.enough_data(batch=batch):
             self.task.apply_async(
                 kwargs={'batch': batch},
                 countdown=2,
