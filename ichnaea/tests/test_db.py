@@ -37,8 +37,7 @@ class TestDatabase(DBTestCase):
         self.session.execute(stmt)
 
     def test_executemany_backport(self):
-        # Backport from unreleased PyMySQL 0.6.7
-        # https://github.com/PyMySQL/PyMySQL/pull/365
+        # Fixed in PyMySQL 0.6.7
         self.session.add(WifiShard0(mac='000000123456'))
         self.session.add(WifiShard0(mac='000000abcdef'))
         self.session.commit()

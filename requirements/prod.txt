@@ -11,7 +11,7 @@ Chameleon==2.22
 colander==1.0
 configparser==3.5.0b2
 country-bounding-boxes==0.2.3
-cryptography==1.0.1
+cryptography==1.0.2
 datadog==0.9.0
 decorator==4.0.4
 enum34==1.0.4 ; python_version < '3.0'
@@ -39,9 +39,9 @@ ndg-httpsclient==0.4.0
 numpy==1.9.3
 ordereddict==1.1 ; python_version < '3.0'
 PasteDeploy==1.5.2
-pyasn1==0.1.8
+pyasn1==0.1.9
 pycparser==2.14
-PyMySQL==0.6.6
+PyMySQL==0.6.7
 pyopenssl==0.15.1
 pyramid==1.5.7
 pyramid-chameleon==0.3
