@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use the intersection of region codes from GENC and our shapefile.
+
 - Avoid base64/json overhead for simple queues containing byte values.
 
 - Maintain a queue TTL value and process remaining data for inactive queues.

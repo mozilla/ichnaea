@@ -5,6 +5,7 @@ Contains helper functions for region related tasks.
 import os
 
 from country_bounding_boxes import country_subunits_by_iso_code
+import genc
 import mobile_codes
 from shapely import geometry
 from shapely import prepared
@@ -12,7 +13,6 @@ import simplejson
 from six import string_types
 from rtree import index
 
-from ichnaea.constants import ALL_VALID_COUNTRIES
 from ichnaea import geocalc
 
 JSON_FILE = os.path.join(os.path.abspath(
@@ -32,16 +32,15 @@ class Geocoder(object):
     _shapes = None  #: maps region code to a precise shape
     _tree = None  #: RTree of buffered region envelopes
     _tree_ids = None  #: maps RTree entry id to region code
+    _valid_regions = None  #: Set of known and valid region codes
 
     def __init__(self, json_file=JSON_FILE):
-        self.json_file = json_file
         self._buffered_shapes = {}
         self._prepared_shapes = {}
         self._shapes = {}
         self._tree_ids = {}
 
-    def _fill_caches(self):
-        with open(self.json_file, 'r') as fd:
+        with open(json_file, 'r') as fd:
             data = simplejson.load(fd)
 
         for feature in data['features']:
@@ -69,14 +68,15 @@ class Geocoder(object):
         props.leaf_capacity = 20
         self._tree = index.Index(envelopes, interleaved=True, properties=props)
 
+        regions = set(self._shapes.keys())
+        genc_regions = set([rec.alpha2 for rec in genc.REGIONS])
+        self._valid_regions = frozenset(genc_regions.intersection(regions))
+
     def region(self, lat, lon):
         """
         Return a alpha2 region code matching the provided position.
         If the position is not found inside any region return None.
         """
-        if self._tree is None:  # pragma: no cover
-            self._fill_caches()
-
         # Look up point in RTree of buffered region envelopes.
         # This is a coarse-grained but very fast match.
         point = geometry.Point(lon, lat)
@@ -121,9 +121,6 @@ class Geocoder(object):
 
         Returns False if the position is outside of all known regions.
         """
-        if self._tree is None:  # pragma: no cover
-            self._fill_caches()
-
         point = geometry.Point(lon, lat)
         codes = [self._tree_ids[id_] for id_ in
                  self._tree.intersection(point.bounds)]
@@ -139,10 +136,7 @@ class Geocoder(object):
         Is the provided lat/lon position inside the region associated
         with the given alpha2 region code.
         """
-        if self._tree is None:  # pragma: no cover
-            self._fill_caches()
-
-        if code not in ALL_VALID_COUNTRIES:
+        if code not in self._valid_regions:
             return False
 
         point = geometry.Point(lon, lat)
@@ -150,17 +144,17 @@ class Geocoder(object):
             return True
         return False
 
+    def regions_for_mcc(self, mcc):
+        """
+        Return a list of :class:`mobile_codes.Country` instances matching
+        the passed in mobile country code.
 
-def regions_for_mcc(mcc):
-    """
-    Return a list of :class:`mobile_codes.Country` instances matching
-    the passed in mobile country code.
-
-    The return list is filtered by the set of recognized ISO 3166 alpha2
-    codes present in the GENC dataset.
-    """
-    regions = mobile_codes.mcc(str(mcc))
-    return [r for r in regions if r.alpha2 in ALL_VALID_COUNTRIES]
+        The return list is filtered by the set of recognized ISO 3166
+        alpha2 codes present in the GENC dataset and those that we have
+        region shapefiles for.
+        """
+        regions = mobile_codes.mcc(str(mcc))
+        return [r for r in regions if r.alpha2 in self._valid_regions]
 
 
 def region_max_radius(code):

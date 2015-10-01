@@ -1,10 +1,8 @@
-from ichnaea.constants import ALL_VALID_COUNTRIES
 from ichnaea.models.constants import ALL_VALID_MCCS
 from ichnaea.region import (
     _RADIUS_CACHE,
     GEOCODER,
     region_max_radius,
-    regions_for_mcc,
 )
 from ichnaea.tests.base import TestCase
 
@@ -94,25 +92,27 @@ class TestRegionMaxRadius(TestCase):
 class TestRegionsForMcc(TestCase):
 
     def test_no_match(self):
-        self.assertEqual(regions_for_mcc(1), [])
+        self.assertEqual(GEOCODER.regions_for_mcc(1), [])
 
     def test_single(self):
-        regions = regions_for_mcc(262)
+        regions = GEOCODER.regions_for_mcc(262)
         self.assertEqual(set([r.alpha2 for r in regions]), set(['DE']))
 
     def test_multiple(self):
-        regions = regions_for_mcc(242)
+        regions = GEOCODER.regions_for_mcc(311)
         self.assertEqual(set([r.alpha2 for r in regions]),
-                         set(['BV', 'NO']))
+                         set(['GU', 'US']))
 
     def test_filtered(self):
         # AX / Aland Islands is not in the GENC list
-        regions = regions_for_mcc(244)
+        regions = GEOCODER.regions_for_mcc(244)
         self.assertEqual(set([r.alpha2 for r in regions]), set(['FI']))
 
     def test_all_valid_mcc(self):
-        for mcc in ALL_VALID_MCCS:
-            regions = regions_for_mcc(mcc)
+        # Gibraltar, Reunion and Tuvalu aren't in the shapefile
+        ignored = set([266, 553, 647])
+        for mcc in ALL_VALID_MCCS - ignored:
+            regions = GEOCODER.regions_for_mcc(mcc)
             self.assertNotEqual(regions, [])
             codes = set([r.alpha2 for r in regions])
-            self.assertEqual(codes - ALL_VALID_COUNTRIES, set())
+            self.assertEqual(codes - GEOCODER._valid_regions, set())

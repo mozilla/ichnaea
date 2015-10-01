@@ -183,13 +183,11 @@ class TestStats(DBTestCase):
         CellAreaFactory(radio=Radio.lte, mcc=262, num_cells=1)
         CellAreaFactory(radio=Radio.gsm, mcc=310, num_cells=2)
         CellAreaFactory(radio=Radio.gsm, mcc=313, num_cells=1)
-        CellAreaFactory(radio=Radio.wcdma, mcc=242, num_cells=1)
-        CellAreaFactory(radio=Radio.lte, mcc=242, num_cells=1)
         CellAreaFactory(radio=Radio.gsm, mcc=466, num_cells=1)
         self.session.flush()
 
         # check the result
-        expected = set(['BM', 'BV', 'DE', 'GU', 'NO', 'PR', 'TW', 'US'])
+        expected = set(['BM', 'DE', 'GU', 'PR', 'TW', 'US'])
         result = regions(self.session)
         self.assertEqual(set([r['code'] for r in result]), expected)
 
@@ -218,15 +216,6 @@ class TestStats(DBTestCase):
         self.assertEqual(region_results['GU'],
                          {'gsm': 2, 'lte': 0, 'total': 2,
                           'wcdma': 0, 'multiple': True, 'order': 'guam'})
-
-        # These two regions share a mcc, so we report the same data
-        # for both of them
-        self.assertEqual(region_results['NO'],
-                         {'gsm': 0, 'lte': 1, 'total': 2,
-                          'wcdma': 1, 'multiple': True, 'order': 'norway'})
-        self.assertEqual(region_results['BV'],
-                         {'gsm': 0, 'lte': 1, 'total': 2,
-                          'wcdma': 1, 'multiple': True, 'order': 'bouvet isl'})
 
 
 class TestTransliterate(TestCase):

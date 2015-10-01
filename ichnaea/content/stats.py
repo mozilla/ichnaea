@@ -17,7 +17,7 @@ from ichnaea.models.content import (
     StatKey,
     User,
 )
-from ichnaea.region import regions_for_mcc
+from ichnaea.region import GEOCODER
 from ichnaea import util
 
 transliterate_mapping = {
@@ -184,7 +184,7 @@ def regions(session):
 
     regions = {}
     for mcc, item in mccs.items():
-        iso_codes = [rec.alpha2 for rec in regions_for_mcc(mcc)]
+        iso_codes = [rec.alpha2 for rec in GEOCODER.regions_for_mcc(mcc)]
         multiple = bool(len(iso_codes) > 1)
         for alpha2 in iso_codes:
             record = genc.region_by_alpha2(alpha2)

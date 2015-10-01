@@ -9,7 +9,7 @@ from ichnaea.api.locate.source import (
 )
 from ichnaea.api.locate.wifi import WifiPositionMixin
 from ichnaea.geoip import geoip_accuracy
-from ichnaea.region import regions_for_mcc
+from ichnaea.region import GEOCODER
 
 
 class InternalCountrySource(CountrySource):
@@ -26,7 +26,7 @@ class InternalCountrySource(CountrySource):
 
         countries = []
         for code in codes:
-            countries.extend(regions_for_mcc(code))
+            countries.extend(GEOCODER.regions_for_mcc(code))
 
         for country in countries:
             country_code = country.alpha2

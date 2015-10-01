@@ -26,10 +26,7 @@ from ichnaea.models.schema import (
 from ichnaea.models.wifi import (
     ValidWifiSignalSchema,
 )
-from ichnaea.region import (
-    regions_for_mcc,
-    GEOCODER,
-)
+from ichnaea.region import GEOCODER
 
 
 class CellKeyPsc(CellHashKey):
@@ -169,7 +166,7 @@ class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
         super(ValidCellObservationSchema, self).validator(node, cstruct)
 
         in_region = False
-        for region in regions_for_mcc(cstruct['mcc']):
+        for region in GEOCODER.regions_for_mcc(cstruct['mcc']):
             in_region = in_region or GEOCODER.in_region(
                 cstruct['lat'], cstruct['lon'], region.alpha2)
 
