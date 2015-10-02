@@ -7,13 +7,16 @@ from sqlalchemy import (
     BINARY,
     Boolean,
     Column,
+    Date,
     Index,
     PrimaryKeyConstraint,
+    String,
     UniqueConstraint,
 )
 from sqlalchemy.dialects.mysql import (
     INTEGER as Integer,
     SMALLINT as SmallInteger,
+    TINYINT as TinyInteger,
 )
 from sqlalchemy.types import TypeDecorator
 
@@ -32,12 +35,16 @@ from ichnaea.models.sa_types import (
     TZDateTime as DateTime,
 )
 from ichnaea.models.schema import (
+    DateFromString,
     DefaultNode,
     ValidatorNode,
 )
 from ichnaea.models.station import (
     BboxMixin,
     PositionMixin,
+    StationSource,
+    StationSourceNode,
+    StationSourceType,
     TimeTrackingMixin,
     ValidBboxSchema,
     ValidPositionSchema,
@@ -148,6 +155,28 @@ class CellAreaColumn(TypeDecorator):
             return None
         radio, mcc, mnc, lac = CELLAREA_STRUCT.unpack(value)
         return (Radio(radio), mcc, mnc, lac)
+
+
+class CellIdColumn(TypeDecorator):
+    """A binary type storing Cell IDs."""
+
+    impl = BINARY
+
+    def process_bind_param(self, value, dialect):
+        if value is None or isinstance(value, bytes):
+            return value
+
+        if (isinstance(value, tuple) and len(value) != 5):
+            raise ValueError('Invalid Cell ID: %r' % value)
+
+        radio, mcc, mnc, lac, cid = value
+        return CELLID_STRUCT.pack(int(radio), mcc, mnc, lac, cid)
+
+    def process_result_value(self, value, dialect):
+        if value is None:  # pragma: no cover
+            return None
+        radio, mcc, mnc, lac, cid = CELLID_STRUCT.unpack(value)
+        return (Radio(radio), mcc, mnc, lac, cid)
 
 
 class RadioType(colander.Integer):
@@ -311,8 +340,13 @@ class ValidCellAreaSchema(ValidCellAreaKeySchema,
     num_cells = colander.SchemaNode(colander.Integer(), missing=0)
 
 
-class CellAreaMixin(PositionMixin, TimeTrackingMixin, CreationMixin):
+class CellArea(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
+    __tablename__ = 'cell_area'
 
+    _indices = (
+        PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac'),
+        UniqueConstraint('areaid', name='cell_area_areaid_unique'),
+    )
     _valid_schema = ValidCellAreaSchema()
 
     radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
@@ -328,7 +362,7 @@ class CellAreaMixin(PositionMixin, TimeTrackingMixin, CreationMixin):
 
     @classmethod
     def validate(cls, entry, _raise_invalid=False, **kw):
-        validated = super(CellAreaMixin, cls).validate(
+        validated = super(CellArea, cls).validate(
             entry, _raise_invalid=_raise_invalid, **kw)
         if validated is not None and 'areaid' not in validated:
             validated['areaid'] = (
@@ -350,22 +384,111 @@ class CellAreaMixin(PositionMixin, TimeTrackingMixin, CreationMixin):
         return self.avg_cell_range
 
 
-class CellArea(CellAreaMixin, _Model):
-    __tablename__ = 'cell_area'
+class ValidCellAreaOCIDSchema(ValidCellAreaKeySchema,
+                              ValidPositionSchema,
+                              ValidTimeTrackingSchema):
+    # BBB
 
-    _indices = (
-        PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac'),
-        UniqueConstraint('areaid', name='cell_area_areaid_unique'),
-    )
+    # areaid is a derived value
+    range = colander.SchemaNode(colander.Integer(), missing=0)
+    avg_cell_range = colander.SchemaNode(colander.Integer(), missing=0)
+    num_cells = colander.SchemaNode(colander.Integer(), missing=0)
 
 
-class OCIDCellArea(CellAreaMixin, _Model):
+class OCIDCellArea(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
+    # BBB
     __tablename__ = 'ocid_cell_area'
 
     _indices = (
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac'),
         UniqueConstraint('areaid', name='ocid_cell_area_areaid_unique'),
     )
+    _valid_schema = ValidCellAreaOCIDSchema()
+
+    radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
+    mcc = Column(SmallInteger, autoincrement=False, default=None)
+    mnc = Column(SmallInteger, autoincrement=False, default=None)
+    lac = Column(SmallInteger(unsigned=True),
+                 autoincrement=False, default=None)
+
+    areaid = Column(CellAreaColumn(7), nullable=False)
+    range = Column(Integer)
+    avg_cell_range = Column(Integer)
+    num_cells = Column(Integer(unsigned=True))
+
+    @classmethod
+    def validate(cls, entry, _raise_invalid=False, **kw):
+        validated = super(OCIDCellArea, cls).validate(
+            entry, _raise_invalid=_raise_invalid, **kw)
+        if validated is not None and 'areaid' not in validated:
+            validated['areaid'] = (
+                validated['radio'],
+                validated['mcc'],
+                validated['mnc'],
+                validated['lac'],
+            )
+        return validated
+
+    @property
+    def radius(self):
+        # BBB: alias
+        return self.range
+
+    @property
+    def avg_cell_radius(self):
+        # BBB: alias
+        return self.avg_cell_range
+
+
+class ValidCellAreaOCIDSchema(ValidCellAreaKeySchema,
+                              ValidPositionSchema,
+                              ValidTimeTrackingSchema):
+
+    # areaid is a derived value
+    radius = colander.SchemaNode(colander.Integer(), missing=0)
+    country = colander.SchemaNode(colander.String(), missing=None)
+    avg_cell_radius = colander.SchemaNode(colander.Integer(), missing=0)
+    num_cells = colander.SchemaNode(colander.Integer(), missing=0)
+
+
+class CellAreaOCID(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
+    __tablename__ = 'cell_area_ocid'
+
+    _indices = (
+        PrimaryKeyConstraint('areaid'),
+        UniqueConstraint('radio', 'mcc', 'mnc', 'lac',
+                         name='cell_area_ocid_areaid_unique'),
+        Index('cell_area_ocid_country_radio_idx', 'country', 'radio'),
+        Index('cell_area_ocid_created_idx', 'created'),
+        Index('cell_area_ocid_modified_idx', 'modified'),
+        Index('cell_area_ocid_latlon_idx', 'lat', 'lon'),
+    )
+    _valid_schema = ValidCellAreaOCIDSchema()
+
+    areaid = Column(CellAreaColumn(7))
+    radio = Column(TinyIntEnum(Radio), autoincrement=False, nullable=False)
+    mcc = Column(SmallInteger, autoincrement=False, nullable=False)
+    mnc = Column(SmallInteger, autoincrement=False, nullable=False)
+    lac = Column(SmallInteger(unsigned=True),
+                 autoincrement=False, nullable=False)
+
+    radius = Column(Integer)
+    country = Column(String(2))
+    avg_cell_radius = Column(Integer(unsigned=True))
+    num_cells = Column(Integer(unsigned=True))
+
+    @classmethod
+    def validate(cls, entry, _raise_invalid=False, **kw):
+        validated = super(CellAreaOCID, cls).validate(
+            entry, _raise_invalid=_raise_invalid, **kw)
+        if validated is not None and 'areaid' not in validated:
+            validated['areaid'] = (
+                validated['radio'],
+                validated['mcc'],
+                validated['mnc'],
+                validated['lac'],
+            )
+        return validated
 
 
 class CellBlocklist(HashKeyQueryMixin, _Model):
@@ -438,7 +561,7 @@ class Cell(BboxMixin, PositionMixin, TimeTrackingMixin,
 
 class ValidOCIDCellSchema(ValidCellKeySchema, ValidPositionSchema,
                           ValidTimeTrackingSchema):
-    """A schema which validates the fields present in a :term:`OCID` cell."""
+    # BBB
 
     range = colander.SchemaNode(colander.Integer(), missing=0)
     total_measures = colander.SchemaNode(colander.Integer(), missing=0)
@@ -447,6 +570,7 @@ class ValidOCIDCellSchema(ValidCellKeySchema, ValidPositionSchema,
 
 class OCIDCell(PositionMixin, TimeTrackingMixin,
                CreationMixin, HashKeyQueryMixin, _Model):
+    # BBB
     __tablename__ = 'ocid_cell'
 
     _indices = (
@@ -498,3 +622,69 @@ class OCIDCell(PositionMixin, TimeTrackingMixin,
     @property
     def max_lon(self):
         return geocalc.longitude_add(self.lat, self.lon, self.radius)
+
+
+class ValidCellOCIDSchema(ValidCellKeySchema, ValidBboxSchema,
+                          ValidPositionSchema, ValidTimeTrackingSchema):
+    """A schema which validates the fields present in a :term:`OCID` cell."""
+
+    radius = colander.SchemaNode(colander.Integer(), missing=0)
+    country = colander.SchemaNode(colander.String(), missing=None)
+    samples = colander.SchemaNode(colander.Integer(), missing=0)
+    source = StationSourceNode(StationSourceType(), missing=None)
+
+    block_first = colander.SchemaNode(DateFromString(), missing=None)
+    block_last = colander.SchemaNode(DateFromString(), missing=None)
+    block_count = colander.SchemaNode(colander.Integer(), missing=0)
+
+
+class CellOCID(BboxMixin, PositionMixin, TimeTrackingMixin,
+               CreationMixin, _Model):
+    __tablename__ = 'cell_ocid'
+
+    _indices = (
+        PrimaryKeyConstraint('cellid'),
+        UniqueConstraint('radio', 'mcc', 'mnc', 'lac', 'cid',
+                         name='cell_ocid_cellid_unique'),
+        Index('cell_ocid_country_radio_idx', 'country', 'radio'),
+        Index('cell_ocid_created_idx', 'created'),
+        Index('cell_ocid_modified_idx', 'modified'),
+        Index('cell_ocid_latlon_idx', 'lat', 'lon'),
+    )
+    _valid_schema = ValidCellOCIDSchema()
+
+    cellid = Column(CellIdColumn(11))
+    radio = Column(TinyIntEnum(Radio), autoincrement=False, nullable=False)
+    mcc = Column(SmallInteger, autoincrement=False, nullable=False)
+    mnc = Column(SmallInteger, autoincrement=False, nullable=False)
+    lac = Column(SmallInteger(unsigned=True),
+                 autoincrement=False, nullable=False)
+    cid = Column(Integer(unsigned=True), autoincrement=False, nullable=False)
+    psc = Column(SmallInteger, autoincrement=False)
+
+    radius = Column(Integer(unsigned=True))
+    country = Column(String(2))
+    samples = Column(Integer(unsigned=True))
+    source = Column(TinyIntEnum(StationSource))
+
+    block_first = Column(Date)
+    block_last = Column(Date)
+    block_count = Column(TinyInteger(unsigned=True))
+
+    @classmethod
+    def validate(cls, entry, _raise_invalid=False, **kw):
+        validated = super(CellOCID, cls).validate(
+            entry, _raise_invalid=_raise_invalid, **kw)
+        if validated is not None and 'cellid' not in validated:
+            validated['cellid'] = (
+                validated['radio'],
+                validated['mcc'],
+                validated['mnc'],
+                validated['lac'],
+                validated['cid'],
+            )
+        return validated
+
+    @property
+    def areaid(self):
+        return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)

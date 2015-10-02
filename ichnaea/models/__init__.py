@@ -9,6 +9,7 @@ from ichnaea.models.api import ApiKey  # NOQA
 from ichnaea.models.cell import (  # NOQA
     Cell,
     CellArea,
+    CellAreaOCID,
     CellBlocklist,
     decode_cellarea,
     decode_cellid,
@@ -34,6 +35,7 @@ from ichnaea.models.observation import (  # NOQA
     WifiObservation,
     WifiReport,
 )
+from ichnaea.models.station import StationSource  # NOQA
 from ichnaea.models.wifi import (  # NOQA
     decode_mac,
     encode_mac,

@@ -1,7 +1,10 @@
+from ichnaea.models import StationSource
 from ichnaea.models.cell import (
     Cell,
     CellArea,
+    CellAreaOCID,
     CellBlocklist,
+    CellOCID,
     decode_cellarea,
     decode_cellid,
     encode_cellarea,
@@ -18,6 +21,7 @@ from ichnaea.tests.base import (
     GB_MCC,
     GB_MNC,
 )
+from ichnaea import util
 
 
 class TestCellCodec(TestCase):
@@ -111,6 +115,59 @@ class TestCell(DBTestCase):
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
         self.assertEqual(result.samples, 15)
+
+
+class TestCellOCID(DBTestCase):
+
+    def test_cellid(self):
+        query = self.session.query(CellOCID).filter(CellOCID.cellid == (1, 2))
+        self.assertRaises(Exception, query.first)
+
+    def test_cellid_null(self):
+        result = (self.session.query(CellOCID)
+                              .filter(CellOCID.cellid.is_(None))).all()
+        self.assertEqual(result, [])
+
+        self.session.add(CellOCID(
+            cellid=None,
+            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345))
+        with self.assertRaises(Exception):
+            self.session.flush()
+
+    def test_fields(self):
+        now = util.utcnow()
+        cellid = encode_cellid(Radio.gsm, GB_MCC, GB_MNC, 123, 2345)
+        self.session.add(CellOCID.create(
+            cellid=cellid, created=now, modified=now,
+            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345, psc=1,
+            lat=GB_LAT, lon=GB_LON,
+            max_lat=GB_LAT + 0.1, min_lat=GB_LAT - 0.1,
+            max_lon=GB_LON + 0.1, min_lon=GB_LON - 0.1,
+            country='GB', radius=11, samples=15, source=StationSource.gnss,
+            block_first=now.date(), block_last=now.date(), block_count=1))
+        self.session.flush()
+
+        result = (self.session.query(CellOCID)
+                              .filter(CellOCID.cellid == cellid)).first()
+        self.assertEqual(result.areaid, cellid[:7])
+        self.assertEqual(encode_cellid(*result.cellid), cellid)
+        self.assertEqual(result.radio, Radio.gsm)
+        self.assertEqual(result.mcc, GB_MCC)
+        self.assertEqual(result.mnc, GB_MNC)
+        self.assertEqual(result.lac, 123)
+        self.assertEqual(result.cid, 2345)
+        self.assertEqual(result.psc, 1)
+        self.assertEqual(result.created, now)
+        self.assertEqual(result.modified, now)
+        self.assertEqual(result.lat, GB_LAT)
+        self.assertEqual(result.lon, GB_LON)
+        self.assertEqual(result.country, 'GB')
+        self.assertEqual(result.radius, 11)
+        self.assertEqual(result.samples, 15)
+        self.assertEqual(result.source, StationSource.gnss)
+        self.assertEqual(result.block_first, now.date())
+        self.assertEqual(result.block_last, now.date())
+        self.assertEqual(result.block_count, 1)
 
 
 class TestCellArea(DBTestCase):
@@ -229,6 +286,30 @@ cast(conv(substr(hex(`areaid`), 11, 4), 16, 10) as unsigned)
         self.assertEqual(result.num_cells, 15)
 
 
+class TestCellAreaOCID(DBTestCase):
+
+    def test_fields(self):
+        areaid = encode_cellarea(Radio.wcdma, GB_MCC, GB_MNC, 123)
+        self.session.add(CellAreaOCID.create(
+            areaid=areaid, radio=Radio.wcdma, mcc=GB_MCC, mnc=GB_MNC, lac=123,
+            lat=GB_LAT, lon=GB_LON, radius=10, country='GB',
+            avg_cell_radius=11, num_cells=15))
+        self.session.flush()
+
+        result = self.session.query(CellAreaOCID).first()
+        self.assertEqual(encode_cellarea(*result.areaid), areaid)
+        self.assertEqual(result.radio, Radio.wcdma)
+        self.assertEqual(result.mcc, GB_MCC)
+        self.assertEqual(result.mnc, GB_MNC)
+        self.assertEqual(result.lac, 123)
+        self.assertEqual(result.lat, GB_LAT)
+        self.assertEqual(result.lon, GB_LON)
+        self.assertEqual(result.radius, 10)
+        self.assertEqual(result.country, 'GB')
+        self.assertEqual(result.avg_cell_radius, 11)
+        self.assertEqual(result.num_cells, 15)
+
+
 class TestCellBlocklist(DBTestCase):
 
     def test_fields(self):
@@ -247,6 +328,7 @@ class TestCellBlocklist(DBTestCase):
 
 
 class TestOCIDCell(DBTestCase):
+    # BBB
 
     def test_fields(self):
         self.session.add(OCIDCell.create(
@@ -270,15 +352,16 @@ class TestOCIDCell(DBTestCase):
 
 
 class TestOCIDCellArea(DBTestCase):
+    # BBB
 
     def test_fields(self):
         self.session.add(OCIDCellArea.create(
-            radio=Radio.umts, mcc=GB_MCC, mnc=GB_MNC, lac=1234, range=10,
+            radio=Radio.wcdma, mcc=GB_MCC, mnc=GB_MNC, lac=1234, range=10,
             lat=GB_LAT, lon=GB_LON, avg_cell_range=10, num_cells=15))
         self.session.flush()
 
         result = self.session.query(OCIDCellArea).first()
-        self.assertEqual(result.radio, Radio.umts)
+        self.assertEqual(result.radio, Radio.wcdma)
         self.assertEqual(result.mcc, GB_MCC)
         self.assertEqual(result.mnc, GB_MNC)
         self.assertEqual(result.lac, 1234)

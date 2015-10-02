@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 339d19da63ee: Add new cell OCID tables.
+
 Changes
 ~~~~~~~
 
