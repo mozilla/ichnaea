@@ -1,6 +1,6 @@
 {
   "name": "ichnaea",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "private": true,
   "author": "Mozilla <dev-geolocation@lists.mozilla.org>",
   "repository": {
@@ -9,8 +9,8 @@
   },
   "license": "Apache-2.0",
   "devDependencies": {
-    "bower": "~1.4",
-    "clean-css": "~3.3",
+    "bower": "~1.5",
+    "clean-css": "~3.4",
     "uglify-js": "~2.4"
   }
 }

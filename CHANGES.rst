@@ -28,6 +28,8 @@ Changes
 
 - Remove backwards compatible tasks and area/mapstat task processing logic.
 
+- Update to latest versions of bower, clean-css and uglify-js.
+
 - Update to latest versions of cryptography, Cython, pyasn1 and PyMySQL.
 
 20150928100200
