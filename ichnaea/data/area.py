@@ -1,7 +1,6 @@
 import base64
 
 import numpy
-from sqlalchemy import func
 from sqlalchemy.orm import load_only
 
 from ichnaea.data.base import DataTask
@@ -144,13 +143,16 @@ class CellAreaOCIDUpdater(CellAreaUpdater):
     queue_name = 'update_cellarea_ocid'
 
     def update_area(self, areaid):
+        radio, mcc, mnc, lac = decode_cellarea(areaid)
         # Select all cells in this area and derive a bounding box for them
         load_fields = ('lat', 'lon', 'country', 'radius',
                        'max_lat', 'max_lon', 'min_lat', 'min_lon')
 
         cells = (self.session.query(self.cell_model)
-                             .filter(func.substr(self.cell_model.cellid,
-                                                 1, 7) == areaid)
+                             .filter(self.cell_model.radio == radio)
+                             .filter(self.cell_model.mcc == mcc)
+                             .filter(self.cell_model.mnc == mnc)
+                             .filter(self.cell_model.lac == lac)
                              .filter(self.cell_model.lat.isnot(None))
                              .filter(self.cell_model.lon.isnot(None))
                              .options(load_only(*load_fields))).all()
@@ -197,7 +199,6 @@ class CellAreaOCIDUpdater(CellAreaUpdater):
                 country = list(countries)[0]
 
             if area is None:
-                radio, mcc, mnc, lac = decode_cellarea(areaid)
                 stmt = self.area_model.__table__.insert(
                     mysql_on_duplicate='num_cells = num_cells'  # no-op
                 ).values(

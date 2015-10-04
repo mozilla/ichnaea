@@ -216,7 +216,8 @@ class ImportBase(object):
         validated = validate(data)
         if validated is None:
             return None
-        for field in ('radio', 'mcc', 'mnc', 'lac', 'cid'):
+        for field in ('country', 'cellid',
+                      'radio', 'mcc', 'mnc', 'lac', 'cid'):
             if validated[field] is None:
                 return None
 
