@@ -9,7 +9,7 @@ from ichnaea.data.tasks import (
     monitor_queue_size,
 )
 from ichnaea.tests.base import CeleryTestCase
-from ichnaea.tests.factories import OCIDCellFactory
+from ichnaea.tests.factories import CellOCIDFactory
 from ichnaea import util
 
 
@@ -79,12 +79,12 @@ class TestMonitorTasks(CeleryTestCase):
         for i in range(35, 5, -5):
             created = now - timedelta(hours=i)
             expected.append(i * 3600000)
-            OCIDCellFactory(created=created, cid=i)
+            CellOCIDFactory(created=created, cid=i)
             self.session.flush()
             results.append(monitor_ocid_import.delay().get())
 
         self.check_stats(gauge=[
-            ('table', len(expected), ['table:ocid_cell_age']),
+            ('table', len(expected), ['table:cell_ocid_age']),
         ])
         for result, expect in zip(results, expected):
             # The values should be almost equal, ignoring differences

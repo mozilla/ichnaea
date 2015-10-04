@@ -12,7 +12,7 @@ from ichnaea import geocalc
 from ichnaea.models import (
     encode_cellarea,
     Cell,
-    OCIDCell,
+    CellOCID,
     Radio,
     StatCounter,
     StatKey,
@@ -155,9 +155,9 @@ class ImportBase(object):
         self.task = task
         self.cell_type = cell_type
         if cell_type == 'ocid':
-            self.cell_model = OCIDCell
+            self.cell_model = CellOCID
             self.area_queue = task.app.data_queues['update_cellarea_ocid']
-            self.stat_key = StatKey.unique_ocid_cell
+            self.stat_key = StatKey.unique_cell_ocid
         elif cell_type == 'cell':  # pragma: no cover
             self.cell_model = Cell
             self.area_queue = task.app.data_queues['update_cellarea']
@@ -171,17 +171,22 @@ class ImportBase(object):
             ('psc', 5, None, int),
             ('lon', 6, None, float),
             ('lat', 7, None, float),
-            ('range', 8, 0, int),
-            ('total_measures', 9, 0, int),
             ('created', 11, 0, int),
             ('modified', 12, 0, int),
         ]
         if self.cell_type == 'ocid':
-            self.import_spec.append(
-                ('changeable', 10, True, bool))
+            self.import_spec.extend([
+                ('radius', 8, 0, int),
+                ('samples', 9, 0, int),
+            ])
+        else:  # pragma: no cover
+            self.import_spec.extend([
+                ('range', 8, 0, int),
+                ('total_measures', 9, 0, int),
+            ])
 
     @staticmethod
-    def make_import_dict(validate, cell_type, import_spec, row):
+    def make_import_dict(validate, radius_field, import_spec, row):
         data = {}
 
         # parse radio field
@@ -204,11 +209,9 @@ class ImportBase(object):
 
         data['created'] = datetime.utcfromtimestamp(data['created'])
         data['modified'] = datetime.utcfromtimestamp(data['modified'])
-
-        if cell_type == 'cell':  # pragma: no cover
-            data['max_lat'], data['min_lat'], \
-                data['max_lon'], data['min_lon'] = geocalc.bbox(
-                    data['lat'], data['lon'], data['range'])
+        data['max_lat'], data['min_lat'], \
+            data['max_lon'], data['min_lon'] = geocalc.bbox(
+                data['lat'], data['lon'], data[radius_field])
 
         validated = validate(data)
         if validated is None:
@@ -216,26 +219,34 @@ class ImportBase(object):
         for field in ('radio', 'mcc', 'mnc', 'lac', 'cid'):
             if validated[field] is None:
                 return None
+
         return validated
 
     def import_stations(self, session, pipe, filename):
         today = util.utcnow().date()
 
         on_duplicate = (
-            'modified = values(modified), '
-            'total_measures = values(total_measures), '
-            'lat = values(lat), '
-            'lon = values(lon), '
-            'psc = values(psc), '
-            '`range` = values(`range`)')
+            'modified = values(modified)'
+            ', lat = values(lat)'
+            ', lon = values(lon)'
+            ', psc = values(psc)'
+            ', max_lat = values(max_lat)'
+            ', min_lat = values(min_lat)'
+            ', max_lon = values(max_lon)'
+            ', min_lon = values(min_lon)'
+        )
         if self.cell_type == 'ocid':
-            on_duplicate += ', changeable = values(changeable)'
-        elif self.cell_type == 'cell':  # pragma: no cover
+            radius_field = 'radius'
             on_duplicate += (
-                ', max_lat = values(max_lat)'
-                ', min_lat = values(min_lat)'
-                ', max_lon = values(max_lon)'
-                ', min_lon = values(min_lon)')
+                ', `radius` = values(`radius`)'
+                ', `samples` = values(`samples`)'
+            )
+        elif self.cell_type == 'cell':  # pragma: no cover
+            radius_field = 'range'
+            on_duplicate += (
+                ', `range` = values(`range`)'
+                ', `total_measures` = values(`total_measures`)'
+            )
 
         table_insert = self.cell_model.__table__.insert(
             mysql_on_duplicate=on_duplicate)
@@ -257,7 +268,7 @@ class ImportBase(object):
                 csv_reader = csv.reader(gzip_file)
                 parse_row = partial(self.make_import_dict,
                                     self.cell_model.validate,
-                                    self.cell_type,
+                                    radius_field,
                                     self.import_spec)
                 rows = []
                 for row in csv_reader:

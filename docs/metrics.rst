@@ -364,7 +364,7 @@ Internal Monitoring
     still need to be acted upon and integrated into the aggregate
     :term:`station` data.
 
-``table#table:ocid_cell_age`` : gauge
+``table#table:cell_ocid_age`` : gauge
 
     This gauge measures when the last entry was added to the :term:`OCID`
     table. It represents this as `now() - max(created)` and converts it

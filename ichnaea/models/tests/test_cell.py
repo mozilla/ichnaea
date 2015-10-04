@@ -9,8 +9,6 @@ from ichnaea.models.cell import (
     decode_cellid,
     encode_cellarea,
     encode_cellid,
-    OCIDCell,
-    OCIDCellArea,
     Radio,
 )
 from ichnaea.tests.base import (
@@ -119,6 +117,16 @@ class TestCell(DBTestCase):
 
 class TestCellOCID(DBTestCase):
 
+    def test_areaid(self):
+        cellid = encode_cellid(Radio.gsm, GB_MCC, GB_MNC, 123, 2345)
+        self.session.add(CellOCID.create(
+            cellid=cellid,
+            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345))
+        self.session.flush()
+
+        result = self.session.query(CellOCID).first()
+        self.assertEqual(result.areaid, cellid[:7])
+
     def test_cellid(self):
         query = self.session.query(CellOCID).filter(CellOCID.cellid == (1, 2))
         self.assertRaises(Exception, query.first)
@@ -133,6 +141,16 @@ class TestCellOCID(DBTestCase):
             radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345))
         with self.assertRaises(Exception):
             self.session.flush()
+
+    def test_country(self):
+        cellid = encode_cellid(Radio.gsm, GB_MCC, GB_MNC, 123, 2345)
+        self.session.add(CellOCID.create(
+            cellid=cellid, country=None, lat=GB_LAT, lon=GB_LON,
+            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345))
+        self.session.flush()
+
+        result = self.session.query(CellOCID).first()
+        self.assertEqual(result.country, 'GB')
 
     def test_fields(self):
         now = util.utcnow()
@@ -288,6 +306,16 @@ cast(conv(substr(hex(`areaid`), 11, 4), 16, 10) as unsigned)
 
 class TestCellAreaOCID(DBTestCase):
 
+    def test_country(self):
+        areaid = encode_cellarea(Radio.gsm, GB_MCC, GB_MNC, 123)
+        self.session.add(CellAreaOCID.create(
+            areaid=areaid, country=None, lat=GB_LAT, lon=GB_LON,
+            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123))
+        self.session.flush()
+
+        result = self.session.query(CellAreaOCID).first()
+        self.assertEqual(result.country, 'GB')
+
     def test_fields(self):
         areaid = encode_cellarea(Radio.wcdma, GB_MCC, GB_MNC, 123)
         self.session.add(CellAreaOCID.create(
@@ -325,48 +353,3 @@ class TestCellBlocklist(DBTestCase):
         self.assertEqual(result.lac, 1234)
         self.assertEqual(result.cid, 23456)
         self.assertEqual(result.count, 2)
-
-
-class TestOCIDCell(DBTestCase):
-    # BBB
-
-    def test_fields(self):
-        self.session.add(OCIDCell.create(
-            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=1234, cid=23456,
-            lat=GB_LAT, lon=GB_LON, range=1000, total_measures=15))
-        self.session.flush()
-
-        result = self.session.query(OCIDCell).first()
-        self.assertEqual(result.radio, Radio.gsm)
-        self.assertEqual(result.mcc, GB_MCC)
-        self.assertEqual(result.mnc, GB_MNC)
-        self.assertEqual(result.lac, 1234)
-        self.assertEqual(result.cid, 23456)
-        self.assertEqual(result.lat, GB_LAT)
-        self.assertEqual(result.lon, GB_LON)
-        self.assertEqual(result.samples, 15)
-        self.assertAlmostEqual(result.min_lat, GB_LAT - 0.009, 7)
-        self.assertAlmostEqual(result.min_lon, GB_LON - 0.02727469, 7)
-        self.assertAlmostEqual(result.max_lat, GB_LAT + 0.009, 7)
-        self.assertAlmostEqual(result.max_lon, GB_LON + 0.02727469, 7)
-
-
-class TestOCIDCellArea(DBTestCase):
-    # BBB
-
-    def test_fields(self):
-        self.session.add(OCIDCellArea.create(
-            radio=Radio.wcdma, mcc=GB_MCC, mnc=GB_MNC, lac=1234, range=10,
-            lat=GB_LAT, lon=GB_LON, avg_cell_range=10, num_cells=15))
-        self.session.flush()
-
-        result = self.session.query(OCIDCellArea).first()
-        self.assertEqual(result.radio, Radio.wcdma)
-        self.assertEqual(result.mcc, GB_MCC)
-        self.assertEqual(result.mnc, GB_MNC)
-        self.assertEqual(result.lac, 1234)
-        self.assertEqual(result.lat, GB_LAT)
-        self.assertEqual(result.lon, GB_LON)
-        self.assertEqual(result.radius, 10)
-        self.assertEqual(result.avg_cell_radius, 10)
-        self.assertEqual(result.num_cells, 15)

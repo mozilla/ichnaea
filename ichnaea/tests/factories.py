@@ -15,10 +15,10 @@ from ichnaea.models import (
     ApiKey,
     Cell,
     CellArea,
+    CellAreaOCID,
     CellBlocklist,
     CellObservation,
-    OCIDCell,
-    OCIDCellArea,
+    CellOCID,
     Radio,
     WifiShard,
     WifiObservation,
@@ -128,7 +128,6 @@ class CellAreaPositionFactory(CellAreaKeyFactory):
 
     lat = GB_LAT
     lon = GB_LON
-    range = CELLAREA_MIN_ACCURACY / 2.0
 
 
 class CellKeyFactory(CellAreaKeyFactory):
@@ -139,37 +138,47 @@ class CellKeyFactory(CellAreaKeyFactory):
 class CellPositionFactory(CellKeyFactory, CellAreaPositionFactory):
 
     psc = fuzzy.FuzzyInteger(1, 500)
-    range = CELL_MIN_ACCURACY / 2.0
 
 
 class CellFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
+
+    range = CELL_MIN_ACCURACY / 2.0
 
     class Meta:
         model = Cell.create
 
 
+class CellOCIDFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
+
+    country = 'GB'
+    radius = CELL_MIN_ACCURACY / 2.0
+
+    class Meta:
+        model = CellOCID.create
+
+
 class CellAreaFactory(CellAreaPositionFactory, BboxFactory, BaseSQLFactory):
+
+    range = CELLAREA_MIN_ACCURACY / 2.0
 
     class Meta:
         model = CellArea.create
+
+
+class CellAreaOCIDFactory(CellAreaPositionFactory,
+                          BboxFactory, BaseSQLFactory):
+
+    country = 'GB'
+    radius = CELLAREA_MIN_ACCURACY / 2.0
+
+    class Meta:
+        model = CellAreaOCID.create
 
 
 class CellBlocklistFactory(CellKeyFactory, BaseSQLFactory):
 
     class Meta:
         model = CellBlocklist
-
-
-class OCIDCellFactory(CellPositionFactory, BaseSQLFactory):
-
-    class Meta:
-        model = OCIDCell.create
-
-
-class OCIDCellAreaFactory(CellAreaPositionFactory, BaseSQLFactory):
-
-    class Meta:
-        model = OCIDCellArea.create
 
 
 class CellObservationFactory(CellPositionFactory, BaseMemoryFactory):
@@ -183,6 +192,7 @@ class WifiShardFactory(BaseSQLFactory):
     mac = FuzzyWifiMac()
     lat = GB_LAT
     lon = GB_LON
+    country = 'GB'
     radius = WIFI_MIN_ACCURACY / 2.0
     samples = 1
 

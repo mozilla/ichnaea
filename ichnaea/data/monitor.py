@@ -6,7 +6,7 @@ from sqlalchemy.orm import load_only
 
 from ichnaea.models import (
     ApiKey,
-    OCIDCell,
+    CellOCID,
 )
 from ichnaea import util
 
@@ -96,14 +96,14 @@ class OcidImport(object):
     def __call__(self):
         result = -1
         now = util.utcnow()
-        query = self.session.query(func.max(OCIDCell.created))
+        query = self.session.query(func.max(CellOCID.created))
         max_created = query.first()[0]
         if max_created:
             # diff between now and the value, in milliseconds
             diff = now - max_created
             result = (diff.days * 86400 + diff.seconds) * 1000
 
-        self.stats_client.gauge('table', result, tags=['table:ocid_cell_age'])
+        self.stats_client.gauge('table', result, tags=['table:cell_ocid_age'])
         return result
 
 

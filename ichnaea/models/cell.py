@@ -20,7 +20,6 @@ from sqlalchemy.dialects.mysql import (
 )
 from sqlalchemy.types import TypeDecorator
 
-from ichnaea import geocalc
 from ichnaea.models.base import (
     _Model,
     CreationMixin,
@@ -50,6 +49,8 @@ from ichnaea.models.station import (
     ValidPositionSchema,
     ValidTimeTrackingSchema,
 )
+from ichnaea.region import GEOCODER
+
 
 CELLAREA_STRUCT = struct.Struct('!bHHH')
 """
@@ -384,17 +385,6 @@ class CellArea(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
         return self.avg_cell_range
 
 
-class ValidCellAreaOCIDSchema(ValidCellAreaKeySchema,
-                              ValidPositionSchema,
-                              ValidTimeTrackingSchema):
-    # BBB
-
-    # areaid is a derived value
-    range = colander.SchemaNode(colander.Integer(), missing=0)
-    avg_cell_range = colander.SchemaNode(colander.Integer(), missing=0)
-    num_cells = colander.SchemaNode(colander.Integer(), missing=0)
-
-
 class OCIDCellArea(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
     # BBB
     __tablename__ = 'ocid_cell_area'
@@ -403,7 +393,7 @@ class OCIDCellArea(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac'),
         UniqueConstraint('areaid', name='ocid_cell_area_areaid_unique'),
     )
-    _valid_schema = ValidCellAreaOCIDSchema()
+    _valid_schema = None
 
     radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
     mcc = Column(SmallInteger, autoincrement=False, default=None)
@@ -415,29 +405,6 @@ class OCIDCellArea(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
     range = Column(Integer)
     avg_cell_range = Column(Integer)
     num_cells = Column(Integer(unsigned=True))
-
-    @classmethod
-    def validate(cls, entry, _raise_invalid=False, **kw):
-        validated = super(OCIDCellArea, cls).validate(
-            entry, _raise_invalid=_raise_invalid, **kw)
-        if validated is not None and 'areaid' not in validated:
-            validated['areaid'] = (
-                validated['radio'],
-                validated['mcc'],
-                validated['mnc'],
-                validated['lac'],
-            )
-        return validated
-
-    @property
-    def radius(self):
-        # BBB: alias
-        return self.range
-
-    @property
-    def avg_cell_radius(self):
-        # BBB: alias
-        return self.avg_cell_range
 
 
 class ValidCellAreaOCIDSchema(ValidCellAreaKeySchema,
@@ -481,13 +448,19 @@ class CellAreaOCID(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
     def validate(cls, entry, _raise_invalid=False, **kw):
         validated = super(CellAreaOCID, cls).validate(
             entry, _raise_invalid=_raise_invalid, **kw)
-        if validated is not None and 'areaid' not in validated:
-            validated['areaid'] = (
-                validated['radio'],
-                validated['mcc'],
-                validated['mnc'],
-                validated['lac'],
-            )
+        if validated is not None:
+            if 'areaid' not in validated:
+                validated['areaid'] = (
+                    validated['radio'],
+                    validated['mcc'],
+                    validated['mnc'],
+                    validated['lac'],
+                )
+            if (('country' not in validated or not validated['country']) and
+                    validated['lat'] is not None and
+                    validated['lon'] is not None):
+                validated['country'] = GEOCODER.region(
+                    validated['lat'], validated['lon'])
         return validated
 
 
@@ -559,15 +532,6 @@ class Cell(BboxMixin, PositionMixin, TimeTrackingMixin,
         return self.total_measures
 
 
-class ValidOCIDCellSchema(ValidCellKeySchema, ValidPositionSchema,
-                          ValidTimeTrackingSchema):
-    # BBB
-
-    range = colander.SchemaNode(colander.Integer(), missing=0)
-    total_measures = colander.SchemaNode(colander.Integer(), missing=0)
-    changeable = colander.SchemaNode(colander.Boolean(), missing=True)
-
-
 class OCIDCell(PositionMixin, TimeTrackingMixin,
                CreationMixin, HashKeyQueryMixin, _Model):
     # BBB
@@ -580,7 +544,7 @@ class OCIDCell(PositionMixin, TimeTrackingMixin,
 
     _hashkey_cls = CellKey
     _query_batch = 20
-    _valid_schema = ValidOCIDCellSchema()
+    _valid_schema = None
 
     radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
     mcc = Column(SmallInteger, autoincrement=False, default=None)
@@ -592,36 +556,6 @@ class OCIDCell(PositionMixin, TimeTrackingMixin,
     range = Column(Integer)
     total_measures = Column(Integer(unsigned=True))
     changeable = Column(Boolean)
-
-    @property
-    def areaid(self):
-        return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)
-
-    @property
-    def radius(self):
-        # BBB: alias
-        return self.range
-
-    @property
-    def samples(self):
-        # BBB: alias
-        return self.total_measures
-
-    @property
-    def min_lat(self):
-        return geocalc.latitude_add(self.lat, self.lon, -self.radius)
-
-    @property
-    def max_lat(self):
-        return geocalc.latitude_add(self.lat, self.lon, self.radius)
-
-    @property
-    def min_lon(self):
-        return geocalc.longitude_add(self.lat, self.lon, -self.radius)
-
-    @property
-    def max_lon(self):
-        return geocalc.longitude_add(self.lat, self.lon, self.radius)
 
 
 class ValidCellOCIDSchema(ValidCellKeySchema, ValidBboxSchema,
@@ -675,14 +609,20 @@ class CellOCID(BboxMixin, PositionMixin, TimeTrackingMixin,
     def validate(cls, entry, _raise_invalid=False, **kw):
         validated = super(CellOCID, cls).validate(
             entry, _raise_invalid=_raise_invalid, **kw)
-        if validated is not None and 'cellid' not in validated:
-            validated['cellid'] = (
-                validated['radio'],
-                validated['mcc'],
-                validated['mnc'],
-                validated['lac'],
-                validated['cid'],
-            )
+        if validated is not None:
+            if 'cellid' not in validated:
+                validated['cellid'] = (
+                    validated['radio'],
+                    validated['mcc'],
+                    validated['mnc'],
+                    validated['lac'],
+                    validated['cid'],
+                )
+            if (('country' not in validated or not validated['country']) and
+                    validated['lat'] is not None and
+                    validated['lon'] is not None):
+                validated['country'] = GEOCODER.region(
+                    validated['lat'], validated['lon'])
         return validated
 
     @property

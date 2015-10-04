@@ -24,12 +24,13 @@ from ichnaea.constants import (
 from ichnaea.models import (
     ApiKey,
     Cell,
+    CellOCID,
     CellArea,
-    OCIDCell,
-    OCIDCellArea,
+    CellAreaOCID,
     WifiShard,
     Radio,
 )
+from ichnaea.models.wifi import WIFI_SHARDS
 from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
@@ -149,17 +150,13 @@ class BaseSourceTest(ConnectionTestCase):
         if type_ is Position:
             check_func = self.assertAlmostEqual
             for model in models:
-                if isinstance(model, (Cell, OCIDCell)):
-                    model_radius = kw.get('accuracy', model.radius)
-                    accuracy = max(model_radius, CELL_MIN_ACCURACY)
-                elif isinstance(model, (CellArea, OCIDCellArea)):
-                    model_radius = kw.get('accuracy', model.radius)
-                    accuracy = max(model_radius, CELLAREA_MIN_ACCURACY)
+                accuracy = kw.get('accuracy', model.radius)
+                if isinstance(model, (Cell, CellOCID)):
+                    accuracy = max(accuracy, CELL_MIN_ACCURACY)
+                elif isinstance(model, (CellArea, CellAreaOCID)):
+                    accuracy = max(accuracy, CELLAREA_MIN_ACCURACY)
                 elif isinstance(model, WifiShard):
-                    model_radius = kw.get('accuracy', model.radius)
-                    accuracy = max(model_radius, WIFI_MIN_ACCURACY)
-                else:
-                    accuracy = kw.get('accuracy', model.radius)
+                    accuracy = max(accuracy, WIFI_MIN_ACCURACY)
                 expected.append({
                     'lat': kw.get('lat', model.lat),
                     'lon': kw.get('lon', model.lon),
@@ -246,14 +243,12 @@ class BaseLocateTest(object):
             else:
                 model_name = name
                 if name == 'accuracy':
-                    if isinstance(model, (Cell, OCIDCell)):
-                        model_value = getattr(model, 'range')
+                    model_value = getattr(model, 'radius')
+                    if isinstance(model, (Cell, CellOCID)):
                         model_value = max(model_value, CELL_MIN_ACCURACY)
-                    elif isinstance(model, (CellArea, OCIDCellArea)):
-                        model_value = getattr(model, 'range')
+                    elif isinstance(model, (CellArea, CellAreaOCID)):
                         model_value = max(model_value, CELLAREA_MIN_ACCURACY)
                     elif isinstance(model, WifiShard):
-                        model_value = getattr(model, 'radius')
                         model_value = max(model_value, WIFI_MIN_ACCURACY)
                     expected[name] = model_value
                 else:
@@ -664,12 +659,10 @@ class CommonLocateErrorTest(BaseLocateTest):
         super(CommonLocateErrorTest, self).tearDown()
 
     def test_database_error(self, db_errors=0):
-        for tablename in ('cell', 'cell_area',
-                          'ocid_cell', 'ocid_cell_area'):
-            self.session.execute(text('drop table %s;' % tablename))
-        for i in range(16):
-            self.session.execute(text(
-                'drop table wifi_shard_%s;' % hex(i)[2:]))
+        for model in (Cell, CellArea, CellOCID, CellAreaOCID):
+            self.session.execute(text('drop table %s;' % model.__tablename__))
+        for model in WIFI_SHARDS.values():
+            self.session.execute(text('drop table %s;' % model.__tablename__))
 
         cells = CellFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(2)

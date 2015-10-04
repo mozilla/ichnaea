@@ -5,6 +5,7 @@ multiple sources to satisfy a given query.
 
 from collections import defaultdict
 
+from ichnaea.api.locate.cell import OCIDPositionSource
 from ichnaea.api.locate.fallback import FallbackPositionSource
 from ichnaea.api.locate.geoip import (
     GeoIPCountrySource,
@@ -14,7 +15,6 @@ from ichnaea.api.locate.internal import (
     InternalCountrySource,
     InternalPositionSource,
 )
-from ichnaea.api.locate.ocid import OCIDPositionSource
 from ichnaea.api.locate.result import (
     Country,
     Position,

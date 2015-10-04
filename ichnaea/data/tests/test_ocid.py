@@ -23,8 +23,8 @@ from ichnaea.data.tasks import (
     update_statcounter,
 )
 from ichnaea.models import (
-    OCIDCell,
-    OCIDCellArea,
+    CellOCID,
+    CellAreaOCID,
     Radio,
     Stat,
     StatKey,
@@ -175,17 +175,16 @@ class TestImport(CeleryAppTestCase):
 
     def test_local_import(self):
         self.import_csv()
-        cells = self.session.query(OCIDCell).all()
+        cells = self.session.query(CellOCID).all()
         self.assertEqual(len(cells), 9)
 
-        lacs = set([
-            (cell.radio, cell.mcc, cell.mnc, cell.lac) for cell in cells])
+        areaids = set([cell.areaid for cell in cells])
         self.assertEqual(
-            self.session.query(OCIDCellArea).count(), len(lacs))
+            self.session.query(CellAreaOCID).count(), len(areaids))
 
         update_statcounter.delay(ago=0).get()
         today = util.utcnow().date()
-        stat_key = Stat.to_hashkey(key=StatKey.unique_ocid_cell, time=today)
+        stat_key = Stat.to_hashkey(key=StatKey.unique_cell_ocid, time=today)
         self.assertEqual(Stat.getkey(self.session, stat_key).value, 9)
 
     def test_local_import_delta(self):
@@ -196,23 +195,22 @@ class TestImport(CeleryAppTestCase):
         today = util.utcnow().date()
 
         self.import_csv(time=old_time)
-        cells = self.session.query(OCIDCell).all()
+        cells = self.session.query(CellOCID).all()
         self.assertEqual(len(cells), 9)
         update_statcounter.delay(ago=0).get()
-        stat_key = Stat.to_hashkey(key=StatKey.unique_ocid_cell, time=today)
+        stat_key = Stat.to_hashkey(key=StatKey.unique_cell_ocid, time=today)
         self.assertEqual(Stat.getkey(self.session, stat_key).value, 9)
 
-        lacs = set([
-            (cell.radio, cell.mcc, cell.mnc, cell.lac) for cell in cells])
+        areaids = set([cell.areaid for cell in cells])
         self.assertEqual(
-            self.session.query(OCIDCellArea).count(), len(lacs))
+            self.session.query(CellAreaOCID).count(), len(areaids))
 
         # update some entries
         self.import_csv(lo=5, hi=13, time=new_time)
         self.session.commit()
 
-        cells = (self.session.query(OCIDCell)
-                             .order_by(OCIDCell.modified).all())
+        cells = (self.session.query(CellOCID)
+                             .order_by(CellOCID.modified).all())
         self.assertEqual(len(cells), 12)
 
         for i in range(0, 4):
@@ -221,13 +219,12 @@ class TestImport(CeleryAppTestCase):
         for i in range(4, 12):
             self.assertEqual(cells[i].modified, new_date)
 
-        lacs = set([
-            (cell.radio, cell.mcc, cell.mnc, cell.lac) for cell in cells])
+        areaids = set([cell.areaid for cell in cells])
         self.assertEqual(
-            self.session.query(OCIDCellArea).count(), len(lacs))
+            self.session.query(CellAreaOCID).count(), len(areaids))
 
         update_statcounter.delay(ago=0).get()
-        stat_key = Stat.to_hashkey(key=StatKey.unique_ocid_cell, time=today)
+        stat_key = Stat.to_hashkey(key=StatKey.unique_cell_ocid, time=today)
         self.assertEqual(Stat.getkey(self.session, stat_key).value, 12)
 
     def test_local_import_latest_through_http(self):
@@ -238,11 +235,10 @@ class TestImport(CeleryAppTestCase):
                     cell_import_external.delay().get()
 
         update_cellarea_ocid.delay().get()
-        cells = (self.session.query(OCIDCell)
-                             .order_by(OCIDCell.modified).all())
+        cells = (self.session.query(CellOCID)
+                             .order_by(CellOCID.modified).all())
         self.assertEqual(len(cells), 9)
 
-        lacs = set([
-            (cell.radio, cell.mcc, cell.mnc, cell.lac) for cell in cells])
+        areaids = set([cell.areaid for cell in cells])
         self.assertEqual(
-            self.session.query(OCIDCellArea).count(), len(lacs))
+            self.session.query(CellAreaOCID).count(), len(areaids))

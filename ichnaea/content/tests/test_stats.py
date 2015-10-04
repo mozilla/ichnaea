@@ -41,7 +41,7 @@ class TestStats(DBTestCase):
             Stat(key=StatKey.cell, time=day, value=6100000),
             Stat(key=StatKey.wifi, time=day, value=3212000),
             Stat(key=StatKey.unique_cell, time=day, value=3289900),
-            Stat(key=StatKey.unique_ocid_cell, time=day, value=1523000),
+            Stat(key=StatKey.unique_cell_ocid, time=day, value=1523000),
             Stat(key=StatKey.unique_wifi, time=day, value=2009000),
         ]
         session.add_all(stats)
@@ -52,7 +52,7 @@ class TestStats(DBTestCase):
             result, {
                 'cell': '6.10', 'unique_cell': '3.28',
                 'wifi': '3.21', 'unique_wifi': '2.00',
-                'unique_ocid_cell': '1.52',
+                'unique_cell_ocid': '1.52',
             })
 
     def test_global_stats_missing_today(self):
@@ -73,7 +73,7 @@ class TestStats(DBTestCase):
             result, {
                 'cell': '6.00', 'unique_cell': '4.00',
                 'wifi': '3.00', 'unique_wifi': '0.00',
-                'unique_ocid_cell': '0.00',
+                'unique_cell_ocid': '0.00',
             })
 
     def test_histogram(self):

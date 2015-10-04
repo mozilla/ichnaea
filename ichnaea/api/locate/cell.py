@@ -17,6 +17,8 @@ from ichnaea.geocalc import aggregate_position
 from ichnaea.models import (
     Cell,
     CellArea,
+    CellAreaOCID,
+    CellOCID,
 )
 
 
@@ -58,7 +60,7 @@ def aggregate_area_position(area, result_type):
     """
     Given a single area, return the position of the user inside it.
     """
-    accuracy = float(max(area.radius, CELLAREA_MIN_ACCURACY))
+    accuracy = max(float(area.radius), CELLAREA_MIN_ACCURACY)
     return result_type(
         lat=area.lat, lon=area.lon, accuracy=accuracy, fallback='lacf')
 
@@ -66,23 +68,41 @@ def aggregate_area_position(area, result_type):
 def query_cells(query, lookups, model, raven_client):
     # Given a location query and a list of lookup instances, query the
     # database and return a list of model objects.
-    hashkeys = [lookup.hashkey() for lookup in lookups]
-    if not hashkeys:  # pragma: no cover
+    if model == CellOCID:
+        cellids = [lookup.cellid for lookup in lookups]
+        if not cellids:  # pragma: no cover
+            return []
+
+        try:
+            load_fields = ('lat', 'lon', 'radius')
+            areas = (query.session.query(model)
+                                  .filter(model.cellid.in_(cellids))
+                                  .filter(model.lat.isnot(None))
+                                  .filter(model.lon.isnot(None))
+                                  .options(load_only(*load_fields))).all()
+
+            return areas
+        except Exception:
+            raven_client.captureException()
         return []
+    else:
+        hashkeys = [lookup.hashkey() for lookup in lookups]
+        if not hashkeys:  # pragma: no cover
+            return []
 
-    try:
-        load_fields = ('lat', 'lon', 'range')
-        model_iter = model.iterkeys(
-            query.session,
-            hashkeys,
-            extra=lambda query: query.options(load_only(*load_fields))
-                                     .filter(model.lat.isnot(None))
-                                     .filter(model.lon.isnot(None)))
+        try:
+            load_fields = ('lat', 'lon', 'range')
+            model_iter = model.iterkeys(
+                query.session,
+                hashkeys,
+                extra=lambda query: query.options(load_only(*load_fields))
+                                         .filter(model.lat.isnot(None))
+                                         .filter(model.lon.isnot(None)))
 
-        return list(model_iter)
-    except Exception:
-        raven_client.captureException()
-    return []
+            return list(model_iter)
+        except Exception:
+            raven_client.captureException()
+        return []
 
 
 def query_areas(query, lookups, model, raven_client):
@@ -90,8 +110,12 @@ def query_areas(query, lookups, model, raven_client):
     if not areaids:  # pragma: no cover
         return []
 
-    try:
+    if model == CellAreaOCID:
+        load_fields = ('lat', 'lon', 'radius')
+    else:
         load_fields = ('lat', 'lon', 'range')
+
+    try:
         areas = (query.session.query(model)
                               .filter(model.areaid.in_(areaids))
                               .filter(model.lat.isnot(None))
@@ -159,3 +183,12 @@ class CellPositionSource(CellPositionMixin, PositionSource):
         result = self.search_cell(query)
         query.emit_source_stats(self.source, result)
         return result
+
+
+class OCIDPositionSource(CellPositionSource):
+    """Implements a search using the :term:`OCID` cell data."""
+
+    cell_model = CellOCID
+    area_model = CellAreaOCID
+    fallback_field = None  #:
+    source = DataSource.ocid  #:

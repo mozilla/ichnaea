@@ -176,7 +176,7 @@ class TestFunctionalContent(AppTestCase):
         session = self.session
         stat = Stat(key=StatKey.unique_cell, time=yesterday, value=2)
         session.add(stat)
-        stat = Stat(key=StatKey.unique_ocid_cell, time=yesterday, value=5)
+        stat = Stat(key=StatKey.unique_cell_ocid, time=yesterday, value=5)
         session.add(stat)
         session.commit()
         result = app.get('/stats_cell.json', status=200)
@@ -302,7 +302,7 @@ class TestFunctionalContentViews(AppTestCase):
             Stat(key=StatKey.cell, time=day, value=2000000),
             Stat(key=StatKey.wifi, time=day, value=2000000),
             Stat(key=StatKey.unique_cell, time=day, value=1000000),
-            Stat(key=StatKey.unique_ocid_cell, time=day, value=1500000),
+            Stat(key=StatKey.unique_cell_ocid, time=day, value=1500000),
             Stat(key=StatKey.unique_wifi, time=day, value=2000000),
         ]
         session.add_all(stats)

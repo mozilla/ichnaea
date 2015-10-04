@@ -49,7 +49,7 @@ class StatKey(IntEnum):
     unique_wifi = 4
     # deleted_cell = 5
     # deleted_wifi = 6
-    unique_ocid_cell = 7
+    unique_cell_ocid = 7
 
 
 class MapStatHashKey(HashKey):

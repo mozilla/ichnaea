@@ -11,10 +11,14 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- All OCID data has to be manually imported again into the new tables.
+
 - 339d19da63ee: Add new cell OCID tables.
 
 Changes
 ~~~~~~~
+
+- Use new OCID tables in the entire code base.
 
 - Use the intersection of region codes from GENC and our shapefile.
 

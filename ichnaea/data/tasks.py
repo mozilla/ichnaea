@@ -153,7 +153,7 @@ def update_cellarea(self, batch=100):
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
 def update_cellarea_ocid(self, batch=100):
     with self.db_session() as session:
-        area.OCIDCellAreaUpdater(self, session)(batch=batch)
+        area.CellAreaOCIDUpdater(self, session)(batch=batch)
 
 
 @celery_app.task(base=BaseTask, bind=True)

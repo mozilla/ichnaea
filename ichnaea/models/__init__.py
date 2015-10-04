@@ -11,12 +11,11 @@ from ichnaea.models.cell import (  # NOQA
     CellArea,
     CellAreaOCID,
     CellBlocklist,
+    CellOCID,
     decode_cellarea,
     decode_cellid,
     encode_cellarea,
     encode_cellid,
-    OCIDCell,
-    OCIDCellArea,
     Radio,
 )
 from ichnaea.models.content import (  # NOQA

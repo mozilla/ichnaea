@@ -1,10 +1,15 @@
-from ichnaea.api.locate.cell import CellPositionSource
+from ichnaea.api.locate.cell import (
+    CellPositionSource,
+    OCIDPositionSource,
+)
 from ichnaea.api.locate.result import ResultList
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.constants import CELLAREA_MIN_ACCURACY
 from ichnaea.tests.factories import (
     CellAreaFactory,
+    CellAreaOCIDFactory,
     CellFactory,
+    CellOCIDFactory,
 )
 
 
@@ -89,3 +94,34 @@ class TestCellPosition(BaseSourceTest):
         self.check_model_result(
             result, areas[0],
             accuracy=CELLAREA_MIN_ACCURACY)
+
+
+class TestOCIDPositionSource(BaseSourceTest):
+
+    TestSource = OCIDPositionSource
+
+    def test_check_empty(self):
+        query = self.model_query()
+        result = self.source.result_type()
+        self.assertFalse(self.source.should_search(query, ResultList(result)))
+
+    def test_empty(self):
+        query = self.model_query()
+        with self.db_call_checker() as check_db_calls:
+            result = self.source.search(query)
+            self.check_model_result(result, None)
+            check_db_calls(rw=0, ro=0)
+
+    def test_cell(self):
+        cell = CellOCIDFactory()
+        self.session.flush()
+        query = self.model_query(cells=[cell])
+        result = self.source.search(query)
+        self.check_model_result(result, cell)
+
+    def test_cell_ara(self):
+        cell = CellAreaOCIDFactory()
+        self.session.flush()
+        query = self.model_query(cells=[cell])
+        result = self.source.search(query)
+        self.check_model_result(result, cell)

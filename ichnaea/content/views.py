@@ -286,7 +286,7 @@ class ContentViews(Layout):
         else:
             session = self.request.db_ro_session
             mls_data = histogram(session, StatKey.unique_cell)
-            ocid_data = histogram(session, StatKey.unique_ocid_cell)
+            ocid_data = histogram(session, StatKey.unique_cell_ocid)
             data = [
                 {'title': 'MLS Cells', 'data': mls_data[0]},
                 {'title': 'OCID Cells', 'data': ocid_data[0]},
@@ -326,7 +326,7 @@ class ContentViews(Layout):
             metrics = global_stats(session)
             metric_names = [
                 (StatKey.unique_cell.name, 'MLS Cells'),
-                (StatKey.unique_ocid_cell.name, 'OpenCellID Cells'),
+                (StatKey.unique_cell_ocid.name, 'OpenCellID Cells'),
                 (StatKey.cell.name, 'MLS Cell Observations'),
                 (StatKey.unique_wifi.name, 'Wifi Networks'),
                 (StatKey.wifi.name, 'Wifi Observations'),

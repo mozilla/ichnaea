@@ -11,7 +11,6 @@
    fallback
    geoip
    internal
-   ocid
    query
    result
    schema

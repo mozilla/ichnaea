@@ -1,6 +1,7 @@
 import base64
 
 import numpy
+from sqlalchemy import func
 from sqlalchemy.orm import load_only
 
 from ichnaea.data.base import DataTask
@@ -12,8 +13,8 @@ from ichnaea.models import (
     decode_cellarea,
     Cell,
     CellArea,
-    OCIDCell,
-    OCIDCellArea,
+    CellOCID,
+    CellAreaOCID,
 )
 from ichnaea import util
 
@@ -22,8 +23,6 @@ class CellAreaUpdater(DataTask):
 
     area_model = CellArea
     cell_model = Cell
-    cell_load_fields = (
-        'lat', 'lon', 'range', 'max_lat', 'max_lon', 'min_lat', 'min_lon')
     queue_name = 'update_cellarea'
 
     def __init__(self, task, session):
@@ -64,8 +63,10 @@ class CellAreaUpdater(DataTask):
     def update_area(self, areaid):
         radio, mcc, mnc, lac = decode_cellarea(areaid)
         # Select all cells in this area and derive a bounding box for them
+        load_fields = ('lat', 'lon', 'range',
+                       'max_lat', 'max_lon', 'min_lat', 'min_lon')
         cells = (self.session.query(self.cell_model)
-                             .options(load_only(*self.cell_load_fields))
+                             .options(load_only(*load_fields))
                              .filter(self.cell_model.radio == radio)
                              .filter(self.cell_model.mcc == mcc)
                              .filter(self.cell_model.mnc == mnc)
@@ -136,9 +137,90 @@ class CellAreaUpdater(DataTask):
                 area.num_cells = num_cells
 
 
-class OCIDCellAreaUpdater(CellAreaUpdater):
+class CellAreaOCIDUpdater(CellAreaUpdater):
 
-    area_model = OCIDCellArea
-    cell_model = OCIDCell
-    cell_load_fields = ('lat', 'lon', 'range')
+    area_model = CellAreaOCID
+    cell_model = CellOCID
     queue_name = 'update_cellarea_ocid'
+
+    def update_area(self, areaid):
+        # Select all cells in this area and derive a bounding box for them
+        load_fields = ('lat', 'lon', 'country', 'radius',
+                       'max_lat', 'max_lon', 'min_lat', 'min_lon')
+
+        cells = (self.session.query(self.cell_model)
+                             .filter(func.substr(self.cell_model.cellid,
+                                                 1, 7) == areaid)
+                             .filter(self.cell_model.lat.isnot(None))
+                             .filter(self.cell_model.lon.isnot(None))
+                             .options(load_only(*load_fields))).all()
+
+        area_query = (self.session.query(self.area_model)
+                                  .filter(self.area_model.areaid == areaid))
+
+        if len(cells) == 0:
+            # If there are no more underlying cells, delete the area entry
+            area_query.delete()
+        else:
+            # Otherwise update the area entry based on all the cells
+            area = area_query.first()
+
+            cell_extremes = numpy.array([
+                (numpy.nan if cell.max_lat is None else cell.max_lat,
+                 numpy.nan if cell.max_lon is None else cell.max_lon)
+                for cell in cells] + [
+                (numpy.nan if cell.min_lat is None else cell.min_lat,
+                 numpy.nan if cell.min_lon is None else cell.min_lon)
+                for cell in cells
+            ], dtype=numpy.double)
+
+            max_lat, max_lon = numpy.nanmax(cell_extremes, axis=0)
+            min_lat, min_lon = numpy.nanmin(cell_extremes, axis=0)
+
+            ctr_lat, ctr_lon = centroid(
+                numpy.array([(c.lat, c.lon) for c in cells],
+                            dtype=numpy.double))
+            radius = circle_radius(
+                ctr_lat, ctr_lon, max_lat, max_lon, min_lat, min_lon)
+
+            cell_radii = numpy.array([
+                (numpy.nan if cell.radius is None else cell.radius)
+                for cell in cells
+            ], dtype=numpy.int32)
+            avg_cell_radius = int(round(numpy.nanmean(cell_radii)))
+            num_cells = len(cells)
+
+            country = None
+            countries = set([cell.country for cell in cells])
+            if len(countries) == 1:
+                # refuse to guess if we get multiple countries
+                country = list(countries)[0]
+
+            if area is None:
+                radio, mcc, mnc, lac = decode_cellarea(areaid)
+                stmt = self.area_model.__table__.insert(
+                    mysql_on_duplicate='num_cells = num_cells'  # no-op
+                ).values(
+                    areaid=areaid,
+                    radio=radio,
+                    mcc=mcc,
+                    mnc=mnc,
+                    lac=lac,
+                    created=self.utcnow,
+                    modified=self.utcnow,
+                    lat=ctr_lat,
+                    lon=ctr_lon,
+                    country=country,
+                    radius=radius,
+                    avg_cell_radius=avg_cell_radius,
+                    num_cells=num_cells,
+                )
+                self.session.execute(stmt)
+            else:
+                area.modified = self.utcnow
+                area.lat = ctr_lat
+                area.lon = ctr_lon
+                area.country = country
+                area.radius = radius
+                area.avg_cell_radius = avg_cell_radius
+                area.num_cells = num_cells
