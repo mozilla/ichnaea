@@ -13,11 +13,11 @@ class TestCountrySource(BaseSourceTest):
     api_type = 'country'
 
     def test_from_mcc(self):
-        country = GEOCODER.regions_for_mcc(235)[0]
+        region = GEOCODER.regions_for_mcc(235, names=True)[0]
         cell = CellFactory.build(mcc=235)
         query = self.model_query(cells=[cell])
         results = self.source.search(query)
-        self.check_model_result(results, country)
+        self.check_model_result(results, region)
         self.check_stats(counter=[
             (self.api_type + '.source',
                 ['key:test', 'country:none', 'source:internal',
@@ -25,11 +25,11 @@ class TestCountrySource(BaseSourceTest):
         ])
 
     def test_ambiguous_mcc(self):
-        countries = GEOCODER.regions_for_mcc(234)
+        regions = GEOCODER.regions_for_mcc(234, names=True)
         cell = CellFactory.build(mcc=234)
         query = self.model_query(cells=[cell])
         results = self.source.search(query)
-        self.check_model_result(results, countries)
+        self.check_model_result(results, regions)
         self.check_stats(counter=[
             (self.api_type + '.source',
                 ['key:test', 'country:none', 'source:internal',

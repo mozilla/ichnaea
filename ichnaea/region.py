@@ -131,30 +131,52 @@ class Geocoder(object):
 
         return False
 
-    def in_region(self, lat, lon, code):
+    def in_region(self, lat, lon, alpha2):
         """
         Is the provided lat/lon position inside the region associated
         with the given alpha2 region code.
         """
-        if code not in self._valid_regions:
+        if alpha2 not in self._valid_regions:
             return False
 
         point = geometry.Point(lon, lat)
-        if self._buffered_shapes[code].contains(point):
+        if self._buffered_shapes[alpha2].contains(point):
             return True
         return False
 
-    def regions_for_mcc(self, mcc):
+    def in_region_mcc(self, lat, lon, mcc):
         """
-        Return a list of :class:`mobile_codes.Country` instances matching
-        the passed in mobile country code.
+        Is the provided lat/lon position inside one of the regions
+        associated with the given mcc.
+        """
+        for alpha2 in self.regions_for_mcc(mcc):
+            if self.in_region(lat, lon, alpha2):
+                return True
+        return False
+
+    def regions_for_mcc(self, mcc, names=False):
+        """
+        Return a list of alpha2 region codes matching the passed in
+        mobile country code.
+
+        If the names argument is set to True, returns a list of
+        :class:`genc.regions.Region` instances instead.
 
         The return list is filtered by the set of recognized ISO 3166
         alpha2 codes present in the GENC dataset and those that we have
         region shapefiles for.
         """
-        regions = mobile_codes.mcc(str(mcc))
-        return [r for r in regions if r.alpha2 in self._valid_regions]
+        codes = set([region.alpha2 for region in mobile_codes.mcc(str(mcc))])
+        valid_codes = set(codes).intersection(self._valid_regions)
+        if not names:
+            return list(valid_codes)
+
+        result = []
+        for alpha2 in valid_codes:
+            region = genc.region_by_alpha2(alpha2)
+            if region is not None:
+                result.append(region)
+        return result
 
 
 def region_max_radius(code):

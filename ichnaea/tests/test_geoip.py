@@ -62,9 +62,9 @@ class TestDatabase(GeoIPTestCase):
         self.assertTrue(isinstance(db, geoip.GeoIPNull))
         self.check_raven(['InvalidDatabaseError: Invalid database type'])
 
-    def test_valid_countries(self):
+    def test_valid_regions(self):
         for code in ('US', 'GB', 'DE'):
-            self.assertTrue(code in self.geoip_db.valid_countries)
+            self.assertTrue(code in self.geoip_db.valid_regions)
 
 
 class TestGeoIPLookup(GeoIPTestCase):

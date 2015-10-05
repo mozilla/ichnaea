@@ -449,7 +449,7 @@ class CellAreaOCID(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
         validated = super(CellAreaOCID, cls).validate(
             entry, _raise_invalid=_raise_invalid, **kw)
         if validated is not None:
-            if 'areaid' not in validated:
+            if 'areaid' not in validated or not validated['areaid']:
                 validated['areaid'] = (
                     validated['radio'],
                     validated['mcc'],

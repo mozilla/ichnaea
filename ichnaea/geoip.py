@@ -23,7 +23,7 @@ from ichnaea.constants import (
 )
 from ichnaea.region import region_max_radius
 
-VALID_COUNTRIES = frozenset([region.alpha2 for region in genc.REGIONS])
+VALID_REGIONS = frozenset([region.alpha2 for region in genc.REGIONS])
 
 
 def configure_geoip(filename, mode=MODE_AUTO,
@@ -106,7 +106,7 @@ class GeoIPWrapper(Reader):
 
     lookup_exceptions = (
         AddressNotFoundError, GeoIP2Error, InvalidDatabaseError, ValueError)
-    valid_countries = VALID_COUNTRIES  #: A set of valid country codes.
+    valid_regions = VALID_REGIONS  #: A set of valid region codes.
 
     def __init__(self, filename, mode=MODE_AUTO):
         """
@@ -194,7 +194,7 @@ class GeoIPNull(object):
     A dummy implementation of the :class:`~ichnaea.geoip.GeoIPWrapper` API.
     """
 
-    valid_countries = VALID_COUNTRIES  #: A set of valid country codes.
+    valid_regions = VALID_REGIONS  #: A set of valid region codes.
 
     def geoip_lookup(self, addr):
         """

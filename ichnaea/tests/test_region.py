@@ -33,6 +33,12 @@ class TestGeocoder(TestCase):
         self.assertFalse(func(0.0, 0.0, 'GB'))
         self.assertFalse(func(60.1, 20.0, 'AX'))
 
+    def test_in_region_mcc(self):
+        func = GEOCODER.in_region_mcc
+        self.assertTrue(func(51.5142, -0.0931, 234))
+        self.assertTrue(func(51.5142, -0.0931, 235))
+        self.assertFalse(func(0.0, 0.0, 234))
+
 
 class TestRegionMaxRadius(TestCase):
 
@@ -93,26 +99,29 @@ class TestRegionsForMcc(TestCase):
 
     def test_no_match(self):
         self.assertEqual(GEOCODER.regions_for_mcc(1), [])
+        self.assertEqual(GEOCODER.regions_for_mcc(1, names=True), [])
 
     def test_single(self):
         regions = GEOCODER.regions_for_mcc(262)
+        self.assertEqual(set(regions), set(['DE']))
+        regions = GEOCODER.regions_for_mcc(262, names=True)
         self.assertEqual(set([r.alpha2 for r in regions]), set(['DE']))
 
     def test_multiple(self):
         regions = GEOCODER.regions_for_mcc(311)
-        self.assertEqual(set([r.alpha2 for r in regions]),
-                         set(['GU', 'US']))
+        self.assertEqual(set(regions), set(['GU', 'US']))
+        regions = GEOCODER.regions_for_mcc(311, names=True)
+        self.assertEqual(set([r.alpha2 for r in regions]), set(['GU', 'US']))
 
     def test_filtered(self):
         # AX / Aland Islands is not in the GENC list
         regions = GEOCODER.regions_for_mcc(244)
-        self.assertEqual(set([r.alpha2 for r in regions]), set(['FI']))
+        self.assertEqual(set(regions), set(['FI']))
 
     def test_all_valid_mcc(self):
         # Gibraltar, Reunion and Tuvalu aren't in the shapefile
         ignored = set([266, 553, 647])
         for mcc in ALL_VALID_MCCS - ignored:
-            regions = GEOCODER.regions_for_mcc(mcc)
-            self.assertNotEqual(regions, [])
-            codes = set([r.alpha2 for r in regions])
-            self.assertEqual(codes - GEOCODER._valid_regions, set())
+            regions = set(GEOCODER.regions_for_mcc(mcc))
+            self.assertNotEqual(regions, set())
+            self.assertEqual(regions - GEOCODER._valid_regions, set())

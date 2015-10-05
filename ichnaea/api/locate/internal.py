@@ -26,7 +26,7 @@ class InternalCountrySource(CountrySource):
 
         countries = []
         for code in codes:
-            countries.extend(GEOCODER.regions_for_mcc(code))
+            countries.extend(GEOCODER.regions_for_mcc(code, names=True))
 
         for country in countries:
             country_code = country.alpha2

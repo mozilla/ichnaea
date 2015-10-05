@@ -3,7 +3,6 @@ from collections import defaultdict
 from datetime import date, timedelta
 from operator import itemgetter
 
-import genc
 from sqlalchemy import func
 
 from ichnaea.models import (
@@ -184,14 +183,14 @@ def regions(session):
 
     regions = {}
     for mcc, item in mccs.items():
-        iso_codes = [rec.alpha2 for rec in GEOCODER.regions_for_mcc(mcc)]
-        multiple = bool(len(iso_codes) > 1)
-        for alpha2 in iso_codes:
-            record = genc.region_by_alpha2(alpha2)
+        cell_regions = GEOCODER.regions_for_mcc(mcc, names=True)
+        multiple = bool(len(cell_regions) > 1)
+        for cell_region in cell_regions:
+            alpha2 = cell_region.alpha2
             region = {
                 'code': alpha2,
-                'name': record.name,
-                'order': transliterate(record.name[:10]).lower(),
+                'name': cell_region.name,
+                'order': transliterate(cell_region.name[:10]).lower(),
                 'multiple': multiple,
                 'total': 0,
                 'gsm': 0, 'wcdma': 0, 'lte': 0,

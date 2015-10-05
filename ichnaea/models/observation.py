@@ -165,10 +165,8 @@ class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
     def validator(self, node, cstruct):
         super(ValidCellObservationSchema, self).validator(node, cstruct)
 
-        in_region = False
-        for region in GEOCODER.regions_for_mcc(cstruct['mcc']):
-            in_region = in_region or GEOCODER.in_region(
-                cstruct['lat'], cstruct['lon'], region.alpha2)
+        in_region = GEOCODER.in_region_mcc(
+            cstruct['lat'], cstruct['lon'], cstruct['mcc'])
 
         if not in_region:
             raise colander.Invalid(node, (
