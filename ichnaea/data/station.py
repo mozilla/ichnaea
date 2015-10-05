@@ -20,6 +20,10 @@ from ichnaea.models import (
     StatKey,
     WifiShard,
 )
+from ichnaea.models.constants import (
+    CELL_MAX_RADIUS,
+    WIFI_MAX_RADIUS,
+)
 from ichnaea.region import GEOCODER
 from ichnaea import util
 
@@ -77,7 +81,7 @@ class StationUpdater(DataTask):
 
 class CellUpdater(StationUpdater):
 
-    max_dist_meters = 150000
+    max_dist_meters = CELL_MAX_RADIUS
     station_type = 'cell'
 
     def __init__(self, task, session, pipe, remove_task=None):
@@ -348,7 +352,7 @@ class CellUpdater(StationUpdater):
 
 class WifiUpdater(StationUpdater):
 
-    max_dist_meters = 5000
+    max_dist_meters = WIFI_MAX_RADIUS
     station_type = 'wifi'
 
     def __init__(self, task, session, pipe, shard_id=None):

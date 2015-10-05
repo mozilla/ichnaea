@@ -18,6 +18,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Discard too large cell networks during import.
+
 - Use mcc in region determination for cells.
 
 - Use new OCID tables in the entire code base.

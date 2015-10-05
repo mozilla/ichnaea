@@ -412,7 +412,9 @@ class ValidCellAreaOCIDSchema(ValidCellAreaKeySchema,
                               ValidTimeTrackingSchema):
 
     # areaid is a derived value
-    radius = colander.SchemaNode(colander.Integer(), missing=0)
+    radius = colander.SchemaNode(
+        colander.Integer(), missing=0,
+        validator=colander.Range(0, constants.CELLAREA_MAX_RADIUS))
     country = colander.SchemaNode(colander.String(), missing=None)
     avg_cell_radius = colander.SchemaNode(colander.Integer(), missing=0)
     num_cells = colander.SchemaNode(colander.Integer(), missing=0)
@@ -565,7 +567,9 @@ class ValidCellOCIDSchema(ValidCellKeySchema, ValidBboxSchema,
                           ValidPositionSchema, ValidTimeTrackingSchema):
     """A schema which validates the fields present in a :term:`OCID` cell."""
 
-    radius = colander.SchemaNode(colander.Integer(), missing=0)
+    radius = colander.SchemaNode(
+        colander.Integer(), missing=0,
+        validator=colander.Range(0, constants.CELL_MAX_RADIUS))
     country = colander.SchemaNode(colander.String(), missing=None)
     samples = colander.SchemaNode(colander.Integer(), missing=0)
     source = StationSourceNode(StationSourceType(), missing=None)
