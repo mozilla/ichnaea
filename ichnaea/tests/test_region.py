@@ -39,6 +39,15 @@ class TestGeocoder(TestCase):
         self.assertTrue(func(51.5142, -0.0931, 235))
         self.assertFalse(func(0.0, 0.0, 234))
 
+    def test_region_for_cell(self):
+        func = GEOCODER.region_for_cell
+        self.assertEqual(func(51.5142, -0.0931, 234), 'GB')
+        self.assertEqual(func(51.5142, -0.0931, 235), 'GB')
+        self.assertEqual(func(46.2130, 6.1290, 228), 'CH')
+        self.assertEqual(func(46.5743, 6.3532, 208), 'FR')
+        self.assertEqual(func(31.522, 34.455, 425), 'XW')
+        self.assertEqual(func(0.0, 0.0, 234), None)
+
 
 class TestRegionMaxRadius(TestCase):
 
@@ -119,9 +128,7 @@ class TestRegionsForMcc(TestCase):
         self.assertEqual(set(regions), set(['FI']))
 
     def test_all_valid_mcc(self):
-        # Gibraltar, Reunion and Tuvalu aren't in the shapefile
-        ignored = set([266, 553, 647])
-        for mcc in ALL_VALID_MCCS - ignored:
+        for mcc in ALL_VALID_MCCS:
             regions = set(GEOCODER.regions_for_mcc(mcc))
             self.assertNotEqual(regions, set())
             self.assertEqual(regions - GEOCODER._valid_regions, set())

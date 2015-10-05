@@ -49,8 +49,10 @@ ALL_VALID_MCCS = (
      if isinstance(country.mcc, (tuple, list))
      for code in country.mcc]
 )  #: All valid mobile country codes.
-ALL_VALID_MCCS = frozenset(
+ALL_VALID_MCCS = set(
     [mcc for mcc in ALL_VALID_MCCS if MIN_MCC <= mcc <= MAX_MCC])
+# exclude Tuvalu, as it isn't in our shapefile
+ALL_VALID_MCCS = frozenset(ALL_VALID_MCCS - set([553]))
 
 MIN_MNC = 0  #: Minimum accepted network code.
 MAX_MNC = 999  #: Maximum accepted network code.

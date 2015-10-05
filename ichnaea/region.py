@@ -18,6 +18,13 @@ from ichnaea import geocalc
 JSON_FILE = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), 'regions.geojson')
 
+# Gibraltar, Reunion and Tuvalu aren't in the shapefile
+# Palestine only exists as West Bank/Gaza in the GENC dataset
+MCC_GENC_SHAPEFILE_MAP = {
+    'GI': 'GB',
+    'PS': 'XW',
+    'RE': 'FR',
+}
 _RADIUS_CACHE = {}
 
 
@@ -166,7 +173,9 @@ class Geocoder(object):
         alpha2 codes present in the GENC dataset and those that we have
         region shapefiles for.
         """
-        codes = set([region.alpha2 for region in mobile_codes.mcc(str(mcc))])
+        codes = [region.alpha2 for region in mobile_codes.mcc(str(mcc))]
+        # map mcc alpha2 codes to genc alpha2 codes
+        codes = [MCC_GENC_SHAPEFILE_MAP.get(code, code) for code in codes]
         valid_codes = set(codes).intersection(self._valid_regions)
         if not names:
             return list(valid_codes)
@@ -177,6 +186,24 @@ class Geocoder(object):
             if region is not None:
                 result.append(region)
         return result
+
+    def region_for_cell(self, lat, lon, mcc):
+        """
+        Return a alpha2 region code matching the provided mcc and position.
+        If the position is not found inside any region return None.
+        """
+        regions = []
+        for alpha2 in self.regions_for_mcc(mcc):
+            if self.in_region(lat, lon, alpha2):
+                regions.append(alpha2)
+
+        if not regions:
+            return None
+        if len(regions) == 1:
+            return regions[0]
+
+        # fall back to lookup without the mcc/alpha2 hint
+        return self.region(lat, lon)
 
 
 def region_max_radius(code):

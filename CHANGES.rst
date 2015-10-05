@@ -18,6 +18,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use mcc in region determination for cells.
+
 - Use new OCID tables in the entire code base.
 
 - Use the intersection of region codes from GENC and our shapefile.

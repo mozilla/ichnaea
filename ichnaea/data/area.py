@@ -15,6 +15,7 @@ from ichnaea.models import (
     CellOCID,
     CellAreaOCID,
 )
+from ichnaea.region import GEOCODER
 from ichnaea import util
 
 
@@ -193,11 +194,16 @@ class CellAreaOCIDUpdater(CellAreaUpdater):
             num_cells = len(cells)
 
             country = None
-            countries = set([cell.country for cell in cells])
-            if len(countries) == 1:
-                # refuse to guess if we get multiple countries
-                country = list(countries)[0]
-
+            countries = [cell.country for cell in cells]
+            unique_countries = set(countries)
+            if len(unique_countries) == 1:
+                country = countries[0]
+            else:
+                # Choose the country based on the center of the area.
+                # We could also choose the country based on the majority
+                # of the cell countries, but would need another tie-breaker
+                # for areas with equal number of cells in two regions.
+                country = GEOCODER.region_for_cell(ctr_lat, ctr_lon, mcc)
             if area is None:
                 stmt = self.area_model.__table__.insert(
                     mysql_on_duplicate='num_cells = num_cells'  # no-op

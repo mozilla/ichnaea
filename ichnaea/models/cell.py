@@ -448,6 +448,7 @@ class CellAreaOCID(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
     def validate(cls, entry, _raise_invalid=False, **kw):
         validated = super(CellAreaOCID, cls).validate(
             entry, _raise_invalid=_raise_invalid, **kw)
+
         if validated is not None:
             if 'areaid' not in validated or not validated['areaid']:
                 validated['areaid'] = (
@@ -456,11 +457,13 @@ class CellAreaOCID(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
                     validated['mnc'],
                     validated['lac'],
                 )
+
             if (('country' not in validated or not validated['country']) and
                     validated['lat'] is not None and
                     validated['lon'] is not None):
-                validated['country'] = GEOCODER.region(
-                    validated['lat'], validated['lon'])
+                validated['country'] = GEOCODER.region_for_cell(
+                    validated['lat'], validated['lon'], validated['mcc'])
+
         return validated
 
 
@@ -609,6 +612,7 @@ class CellOCID(BboxMixin, PositionMixin, TimeTrackingMixin,
     def validate(cls, entry, _raise_invalid=False, **kw):
         validated = super(CellOCID, cls).validate(
             entry, _raise_invalid=_raise_invalid, **kw)
+
         if validated is not None:
             if 'cellid' not in validated:
                 validated['cellid'] = (
@@ -618,11 +622,13 @@ class CellOCID(BboxMixin, PositionMixin, TimeTrackingMixin,
                     validated['lac'],
                     validated['cid'],
                 )
+
             if (('country' not in validated or not validated['country']) and
                     validated['lat'] is not None and
                     validated['lon'] is not None):
-                validated['country'] = GEOCODER.region(
-                    validated['lat'], validated['lon'])
+                validated['country'] = GEOCODER.region_for_cell(
+                    validated['lat'], validated['lon'], validated['mcc'])
+
         return validated
 
     @property

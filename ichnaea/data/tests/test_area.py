@@ -6,6 +6,7 @@ from ichnaea.models import (
     encode_cellarea,
     CellArea,
     CellAreaOCID,
+    Radio,
 )
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
@@ -120,3 +121,18 @@ class TestAreaOCID(CeleryTestCase):
         self.area_queue.enqueue([areaid], json=False)
         update_cellarea_ocid.delay().get()
         self.assertEqual(self.session.query(CellAreaOCID).count(), 0)
+
+    def test_country_area(self):
+        cell = CellOCIDFactory(
+            radio=Radio.gsm, mcc=425, mnc=1, lac=1, cid=1,
+            lat=32.2, lon=35.0, country='XW', radius=10000)
+        CellOCIDFactory(
+            radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac, cid=2,
+            lat=32.2, lon=34.9, country='IL', radius=10000)
+        self.session.flush()
+
+        self.area_queue.enqueue([cell.areaid], json=False)
+        update_cellarea_ocid.delay().get()
+
+        area = self.session.query(CellAreaOCID).one()
+        self.assertEqual(area.country, 'IL')
