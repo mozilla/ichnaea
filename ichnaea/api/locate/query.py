@@ -32,10 +32,10 @@ METRIC_MAPPING = {
 
 class Query(object):
 
-    _country = None
     _fallback = None
     _geoip = None
     _ip = None
+    _region = None
 
     def __init__(self, fallback=None, ip=None, cell=None, wifi=None,
                  api_key=None, api_type=None, session=None,
@@ -103,15 +103,6 @@ class Query(object):
         self._fallback = valid
 
     @property
-    def country(self):
-        """
-        The two letter country code of origin for this query.
-
-        Can return None, if no country could be determined.
-        """
-        return self._country
-
-    @property
     def geoip(self):
         """
         A GeoIP database entry for the originating IP address.
@@ -135,16 +126,25 @@ class Query(object):
             valid = None
         self._ip = valid
         if valid:
-            country = None
+            region = None
             geoip = None
             if self.geoip_db:
                 geoip = self.geoip_db.geoip_lookup(valid)
                 if geoip:
-                    country = geoip.get('country_code')
-                    if country:
-                        country = country.upper()
+                    region = geoip.get('country_code')
+                    if region:
+                        region = region.upper()
             self._geoip = geoip
-            self._country = country
+            self._region = region
+
+    @property
+    def region(self):
+        """
+        The two letter region code of origin for this query.
+
+        Can return None, if no region could be determined.
+        """
+        return self._region
 
     @property
     def cell(self):
@@ -296,15 +296,15 @@ class Query(object):
         possible_result = bool(self.expected_accuracy != DataAccuracy.none)
         return (allowed and possible_result)
 
-    def _emit_country_stat(self, metric, extra_tags):
-        country = self.country
-        if not country:
-            country = 'none'
+    def _emit_region_stat(self, metric, extra_tags):
+        region = self.region
+        if not region:
+            region = 'none'
 
         metric = '%s.%s' % (self.api_type, metric)
         tags = [
             'key:%s' % self.api_key.name,
-            'country:%s' % country,
+            'region:%s' % region,
         ]
         self.stats_client.incr(metric, tags=tags + extra_tags)
 
@@ -323,7 +323,7 @@ class Query(object):
         for name, length in (('cell', cells), ('wifi', wifis)):
             num = METRIC_MAPPING[min(length, 2)]
             tags.append('{name}:{num}'.format(name=name, num=num))
-        self._emit_country_stat('query', tags)
+        self._emit_region_stat('query', tags)
 
     def emit_result_stats(self, result):
         """Emit stats about how well the result satisfied the query."""
@@ -337,7 +337,7 @@ class Query(object):
         ]
         if status == 'hit' and result.source:
             tags.append('source:%s' % result.source.name)
-        self._emit_country_stat('result', tags)
+        self._emit_region_stat('result', tags)
 
     def emit_source_stats(self, source, result):
         """Emit stats about how well the source satisfied the query."""
@@ -350,4 +350,4 @@ class Query(object):
             'accuracy:%s' % self.expected_accuracy.name,
             'status:%s' % status,
         ]
-        self._emit_country_stat('source', tags)
+        self._emit_region_stat('source', tags)

@@ -173,19 +173,19 @@ class CountrySearcher(Searcher):
         if len(found) == 1:
             return found[0]
 
-        # group by country code
+        # group by region code
         grouped = defaultdict(list)
         for result in found:
             grouped[result.country_code].append(result)
 
-        countries = []
+        regions = []
         for code, values in grouped.items():
-            country = grouped[code][0]
-            countries.append(
-                (len(values), country.accuracy, country))
+            region = grouped[code][0]
+            regions.append(
+                (len(values), region.accuracy, region))
 
-        # pick the country with the most entries,
-        # break tie by country with the largest radius
-        countries = sorted(countries, reverse=True)
+        # pick the region with the most entries,
+        # break tie by region with the largest radius
+        regions = sorted(regions, reverse=True)
 
-        return countries[0][2]
+        return regions[0][2]

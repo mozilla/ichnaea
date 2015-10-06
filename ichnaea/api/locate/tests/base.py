@@ -234,9 +234,9 @@ class BaseLocateTest(object):
             self.assertEqual(response.json, DailyLimitExceeded.json_body())
 
     def check_model_response(self, response, model,
-                             country=None, fallback=None,
+                             region=None, fallback=None,
                              expected_names=(), **kw):
-        expected = {'country': country}
+        expected = {'region': region}
         for name in ('lat', 'lon', 'accuracy'):
             if name in kw:
                 expected[name] = kw[name]
@@ -325,12 +325,12 @@ class CommonLocateTest(BaseLocateTest):
         if self.apikey_metrics:
             self.check_stats(counter=[
                 (self.metric_type + '.query',
-                    ['key:test', 'country:GB', 'cell:none', 'wifi:none']),
+                    ['key:test', 'region:GB', 'cell:none', 'wifi:none']),
                 (self.metric_type + '.result',
-                    ['key:test', 'country:GB',
+                    ['key:test', 'region:GB',
                      'accuracy:low', 'status:hit', 'source:geoip']),
                 (self.metric_type + '.source',
-                    ['key:test', 'country:GB', 'source:geoip',
+                    ['key:test', 'region:GB', 'source:geoip',
                      'accuracy:low', 'status:hit']),
             ])
 
@@ -411,13 +411,13 @@ class CommonPositionTest(BaseLocateTest):
                          'status:%s' % self.not_found.code]),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.query',
-                ['key:test', 'country:none',
+                ['key:test', 'region:none',
                  'geoip:false', 'cell:one', 'wifi:none']),
             (self.metric_type + '.result',
-                ['key:test', 'country:none',
+                ['key:test', 'region:none',
                  'accuracy:medium', 'status:miss']),
             (self.metric_type + '.source',
-                ['key:test', 'country:none', 'source:internal',
+                ['key:test', 'region:none', 'source:internal',
                  'accuracy:medium', 'status:miss']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
@@ -447,13 +447,13 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post', 'status:200']),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.query',
-                ['key:test', 'country:none',
+                ['key:test', 'region:none',
                  'geoip:false', 'cell:none', 'wifi:none']),
             (self.metric_type + '.result',
-                ['key:test', 'country:none',
+                ['key:test', 'region:none',
                  'accuracy:low', 'status:hit', 'source:internal']),
             (self.metric_type + '.source',
-                ['key:test', 'country:none', 'source:internal',
+                ['key:test', 'region:none', 'source:internal',
                  'accuracy:low', 'status:hit']),
         ])
 
@@ -470,13 +470,13 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post', 'status:200']),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.query',
-                ['key:test', 'country:none',
+                ['key:test', 'region:none',
                  'geoip:false', 'cell:none', 'wifi:none']),
             (self.metric_type + '.result',
-                ['key:test', 'country:none',
+                ['key:test', 'region:none',
                  'accuracy:low', 'status:hit', 'source:internal']),
             (self.metric_type + '.source',
-                ['key:test', 'country:none', 'source:internal',
+                ['key:test', 'region:none', 'source:internal',
                  'accuracy:low', 'status:hit']),
         ])
 
@@ -508,7 +508,7 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post', 'status:200']),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.result',
-                ['key:test', 'country:none',
+                ['key:test', 'region:none',
                  'accuracy:low', 'status:hit', 'source:internal']),
         ])
 
@@ -524,12 +524,12 @@ class CommonPositionTest(BaseLocateTest):
                          'status:%s' % self.not_found.code]),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.query',
-                ['key:test', 'country:none',
+                ['key:test', 'region:none',
                  'geoip:false', 'cell:none', 'wifi:many']),
             (self.metric_type + '.result',
-                ['key:test', 'country:none', 'accuracy:high', 'status:miss']),
+                ['key:test', 'region:none', 'accuracy:high', 'status:miss']),
             (self.metric_type + '.source',
-                ['key:test', 'country:none', 'source:internal',
+                ['key:test', 'region:none', 'source:internal',
                  'accuracy:high', 'status:miss']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
@@ -585,16 +585,16 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post', 'status:200']),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.query',
-                ['key:test', 'country:none',
+                ['key:test', 'region:none',
                  'geoip:false', 'cell:many', 'wifi:many']),
             (self.metric_type + '.result',
-                ['key:test', 'country:none',
+                ['key:test', 'region:none',
                  'accuracy:high', 'status:hit', 'source:fallback']),
             (self.metric_type + '.source',
-                ['key:test', 'country:none', 'source:internal',
+                ['key:test', 'region:none', 'source:internal',
                  'accuracy:high', 'status:miss']),
             (self.metric_type + '.source',
-                ['key:test', 'country:none', 'source:fallback',
+                ['key:test', 'region:none', 'source:fallback',
                  'accuracy:high', 'status:hit']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
@@ -630,10 +630,10 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post', 'status:200']),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.result',
-                ['key:test', 'country:GB',
+                ['key:test', 'region:GB',
                  'accuracy:high', 'status:hit', 'source:fallback']),
             (self.metric_type + '.source',
-                ['key:test', 'country:GB', 'source:fallback',
+                ['key:test', 'region:GB', 'source:fallback',
                  'accuracy:high', 'status:hit']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
@@ -678,7 +678,7 @@ class CommonLocateErrorTest(BaseLocateTest):
         if self.apikey_metrics:
             self.check_stats(counter=[
                 (self.metric_type + '.result',
-                    ['key:test', 'country:GB',
+                    ['key:test', 'region:GB',
                      'accuracy:high', 'status:miss']),
             ])
 

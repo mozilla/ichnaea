@@ -20,6 +20,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Change metric tag to region for region codes.
+
 - Temporarily stop using cell/area range in locate logic.
 
 - Discard too large cell networks during import.

@@ -20,7 +20,7 @@ class TestCountrySource(BaseSourceTest):
         self.check_model_result(results, region)
         self.check_stats(counter=[
             (self.api_type + '.source',
-                ['key:test', 'country:none', 'source:internal',
+                ['key:test', 'region:none', 'source:internal',
                  'accuracy:low', 'status:hit']),
         ])
 
@@ -32,7 +32,7 @@ class TestCountrySource(BaseSourceTest):
         self.check_model_result(results, regions)
         self.check_stats(counter=[
             (self.api_type + '.source',
-                ['key:test', 'country:none', 'source:internal',
+                ['key:test', 'region:none', 'source:internal',
                  'accuracy:low', 'status:hit']),
         ])
 

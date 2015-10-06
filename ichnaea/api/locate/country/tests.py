@@ -26,18 +26,18 @@ class CountryBase(BaseLocateTest, AppTestCase):
         }
 
     def check_model_response(self, response, model,
-                             country=None, fallback=None, **kw):
+                             region=None, fallback=None, **kw):
         expected_names = set(['country_code', 'country_name'])
 
         expected = super(CountryBase, self).check_model_response(
             response, model,
-            country=country,
+            region=region,
             fallback=fallback,
             expected_names=expected_names,
             **kw)
 
         data = response.json
-        self.assertEqual(data['country_code'], expected['country'])
+        self.assertEqual(data['country_code'], expected['region'])
         if fallback is not None:
             self.assertEqual(data['fallback'], fallback)
 
@@ -99,19 +99,19 @@ class TestView(CountryBase, CommonLocateTest):
         self.check_db_calls(rw=0, ro=0)
 
     def test_cell(self):
-        # cell with unique mcc to country mapping
+        # cell with unique mcc to region mapping
         cell = CellFactory.create(mcc=235)
         query = self.model_query(cells=[cell])
         res = self._call(body=query)
-        self.check_model_response(res, cell, country='GB')
+        self.check_model_response(res, cell, region='GB')
         self.check_db_calls(rw=0, ro=0)
 
     def test_cell_ambiguous(self):
-        # cell with ambiguous mcc to country mapping
+        # cell with ambiguous mcc to region mapping
         cell = CellFactory.create(mcc=234)
         query = self.model_query(cells=[cell])
         res = self._call(body=query)
-        self.check_model_response(res, cell, country='GB')
+        self.check_model_response(res, cell, region='GB')
         self.check_db_calls(rw=0, ro=0)
 
     def test_cell_geoip_mismatch(self):
@@ -119,7 +119,7 @@ class TestView(CountryBase, CommonLocateTest):
         cell = CellFactory.create(mcc=310)
         query = self.model_query(cells=[cell])
         res = self._call(body=query, ip=self.test_ip)
-        self.check_model_response(res, cell, country='US')
+        self.check_model_response(res, cell, region='US')
         self.check_db_calls(rw=0, ro=0)
 
     def test_wifi(self):

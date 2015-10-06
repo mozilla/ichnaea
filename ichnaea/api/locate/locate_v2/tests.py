@@ -76,12 +76,12 @@ class LocateV2Base(BaseLocateTest, AppTestCase):
         }
 
     def check_model_response(self, response, model,
-                             country=None, fallback=None, **kw):
+                             region=None, fallback=None, **kw):
         expected_names = set(['location', 'accuracy'])
 
         expected = super(LocateV2Base, self).check_model_response(
             response, model,
-            country=country,
+            region=region,
             fallback=fallback,
             expected_names=expected_names,
             **kw)
@@ -113,10 +113,10 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
             ('request', [self.metric_path, 'method:post', 'status:200']),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.result',
-                ['key:test', 'country:none',
+                ['key:test', 'region:none',
                  'accuracy:medium', 'status:hit', 'source:internal']),
             (self.metric_type + '.source',
-                ['key:test', 'country:none', 'source:internal',
+                ['key:test', 'region:none', 'source:internal',
                  'accuracy:medium', 'status:hit']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
@@ -163,10 +163,10 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
             ('request', [self.metric_path, 'method:post', 'status:200']),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.result',
-                ['key:test', 'country:none',
+                ['key:test', 'region:none',
                  'accuracy:high', 'status:hit', 'source:internal']),
             (self.metric_type + '.source',
-                ['key:test', 'country:none', 'source:internal',
+                ['key:test', 'region:none', 'source:internal',
                  'accuracy:high', 'status:hit']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),

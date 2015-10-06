@@ -48,7 +48,7 @@ class GeoIPCountrySource(GeoIPSource, CountrySource):
     """A GeoIPSource returning country results."""
 
     def _geoip_result_accuracy(self, geoip):
-        # calculate country based accuracy, ignoring city
+        # calculate region based accuracy, ignoring city
         return geoip_accuracy(geoip['country_code'])
 
 

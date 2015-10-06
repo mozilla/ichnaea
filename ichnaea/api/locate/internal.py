@@ -24,16 +24,16 @@ class InternalCountrySource(CountrySource):
         for cell in list(query.cell) + list(query.cell_area):
             codes.add(cell.mcc)
 
-        countries = []
+        regions = []
         for code in codes:
-            countries.extend(GEOCODER.regions_for_mcc(code, names=True))
+            regions.extend(GEOCODER.regions_for_mcc(code, names=True))
 
-        for country in countries:
-            country_code = country.alpha2
+        for region in regions:
+            region_code = region.alpha2
             results.add(self.result_type(
-                country_code=country_code,
-                country_name=country.name,
-                accuracy=geoip_accuracy(country_code)))
+                country_code=region_code,
+                country_name=region.name,
+                accuracy=geoip_accuracy(region_code)))
 
         if len(results):
             query.emit_source_stats(self.source, results[0])

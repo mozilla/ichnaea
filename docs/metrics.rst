@@ -74,14 +74,14 @@ API Query Metrics
 For each incoming API query we log metrics about the data contained in
 the query with the metric name and tags:
 
-``<api_type>.query#key<api_shortname>,country:<country_code>`` : counter
+``<api_type>.query#key<api_shortname>,region:<region_code>`` : counter
 
 `api_type` describes the type of API being used, independent of the
 version number of the API. So `v1/country` gets logged as `country`
 and both `v1/search` and `v1/geolocate` get logged as `locate`.
 
-`country_code` is either a two-letter GENC region code like `de` or the
-special value `none` if the country origin of the incoming request
+`region_code` is either a two-letter GENC region code like `de` or the
+special value `none` if the region of origin of the incoming request
 could not be determined.
 
 We extend the metric with additional tags based on the data contained
@@ -106,9 +106,9 @@ API Result Metrics
 
 Similar to the API query metrics we also collect metrics about each
 result of an API query. This follows the same per API type and per
-country rules under the prefix / tag combination:
+region rules under the prefix / tag combination:
 
-``<api_type>.result#key:<api_shortname>,country:<country_code>``
+``<api_type>.result#key:<api_shortname>,region:<region_code>``
 
 The result metrics measure if we satisfied the incoming API query in
 the best possible fashion. Incoming queries can generally contain
@@ -188,14 +188,14 @@ API Source Metrics
 
 In addition to the final API result, we also collect metrics about each
 individual data source we use to answer queries under the
-``<api_type>.source#key:<api_shortname>,country:<country_code>`` metric.
+``<api_type>.source#key:<api_shortname>,region:<region_code>`` metric.
 
 Each request may use one or multiple of these sources to deliver a result.
 We log the same metrics as mentioned above for the result.
 
 All of this combined might lead to a tagged metric like:
 
-``locate.source#key:test,country:de,source:ocid,accuracy:medium,status:hit``
+``locate.source#key:test,region:de,source:ocid,accuracy:medium,status:hit``
 
 
 API Fallback Source Metrics

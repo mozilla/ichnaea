@@ -82,7 +82,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
 
     def test_geoip(self):
         query = Query(ip=self.london_ip, geoip_db=self.geoip_db)
-        self.assertEqual(query.country, 'GB')
+        self.assertEqual(query.region, 'GB')
         self.assertEqual(query.geoip['city'], True)
         self.assertEqual(query.geoip['country_code'], 'GB')
         self.assertEqual(query.geoip['country_name'], 'United Kingdom')
@@ -91,7 +91,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
 
     def test_geoip_malformed(self):
         query = Query(ip='127.0.0.0.0.1', geoip_db=self.geoip_db)
-        self.assertEqual(query.country, None)
+        self.assertEqual(query.region, None)
         self.assertEqual(query.geoip, None)
         self.assertEqual(query.ip, None)
 
@@ -136,7 +136,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(len(query.cell), 1)
         self.assertEqual(query.cell[0].signal, -90)
 
-    def test_cell_country(self):
+    def test_cell_region(self):
         cell = CellFactory.build()
         cell_query = self.cell_model_query([cell])
         query = Query(cell=cell_query, api_type='country')
@@ -169,13 +169,13 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(len(query.cell_area), 0)
         self.assertEqual(query.expected_accuracy, DataAccuracy.none)
 
-    def test_cell_area_country(self):
+    def test_cell_area_region(self):
         cell = CellAreaFactory.build()
         cell_query = self.cell_model_query([cell])
         query = Query(cell=cell_query, api_type='country')
         self.assertEqual(query.expected_accuracy, DataAccuracy.low)
 
-    def test_cell_area_country_no_fallback(self):
+    def test_cell_area_region_no_fallback(self):
         cell = CellAreaFactory.build()
         cell_query = self.cell_model_query([cell])
         query = Query(cell=cell_query, api_type='country',
@@ -229,7 +229,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
         query = Query(wifi=[wifi_query, {'mac': 'foo'}])
         self.assertEqual(len(query.wifi), 0)
 
-    def test_wifi_country(self):
+    def test_wifi_region(self):
         wifis = WifiShardFactory.build_batch(2)
         query = Query(
             wifi=self.wifi_model_query(wifis), api_type='country')
@@ -294,14 +294,14 @@ class TestQueryStats(QueryTest):
         self.check_stats(counter=[
             ('locate.query',
                 ['key:%s' % api_key.valid_key,
-                 'country:none', 'geoip:false', 'cell:one', 'wifi:none']),
+                 'region:none', 'geoip:false', 'cell:one', 'wifi:none']),
         ])
 
     def test_empty(self):
         self._make_query(ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.query',
-                ['key:key', 'country:GB', 'cell:none', 'wifi:none']),
+                ['key:key', 'region:GB', 'cell:none', 'wifi:none']),
         ])
 
     def test_one(self):
@@ -311,7 +311,7 @@ class TestQueryStats(QueryTest):
         self._make_query(cell=cells, wifi=wifis, ip=self.london_ip)
         self.check_stats(total=1, counter=[
             ('locate.query',
-                ['key:key', 'country:GB', 'cell:one', 'wifi:one']),
+                ['key:key', 'region:GB', 'cell:one', 'wifi:one']),
         ])
 
     def test_many(self):
@@ -321,7 +321,7 @@ class TestQueryStats(QueryTest):
         self._make_query(cell=cells, wifi=wifis, ip=self.london_ip)
         self.check_stats(total=1, counter=[
             ('locate.query',
-                ['key:key', 'country:GB', 'cell:many', 'wifi:many']),
+                ['key:key', 'region:GB', 'cell:many', 'wifi:many']),
         ])
 
 
@@ -362,7 +362,7 @@ class TestResultStats(QueryTest):
             self._make_country_result(), api_type='country', ip=self.london_ip)
         self.check_stats(counter=[
             ('country.result',
-                ['key:key', 'country:GB', 'accuracy:low', 'status:hit']),
+                ['key:key', 'region:GB', 'accuracy:low', 'status:hit']),
         ])
 
     def test_none(self):
@@ -374,7 +374,7 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(), ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'country:GB', 'accuracy:low', 'status:miss']),
+                ['key:key', 'region:GB', 'accuracy:low', 'status:miss']),
         ])
 
     def test_low_hit(self):
@@ -382,7 +382,7 @@ class TestResultStats(QueryTest):
             self._make_result(accuracy=60000.0), ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'country:GB', 'accuracy:low', 'status:hit']),
+                ['key:key', 'region:GB', 'accuracy:low', 'status:hit']),
         ])
 
     def test_medium_miss(self):
@@ -390,7 +390,7 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(), cell=cells)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'country:none', 'accuracy:medium', 'status:miss']),
+                ['key:key', 'region:none', 'accuracy:medium', 'status:miss']),
         ])
 
     def test_medium_miss_low(self):
@@ -398,7 +398,7 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(accuracy=60000.0), cell=cells)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'country:none', 'accuracy:medium', 'status:miss']),
+                ['key:key', 'region:none', 'accuracy:medium', 'status:miss']),
         ])
 
     def test_medium_hit(self):
@@ -406,7 +406,7 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(accuracy=30000.0), cell=cells)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'country:none', 'accuracy:medium', 'status:hit']),
+                ['key:key', 'region:none', 'accuracy:medium', 'status:hit']),
         ])
 
     def test_high_miss(self):
@@ -414,7 +414,7 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(accuracy=1500.0), wifi=wifis)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'country:none', 'accuracy:high', 'status:miss']),
+                ['key:key', 'region:none', 'accuracy:high', 'status:miss']),
         ])
 
     def test_high_hit(self):
@@ -422,7 +422,7 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(accuracy=1000.0), wifi=wifis)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'country:none', 'accuracy:high', 'status:hit']),
+                ['key:key', 'region:none', 'accuracy:high', 'status:hit']),
         ])
 
     def test_mixed_miss(self):
@@ -431,7 +431,7 @@ class TestResultStats(QueryTest):
             self._make_result(accuracy=1001.0), wifi=wifis, ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'country:GB', 'accuracy:high', 'status:miss']),
+                ['key:key', 'region:GB', 'accuracy:high', 'status:miss']),
         ])
 
     def test_mixed_hit(self):
@@ -440,7 +440,7 @@ class TestResultStats(QueryTest):
             self._make_result(accuracy=500.0), cell=cells, ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'country:GB', 'accuracy:medium', 'status:hit']),
+                ['key:key', 'region:GB', 'accuracy:medium', 'status:hit']),
         ])
 
 
@@ -471,7 +471,7 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
             DataSource.internal, self._make_result(accuracy=100.0), wifi=wifis)
         self.check_stats(counter=[
             ('locate.source',
-                ['key:key', 'country:none', 'source:internal',
+                ['key:key', 'region:none', 'source:internal',
                  'accuracy:high', 'status:hit']),
         ])
 
@@ -481,6 +481,6 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
             DataSource.ocid, self._make_result(accuracy=10000.0), wifi=wifis)
         self.check_stats(counter=[
             ('locate.source',
-                ['key:key', 'country:none', 'source:ocid',
+                ['key:key', 'region:none', 'source:ocid',
                  'accuracy:high', 'status:miss']),
         ])
