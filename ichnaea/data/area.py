@@ -1,4 +1,5 @@
 import base64
+from collections import defaultdict
 
 import numpy
 from sqlalchemy.orm import load_only
@@ -193,17 +194,30 @@ class CellAreaOCIDUpdater(CellAreaUpdater):
             avg_cell_radius = int(round(numpy.nanmean(cell_radii)))
             num_cells = len(cells)
 
-            country = None
-            countries = [cell.country for cell in cells]
-            unique_countries = set(countries)
-            if len(unique_countries) == 1:
-                country = countries[0]
+            region = None
+            regions = [cell.country for cell in cells]
+            unique_regions = set(regions)
+            if len(unique_regions) == 1:
+                region = regions[0]
             else:
-                # Choose the country based on the center of the area.
-                # We could also choose the country based on the majority
-                # of the cell countries, but would need another tie-breaker
-                # for areas with equal number of cells in two regions.
-                country = GEOCODER.region_for_cell(ctr_lat, ctr_lon, mcc)
+                # Choose the area region based on the majority of cells
+                # inside each region.
+                grouped_regions = defaultdict(int)
+                for reg in regions:
+                    grouped_regions[reg] += 1
+                max_count = max(grouped_regions.values())
+                max_regions = sorted([k for k, v in grouped_regions.items()
+                                      if v == max_count])
+                # If we get a tie here, randomly choose the first.
+                region = max_regions[0]
+                if len(max_regions) > 1:
+                    # Try to break the tie based on the center of the area,
+                    # but keep the randomly chosen region if this fails.
+                    area_region = GEOCODER.region_for_cell(
+                        ctr_lat, ctr_lon, mcc)
+                    if area_region is not None:
+                        region = area_region
+
             if area is None:
                 stmt = self.area_model.__table__.insert(
                     mysql_on_duplicate='num_cells = num_cells'  # no-op
@@ -217,7 +231,7 @@ class CellAreaOCIDUpdater(CellAreaUpdater):
                     modified=self.utcnow,
                     lat=ctr_lat,
                     lon=ctr_lon,
-                    country=country,
+                    country=region,
                     radius=radius,
                     avg_cell_radius=avg_cell_radius,
                     num_cells=num_cells,
@@ -227,7 +241,7 @@ class CellAreaOCIDUpdater(CellAreaUpdater):
                 area.modified = self.utcnow
                 area.lat = ctr_lat
                 area.lon = ctr_lon
-                area.country = country
+                area.country = region
                 area.radius = radius
                 area.avg_cell_radius = avg_cell_radius
                 area.num_cells = num_cells

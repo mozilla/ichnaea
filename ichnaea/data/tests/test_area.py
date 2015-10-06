@@ -122,7 +122,7 @@ class TestAreaOCID(CeleryTestCase):
         update_cellarea_ocid.delay().get()
         self.assertEqual(self.session.query(CellAreaOCID).count(), 0)
 
-    def test_country_area(self):
+    def test_region_area(self):
         cell = CellOCIDFactory(
             radio=Radio.gsm, mcc=425, mnc=1, lac=1, cid=1,
             lat=32.2, lon=35.0, country='XW', radius=10000)
@@ -136,3 +136,36 @@ class TestAreaOCID(CeleryTestCase):
 
         area = self.session.query(CellAreaOCID).one()
         self.assertEqual(area.country, 'IL')
+
+    def test_region_area_outside(self):
+        cell = CellOCIDFactory(
+            radio=Radio.gsm, mcc=310, mnc=1, lac=1, cid=1,
+            lat=18.33, lon=-64.9, country='PR', radius=10000)
+        CellOCIDFactory(
+            radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac, cid=2,
+            lat=18.34, lon=-64.9, country='PR', radius=10000)
+        CellOCIDFactory(
+            radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac, cid=3,
+            lat=35.8, lon=-83.1, country='US', radius=10000)
+        self.session.flush()
+
+        self.area_queue.enqueue([cell.areaid], json=False)
+        update_cellarea_ocid.delay().get()
+
+        area = self.session.query(CellAreaOCID).one()
+        self.assertEqual(area.country, 'PR')
+
+    def test_region_area_outside_tie(self):
+        cell = CellOCIDFactory(
+            radio=Radio.gsm, mcc=310, mnc=1, lac=1, cid=1,
+            lat=18.33, lon=-64.9, country='PR', radius=10000)
+        CellOCIDFactory(
+            radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac, cid=2,
+            lat=18.34, lon=-64.9, country='PR', radius=10000)
+        self.session.flush()
+
+        self.area_queue.enqueue([cell.areaid], json=False)
+        update_cellarea_ocid.delay().get()
+
+        area = self.session.query(CellAreaOCID).one()
+        self.assertEqual(area.country, 'PR')
