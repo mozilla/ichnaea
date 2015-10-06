@@ -1,4 +1,4 @@
-from ichnaea.api.locate.internal import InternalCountrySource
+from ichnaea.api.locate.internal import InternalRegionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.region import GEOCODER
 from ichnaea.tests.factories import (
@@ -7,10 +7,10 @@ from ichnaea.tests.factories import (
 )
 
 
-class TestCountrySource(BaseSourceTest):
+class TestRegionSource(BaseSourceTest):
 
-    TestSource = InternalCountrySource
-    api_type = 'country'
+    TestSource = InternalRegionSource
+    api_type = 'region'
 
     def test_from_mcc(self):
         region = GEOCODER.regions_for_mcc(235, names=True)[0]

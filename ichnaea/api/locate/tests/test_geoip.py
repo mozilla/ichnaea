@@ -1,6 +1,6 @@
 from ichnaea.api.locate.geoip import (
-    GeoIPCountrySource,
     GeoIPPositionSource,
+    GeoIPRegionSource,
 )
 from ichnaea.api.locate.tests.base import BaseSourceTest
 
@@ -35,6 +35,6 @@ class TestPositionSource(SourceTest, BaseSourceTest):
     TestSource = GeoIPPositionSource
 
 
-class TestCountrySource(SourceTest, BaseSourceTest):
+class TestRegionSource(SourceTest, BaseSourceTest):
 
-    TestSource = GeoIPCountrySource
+    TestSource = GeoIPRegionSource

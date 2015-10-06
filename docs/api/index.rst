@@ -7,7 +7,7 @@ Services API
 The service APIs accept data submission for geolocation stumbling as
 well as reporting a location based on IP addresses, cell or WiFi networks.
 
-New client developments should use the :ref:`api_country_latest`,
+New client developments should use the :ref:`api_region_latest`,
 :ref:`api_geolocate_latest` or :ref:`api_geosubmit_latest` APIs.
 
 
@@ -18,7 +18,7 @@ You can anonymously submit data to the service without an API key via
 any of the submission APIs.
 
 You must identify your client to the service using an API key when
-using one of the :ref:`api_country_latest` or :ref:`api_geolocate_latest`
+using one of the :ref:`api_region_latest` or :ref:`api_geolocate_latest`
 APIs.
 
 If you want or need to specify an API key, you need to be provide
@@ -123,14 +123,14 @@ Historically the service first offered the custom :ref:`api_search` and
 :ref:`api_geolocate` API to lessen the burden on clients that want to
 support multiple location services. As an extension to this the
 :ref:`api_geosubmit` was added to offer a consistent way to contribute
-back data to the service. Finally the :ref:`api_country` was added and
+back data to the service. Finally the :ref:`api_region` was added and
 :ref:`api_geosubmit2` superseded its version 1 counterpart.
 
 .. toctree::
    :maxdepth: 1
 
    geolocate
-   country
+   region
    geosubmit2
    geosubmit
    search

@@ -182,8 +182,8 @@ class GeoIPWrapper(Reader):
             # Round lat/lon to a standard maximum precision
             'latitude': round(location.latitude, DEGREE_DECIMAL_PLACES),
             'longitude': round(location.longitude, DEGREE_DECIMAL_PLACES),
-            'country_code': region.iso_code,
-            'country_name': region.name,
+            'region_code': region.iso_code,
+            'region_name': region.name,
             'city': city,
             'accuracy': geoip_accuracy(region.iso_code, city=city),
         }

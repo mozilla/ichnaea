@@ -4,16 +4,16 @@ from ichnaea.api.locate.cell import CellPositionMixin
 from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.result import ResultList
 from ichnaea.api.locate.source import (
-    CountrySource,
     PositionSource,
+    RegionSource,
 )
 from ichnaea.api.locate.wifi import WifiPositionMixin
 from ichnaea.geoip import geoip_accuracy
 from ichnaea.region import GEOCODER
 
 
-class InternalCountrySource(CountrySource):
-    """A country source based on our own crowd-sourced internal data."""
+class InternalRegionSource(RegionSource):
+    """A region source based on our own crowd-sourced internal data."""
 
     source = DataSource.internal  #:
 
@@ -31,8 +31,8 @@ class InternalCountrySource(CountrySource):
         for region in regions:
             region_code = region.alpha2
             results.add(self.result_type(
-                country_code=region_code,
-                country_name=region.name,
+                region_code=region_code,
+                region_name=region.name,
                 accuracy=geoip_accuracy(region_code)))
 
         if len(results):

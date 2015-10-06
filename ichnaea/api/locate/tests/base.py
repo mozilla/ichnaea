@@ -12,8 +12,8 @@ from ichnaea.api.exceptions import (
 )
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
-    Country,
     Position,
+    Region,
     ResultList,
 )
 from ichnaea.constants import (
@@ -67,16 +67,16 @@ class BaseSourceTest(ConnectionTestCase):
             lat=bhutan['latitude'],
             lon=bhutan['longitude'],
             accuracy=bhutan['accuracy'],
-            alpha2=bhutan['country_code'],
-            name=bhutan['country_name'],
+            alpha2=bhutan['region_code'],
+            name=bhutan['region_name'],
             ip=bhutan['ip'])
         london = cls.geoip_data['London']
         cls.london_model = DummyModel(
             lat=london['latitude'],
             lon=london['longitude'],
             accuracy=london['accuracy'],
-            alpha2=london['country_code'],
-            name=london['country_name'],
+            alpha2=london['region_code'],
+            name=london['region_name'],
             ip=london['ip'])
 
     def setUp(self):
@@ -162,12 +162,12 @@ class BaseSourceTest(ConnectionTestCase):
                     'lon': kw.get('lon', model.lon),
                     'accuracy': accuracy,
                 })
-        elif type_ is Country:
+        elif type_ is Region:
             check_func = self.assertEqual
             for model in models:
                 expected.append({
-                    'country_code': model.alpha2,
-                    'country_name': model.name,
+                    'region_code': model.alpha2,
+                    'region_name': model.name,
                 })
 
         for expect, result in zip(expected, results):
@@ -289,7 +289,7 @@ class BaseLocateTest(object):
 
 
 class CommonLocateTest(BaseLocateTest):
-    # tests for all locate API's incl. country
+    # tests for all locate API's incl. region
 
     def test_get(self):
         res = self._call(ip=self.test_ip, method='get', status=200)

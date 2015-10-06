@@ -1,8 +1,8 @@
 from ichnaea.api.locate.constants import DataAccuracy
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
-    Country,
     Position,
+    Region,
     Result,
     ResultList,
 )
@@ -13,7 +13,7 @@ from ichnaea.tests.factories import WifiShardFactory
 class TestResult(TestCase):
 
     def test_repr(self):
-        result = Result(country_code='DE', lat=1.0)
+        result = Result(region_code='DE', lat=1.0)
         rep = repr(result)
         self.assertTrue(rep.startswith('Result'), rep)
         self.assertFalse('DE' in rep, rep)
@@ -74,48 +74,48 @@ class TestResultList(TestCase):
             self.assertEqual(res, result)
 
 
-class TestCountry(TestCase):
+class TestRegion(TestCase):
 
     def test_repr(self):
-        country = Country(country_code='DE', country_name='Germany')
-        rep = repr(country)
-        self.assertTrue(rep.startswith('Country'), rep)
+        region = Region(region_code='DE', region_name='Germany')
+        rep = repr(region)
+        self.assertTrue(rep.startswith('Region'), rep)
         self.assertTrue('DE' in rep, rep)
         self.assertTrue('Germany' in rep, rep)
 
     def test_empty(self):
-        country = Country(
-            country_code='DE', country_name='Germany', accuracy=None)
-        self.assertTrue(country.empty())
-        country = Country(
-            country_code='DE', country_name=None, accuracy=100000.0)
-        self.assertTrue(country.empty())
-        country = Country(
-            country_code=None, country_name='Germany', accuracy=100000.0)
-        self.assertTrue(country.empty())
+        region = Region(
+            region_code='DE', region_name='Germany', accuracy=None)
+        self.assertTrue(region.empty())
+        region = Region(
+            region_code='DE', region_name=None, accuracy=100000.0)
+        self.assertTrue(region.empty())
+        region = Region(
+            region_code=None, region_name='Germany', accuracy=100000.0)
+        self.assertTrue(region.empty())
 
     def test_not_empty(self):
-        country = Country(
-            country_code='DE', country_name='Germany', accuracy=100000.0)
-        self.assertFalse(country.empty())
+        region = Region(
+            region_code='DE', region_name='Germany', accuracy=100000.0)
+        self.assertFalse(region.empty())
 
     def test_satisfies(self):
-        country = Country(
-            country_code='DE', country_name='Germany', accuracy=100000.0)
-        self.assertTrue(country.satisfies(Query()))
+        region = Region(
+            region_code='DE', region_name='Germany', accuracy=100000.0)
+        self.assertTrue(region.satisfies(Query()))
 
     def test_satisfies_fail(self):
-        country = Country()
-        self.assertFalse(country.satisfies(Query()))
+        region = Region()
+        self.assertFalse(region.satisfies(Query()))
 
     def test_data_accuracy(self):
-        self.assertEqual(Country().data_accuracy, DataAccuracy.none)
-        country = Country(
-            country_code='DE', country_name='Germany', accuracy=100000.0)
-        self.assertEqual(country.data_accuracy, DataAccuracy.low)
-        country = Country(
-            country_code='VA', country_name='Holy See', accuracy=1000.0)
-        self.assertEqual(country.data_accuracy, DataAccuracy.high)
+        self.assertEqual(Region().data_accuracy, DataAccuracy.none)
+        region = Region(
+            region_code='DE', region_name='Germany', accuracy=100000.0)
+        self.assertEqual(region.data_accuracy, DataAccuracy.low)
+        region = Region(
+            region_code='VA', region_name='Holy See', accuracy=1000.0)
+        self.assertEqual(region.data_accuracy, DataAccuracy.high)
 
 
 class TestPosition(TestCase):

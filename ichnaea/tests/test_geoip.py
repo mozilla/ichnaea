@@ -75,7 +75,7 @@ class TestGeoIPLookup(GeoIPTestCase):
         result = self.geoip_db.geoip_lookup(london['ip'])
         for name in ('latitude', 'longitude'):
             self.assertAlmostEqual(london[name], result[name])
-        for name in ('accuracy', 'country_code', 'country_name', 'city'):
+        for name in ('accuracy', 'region_code', 'region_name', 'city'):
             self.assertEqual(london[name], result[name])
 
     def test_region(self):
@@ -83,7 +83,7 @@ class TestGeoIPLookup(GeoIPTestCase):
         result = self.geoip_db.geoip_lookup(bhutan['ip'])
         for name in ('latitude', 'longitude'):
             self.assertAlmostEqual(bhutan[name], result[name])
-        for name in ('accuracy', 'country_code', 'country_name', 'city'):
+        for name in ('accuracy', 'region_code', 'region_name', 'city'):
             self.assertEqual(bhutan[name], result[name])
 
     def test_fail(self):

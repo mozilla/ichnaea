@@ -3,8 +3,8 @@
 from functools import partial
 
 from ichnaea.api.locate.result import (
-    Country,
     Position,
+    Region,
 )
 
 
@@ -59,15 +59,6 @@ class Source(object):
         raise NotImplementedError()
 
 
-class CountrySource(Source):
-    """
-    A CountrySource will return a country result with
-    a country name and code in it.
-    """
-
-    result_type = Country  #:
-
-
 class PositionSource(Source):
     """
     A PositionSource will return a position result with
@@ -75,3 +66,12 @@ class PositionSource(Source):
     """
 
     result_type = Position  #:
+
+
+class RegionSource(Source):
+    """
+    A RegionSource will return a region result with
+    a region name and code in it.
+    """
+
+    result_type = Region  #:

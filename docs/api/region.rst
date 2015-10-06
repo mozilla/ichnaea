@@ -1,12 +1,12 @@
-.. _api_country:
-.. _api_country_latest:
+.. _api_region:
+.. _api_region_latest:
 
-Country
-=======
+Region
+======
 
 Purpose
-    Determine the current country or region based on data provided about
-    nearby cell or WiFi networks and based on the IP address used to access
+    Determine the current region based on data provided about nearby
+    cell or WiFi networks and based on the IP address used to access
     the service.
 
 
@@ -48,8 +48,7 @@ Should the response be based on a GeoIP estimate:
         "fallback": "ipf"
     }
 
-If no country or region could be determined, a HTTP status code 404 will
-be returned:
+If no region could be determined, a HTTP status code 404 will be returned:
 
 .. code-block:: javascript
 

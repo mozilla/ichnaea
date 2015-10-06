@@ -20,6 +20,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Change internal names to refer to region.
+
 - Change metric tag to region for region codes.
 
 - Temporarily stop using cell/area range in locate logic.

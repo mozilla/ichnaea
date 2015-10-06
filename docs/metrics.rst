@@ -24,14 +24,14 @@ API Request Metrics
 
 These are metrics that track how many times each specific public API
 is used and which clients identified by their API keys do so. They are
-grouped by the type of the API, where type is one of `country`, `locate`
+grouped by the type of the API, where type is one of `locate`, `region`
 and `submit`, independent of the specific version of that API.
 
 These metrics can help in deciding when to remove a deprecated API.
 
-``country.request#path:v1.country,key:<apikey_shortname>``,
 ``locate.request#path:v1.search,key:<apikey_shortname>``,
 ``locate.request#path:v1.geolocate,key:<apikey_shortname>``,
+``region.request#path:v1.country,key:<apikey_shortname>``,
 ``submit.request#path:v1.submit,key:<apikey_shortname>``,
 ``submit.request#path:v1.geosubmit,key:<apikey_shortname>``,
 ``submit.request#path:v2.geosubmit,key:<apikey_shortname>`` : counters
@@ -77,7 +77,7 @@ the query with the metric name and tags:
 ``<api_type>.query#key<api_shortname>,region:<region_code>`` : counter
 
 `api_type` describes the type of API being used, independent of the
-version number of the API. So `v1/country` gets logged as `country`
+version number of the API. So `v1/country` gets logged as `region`
 and both `v1/search` and `v1/geolocate` get logged as `locate`.
 
 `region_code` is either a two-letter GENC region code like `de` or the

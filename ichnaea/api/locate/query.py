@@ -81,7 +81,7 @@ class Query(object):
         self.cell = cell
         self.wifi = wifi
         self.api_key = api_key
-        if api_type not in (None, 'country', 'locate'):
+        if api_type not in (None, 'region', 'locate'):
             raise ValueError('Invalid api_type.')
         self.api_type = api_type
 
@@ -131,7 +131,7 @@ class Query(object):
             if self.geoip_db:
                 geoip = self.geoip_db.geoip_lookup(valid)
                 if geoip:
-                    region = geoip.get('country_code')
+                    region = geoip.get('region_code')
                     if region:
                         region = region.upper()
             self._geoip = geoip
@@ -239,12 +239,12 @@ class Query(object):
         accuracies = [DataAccuracy.none]
 
         if self.wifi:
-            if self.api_type == 'country':
+            if self.api_type == 'region':
                 accuracies.append(DataAccuracy.none)
             else:
                 accuracies.append(DataAccuracy.high)
         if self.cell:
-            if self.api_type == 'country':
+            if self.api_type == 'region':
                 accuracies.append(DataAccuracy.low)
             else:
                 accuracies.append(DataAccuracy.medium)

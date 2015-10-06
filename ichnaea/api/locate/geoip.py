@@ -2,8 +2,8 @@
 
 from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.source import (
-    CountrySource,
     PositionSource,
+    RegionSource,
     Source,
 )
 from ichnaea.geoip import geoip_accuracy
@@ -34,8 +34,8 @@ class GeoIPSource(Source):
                 lat=geoip['latitude'],
                 lon=geoip['longitude'],
                 accuracy=self._geoip_result_accuracy(geoip),
-                country_code=geoip['country_code'],
-                country_name=geoip['country_name'],
+                region_code=geoip['region_code'],
+                region_name=geoip['region_name'],
             )
 
         if source_used:
@@ -44,13 +44,13 @@ class GeoIPSource(Source):
         return result
 
 
-class GeoIPCountrySource(GeoIPSource, CountrySource):
-    """A GeoIPSource returning country results."""
+class GeoIPPositionSource(GeoIPSource, PositionSource):
+    """A GeoIPSource returning position results."""
+
+
+class GeoIPRegionSource(GeoIPSource, RegionSource):
+    """A GeoIPSource returning region results."""
 
     def _geoip_result_accuracy(self, geoip):
         # calculate region based accuracy, ignoring city
-        return geoip_accuracy(geoip['country_code'])
-
-
-class GeoIPPositionSource(GeoIPSource, PositionSource):
-    """A GeoIPSource returning position results."""
+        return geoip_accuracy(geoip['region_code'])

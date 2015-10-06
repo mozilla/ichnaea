@@ -1,13 +1,13 @@
 from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
-    Country,
     Position,
+    Region,
     ResultList,
 )
 from ichnaea.api.locate.source import (
-    CountrySource,
     PositionSource,
+    RegionSource,
 )
 from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import (
@@ -49,9 +49,9 @@ class SourceTest(object):
         self.assertTrue(self.source.should_search(query, ResultList(empty)))
 
 
-class TestCountrySource(SourceTest, ConnectionTestCase):
+class TestRegionSource(SourceTest, ConnectionTestCase):
 
-    class TestSource(CountrySource):
+    class TestSource(RegionSource):
         fallback_field = 'ipf'
         source = DataSource.geoip
 
@@ -62,7 +62,7 @@ class TestCountrySource(SourceTest, ConnectionTestCase):
         query = self._make_query()
         result = self.source.search(query)
         self.assertTrue(result.empty())
-        self.assertTrue(isinstance(result, Country))
+        self.assertTrue(isinstance(result, Region))
         self.assertEqual(result.fallback, 'ipf')
         self.assertEqual(result.source, DataSource.geoip)
 

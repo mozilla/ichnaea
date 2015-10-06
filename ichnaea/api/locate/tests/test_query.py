@@ -4,8 +4,8 @@ from ichnaea.api.locate.constants import (
 )
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
-    Country,
     Position,
+    Region,
 )
 from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import (
@@ -84,8 +84,8 @@ class TestQuery(QueryTest, ConnectionTestCase):
         query = Query(ip=self.london_ip, geoip_db=self.geoip_db)
         self.assertEqual(query.region, 'GB')
         self.assertEqual(query.geoip['city'], True)
-        self.assertEqual(query.geoip['country_code'], 'GB')
-        self.assertEqual(query.geoip['country_name'], 'United Kingdom')
+        self.assertEqual(query.geoip['region_code'], 'GB')
+        self.assertEqual(query.geoip['region_name'], 'United Kingdom')
         self.assertEqual(query.ip, self.london_ip)
         self.assertEqual(query.expected_accuracy, DataAccuracy.low)
 
@@ -139,7 +139,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
     def test_cell_region(self):
         cell = CellFactory.build()
         cell_query = self.cell_model_query([cell])
-        query = Query(cell=cell_query, api_type='country')
+        query = Query(cell=cell_query, api_type='region')
         self.assertEqual(query.expected_accuracy, DataAccuracy.low)
 
     def test_cell_area(self):
@@ -172,13 +172,13 @@ class TestQuery(QueryTest, ConnectionTestCase):
     def test_cell_area_region(self):
         cell = CellAreaFactory.build()
         cell_query = self.cell_model_query([cell])
-        query = Query(cell=cell_query, api_type='country')
+        query = Query(cell=cell_query, api_type='region')
         self.assertEqual(query.expected_accuracy, DataAccuracy.low)
 
     def test_cell_area_region_no_fallback(self):
         cell = CellAreaFactory.build()
         cell_query = self.cell_model_query([cell])
-        query = Query(cell=cell_query, api_type='country',
+        query = Query(cell=cell_query, api_type='region',
                       fallback={'lacf': False})
         self.assertEqual(query.expected_accuracy, DataAccuracy.none)
 
@@ -232,7 +232,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
     def test_wifi_region(self):
         wifis = WifiShardFactory.build_batch(2)
         query = Query(
-            wifi=self.wifi_model_query(wifis), api_type='country')
+            wifi=self.wifi_model_query(wifis), api_type='region')
         self.assertEqual(query.expected_accuracy, DataAccuracy.none)
 
     def test_mixed_cell_wifi(self):
@@ -333,10 +333,10 @@ class TestResultStats(QueryTest):
             lon=self.london['longitude'],
             accuracy=accuracy)
 
-    def _make_country_result(self, accuracy=100000.0):
-        return Country(
-            country_code='GB',
-            country_name='United Kingdom',
+    def _make_region_result(self, accuracy=100000.0):
+        return Region(
+            region_code='GB',
+            region_name='United Kingdom',
             accuracy=accuracy)
 
     def _make_query(self, result, api_key=None, api_type='locate',
@@ -357,11 +357,11 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(), api_key=api_key)
         self.check_stats(total=0)
 
-    def test_country_api(self):
+    def test_region_api(self):
         self._make_query(
-            self._make_country_result(), api_type='country', ip=self.london_ip)
+            self._make_region_result(), api_type='region', ip=self.london_ip)
         self.check_stats(counter=[
-            ('country.result',
+            ('region.result',
                 ['key:key', 'region:GB', 'accuracy:low', 'status:hit']),
         ])
 

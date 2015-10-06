@@ -1,6 +1,6 @@
 """
-Classes representing an abstract query result
-or a concrete country or position result.
+Classes representing an abstract query result or
+a concrete position or region result.
 """
 
 from ichnaea.api.locate.constants import DataAccuracy
@@ -17,11 +17,11 @@ class Result(object):
 
     _required = ()  #: The list of required attributes.
 
-    def __init__(self, accuracy=None, country_code=None, country_name=None,
+    def __init__(self, accuracy=None, region_code=None, region_name=None,
                  fallback=None, lat=None, lon=None, source=None):
         self.accuracy = self._round(accuracy)
-        self.country_code = country_code
-        self.country_name = country_name
+        self.region_code = region_code
+        self.region_name = region_name
         self.fallback = fallback
         self.lat = self._round(lat)
         self.lon = self._round(lon)
@@ -120,10 +120,10 @@ class Position(Result):
         return False
 
 
-class Country(Result):
-    """The country returned by a country query."""
+class Region(Result):
+    """The region returned by a region query."""
 
-    _required = ('country_code', 'country_name', 'accuracy')  #:
+    _required = ('region_code', 'region_name', 'accuracy')  #:
 
     def satisfies(self, query):
         return not self.empty()

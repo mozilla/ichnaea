@@ -7,8 +7,8 @@ from pyramid.tweens import EXCVIEW
 
 from ichnaea.api.config import configure_api
 from ichnaea.api.locate.searcher import (
-    configure_country_searcher,
     configure_position_searcher,
+    configure_region_searcher,
 )
 from ichnaea.cache import configure_redis
 from ichnaea.content.views import configure_content
@@ -30,7 +30,7 @@ from ichnaea.webapp.monitor import configure_monitor
 def main(app_config, ping_connections=False,
          _db_rw=None, _db_ro=None, _geoip_db=None, _http_session=None,
          _raven_client=None, _redis_client=None, _stats_client=None,
-         _country_searcher=None, _position_searcher=None):
+         _position_searcher=None, _region_searcher=None):
     """
     Configure the web app stored in :data:`ichnaea.webapp.app._APP`.
 
@@ -93,12 +93,12 @@ def main(app_config, ping_connections=False,
         app_config.get('geoip', 'db_path'), raven_client=raven_client,
         _client=_geoip_db)
 
-    for name, func, default in (('country_searcher',
-                                 configure_country_searcher,
-                                 _country_searcher),
-                                ('position_searcher',
+    for name, func, default in (('position_searcher',
                                  configure_position_searcher,
-                                 _position_searcher)):
+                                 _position_searcher),
+                                ('region_searcher',
+                                 configure_region_searcher,
+                                 _region_searcher)):
         searcher = func(app_config,
                         geoip_db=geoip_db, raven_client=raven_client,
                         redis_client=redis_client, stats_client=stats_client,

@@ -18,8 +18,8 @@ from sqlalchemy.schema import (
 from webtest import TestApp
 
 from ichnaea.api.locate.searcher import (
-    configure_country_searcher,
     configure_position_searcher,
+    configure_region_searcher,
 )
 from ichnaea.async.app import celery_app
 from ichnaea.async.config import (
@@ -92,8 +92,8 @@ TEST_CONFIG = DummyConfig({
 GEOIP_DATA = {
     'London': {
         'city': True,
-        'country_code': 'GB',
-        'country_name': 'United Kingdom',
+        'region_code': 'GB',
+        'region_name': 'United Kingdom',
         'ip': '81.2.69.192',
         'latitude': 51.5142,
         'longitude': -0.0931,
@@ -101,8 +101,8 @@ GEOIP_DATA = {
     },
     'Bhutan': {
         'city': False,
-        'country_code': 'BT',
-        'country_name': 'Bhutan',
+        'region_code': 'BT',
+        'region_name': 'Bhutan',
         'ip': '67.43.156.1',
         'latitude': 27.5,
         'longitude': 90.5,
@@ -127,7 +127,7 @@ def _make_redis(uri=REDIS_URI):
 def _make_app(app_config=TEST_CONFIG,
               _db_rw=None, _db_ro=None, _http_session=None, _geoip_db=None,
               _raven_client=None, _redis_client=None, _stats_client=None,
-              _country_searcher=None, _position_searcher=None):
+              _position_searcher=None, _region_searcher=None):
     wsgiapp = main(
         app_config,
         _db_rw=_db_rw,
@@ -137,8 +137,8 @@ def _make_app(app_config=TEST_CONFIG,
         _raven_client=_raven_client,
         _redis_client=_redis_client,
         _stats_client=_stats_client,
-        _country_searcher=_country_searcher,
         _position_searcher=_position_searcher,
+        _region_searcher=_region_searcher,
     )
     return TestApp(wsgiapp)
 
@@ -499,8 +499,8 @@ class APITestCase(ConnectionTestCase):
     @classmethod
     def setUpClass(cls):
         super(APITestCase, cls).setUpClass()
-        for name, func in (('country_searcher', configure_country_searcher),
-                           ('position_searcher', configure_position_searcher)):
+        for name, func in (('position_searcher', configure_position_searcher),
+                           ('region_searcher', configure_region_searcher)):
             searcher = func(
                 TEST_CONFIG,
                 geoip_db=cls.geoip_db, raven_client=cls.raven_client,
@@ -510,8 +510,8 @@ class APITestCase(ConnectionTestCase):
     @classmethod
     def tearDownClass(cls):
         super(APITestCase, cls).tearDownClass()
-        del cls.country_searcher
         del cls.position_searcher
+        del cls.region_searcher
 
 
 class AppTestCase(APITestCase):
@@ -529,8 +529,8 @@ class AppTestCase(APITestCase):
                             _raven_client=cls.raven_client,
                             _redis_client=cls.redis_client,
                             _stats_client=cls.stats_client,
-                            _country_searcher=cls.country_searcher,
-                            _position_searcher=cls.position_searcher)
+                            _position_searcher=cls.position_searcher,
+                            _region_searcher=cls.region_searcher)
 
     @classmethod
     def tearDownClass(cls):

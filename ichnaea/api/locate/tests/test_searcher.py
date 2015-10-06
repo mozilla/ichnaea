@@ -1,25 +1,25 @@
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.searcher import (
-    CountrySearcher,
     PositionSearcher,
+    RegionSearcher,
 )
 from ichnaea.api.locate.source import (
-    CountrySource,
     PositionSource,
+    RegionSource,
 )
 from ichnaea.config import DummyConfig
 from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import ApiKeyFactory
 
 
-class TestCountrySource(CountrySource):
+class TestRegionSource(RegionSource):
 
     def search(self, query):
         return self.result_type(
-            country_name='Germany', country_code='DE', accuracy=100000.0)
+            region_name='Germany', region_code='DE', accuracy=100000.0)
 
 
-class TestEmptySource(CountrySource):
+class TestEmptySource(RegionSource):
 
     def search(self, query):
         return self.result_type()
@@ -66,14 +66,14 @@ class SearcherTest(ConnectionTestCase):
 class TestSearcher(SearcherTest):
 
     def test_no_sources(self):
-        class TestSearcher(CountrySearcher):
+        class TestSearcher(RegionSearcher):
             source_classes = ()
 
         result = self._search(TestSearcher)
         self.assertTrue(result is None)
 
     def test_no_result(self):
-        class TestSearcher(CountrySearcher):
+        class TestSearcher(RegionSearcher):
             source_classes = (
                 ('test', TestEmptySource),
             )
@@ -82,7 +82,7 @@ class TestSearcher(SearcherTest):
         self.assertTrue(result is None)
 
     def test_should_search(self):
-        class TestSource(CountrySource):
+        class TestSource(RegionSource):
 
             def should_search(self, query, results):
                 return False
@@ -90,14 +90,14 @@ class TestSearcher(SearcherTest):
             def search(self, query):
                 raise Exception('The searcher should not reach this point.')
 
-        class TestSearcher(CountrySearcher):
+        class TestSearcher(RegionSearcher):
             source_classes = (
-                ('test1', TestCountrySource),
+                ('test1', TestRegionSource),
                 ('test2', TestSource),
             )
 
         result = self._search(TestSearcher)
-        self.assertEqual(result['country_code'], 'DE')
+        self.assertEqual(result['region_code'], 'DE')
 
 
 class TestPositionSearcher(SearcherTest):
@@ -115,14 +115,14 @@ class TestPositionSearcher(SearcherTest):
         self.assertEqual(result['fallback'], 'ipf')
 
 
-class TestCountrySearcher(SearcherTest):
+class TestRegionSearcher(SearcherTest):
 
     def test_result(self):
-        class TestSearcher(CountrySearcher):
+        class TestSearcher(RegionSearcher):
             source_classes = (
-                ('test', TestCountrySource),
+                ('test', TestRegionSource),
             )
 
         result = self._search(TestSearcher)
-        self.assertEqual(result['country_code'], 'DE')
-        self.assertEqual(result['country_name'], 'Germany')
+        self.assertEqual(result['region_code'], 'DE')
+        self.assertEqual(result['region_name'], 'Germany')

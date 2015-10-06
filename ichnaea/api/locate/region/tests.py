@@ -10,12 +10,12 @@ from ichnaea.tests.factories import (
 )
 
 
-class CountryBase(BaseLocateTest, AppTestCase):
+class RegionBase(BaseLocateTest, AppTestCase):
 
     url = '/v1/country'
     apikey_metrics = False
     metric_path = 'path:v1.country'
-    metric_type = 'country'
+    metric_type = 'region'
 
     @property
     def ip_response(self):
@@ -29,7 +29,7 @@ class CountryBase(BaseLocateTest, AppTestCase):
                              region=None, fallback=None, **kw):
         expected_names = set(['country_code', 'country_name'])
 
-        expected = super(CountryBase, self).check_model_response(
+        expected = super(RegionBase, self).check_model_response(
             response, model,
             region=region,
             fallback=fallback,
@@ -42,7 +42,7 @@ class CountryBase(BaseLocateTest, AppTestCase):
             self.assertEqual(data['fallback'], fallback)
 
 
-class TestView(CountryBase, CommonLocateTest):
+class TestView(RegionBase, CommonLocateTest):
 
     track_connection_events = True
 
@@ -137,7 +137,7 @@ class TestView(CountryBase, CommonLocateTest):
         self.check_db_calls(rw=0, ro=0)
 
 
-class TestError(CountryBase, CommonLocateErrorTest):
+class TestError(RegionBase, CommonLocateErrorTest):
 
     @property
     def ip_response(self):
