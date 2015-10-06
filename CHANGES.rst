@@ -20,6 +20,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Consider more responses as high accuracy.
+
 - Change internal names to refer to region.
 
 - Change metric tag to region for region codes.

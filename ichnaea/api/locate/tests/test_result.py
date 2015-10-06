@@ -147,7 +147,7 @@ class TestPosition(TestCase):
     def test_satisfies_fail(self):
         wifis = WifiShardFactory.build_batch(2)
         wifi_query = [{'mac': wifi.mac} for wifi in wifis]
-        position = Position(lat=1.0, lon=1.0, accuracy=1500.0)
+        position = Position(lat=1.0, lon=1.0, accuracy=2500.0)
         query = Query(api_type='locate', wifi=wifi_query)
         self.assertFalse(position.satisfies(query))
 

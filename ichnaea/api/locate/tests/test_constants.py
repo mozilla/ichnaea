@@ -22,7 +22,7 @@ class DataAccuracyTest(TestCase):
         self.assertTrue(DataAccuracy.medium <= 40000)
         self.assertFalse(DataAccuracy.medium != 40000.0)
         self.assertTrue(500.0 <= DataAccuracy.high)
-        self.assertFalse(1000.1 <= DataAccuracy.high)
+        self.assertFalse(2000.1 <= DataAccuracy.high)
 
     def test_uncomparable(self):
         with self.assertRaises(TypeError):
@@ -35,8 +35,8 @@ class DataAccuracyTest(TestCase):
     def test_from_number(self):
         self.assertEqual(DataAccuracy.from_number(1), DataAccuracy.high)
         self.assertEqual(DataAccuracy.from_number(-0.1), DataAccuracy.high)
-        self.assertEqual(DataAccuracy.from_number(1000), DataAccuracy.high)
-        self.assertEqual(DataAccuracy.from_number(1000.1), DataAccuracy.medium)
+        self.assertEqual(DataAccuracy.from_number(2000), DataAccuracy.high)
+        self.assertEqual(DataAccuracy.from_number(2000.1), DataAccuracy.medium)
         self.assertEqual(DataAccuracy.from_number(10 ** 5), DataAccuracy.low)
         self.assertEqual(DataAccuracy.from_number(10 ** 9), DataAccuracy.none)
         with self.assertRaises(TypeError):

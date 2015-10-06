@@ -411,7 +411,7 @@ class TestResultStats(QueryTest):
 
     def test_high_miss(self):
         wifis = WifiShardFactory.build_batch(2)
-        self._make_query(self._make_result(accuracy=1500.0), wifi=wifis)
+        self._make_query(self._make_result(accuracy=2500.0), wifi=wifis)
         self.check_stats(counter=[
             ('locate.result',
                 ['key:key', 'region:none', 'accuracy:high', 'status:miss']),
@@ -428,7 +428,7 @@ class TestResultStats(QueryTest):
     def test_mixed_miss(self):
         wifis = WifiShardFactory.build_batch(2)
         self._make_query(
-            self._make_result(accuracy=1001.0), wifi=wifis, ip=self.london_ip)
+            self._make_result(accuracy=2001.0), wifi=wifis, ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
                 ['key:key', 'region:GB', 'accuracy:high', 'status:miss']),
