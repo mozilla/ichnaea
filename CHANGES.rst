@@ -18,6 +18,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Temporarily stop using cell/area range in locate logic.
+
 - Discard too large cell networks during import.
 
 - Use mcc in region determination for cells.

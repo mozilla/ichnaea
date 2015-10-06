@@ -91,7 +91,7 @@ def query_cells(query, lookups, model, raven_client):
             return []
 
         try:
-            load_fields = ('lat', 'lon', 'range')
+            load_fields = ('lat', 'lon')  # BBB: 'range'
             model_iter = model.iterkeys(
                 query.session,
                 hashkeys,
@@ -113,7 +113,7 @@ def query_areas(query, lookups, model, raven_client):
     if model == CellAreaOCID:
         load_fields = ('lat', 'lon', 'radius')
     else:
-        load_fields = ('lat', 'lon', 'range')
+        load_fields = ('lat', 'lon')  # BBB: 'range'
 
     try:
         areas = (query.session.query(model)

@@ -104,8 +104,8 @@ class CellAreaUpdater(DataTask):
                 ctr_lat, ctr_lon,
                 max_lat, max_lon, min_lat, min_lon)
 
-            cell_radii = numpy.array([
-                (numpy.nan if cell.radius is None else cell.radius)
+            cell_radii = numpy.array([  # BBB
+                (numpy.nan if cell.range is None else cell.range)
                 for cell in cells
             ], dtype=numpy.int32)
             avg_cell_radius = int(round(numpy.nanmean(cell_radii)))

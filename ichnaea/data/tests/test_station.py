@@ -350,8 +350,8 @@ class TestCell(StationTest):
         self.assertAlmostEqual(cell.lon, cell_lon - 0.0016)
         self.assertAlmostEqual(cell.max_lon, cell_lon + 0.001)
         self.assertAlmostEqual(cell.min_lon, cell_lon - 0.006)
-        self.assertEqual(cell.radius, 468)
-        self.assertEqual(cell.samples, 5)
+        self.assertEqual(cell.range, 468)  # BBB
+        self.assertEqual(cell.total_measures, 5)  # BBB
 
 
 class TestWifi(StationTest):

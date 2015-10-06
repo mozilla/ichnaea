@@ -20,6 +20,10 @@ from sqlalchemy.dialects.mysql import (
 )
 from sqlalchemy.types import TypeDecorator
 
+from ichnaea.constants import (
+    CELL_MIN_ACCURACY,
+    CELLAREA_MIN_ACCURACY,
+)
 from ichnaea.models.base import (
     _Model,
     CreationMixin,
@@ -377,12 +381,12 @@ class CellArea(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
     @property
     def radius(self):
         # BBB: alias
-        return self.range
+        return CELLAREA_MIN_ACCURACY
 
     @property
     def avg_cell_radius(self):
         # BBB: alias
-        return self.avg_cell_range
+        return CELLAREA_MIN_ACCURACY
 
 
 class OCIDCellArea(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
@@ -529,7 +533,7 @@ class Cell(BboxMixin, PositionMixin, TimeTrackingMixin,
     @property
     def radius(self):
         # BBB: alias
-        return self.range
+        return CELL_MIN_ACCURACY
 
     @property
     def samples(self):

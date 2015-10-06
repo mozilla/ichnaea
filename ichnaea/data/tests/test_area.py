@@ -39,9 +39,9 @@ class TestArea(CeleryTestCase):
         area = self.session.query(CellArea).one()
         self.assertAlmostEqual(area.lat, cell.lat)
         self.assertAlmostEqual(area.lon, cell.lon)
-        self.assertEqual(area.radius, 0)
+        self.assertEqual(area.range, 0)  # BBB
         self.assertEqual(area.num_cells, 1)
-        self.assertEqual(area.avg_cell_radius, cell.radius)
+        self.assertEqual(area.avg_cell_range, cell.range)  # BBB
 
     def test_remove(self):
         area = CellAreaFactory()
@@ -66,9 +66,9 @@ class TestArea(CeleryTestCase):
         self.session.refresh(area)
         self.assertAlmostEqual(area.lat, cell.lat)
         self.assertAlmostEqual(area.lon, cell.lon)
-        self.assertEqual(area.radius, 0)
+        self.assertEqual(area.range, 0)  # BBB
         self.assertEqual(area.num_cells, 1)
-        self.assertEqual(area.avg_cell_radius, 200)
+        self.assertEqual(area.avg_cell_range, 200)  # BBB
 
     def test_update_incomplete_cell(self):
         area = CellAreaFactory(range=500)
