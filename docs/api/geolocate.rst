@@ -262,7 +262,7 @@ further zoom in.
 If instead the returned position is shown highly zoomed in, the user
 may just see an arbitrary location that they don't recognize at all.
 This typically happens when GeoIP based results are returned and the
-returned position is the center of a city or the center of a country.
+returned position is the center of a city or the center of a region.
 
 A successful response will be:
 

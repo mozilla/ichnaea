@@ -124,8 +124,8 @@ estimates based on multiple cells.
 GeoIP
 -----
 
-The accuracy of GeoIP depends a lot on the country or region the user
-is in. In the US GeoIP can be fairly accurate and often places the
+The accuracy of GeoIP depends a lot on the region the user is in.
+In the US GeoIP can be fairly accurate and often places the
 user in the right city or metropolitan area. In many other parts of
 the world GeoIP is only accurate to the region level.
 

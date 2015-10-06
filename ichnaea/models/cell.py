@@ -419,7 +419,7 @@ class ValidCellAreaOCIDSchema(ValidCellAreaKeySchema,
     radius = colander.SchemaNode(
         colander.Integer(), missing=0,
         validator=colander.Range(0, constants.CELLAREA_MAX_RADIUS))
-    country = colander.SchemaNode(colander.String(), missing=None)
+    region = colander.SchemaNode(colander.String(), missing=None)
     avg_cell_radius = colander.SchemaNode(colander.Integer(), missing=0)
     num_cells = colander.SchemaNode(colander.Integer(), missing=0)
 
@@ -431,7 +431,7 @@ class CellAreaOCID(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
         PrimaryKeyConstraint('areaid'),
         UniqueConstraint('radio', 'mcc', 'mnc', 'lac',
                          name='cell_area_ocid_areaid_unique'),
-        Index('cell_area_ocid_country_radio_idx', 'country', 'radio'),
+        Index('cell_area_ocid_region_radio_idx', 'region', 'radio'),
         Index('cell_area_ocid_created_idx', 'created'),
         Index('cell_area_ocid_modified_idx', 'modified'),
         Index('cell_area_ocid_latlon_idx', 'lat', 'lon'),
@@ -446,7 +446,7 @@ class CellAreaOCID(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
                  autoincrement=False, nullable=False)
 
     radius = Column(Integer)
-    country = Column(String(2))
+    region = Column(String(2))
     avg_cell_radius = Column(Integer(unsigned=True))
     num_cells = Column(Integer(unsigned=True))
 
@@ -464,10 +464,10 @@ class CellAreaOCID(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
                     validated['lac'],
                 )
 
-            if (('country' not in validated or not validated['country']) and
+            if (('region' not in validated or not validated['region']) and
                     validated['lat'] is not None and
                     validated['lon'] is not None):
-                validated['country'] = GEOCODER.region_for_cell(
+                validated['region'] = GEOCODER.region_for_cell(
                     validated['lat'], validated['lon'], validated['mcc'])
 
         return validated
@@ -574,7 +574,7 @@ class ValidCellOCIDSchema(ValidCellKeySchema, ValidBboxSchema,
     radius = colander.SchemaNode(
         colander.Integer(), missing=0,
         validator=colander.Range(0, constants.CELL_MAX_RADIUS))
-    country = colander.SchemaNode(colander.String(), missing=None)
+    region = colander.SchemaNode(colander.String(), missing=None)
     samples = colander.SchemaNode(colander.Integer(), missing=0)
     source = StationSourceNode(StationSourceType(), missing=None)
 
@@ -591,7 +591,7 @@ class CellOCID(BboxMixin, PositionMixin, TimeTrackingMixin,
         PrimaryKeyConstraint('cellid'),
         UniqueConstraint('radio', 'mcc', 'mnc', 'lac', 'cid',
                          name='cell_ocid_cellid_unique'),
-        Index('cell_ocid_country_radio_idx', 'country', 'radio'),
+        Index('cell_ocid_region_radio_idx', 'region', 'radio'),
         Index('cell_ocid_created_idx', 'created'),
         Index('cell_ocid_modified_idx', 'modified'),
         Index('cell_ocid_latlon_idx', 'lat', 'lon'),
@@ -608,7 +608,7 @@ class CellOCID(BboxMixin, PositionMixin, TimeTrackingMixin,
     psc = Column(SmallInteger, autoincrement=False)
 
     radius = Column(Integer(unsigned=True))
-    country = Column(String(2))
+    region = Column(String(2))
     samples = Column(Integer(unsigned=True))
     source = Column(TinyIntEnum(StationSource))
 
@@ -631,10 +631,10 @@ class CellOCID(BboxMixin, PositionMixin, TimeTrackingMixin,
                     validated['cid'],
                 )
 
-            if (('country' not in validated or not validated['country']) and
+            if (('region' not in validated or not validated['region']) and
                     validated['lat'] is not None and
                     validated['lon'] is not None):
-                validated['country'] = GEOCODER.region_for_cell(
+                validated['region'] = GEOCODER.region_for_cell(
                     validated['lat'], validated['lon'], validated['mcc'])
 
         return validated

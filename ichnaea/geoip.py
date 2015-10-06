@@ -19,7 +19,7 @@ from six import PY2
 from ichnaea.constants import (
     DEGREE_DECIMAL_PLACES,
     GEOIP_CITY_ACCURACY,
-    GEOIP_COUNTRY_ACCURACY,
+    GEOIP_REGION_ACCURACY,
 )
 from ichnaea.region import region_max_radius
 
@@ -74,10 +74,10 @@ def geoip_accuracy(code, city=False):
     """
     Return the best accuracy guess for the given GeoIP record.
 
-    :param code: A two-letter ISO country code.
+    :param code: A two-letter region code.
     :type code: str
 
-    :param city: Do we have a city record or a country record.
+    :param city: Do we have a city record or a region record.
     :type city: bool
 
     :returns: An accuracy guess in meters.
@@ -87,12 +87,12 @@ def geoip_accuracy(code, city=False):
     if code:
         accuracy = region_max_radius(code)
     if accuracy is None:
-        # No country code or no successful radius lookup
-        accuracy = GEOIP_COUNTRY_ACCURACY
+        # No region code or no successful radius lookup
+        accuracy = GEOIP_REGION_ACCURACY
 
     if city:
-        # Use country radius as an upper bound for city radius
-        # for really small countries
+        # Use region radius as an upper bound for city radius
+        # for really small regions.
         accuracy = min(GEOIP_CITY_ACCURACY, accuracy)
 
     return accuracy
@@ -158,7 +158,7 @@ class GeoIPWrapper(Reader):
         :param addr: IP address (e.g. '203.0.113.30')
         :type addr: str
 
-        :returns: A dictionary with city, country data and location data.
+        :returns: A dictionary with city, region data and location data.
         :rtype: dict
         """
         try:
@@ -170,22 +170,22 @@ class GeoIPWrapper(Reader):
         if not record:
             return None
 
-        country = record.country
+        region = record.country
         city = bool(record.city.name)
         location = record.location
         if not (location.latitude and
                 location.longitude and
-                country.iso_code):  # pragma: no cover
+                region.iso_code):  # pragma: no cover
             return None
 
         return {
             # Round lat/lon to a standard maximum precision
             'latitude': round(location.latitude, DEGREE_DECIMAL_PLACES),
             'longitude': round(location.longitude, DEGREE_DECIMAL_PLACES),
-            'country_code': country.iso_code,
-            'country_name': country.name,
+            'country_code': region.iso_code,
+            'country_name': region.name,
             'city': city,
-            'accuracy': geoip_accuracy(country.iso_code, city=city),
+            'accuracy': geoip_accuracy(region.iso_code, city=city),
         }
 
 

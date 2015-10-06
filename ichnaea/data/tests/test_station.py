@@ -381,8 +381,8 @@ class TestWifi(StationTest):
         self.assertAlmostEqual(wifi.lon, obs.lon)
         self.assertAlmostEqual(wifi.max_lon, obs.lon)
         self.assertAlmostEqual(wifi.min_lon, obs.lon)
-        self.assertEqual(wifi.country, 'GB')
         self.assertEqual(wifi.radius, 0)
+        self.assertEqual(wifi.region, 'GB')
         self.assertEqual(wifi.samples, 1)
         self.assertEqual(wifi.created.date(), utcnow.date())
         self.assertEqual(wifi.modified.date(), utcnow.date())
@@ -433,8 +433,8 @@ class TestWifi(StationTest):
         self.assertAlmostEqual(found.max_lon, lon1 + 0.006)
         self.assertAlmostEqual(found.min_lon, lon1)
         self.assertEqual(found.modified.date(), utcnow.date())
-        self.assertEqual(found.country, 'GB')
         self.assertEqual(found.radius, 304)
+        self.assertEqual(found.region, 'GB')
         self.assertEqual(found.samples, 6)
 
         shard = WifiShard.shard_model(mac2)
@@ -447,8 +447,8 @@ class TestWifi(StationTest):
         self.assertAlmostEqual(found.min_lon, lon2)
         self.assertEqual(found.created.date(), utcnow.date() - timedelta(10))
         self.assertEqual(found.modified.date(), utcnow.date())
-        self.assertEqual(found.country, 'GB')
         self.assertEqual(found.radius, 260)
+        self.assertEqual(found.region, 'GB')
         self.assertEqual(found.samples, 4)
 
     def test_temp_blocked(self):
@@ -512,7 +512,7 @@ class TestWifi(StationTest):
         self.assertEqual(wifi.created.date(), last_week.date())
         self.assertAlmostEqual(wifi.lat, obs.lat)
         self.assertAlmostEqual(wifi.lon, obs.lon)
-        self.assertEqual(wifi.country, 'GB')
+        self.assertEqual(wifi.region, 'GB')
         self.assertEqual(wifi.samples, 1)
         self.check_statcounter(StatKey.unique_wifi, 0)
 
@@ -622,14 +622,14 @@ class TestWifi(StationTest):
                     blocks.append(row)
         self.assertEqual(set([b.mac for b in blocks]), moving)
 
-    def test_country(self):
+    def test_region(self):
         obs = []
         obs_factory = WifiObservationFactory
-        wifi1 = WifiShardFactory(lat=46.2884, lon=6.77, country='FR')
+        wifi1 = WifiShardFactory(lat=46.2884, lon=6.77, region='FR')
         obs.extend(obs_factory.create_batch(
             5, key=wifi1.mac, lat=wifi1.lat, lon=wifi1.lon + 0.05,
         ))
-        wifi2 = WifiShardFactory(lat=46.2884, lon=7.4, country='FR')
+        wifi2 = WifiShardFactory(lat=46.2884, lon=7.4, region='FR')
         obs.extend(obs_factory.create_batch(
             5, key=wifi2.mac, lat=wifi2.lat, lon=wifi2.lon + 0.05,
         ))
@@ -640,7 +640,7 @@ class TestWifi(StationTest):
         # to not re-trigger region determination
         wifi1 = self.session.query(wifi1.__class__).get(wifi1.mac)
         self.assertEqual(wifi1.block_count, 0)
-        self.assertEqual(wifi1.country, 'FR')
+        self.assertEqual(wifi1.region, 'FR')
         wifi2 = self.session.query(wifi2.__class__).get(wifi2.mac)
         self.assertEqual(wifi1.block_count, 0)
-        self.assertEqual(wifi2.country, 'CH')
+        self.assertEqual(wifi2.region, 'CH')

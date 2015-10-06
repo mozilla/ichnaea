@@ -1,6 +1,6 @@
 (function($) {
     $(function() {
-        var $table = $('#country-stats').dataTable({
+        var $table = $('#region-stats').dataTable({
             info: false,
             paging: true,
             searching: true,

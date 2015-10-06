@@ -150,8 +150,8 @@ class CellFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
 
 class CellOCIDFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
 
-    country = 'GB'
     radius = CELL_MIN_ACCURACY / 2.0
+    region = 'GB'
 
     class Meta:
         model = CellOCID.create
@@ -168,8 +168,8 @@ class CellAreaFactory(CellAreaPositionFactory, BboxFactory, BaseSQLFactory):
 class CellAreaOCIDFactory(CellAreaPositionFactory,
                           BboxFactory, BaseSQLFactory):
 
-    country = 'GB'
     radius = CELLAREA_MIN_ACCURACY / 2.0
+    region = 'GB'
 
     class Meta:
         model = CellAreaOCID.create
@@ -192,8 +192,8 @@ class WifiShardFactory(BaseSQLFactory):
     mac = FuzzyWifiMac()
     lat = GB_LAT
     lon = GB_LON
-    country = 'GB'
     radius = WIFI_MIN_ACCURACY / 2.0
+    region = 'GB'
     samples = 1
 
     class Meta:

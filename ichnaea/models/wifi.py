@@ -132,7 +132,7 @@ class ValidWifiShardSchema(ValidBboxSchema,
     mac = MacNode(colander.String())
     radius = colander.SchemaNode(colander.Integer(), missing=0)
 
-    country = colander.SchemaNode(colander.String(), missing=None)
+    region = colander.SchemaNode(colander.String(), missing=None)
     samples = colander.SchemaNode(colander.Integer(), missing=0)
     source = StationSourceNode(StationSourceType(), missing=None)
 
@@ -149,9 +149,9 @@ class WifiShard(CreationMixin,
     _valid_schema = ValidWifiShardSchema()
 
     mac = Column(MacColumn(6))
-    radius = Column(Integer(unsigned=True))
 
-    country = Column(String(2))
+    radius = Column(Integer(unsigned=True))
+    region = Column(String(2))
     samples = Column(Integer(unsigned=True))
     source = Column(TinyIntEnum(StationSource))
 
@@ -163,7 +163,7 @@ class WifiShard(CreationMixin,
     def __table_args__(cls):  # NOQA
         _indices = (
             PrimaryKeyConstraint('mac'),
-            Index('%s_country_idx' % cls.__tablename__, 'country'),
+            Index('%s_region_idx' % cls.__tablename__, 'region'),
             Index('%s_created_idx' % cls.__tablename__, 'created'),
             Index('%s_modified_idx' % cls.__tablename__, 'modified'),
             Index('%s_latlon_idx' % cls.__tablename__, 'lat', 'lon'),

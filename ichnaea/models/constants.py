@@ -45,13 +45,13 @@ MIN_MCC = 1  #: Minimum accepted network code.
 MAX_MCC = 999  #: Maximum accepted network code.
 
 ALL_VALID_MCCS = (
-    [int(country.mcc)
-     for country in mobile_codes._countries()
-     if isinstance(country.mcc, string_types)] +
+    [int(record.mcc)
+     for record in mobile_codes._countries()
+     if isinstance(record.mcc, string_types)] +
     [int(code)
-     for country in mobile_codes._countries()
-     if isinstance(country.mcc, (tuple, list))
-     for code in country.mcc]
+     for record in mobile_codes._countries()
+     if isinstance(record.mcc, (tuple, list))
+     for code in record.mcc]
 )  #: All valid mobile country codes.
 ALL_VALID_MCCS = set(
     [mcc for mcc in ALL_VALID_MCCS if MIN_MCC <= mcc <= MAX_MCC])

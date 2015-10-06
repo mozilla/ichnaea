@@ -169,8 +169,8 @@ class Geocoder(object):
         If the names argument is set to True, returns a list of
         :class:`genc.regions.Region` instances instead.
 
-        The return list is filtered by the set of recognized ISO 3166
-        alpha2 codes present in the GENC dataset and those that we have
+        The return list is filtered by the set of recognized alpha2
+        region codes present in the GENC dataset and those that we have
         region shapefiles for.
         """
         codes = [region.alpha2 for region in mobile_codes.mcc(str(mcc))]
@@ -222,8 +222,8 @@ def region_max_radius(code):
         return value
 
     diagonals = []
-    for country in country_subunits_by_iso_code(code):
-        (lon1, lat1, lon2, lat2) = country.bbox
+    for region in country_subunits_by_iso_code(code):
+        (lon1, lat1, lon2, lat2) = region.bbox
         diagonals.append(geocalc.distance(lat1, lon1, lat2, lon2))
     if diagonals:
         # Divide by two to get radius, round to 1 km and convert to meters

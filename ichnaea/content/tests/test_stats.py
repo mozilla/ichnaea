@@ -204,7 +204,7 @@ class TestStats(DBTestCase):
         for code in region_results:
             del region_results[code]['name']
 
-        # a simple case with a 1:1 mapping of mcc to ISO code
+        # a simple case with a 1:1 mapping of mcc to region code
         self.assertEqual(region_results['DE'],
                          {'gsm': 0, 'lte': 1, 'total': 1,
                           'wcdma': 0, 'multiple': False, 'order': 'germany'})

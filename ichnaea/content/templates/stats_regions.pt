@@ -20,18 +20,18 @@
         cell towers. Data is updated near real time.
     </p>
     <p>
-        The underlying data is grouped by mobile country code. In some cases
-        these mobile country codes are shared between multiple countries
-        or regions, as identified by ISO 3166 alpha-2 codes. In these cases
-        we report all data for each of these countries or regions and mark the
-        entry with a `*`. For example Australia and the Norfolk Islands share
+        The underlying data is grouped by mobile country code. In some
+        cases these mobile country codes are shared between multiple
+        regions, as identified by GENC alpha-2 region codes. In these cases
+        we report all data for each of these regions and mark the entry
+        with a `*`. For example Australia and the Norfolk Islands share
         a mobile country code, so they get each listed with the same data.
     </p>
     <div class="separator">
-    <table id="country-stats" class="table">
+    <table id="region-stats" class="table">
         <thead>
             <tr>
-                <th>Country / Region</th>
+                <th>Region</th>
                 <th class="text-right">GSM</th>
                 <th class="text-right">WCDMA</th>
                 <th class="text-right">LTE</th>

@@ -36,10 +36,10 @@ Accuracy returned for GeoIP city based queries.
 50km is pure guesswork but should cover most cities.
 """
 
-GEOIP_COUNTRY_ACCURACY = 5000000.0
+GEOIP_REGION_ACCURACY = 5000000.0
 """
-Usually a per-country accuracy is calculated. This is the worst case
-accuracy returned for GeoIP country based queries, based on data
+Usually a per-region accuracy is calculated. This is the worst case
+accuracy returned for GeoIP region based queries, based on data
 for Russia:
 
 ``geocalc.distance(60.0, 100.0, 41.199278, 27.351944) == 5220613 meters``

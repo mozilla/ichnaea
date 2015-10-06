@@ -24,7 +24,7 @@ class SourceTest(object):
         result = self.source.search(query)
         self.check_model_result(result, self.london_model)
 
-    def test_country(self):
+    def test_region(self):
         query = self.make_query(ip=self.bhutan_model.ip)
         result = self.source.search(query)
         self.check_model_result(result, self.bhutan_model)

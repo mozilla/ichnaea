@@ -75,13 +75,13 @@ class TestRegionMaxRadius(TestCase):
         self.assertEqual(r, self.usa_radius)
         self.assertFalse('usa' in _RADIUS_CACHE)
 
-    def test_small_countries(self):
+    def test_small_regions(self):
         r = region_max_radius('LI')
         self.assertEqual(r, self.li_radius)
         r = region_max_radius('VAT')
         self.assertEqual(r, self.vat_radius)
 
-    def test_malformed_country(self):
+    def test_malformed_region(self):
         r = region_max_radius(None)
         self.assertTrue(r is None)
 
@@ -94,7 +94,7 @@ class TestRegionMaxRadius(TestCase):
         r = region_max_radius('-#1-')
         self.assertTrue(r is None)
 
-    def test_unknown_country(self):
+    def test_unknown_region(self):
         r = region_max_radius('AA')
         self.assertTrue(r is None)
         self.assertFalse('AA' in _RADIUS_CACHE)

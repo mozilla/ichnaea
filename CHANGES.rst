@@ -11,9 +11,11 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
-- All OCID data has to be manually imported again into the new tables.
+- 460ce3d4fe09: Rename columns to region.
 
 - 339d19da63ee: Add new cell OCID tables.
+
+- All OCID data has to be manually imported again into the new tables.
 
 Changes
 ~~~~~~~

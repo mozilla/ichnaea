@@ -186,4 +186,4 @@ We classify CDMA networks and their EVDO variants as `cdma`. This includes
 `1xRTT`, `CDMA`, `eHRPD`, `EVDO_0`, `EVDO_A`, `EVDO_B`, `IS95A` and `IS95B`.
 
 .. note:: Since CDMA networks are rare and only available in a minority
-          of countries, this project does not support them.
+          of regions, this project does not support them.

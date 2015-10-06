@@ -44,16 +44,16 @@ class TestDatabase(DBTestCase):
 
     def test_excecutemany_on_duplicate(self):
         stmt = WifiShard0.__table__.insert(
-            mysql_on_duplicate=u'mac = "\x00\x00\x000\x00\x00", country="\xe4"'
+            mysql_on_duplicate=u'mac = "\x00\x00\x000\x00\x00", region="\xe4"'
         )
         values = [
-            {'mac': '000000100000', 'country': 'DE'},
-            {'mac': '000000200000', 'country': u'\xe4'},
-            {'mac': '000000200000', 'country': u'\xf6'},
+            {'mac': '000000100000', 'region': 'DE'},
+            {'mac': '000000200000', 'region': u'\xe4'},
+            {'mac': '000000200000', 'region': u'\xf6'},
         ]
         self.session.execute(stmt.values(values))
         rows = self.session.query(WifiShard0).all()
         self.assertEqual(set([row.mac for row in rows]),
                          set(['000000100000', '000000300000']))
-        self.assertEqual(set([row.country for row in rows]),
+        self.assertEqual(set([row.region for row in rows]),
                          set(['DE', u'\xe4']))

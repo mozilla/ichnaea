@@ -52,10 +52,7 @@
             <span property="dct:title">Mozilla Corporation</span></a>
         has waived all copyright and related or neighboring rights to
         <i><span property="dct:title">MLS Cell Network Export Data</span></i>.
-        This work is published from the
-        <span property="vcard:Country" datatype="dct:ISO3166"
-              content="US" about="https://location.services.mozilla.com/">
-            United States</span>.
+        This work is published from the United States.
     </p>
 
     <p class="text-justified">

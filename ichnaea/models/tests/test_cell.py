@@ -145,15 +145,15 @@ class TestCellOCID(DBTestCase):
         with self.assertRaises(Exception):
             self.session.flush()
 
-    def test_country(self):
+    def test_region(self):
         cellid = encode_cellid(Radio.gsm, GB_MCC, GB_MNC, 123, 2345)
         self.session.add(CellOCID.create(
-            cellid=cellid, country=None, lat=GB_LAT, lon=GB_LON,
+            cellid=cellid, lat=GB_LAT, lon=GB_LON, region=None,
             radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345))
         self.session.flush()
 
         result = self.session.query(CellOCID).first()
-        self.assertEqual(result.country, 'GB')
+        self.assertEqual(result.region, 'GB')
 
     def test_fields(self):
         now = util.utcnow()
@@ -164,7 +164,7 @@ class TestCellOCID(DBTestCase):
             lat=GB_LAT, lon=GB_LON,
             max_lat=GB_LAT + 0.1, min_lat=GB_LAT - 0.1,
             max_lon=GB_LON + 0.1, min_lon=GB_LON - 0.1,
-            country='GB', radius=11, samples=15, source=StationSource.gnss,
+            radius=11, region='GB', samples=15, source=StationSource.gnss,
             block_first=now.date(), block_last=now.date(), block_count=1))
         self.session.flush()
 
@@ -182,8 +182,8 @@ class TestCellOCID(DBTestCase):
         self.assertEqual(result.modified, now)
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
-        self.assertEqual(result.country, 'GB')
         self.assertEqual(result.radius, 11)
+        self.assertEqual(result.region, 'GB')
         self.assertEqual(result.samples, 15)
         self.assertEqual(result.source, StationSource.gnss)
         self.assertEqual(result.block_first, now.date())
@@ -312,21 +312,21 @@ cast(conv(substr(hex(`areaid`), 11, 4), 16, 10) as unsigned)
 
 class TestCellAreaOCID(DBTestCase):
 
-    def test_country(self):
+    def test_region(self):
         areaid = encode_cellarea(Radio.gsm, GB_MCC, GB_MNC, 123)
         self.session.add(CellAreaOCID.create(
-            areaid=areaid, country=None, lat=GB_LAT, lon=GB_LON,
+            areaid=areaid, lat=GB_LAT, lon=GB_LON, region=None,
             radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123))
         self.session.flush()
 
         result = self.session.query(CellAreaOCID).first()
-        self.assertEqual(result.country, 'GB')
+        self.assertEqual(result.region, 'GB')
 
     def test_fields(self):
         areaid = encode_cellarea(Radio.wcdma, GB_MCC, GB_MNC, 123)
         self.session.add(CellAreaOCID.create(
             areaid=areaid, radio=Radio.wcdma, mcc=GB_MCC, mnc=GB_MNC, lac=123,
-            lat=GB_LAT, lon=GB_LON, radius=10, country='GB',
+            lat=GB_LAT, lon=GB_LON, radius=10, region='GB',
             avg_cell_radius=11, num_cells=15))
         self.session.flush()
 
@@ -339,7 +339,7 @@ class TestCellAreaOCID(DBTestCase):
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
         self.assertEqual(result.radius, 10)
-        self.assertEqual(result.country, 'GB')
+        self.assertEqual(result.region, 'GB')
         self.assertEqual(result.avg_cell_radius, 11)
         self.assertEqual(result.num_cells, 15)
 

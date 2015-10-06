@@ -80,7 +80,7 @@ the query with the metric name and tags:
 version number of the API. So `v1/country` gets logged as `country`
 and both `v1/search` and `v1/geolocate` get logged as `locate`.
 
-`country_code` is either a two-letter ISO3166 code like `de` or the
+`country_code` is either a two-letter GENC region code like `de` or the
 special value `none` if the country origin of the incoming request
 could not be determined.
 

@@ -147,7 +147,7 @@ class CellAreaOCIDUpdater(CellAreaUpdater):
     def update_area(self, areaid):
         radio, mcc, mnc, lac = decode_cellarea(areaid)
         # Select all cells in this area and derive a bounding box for them
-        load_fields = ('lat', 'lon', 'country', 'radius',
+        load_fields = ('lat', 'lon', 'radius', 'region',
                        'max_lat', 'max_lon', 'min_lat', 'min_lon')
 
         cells = (self.session.query(self.cell_model)
@@ -195,7 +195,7 @@ class CellAreaOCIDUpdater(CellAreaUpdater):
             num_cells = len(cells)
 
             region = None
-            regions = [cell.country for cell in cells]
+            regions = [cell.region for cell in cells]
             unique_regions = set(regions)
             if len(unique_regions) == 1:
                 region = regions[0]
@@ -231,8 +231,8 @@ class CellAreaOCIDUpdater(CellAreaUpdater):
                     modified=self.utcnow,
                     lat=ctr_lat,
                     lon=ctr_lon,
-                    country=region,
                     radius=radius,
+                    region=region,
                     avg_cell_radius=avg_cell_radius,
                     num_cells=num_cells,
                 )
@@ -241,7 +241,7 @@ class CellAreaOCIDUpdater(CellAreaUpdater):
                 area.modified = self.utcnow
                 area.lat = ctr_lat
                 area.lon = ctr_lon
-                area.country = region
                 area.radius = radius
+                area.region = region
                 area.avg_cell_radius = avg_cell_radius
                 area.num_cells = num_cells

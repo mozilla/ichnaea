@@ -5,7 +5,7 @@ from six import PY2
 
 from ichnaea.constants import (
     GEOIP_CITY_ACCURACY,
-    GEOIP_COUNTRY_ACCURACY,
+    GEOIP_REGION_ACCURACY,
 )
 from ichnaea import geoip
 from ichnaea.geoip import geoip_accuracy
@@ -69,7 +69,7 @@ class TestDatabase(GeoIPTestCase):
 
 class TestGeoIPLookup(GeoIPTestCase):
 
-    def test_ok_city(self):
+    def test_city(self):
         london = self.geoip_data['London']
         # Known good value in the wee sample DB we're using
         result = self.geoip_db.geoip_lookup(london['ip'])
@@ -78,7 +78,7 @@ class TestGeoIPLookup(GeoIPTestCase):
         for name in ('accuracy', 'country_code', 'country_name', 'city'):
             self.assertEqual(london[name], result[name])
 
-    def test_ok_country(self):
+    def test_region(self):
         bhutan = self.geoip_data['Bhutan']
         result = self.geoip_db.geoip_lookup(bhutan['ip'])
         for name in ('latitude', 'longitude'):
@@ -102,7 +102,7 @@ class TestGeoIPAccuracy(TestCase):
     us_radius = 2826000.0
     va_radius = 1000.0
 
-    def test_country(self):
+    def test_region(self):
         accuracy = geoip_accuracy('US')
         self.assertEqual(accuracy, self.us_radius)
 
@@ -110,17 +110,17 @@ class TestGeoIPAccuracy(TestCase):
         accuracy = geoip_accuracy('US', city=True)
         self.assertEqual(accuracy, GEOIP_CITY_ACCURACY)
 
-    def test_small_country(self):
+    def test_small_region(self):
         accuracy = geoip_accuracy('LI', city=True)
         self.assertEqual(accuracy, self.li_radius)
 
-    def test_tiny_country(self):
+    def test_tiny_region(self):
         accuracy = geoip_accuracy('VA', city=True)
         self.assertEqual(accuracy, self.va_radius)
 
-    def test_unknown_country(self):
+    def test_unknown_region(self):
         accuracy = geoip_accuracy('XX')
-        self.assertEqual(accuracy, GEOIP_COUNTRY_ACCURACY)
+        self.assertEqual(accuracy, GEOIP_REGION_ACCURACY)
 
     def test_unknown_city(self):
         accuracy = geoip_accuracy('XX', city=True)

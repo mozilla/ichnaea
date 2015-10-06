@@ -429,8 +429,8 @@ class WifiUpdater(StationUpdater):
                     'min_lat': None,
                     'max_lon': None,
                     'min_lon': None,
-                    'country': shard_station.country,
                     'radius': None,
+                    'region': shard_station.region,
                     'samples': None,
                     'source': None,
                     'block_last': self.today,
@@ -451,8 +451,8 @@ class WifiUpdater(StationUpdater):
                 'min_lat': float(obs_min_lat),
                 'max_lon': float(obs_max_lon),
                 'min_lon': float(obs_min_lon),
-                'country': GEOCODER.region(obs_new_lat, obs_new_lon),
                 'radius': radius,
+                'region': GEOCODER.region(obs_new_lat, obs_new_lon),
                 'samples': obs_length,
                 'source': None,
             })
@@ -486,8 +486,8 @@ class WifiUpdater(StationUpdater):
                     'min_lat': None,
                     'max_lon': None,
                     'min_lon': None,
-                    'country': shard_station.country,
                     'radius': None,
+                    'region': shard_station.region,
                     'samples': None,
                     'source': None,
                     'block_last': self.today,
@@ -510,13 +510,13 @@ class WifiUpdater(StationUpdater):
                 samples = (shard_station.samples or 0) + obs_length
                 radius = circle_radius(
                     new_lat, new_lon, max_lat, max_lon, min_lat, min_lon)
-                country = shard_station.country
-                if (country and not GEOCODER.in_region(
-                        new_lat, new_lon, country)):
-                    # reset country if it no longer matches
-                    country = None
-                if not country:
-                    country = GEOCODER.region(new_lat, new_lon)
+                region = shard_station.region
+                if (region and not GEOCODER.in_region(
+                        new_lat, new_lon, region)):
+                    # reset region if it no longer matches
+                    region = None
+                if not region:
+                    region = GEOCODER.region(new_lat, new_lon)
                 values.update({
                     'lat': new_lat,
                     'lon': new_lon,
@@ -524,8 +524,8 @@ class WifiUpdater(StationUpdater):
                     'min_lat': float(min_lat),
                     'max_lon': float(max_lon),
                     'min_lon': float(min_lon),
-                    'country': country,
                     'radius': radius,
+                    'region': region,
                     'samples': samples,
                     'source': None,
                     # use the exact same keys as in the moving case
