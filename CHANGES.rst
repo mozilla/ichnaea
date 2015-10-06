@@ -40,7 +40,7 @@ Changes
 
 - Update to latest versions of bower, clean-css and uglify-js.
 
-- Update to latest versions of cryptography, Cython, pyasn1 and PyMySQL.
+- Update to latest versions of cryptography, Cython, numpy, pyasn1 and PyMySQL.
 
 20150928100200
 **************
