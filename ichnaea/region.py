@@ -79,6 +79,10 @@ class Geocoder(object):
         genc_regions = set([rec.alpha2 for rec in genc.REGIONS])
         self._valid_regions = frozenset(genc_regions.intersection(regions))
 
+    @property
+    def valid_regions(self):
+        return self._valid_regions
+
     def region(self, lat, lon):
         """
         Return a alpha2 region code matching the provided position.

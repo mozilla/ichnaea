@@ -20,6 +20,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use GENC codes and names in GeoIP results.
+
 - Consider more responses as high accuracy.
 
 - Change internal names to refer to region.

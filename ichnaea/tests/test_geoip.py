@@ -8,7 +8,15 @@ from ichnaea.constants import (
     GEOIP_REGION_ACCURACY,
 )
 from ichnaea import geoip
-from ichnaea.geoip import geoip_accuracy
+from ichnaea.geoip import (
+    geoip_accuracy,
+    GEOIP_REGIONS,
+    MAP_GEOIP_GENC,
+)
+from ichnaea.region import (
+    GEOCODER,
+    region_max_radius,
+)
 from ichnaea.tests.base import (
     GEOIP_BAD_FILE,
     GeoIPTestCase,
@@ -62,9 +70,12 @@ class TestDatabase(GeoIPTestCase):
         self.assertTrue(isinstance(db, geoip.GeoIPNull))
         self.check_raven(['InvalidDatabaseError: Invalid database type'])
 
-    def test_valid_regions(self):
-        for code in ('US', 'GB', 'DE'):
-            self.assertTrue(code in self.geoip_db.valid_regions)
+    def test_regions(self):
+        valid_regions = GEOCODER.valid_regions
+        mapped_regions = set([MAP_GEOIP_GENC.get(r, r) for r in GEOIP_REGIONS])
+        self.assertEqual(mapped_regions - valid_regions, set([None]))
+        for region in mapped_regions - set([None, 'XK', 'XW']):
+            self.assertNotEqual(region_max_radius(region), None)
 
 
 class TestGeoIPLookup(GeoIPTestCase):
@@ -85,6 +96,13 @@ class TestGeoIPLookup(GeoIPTestCase):
             self.assertAlmostEqual(bhutan[name], result[name])
         for name in ('accuracy', 'region_code', 'region_name', 'city'):
             self.assertEqual(bhutan[name], result[name])
+
+    def test_region_map(self):
+        # Gibraltar isn't in the GENC dataset, so it's mapped to GB
+        result = self.geoip_db.geoip_lookup('2a02:ffc0::')
+        self.assertEqual(result['region_code'], 'GB')
+        self.assertEqual(result['region_name'], 'United Kingdom')
+        self.assertEqual(result['accuracy'], geoip_accuracy('GB'))
 
     def test_fail(self):
         self.assertIsNone(self.geoip_db.geoip_lookup('127.0.0.1'))

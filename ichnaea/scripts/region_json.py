@@ -8,8 +8,6 @@ import shapely.geometry
 import shapely.ops
 
 REGION_CODES = set([reg.alpha2 for reg in genc.REGIONS])
-# exclude Antarctica
-REGION_CODES = REGION_CODES - set(['AQ'])
 REGION_CODE_MAP = {
     'AX': 'FI',
     'PS': 'XW',

@@ -23,7 +23,51 @@ from ichnaea.constants import (
 )
 from ichnaea.region import region_max_radius
 
-VALID_REGIONS = frozenset([region.alpha2 for region in genc.REGIONS])
+# The region codes present in the GeoIP data files,
+# extracted from the CSV files.
+GEOIP_REGIONS = frozenset([
+    'AD', 'AE', 'AF', 'AG', 'AI', 'AL', 'AM', 'AO', 'AQ', 'AR', 'AS',
+    'AT', 'AU', 'AW', 'AX', 'AZ', 'BA', 'BB', 'BD', 'BE', 'BF', 'BG',
+    'BH', 'BI', 'BJ', 'BL', 'BM', 'BN', 'BO', 'BQ', 'BR', 'BS', 'BT',
+    'BW', 'BY', 'BZ', 'CA', 'CC', 'CD', 'CF', 'CG', 'CH', 'CI', 'CK',
+    'CL', 'CM', 'CN', 'CO', 'CR', 'CU', 'CV', 'CW', 'CX', 'CY', 'CZ',
+    'DE', 'DJ', 'DK', 'DM', 'DO', 'DZ', 'EC', 'EE', 'EG', 'ER', 'ES',
+    'ET', 'FI', 'FJ', 'FK', 'FM', 'FO', 'FR', 'GA', 'GB', 'GD', 'GE',
+    'GF', 'GG', 'GH', 'GI', 'GL', 'GM', 'GN', 'GP', 'GQ', 'GR', 'GS',
+    'GT', 'GU', 'GW', 'GY', 'HK', 'HN', 'HR', 'HT', 'HU', 'ID', 'IE',
+    'IL', 'IM', 'IN', 'IO', 'IQ', 'IR', 'IS', 'IT', 'JE', 'JM', 'JO',
+    'JP', 'KE', 'KG', 'KH', 'KI', 'KM', 'KN', 'KP', 'KR', 'KW', 'KY',
+    'KZ', 'LA', 'LB', 'LC', 'LI', 'LK', 'LR', 'LS', 'LT', 'LU', 'LV',
+    'LY', 'MA', 'MC', 'MD', 'ME', 'MF', 'MG', 'MH', 'MK', 'ML', 'MM',
+    'MN', 'MO', 'MP', 'MQ', 'MR', 'MS', 'MT', 'MU', 'MV', 'MW', 'MX',
+    'MY', 'MZ', 'NA', 'NC', 'NE', 'NF', 'NG', 'NI', 'NL', 'NO', 'NP',
+    'NR', 'NU', 'NZ', 'OM', 'PA', 'PE', 'PF', 'PG', 'PH', 'PK', 'PL',
+    'PM', 'PN', 'PR', 'PS', 'PT', 'PW', 'PY', 'QA', 'RE', 'RO', 'RS',
+    'RU', 'RW', 'SA', 'SB', 'SC', 'SD', 'SE', 'SG', 'SH', 'SI', 'SJ',
+    'SK', 'SL', 'SM', 'SN', 'SO', 'SR', 'SS', 'ST', 'SV', 'SX', 'SY',
+    'SZ', 'TC', 'TD', 'TF', 'TG', 'TH', 'TJ', 'TK', 'TL', 'TM', 'TN',
+    'TO', 'TR', 'TT', 'TV', 'TW', 'TZ', 'UA', 'UG', 'UM', 'US', 'UY',
+    'UZ', 'VA', 'VC', 'VE', 'VG', 'VI', 'VN', 'VU', 'WF', 'WS', 'XK',
+    'YE', 'YT', 'ZA', 'ZM', 'ZW',
+])
+
+MAP_GEOIP_GENC = {
+    'AX': 'FI',  # genc
+    'BQ': 'NL',  # shapefile
+    'CC': 'AU',  # shapefile
+    'CX': 'AU',  # shapefile
+    'GF': 'FR',  # shapefile
+    'GI': 'GB',  # shapefile
+    'GP': 'FR',  # shapefile
+    'MQ': 'FR',  # shapefile
+    'PS': 'XW',  # genc
+    'RE': 'FR',  # shapefile
+    'SJ': 'NO',  # genc XR, shapefile
+    'TK': 'NZ',  # shapefile
+    'TV': None,  # shapefile
+    'UM': 'US',  # genc
+    'YT': 'FR',  # shapefile
+}
 
 
 def configure_geoip(filename, mode=MODE_AUTO,
@@ -106,7 +150,6 @@ class GeoIPWrapper(Reader):
 
     lookup_exceptions = (
         AddressNotFoundError, GeoIP2Error, InvalidDatabaseError, ValueError)
-    valid_regions = VALID_REGIONS  #: A set of valid region codes.
 
     def __init__(self, filename, mode=MODE_AUTO):
         """
@@ -178,14 +221,18 @@ class GeoIPWrapper(Reader):
                 region.iso_code):  # pragma: no cover
             return None
 
+        code = MAP_GEOIP_GENC.get(region.iso_code, region.iso_code)
+        if code is None:  # pragma: no cover
+            return None
+
         return {
             # Round lat/lon to a standard maximum precision
             'latitude': round(location.latitude, DEGREE_DECIMAL_PLACES),
             'longitude': round(location.longitude, DEGREE_DECIMAL_PLACES),
-            'region_code': region.iso_code,
-            'region_name': region.name,
+            'region_code': code,
+            'region_name': genc.region_by_alpha2(code).name,
             'city': city,
-            'accuracy': geoip_accuracy(region.iso_code, city=city),
+            'accuracy': geoip_accuracy(code, city=city),
         }
 
 
@@ -193,8 +240,6 @@ class GeoIPNull(object):
     """
     A dummy implementation of the :class:`~ichnaea.geoip.GeoIPWrapper` API.
     """
-
-    valid_regions = VALID_REGIONS  #: A set of valid region codes.
 
     def geoip_lookup(self, addr):
         """
