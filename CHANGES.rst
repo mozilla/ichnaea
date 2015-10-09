@@ -20,6 +20,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use subunits dataset to preserve smaller regions.
+
 - Use GENC codes and names in GeoIP results.
 
 - Consider more responses as high accuracy.

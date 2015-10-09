@@ -53,20 +53,9 @@ GEOIP_REGIONS = frozenset([
 
 MAP_GEOIP_GENC = {
     'AX': 'FI',  # genc
-    'BQ': 'NL',  # shapefile
-    'CC': 'AU',  # shapefile
-    'CX': 'AU',  # shapefile
-    'GF': 'FR',  # shapefile
-    'GI': 'GB',  # shapefile
-    'GP': 'FR',  # shapefile
-    'MQ': 'FR',  # shapefile
     'PS': 'XW',  # genc
-    'RE': 'FR',  # shapefile
-    'SJ': 'NO',  # genc XR, shapefile
-    'TK': 'NZ',  # shapefile
-    'TV': None,  # shapefile
+    'SJ': 'XR',  # genc
     'UM': 'US',  # genc
-    'YT': 'FR',  # shapefile
 }
 
 
@@ -144,8 +133,8 @@ def geoip_accuracy(code, city=False):
 
 class GeoIPWrapper(Reader):
     """
-    A wrapper around the :class:`geoip2.database.Reader` class with two lookup
-    functions which return `None` instead of raising errors.
+    A wrapper around the :class:`geoip2.database.Reader` class with a lookup
+    function which returns `None` instead of raising exceptions.
     """
 
     lookup_exceptions = (

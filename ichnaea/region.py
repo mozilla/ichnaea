@@ -18,12 +18,12 @@ from ichnaea import geocalc
 JSON_FILE = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), 'regions.geojson')
 
-# Gibraltar, Reunion and Tuvalu aren't in the shapefile
+DATELINE_EAST = geometry.box(180.0, -90.0, 270.0, 90.0)
+DATELINE_WEST = geometry.box(-270.0, -90.0, -180.0, 90.0)
+
 # Palestine only exists as West Bank/Gaza in the GENC dataset
 MCC_GENC_SHAPEFILE_MAP = {
-    'GI': 'GB',
     'PS': 'XW',
-    'RE': 'FR',
 }
 _RADIUS_CACHE = {}
 
@@ -55,20 +55,36 @@ class Geocoder(object):
             self._shapes[code] = shape = geometry.shape(feature['geometry'])
             self._prepared_shapes[code] = prepared.prep(shape)
 
+        i = 0
         envelopes = []
-        for i, (code, shape) in enumerate(self._shapes.items()):
+        for code, shape in self._shapes.items():
             # Build up region buffers, to create shapes that include all of
             # the coastal areas and boundaries of the regions and anywhere
             # a cell signal could still be recorded. The value is in decimal
             # degrees (1.0 == ~100km) but calculations don't take projection
             # / WSG84 into account.
-            buffered = shape.buffer(0.5)
+            # After buffering remove any parts that crosses the -180.0/+180.0
+            # longitude boundary to the east or west.
+            buffered = (shape.buffer(0.5)
+                             .difference(DATELINE_EAST)
+                             .difference(DATELINE_WEST))
+            self._buffered_shapes[code] = prepared.prep(buffered)
+
             # Collect rtree index entries, and maintain a separate id to
             # code mapping. We don't use index object support as it
             # requires un/pickling the object entries on each lookup.
-            envelopes.append((i, buffered.envelope.bounds, None))
-            self._tree_ids[i] = code
-            self._buffered_shapes[code] = prepared.prep(buffered)
+            if isinstance(buffered, geometry.base.BaseMultipartGeometry):
+                # Index bounding box of individual polygons instead of
+                # the multipolygon, to avoid issues with regions crossing
+                # the -180.0/+180.0 longitude boundary.
+                for geom in buffered.geoms:
+                    envelopes.append((i, geom.envelope.bounds, None))
+                    self._tree_ids[i] = code
+                    i += 1
+            else:
+                envelopes.append((i, buffered.envelope.bounds, None))
+                self._tree_ids[i] = code
+                i += 1
 
         props = index.Property()
         props.fill_factor = 0.9
@@ -94,8 +110,8 @@ class Geocoder(object):
         codes = [self._tree_ids[id_] for id_ in
                  self._tree.intersection(point.bounds)]
 
-        if len(codes) < 2:
-            return codes[0] if codes else None
+        if not codes:
+            return None
 
         # match point against the buffered polygon shapes
         buffered_codes = [code for code in codes

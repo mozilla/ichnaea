@@ -73,8 +73,8 @@ class TestDatabase(GeoIPTestCase):
     def test_regions(self):
         valid_regions = GEOCODER.valid_regions
         mapped_regions = set([MAP_GEOIP_GENC.get(r, r) for r in GEOIP_REGIONS])
-        self.assertEqual(mapped_regions - valid_regions, set([None]))
-        for region in mapped_regions - set([None, 'XK', 'XW']):
+        self.assertEqual(mapped_regions - valid_regions, set())
+        for region in mapped_regions - set(['XK', 'XR', 'XW']):
             self.assertNotEqual(region_max_radius(region), None)
 
 
@@ -97,12 +97,11 @@ class TestGeoIPLookup(GeoIPTestCase):
         for name in ('accuracy', 'region_code', 'region_name', 'city'):
             self.assertEqual(bhutan[name], result[name])
 
-    def test_region_map(self):
-        # Gibraltar isn't in the GENC dataset, so it's mapped to GB
+    def test_ipv6(self):
         result = self.geoip_db.geoip_lookup('2a02:ffc0::')
-        self.assertEqual(result['region_code'], 'GB')
-        self.assertEqual(result['region_name'], 'United Kingdom')
-        self.assertEqual(result['accuracy'], geoip_accuracy('GB'))
+        self.assertEqual(result['region_code'], 'GI')
+        self.assertEqual(result['region_name'], 'Gibraltar')
+        self.assertEqual(result['accuracy'], geoip_accuracy('GI'))
 
     def test_fail(self):
         self.assertIsNone(self.geoip_db.geoip_lookup('127.0.0.1'))
