@@ -2,8 +2,12 @@
 import os.path
 import sys
 import warnings
+
+from pymysql import err
+
 warnings.simplefilter('ignore', DeprecationWarning)
 warnings.simplefilter('ignore', PendingDeprecationWarning)
+warnings.simplefilter('ignore', err.Warning)
 
 # Enable pyopenssl based SSL stack
 if sys.version_info < (3, 0):  # pragma: no cover
@@ -27,6 +31,7 @@ def setup_package(module):
     # enable all warnings in test mode
     warnings.resetwarnings()
     warnings.simplefilter('default')
+    warnings.simplefilter('ignore', err.Warning)
 
     from ichnaea.tests.base import setup_package
     return setup_package(module)
