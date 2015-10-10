@@ -9,6 +9,11 @@ Purpose
     cell or WiFi networks and based on the IP address used to access
     the service.
 
+The responses use region codes and names from the
+`GENC dataset <http://www.gwg.nga.mil/ccwg.php>`_, which is for the
+most part compatible with the ISO 3166 standard. While the API
+endpoint and JSON payload refers to `country`, no claim about the
+political status of any region is made by this service.
 
 Request
 -------

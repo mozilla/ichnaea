@@ -20,6 +20,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Calculate region radii based on precise shapefiles.
+
 - Use subunits dataset to preserve smaller regions.
 
 - Use GENC codes and names in GeoIP results.

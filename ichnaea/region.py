@@ -4,15 +4,12 @@ Contains helper functions for region related tasks.
 
 import os
 
-from country_bounding_boxes import country_subunits_by_iso_code
 import genc
 import mobile_codes
 from shapely import geometry
 from shapely import prepared
 import simplejson
 from rtree import index
-
-from ichnaea import geocalc
 
 JSON_FILE = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), 'regions.geojson')
@@ -57,6 +54,7 @@ class Geocoder(object):
                 shape = geometry.shape(feature['geometry'])
                 self._shapes[code] = shape
                 self._prepared_shapes[code] = prepared.prep(shape)
+                self._radii[code] = feature['properties']['radius']
 
         i = 0
         envelopes = []
@@ -94,28 +92,6 @@ class Geocoder(object):
         props.leaf_capacity = 20
         self._tree = index.Index(envelopes, interleaved=True, properties=props)
         self._valid_regions = frozenset(self._shapes.keys())
-
-        for code in self._valid_regions:
-            radius = None
-            diagonals = []
-            for subregion in country_subunits_by_iso_code(code):
-                (lon1, lat1, lon2, lat2) = subregion.bbox
-                diagonals.append(geocalc.distance(lat1, lon1, lat2, lon2))
-            if diagonals:
-                # Divide by two to get radius, round to 1 km, convert to meters
-                radius = round(max(diagonals) / 2.0 / 1000.0) * 1000.0
-            self._radii[code] = radius
-
-        self._radii.update({
-            # bbox (20.0294921875, 41.8538085937, 21.752929687, 43.2610839844)
-            'XK': 105000.0,
-            # bbox (10.5576171875, 74.3521484375, 33.629296875, 80.4778320312)
-            # bbox (-9.0988769531, 70.8326660156, -7.978808594, 71.1776855469)
-            'XR': 434000.0,
-            # bbox (34.1981445313, 31.2083007812, 34.525585937, 31.5848632812)
-            # bbox (34.8727539063, 31.3513183594, 35.572070313, 32.5344238281)
-            'XW': 74000.0,
-        })
 
     @property
     def valid_regions(self):

@@ -45,8 +45,8 @@ class TestGeocoder(TestCase):
         self.assertEqual(func(0.0, 0.0, 234), None)
 
     def test_max_radius(self):
-        self.assertEqual(GEOCODER.region_max_radius('US'), 2826000.0)
-        self.assertEqual(GEOCODER.region_max_radius('LI'), 13000.0)
+        self.assertEqual(GEOCODER.region_max_radius('US'), 2971000.0)
+        self.assertEqual(GEOCODER.region_max_radius('LI'), 14000.0)
         self.assertEqual(GEOCODER.region_max_radius('VA'), 1000.0)
 
     def test_max_radius_fail(self):

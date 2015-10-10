@@ -3,9 +3,12 @@ import json
 import os
 
 import genc
+import numpy
 import shapely
 import shapely.geometry
 import shapely.ops
+
+from ichnaea import geocalc
 
 DATELINE_EAST = shapely.geometry.box(180.0, -90.0, 270.0, 90.0)
 DATELINE_WEST = shapely.geometry.box(-270.0, -90.0, -180.0, 90.0)
@@ -177,10 +180,26 @@ def simplify(features):
 def to_geojson(regions):
     features = []
     for code, region in regions.items():
+        # calculate the maximum radius of each polygon
+        boundary = region.boundary
+        if isinstance(boundary, shapely.geometry.base.BaseMultipartGeometry):
+            boundaries = list(boundary.geoms)
+        else:
+            boundaries = [boundary]
+
+        radii = []
+        for boundary in boundaries:
+            # flip x/y aka lon/lat to lat/lon
+            boundary = numpy.fliplr(numpy.array(boundary))
+            ctr_lat, ctr_lon = geocalc.centroid(boundary)
+            radii.append(geocalc.max_distance(ctr_lat, ctr_lon, boundary))
+        radius = round(max(radii) / 1000.0) * 1000.0
+
         features.append({
             'type': 'Feature',
             'properties': {
                 'alpha2': code,
+                'radius': radius,
             },
             'geometry': shapely.geometry.mapping(region),
         })
