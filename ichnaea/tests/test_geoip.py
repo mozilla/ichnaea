@@ -11,12 +11,9 @@ from ichnaea import geoip
 from ichnaea.geoip import (
     geoip_accuracy,
     GEOIP_REGIONS,
-    MAP_GEOIP_GENC,
+    GEOIP_GENC_MAP,
 )
-from ichnaea.region import (
-    GEOCODER,
-    region_max_radius,
-)
+from ichnaea.region import GEOCODER
 from ichnaea.tests.base import (
     GEOIP_BAD_FILE,
     GeoIPTestCase,
@@ -72,10 +69,10 @@ class TestDatabase(GeoIPTestCase):
 
     def test_regions(self):
         valid_regions = GEOCODER.valid_regions
-        mapped_regions = set([MAP_GEOIP_GENC.get(r, r) for r in GEOIP_REGIONS])
+        mapped_regions = set([GEOIP_GENC_MAP.get(r, r) for r in GEOIP_REGIONS])
         self.assertEqual(mapped_regions - valid_regions, set())
-        for region in mapped_regions - set(['XK', 'XR', 'XW']):
-            self.assertNotEqual(region_max_radius(region), None)
+        for region in mapped_regions:
+            self.assertNotEqual(geoip_accuracy(region, default=None), None)
 
 
 class TestGeoIPLookup(GeoIPTestCase):
@@ -115,30 +112,15 @@ class TestGeoIPLookup(GeoIPTestCase):
 
 class TestGeoIPAccuracy(TestCase):
 
-    li_radius = 13000.0
-    us_radius = 2826000.0
-    va_radius = 1000.0
-
     def test_region(self):
-        accuracy = geoip_accuracy('US')
-        self.assertEqual(accuracy, self.us_radius)
+        self.assertTrue(geoip_accuracy('US') > 1000000.0)
+        self.assertTrue(geoip_accuracy('XK') > 50000.0)
 
     def test_city(self):
-        accuracy = geoip_accuracy('US', city=True)
-        self.assertEqual(accuracy, GEOIP_CITY_ACCURACY)
+        self.assertEqual(geoip_accuracy('US', city=True), GEOIP_CITY_ACCURACY)
+        self.assertTrue(geoip_accuracy('LI', city=True) < GEOIP_CITY_ACCURACY)
+        self.assertTrue(geoip_accuracy('VA', city=True) < GEOIP_CITY_ACCURACY)
 
-    def test_small_region(self):
-        accuracy = geoip_accuracy('LI', city=True)
-        self.assertEqual(accuracy, self.li_radius)
-
-    def test_tiny_region(self):
-        accuracy = geoip_accuracy('VA', city=True)
-        self.assertEqual(accuracy, self.va_radius)
-
-    def test_unknown_region(self):
-        accuracy = geoip_accuracy('XX')
-        self.assertEqual(accuracy, GEOIP_REGION_ACCURACY)
-
-    def test_unknown_city(self):
-        accuracy = geoip_accuracy('XX', city=True)
-        self.assertEqual(accuracy, GEOIP_CITY_ACCURACY)
+    def test_unknown(self):
+        self.assertEqual(geoip_accuracy('XX'), GEOIP_REGION_ACCURACY)
+        self.assertEqual(geoip_accuracy('XX', city=True), GEOIP_CITY_ACCURACY)

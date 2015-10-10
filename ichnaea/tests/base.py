@@ -39,7 +39,7 @@ from ichnaea.log import (
     DebugStatsClient,
 )
 from ichnaea.models import _Model, ApiKey
-from ichnaea.region import region_max_radius
+from ichnaea.region import GEOCODER
 from ichnaea.webapp.config import main
 
 # make new unittest API's available under Python 2.6
@@ -106,7 +106,7 @@ GEOIP_DATA = {
         'ip': '67.43.156.1',
         'latitude': 27.5,
         'longitude': 90.5,
-        'accuracy': region_max_radius('BT'),
+        'accuracy': GEOCODER.region_max_radius('BT'),
     },
 }
 

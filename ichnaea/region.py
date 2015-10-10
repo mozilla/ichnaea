@@ -10,7 +10,6 @@ import mobile_codes
 from shapely import geometry
 from shapely import prepared
 import simplejson
-from six import string_types
 from rtree import index
 
 from ichnaea import geocalc
@@ -25,7 +24,6 @@ DATELINE_WEST = geometry.box(-270.0, -90.0, -180.0, 90.0)
 MCC_GENC_SHAPEFILE_MAP = {
     'PS': 'XW',
 }
-_RADIUS_CACHE = {}
 
 
 class Geocoder(object):
@@ -40,20 +38,25 @@ class Geocoder(object):
     _tree = None  #: RTree of buffered region envelopes
     _tree_ids = None  #: maps RTree entry id to region code
     _valid_regions = None  #: Set of known and valid region codes
+    _radii = None  #: A cache of region radii
 
     def __init__(self, json_file=JSON_FILE):
         self._buffered_shapes = {}
         self._prepared_shapes = {}
         self._shapes = {}
         self._tree_ids = {}
+        self._radii = {}
 
         with open(json_file, 'r') as fd:
             data = simplejson.load(fd)
 
+        genc_regions = frozenset([rec.alpha2 for rec in genc.REGIONS])
         for feature in data['features']:
             code = feature['properties']['alpha2']
-            self._shapes[code] = shape = geometry.shape(feature['geometry'])
-            self._prepared_shapes[code] = prepared.prep(shape)
+            if code in genc_regions:
+                shape = geometry.shape(feature['geometry'])
+                self._shapes[code] = shape
+                self._prepared_shapes[code] = prepared.prep(shape)
 
         i = 0
         envelopes = []
@@ -90,10 +93,29 @@ class Geocoder(object):
         props.fill_factor = 0.9
         props.leaf_capacity = 20
         self._tree = index.Index(envelopes, interleaved=True, properties=props)
+        self._valid_regions = frozenset(self._shapes.keys())
 
-        regions = set(self._shapes.keys())
-        genc_regions = set([rec.alpha2 for rec in genc.REGIONS])
-        self._valid_regions = frozenset(genc_regions.intersection(regions))
+        for code in self._valid_regions:
+            radius = None
+            diagonals = []
+            for subregion in country_subunits_by_iso_code(code):
+                (lon1, lat1, lon2, lat2) = subregion.bbox
+                diagonals.append(geocalc.distance(lat1, lon1, lat2, lon2))
+            if diagonals:
+                # Divide by two to get radius, round to 1 km, convert to meters
+                radius = round(max(diagonals) / 2.0 / 1000.0) * 1000.0
+            self._radii[code] = radius
+
+        self._radii.update({
+            # bbox (20.0294921875, 41.8538085937, 21.752929687, 43.2610839844)
+            'XK': 105000.0,
+            # bbox (10.5576171875, 74.3521484375, 33.629296875, 80.4778320312)
+            # bbox (-9.0988769531, 70.8326660156, -7.978808594, 71.1776855469)
+            'XR': 434000.0,
+            # bbox (34.1981445313, 31.2083007812, 34.525585937, 31.5848632812)
+            # bbox (34.8727539063, 31.3513183594, 35.572070313, 32.5344238281)
+            'XW': 74000.0,
+        })
 
     @property
     def valid_regions(self):
@@ -225,31 +247,12 @@ class Geocoder(object):
         # fall back to lookup without the mcc/alpha2 hint
         return self.region(lat, lon)
 
+    def region_max_radius(self, code):
+        """
+        Return the maximum radius of a circle encompassing the largest
+        region subunit in meters, rounded to 1 km increments.
+        """
+        return self._radii.get(code, None)
 
-def region_max_radius(code):
-    """
-    Return the maximum radius of a circle encompassing the largest
-    region subunit in meters, rounded to 1 km increments.
-    """
-    if not isinstance(code, string_types):
-        return None
-    code = code.upper()
-    if len(code) not in (2, 3):
-        return None
-
-    value = _RADIUS_CACHE.get(code, None)
-    if value:
-        return value
-
-    diagonals = []
-    for region in country_subunits_by_iso_code(code):
-        (lon1, lat1, lon2, lat2) = region.bbox
-        diagonals.append(geocalc.distance(lat1, lon1, lat2, lon2))
-    if diagonals:
-        # Divide by two to get radius, round to 1 km and convert to meters
-        radius = max(diagonals) / 2.0 / 1000.0
-        value = _RADIUS_CACHE[code] = round(radius) * 1000.0
-
-    return value
 
 GEOCODER = Geocoder()

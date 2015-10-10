@@ -21,7 +21,7 @@ from ichnaea.constants import (
     GEOIP_CITY_ACCURACY,
     GEOIP_REGION_ACCURACY,
 )
-from ichnaea.region import region_max_radius
+from ichnaea.region import GEOCODER
 
 # The region codes present in the GeoIP data files,
 # extracted from the CSV files.
@@ -51,7 +51,7 @@ GEOIP_REGIONS = frozenset([
     'YE', 'YT', 'ZA', 'ZM', 'ZW',
 ])
 
-MAP_GEOIP_GENC = {
+GEOIP_GENC_MAP = {
     'AX': 'FI',  # genc
     'PS': 'XW',  # genc
     'SJ': 'XR',  # genc
@@ -103,7 +103,7 @@ def configure_geoip(filename, mode=MODE_AUTO,
     return db
 
 
-def geoip_accuracy(code, city=False):
+def geoip_accuracy(code, city=False, default=GEOIP_REGION_ACCURACY):
     """
     Return the best accuracy guess for the given GeoIP record.
 
@@ -114,14 +114,14 @@ def geoip_accuracy(code, city=False):
     :type city: bool
 
     :returns: An accuracy guess in meters.
-    :rtype: int
+    :rtype: float
     """
     accuracy = None
     if code:
-        accuracy = region_max_radius(code)
+        accuracy = GEOCODER.region_max_radius(code)
     if accuracy is None:
         # No region code or no successful radius lookup
-        accuracy = GEOIP_REGION_ACCURACY
+        accuracy = default
 
     if city:
         # Use region radius as an upper bound for city radius
@@ -210,7 +210,7 @@ class GeoIPWrapper(Reader):
                 region.iso_code):  # pragma: no cover
             return None
 
-        code = MAP_GEOIP_GENC.get(region.iso_code, region.iso_code)
+        code = GEOIP_GENC_MAP.get(region.iso_code, region.iso_code)
         if code is None:  # pragma: no cover
             return None
 

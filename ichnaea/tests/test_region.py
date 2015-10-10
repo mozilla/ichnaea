@@ -1,9 +1,5 @@
 from ichnaea.models.constants import ALL_VALID_MCCS
-from ichnaea.region import (
-    _RADIUS_CACHE,
-    GEOCODER,
-    region_max_radius,
-)
+from ichnaea.region import GEOCODER
 from ichnaea.tests.base import TestCase
 
 
@@ -48,60 +44,14 @@ class TestGeocoder(TestCase):
         self.assertEqual(func(31.522, 34.455, 425), 'XW')
         self.assertEqual(func(0.0, 0.0, 234), None)
 
+    def test_max_radius(self):
+        self.assertEqual(GEOCODER.region_max_radius('US'), 2826000.0)
+        self.assertEqual(GEOCODER.region_max_radius('LI'), 13000.0)
+        self.assertEqual(GEOCODER.region_max_radius('VA'), 1000.0)
 
-class TestRegionMaxRadius(TestCase):
-
-    li_radius = 13000.0
-    usa_radius = 2826000.0
-    vat_radius = 1000.0
-
-    def test_alpha2(self):
-        r = region_max_radius('US')
-        self.assertEqual(r, self.usa_radius)
-        cached = _RADIUS_CACHE['US']
-        self.assertEqual(r, cached)
-
-        r = region_max_radius('us')
-        self.assertEqual(r, self.usa_radius)
-        self.assertFalse('us' in _RADIUS_CACHE)
-
-    def test_alpha3(self):
-        r = region_max_radius('USA')
-        self.assertEqual(r, self.usa_radius)
-        cached = _RADIUS_CACHE['USA']
-        self.assertEqual(r, cached)
-
-        r = region_max_radius('usa')
-        self.assertEqual(r, self.usa_radius)
-        self.assertFalse('usa' in _RADIUS_CACHE)
-
-    def test_small_regions(self):
-        r = region_max_radius('LI')
-        self.assertEqual(r, self.li_radius)
-        r = region_max_radius('VAT')
-        self.assertEqual(r, self.vat_radius)
-
-    def test_malformed_region(self):
-        r = region_max_radius(None)
-        self.assertTrue(r is None)
-
-        r = region_max_radius(42)
-        self.assertTrue(r is None)
-
-        r = region_max_radius('A')
-        self.assertTrue(r is None)
-
-        r = region_max_radius('-#1-')
-        self.assertTrue(r is None)
-
-    def test_unknown_region(self):
-        r = region_max_radius('AA')
-        self.assertTrue(r is None)
-        self.assertFalse('AA' in _RADIUS_CACHE)
-
-        r = region_max_radius('AAA')
-        self.assertTrue(r is None)
-        self.assertFalse('AAA' in _RADIUS_CACHE)
+    def test_max_radius_fail(self):
+        for invalid in (None, 42, 'A', 'us', 'USA', 'AA'):
+            self.assertTrue(GEOCODER.region_max_radius(invalid) is None)
 
 
 class TestRegionsForMcc(TestCase):
