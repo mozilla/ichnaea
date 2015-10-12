@@ -8,7 +8,6 @@ from ichnaea.api.locate.source import (
     RegionSource,
 )
 from ichnaea.api.locate.wifi import WifiPositionMixin
-from ichnaea.geoip import geoip_accuracy
 from ichnaea.region import GEOCODER
 
 
@@ -26,14 +25,14 @@ class InternalRegionSource(RegionSource):
 
         regions = []
         for code in codes:
-            regions.extend(GEOCODER.regions_for_mcc(code, names=True))
+            regions.extend(GEOCODER.regions_for_mcc(code, metadata=True))
 
         for region in regions:
-            region_code = region.alpha2
+            region_code = region.code
             results.add(self.result_type(
                 region_code=region_code,
                 region_name=region.name,
-                accuracy=geoip_accuracy(region_code)))
+                accuracy=region.radius))
 
         if len(results):
             query.emit_source_stats(self.source, results[0])

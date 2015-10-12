@@ -52,10 +52,10 @@ GEOIP_REGIONS = frozenset([
 ])
 
 GEOIP_GENC_MAP = {
-    'AX': 'FI',  # genc
-    'PS': 'XW',  # genc
-    'SJ': 'XR',  # genc
-    'UM': 'US',  # genc
+    'AX': 'FI',  # Aland Islands -> Finland
+    'PS': 'XW',  # Palestine -> West Bank
+    'SJ': 'XR',  # Svalbard and Jan Mayen -> Svalbard
+    'UM': 'US',  # US Minor Outlying Territories -> US
 }
 
 
@@ -101,34 +101,6 @@ def configure_geoip(filename, mode=MODE_AUTO,
         return GeoIPNull()
 
     return db
-
-
-def geoip_accuracy(code, city=False, default=GEOIP_REGION_ACCURACY):
-    """
-    Return the best accuracy guess for the given GeoIP record.
-
-    :param code: A two-letter region code.
-    :type code: str
-
-    :param city: Do we have a city record or a region record.
-    :type city: bool
-
-    :returns: An accuracy guess in meters.
-    :rtype: float
-    """
-    accuracy = None
-    if code:
-        accuracy = GEOCODER.region_max_radius(code)
-    if accuracy is None:
-        # No region code or no successful radius lookup
-        accuracy = default
-
-    if city:
-        # Use region radius as an upper bound for city radius
-        # for really small regions.
-        accuracy = min(GEOIP_CITY_ACCURACY, accuracy)
-
-    return accuracy
 
 
 class GeoIPWrapper(Reader):
@@ -210,10 +182,8 @@ class GeoIPWrapper(Reader):
                 region.iso_code):  # pragma: no cover
             return None
 
-        code = GEOIP_GENC_MAP.get(region.iso_code, region.iso_code)
-        if code is None:  # pragma: no cover
-            return None
-
+        code = GEOIP_GENC_MAP.get(region.iso_code, region.iso_code).upper()
+        accuracy, region_accuracy = self.accuracy(code, city=city)
         return {
             # Round lat/lon to a standard maximum precision
             'latitude': round(location.latitude, DEGREE_DECIMAL_PLACES),
@@ -221,8 +191,35 @@ class GeoIPWrapper(Reader):
             'region_code': code,
             'region_name': genc.region_by_alpha2(code).name,
             'city': city,
-            'accuracy': geoip_accuracy(code, city=city),
+            'accuracy': accuracy,
+            'region_accuracy': region_accuracy,
         }
+
+    def accuracy(self, code, city=False, default=GEOIP_REGION_ACCURACY):
+        """
+        Return the best accuracy guess for the given region code.
+
+        :param code: A two-letter region code.
+        :type code: str
+
+        :param city: Do we have a city record or a region record.
+        :type city: bool
+
+        :returns: A tuple of accuracy/region accuracy guesses in meters.
+        :rtype: tuple
+        """
+        region_accuracy = GEOCODER.region_max_radius(code)
+        if region_accuracy is None:
+            # No region code or no successful radius lookup
+            region_accuracy = default
+
+        accuracy = region_accuracy
+        if city:
+            # Use region radius as an upper bound for city radius
+            # for really small regions.
+            accuracy = min(GEOIP_CITY_ACCURACY, region_accuracy)
+
+        return (accuracy, region_accuracy)
 
 
 class GeoIPNull(object):

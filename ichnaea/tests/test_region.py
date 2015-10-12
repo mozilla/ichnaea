@@ -58,19 +58,19 @@ class TestRegionsForMcc(TestCase):
 
     def test_no_match(self):
         self.assertEqual(GEOCODER.regions_for_mcc(1), [])
-        self.assertEqual(GEOCODER.regions_for_mcc(1, names=True), [])
+        self.assertEqual(GEOCODER.regions_for_mcc(1, metadata=True), [])
 
     def test_single(self):
         regions = GEOCODER.regions_for_mcc(262)
         self.assertEqual(set(regions), set(['DE']))
-        regions = GEOCODER.regions_for_mcc(262, names=True)
-        self.assertEqual(set([r.alpha2 for r in regions]), set(['DE']))
+        regions = GEOCODER.regions_for_mcc(262, metadata=True)
+        self.assertEqual(set([r.code for r in regions]), set(['DE']))
 
     def test_multiple(self):
         regions = GEOCODER.regions_for_mcc(311)
         self.assertEqual(set(regions), set(['GU', 'US']))
-        regions = GEOCODER.regions_for_mcc(311, names=True)
-        self.assertEqual(set([r.alpha2 for r in regions]), set(['GU', 'US']))
+        regions = GEOCODER.regions_for_mcc(311, metadata=True)
+        self.assertEqual(set([r.code for r in regions]), set(['GU', 'US']))
 
     def test_filtered(self):
         # AX / Aland Islands is not in the GENC list

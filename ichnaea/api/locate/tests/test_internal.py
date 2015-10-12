@@ -13,7 +13,7 @@ class TestRegionSource(BaseSourceTest):
     api_type = 'region'
 
     def test_from_mcc(self):
-        region = GEOCODER.regions_for_mcc(235, names=True)[0]
+        region = GEOCODER.regions_for_mcc(235, metadata=True)[0]
         cell = CellFactory.build(mcc=235)
         query = self.model_query(cells=[cell])
         results = self.source.search(query)
@@ -25,7 +25,7 @@ class TestRegionSource(BaseSourceTest):
         ])
 
     def test_ambiguous_mcc(self):
-        regions = GEOCODER.regions_for_mcc(234, names=True)
+        regions = GEOCODER.regions_for_mcc(234, metadata=True)
         cell = CellFactory.build(mcc=234)
         query = self.model_query(cells=[cell])
         results = self.source.search(query)

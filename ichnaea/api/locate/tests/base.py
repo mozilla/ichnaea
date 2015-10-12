@@ -44,11 +44,11 @@ from ichnaea import util
 class DummyModel(object):
 
     def __init__(self, lat=None, lon=None, accuracy=None,
-                 alpha2=None, name=None, ip=None):
+                 code=None, name=None, ip=None):
         self.lat = lat
         self.lon = lon
         self.radius = accuracy
-        self.alpha2 = alpha2
+        self.code = code
         self.name = name
         self.ip = ip
 
@@ -67,7 +67,7 @@ class BaseSourceTest(ConnectionTestCase):
             lat=bhutan['latitude'],
             lon=bhutan['longitude'],
             accuracy=bhutan['accuracy'],
-            alpha2=bhutan['region_code'],
+            code=bhutan['region_code'],
             name=bhutan['region_name'],
             ip=bhutan['ip'])
         london = cls.geoip_data['London']
@@ -75,7 +75,7 @@ class BaseSourceTest(ConnectionTestCase):
             lat=london['latitude'],
             lon=london['longitude'],
             accuracy=london['accuracy'],
-            alpha2=london['region_code'],
+            code=london['region_code'],
             name=london['region_name'],
             ip=london['ip'])
 
@@ -166,7 +166,7 @@ class BaseSourceTest(ConnectionTestCase):
             check_func = self.assertEqual
             for model in models:
                 expected.append({
-                    'region_code': model.alpha2,
+                    'region_code': model.code,
                     'region_name': model.name,
                 })
 

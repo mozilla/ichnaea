@@ -2,6 +2,7 @@
 Contains helper functions for region related tasks.
 """
 
+from collections import namedtuple
 import os
 
 import genc
@@ -21,6 +22,8 @@ DATELINE_WEST = geometry.box(-270.0, -90.0, -180.0, 90.0)
 MCC_GENC_SHAPEFILE_MAP = {
     'PS': 'XW',
 }
+
+Region = namedtuple('Region', 'code name radius')
 
 
 class Geocoder(object):
@@ -99,7 +102,7 @@ class Geocoder(object):
 
     def region(self, lat, lon):
         """
-        Return a alpha2 region code matching the provided position.
+        Return a region code matching the provided position.
         If the position is not found inside any region return None.
         """
         # Look up point in RTree of buffered region envelopes.
@@ -156,16 +159,16 @@ class Geocoder(object):
 
         return False
 
-    def in_region(self, lat, lon, alpha2):
+    def in_region(self, lat, lon, code):
         """
         Is the provided lat/lon position inside the region associated
-        with the given alpha2 region code.
+        with the given region code.
         """
-        if alpha2 not in self._valid_regions:
+        if code not in self._valid_regions:
             return False
 
         point = geometry.Point(lon, lat)
-        if self._buffered_shapes[alpha2].contains(point):
+        if self._buffered_shapes[code].contains(point):
             return True
         return False
 
@@ -174,53 +177,55 @@ class Geocoder(object):
         Is the provided lat/lon position inside one of the regions
         associated with the given mcc.
         """
-        for alpha2 in self.regions_for_mcc(mcc):
-            if self.in_region(lat, lon, alpha2):
+        for code in self.regions_for_mcc(mcc):
+            if self.in_region(lat, lon, code):
                 return True
         return False
 
-    def regions_for_mcc(self, mcc, names=False):
+    def regions_for_mcc(self, mcc, metadata=False):
         """
-        Return a list of alpha2 region codes matching the passed in
+        Return a list of region codes matching the passed in
         mobile country code.
 
-        If the names argument is set to True, returns a list of
-        :class:`genc.regions.Region` instances instead.
+        If the metadata argument is set to True, returns a list of
+        dictionaries containing additional metadata instead.
 
-        The return list is filtered by the set of recognized alpha2
-        region codes present in the GENC dataset and those that we have
-        region shapefiles for.
+        The return list is filtered by the set of recognized
+        region codes present in the GENC dataset.
         """
         codes = [region.alpha2 for region in mobile_codes.mcc(str(mcc))]
-        # map mcc alpha2 codes to genc alpha2 codes
+        # map mcc region codes to genc region codes
         codes = [MCC_GENC_SHAPEFILE_MAP.get(code, code) for code in codes]
         valid_codes = set(codes).intersection(self._valid_regions)
-        if not names:
+        if not metadata:
             return list(valid_codes)
 
         result = []
-        for alpha2 in valid_codes:
-            region = genc.region_by_alpha2(alpha2)
+        for code in valid_codes:
+            region = genc.region_by_alpha2(code)
             if region is not None:
-                result.append(region)
+                result.append(Region(
+                    code=region.alpha2,
+                    name=region.name,
+                    radius=self.region_max_radius(code)))
         return result
 
     def region_for_cell(self, lat, lon, mcc):
         """
-        Return a alpha2 region code matching the provided mcc and position.
+        Return a region code matching the provided mcc and position.
         If the position is not found inside any region return None.
         """
         regions = []
-        for alpha2 in self.regions_for_mcc(mcc):
-            if self.in_region(lat, lon, alpha2):
-                regions.append(alpha2)
+        for code in self.regions_for_mcc(mcc):
+            if self.in_region(lat, lon, code):
+                regions.append(code)
 
         if not regions:
             return None
         if len(regions) == 1:
             return regions[0]
 
-        # fall back to lookup without the mcc/alpha2 hint
+        # fall back to lookup without the mcc/region code hint
         return self.region(lat, lon)
 
     def region_max_radius(self, code):

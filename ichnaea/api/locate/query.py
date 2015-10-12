@@ -132,8 +132,6 @@ class Query(object):
                 geoip = self.geoip_db.geoip_lookup(valid)
                 if geoip:
                     region = geoip.get('region_code')
-                    if region:
-                        region = region.upper()
             self._geoip = geoip
             self._region = region
 

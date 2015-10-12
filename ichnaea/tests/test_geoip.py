@@ -9,7 +9,6 @@ from ichnaea.constants import (
 )
 from ichnaea import geoip
 from ichnaea.geoip import (
-    geoip_accuracy,
     GEOIP_REGIONS,
     GEOIP_GENC_MAP,
 )
@@ -17,13 +16,12 @@ from ichnaea.region import GEOCODER
 from ichnaea.tests.base import (
     GEOIP_BAD_FILE,
     GeoIPTestCase,
-    TestCase,
 )
 
 
 class TestDatabase(GeoIPTestCase):
 
-    def test_open_ok(self):
+    def test_open(self):
         self.assertIsInstance(self.geoip_db, geoip.GeoIPWrapper)
 
     def test_age(self):
@@ -72,7 +70,10 @@ class TestDatabase(GeoIPTestCase):
         mapped_regions = set([GEOIP_GENC_MAP.get(r, r) for r in GEOIP_REGIONS])
         self.assertEqual(mapped_regions - valid_regions, set())
         for region in mapped_regions:
-            self.assertNotEqual(geoip_accuracy(region, default=None), None)
+            accuracy, region_accuracy = self.geoip_db.accuracy(
+                region, default=None)
+            self.assertNotEqual(accuracy, None, region)
+            self.assertNotEqual(region_accuracy, None, region)
 
 
 class TestGeoIPLookup(GeoIPTestCase):
@@ -98,7 +99,7 @@ class TestGeoIPLookup(GeoIPTestCase):
         result = self.geoip_db.geoip_lookup('2a02:ffc0::')
         self.assertEqual(result['region_code'], 'GI')
         self.assertEqual(result['region_name'], 'Gibraltar')
-        self.assertEqual(result['accuracy'], geoip_accuracy('GI'))
+        self.assertEqual(result['accuracy'], self.geoip_db.accuracy('GI')[0])
 
     def test_fail(self):
         self.assertIsNone(self.geoip_db.geoip_lookup('127.0.0.1'))
@@ -110,17 +111,22 @@ class TestGeoIPLookup(GeoIPTestCase):
         self.assertIsNone(geoip.GeoIPNull().geoip_lookup('200'))
 
 
-class TestGeoIPAccuracy(TestCase):
+class TestGeoIPAccuracy(GeoIPTestCase):
 
     def test_region(self):
-        self.assertTrue(geoip_accuracy('US') > 1000000.0)
-        self.assertTrue(geoip_accuracy('XK') > 50000.0)
+        self.assertTrue(self.geoip_db.accuracy('US')[0] > 1000000.0)
+        self.assertTrue(self.geoip_db.accuracy('XK')[0] > 50000.0)
 
     def test_city(self):
-        self.assertEqual(geoip_accuracy('US', city=True), GEOIP_CITY_ACCURACY)
-        self.assertTrue(geoip_accuracy('LI', city=True) < GEOIP_CITY_ACCURACY)
-        self.assertTrue(geoip_accuracy('VA', city=True) < GEOIP_CITY_ACCURACY)
+        self.assertEqual(
+            self.geoip_db.accuracy('US', city=True)[0], GEOIP_CITY_ACCURACY)
+        self.assertTrue(
+            self.geoip_db.accuracy('LI', city=True)[0] < GEOIP_CITY_ACCURACY)
+        self.assertTrue(
+            self.geoip_db.accuracy('VA', city=True)[0] < GEOIP_CITY_ACCURACY)
 
     def test_unknown(self):
-        self.assertEqual(geoip_accuracy('XX'), GEOIP_REGION_ACCURACY)
-        self.assertEqual(geoip_accuracy('XX', city=True), GEOIP_CITY_ACCURACY)
+        self.assertEqual(
+            self.geoip_db.accuracy('XX')[0], GEOIP_REGION_ACCURACY)
+        self.assertEqual(
+            self.geoip_db.accuracy('XX', city=True)[0], GEOIP_CITY_ACCURACY)

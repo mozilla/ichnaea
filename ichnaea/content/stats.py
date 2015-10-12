@@ -183,14 +183,15 @@ def regions(session):
 
     regions = {}
     for mcc, item in mccs.items():
-        cell_regions = GEOCODER.regions_for_mcc(mcc, names=True)
+        cell_regions = GEOCODER.regions_for_mcc(mcc, metadata=True)
         multiple = bool(len(cell_regions) > 1)
         for cell_region in cell_regions:
-            alpha2 = cell_region.alpha2
+            code = cell_region.code
+            name = cell_region.name
             region = {
-                'code': alpha2,
-                'name': cell_region.name,
-                'order': transliterate(cell_region.name[:10]).lower(),
+                'code': code,
+                'name': name,
+                'order': transliterate(name[:10]).lower(),
                 'multiple': multiple,
                 'total': 0,
                 'gsm': 0, 'wcdma': 0, 'lte': 0,
@@ -198,13 +199,13 @@ def regions(session):
             for radio, value in item.items():
                 region[radio.name] = int(value)
             region['total'] = int(sum(item.values()))
-            if alpha2 not in regions:
-                regions[alpha2] = region
+            if code not in regions:
+                regions[code] = region
             else:
                 # some regions like the US have multiple mcc codes,
                 # we merge them here
                 for radio_name, value in region.items():
                     if isinstance(value, int):
-                        regions[alpha2][radio_name] += value
+                        regions[code][radio_name] += value
 
     return sorted(regions.values(), key=itemgetter('name'))
