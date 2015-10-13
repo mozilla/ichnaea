@@ -21,7 +21,7 @@ class QueryTest(ConnectionTestCase):
     @classmethod
     def setUpClass(cls):
         super(QueryTest, cls).setUpClass()
-        cls.api_key = ApiKeyFactory.build(shortname='key', log=True)
+        cls.api_key = ApiKeyFactory.build(shortname='key')
         cls.london = cls.geoip_data['London']
         cls.london_ip = cls.london['ip']
 
@@ -283,12 +283,12 @@ class TestQueryStats(QueryTest):
         return query
 
     def test_no_log(self):
-        api_key = ApiKeyFactory.build(shortname='key', log=False)
-        self._make_query(api_key=api_key)
+        api_key = ApiKeyFactory.build(shortname='key', log_locate=False)
+        self._make_query(api_key=api_key, api_type='locate')
         self.check_stats(total=0)
 
     def test_no_api_key_shortname(self):
-        api_key = ApiKeyFactory.build(shortname=None, log=True)
+        api_key = ApiKeyFactory.build(shortname=None, log_locate=True)
         cell = CellFactory.build()
         self._make_query(api_key=api_key, cell=[cell])
         self.check_stats(counter=[
@@ -353,8 +353,9 @@ class TestResultStats(QueryTest):
         return query
 
     def test_no_log(self):
-        api_key = ApiKeyFactory.build(shortname='key', log=False)
-        self._make_query(self._make_result(), api_key=api_key)
+        api_key = ApiKeyFactory.build(shortname='key', log_locate=False)
+        self._make_query(self._make_result(),
+                         api_key=api_key, api_type='locate')
         self.check_stats(total=0)
 
     def test_region_api(self):
@@ -362,7 +363,8 @@ class TestResultStats(QueryTest):
             self._make_region_result(), api_type='region', ip=self.london_ip)
         self.check_stats(counter=[
             ('region.result',
-                ['key:key', 'region:GB', 'accuracy:low', 'status:hit']),
+                ['key:key', 'region:GB', 'fallback_allowed:false',
+                 'accuracy:low', 'status:hit']),
         ])
 
     def test_none(self):
@@ -374,7 +376,8 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(), ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:GB', 'accuracy:low', 'status:miss']),
+                ['key:key', 'region:GB', 'fallback_allowed:false',
+                 'accuracy:low', 'status:miss']),
         ])
 
     def test_low_hit(self):
@@ -382,7 +385,8 @@ class TestResultStats(QueryTest):
             self._make_result(accuracy=60000.0), ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:GB', 'accuracy:low', 'status:hit']),
+                ['key:key', 'region:GB', 'fallback_allowed:false',
+                 'accuracy:low', 'status:hit']),
         ])
 
     def test_medium_miss(self):
@@ -390,7 +394,8 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(), cell=cells)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:none', 'accuracy:medium', 'status:miss']),
+                ['key:key', 'region:none', 'fallback_allowed:false',
+                 'accuracy:medium', 'status:miss']),
         ])
 
     def test_medium_miss_low(self):
@@ -398,7 +403,8 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(accuracy=60000.0), cell=cells)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:none', 'accuracy:medium', 'status:miss']),
+                ['key:key', 'region:none', 'fallback_allowed:false',
+                 'accuracy:medium', 'status:miss']),
         ])
 
     def test_medium_hit(self):
@@ -406,7 +412,8 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(accuracy=30000.0), cell=cells)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:none', 'accuracy:medium', 'status:hit']),
+                ['key:key', 'region:none', 'fallback_allowed:false',
+                 'accuracy:medium', 'status:hit']),
         ])
 
     def test_high_miss(self):
@@ -414,7 +421,8 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(accuracy=2500.0), wifi=wifis)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:none', 'accuracy:high', 'status:miss']),
+                ['key:key', 'region:none', 'fallback_allowed:false',
+                 'accuracy:high', 'status:miss']),
         ])
 
     def test_high_hit(self):
@@ -422,7 +430,8 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(accuracy=1000.0), wifi=wifis)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:none', 'accuracy:high', 'status:hit']),
+                ['key:key', 'region:none', 'fallback_allowed:false',
+                 'accuracy:high', 'status:hit']),
         ])
 
     def test_mixed_miss(self):
@@ -431,7 +440,8 @@ class TestResultStats(QueryTest):
             self._make_result(accuracy=2001.0), wifi=wifis, ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:GB', 'accuracy:high', 'status:miss']),
+                ['key:key', 'region:GB', 'fallback_allowed:false',
+                 'accuracy:high', 'status:miss']),
         ])
 
     def test_mixed_hit(self):
@@ -440,7 +450,8 @@ class TestResultStats(QueryTest):
             self._make_result(accuracy=500.0), cell=cells, ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:GB', 'accuracy:medium', 'status:hit']),
+                ['key:key', 'region:GB', 'fallback_allowed:false',
+                 'accuracy:medium', 'status:hit']),
         ])
 
 

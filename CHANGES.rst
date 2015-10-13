@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 33d0f7fb4da0: Add api_type specific logging flags to api keys.
+
 - 460ce3d4fe09: Rename columns to region.
 
 - 339d19da63ee: Add new cell OCID tables.
@@ -19,6 +21,8 @@ Migrations
 
 Changes
 ~~~~~~~
+
+- Add new `fallback_allowed` tag to locate metrics.
 
 - Calculate region radii based on precise shapefiles.
 

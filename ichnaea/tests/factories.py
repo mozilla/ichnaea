@@ -89,7 +89,9 @@ class ApiKeyFactory(BaseSQLFactory):
 
     valid_key = FuzzyUUID()
     maxreq = 0
-    log = True
+    log_locate = True
+    log_region = True
+    log_submit = True
     allow_fallback = False
 
     @factory.lazy_attribute

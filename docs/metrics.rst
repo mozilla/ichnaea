@@ -182,6 +182,13 @@ Data sources can be one of:
 ``geoip``
     Data from a GeoIP database.
 
+And finally we add a tag to state whether or not the query was allowed
+to use the fallback source.
+
+``#fallback_allowed:<value>`` : tag
+
+    The value is either `true` or `false`.
+
 
 API Source Metrics
 ------------------

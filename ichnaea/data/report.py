@@ -37,7 +37,7 @@ class ReportQueue(DataTask):
 
     def emit_stats(self, reports, malformed_reports, obs_count):
         api_tag = []
-        if self.api_key and self.api_key.log:
+        if self.api_key and self.api_key.should_log('submit'):
             api_tag = ['key:%s' % self.api_key.name]
 
         if reports > 0:

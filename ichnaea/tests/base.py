@@ -576,8 +576,12 @@ def setup_package(module):
     DBTestCase.setup_tables(engine)
     # always add a test API key
     session = db.session()
-    session.add(ApiKey(valid_key='test', log=True, shortname='test'))
-    session.add(ApiKey(valid_key='export', log=False, shortname='export'))
+    session.add(ApiKey(
+        valid_key='test', shortname='test', allow_fallback=False,
+        log_locate=True, log_region=True, log_submit=True))
+    session.add(ApiKey(
+        valid_key='export', shortname='export', allow_fallback=False,
+        log_locate=False, log_region=False, log_submit=False))
     session.commit()
     session.close()
     db.engine.pool.dispose()

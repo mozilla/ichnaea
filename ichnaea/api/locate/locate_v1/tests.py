@@ -113,7 +113,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             ('request', [self.metric_path, 'method:post', 'status:200']),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.result',
-                ['key:test', 'region:none',
+                ['key:test', 'region:none', 'fallback_allowed:false',
                  'accuracy:medium', 'status:hit', 'source:internal']),
             (self.metric_type + '.source',
                 ['key:test', 'region:none', 'source:internal',
@@ -146,7 +146,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         self.check_stats(counter=[
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.result',
-                ['key:test', 'region:none',
+                ['key:test', 'region:none', 'fallback_allowed:false',
                  'accuracy:high', 'status:hit', 'source:internal']),
             (self.metric_type + '.source',
                 ['key:test', 'region:none', 'source:internal',

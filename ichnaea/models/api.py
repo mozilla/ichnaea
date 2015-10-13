@@ -15,18 +15,20 @@ class ApiKey(_Model):
 
     valid_key = Column(String(40), primary_key=True)
 
-    #: Maximum number of requests per day
-    maxreq = Column(Integer)
-    #: Extended logging enabled?
-    log = Column(Boolean)
-    #: Allow this API key to make external fallback calls
-    allow_fallback = Column(Boolean)
-    #: A readable short name used in metrics
-    shortname = Column(String(40))
+    maxreq = Column(Integer)  #: Maximum number of requests per day.
+    log = Column(Boolean)  # BBB
+    log_locate = Column(Boolean)  #: Extended locate logging enabled?
+    log_region = Column(Boolean)  #: Extended region logging enabled?
+    log_submit = Column(Boolean)  #: Extended submit logging enabled?
+    allow_fallback = Column(Boolean)  #: Use the fallback source?
+    shortname = Column(String(40))  #: A readable short name used in metrics.
 
     @property
     def name(self):
         return self.shortname or self.valid_key
+
+    def should_log(self, api_type):
+        return bool(getattr(self, 'log_%s' % api_type, False))
 
     def __str__(self):  # pragma: no cover
         return '<ApiKey>: %s' % self.name

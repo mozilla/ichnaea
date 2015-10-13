@@ -33,7 +33,7 @@ class TestUploader(BaseExportTest):
             self.redis_client, config)
 
     def test_stats(self):
-        self.session.add(ApiKey(valid_key='e5444-794', log=True))
+        self.session.add(ApiKey(valid_key='e5444-794', log_submit=True))
         self.session.flush()
 
         self.add_reports(3, email='secretemail@localhost',

@@ -20,7 +20,7 @@ class SourceTest(object):
     @classmethod
     def setUpClass(cls):
         super(SourceTest, cls).setUpClass()
-        cls.api_key = ApiKeyFactory.build(shortname='key', log=True)
+        cls.api_key = ApiKeyFactory.build(shortname='key')
         cls.source = cls.TestSource(
             settings={'foo': '1'},
             geoip_db=cls.geoip_db,

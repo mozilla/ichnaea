@@ -289,7 +289,8 @@ class Query(object):
 
     def collect_metrics(self):
         """Should detailed metrics be collected for this query?"""
-        allowed = bool(self.api_key and self.api_key.log and self.api_type)
+        allowed = bool(self.api_key and self.api_type and
+                       self.api_key.should_log(self.api_type))
         # don't report stats if there is no data at all in the query
         possible_result = bool(self.expected_accuracy != DataAccuracy.none)
         return (allowed and possible_result)
@@ -328,8 +329,11 @@ class Query(object):
         if not self.collect_metrics():
             return
 
+        allow_fallback = self.api_key and self.api_key.allow_fallback or False
+        allow_fallback = str(bool(allow_fallback)).lower()
         status = self.result_status(result)
         tags = [
+            'fallback_allowed:%s' % allow_fallback,
             'accuracy:%s' % self.expected_accuracy.name,
             'status:%s' % status,
         ]
