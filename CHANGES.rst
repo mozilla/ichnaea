@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 582ef9419c6a: Add region stat table.
+
 - 238aca86fe8d: Change cell_area primary key.
 
 - 3fd11bfaca02: Drop api_key log column.

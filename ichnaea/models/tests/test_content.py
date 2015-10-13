@@ -3,6 +3,7 @@ from ichnaea.models.content import (
     encode_datamap_grid,
     DataMap,
     MapStat,
+    RegionStat,
     Score,
     ScoreKey,
     Stat,
@@ -105,6 +106,21 @@ class TestMapStat(DBTestCase):
         self.assertEqual(result.lat, 12345)
         self.assertEqual(result.lon, -23456)
         self.assertEqual(result.time, today)
+
+
+class TestRegionStat(DBTestCase):
+
+    def test_fields(self):
+        self.session.add(RegionStat(
+            region='GB', gsm=1, wcdma=2, lte=3, wifi=4))
+        self.session.flush()
+
+        result = self.session.query(RegionStat).first()
+        self.assertEqual(result.region, 'GB')
+        self.assertEqual(result.gsm, 1)
+        self.assertEqual(result.wcdma, 2)
+        self.assertEqual(result.lte, 3)
+        self.assertEqual(result.wifi, 4)
 
 
 class TestScore(DBTestCase):

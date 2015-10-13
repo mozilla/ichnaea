@@ -8,6 +8,7 @@ from sqlalchemy import (
     Date,
     Index,
     PrimaryKeyConstraint,
+    String,
     Unicode,
     UniqueConstraint,
 )
@@ -149,6 +150,20 @@ class MapStat(HashKeyQueryMixin, _Model):
             int(round(lat_value * cls._scaling_factor)),
             int(round(lon_value * cls._scaling_factor)),
         )
+
+
+class RegionStat(_Model):
+    __tablename__ = 'region_stat'
+
+    _indices = (
+        PrimaryKeyConstraint('region'),
+    )
+
+    region = Column(String(2))
+    gsm = Column(Integer(unsigned=True))
+    wcdma = Column(Integer(unsigned=True))
+    lte = Column(Integer(unsigned=True))
+    wifi = Column(BigInteger(unsigned=True))
 
 
 class ScoreHashKey(HashKey):

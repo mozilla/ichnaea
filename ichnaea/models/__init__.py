@@ -19,7 +19,9 @@ from ichnaea.models.cell import (  # NOQA
     Radio,
 )
 from ichnaea.models.content import (  # NOQA
+    DataMap,
     MapStat,
+    RegionStat,
     Score,
     ScoreKey,
     Stat,
