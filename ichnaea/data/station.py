@@ -190,8 +190,8 @@ class CellUpdater(StationUpdater):
                 created = first_blocked
             values.update({
                 'created': created,
-                'range': 0,
-                'total_measures': 0,
+                'radius': 0,
+                'samples': 0,
             })
 
         if (station is not None and
@@ -238,9 +238,9 @@ class CellUpdater(StationUpdater):
 
         # increase total counter
         if station is not None:
-            values['total_measures'] = station.samples + obs_length
+            values['samples'] = station.samples + obs_length
         else:
-            values['total_measures'] = obs_length
+            values['samples'] = obs_length
 
         # update max/min lat/lon columns
         values['min_lat'] = float(min_lat)
@@ -248,8 +248,8 @@ class CellUpdater(StationUpdater):
         values['max_lat'] = float(max_lat)
         values['max_lon'] = float(max_lon)
 
-        # give radio-range estimate between extreme values and centroid
-        values['range'] = circle_radius(
+        # give radius estimate between extreme values and centroid
+        values['radius'] = circle_radius(
             values['lat'], values['lon'],
             max_lat, max_lon, min_lat, min_lon)
 

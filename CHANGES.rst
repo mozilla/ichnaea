@@ -11,6 +11,7 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 2c709f81a660: Rename cell/area columns to radius/samples.
 
 Changes
 ~~~~~~~

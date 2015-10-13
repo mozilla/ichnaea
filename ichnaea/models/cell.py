@@ -20,10 +20,6 @@ from sqlalchemy.dialects.mysql import (
 )
 from sqlalchemy.types import TypeDecorator
 
-from ichnaea.constants import (
-    CELL_MIN_ACCURACY,
-    CELLAREA_MIN_ACCURACY,
-)
 from ichnaea.geocode import GEOCODER
 from ichnaea.models.base import (
     _Model,
@@ -340,8 +336,8 @@ class ValidCellAreaSchema(ValidCellAreaKeySchema,
                           ValidTimeTrackingSchema):
 
     # areaid is a derived value
-    range = colander.SchemaNode(colander.Integer(), missing=0)
-    avg_cell_range = colander.SchemaNode(colander.Integer(), missing=0)
+    radius = colander.SchemaNode(colander.Integer(), missing=0)
+    avg_cell_radius = colander.SchemaNode(colander.Integer(), missing=0)
     num_cells = colander.SchemaNode(colander.Integer(), missing=0)
 
 
@@ -361,8 +357,8 @@ class CellArea(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
                  autoincrement=False, default=None)
 
     areaid = Column(CellAreaColumn(7), nullable=False)
-    range = Column(Integer)
-    avg_cell_range = Column(Integer)
+    radius = Column(Integer)
+    avg_cell_radius = Column(Integer)
     num_cells = Column(Integer(unsigned=True))
 
     @classmethod
@@ -377,16 +373,6 @@ class CellArea(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
                 validated['lac'],
             )
         return validated
-
-    @property
-    def radius(self):
-        # BBB: alias
-        return CELLAREA_MIN_ACCURACY
-
-    @property
-    def avg_cell_radius(self):
-        # BBB: alias
-        return CELLAREA_MIN_ACCURACY
 
 
 class OCIDCellArea(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
@@ -497,8 +483,8 @@ class ValidCellSchema(ValidCellKeySchema, ValidBboxSchema,
                       ValidPositionSchema, ValidTimeTrackingSchema):
     """A schema which validates the fields in a cell."""
 
-    range = colander.SchemaNode(colander.Integer(), missing=0)
-    total_measures = colander.SchemaNode(colander.Integer(), missing=0)
+    radius = colander.SchemaNode(colander.Integer(), missing=0)
+    samples = colander.SchemaNode(colander.Integer(), missing=0)
 
 
 class Cell(BboxMixin, PositionMixin, TimeTrackingMixin,
@@ -522,23 +508,13 @@ class Cell(BboxMixin, PositionMixin, TimeTrackingMixin,
                  autoincrement=False, default=None)
     cid = Column(Integer(unsigned=True), autoincrement=False, default=None)
     psc = Column(SmallInteger, autoincrement=False)
-    range = Column(Integer)
-    total_measures = Column(Integer(unsigned=True))
+    radius = Column(Integer)
+    samples = Column(Integer(unsigned=True))
     new_measures = Column(Integer(unsigned=True))
 
     @property
     def areaid(self):
         return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)
-
-    @property
-    def radius(self):
-        # BBB: alias
-        return CELL_MIN_ACCURACY
-
-    @property
-    def samples(self):
-        # BBB: alias
-        return self.total_measures
 
 
 class OCIDCell(PositionMixin, TimeTrackingMixin,

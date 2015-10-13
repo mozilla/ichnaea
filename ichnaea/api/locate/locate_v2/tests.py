@@ -1,5 +1,4 @@
 import colander
-import unittest2 as unittest
 
 from ichnaea.models import Radio
 from ichnaea.api.locate.locate_v2.schema import LOCATE_V2_SCHEMA
@@ -228,10 +227,9 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         res = self._call(body=query)
         self.check_model_response(res, cell)
 
-    @unittest.skip('Skip range/radius check.')
     def test_inconsistent_cell_radio(self):
-        cell = CellFactory(radio=Radio.wcdma, range=15000)
-        cell2 = CellFactory(radio=Radio.gsm, range=35000,
+        cell = CellFactory(radio=Radio.wcdma, radius=15000)
+        cell2 = CellFactory(radio=Radio.gsm, radius=35000,
                             lat=cell.lat + 0.0002, lon=cell.lon)
         self.session.flush()
 
@@ -245,10 +243,9 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         res = self._call(body=query)
         self.check_model_response(res, cell)
 
-    @unittest.skip('Skip range/radius check.')
     def test_inconsistent_cell_radio_type(self):
-        cell = CellFactory(radio=Radio.wcdma, range=15000)
-        cell2 = CellFactory(radio=Radio.gsm, range=35000,
+        cell = CellFactory(radio=Radio.wcdma, radius=15000)
+        cell2 = CellFactory(radio=Radio.gsm, radius=35000,
                             lat=cell.lat + 0.0002, lon=cell.lon)
         self.session.flush()
 
@@ -262,8 +259,8 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
     def test_cdma_cell(self):
         # Specifying a CDMA radio type works,
         # but the information is ignored.
-        cell = CellFactory(radio=Radio.gsm, range=15000)
-        cell2 = CellFactory(radio=Radio.gsm, range=35000,
+        cell = CellFactory(radio=Radio.gsm, radius=15000)
+        cell2 = CellFactory(radio=Radio.gsm, radius=35000,
                             lat=cell.lat + 0.0002, lon=cell.lon)
         cell2.radio = Radio.cdma
         self.session.flush()

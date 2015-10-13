@@ -64,7 +64,7 @@ class CellAreaUpdater(DataTask):
     def update_area(self, areaid):
         radio, mcc, mnc, lac = decode_cellarea(areaid)
         # Select all cells in this area and derive a bounding box for them
-        load_fields = ('lat', 'lon', 'range',
+        load_fields = ('lat', 'lon', 'radius',
                        'max_lat', 'max_lon', 'min_lat', 'min_lon')
         cells = (self.session.query(self.cell_model)
                              .options(load_only(*load_fields))
@@ -104,8 +104,8 @@ class CellAreaUpdater(DataTask):
                 ctr_lat, ctr_lon,
                 max_lat, max_lon, min_lat, min_lon)
 
-            cell_radii = numpy.array([  # BBB
-                (numpy.nan if cell.range is None else cell.range)
+            cell_radii = numpy.array([
+                (numpy.nan if cell.radius is None else cell.radius)
                 for cell in cells
             ], dtype=numpy.int32)
             avg_cell_radius = int(round(numpy.nanmean(cell_radii)))
@@ -119,8 +119,8 @@ class CellAreaUpdater(DataTask):
                     modified=self.utcnow,
                     lat=ctr_lat,
                     lon=ctr_lon,
-                    range=radius,
-                    avg_cell_range=avg_cell_radius,
+                    radius=radius,
+                    avg_cell_radius=avg_cell_radius,
                     num_cells=num_cells,
                     radio=radio,
                     mcc=mcc,
@@ -133,8 +133,8 @@ class CellAreaUpdater(DataTask):
                 area.modified = self.utcnow
                 area.lat = ctr_lat
                 area.lon = ctr_lon
-                area.range = radius
-                area.avg_cell_range = avg_cell_radius
+                area.radius = radius
+                area.avg_cell_radius = avg_cell_radius
                 area.num_cells = num_cells
 
 

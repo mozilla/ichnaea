@@ -144,7 +144,7 @@ class CellPositionFactory(CellKeyFactory, CellAreaPositionFactory):
 
 class CellFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
 
-    range = CELL_MIN_ACCURACY / 2.0
+    radius = CELL_MIN_ACCURACY / 2.0
 
     class Meta:
         model = Cell.create
@@ -161,7 +161,7 @@ class CellOCIDFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
 
 class CellAreaFactory(CellAreaPositionFactory, BboxFactory, BaseSQLFactory):
 
-    range = CELLAREA_MIN_ACCURACY / 2.0
+    radius = CELLAREA_MIN_ACCURACY / 2.0
 
     class Meta:
         model = CellArea.create

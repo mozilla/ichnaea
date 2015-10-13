@@ -19,23 +19,6 @@ from ichnaea.models import (
 )
 from ichnaea import util
 
-CELL_POS = {
-    'radio': 0,
-    'mcc': 1,
-    'mnc': 2,
-    'lac': 3,
-    'cid': 4,
-    'psc': 5,
-    'lon': 6,
-    'lat': 7,
-    'range': 8,
-    'samples': 9,
-    'changeable': 10,
-    'created': 11,
-    'updated': 12,
-    'averageSignal': 13,
-}
-
 
 def write_stations_to_csv(session, path, start_time=None, end_time=None):
     where = 'radio != 1 AND lat IS NOT NULL AND lon IS NOT NULL'
@@ -52,7 +35,7 @@ def write_stations_to_csv(session, path, start_time=None, end_time=None):
     header_row = ','.join(header_row) + '\n'
 
     table = Cell.__tablename__
-    stmt = """SELECT
+    stmt = '''SELECT
     CONCAT_WS(",",
         CASE radio
             WHEN 0 THEN "GSM"
@@ -67,8 +50,8 @@ def write_stations_to_csv(session, path, start_time=None, end_time=None):
         COALESCE(`psc`, ""),
         ROUND(`lon`, 7),
         ROUND(`lat`, 7),
-        COALESCE(`range`, "0"),
-        COALESCE(`total_measures`, "0"),
+        COALESCE(`radius`, "0"),
+        COALESCE(`samples`, "0"),
         "1",
         COALESCE(UNIX_TIMESTAMP(`created`), ""),
         COALESCE(UNIX_TIMESTAMP(`modified`), ""),
@@ -79,7 +62,7 @@ WHERE %s
 ORDER BY `radio`, `mcc`, `mnc`, `lac`, `cid`
 LIMIT :l
 OFFSET :o
-""" % (table, where)
+''' % (table, where)
     stmt = text(stmt)
 
     limit = 10000
@@ -150,6 +133,21 @@ class CellExport(object):
 class ImportBase(object):
 
     batch_size = 10000
+    import_spec = [
+        ('mcc', 1, None, int),
+        ('mnc', 2, None, int),
+        ('lac', 3, None, int),
+        ('cid', 4, None, int),
+        ('psc', 5, None, int),
+        ('lon', 6, None, float),
+        ('lat', 7, None, float),
+        ('radius', 8, 0, int),
+        ('samples', 9, 0, int),
+        # skip changeable
+        ('created', 11, 0, int),
+        ('modified', 12, 0, int),
+        # skip averageSignal
+    ]
 
     def __init__(self, task, cell_type='ocid'):
         self.task = task
@@ -163,30 +161,8 @@ class ImportBase(object):
             self.area_queue = task.app.data_queues['update_cellarea']
             self.stat_key = StatKey.unique_cell
 
-        self.import_spec = [
-            ('mcc', 1, None, int),
-            ('mnc', 2, None, int),
-            ('lac', 3, None, int),
-            ('cid', 4, None, int),
-            ('psc', 5, None, int),
-            ('lon', 6, None, float),
-            ('lat', 7, None, float),
-            ('created', 11, 0, int),
-            ('modified', 12, 0, int),
-        ]
-        if self.cell_type == 'ocid':
-            self.import_spec.extend([
-                ('radius', 8, 0, int),
-                ('samples', 9, 0, int),
-            ])
-        else:  # pragma: no cover
-            self.import_spec.extend([
-                ('range', 8, 0, int),
-                ('total_measures', 9, 0, int),
-            ])
-
     @staticmethod
-    def make_import_dict(validate, radius_field, import_spec, row):
+    def make_import_dict(validate, import_spec, row):
         data = {}
 
         # parse radio field
@@ -211,7 +187,7 @@ class ImportBase(object):
         data['modified'] = datetime.utcfromtimestamp(data['modified'])
         data['max_lat'], data['min_lat'], \
             data['max_lon'], data['min_lon'] = geocalc.bbox(
-                data['lat'], data['lon'], data[radius_field])
+                data['lat'], data['lon'], data['radius'])
 
         validated = validate(data)
         if validated is None:
@@ -227,27 +203,17 @@ class ImportBase(object):
         today = util.utcnow().date()
 
         on_duplicate = (
-            'modified = values(modified)'
-            ', lat = values(lat)'
-            ', lon = values(lon)'
-            ', psc = values(psc)'
-            ', max_lat = values(max_lat)'
-            ', min_lat = values(min_lat)'
-            ', max_lon = values(max_lon)'
-            ', min_lon = values(min_lon)'
+            '`modified` = values(`modified`)'
+            ', `lat` = values(`lat`)'
+            ', `lon` = values(`lon`)'
+            ', `psc` = values(`psc`)'
+            ', `max_lat` = values(`max_lat`)'
+            ', `min_lat` = values(`min_lat`)'
+            ', `max_lon` = values(`max_lon`)'
+            ', `min_lon` = values(`min_lon`)'
+            ', `radius` = values(`radius`)'
+            ', `samples` = values(`samples`)'
         )
-        if self.cell_type == 'ocid':
-            radius_field = 'radius'
-            on_duplicate += (
-                ', `radius` = values(`radius`)'
-                ', `samples` = values(`samples`)'
-            )
-        elif self.cell_type == 'cell':  # pragma: no cover
-            radius_field = 'range'
-            on_duplicate += (
-                ', `range` = values(`range`)'
-                ', `total_measures` = values(`total_measures`)'
-            )
 
         table_insert = self.cell_model.__table__.insert(
             mysql_on_duplicate=on_duplicate)
@@ -269,7 +235,6 @@ class ImportBase(object):
                 csv_reader = csv.reader(gzip_file)
                 parse_row = partial(self.make_import_dict,
                                     self.cell_model.validate,
-                                    radius_field,
                                     self.import_spec)
                 rows = []
                 for row in csv_reader:

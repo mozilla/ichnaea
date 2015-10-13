@@ -101,7 +101,7 @@ class TestCell(DBTestCase):
     def test_fields(self):
         self.session.add(Cell.create(
             radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=1234, cid=23456,
-            lat=GB_LAT, lon=GB_LON, range=10, total_measures=15))
+            lat=GB_LAT, lon=GB_LON, radius=10, samples=15))
         self.session.flush()
 
         result = self.session.query(Cell).first()
@@ -112,10 +112,8 @@ class TestCell(DBTestCase):
         self.assertEqual(result.cid, 23456)
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
-        self.assertTrue(result.radius > 0)  # BBB
-        self.assertTrue(result.samples > 0)  # BBB
-        self.assertEqual(result.range, 10)  # BBB
-        self.assertEqual(result.total_measures, 15)  # BBB
+        self.assertEqual(result.radius, 10)
+        self.assertEqual(result.samples, 15)
 
 
 class TestCellOCID(DBTestCase):
@@ -292,7 +290,7 @@ cast(conv(substr(hex(`areaid`), 11, 4), 16, 10) as unsigned)
             areaid=(Radio.wcdma, GB_MCC, GB_MNC, 1234),
             radio=Radio.wcdma, mcc=GB_MCC, mnc=GB_MNC, lac=1234,
             lat=GB_LAT, lon=GB_LON,
-            range=10, avg_cell_range=10, num_cells=15))
+            radius=10, avg_cell_radius=10, num_cells=15))
         self.session.flush()
 
         result = self.session.query(CellArea).first()
@@ -303,10 +301,8 @@ cast(conv(substr(hex(`areaid`), 11, 4), 16, 10) as unsigned)
         self.assertEqual(result.lac, 1234)
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
-        self.assertTrue(result.radius > 0)  # BBB
-        self.assertTrue(result.avg_cell_radius > 10)  # BBB
-        self.assertEqual(result.range, 10)  # BBB
-        self.assertEqual(result.avg_cell_range, 10)  # BBB
+        self.assertEqual(result.radius, 10)
+        self.assertEqual(result.avg_cell_radius, 10)
         self.assertEqual(result.num_cells, 15)
 
 

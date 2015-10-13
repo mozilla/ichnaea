@@ -104,7 +104,7 @@ class TestCell(StationTest):
         # a cell with an entry but no prior position
         cell = cells[0]
         cell_key = cell.hashkey().__dict__
-        cell.total_measures = 0
+        cell.samples = 0
         obs.extend([
             obs_factory(lat=cell.lat + 0.01,
                         lon=cell.lon + 0.01, **cell_key),
@@ -118,7 +118,7 @@ class TestCell(StationTest):
         # a cell with a prior known position
         cell = cells[1]
         cell_key = cell.hashkey().__dict__
-        cell.total_measures = 1
+        cell.samples = 1
         cell.lat += 0.1
         obs.extend([
             obs_factory(lat=cell.lat + 1.0,
@@ -130,7 +130,7 @@ class TestCell(StationTest):
         # a cell with a very different prior position
         cell = cells[2]
         cell_key = cell.hashkey().__dict__
-        cell.total_measures = 1
+        cell.samples = 1
         obs.extend([
             obs_factory(lat=cell.lat + 3.0,
                         lon=cell.lon, **cell_key),
@@ -141,7 +141,7 @@ class TestCell(StationTest):
         # another cell with a prior known position (and negative lon)
         cell = cells[3]
         cell_key = cell.hashkey().__dict__
-        cell.total_measures = 1
+        cell.samples = 1
         cell.lon *= -1.0
         obs.extend([
             obs_factory(lat=cell.lat + 1.0,
@@ -278,7 +278,7 @@ class TestCell(StationTest):
             obs = CellObservationFactory.build(**kw)
             observations.append(obs)
 
-        cell1 = CellFactory(total_measures=3)
+        cell1 = CellFactory(samples=3)
         lat1, lon1 = (cell1.lat, cell1.lon)
         key1 = dict(radio=cell1.radio, lac=cell1.lac, cid=cell1.cid)
         obs_factory(lat=lat1, lon=lon1, created=now, **key1)
@@ -288,13 +288,13 @@ class TestCell(StationTest):
         obs_factory(created=now, **invalid_key)
         obs_factory(created=now, **invalid_key)
 
-        cell2 = CellFactory(lat=lat1 + 1.0, lon=lon1 + 1.0, total_measures=3)
+        cell2 = CellFactory(lat=lat1 + 1.0, lon=lon1 + 1.0, samples=3)
         lat2, lon2 = (cell2.lat, cell2.lon)
         key2 = dict(radio=cell2.radio, lac=cell2.lac, cid=cell2.cid)
         obs_factory(lat=lat2 + 0.001, lon=lon2 + 0.002, created=now, **key2)
         obs_factory(lat=lat2 + 0.003, lon=lon2 + 0.006, created=now, **key2)
 
-        cell3 = CellFactory(total_measures=100000)
+        cell3 = CellFactory(samples=100000)
         lat3, lon3 = (cell3.lat, cell3.lon)
         key3 = dict(radio=cell3.radio, lac=cell3.lac, cid=cell3.cid)
         for i in range(10):
@@ -322,7 +322,7 @@ class TestCell(StationTest):
                 self.assertAlmostEqual(cell.lon, expected_lon, 7)
 
     def test_max_min_radius_update(self):
-        cell = CellFactory(range=150, total_measures=3)
+        cell = CellFactory(radius=150, samples=3)
         cell_lat = cell.lat
         cell_lon = cell.lon
         cell.max_lat = cell.lat + 0.001
@@ -350,8 +350,8 @@ class TestCell(StationTest):
         self.assertAlmostEqual(cell.lon, cell_lon - 0.0016)
         self.assertAlmostEqual(cell.max_lon, cell_lon + 0.001)
         self.assertAlmostEqual(cell.min_lon, cell_lon - 0.006)
-        self.assertEqual(cell.range, 468)  # BBB
-        self.assertEqual(cell.total_measures, 5)  # BBB
+        self.assertEqual(cell.radius, 468)
+        self.assertEqual(cell.samples, 5)
 
 
 class TestWifi(StationTest):
