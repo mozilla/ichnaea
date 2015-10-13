@@ -40,6 +40,7 @@ class TestArea(CeleryTestCase):
         self.assertAlmostEqual(area.lat, cell.lat)
         self.assertAlmostEqual(area.lon, cell.lon)
         self.assertEqual(area.radius, 0)
+        self.assertEqual(area.region, 'GB')
         self.assertEqual(area.num_cells, 1)
         self.assertEqual(area.avg_cell_radius, cell.radius)
 
@@ -67,6 +68,7 @@ class TestArea(CeleryTestCase):
         self.assertAlmostEqual(area.lat, cell.lat)
         self.assertAlmostEqual(area.lon, cell.lon)
         self.assertEqual(area.radius, 0)
+        self.assertEqual(area.region, 'GB')
         self.assertEqual(area.num_cells, 1)
         self.assertEqual(area.avg_cell_radius, 200)
 
