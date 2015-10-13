@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 3fd11bfaca02: Drop api_key log column.
+
 - 583a68296584: Drop old OCID cell/area tables.
 
 - 2c709f81a660: Rename cell/area columns to radius/samples.

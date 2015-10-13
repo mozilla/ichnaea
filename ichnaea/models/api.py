@@ -16,7 +16,6 @@ class ApiKey(_Model):
     valid_key = Column(String(40), primary_key=True)
 
     maxreq = Column(Integer)  #: Maximum number of requests per day.
-    log = Column(Boolean)  # BBB
     log_locate = Column(Boolean)  #: Extended locate logging enabled?
     log_region = Column(Boolean)  #: Extended region logging enabled?
     log_submit = Column(Boolean)  #: Extended submit logging enabled?
