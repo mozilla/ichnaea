@@ -9,6 +9,7 @@ import shapely.geometry
 import shapely.ops
 
 from ichnaea import geocalc
+from ichnaea import util
 
 DATELINE_EAST = shapely.geometry.box(180.0, -90.0, 270.0, 90.0)
 DATELINE_WEST = shapely.geometry.box(-270.0, -90.0, -180.0, 90.0)
@@ -223,7 +224,8 @@ def main():
     data = json.loads(jsondata)
     simplified = simplify(data['features'])
     output = to_geojson(simplified)
-    with open('ichnaea/regions.geojson', 'w') as fd:
+    with util.gzip_open('ichnaea/regions.geojson.gz',
+                        'w', compresslevel=7) as fd:
         fd.write(output)
 
 if __name__ == '__main__':

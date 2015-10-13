@@ -12,8 +12,10 @@ from shapely import prepared
 import simplejson
 from rtree import index
 
+from ichnaea import util
+
 JSON_FILE = os.path.join(os.path.abspath(
-    os.path.dirname(__file__)), 'regions.geojson')
+    os.path.dirname(__file__)), 'regions.geojson.gz')
 
 DATELINE_EAST = geometry.box(180.0, -90.0, 270.0, 90.0)
 DATELINE_WEST = geometry.box(-270.0, -90.0, -180.0, 90.0)
@@ -47,7 +49,7 @@ class Geocoder(object):
         self._tree_ids = {}
         self._radii = {}
 
-        with open(json_file, 'r') as fd:
+        with util.gzip_open(json_file, 'r') as fd:
             data = simplejson.load(fd)
 
         genc_regions = frozenset([rec.alpha2 for rec in genc.REGIONS])
