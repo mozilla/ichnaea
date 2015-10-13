@@ -17,6 +17,7 @@ from sqlalchemy.dialects.mysql import (
     SMALLINT as SmallInteger,
     TINYINT as TinyInteger,
 )
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.types import TypeDecorator
 
 from ichnaea.geocode import GEOCODER
@@ -335,50 +336,6 @@ class ValidCellAreaSchema(ValidCellAreaKeySchema,
                           ValidTimeTrackingSchema):
 
     # areaid is a derived value
-    radius = colander.SchemaNode(colander.Integer(), missing=0)
-    avg_cell_radius = colander.SchemaNode(colander.Integer(), missing=0)
-    num_cells = colander.SchemaNode(colander.Integer(), missing=0)
-
-
-class CellArea(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
-    __tablename__ = 'cell_area'
-
-    _indices = (
-        PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac'),
-        UniqueConstraint('areaid', name='cell_area_areaid_unique'),
-    )
-    _valid_schema = ValidCellAreaSchema()
-
-    radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
-    mcc = Column(SmallInteger, autoincrement=False, default=None)
-    mnc = Column(SmallInteger, autoincrement=False, default=None)
-    lac = Column(SmallInteger(unsigned=True),
-                 autoincrement=False, default=None)
-
-    areaid = Column(CellAreaColumn(7), nullable=False)
-    radius = Column(Integer)
-    avg_cell_radius = Column(Integer)
-    num_cells = Column(Integer(unsigned=True))
-
-    @classmethod
-    def validate(cls, entry, _raise_invalid=False, **kw):
-        validated = super(CellArea, cls).validate(
-            entry, _raise_invalid=_raise_invalid, **kw)
-        if validated is not None and 'areaid' not in validated:
-            validated['areaid'] = (
-                validated['radio'],
-                validated['mcc'],
-                validated['mnc'],
-                validated['lac'],
-            )
-        return validated
-
-
-class ValidCellAreaOCIDSchema(ValidCellAreaKeySchema,
-                              ValidPositionSchema,
-                              ValidTimeTrackingSchema):
-
-    # areaid is a derived value
     radius = colander.SchemaNode(
         colander.Integer(), missing=0,
         validator=colander.Range(0, constants.CELLAREA_MAX_RADIUS))
@@ -387,19 +344,9 @@ class ValidCellAreaOCIDSchema(ValidCellAreaKeySchema,
     num_cells = colander.SchemaNode(colander.Integer(), missing=0)
 
 
-class CellAreaOCID(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
-    __tablename__ = 'cell_area_ocid'
+class CellAreaMixin(PositionMixin, TimeTrackingMixin, CreationMixin):
 
-    _indices = (
-        PrimaryKeyConstraint('areaid'),
-        UniqueConstraint('radio', 'mcc', 'mnc', 'lac',
-                         name='cell_area_ocid_areaid_unique'),
-        Index('cell_area_ocid_region_radio_idx', 'region', 'radio'),
-        Index('cell_area_ocid_created_idx', 'created'),
-        Index('cell_area_ocid_modified_idx', 'modified'),
-        Index('cell_area_ocid_latlon_idx', 'lat', 'lon'),
-    )
-    _valid_schema = ValidCellAreaOCIDSchema()
+    _valid_schema = ValidCellAreaSchema()
 
     areaid = Column(CellAreaColumn(7))
     radio = Column(TinyIntEnum(Radio), autoincrement=False, nullable=False)
@@ -413,19 +360,31 @@ class CellAreaOCID(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
     avg_cell_radius = Column(Integer(unsigned=True))
     num_cells = Column(Integer(unsigned=True))
 
+    @declared_attr
+    def __table_args__(cls):  # NOQA
+        prefix = cls.__tablename__
+        _indices = (
+            PrimaryKeyConstraint('areaid'),
+            UniqueConstraint('radio', 'mcc', 'mnc', 'lac',
+                             name='%s_areaid_unique' % prefix),
+            Index('%s_region_radio_idx' % prefix, 'region', 'radio'),
+            Index('%s_created_idx' % prefix, 'created'),
+            Index('%s_modified_idx' % prefix, 'modified'),
+            Index('%s_latlon_idx' % prefix, 'lat', 'lon'),
+        )
+        return _indices + (cls._settings, )
+
     @classmethod
     def validate(cls, entry, _raise_invalid=False, **kw):
-        validated = super(CellAreaOCID, cls).validate(
+        validated = super(CellAreaMixin, cls).validate(
             entry, _raise_invalid=_raise_invalid, **kw)
-
-        if validated is not None:
-            if 'areaid' not in validated or not validated['areaid']:
-                validated['areaid'] = (
-                    validated['radio'],
-                    validated['mcc'],
-                    validated['mnc'],
-                    validated['lac'],
-                )
+        if validated is not None and 'areaid' not in validated:
+            validated['areaid'] = (
+                validated['radio'],
+                validated['mcc'],
+                validated['mnc'],
+                validated['lac'],
+            )
 
             if (('region' not in validated or not validated['region']) and
                     validated['lat'] is not None and
@@ -434,6 +393,14 @@ class CellAreaOCID(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
                     validated['lat'], validated['lon'], validated['mcc'])
 
         return validated
+
+
+class CellArea(CellAreaMixin, _Model):
+    __tablename__ = 'cell_area'
+
+
+class CellAreaOCID(CellAreaMixin, _Model):
+    __tablename__ = 'cell_area_ocid'
 
 
 class CellBlocklist(HashKeyQueryMixin, _Model):
@@ -460,7 +427,9 @@ class ValidCellSchema(ValidCellKeySchema, ValidBboxSchema,
                       ValidPositionSchema, ValidTimeTrackingSchema):
     """A schema which validates the fields in a cell."""
 
-    radius = colander.SchemaNode(colander.Integer(), missing=0)
+    radius = colander.SchemaNode(
+        colander.Integer(), missing=0,
+        validator=colander.Range(0, constants.CELL_MAX_RADIUS))
     samples = colander.SchemaNode(colander.Integer(), missing=0)
 
 

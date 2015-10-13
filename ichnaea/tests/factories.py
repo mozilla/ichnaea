@@ -162,6 +162,7 @@ class CellOCIDFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
 class CellAreaFactory(CellAreaPositionFactory, BboxFactory, BaseSQLFactory):
 
     radius = CELLAREA_MIN_ACCURACY / 2.0
+    region = 'GB'
 
     class Meta:
         model = CellArea.create

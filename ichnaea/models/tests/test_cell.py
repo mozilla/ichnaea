@@ -289,7 +289,7 @@ cast(conv(substr(hex(`areaid`), 11, 4), 16, 10) as unsigned)
         self.session.add(CellArea.create(
             areaid=(Radio.wcdma, GB_MCC, GB_MNC, 1234),
             radio=Radio.wcdma, mcc=GB_MCC, mnc=GB_MNC, lac=1234,
-            lat=GB_LAT, lon=GB_LON,
+            lat=GB_LAT, lon=GB_LON, region='GB',
             radius=10, avg_cell_radius=10, num_cells=15))
         self.session.flush()
 
@@ -302,6 +302,7 @@ cast(conv(substr(hex(`areaid`), 11, 4), 16, 10) as unsigned)
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
         self.assertEqual(result.radius, 10)
+        self.assertEqual(result.region, 'GB')
         self.assertEqual(result.avg_cell_radius, 10)
         self.assertEqual(result.num_cells, 15)
 

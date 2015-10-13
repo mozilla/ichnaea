@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 238aca86fe8d: Change cell_area primary key.
+
 - 3fd11bfaca02: Drop api_key log column.
 
 - 583a68296584: Drop old OCID cell/area tables.
