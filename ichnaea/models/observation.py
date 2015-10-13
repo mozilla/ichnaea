@@ -2,6 +2,7 @@ import operator
 
 import colander
 
+from ichnaea.geocode import GEOCODER
 from ichnaea.models.base import (
     CreationMixin,
     ValidationMixin,
@@ -26,7 +27,6 @@ from ichnaea.models.schema import (
 from ichnaea.models.wifi import (
     ValidWifiSignalSchema,
 )
-from ichnaea.region import GEOCODER
 
 
 class CellKeyPsc(CellHashKey):

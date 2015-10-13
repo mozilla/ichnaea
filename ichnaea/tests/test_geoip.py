@@ -7,12 +7,8 @@ from ichnaea.constants import (
     GEOIP_CITY_ACCURACY,
     GEOIP_REGION_ACCURACY,
 )
+from ichnaea.geocode import GEOCODER
 from ichnaea import geoip
-from ichnaea.geoip import (
-    GEOIP_REGIONS,
-    GEOIP_GENC_MAP,
-)
-from ichnaea.region import GEOCODER
 from ichnaea.tests.base import (
     GEOIP_BAD_FILE,
     GeoIPTestCase,
@@ -67,7 +63,8 @@ class TestDatabase(GeoIPTestCase):
 
     def test_regions(self):
         valid_regions = GEOCODER.valid_regions
-        mapped_regions = set([GEOIP_GENC_MAP.get(r, r) for r in GEOIP_REGIONS])
+        mapped_regions = set([geoip.GEOIP_GENC_MAP.get(r, r)
+                              for r in geoip.GEOIP_REGIONS])
         self.assertEqual(mapped_regions - valid_regions, set())
         for region in mapped_regions:
             accuracy, region_accuracy = self.geoip_db.accuracy(

@@ -30,6 +30,7 @@ from ichnaea.cache import configure_redis
 from ichnaea.config import DummyConfig
 from ichnaea.constants import GEOIP_CITY_ACCURACY
 from ichnaea.db import configure_db
+from ichnaea.geocode import GEOCODER
 from ichnaea.geoip import configure_geoip
 from ichnaea.http import configure_http_session
 from ichnaea.log import (
@@ -39,7 +40,6 @@ from ichnaea.log import (
     DebugStatsClient,
 )
 from ichnaea.models import _Model, ApiKey
-from ichnaea.region import GEOCODER
 from ichnaea.webapp.config import main
 
 # make new unittest API's available under Python 2.6

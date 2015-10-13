@@ -1,5 +1,5 @@
+from ichnaea.geocode import GEOCODER
 from ichnaea.models.constants import ALL_VALID_MCCS
-from ichnaea.region import GEOCODER
 from ichnaea.tests.base import TestCase
 
 

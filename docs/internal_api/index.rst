@@ -26,12 +26,12 @@ Indices and Tables
    exceptions
    floatjson
    geocalc
+   geocode
    geoip
    http
    internaljson
    log
    models/index
    queue
-   region
    util
    webapp/index

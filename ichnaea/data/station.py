@@ -12,6 +12,7 @@ from ichnaea.geocalc import (
     circle_radius,
     distance,
 )
+from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
     encode_cellarea,
     Cell,
@@ -24,7 +25,6 @@ from ichnaea.models.constants import (
     CELL_MAX_RADIUS,
     WIFI_MAX_RADIUS,
 )
-from ichnaea.region import GEOCODER
 from ichnaea import util
 
 

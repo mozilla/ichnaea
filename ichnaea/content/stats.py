@@ -5,6 +5,7 @@ from operator import itemgetter
 
 from sqlalchemy import func
 
+from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
     CellArea,
     Radio,
@@ -16,7 +17,6 @@ from ichnaea.models.content import (
     StatKey,
     User,
 )
-from ichnaea.region import GEOCODER
 from ichnaea import util
 
 transliterate_mapping = {

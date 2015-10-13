@@ -9,6 +9,7 @@ from ichnaea.geocalc import (
     centroid,
     circle_radius,
 )
+from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
     decode_cellarea,
     Cell,
@@ -16,7 +17,6 @@ from ichnaea.models import (
     CellOCID,
     CellAreaOCID,
 )
-from ichnaea.region import GEOCODER
 from ichnaea import util
 
 

@@ -21,7 +21,7 @@ from ichnaea.constants import (
     GEOIP_CITY_ACCURACY,
     GEOIP_REGION_ACCURACY,
 )
-from ichnaea.region import GEOCODER
+from ichnaea.geocode import GEOCODER
 
 # The region codes present in the GeoIP data files,
 # extracted from the CSV files.

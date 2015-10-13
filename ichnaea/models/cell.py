@@ -24,6 +24,7 @@ from ichnaea.constants import (
     CELL_MIN_ACCURACY,
     CELLAREA_MIN_ACCURACY,
 )
+from ichnaea.geocode import GEOCODER
 from ichnaea.models.base import (
     _Model,
     CreationMixin,
@@ -53,7 +54,6 @@ from ichnaea.models.station import (
     ValidPositionSchema,
     ValidTimeTrackingSchema,
 )
-from ichnaea.region import GEOCODER
 
 
 CELLAREA_STRUCT = struct.Struct('!bHHH')

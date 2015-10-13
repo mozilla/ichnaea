@@ -8,7 +8,7 @@ from ichnaea.api.locate.source import (
     RegionSource,
 )
 from ichnaea.api.locate.wifi import WifiPositionMixin
-from ichnaea.region import GEOCODER
+from ichnaea.geocode import GEOCODER
 
 
 class InternalRegionSource(RegionSource):

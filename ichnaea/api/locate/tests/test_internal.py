@@ -1,6 +1,6 @@
 from ichnaea.api.locate.internal import InternalRegionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
-from ichnaea.region import GEOCODER
+from ichnaea.geocode import GEOCODER
 from ichnaea.tests.factories import (
     CellFactory,
     WifiShardFactory,
