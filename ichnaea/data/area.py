@@ -1,4 +1,3 @@
-import base64
 from collections import defaultdict
 
 import numpy
@@ -31,28 +30,9 @@ class CellAreaUpdater(DataTask):
         self.queue = self.task.app.data_queues[self.queue_name]
         self.utcnow = util.utcnow()
 
-    def scan(self, update_task, batch=100):  # pragma: no cover
-        # BBB
-        queue = self.task.app.data_queues['update_cell_lac']
-        redis_areas = queue.dequeue(batch=batch)
-        areaids = list(set(redis_areas))
-        batch_size = 20
-        for i in range(0, len(areaids), batch_size):
-            area_batch = areaids[i:i + batch_size]
-            update_task.delay(area_batch)
-        return len(areaids)
-
-    def update(self, areaids):  # pragma: no cover
-        # BBB
-        for areaid in set(areaids):
-            self.update_area(areaid)
-
     def __call__(self, batch=100):
         areaids = self.queue.dequeue(batch=batch, json=False)
         for areaid in set(areaids):
-            if len(areaid) > 7:  # pragma: no cover
-                # BBB
-                areaid = base64.b64decode(areaid.strip('"'))
             self.update_area(areaid)
 
         if self.queue.enough_data(batch=batch):  # pragma: no cover

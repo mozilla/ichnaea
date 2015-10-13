@@ -67,14 +67,6 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(seconds=8),
         'options': {'expires': 15},
     },
-
-    'schedule-update-cellarea': {  # BBB
-        'task': 'ichnaea.data.tasks.scan_areas',
-        'schedule': timedelta(seconds=9),
-        'args': (100, ),
-        'options': {'expires': 15},
-    },
-
     'update-cell': {
         'task': 'ichnaea.data.tasks.update_cell',
         'schedule': timedelta(seconds=7),

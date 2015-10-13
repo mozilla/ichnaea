@@ -1,5 +1,3 @@
-import base64
-
 from sqlalchemy.orm import load_only
 
 from ichnaea.data.base import DataTask
@@ -25,9 +23,6 @@ class MapStatUpdater(DataTask):
 
         scaled_positions = set()
         for position in positions:
-            if len(position) > 8:  # pragma: no cover
-                # BBB
-                position = base64.b64decode(position.strip('"'))
             lat, lon = decode_datamap_grid(position)
             scaled_positions.add((lat, lon))
 

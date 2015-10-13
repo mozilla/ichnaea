@@ -85,8 +85,6 @@ def configure_data(redis_client):
     data_queues = {
         'update_cell': DataQueue('update_cell', redis_client,
                                  queue_key='update_cell'),
-        'update_cell_lac': DataQueue('update_cellarea', redis_client,  # BBB
-                                     queue_key='update_cell_lac'),
         'update_cellarea': DataQueue('update_cellarea', redis_client,
                                      queue_key='update_cellarea'),
         'update_cellarea_ocid': DataQueue('update_cellarea_ocid', redis_client,
