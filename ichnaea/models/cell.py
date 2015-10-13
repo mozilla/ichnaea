@@ -5,7 +5,6 @@ import colander
 from enum import IntEnum
 from sqlalchemy import (
     BINARY,
-    Boolean,
     Column,
     Date,
     Index,
@@ -375,28 +374,6 @@ class CellArea(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
         return validated
 
 
-class OCIDCellArea(PositionMixin, TimeTrackingMixin, CreationMixin, _Model):
-    # BBB
-    __tablename__ = 'ocid_cell_area'
-
-    _indices = (
-        PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac'),
-        UniqueConstraint('areaid', name='ocid_cell_area_areaid_unique'),
-    )
-    _valid_schema = None
-
-    radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
-    mcc = Column(SmallInteger, autoincrement=False, default=None)
-    mnc = Column(SmallInteger, autoincrement=False, default=None)
-    lac = Column(SmallInteger(unsigned=True),
-                 autoincrement=False, default=None)
-
-    areaid = Column(CellAreaColumn(7), nullable=False)
-    range = Column(Integer)
-    avg_cell_range = Column(Integer)
-    num_cells = Column(Integer(unsigned=True))
-
-
 class ValidCellAreaOCIDSchema(ValidCellAreaKeySchema,
                               ValidPositionSchema,
                               ValidTimeTrackingSchema):
@@ -515,32 +492,6 @@ class Cell(BboxMixin, PositionMixin, TimeTrackingMixin,
     @property
     def areaid(self):
         return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)
-
-
-class OCIDCell(PositionMixin, TimeTrackingMixin,
-               CreationMixin, HashKeyQueryMixin, _Model):
-    # BBB
-    __tablename__ = 'ocid_cell'
-
-    _indices = (
-        PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
-        Index('ocid_cell_created_idx', 'created'),
-    )
-
-    _hashkey_cls = CellKey
-    _query_batch = 20
-    _valid_schema = None
-
-    radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
-    mcc = Column(SmallInteger, autoincrement=False, default=None)
-    mnc = Column(SmallInteger, autoincrement=False, default=None)
-    lac = Column(SmallInteger(unsigned=True),
-                 autoincrement=False, default=None)
-    cid = Column(Integer(unsigned=True), autoincrement=False, default=None)
-    psc = Column(SmallInteger, autoincrement=False)
-    range = Column(Integer)
-    total_measures = Column(Integer(unsigned=True))
-    changeable = Column(Boolean)
 
 
 class ValidCellOCIDSchema(ValidCellKeySchema, ValidBboxSchema,
