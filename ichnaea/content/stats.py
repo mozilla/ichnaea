@@ -1,16 +1,10 @@
 from calendar import timegm
-from collections import defaultdict
 from datetime import date, timedelta
 from operator import itemgetter
 
 import genc
 from sqlalchemy import func
 
-from ichnaea.geocode import GEOCODER
-from ichnaea.models import (
-    CellArea,
-    Radio,
-)
 from ichnaea.models.content import (
     RegionStat,
     Score,
@@ -168,7 +162,7 @@ def leaders_weekly(session, batch=20):
     return result
 
 
-def region_stats(session):
+def regions(session):
     rows = session.query(RegionStat).all()
     regions = {}
     for row in rows:
@@ -177,65 +171,16 @@ def region_stats(session):
         gsm = int(row.gsm or 0)
         wcdma = int(row.wcdma or 0)
         lte = int(row.lte or 0)
-        # wifi = int(row.wifi or 0)
-        total = sum((gsm, wcdma, lte))
-        if not total:
-            # skip wifi-only for now
-            continue
+        cell = sum((gsm, wcdma, lte))
+        wifi = int(row.wifi or 0)
         regions[code] = {
             'code': code,
             'name': name,
             'order': transliterate(name[:10]).lower(),
-            'multiple': False,
             'gsm': gsm,
             'wcdma': wcdma,
             'lte': lte,
-            # 'wifi': wifi,
-            'total': total,
+            'cell': cell,
+            'wifi': wifi,
         }
-    return sorted(regions.values(), key=itemgetter('name'))
-
-
-def regions(session):
-    # We group by radio, mcc to take advantage of the index
-    # and explicitly specify a small list of all valid radio values
-    # to get mysql to actually use the index.
-    radios = set([radio for radio in Radio if radio != Radio.cdma])
-    rows = (session.query(CellArea.radio, CellArea.mcc,
-                          func.sum(CellArea.num_cells))
-                   .filter(CellArea.radio.in_(radios))
-                   .group_by(CellArea.radio, CellArea.mcc)).all()
-
-    # reverse grouping by mcc, radio
-    mccs = defaultdict(dict)
-    for row in rows:
-        mccs[row.mcc][row.radio] = row[2]
-
-    regions = {}
-    for mcc, item in mccs.items():
-        cell_regions = GEOCODER.regions_for_mcc(mcc, metadata=True)
-        multiple = bool(len(cell_regions) > 1)
-        for cell_region in cell_regions:
-            code = cell_region.code
-            name = cell_region.name
-            region = {
-                'code': code,
-                'name': name,
-                'order': transliterate(name[:10]).lower(),
-                'multiple': multiple,
-                'total': 0,
-                'gsm': 0, 'wcdma': 0, 'lte': 0,
-            }
-            for radio, value in item.items():
-                region[radio.name] = int(value)
-            region['total'] = int(sum(item.values()))
-            if code not in regions:
-                regions[code] = region
-            else:
-                # some regions like the US have multiple mcc codes,
-                # we merge them here
-                for radio_name, value in region.items():
-                    if isinstance(value, int):
-                        regions[code][radio_name] += value
-
-    return sorted(regions.values(), key=itemgetter('name'))
+    return sorted(regions.values(), key=itemgetter('cell'), reverse=True)

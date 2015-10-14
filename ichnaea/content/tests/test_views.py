@@ -338,7 +338,7 @@ class TestFunctionalContentViews(AppTestCase):
         request.registry.redis_client = self.redis_client
         inst = self._make_view(request)
         result = inst.stats_regions_view()
-        self.assertEqual(result['page_title'], 'Cell Statistics')
+        self.assertEqual(result['page_title'], 'Region Statistics')
 
         # call the view again, without a working db session, so
         # we can be sure to use the cached result

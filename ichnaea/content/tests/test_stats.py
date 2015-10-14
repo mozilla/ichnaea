@@ -16,19 +16,14 @@ from ichnaea.content.stats import (
     histogram,
     leaders,
     leaders_weekly,
-    region_stats,
     regions,
     transliterate,
 )
-from ichnaea.models import Radio
 from ichnaea.tests.base import (
     DBTestCase,
     TestCase,
 )
-from ichnaea.tests.factories import (
-    CellAreaFactory,
-    RegionStatFactory,
-)
+from ichnaea.tests.factories import RegionStatFactory
 from ichnaea import util
 
 
@@ -183,17 +178,15 @@ class TestStats(DBTestCase):
         self.assertEqual(scores[-1]['nickname'], 'nick-5')
         self.assertEqual(scores[-1]['num'], 16)
 
-    def test_region_stats(self):
+    def test_regions(self):
         RegionStatFactory(region='DE', gsm=2, wcdma=1, wifi=4)
         RegionStatFactory(region='GB', wifi=1)
         RegionStatFactory(region='TW', wcdma=1)
         RegionStatFactory(region='US', gsm=3)
         self.session.flush()
 
-        result = region_stats(self.session)
-
-        expected = set(['DE', 'TW', 'US'])
-        result = region_stats(self.session)
+        result = regions(self.session)
+        expected = set(['DE', 'GB', 'TW', 'US'])
         self.assertEqual(set([r['code'] for r in result]), expected)
 
         region_results = {}
@@ -210,49 +203,14 @@ class TestStats(DBTestCase):
             del region_results[code]['name']
 
         self.assertEqual(region_results['DE'],
-                         {'gsm': 2, 'wcdma': 1, 'lte': 0, 'total': 3,
-                          'multiple': False, 'order': 'germany'})
+                         {'gsm': 2, 'wcdma': 1, 'lte': 0, 'cell': 3,
+                          'wifi': 4, 'order': 'germany'})
+        self.assertEqual(region_results['GB'],
+                         {'gsm': 0, 'wcdma': 0, 'lte': 0, 'cell': 0,
+                          'wifi': 1, 'order': 'united kin'})
         self.assertEqual(region_results['US'],
-                         {'gsm': 3, 'wcdma': 0, 'lte': 0, 'total': 3,
-                          'multiple': False, 'order': 'united sta'})
-
-    def test_regions(self):
-        CellAreaFactory(radio=Radio.lte, mcc=262, num_cells=1)
-        CellAreaFactory(radio=Radio.gsm, mcc=310, num_cells=2)
-        CellAreaFactory(radio=Radio.gsm, mcc=313, num_cells=1)
-        CellAreaFactory(radio=Radio.gsm, mcc=466, num_cells=1)
-        self.session.flush()
-
-        # check the result
-        expected = set(['BM', 'DE', 'GU', 'PR', 'TW', 'US'])
-        result = regions(self.session)
-        self.assertEqual(set([r['code'] for r in result]), expected)
-
-        region_results = {}
-        for r in result:
-            code = r['code']
-            region_results[code] = r
-            del region_results[code]['code']
-
-        # ensure we use apolitical names
-        self.assertEqual(region_results['TW']['name'], 'Taiwan')
-
-        # strip out names to make assertion statements shorter
-        for code in region_results:
-            del region_results[code]['name']
-
-        # a simple case with a 1:1 mapping of mcc to region code
-        self.assertEqual(region_results['DE'],
-                         {'gsm': 0, 'lte': 1, 'total': 1,
-                          'wcdma': 0, 'multiple': False, 'order': 'germany'})
-
-        # mcc 310 is valid for both GU/US, 313 only for US
-        self.assertEqual(region_results['US'],
-                         {'gsm': 3, 'lte': 0, 'total': 3,
-                          'wcdma': 0, 'multiple': True, 'order': 'united sta'})
-        self.assertEqual(region_results['GU'],
-                         {'gsm': 2, 'lte': 0, 'total': 2,
-                          'wcdma': 0, 'multiple': True, 'order': 'guam'})
+                         {'gsm': 3, 'wcdma': 0, 'lte': 0, 'cell': 3,
+                          'wifi': 0, 'order': 'united sta'})
 
 
 class TestTransliterate(TestCase):

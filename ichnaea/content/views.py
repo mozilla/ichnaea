@@ -354,7 +354,7 @@ class ContentViews(Layout):
             data = regions(session)
             redis_client.set(cache_key, internal_dumps(data), ex=3600)
 
-        return {'page_title': 'Cell Statistics', 'metrics': data}
+        return {'page_title': 'Region Statistics', 'metrics': data}
 
 
 def favicon_view(request):

@@ -26,6 +26,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #242: Add WiFi stats to region specific stats page.
+
 - Add update_statregion task to maintain region_stat table.
 
 20151013115000
