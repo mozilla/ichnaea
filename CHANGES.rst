@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 450f02b5e1ca: Update cell_area regions.
+
 - 582ef9419c6a: Add region stat table.
 
 - 238aca86fe8d: Change cell_area primary key.
