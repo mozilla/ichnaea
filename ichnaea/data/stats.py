@@ -5,7 +5,6 @@ from sqlalchemy import func
 from ichnaea.data.base import DataTask
 from ichnaea.models import (
     CellArea,
-    Radio,
     RegionStat,
     Stat,
     StatCounter,
@@ -56,26 +55,23 @@ class StatRegion(DataTask):
         cells = (self.session.query(CellArea.region,
                                     CellArea.radio,
                                     func.sum(CellArea.num_cells))
+                             .filter(CellArea.region.isnot(None))
                              .group_by(CellArea.region, CellArea.radio)).all()
 
-        default = {
-            Radio.gsm.name: 0,
-            Radio.wcdma.name: 0,
-            Radio.lte.name: 0,
-            'wifi': 0}
-
+        default = {'gsm': 0, 'wcdma': 0, 'lte': 0, 'wifi': 0}
         stats = {}
         for region, radio, num in cells:
-            if region and region not in stats:
+            if region not in stats:
                 stats[region] = default.copy()
             stats[region][radio.name] = int(num)
 
         for shard in WIFI_SHARDS.values():
             wifis = (self.session.query(shard.region, func.count())
+                                 .filter(shard.region.isnot(None))
                                  .group_by(shard.region)).all()
 
             for region, num in wifis:
-                if region and region not in stats:
+                if region not in stats:
                     stats[region] = default.copy()
                 stats[region]['wifi'] += int(num)
 

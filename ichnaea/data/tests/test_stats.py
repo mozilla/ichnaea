@@ -111,15 +111,19 @@ class TestStatRegion(CeleryTestCase):
         self.assertEqual(stats, [])
 
     def test_update(self):
+        area = CellAreaFactory(radio=Radio.gsm, num_cells=1)
+        area.region = None
         CellAreaFactory(radio=Radio.gsm, region='DE', num_cells=1)
         CellAreaFactory(radio=Radio.gsm, region='DE', num_cells=2)
-        CellAreaFactory(radio=Radio.gsm, region='GB', num_cells=2)
+        CellAreaFactory(radio=Radio.gsm, region='CA', num_cells=2)
         CellAreaFactory(radio=Radio.wcdma, region='DE', num_cells=3)
-        CellAreaFactory(radio=Radio.lte, region='GB', num_cells=4)
+        CellAreaFactory(radio=Radio.lte, region='CA', num_cells=4)
         WifiShardFactory.create_batch(5, region='DE')
         WifiShardFactory.create_batch(6, region='US')
+        wifi = WifiShardFactory()
+        wifi.region = None
         self.session.add(RegionStat(region='US', wifi=2))
-        self.session.add(RegionStat(region='CA', wifi=1))
+        self.session.add(RegionStat(region='TW', wifi=1))
         self.session.flush()
 
         update_statregion.delay().get()
@@ -130,7 +134,7 @@ class TestStatRegion(CeleryTestCase):
             values = (stat.gsm, stat.wcdma, stat.lte, stat.wifi)
             if stat.region == 'DE':
                 self.assertEqual(values, (3, 3, 0, 5))
-            elif stat.region == 'GB':
+            elif stat.region == 'CA':
                 self.assertEqual(values, (2, 0, 4, 0))
             elif stat.region == 'US':
                 self.assertEqual(values, (0, 0, 0, 6))
