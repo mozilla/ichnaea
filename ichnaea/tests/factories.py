@@ -20,6 +20,7 @@ from ichnaea.models import (
     CellObservation,
     CellOCID,
     Radio,
+    RegionStat,
     WifiShard,
     WifiObservation,
 )
@@ -188,6 +189,18 @@ class CellObservationFactory(CellPositionFactory, BaseMemoryFactory):
 
     class Meta:
         model = CellObservation.create
+
+
+class RegionStatFactory(BaseSQLFactory):
+
+    class Meta:
+        model = RegionStat
+
+    region = 'GB'
+    gsm = 0
+    wcdma = 0
+    lte = 0
+    wifi = 0
 
 
 class WifiShardFactory(BaseSQLFactory):

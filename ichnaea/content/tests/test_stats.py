@@ -16,6 +16,7 @@ from ichnaea.content.stats import (
     histogram,
     leaders,
     leaders_weekly,
+    region_stats,
     regions,
     transliterate,
 )
@@ -24,7 +25,10 @@ from ichnaea.tests.base import (
     DBTestCase,
     TestCase,
 )
-from ichnaea.tests.factories import CellAreaFactory
+from ichnaea.tests.factories import (
+    CellAreaFactory,
+    RegionStatFactory,
+)
 from ichnaea import util
 
 
@@ -178,6 +182,39 @@ class TestStats(DBTestCase):
         self.assertEqual(scores[0]['num'], 20)
         self.assertEqual(scores[-1]['nickname'], 'nick-5')
         self.assertEqual(scores[-1]['num'], 16)
+
+    def test_region_stats(self):
+        RegionStatFactory(region='DE', gsm=2, wcdma=1, wifi=4)
+        RegionStatFactory(region='GB', wifi=1)
+        RegionStatFactory(region='TW', wcdma=1)
+        RegionStatFactory(region='US', gsm=3)
+        self.session.flush()
+
+        result = region_stats(self.session)
+
+        expected = set(['DE', 'TW', 'US'])
+        result = region_stats(self.session)
+        self.assertEqual(set([r['code'] for r in result]), expected)
+
+        region_results = {}
+        for r in result:
+            code = r['code']
+            region_results[code] = r
+            del region_results[code]['code']
+
+        # ensure we use GENC names
+        self.assertEqual(region_results['TW']['name'], 'Taiwan')
+
+        # strip out names to make assertion statements shorter
+        for code in region_results:
+            del region_results[code]['name']
+
+        self.assertEqual(region_results['DE'],
+                         {'gsm': 2, 'wcdma': 1, 'lte': 0, 'total': 3,
+                          'multiple': False, 'order': 'germany'})
+        self.assertEqual(region_results['US'],
+                         {'gsm': 3, 'wcdma': 0, 'lte': 0, 'total': 3,
+                          'multiple': False, 'order': 'united sta'})
 
     def test_regions(self):
         CellAreaFactory(radio=Radio.lte, mcc=262, num_cells=1)

@@ -3,6 +3,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 from operator import itemgetter
 
+import genc
 from sqlalchemy import func
 
 from ichnaea.geocode import GEOCODER
@@ -11,6 +12,7 @@ from ichnaea.models import (
     Radio,
 )
 from ichnaea.models.content import (
+    RegionStat,
     Score,
     ScoreKey,
     Stat,
@@ -164,6 +166,34 @@ def leaders_weekly(session, batch=20):
                 {'nickname': nickname, 'num': int(value)})
 
     return result
+
+
+def region_stats(session):
+    rows = session.query(RegionStat).all()
+    regions = {}
+    for row in rows:
+        code = row.region
+        name = genc.region_by_alpha2(code).name
+        gsm = int(row.gsm or 0)
+        wcdma = int(row.wcdma or 0)
+        lte = int(row.lte or 0)
+        # wifi = int(row.wifi or 0)
+        total = sum((gsm, wcdma, lte))
+        if not total:
+            # skip wifi-only for now
+            continue
+        regions[code] = {
+            'code': code,
+            'name': name,
+            'order': transliterate(name[:10]).lower(),
+            'multiple': False,
+            'gsm': gsm,
+            'wcdma': wcdma,
+            'lte': lte,
+            # 'wifi': wifi,
+            'total': total,
+        }
+    return sorted(regions.values(), key=itemgetter('name'))
 
 
 def regions(session):
