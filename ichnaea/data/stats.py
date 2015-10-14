@@ -1,10 +1,16 @@
 from datetime import timedelta
 
+from sqlalchemy import func
+
 from ichnaea.data.base import DataTask
-from ichnaea.models.content import (
+from ichnaea.models import (
+    CellArea,
+    Radio,
+    RegionStat,
     Stat,
     StatCounter,
     StatKey,
+    WIFI_SHARDS,
 )
 from ichnaea import util
 
@@ -42,3 +48,59 @@ class StatCounterUpdater(DataTask):
 
         # queue the redis value to be decreased
         stat_counter.decr(self.pipe, value)
+
+
+class StatRegion(DataTask):
+
+    def __call__(self):
+        cells = (self.session.query(CellArea.region,
+                                    CellArea.radio,
+                                    func.sum(CellArea.num_cells))
+                             .group_by(CellArea.region, CellArea.radio)).all()
+
+        default = {
+            Radio.gsm.name: 0,
+            Radio.wcdma.name: 0,
+            Radio.lte.name: 0,
+            'wifi': 0}
+
+        stats = {}
+        for region, radio, num in cells:
+            if region and region not in stats:
+                stats[region] = default.copy()
+            stats[region][radio.name] = int(num)
+
+        for shard in WIFI_SHARDS.values():
+            wifis = (self.session.query(shard.region, func.count())
+                                 .group_by(shard.region)).all()
+
+            for region, num in wifis:
+                if region and region not in stats:
+                    stats[region] = default.copy()
+                stats[region]['wifi'] += int(num)
+
+        if not stats:
+            return
+
+        region_stats = dict(self.session.query(RegionStat.region,
+                                               RegionStat).all())
+        for region, values in stats.items():
+            if region in region_stats:
+                region_stats[region].gsm = values['gsm']
+                region_stats[region].wcdma = values['wcdma']
+                region_stats[region].lte = values['lte']
+                region_stats[region].wifi = values['wifi']
+            else:
+                self.session.add(RegionStat(
+                    region=region,
+                    gsm=values['gsm'],
+                    wcdma=values['wcdma'],
+                    lte=values['lte'],
+                    wifi=values['wifi'],
+                ))
+
+        obsolete_regions = list(set(region_stats.keys()) - set(stats.keys()))
+        if obsolete_regions:
+            (self.session.query(RegionStat)
+                         .filter(RegionStat.region.in_(obsolete_regions))
+             ).delete(synchronize_session=False)

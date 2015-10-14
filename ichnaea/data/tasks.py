@@ -9,7 +9,7 @@ from ichnaea.data import ocid
 from ichnaea.data.report import ReportQueue
 from ichnaea.data.score import ScoreUpdater
 from ichnaea.data import station
-from ichnaea.data.stats import StatCounterUpdater
+from ichnaea.data import stats
 from ichnaea.models import ApiKey
 
 
@@ -170,7 +170,13 @@ def update_score(self, batch=1000):
 
 
 @celery_app.task(base=BaseTask, bind=True)
+def update_statregion(self):
+    with self.db_session() as session:
+        stats.StatRegion(self, session)()
+
+
+@celery_app.task(base=BaseTask, bind=True)
 def update_statcounter(self, ago=1):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
-            StatCounterUpdater(self, session, pipe)(ago=ago)
+            stats.StatCounterUpdater(self, session, pipe)(ago=ago)

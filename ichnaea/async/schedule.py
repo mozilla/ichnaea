@@ -58,6 +58,12 @@ CELERYBEAT_SCHEDULE = {
         'task': 'ichnaea.data.tasks.update_statcounter',
         'args': (1, ),
         'schedule': crontab(minute=3),
+        'options': {'expires': 2700},
+    },
+    'update-statregion': {
+        'task': 'ichnaea.data.tasks.update_statregion',
+        'schedule': crontab(minute=5),
+        'options': {'expires': 2700},
     },
 
     # (less than) one minute

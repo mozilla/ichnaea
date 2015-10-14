@@ -1,13 +1,22 @@
 from datetime import timedelta
 
 from ichnaea.cache import redis_pipeline
-from ichnaea.data.tasks import update_statcounter
-from ichnaea.models.content import (
+from ichnaea.data.tasks import (
+    update_statcounter,
+    update_statregion,
+)
+from ichnaea.models import (
+    Radio,
+    RegionStat,
     Stat,
     StatCounter,
     StatKey,
 )
 from ichnaea.tests.base import CeleryTestCase
+from ichnaea.tests.factories import (
+    CellAreaFactory,
+    WifiShardFactory,
+)
 from ichnaea import util
 
 
@@ -92,3 +101,36 @@ class TestStatCounter(CeleryTestCase):
         self.check_stat(StatKey.unique_cell, self.yesterday, 4)
         self.check_stat(StatKey.unique_wifi, self.yesterday, 5)
         self.check_stat(StatKey.unique_cell_ocid, self.yesterday, 6)
+
+
+class TestStatRegion(CeleryTestCase):
+
+    def test_empty(self):
+        update_statregion.delay().get()
+        stats = self.session.query(RegionStat).all()
+        self.assertEqual(stats, [])
+
+    def test_update(self):
+        CellAreaFactory(radio=Radio.gsm, region='DE', num_cells=1)
+        CellAreaFactory(radio=Radio.gsm, region='DE', num_cells=2)
+        CellAreaFactory(radio=Radio.gsm, region='GB', num_cells=2)
+        CellAreaFactory(radio=Radio.wcdma, region='DE', num_cells=3)
+        CellAreaFactory(radio=Radio.lte, region='GB', num_cells=4)
+        WifiShardFactory.create_batch(5, region='DE')
+        WifiShardFactory.create_batch(6, region='US')
+        self.session.add(RegionStat(region='US', wifi=2))
+        self.session.add(RegionStat(region='CA', wifi=1))
+        self.session.flush()
+
+        update_statregion.delay().get()
+        stats = self.session.query(RegionStat).all()
+        self.assertEqual(len(stats), 3)
+
+        for stat in stats:
+            values = (stat.gsm, stat.wcdma, stat.lte, stat.wifi)
+            if stat.region == 'DE':
+                self.assertEqual(values, (3, 3, 0, 5))
+            elif stat.region == 'GB':
+                self.assertEqual(values, (2, 0, 4, 0))
+            elif stat.region == 'US':
+                self.assertEqual(values, (0, 0, 0, 6))

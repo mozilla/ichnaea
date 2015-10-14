@@ -24,6 +24,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add update_statregion task to maintain region_stat table.
 
 20151013115000
 **************
