@@ -70,7 +70,7 @@ class LocateV2Base(BaseLocateTest, AppTestCase):
         return {
             'location': {'lat': london['latitude'],
                          'lng': london['longitude']},
-            'accuracy': london['accuracy'],
+            'accuracy': london['radius'],
             'fallback': 'ipf',
         }
 

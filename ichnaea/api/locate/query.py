@@ -129,7 +129,7 @@ class Query(object):
             region = None
             geoip = None
             if self.geoip_db:
-                geoip = self.geoip_db.geoip_lookup(valid)
+                geoip = self.geoip_db.lookup(valid)
                 if geoip:
                     region = geoip.get('region_code')
             self._geoip = geoip

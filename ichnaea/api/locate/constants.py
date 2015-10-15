@@ -51,7 +51,7 @@ class DataAccuracy(Enum):
     be compared to int/float values.
 
     These values are related to :data:`~ichnaea.constants.CELL_MIN_ACCURACY`
-    and :data:`~ichnaea.constants.GEOIP_CITY_ACCURACY` and adjustments
+    and :data:`~ichnaea.constants.GEOIP_CITY_RADIUS` and adjustments
     in one need to be reflected in the other.
     """
 

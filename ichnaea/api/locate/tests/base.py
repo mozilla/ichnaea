@@ -43,11 +43,11 @@ from ichnaea import util
 
 class DummyModel(object):
 
-    def __init__(self, lat=None, lon=None, accuracy=None,
+    def __init__(self, lat=None, lon=None, radius=None,
                  code=None, name=None, ip=None):
         self.lat = lat
         self.lon = lon
-        self.radius = accuracy
+        self.radius = radius
         self.code = code
         self.name = name
         self.ip = ip
@@ -66,7 +66,7 @@ class BaseSourceTest(ConnectionTestCase):
         cls.bhutan_model = DummyModel(
             lat=bhutan['latitude'],
             lon=bhutan['longitude'],
-            accuracy=bhutan['accuracy'],
+            radius=bhutan['radius'],
             code=bhutan['region_code'],
             name=bhutan['region_name'],
             ip=bhutan['ip'])
@@ -74,7 +74,7 @@ class BaseSourceTest(ConnectionTestCase):
         cls.london_model = DummyModel(
             lat=london['latitude'],
             lon=london['longitude'],
-            accuracy=london['accuracy'],
+            radius=london['radius'],
             code=london['region_code'],
             name=london['region_name'],
             ip=london['ip'])

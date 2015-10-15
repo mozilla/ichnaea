@@ -300,7 +300,7 @@ class TestSource(BaseSourceTest):
         self.api_key = ApiKeyFactory.build(
             shortname='test', allow_fallback=True)
         self.fallback_model = DummyModel(
-            lat=51.5366, lon=0.03989, accuracy=1500.0)
+            lat=51.5366, lon=0.03989, radius=1500.0)
 
         self.fallback_result = {
             'location': {

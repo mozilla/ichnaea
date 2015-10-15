@@ -29,17 +29,17 @@ WIFI_MIN_ACCURACY = 100.0  #: Minimum accuracy returned for Wifi queries.
 CELL_MIN_ACCURACY = 5000.0  #: Minimum accuracy returned for cell queries.
 CELLAREA_MIN_ACCURACY = 20000.0  #: Minimum accuracy for cell area queries.
 
-GEOIP_CITY_ACCURACY = 50000.0
+GEOIP_CITY_RADIUS = 50000.0
 """
-Accuracy returned for GeoIP city based queries.
+Radius returned for GeoIP city based queries.
 
 50km is pure guesswork but should cover most cities.
 """
 
-GEOIP_REGION_ACCURACY = 5000000.0
+GEOIP_REGION_RADIUS = 5000000.0
 """
-Usually a per-region accuracy is calculated. This is the worst case
-accuracy returned for GeoIP region based queries, based on data
+Usually a per-region radius is calculated. This is the worst case
+radius returned for GeoIP region based queries, based on data
 for Russia:
 
 ``geocalc.distance(60.0, 100.0, 41.199278, 27.351944) == 5220613 meters``

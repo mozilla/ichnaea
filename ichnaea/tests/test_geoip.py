@@ -4,8 +4,8 @@ from maxminddb.const import MODE_MMAP
 from six import PY2
 
 from ichnaea.constants import (
-    GEOIP_CITY_ACCURACY,
-    GEOIP_REGION_ACCURACY,
+    GEOIP_CITY_RADIUS,
+    GEOIP_REGION_RADIUS,
 )
 from ichnaea.geocode import GEOCODER
 from ichnaea import geoip
@@ -64,66 +64,66 @@ class TestDatabase(GeoIPTestCase):
     def test_regions(self):
         valid_regions = GEOCODER.valid_regions
         mapped_regions = set([geoip.GEOIP_GENC_MAP.get(r, r)
-                              for r in geoip.GEOIP_REGIONS])
+                              for r in geoip.GEOIP_SCORE.keys()])
         self.assertEqual(mapped_regions - valid_regions, set())
         for region in mapped_regions:
-            accuracy, region_accuracy = self.geoip_db.accuracy(
+            radius, region_radius = self.geoip_db.radius(
                 region, default=None)
-            self.assertNotEqual(accuracy, None, region)
-            self.assertNotEqual(region_accuracy, None, region)
+            self.assertNotEqual(radius, None, region)
+            self.assertNotEqual(region_radius, None, region)
 
 
-class TestGeoIPLookup(GeoIPTestCase):
+class TestLookup(GeoIPTestCase):
 
     def test_city(self):
         london = self.geoip_data['London']
         # Known good value in the wee sample DB we're using
-        result = self.geoip_db.geoip_lookup(london['ip'])
-        for name in ('latitude', 'longitude'):
+        result = self.geoip_db.lookup(london['ip'])
+        for name in ('latitude', 'longitude', 'radius', 'region_radius'):
             self.assertAlmostEqual(london[name], result[name])
-        for name in ('accuracy', 'region_code', 'region_name', 'city'):
+        for name in ('region_code', 'region_name', 'city', 'score'):
             self.assertEqual(london[name], result[name])
 
     def test_region(self):
         bhutan = self.geoip_data['Bhutan']
-        result = self.geoip_db.geoip_lookup(bhutan['ip'])
-        for name in ('latitude', 'longitude'):
+        result = self.geoip_db.lookup(bhutan['ip'])
+        for name in ('latitude', 'longitude', 'radius', 'region_radius'):
             self.assertAlmostEqual(bhutan[name], result[name])
-        for name in ('accuracy', 'region_code', 'region_name', 'city'):
+        for name in ('region_code', 'region_name', 'city', 'score'):
             self.assertEqual(bhutan[name], result[name])
 
     def test_ipv6(self):
-        result = self.geoip_db.geoip_lookup('2a02:ffc0::')
+        result = self.geoip_db.lookup('2a02:ffc0::')
         self.assertEqual(result['region_code'], 'GI')
         self.assertEqual(result['region_name'], 'Gibraltar')
-        self.assertEqual(result['accuracy'], self.geoip_db.accuracy('GI')[0])
+        self.assertEqual(result['radius'], self.geoip_db.radius('GI')[0])
 
     def test_fail(self):
-        self.assertIsNone(self.geoip_db.geoip_lookup('127.0.0.1'))
+        self.assertIsNone(self.geoip_db.lookup('127.0.0.1'))
 
     def test_fail_bad_ip(self):
-        self.assertIsNone(self.geoip_db.geoip_lookup('546.839.319.-1'))
+        self.assertIsNone(self.geoip_db.lookup('546.839.319.-1'))
 
     def test_with_dummy_db(self):
-        self.assertIsNone(geoip.GeoIPNull().geoip_lookup('200'))
+        self.assertIsNone(geoip.GeoIPNull().lookup('200'))
 
 
-class TestGeoIPAccuracy(GeoIPTestCase):
+class TestRadius(GeoIPTestCase):
 
     def test_region(self):
-        self.assertTrue(self.geoip_db.accuracy('US')[0] > 1000000.0)
-        self.assertTrue(self.geoip_db.accuracy('XK')[0] > 50000.0)
+        self.assertTrue(self.geoip_db.radius('US')[0] > 1000000.0)
+        self.assertTrue(self.geoip_db.radius('XK')[0] > 50000.0)
 
     def test_city(self):
         self.assertEqual(
-            self.geoip_db.accuracy('US', city=True)[0], GEOIP_CITY_ACCURACY)
+            self.geoip_db.radius('US', city=True)[0], GEOIP_CITY_RADIUS)
         self.assertTrue(
-            self.geoip_db.accuracy('LI', city=True)[0] < GEOIP_CITY_ACCURACY)
+            self.geoip_db.radius('LI', city=True)[0] < GEOIP_CITY_RADIUS)
         self.assertTrue(
-            self.geoip_db.accuracy('VA', city=True)[0] < GEOIP_CITY_ACCURACY)
+            self.geoip_db.radius('VA', city=True)[0] < GEOIP_CITY_RADIUS)
 
     def test_unknown(self):
         self.assertEqual(
-            self.geoip_db.accuracy('XX')[0], GEOIP_REGION_ACCURACY)
+            self.geoip_db.radius('XX')[0], GEOIP_REGION_RADIUS)
         self.assertEqual(
-            self.geoip_db.accuracy('XX', city=True)[0], GEOIP_CITY_ACCURACY)
+            self.geoip_db.radius('XX', city=True)[0], GEOIP_CITY_RADIUS)

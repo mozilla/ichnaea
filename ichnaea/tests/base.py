@@ -28,7 +28,7 @@ from ichnaea.async.config import (
 )
 from ichnaea.cache import configure_redis
 from ichnaea.config import DummyConfig
-from ichnaea.constants import GEOIP_CITY_ACCURACY
+from ichnaea.constants import GEOIP_CITY_RADIUS
 from ichnaea.db import configure_db
 from ichnaea.geocode import GEOCODER
 from ichnaea.geoip import configure_geoip
@@ -97,7 +97,9 @@ GEOIP_DATA = {
         'ip': '81.2.69.192',
         'latitude': 51.5142,
         'longitude': -0.0931,
-        'accuracy': GEOIP_CITY_ACCURACY,
+        'radius': GEOIP_CITY_RADIUS,
+        'region_radius': GEOCODER.region_max_radius('GB'),
+        'score': 0.8,
     },
     'Bhutan': {
         'city': False,
@@ -106,7 +108,9 @@ GEOIP_DATA = {
         'ip': '67.43.156.1',
         'latitude': 27.5,
         'longitude': 90.5,
-        'accuracy': GEOCODER.region_max_radius('BT'),
+        'radius': GEOCODER.region_max_radius('BT'),
+        'region_radius': GEOCODER.region_max_radius('BT'),
+        'score': 0.9,
     },
 }
 

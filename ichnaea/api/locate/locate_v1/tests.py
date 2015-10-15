@@ -50,7 +50,7 @@ class LocateV1Base(BaseLocateTest, AppTestCase):
             'status': 'ok',
             'lat': london['latitude'],
             'lon': london['longitude'],
-            'accuracy': london['accuracy'],
+            'accuracy': london['radius'],
             'fallback': 'ipf',
         }
 

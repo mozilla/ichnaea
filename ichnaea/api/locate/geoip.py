@@ -13,7 +13,7 @@ class GeoIPSource(Source):
 
     fallback_field = 'ipf'
     source = DataSource.geoip
-    geoip_accuracy_field = 'accuracy'
+    geoip_accuracy_field = 'radius'
 
     def search(self, query):
         result = self.result_type()
@@ -47,4 +47,4 @@ class GeoIPPositionSource(GeoIPSource, PositionSource):
 class GeoIPRegionSource(GeoIPSource, RegionSource):
     """A GeoIPSource returning region results."""
 
-    geoip_accuracy_field = 'region_accuracy'
+    geoip_accuracy_field = 'region_radius'
