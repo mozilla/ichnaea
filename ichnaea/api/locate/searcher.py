@@ -89,7 +89,7 @@ class Searcher(object):
         raise NotImplementedError()
 
     def _search(self, query):
-        results = ResultList(result=self.result_type())
+        results = ResultList(self.result_type())
         for name, source in self.sources:
             if source.should_search(query, results):
                 results.add(source.search(query))

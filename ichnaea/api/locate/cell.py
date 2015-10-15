@@ -7,13 +7,18 @@ import numpy
 from sqlalchemy.orm import load_only
 
 from ichnaea.api.locate.constants import DataSource
-from ichnaea.api.locate.result import Position
+from ichnaea.api.locate.result import (
+    Position,
+    Region,
+    ResultList,
+)
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.constants import (
     CELL_MIN_ACCURACY,
     CELLAREA_MIN_ACCURACY,
 )
 from ichnaea.geocalc import aggregate_position
+from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
     Cell,
     CellArea,
@@ -159,6 +164,38 @@ class CellPositionMixin(object):
                 result = aggregate_area_position(best_area, self.result_type)
 
         return result
+
+
+class CellRegionMixin(object):
+    """
+    A CellRegionMixin implements a region search using the cell models.
+    """
+
+    result_type = Region
+
+    def should_search_cell(self, query, results):
+        if not (query.cell or query.cell_area):
+            return False
+        return True
+
+    def search_mcc(self, query):
+        results = ResultList()
+
+        codes = set()
+        for cell in list(query.cell) + list(query.cell_area):
+            codes.add(cell.mcc)
+
+        regions = []
+        for code in codes:
+            regions.extend(GEOCODER.regions_for_mcc(code, metadata=True))
+
+        for region in regions:
+            region_code = region.code
+            results.add(self.result_type(
+                region_code=region_code,
+                region_name=region.name,
+                accuracy=region.radius))
+        return results
 
 
 class CellPositionSource(CellPositionMixin, PositionSource):
