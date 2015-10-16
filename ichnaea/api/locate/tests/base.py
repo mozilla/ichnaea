@@ -278,6 +278,8 @@ class BaseLocateTest(object):
                 }
                 if getattr(cell, 'cid', None) is not None:
                     cell_query['cellId'] = cell.cid
+                if getattr(cell, 'psc', None) is not None:
+                    cell_query['psc'] = cell.cid
                 query['cellTowers'].append(cell_query)
         if wifis:
             query['wifiAccessPoints'] = []
@@ -422,6 +424,12 @@ class CommonPositionTest(BaseLocateTest):
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
+
+    def test_cell_invalid_lac(self):
+        cell = CellFactory.build(radio=Radio.wcdma, lac=0, cid=1)
+        query = self.model_query(cells=[cell])
+        res = self._call(body=query, status=self.not_found.code)
+        self.check_response(res, 'not_found')
 
     def test_cell_lte_radio(self):
         cell = CellFactory(radio=Radio.lte)

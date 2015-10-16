@@ -26,6 +26,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Fix cell queries containing invalid area codes but valid cids.
+
 - #242: Add WiFi stats to region specific stats page.
 
 - Add update_statregion task to maintain region_stat table.

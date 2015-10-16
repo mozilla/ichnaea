@@ -102,8 +102,8 @@ class ValidCellLookupSchema(ValidCellKeySchema, ValidCellSignalSchema):
     def validator(self, node, cstruct):
         super(ValidCellLookupSchema, self).validator(node, cstruct)
 
-        if cstruct['cid'] is None:
-            raise colander.Invalid(node, ('CID is required in lookups.'))
+        if (cstruct['lac'] is None or cstruct['cid'] is None):
+            raise colander.Invalid(node, ('LAC/CID are required in lookups.'))
 
 
 class CellLookup(HashKeyMixin, BaseCellLookup):

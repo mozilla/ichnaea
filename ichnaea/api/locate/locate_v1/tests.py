@@ -86,6 +86,8 @@ class LocateV1Base(BaseLocateTest, AppTestCase):
                 }
                 if getattr(cell, 'cid', None) is not None:
                     cell_query['cid'] = cell.cid
+                if getattr(cell, 'psc', None) is not None:
+                    cell_query['psc'] = cell.cid
                 query['cell'].append(cell_query)
         if wifis:
             query['wifi'] = []
