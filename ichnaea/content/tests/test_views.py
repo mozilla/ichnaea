@@ -368,8 +368,3 @@ class TestLayout(TestCase):
         from chameleon.zpt.template import Macro
         layout = self._make_layout()
         self.assertEqual(layout.base_template.__class__, Macro)
-
-    def test_base_macros(self):
-        from chameleon.zpt.template import Macros
-        layout = self._make_layout()
-        self.assertEqual(layout.base_macros.__class__, Macros)

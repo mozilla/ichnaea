@@ -121,11 +121,6 @@ class Layout(object):
         renderer = get_renderer('templates/base.pt')
         return renderer.implementation().macros['layout']
 
-    @reify
-    def base_macros(self):
-        renderer = get_renderer('templates/base_macros.pt')
-        return renderer.implementation().macros
-
     @property
     def this_year(self):
         return THIS_YEAR
