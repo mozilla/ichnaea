@@ -15,10 +15,11 @@ class TestGeocoder(TestCase):
     def test_region(self):
         func = GEOCODER.region
         self.assertEqual(func(31.522, 34.455), 'XW')
-        self.assertEqual(func(42.83256, 20.34221), 'XK')
+        self.assertEqual(func(42.83256, 20.34221), 'RS')
+        self.assertEqual(func(42.4255, 3.3584), 'ES')
         self.assertEqual(func(46.2130, 6.1290), 'FR')
-        self.assertEqual(func(46.5743, 6.3532), 'CH')
-        self.assertEqual(func(48.8656, 13.6781), 'DE')
+        self.assertEqual(func(46.5743, 6.3532), 'FR')
+        self.assertEqual(func(48.8656, 13.6781), 'CZ')
         self.assertEqual(func(49.7089, 6.0741), 'LU')
         self.assertEqual(func(51.5142, -0.0931), 'GB')
         self.assertEqual(func(60.1, 20.0), 'FI')

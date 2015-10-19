@@ -12,6 +12,7 @@ from shapely import prepared
 import simplejson
 from rtree import index
 
+from ichnaea import geocalc
 from ichnaea import util
 
 JSON_FILE = os.path.join(os.path.abspath(
@@ -136,13 +137,31 @@ class Geocoder(object):
         # regions is it closest to?
         if not precise_codes:
             for code in buffered_codes:
-                distances[self._shapes[code].boundary.distance(point)] = code
+                coords = []
+                if isinstance(self._shapes[code].boundary,
+                              geometry.base.BaseMultipartGeometry):
+                    for geom in self._shapes[code].boundary.geoms:
+                        coords.extend([coord for coord in geom.coords])
+                else:
+                    coords = self._shapes[code].boundary.coords
+                for coord in coords:
+                    distances[geocalc.distance(
+                        coord[1], coord[0], lat, lon)] = code
             return distances[min(distances.keys())]
 
         # point was in multiple overlapping regions, take the one where it
         # is farthest away from the border / the most inside a region
         for code in precise_codes:
-            distances[self._shapes[code].boundary.distance(point)] = code
+            coords = []
+            if isinstance(self._shapes[code].boundary,
+                          geometry.base.BaseMultipartGeometry):
+                for geom in self._shapes[code].boundary.geoms:
+                    coords.extend([coord for coord in geom.coords])
+            else:
+                coords = self._shapes[code].boundary.coords
+            for coord in coords:
+                distances[geocalc.distance(
+                    coord[1], coord[0], lat, lon)] = code
         return distances[max(distances.keys())]
 
     def any_region(self, lat, lon):
