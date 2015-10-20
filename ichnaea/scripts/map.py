@@ -76,9 +76,13 @@ def export_to_csv(session, filename, multiplier=5):
                 for i in xrange(multiplier):
                     # keep calling random even if we skip the lines
                     # to preserve the pseudo-random sequence
-                    lat = (row[0] + random()) / 1000.0
-                    lon = (row[1] + random()) / 1000.0
-                    if row[0] != 0 or row[1] != 0:
+                    if (row[0] is None or row[1] is None or
+                            (row[0] == 0 and row[1] == 0)):
+                        random()
+                        random()
+                    else:
+                        lat = (row[0] + random()) / 1000.0
+                        lon = (row[1] + random()) / 1000.0
                         append(pattern % (lat, lon))
             fd.writelines(lines)
             result_rows += len(lines)
