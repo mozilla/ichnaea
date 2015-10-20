@@ -18,7 +18,7 @@ class Result(object):
     _required = ()  #: The list of required attributes.
 
     def __init__(self, accuracy=None, region_code=None, region_name=None,
-                 fallback=None, lat=None, lon=None, source=None):
+                 fallback=None, lat=None, lon=None, source=None, score=1.0):
         self.accuracy = self._round(accuracy)
         self.region_code = region_code
         self.region_name = region_name
@@ -26,6 +26,7 @@ class Result(object):
         self.lat = self._round(lat)
         self.lon = self._round(lon)
         self.source = source
+        self.score = score
 
     def __repr__(self):
         values = []

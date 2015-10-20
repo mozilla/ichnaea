@@ -23,11 +23,13 @@ class SourceTest(object):
         query = self.make_query(ip=self.london_model.ip)
         result = self.source.search(query)
         self.check_model_result(result, self.london_model)
+        self.assertTrue(0.5 < result.score < 1.0, result.score)
 
     def test_region(self):
         query = self.make_query(ip=self.bhutan_model.ip)
         result = self.source.search(query)
         self.check_model_result(result, self.bhutan_model)
+        self.assertTrue(0.5 < result.score < 1.0, result.score)
 
 
 class TestPositionSource(SourceTest, BaseSourceTest):

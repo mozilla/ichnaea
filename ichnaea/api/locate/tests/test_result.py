@@ -77,11 +77,12 @@ class TestResultList(TestCase):
 class TestRegion(TestCase):
 
     def test_repr(self):
-        region = Region(region_code='DE', region_name='Germany')
+        region = Region(region_code='DE', region_name='Germany', score=2.0)
         rep = repr(region)
         self.assertTrue(rep.startswith('Region'), rep)
         self.assertTrue('DE' in rep, rep)
         self.assertTrue('Germany' in rep, rep)
+        self.assertAlmostEqual(region.score, 2.0)
 
     def test_empty(self):
         region = Region(
@@ -121,12 +122,13 @@ class TestRegion(TestCase):
 class TestPosition(TestCase):
 
     def test_repr(self):
-        position = Position(lat=1.0, lon=-1.1, accuracy=100.0)
+        position = Position(lat=1.0, lon=-1.1, accuracy=100.0, score=2.0)
         rep = repr(position)
         self.assertTrue(rep.startswith('Position'), rep)
         self.assertTrue('1.0' in rep, rep)
         self.assertTrue('-1.1' in rep, rep)
         self.assertTrue('100.0' in rep, rep)
+        self.assertAlmostEqual(position.score, 2.0)
 
     def test_empty(self):
         self.assertTrue(Position(lat=1.0, lon=1.0, accuracy=None).empty())

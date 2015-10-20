@@ -32,6 +32,7 @@ class GeoIPSource(Source):
                 accuracy=geoip[self.geoip_accuracy_field],
                 region_code=geoip['region_code'],
                 region_name=geoip['region_name'],
+                score=geoip['score'],
             )
 
         if source_used:
