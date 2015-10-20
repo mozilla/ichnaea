@@ -433,6 +433,7 @@ class WifiUpdater(StationUpdater):
                     'region': shard_station.region,
                     'samples': None,
                     'source': None,
+                    'block_first': shard_station.block_first or self.today,
                     'block_last': self.today,
                     'block_count': block_count + 1,
                 })
@@ -490,6 +491,7 @@ class WifiUpdater(StationUpdater):
                     'region': shard_station.region,
                     'samples': None,
                     'source': None,
+                    'block_first': shard_station.block_first or self.today,
                     'block_last': self.today,
                     'block_count': block_count + 1,
                 })
@@ -529,6 +531,7 @@ class WifiUpdater(StationUpdater):
                     'samples': samples,
                     'source': None,
                     # use the exact same keys as in the moving case
+                    'block_first': shard_station.block_first,
                     'block_last': shard_station.block_last,
                     'block_count': shard_station.block_count,
                 })

@@ -479,6 +479,7 @@ class TestWifi(StationTest):
         wifis = (self.session.query(shard)
                              .filter(shard.mac == bad_wifi.mac)).all()
         self.assertEqual(len(wifis), 1)
+        self.assertTrue(wifis[0].block_first < utcnow.date())
         self.assertTrue(wifis[0].lat is None)
         self.assertTrue(wifis[0].lon is None)
 
@@ -509,6 +510,8 @@ class TestWifi(StationTest):
         wifis = self.session.query(shard).all()
         self.assertEqual(len(wifis), 1)
         wifi = wifis[0]
+        self.assertEqual(wifi.block_first, last_week.date())
+        self.assertEqual(wifi.block_last, last_week.date())
         self.assertEqual(wifi.created.date(), last_week.date())
         self.assertAlmostEqual(wifi.lat, obs.lat)
         self.assertAlmostEqual(wifi.lon, obs.lon)

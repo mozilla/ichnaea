@@ -26,6 +26,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Maintain `block_first` column.
+
 - Introduce upper bound for Wifi based accuracy numbers.
 
 - Provide better GeoIP accuracy numbers for cities and subdivisions.
