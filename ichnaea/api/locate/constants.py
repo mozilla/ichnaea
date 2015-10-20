@@ -51,12 +51,12 @@ class DataAccuracy(Enum):
     be compared to int/float values.
 
     These values are related to :data:`~ichnaea.constants.CELL_MIN_ACCURACY`
-    and :data:`~ichnaea.constants.GEOIP_CITY_RADIUS` and adjustments
+    and :data:`~ichnaea.geoip.CITY_RADIUS` and adjustments
     in one need to be reflected in the other.
     """
 
     high = 2000.0  #: High accuracy, probably WiFi based.
-    medium = 40000.0  #: Medium accuracy, probably cell based.
+    medium = 24999.0  #: Medium accuracy, probably cell based.
     low = EARTH_CIRCUMFERENCE  #: Low accuracy, large cell, cell area or GeoIP.
     none = float('inf')  # No accuracy at all.
 

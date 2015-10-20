@@ -162,6 +162,6 @@ class TestPosition(TestCase):
         self.assertEqual(
             _position(accuracy=100).data_accuracy, DataAccuracy.high)
         self.assertEqual(
-            _position(accuracy=30000.0).data_accuracy, DataAccuracy.medium)
+            _position(accuracy=20000.0).data_accuracy, DataAccuracy.medium)
         self.assertEqual(
             _position(accuracy=10 ** 6).data_accuracy, DataAccuracy.low)

@@ -16,18 +16,14 @@ from maxminddb import InvalidDatabaseError
 from maxminddb.const import MODE_AUTO
 from six import PY2
 
-from ichnaea.constants import (
-    DEGREE_DECIMAL_PLACES,
-    GEOIP_CITY_RADIUS,
-    GEOIP_REGION_RADIUS,
-)
+from ichnaea.constants import DEGREE_DECIMAL_PLACES
 from ichnaea.geocode import GEOCODER
 
 # The region codes present in the GeoIP data files, extracted from
 # the CSV files. Accuracy numbers from October 2015 from
 # https://www.maxmind.com/en/geoip2-city-database-accuracy.
 # Default value is 0.3 if the website didn't include any data.
-GEOIP_SCORE = {
+REGION_SCORE = {
     'AD': 0.3, 'AE': 0.9, 'AF': 0.3, 'AG': 0.3, 'AI': 0.3, 'AL': 0.3,
     'AM': 0.3, 'AO': 0.3, 'AQ': 0.3, 'AR': 0.7, 'AS': 0.3, 'AT': 0.7,
     'AU': 0.7, 'AW': 0.3, 'AX': 0.3, 'AZ': 0.3, 'BA': 0.3, 'BB': 0.3,
@@ -72,12 +68,100 @@ GEOIP_SCORE = {
     'ZW': 0.3,
 }
 
+# The largest subdivision radius in each region, based on
+# https://en.wikipedia.org/wiki/List_of_country_subdivisions_by_area
+SUB_RADII = {
+    'AU': 1200000.0,
+    'BR': 1000000.0,
+    'CA': 1400000.0,
+    'CD': 500000.0,
+    'CL': 500000.0,
+    'CN': 1000000.0,
+    'DZ': 600000.0,
+    'EG': 500000.0,
+    'GL': 1600000.0,
+    'ID': 550000.0,
+    'KZ': 550000.0,
+    'LY': 500000.0,
+    'ML': 600000.0,
+    'NE': 600000.0,
+    'RU': 1200000.0,
+    'SA': 650000.0,
+    'SD': 450000.0,
+    'SO': 500000.0,
+    'US': 1200000.0,
+}  #:
+
+SUB_RADIUS = 400000.0  #:
+
+REGION_RADIUS = 5000000.0
+"""
+Usually a per-region radius is calculated. This is the worst case
+radius returned for GeoIP region based queries, based on data
+for Russia:
+
+``geocalc.distance(60.0, 100.0, 41.199278, 27.351944) == 5220613 meters``
+"""
+
+# City selection based on
+# https://en.wikipedia.org/wiki/List_of_cities_proper_by_population
+# Radius data based on bbox from http://www.geonames.org/getJSON?id=<num>
+# from ichnaea.geocalc import distance
+# round(max(distance(box['north'], box['west'], box['north'], box['east']),
+#           distance(box['north'], box['west'], box['south'], box['west']))
+#       / 2000.0) * 1000.0
+# representing an inner circle inside the bounding box
+CITY_RADII = {
+    98182: 39000.0,  # Baghdad
+    108410: 30000.0,  # Riyadh
+    112931: 39000.0,  # Tehran
+    323786: 27000.0,  # Ankara
+    360630: 40000.0,  # Cairo
+    524901: 47000.0,  # Moscow
+    745044: 48000.0,  # Istanbul
+    1172451: 36000.0,  # Lahore
+    1185241: 46000.0,  # Dhaka
+    1275339: 50000.0,  # Mumbai
+    1277333: 33000.0,  # Bengaluru
+    1279233: 28000.0,  # Ahmedabad
+    1566083: 27000.0,  # Ho Chi Minh City
+    1609350: 33000.0,  # Bangkok
+    1642911: 42000.0,  # Jakarta
+    1668341: 40000.0,  # Taipei
+    1701668: 47000.0,  # Manila
+    1792947: 48000.0,  # Tianjin
+    1796236: 68000.0,  # Shanghai
+    1816670: 49000.0,  # Beijing
+    1835848: 46000.0,  # Seoul
+    1850147: 42000.0,  # Tokyo
+    1871859: 26000.0,  # Pyongyang
+    2314302: 40000.0,  # Kinshasa
+    2643743: 40000.0,  # London
+    2950159: 27000.0,  # Berlin
+    3117735: 26000.0,  # Madrid
+    3435910: 50000.0,  # Buenos Aires
+    3448439: 46000.0,  # Sao Paulo
+    3530597: 50000.0,  # Mexico City
+    3688689: 40000.0,  # Bogota
+    3871336: 32000.0,  # Santiago
+    3936456: 40000.0,  # Lima
+    5128581: 41000.0,  # New York
+}  #:
+
+CITY_RADIUS = 25000.0
+"""
+Radius returned for GeoIP city based queries.
+
+25km is pure guesswork but should cover most cities, except those
+explicitly listed in :data:`~ichnaea.geoip.CITY_RADII`.
+"""
+
 GEOIP_GENC_MAP = {
     'AX': 'FI',  # Aland Islands -> Finland
     'PS': 'XW',  # Palestine -> West Bank
     'SJ': 'XR',  # Svalbard and Jan Mayen -> Svalbard
     'UM': 'US',  # US Minor Outlying Territories -> US
-}
+}  #:
 
 
 def configure_geoip(filename, mode=MODE_AUTO,
@@ -196,7 +280,11 @@ class GeoIPWrapper(Reader):
             return None
 
         region = record.country
-        city = bool(record.city.name)
+        city = record.city.geoname_id if record.city else None
+        subs = []
+        if record.subdivisions:
+            for sub in record.subdivisions:
+                subs.append(sub.iso_code)
         location = record.location
         if not (location.latitude and
                 location.longitude and
@@ -204,31 +292,34 @@ class GeoIPWrapper(Reader):
             return None
 
         code = GEOIP_GENC_MAP.get(region.iso_code, region.iso_code).upper()
-        radius, region_radius = self.radius(code, city=city)
+        radius, region_radius = self.radius(code, subs=subs, city=city)
         score = 0.9
         if city:
-            score = GEOIP_SCORE.get(code, 0.3)
+            score = REGION_SCORE.get(code, 0.3)
         return {
             # Round lat/lon to a standard maximum precision
             'latitude': round(location.latitude, DEGREE_DECIMAL_PLACES),
             'longitude': round(location.longitude, DEGREE_DECIMAL_PLACES),
             'region_code': code,
             'region_name': genc.region_by_alpha2(code).name,
-            'city': city,
+            'city': bool(city),
             'radius': radius,
             'region_radius': region_radius,
             'score': score,
         }
 
-    def radius(self, code, city=False, default=GEOIP_REGION_RADIUS):
+    def radius(self, code, subs=None, city=None, default=REGION_RADIUS):
         """
         Return the best radius guess for the given region code.
 
         :param code: A two-letter region code.
         :type code: str
 
-        :param city: Do we have a city record or a region record.
-        :type city: bool
+        :param subs: A list of ISO subdivision codes.
+        :type code: list
+
+        :param city: A geoname_id from a city record or None.
+        :type city: int
 
         :returns: A tuple of radius/region radius guesses in meters.
         :rtype: tuple
@@ -238,12 +329,16 @@ class GeoIPWrapper(Reader):
             # No region code or no successful radius lookup
             region_radius = default
 
+        # Use region radius as an upper bound for city / subdivision
+        # radius for really small regions. E.g. Vatican City cannot
+        # be larger than the Vatican as a region.
         radius = region_radius
+
+        if subs:
+            radius = min(SUB_RADII.get(code, SUB_RADIUS), radius)
+
         if city:
-            # Use region radius as an upper bound for city radius
-            # for really small regions. E.g. Vatican City cannot
-            # be larger than the Vatican as a region.
-            radius = min(GEOIP_CITY_RADIUS, region_radius)
+            radius = min(CITY_RADII.get(city, CITY_RADIUS), radius)
 
         return (radius, region_radius)
 

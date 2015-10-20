@@ -3,10 +3,6 @@ import tempfile
 from maxminddb.const import MODE_MMAP
 from six import PY2
 
-from ichnaea.constants import (
-    GEOIP_CITY_RADIUS,
-    GEOIP_REGION_RADIUS,
-)
 from ichnaea.geocode import GEOCODER
 from ichnaea import geoip
 from ichnaea.tests.base import (
@@ -64,7 +60,7 @@ class TestDatabase(GeoIPTestCase):
     def test_regions(self):
         valid_regions = GEOCODER.valid_regions
         mapped_regions = set([geoip.GEOIP_GENC_MAP.get(r, r)
-                              for r in geoip.GEOIP_SCORE.keys()])
+                              for r in geoip.REGION_SCORE.keys()])
         self.assertEqual(mapped_regions - valid_regions, set())
         for region in mapped_regions:
             radius, region_radius = self.geoip_db.radius(
@@ -77,7 +73,6 @@ class TestLookup(GeoIPTestCase):
 
     def test_city(self):
         london = self.geoip_data['London']
-        # Known good value in the wee sample DB we're using
         result = self.geoip_db.lookup(london['ip'])
         for name in ('latitude', 'longitude', 'radius', 'region_radius'):
             self.assertAlmostEqual(london[name], result[name])
@@ -114,16 +109,21 @@ class TestRadius(GeoIPTestCase):
         self.assertTrue(self.geoip_db.radius('US')[0] > 1000000.0)
         self.assertTrue(self.geoip_db.radius('XK')[0] > 50000.0)
 
+    def test_subdivision(self):
+        self.assertTrue(self.geoip_db.radius('RU')[0] > 2000000.0)
+        self.assertTrue(self.geoip_db.radius('RU', subs=['A'])[0] < 2000000.0)
+
     def test_city(self):
-        self.assertEqual(
-            self.geoip_db.radius('US', city=True)[0], GEOIP_CITY_RADIUS)
-        self.assertTrue(
-            self.geoip_db.radius('LI', city=True)[0] < GEOIP_CITY_RADIUS)
-        self.assertTrue(
-            self.geoip_db.radius('VA', city=True)[0] < GEOIP_CITY_RADIUS)
+        self.assertTrue(self.geoip_db.radius('GB', city=2643743)[0] >
+                        geoip.CITY_RADIUS)
+        self.assertEqual(self.geoip_db.radius('RU', subs=['A'], city=1)[0],
+                         geoip.CITY_RADIUS)
+        self.assertTrue(self.geoip_db.radius('LI', city=1)[0] <
+                        geoip.CITY_RADIUS)
+        self.assertEqual(self.geoip_db.radius('US', city=1)[0],
+                         geoip.CITY_RADIUS)
 
     def test_unknown(self):
-        self.assertEqual(
-            self.geoip_db.radius('XX')[0], GEOIP_REGION_RADIUS)
-        self.assertEqual(
-            self.geoip_db.radius('XX', city=True)[0], GEOIP_CITY_RADIUS)
+        self.assertEqual(self.geoip_db.radius('XX')[0], geoip.REGION_RADIUS)
+        self.assertEqual(self.geoip_db.radius('XX', city=1)[0],
+                         geoip.CITY_RADIUS)

@@ -15,12 +15,12 @@ class DataAccuracyTest(TestCase):
 
     def test_compare_number(self):
         self.assertTrue(DataAccuracy.none == float('inf'))
-        self.assertTrue(DataAccuracy.low > 50000)
-        self.assertTrue(DataAccuracy.low > 50000.0)
-        self.assertTrue(DataAccuracy.medium == 40000)
-        self.assertTrue(DataAccuracy.medium >= 40000.0)
-        self.assertTrue(DataAccuracy.medium <= 40000)
-        self.assertFalse(DataAccuracy.medium != 40000.0)
+        self.assertTrue(DataAccuracy.low > 25000)
+        self.assertTrue(DataAccuracy.low > 25000.0)
+        self.assertTrue(DataAccuracy.medium == 24999)
+        self.assertTrue(DataAccuracy.medium >= 24999.0)
+        self.assertTrue(DataAccuracy.medium <= 24999)
+        self.assertFalse(DataAccuracy.medium != 24999.0)
         self.assertTrue(500.0 <= DataAccuracy.high)
         self.assertFalse(2000.1 <= DataAccuracy.high)
 

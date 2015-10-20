@@ -382,7 +382,7 @@ class TestResultStats(QueryTest):
 
     def test_low_hit(self):
         self._make_query(
-            self._make_result(accuracy=60000.0), ip=self.london_ip)
+            self._make_result(accuracy=25000.0), ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
                 ['key:key', 'region:GB', 'fallback_allowed:false',
@@ -400,7 +400,7 @@ class TestResultStats(QueryTest):
 
     def test_medium_miss_low(self):
         cells = CellFactory.build_batch(1)
-        self._make_query(self._make_result(accuracy=60000.0), cell=cells)
+        self._make_query(self._make_result(accuracy=25000.0), cell=cells)
         self.check_stats(counter=[
             ('locate.result',
                 ['key:key', 'region:none', 'fallback_allowed:false',
@@ -409,7 +409,7 @@ class TestResultStats(QueryTest):
 
     def test_medium_hit(self):
         cells = CellFactory.build_batch(1)
-        self._make_query(self._make_result(accuracy=30000.0), cell=cells)
+        self._make_query(self._make_result(accuracy=20000.0), cell=cells)
         self.check_stats(counter=[
             ('locate.result',
                 ['key:key', 'region:none', 'fallback_allowed:false',

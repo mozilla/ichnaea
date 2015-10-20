@@ -28,10 +28,12 @@ from ichnaea.async.config import (
 )
 from ichnaea.cache import configure_redis
 from ichnaea.config import DummyConfig
-from ichnaea.constants import GEOIP_CITY_RADIUS
 from ichnaea.db import configure_db
 from ichnaea.geocode import GEOCODER
-from ichnaea.geoip import configure_geoip
+from ichnaea.geoip import (
+    CITY_RADII,
+    configure_geoip,
+)
 from ichnaea.http import configure_http_session
 from ichnaea.log import (
     configure_raven,
@@ -97,7 +99,7 @@ GEOIP_DATA = {
         'ip': '81.2.69.192',
         'latitude': 51.5142,
         'longitude': -0.0931,
-        'radius': GEOIP_CITY_RADIUS,
+        'radius': CITY_RADII[2643743],
         'region_radius': GEOCODER.region_max_radius('GB'),
         'score': 0.8,
     },
