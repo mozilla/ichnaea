@@ -82,6 +82,8 @@ class MigrationTest(object):
             'alembic', 'script_location', 'alembic')
         alembic_cfg.set_section_option(
             'alembic', 'sqlalchemy.url', str(self.db.engine.url))
+        alembic_cfg.set_section_option(
+            'alembic', 'sourceless', 'true')
         return alembic_cfg
 
     def alembic_script(self):

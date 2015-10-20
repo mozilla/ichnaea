@@ -30,7 +30,6 @@ from ichnaea.models import (
     WifiShard,
     Radio,
 )
-from ichnaea.models.wifi import WIFI_SHARDS
 from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
@@ -667,13 +666,13 @@ class CommonLocateErrorTest(BaseLocateTest):
         super(CommonLocateErrorTest, self).tearDown()
 
     def test_database_error(self, db_errors=0):
-        for model in (Cell, CellArea, CellOCID, CellAreaOCID):
-            self.session.execute(text('drop table %s;' % model.__tablename__))
-        for model in WIFI_SHARDS.values():
-            self.session.execute(text('drop table %s;' % model.__tablename__))
-
         cells = CellFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(2)
+
+        for model in (Cell, CellArea, CellOCID, CellAreaOCID):
+            self.session.execute(text('drop table %s;' % model.__tablename__))
+        for name in set([wifi.__tablename__ for wifi in wifis]):
+            self.session.execute(text('drop table %s;' % name))
 
         query = self.model_query(cells=cells, wifis=wifis)
         res = self._call(body=query, ip=self.test_ip)

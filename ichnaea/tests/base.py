@@ -9,11 +9,7 @@ from maxminddb.const import MODE_AUTO
 from sqlalchemy import (
     event,
     inspect,
-)
-from sqlalchemy.schema import (
-    DropTable,
-    MetaData,
-    Table,
+    text,
 )
 from webtest import TestApp
 
@@ -415,12 +411,12 @@ class DBTestCase(LogTestCase):
             _Model.metadata.create_all(engine)
             # Now stamp the latest alembic version
             alembic_cfg = Config()
-            alembic_cfg.set_section_option('alembic',
-                                           'script_location',
-                                           'alembic')
-            alembic_cfg.set_section_option('alembic',
-                                           'sqlalchemy.url',
-                                           str(engine.url))
+            alembic_cfg.set_section_option(
+                'alembic', 'script_location', 'alembic')
+            alembic_cfg.set_section_option(
+                'alembic', 'sqlalchemy.url', str(engine.url))
+            alembic_cfg.set_section_option(
+                'alembic', 'sourceless', 'true')
 
             command.stamp(alembic_cfg, 'head')
             trans.commit()
@@ -429,15 +425,13 @@ class DBTestCase(LogTestCase):
     def cleanup_tables(cls, engine):
         # reflect and delete all tables, not just those known to
         # our current code version / models
-        metadata = MetaData()
         inspector = inspect(engine)
-        tables = []
         with engine.connect() as conn:
             trans = conn.begin()
-            for t in inspector.get_table_names():
-                tables.append(Table(t, metadata))
-            for t in tables:
-                conn.execute(DropTable(t))
+            names = inspector.get_table_names()
+            if names:
+                tables = '`' + '`, `'.join(names) + '`'
+                conn.execute(text('DROP TABLE %s' % tables))
             trans.commit()
 
 
