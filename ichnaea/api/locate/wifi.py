@@ -18,6 +18,7 @@ from ichnaea.api.locate.source import PositionSource
 from ichnaea.constants import (
     PERMANENT_BLOCKLIST_THRESHOLD,
     TEMPORARY_BLOCKLIST_DURATION,
+    WIFI_MAX_ACCURACY,
     WIFI_MIN_ACCURACY,
 )
 from ichnaea.geocalc import (
@@ -186,6 +187,7 @@ def aggregate_cluster_position(cluster, result_type):
         [(wifi.lat, wifi.lon, wifi.radius) for wifi in sample],
         dtype=numpy.double)
     lat, lon, accuracy = aggregate_position(circles, WIFI_MIN_ACCURACY)
+    accuracy = min(accuracy, WIFI_MAX_ACCURACY)
     return result_type(lat=lat, lon=lon, accuracy=accuracy)
 
 

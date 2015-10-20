@@ -20,6 +20,7 @@ from ichnaea.constants import (
     CELL_MIN_ACCURACY,
     CELLAREA_MIN_ACCURACY,
     WIFI_MIN_ACCURACY,
+    WIFI_MAX_ACCURACY,
 )
 from ichnaea.models import (
     ApiKey,
@@ -155,7 +156,8 @@ class BaseSourceTest(ConnectionTestCase):
                 elif isinstance(model, (CellArea, CellAreaOCID)):
                     accuracy = max(accuracy, CELLAREA_MIN_ACCURACY)
                 elif isinstance(model, WifiShard):
-                    accuracy = max(accuracy, WIFI_MIN_ACCURACY)
+                    accuracy = min(max(accuracy, WIFI_MIN_ACCURACY),
+                                   WIFI_MAX_ACCURACY)
                 expected.append({
                     'lat': kw.get('lat', model.lat),
                     'lon': kw.get('lon', model.lon),
@@ -248,7 +250,8 @@ class BaseLocateTest(object):
                     elif isinstance(model, (CellArea, CellAreaOCID)):
                         model_value = max(model_value, CELLAREA_MIN_ACCURACY)
                     elif isinstance(model, WifiShard):
-                        model_value = max(model_value, WIFI_MIN_ACCURACY)
+                        model_value = min(max(model_value, WIFI_MIN_ACCURACY),
+                                          WIFI_MAX_ACCURACY)
                     expected[name] = model_value
                 else:
                     expected[name] = getattr(model, model_name)

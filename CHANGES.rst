@@ -26,6 +26,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Introduce upper bound for Wifi based accuracy numbers.
+
 - Provide better GeoIP accuracy numbers for cities and subdivisions.
 
 - Fix cell queries containing invalid area codes but valid cids.

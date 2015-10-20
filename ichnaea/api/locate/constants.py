@@ -55,7 +55,7 @@ class DataAccuracy(Enum):
     in one need to be reflected in the other.
     """
 
-    high = 2000.0  #: High accuracy, probably WiFi based.
+    high = 1000.0  #: High accuracy, probably WiFi based.
     medium = 24999.0  #: Medium accuracy, probably cell based.
     low = EARTH_CIRCUMFERENCE  #: Low accuracy, large cell, cell area or GeoIP.
     none = float('inf')  # No accuracy at all.
