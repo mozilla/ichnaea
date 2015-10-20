@@ -36,6 +36,9 @@ Changes
 
 - Add update_statregion task to maintain region_stat table.
 
+- Update to latest versions of alembic, coverage, datadog, raven
+  and requests.
+
 20151013115000
 **************
 

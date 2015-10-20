@@ -1,4 +1,4 @@
-alembic==0.8.2
+alembic==0.8.3
 amqp==1.4.7
 anyjson==0.3.3
 argparse==1.3.0 ; python_version < '2.7'
@@ -11,7 +11,7 @@ Chameleon==2.22
 colander==1.0
 configparser==3.5.0b2
 cryptography==1.0.2
-datadog==0.9.0
+datadog==0.10.0
 decorator==4.0.4
 enum34==1.0.4 ; python_version < '3.0'
 filechunkio==1.6
@@ -45,10 +45,10 @@ pyramid==1.5.7
 pyramid-chameleon==0.3
 python-editor==0.4
 pytz==2015.6
-raven==5.7.2
+raven==5.8.0
 redis==2.10.3
 repoze.lru==0.6
-requests==2.8.0
+requests==2.8.1
 Rtree==0.6.0 ; python_version < '2.7'  # rq.filter: <0.7.0
 Rtree==0.8.2 ; python_version >= '2.7'
 scipy==0.16.0
