@@ -132,18 +132,6 @@ def update_wifi(self, batch=1000, shard_id=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell')
-def scan_areas(self, batch=100):  # pragma: no cover
-    # BBB
-    return
-
-
-@celery_app.task(base=BaseTask, bind=True, queue='celery_cell')
-def update_area(self, areaids):  # pragma: no cover
-    # BBB
-    return
-
-
-@celery_app.task(base=BaseTask, bind=True, queue='celery_cell')
 def update_cellarea(self, batch=100):
     with self.db_session() as session:
         area.CellAreaUpdater(self, session)(batch=batch)
