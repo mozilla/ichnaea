@@ -1,6 +1,5 @@
 from contextlib import contextmanager
 import os
-from tempfile import mkstemp
 
 from mock import MagicMock, patch
 
@@ -13,6 +12,7 @@ from ichnaea.scripts.map import (
     tempdir,
 )
 from ichnaea.tests.base import CeleryTestCase
+from ichnaea import util
 
 
 @contextmanager
@@ -25,29 +25,28 @@ def mock_system_call():
 class TestMap(CeleryTestCase):
 
     def test_export_to_csv(self):
-        session = self.session
+        today = util.utcnow().date()
         data = [
-            MapStat(lat=12345, lon=12345),
-            MapStat(lat=0, lon=12345),
-            MapStat(lat=0, lon=0),
-            MapStat(lat=-10000, lon=-11000),
+            MapStat(time=today, lat=12345, lon=12345),
+            MapStat(time=today, lat=0, lon=12345),
+            MapStat(time=today, lat=None, lon=None),
+            MapStat(time=today, lat=-10000, lon=-11000),
         ]
-        session.add_all(data)
-        session.flush()
+        self.session.add_all(data)
+        self.session.flush()
 
-        fd, filename = mkstemp()
-        try:
-            result = export_to_csv(session, filename, multiplier=3)
-            self.assertEqual(result, 9)
-            written = os.read(fd, 10240).decode('utf-8')
+        with util.selfdestruct_tempdir() as temp_dir:
+            filename = os.path.join(temp_dir, 'map.csv.gz')
+            result = export_to_csv(self.session, filename)
+            self.assertEqual(result, 36)
+            with util.gzip_open(filename, 'r') as fd:
+                written = fd.read()
             lines = [line.split(',') for line in written.split()]
-            self.assertEqual(len(lines), 9)
+            self.assertEqual(len(lines), 36)
             self.assertEqual(set([round(float(l[0]), 2) for l in lines]),
                              set([-10.0, 0.0, 12.35]))
             self.assertEqual(set([round(float(l[1]), 2) for l in lines]),
                              set([-11.0, 12.35]))
-        finally:
-            os.remove(filename)
 
     def test_generate(self):
         with mock_system_call() as mock_system:
@@ -56,7 +55,7 @@ class TestMap(CeleryTestCase):
                      upload=False, concurrency=1, datamaps='')
             mock_calls = mock_system.mock_calls
             self.assertEqual(len(mock_calls), 3)
-            self.assertTrue(mock_calls[0][1][0].startswith('encode'))
+            self.assertTrue('encode' in mock_calls[0][1][0])
             self.assertTrue(mock_calls[1][1][0].startswith('enumerate'))
             self.assertTrue(mock_calls[2][1][0].startswith('enumerate'))
         self.check_stats(

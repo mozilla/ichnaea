@@ -23,6 +23,10 @@ if sys.version_info < (2, 7):  # pragma: no cover
         # would bark on this while trying to capture the stack frame locals.
         fileobj = None
 
+        @property
+        def closed(self):  # pragma: no cover
+            return self.fileobj is None
+
         def __enter__(self):
             if self.fileobj is None:  # pragma: no cover
                 raise ValueError('I/O operation on closed GzipFile object')
@@ -43,11 +47,15 @@ def gzip_open(filename, mode, compresslevel=6):  # pragma: no cover
     """
     # open with either mode r or w
     if six.PY2:
-        yield GzipFile(filename, mode, compresslevel=compresslevel)
+        with GzipFile(filename, mode,
+                      compresslevel=compresslevel) as gzip_file:
+            yield gzip_file
     else:
         with open(filename, mode + 'b') as fd:
-            yield gzip.open(fd, mode=mode + 't',
-                            compresslevel=compresslevel, encoding='utf-8')
+            with gzip.open(fd, mode=mode + 't',
+                           compresslevel=compresslevel,
+                           encoding='utf-8') as gzip_file:
+                yield gzip_file
 
 
 def encode_gzip(data, compresslevel=6, encoding='utf-8'):

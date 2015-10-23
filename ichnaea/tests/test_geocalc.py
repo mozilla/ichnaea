@@ -6,6 +6,7 @@ from ichnaea.geocalc import (
     distance,
     latitude_add,
     longitude_add,
+    random_points,
 )
 from ichnaea import constants
 from ichnaea.tests.base import TestCase
@@ -105,3 +106,33 @@ class TestLongitudeAdd(TestCase):
     def test_adds_meters_to_longitude(self):
         self.assertAlmostEqual(longitude_add(1.0, 1.0, 1000),
                                1.0166573581, 9)
+
+
+class TestRandomPoints(TestCase):
+
+    def test_null(self):
+        points = random_points(0, 0, 20)
+        self.assertEqual(type(points), list)
+        self.assertEqual(len(points), 2)
+
+    def test_stable(self):
+        points1 = random_points(10123, -170234, 1)
+        points2 = random_points(10123, -170234, 1)
+        points3 = random_points(10124, -170234, 1)
+        self.assertEqual(points1, points2)
+        self.assertNotEqual(points1, points3)
+        self.assertNotEqual(points2, points3)
+
+    def test_num(self):
+        self.assertEqual(len(random_points(1, -2, 20)), 2)
+        self.assertEqual(len(random_points(1, -2, 6)), 2)
+        self.assertEqual(len(random_points(1, -2, 5)), 2)
+        self.assertEqual(len(random_points(1, -2, 4)), 4)
+        self.assertEqual(len(random_points(1, -2, 1)), 10)
+        self.assertEqual(len(random_points(1, -2, 0)), 12)
+        self.assertEqual(len(random_points(1, -2, -1)), 12)
+        self.assertEqual(len(random_points(1, -2, -10)), 12)
+
+    def test_large(self):
+        random_points(90000, 180000, 1)
+        random_points(-90000, -180000, 1)

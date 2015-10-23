@@ -2,14 +2,12 @@ import argparse
 from contextlib import contextmanager
 import hashlib
 import os
-from random import Random
 import shutil
 import sys
 import tempfile
 
 import boto
 from simplejson import dumps
-from six.moves import range as xrange
 from sqlalchemy import text
 
 from ichnaea.config import read_config
@@ -17,6 +15,7 @@ from ichnaea.db import (
     configure_db,
     db_worker_session,
 )
+from ichnaea.geocalc import random_points
 from ichnaea.log import (
     configure_raven,
     configure_stats,
@@ -31,6 +30,11 @@ JSON_HEADERS = {
     'Content-Type': 'application/json',
     'Cache-Control': 'max-age=3600, public',
 }
+
+if sys.platform == 'darwin':  # pragma: no cover
+    ZCAT = 'gzcat'
+else:  # pragma: no cover
+    ZCAT = 'zcat'
 
 
 @contextmanager
@@ -47,23 +51,20 @@ def system_call(cmd):  # pragma: no cover
     return os.system(cmd)
 
 
-def export_to_csv(session, filename, multiplier=5):
-    # Order by id to keep a stable ordering.
-    stmt = text('select lat, lon from mapstat '
-                'order by id limit :l offset :o')
+def export_to_csv(session, filename):
+    stmt = text('''\
+SELECT
+lat, lon,
+CAST(ROUND(DATEDIFF(CURDATE(), `time`) / 30) AS UNSIGNED) as `num`
+FROM mapstat
+LIMIT :l OFFSET :o
+''')
 
-    # Set up a pseudo random generator with a fixed seed to prevent
-    # datamap tiles from changing with every generation.
-    pseudorandom = Random()
-    pseudorandom.seed(42)
-    random = pseudorandom.random
     offset = 0
     batch = 200000
-    pattern = '%.6f,%.6f\n'
 
     result_rows = 0
-    # export mapstat mysql table as csv to local file
-    with open(filename, 'w') as fd:
+    with util.gzip_open(filename, 'w', compresslevel=2) as fd:
         while True:
             result = session.execute(stmt.bindparams(o=offset, l=batch))
             rows = result.fetchall()
@@ -71,19 +72,16 @@ def export_to_csv(session, filename, multiplier=5):
             if not rows:
                 break
             lines = []
-            append = lines.append
+            extend = lines.extend
             for row in rows:
-                for i in xrange(multiplier):
-                    # keep calling random even if we skip the lines
-                    # to preserve the pseudo-random sequence
-                    if (row[0] is None or row[1] is None or
-                            (row[0] == 0 and row[1] == 0)):
-                        random()
-                        random()
-                    else:
-                        lat = (row[0] + random()) / 1000.0
-                        lon = (row[1] + random()) / 1000.0
-                        append(pattern % (lat, lon))
+                lat = row[0]
+                lon = row[1]
+                num = row[2]
+                if (lat is None or lon is None):  # pragma: no cover
+                    continue
+
+                extend(random_points(lat, lon, num))
+
             fd.writelines(lines)
             result_rows += len(lines)
             offset += batch
@@ -183,7 +181,7 @@ def generate(db, bucketname, raven_client, stats_client,
     datamaps_render = os.path.join(datamaps, 'render')
 
     with tempdir() as workdir:
-        csv = os.path.join(workdir, 'map.csv')
+        csv = os.path.join(workdir, 'map.csv.gz')
 
         with stats_client.timed('datamaps', tags=['func:export_to_csv']):
             with db_worker_session(db, commit=False) as session:
@@ -193,10 +191,11 @@ def generate(db, bucketname, raven_client, stats_client,
 
         # create shapefile / quadtree
         shapes = os.path.join(workdir, 'shapes')
-        cmd = '{encode} -z15 -o {output} {input}'.format(
+        cmd = '{zcat} {input} | {encode} -z15 -o {output}'.format(
+            zcat=ZCAT,
+            input=csv,
             encode=datamaps_encode,
-            output=shapes,
-            input=csv)
+            output=shapes)
 
         with stats_client.timed('datamaps', tags=['func:encode']):
             system_call(cmd)

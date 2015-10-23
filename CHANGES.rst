@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Switch randomness generator for data map, highlight more recent additions.
 
 20151021143400
 **************
