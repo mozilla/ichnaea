@@ -16,6 +16,8 @@ Changes
 
 - Switch randomness generator for data map, highlight more recent additions.
 
+- Update to latest versions of cffi, factory-boy, pytz, scipy and SQLAlchemy.
+
 20151021143400
 **************
 

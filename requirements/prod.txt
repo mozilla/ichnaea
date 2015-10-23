@@ -6,7 +6,7 @@ billiard==3.3.0.20
 boto==2.38.0
 celery==3.1.18
 certifi==2015.9.6.2
-cffi==1.2.1
+cffi==1.3.0
 Chameleon==2.22
 colander==1.0
 configparser==3.5.0b2
@@ -44,19 +44,19 @@ pyopenssl==0.15.1
 pyramid==1.5.7
 pyramid-chameleon==0.3
 python-editor==0.4
-pytz==2015.6
+pytz==2015.7
 raven==5.8.1
 redis==2.10.3
 repoze.lru==0.6
 requests==2.8.1
 Rtree==0.6.0 ; python_version < '2.7'  # rq.filter: <0.7.0
 Rtree==0.8.2 ; python_version >= '2.7'
-scipy==0.16.0
+scipy==0.16.1
 setproctitle==1.1.9
 Shapely==1.5.13
 simplejson==3.8.0
 six==1.10.0
-SQLAlchemy==1.0.8
+SQLAlchemy==1.0.9
 traceback2==1.4.0
 translationstring==1.3
 unittest2==1.1.0
