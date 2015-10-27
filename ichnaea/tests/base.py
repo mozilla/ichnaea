@@ -419,6 +419,19 @@ class DBTestCase(LogTestCase):
                 'alembic', 'sourceless', 'true')
 
             command.stamp(alembic_cfg, 'head')
+
+            # always add a test API key
+            conn.execute(ApiKey.__table__.delete())
+
+            key1 = ApiKey.__table__.insert().values(
+                valid_key='test', shortname='test', allow_fallback=False,
+                log_locate=True, log_region=True, log_submit=True)
+            conn.execute(key1)
+            key2 = ApiKey.__table__.insert().values(
+                valid_key='export', shortname='export', allow_fallback=False,
+                log_locate=False, log_region=False, log_submit=False)
+            conn.execute(key2)
+
             trans.commit()
 
     @classmethod
@@ -574,16 +587,6 @@ def setup_package(module):
     engine = db.engine
     DBTestCase.cleanup_tables(engine)
     DBTestCase.setup_tables(engine)
-    # always add a test API key
-    session = db.session()
-    session.add(ApiKey(
-        valid_key='test', shortname='test', allow_fallback=False,
-        log_locate=True, log_region=True, log_submit=True))
-    session.add(ApiKey(
-        valid_key='export', shortname='export', allow_fallback=False,
-        log_locate=False, log_region=False, log_submit=False))
-    session.commit()
-    session.close()
     db.engine.pool.dispose()
 
 

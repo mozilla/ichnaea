@@ -272,5 +272,8 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
 
 class TestError(LocateV2Base, CommonLocateErrorTest):
 
+    def test_apikey_error(self):
+        super(TestError, self).test_apikey_error(db_errors=1)
+
     def test_database_error(self):
         super(TestError, self).test_database_error(db_errors=5)

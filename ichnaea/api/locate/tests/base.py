@@ -668,6 +668,17 @@ class CommonLocateErrorTest(BaseLocateTest):
         self.setup_tables(self.db_rw.engine)
         super(CommonLocateErrorTest, self).tearDown()
 
+    def test_apikey_error(self, db_errors=0):
+        cells = CellFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
+
+        self.session.execute(text('drop table %s;' % ApiKey.__tablename__))
+
+        query = self.model_query(cells=cells, wifis=wifis)
+        res = self._call(body=query, ip=self.test_ip)
+        self.check_response(res, 'ok')
+        self.check_raven([('ProgrammingError', db_errors)])
+
     def test_database_error(self, db_errors=0):
         cells = CellFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(2)

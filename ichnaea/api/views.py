@@ -68,6 +68,7 @@ class BaseAPIView(BaseView):
     def check(self):
         api_key = None
         api_key_text = self.request.GET.get('key', None)
+        skip_check = False
 
         if api_key_text is None:
             self.log_count('none', False)
@@ -78,8 +79,9 @@ class BaseAPIView(BaseView):
             try:
                 session = self.request.db_ro_session
                 api_key = session.query(ApiKey).get(api_key_text)
-            except Exception:  # pragma: no cover
+            except Exception:
                 # if we cannot connect to backend DB, skip api key check
+                skip_check = True
                 self.raven_client.captureException()
 
         if api_key is not None:
@@ -98,6 +100,8 @@ class BaseAPIView(BaseView):
 
             if should_limit:
                 raise DailyLimitExceeded()
+        elif skip_check:
+            pass
         else:
             if api_key_text is not None:
                 self.log_count('invalid', False)
