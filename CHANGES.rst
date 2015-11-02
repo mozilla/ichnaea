@@ -18,7 +18,8 @@ Changes
 
 - Switch randomness generator for data map, highlight more recent additions.
 
-- Update to latest versions of cffi, factory-boy, pytz, scipy and SQLAlchemy.
+- Update to latest versions of celery, cffi, cryptography, factory-boy,
+  kombu, Mako, pytz, scipy, simplejson, SQLAlchemy, WebOb and WebTest.
 
 20151021143400
 **************

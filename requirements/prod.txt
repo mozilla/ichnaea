@@ -2,15 +2,15 @@ alembic==0.8.3
 amqp==1.4.7
 anyjson==0.3.3
 argparse==1.3.0 ; python_version < '2.7'
-billiard==3.3.0.20
+billiard==3.3.0.21
 boto==2.38.0
-celery==3.1.18
+celery==3.1.19
 certifi==2015.9.6.2
 cffi==1.3.0
 Chameleon==2.22
 colander==1.0
 configparser==3.5.0b2
-cryptography==1.0.2
+cryptography==1.1
 datadog==0.10.0
 decorator==4.0.4
 enum34==1.0.4 ; python_version < '3.0'
@@ -27,9 +27,9 @@ importlib==1.0.3 ; python_version < '3.0'
 ipaddr==2.1.11 ; python_version < '3.0'
 ipaddress==1.0.14 ; python_version < '3.0'
 iso8601==0.1.10
-kombu==3.0.28
+kombu==3.0.29
 linecache2==1.0.0
-Mako==1.0.2
+Mako==1.0.3
 MarkupSafe==0.23
 maxminddb==1.2.0  # optional C extension, version also in Makefile
 mobile-codes==0.7
@@ -54,14 +54,14 @@ Rtree==0.8.2 ; python_version >= '2.7'
 scipy==0.16.1
 setproctitle==1.1.9
 Shapely==1.5.13
-simplejson==3.8.0
+simplejson==3.8.1
 six==1.10.0
 SQLAlchemy==1.0.9
 traceback2==1.4.0
 translationstring==1.3
 unittest2==1.1.0
 venusian==1.0
-WebOb==1.5.0
+WebOb==1.5.1
 wsgiref==0.1.2 ; python_version < '3.0'
 zope.deprecation==4.1.2
 zope.interface==4.1.3
