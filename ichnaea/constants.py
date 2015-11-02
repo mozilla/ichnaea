@@ -19,18 +19,6 @@ MIN_LAT = -85.051  #: Minimum latitude in :term:`Web Mercator` projection.
 MAX_LON = 180.0  #: Maximum unrestricted longitude in :term:`WSG84`.
 MIN_LON = -180.0  #: Minimum unrestricted longitude in :term:`WSG84`.
 
-# Empirical 95th percentile accuracy of ichnaea's responses,
-# from feedback testing of observations as queries.
-# These values are related to
-# :class:`~ichnaea.api.locate.constants.DataAccuracy`
-# and adjustments in one need to be reflected in the other.
-
-WIFI_MIN_ACCURACY = 100.0  #: Minimum accuracy returned for Wifi queries.
-WIFI_MAX_ACCURACY = 1000.0  # Maximum accuracy returned for Wifi queries.
-
-CELL_MIN_ACCURACY = 5000.0  #: Minimum accuracy returned for cell queries.
-CELLAREA_MIN_ACCURACY = 20000.0  #: Minimum accuracy for cell area queries.
-
 TEMPORARY_BLOCKLIST_DURATION = timedelta(days=7)
 """
 Time during which each temporary blocklisting (detection of

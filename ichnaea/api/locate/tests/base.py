@@ -10,17 +10,19 @@ from ichnaea.api.exceptions import (
     LocationNotFound,
     ParseError,
 )
+from ichnaea.api.locate.constants import (
+    CELL_MIN_ACCURACY,
+    CELL_MAX_ACCURACY,
+    CELLAREA_MIN_ACCURACY,
+    CELLAREA_MAX_ACCURACY,
+    WIFI_MIN_ACCURACY,
+    WIFI_MAX_ACCURACY,
+)
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
     Position,
     Region,
     ResultList,
-)
-from ichnaea.constants import (
-    CELL_MIN_ACCURACY,
-    CELLAREA_MIN_ACCURACY,
-    WIFI_MIN_ACCURACY,
-    WIFI_MAX_ACCURACY,
 )
 from ichnaea.models import (
     ApiKey,
@@ -152,9 +154,11 @@ class BaseSourceTest(ConnectionTestCase):
             for model in models:
                 accuracy = kw.get('accuracy', model.radius)
                 if isinstance(model, (Cell, CellOCID)):
-                    accuracy = max(accuracy, CELL_MIN_ACCURACY)
+                    accuracy = min(max(accuracy, CELL_MIN_ACCURACY),
+                                   CELL_MAX_ACCURACY)
                 elif isinstance(model, (CellArea, CellAreaOCID)):
-                    accuracy = max(accuracy, CELLAREA_MIN_ACCURACY)
+                    accuracy = min(max(accuracy, CELLAREA_MIN_ACCURACY),
+                                   CELLAREA_MAX_ACCURACY)
                 elif isinstance(model, WifiShard):
                     accuracy = min(max(accuracy, WIFI_MIN_ACCURACY),
                                    WIFI_MAX_ACCURACY)
@@ -246,9 +250,12 @@ class BaseLocateTest(object):
                 if name == 'accuracy':
                     model_value = getattr(model, 'radius')
                     if isinstance(model, (Cell, CellOCID)):
-                        model_value = max(model_value, CELL_MIN_ACCURACY)
+                        model_value = min(max(model_value, CELL_MIN_ACCURACY),
+                                          CELL_MAX_ACCURACY)
                     elif isinstance(model, (CellArea, CellAreaOCID)):
-                        model_value = max(model_value, CELLAREA_MIN_ACCURACY)
+                        model_value = min(max(model_value,
+                                              CELLAREA_MIN_ACCURACY),
+                                          CELLAREA_MAX_ACCURACY)
                     elif isinstance(model, WifiShard):
                         model_value = min(max(model_value, WIFI_MIN_ACCURACY),
                                           WIFI_MAX_ACCURACY)

@@ -2,9 +2,12 @@ from ichnaea.api.locate.cell import (
     CellPositionSource,
     OCIDPositionSource,
 )
+from ichnaea.api.locate.constants import (
+    CELL_MAX_ACCURACY,
+    CELLAREA_MIN_ACCURACY,
+)
 from ichnaea.api.locate.result import ResultList
 from ichnaea.api.locate.tests.base import BaseSourceTest
-from ichnaea.constants import CELLAREA_MIN_ACCURACY
 from ichnaea.tests.factories import (
     CellAreaFactory,
     CellAreaOCIDFactory,
@@ -50,14 +53,15 @@ class TestCellPosition(BaseSourceTest):
         cell = CellFactory()
         cell2 = CellFactory(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
                             lac=cell.lac, cid=cell.cid + 1,
-                            lat=cell.lat + 0.02, lon=cell.lon + 0.02)
+                            lat=cell.lat + 1.0, lon=cell.lon + 1.0)
         self.session.flush()
 
         query = self.model_query(cells=[cell, cell2])
         result = self.source.search(query)
         self.check_model_result(
             result, cell,
-            lat=cell.lat + 0.01, lon=cell.lon + 0.01)
+            lat=cell.lat + 0.5, lon=cell.lon + 0.5,
+            accuracy=CELL_MAX_ACCURACY)
 
     def test_incomplete_keys(self):
         cells = CellAreaFactory.build_batch(4)

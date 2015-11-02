@@ -6,17 +6,19 @@ import operator
 import numpy
 from sqlalchemy.orm import load_only
 
-from ichnaea.api.locate.constants import DataSource
+from ichnaea.api.locate.constants import (
+    DataSource,
+    CELL_MIN_ACCURACY,
+    CELL_MAX_ACCURACY,
+    CELLAREA_MIN_ACCURACY,
+    CELLAREA_MAX_ACCURACY,
+)
 from ichnaea.api.locate.result import (
     Position,
     Region,
     ResultList,
 )
 from ichnaea.api.locate.source import PositionSource
-from ichnaea.constants import (
-    CELL_MIN_ACCURACY,
-    CELLAREA_MIN_ACCURACY,
-)
 from ichnaea.geocalc import aggregate_position
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
@@ -58,6 +60,7 @@ def aggregate_cell_position(cells, result_type):
         [(cell.lat, cell.lon, cell.radius) for cell in cells],
         dtype=numpy.double)
     lat, lon, accuracy = aggregate_position(circles, CELL_MIN_ACCURACY)
+    accuracy = min(accuracy, CELL_MAX_ACCURACY)
     return result_type(lat=lat, lon=lon, accuracy=accuracy)
 
 
@@ -66,6 +69,7 @@ def aggregate_area_position(area, result_type):
     Given a single area, return the position of the user inside it.
     """
     accuracy = max(float(area.radius), CELLAREA_MIN_ACCURACY)
+    accuracy = min(accuracy, CELLAREA_MAX_ACCURACY)
     return result_type(
         lat=area.lat, lon=area.lon, accuracy=accuracy, fallback='lacf')
 

@@ -12,14 +12,14 @@ from ichnaea.api.locate.constants import (
     MAX_WIFI_CLUSTER_METERS,
     MIN_WIFIS_IN_CLUSTER,
     MAX_WIFIS_IN_CLUSTER,
+    WIFI_MAX_ACCURACY,
+    WIFI_MIN_ACCURACY,
 )
 from ichnaea.api.locate.result import Position
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.constants import (
     PERMANENT_BLOCKLIST_THRESHOLD,
     TEMPORARY_BLOCKLIST_DURATION,
-    WIFI_MAX_ACCURACY,
-    WIFI_MIN_ACCURACY,
 )
 from ichnaea.geocalc import (
     aggregate_position,

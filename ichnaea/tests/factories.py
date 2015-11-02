@@ -6,7 +6,7 @@ from factory.alchemy import SQLAlchemyModelFactory
 from factory.base import Factory
 from factory import fuzzy
 
-from ichnaea.constants import (
+from ichnaea.api.locate.constants import (
     CELL_MIN_ACCURACY,
     CELLAREA_MIN_ACCURACY,
     WIFI_MIN_ACCURACY,

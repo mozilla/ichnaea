@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Introduce upper bound for cell based accuracy numbers.
+
 - Fix database lookup fallback in API key check.
 
 - Switch randomness generator for data map, highlight more recent additions.

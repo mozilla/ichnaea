@@ -31,6 +31,18 @@ Maximum number of WiFi networks used from one combined cluster to form
 the aggregate result.
 """
 
+# These values are related to
+# :class:`~ichnaea.api.locate.constants.DataAccuracy`
+# and adjustments in one need to be reflected in the other.
+
+WIFI_MIN_ACCURACY = 100.0  #: Minimum accuracy returned for Wifi queries.
+WIFI_MAX_ACCURACY = 1000.0  # Maximum accuracy returned for Wifi queries.
+
+CELL_MIN_ACCURACY = 1000.1  #: Minimum accuracy returned for cell queries.
+CELL_MAX_ACCURACY = 50000.0  #: Maximum accuracy returned for cell queries.
+CELLAREA_MIN_ACCURACY = 50000.1  #: Minimum accuracy for cell area queries.
+CELLAREA_MAX_ACCURACY = 500000.0  #: Maximum accuracy for cell area queries.
+
 
 class DataSource(Enum):
     """
@@ -56,7 +68,7 @@ class DataAccuracy(Enum):
     """
 
     high = 1000.0  #: High accuracy, probably WiFi based.
-    medium = 24999.0  #: Medium accuracy, probably cell based.
+    medium = 50000.0  #: Medium accuracy, probably cell based.
     low = EARTH_CIRCUMFERENCE  #: Low accuracy, large cell, cell area or GeoIP.
     none = float('inf')  # No accuracy at all.
 
