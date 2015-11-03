@@ -1,11 +1,11 @@
 import argparse
-from contextlib import contextmanager
 import hashlib
 import os
+import os.path
 import shutil
 import sys
-import tempfile
 
+import billiard
 import boto
 from simplejson import dumps
 from sqlalchemy import text
@@ -37,59 +37,107 @@ else:  # pragma: no cover
     ZCAT = 'zcat'
 
 
-@contextmanager
-def tempdir():
-    workdir = tempfile.mkdtemp()
-    try:
-        yield workdir
-    finally:
-        shutil.rmtree(workdir)
-
-
-def system_call(cmd):  # pragma: no cover
-    # testing hook
-    return os.system(cmd)
-
-
-def export_to_csv(session, filename):
+def export_file(db_url, filename, min_lat, max_lat, min_lon, max_lon,
+                _db_rw=None, _session=None):
+    # this is executed in a worker process
     stmt = text('''\
 SELECT
 lat, lon,
 CAST(ROUND(DATEDIFF(CURDATE(), `time`) / 30) AS UNSIGNED) as `num`
 FROM mapstat
-LIMIT :l OFFSET :o
-''')
+WHERE
+lat >= :min_lat AND lat < :max_lat AND
+lon >= :min_lon AND lon < :max_lon
+LIMIT :limit OFFSET :offset
+'''.replace('\n', ' '))
+    db = configure_db(db_url, _db=_db_rw)
 
     offset = 0
-    batch = 200000
+    limit = 100000
 
     result_rows = 0
     with util.gzip_open(filename, 'w', compresslevel=2) as fd:
-        while True:
-            result = session.execute(stmt.bindparams(o=offset, l=batch))
-            rows = result.fetchall()
-            result.close()
-            if not rows:
-                break
-            lines = []
-            extend = lines.extend
-            for row in rows:
-                lat = row[0]
-                lon = row[1]
-                num = row[2]
-                if (lat is None or lon is None):  # pragma: no cover
-                    continue
+        with db_worker_session(db, commit=False) as session:
+            if _session is not None:
+                # testing hook
+                session = _session
+            while True:
+                result = session.execute(stmt.bindparams(
+                    min_lat=min_lat, max_lat=max_lat,
+                    min_lon=min_lon, max_lon=max_lon,
+                    limit=limit, offset=offset))
+                rows = result.fetchall()
+                result.close()
+                if not rows:
+                    break
 
-                extend(random_points(lat, lon, num))
+                lines = []
+                extend = lines.extend
+                for row in rows:
+                    extend(random_points(row[0], row[1], row[2]))
 
-            fd.writelines(lines)
-            result_rows += len(lines)
-            offset += batch
+                fd.writelines(lines)
+
+                result_rows += len(lines)
+                offset += limit
+
+    if not result_rows:  # pragma: no cover
+        os.remove(filename)
+
+    db.engine.pool.dispose()
+    return result_rows
+
+
+def export_files(pool, db_url, csvdir):  # pragma: no cover
+    jobs = []
+    result_rows = 0
+    # split the earth into 32 chunks
+    lat_batch = 42526
+    lon_batch = 45001
+    # limited to Web Mercator bounds
+    for lat in range(-85051, 85052, lat_batch):
+        for lon in range(-180000, 180001, lon_batch):
+            filename = os.path.join(csvdir, 'map_%s_%s.csv.gz' % (lat, lon))
+            jobs.append(pool.apply_async(export_file,
+                                         (db_url, filename,
+                                          lat, lat + lat_batch,
+                                          lon, lon + lon_batch)))
+
+    for job in jobs:
+        result_rows += job.get()
 
     return result_rows
 
 
-def upload_to_s3(bucketname, tiles):  # pragma: no cover
+def encode_file(name, csvdir, quaddir, datamaps_encode):  # pragma: no cover
+    # this is executed in a worker process
+    in_ = os.path.join(csvdir, name)
+    out = os.path.join(quaddir, name.split('.')[0])
+
+    cmd = '{zcat} {input} | {encode} -z15 -o {output}'.format(
+        zcat=ZCAT,
+        input=in_,
+        encode=datamaps_encode,
+        output=out)
+
+    os.system(cmd)
+
+
+def encode_files(pool, csvdir, quaddir, datamaps_encode):  # pragma: no cover
+    jobs = []
+    for name in os.listdir(csvdir):
+        if name.startswith('map_') and name.endswith('.csv.gz'):
+            jobs.append(pool.apply_async(
+                encode_file,
+                (name, csvdir, quaddir, datamaps_encode)))
+
+    for job in jobs:
+        job.get()
+
+    return len(jobs)
+
+
+def upload_to_s3(pool, bucketname, tiles):  # pragma: no cover
     tiles = os.path.abspath(tiles)
 
     conn = boto.connect_s3()
@@ -174,37 +222,66 @@ def upload_to_s3(bucketname, tiles):  # pragma: no cover
     return result
 
 
-def generate(db, bucketname, raven_client, stats_client,
-             upload=True, concurrency=2, datamaps='', output=None):
+def generate(db_url, bucketname, raven_client, stats_client,
+             upload=True, concurrency=2,
+             datamaps='', output=None):  # pragma: no cover
     datamaps_encode = os.path.join(datamaps, 'encode')
     datamaps_enumerate = os.path.join(datamaps, 'enumerate')
+    datamaps_merge = os.path.join(datamaps, 'merge')
     datamaps_render = os.path.join(datamaps, 'render')
 
-    with tempdir() as workdir:
-        csv = os.path.join(workdir, 'map.csv.gz')
+    with util.selfdestruct_tempdir() as workdir:
+        pool = billiard.Pool(processes=concurrency)
 
-        with stats_client.timed('datamaps', tags=['func:export_to_csv']):
-            with db_worker_session(db, commit=False) as session:
-                result_rows = export_to_csv(session, csv)
+        if output:
+            basedir = output
+        else:
+            basedir = workdir
+
+        if not os.path.isdir(basedir):
+            os.makedirs(basedir)
+
+        # export datamap table to csv
+        csvdir = os.path.join(basedir, 'csv')
+        if not os.path.isdir(csvdir):
+            os.mkdir(csvdir)
+
+        with stats_client.timed('datamaps', tags=['func:export']):
+            result_rows = export_files(pool, db_url, csvdir)
 
         stats_client.timing('datamaps', result_rows, tags=['count:csv_rows'])
 
-        # create shapefile / quadtree
-        shapes = os.path.join(workdir, 'shapes')
-        cmd = '{zcat} {input} | {encode} -z15 -o {output}'.format(
-            zcat=ZCAT,
-            input=csv,
-            encode=datamaps_encode,
-            output=shapes)
+        # create quadtrees
+        quaddir = os.path.join(basedir, 'quadtrees')
+        if os.path.isdir(quaddir):
+            shutil.rmtree(quaddir)
+        os.mkdir(quaddir)
 
         with stats_client.timed('datamaps', tags=['func:encode']):
-            system_call(cmd)
+            quadtrees = encode_files(pool, csvdir, quaddir, datamaps_encode)
+
+        stats_client.timing('datamaps', quadtrees, tags=['count:quadtrees'])
+
+        sys.stdout.flush()
+        pool.close()
+        pool.join()
+
+        # merge quadtrees and make points unique
+        shapes = os.path.join(basedir, 'shapes')
+        if os.path.isdir(shapes):
+            shutil.rmtree(shapes)
+
+        in_ = os.path.join(quaddir, '*')
+        cmd = '{merge} -u -o {output} {input}'.format(
+            merge=datamaps_merge,
+            input=in_,
+            output=shapes)
+
+        with stats_client.timed('datamaps', tags=['func:merge']):
+            os.system(cmd)
 
         # render tiles
-        if output:
-            tiles = output
-        else:
-            tiles = os.path.join(workdir, 'tiles')
+        tiles = os.path.join(basedir, 'tiles')
         cmd = ("{enumerate} -z{zoom} {shapes} | xargs -L1 -P{concurrency} "
                "sh -c 'mkdir -p {output}/$2/$3; {render} "
                "-B 12:0.0379:0.874 -c0088FF -t0 "
@@ -223,7 +300,7 @@ def generate(db, bucketname, raven_client, stats_client,
             suffix='@2x')
 
         # create high-res version for zoom level 0
-        system_call(zoom_0_cmd)
+        os.system(zoom_0_cmd)
 
         zoom_all_cmd = cmd.format(
             enumerate=datamaps_enumerate,
@@ -236,19 +313,23 @@ def generate(db, bucketname, raven_client, stats_client,
             suffix='')
 
         with stats_client.timed('datamaps', tags=['func:render']):
-            system_call(zoom_all_cmd)
+            os.system(zoom_all_cmd)
 
         if upload:  # pragma: no cover
-            with stats_client.timed('datamaps', tags=['func:upload_to_s3']):
-                result = upload_to_s3(bucketname, tiles)
+            pool = billiard.Pool(processes=concurrency)
+
+            with stats_client.timed('datamaps', tags=['func:upload']):
+                result = upload_to_s3(pool, bucketname, tiles)
+
+            pool.close()
+            pool.join()
 
             for metric, value in result.items():
                 stats_client.timing('datamaps', value,
                                     tags=['count:%s' % metric])
 
 
-def main(argv, _db_rw=None,
-         _raven_client=None, _stats_client=None):
+def main(argv, _raven_client=None, _stats_client=None):
     # run for example via:
     # bin/location_map --create --upload --datamaps=/path/to/datamaps/ \
     #   --output=ichnaea/content/static/tiles/
@@ -257,34 +338,34 @@ def main(argv, _db_rw=None,
         prog=argv[0], description='Generate and upload datamap tiles.')
 
     parser.add_argument('--create', action='store_true',
-                        help='Create tiles.')
+                        help='Create tiles?')
     parser.add_argument('--upload', action='store_true',
-                        help='Upload tiles to S3.')
+                        help='Upload tiles to S3?')
     parser.add_argument('--concurrency', default=2,
-                        help='How many concurrent render processes to use?')
+                        help='How many concurrent processes to use?')
     parser.add_argument('--datamaps',
                         help='Directory of the datamaps tools.')
     parser.add_argument('--output',
-                        help='Optional directory for local tile output.')
+                        help='Optional directory for output files.')
 
     args = parser.parse_args(argv[1:])
-
     if args.create:
         conf = read_config()
-        db = configure_db(
-            conf.get('database', 'rw_url'), _db=_db_rw)
+        db_url = conf.get('database', 'rw_url')
+
         raven_client = configure_raven(
             conf.get('sentry', 'dsn'),
             transport='sync', _client=_raven_client)
+
         stats_client = configure_stats(conf, _client=_stats_client)
 
         bucketname = conf.get('assets', 'bucket').strip('/')
 
         upload = False
-        if args.upload:  # pragma: no cover
+        if args.upload:
             upload = bool(args.upload)
 
-        concurrency = 2
+        concurrency = billiard.cpu_count()
         if args.concurrency:
             concurrency = int(args.concurrency)
 
@@ -298,7 +379,7 @@ def main(argv, _db_rw=None,
 
         try:
             with stats_client.timed('datamaps', tags=['func:main']):
-                generate(db, bucketname, raven_client, stats_client,
+                generate(db_url, bucketname, raven_client, stats_client,
                          upload=upload,
                          concurrency=concurrency,
                          datamaps=datamaps,

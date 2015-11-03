@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Parallelize datamap CSV export and Quadtree generation.
+
 - Introduce upper bound for cell based accuracy numbers.
 
 - Fix database lookup fallback in API key check.

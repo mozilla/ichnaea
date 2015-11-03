@@ -431,20 +431,23 @@ We include a script to generate a data map from the gathered map
 statistics. This script includes a number of timers and pseudo-timers
 to monitor its operation.
 
-``datamaps#func:export_to_csv``,
+``datamaps#func:export``,
 ``datamaps#func:encode``,
+``datamaps#func:merge``,
 ``datamaps#func:main``,
 ``datamaps#func:render``,
-``datamaps#func:upload_to_s3`` : timers
+``datamaps#func:upload`` : timers
 
     These timers track the individual functions of the generation process.
 
 ``datamaps#count:csv_rows``,
+``datamaps#count:quadtrees``,
 ``datamaps#count:s3_list``,
 ``datamaps#count:s3_put``,
 ``datamaps#count:tile_new``,
 ``datamaps#count:tile_changed``,
+``datamaps#count:tile_deleted``,
 ``datamaps#count:tile_unchanged`` : timers
 
-    Pseudo-timers to track the number of CSV rows, image tiles and
-    S3 operations.
+    Pseudo-timers to track the number of CSV rows, Quadtree files,
+    image tiles and Amazon S3 operations.
