@@ -22,6 +22,11 @@ from ichnaea.log import (
 )
 from ichnaea import util
 
+try:
+    from os import scandir
+except ImportError:  # pragma: no cover
+    from scandir import scandir
+
 IMAGE_HEADERS = {
     'Content-Type': 'image/png',
     'Cache-Control': 'max-age=3600, public',
@@ -35,6 +40,14 @@ if sys.platform == 'darwin':  # pragma: no cover
     ZCAT = 'gzcat'
 else:  # pragma: no cover
     ZCAT = 'zcat'
+
+
+def recursive_scandir(top):  # pragma: no cover
+    for entry in scandir(top):
+        yield entry
+        if entry.is_dir():
+            for subentry in recursive_scandir(entry.path):
+                yield subentry
 
 
 def export_file(db_url, filename, min_lat, max_lat, min_lon, max_lon,
@@ -91,10 +104,10 @@ LIMIT :limit OFFSET :offset
 def export_files(pool, db_url, csvdir):  # pragma: no cover
     jobs = []
     result_rows = 0
-    # split the earth into 32 chunks
+    # Split the earth into 32 chunks.
     lat_batch = 42526
     lon_batch = 45001
-    # limited to Web Mercator bounds
+    # Limit to Web Mercator bounds.
     for lat in range(-85051, 85052, lat_batch):
         for lon in range(-180000, 180001, lon_batch):
             filename = os.path.join(csvdir, 'map_%s_%s.csv.gz' % (lat, lon))
@@ -137,85 +150,114 @@ def encode_files(pool, csvdir, quaddir, datamaps_encode):  # pragma: no cover
     return len(jobs)
 
 
-def upload_to_s3(pool, bucketname, tiles):  # pragma: no cover
-    tiles = os.path.abspath(tiles)
-
-    conn = boto.connect_s3()
-    bucket = conn.get_bucket(bucketname, validate=False)
+def upload_folder(bucketname, bucket_prefix,
+                  tiles, folder):  # pragma: no cover
+    # this is executed in a worker process
     result = {
         'tile_changed': 0,
         'tile_deleted': 0,
-        'tile_unchanged': 0,
         'tile_new': 0,
-        's3_put': 0,
-        's3_list': 0,
+        'tile_unchanged': 0,
     }
 
-    def _key(name):
-        try:
-            return int(name)
-        except Exception:
-            return -1
+    # Get all the S3 keys.
+    conn = boto.connect_s3()
+    bucket = conn.get_bucket(bucketname, validate=False)
 
-    for name in sorted(os.listdir(tiles), key=_key):
-        folder = os.path.join(tiles, name)
-        if not os.path.isdir(folder):
+    key_root = bucket_prefix + folder[len(tiles):].lstrip('/') + '/'
+    keys = {}
+    for key in bucket.list(prefix=key_root):
+        keys[key.name[len(bucket_prefix):]] = key
+
+    # Traverse local file system
+    for entry in recursive_scandir(folder):
+        if not entry.is_file() or not entry.name.endswith('.png'):
             continue
 
-        for root, dirs, files in os.walk(folder):
-            rel_root = 'tiles/' + root.lstrip(tiles) + '/'
-            rel_root_len = len(rel_root)
-            filtered_files = [f for f in files if f.endswith('.png')]
-            if not filtered_files:
-                continue
-            # get all the keys
-            keys = {}
-            result['s3_list'] += 1
-            for key in bucket.list(prefix=rel_root):
-                rel_name = key.name[rel_root_len:]
-                keys[rel_name] = key
-            for f in filtered_files:
-                filename = root + os.sep + f
-                keyname = rel_root + f
-                key = keys.pop(f, None)
+        key_name = entry.path[len(tiles):].lstrip('/')
+        key = keys.pop(key_name, None)
+        changed = True
+
+        if key is not None:
+            if entry.stat().st_size != key.size:
+                # Mismatched file sizes?
                 changed = True
-                if key is not None:
-                    if os.path.getsize(filename) != key.size:
-                        # do the file sizes match?
-                        changed = True
-                    else:
-                        remote_md5 = key.etag.strip('"')
-                        with open(filename, 'rb') as fd:
-                            local_md5 = hashlib.md5(fd.read()).hexdigest()
-                        if local_md5 == remote_md5:
-                            # do the md5/etags match?
-                            changed = False
-                if changed:
-                    if key is None:
-                        result['tile_new'] += 1
-                        key = boto.s3.key.Key(bucket)
-                        key.key = keyname
-                    else:
-                        result['tile_changed'] += 1
-                    # upload or update the key
-                    result['s3_put'] += 1
-                    key.set_contents_from_filename(
-                        filename,
-                        headers=IMAGE_HEADERS,
-                        reduced_redundancy=True)
-                else:
-                    result['tile_unchanged'] += 1
-            # delete orphaned files
-            for rel_name, key in keys.items():
-                result['tile_deleted'] += 1
-                key.delete()
+            else:
+                remote_md5 = key.etag.strip('"')
+                with open(entry.path, 'rb') as fd:
+                    local_md5 = hashlib.md5(fd.read()).hexdigest()
+                if local_md5 == remote_md5:
+                    # Do the md5/etags match?
+                    changed = False
+
+        if changed:
+            if key is None:
+                key = boto.s3.key.Key(bucket)
+                key.key = bucket_prefix + key_name
+                result['tile_new'] += 1
+            else:
+                result['tile_changed'] += 1
+
+            # Create or update the key.
+            key.set_contents_from_filename(
+                entry.path,
+                headers=IMAGE_HEADERS,
+                reduced_redundancy=True)
+        else:
+            result['tile_unchanged'] += 1
+
+    # Delete orphaned keys.
+    if keys:
+        result['tile_deleted'] += len(keys)
+        bucket.delete_keys(keys.values())
+
+    return result
+
+
+def upload_files(pool, bucketname, tiles, max_zoom,
+                 bucket_prefix='tiles/'):  # pragma: no cover
+    result = {
+        'tile_changed': 0,
+        'tile_deleted': 0,
+        'tile_new': 0,
+        'tile_unchanged': 0,
+    }
+
+    zoom_levels = frozenset([str(i) for i in range(max_zoom + 1)])
+    tiny_levels = frozenset([str(i) for i in range(max_zoom - 2)])
+
+    paths = []
+    for entry in scandir(tiles):
+        if not entry.is_dir() or entry.name not in zoom_levels:
+            continue
+        if entry.name in tiny_levels:
+            # Process upper zoom levels in one go, as these contain
+            # very few files. This avoids the overhead of repeated
+            # Amazon S3 list calls and job scheduling.
+            paths.append(entry.path)
+        else:
+            for subentry in scandir(entry.path):
+                if subentry.is_dir():
+                    paths.append(subentry.path)
+
+    jobs = []
+    for folder in paths:
+        jobs.append(pool.apply_async(
+            upload_folder, (bucketname, bucket_prefix, tiles, folder)))
+
+    for job in jobs:
+        folder_result = job.get()
+        for key, value in folder_result.items():
+            result[key] += value
 
     # Update status file
-    data = {'updated': util.utcnow().isoformat()}
-    k = boto.s3.key.Key(bucket)
-    k.key = 'tiles/data.json'
-    k.set_contents_from_string(
-        dumps(data),
+    conn = boto.connect_s3()
+    bucket = conn.get_bucket(bucketname, validate=False)
+
+    key = boto.s3.key.Key(bucket)
+    key.key = bucket_prefix + 'data.json'
+    key.set_contents_from_string(
+        dumps({'updated': util.utcnow().isoformat()}),
         headers=JSON_HEADERS,
         reduced_redundancy=True)
 
@@ -223,7 +265,7 @@ def upload_to_s3(pool, bucketname, tiles):  # pragma: no cover
 
 
 def generate(db_url, bucketname, raven_client, stats_client,
-             upload=True, concurrency=2,
+             upload=True, concurrency=2, max_zoom=13,
              datamaps='', output=None):  # pragma: no cover
     datamaps_encode = os.path.join(datamaps, 'encode')
     datamaps_enumerate = os.path.join(datamaps, 'enumerate')
@@ -241,7 +283,7 @@ def generate(db_url, bucketname, raven_client, stats_client,
         if not os.path.isdir(basedir):
             os.makedirs(basedir)
 
-        # export datamap table to csv
+        # Concurrently export datamap table to CSV files.
         csvdir = os.path.join(basedir, 'csv')
         if not os.path.isdir(csvdir):
             os.mkdir(csvdir)
@@ -251,7 +293,7 @@ def generate(db_url, bucketname, raven_client, stats_client,
 
         stats_client.timing('datamaps', result_rows, tags=['count:csv_rows'])
 
-        # create quadtrees
+        # Concurrently create quadtrees out of CSV files.
         quaddir = os.path.join(basedir, 'quadtrees')
         if os.path.isdir(quaddir):
             shutil.rmtree(quaddir)
@@ -262,11 +304,11 @@ def generate(db_url, bucketname, raven_client, stats_client,
 
         stats_client.timing('datamaps', quadtrees, tags=['count:quadtrees'])
 
-        sys.stdout.flush()
         pool.close()
         pool.join()
 
-        # merge quadtrees and make points unique
+        # Merge quadtrees and make points unique. This process cannot
+        # be made concurrent.
         shapes = os.path.join(basedir, 'shapes')
         if os.path.isdir(shapes):
             shutil.rmtree(shapes)
@@ -280,8 +322,8 @@ def generate(db_url, bucketname, raven_client, stats_client,
         with stats_client.timed('datamaps', tags=['func:merge']):
             os.system(cmd)
 
-        # render tiles
-        tiles = os.path.join(basedir, 'tiles')
+        # Render tiles, using xargs -P to get concurrency.
+        tiles = os.path.abspath(os.path.join(basedir, 'tiles'))
         cmd = ("{enumerate} -z{zoom} {shapes} | xargs -L1 -P{concurrency} "
                "sh -c 'mkdir -p {output}/$2/$3; {render} "
                "-B 12:0.0379:0.874 -c0088FF -t0 "
@@ -299,12 +341,9 @@ def generate(db_url, bucketname, raven_client, stats_client,
             extra=' -T 512',
             suffix='@2x')
 
-        # create high-res version for zoom level 0
-        os.system(zoom_0_cmd)
-
         zoom_all_cmd = cmd.format(
             enumerate=datamaps_enumerate,
-            zoom=13,
+            zoom=max_zoom,
             shapes=shapes,
             concurrency=concurrency,
             render=datamaps_render,
@@ -313,13 +352,17 @@ def generate(db_url, bucketname, raven_client, stats_client,
             suffix='')
 
         with stats_client.timed('datamaps', tags=['func:render']):
+            # Create high-res version for zoom level 0.
+            os.system(zoom_0_cmd)
             os.system(zoom_all_cmd)
 
-        if upload:  # pragma: no cover
-            pool = billiard.Pool(processes=concurrency)
+        if upload:
+            # The upload process is largely network I/O bound, so we
+            # can use more processes compared to the CPU bound tasks.
+            pool = billiard.Pool(processes=concurrency * 2)
 
             with stats_client.timed('datamaps', tags=['func:upload']):
-                result = upload_to_s3(pool, bucketname, tiles)
+                result = upload_files(pool, bucketname, tiles, max_zoom)
 
             pool.close()
             pool.join()

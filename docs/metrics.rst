@@ -442,12 +442,10 @@ to monitor its operation.
 
 ``datamaps#count:csv_rows``,
 ``datamaps#count:quadtrees``,
-``datamaps#count:s3_list``,
-``datamaps#count:s3_put``,
 ``datamaps#count:tile_new``,
 ``datamaps#count:tile_changed``,
 ``datamaps#count:tile_deleted``,
 ``datamaps#count:tile_unchanged`` : timers
 
-    Pseudo-timers to track the number of CSV rows, Quadtree files,
-    image tiles and Amazon S3 operations.
+    Pseudo-timers to track the number of CSV rows, Quadtree files and
+    image tiles.

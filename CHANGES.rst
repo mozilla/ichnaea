@@ -14,7 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
-- Parallelize datamap CSV export and Quadtree generation.
+- Parallelize datamap CSV export, Quadtree generation and upload.
 
 - Introduce upper bound for cell based accuracy numbers.
 
