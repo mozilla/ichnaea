@@ -7,7 +7,7 @@ boto==2.38.0
 celery==3.1.19
 certifi==2015.9.6.2
 cffi==1.3.0
-Chameleon==2.22
+Chameleon==2.24
 colander==1.0
 configparser==3.5.0b2
 cryptography==1.1
@@ -26,7 +26,7 @@ idna==2.0
 importlib==1.0.3 ; python_version < '3.0'
 ipaddr==2.1.11 ; python_version < '3.0'
 ipaddress==1.0.14 ; python_version < '3.0'
-iso8601==0.1.10
+iso8601==0.1.11
 kombu==3.0.29
 linecache2==1.0.0
 Mako==1.0.3
@@ -46,7 +46,7 @@ pyramid-chameleon==0.3
 python-editor==0.4
 pytz==2015.7
 raven==5.8.1
-redis==2.10.3
+redis==2.10.5
 repoze.lru==0.6
 requests==2.8.1
 Rtree==0.6.0 ; python_version < '2.7'  # rq.filter: <0.7.0

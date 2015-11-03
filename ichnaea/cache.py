@@ -79,8 +79,3 @@ class RedisClient(redis.StrictRedis):
         except RedisError:
             return False
         return True
-
-    def pfcount(self, *keys):
-        # Workaround for missing multiple key support:
-        # https://github.com/andymccurdy/redis-py/pull/594
-        return self.execute_command('PFCOUNT', *keys)
