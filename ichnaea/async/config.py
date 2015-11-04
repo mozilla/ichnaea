@@ -90,10 +90,13 @@ def configure_data(redis_client):
         'update_cellarea_ocid': DataQueue('update_cellarea_ocid', redis_client,
                                           queue_key='update_cellarea_ocid'),
         'update_mapstat': DataQueue('update_mapstat', redis_client,
-                                    queue_key='update_mapstat'),
+                                    queue_key='update_mapstat'),  # BBB
         'update_score': DataQueue('update_score', redis_client,
                                   queue_key='update_score'),
     }
+    for shard_id in ('ne', 'nw', 'se', 'sw'):
+        name = 'update_datamap_' + shard_id
+        data_queues[name] = DataQueue(name, redis_client, queue_key=name)
     for shard_id in ['%x' % i for i in range(16)]:
         name = 'update_wifi_' + shard_id
         data_queues[name] = DataQueue(

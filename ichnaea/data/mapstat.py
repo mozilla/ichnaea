@@ -1,61 +1,49 @@
-from sqlalchemy.orm import load_only
+from collections import defaultdict
+import struct
 
 from ichnaea.data.base import DataTask
 from ichnaea.models.content import (
-    decode_datamap_grid,
-    MapStat,
+    DataMap,
+    encode_datamap_grid,
 )
-from ichnaea import util
+
+MAPSTAT_STRUCT = struct.Struct('!ii')
 
 
-class MapStatUpdater(DataTask):
+def decode_mapstat_grid(value):
+    return MAPSTAT_STRUCT.unpack(value)
+
+
+def encode_mapstat_grid(lat, lon, scale=False):
+    if scale:
+        lat, lon = DataMap.scale(lat, lon)
+    return MAPSTAT_STRUCT.pack(lat, lon)
+
+
+class MapStatUpdater(DataTask):  # BBB
 
     def __init__(self, task, session, pipe):
         DataTask.__init__(self, task, session)
         self.pipe = pipe
 
     def __call__(self, batch=1000):
-        queue = self.task.app.data_queues['update_mapstat']
-        today = util.utcnow().date()
-        positions = queue.dequeue(batch=batch, json=False)
+        map_queue = self.task.app.data_queues['update_mapstat']
+        positions = map_queue.dequeue(batch=batch, json=False)
         if not positions:
             return 0
 
-        scaled_positions = set()
+        grids = defaultdict(set)
+        positions = set(positions)
         for position in positions:
-            lat, lon = decode_datamap_grid(position)
-            scaled_positions.add((lat, lon))
+            lat, lon = decode_mapstat_grid(position)
+            grids[DataMap.shard_id(lat, lon)].add(
+                encode_datamap_grid(lat, lon))
 
-        wanted = set()
-        for scaled in scaled_positions:
-            wanted.add(MapStat.to_hashkey(lat=scaled[0], lon=scaled[1]))
+        for shard_id, values in grids.items():
+            queue = self.task.app.data_queues['update_datamap_' + shard_id]
+            queue.enqueue(list(values), json=False)
 
-        stat_iter = MapStat.iterkeys(
-            self.session, list(wanted),
-            extra=lambda query: query.options(load_only('lat', 'lon')))
-
-        found = set([stat.hashkey() for stat in stat_iter])
-
-        new_stat_values = []
-        for key in (wanted - found):
-            new_stat_values.append({
-                'lat': key.lat,
-                'lon': key.lon,
-                'time': today,
-            })
-
-        if new_stat_values:
-            # do a batch insert of new stats
-            stmt = MapStat.__table__.insert(
-                mysql_on_duplicate='id = id'  # no-op
-            )
-            # but limit the batch depending on the model
-            ins_batch = MapStat._insert_batch
-            for i in range(0, len(new_stat_values), ins_batch):
-                batch_values = new_stat_values[i:i + ins_batch]
-                self.session.execute(stmt.values(batch_values))
-
-        if queue.enough_data(batch=batch):
+        if map_queue.enough_data(batch=batch):
             self.task.apply_async(
                 kwargs={'batch': batch},
                 countdown=2,

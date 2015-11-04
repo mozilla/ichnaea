@@ -26,18 +26,26 @@ class TestDataMapCodec(TestCase):
         self.assertEqual(
             decode_datamap_grid(b'AAAAAAAAAAA=', codec='base64'),
             (-90000, -180000))
+
         self.assertEqual(
             decode_datamap_grid(b'\x00\x01_\x90\x00\x02\xbf '),
             (0, 0))
         self.assertEqual(
             decode_datamap_grid(b'AAFfkAACvyA=', codec='base64'),
             (0, 0))
+
         self.assertEqual(
             decode_datamap_grid(b'\x00\x02\xbf \x00\x05~@'),
             (90000, 180000))
         self.assertEqual(
+            decode_datamap_grid(b'\x00\x02\xbf \x00\x05~@', scale=True),
+            (90.0, 180.0))
+        self.assertEqual(
             decode_datamap_grid(b'AAK/IAAFfkA=', codec='base64'),
             (90000, 180000))
+        self.assertEqual(
+            decode_datamap_grid(b'AAK/IAAFfkA=', scale=True, codec='base64'),
+            (90.0, 180.0))
 
     def test_encode_datamap_grid(self):
         self.assertEqual(encode_datamap_grid(-90000, -180000),

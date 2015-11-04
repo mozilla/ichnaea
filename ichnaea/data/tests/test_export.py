@@ -40,7 +40,8 @@ class BaseExportTest(CeleryTestCase):
 
     def add_reports(self, num=1, blue_factor=0, cell_factor=1, wifi_factor=2,
                     api_key='test', email=None, ip=None, nickname=None,
-                    blue_key=None, cell_mcc=None, wifi_key=None, lat=None):
+                    blue_key=None, cell_mcc=None, wifi_key=None,
+                    lat=None, lon=None):
         reports = []
         for i in range(num):
             pos = CellFactory.build()
@@ -52,7 +53,7 @@ class BaseExportTest(CeleryTestCase):
                 'wifiAccessPoints': [],
             }
             report['position']['latitude'] = lat or pos.lat
-            report['position']['longitude'] = pos.lon
+            report['position']['longitude'] = lon or pos.lon
             report['position']['accuracy'] = 17.0 + i
 
             blues = WifiShardFactory.build_batch(blue_factor,

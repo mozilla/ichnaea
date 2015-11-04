@@ -197,6 +197,15 @@ class TestUploader(BaseExportTest):
             ('data.observation.upload', 1, 1, ['type:cell', 'key:test']),
         ])
 
+    def test_datamap(self):
+        self.add_reports(1, cell_factor=0, wifi_factor=2, lat=50.0, lon=10.0)
+        self.add_reports(2, cell_factor=0, wifi_factor=2, lat=20.0, lon=-10.0)
+        schedule_export_reports.delay().get()
+        self.assertEqual(
+            self.celery_app.data_queues['update_datamap_ne'].size(), 1)
+        self.assertEqual(
+            self.celery_app.data_queues['update_datamap_sw'].size(), 1)
+
     def test_nickname(self):
         self.add_reports(wifi_factor=0, nickname=self.nickname)
         schedule_export_reports.delay().get()

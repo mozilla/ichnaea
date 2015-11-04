@@ -8,6 +8,7 @@ from ichnaea.models import (
     CellBlocklist,
     CellObservation,
     CellReport,
+    DataMap,
     Report,
     Score,
     ScoreKey,
@@ -152,7 +153,7 @@ class ReportQueue(DataTask):
                 wifi_queue = self.data_queues['update_wifi_%s' % shard_id]
                 wifi_queue.enqueue(list(values), pipe=self.pipe)
 
-        self.process_mapstat(positions)
+        self.process_datamap(positions)
         self.process_score(userid, positions, new_station_count)
         self.emit_stats(
             len(reports),
@@ -199,15 +200,23 @@ class ReportQueue(DataTask):
             malformed,
         )
 
-    def process_mapstat(self, positions):
+    def process_datamap(self, positions):
         if not positions:
             return
 
-        queue = self.task.app.data_queues['update_mapstat']
         grids = set()
         for lat, lon in positions:
-            grids.add(encode_datamap_grid(lat, lon, scale=True))
-        queue.enqueue(list(grids), pipe=self.pipe, json=False)
+            if lat is not None and lon is not None:
+                grids.add(DataMap.scale(lat, lon))
+
+        shards = defaultdict(set)
+        for lat, lon in grids:
+            shards[DataMap.shard_id(lat, lon)].add(
+                encode_datamap_grid(lat, lon))
+
+        for shard_id, values in shards.items():
+            queue = self.task.app.data_queues['update_datamap_' + shard_id]
+            queue.enqueue(list(values), pipe=self.pipe, json=False)
 
     def process_score(self, userid, positions, new_station_count):
         if userid is None or len(positions) <= 0:

@@ -18,6 +18,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use new sharded datamap tables.
+
 - Parallelize datamap CSV export, Quadtree generation and upload.
 
 - Introduce upper bound for cell based accuracy numbers.

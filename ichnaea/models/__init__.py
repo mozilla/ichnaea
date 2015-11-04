@@ -20,7 +20,6 @@ from ichnaea.models.cell import (  # NOQA
 )
 from ichnaea.models.content import (  # NOQA
     DataMap,
-    MapStat,
     RegionStat,
     Score,
     ScoreKey,

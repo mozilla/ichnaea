@@ -73,6 +73,7 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(seconds=8),
         'options': {'expires': 15},
     },
+
     'update-cell': {
         'task': 'ichnaea.data.tasks.update_cell',
         'schedule': timedelta(seconds=7),
@@ -91,12 +92,39 @@ CELERYBEAT_SCHEDULE = {
         'args': (100, ),
         'options': {'expires': 15},
     },
-    'update-mapstat': {
+
+    'update-datamap-ne': {
+        'task': 'ichnaea.data.tasks.update_datamap',
+        'args': (250, 'ne'),
+        'schedule': timedelta(seconds=14),
+        'options': {'expires': 20},
+    },
+    'update-datamap-nw': {
+        'task': 'ichnaea.data.tasks.update_datamap',
+        'args': (250, 'nw'),
+        'schedule': timedelta(seconds=14),
+        'options': {'expires': 20},
+    },
+    'update-datamap-se': {
+        'task': 'ichnaea.data.tasks.update_datamap',
+        'args': (250, 'se'),
+        'schedule': timedelta(seconds=14),
+        'options': {'expires': 20},
+    },
+    'update-datamap-sw': {
+        'task': 'ichnaea.data.tasks.update_datamap',
+        'args': (250, 'sw'),
+        'schedule': timedelta(seconds=14),
+        'options': {'expires': 20},
+    },
+
+    'update-mapstat': {  # BBB
         'task': 'ichnaea.data.tasks.update_mapstat',
         'args': (250, ),
-        'schedule': timedelta(seconds=8),
-        'options': {'expires': 10},
+        'schedule': timedelta(seconds=68),
+        'options': {'expires': 80},
     },
+
     'update-score': {
         'task': 'ichnaea.data.tasks.update_score',
         'args': (250, ),

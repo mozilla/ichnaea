@@ -26,8 +26,6 @@ from ichnaea.models.hashkey import (
 )
 from ichnaea.models.sa_types import TinyIntEnum
 
-DATAMAP_INMEMORY_STRUCT = struct.Struct('!ii')
-
 DATAMAP_GRID_SCALE = 1000
 DATAMAP_GRID_STRUCT = struct.Struct('!II')
 """
@@ -64,7 +62,7 @@ class MapStatHashKey(HashKey):
     _fields = ('lat', 'lon')
 
 
-def decode_datamap_grid(value, codec=None):
+def decode_datamap_grid(value, scale=False, codec=None):
     """
     Decode a byte sequence representing a datamap grid into a tuple
     of a scaled latitude and longitude.
@@ -74,7 +72,11 @@ def decode_datamap_grid(value, codec=None):
     if codec == 'base64':
         value = base64.b64decode(value)
     lat, lon = DATAMAP_GRID_STRUCT.unpack(value)
-    return (lat - 90000, lon - 180000)
+    lat, lon = (lat - 90000, lon - 180000)
+    if scale:
+        lat = float(lat) / DATAMAP_GRID_SCALE
+        lon = float(lon) / DATAMAP_GRID_SCALE
+    return (lat, lon)
 
 
 def encode_datamap_grid(lat, lon, scale=False, codec=None):
@@ -187,7 +189,7 @@ class DataMapSW(DataMap, _Model):
 DATAMAP_SHARDS['sw'] = DataMapSW
 
 
-class MapStat(HashKeyQueryMixin, _Model):
+class MapStat(HashKeyQueryMixin, _Model):  # BBB
     __tablename__ = 'mapstat'
 
     _indices = (
@@ -206,13 +208,6 @@ class MapStat(HashKeyQueryMixin, _Model):
     # lat/lon * 1000, so 12.345 is stored as 12345
     lat = Column(Integer)
     lon = Column(Integer)
-
-    @classmethod
-    def scale(cls, lat_value, lon_value):
-        return (
-            int(round(lat_value * cls._scaling_factor)),
-            int(round(lon_value * cls._scaling_factor)),
-        )
 
 
 class RegionStat(_Model):

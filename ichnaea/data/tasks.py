@@ -1,6 +1,7 @@
 from ichnaea.async.app import celery_app
 from ichnaea.async.task import BaseTask
 from ichnaea.data import area
+from ichnaea.data.datamap import DataMapUpdater
 from ichnaea.data import export
 from ichnaea.data.internal import InternalUploader
 from ichnaea.data.mapstat import MapStatUpdater
@@ -144,7 +145,14 @@ def update_cellarea_ocid(self, batch=100):
 
 
 @celery_app.task(base=BaseTask, bind=True)
-def update_mapstat(self, batch=1000):
+def update_datamap(self, batch=1000, shard_id=None):
+    with self.redis_pipeline() as pipe:
+        with self.db_session() as session:
+            DataMapUpdater(self, session, pipe, shard_id=shard_id)(batch=batch)
+
+
+@celery_app.task(base=BaseTask, bind=True)
+def update_mapstat(self, batch=1000):  # BBB
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
             MapStatUpdater(self, session, pipe)(batch=batch)

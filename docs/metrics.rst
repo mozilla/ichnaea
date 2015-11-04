@@ -361,15 +361,15 @@ Internal Monitoring
 
 ``queue#queue:update_cell``,
 ``queue#queue:update_cellarea``,
-``queue#queue:update_mapstat``,
+``queue#queue:update_datamap_ne``,
+``queue#queue:update_datamap_nw``,
+``queue#queue:update_datamap_se``,
+``queue#queue:update_datamap_sw``,
 ``queue#queue:update_score``,
 ``queue#queue:update_wifi_0``,
 ``queue#queue:update_wifi_f`` : gauges
 
     These gauges measure the number of items in the Redis update queues.
-    These queues are used to keep track of which :term:`observations`
-    still need to be acted upon and integrated into the aggregate
-    :term:`station` data.
 
 ``table#table:cell_ocid_age`` : gauge
 
