@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 78e6322b4d9: Copy mapstat data to sharded datamap tables.
+
 - 4e8635b0f4cf: Add sharded datamap tables.
 
 Changes
