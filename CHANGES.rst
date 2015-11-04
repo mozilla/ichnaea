@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 4e8635b0f4cf: Add sharded datamap tables.
+
 Changes
 ~~~~~~~
 

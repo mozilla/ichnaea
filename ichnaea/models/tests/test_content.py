@@ -21,50 +21,54 @@ class TestDataMapCodec(TestCase):
 
     def test_decode_datamap_grid(self):
         self.assertEqual(
-            decode_datamap_grid(b'\x00\x00\x00\x00\x00\x00\x00\x00'), (0, 0))
+            decode_datamap_grid(b'\x00\x00\x00\x00\x00\x00\x00\x00'),
+            (-90000, -180000))
         self.assertEqual(
-            decode_datamap_grid(b'AAAAAAAAAAA=', codec='base64'), (0, 0))
+            decode_datamap_grid(b'AAAAAAAAAAA=', codec='base64'),
+            (-90000, -180000))
         self.assertEqual(
             decode_datamap_grid(b'\x00\x01_\x90\x00\x02\xbf '),
-            (90000, 180000))
+            (0, 0))
         self.assertEqual(
             decode_datamap_grid(b'AAFfkAACvyA=', codec='base64'),
+            (0, 0))
+        self.assertEqual(
+            decode_datamap_grid(b'\x00\x02\xbf \x00\x05~@'),
             (90000, 180000))
         self.assertEqual(
-            decode_datamap_grid(b'\xff\xfe\xa0p\xff\xfd@\xe0'),
-            (-90000, -180000))
-        self.assertEqual(
-            decode_datamap_grid(b'//6gcP/9QOA=', codec='base64'),
-            (-90000, -180000))
+            decode_datamap_grid(b'AAK/IAAFfkA=', codec='base64'),
+            (90000, 180000))
 
     def test_encode_datamap_grid(self):
-        self.assertEqual(encode_datamap_grid(0, 0),
+        self.assertEqual(encode_datamap_grid(-90000, -180000),
                          b'\x00\x00\x00\x00\x00\x00\x00\x00')
-        self.assertEqual(encode_datamap_grid(0, 0, codec='base64'),
+        self.assertEqual(encode_datamap_grid(-90000, -180000, codec='base64'),
                          b'AAAAAAAAAAA=')
 
-        self.assertEqual(encode_datamap_grid(90.0, 180.0, scale=True),
+        self.assertEqual(encode_datamap_grid(0, 0),
                          b'\x00\x01_\x90\x00\x02\xbf ')
-        self.assertEqual(encode_datamap_grid(90000, 180000),
-                         b'\x00\x01_\x90\x00\x02\xbf ')
-        self.assertEqual(encode_datamap_grid(90000, 180000, codec='base64'),
+        self.assertEqual(encode_datamap_grid(0, 0, codec='base64'),
                          b'AAFfkAACvyA=')
 
-        self.assertEqual(encode_datamap_grid(-90000, -180000),
-                         b'\xff\xfe\xa0p\xff\xfd@\xe0')
-        self.assertEqual(encode_datamap_grid(-90000, -180000, codec='base64'),
-                         b'//6gcP/9QOA=')
+        self.assertEqual(encode_datamap_grid(90.0, 180.0, scale=True),
+                         b'\x00\x02\xbf \x00\x05~@')
+        self.assertEqual(encode_datamap_grid(90000, 180000),
+                         b'\x00\x02\xbf \x00\x05~@')
+        self.assertEqual(encode_datamap_grid(90000, 180000, codec='base64'),
+                         b'AAK/IAAFfkA=')
 
 
 class TestDataMap(DBTestCase):
 
     def test_fields(self):
         today = util.utcnow().date()
-        self.session.add(DataMap(grid=(12345, -23456),
-                                 created=today, modified=today))
+        lat = 12345
+        lon = -23456
+        model = DataMap.shard_model(lat, lon)
+        self.session.add(model(grid=(lat, lon), created=today, modified=today))
         self.session.flush()
-        result = self.session.query(DataMap).first()
-        self.assertEqual(result.grid, (12345, -23456))
+        result = self.session.query(model).first()
+        self.assertEqual(result.grid, (lat, lon))
         self.assertEqual(result.created, today)
         self.assertEqual(result.modified, today)
 
@@ -72,25 +76,41 @@ class TestDataMap(DBTestCase):
         self.assertEqual(DataMap.scale(-1.12345678, 2.23456789),
                          (-1123, 2235))
 
+    def test_shard_id(self):
+        self.assertEqual(DataMap.shard_id(None, None), None)
+        self.assertEqual(DataMap.shard_id(85000, 180000), 'ne')
+        self.assertEqual(DataMap.shard_id(36000, 5000), 'ne')
+        self.assertEqual(DataMap.shard_id(35999, 5000), 'se')
+        self.assertEqual(DataMap.shard_id(-85000, 180000), 'se')
+        self.assertEqual(DataMap.shard_id(85000, -180000), 'nw')
+        self.assertEqual(DataMap.shard_id(36000, 4999), 'nw')
+        self.assertEqual(DataMap.shard_id(35999, 4999), 'sw')
+        self.assertEqual(DataMap.shard_id(-85000, -180000), 'sw')
+
     def test_grid_bytes(self):
-        grid = encode_datamap_grid(12000, 34000)
-        self.session.add(DataMap(grid=grid))
+        lat = 12000
+        lon = 34000
+        grid = encode_datamap_grid(lat, lon)
+        model = DataMap.shard_model(lat, lon)
+        self.session.add(model(grid=grid))
         self.session.flush()
-        result = self.session.query(DataMap).first()
-        self.assertEqual(result.grid, (12000, 34000))
+        result = self.session.query(model).first()
+        self.assertEqual(result.grid, (lat, lon))
 
     def test_grid_none(self):
-        self.session.add(DataMap(grid=None))
+        self.session.add(DataMap.shard_model(0, 0)(grid=None))
         with self.assertRaises(Exception):
             self.session.flush()
 
     def test_grid_length(self):
-        self.session.add(DataMap(grid=b'\x00' * 9))
+        self.session.add(DataMap.shard_model(0, 9)(grid=b'\x00' * 9))
         with self.assertRaises(Exception):
             self.session.flush()
 
     def test_grid_list(self):
-        self.session.add(DataMap(grid=[1000, -2000]))
+        lat = 1000
+        lon = -2000
+        self.session.add(DataMap.shard_model(lat, lon)(grid=[lat, lon]))
         with self.assertRaises(Exception):
             self.session.flush()
 
