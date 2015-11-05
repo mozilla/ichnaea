@@ -8,8 +8,8 @@ from ichnaea.models.content import (
     DATAMAP_SHARDS,
     DataMap,
 )
-from ichnaea.scripts import map as scripts_map
-from ichnaea.scripts.map import (
+from ichnaea.scripts import datamap
+from ichnaea.scripts.datamap import (
     encode_file,
     export_file,
     main,
@@ -97,7 +97,7 @@ class TestMap(CeleryTestCase):
     def test_main(self):
         with util.selfdestruct_tempdir() as temp_dir:
             mock_generate = MagicMock()
-            with patch.object(scripts_map, 'generate', mock_generate):
+            with patch.object(datamap, 'generate', mock_generate):
                 argv = [
                     'bin/location_map',
                     '--create',
