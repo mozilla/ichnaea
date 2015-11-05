@@ -109,11 +109,11 @@ build_maxmind: $(PYTHON) pip $(TOXINIDIR)/lib/libmaxminddb.0.dylib
 	CFLAGS=-I$(TOXINIDIR)/include LDFLAGS=-L$(TOXINIDIR)/lib \
 		$(INSTALL) --no-use-wheel maxminddb==$(MAXMINDDB_VERSION)
 
-datamaps:
+datamaps/merge:
 	git clone --recursive git://github.com/ericfischer/datamaps
 	cd datamaps; make all
 
-build_datamaps: datamaps
+build_datamaps: datamaps/merge
 
 ichnaea/geocalc.c: ichnaea/geocalc.pyx
 	$(CYTHON) ichnaea/geocalc.pyx
