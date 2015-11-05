@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use proper agglomerative clustering in WiFi clustering.
+
 - Remove arithmetic/hamming distance analysis of BSSIDs.
 
 - Accept and forward WiFi SSID's in public HTTP API's.

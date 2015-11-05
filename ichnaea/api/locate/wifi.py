@@ -1,9 +1,10 @@
 """Search implementation using a wifi database."""
 
-from collections import defaultdict, namedtuple
-from operator import attrgetter
+from collections import defaultdict
+import itertools
 
 import numpy
+from scipy.cluster import hierarchy
 from sqlalchemy.orm import load_only
 from sqlalchemy.sql import or_
 
@@ -28,37 +29,62 @@ from ichnaea.geocalc import (
 from ichnaea.models import WifiShard
 from ichnaea import util
 
-Network = namedtuple('Network', 'mac lat lon radius signal')
+NETWORK_DTYPE = numpy.dtype([
+    ('mac', numpy.unicode_, 12),
+    ('lat', numpy.double),
+    ('lon', numpy.double),
+    ('radius', numpy.double),
+    ('signal', numpy.int32),
+])
 
 
-def cluster_wifis(wifis):
-    distance_matrix = [
-        [distance(a.lat, a.lon, b.lat, b.lon)
-         for a in wifis] for b in wifis]
-    clusters = [[i] for i in range(len(wifis))]
+def cluster_wifis(networks):
+    # Only consider clusters that have at least 2 found networks
+    # inside them. Otherwise someone could use a combination of
+    # one real network and one fake and therefor not found network to
+    # get the position of the real network.
+    length = len(networks)
+    if length < MIN_WIFIS_IN_CLUSTER:
+        # Not enough WiFis to form a valid cluster.
+        return []
 
-    def cluster_distance(a, b):
-        return min([distance_matrix[i][j] for i in a for j in b])
+    positions = networks[['lat', 'lon']]
+    if length == 2:
+        one = positions[0]
+        two = positions[1]
+        if distance(one[0], one[1],
+                    two[0], two[1]) <= MAX_WIFI_CLUSTER_METERS:
+            # Only two WiFis and they agree, so cluster them.
+            return [networks]
+        else:
+            # Or they disagree forming two clusters of size one,
+            # neither of which is large enough to be returned.
+            return []
 
-    merged_one = True
-    while merged_one:
-        merged_one = False
-        for i in range(len(clusters)):
-            if merged_one:
-                break
-            for j in range(len(clusters)):
-                if merged_one:
-                    break
-                if i == j:
-                    continue
-                a = clusters[i]
-                b = clusters[j]
-                if cluster_distance(a, b) <= MAX_WIFI_CLUSTER_METERS:
-                    clusters.pop(j)
-                    a.extend(b)
-                    merged_one = True
+    # Calculate the condensed distance matrix based on distance in meters.
+    # This avoids calculating the square form, which would calculate
+    # each value twice and avoids calculating the diagonal of zeros.
+    # We avoid the special cases for length < 2 with the above checks.
+    # See scipy.spatial.distance.squareform and
+    # https://stackoverflow.com/questions/13079563
+    dist_matrix = numpy.zeros(length * (length - 1) // 2, dtype=numpy.double)
+    for i, (a, b) in enumerate(itertools.combinations(positions, 2)):
+        dist_matrix[i] = distance(a[0], a[1], b[0], b[1])
 
-    return [[wifis[i] for i in c] for c in clusters]
+    link_matrix = hierarchy.linkage(dist_matrix, method='complete')
+    assignments = hierarchy.fcluster(
+        link_matrix, MAX_WIFI_CLUSTER_METERS, criterion='distance', depth=2)
+
+    indexed_clusters = defaultdict(list)
+    for i, net in zip(assignments, networks):
+        indexed_clusters[i].append(net)
+
+    clusters = []
+    for values in indexed_clusters.values():
+        if len(values) >= MIN_WIFIS_IN_CLUSTER:
+            clusters.append(numpy.array(values, dtype=NETWORK_DTYPE))
+
+    return clusters
 
 
 def get_clusters(wifis, lookups):
@@ -71,24 +97,16 @@ def get_clusters(wifis, lookups):
     # Estimate signal strength at -100 dBm if none is provided,
     # which is worse than the 99th percentile of wifi dBms we
     # see in practice (-98).
-    wifi_signals = {}
+    signals = {}
     for lookup in lookups:
-        wifi_signals[lookup.mac] = lookup.signal or -100
+        signals[lookup.mac] = lookup.signal or -100
 
-    wifi_networks = [
-        Network(w.mac, w.lat, w.lon, w.radius, wifi_signals[w.mac])
-        for w in wifis]
+    networks = numpy.array(
+        [(w.mac, w.lat, w.lon, w.radius, signals[w.mac])
+         for w in wifis],
+        dtype=NETWORK_DTYPE)
 
-    # Sort networks by signal strengths in query.
-    wifi_networks.sort(key=attrgetter('signal'), reverse=True)
-
-    clusters = cluster_wifis(wifi_networks)
-
-    # Only consider clusters that have at least 2 found networks
-    # inside them. Otherwise someone could use a combination of
-    # one real network and one fake and therefor not found network to
-    # get the position of the real network.
-    return [c for c in clusters if len(c) >= MIN_WIFIS_IN_CLUSTER]
+    return cluster_wifis(networks)
 
 
 def pick_best_cluster(clusters):
@@ -103,12 +121,12 @@ def pick_best_cluster(clusters):
     We assume that the majority of our data is correct and discard the
     minority match.
 
-    The list of clusters is pre-sorted by signal strength, so given
-    two clusters with two networks each, the cluster with the better
-    signal strength readings wins.
+    In case of a tie, we use the cluster with the better median
+    signal strength.
     """
+
     def sort_cluster(cluster):
-        return len(cluster)
+        return (len(cluster), numpy.median(cluster['signal']))
 
     return sorted(clusters, key=sort_cluster, reverse=True)[0]
 
@@ -129,9 +147,14 @@ def aggregate_cluster_position(cluster, result_type):
     distance has an error that increases significantly with distance,
     so we'd have to underweight pretty heavily.
     """
+    # Reverse sort by signal, to pick the best sample of networks.
+    cluster.sort(order='signal')
+    cluster = numpy.flipud(cluster)
+
     sample = cluster[:min(len(cluster), MAX_WIFIS_IN_CLUSTER)]
     circles = numpy.array(
-        [(wifi.lat, wifi.lon, wifi.radius) for wifi in sample],
+        [(net[0], net[1], net[2])
+         for net in sample[['lat', 'lon', 'radius']]],
         dtype=numpy.double)
     lat, lon, accuracy = aggregate_position(circles, WIFI_MIN_ACCURACY)
     accuracy = min(accuracy, WIFI_MAX_ACCURACY)
