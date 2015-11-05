@@ -5,6 +5,16 @@ Changelog
 1.4 (unreleased)
 ================
 
+Untagged
+********
+
+Migrations
+~~~~~~~~~~
+
+Changes
+~~~~~~~
+
+
 20151105120300
 **************
 
