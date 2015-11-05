@@ -88,60 +88,6 @@ class TestWifi(BaseSourceTest):
         result = self.source.search(query)
         self.check_model_result(result, None)
 
-    def test_arithmetic_similarity(self):
-        wifi = WifiShardFactory(mac='00000000001f')
-        wifi2 = WifiShardFactory(mac='000000000020')
-        self.session.flush()
-
-        query = self.model_query(wifis=[wifi, wifi2])
-        result = self.source.search(query)
-        self.check_model_result(result, None)
-
-    def test_hamming_distance_similarity(self):
-        wifi = WifiShardFactory(mac='000000000058')
-        wifi2 = WifiShardFactory(mac='00000000005c')
-        self.session.flush()
-
-        query = self.model_query(wifis=[wifi, wifi2])
-        result = self.source.search(query)
-        self.check_model_result(result, None)
-
-    def test_similar_many_clusters(self):
-        wifi11 = WifiShardFactory(mac='00000000001f')
-        wifi12 = WifiShardFactory(mac='000000000020',
-                                  lat=wifi11.lat, lon=wifi11.lon)
-        wifi21 = WifiShardFactory(mac='000000000058',
-                                  lat=wifi11.lat + 0.00004,
-                                  lon=wifi11.lon + 0.00004)
-        wifi22 = WifiShardFactory(mac='00000000005c',
-                                  lat=wifi21.lat, lon=wifi21.lon)
-        self.session.flush()
-
-        query = self.model_query(wifis=[wifi11, wifi12, wifi21, wifi22])
-        result = self.source.search(query)
-        self.check_model_result(
-            result, wifi11,
-            lat=wifi11.lat + 0.00002, lon=wifi11.lon + 0.00002)
-
-    def test_similar_many_found_clusters(self):
-        wifi = WifiShardFactory(mac='00000000001f')
-        wifi2 = WifiShardFactory(mac='000000000024',
-                                 lat=wifi.lat + 0.00004,
-                                 lon=wifi.lon + 0.00004)
-        other_wifi = [
-            WifiShardFactory.build(mac='000000000020'),
-            WifiShardFactory.build(mac='000000000021'),
-            WifiShardFactory.build(mac='000000000022'),
-            WifiShardFactory.build(mac='000000000023'),
-        ]
-        self.session.flush()
-
-        query = self.model_query(wifis=[wifi, wifi2] + other_wifi)
-        result = self.source.search(query)
-        self.check_model_result(
-            result, wifi,
-            lat=wifi.lat + 0.00002, lon=wifi.lon + 0.00002)
-
     def test_ignore_outlier(self):
         wifi = WifiShardFactory()
         wifis = WifiShardFactory.create_batch(3, lat=wifi.lat, lon=wifi.lon)

@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove arithmetic/hamming distance analysis of BSSIDs.
+
 - Accept and forward WiFi SSID's in public HTTP API's.
 
 20151105120300

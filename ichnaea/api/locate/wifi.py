@@ -71,62 +71,23 @@ def cluster_elements(items, distance_fn, threshold):
     return [[items[i] for i in c] for c in clusters]
 
 
-def filter_bssids_by_similarity(bssids, distance_threshold=2):
-    """
-    Cluster BSSIDs by "similarity" (hamming or arithmetic distance);
-    return one BSSID from each cluster. The distance threshold is
-    hard-wired to 2, meaning that two BSSIDs are clustered together
-    if they are within a numeric difference of 2 of one another or
-    a hamming distance of 2.
-    """
-
-    def bytes_of_hex_string(hs):
-        return [int(hs[i:i + 2], 16) for i in range(0, len(hs), 2)]
-
-    def hamming_distance(a, b):
-        h = 0
-        v = a ^ b
-        while v:
-            h += 1
-            v &= v - 1
-        return h
-
-    def hamming_or_arithmetic_byte_difference(a, b):
-        return min(abs(a - b), hamming_distance(a, b))
-
-    def bssid_difference(a, b):
-        abytes = bytes_of_hex_string(a)
-        bbytes = bytes_of_hex_string(b)
-        return sum(hamming_or_arithmetic_byte_difference(a, b) for
-                   (a, b) in zip(abytes, bbytes))
-
-    clusters = cluster_elements(
-        bssids, bssid_difference, distance_threshold)
-    return [cluster[0] for cluster in clusters]
-
-
 def get_clusters(wifis, lookups):
     """
     Given a list of wifi models and wifi lookups, return
     a list of clusters of nearby wifi networks.
     """
 
-    # Filter out BSSIDs that are numerically very similar, assuming
-    # they are multiple interfaces on the same base station or such.
-    dissimilar_macs = set(filter_bssids_by_similarity([w.mac for w in wifis]))
-
-    # Create a dict of wifi macs mapped to their signal strength.
+    # Create a dict of WiFi macs mapped to their signal strength.
     # Estimate signal strength at -100 dBm if none is provided,
     # which is worse than the 99th percentile of wifi dBms we
     # see in practice (-98).
     wifi_signals = {}
     for lookup in lookups:
-        if lookup.mac in dissimilar_macs:
-            wifi_signals[lookup.mac] = lookup.signal or -100
+        wifi_signals[lookup.mac] = lookup.signal or -100
 
     wifi_networks = [
         Network(w.mac, w.lat, w.lon, w.radius, wifi_signals[w.mac])
-        for w in wifis if w.mac in dissimilar_macs]
+        for w in wifis]
 
     # Sort networks by signal strengths in query.
     wifi_networks.sort(key=attrgetter('signal'), reverse=True)
