@@ -31,21 +31,11 @@ from ichnaea import util
 Network = namedtuple('Network', 'mac lat lon radius signal')
 
 
-def cluster_elements(items, distance_fn, threshold):
-    """
-    Generic pairwise clustering routine.
-
-    :param items: A list of elements to cluster.
-    :param distance_fn: A pairwise distance function over elements.
-    :param threshold: A numeric threshold for clustering;
-                      clusters P, Q will be joined if
-                      distance_fn(a,b) <= threshold,
-                      for any a in P, b in Q.
-
-    :returns: A list of lists of elements, each sub-list being a cluster.
-    """
-    distance_matrix = [[distance_fn(a, b) for a in items] for b in items]
-    clusters = [[i] for i in range(len(items))]
+def cluster_wifis(wifis):
+    distance_matrix = [
+        [distance(a.lat, a.lon, b.lat, b.lon)
+         for a in wifis] for b in wifis]
+    clusters = [[i] for i in range(len(wifis))]
 
     def cluster_distance(a, b):
         return min([distance_matrix[i][j] for i in a for j in b])
@@ -63,12 +53,12 @@ def cluster_elements(items, distance_fn, threshold):
                     continue
                 a = clusters[i]
                 b = clusters[j]
-                if cluster_distance(a, b) <= threshold:
+                if cluster_distance(a, b) <= MAX_WIFI_CLUSTER_METERS:
                     clusters.pop(j)
                     a.extend(b)
                     merged_one = True
 
-    return [[items[i] for i in c] for c in clusters]
+    return [[wifis[i] for i in c] for c in clusters]
 
 
 def get_clusters(wifis, lookups):
@@ -92,11 +82,7 @@ def get_clusters(wifis, lookups):
     # Sort networks by signal strengths in query.
     wifi_networks.sort(key=attrgetter('signal'), reverse=True)
 
-    def wifi_distance(one, two):
-        return distance(one.lat, one.lon, two.lat, two.lon)
-
-    clusters = cluster_elements(
-        wifi_networks, wifi_distance, MAX_WIFI_CLUSTER_METERS)
+    clusters = cluster_wifis(wifi_networks)
 
     # Only consider clusters that have at least 2 found networks
     # inside them. Otherwise someone could use a combination of
