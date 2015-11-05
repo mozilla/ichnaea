@@ -22,7 +22,9 @@ from ichnaea.tests.base import (
 )
 from ichnaea import util
 
-DATAMAPS_DIR = os.path.abspath(os.path.join(ROOT, os.pardir, 'datamaps'))
+GIT_ROOT = os.path.abspath(os.path.join(ROOT, os.pardir))
+DATAMAPS_DIR = os.path.join(GIT_ROOT, 'datamaps')
+PNGQUANT = os.path.join(GIT_ROOT, 'pngquant', 'pngquant')
 
 
 class TestMap(CeleryTestCase):
@@ -79,7 +81,7 @@ class TestMap(CeleryTestCase):
             merge_files(quaddir, shapes, DATAMAPS_DIR)
             self._check_quadtree(shapes)
 
-            render_tiles(shapes, tiles, 1, 2, DATAMAPS_DIR)
+            render_tiles(shapes, tiles, 1, 2, DATAMAPS_DIR, PNGQUANT)
             self.assertEqual(sorted(os.listdir(tiles)),
                              ['0', '1', '2'])
             self.assertEqual(sorted(os.listdir(os.path.join(tiles, '0', '0'))),

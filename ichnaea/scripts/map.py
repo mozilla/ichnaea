@@ -148,12 +148,12 @@ def merge_files(quaddir, shapes, datamaps):
     os.system(cmd)
 
 
-def render_tiles(shapes, tiles, concurrency, max_zoom, datamaps):
+def render_tiles(shapes, tiles, concurrency, max_zoom, datamaps, pngquant):
     cmd = ("{enumerate} -z{zoom} {shapes} | xargs -L1 -P{concurrency} "
            "sh -c 'mkdir -p {output}/$2/$3; {render} "
            "-B 12:0.0379:0.874 -c0088FF -t0 "
            "-O 16:1600:1.5 -G 0.5{extra} $1 $2 $3 $4 | "
-           "pngquant --speed=3 --quality=65-95 32 > "
+           "{pngquant} --speed=3 --quality=65-95 32 > "
            "{output}/$2/$3/$4{suffix}.png' dummy")
 
     datamaps_enumerate = os.path.join(datamaps, 'enumerate')
@@ -165,6 +165,7 @@ def render_tiles(shapes, tiles, concurrency, max_zoom, datamaps):
         shapes=shapes,
         concurrency=concurrency,
         render=datamaps_render,
+        pngquant=pngquant,
         output=tiles,
         extra=' -T 512',
         suffix='@2x')
@@ -175,6 +176,7 @@ def render_tiles(shapes, tiles, concurrency, max_zoom, datamaps):
         shapes=shapes,
         concurrency=concurrency,
         render=datamaps_render,
+        pngquant=pngquant,
         output=tiles,
         extra='',
         suffix='')
@@ -349,7 +351,8 @@ def generate(db_url, bucketname, raven_client, stats_client,
         tiles = os.path.abspath(os.path.join(basedir, 'tiles'))
 
         with stats_client.timed('datamaps', tags=['func:render']):
-            render_tiles(shapes, tiles, concurrency, max_zoom, datamaps)
+            render_tiles(shapes, tiles, concurrency, max_zoom,
+                         datamaps, 'pngquant')
 
         if upload:
             # The upload process is largely network I/O bound, so we

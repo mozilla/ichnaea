@@ -1,7 +1,7 @@
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
 BUILD_DIRS = .tox bin bower_components build datamaps dist include \
-	lib lib64 libmaxminddb man node_modules share
+	lib lib64 libmaxminddb man node_modules pngquant share
 TESTS ?= ichnaea
 TRAVIS ?= false
 
@@ -64,7 +64,8 @@ UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
 
 
 .PHONY: all bower js mysql pip init_db css js test clean shell docs \
-	build build_dev build_maxmind build_cython build_datamaps build_req \
+	build build_dev build_req build_cython \
+	build_datamaps build_maxmind build_pngquant \
 	release release_install release_compile \
 	tox_install tox_test pypi_release pypi_upload
 
@@ -91,6 +92,12 @@ endif
 pip:
 	bin/pip install --disable-pip-version-check -r requirements/build.txt
 
+datamaps/merge:
+	git clone --recursive git://github.com/ericfischer/datamaps
+	cd datamaps; make all
+
+build_datamaps: datamaps/merge
+
 $(TOXINIDIR)/libmaxminddb/bootstrap:
 	git clone --recursive git://github.com/maxmind/libmaxminddb
 	cd libmaxminddb; git checkout 1.1.1
@@ -109,11 +116,13 @@ build_maxmind: $(PYTHON) pip $(TOXINIDIR)/lib/libmaxminddb.0.dylib
 	CFLAGS=-I$(TOXINIDIR)/include LDFLAGS=-L$(TOXINIDIR)/lib \
 		$(INSTALL) --no-use-wheel maxminddb==$(MAXMINDDB_VERSION)
 
-datamaps/merge:
-	git clone --recursive git://github.com/ericfischer/datamaps
-	cd datamaps; make all
+pngquant/pngquant:
+	git clone --recursive git://github.com/pornel/pngquant
+	cd pngquant; git checkout 2.5.2
+	cd pngquant; ./configure
+	cd pngquant; make all
 
-build_datamaps: datamaps/merge
+build_pngquant: pngquant/pngquant
 
 ichnaea/geocalc.c: ichnaea/geocalc.pyx
 	$(CYTHON) ichnaea/geocalc.pyx
@@ -121,7 +130,7 @@ ichnaea/geocalc.c: ichnaea/geocalc.pyx
 build_cython: ichnaea/geocalc.c
 	$(PYTHON) setup.py build_ext --inplace
 
-build_req: $(PYTHON) pip mysql build_datamaps build_maxmind
+build_req: $(PYTHON) pip mysql build_datamaps build_maxmind build_pngquant
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/dev.txt
 
