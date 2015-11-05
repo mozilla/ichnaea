@@ -1,6 +1,6 @@
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
-BUILD_DIRS = .tox bin bower_components build dist include \
+BUILD_DIRS = .tox bin bower_components build datamaps dist include \
 	lib lib64 libmaxminddb man node_modules share
 TESTS ?= ichnaea
 TRAVIS ?= false
@@ -64,7 +64,7 @@ UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
 
 
 .PHONY: all bower js mysql pip init_db css js test clean shell docs \
-	build build_dev build_maxmind build_cython build_req \
+	build build_dev build_maxmind build_cython build_datamaps build_req \
 	release release_install release_compile \
 	tox_install tox_test pypi_release pypi_upload
 
@@ -109,13 +109,19 @@ build_maxmind: $(PYTHON) pip $(TOXINIDIR)/lib/libmaxminddb.0.dylib
 	CFLAGS=-I$(TOXINIDIR)/include LDFLAGS=-L$(TOXINIDIR)/lib \
 		$(INSTALL) --no-use-wheel maxminddb==$(MAXMINDDB_VERSION)
 
+datamaps:
+	git clone --recursive git://github.com/ericfischer/datamaps
+	cd datamaps; make all
+
+build_datamaps: datamaps
+
 ichnaea/geocalc.c: ichnaea/geocalc.pyx
 	$(CYTHON) ichnaea/geocalc.pyx
 
 build_cython: ichnaea/geocalc.c
 	$(PYTHON) setup.py build_ext --inplace
 
-build_req: $(PYTHON) pip mysql build_maxmind
+build_req: $(PYTHON) pip mysql build_datamaps build_maxmind
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/dev.txt
 

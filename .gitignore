@@ -20,6 +20,7 @@ bin/
 bower_components/
 /build/
 coverage/
+datamaps/
 dist/
 docs/build/doctrees/
 ichnaea/content/static/tiles/
