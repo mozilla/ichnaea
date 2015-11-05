@@ -11,6 +11,10 @@ from simplejson import dumps
 from sqlalchemy import text
 
 from ichnaea.config import read_config
+from ichnaea.models.content import (
+    DATAMAP_SHARDS,
+    decode_datamap_grid,
+)
 from ichnaea.db import (
     configure_db,
     db_worker_session,
@@ -50,23 +54,18 @@ def recursive_scandir(top):  # pragma: no cover
                 yield subentry
 
 
-def export_file(db_url, filename, min_lat, max_lat, min_lon, max_lon,
-                _db_rw=None, _session=None):
+def export_file(db_url, filename, tablename, _db_rw=None, _session=None):
     # this is executed in a worker process
     stmt = text('''\
 SELECT
-lat, lon,
-CAST(ROUND(DATEDIFF(CURDATE(), `time`) / 30) AS UNSIGNED) as `num`
-FROM mapstat
-WHERE
-lat >= :min_lat AND lat < :max_lat AND
-lon >= :min_lon AND lon < :max_lon
+`grid`, CAST(ROUND(DATEDIFF(CURDATE(), `modified`) / 30) AS UNSIGNED) as `num`
+FROM {tablename}
 LIMIT :limit OFFSET :offset
-'''.replace('\n', ' '))
+'''.format(tablename=tablename).replace('\n', ' '))
     db = configure_db(db_url, _db=_db_rw)
 
     offset = 0
-    limit = 100000
+    limit = 200000
 
     result_rows = 0
     with util.gzip_open(filename, 'w', compresslevel=2) as fd:
@@ -75,10 +74,8 @@ LIMIT :limit OFFSET :offset
                 # testing hook
                 session = _session
             while True:
-                result = session.execute(stmt.bindparams(
-                    min_lat=min_lat, max_lat=max_lat,
-                    min_lon=min_lon, max_lon=max_lon,
-                    limit=limit, offset=offset))
+                result = session.execute(
+                    stmt.bindparams(limit=limit, offset=offset))
                 rows = result.fetchall()
                 result.close()
                 if not rows:
@@ -87,14 +84,14 @@ LIMIT :limit OFFSET :offset
                 lines = []
                 extend = lines.extend
                 for row in rows:
-                    extend(random_points(row[0], row[1], row[2]))
+                    lat, lon = decode_datamap_grid(row.grid)
+                    extend(random_points(lat, lon, row.num))
 
                 fd.writelines(lines)
-
                 result_rows += len(lines)
                 offset += limit
 
-    if not result_rows:  # pragma: no cover
+    if not result_rows:
         os.remove(filename)
 
     db.engine.pool.dispose()
@@ -104,17 +101,12 @@ LIMIT :limit OFFSET :offset
 def export_files(pool, db_url, csvdir):  # pragma: no cover
     jobs = []
     result_rows = 0
-    # Split the earth into 32 chunks.
-    lat_batch = 42526
-    lon_batch = 45001
-    # Limit to Web Mercator bounds.
-    for lat in range(-85051, 85052, lat_batch):
-        for lon in range(-180000, 180001, lon_batch):
-            filename = os.path.join(csvdir, 'map_%s_%s.csv.gz' % (lat, lon))
-            jobs.append(pool.apply_async(export_file,
-                                         (db_url, filename,
-                                          lat, lat + lat_batch,
-                                          lon, lon + lon_batch)))
+    for shard_id, shard in sorted(DATAMAP_SHARDS.items()):
+        # sorting the shards prefers the north which contains more
+        # data points than the south
+        filename = os.path.join(csvdir, 'map_%s.csv.gz' % shard_id)
+        jobs.append(pool.apply_async(export_file,
+                                     (db_url, filename, shard.__tablename__)))
 
     for job in jobs:
         result_rows += job.get()

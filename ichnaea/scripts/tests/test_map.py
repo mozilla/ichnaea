@@ -1,8 +1,12 @@
 import os
+import os.path
 
 from mock import MagicMock, patch
 
-from ichnaea.models.content import MapStat
+from ichnaea.models.content import (
+    DATAMAP_SHARDS,
+    DataMap,
+)
 from ichnaea.scripts import map as scripts_map
 from ichnaea.scripts.map import (
     export_file,
@@ -19,31 +23,41 @@ class TestMap(CeleryTestCase):
 
     def test_export_file(self):
         today = util.utcnow().date()
-        data = [
-            MapStat(time=today, lat=12345, lon=12345),
-            MapStat(time=today, lat=0, lon=12345),
-            MapStat(time=today, lat=None, lon=None),
-            MapStat(time=today, lat=-10000, lon=-11000),
+        rows = [
+            dict(time=today, lat=12.345, lon=12.345),
+            dict(time=today, lat=0, lon=12.345),
+            dict(time=today, lat=-10.000, lon=-11.000),
         ]
-        self.session.add_all(data)
+        for row in rows:
+            lat, lon = DataMap.scale(row['lat'], row['lon'])
+            data = DataMap.shard_model(lat, lon)(
+                grid=(lat, lon), created=row['time'], modified=row['time'])
+            self.session.add(data)
         self.session.flush()
 
+        lines = []
+        rows = 0
         with util.selfdestruct_tempdir() as temp_dir:
-            filename = os.path.join(temp_dir, 'map.csv.gz')
+            for shard_id, shard in DATAMAP_SHARDS.items():
+                filename = os.path.join(temp_dir, 'map_%s.csv.gz' % shard_id)
+                result = export_file(
+                    None, filename, shard.__tablename__,
+                    _db_rw=_make_db(), _session=self.session)
 
-            result = export_file(
-                None, filename, -85051, 85052, -180000, 180001,
-                _db_rw=_make_db(), _session=self.session)
-            self.assertEqual(result, 36)
+                if not result:
+                    self.assertFalse(os.path.isfile(filename))
+                else:
+                    rows += result
+                    with util.gzip_open(filename, 'r') as fd:
+                        written = fd.read()
+                    lines.extend([line.split(',') for line in written.split()])
 
-            with util.gzip_open(filename, 'r') as fd:
-                written = fd.read()
-            lines = [line.split(',') for line in written.split()]
-            self.assertEqual(len(lines), 36)
-            self.assertEqual(set([round(float(l[0]), 2) for l in lines]),
-                             set([-10.0, 0.0, 12.35]))
-            self.assertEqual(set([round(float(l[1]), 2) for l in lines]),
-                             set([-11.0, 12.35]))
+        self.assertEqual(rows, 36)
+        self.assertEqual(len(lines), 36)
+        self.assertEqual(set([round(float(l[0]), 2) for l in lines]),
+                         set([-10.0, 0.0, 12.35]))
+        self.assertEqual(set([round(float(l[1]), 2) for l in lines]),
+                         set([-11.0, 12.35]))
 
     def test_main(self):
         with util.selfdestruct_tempdir() as temp_dir:
