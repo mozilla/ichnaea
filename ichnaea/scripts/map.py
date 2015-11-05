@@ -114,32 +114,74 @@ def export_files(pool, db_url, csvdir):  # pragma: no cover
     return result_rows
 
 
-def encode_file(name, csvdir, quaddir, datamaps_encode):  # pragma: no cover
+def encode_file(name, csvdir, quaddir, datamaps):
     # this is executed in a worker process
-    in_ = os.path.join(csvdir, name)
-    out = os.path.join(quaddir, name.split('.')[0])
-
     cmd = '{zcat} {input} | {encode} -z15 -o {output}'.format(
         zcat=ZCAT,
-        input=in_,
-        encode=datamaps_encode,
-        output=out)
+        input=os.path.join(csvdir, name),
+        encode=os.path.join(datamaps, 'encode'),
+        output=os.path.join(quaddir, name.split('.')[0]))
 
     os.system(cmd)
 
 
-def encode_files(pool, csvdir, quaddir, datamaps_encode):  # pragma: no cover
+def encode_files(pool, csvdir, quaddir, datamaps):  # pragma: no cover
     jobs = []
     for name in os.listdir(csvdir):
         if name.startswith('map_') and name.endswith('.csv.gz'):
             jobs.append(pool.apply_async(
                 encode_file,
-                (name, csvdir, quaddir, datamaps_encode)))
+                (name, csvdir, quaddir, datamaps)))
 
     for job in jobs:
         job.get()
 
     return len(jobs)
+
+
+def merge_files(quaddir, shapes, datamaps):
+    cmd = '{merge} -u -o {output} {input}'.format(
+        merge=os.path.join(datamaps, 'merge'),
+        input=os.path.join(quaddir, 'map*'),
+        output=shapes)
+
+    os.system(cmd)
+
+
+def render_tiles(shapes, tiles, concurrency, max_zoom, datamaps):
+    cmd = ("{enumerate} -z{zoom} {shapes} | xargs -L1 -P{concurrency} "
+           "sh -c 'mkdir -p {output}/$2/$3; {render} "
+           "-B 12:0.0379:0.874 -c0088FF -t0 "
+           "-O 16:1600:1.5 -G 0.5{extra} $1 $2 $3 $4 | "
+           "pngquant --speed=3 --quality=65-95 32 > "
+           "{output}/$2/$3/$4{suffix}.png' dummy")
+
+    datamaps_enumerate = os.path.join(datamaps, 'enumerate')
+    datamaps_render = os.path.join(datamaps, 'render')
+
+    zoom_0_cmd = cmd.format(
+        enumerate=datamaps_enumerate,
+        zoom=0,
+        shapes=shapes,
+        concurrency=concurrency,
+        render=datamaps_render,
+        output=tiles,
+        extra=' -T 512',
+        suffix='@2x')
+
+    zoom_all_cmd = cmd.format(
+        enumerate=datamaps_enumerate,
+        zoom=max_zoom,
+        shapes=shapes,
+        concurrency=concurrency,
+        render=datamaps_render,
+        output=tiles,
+        extra='',
+        suffix='')
+
+    # Create high-res version for zoom level 0.
+    os.system(zoom_0_cmd)
+    os.system(zoom_all_cmd)
 
 
 def upload_folder(bucketname, bucket_prefix,
@@ -259,11 +301,6 @@ def upload_files(pool, bucketname, tiles, max_zoom,
 def generate(db_url, bucketname, raven_client, stats_client,
              upload=True, concurrency=2, max_zoom=13,
              datamaps='', output=None):  # pragma: no cover
-    datamaps_encode = os.path.join(datamaps, 'encode')
-    datamaps_enumerate = os.path.join(datamaps, 'enumerate')
-    datamaps_merge = os.path.join(datamaps, 'merge')
-    datamaps_render = os.path.join(datamaps, 'render')
-
     with util.selfdestruct_tempdir() as workdir:
         pool = billiard.Pool(processes=concurrency)
 
@@ -292,7 +329,7 @@ def generate(db_url, bucketname, raven_client, stats_client,
         os.mkdir(quaddir)
 
         with stats_client.timed('datamaps', tags=['func:encode']):
-            quadtrees = encode_files(pool, csvdir, quaddir, datamaps_encode)
+            quadtrees = encode_files(pool, csvdir, quaddir, datamaps)
 
         stats_client.timing('datamaps', quadtrees, tags=['count:quadtrees'])
 
@@ -305,48 +342,14 @@ def generate(db_url, bucketname, raven_client, stats_client,
         if os.path.isdir(shapes):
             shutil.rmtree(shapes)
 
-        in_ = os.path.join(quaddir, '*')
-        cmd = '{merge} -u -o {output} {input}'.format(
-            merge=datamaps_merge,
-            input=in_,
-            output=shapes)
-
         with stats_client.timed('datamaps', tags=['func:merge']):
-            os.system(cmd)
+            merge_files(quaddir, shapes, datamaps)
 
         # Render tiles, using xargs -P to get concurrency.
         tiles = os.path.abspath(os.path.join(basedir, 'tiles'))
-        cmd = ("{enumerate} -z{zoom} {shapes} | xargs -L1 -P{concurrency} "
-               "sh -c 'mkdir -p {output}/$2/$3; {render} "
-               "-B 12:0.0379:0.874 -c0088FF -t0 "
-               "-O 16:1600:1.5 -G 0.5{extra} $1 $2 $3 $4 | "
-               "pngquant --speed=3 --quality=65-95 32 > "
-               "{output}/$2/$3/$4{suffix}.png' dummy")
-
-        zoom_0_cmd = cmd.format(
-            enumerate=datamaps_enumerate,
-            zoom=0,
-            shapes=shapes,
-            concurrency=concurrency,
-            render=datamaps_render,
-            output=tiles,
-            extra=' -T 512',
-            suffix='@2x')
-
-        zoom_all_cmd = cmd.format(
-            enumerate=datamaps_enumerate,
-            zoom=max_zoom,
-            shapes=shapes,
-            concurrency=concurrency,
-            render=datamaps_render,
-            output=tiles,
-            extra='',
-            suffix='')
 
         with stats_client.timed('datamaps', tags=['func:render']):
-            # Create high-res version for zoom level 0.
-            os.system(zoom_0_cmd)
-            os.system(zoom_all_cmd)
+            render_tiles(shapes, tiles, concurrency, max_zoom, datamaps)
 
         if upload:
             # The upload process is largely network I/O bound, so we

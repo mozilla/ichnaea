@@ -3,14 +3,18 @@ import os.path
 
 from mock import MagicMock, patch
 
+from ichnaea import ROOT
 from ichnaea.models.content import (
     DATAMAP_SHARDS,
     DataMap,
 )
 from ichnaea.scripts import map as scripts_map
 from ichnaea.scripts.map import (
+    encode_file,
     export_file,
     main,
+    merge_files,
+    render_tiles,
 )
 from ichnaea.tests.base import (
     _make_db,
@@ -18,10 +22,17 @@ from ichnaea.tests.base import (
 )
 from ichnaea import util
 
+DATAMAPS_DIR = os.path.abspath(os.path.join(ROOT, os.pardir, 'datamaps'))
+
 
 class TestMap(CeleryTestCase):
 
-    def test_export_file(self):
+    def _check_quadtree(self, path):
+        self.assertTrue(os.path.isdir(path))
+        for name in ('1,0', 'meta'):
+            self.assertTrue(os.path.isfile(os.path.join(path, name)))
+
+    def test_files(self):
         today = util.utcnow().date()
         rows = [
             dict(time=today, lat=12.345, lon=12.345),
@@ -38,19 +49,41 @@ class TestMap(CeleryTestCase):
         lines = []
         rows = 0
         with util.selfdestruct_tempdir() as temp_dir:
+            quaddir = os.path.join(temp_dir, 'quadtrees')
+            os.mkdir(quaddir)
+            shapes = os.path.join(temp_dir, 'shapes')
+            tiles = os.path.join(temp_dir, 'tiles')
+
             for shard_id, shard in DATAMAP_SHARDS.items():
-                filename = os.path.join(temp_dir, 'map_%s.csv.gz' % shard_id)
+                filename = 'map_%s.csv.gz' % shard_id
+                filepath = os.path.join(temp_dir, filename)
                 result = export_file(
-                    None, filename, shard.__tablename__,
+                    None, filepath, shard.__tablename__,
                     _db_rw=_make_db(), _session=self.session)
 
                 if not result:
-                    self.assertFalse(os.path.isfile(filename))
-                else:
-                    rows += result
-                    with util.gzip_open(filename, 'r') as fd:
-                        written = fd.read()
-                    lines.extend([line.split(',') for line in written.split()])
+                    self.assertFalse(os.path.isfile(filepath))
+                    continue
+
+                rows += result
+                with util.gzip_open(filepath, 'r') as fd:
+                    written = fd.read()
+                lines.extend([line.split(',') for line in written.split()])
+
+                encode_file(filename, temp_dir, quaddir, DATAMAPS_DIR)
+
+                quadfolder = os.path.join(quaddir, 'map_' + shard_id)
+                self.assertTrue(os.path.isdir(quadfolder))
+                self._check_quadtree(quadfolder)
+
+            merge_files(quaddir, shapes, DATAMAPS_DIR)
+            self._check_quadtree(shapes)
+
+            render_tiles(shapes, tiles, 1, 2, DATAMAPS_DIR)
+            self.assertEqual(sorted(os.listdir(tiles)),
+                             ['0', '1', '2'])
+            self.assertEqual(sorted(os.listdir(os.path.join(tiles, '0', '0'))),
+                             ['0.png', '0@2x.png'])
 
         self.assertEqual(rows, 36)
         self.assertEqual(len(lines), 36)
