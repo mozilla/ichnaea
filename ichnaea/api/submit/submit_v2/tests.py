@@ -120,6 +120,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
                 'radioType': '802.11n',
                 'signalStrength': -90,
                 'signalToNoiseRatio': 5,
+                'ssid': 'my-wifi',
                 'xtra_field': 3,
             }]},
         ])
@@ -141,6 +142,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertEqual(wifis[0]['radioType'], '802.11n')
         self.assertEqual(wifis[0]['signalStrength'], -90),
         self.assertEqual(wifis[0]['signalToNoiseRatio'], 5),
+        self.assertEqual(wifis[0]['ssid'], 'my-wifi'),
         self.assertFalse('xtra_field' in wifis[0])
 
     def test_batches(self):

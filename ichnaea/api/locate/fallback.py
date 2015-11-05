@@ -127,6 +127,7 @@ class OutboundSchema(OptionalMappingSchema):
                 colander.Integer(), internal_name='signalStrength')
             snr = OptionalNode(
                 colander.Integer(), internal_name='signalToNoiseRatio')
+            ssid = OptionalNode(colander.String())
 
 OUTBOUND_SCHEMA = OutboundSchema()
 

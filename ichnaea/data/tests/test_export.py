@@ -85,6 +85,7 @@ class BaseExportTest(CeleryTestCase):
                 wifi_data = {
                     'macAddress': wifi_key or wifi.mac,
                     'signalStrength': -90 + i,
+                    'ssid': 'my-wifi',
                 }
                 report['wifiAccessPoints'].append(wifi_data)
 
@@ -219,6 +220,10 @@ class TestGeosubmitUploader(BaseExportTest):
         expect = [report['position']['accuracy'] for report in reports]
         gotten = [report['position']['accuracy'] for report in send_reports]
         self.assertEqual(set(expect), set(gotten))
+
+        self.assertEqual(
+            set([w['ssid'] for w in send_reports[0]['wifiAccessPoints']]),
+            set(['my-wifi']))
 
         self.check_stats(counter=[
             ('data.export.batch', 1, 1, ['key:test']),

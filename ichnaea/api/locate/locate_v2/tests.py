@@ -155,6 +155,7 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         wifi_query[1]['frequency'] = 2437
         wifi_query[2]['signalStrength'] = -77
         wifi_query[3]['signalToNoiseRatio'] = 13
+        wifi_query[3]['ssid'] = 'my-wifi'
 
         res = self._call(body=query)
         self.check_model_response(res, wifi, lat=wifi.lat + offset)

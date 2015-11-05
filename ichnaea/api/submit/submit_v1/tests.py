@@ -107,6 +107,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
                       'frequency': 2437,
                       'signal': -70,
                       'signalToNoiseRatio': 5,
+                      'ssid': 'my-wifi',
                       }]
         }])
 
@@ -126,6 +127,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertEqual(wifis[0]['frequency'], 2437)
         self.assertEqual(wifis[0]['signalStrength'], -70)
         self.assertEqual(wifis[0]['signalToNoiseRatio'], 5)
+        self.assertEqual(wifis[0]['ssid'], 'my-wifi')
 
     def test_batches(self):
         batch = 110

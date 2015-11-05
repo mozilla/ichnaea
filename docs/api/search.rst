@@ -123,6 +123,10 @@ signal
 signalToNoiseRatio
     The current signal to noise ratio measured in dB.
 
+ssid
+    The SSID of the Wifi network. Wifi networks with a SSID ending in
+    `_nomap` must not be collected.
+
 An example of a valid WiFi record is below:
 
 .. code-block:: javascript

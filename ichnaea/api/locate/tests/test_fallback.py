@@ -147,15 +147,17 @@ class TestOutboundSchema(TestCase):
     def test_wifi(self):
         wifis = WifiShardFactory.build_batch(2)
         query = Query(wifi=[
-            {'mac': wifi.mac, 'signal': -90} for wifi in wifis])
+            {'mac': wifi.mac, 'signal': -90, 'ssid': 'my'} for wifi in wifis])
         data = self.schema.deserialize(query.internal_query())
         self.assertEqual(data, {
             'wifiAccessPoints': [{
                 'macAddress': wifis[0].mac,
                 'signalStrength': -90,
+                'ssid': 'my',
             }, {
                 'macAddress': wifis[1].mac,
                 'signalStrength': -90,
+                'ssid': 'my',
             }],
             'fallbacks': {'lacf': True},
         })

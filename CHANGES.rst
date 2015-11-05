@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Accept and forward WiFi SSID's in public HTTP API's.
 
 20151105120300
 **************

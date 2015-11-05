@@ -126,6 +126,7 @@ class ValidWifiLookupSchema(ValidWifiSignalSchema):
     """A schema which validates the fields in a wifi lookup."""
 
     mac = MacNode(colander.String())
+    ssid = DefaultNode(colander.String(), missing=None)
 
 
 class WifiLookup(BaseLookup):
@@ -137,6 +138,7 @@ class WifiLookup(BaseLookup):
         'channel',
         'signal',
         'snr',
+        'ssid',
     )
 
     def better(self, other):

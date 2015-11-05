@@ -70,8 +70,7 @@ class WifiAccessPointSchema(OptionalMappingSchema):
     radioType = OptionalStringNode()
     signalStrength = OptionalIntNode()
     signalToNoiseRatio = OptionalIntNode()
-    # ssid is not mapped on purpose
-    # ssid = OptionalStringNode()
+    ssid = OptionalStringNode()
 
     def deserialize(self, data):
         data = super(WifiAccessPointSchema, self).deserialize(data)

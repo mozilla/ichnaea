@@ -37,6 +37,7 @@ class WifiV1Schema(OptionalMappingSchema):
     radio = OptionalStringNode(internal_name='radioType')
     signal = OptionalIntNode(internal_name='signalStrength')
     signalToNoiseRatio = OptionalIntNode()
+    ssid = OptionalStringNode()
 
     def deserialize(self, data):
         data = super(WifiV1Schema, self).deserialize(data)

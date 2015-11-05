@@ -218,10 +218,6 @@ Wifi Access Point Fields
 macAddress
     The BSSID of the Wifi network. Hidden Wifi networks must not be collected.
 
-ssid
-    The SSID of the Wifi network. Wifi networks with a SSID ending in
-    `_nomap` must not be collected.
-
 radioType
     The Wifi radio type, one of `802.11a`, `802.11b`, `802.11g`, `802.11n`,
     `802.11ac`.
@@ -242,6 +238,10 @@ signalStrength
 
 signalToNoiseRatio
     The current signal to noise ratio measured in dB.
+
+ssid
+    The SSID of the Wifi network. Wifi networks with a SSID ending in
+    `_nomap` must not be collected.
 
 
 Response

@@ -63,6 +63,7 @@ class WifiAccessPointsSchema(InternalSequenceSchema):
             colander.Integer(), missing=None, internal_name='signal')
         signalToNoiseRatio = InternalSchemaNode(
             colander.Integer(), missing=None, internal_name='snr')
+        ssid = InternalSchemaNode(colander.String(), missing=None)
 
 
 class LocateV2Schema(BaseLocateSchema):
