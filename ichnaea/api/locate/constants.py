@@ -7,7 +7,7 @@ EARTH_CIRCUMFERENCE = 40000000.0
 Approximate circumference of the Earth in meters.
 """
 
-MAX_WIFI_CLUSTER_METERS = 500
+MAX_WIFI_CLUSTER_METERS = 1000.0
 """
 Maximum distance between WiFi networks to be considered close enough
 to be from one consistent observation.
@@ -25,7 +25,7 @@ Minimum number of WiFi networks in a close-by cluster to allow returning
 results based on the cluster.
 """
 
-MAX_WIFIS_IN_CLUSTER = 5
+MAX_WIFIS_IN_CLUSTER = 10
 """
 Maximum number of WiFi networks used from one combined cluster to form
 the aggregate result.

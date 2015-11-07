@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use up to top 10 WiFi networks in WiFi location.
+
 - Use proper agglomerative clustering in WiFi clustering.
 
 - Remove arithmetic/hamming distance analysis of BSSIDs.

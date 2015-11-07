@@ -1,5 +1,8 @@
 from datetime import timedelta
 
+import numpy
+
+from ichnaea.api.locate.constants import MAX_WIFIS_IN_CLUSTER
 from ichnaea.api.locate.result import ResultList
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.api.locate.wifi import WifiPositionSource
@@ -133,26 +136,26 @@ class TestWifi(BaseSourceTest):
         result = self.source.search(query)
         self.check_model_result(result, wifi)
 
-    def test_top_five_in_noisy_cluster(self):
+    def test_top_results_in_noisy_cluster(self):
         # all these should wind up in the same cluster since
-        # clustering threshold is 500m and the 10 wifis are
-        # spaced in increments of (+1m, +1.2m)
-        wifi = WifiShardFactory.build()
+        # the WiFis are spaced in increments of (+1m, +1.2m)
+        wifi1 = WifiShardFactory.build()
         wifis = []
-        for i in range(0, 10):
-            wifis.append(WifiShardFactory(lat=wifi.lat + i * 0.00001,
-                                          lon=wifi.lon + i * 0.000012))
-
+        for i in range(0, MAX_WIFIS_IN_CLUSTER + 10):
+            wifis.append(WifiShardFactory(lat=wifi1.lat + i * 0.00001,
+                                          lon=wifi1.lon + i * 0.000012))
         self.session.flush()
+
+        # calculate expected result
+        lat, lon = numpy.array(
+            [(wifi.lat, wifi.lon) for wifi in
+             wifis[:MAX_WIFIS_IN_CLUSTER]]).mean(axis=0)
 
         query = self.model_query(wifis=wifis)
         for i, entry in enumerate(query.wifi):
             entry.signal = -70 - i
         result = self.source.search(query)
-        self.check_model_result(
-            result, wifi,
-            lat=wifi.lat + 0.00002,
-            lon=wifi.lon + 0.000024)
+        self.check_model_result(result, wifi1, lat=lat, lon=lon)
 
     def test_wifi_not_closeby(self):
         wifi = WifiShardFactory()
