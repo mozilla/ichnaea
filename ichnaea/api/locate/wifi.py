@@ -35,6 +35,7 @@ NETWORK_DTYPE = numpy.dtype([
     ('lon', numpy.double),
     ('radius', numpy.double),
     ('signal', numpy.int32),
+    ('score', numpy.double),
 ])
 
 
@@ -92,6 +93,7 @@ def get_clusters(wifis, lookups):
     Given a list of wifi models and wifi lookups, return
     a list of clusters of nearby wifi networks.
     """
+    now = util.utcnow()
 
     # Create a dict of WiFi macs mapped to their signal strength.
     # Estimate signal strength at -100 dBm if none is provided,
@@ -102,8 +104,9 @@ def get_clusters(wifis, lookups):
         signals[lookup.mac] = lookup.signal or -100
 
     networks = numpy.array(
-        [(w.mac, w.lat, w.lon, w.radius, signals[w.mac])
-         for w in wifis],
+        [(wifi.mac, wifi.lat, wifi.lon, wifi.radius,
+          signals[wifi.mac], wifi.score(now))
+         for wifi in wifis],
         dtype=NETWORK_DTYPE)
 
     return cluster_wifis(networks)
@@ -111,22 +114,16 @@ def get_clusters(wifis, lookups):
 
 def pick_best_cluster(clusters):
     """
-    Out of the list of possible clusters, pick the best one.
-
-    Currently we pick the cluster with the most found networks inside
-    it. If we find more than one cluster, we have some stale data in
-    our database, as a device shouldn't be able to pick up signals
-    from networks more than
-    :data:`ichnaea.api.locate.constants.MAX_WIFI_CLUSTER_METERS` apart.
-    We assume that the majority of our data is correct and discard the
-    minority match.
+    Out of the list of possible clusters, pick the best one based
+    on the sum of the individual network scores.
 
     In case of a tie, we use the cluster with the better median
     signal strength.
     """
 
     def sort_cluster(cluster):
-        return (len(cluster), numpy.median(cluster['signal']))
+        return (cluster['score'].sum(),
+                numpy.median(cluster['signal']))
 
     return sorted(clusters, key=sort_cluster, reverse=True)[0]
 
@@ -171,7 +168,10 @@ def query_wifis(query, raven_client):
     temp_blocked = today - TEMPORARY_BLOCKLIST_DURATION
 
     try:
-        load_fields = ('lat', 'lon', 'radius')
+        # load all fields used in score calculation and those we
+        # need for the position
+        load_fields = ('lat', 'lon', 'radius',
+                       'created', 'modified', 'samples')
         shards = defaultdict(list)
         for mac in macs:
             shards[WifiShard.shard_model(mac)].append(mac)

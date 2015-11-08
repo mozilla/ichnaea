@@ -31,6 +31,7 @@ from ichnaea.tests.base import (
     GB_MNC,
     SESSION,
 )
+from ichnaea import util
 
 
 class BaseMemoryFactory(Factory):
@@ -211,6 +212,8 @@ class WifiShardFactory(BaseSQLFactory):
     radius = WIFI_MIN_ACCURACY / 2.0
     region = 'GB'
     samples = 1
+    created = util.utcnow()
+    modified = util.utcnow()
 
     class Meta:
         model = WifiShard.create

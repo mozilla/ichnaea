@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Choose best WiFi cluster based on a data quality score.
+
 - Use up to top 10 WiFi networks in WiFi location.
 
 - Use proper agglomerative clustering in WiFi clustering.
