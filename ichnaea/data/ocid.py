@@ -265,11 +265,11 @@ class ImportExternal(ImportBase):
 
     def __init__(self, task, cell_type='ocid'):
         super(ImportExternal, self).__init__(task, cell_type=cell_type)
-        self.settings = self.task.app.settings['import:ocid']
+        self.settings = self.task.app.settings.get('import:ocid', {})
 
     def __call__(self, diff=True, _filename=None):
-        url = self.settings['url']
-        apikey = self.settings['apikey']
+        url = self.settings.get('url')
+        apikey = self.settings.get('apikey')
         if not url or not apikey:  # pragma: no cover
             return
 
