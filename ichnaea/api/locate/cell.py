@@ -83,7 +83,8 @@ def query_cells(query, lookups, model, raven_client):
             return []
 
         try:
-            load_fields = ('lat', 'lon', 'radius')
+            load_fields = ('lat', 'lon', 'radius',
+                           'created', 'modified', 'samples')
             areas = (query.session.query(model)
                                   .filter(model.cellid.in_(cellids))
                                   .filter(model.lat.isnot(None))
@@ -100,7 +101,8 @@ def query_cells(query, lookups, model, raven_client):
             return []
 
         try:
-            load_fields = ('lat', 'lon', 'radius')
+            load_fields = ('lat', 'lon', 'radius',
+                           'created', 'modified', 'samples')
             model_iter = model.iterkeys(
                 query.session,
                 hashkeys,
@@ -119,7 +121,8 @@ def query_areas(query, lookups, model, raven_client):
     if not areaids:  # pragma: no cover
         return []
 
-    load_fields = ('lat', 'lon', 'radius')
+    load_fields = ('lat', 'lon', 'radius',
+                   'created', 'modified', 'num_cells')
     try:
         areas = (query.session.query(model)
                               .filter(model.areaid.in_(areaids))

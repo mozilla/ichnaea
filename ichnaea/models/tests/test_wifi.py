@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 from sqlalchemy.exc import (
     SQLAlchemyError,
 )
@@ -137,46 +135,8 @@ class TestWifiShard(DBTestCase):
 
     def test_score(self):
         now = util.utcnow()
-        self.assertAlmostEqual(
-            WifiShard.create(mac='111101123456',
-                             created=now, modified=now,
-                             radius=0, samples=1).score(now), 0.05, 2)
-        self.assertAlmostEqual(
-            WifiShard.create(mac='111101123456',
-                             created=now - timedelta(days=1), modified=now,
-                             radius=10, samples=2).score(now), 0.1, 2)
-        self.assertAlmostEqual(
-            WifiShard.create(mac='111101123456',
-                             created=now - timedelta(days=5), modified=now,
-                             radius=10, samples=2).score(now), 0.5, 2)
-        self.assertAlmostEqual(
-            WifiShard.create(mac='111101123456',
-                             created=now - timedelta(days=10), modified=now,
-                             radius=10, samples=2).score(now), 1.0, 2)
-        self.assertAlmostEqual(
-            WifiShard.create(mac='111101123456',
-                             created=now - timedelta(days=10), modified=now,
-                             radius=10, samples=64).score(now), 6.0, 2)
-        self.assertAlmostEqual(
-            WifiShard.create(mac='111101123456',
-                             created=now - timedelta(days=10), modified=now,
-                             radius=10, samples=1024).score(now), 10.0, 2)
-        self.assertAlmostEqual(
-            WifiShard.create(mac='111101123456',
-                             created=now - timedelta(days=10), modified=now,
-                             radius=0, samples=1024).score(now), 0.5, 2)
-        self.assertAlmostEqual(
-            WifiShard.create(mac='111101123456',
-                             created=now - timedelta(days=70),
-                             modified=now - timedelta(days=40),
-                             radius=10, samples=1024).score(now), 7.07, 2)
-        self.assertAlmostEqual(
-            WifiShard.create(mac='111101123456',
-                             created=now - timedelta(days=190),
-                             modified=now - timedelta(days=180),
-                             radius=10, samples=1024).score(now), 3.78, 2)
-        self.assertAlmostEqual(
-            WifiShard.create(mac='111101123456',
-                             created=now - timedelta(days=190),
-                             modified=now - timedelta(days=180),
-                             radius=10, samples=64).score(now), 2.27, 2)
+        wifi = WifiShard.create(
+            mac='111101123456', created=now, modified=now,
+            radius=10, samples=2,
+        )
+        self.assertAlmostEqual(wifi.score(now), 0.1, 2)

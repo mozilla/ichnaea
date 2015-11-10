@@ -115,6 +115,13 @@ class TestCell(DBTestCase):
         self.assertEqual(result.radius, 10)
         self.assertEqual(result.samples, 15)
 
+    def test_score(self):
+        now = util.utcnow()
+        cell = Cell.create(
+            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2, cid=3,
+            created=now, modified=now, radius=10, samples=2)
+        self.assertAlmostEqual(cell.score(now), 0.1, 2)
+
 
 class TestCellOCID(DBTestCase):
 
@@ -187,6 +194,13 @@ class TestCellOCID(DBTestCase):
         self.assertEqual(result.block_first, now.date())
         self.assertEqual(result.block_last, now.date())
         self.assertEqual(result.block_count, 1)
+
+    def test_score(self):
+        now = util.utcnow()
+        cell = CellOCID.create(
+            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2, cid=3,
+            created=now, modified=now, radius=10, samples=2)
+        self.assertAlmostEqual(cell.score(now), 0.1, 2)
 
 
 class TestCellArea(DBTestCase):
@@ -306,6 +320,17 @@ cast(conv(substr(hex(`areaid`), 11, 4), 16, 10) as unsigned)
         self.assertEqual(result.avg_cell_radius, 10)
         self.assertEqual(result.num_cells, 15)
 
+    def test_score(self):
+        now = util.utcnow()
+        area = CellArea.create(
+            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2,
+            created=now, modified=now, radius=10, num_cells=4)
+        self.assertAlmostEqual(area.score(now), 0.2, 2)
+        area = CellArea.create(
+            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2,
+            created=now, modified=now, radius=0, num_cells=100)
+        self.assertAlmostEqual(area.score(now), 0.1, 2)
+
 
 class TestCellAreaOCID(DBTestCase):
 
@@ -339,6 +364,17 @@ class TestCellAreaOCID(DBTestCase):
         self.assertEqual(result.region, 'GB')
         self.assertEqual(result.avg_cell_radius, 11)
         self.assertEqual(result.num_cells, 15)
+
+    def test_score(self):
+        now = util.utcnow()
+        area = CellAreaOCID.create(
+            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2,
+            created=now, modified=now, radius=10, num_cells=4)
+        self.assertAlmostEqual(area.score(now), 0.2, 2)
+        area = CellAreaOCID.create(
+            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2,
+            created=now, modified=now, radius=0, num_cells=100)
+        self.assertAlmostEqual(area.score(now), 0.1, 2)
 
 
 class TestCellBlocklist(DBTestCase):
