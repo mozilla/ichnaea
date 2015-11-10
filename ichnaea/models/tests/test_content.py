@@ -2,7 +2,6 @@ from ichnaea.models.content import (
     decode_datamap_grid,
     encode_datamap_grid,
     DataMap,
-    MapStat,
     RegionStat,
     Score,
     ScoreKey,
@@ -121,19 +120,6 @@ class TestDataMap(DBTestCase):
         self.session.add(DataMap.shard_model(lat, lon)(grid=[lat, lon]))
         with self.assertRaises(Exception):
             self.session.flush()
-
-
-class TestMapStat(DBTestCase):
-
-    def test_fields(self):
-        today = util.utcnow().date()
-        self.session.add(MapStat(lat=12345, lon=-23456, time=today))
-        self.session.flush()
-
-        result = self.session.query(MapStat).first()
-        self.assertEqual(result.lat, 12345)
-        self.assertEqual(result.lon, -23456)
-        self.assertEqual(result.time, today)
 
 
 class TestRegionStat(DBTestCase):

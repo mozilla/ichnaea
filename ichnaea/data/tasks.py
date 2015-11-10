@@ -4,7 +4,6 @@ from ichnaea.data import area
 from ichnaea.data.datamap import DataMapUpdater
 from ichnaea.data import export
 from ichnaea.data.internal import InternalUploader
-from ichnaea.data.mapstat import MapStatUpdater
 from ichnaea.data import monitor
 from ichnaea.data import ocid
 from ichnaea.data.report import ReportQueue
@@ -124,8 +123,6 @@ def update_cell(self, batch=1000):
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_wifi')
 def update_wifi(self, batch=1000, shard_id=None):
-    if shard_id is None:  # pragma: no cover
-        return
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
             station.WifiUpdater(
@@ -152,10 +149,9 @@ def update_datamap(self, batch=1000, shard_id=None):
 
 
 @celery_app.task(base=BaseTask, bind=True)
-def update_mapstat(self, batch=1000):  # BBB
-    with self.redis_pipeline() as pipe:
-        with self.db_session() as session:
-            MapStatUpdater(self, session, pipe)(batch=batch)
+def update_mapstat(self, batch=1000):  # pragma: no cover
+    # BBB
+    pass
 
 
 @celery_app.task(base=BaseTask, bind=True)

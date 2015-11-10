@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 91fb41d12c5: Drop mapstat table.
+
 Changes
 ~~~~~~~
 

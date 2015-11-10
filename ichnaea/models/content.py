@@ -57,11 +57,6 @@ class StatKey(IntEnum):
     unique_cell_ocid = 7
 
 
-class MapStatHashKey(HashKey):
-
-    _fields = ('lat', 'lon')
-
-
 def decode_datamap_grid(value, scale=False, codec=None):
     """
     Decode a byte sequence representing a datamap grid into a tuple
@@ -187,27 +182,6 @@ class DataMapSW(DataMap, _Model):
     __tablename__ = 'datamap_sw'
 
 DATAMAP_SHARDS['sw'] = DataMapSW
-
-
-class MapStat(HashKeyQueryMixin, _Model):  # BBB
-    __tablename__ = 'mapstat'
-
-    _indices = (
-        UniqueConstraint('lat', 'lon', name='mapstat_lat_lon_unique'),
-        Index('idx_mapstat_time', 'time'),
-    )
-    _hashkey_cls = MapStatHashKey
-    _insert_batch = 100
-    _query_batch = 50
-    _scaling_factor = 1000
-
-    # used to preserve stable insert ordering
-    id = Column(Integer(unsigned=True), primary_key=True, autoincrement=True)
-    # tracks the creation time
-    time = Column(Date)
-    # lat/lon * 1000, so 12.345 is stored as 12345
-    lat = Column(Integer)
-    lon = Column(Integer)
 
 
 class RegionStat(_Model):
