@@ -9,6 +9,7 @@ class BaseView(object):
     on class attributes.
     """
 
+    http_cache = None  #: HTTP cache configuration.
     renderer = 'json'  #: The name of the renderer to use.
     route = None  #: The url path for this view, e.g. `/hello`.
 
@@ -24,7 +25,12 @@ class BaseView(object):
         path = cls.route
         name = path.lstrip('/').replace('/', '_')
         config.add_route(name, path)
-        config.add_view(cls, route_name=name, renderer=cls.renderer)
+        config.add_view(
+            cls,
+            http_cache=cls.http_cache,
+            route_name=name,
+            renderer=cls.renderer,
+        )
 
     def __init__(self, request):
         """

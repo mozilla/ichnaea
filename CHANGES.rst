@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #467: Implement geodude compatibility API.
+
 - Choose best WiFi cluster based on a data quality score.
 
 - Use up to top 10 WiFi networks in WiFi location.

@@ -36,11 +36,13 @@ class TestInternalSchemaNode(TestCase):
 
 class TestExceptions(TestCase):
 
-    def _check(self, error, status):
+    def _check(self, error, status,
+               json=True, content_type='application/json'):
         response = Request.blank('/').get_response(error())
-        self.assertEqual(response.content_type, 'application/json')
+        self.assertEqual(response.content_type, content_type)
         self.assertEqual(response.status_code, status)
-        self.assertEqual(response.json, error.json_body())
+        if json:
+            self.assertEqual(response.json, error.json_body())
         return response
 
     def test_str(self):
@@ -66,6 +68,19 @@ class TestExceptions(TestCase):
         error = api_exceptions.LocationNotFoundV1
         response = self._check(error, 200)
         self.assertEqual(response.json, {'status': 'not_found'})
+
+    def test_region_not_found_v0(self):
+        error = api_exceptions.RegionNotFoundV0
+        response = self._check(error, 404)
+        self.assertEqual(response.text, 'null')
+
+    def test_region_not_found_v0_js(self):
+        error = api_exceptions.RegionNotFoundV0JS
+        response = self._check(
+            error, 404, json=False, content_type='text/javascript')
+        self.assertEqual(response.charset, 'UTF-8')
+        self.assertEqual(response.content_length, 0)
+        self.assertEqual(response.text, '')
 
     def test_parse_error(self):
         error = api_exceptions.ParseError

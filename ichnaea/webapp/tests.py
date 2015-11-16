@@ -8,7 +8,9 @@ from ichnaea.tests.base import (
     ConnectionTestCase,
     REDIS_URI,
     SQLURI,
+    TestCase,
 )
+from ichnaea.webapp import renderers
 
 
 class TestApp(ConnectionTestCase):
@@ -146,6 +148,18 @@ class TestMonitorErrors(AppTestCase):
         res = self.app.get('/__monitor__', status=503)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json['redis'], {'up': False, 'time': 0})
+
+
+class TestRenderers(TestCase):
+
+    def test_js(self):
+        renderer = renderers.JSRenderer()
+        render = renderer(None)
+        self.assertEqual(render('foo', {}), 'foo')
+        self.assertEqual(render('', {}), '')
+        self.assertEqual(render(0, {}), '0')
+        self.assertEqual(render(1, {}), '1')
+        self.assertEqual(render(None, {}), 'None')
 
 
 class TestVersion(AppTestCase):

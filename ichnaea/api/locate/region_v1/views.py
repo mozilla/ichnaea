@@ -1,12 +1,12 @@
 from ichnaea.api.locate.locate_v2.views import LocateV2View
 
 
-class RegionView(LocateV2View):
+class RegionV1View(LocateV2View):
 
-    # TODO: Enable API key checks and logging, after the initial wave
     check_api_key = False  #:
     error_on_invalidkey = False  #:
     metric_path = 'v1.country'  #:
+    renderer = 'json'
     route = '/v1/country'  #:
     searcher = 'region_searcher'  #:
     view_type = 'region'  #:
