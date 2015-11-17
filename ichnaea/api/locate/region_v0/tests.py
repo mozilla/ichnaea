@@ -9,15 +9,9 @@ from ichnaea.tests.base import AppTestCase
 class RegionBase(BaseLocateTest, AppTestCase):
 
     apikey_metrics = False
+    default_apikey = None
     metric_type = 'region'
     track_connection_events = True
-
-    def _call(self, body=None, api_key=None, ip=None, status=200,
-              headers=None, method='post_json', **kw):
-        # default api_key to None
-        return super(RegionBase, self)._call(
-            body=body, api_key=api_key, ip=ip, status=status,
-            headers=headers, method=method, **kw)
 
 
 class CommonRegionTests(object):
@@ -25,6 +19,8 @@ class CommonRegionTests(object):
     def test_geoip(self):
         res = self._call(ip=self.test_ip)
         self.check_response(res, 'ok')
+        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
+        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(counter=[
             ('request', [self.metric_path, 'method:post', 'status:200']),
@@ -45,11 +41,23 @@ class CommonRegionTests(object):
     def test_get(self):
         res = self._call(ip=self.test_ip, method='get', status=200)
         self.check_response(res, 'ok')
+        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
+        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
         self.check_stats(counter=[
             ('request', [self.metric_path, 'method:get', 'status:200']),
         ], timer=[
             ('request', [self.metric_path, 'method:get']),
         ])
+
+    def test_options(self):
+        res = self._call(method='options', status=200)
+        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
+        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
+
+    def test_unsupported_methods(self):
+        self._call(method='delete', status=405)
+        self._call(method='patch', status=405)
+        self._call(method='put', status=405)
 
     def test_cache(self):
         res = self._call(ip=self.test_ip, method='get', status=200)

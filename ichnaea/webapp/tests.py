@@ -70,11 +70,38 @@ class TestApp(ConnectionTestCase):
 
 class TestHeartbeat(AppTestCase):
 
-    def test_ok(self):
-        app = self.app
-        res = app.get('/__heartbeat__', status=200)
+    def test_get(self):
+        res = self.app.get('/__heartbeat__', status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json['status'], 'OK')
+        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
+        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
+
+    def test_head(self):
+        res = self.app.head('/__heartbeat__', status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.body, b'')
+
+    def test_post(self):
+        res = self.app.post('/__heartbeat__', status=200)
+        self.assertEqual(res.content_type, 'application/json')
+        self.assertEqual(res.json['status'], 'OK')
+
+    def test_options(self):
+        res = self.app.options(
+            '/__heartbeat__', status=200, headers={
+                'Access-Control-Request-Method': 'POST',
+                'Origin': 'localhost.local',
+            })
+        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
+        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
+        self.assertEqual(res.content_length, None)
+        self.assertEqual(res.content_type, None)
+
+    def test_unsupported_methods(self):
+        self.app.delete('/__heartbeat__', status=405)
+        self.app.patch('/__heartbeat__', status=405)
+        self.app.put('/__heartbeat__', status=405)
 
 
 class TestDatabaseHeartbeat(AppTestCase):
@@ -82,13 +109,12 @@ class TestDatabaseHeartbeat(AppTestCase):
     def test_database_error(self):
         # self.app is a class variable, so we keep this test in
         # its own class to avoid isolation problems
-        app = self.app
 
         # create a database connection to the discard port
         self.app.app.registry.db_ro = _make_db(
             uri='mysql+pymysql://none:none@127.0.0.1:9/test_location')
 
-        res = app.get('/__heartbeat__', status=200)
+        res = self.app.get('/__heartbeat__', status=200)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json['status'], 'OK')
 
@@ -96,8 +122,7 @@ class TestDatabaseHeartbeat(AppTestCase):
 class TestMonitor(AppTestCase):
 
     def test_ok(self):
-        app = self.app
-        response = app.get('/__monitor__', status=200)
+        response = self.app.get('/__monitor__', status=200)
         self.assertEqual(response.content_type, 'application/json')
         data = response.json
         timed_services = set(['database', 'geoip', 'redis'])
@@ -165,8 +190,7 @@ class TestRenderers(TestCase):
 class TestVersion(AppTestCase):
 
     def test_ok(self):
-        app = self.app
-        response = app.get('/__version__', status=200)
+        response = self.app.get('/__version__', status=200)
         self.assertEqual(response.content_type, 'application/json')
         data = response.json
         self.assertEqual(

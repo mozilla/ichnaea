@@ -49,6 +49,8 @@ class TestView(RegionBase, CommonLocateTest):
     def test_geoip(self):
         res = self._call(ip=self.test_ip)
         self.check_response(res, 'ok')
+        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
+        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(counter=[
             ('request', [self.metric_path, 'method:post', 'status:200']),

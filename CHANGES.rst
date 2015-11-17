@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #468: Add CORS headers and support OPTIONS requests.
+
 - #467: Implement geodude compatibility API.
 
 - Choose best WiFi cluster based on a data quality score.

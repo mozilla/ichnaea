@@ -42,6 +42,8 @@ from ichnaea.tests.factories import (
 )
 from ichnaea import util
 
+_sentinel = object()
+
 
 class DummyModel(object):
 
@@ -186,6 +188,7 @@ class BaseLocateTest(object):
 
     url = None
     apikey_metrics = True
+    default_apikey = 'test'
     metric_path = None
     metric_type = None
     not_found = LocationNotFound
@@ -199,18 +202,20 @@ class BaseLocateTest(object):
     def ip_response(self):  # pragma: no cover
         return {}
 
-    def _call(self, body=None, api_key='test', ip=None, status=200,
+    def _call(self, body=None, api_key=_sentinel, ip=None, status=200,
               headers=None, method='post_json', **kw):
         if body is None:
             body = {}
         url = self.url
         if api_key:
+            if api_key is _sentinel:
+                api_key = self.default_apikey
             url += '?key=%s' % api_key
         extra_environ = {}
         if ip is not None:
             extra_environ = {'HTTP_X_FORWARDED_FOR': ip}
         call = getattr(self.app, method)
-        if method == 'get':
+        if method in ('get', 'delete', 'head', 'options'):
             return call(url,
                         extra_environ=extra_environ,
                         status=status,
@@ -305,11 +310,23 @@ class CommonLocateTest(BaseLocateTest):
     def test_get(self):
         res = self._call(ip=self.test_ip, method='get', status=200)
         self.check_response(res, 'ok')
+        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
+        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
         self.check_stats(counter=[
             ('request', [self.metric_path, 'method:get', 'status:200']),
         ], timer=[
             ('request', [self.metric_path, 'method:get']),
         ])
+
+    def test_options(self):
+        res = self._call(method='options', status=200)
+        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
+        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
+
+    def test_unsupported_methods(self):
+        self._call(method='delete', status=405)
+        self._call(method='patch', status=405)
+        self._call(method='put', status=405)
 
     def test_empty_body(self):
         res = self._call('', ip=self.test_ip, method='post', status=200)
