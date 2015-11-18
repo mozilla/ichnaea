@@ -162,6 +162,8 @@ class TestMonitorErrors(AppTestCase):
         res = self.app.get('/__monitor__', status=503)
         self.assertEqual(res.content_type, 'application/json')
         self.assertEqual(res.json['database'], {'up': False, 'time': 0})
+        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
+        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
 
     def test_geoip_error(self):
         res = self.app.get('/__monitor__', status=503)

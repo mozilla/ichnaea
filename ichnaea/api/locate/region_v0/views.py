@@ -33,7 +33,7 @@ class RegionV0BaseView(BaseLocateView):
         if geoip:
             return self.prepare_response(geoip)
 
-        raise self.not_found()
+        raise self.prepare_exception(self.not_found())
 
 
 class RegionV0JSView(RegionV0BaseView):

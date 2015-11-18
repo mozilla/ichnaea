@@ -73,7 +73,7 @@ class BaseAPIView(BaseView):
         if api_key_text is None:
             self.log_count('none', False)
             if self.error_on_invalidkey:
-                raise InvalidAPIKey()
+                raise self.prepare_exception(InvalidAPIKey())
 
         if api_key_text is not None:
             try:
@@ -99,14 +99,14 @@ class BaseAPIView(BaseView):
             )
 
             if should_limit:
-                raise DailyLimitExceeded()
+                raise self.prepare_exception(DailyLimitExceeded())
         elif skip_check:
             pass
         else:
             if api_key_text is not None:
                 self.log_count('invalid', False)
             if self.error_on_invalidkey:
-                raise InvalidAPIKey()
+                raise self.prepare_exception(InvalidAPIKey())
 
         # If we failed to look up an ApiKey, create an empty one
         # rather than passing None through
@@ -138,7 +138,7 @@ class BaseAPIView(BaseView):
             errors.append({'name': None, 'description': exc.asdict()})
 
         if request_content and errors:
-            raise ParseError()
+            raise self.prepare_exception(ParseError())
 
         return (validated_data, errors)
 

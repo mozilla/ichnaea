@@ -232,6 +232,8 @@ class BaseLocateTest(object):
     def check_response(self, response, status):
         self.assertEqual(response.content_type, 'application/json')
         self.assertEqual(response.charset, 'UTF-8')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'], '*')
+        self.assertEqual(response.headers['Access-Control-Max-Age'], '2592000')
         if status == 'ok':
             self.assertEqual(response.json, self.ip_response)
         elif status == 'invalid_key':
@@ -310,8 +312,6 @@ class CommonLocateTest(BaseLocateTest):
     def test_get(self):
         res = self._call(ip=self.test_ip, method='get', status=200)
         self.check_response(res, 'ok')
-        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
-        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
         self.check_stats(counter=[
             ('request', [self.metric_path, 'method:get', 'status:200']),
         ], timer=[

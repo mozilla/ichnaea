@@ -49,7 +49,7 @@ class BaseSubmitView(BaseAPIView):
 
             if not request_data:
                 # don't allow completely empty submit request
-                raise ParseError()
+                raise self.prepare_exception(ParseError())
 
         except ParseError:
             # capture JSON exceptions for submit calls
@@ -90,4 +90,4 @@ class BaseSubmitView(BaseAPIView):
         except RedisError:
             raise ServiceUnavailable()
 
-        return self.success()
+        return self.prepare_exception(self.success())

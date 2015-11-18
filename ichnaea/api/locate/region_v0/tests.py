@@ -19,8 +19,6 @@ class CommonRegionTests(object):
     def test_geoip(self):
         res = self._call(ip=self.test_ip)
         self.check_response(res, 'ok')
-        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
-        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(counter=[
             ('request', [self.metric_path, 'method:post', 'status:200']),
@@ -41,8 +39,6 @@ class CommonRegionTests(object):
     def test_get(self):
         res = self._call(ip=self.test_ip, method='get', status=200)
         self.check_response(res, 'ok')
-        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
-        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
         self.check_stats(counter=[
             ('request', [self.metric_path, 'method:get', 'status:200']),
         ], timer=[
@@ -92,6 +88,8 @@ class TestJSONView(CommonRegionTests, RegionBase):
     def check_response(self, response, status):
         self.assertEqual(response.content_type, 'application/json')
         self.assertEqual(response.charset, 'UTF-8')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'], '*')
+        self.assertEqual(response.headers['Access-Control-Max-Age'], '2592000')
         if status == 'ok':
             self.assertEqual(response.json, self.ip_response)
         elif status == 'not_found':
@@ -114,6 +112,8 @@ function geoip_country_name() { return 'United Kingdom'; }
     def check_response(self, response, status):
         self.assertEqual(response.content_type, 'text/javascript')
         self.assertEqual(response.charset, 'UTF-8')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'], '*')
+        self.assertEqual(response.headers['Access-Control-Max-Age'], '2592000')
         if status == 'ok':
             self.assertEqual(response.text, self.ip_response)
         elif status == 'not_found':

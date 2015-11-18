@@ -91,6 +91,12 @@ class BaseView(object):
         """
         raise NotImplementedError()
 
+    def prepare_exception(self, exc):
+        """Prepare an exception response."""
+        if isinstance(exc, Response) and self._cors_headers:
+            exc.headers.update(self._cors_headers)
+        return exc
+
     def options(self):
         """
         Return a response for HTTP OPTIONS requests.

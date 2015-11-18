@@ -92,7 +92,7 @@ class HeartbeatView(BaseView):
         try:
             return {'status': 'OK', 'hostname': LOCAL_FQDN}
         except Exception:  # pragma: no cover
-            raise HTTPServiceUnavailable()
+            raise self.prepare_exception(HTTPServiceUnavailable())
 
 
 class MonitorView(BaseView):
@@ -130,7 +130,7 @@ class MonitorView(BaseView):
                     failed = True
 
         if failed:
-            response = HTTPServiceUnavailable()
+            response = self.prepare_exception(HTTPServiceUnavailable())
             response.content_type = 'application/json'
             response.json = result
             return response

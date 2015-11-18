@@ -42,7 +42,7 @@ class BaseLocateView(BaseAPIView):
         """
         result = self.locate(api_key)
         if not result:
-            raise self.not_found()
+            raise self.prepare_exception(self.not_found())
 
         return self.prepare_response(result)
 

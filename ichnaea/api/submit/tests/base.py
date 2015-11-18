@@ -53,9 +53,11 @@ class BaseSubmitTest(object):
         data = {'items': [query]}
         body = util.encode_gzip(dumps(data))
         headers = {'Content-Encoding': 'gzip'}
-        self.app.post(
+        res = self.app.post(
             self.url, body, headers=headers,
             content_type='application/json', status=self.status)
+        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
+        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
         self._assert_queue_size(1)
 
     def test_malformed_gzip(self):
@@ -149,6 +151,11 @@ class BaseSubmitTest(object):
         self.assertEqual(
             [k.decode('ascii') for k in self.redis_client.keys('apiuser:*')],
             ['apiuser:submit:test:%s' % today.strftime('%Y-%m-%d')])
+
+    def test_options(self):
+        res = self.app.options(self.url, status=200)
+        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
+        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
 
     def test_radio_duplicated(self):
         cell, query = self._one_cell_query(radio=False)
