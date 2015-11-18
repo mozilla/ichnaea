@@ -290,6 +290,10 @@ img {
     color: #484848;
 }
 
+#tabzilla:before {
+    background-color: #666;
+}
+
 .header-logo {
     padding-top: 20px;
 }

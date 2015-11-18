@@ -16,11 +16,9 @@
     <meta name="msapplication-TileColor" content="#dedede" />
 
     <link rel="stylesheet" href="/static/css/bundle-base.css" />
-    <link href="https://mozorg.cdn.mozilla.net/media/css/tabzilla-min.css" rel="stylesheet" />
     <tal:slot metal:define-slot="css"></tal:slot>
 
     <script src='/static/js/bundle-base.js'></script>
-    <script src="https://mozorg.cdn.mozilla.net/en-US/tabzilla/tabzilla.js"></script>
     <tal:slot metal:define-slot="js"></tal:slot>
 
     <tal:slot metal:define-slot="head"></tal:slot>
@@ -30,7 +28,10 @@
     <tal:macro metal:define-slot="header">
     <div id="wrapper">
         <header id="masthead">
-            <a href="https://www.mozilla.org/" id="tabzilla">mozilla</a>
+            <div id="tabzilla">
+                <a href="https://www.mozilla.org/">Mozilla</a>
+            </div>
+
             <nav id="nav-main" role="navigation">
                 <ul id="nav-main-menu">
                     <li class="first"><a href="/">Home</a></li>

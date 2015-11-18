@@ -96,7 +96,7 @@ class TestFunctionalContent(AppTestCase):
         self.assertTrue('Content-Security-Policy' in result.headers)
         csp = result.headers['Content-Security-Policy']
         # make sure CSP_BASE interpolation worked
-        self.assertTrue("'self' https://*.cdn.mozilla.net" in csp)
+        self.assertTrue("'self'" in csp)
         # make sure map assets url interpolation worked
         self.assertTrue('127.0.0.1:7001' in csp)
 

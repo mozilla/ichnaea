@@ -30,7 +30,7 @@ TOUCHICON_PATH = os.path.join(IMAGE_PATH, 'apple-touch-icon.png')
 # cache year lookup, needs server restart after new year :)
 THIS_YEAR = u'%s' % util.utcnow().year
 
-CSP_BASE = "'self' https://*.cdn.mozilla.net"
+CSP_BASE = "'self'"
 CSP_POLICY = """\
 default-src 'self' *.tiles.mapbox.com;
 font-src {base};

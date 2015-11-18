@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #469: Update to static tabzilla.
+
 - #468: Add CORS headers and support OPTIONS requests.
 
 - #467: Implement geodude compatibility API.

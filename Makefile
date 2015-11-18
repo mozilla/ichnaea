@@ -170,14 +170,19 @@ css: bower
 	cp $(BOWER_ROOT)/bedrock/media/img/sandstone/footer-mozilla-high-res.png \
 		$(IMG_ROOT)/mozilla-logo@2x.png
 	cp $(BOWER_ROOT)/bedrock/media/img/sandstone/menu-current.png $(IMG_ROOT)/
-	$(CLEANCSS) -o bundle-base.css base.css
 
-	cp $(BOWER_ROOT)/datatables/media/css/jquery.dataTables.css $(CSS_ROOT)
+	cp $(BOWER_ROOT)/mozilla-tabzilla/css/tabzilla.css $(CSS_ROOT)/
+	mkdir -p $(CSS_ROOT)/../media/img/
+	cp $(BOWER_ROOT)/mozilla-tabzilla/media/img/* $(CSS_ROOT)/../media/img/
+
+	$(CLEANCSS) -o bundle-base.css tabzilla.css base.css
+
+	cp $(BOWER_ROOT)/datatables/media/css/jquery.dataTables.css $(CSS_ROOT)/
 	$(CLEANCSS) -o bundle-stat-regions.css jquery.dataTables.css
 
 	cp $(BOWER_ROOT)/font-awesome/fonts/* $(FONT_ROOT)/
-	cp $(BOWER_ROOT)/font-awesome/css/font-awesome.css $(CSS_ROOT)
-	cp $(BOWER_ROOT)/mapbox.js/mapbox.uncompressed.css $(CSS_ROOT)
+	cp $(BOWER_ROOT)/font-awesome/css/font-awesome.css $(CSS_ROOT)/
+	cp $(BOWER_ROOT)/mapbox.js/mapbox.uncompressed.css $(CSS_ROOT)/
 	mkdir -p $(CSS_ROOT)/images/
 	cp -R $(BOWER_ROOT)/mapbox.js/images/*.png $(CSS_ROOT)/images/
 	$(CLEANCSS) -o bundle-map.css font-awesome.css mapbox.uncompressed.css
