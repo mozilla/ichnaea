@@ -9,8 +9,8 @@
   },
   "license": "Apache-2.0",
   "devDependencies": {
-    "bower": "~1.5",
+    "bower": "~1.6",
     "clean-css": "~3.4",
-    "uglify-js": "~2.4"
+    "uglify-js": "~2.6"
   }
 }
