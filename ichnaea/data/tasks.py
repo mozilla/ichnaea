@@ -149,12 +149,6 @@ def update_datamap(self, batch=1000, shard_id=None):
 
 
 @celery_app.task(base=BaseTask, bind=True)
-def update_mapstat(self, batch=1000):  # pragma: no cover
-    # BBB
-    pass
-
-
-@celery_app.task(base=BaseTask, bind=True)
 def update_score(self, batch=1000):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
