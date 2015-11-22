@@ -5,6 +5,12 @@ import warnings
 
 from pymysql import err
 
+# BBB: Workaround for https://github.com/celery/kombu/pull/540
+import uuid
+if not getattr(uuid, '_uuid_generate_random', None):  # pragma: no cover
+    setattr(uuid, '_uuid_generate_random', None)
+del uuid
+
 warnings.simplefilter('ignore', DeprecationWarning)
 warnings.simplefilter('ignore', PendingDeprecationWarning)
 warnings.simplefilter('ignore', err.Warning)
