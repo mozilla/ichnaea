@@ -15,6 +15,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Update to latest versions of certifi, cffi and cryptography.
 
 20151118134500
 **************
