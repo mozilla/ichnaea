@@ -26,10 +26,10 @@ from ichnaea.api.locate.result import (
 )
 from ichnaea.models import (
     ApiKey,
-    Cell,
-    CellOCID,
     CellArea,
     CellAreaOCID,
+    CellOCID,
+    CellShard,
     WifiShard,
     Radio,
 )
@@ -37,7 +37,7 @@ from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
     CellAreaFactory,
-    CellFactory,
+    CellShardFactory,
     WifiShardFactory,
 )
 from ichnaea import util
@@ -155,7 +155,7 @@ class BaseSourceTest(ConnectionTestCase):
             check_func = self.assertAlmostEqual
             for model in models:
                 accuracy = kw.get('accuracy', model.radius)
-                if isinstance(model, (Cell, CellOCID)):
+                if isinstance(model, (CellOCID, CellShard)):
                     accuracy = min(max(accuracy, CELL_MIN_ACCURACY),
                                    CELL_MAX_ACCURACY)
                 elif isinstance(model, (CellArea, CellAreaOCID)):
@@ -256,7 +256,7 @@ class BaseLocateTest(object):
                 model_name = name
                 if name == 'accuracy':
                     model_value = getattr(model, 'radius')
-                    if isinstance(model, (Cell, CellOCID)):
+                    if isinstance(model, (CellOCID, CellShard)):
                         model_value = min(max(model_value, CELL_MIN_ACCURACY),
                                           CELL_MAX_ACCURACY)
                     elif isinstance(model, (CellArea, CellAreaOCID)):
@@ -429,7 +429,7 @@ class CommonPositionTest(BaseLocateTest):
         self.check_response(res, 'limit_exceeded')
 
     def test_cell_not_found(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
 
         query = self.model_query(cells=[cell])
         res = self._call(body=query, status=self.not_found.code)
@@ -452,13 +452,13 @@ class CommonPositionTest(BaseLocateTest):
         ])
 
     def test_cell_invalid_lac(self):
-        cell = CellFactory.build(radio=Radio.wcdma, lac=0, cid=1)
+        cell = CellShardFactory.build(radio=Radio.wcdma, lac=0, cid=1)
         query = self.model_query(cells=[cell])
         res = self._call(body=query, status=self.not_found.code)
         self.check_response(res, 'not_found')
 
     def test_cell_lte_radio(self):
-        cell = CellFactory(radio=Radio.lte)
+        cell = CellShardFactory(radio=Radio.lte)
         self.session.flush()
 
         query = self.model_query(cells=[cell])
@@ -589,7 +589,7 @@ class CommonPositionTest(BaseLocateTest):
         # this tests a cell + wifi based query which gets a cell based
         # internal result and continues on to the fallback to get a
         # better wifi based result
-        cells = CellFactory.create_batch(2, radio=Radio.wcdma)
+        cells = CellShardFactory.create_batch(2, radio=Radio.wcdma)
         wifis = WifiShardFactory.build_batch(3)
         api_key = self.session.query(ApiKey).get('test')
         api_key.allow_fallback = True
@@ -635,7 +635,7 @@ class CommonPositionTest(BaseLocateTest):
         ])
 
     def test_fallback_used_with_geoip(self):
-        cells = CellFactory.create_batch(2, radio=Radio.wcdma)
+        cells = CellShardFactory.create_batch(2, radio=Radio.wcdma)
         wifis = WifiShardFactory.build_batch(3)
         api_key = self.session.query(ApiKey).get('test')
         api_key.allow_fallback = True
@@ -674,7 +674,7 @@ class CommonPositionTest(BaseLocateTest):
         ])
 
     def test_floatjson(self):
-        cell = CellFactory(lat=51.5, lon=(3.3 / 3 + 0.0001))
+        cell = CellShardFactory(lat=51.5, lon=(3.3 / 3 + 0.0001))
         self.session.flush()
 
         query = self.model_query(cells=[cell])
@@ -693,7 +693,7 @@ class CommonLocateErrorTest(BaseLocateTest):
         super(CommonLocateErrorTest, self).tearDown()
 
     def test_apikey_error(self, db_errors=0):
-        cells = CellFactory.build_batch(2)
+        cells = CellShardFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(2)
 
         self.session.execute(text('drop table %s;' % ApiKey.__tablename__))
@@ -704,11 +704,17 @@ class CommonLocateErrorTest(BaseLocateTest):
         self.check_raven([('ProgrammingError', db_errors)])
 
     def test_database_error(self, db_errors=0):
-        cells = CellFactory.build_batch(2)
+        cells = [
+            CellShardFactory.build(radio=Radio.gsm),
+            CellShardFactory.build(radio=Radio.wcdma),
+            CellShardFactory.build(radio=Radio.lte),
+        ]
         wifis = WifiShardFactory.build_batch(2)
 
-        for model in (Cell, CellArea, CellOCID, CellAreaOCID):
+        for model in (CellArea, CellOCID, CellAreaOCID):
             self.session.execute(text('drop table %s;' % model.__tablename__))
+        for name in set([cell.__tablename__ for cell in cells]):
+            self.session.execute(text('drop table %s;' % name))
         for name in set([wifi.__tablename__ for wifi in wifis]):
             self.session.execute(text('drop table %s;' % name))
 

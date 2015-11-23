@@ -5,6 +5,7 @@ import operator
 
 import numpy
 from sqlalchemy.orm import load_only
+from sqlalchemy.sql import or_
 
 from ichnaea.api.locate.constants import (
     DataSource,
@@ -19,14 +20,19 @@ from ichnaea.api.locate.result import (
     ResultList,
 )
 from ichnaea.api.locate.source import PositionSource
+from ichnaea.constants import (
+    PERMANENT_BLOCKLIST_THRESHOLD,
+    TEMPORARY_BLOCKLIST_DURATION,
+)
 from ichnaea.geocalc import aggregate_position
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
-    Cell,
     CellArea,
     CellAreaOCID,
     CellOCID,
+    CellShard,
 )
+from ichnaea import util
 
 
 def pick_best_cells(cells):
@@ -74,46 +80,59 @@ def aggregate_area_position(area, result_type):
         lat=area.lat, lon=area.lon, accuracy=accuracy, fallback='lacf')
 
 
+def query_cell_table(session, model, cellids, temp_blocked,
+                     load_fields, raven_client):
+    try:
+        return (
+            session.query(model)
+                   .filter(model.cellid.in_(cellids))
+                   .filter(model.lat.isnot(None))
+                   .filter(model.lon.isnot(None))
+                   .filter(or_(
+                       model.block_count.is_(None),
+                       model.block_count <
+                           PERMANENT_BLOCKLIST_THRESHOLD))
+                   .filter(or_(
+                       model.block_last.is_(None),
+                       model.block_last < temp_blocked))
+                   .options(load_only(*load_fields))
+        ).all()
+    except Exception:
+        raven_client.captureException()
+    return []
+
+
 def query_cells(query, lookups, model, raven_client):
     # Given a location query and a list of lookup instances, query the
     # database and return a list of model objects.
+    cellids = [lookup.cellid for lookup in lookups]
+    if not cellids:  # pragma: no cover
+        return []
+
+    # load all fields used in score calculation and those we
+    # need for the position
+    load_fields = ('lat', 'lon', 'radius',
+                   'created', 'modified', 'samples')
+
+    today = util.utcnow().date()
+    temp_blocked = today - TEMPORARY_BLOCKLIST_DURATION
+
     if model == CellOCID:
-        cellids = [lookup.cellid for lookup in lookups]
-        if not cellids:  # pragma: no cover
-            return []
+        # non sharded OCID table
+        return query_cell_table(query.session, model, cellids,
+                                temp_blocked, load_fields, raven_client)
 
-        try:
-            load_fields = ('lat', 'lon', 'radius',
-                           'created', 'modified', 'samples')
-            areas = (query.session.query(model)
-                                  .filter(model.cellid.in_(cellids))
-                                  .filter(model.lat.isnot(None))
-                                  .filter(model.lon.isnot(None))
-                                  .options(load_only(*load_fields))).all()
+    result = []
+    shards = defaultdict(list)
+    for lookup in lookups:
+        shards[CellShard.shard_model(lookup.radio)].append(lookup.cellid)
 
-            return areas
-        except Exception:
-            raven_client.captureException()
-        return []
-    else:
-        hashkeys = [lookup.hashkey() for lookup in lookups]
-        if not hashkeys:  # pragma: no cover
-            return []
+    for shard, shard_cellids in shards.items():
+        result.extend(
+            query_cell_table(query.session, shard, shard_cellids,
+                             temp_blocked, load_fields, raven_client))
 
-        try:
-            load_fields = ('lat', 'lon', 'radius',
-                           'created', 'modified', 'samples')
-            model_iter = model.iterkeys(
-                query.session,
-                hashkeys,
-                extra=lambda query: query.options(load_only(*load_fields))
-                                         .filter(model.lat.isnot(None))
-                                         .filter(model.lon.isnot(None)))
-
-            return list(model_iter)
-        except Exception:
-            raven_client.captureException()
-        return []
+    return result
 
 
 def query_areas(query, lookups, model, raven_client):
@@ -141,7 +160,7 @@ class CellPositionMixin(object):
     A CellPositionMixin implements a position search using the cell models.
     """
 
-    cell_model = Cell
+    cell_model = CellShard
     area_model = CellArea
     result_type = Position
 

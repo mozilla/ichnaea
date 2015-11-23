@@ -4,7 +4,7 @@ from ichnaea.models import Radio
 from ichnaea.api.submit.tests.base import BaseSubmitTest
 from ichnaea.tests.base import CeleryAppTestCase
 from ichnaea.tests.factories import (
-    CellFactory,
+    CellShardFactory,
     WifiShardFactory,
 )
 
@@ -18,7 +18,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
     cells_id = 'cellTowers'
 
     def _one_cell_query(self, radio=True):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
         query = {
             'position': {
                 'latitude': cell.lat,
@@ -37,7 +37,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
 
     def test_cell(self):
         now_ms = int(time.time() * 1000)
-        cell = CellFactory.build(radio=Radio.wcdma)
+        cell = CellShardFactory.build(radio=Radio.wcdma)
         response = self._post([{
             'carrier': 'Some Carrier',
             'homeMobileCountryCode': cell.mcc,

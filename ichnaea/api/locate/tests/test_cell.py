@@ -11,7 +11,7 @@ from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.tests.factories import (
     CellAreaFactory,
     CellAreaOCIDFactory,
-    CellFactory,
+    CellShardFactory,
     CellOCIDFactory,
 )
 
@@ -33,7 +33,7 @@ class TestCellPosition(BaseSourceTest):
             check_db_calls(rw=0, ro=0)
 
     def test_cell(self):
-        cell = CellFactory()
+        cell = CellShardFactory()
         self.session.flush()
 
         query = self.model_query(cells=[cell])
@@ -41,7 +41,7 @@ class TestCellPosition(BaseSourceTest):
         self.check_model_result(result, cell)
 
     def test_cell_wrong_cid(self):
-        cell = CellFactory()
+        cell = CellShardFactory()
         self.session.flush()
         cell.cid += 1
 
@@ -50,10 +50,10 @@ class TestCellPosition(BaseSourceTest):
         self.check_model_result(result, None)
 
     def test_multiple_cells(self):
-        cell = CellFactory()
-        cell2 = CellFactory(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
-                            lac=cell.lac, cid=cell.cid + 1,
-                            lat=cell.lat + 1.0, lon=cell.lon + 1.0)
+        cell = CellShardFactory()
+        cell2 = CellShardFactory(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
+                                 lac=cell.lac, cid=cell.cid + 1,
+                                 lat=cell.lat + 1.0, lon=cell.lon + 1.0)
         self.session.flush()
 
         query = self.model_query(cells=[cell, cell2])

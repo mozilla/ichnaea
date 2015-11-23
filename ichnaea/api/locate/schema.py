@@ -14,15 +14,11 @@ from ichnaea.models.base import (
 from ichnaea.models.cell import (
     encode_cellarea,
     encode_cellid,
-    CellKey,
     ValidCellAreaKeySchema,
     ValidCellKeySchema,
     ValidCellSignalSchema,
 )
-from ichnaea.models.hashkey import (
-    HashKey,
-    HashKeyMixin,
-)
+from ichnaea.models.hashkey import HashKey
 from ichnaea.models.schema import (
     DefaultNode,
     MacNode,
@@ -106,10 +102,9 @@ class ValidCellLookupSchema(ValidCellKeySchema, ValidCellSignalSchema):
             raise colander.Invalid(node, ('LAC/CID are required in lookups.'))
 
 
-class CellLookup(HashKeyMixin, BaseCellLookup):
+class CellLookup(BaseCellLookup):
     """A model class representing a cell lookup."""
 
-    _hashkey_cls = CellKey
     _valid_schema = ValidCellLookupSchema()
     _fields = BaseCellLookup._key_fields + (
         'cid',

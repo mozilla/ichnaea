@@ -11,7 +11,7 @@ from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
     CellAreaFactory,
-    CellFactory,
+    CellShardFactory,
     WifiShardFactory,
 )
 
@@ -96,7 +96,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(query.ip, None)
 
     def test_cell(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
         cell_query = self.cell_model_query([cell])
         query = Query(cell=cell_query)
 
@@ -127,7 +127,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(len(query.cell), 0)
 
     def test_cell_duplicated(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
         cell_query = self.cell_model_query([cell, cell, cell])
         cell_query[0]['signal'] = -95
         cell_query[1]['signal'] = -90
@@ -137,7 +137,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(query.cell[0].signal, -90)
 
     def test_cell_region(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
         cell_query = self.cell_model_query([cell])
         query = Query(cell=cell_query, api_type='region')
         self.assertEqual(query.expected_accuracy, DataAccuracy.low)
@@ -152,7 +152,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(query.expected_accuracy, DataAccuracy.low)
 
     def test_cell_area_duplicated(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
         cell_query = self.cell_model_query([cell, cell, cell])
         cell_query[1]['cid'] += 2
         cell_query[2]['cid'] += 1
@@ -236,7 +236,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(query.expected_accuracy, DataAccuracy.none)
 
     def test_mixed_cell_wifi(self):
-        cells = CellFactory.build_batch(1)
+        cells = CellShardFactory.build_batch(1)
         wifis = WifiShardFactory.build_batch(2)
 
         query = Query(
@@ -289,7 +289,7 @@ class TestQueryStats(QueryTest):
 
     def test_no_api_key_shortname(self):
         api_key = ApiKeyFactory.build(shortname=None, log_locate=True)
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
         self._make_query(api_key=api_key, cell=[cell])
         self.check_stats(counter=[
             ('locate.query',
@@ -305,7 +305,7 @@ class TestQueryStats(QueryTest):
         ])
 
     def test_one(self):
-        cells = CellFactory.build_batch(1)
+        cells = CellShardFactory.build_batch(1)
         wifis = WifiShardFactory.build_batch(1)
 
         self._make_query(cell=cells, wifi=wifis, ip=self.london_ip)
@@ -315,7 +315,7 @@ class TestQueryStats(QueryTest):
         ])
 
     def test_many(self):
-        cells = CellFactory.build_batch(2)
+        cells = CellShardFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(3)
 
         self._make_query(cell=cells, wifi=wifis, ip=self.london_ip)
@@ -390,7 +390,7 @@ class TestResultStats(QueryTest):
         ])
 
     def test_medium_miss(self):
-        cells = CellFactory.build_batch(1)
+        cells = CellShardFactory.build_batch(1)
         self._make_query(self._make_result(), cell=cells)
         self.check_stats(counter=[
             ('locate.result',
@@ -399,7 +399,7 @@ class TestResultStats(QueryTest):
         ])
 
     def test_medium_miss_low(self):
-        cells = CellFactory.build_batch(1)
+        cells = CellShardFactory.build_batch(1)
         self._make_query(self._make_result(accuracy=50000.1), cell=cells)
         self.check_stats(counter=[
             ('locate.result',
@@ -408,7 +408,7 @@ class TestResultStats(QueryTest):
         ])
 
     def test_medium_hit(self):
-        cells = CellFactory.build_batch(1)
+        cells = CellShardFactory.build_batch(1)
         self._make_query(self._make_result(accuracy=50000.0), cell=cells)
         self.check_stats(counter=[
             ('locate.result',
@@ -445,7 +445,7 @@ class TestResultStats(QueryTest):
         ])
 
     def test_mixed_hit(self):
-        cells = CellFactory.build_batch(2)
+        cells = CellShardFactory.build_batch(2)
         self._make_query(
             self._make_result(accuracy=500.0), cell=cells, ip=self.london_ip)
         self.check_stats(counter=[

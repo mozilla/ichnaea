@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use sharded cell tables in locate logic.
+
 - Update to latest versions of certifi, cffi and cryptography.
 
 20151118134500

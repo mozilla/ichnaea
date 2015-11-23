@@ -2,7 +2,7 @@ from ichnaea.api.locate.internal import InternalRegionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.geocode import GEOCODER
 from ichnaea.tests.factories import (
-    CellFactory,
+    CellShardFactory,
     WifiShardFactory,
 )
 
@@ -14,7 +14,7 @@ class TestRegionSource(BaseSourceTest):
 
     def test_from_mcc(self):
         region = GEOCODER.regions_for_mcc(235, metadata=True)[0]
-        cell = CellFactory.build(mcc=235)
+        cell = CellShardFactory.build(mcc=235)
         query = self.model_query(cells=[cell])
         results = self.source.search(query)
         self.check_model_result(results, region)
@@ -26,7 +26,7 @@ class TestRegionSource(BaseSourceTest):
 
     def test_ambiguous_mcc(self):
         regions = GEOCODER.regions_for_mcc(234, metadata=True)
-        cell = CellFactory.build(mcc=234)
+        cell = CellShardFactory.build(mcc=234)
         query = self.model_query(cells=[cell])
         results = self.source.search(query)
         self.check_model_result(results, regions)

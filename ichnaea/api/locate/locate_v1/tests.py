@@ -13,7 +13,7 @@ from ichnaea.tests.base import (
     TestCase,
 )
 from ichnaea.tests.factories import (
-    CellFactory,
+    CellShardFactory,
     WifiShardFactory,
 )
 
@@ -101,7 +101,7 @@ class LocateV1Base(BaseLocateTest, AppTestCase):
 class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
 
     def test_cell(self):
-        cell = CellFactory()
+        cell = CellShardFactory()
         self.session.flush()
 
         query = self.model_query(cells=[cell])
@@ -163,4 +163,4 @@ class TestError(LocateV1Base, CommonLocateErrorTest):
         super(TestError, self).test_apikey_error(db_errors=1)
 
     def test_database_error(self):
-        super(TestError, self).test_database_error(db_errors=5)
+        super(TestError, self).test_database_error(db_errors=7)

@@ -484,10 +484,6 @@ class Cell(BboxMixin, PositionMixin, TimeTrackingMixin,
     samples = Column(Integer(unsigned=True))
     new_measures = Column(Integer(unsigned=True))
 
-    @property
-    def areaid(self):
-        return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)
-
 
 class ValidCellSchema(ValidCellKeySchema, ValidBboxSchema,
                       ValidPositionSchema, ValidTimeTrackingSchema):

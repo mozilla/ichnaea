@@ -13,7 +13,7 @@ from ichnaea.tests.base import (
     TestCase,
 )
 from ichnaea.tests.factories import (
-    CellFactory,
+    CellShardFactory,
     WifiShardFactory,
 )
 
@@ -97,7 +97,7 @@ class LocateV2Base(BaseLocateTest, AppTestCase):
 class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
 
     def test_cell(self):
-        cell = CellFactory()
+        cell = CellShardFactory()
         self.session.flush()
 
         query = self.model_query(cells=[cell])
@@ -122,7 +122,7 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         ])
 
     def test_partial_cell(self):
-        cell = CellFactory()
+        cell = CellShardFactory()
         self.session.flush()
 
         # simulate one neighboring incomplete cell
@@ -178,7 +178,7 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         # them as integers, so both of these are encoded as 1 instead.
         # Some clients sends us these values as strings, some as integers,
         # so we want to make sure we support both.
-        cell = CellFactory(mnc=1)
+        cell = CellShardFactory(mnc=1)
         self.session.flush()
 
         query = self.model_query(cells=[cell])
@@ -191,7 +191,7 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
     def test_cell_radio_in_celltowers(self):
         # This test covers a bug related to FxOS calling the
         # geolocate API incorrectly.
-        cell = CellFactory()
+        cell = CellShardFactory()
         self.session.flush()
 
         query = self.model_query(cells=[cell])
@@ -203,7 +203,7 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
 
     def test_cell_radiotype_in_celltowers(self):
         # This test covers an extension to the geolocate API
-        cell = CellFactory()
+        cell = CellShardFactory()
         self.session.flush()
 
         query = self.model_query(cells=[cell])
@@ -215,7 +215,7 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
     def test_cell_radio_in_celltowers_dupes(self):
         # This test covers a bug related to FxOS calling the
         # geolocate API incorrectly.
-        cell = CellFactory()
+        cell = CellShardFactory()
         self.session.flush()
 
         query = self.model_query(cells=[cell])
@@ -229,9 +229,9 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, cell)
 
     def test_inconsistent_cell_radio(self):
-        cell = CellFactory(radio=Radio.wcdma, radius=15000)
-        cell2 = CellFactory(radio=Radio.gsm, radius=35000,
-                            lat=cell.lat + 0.0002, lon=cell.lon)
+        cell = CellShardFactory(radio=Radio.wcdma, radius=15000)
+        cell2 = CellShardFactory(radio=Radio.gsm, radius=35000,
+                                 lat=cell.lat + 0.0002, lon=cell.lon)
         self.session.flush()
 
         query = self.model_query(cells=[cell, cell2])
@@ -245,9 +245,9 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, cell)
 
     def test_inconsistent_cell_radio_type(self):
-        cell = CellFactory(radio=Radio.wcdma, radius=15000)
-        cell2 = CellFactory(radio=Radio.gsm, radius=35000,
-                            lat=cell.lat + 0.0002, lon=cell.lon)
+        cell = CellShardFactory(radio=Radio.wcdma, radius=15000)
+        cell2 = CellShardFactory(radio=Radio.gsm, radius=35000,
+                                 lat=cell.lat + 0.0002, lon=cell.lon)
         self.session.flush()
 
         query = self.model_query(cells=[cell, cell2])
@@ -260,9 +260,9 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
     def test_cdma_cell(self):
         # Specifying a CDMA radio type works,
         # but the information is ignored.
-        cell = CellFactory(radio=Radio.gsm, radius=15000)
-        cell2 = CellFactory(radio=Radio.gsm, radius=35000,
-                            lat=cell.lat + 0.0002, lon=cell.lon)
+        cell = CellShardFactory(radio=Radio.gsm, radius=15000)
+        cell2 = CellShardFactory(radio=Radio.gsm, radius=35000,
+                                 lat=cell.lat + 0.0002, lon=cell.lon)
         cell2.radio = Radio.cdma
         self.session.flush()
 
@@ -277,4 +277,4 @@ class TestError(LocateV2Base, CommonLocateErrorTest):
         super(TestError, self).test_apikey_error(db_errors=1)
 
     def test_database_error(self):
-        super(TestError, self).test_database_error(db_errors=5)
+        super(TestError, self).test_database_error(db_errors=7)

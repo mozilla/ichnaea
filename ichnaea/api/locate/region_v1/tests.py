@@ -5,7 +5,7 @@ from ichnaea.api.locate.tests.base import (
 )
 from ichnaea.tests.base import AppTestCase
 from ichnaea.tests.factories import (
-    CellFactory,
+    CellShardFactory,
     WifiShardFactory,
 )
 
@@ -102,7 +102,7 @@ class TestView(RegionBase, CommonLocateTest):
 
     def test_cell(self):
         # cell with unique mcc to region mapping
-        cell = CellFactory.create(mcc=235)
+        cell = CellShardFactory.create(mcc=235)
         query = self.model_query(cells=[cell])
         res = self._call(body=query)
         self.check_model_response(res, cell, region='GB')
@@ -110,7 +110,7 @@ class TestView(RegionBase, CommonLocateTest):
 
     def test_cell_ambiguous(self):
         # cell with ambiguous mcc to region mapping
-        cell = CellFactory.create(mcc=234)
+        cell = CellShardFactory.create(mcc=234)
         query = self.model_query(cells=[cell])
         res = self._call(body=query)
         self.check_model_response(res, cell, region='GB')
@@ -118,7 +118,7 @@ class TestView(RegionBase, CommonLocateTest):
 
     def test_cell_geoip_mismatch(self):
         # UK GeoIP with US mcc
-        cell = CellFactory.create(mcc=310)
+        cell = CellShardFactory.create(mcc=310)
         query = self.model_query(cells=[cell])
         res = self._call(body=query, ip=self.test_ip)
         self.check_model_response(res, cell, region='US')

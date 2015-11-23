@@ -12,7 +12,7 @@ from ichnaea.tests.base import (
     TestCase,
 )
 from ichnaea.tests.factories import (
-    CellFactory,
+    CellShardFactory,
     WifiShardFactory,
 )
 from ichnaea import util
@@ -51,7 +51,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
     cells_id = 'cell'
 
     def _one_cell_query(self, radio=True):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
         query = {'lat': cell.lat, 'lon': cell.lon,
                  'cell': [{'mcc': cell.mcc, 'mnc': cell.mnc,
                            'lac': cell.lac, 'cid': cell.cid}]}
@@ -62,7 +62,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
     def test_cell(self):
         now = util.utcnow()
         today = now.replace(hour=0, minute=0, second=0)
-        cell = CellFactory.build(radio=Radio.umts)
+        cell = CellShardFactory.build(radio=Radio.umts)
         res = self._post([{
             'lat': cell.lat,
             'lon': cell.lon,

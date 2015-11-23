@@ -25,7 +25,7 @@ from ichnaea import floatjson
 from ichnaea.tests.base import TestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
-    CellFactory,
+    CellShardFactory,
     WifiShardFactory,
 )
 
@@ -125,7 +125,7 @@ class TestOutboundSchema(TestCase):
         self.assertEqual(data, {'fallbacks': {'lacf': True}})
 
     def test_cell(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
         query = Query(cell=[
             {'radio': cell.radio, 'mcc': cell.mcc, 'mnc': cell.mnc,
              'lac': cell.lac, 'cid': cell.cid, 'signal': -70, 'ta': 15,
@@ -179,7 +179,7 @@ class TestCache(QueryTest):
         self.assertEqual(cache.get(query), None)
 
     def test_get_cell(self):
-        cells = CellFactory.build_batch(1)
+        cells = CellShardFactory.build_batch(1)
         query = Query(cell=self.cell_model_query(cells))
         self.assertEqual(self.cache.get(query), None)
         self.check_stats(counter=[
@@ -187,7 +187,7 @@ class TestCache(QueryTest):
         ])
 
     def test_set_cell(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
         query = Query(cell=self.cell_model_query([cell]))
         result = ExternalResult(cell.lat, cell.lon, cell.radius, None)
         self.cache.set(query, result)
@@ -200,7 +200,7 @@ class TestCache(QueryTest):
         ])
 
     def test_set_cell_not_found(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
         query = Query(cell=self.cell_model_query([cell]))
         result = ExternalResult(None, None, None, None)
         self.cache.set(query, result)
@@ -213,7 +213,7 @@ class TestCache(QueryTest):
         ])
 
     def test_get_cell_multi(self):
-        cells = CellFactory.build_batch(2)
+        cells = CellShardFactory.build_batch(2)
         query = Query(cell=self.cell_model_query(cells))
         self.assertEqual(self.cache.get(query), None)
         self.check_stats(counter=[
@@ -274,7 +274,7 @@ class TestCache(QueryTest):
         ])
 
     def test_get_mixed(self):
-        cells = CellFactory.build_batch(1)
+        cells = CellShardFactory.build_batch(1)
         wifis = WifiShardFactory.build_batch(2)
         query = Query(
             cell=self.cell_model_query(cells),
@@ -353,7 +353,7 @@ class TestSource(BaseSourceTest):
         self.assertTrue(isinstance(source.cache, DisabledCache))
 
     def test_success(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
@@ -379,7 +379,7 @@ class TestSource(BaseSourceTest):
         ])
 
     def test_failed_call(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
             def raise_request_exception(request, context):
@@ -393,7 +393,7 @@ class TestSource(BaseSourceTest):
             self.check_model_result(result, None)
 
     def test_invalid_json(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
@@ -404,7 +404,7 @@ class TestSource(BaseSourceTest):
             self.check_model_result(result, None)
 
     def test_malformed_json(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
@@ -415,7 +415,7 @@ class TestSource(BaseSourceTest):
             self.check_model_result(result, None)
 
     def test_403_response(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
@@ -431,7 +431,7 @@ class TestSource(BaseSourceTest):
         ])
 
     def test_404_response(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
@@ -449,7 +449,7 @@ class TestSource(BaseSourceTest):
         ])
 
     def test_500_response(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
@@ -468,7 +468,7 @@ class TestSource(BaseSourceTest):
 
     def test_api_key_disallows(self):
         api_key = ApiKeyFactory.build(allow_fallback=False)
-        cells = CellFactory.build_batch(2)
+        cells = CellShardFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(2)
 
         query = self.model_query(cells=cells, wifis=wifis, api_key=api_key)
@@ -485,7 +485,7 @@ class TestSource(BaseSourceTest):
         self.check_should_search(query, False)
 
     def test_check_invalid_cell(self):
-        malformed_cell = CellFactory.build()
+        malformed_cell = CellShardFactory.build()
         malformed_cell.mcc = 99999
 
         query = self.model_query(cells=[malformed_cell])
@@ -526,7 +526,7 @@ class TestSource(BaseSourceTest):
         self.check_should_search(query, False, results=[internal_pos])
 
     def test_rate_limit_allow(self):
-        cell = CellFactory()
+        cell = CellShardFactory()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
@@ -538,7 +538,7 @@ class TestSource(BaseSourceTest):
                 self.check_model_result(result, self.fallback_model)
 
     def test_rate_limit_blocks(self):
-        cell = CellFactory()
+        cell = CellShardFactory()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
@@ -552,7 +552,7 @@ class TestSource(BaseSourceTest):
             self.check_model_result(result, None)
 
     def test_rate_limit_redis_failure(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
         mock_redis_client = self._mock_redis_client()
         mock_redis_client.pipeline.side_effect = RedisError()
 
@@ -570,7 +570,7 @@ class TestSource(BaseSourceTest):
             self.assertFalse(mock_request.called)
 
     def test_get_cache_redis_failure(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
         mock_redis_client = self._mock_redis_client()
         mock_redis_client.mget.side_effect = RedisError()
 
@@ -592,7 +592,7 @@ class TestSource(BaseSourceTest):
         ])
 
     def test_set_cache_redis_failure(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
         mock_redis_client = self._mock_redis_client()
         mock_redis_client.mget.return_value = []
         mock_redis_client.mset.side_effect = RedisError()
@@ -618,7 +618,7 @@ class TestSource(BaseSourceTest):
         ])
 
     def test_cache_single_cell(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
@@ -651,7 +651,7 @@ class TestSource(BaseSourceTest):
             ])
 
     def test_cache_empty_result(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
@@ -682,7 +682,7 @@ class TestSource(BaseSourceTest):
             ])
 
     def test_dont_recache(self):
-        cell = CellFactory.build()
+        cell = CellShardFactory.build()
         mock_redis_client = self._mock_redis_client()
         mock_redis_client.mget.return_value = [self.fallback_cached_result]
 
