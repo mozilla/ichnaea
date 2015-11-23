@@ -7,12 +7,10 @@ from ichnaea.constants import (
 )
 from ichnaea.data.tasks import (
     update_cell,
-    update_cellarea,
     update_wifi,
 )
 from ichnaea.models import (
     Cell,
-    CellArea,
     CellBlocklist,
     StatCounter,
     StatKey,
@@ -181,93 +179,6 @@ class TestCell(StationTest):
             # One of those would've scheduled a remove_cell task
             ('task', 1, ['task:data.remove_cell'])
         ])
-
-    def test_blocklist_temporary_and_permanent(self):
-        # This test simulates a cell that moves once a month, for 2 years.
-        # The first 2 * PERMANENT_BLOCKLIST_THRESHOLD (12) moves should be
-        # temporary, forgotten after a week; after that it should be
-        # permanently blocklisted.
-
-        now = util.utcnow()
-        # Station moves between these 4 points, all in the USA:
-        points = [
-            (40.0, -74.0),  # NYC
-            (37.0, -122.0),  # SF
-            (47.0, -122.0),  # Seattle
-            (25.0, -80.0),  # Miami
-        ]
-
-        obs = CellObservationFactory(
-            mcc=310, lat=points[0][0], lon=points[0][1])
-
-        N = 4 * PERMANENT_BLOCKLIST_THRESHOLD
-        for month in range(0, N):
-            days_ago = (N - (month + 1)) * 30
-            time = now - timedelta(days=days_ago)
-
-            obs.lat = points[month % 4][0]
-            obs.lon = points[month % 4][1]
-
-            # Assuming PERMANENT_BLOCKLIST_THRESHOLD == 6:
-            #
-            # 0th insert will create the station
-            # 1st insert will create first blocklist entry, delete station
-            # 2nd insert will recreate the station at new position
-            # 3rd insert will update blocklist, re-delete station
-            # 4th insert will recreate the station at new position
-            # 5th insert will update blocklist, re-delete station
-            # 6th insert will recreate the station at new position
-            # ...
-            # 11th insert will make blocklisting permanent, re-delete station
-            # 12th insert will not recreate station
-            # 13th insert will not recreate station
-            # ...
-            # 23rd insert will not recreate station
-
-            blocks = self.session.query(CellBlocklist).all()
-            if month < 2:
-                self.assertEqual(len(blocks), 0)
-            else:
-                self.assertEqual(len(blocks), 1)
-                # force the blocklist back in time to whenever the
-                # observation was supposedly inserted.
-                block = blocks[0]
-                block.time = time
-                self.session.commit()
-
-            if month < N / 2:
-                # We still haven't exceeded the threshold, so the
-                # observation was admitted.
-                self.data_queue.enqueue([obs])
-                if month % 2 == 0:
-                    # The station was (re)created.
-                    self.assertEqual(update_cell.delay().get(), (1, 0))
-                    # Update cell areas
-                    update_cellarea.delay().get()
-                    # One cell + one cell-LAC record should exist.
-                    self.assertEqual(self.session.query(Cell).count(), 1)
-                    self.assertEqual(self.session.query(CellArea).count(), 1)
-                else:
-                    # The station existed and was seen moving,
-                    # thereby activating the blocklist and deleting the cell.
-                    self.assertEqual(update_cell.delay().get(), (1, 1))
-                    # Update cell areas to delete orphaned area entry
-                    update_cellarea.delay().get()
-                    if month > 1:
-                        self.assertEqual(block.count, ((month + 1) / 2))
-                    self.assertEqual(
-                        self.session.query(CellBlocklist).count(), 1)
-                    self.assertEqual(self.session.query(Cell).count(), 0)
-
-                    # Try adding one more observation
-                    # to be sure it is dropped by the now-active blocklist.
-                    self.data_queue.enqueue([obs])
-                    self.assertEqual(update_cell.delay().get(), (0, 0))
-            else:
-                # Blocklist has exceeded threshold, gone to permanent mode,
-                # so no observation accepted, no stations seen.
-                self.data_queue.enqueue([obs])
-                self.assertEqual(update_cell.delay().get(), (0, 0))
 
     def test_update_cell(self):
         now = util.utcnow()

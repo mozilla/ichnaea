@@ -11,10 +11,10 @@ from ichnaea.geocalc import (
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
     decode_cellarea,
-    Cell,
     CellArea,
-    CellOCID,
     CellAreaOCID,
+    CellOCID,
+    CellShard,
 )
 from ichnaea import util
 
@@ -22,11 +22,8 @@ from ichnaea import util
 class CellAreaUpdater(DataTask):
 
     area_model = CellArea
-    cell_model = Cell
+    cell_model = CellShard
     queue_name = 'update_cellarea'
-
-    cell_load_fields = ('lat', 'lon', 'radius',
-                        'max_lat', 'max_lon', 'min_lat', 'min_lon')
 
     def __init__(self, task, session):
         DataTask.__init__(self, task, session)
@@ -45,29 +42,47 @@ class CellAreaUpdater(DataTask):
                 expires=10)
 
     def region(self, ctr_lat, ctr_lon, mcc, cells):
-        # TODO: Extend this to consider region values of cells,
-        # once they have a region.
-
         region = None
-        # Determine region based on area position.
-        area_region = GEOCODER.region_for_cell(
-            ctr_lat, ctr_lon, mcc)
-        if area_region is not None:
-            region = area_region
+        regions = [cell.region for cell in cells]
+        unique_regions = set(regions)
+        if len(unique_regions) == 1:
+            region = regions[0]
+        else:
+            # Choose the area region based on the majority of cells
+            # inside each region.
+            grouped_regions = defaultdict(int)
+            for reg in regions:
+                grouped_regions[reg] += 1
+            max_count = max(grouped_regions.values())
+            max_regions = sorted([k for k, v in grouped_regions.items()
+                                  if v == max_count])
+            # If we get a tie here, randomly choose the first.
+            region = max_regions[0]
+            if len(max_regions) > 1:
+                # Try to break the tie based on the center of the area,
+                # but keep the randomly chosen region if this fails.
+                area_region = GEOCODER.region_for_cell(
+                    ctr_lat, ctr_lon, mcc)
+                if area_region is not None:
+                    region = area_region
+
         return region
 
     def update_area(self, areaid):
-        radio, mcc, mnc, lac = decode_cellarea(areaid)
         # Select all cells in this area and derive a bounding box for them
-        load_fields = self.cell_load_fields
-        cells = (self.session.query(self.cell_model)
+        radio, mcc, mnc, lac = decode_cellarea(areaid)
+        load_fields = ('lat', 'lon', 'radius', 'region',
+                       'max_lat', 'max_lon', 'min_lat', 'min_lon')
+
+        shard = self.cell_model.shard_model(radio)
+        cells = (self.session.query(shard)
                              .options(load_only(*load_fields))
-                             .filter(self.cell_model.radio == radio)
-                             .filter(self.cell_model.mcc == mcc)
-                             .filter(self.cell_model.mnc == mnc)
-                             .filter(self.cell_model.lac == lac)
-                             .filter(self.cell_model.lat.isnot(None))
-                             .filter(self.cell_model.lon.isnot(None))).all()
+                             .filter(shard.radio == radio)
+                             .filter(shard.mcc == mcc)
+                             .filter(shard.mnc == mnc)
+                             .filter(shard.lac == lac)
+                             .filter(shard.lat.isnot(None))
+                             .filter(shard.lon.isnot(None))).all()
 
         area_query = (self.session.query(self.area_model)
                                   .filter(self.area_model.areaid == areaid))
@@ -139,33 +154,3 @@ class CellAreaOCIDUpdater(CellAreaUpdater):
     area_model = CellAreaOCID
     cell_model = CellOCID
     queue_name = 'update_cellarea_ocid'
-
-    cell_load_fields = ('lat', 'lon', 'radius', 'region',
-                        'max_lat', 'max_lon', 'min_lat', 'min_lon')
-
-    def region(self, ctr_lat, ctr_lon, mcc, cells):
-        region = None
-        regions = [cell.region for cell in cells]
-        unique_regions = set(regions)
-        if len(unique_regions) == 1:
-            region = regions[0]
-        else:
-            # Choose the area region based on the majority of cells
-            # inside each region.
-            grouped_regions = defaultdict(int)
-            for reg in regions:
-                grouped_regions[reg] += 1
-            max_count = max(grouped_regions.values())
-            max_regions = sorted([k for k, v in grouped_regions.items()
-                                  if v == max_count])
-            # If we get a tie here, randomly choose the first.
-            region = max_regions[0]
-            if len(max_regions) > 1:
-                # Try to break the tie based on the center of the area,
-                # but keep the randomly chosen region if this fails.
-                area_region = GEOCODER.region_for_cell(
-                    ctr_lat, ctr_lon, mcc)
-                if area_region is not None:
-                    region = area_region
-
-        return region

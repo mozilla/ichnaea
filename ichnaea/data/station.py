@@ -128,7 +128,7 @@ class CellUpdater(StationUpdater):
         new_block_values = []
         for station_key, block in moving:
             moving_keys.append(station_key)
-            if block:
+            if block:  # pragma: no cover
                 block.time = self.utcnow
                 block.count += 1
             else:

@@ -12,31 +12,31 @@ from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
     CellAreaFactory,
     CellAreaOCIDFactory,
-    CellFactory,
     CellOCIDFactory,
+    CellShardFactory,
 )
 
 
-class TestArea(CeleryTestCase):
+class BaseTest(object):
 
-    def setUp(self):
-        super(TestArea, self).setUp()
-        self.area_queue = self.celery_app.data_queues['update_cellarea']
-        self.obs_queue = self.celery_app.data_queues['update_cell']
+    area_model = None
+    area_factory = None
+    cell_factory = None
+    task = None
 
     def test_empty(self):
-        update_cellarea.delay().get()
+        self.task.delay().get()
 
     def test_new(self):
-        cell = CellFactory()
+        cell = self.cell_factory()
         self.session.flush()
 
         areaid = encode_cellarea(
             cell.radio, cell.mcc, cell.mnc, cell.lac)
         self.area_queue.enqueue([areaid], json=False)
-        update_cellarea.delay().get()
+        self.task.delay().get()
 
-        area = self.session.query(CellArea).one()
+        area = self.session.query(self.area_model).one()
         self.assertAlmostEqual(area.lat, cell.lat)
         self.assertAlmostEqual(area.lon, cell.lon)
         self.assertEqual(area.radius, 0)
@@ -45,24 +45,24 @@ class TestArea(CeleryTestCase):
         self.assertEqual(area.avg_cell_radius, cell.radius)
 
     def test_remove(self):
-        area = CellAreaFactory()
+        area = self.area_factory()
         self.session.flush()
 
         areaid = encode_cellarea(*area.areaid)
         self.area_queue.enqueue([areaid], json=False)
-        update_cellarea.delay().get()
-        self.assertEqual(self.session.query(CellArea).count(), 0)
+        self.task.delay().get()
+        self.assertEqual(self.session.query(self.area_model).count(), 0)
 
     def test_update(self):
-        area = CellAreaFactory(num_cells=2, radius=500, avg_cell_radius=100)
-        cell = CellFactory(
+        area = self.area_factory(num_cells=2, radius=500, avg_cell_radius=100)
+        cell = self.cell_factory(
             lat=area.lat, lon=area.lon, radius=200,
             radio=area.radio, mcc=area.mcc, mnc=area.mnc, lac=area.lac)
         self.session.commit()
 
         areaid = encode_cellarea(*area.areaid)
         self.area_queue.enqueue([areaid], json=False)
-        update_cellarea.delay().get()
+        self.task.delay().get()
 
         self.session.refresh(area)
         self.assertAlmostEqual(area.lat, cell.lat)
@@ -73,101 +73,93 @@ class TestArea(CeleryTestCase):
         self.assertEqual(area.avg_cell_radius, 200)
 
     def test_update_incomplete_cell(self):
-        area = CellAreaFactory(radius=500)
+        area = self.area_factory(radius=500)
         area_key = {'radio': area.radio, 'mcc': area.mcc,
                     'mnc': area.mnc, 'lac': area.lac}
-        cell = CellFactory(lat=area.lat + 0.0002, lon=area.lon, **area_key)
-        CellFactory(lat=None, lon=None, **area_key)
-        CellFactory(lat=area.lat, lon=area.lon,
-                    max_lat=None, min_lon=None, **area_key)
+        cell = self.cell_factory(lat=area.lat + 0.0002,
+                                 lon=area.lon, **area_key)
+        self.cell_factory(lat=None, lon=None, **area_key)
+        self.cell_factory(lat=area.lat, lon=area.lon,
+                          max_lat=None, min_lon=None, **area_key)
         self.session.commit()
 
         areaid = encode_cellarea(*area.areaid)
         self.area_queue.enqueue([areaid], json=False)
-        update_cellarea.delay().get()
+        self.task.delay().get()
 
         self.session.refresh(area)
         self.assertAlmostEqual(area.lat, cell.lat - 0.0001)
         self.assertAlmostEqual(area.lon, cell.lon)
         self.assertEqual(area.num_cells, 2)
 
-
-class TestAreaOCID(CeleryTestCase):
-
-    def setUp(self):
-        super(TestAreaOCID, self).setUp()
-        self.area_queue = self.celery_app.data_queues['update_cellarea_ocid']
-
-    def test_new(self):
-        cell = CellOCIDFactory()
-        self.session.flush()
-
-        areaid = encode_cellarea(
-            cell.radio, cell.mcc, cell.mnc, cell.lac)
-        self.area_queue.enqueue([areaid], json=False)
-        update_cellarea_ocid.delay().get()
-
-        area = self.session.query(CellAreaOCID).one()
-        self.assertAlmostEqual(area.lat, cell.lat)
-        self.assertAlmostEqual(area.lon, cell.lon)
-        self.assertEqual(area.radius, 0)
-        self.assertEqual(area.region, 'GB')
-        self.assertEqual(area.num_cells, 1)
-        self.assertEqual(area.avg_cell_radius, cell.radius)
-
-    def test_remove(self):
-        area = CellAreaOCIDFactory()
-        self.session.flush()
-
-        areaid = encode_cellarea(*area.areaid)
-        self.area_queue.enqueue([areaid], json=False)
-        update_cellarea_ocid.delay().get()
-        self.assertEqual(self.session.query(CellAreaOCID).count(), 0)
-
     def test_region(self):
-        cell = CellOCIDFactory(
+        cell = self.cell_factory(
             radio=Radio.gsm, mcc=425, mnc=1, lac=1, cid=1,
             lat=32.2, lon=35.0, radius=10000, region='XW')
-        CellOCIDFactory(
+        self.cell_factory(
             radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac, cid=2,
             lat=32.2, lon=34.9, radius=10000, region='IL')
         self.session.flush()
 
         self.area_queue.enqueue([cell.areaid], json=False)
-        update_cellarea_ocid.delay().get()
+        self.task.delay().get()
 
-        area = self.session.query(CellAreaOCID).one()
+        area = self.session.query(self.area_model).one()
         self.assertEqual(area.region, 'IL')
 
     def test_region_outside(self):
-        cell = CellOCIDFactory(
+        cell = self.cell_factory(
             radio=Radio.gsm, mcc=310, mnc=1, lac=1, cid=1,
             lat=18.33, lon=-64.9, radius=10000, region='PR')
-        CellOCIDFactory(
+        self.cell_factory(
             radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac, cid=2,
             lat=18.34, lon=-64.9, radius=10000, region='PR')
-        CellOCIDFactory(
+        self.cell_factory(
             radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac, cid=3,
             lat=35.8, lon=-83.1, radius=10000, region='US')
         self.session.flush()
 
         self.area_queue.enqueue([cell.areaid], json=False)
-        update_cellarea_ocid.delay().get()
+        self.task.delay().get()
 
-        area = self.session.query(CellAreaOCID).one()
+        area = self.session.query(self.area_model).one()
         self.assertEqual(area.region, 'PR')
 
     def test_region_outside_tie(self):
-        cell = CellOCIDFactory(
+        cell = self.cell_factory(
             radio=Radio.gsm, mcc=310, mnc=1, lac=1, cid=1,
             lat=18.33, lon=-64.9, radius=10000, region='PR')
-        CellOCIDFactory(
+        self.cell_factory(
             radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac, cid=2,
             lat=18.34, lon=-64.9, radius=10000, region='PR')
         self.session.flush()
 
         self.area_queue.enqueue([cell.areaid], json=False)
-        update_cellarea_ocid.delay().get()
+        self.task.delay().get()
 
-        area = self.session.query(CellAreaOCID).one()
+        area = self.session.query(self.area_model).one()
         self.assertEqual(area.region, 'PR')
+
+
+class TestArea(BaseTest, CeleryTestCase):
+
+    area_model = CellArea
+    area_factory = CellAreaFactory
+    cell_factory = CellShardFactory
+    task = update_cellarea
+
+    def setUp(self):
+        super(TestArea, self).setUp()
+        self.area_queue = self.celery_app.data_queues['update_cellarea']
+
+
+class TestAreaOCID(BaseTest, CeleryTestCase):
+
+    area_model = CellAreaOCID
+    area_factory = CellAreaOCIDFactory
+    cell_factory = CellOCIDFactory
+    task = update_cellarea_ocid
+
+    def setUp(self):
+        super(TestAreaOCID, self).setUp()
+        self.area_queue = self.celery_app.data_queues['update_cellarea_ocid']

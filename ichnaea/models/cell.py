@@ -565,6 +565,10 @@ class CellOCID(BaseCell, _Model):
         Index('cell_ocid_latlon_idx', 'lat', 'lon'),
     )
 
+    @classmethod
+    def shard_model(cls, radio):
+        return cls
+
 
 class CellShard(BaseCell):
 

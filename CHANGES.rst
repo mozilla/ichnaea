@@ -16,7 +16,7 @@ Migrations
 Changes
 ~~~~~~~
 
-- Use sharded cell tables in locate logic.
+- Use sharded cell tables in locate and update area logic.
 
 - Update to latest versions of certifi, cffi and cryptography.
 
