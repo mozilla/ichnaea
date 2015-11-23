@@ -21,6 +21,10 @@ from sqlalchemy.dialects.mysql import (
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.types import TypeDecorator
 
+from ichnaea.constants import (
+    PERMANENT_BLOCKLIST_THRESHOLD,
+    TEMPORARY_BLOCKLIST_DURATION,
+)
 from ichnaea.geocode import GEOCODER
 from ichnaea.models.base import (
     _Model,
@@ -52,6 +56,7 @@ from ichnaea.models.station import (
     ValidPositionSchema,
     ValidTimeTrackingSchema,
 )
+from ichnaea import util
 
 
 CELLAREA_STRUCT = struct.Struct('!bHHH')
@@ -70,6 +75,8 @@ Consists of a single byte for the radio type, three 16 bit unsigned
 integers for the mcc, mnc and lac parts and a final 32 bit unsigned
 integer for the cid part.
 """
+
+CELL_SHARDS = {}
 
 
 class Radio(IntEnum):
@@ -442,8 +449,8 @@ class CellBlocklist(HashKeyQueryMixin, _Model):
     count = Column(Integer)
 
 
-class ValidCellSchema(ValidCellKeySchema, ValidBboxSchema,
-                      ValidPositionSchema, ValidTimeTrackingSchema):
+class ValidCellOldSchema(ValidCellKeySchema, ValidBboxSchema,
+                         ValidPositionSchema, ValidTimeTrackingSchema):
     """A schema which validates the fields in a cell."""
 
     radius = colander.SchemaNode(
@@ -464,7 +471,7 @@ class Cell(BboxMixin, PositionMixin, TimeTrackingMixin,
 
     _hashkey_cls = CellKey
     _query_batch = 20
-    _valid_schema = ValidCellSchema()
+    _valid_schema = ValidCellOldSchema()
 
     radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
     mcc = Column(SmallInteger, autoincrement=False, default=None)
@@ -482,9 +489,9 @@ class Cell(BboxMixin, PositionMixin, TimeTrackingMixin,
         return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)
 
 
-class ValidCellOCIDSchema(ValidCellKeySchema, ValidBboxSchema,
-                          ValidPositionSchema, ValidTimeTrackingSchema):
-    """A schema which validates the fields present in a :term:`OCID` cell."""
+class ValidCellSchema(ValidCellKeySchema, ValidBboxSchema,
+                      ValidPositionSchema, ValidTimeTrackingSchema):
+    """A schema which validates the fields present in a cell."""
 
     radius = colander.SchemaNode(
         colander.Integer(), missing=0,
@@ -498,20 +505,10 @@ class ValidCellOCIDSchema(ValidCellKeySchema, ValidBboxSchema,
     block_count = colander.SchemaNode(colander.Integer(), missing=0)
 
 
-class CellOCID(BboxMixin, PositionMixin, TimeTrackingMixin,
-               CreationMixin, ScoreMixin, _Model):
-    __tablename__ = 'cell_ocid'
+class BaseCell(BboxMixin, PositionMixin, TimeTrackingMixin,
+               CreationMixin, ScoreMixin):
 
-    _indices = (
-        PrimaryKeyConstraint('cellid'),
-        UniqueConstraint('radio', 'mcc', 'mnc', 'lac', 'cid',
-                         name='cell_ocid_cellid_unique'),
-        Index('cell_ocid_region_radio_idx', 'region', 'radio'),
-        Index('cell_ocid_created_idx', 'created'),
-        Index('cell_ocid_modified_idx', 'modified'),
-        Index('cell_ocid_latlon_idx', 'lat', 'lon'),
-    )
-    _valid_schema = ValidCellOCIDSchema()
+    _valid_schema = ValidCellSchema()
 
     cellid = Column(CellIdColumn(11))
     radio = Column(TinyIntEnum(Radio), autoincrement=False, nullable=False)
@@ -533,7 +530,7 @@ class CellOCID(BboxMixin, PositionMixin, TimeTrackingMixin,
 
     @classmethod
     def validate(cls, entry, _raise_invalid=False, **kw):
-        validated = super(CellOCID, cls).validate(
+        validated = super(BaseCell, cls).validate(
             entry, _raise_invalid=_raise_invalid, **kw)
 
         if validated is not None:
@@ -557,3 +554,105 @@ class CellOCID(BboxMixin, PositionMixin, TimeTrackingMixin,
     @property
     def areaid(self):
         return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)
+
+
+class CellOCID(BaseCell, _Model):
+    __tablename__ = 'cell_ocid'
+
+    _indices = (
+        PrimaryKeyConstraint('cellid'),
+        UniqueConstraint('radio', 'mcc', 'mnc', 'lac', 'cid',
+                         name='cell_ocid_cellid_unique'),
+        Index('cell_ocid_region_radio_idx', 'region', 'radio'),
+        Index('cell_ocid_created_idx', 'created'),
+        Index('cell_ocid_modified_idx', 'modified'),
+        Index('cell_ocid_latlon_idx', 'lat', 'lon'),
+    )
+
+
+class CellShard(BaseCell):
+
+    @declared_attr
+    def __table_args__(cls):  # NOQA
+        _indices = (
+            PrimaryKeyConstraint('cellid'),
+            UniqueConstraint('radio', 'mcc', 'mnc', 'lac', 'cid',
+                             name='%s_cellid_unique' % cls.__tablename__),
+            Index('%s_region_idx' % cls.__tablename__, 'region'),
+            Index('%s_created_idx' % cls.__tablename__, 'created'),
+            Index('%s_modified_idx' % cls.__tablename__, 'modified'),
+            Index('%s_latlon_idx' % cls.__tablename__, 'lat', 'lon'),
+        )
+        return _indices + (cls._settings, )
+
+    @classmethod
+    def create(cls, _raise_invalid=False, **kw):
+        """
+        Returns an instance of the correct shard model class, if the
+        passed in keyword arguments pass schema validation,
+        otherwise returns None.
+        """
+        validated = cls.validate(kw, _raise_invalid=_raise_invalid)
+        if validated is None:  # pragma: no cover
+            return None
+        shard = cls.shard_model(validated['radio'])
+        return shard(**validated)
+
+    @classmethod
+    def shard_id(cls, radio):
+        """
+        Given a radio type return the correct shard id.
+        """
+        if type(radio) == Radio:
+            return radio.name
+        try:
+            return Radio[radio].name
+        except KeyError:
+            pass
+        return None
+
+    @classmethod
+    def shard_model(cls, radio):
+        """
+        Given a radio type return the correct DB model class.
+        """
+        global CELL_SHARDS
+        return CELL_SHARDS.get(cls.shard_id(radio), None)
+
+    @classmethod
+    def shards(cls):
+        """Return a dict of shard id to model classes."""
+        global CELL_SHARDS
+        return CELL_SHARDS
+
+    def blocked(self, today=None):
+        if (self.block_count and
+                self.block_count >= PERMANENT_BLOCKLIST_THRESHOLD):
+            return True
+
+        temporary = False
+        if self.block_last:
+            if today is None:
+                today = util.utcnow().date()
+            age = today - self.block_last
+            temporary = age < TEMPORARY_BLOCKLIST_DURATION
+
+        return bool(temporary)
+
+
+class CellShardGsm(CellShard, _Model):
+    __tablename__ = 'cell_gsm'
+
+CELL_SHARDS[Radio.gsm.name] = CellShardGsm
+
+
+class CellShardWcdma(CellShard, _Model):
+    __tablename__ = 'cell_wcdma'
+
+CELL_SHARDS[Radio.wcdma.name] = CellShardWcdma
+
+
+class CellShardLte(CellShard, _Model):
+    __tablename__ = 'cell_lte'
+
+CELL_SHARDS[Radio.lte.name] = CellShardLte

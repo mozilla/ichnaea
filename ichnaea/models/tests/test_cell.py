@@ -1,3 +1,7 @@
+from datetime import timedelta
+
+from sqlalchemy.exc import SQLAlchemyError
+
 from ichnaea.models import StationSource
 from ichnaea.models.cell import (
     Cell,
@@ -5,6 +9,10 @@ from ichnaea.models.cell import (
     CellAreaOCID,
     CellBlocklist,
     CellOCID,
+    CellShard,
+    CellShardGsm,
+    CellShardWcdma,
+    CellShardLte,
     decode_cellarea,
     decode_cellid,
     encode_cellarea,
@@ -118,6 +126,92 @@ class TestCell(DBTestCase):
     def test_score(self):
         now = util.utcnow()
         cell = Cell.create(
+            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2, cid=3,
+            created=now, modified=now, radius=10, samples=2)
+        self.assertAlmostEqual(cell.score(now), 0.1, 2)
+
+
+class TestCellShard(DBTestCase):
+
+    def test_fields(self):
+        now = util.utcnow()
+        cellid = encode_cellid(Radio.gsm, GB_MCC, GB_MNC, 123, 2345)
+        model = CellShard.shard_model(Radio.gsm)
+        self.session.add(model.create(
+            cellid=cellid, created=now, modified=now,
+            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345, psc=1,
+            lat=GB_LAT, lon=GB_LON,
+            max_lat=GB_LAT + 0.1, min_lat=GB_LAT - 0.1,
+            max_lon=GB_LON + 0.1, min_lon=GB_LON - 0.1,
+            radius=11, region='GB', samples=15, source=StationSource.gnss,
+            block_first=now.date(), block_last=now.date(), block_count=1))
+        self.session.flush()
+
+        result = (self.session.query(model)
+                              .filter(model.cellid == cellid)).first()
+        self.assertEqual(result.areaid, cellid[:7])
+        self.assertEqual(encode_cellid(*result.cellid), cellid)
+        self.assertEqual(result.radio, Radio.gsm)
+        self.assertEqual(result.mcc, GB_MCC)
+        self.assertEqual(result.mnc, GB_MNC)
+        self.assertEqual(result.lac, 123)
+        self.assertEqual(result.cid, 2345)
+        self.assertEqual(result.psc, 1)
+        self.assertEqual(result.created, now)
+        self.assertEqual(result.modified, now)
+        self.assertEqual(result.lat, GB_LAT)
+        self.assertEqual(result.lon, GB_LON)
+        self.assertEqual(result.radius, 11)
+        self.assertEqual(result.region, 'GB')
+        self.assertEqual(result.samples, 15)
+        self.assertEqual(result.source, StationSource.gnss)
+        self.assertEqual(result.block_first, now.date())
+        self.assertEqual(result.block_last, now.date())
+        self.assertEqual(result.block_count, 1)
+
+    def test_shard_id(self):
+        self.assertEqual(CellShard.shard_id(Radio.lte), 'lte')
+        self.assertEqual(CellShard.shard_id(Radio.umts), 'wcdma')
+        self.assertEqual(CellShard.shard_id('gsm'), 'gsm')
+        self.assertEqual(CellShard.shard_id('umts'), 'wcdma')
+        self.assertEqual(CellShard.shard_id(''), None)
+        self.assertEqual(CellShard.shard_id(None), None)
+
+    def test_shard_model(self):
+        self.assertIs(CellShard.shard_model(Radio.gsm), CellShardGsm)
+        self.assertIs(CellShard.shard_model(Radio.wcdma), CellShardWcdma)
+        self.assertIs(CellShard.shard_model(Radio.lte), CellShardLte)
+        self.assertIs(CellShard.shard_model(''), None)
+        self.assertIs(CellShard.shard_model(None), None)
+
+    def test_shards(self):
+        self.assertEqual(set(CellShard.shards().keys()),
+                         set(['gsm', 'wcdma', 'lte']))
+        self.assertEqual(set(CellShard.shards().values()),
+                         set([CellShardGsm, CellShardWcdma, CellShardLte]))
+
+    def test_init_empty(self):
+        self.session.add(CellShardGsm())
+        with self.assertRaises(SQLAlchemyError):
+            self.session.flush()
+
+    def test_init_fail(self):
+        self.session.add(CellShardGsm(cellid='abc'))
+        with self.assertRaises(SQLAlchemyError):
+            self.session.flush()
+
+    def test_blocked(self):
+        today = util.utcnow().date()
+        two_weeks = today - timedelta(days=14)
+        self.assertFalse(CellShardGsm().blocked())
+        self.assertTrue(CellShardGsm(block_count=100).blocked())
+        self.assertTrue(CellShardGsm(block_last=today).blocked())
+        self.assertFalse(CellShardGsm(block_last=two_weeks).blocked())
+        self.assertTrue(CellShardGsm(block_last=two_weeks).blocked(two_weeks))
+
+    def test_score(self):
+        now = util.utcnow()
+        cell = CellShard.shard_model(Radio.gsm).create(
             radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2, cid=3,
             created=now, modified=now, radius=10, samples=2)
         self.assertAlmostEqual(cell.score(now), 0.1, 2)

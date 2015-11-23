@@ -19,6 +19,7 @@ from ichnaea.models import (
     CellBlocklist,
     CellObservation,
     CellOCID,
+    CellShard,
     Radio,
     RegionStat,
     WifiShard,
@@ -150,6 +151,18 @@ class CellFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
 
     class Meta:
         model = Cell.create
+
+
+class CellShardFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
+
+    radius = CELL_MIN_ACCURACY / 2.0
+    region = 'GB'
+    samples = 1
+    created = util.utcnow()
+    modified = util.utcnow()
+
+    class Meta:
+        model = CellShard.create
 
 
 class CellOCIDFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):

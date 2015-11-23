@@ -11,6 +11,7 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 40d609897296: Add sharded cell tables.
 
 Changes
 ~~~~~~~
