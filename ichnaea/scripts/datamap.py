@@ -12,7 +12,7 @@ from sqlalchemy import text
 
 from ichnaea.config import read_config
 from ichnaea.models.content import (
-    DATAMAP_SHARDS,
+    DataMap,
     decode_datamap_grid,
 )
 from ichnaea.db import (
@@ -101,7 +101,7 @@ LIMIT :limit OFFSET :offset
 def export_files(pool, db_url, csvdir):  # pragma: no cover
     jobs = []
     result_rows = 0
-    for shard_id, shard in sorted(DATAMAP_SHARDS.items()):
+    for shard_id, shard in sorted(DataMap.shards().items()):
         # sorting the shards prefers the north which contains more
         # data points than the south
         filename = os.path.join(csvdir, 'map_%s.csv.gz' % shard_id)

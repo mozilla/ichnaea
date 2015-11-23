@@ -9,7 +9,7 @@ from ichnaea.models import (
     Stat,
     StatCounter,
     StatKey,
-    WIFI_SHARDS,
+    WifiShard,
 )
 from ichnaea import util
 
@@ -65,7 +65,7 @@ class StatRegion(DataTask):
                 stats[region] = default.copy()
             stats[region][radio.name] = int(num)
 
-        for shard in WIFI_SHARDS.values():
+        for shard in WifiShard.shards().values():
             wifis = (self.session.query(shard.region, func.count())
                                  .filter(shard.region.isnot(None))
                                  .group_by(shard.region)).all()

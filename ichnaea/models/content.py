@@ -150,7 +150,14 @@ class DataMap(object):
         """
         Given a lat/lon return the correct DB model class for this grid.
         """
+        global DATAMAP_SHARDS
         return DATAMAP_SHARDS.get(cls.shard_id(lat, lon), None)
+
+    @classmethod
+    def shards(cls):
+        """Return a dict of shard id to model classes."""
+        global DATAMAP_SHARDS
+        return DATAMAP_SHARDS
 
     @classmethod
     def scale(cls, lat, lon):

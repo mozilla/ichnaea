@@ -40,7 +40,6 @@ from ichnaea.models.wifi import (  # NOQA
     decode_mac,
     encode_mac,
     WifiShard,
-    WIFI_SHARDS,
 )
 
 __all__ = (_Model, )

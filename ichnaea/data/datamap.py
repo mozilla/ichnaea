@@ -2,7 +2,7 @@ from sqlalchemy.orm import load_only
 
 from ichnaea.data.base import DataTask
 from ichnaea.models.content import (
-    DATAMAP_SHARDS,
+    DataMap,
     encode_datamap_grid,
 )
 from ichnaea import util
@@ -14,7 +14,7 @@ class DataMapUpdater(DataTask):
         DataTask.__init__(self, task, session)
         self.pipe = pipe
         self.shard_id = shard_id
-        self.shard = DATAMAP_SHARDS.get(shard_id)
+        self.shard = DataMap.shards().get(shard_id)
 
     def __call__(self, batch=1000):
         queue = self.task.app.data_queues['update_datamap_' + self.shard_id]

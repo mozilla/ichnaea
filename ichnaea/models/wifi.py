@@ -211,7 +211,14 @@ class WifiShard(CreationMixin,
         """
         if not mac:
             return None
+        global WIFI_SHARDS
         return WIFI_SHARDS.get(mac.lower()[4], None)
+
+    @classmethod
+    def shards(cls):
+        """Return a dict of shard id to model classes."""
+        global WIFI_SHARDS
+        return WIFI_SHARDS
 
     def blocked(self, today=None):
         if (self.block_count and

@@ -4,7 +4,6 @@ from datetime import timedelta
 from ichnaea.data.tasks import update_datamap
 from ichnaea.models.content import (
     DataMap,
-    DATAMAP_SHARDS,
     encode_datamap_grid,
 )
 from ichnaea.tests.base import CeleryTestCase
@@ -40,7 +39,7 @@ class TestDataMap(CeleryTestCase):
             queue.enqueue(list(values), json=False)
 
     def test_empty(self):
-        for shard_id, shard in DATAMAP_SHARDS.items():
+        for shard_id, shard in DataMap.shards().items():
             update_datamap.delay(shard_id=shard_id).get()
             self.assertEqual(self.session.query(shard).count(), 0)
 
@@ -51,7 +50,7 @@ class TestDataMap(CeleryTestCase):
         self._queue([(lat, lon)])
         update_datamap.delay(shard_id=shard_id).get()
 
-        grids = self.session.query(DATAMAP_SHARDS[shard_id]).all()
+        grids = self.session.query(DataMap.shards()[shard_id]).all()
         self.assertEqual(len(grids), 1)
         self._check_position(grids[0], 1.235, 2.346)
         self.assertEqual(grids[0].created, self.today)
@@ -65,7 +64,7 @@ class TestDataMap(CeleryTestCase):
         self._queue([(lat, lon)])
         update_datamap.delay(shard_id=shard_id).get()
 
-        grids = self.session.query(DATAMAP_SHARDS[shard_id]).all()
+        grids = self.session.query(DataMap.shards()[shard_id]).all()
         self.assertEqual(len(grids), 1)
         self._check_position(grids[0], 1.0, 2.0)
         self.assertEqual(grids[0].created, self.yesterday)
@@ -83,11 +82,11 @@ class TestDataMap(CeleryTestCase):
             (1.0, 2.0),
             (1.00001, 2.00001),
         ])
-        for shard_id in DATAMAP_SHARDS:
+        for shard_id in DataMap.shards():
             update_datamap.delay(batch=2, shard_id=shard_id).get()
 
         rows = []
-        for shard in DATAMAP_SHARDS.values():
+        for shard in DataMap.shards().values():
             rows.extend(self.session.query(shard).all())
 
         self.assertEqual(len(rows), 4)

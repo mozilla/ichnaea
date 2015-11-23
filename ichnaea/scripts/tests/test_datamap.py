@@ -5,7 +5,6 @@ from mock import MagicMock, patch
 
 from ichnaea import ROOT
 from ichnaea.models.content import (
-    DATAMAP_SHARDS,
     DataMap,
 )
 from ichnaea.scripts import datamap
@@ -56,7 +55,7 @@ class TestMap(CeleryTestCase):
             shapes = os.path.join(temp_dir, 'shapes')
             tiles = os.path.join(temp_dir, 'tiles')
 
-            for shard_id, shard in DATAMAP_SHARDS.items():
+            for shard_id, shard in DataMap.shards().items():
                 filename = 'map_%s.csv.gz' % shard_id
                 filepath = os.path.join(temp_dir, filename)
                 result = export_file(
