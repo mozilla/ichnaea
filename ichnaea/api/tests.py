@@ -91,37 +91,37 @@ class TestExceptions(TestCase):
 class TestLimiter(RedisTestCase):
 
     def test_limiter_maxrequests(self):
-        api_key = 'key_a'
+        rate_key = 'apilimit:key_a:v1.geolocate:20150101'
         maxreq = 5
         expire = 1
         for i in range(maxreq):
             self.assertFalse(rate_limit_exceeded(
                 self.redis_client,
-                api_key,
+                rate_key,
                 maxreq=maxreq,
                 expire=expire,
             ))
         self.assertTrue(rate_limit_exceeded(
             self.redis_client,
-            api_key,
+            rate_key,
             maxreq=maxreq,
             expire=expire,
         ))
 
     def test_limiter_expiry(self):
-        api_key = 'key_b'
+        rate_key = 'apilimit:key_a:v1.geolocate:20150101'
         maxreq = 100
         expire = 1
         self.assertFalse(rate_limit_exceeded(
             self.redis_client,
-            api_key,
+            rate_key,
             maxreq=maxreq,
             expire=expire,
         ))
         time.sleep(1)
         self.assertFalse(rate_limit_exceeded(
             self.redis_client,
-            api_key,
+            rate_key,
             maxreq=maxreq,
             expire=expire,
         ))

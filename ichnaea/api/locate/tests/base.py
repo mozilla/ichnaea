@@ -422,7 +422,8 @@ class CommonPositionTest(BaseLocateTest):
 
         # exhaust today's limit
         dstamp = util.utcnow().strftime('%Y%m%d')
-        key = 'apilimit:%s:%s' % (api_key, dstamp)
+        path = self.metric_path.split(':')[-1]
+        key = 'apilimit:%s:%s:%s' % (api_key, path, dstamp)
         self.redis_client.incr(key, 10)
 
         res = self._call(api_key=api_key, ip=self.test_ip, status=403)

@@ -87,8 +87,9 @@ class BaseAPIView(BaseView):
         if api_key is not None:
             self.log_count(api_key.name, api_key.should_log(self.view_type))
 
-            rate_key = 'apilimit:{key}:{time}'.format(
+            rate_key = 'apilimit:{key}:{path}:{time}'.format(
                 key=api_key_text,
+                path=self.metric_path,
                 time=util.utcnow().strftime('%Y%m%d')
             )
 

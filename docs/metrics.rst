@@ -340,11 +340,11 @@ targets. We keep metrics about how those individual export targets perform.
 Internal Monitoring
 -------------------
 
-``api.limit#key:<apikey_shortname>`` : gauge
+``api.limit#key:<apikey_shortname>,#path:<path>`` : gauge
 
-    One gauge is created per API key that has rate limiting enabled on it.
-    This gauge measures how many requests have been done for each such
-    API key for the current day.
+    One gauge is created per API key and API path which has rate limiting
+    enabled on it. This gauge measures how many requests have been done
+    for each such API key and path combination for the current day.
 
 ``queue#queue:celery_cell``,
 ``queue#queue:celery_default``,

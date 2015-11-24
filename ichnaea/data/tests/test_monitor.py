@@ -24,14 +24,14 @@ class TestMonitorTasks(CeleryTestCase):
         now = util.utcnow()
         today = now.strftime('%Y%m%d')
 
-        key = 'apilimit:no_key_1:' + today
-        redis_client.incr(key, 13)
+        rate_key = 'apilimit:no_key_1:v1.geolocate:' + today
+        redis_client.incr(rate_key, 13)
 
         result = monitor_api_key_limits.delay().get()
-        self.assertEqual(result, {'no_key_1': 13})
+        self.assertEqual(result, {'no_key_1': {'v1.geolocate': 13}})
 
         self.check_stats(gauge=[
-            ('api.limit', ['key:no_key_1']),
+            ('api.limit', ['key:no_key_1', 'path:v1.geolocate']),
         ])
 
     def test_monitor_api_keys_multiple(self):
@@ -40,15 +40,16 @@ class TestMonitorTasks(CeleryTestCase):
         today = now.strftime('%Y%m%d')
         yesterday = (now - timedelta(hours=24)).strftime('%Y%m%d')
         data = {
-            'test': 11,
-            'no_key_1': 12,
-            'no_key_2': 15,
+            'test': {'v1.search': 11, 'v1.geolocate': 13},
+            'no_key_1': {'v1.search': 12},
+            'no_key_2': {'v1.geolocate': 15},
         }
-        for k, v in data.items():
-            key = 'apilimit:%s:%s' % (k, today)
-            redis_client.incr(key, v)
-            key = 'apilimit:%s:%s' % (k, yesterday)
-            redis_client.incr(key, v - 10)
+        for key, paths in data.items():
+            for path, value in paths.items():
+                rate_key = 'apilimit:%s:%s:%s' % (key, path, today)
+                redis_client.incr(rate_key, value)
+                rate_key = 'apilimit:%s:%s:%s' % (key, path, yesterday)
+                redis_client.incr(rate_key, value - 10)
 
         api_keys = [
             ApiKey(valid_key='no_key_1', shortname='shortname_1'),
@@ -65,12 +66,16 @@ class TestMonitorTasks(CeleryTestCase):
         result = monitor_api_key_limits.delay().get()
 
         self.check_stats(gauge=[
-            ('api.limit', ['key:test']),
-            ('api.limit', ['key:shortname_1']),
-            ('api.limit', ['key:no_key_2']),
+            ('api.limit', ['key:test', 'path:v1.geolocate']),
+            ('api.limit', ['key:test', 'path:v1.search']),
+            ('api.limit', ['key:shortname_1', 'path:v1.search']),
+            ('api.limit', ['key:no_key_2', 'path:v1.geolocate']),
         ])
-        self.assertDictEqual(
-            result, {'test': 11, 'shortname_1': 12, 'no_key_2': 15})
+        self.assertDictEqual(result, {
+            'test': {'v1.search': 11, 'v1.geolocate': 13},
+            'shortname_1': {'v1.search': 12},
+            'no_key_2': {'v1.geolocate': 15},
+        })
 
     def test_monitor_ocid_import(self):
         now = util.utcnow()

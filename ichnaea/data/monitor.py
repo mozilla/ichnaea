@@ -24,25 +24,28 @@ class ApiKeyLimits(object):
         keys = self.redis_client.keys('apilimit:*:' + today)
         if keys:
             values = self.redis_client.mget(keys)
-            keys = [k.decode('utf-8').split(':')[1] for k in keys]
+            keys = [k.decode('utf-8').split(':')[1:3] for k in keys]
+            api_keys = [key[0] for key in keys]
         else:
             values = []
+            api_keys = []
 
         names = {}
-        if keys:
+        if api_keys:
             query = (self.session.query(ApiKey)
-                                 .filter(ApiKey.valid_key.in_(keys))
+                                 .filter(ApiKey.valid_key.in_(api_keys))
                                  .options(load_only('shortname')))
             for api_key in query.all():
                 names[api_key.valid_key] = api_key.name
 
-        result = {}
-        for k, v in zip(keys, values):
-            name = names.get(k, k)
-            value = int(v)
-            result[name] = value
+        result = defaultdict(dict)
+        for key, value in zip(keys, values):
+            api_key, path = key
+            name = names.get(api_key, api_key)
+            value = int(value)
+            result[name][path] = value
             self.stats_client.gauge(
-                'api.limit', value, tags=['key:' + name])
+                'api.limit', value, tags=['key:' + name, 'path:' + path])
         return result
 
 

@@ -18,6 +18,8 @@ Changes
 
 - Use sharded cell tables in locate and update area logic.
 
+- Keep separate rate limits per API version.
+
 - Update to latest versions of certifi, cffi and cryptography.
 
 20151118134500
