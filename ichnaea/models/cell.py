@@ -566,8 +566,16 @@ class CellOCID(BaseCell, _Model):
     )
 
     @classmethod
+    def shard_id(cls, radio):
+        return 'ocid'
+
+    @classmethod
     def shard_model(cls, radio):
         return cls
+
+    @classmethod
+    def shards(cls):
+        return {'ocid': cls}
 
 
 class CellShard(BaseCell):

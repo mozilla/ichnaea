@@ -19,12 +19,15 @@ from ichnaea.data.tasks import (
     cell_export_full,
     cell_export_diff,
     cell_import_external,
+    update_cellarea,
     update_cellarea_ocid,
     update_statcounter,
 )
 from ichnaea.models import (
-    CellOCID,
+    CellArea,
     CellAreaOCID,
+    CellOCID,
+    CellShard,
     Radio,
     Stat,
     StatKey,
@@ -33,7 +36,7 @@ from ichnaea.tests.base import (
     CeleryTestCase,
     CeleryAppTestCase,
 )
-from ichnaea.tests.factories import CellFactory
+from ichnaea.tests.factories import CellShardFactory
 from ichnaea import util
 
 CELL_FIELDS = [
@@ -62,7 +65,7 @@ class TestExport(CeleryTestCase):
     def test_local_export(self):
         cell_fixture_fields = (
             'radio', 'cid', 'lat', 'lon', 'mnc', 'mcc', 'lac')
-        base_cell = CellFactory.build(radio=Radio.wcdma)
+        base_cell = CellShardFactory.build(radio=Radio.wcdma)
         cell_key = {'radio': Radio.wcdma, 'mcc': base_cell.mcc,
                     'mnc': base_cell.mnc, 'lac': base_cell.lac}
         cells = set()
@@ -70,7 +73,7 @@ class TestExport(CeleryTestCase):
         for cid in range(190, 200):
             cell = dict(cid=cid, lat=base_cell.lat,
                         lon=base_cell.lon, **cell_key)
-            CellFactory(**cell)
+            CellShardFactory(**cell)
             cell['lat'] = '%.7f' % cell['lat']
             cell['lon'] = '%.7f' % cell['lon']
 
@@ -81,7 +84,7 @@ class TestExport(CeleryTestCase):
             cells.add(cell_tuple)
 
         # add one incomplete / unprocessed cell
-        CellFactory(cid=210, lat=None, lon=None, **cell_key)
+        CellShardFactory(cid=210, lat=None, lon=None, **cell_key)
         self.session.commit()
 
         with util.selfdestruct_tempdir() as temp_dir:
@@ -107,7 +110,7 @@ class TestExport(CeleryTestCase):
                     self.assertEqual(cells, exported_cells)
 
     def test_export_diff(self):
-        CellFactory.create_batch(10, radio=Radio.gsm)
+        CellShardFactory.create_batch(10, radio=Radio.gsm)
         self.session.commit()
 
         with mock_s3() as mock_key:
@@ -118,7 +121,7 @@ class TestExport(CeleryTestCase):
             self.assertRegex(method.call_args[0][0], pat)
 
     def test_export_full(self):
-        CellFactory.create_batch(10, radio=Radio.gsm)
+        CellShardFactory.create_batch(10, radio=Radio.gsm)
         self.session.commit()
 
         with mock_s3() as mock_key:
@@ -133,7 +136,7 @@ class TestImport(CeleryAppTestCase):
 
     def setUp(self):
         super(TestImport, self).setUp()
-        self.cell = CellFactory.build(radio=Radio.wcdma)
+        self.cell = CellShardFactory.build(radio=Radio.wcdma)
 
     @contextmanager
     def get_csv(self, lo=1, hi=10, time=1408604686):
@@ -166,14 +169,32 @@ class TestImport(CeleryAppTestCase):
                     gzip_file.write(txt)
             yield path
 
-    def import_csv(self, lo=1, hi=10, time=1408604686):
+    def import_csv(self, lo=1, hi=10, time=1408604686, cell_type='ocid'):
         task = FakeTask(self.celery_app)
         with self.get_csv(lo=lo, hi=hi, time=time) as path:
             with redis_pipeline(self.redis_client) as pipe:
-                ImportLocal(task, self.session, pipe)(filename=path)
-        update_cellarea_ocid.delay().get()
+                ImportLocal(task, self.session, pipe,
+                            cell_type=cell_type)(filename=path)
+        if cell_type == 'ocid':
+            update_cellarea_ocid.delay().get()
+        else:
+            update_cellarea.delay().get()
 
-    def test_local_import(self):
+    def test_import_local_cell(self):
+        self.import_csv(cell_type='cell')
+        cells = self.session.query(CellShard.shards()['wcdma']).all()
+        self.assertEqual(len(cells), 9)
+
+        areaids = set([cell.areaid for cell in cells])
+        self.assertEqual(
+            self.session.query(CellArea).count(), len(areaids))
+
+        update_statcounter.delay(ago=0).get()
+        today = util.utcnow().date()
+        stat_key = Stat.to_hashkey(key=StatKey.unique_cell, time=today)
+        self.assertEqual(Stat.getkey(self.session, stat_key).value, 9)
+
+    def test_import_local_ocid(self):
         self.import_csv()
         cells = self.session.query(CellOCID).all()
         self.assertEqual(len(cells), 9)
@@ -187,7 +208,7 @@ class TestImport(CeleryAppTestCase):
         stat_key = Stat.to_hashkey(key=StatKey.unique_cell_ocid, time=today)
         self.assertEqual(Stat.getkey(self.session, stat_key).value, 9)
 
-    def test_local_import_delta(self):
+    def test_import_local_delta(self):
         old_time = 1407000000
         new_time = 1408000000
         old_date = datetime.utcfromtimestamp(old_time).replace(tzinfo=UTC)
@@ -227,7 +248,7 @@ class TestImport(CeleryAppTestCase):
         stat_key = Stat.to_hashkey(key=StatKey.unique_cell_ocid, time=today)
         self.assertEqual(Stat.getkey(self.session, stat_key).value, 12)
 
-    def test_local_import_latest_through_http(self):
+    def test_import_external(self):
         with self.get_csv() as path:
             with open(path, 'rb') as gzip_file:
                 with requests_mock.Mocker() as req_m:

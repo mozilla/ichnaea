@@ -1,3 +1,4 @@
+from collections import defaultdict
 from contextlib import closing
 import csv
 from datetime import datetime, timedelta
@@ -11,8 +12,8 @@ from sqlalchemy.sql import text
 from ichnaea import geocalc
 from ichnaea.models import (
     encode_cellarea,
-    Cell,
     CellOCID,
+    CellShard,
     Radio,
     StatCounter,
     StatKey,
@@ -34,7 +35,7 @@ def write_stations_to_csv(session, path, start_time=None, end_time=None):
     ]
     header_row = ','.join(header_row) + '\n'
 
-    table = Cell.__tablename__
+    tables = [shard.__tablename__ for shard in CellShard.shards().values()]
     stmt = '''SELECT
     CONCAT_WS(",",
         CASE radio
@@ -62,25 +63,26 @@ WHERE %s
 ORDER BY `radio`, `mcc`, `mnc`, `lac`, `cid`
 LIMIT :l
 OFFSET :o
-''' % (table, where)
-    stmt = text(stmt)
+'''
 
     limit = 10000
     offset = 0
     with util.gzip_open(path, 'w', compresslevel=5) as gzip_wrapper:
         with gzip_wrapper as gzip_file:
             gzip_file.write(header_row)
-            while True:
-                rows = session.execute(
-                    stmt.bindparams(o=offset, l=limit)).fetchall()
-                if rows:
-                    buf = '\r\n'.join([row.cell_value for row in rows])
-                    if buf:
-                        buf += '\r\n'
-                    gzip_file.write(buf)
-                    offset += limit
-                else:
-                    break
+            for table in tables:
+                table_stmt = text(stmt % (table, where))
+                while True:
+                    rows = session.execute(
+                        table_stmt.bindparams(o=offset, l=limit)).fetchall()
+                    if rows:
+                        buf = '\r\n'.join([row.cell_value for row in rows])
+                        if buf:
+                            buf += '\r\n'
+                        gzip_file.write(buf)
+                        offset += limit
+                    else:
+                        break
 
 
 class CellExport(object):
@@ -156,8 +158,8 @@ class ImportBase(object):
             self.cell_model = CellOCID
             self.area_queue = task.app.data_queues['update_cellarea_ocid']
             self.stat_key = StatKey.unique_cell_ocid
-        elif cell_type == 'cell':  # pragma: no cover
-            self.cell_model = Cell
+        elif cell_type == 'cell':
+            self.cell_model = CellShard
             self.area_queue = task.app.data_queues['update_cellarea']
             self.stat_key = StatKey.unique_cell
 
@@ -201,6 +203,7 @@ class ImportBase(object):
 
     def import_stations(self, session, pipe, filename):
         today = util.utcnow().date()
+        shards = self.cell_model.shards()
 
         on_duplicate = (
             '`modified` = values(`modified`)'
@@ -215,28 +218,34 @@ class ImportBase(object):
             ', `samples` = values(`samples`)'
         )
 
-        table_insert = self.cell_model.__table__.insert(
-            mysql_on_duplicate=on_duplicate)
-
         def commit_batch(rows):
-            result = session.execute(table_insert, rows)
-            count = result.rowcount
-            # apply trick to avoid querying for existing rows,
-            # MySQL claims 1 row for an inserted row, 2 for an updated row
-            inserted_rows = 2 * len(rows) - count
-            changed_rows = count - len(rows)
-            assert inserted_rows + changed_rows == len(rows)
-            StatCounter(self.stat_key, today).incr(pipe, inserted_rows)
+            all_inserted_rows = 0
+            for shard_id, shard_rows in rows.items():
+                table_insert = shards[shard_id].__table__.insert(
+                    mysql_on_duplicate=on_duplicate)
+
+                result = session.execute(table_insert, shard_rows)
+                count = result.rowcount
+                # apply trick to avoid querying for existing rows,
+                # MySQL claims 1 row for an inserted row, 2 for an updated row
+                inserted_rows = 2 * len(shard_rows) - count
+                changed_rows = count - len(shard_rows)
+                assert inserted_rows + changed_rows == len(shard_rows)
+                all_inserted_rows += inserted_rows
+            StatCounter(self.stat_key, today).incr(pipe, all_inserted_rows)
 
         areaids = set()
 
         with util.gzip_open(filename, 'r') as gzip_wrapper:
             with gzip_wrapper as gzip_file:
+                cell_model = self.cell_model
                 csv_reader = csv.reader(gzip_file)
                 parse_row = partial(self.make_import_dict,
                                     self.cell_model.validate,
                                     self.import_spec)
-                rows = []
+
+                rows = defaultdict(list)
+                row_count = 0
                 for row in csv_reader:
                     # skip any header row
                     if (csv_reader.line_num == 1 and
@@ -245,14 +254,16 @@ class ImportBase(object):
 
                     data = parse_row(row)
                     if data is not None:
-                        rows.append(data)
+                        rows[cell_model.shard_id(data['radio'])].append(data)
+                        row_count += 1
                         areaids.add((int(data['radio']), data['mcc'],
                                     data['mnc'], data['lac']))
 
-                    if len(rows) == self.batch_size:  # pragma: no cover
+                    if row_count == self.batch_size:  # pragma: no cover
                         commit_batch(rows)
                         session.flush()
-                        rows = []
+                        rows = defaultdict(list)
+                        row_count = 0
 
                 if rows:
                     commit_batch(rows)
