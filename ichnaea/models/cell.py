@@ -611,6 +611,9 @@ class CellShard(BaseCell):
         """
         Given a radio type return the correct shard id.
         """
+        if type(radio) == bytes and len(radio) == 11:
+            # extract radio from cellid
+            radio = decode_cellid(radio)[0]
         if type(radio) == Radio:
             return radio.name
         try:

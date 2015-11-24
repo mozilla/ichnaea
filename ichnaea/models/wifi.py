@@ -192,6 +192,9 @@ class WifiShard(CreationMixin,
         """
         if not mac:
             return None
+        if type(mac) == bytes and len(mac) == 6:
+            # mac is encoded as bytes
+            mac = decode_mac(mac)
         return mac.lower()[4]
 
     @classmethod
@@ -212,7 +215,7 @@ class WifiShard(CreationMixin,
         if not mac:
             return None
         global WIFI_SHARDS
-        return WIFI_SHARDS.get(mac.lower()[4], None)
+        return WIFI_SHARDS.get(cls.shard_id(mac), None)
 
     @classmethod
     def shards(cls):

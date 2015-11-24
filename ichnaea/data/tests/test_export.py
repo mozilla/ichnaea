@@ -15,7 +15,7 @@ from ichnaea.data.tasks import (
 from ichnaea.models import ApiKey
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
-    CellFactory,
+    CellShardFactory,
     WifiShardFactory,
 )
 from ichnaea import util
@@ -44,7 +44,7 @@ class BaseExportTest(CeleryTestCase):
                     lat=None, lon=None):
         reports = []
         for i in range(num):
-            pos = CellFactory.build()
+            pos = CellShardFactory.build()
             report = {
                 'timestamp': time.time() * 1000.0,
                 'position': {},
@@ -65,8 +65,8 @@ class BaseExportTest(CeleryTestCase):
                 }
                 report['bluetoothBeacons'].append(blue_data)
 
-            cells = CellFactory.build_batch(cell_factor,
-                                            lat=pos.lat, lon=pos.lon)
+            cells = CellShardFactory.build_batch(cell_factor,
+                                                 lat=pos.lat, lon=pos.lon)
             for cell in cells:
                 cell_data = {
                     'radioType': cell.radio.name,

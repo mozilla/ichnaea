@@ -10,6 +10,7 @@ from ichnaea.models.base import (
 from ichnaea.models.cell import (
     decode_radio_dict,
     encode_radio_dict,
+    encode_cellid,
     CellHashKey,
     ValidCellKeySchema,
     ValidCellSignalSchema,
@@ -147,6 +148,11 @@ class CellReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
                     better_than(old_value, new_value)):
                 return True
         return False
+
+    @property
+    def cellid(self):
+        return encode_cellid(
+            self.radio, self.mcc, self.mnc, self.lac, self.cid)
 
     @classmethod
     def _from_json_value(cls, value):

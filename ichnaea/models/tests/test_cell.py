@@ -177,12 +177,18 @@ class TestCellShard(DBTestCase):
         self.assertEqual(CellShard.shard_id(''), None)
         self.assertEqual(CellShard.shard_id(None), None)
 
+        cellid = encode_cellid(Radio.lte, GB_MCC, GB_MNC, 1, 2)
+        self.assertEqual(CellShard.shard_id(cellid), 'lte')
+
     def test_shard_model(self):
         self.assertIs(CellShard.shard_model(Radio.gsm), CellShardGsm)
         self.assertIs(CellShard.shard_model(Radio.wcdma), CellShardWcdma)
         self.assertIs(CellShard.shard_model(Radio.lte), CellShardLte)
         self.assertIs(CellShard.shard_model(''), None)
         self.assertIs(CellShard.shard_model(None), None)
+
+        cellid = encode_cellid(Radio.lte, GB_MCC, GB_MNC, 1, 2)
+        self.assertEqual(CellShard.shard_model(cellid), CellShardLte)
 
     def test_shards(self):
         self.assertEqual(set(CellShard.shards().keys()),

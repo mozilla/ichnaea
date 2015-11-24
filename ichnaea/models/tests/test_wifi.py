@@ -61,11 +61,17 @@ class TestWifiShard(DBTestCase):
         self.assertEqual(WifiShard.shard_id(''), None)
         self.assertEqual(WifiShard.shard_id(None), None)
 
+        mac = encode_mac('0000f0123456')
+        self.assertEqual(WifiShard.shard_id(mac), 'f')
+
     def test_shard_model(self):
         self.assertIs(WifiShard.shard_model('111101123456'), WifiShard0)
         self.assertIs(WifiShard.shard_model('0000f0123456'), WifiShardF)
         self.assertIs(WifiShard.shard_model(''), None)
         self.assertIs(WifiShard.shard_model(None), None)
+
+        mac = encode_mac('0000f0123456')
+        self.assertEqual(WifiShard.shard_model(mac), WifiShardF)
 
     def test_init(self):
         wifi = WifiShard0(mac='111101123456')

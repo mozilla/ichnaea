@@ -1,13 +1,10 @@
 from collections import defaultdict
 
-from sqlalchemy.orm import load_only
-
 from ichnaea.data.base import DataTask
 from ichnaea.models import (
-    Cell,
-    CellBlocklist,
     CellObservation,
     CellReport,
+    CellShard,
     DataMap,
     Report,
     Score,
@@ -65,42 +62,25 @@ class ReportQueue(DataTask):
         if len(station_keys) == 0:
             return 0
 
+        if name == 'cell':
+            model = CellShard
+            key_id = 'cellid'
+        elif name == 'wifi':
+            model = WifiShard
+            key_id = 'mac'
+
         # assume all stations are unknown
         unknown_keys = set(station_keys)
 
-        if name == 'wifi':
-            # there is only one combined table structure
-            shards = defaultdict(list)
-            for mac in unknown_keys:
-                shards[WifiShard.shard_model(mac)].append(mac)
-            for shard, macs in shards.items():
-                query = (self.session.query(shard.mac)
-                                     .filter(shard.mac.in_(macs)))
-                unknown_keys -= set([r.mac for r in query.all()])
-        elif name == 'cell':
-            # first check the station table, which is more likely to contain
-            # stations
-            station_iter = Cell.iterkeys(
-                self.session,
-                list(unknown_keys),
-                # only load the columns required for the hashkey
-                extra=lambda query: query.options(
-                    load_only(*tuple(Cell._hashkey_cls._fields))))
-            # subtract all stations which are found in the station table
-            unknown_keys -= set([sta.hashkey() for sta in station_iter])
-            if len(unknown_keys) == 0:  # pragma: no cover
-                return 0
+        shards = defaultdict(list)
+        for key in unknown_keys:
+            shards[model.shard_model(key)].append(key)
 
-            # Only check the blocklist table for the still unknown keys.
-            # There is no need to check for the already found keys again.
-            block_iter = CellBlocklist.iterkeys(
-                self.session,
-                list(unknown_keys),
-                # only load the columns required for the hashkey
-                extra=lambda query: query.options(
-                    load_only(*tuple(CellBlocklist._hashkey_cls._fields))))
-            # subtract all stations which are found in the blocklist table
-            unknown_keys -= set([block.hashkey() for block in block_iter])
+        for shard, keys in shards.items():
+            key_column = getattr(shard, key_id)
+            query = (self.session.query(key_column)
+                                 .filter(key_column.in_(keys)))
+            unknown_keys -= set([getattr(r, key_id) for r in query.all()])
 
         return len(unknown_keys)
 
@@ -134,7 +114,7 @@ class ReportQueue(DataTask):
             station_keys = set()
             for obs in observations[name]:
                 if name == 'cell':
-                    station_keys.add(Cell.to_hashkey(obs))
+                    station_keys.add(obs.cellid)
                 elif name == 'wifi':
                     station_keys.add(obs.mac)
             # determine scores for stations
