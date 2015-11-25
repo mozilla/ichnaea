@@ -34,6 +34,8 @@ class TestCellObservation(DBTestCase):
         self.assertEqual(obs.signal, -61)
         self.assertEqual(obs.ta, 10)
 
+        self.assertEqual(obs.shard_id, 'gsm')
+
     def test_internaljson(self):
         obs = CellObservation.create(
             radio=Radio.gsm, mcc=GB_MCC, mnc=5, lac=12345, cid=23456,
@@ -70,6 +72,8 @@ class TestWifiObservation(DBTestCase):
         self.assertEqual(obs.mac, mac)
         self.assertEqual(obs.channel, 5)
         self.assertEqual(obs.signal, -45)
+
+        self.assertEqual(obs.shard_id, '8')
 
     def test_internaljson(self):
         mac = '3680873e9b83'

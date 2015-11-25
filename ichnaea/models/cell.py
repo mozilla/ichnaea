@@ -594,6 +594,10 @@ class CellShard(BaseCell):
         global CELL_SHARDS
         return CELL_SHARDS
 
+    @property
+    def unique_key(self):
+        return encode_cellid(*self.cellid)
+
     def blocked(self, today=None):
         if (self.block_count and
                 self.block_count >= PERMANENT_BLOCKLIST_THRESHOLD):

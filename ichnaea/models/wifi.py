@@ -223,6 +223,10 @@ class WifiShard(CreationMixin,
         global WIFI_SHARDS
         return WIFI_SHARDS
 
+    @property
+    def unique_key(self):
+        return self.mac
+
     def blocked(self, today=None):
         if (self.block_count and
                 self.block_count >= PERMANENT_BLOCKLIST_THRESHOLD):

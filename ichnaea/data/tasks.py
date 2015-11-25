@@ -116,8 +116,7 @@ def update_cell(self, batch=1000, shard_id=None):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
             updater = station.CellUpdater(
-                self, session, pipe,
-                shard_id=shard_id, remove_task=remove_cell)
+                self, session, pipe, shard_id=shard_id)
             if shard_id is None:
                 updater.shard_queues(batch=batch)
             else:

@@ -8,6 +8,7 @@ from ichnaea.models.base import (
     ValidationMixin,
 )
 from ichnaea.models.cell import (
+    CellShard,
     encode_cellid,
     Radio,
     ValidCellKeySchema,
@@ -22,6 +23,7 @@ from ichnaea.models.schema import (
 )
 from ichnaea.models.wifi import (
     ValidWifiSignalSchema,
+    WifiShard,
 )
 
 
@@ -138,6 +140,14 @@ class CellReport(HashKey, CreationMixin, ValidationMixin):
         return self.cellid
 
     @property
+    def shard_id(self):
+        return CellShard.shard_id(self.cellid)
+
+    @property
+    def shard_model(self):
+        return CellShard.shard_model(self.cellid)
+
+    @property
     def cellid(self):
         return encode_cellid(
             self.radio, self.mcc, self.mnc, self.lac, self.cid)
@@ -210,6 +220,14 @@ class WifiReport(HashKey, CreationMixin, ValidationMixin):
     @property
     def unique_key(self):
         return self.mac
+
+    @property
+    def shard_id(self):
+        return WifiShard.shard_id(self.mac)
+
+    @property
+    def shard_model(self):
+        return WifiShard.shard_model(self.mac)
 
     @property
     def mac(self):

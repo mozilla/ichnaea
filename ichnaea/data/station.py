@@ -11,12 +11,9 @@ from ichnaea.geocalc import (
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
     decode_cellid,
-    encode_cellid,
     encode_cellarea,
-    CellShard,
     StatCounter,
     StatKey,
-    WifiShard,
 )
 from ichnaea.models.constants import (
     CELL_MAX_RADIUS,
@@ -40,6 +37,12 @@ class StationUpdater(DataTask):
         self.updated_areas = set()
         self.utcnow = util.utcnow()
         self.today = self.utcnow.date()
+        self.data_queues = self.task.app.data_queues
+        self.data_queue = None
+        if shard_id:
+            # BBB, remove if check
+            queue_name = self.queue_prefix + shard_id
+            self.data_queue = self.data_queues[queue_name]
 
     def stat_count(self, action, count, reason=None):
         if count > 0:
@@ -75,6 +78,9 @@ class StationUpdater(DataTask):
                       'action:add',
                       'reason:moving'])
 
+    def _base_station_values(self, station_key, observations):
+        raise NotImplementedError()
+
     def station_values(self, station_key, shard_station, observations):
         """
         Return two-tuple of status, value dict where status is one of:
@@ -91,25 +97,7 @@ class StationUpdater(DataTask):
         # 2.a. obs disagree -> return moving
         # 2.b. obs agree -> return changed
         created = self.utcnow
-        if self.station_type == 'wifi':
-            values = {
-                'mac': station_key,
-                'modified': self.utcnow,
-            }
-        elif self.station_type == 'cell':
-            radio, mcc, mnc, lac, cid = decode_cellid(station_key)
-            if observations:
-                psc = observations[-1].psc
-            values = {
-                'cellid': station_key,
-                'radio': radio,
-                'mcc': mcc,
-                'mnc': mnc,
-                'lac': lac,
-                'cid': cid,
-                'psc': psc,
-                'modified': self.utcnow,
-            }
+        values = self._base_station_values(station_key, observations)
 
         obs_length = len(observations)
         obs_positions = numpy.array(
@@ -254,38 +242,25 @@ class StationUpdater(DataTask):
         sharded_obs = {}
         for obs in observations:
             if obs is not None:
-                if self.station_type == 'wifi':
-                    shard = WifiShard.shard_model(obs.mac)
-                    if shard not in sharded_obs:
-                        sharded_obs[shard] = defaultdict(list)
-                    sharded_obs[shard][obs.mac].append(obs)
-                elif self.station_type == 'cell':
-                    shard = CellShard.shard_model(obs.cellid)
-                    if shard not in sharded_obs:
-                        sharded_obs[shard] = defaultdict(list)
-                    sharded_obs[shard][obs.cellid].append(obs)
+                shard = obs.shard_model
+                if shard not in sharded_obs:
+                    sharded_obs[shard] = defaultdict(list)
+                sharded_obs[shard][obs.unique_key].append(obs)
         return sharded_obs
+
+    def _query_shard(self, shard, keys):
+        raise NotImplementedError()
 
     def _query_stations(self, shard, shard_values):
         blocklist = {}
         stations = {}
 
-        if self.station_type == 'wifi':
-            macs = list(shard_values.keys())
-            rows = (self.session.query(shard)
-                                .filter(shard.mac.in_(macs))).all()
-            for row in rows:
-                    stations[row.mac] = row
-                    blocklist[row.mac] = row.blocked(today=self.today)
-
-        elif self.station_type == 'cell':
-            cellids = list(shard_values.keys())
-            rows = (self.session.query(shard)
-                                .filter(shard.cellid.in_(cellids))).all()
-            for row in rows:
-                cellid = encode_cellid(*row.cellid)
-                stations[cellid] = row
-                blocklist[cellid] = row.blocked(today=self.today)
+        keys = list(shard_values.keys())
+        rows = self._query_shard(shard, keys)
+        for row in rows:
+            unique_key = row.unique_key
+            stations[unique_key] = row
+            blocklist[unique_key] = row.blocked(today=self.today)
 
         return (blocklist, stations)
 
@@ -364,20 +339,10 @@ class StationUpdater(DataTask):
 class CellUpdater(StationUpdater):
 
     max_dist_meters = CELL_MAX_RADIUS
+    queue_prefix = 'update_cell_'
     station_type = 'cell'
     stat_obs_key = StatKey.cell
     stat_station_key = StatKey.unique_cell
-
-    def __init__(self, task, session, pipe, shard_id=None, remove_task=None):
-        super(CellUpdater, self).__init__(
-            task, session, pipe, shard_id=shard_id)
-        self.remove_task = remove_task
-        self.data_queues = self.task.app.data_queues
-        self.data_queue = None
-        if shard_id:
-            # BBB, remove check
-            queue_name = 'update_cell_' + shard_id
-            self.data_queue = self.data_queues[queue_name]
 
     def shard_queues(self, batch=100):  # BBB
         single_queue = self.data_queues['update_cell']
@@ -385,8 +350,7 @@ class CellUpdater(StationUpdater):
 
         sharded_obs = defaultdict(list)
         for ob in observations:
-            shard_id = CellShard.shard_id(ob.cellid)
-            sharded_obs[shard_id].append(ob)
+            sharded_obs[ob.shard_id].append(ob)
         for shard_id, values in sharded_obs.items():
             cell_queue = self.data_queues['update_cell_' + shard_id]
             cell_queue.enqueue(list(values), pipe=self.pipe)
@@ -399,19 +363,40 @@ class CellUpdater(StationUpdater):
         data_queue.enqueue(list(self.updated_areas),
                            pipe=self.pipe, json=False)
 
-    def __call__(self, batch=10):
-        if self.shard_id:  # BBB remove this check
-            super(CellUpdater, self).__call__(batch=batch)
+    def _base_station_values(self, station_key, observations):
+        radio, mcc, mnc, lac, cid = decode_cellid(station_key)
+        if observations:
+            psc = observations[-1].psc
+        return {
+            'cellid': station_key,
+            'radio': radio,
+            'mcc': mcc,
+            'mnc': mnc,
+            'lac': lac,
+            'cid': cid,
+            'psc': psc,
+            'modified': self.utcnow,
+        }
+
+    def _query_shard(self, shard, keys):
+        return (self.session.query(shard)
+                            .filter(shard.cellid.in_(keys))).all()
 
 
 class WifiUpdater(StationUpdater):
 
     max_dist_meters = WIFI_MAX_RADIUS
+    queue_prefix = 'update_wifi_'
     station_type = 'wifi'
     stat_obs_key = StatKey.wifi
     stat_station_key = StatKey.unique_wifi
 
-    def __init__(self, task, session, pipe, shard_id=None):
-        super(WifiUpdater, self).__init__(task, session, pipe, shard_id)
-        queue_name = 'update_wifi_' + shard_id
-        self.data_queue = self.task.app.data_queues[queue_name]
+    def _base_station_values(self, station_key, observations):
+        return {
+            'mac': station_key,
+            'modified': self.utcnow,
+        }
+
+    def _query_shard(self, shard, keys):
+        return (self.session.query(shard)
+                            .filter(shard.mac.in_(keys))).all()
