@@ -8,18 +8,13 @@ from ichnaea.models.base import (
     ValidationMixin,
 )
 from ichnaea.models.cell import (
-    decode_radio_dict,
-    encode_radio_dict,
     encode_cellid,
-    CellHashKey,
+    Radio,
     ValidCellKeySchema,
     ValidCellSignalSchema,
 )
 from ichnaea.models import constants
-from ichnaea.models.hashkey import (
-    HashKey,
-    HashKeyMixin,
-)
+from ichnaea.models.hashkey import HashKey
 from ichnaea.models.schema import (
     DefaultNode,
     MacNode,
@@ -28,16 +23,6 @@ from ichnaea.models.schema import (
 from ichnaea.models.wifi import (
     ValidWifiSignalSchema,
 )
-
-
-class CellKeyPsc(CellHashKey):
-
-    _fields = ('radio', 'mcc', 'mnc', 'lac', 'cid', 'psc')
-
-
-class WifiKey(HashKey):
-
-    _fields = ('key', )
 
 
 class ValidReportSchema(colander.MappingSchema, ValidatorNode):
@@ -118,9 +103,8 @@ class ValidCellReportSchema(ValidCellKeySchema, ValidCellSignalSchema):
                 raise colander.Invalid(node, 'Cell %s is required.' % field)
 
 
-class CellReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
+class CellReport(HashKey, CreationMixin, ValidationMixin):
 
-    _hashkey_cls = CellKeyPsc
     _valid_schema = ValidCellReportSchema()
     _fields = (
         'radio',
@@ -150,18 +134,25 @@ class CellReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
         return False
 
     @property
+    def unique_key(self):
+        return self.cellid
+
+    @property
     def cellid(self):
         return encode_cellid(
             self.radio, self.mcc, self.mnc, self.lac, self.cid)
 
     @classmethod
-    def _from_json_value(cls, value):
-        value = decode_radio_dict(value)
-        return super(CellReport, cls)._from_json_value(value)
+    def _from_json_value(cls, dct):
+        if 'radio' in dct and dct['radio'] is not None and \
+           not type(dct['radio']) == Radio:
+            dct['radio'] = Radio(dct['radio'])
+        return super(CellReport, cls)._from_json_value(dct)
 
     def _to_json_value(self):
         dct = super(CellReport, self)._to_json_value()
-        dct = encode_radio_dict(dct)
+        if 'radio' in dct and type(dct['radio']) == Radio:
+            dct['radio'] = int(dct['radio'])
         return dct
 
 
@@ -197,9 +188,8 @@ class ValidWifiReportSchema(ValidWifiSignalSchema):
             raise colander.Invalid(node, 'Wifi mac address is required.')
 
 
-class WifiReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
+class WifiReport(HashKey, CreationMixin, ValidationMixin):
 
-    _hashkey_cls = WifiKey
     _valid_schema = ValidWifiReportSchema()
     _fields = (
         'key',
@@ -216,6 +206,10 @@ class WifiReport(HashKey, HashKeyMixin, CreationMixin, ValidationMixin):
                 old_value > new_value):
             return True
         return False
+
+    @property
+    def unique_key(self):
+        return self.mac
 
     @property
     def mac(self):

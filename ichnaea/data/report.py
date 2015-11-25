@@ -169,7 +169,7 @@ class ReportQueue(DataTask):
 
                     # combine general and specific report data into one
                     item_obs = obs_cls.combine(report, item_report)
-                    item_key = item_obs.hashkey()
+                    item_key = item_obs.unique_key
 
                     # if we have better data for the same key, ignore
                     existing = observations[name].get(item_key)

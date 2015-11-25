@@ -4,7 +4,7 @@ from ichnaea.internaljson import (
 )
 from ichnaea.models.hashkey import (
     HashKey,
-    HashKeyMixin,
+    HashKeyQueryMixin,
 )
 from ichnaea.tests.base import TestCase
 
@@ -19,12 +19,12 @@ class Double(HashKey):
     _fields = ('one', 'two')
 
 
-class SingleMixin(HashKeyMixin):
+class SingleMixin(HashKeyQueryMixin):
 
     _hashkey_cls = Single
 
 
-class DoubleMixin(HashKeyMixin):
+class DoubleMixin(HashKeyQueryMixin):
 
     _hashkey_cls = Double
 
@@ -95,7 +95,7 @@ class TestHashKey(TestCase):
         self.assertEqual(double, new_double)
 
 
-class TestHashKeyMixin(TestCase):
+class TestHashKeyQueryMixin(TestCase):
 
     def test_single(self):
         mixin = SingleMixin()

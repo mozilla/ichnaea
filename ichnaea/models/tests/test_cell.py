@@ -107,7 +107,8 @@ class TestCellCodec(TestCase):
 class TestCell(DBTestCase):
 
     def test_fields(self):
-        self.session.add(Cell.create(
+        # BBB
+        self.session.add(Cell(
             radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=1234, cid=23456,
             lat=GB_LAT, lon=GB_LON, radius=10, samples=15))
         self.session.flush()
@@ -122,13 +123,6 @@ class TestCell(DBTestCase):
         self.assertEqual(result.lon, GB_LON)
         self.assertEqual(result.radius, 10)
         self.assertEqual(result.samples, 15)
-
-    def test_score(self):
-        now = util.utcnow()
-        cell = Cell.create(
-            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2, cid=3,
-            created=now, modified=now, radius=10, samples=2)
-        self.assertAlmostEqual(cell.score(now), 0.1, 2)
 
 
 class TestCellShard(DBTestCase):

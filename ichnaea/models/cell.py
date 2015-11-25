@@ -31,10 +31,6 @@ from ichnaea.models.base import (
     CreationMixin,
 )
 from ichnaea.models import constants
-from ichnaea.models.hashkey import (
-    HashKey,
-    HashKeyQueryMixin,
-)
 from ichnaea.models.sa_types import (
     TinyIntEnum,
     TZDateTime as DateTime,
@@ -207,38 +203,6 @@ class RadioType(colander.Integer):
             raise colander.Invalid(node, (
                 '%r is not a valid radio type' % cstruct))
         return cstruct
-
-
-def encode_radio_dict(dct):
-    if 'radio' in dct and type(dct['radio']) == Radio:
-        dct['radio'] = int(dct['radio'])
-    return dct
-
-
-def decode_radio_dict(dct):
-    if 'radio' in dct and dct['radio'] is not None and \
-       not type(dct['radio']) == Radio:
-        dct['radio'] = Radio(dct['radio'])
-    return dct
-
-
-class CellHashKey(HashKey):
-
-    @classmethod
-    def _from_json_value(cls, value):
-        data = value.copy()
-        data['radio'] = Radio(data['radio'])
-        return cls(**data)
-
-    def _to_json_value(self):
-        value = self.__dict__.copy()
-        value['radio'] = int(value['radio'])
-        return value
-
-
-class CellKey(CellHashKey):
-
-    _fields = ('radio', 'mcc', 'mnc', 'lac', 'cid')
 
 
 class ValidCellAreaKeySchema(colander.MappingSchema, ValidatorNode):
@@ -429,15 +393,12 @@ class CellAreaOCID(CellAreaMixin, _Model):
     __tablename__ = 'cell_area_ocid'
 
 
-class CellBlocklist(HashKeyQueryMixin, _Model):
+class CellBlocklist(_Model):
     __tablename__ = 'cell_blacklist'
 
     _indices = (
         PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
     )
-
-    _hashkey_cls = CellKey
-    _query_batch = 20
 
     radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
     mcc = Column(SmallInteger, autoincrement=False, default=None)
@@ -459,8 +420,7 @@ class ValidCellOldSchema(ValidCellKeySchema, ValidBboxSchema,
     samples = colander.SchemaNode(colander.Integer(), missing=0)
 
 
-class Cell(BboxMixin, PositionMixin, TimeTrackingMixin,
-           CreationMixin, ScoreMixin, HashKeyQueryMixin, _Model):
+class Cell(BboxMixin, PositionMixin, TimeTrackingMixin, _Model):  # BBB
     __tablename__ = 'cell'
 
     _indices = (
@@ -468,10 +428,6 @@ class Cell(BboxMixin, PositionMixin, TimeTrackingMixin,
         Index('cell_created_idx', 'created'),
         Index('cell_modified_idx', 'modified'),
     )
-
-    _hashkey_cls = CellKey
-    _query_batch = 20
-    _valid_schema = ValidCellOldSchema()
 
     radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
     mcc = Column(SmallInteger, autoincrement=False, default=None)

@@ -47,12 +47,15 @@ class HashKey(JSONMixin):
         return '{cls}: {data}'.format(cls=self._dottedname, data=self.__dict__)
 
 
-class HashKeyMixin(object):
+class HashKeyQueryMixin(object):
     """
-    A mixin to tie a class and its unique hashkey together.
+    A database model mixin, where the class hashkey represents
+    the primary key columns of the model.
     """
 
     _hashkey_cls = None  #:
+    _insert_batch = 50  #:
+    _query_batch = 100  #:
 
     @classmethod
     def _to_hashkey(cls, obj=_sentinel, **kw):
@@ -81,16 +84,6 @@ class HashKeyMixin(object):
         Returns a hashkey of this instance.
         """
         return self._to_hashkey(self)
-
-
-class HashKeyQueryMixin(HashKeyMixin):
-    """
-    A database model mixin, where the classes hashkey represents
-    the primary key columns of the model.
-    """
-
-    _insert_batch = 50  #:
-    _query_batch = 100  #:
 
     @classmethod
     def joinkey(cls, key):
