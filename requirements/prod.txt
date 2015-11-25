@@ -18,7 +18,7 @@ filechunkio==1.6
 genc==0.2
 geoip2==2.2.0
 gevent==1.0.2 ; python_version < '3.0'
-gevent==1.1b5 ; python_version >= '3.0'
+gevent==1.1rc1 ; python_version >= '3.0'
 greenlet==0.4.9
 gunicorn==19.2.1  # rq.filter: !=19.3.0
 hiredis==0.2.0
