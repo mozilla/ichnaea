@@ -2,10 +2,10 @@ from sqlalchemy.exc import (
     SQLAlchemyError,
 )
 
+from ichnaea.models import StationSource
 from ichnaea.models.wifi import (
     decode_mac,
     encode_mac,
-    StationSource,
     WifiShard,
     WifiShard0,
     WifiShardF,

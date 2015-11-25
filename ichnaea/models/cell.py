@@ -7,7 +7,6 @@ from enum import IntEnum
 from sqlalchemy import (
     BINARY,
     Column,
-    Date,
     Index,
     PrimaryKeyConstraint,
     String,
@@ -16,15 +15,10 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import (
     INTEGER as Integer,
     SMALLINT as SmallInteger,
-    TINYINT as TinyInteger,
 )
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.types import TypeDecorator
 
-from ichnaea.constants import (
-    PERMANENT_BLOCKLIST_THRESHOLD,
-    TEMPORARY_BLOCKLIST_DURATION,
-)
 from ichnaea.geocode import GEOCODER
 from ichnaea.models.base import (
     _Model,
@@ -36,7 +30,6 @@ from ichnaea.models.sa_types import (
     TZDateTime as DateTime,
 )
 from ichnaea.models.schema import (
-    DateFromString,
     DefaultNode,
     ValidatorNode,
 )
@@ -44,15 +37,12 @@ from ichnaea.models.station import (
     BboxMixin,
     PositionMixin,
     ScoreMixin,
-    StationSource,
-    StationSourceNode,
-    StationSourceType,
+    StationMixin,
     TimeTrackingMixin,
-    ValidBboxSchema,
     ValidPositionSchema,
+    ValidStationSchema,
     ValidTimeTrackingSchema,
 )
-from ichnaea import util
 
 
 CELLAREA_STRUCT = struct.Struct('!bHHH')
@@ -410,16 +400,6 @@ class CellBlocklist(_Model):
     count = Column(Integer)
 
 
-class ValidCellOldSchema(ValidCellKeySchema, ValidBboxSchema,
-                         ValidPositionSchema, ValidTimeTrackingSchema):
-    """A schema which validates the fields in a cell."""
-
-    radius = colander.SchemaNode(
-        colander.Integer(), missing=0,
-        validator=colander.Range(0, constants.CELL_MAX_RADIUS))
-    samples = colander.SchemaNode(colander.Integer(), missing=0)
-
-
 class Cell(BboxMixin, PositionMixin, TimeTrackingMixin, _Model):  # BBB
     __tablename__ = 'cell'
 
@@ -441,26 +421,18 @@ class Cell(BboxMixin, PositionMixin, TimeTrackingMixin, _Model):  # BBB
     new_measures = Column(Integer(unsigned=True))
 
 
-class ValidCellSchema(ValidCellKeySchema, ValidBboxSchema,
-                      ValidPositionSchema, ValidTimeTrackingSchema):
+class ValidCellShardSchema(ValidCellKeySchema, ValidStationSchema):
     """A schema which validates the fields present in a cell."""
 
+    # adds a range validator
     radius = colander.SchemaNode(
         colander.Integer(), missing=0,
         validator=colander.Range(0, constants.CELL_MAX_RADIUS))
-    region = colander.SchemaNode(colander.String(), missing=None)
-    samples = colander.SchemaNode(colander.Integer(), missing=0)
-    source = StationSourceNode(StationSourceType(), missing=None)
-
-    block_first = colander.SchemaNode(DateFromString(), missing=None)
-    block_last = colander.SchemaNode(DateFromString(), missing=None)
-    block_count = colander.SchemaNode(colander.Integer(), missing=0)
 
 
-class BaseCell(BboxMixin, PositionMixin, TimeTrackingMixin,
-               CreationMixin, ScoreMixin):
+class BaseCell(StationMixin):
 
-    _valid_schema = ValidCellSchema()
+    _valid_schema = ValidCellShardSchema()
 
     cellid = Column(CellIdColumn(11))
     radio = Column(TinyIntEnum(Radio), autoincrement=False, nullable=False)
@@ -470,15 +442,6 @@ class BaseCell(BboxMixin, PositionMixin, TimeTrackingMixin,
                  autoincrement=False, nullable=False)
     cid = Column(Integer(unsigned=True), autoincrement=False, nullable=False)
     psc = Column(SmallInteger, autoincrement=False)
-
-    radius = Column(Integer(unsigned=True))
-    region = Column(String(2))
-    samples = Column(Integer(unsigned=True))
-    source = Column(TinyIntEnum(StationSource))
-
-    block_first = Column(Date)
-    block_last = Column(Date)
-    block_count = Column(TinyInteger(unsigned=True))
 
     @classmethod
     def validate(cls, entry, _raise_invalid=False, **kw):
@@ -506,6 +469,10 @@ class BaseCell(BboxMixin, PositionMixin, TimeTrackingMixin,
     @property
     def areaid(self):
         return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)
+
+    @property
+    def unique_key(self):
+        return encode_cellid(*self.cellid)
 
 
 class CellOCID(BaseCell, _Model):
@@ -593,24 +560,6 @@ class CellShard(BaseCell):
         """Return a dict of shard id to model classes."""
         global CELL_SHARDS
         return CELL_SHARDS
-
-    @property
-    def unique_key(self):
-        return encode_cellid(*self.cellid)
-
-    def blocked(self, today=None):
-        if (self.block_count and
-                self.block_count >= PERMANENT_BLOCKLIST_THRESHOLD):
-            return True
-
-        temporary = False
-        if self.block_last:
-            if today is None:
-                today = util.utcnow().date()
-            age = today - self.block_last
-            temporary = age < TEMPORARY_BLOCKLIST_DURATION
-
-        return bool(temporary)
 
 
 class CellShardGsm(CellShard, _Model):

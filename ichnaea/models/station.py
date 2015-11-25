@@ -3,18 +3,34 @@ import math
 
 import colander
 from six import string_types
-from sqlalchemy import Column
+from sqlalchemy import (
+    Column,
+    Date,
+    String,
+)
 from sqlalchemy.dialects.mysql import (
     DOUBLE as Double,
+    INTEGER as Integer,
+    TINYINT as TinyInteger,
 )
 
+from ichnaea.constants import (
+    PERMANENT_BLOCKLIST_THRESHOLD,
+    TEMPORARY_BLOCKLIST_DURATION,
+)
+from ichnaea.models.base import CreationMixin
 from ichnaea.models import constants
-from ichnaea.models.sa_types import TZDateTime as DateTime
+from ichnaea.models.sa_types import (
+    TinyIntEnum,
+    TZDateTime as DateTime,
+)
 from ichnaea.models.schema import (
+    DateFromString,
     DateTimeFromString,
     DefaultNode,
     ValidatorNode,
 )
+from ichnaea import util
 
 
 class StationSource(IntEnum):
@@ -164,3 +180,47 @@ class ScoreMixin(object):
         collection_weight = min(collected_over / 10.0, 1.0)
 
         return age_weight * collection_weight * self.score_sample_weight()
+
+
+class ValidStationSchema(ValidBboxSchema,
+                         ValidPositionSchema,
+                         ValidTimeTrackingSchema):
+
+    radius = colander.SchemaNode(colander.Integer(), missing=0)
+    region = colander.SchemaNode(colander.String(), missing=None)
+    samples = colander.SchemaNode(colander.Integer(), missing=0)
+    source = StationSourceNode(StationSourceType(), missing=None)
+
+    block_first = colander.SchemaNode(DateFromString(), missing=None)
+    block_last = colander.SchemaNode(DateFromString(), missing=None)
+    block_count = colander.SchemaNode(colander.Integer(), missing=0)
+
+
+class StationMixin(BboxMixin,
+                   PositionMixin,
+                   TimeTrackingMixin,
+                   CreationMixin,
+                   ScoreMixin):
+
+    radius = Column(Integer(unsigned=True))
+    region = Column(String(2))
+    samples = Column(Integer(unsigned=True))
+    source = Column(TinyIntEnum(StationSource))
+
+    block_first = Column(Date)
+    block_last = Column(Date)
+    block_count = Column(TinyInteger(unsigned=True))
+
+    def blocked(self, today=None):
+        if (self.block_count and
+                self.block_count >= PERMANENT_BLOCKLIST_THRESHOLD):
+            return True
+
+        temporary = False
+        if self.block_last:
+            if today is None:
+                today = util.utcnow().date()
+            age = today - self.block_last
+            temporary = age < TEMPORARY_BLOCKLIST_DURATION
+
+        return bool(temporary)

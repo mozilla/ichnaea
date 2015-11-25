@@ -3,49 +3,23 @@ import base64
 import colander
 from sqlalchemy import (
     Column,
-    Date,
     Index,
-    String,
     PrimaryKeyConstraint,
-)
-from sqlalchemy.dialects.mysql import (
-    INTEGER as Integer,
-    TINYINT as TinyInteger,
 )
 from sqlalchemy.ext.declarative import declared_attr
 
-from ichnaea.constants import (
-    PERMANENT_BLOCKLIST_THRESHOLD,
-    TEMPORARY_BLOCKLIST_DURATION,
-)
 from ichnaea.models import constants
-from ichnaea.models.base import (
-    _Model,
-    CreationMixin,
-)
-from ichnaea.models.sa_types import (
-    MacColumn,
-    TinyIntEnum,
-)
+from ichnaea.models.base import _Model
+from ichnaea.models.sa_types import MacColumn
 from ichnaea.models.schema import (
-    DateFromString,
     DefaultNode,
     MacNode,
     ValidatorNode,
 )
 from ichnaea.models.station import (
-    BboxMixin,
-    PositionMixin,
-    ScoreMixin,
-    StationSource,
-    StationSourceNode,
-    StationSourceType,
-    TimeTrackingMixin,
-    ValidBboxSchema,
-    ValidPositionSchema,
-    ValidTimeTrackingSchema,
+    StationMixin,
+    ValidStationSchema,
 )
-from ichnaea import util
 
 WIFI_SHARDS = {}
 
@@ -125,41 +99,17 @@ class ValidWifiSignalSchema(colander.MappingSchema, ValidatorNode):
         return super(ValidWifiSignalSchema, self).deserialize(data)
 
 
-class ValidWifiShardSchema(ValidBboxSchema,
-                           ValidPositionSchema,
-                           ValidTimeTrackingSchema):
+class ValidWifiShardSchema(ValidStationSchema):
     """A schema which validates the fields in a wifi shard."""
 
     mac = MacNode(colander.String())
-    radius = colander.SchemaNode(colander.Integer(), missing=0)
-
-    region = colander.SchemaNode(colander.String(), missing=None)
-    samples = colander.SchemaNode(colander.Integer(), missing=0)
-    source = StationSourceNode(StationSourceType(), missing=None)
-
-    block_first = colander.SchemaNode(DateFromString(), missing=None)
-    block_last = colander.SchemaNode(DateFromString(), missing=None)
-    block_count = colander.SchemaNode(colander.Integer(), missing=0)
 
 
-class WifiShard(CreationMixin,
-                PositionMixin,
-                BboxMixin,
-                ScoreMixin,
-                TimeTrackingMixin):
+class WifiShard(StationMixin):
 
     _valid_schema = ValidWifiShardSchema()
 
     mac = Column(MacColumn(6))
-
-    radius = Column(Integer(unsigned=True))
-    region = Column(String(2))
-    samples = Column(Integer(unsigned=True))
-    source = Column(TinyIntEnum(StationSource))
-
-    block_first = Column(Date)
-    block_last = Column(Date)
-    block_count = Column(TinyInteger(unsigned=True))
 
     @declared_attr
     def __table_args__(cls):  # NOQA
@@ -226,20 +176,6 @@ class WifiShard(CreationMixin,
     @property
     def unique_key(self):
         return self.mac
-
-    def blocked(self, today=None):
-        if (self.block_count and
-                self.block_count >= PERMANENT_BLOCKLIST_THRESHOLD):
-            return True
-
-        temporary = False
-        if self.block_last:
-            if today is None:
-                today = util.utcnow().date()
-            age = today - self.block_last
-            temporary = age < TEMPORARY_BLOCKLIST_DURATION
-
-        return bool(temporary)
 
 
 class WifiShard0(WifiShard, _Model):
