@@ -10,19 +10,17 @@ from ichnaea.data.tasks import (
     update_wifi,
 )
 from ichnaea.models import (
-    Cell,
-    CellBlocklist,
+    CellShard,
     StatCounter,
     StatKey,
     WifiShard,
 )
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
-    CellFactory,
-    CellBlocklistFactory,
     CellObservationFactory,
-    WifiShardFactory,
+    CellShardFactory,
     WifiObservationFactory,
+    WifiShardFactory,
 )
 from ichnaea import util
 
@@ -39,69 +37,71 @@ class StationTest(CeleryTestCase):
 
 class TestCell(StationTest):
 
-    def setUp(self):
-        super(TestCell, self).setUp()
-        self.data_queue = self.celery_app.data_queues['update_cell']
+    def _queue_and_update(self, obs):
+        sharded_obs = defaultdict(list)
+        for ob in obs:
+            sharded_obs[CellShard.shard_id(ob.cellid)].append(ob)
+
+        for shard_id, values in sharded_obs.items():
+            queue = self.celery_app.data_queues['update_cell_' + shard_id]
+            queue.enqueue(values)
+            update_cell.delay(shard_id=shard_id).get()
+
+    def test_shard_queues(self):  # BBB
+        observations = CellObservationFactory.build_batch(3)
+        data_queues = self.celery_app.data_queues
+        single_queue = data_queues['update_cell']
+        single_queue.enqueue(observations)
+        update_cell.delay().get()
+
+        self.assertEqual(single_queue.size(), 0)
+
+        total = 0
+        for shard_id in CellShard.shards().keys():
+            total += data_queues['update_cell_' + shard_id].size()
+
+        self.assertEqual(total, 3)
 
     def test_blocklist(self):
         now = util.utcnow()
+        today = now.date()
         observations = CellObservationFactory.build_batch(3)
         obs = observations[0]
-
-        block = CellBlocklist(
+        CellShardFactory(
             radio=obs.radio, mcc=obs.mcc, mnc=obs.mnc,
             lac=obs.lac, cid=obs.cid,
-            time=now, count=1,
+            created=now,
+            block_first=today - timedelta(days=10),
+            block_last=today,
+            block_count=1,
         )
-        self.session.add(block)
-        self.session.flush()
+        self.session.commit()
+        self._queue_and_update(observations)
 
-        self.data_queue.enqueue(observations)
-        self.assertEqual(self.data_queue.size(), 3)
-        update_cell.delay().get()
+        blocks = []
+        for obs in observations:
+            shard = CellShard.shard_model(obs.cellid)
+            cell = (self.session.query(shard)
+                                .filter(shard.cellid == obs.cellid)).one()
+            if cell.blocked():
+                blocks.append(cell)
 
-        cells = self.session.query(Cell).all()
-        self.assertEqual(len(cells), 2)
-
+        self.assertEqual(len(blocks), 1)
         self.check_statcounter(StatKey.cell, 2)
         self.check_statcounter(StatKey.unique_cell, 2)
 
-    def test_created_from_blocklist_time(self):
-        now = util.utcnow()
-        last_week = now - TEMPORARY_BLOCKLIST_DURATION - timedelta(days=1)
-
-        obs = CellObservationFactory.build()
-        self.session.add(
-            CellBlocklist(time=last_week, count=1,
-                          radio=obs.radio, mcc=obs.mcc,
-                          mnc=obs.mnc, lac=obs.lac, cid=obs.cid))
-        self.session.flush()
-
-        # add a new entry for the previously blocklisted cell
-        self.data_queue.enqueue([obs])
-        self.assertEqual(self.data_queue.size(), 1)
-        update_cell.delay().get()
-
-        # the cell was inserted again
-        cells = self.session.query(Cell).all()
-        self.assertEqual(len(cells), 1)
-
-        # and the creation date was set to the date of the blocklist entry
-        self.assertEqual(cells[0].created, last_week)
-
-        self.check_statcounter(StatKey.cell, 1)
-        self.check_statcounter(StatKey.unique_cell, 0)
-
     def test_blocklist_moving_cells(self):
         now = util.utcnow()
+        today = now.date()
         obs = []
         obs_factory = CellObservationFactory
         moving = set()
-        cells = CellFactory.create_batch(4)
-        cells.append(CellFactory.build())
+        cells = CellShardFactory.create_batch(4)
+        cells.append(CellShardFactory.build())
         # a cell with an entry but no prior position
         cell = cells[0]
-        cell_key = cell.hashkey().__dict__
+        cell_key = dict(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
+                        lac=cell.lac, cid=cell.cid)
         cell.samples = 0
         obs.extend([
             obs_factory(lat=cell.lat + 0.01,
@@ -115,7 +115,8 @@ class TestCell(StationTest):
         cell.lon = None
         # a cell with a prior known position
         cell = cells[1]
-        cell_key = cell.hashkey().__dict__
+        cell_key = dict(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
+                        lac=cell.lac, cid=cell.cid)
         cell.samples = 1
         cell.lat += 0.1
         obs.extend([
@@ -124,10 +125,11 @@ class TestCell(StationTest):
             obs_factory(lat=cell.lat + 3.0,
                         lon=cell.lon, **cell_key),
         ])
-        moving.add(cell.hashkey())
+        moving.add(cell.cellid)
         # a cell with a very different prior position
         cell = cells[2]
-        cell_key = cell.hashkey().__dict__
+        cell_key = dict(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
+                        lac=cell.lac, cid=cell.cid)
         cell.samples = 1
         obs.extend([
             obs_factory(lat=cell.lat + 3.0,
@@ -135,10 +137,11 @@ class TestCell(StationTest):
             obs_factory(lat=cell.lat - 0.1,
                         lon=cell.lon, **cell_key),
         ])
-        moving.add(cell.hashkey())
+        moving.add(cell.cellid)
         # another cell with a prior known position (and negative lon)
         cell = cells[3]
-        cell_key = cell.hashkey().__dict__
+        cell_key = dict(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
+                        lac=cell.lac, cid=cell.cid)
         cell.samples = 1
         cell.lon *= -1.0
         obs.extend([
@@ -147,49 +150,44 @@ class TestCell(StationTest):
             obs_factory(lat=cell.lat + 2.0,
                         lon=cell.lon, **cell_key),
         ])
-        moving.add(cell.hashkey())
+        moving.add(cell.cellid)
         # an already blocklisted cell
         cell = cells[4]
-        cell_key = cell.hashkey().__dict__
-        CellBlocklistFactory(time=now, count=1, **cell_key)
+        cell_key = dict(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
+                        lac=cell.lac, cid=cell.cid)
+        CellShardFactory(block_first=today, block_last=today, block_count=1,
+                         **cell_key)
         obs.extend([
             obs_factory(lat=cell.lat,
                         lon=cell.lon, **cell_key),
             obs_factory(lat=cell.lat + 3.0,
                         lon=cell.lon, **cell_key),
         ])
-        moving.add(cell.hashkey())
-
-        self.data_queue.enqueue(obs)
+        moving.add(cell.cellid)
         self.session.commit()
-        update_cell.delay().get()
+        self._queue_and_update(obs)
 
-        block = self.session.query(CellBlocklist).all()
-        self.assertEqual(set([b.hashkey() for b in block]), moving)
+        shards = set()
+        for cellid in moving:
+            shards.add(CellShard.shard_model(cellid))
+        blocks = []
+        for shard in shards:
+            for row in self.session.query(shard).all():
+                if row.blocked():
+                    blocks.append(row)
+        self.assertEqual(set([b.cellid for b in blocks]), moving)
 
-        # test duplicate call
-        update_cell.delay().get()
-
-        self.check_stats(counter=[
-            ('data.station.blocklist', 1, 3,
-                ['type:cell', 'action:add', 'reason:moving']),
-        ], timer=[
-            # We made duplicate calls
-            ('task', 2, ['task:data.update_cell']),
-            # One of those would've scheduled a remove_cell task
-            ('task', 1, ['task:data.remove_cell'])
-        ])
-
-    def test_update_cell(self):
+    def test_update(self):
         now = util.utcnow()
         invalid_key = dict(lac=None, cid=None)
         observations = []
 
         def obs_factory(**kw):
             obs = CellObservationFactory.build(**kw)
-            observations.append(obs)
+            if obs is not None:
+                observations.append(obs)
 
-        cell1 = CellFactory(samples=3)
+        cell1 = CellShardFactory(samples=3)
         lat1, lon1 = (cell1.lat, cell1.lon)
         key1 = dict(radio=cell1.radio, lac=cell1.lac, cid=cell1.cid)
         obs_factory(lat=lat1, lon=lon1, created=now, **key1)
@@ -199,60 +197,63 @@ class TestCell(StationTest):
         obs_factory(created=now, **invalid_key)
         obs_factory(created=now, **invalid_key)
 
-        cell2 = CellFactory(lat=lat1 + 1.0, lon=lon1 + 1.0, samples=3)
+        cell2 = CellShardFactory(lat=lat1 + 1.0, lon=lon1 + 1.0, samples=3)
         lat2, lon2 = (cell2.lat, cell2.lon)
         key2 = dict(radio=cell2.radio, lac=cell2.lac, cid=cell2.cid)
         obs_factory(lat=lat2 + 0.001, lon=lon2 + 0.002, created=now, **key2)
         obs_factory(lat=lat2 + 0.003, lon=lon2 + 0.006, created=now, **key2)
 
-        cell3 = CellFactory(samples=100000)
+        cell3 = CellShardFactory(samples=100000)
         lat3, lon3 = (cell3.lat, cell3.lon)
         key3 = dict(radio=cell3.radio, lac=cell3.lac, cid=cell3.cid)
         for i in range(10):
             obs_factory(lat=lat3 + 1.0, lon=lon3 + 1.0, **key3)
 
-        self.data_queue.enqueue(observations)
         self.session.commit()
+        self._queue_and_update(observations)
 
-        result = update_cell.delay()
-        self.assertEqual(result.get(), (3, 0))
+        shard = CellShard.shard_model(cell1.cellid)
+        found = (self.session.query(shard)
+                             .filter(shard.cellid == cell1.cellid)).one()
+        self.assertAlmostEqual(found.lat, lat1 + 0.001667, 6)
+        self.assertAlmostEqual(found.lon, lon1 + 0.0025, 6)
 
-        cells = self.session.query(Cell).all()
-        self.assertEqual(len(cells), 3)
-        for cell in cells:
-            if cell.hashkey() == cell1.hashkey():
-                self.assertAlmostEqual(cell.lat, lat1 + 0.001667, 6)
-                self.assertAlmostEqual(cell.lon, lon1 + 0.0025, 6)
-            if cell.hashkey() == cell2.hashkey():
-                self.assertAlmostEqual(cell.lat, lat2 + 0.0008, 6)
-                self.assertAlmostEqual(cell.lon, lon2 + 0.0016, 6)
-            if cell.hashkey() == cell3.hashkey():
-                expected_lat = ((lat3 * 1000) + (lat3 + 1.0) * 10) / 1010
-                expected_lon = ((lon3 * 1000) + (lon3 + 1.0) * 10) / 1010
-                self.assertAlmostEqual(cell.lat, expected_lat, 7)
-                self.assertAlmostEqual(cell.lon, expected_lon, 7)
+        shard = CellShard.shard_model(cell2.cellid)
+        found = (self.session.query(shard)
+                             .filter(shard.cellid == cell2.cellid)).one()
+        self.assertAlmostEqual(found.lat, lat2 + 0.0008, 6)
+        self.assertAlmostEqual(found.lon, lon2 + 0.0016, 6)
+
+        shard = CellShard.shard_model(cell3.cellid)
+        found = (self.session.query(shard)
+                             .filter(shard.cellid == cell3.cellid)).one()
+        expected_lat = ((lat3 * 1000) + (lat3 + 1.0) * 10) / 1010
+        expected_lon = ((lon3 * 1000) + (lon3 + 1.0) * 10) / 1010
+        self.assertAlmostEqual(found.lat, expected_lat, 7)
+        self.assertAlmostEqual(found.lon, expected_lon, 7)
 
     def test_max_min_radius_update(self):
-        cell = CellFactory(radius=150, samples=3)
+        cell = CellShardFactory(radius=150, samples=3)
         cell_lat = cell.lat
         cell_lon = cell.lon
         cell.max_lat = cell.lat + 0.001
         cell.min_lat = cell.lat - 0.001
         cell.max_lon = cell.lon + 0.001
         cell.min_lon = cell.lon - 0.001
-        k1 = cell.hashkey().__dict__
+        k1 = dict(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
+                  lac=cell.lac, cid=cell.cid)
 
         obs_factory = CellObservationFactory
         obs = [
             obs_factory(lat=cell.lat, lon=cell.lon - 0.002, **k1),
             obs_factory(lat=cell.lat + 0.004, lon=cell.lon - 0.006, **k1),
         ]
-        self.data_queue.enqueue(obs)
+
         self.session.commit()
+        self._queue_and_update(obs)
 
-        self.assertEqual(update_cell.delay().get(), (1, 0))
-
-        cells = self.session.query(Cell).all()
+        shard = CellShard.shard_model(cell.cellid)
+        cells = self.session.query(shard).all()
         self.assertEqual(len(cells), 1)
         cell = cells[0]
         self.assertAlmostEqual(cell.lat, cell_lat + 0.0008)

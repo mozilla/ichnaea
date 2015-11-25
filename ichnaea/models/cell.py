@@ -616,6 +616,8 @@ class CellShard(BaseCell):
             radio = decode_cellid(radio)[0]
         if type(radio) == Radio:
             return radio.name
+        if isinstance(radio, tuple) and len(radio) == 5:
+            return radio[0].name
         try:
             return Radio[radio].name
         except KeyError:

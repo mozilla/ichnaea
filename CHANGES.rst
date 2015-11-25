@@ -16,7 +16,7 @@ Migrations
 Changes
 ~~~~~~~
 
-- Use sharded cell tables in locate and update area logic.
+- Use sharded cell tables.
 
 - Keep separate rate limits per API version.
 

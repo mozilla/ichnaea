@@ -106,19 +106,22 @@ def upload_reports(self, export_queue_name, data, queue_key=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell')
-def remove_cell(self, cell_keys):
-    with self.redis_pipeline() as pipe:
-        with self.db_session() as session:
-            station.CellRemover(self, session, pipe)(cell_keys)
+def remove_cell(self, cell_keys):  # pragma: no cover
+    # BBB
+    pass
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell')
-def update_cell(self, batch=1000):
+def update_cell(self, batch=1000, shard_id=None):
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
-            cells, moving = station.CellUpdater(
-                self, session, pipe, remove_task=remove_cell)(batch=batch)
-    return (cells, moving)
+            updater = station.CellUpdater(
+                self, session, pipe,
+                shard_id=shard_id, remove_task=remove_cell)
+            if shard_id is None:
+                updater.shard_queues(batch=batch)
+            else:
+                updater(batch=batch)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_wifi')

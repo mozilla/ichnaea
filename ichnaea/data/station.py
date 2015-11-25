@@ -2,10 +2,6 @@ from collections import defaultdict
 
 import numpy
 
-from ichnaea.constants import (
-    PERMANENT_BLOCKLIST_THRESHOLD,
-    TEMPORARY_BLOCKLIST_DURATION,
-)
 from ichnaea.data.base import DataTask
 from ichnaea.geocalc import (
     centroid,
@@ -14,9 +10,10 @@ from ichnaea.geocalc import (
 )
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
+    decode_cellid,
+    encode_cellid,
     encode_cellarea,
-    Cell,
-    CellBlocklist,
+    CellShard,
     StatCounter,
     StatKey,
     WifiShard,
@@ -28,39 +25,18 @@ from ichnaea.models.constants import (
 from ichnaea import util
 
 
-class CellRemover(DataTask):
-
-    def __init__(self, task, session, pipe):
-        super(CellRemover, self).__init__(task, session)
-        self.pipe = pipe
-        self.area_queue = self.task.app.data_queues['update_cellarea']
-
-    def __call__(self, cell_keys):
-        cells_removed = 0
-        changed_areas = set()
-
-        for key in cell_keys:
-            query = Cell.querykey(self.session, key)
-            cells_removed += query.delete()
-            changed_areas.add(encode_cellarea(
-                key.radio, key.mcc, key.mnc, key.lac))
-
-        if changed_areas:
-            self.area_queue.enqueue(list(changed_areas),
-                                    pipe=self.pipe, json=False)
-
-        return cells_removed
-
-
 class StationUpdater(DataTask):
 
     MAX_OLD_OBSERVATIONS = 1000
     max_dist_meters = None
     station_type = None
+    stat_obs_key = None
+    stat_station_key = None
 
-    def __init__(self, task, session, pipe):
+    def __init__(self, task, session, pipe, shard_id=None):
         super(StationUpdater, self).__init__(task, session)
         self.pipe = pipe
+        self.shard_id = shard_id
         self.updated_areas = set()
         self.utcnow = util.utcnow()
         self.today = self.utcnow.date()
@@ -75,297 +51,17 @@ class StationUpdater(DataTask):
                 count,
                 tags=tags)
 
-    def __call__(self, batch=10):
-        raise NotImplementedError()
-
-
-class CellUpdater(StationUpdater):
-
-    max_dist_meters = CELL_MAX_RADIUS
-    station_type = 'cell'
-
-    def __init__(self, task, session, pipe, remove_task=None):
-        super(CellUpdater, self).__init__(task, session, pipe)
-        self.remove_task = remove_task
-        self.data_queue = self.task.app.data_queues['update_cell']
-
-    def emit_statcounters(self, obs, stations):
-        day = self.today
-        StatCounter(StatKey.cell, day).incr(self.pipe, obs)
-        StatCounter(StatKey.unique_cell, day).incr(self.pipe, stations)
-
-    def emit_stats(self, added, dropped):
-        self.stat_count('insert', added)
-        for reason, count in dropped.items():
-            self.stat_count('drop', dropped[reason], reason=reason)
-
     def add_area_update(self, key):
-        self.updated_areas.add(encode_cellarea(
-            key.radio, key.mcc, key.mnc, key.lac))
+        pass
 
-    def queue_area_updates(self):
-        data_queue = self.task.app.data_queues['update_cellarea']
-        data_queue.enqueue(list(self.updated_areas),
-                           pipe=self.pipe, json=False)
-
-    def blocklisted_station(self, block):
-        age = self.utcnow - block.time
-        temporary = age < TEMPORARY_BLOCKLIST_DURATION
-        permanent = block.count >= PERMANENT_BLOCKLIST_THRESHOLD
-        if temporary or permanent:
-            return (True, block.time, block)
-        return (False, block.time, block)
-
-    def blocklisted_stations(self, station_keys):
-        blocklist = {}
-        for block in CellBlocklist.iterkeys(
-                self.session, list(station_keys)):
-            blocklist[block.hashkey()] = self.blocklisted_station(block)
-        return blocklist
-
-    def blocklist_stations(self, moving):
-        moving_keys = []
-        new_block_values = []
-        for station_key, block in moving:
-            moving_keys.append(station_key)
-            if block:  # pragma: no cover
-                block.time = self.utcnow
-                block.count += 1
-            else:
-                block_key = CellBlocklist.to_hashkey(station_key)
-                new_block_values.append(dict(
-                    time=self.utcnow,
-                    count=1,
-                    **block_key.__dict__
-                ))
-        if new_block_values:
-            # do a batch insert of new blocks
-            stmt = CellBlocklist.__table__.insert(
-                mysql_on_duplicate='time = time'  # no-op
-            )
-            # but limit the batch depending on each model
-            ins_batch = CellBlocklist._insert_batch
-            for i in range(0, len(new_block_values), ins_batch):
-                batch_values = new_block_values[i:i + ins_batch]
-                self.session.execute(stmt.values(batch_values))
-
-        if moving_keys:
-            self.stats_client.incr(
-                'data.station.blocklist',
-                len(moving_keys),
-                tags=['type:%s' % self.station_type,
-                      'action:add',
-                      'reason:moving'])
-            self.remove_task.delay(moving_keys)
-
-    def new_station_values(self, station, station_key,
-                           first_blocked, observations):
-        # This function returns a 3-tuple, the first element is True,
-        # if the station was found to be moving.
-        # The second element is either None or a dict of values,
-        # if the station is new and should result in a table insert
-        # The third element is either None or a dict of values
-        # if the station did exist and should be updated
-
-        obs_length = len(observations)
-        obs_positions = numpy.array(
-            [(obs.lat, obs.lon) for obs in observations],
-            dtype=numpy.double)
-        obs_lat, obs_lon = centroid(obs_positions)
-
-        values = {
-            'modified': self.utcnow,
-        }
-        values.update(station_key.__dict__)
-        if self.station_type == 'cell':
-            # pass on extra psc column which is not actually part
-            # of the stations hash key
-            values['psc'] = observations[-1].psc
-
-        created = self.utcnow
-        if station is None:
-            if first_blocked:
-                # if the station did previously exist, retain at least the
-                # time it was first put on a blocklist as the creation date
-                created = first_blocked
-            values.update({
-                'created': created,
-                'radius': 0,
-                'samples': 0,
-            })
-
-        if (station is not None and
-                station.lat is not None and station.lon is not None):
-            obs_positions = numpy.append(obs_positions, [
-                (station.lat, station.lon),
-                (numpy.nan if station.max_lat is None else station.max_lat,
-                 numpy.nan if station.max_lon is None else station.max_lon),
-                (numpy.nan if station.min_lat is None else station.min_lat,
-                 numpy.nan if station.min_lon is None else station.min_lon),
-            ], axis=0)
-            existing_station = True
-        else:
-            values['lat'] = obs_lat
-            values['lon'] = obs_lon
-            existing_station = False
-
-        max_lat, max_lon = numpy.nanmax(obs_positions, axis=0)
-        min_lat, min_lon = numpy.nanmin(obs_positions, axis=0)
-
-        # calculate sphere-distance from opposite corners of
-        # bounding box containing current location estimate
-        # and new observations; if too big, station is moving
-        box_dist = distance(min_lat, min_lon, max_lat, max_lon)
-
-        # TODO: If we get a too large box_dist, we should not create
-        # a new station record with the impossibly big distance,
-        # so moving the box_dist > self.max_dist_meters here
-
-        if existing_station:
-            if box_dist > self.max_dist_meters:
-                # Signal a moving station and return early without updating
-                # the station since it will be deleted by caller momentarily
-                return (True, None, None)
-            # limit the maximum weight of the old station estimate
-            old_weight = min(station.samples,
-                             self.MAX_OLD_OBSERVATIONS)
-            new_weight = old_weight + obs_length
-
-            values['lat'] = ((station.lat * old_weight) +
-                             (obs_lat * obs_length)) / new_weight
-            values['lon'] = ((station.lon * old_weight) +
-                             (obs_lon * obs_length)) / new_weight
-
-        # increase total counter
-        if station is not None:
-            values['samples'] = station.samples + obs_length
-        else:
-            values['samples'] = obs_length
-
-        # update max/min lat/lon columns
-        values['min_lat'] = float(min_lat)
-        values['min_lon'] = float(min_lon)
-        values['max_lat'] = float(max_lat)
-        values['max_lon'] = float(max_lon)
-
-        # give radius estimate between extreme values and centroid
-        values['radius'] = circle_radius(
-            values['lat'], values['lon'],
-            max_lat, max_lon, min_lat, min_lon)
-
-        if station is None:
-            # return new values
-            return (False, values, None)
-        else:
-            # return updated values, remove station from session
-            self.session.expunge(station)
-            return (False, None, values)
-
-    def __call__(self, batch=10):
-        all_observations = self.data_queue.dequeue(batch=batch)
-        drop_counter = defaultdict(int)
-        added = 0
-        new_stations = 0
-        station_obs = defaultdict(list)
-
-        for obs in all_observations:
-            station_obs[Cell.to_hashkey(obs)].append(obs)
-
-        if not station_obs:
-            return (0, 0)
-
-        stations = {}
-        for station in Cell.iterkeys(self.session, list(station_obs.keys())):
-            stations[station.hashkey()] = station
-
-        blocklist = self.blocklisted_stations(station_obs.keys())
-
-        new_station_values = []
-        changed_station_values = []
-        moving_stations = set()
-        for station_key, observations in station_obs.items():
-            blocked, first_blocked, block = blocklist.get(
-                station_key, (False, None, None))
-
-            if not any(observations):
-                continue
-
-            if blocked:
-                # Drop observations for blocklisted stations.
-                drop_counter['blocklisted'] += len(observations)
-                continue
-
-            station = stations.get(station_key, None)
-            if station is None and not first_blocked:
-                # We discovered an actual new never before seen station.
-                new_stations += 1
-
-            moving, new_values, changed_values = self.new_station_values(
-                station, station_key, first_blocked, observations)
-            if moving:
-                moving_stations.add((station_key, block))
-            else:
-                added += len(observations)
-                if new_values:
-                    new_station_values.append(new_values)
-                if changed_values:
-                    changed_station_values.append(changed_values)
-
-            # track potential updates to dependent areas
-            self.add_area_update(station_key)
-
-        if new_station_values:
-            # do a batch insert of new stations
-            stmt = Cell.__table__.insert(
-                mysql_on_duplicate='psc = psc'  # no-op
-            )
-            # but limit the batch depending on each model
-            ins_batch = Cell._insert_batch
-            for i in range(0, len(new_station_values), ins_batch):
-                batch_values = new_station_values[i:i + ins_batch]
-                self.session.execute(stmt.values(batch_values))
-
-        if changed_station_values:
-            # do a batch update of changed stations
-            ins_batch = Cell._insert_batch
-            for i in range(0, len(changed_station_values), ins_batch):
-                batch_values = changed_station_values[i:i + ins_batch]
-                self.session.bulk_update_mappings(Cell, batch_values)
-
-        if self.updated_areas:
-            self.queue_area_updates()
-
-        if moving_stations:
-            self.blocklist_stations(moving_stations)
-
-        self.emit_stats(added, drop_counter)
-        self.emit_statcounters(added, new_stations)
-
-        if self.data_queue.enough_data(batch=batch):  # pragma: no cover
-            self.task.apply_async(
-                kwargs={'batch': batch},
-                countdown=2,
-                expires=10)
-
-        return (len(stations) + len(new_station_values), len(moving_stations))
-
-
-class WifiUpdater(StationUpdater):
-
-    max_dist_meters = WIFI_MAX_RADIUS
-    station_type = 'wifi'
-
-    def __init__(self, task, session, pipe, shard_id=None):
-        super(WifiUpdater, self).__init__(task, session, pipe)
-        self.shard_id = shard_id
-        queue_name = '%s_%s' % ('update_wifi', shard_id)
-        self.data_queue = self.task.app.data_queues[queue_name]
+    def queue_area_updates(self):  # pragma: no cover
+        pass
 
     def emit_stats(self, stats_counter, drop_counter):
         day = self.today
-        StatCounter(StatKey.wifi, day).incr(
+        StatCounter(self.stat_obs_key, day).incr(
             self.pipe, stats_counter['obs'])
-        StatCounter(StatKey.unique_wifi, day).incr(
+        StatCounter(self.stat_station_key, day).incr(
             self.pipe, stats_counter['new_station'])
 
         self.stat_count('insert', stats_counter['obs'])
@@ -395,10 +91,25 @@ class WifiUpdater(StationUpdater):
         # 2.a. obs disagree -> return moving
         # 2.b. obs agree -> return changed
         created = self.utcnow
-        values = {
-            'mac': station_key,
-            'modified': self.utcnow,
-        }
+        if self.station_type == 'wifi':
+            values = {
+                'mac': station_key,
+                'modified': self.utcnow,
+            }
+        elif self.station_type == 'cell':
+            radio, mcc, mnc, lac, cid = decode_cellid(station_key)
+            if observations:
+                psc = observations[-1].psc
+            values = {
+                'cellid': station_key,
+                'radio': radio,
+                'mcc': mcc,
+                'mnc': mnc,
+                'lac': lac,
+                'cid': cid,
+                'psc': psc,
+                'modified': self.utcnow,
+            }
 
         obs_length = len(observations)
         obs_positions = numpy.array(
@@ -543,22 +254,39 @@ class WifiUpdater(StationUpdater):
         sharded_obs = {}
         for obs in observations:
             if obs is not None:
-                shard = WifiShard.shard_model(obs.mac)
-                if shard not in sharded_obs:
-                    sharded_obs[shard] = defaultdict(list)
-                sharded_obs[shard][obs.mac].append(obs)
+                if self.station_type == 'wifi':
+                    shard = WifiShard.shard_model(obs.mac)
+                    if shard not in sharded_obs:
+                        sharded_obs[shard] = defaultdict(list)
+                    sharded_obs[shard][obs.mac].append(obs)
+                elif self.station_type == 'cell':
+                    shard = CellShard.shard_model(obs.cellid)
+                    if shard not in sharded_obs:
+                        sharded_obs[shard] = defaultdict(list)
+                    sharded_obs[shard][obs.cellid].append(obs)
         return sharded_obs
 
     def _query_stations(self, shard, shard_values):
-        macs = list(shard_values.keys())
-        rows = (self.session.query(shard)
-                            .filter(shard.mac.in_(macs))).all()
-
         blocklist = {}
         stations = {}
-        for row in rows:
-            stations[row.mac] = row
-            blocklist[row.mac] = row.blocked(today=self.today)
+
+        if self.station_type == 'wifi':
+            macs = list(shard_values.keys())
+            rows = (self.session.query(shard)
+                                .filter(shard.mac.in_(macs))).all()
+            for row in rows:
+                    stations[row.mac] = row
+                    blocklist[row.mac] = row.blocked(today=self.today)
+
+        elif self.station_type == 'cell':
+            cellids = list(shard_values.keys())
+            rows = (self.session.query(shard)
+                                .filter(shard.cellid.in_(cellids))).all()
+            for row in rows:
+                cellid = encode_cellid(*row.cellid)
+                stations[cellid] = row
+                blocklist[cellid] = row.blocked(today=self.today)
+
         return (blocklist, stations)
 
     def _update_shard(self, shard, shard_values,
@@ -585,6 +313,9 @@ class WifiUpdater(StationUpdater):
                 stats_counter['block'] += 1
             else:
                 stats_counter['obs'] += len(observations)
+
+            # track potential updates to dependent areas
+            self.add_area_update(station_key)
 
         if new_data['new']:
             # do a batch insert of new stations
@@ -618,6 +349,9 @@ class WifiUpdater(StationUpdater):
             self._update_shard(shard, shard_values,
                                drop_counter, stats_counter)
 
+        if self.updated_areas:
+            self.queue_area_updates()
+
         self.emit_stats(stats_counter, drop_counter)
 
         if self.data_queue.enough_data(batch=batch):  # pragma: no cover
@@ -625,3 +359,59 @@ class WifiUpdater(StationUpdater):
                 kwargs={'batch': batch, 'shard_id': self.shard_id},
                 countdown=2,
                 expires=10)
+
+
+class CellUpdater(StationUpdater):
+
+    max_dist_meters = CELL_MAX_RADIUS
+    station_type = 'cell'
+    stat_obs_key = StatKey.cell
+    stat_station_key = StatKey.unique_cell
+
+    def __init__(self, task, session, pipe, shard_id=None, remove_task=None):
+        super(CellUpdater, self).__init__(
+            task, session, pipe, shard_id=shard_id)
+        self.remove_task = remove_task
+        self.data_queues = self.task.app.data_queues
+        self.data_queue = None
+        if shard_id:
+            # BBB, remove check
+            queue_name = 'update_cell_' + shard_id
+            self.data_queue = self.data_queues[queue_name]
+
+    def shard_queues(self, batch=100):  # BBB
+        single_queue = self.data_queues['update_cell']
+        observations = single_queue.dequeue(batch=batch)
+
+        sharded_obs = defaultdict(list)
+        for ob in observations:
+            shard_id = CellShard.shard_id(ob.cellid)
+            sharded_obs[shard_id].append(ob)
+        for shard_id, values in sharded_obs.items():
+            cell_queue = self.data_queues['update_cell_' + shard_id]
+            cell_queue.enqueue(list(values), pipe=self.pipe)
+
+    def add_area_update(self, key):
+        self.updated_areas.add(encode_cellarea(*decode_cellid(key)[:4]))
+
+    def queue_area_updates(self):
+        data_queue = self.data_queues['update_cellarea']
+        data_queue.enqueue(list(self.updated_areas),
+                           pipe=self.pipe, json=False)
+
+    def __call__(self, batch=10):
+        if self.shard_id:  # BBB remove this check
+            super(CellUpdater, self).__call__(batch=batch)
+
+
+class WifiUpdater(StationUpdater):
+
+    max_dist_meters = WIFI_MAX_RADIUS
+    station_type = 'wifi'
+    stat_obs_key = StatKey.wifi
+    stat_station_key = StatKey.unique_wifi
+
+    def __init__(self, task, session, pipe, shard_id=None):
+        super(WifiUpdater, self).__init__(task, session, pipe, shard_id)
+        queue_name = 'update_wifi_' + shard_id
+        self.data_queue = self.task.app.data_queues[queue_name]

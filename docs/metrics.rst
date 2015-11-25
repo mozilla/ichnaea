@@ -359,7 +359,9 @@ Internal Monitoring
     These gauges measure the number of tasks in each of the Redis queues.
     They are sampled at an approximate per-minute interval.
 
-``queue#queue:update_cell``,
+``queue#queue:update_cell_gsm``,
+``queue#queue:update_cell_wcdma``,
+``queue#queue:update_cell_lte``,
 ``queue#queue:update_cellarea``,
 ``queue#queue:update_datamap_ne``,
 ``queue#queue:update_datamap_nw``,

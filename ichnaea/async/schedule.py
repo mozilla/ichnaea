@@ -74,12 +74,32 @@ CELERYBEAT_SCHEDULE = {
         'options': {'expires': 15},
     },
 
-    'update-cell': {
+    'update-cell': {  # BBB
+        'task': 'ichnaea.data.tasks.update_cell',
+        'schedule': timedelta(seconds=57),
+        'args': (500, ),
+        'options': {'expires': 60},
+    },
+
+    'update-cell-gsm': {
         'task': 'ichnaea.data.tasks.update_cell',
         'schedule': timedelta(seconds=7),
-        'args': (500, ),
+        'args': (500, 'gsm'),
         'options': {'expires': 10},
     },
+    'update-cell-wcdma': {
+        'task': 'ichnaea.data.tasks.update_cell',
+        'schedule': timedelta(seconds=7),
+        'args': (500, 'wcdma'),
+        'options': {'expires': 10},
+    },
+    'update-cell-lte': {
+        'task': 'ichnaea.data.tasks.update_cell',
+        'schedule': timedelta(seconds=7),
+        'args': (500, 'lte'),
+        'options': {'expires': 10},
+    },
+
     'update-cellarea': {
         'task': 'ichnaea.data.tasks.update_cellarea',
         'schedule': timedelta(seconds=8),

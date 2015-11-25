@@ -8,7 +8,7 @@ from ichnaea.data.tasks import (
 from ichnaea.data.tests.test_export import BaseExportTest
 from ichnaea.models import (
     ApiKey,
-    Cell,
+    CellShard,
     ScoreKey,
     User,
     WifiShard,
@@ -32,6 +32,15 @@ class TestUploader(BaseExportTest):
         self.celery_app.export_queues = configure_export(
             self.redis_client, config)
 
+    def _update_all(self):
+        schedule_export_reports.delay().get()
+
+        for shard_id in CellShard.shards().keys():
+            update_cell.delay(shard_id=shard_id).get()
+
+        for shard_id in WifiShard.shards().keys():
+            update_wifi.delay(shard_id=shard_id).get()
+
     def test_stats(self):
         self.session.add(ApiKey(valid_key='e5444-794', log_submit=True))
         self.session.flush()
@@ -40,18 +49,13 @@ class TestUploader(BaseExportTest):
                          ip=self.geoip_data['London']['ip'])
         self.add_reports(6, api_key='e5444-794')
         self.add_reports(3, api_key=None)
-
-        schedule_export_reports.delay().get()
-        update_cell.delay().get()
-        for i in range(16):
-            update_wifi.delay(shard_id='%x' % i).get()
+        self._update_all()
 
         self.check_stats(counter=[
             ('data.export.batch', 1, 1, ['key:internal']),
             ('data.report.upload', 2, 3),
             ('data.report.upload', 1, 3, ['key:test']),
             ('data.report.upload', 1, 6, ['key:e5444-794']),
-            ('data.observation.insert', 1, 12, ['type:cell']),
             ('data.observation.upload', 1, 3, ['type:cell', 'key:test']),
             ('data.observation.upload', 1, 6, ['type:wifi', 'key:test']),
             ('data.observation.upload', 0, ['type:cell', 'key:no_key']),
@@ -60,22 +64,23 @@ class TestUploader(BaseExportTest):
         ])
         # we get a variable number of statsd messages and are only
         # interested in the sum-total
-        insert_msgs = [msg for msg in self.stats_client.msgs
-                       if (msg.startswith('data.observation.insert') and
-                           'type:wifi' in msg)]
-        self.assertEqual(
-            sum([int(msg.split(':')[1].split('|')[0]) for msg in insert_msgs]),
-            24)
+        for name, total in (('cell', 12), ('wifi', 24)):
+            insert_msgs = [msg for msg in self.stats_client.msgs
+                           if (msg.startswith('data.observation.insert') and
+                               'type:' + name in msg)]
+            self.assertEqual(sum([int(msg.split(':')[1].split('|')[0])
+                                  for msg in insert_msgs]),
+                             total)
 
     def test_cell(self):
         reports = self.add_reports(cell_factor=1, wifi_factor=0)
-        schedule_export_reports.delay().get()
-        update_cell.delay().get()
+        self._update_all()
 
         position = reports[0]['position']
         cell_data = reports[0]['cellTowers'][0]
-
-        cells = self.session.query(Cell).all()
+        radio = cell_data['radioType']
+        shard = CellShard.shard_model(radio)
+        cells = self.session.query(shard).all()
         self.assertEqual(len(cells), 1)
         cell = cells[0]
 
@@ -96,24 +101,23 @@ class TestUploader(BaseExportTest):
         items = queue.dequeue(queue.queue_key())
         report = items[0]['report']
         cell = report['cellTowers'][0]
+        radio = cell['radioType']
         report['cellTowers'].append(cell.copy())
         report['cellTowers'].append(cell.copy())
         report['cellTowers'][1]['signalStrength'] += 2
         report['cellTowers'][2]['signalStrength'] -= 2
         queue.enqueue(items, queue.queue_key())
+        self._update_all()
 
-        schedule_export_reports.delay().get()
-        update_cell.delay().get()
-
-        cells = self.session.query(Cell).all()
+        shard = CellShard.shard_model(radio)
+        cells = self.session.query(shard).all()
         self.assertEqual(len(cells), 1)
         self.assertEqual(cells[0].samples, 1)
 
     def test_cell_invalid(self):
         self.add_reports(cell_factor=1, wifi_factor=0, cell_mcc=-2)
-        schedule_export_reports.delay().get()
-        update_cell.delay().get()
-        self.assertEqual(self.session.query(Cell).count(), 0)
+        self._update_all()
+
         self.check_stats(counter=[
             ('data.report.upload', 1, 1, ['key:test']),
             ('data.report.drop', 1, 1, ['reason:malformed', 'key:test']),
@@ -123,9 +127,7 @@ class TestUploader(BaseExportTest):
 
     def test_wifi(self):
         reports = self.add_reports(cell_factor=0, wifi_factor=1)
-        schedule_export_reports.delay().get()
-        for i in range(16):
-            update_wifi.delay(shard_id='%x' % i).get()
+        self._update_all()
 
         position = reports[0]['position']
         wifi_data = reports[0]['wifiAccessPoints'][0]
@@ -152,10 +154,7 @@ class TestUploader(BaseExportTest):
         report['wifiAccessPoints'][1]['signalStrength'] += 2
         report['wifiAccessPoints'][2]['signalStrength'] -= 2
         queue.enqueue(items, queue.queue_key())
-
-        schedule_export_reports.delay().get()
-        for i in range(16):
-            update_wifi.delay(shard_id='%x' % i).get()
+        self._update_all()
 
         shard = WifiShard.shard_model(mac)
         wifis = self.session.query(shard).all()
@@ -164,9 +163,7 @@ class TestUploader(BaseExportTest):
 
     def test_wifi_invalid(self):
         self.add_reports(cell_factor=0, wifi_factor=1, wifi_key='abcd')
-        schedule_export_reports.delay().get()
-        for i in range(16):
-            update_wifi.delay(shard_id='%x' % i).get()
+        self._update_all()
 
         self.check_stats(counter=[
             ('data.report.upload', 1, 1, ['key:test']),
@@ -185,16 +182,19 @@ class TestUploader(BaseExportTest):
         schedule_export_reports.delay().get()
 
     def test_position_invalid(self):
-        self.add_reports(1, cell_factor=1, wifi_factor=0, lat=-90.1)
-        self.add_reports(1, cell_factor=1, wifi_factor=0)
-        schedule_export_reports.delay().get()
-        update_cell.delay().get()
-        self.assertEqual(self.session.query(Cell).count(), 1)
+        self.add_reports(1, cell_factor=0, wifi_factor=1,
+                         wifi_key='000000123456', lat=-90.1)
+        self.add_reports(1, cell_factor=0, wifi_factor=1,
+                         wifi_key='000000234567')
+        self._update_all()
+
+        shard = WifiShard.shards()['0']
+        self.assertEqual(self.session.query(shard).count(), 1)
         self.check_stats(counter=[
             ('data.report.upload', 1, 2, ['key:test']),
             ('data.report.drop', 1, 1, ['reason:malformed', 'key:test']),
-            ('data.observation.insert', 1, 1, ['type:cell']),
-            ('data.observation.upload', 1, 1, ['type:cell', 'key:test']),
+            ('data.observation.insert', 1, 1, ['type:wifi']),
+            ('data.observation.upload', 1, 1, ['type:wifi', 'key:test']),
         ])
 
     def test_datamap(self):

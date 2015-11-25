@@ -17,6 +17,11 @@ from ichnaea.log import (
     configure_raven,
     configure_stats,
 )
+from ichnaea.models import (
+    CellShard,
+    DataMap,
+    WifiShard,
+)
 from ichnaea.queue import (
     DataQueue,
     ExportQueue,
@@ -84,7 +89,7 @@ def configure_data(redis_client):
     """
     data_queues = {
         'update_cell': DataQueue('update_cell', redis_client,
-                                 queue_key='update_cell'),
+                                 queue_key='update_cell'),  # BBB
         'update_cellarea': DataQueue('update_cellarea', redis_client,
                                      queue_key='update_cellarea'),
         'update_cellarea_ocid': DataQueue('update_cellarea_ocid', redis_client,
@@ -92,10 +97,14 @@ def configure_data(redis_client):
         'update_score': DataQueue('update_score', redis_client,
                                   queue_key='update_score'),
     }
-    for shard_id in ('ne', 'nw', 'se', 'sw'):
+    for shard_id in DataMap.shards().keys():
         name = 'update_datamap_' + shard_id
         data_queues[name] = DataQueue(name, redis_client, queue_key=name)
-    for shard_id in ['%x' % i for i in range(16)]:
+    for shard_id in CellShard.shards().keys():
+        name = 'update_cell_' + shard_id
+        data_queues[name] = DataQueue(
+            name, redis_client, queue_key=name)
+    for shard_id in WifiShard.shards().keys():
         name = 'update_wifi_' + shard_id
         data_queues[name] = DataQueue(
             name, redis_client, queue_key=name)

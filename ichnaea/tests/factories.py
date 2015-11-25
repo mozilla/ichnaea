@@ -13,10 +13,8 @@ from ichnaea.api.locate.constants import (
 )
 from ichnaea.models import (
     ApiKey,
-    Cell,
     CellArea,
     CellAreaOCID,
-    CellBlocklist,
     CellObservation,
     CellOCID,
     CellShard,
@@ -145,14 +143,6 @@ class CellPositionFactory(CellKeyFactory, CellAreaPositionFactory):
     psc = fuzzy.FuzzyInteger(1, 500)
 
 
-class CellFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
-
-    radius = CELL_MIN_ACCURACY / 2.0
-
-    class Meta:
-        model = Cell.create
-
-
 class CellShardFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
 
     radius = CELL_MIN_ACCURACY / 2.0
@@ -191,12 +181,6 @@ class CellAreaOCIDFactory(CellAreaPositionFactory,
 
     class Meta:
         model = CellAreaOCID.create
-
-
-class CellBlocklistFactory(CellKeyFactory, BaseSQLFactory):
-
-    class Meta:
-        model = CellBlocklist
 
 
 class CellObservationFactory(CellPositionFactory, BaseMemoryFactory):

@@ -177,7 +177,9 @@ class TestCellShard(DBTestCase):
         self.assertEqual(CellShard.shard_id(''), None)
         self.assertEqual(CellShard.shard_id(None), None)
 
-        cellid = encode_cellid(Radio.lte, GB_MCC, GB_MNC, 1, 2)
+        cell_tuple = (Radio.lte, GB_MCC, GB_MNC, 1, 2)
+        self.assertEqual(CellShard.shard_id(cell_tuple), 'lte')
+        cellid = encode_cellid(*cell_tuple)
         self.assertEqual(CellShard.shard_id(cellid), 'lte')
 
     def test_shard_model(self):
@@ -187,7 +189,9 @@ class TestCellShard(DBTestCase):
         self.assertIs(CellShard.shard_model(''), None)
         self.assertIs(CellShard.shard_model(None), None)
 
-        cellid = encode_cellid(Radio.lte, GB_MCC, GB_MNC, 1, 2)
+        cell_tuple = (Radio.lte, GB_MCC, GB_MNC, 1, 2)
+        self.assertEqual(CellShard.shard_model(cell_tuple), CellShardLte)
+        cellid = encode_cellid(*cell_tuple)
         self.assertEqual(CellShard.shard_model(cellid), CellShardLte)
 
     def test_shards(self):

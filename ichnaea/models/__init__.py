@@ -7,10 +7,8 @@ from ichnaea.models.base import _Model
 # import all models, to make sure they are all registered
 from ichnaea.models.api import ApiKey  # NOQA
 from ichnaea.models.cell import (  # NOQA
-    Cell,
     CellArea,
     CellAreaOCID,
-    CellBlocklist,
     CellOCID,
     CellShard,
     decode_cellarea,
