@@ -104,12 +104,13 @@ class ValidBboxSchema(colander.MappingSchema, ValidatorNode):
 
 
 class BboxMixin(object):
+    """A model mix-in with columns for a bounding box."""
 
-    max_lat = Column(Double(asdecimal=False))
-    min_lat = Column(Double(asdecimal=False))
+    max_lat = Column(Double(asdecimal=False))  #:
+    min_lat = Column(Double(asdecimal=False))  #:
 
-    max_lon = Column(Double(asdecimal=False))
-    min_lon = Column(Double(asdecimal=False))
+    max_lon = Column(Double(asdecimal=False))  #:
+    min_lon = Column(Double(asdecimal=False))  #:
 
 
 class ValidPositionSchema(colander.MappingSchema, ValidatorNode):
@@ -126,10 +127,10 @@ class ValidPositionSchema(colander.MappingSchema, ValidatorNode):
 
 
 class PositionMixin(object):
-    """A database model mixin with lat and lon float fields."""
+    """A model mix-in with lat and lon float columns."""
 
-    lat = Column(Double(asdecimal=False))
-    lon = Column(Double(asdecimal=False))
+    lat = Column(Double(asdecimal=False))  #:
+    lon = Column(Double(asdecimal=False))  #:
 
 
 class ValidTimeTrackingSchema(colander.MappingSchema, ValidatorNode):
@@ -140,14 +141,14 @@ class ValidTimeTrackingSchema(colander.MappingSchema, ValidatorNode):
 
 
 class TimeTrackingMixin(object):
-    """A database model mixin with created and modified datetime fields."""
+    """A model mix-in with created and modified datetime columns."""
 
-    created = Column(DateTime)
-    modified = Column(DateTime)
+    created = Column(DateTime)  #:
+    modified = Column(DateTime)  #:
 
 
 class ScoreMixin(object):
-    """A database model mixin exposing a score."""
+    """A model mix-in exposing a score."""
 
     def score_sample_weight(self):
         # treat networks for which we get the exact same
@@ -165,6 +166,14 @@ class ScoreMixin(object):
         return min(max(math.log(max(samples, 1), 2), 0.5), 10.0)
 
     def score(self, now):
+        """
+        Returns a score as a floating point number.
+
+        The score represents the quality or trustworthiness of this record.
+
+        :param now: The current time.
+        :type now: datetime.datetime
+        """
         # age_weight is a number between:
         # 1.0 (data from last month) to
         # 0.277 (data from a year ago)
@@ -185,6 +194,7 @@ class ScoreMixin(object):
 class ValidStationSchema(ValidBboxSchema,
                          ValidPositionSchema,
                          ValidTimeTrackingSchema):
+    """A schema which validates the fields in a station."""
 
     radius = colander.SchemaNode(colander.Integer(), missing=0)
     region = colander.SchemaNode(colander.String(), missing=None)
@@ -201,17 +211,19 @@ class StationMixin(BboxMixin,
                    TimeTrackingMixin,
                    CreationMixin,
                    ScoreMixin):
+    """A model mix-in with common station columns."""
 
-    radius = Column(Integer(unsigned=True))
-    region = Column(String(2))
-    samples = Column(Integer(unsigned=True))
-    source = Column(TinyIntEnum(StationSource))
+    radius = Column(Integer(unsigned=True))  #:
+    region = Column(String(2))  #:
+    samples = Column(Integer(unsigned=True))  #:
+    source = Column(TinyIntEnum(StationSource))  #:
 
-    block_first = Column(Date)
-    block_last = Column(Date)
-    block_count = Column(TinyInteger(unsigned=True))
+    block_first = Column(Date)  #:
+    block_last = Column(Date)  #:
+    block_count = Column(TinyInteger(unsigned=True))  #:
 
     def blocked(self, today=None):
+        """Is the station currently blocked?"""
         if (self.block_count and
                 self.block_count >= PERMANENT_BLOCKLIST_THRESHOLD):
             return True

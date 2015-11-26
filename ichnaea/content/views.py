@@ -1,3 +1,7 @@
+"""
+Contains website related routes and views.
+"""
+
 import operator
 import os
 

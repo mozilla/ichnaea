@@ -29,7 +29,7 @@ Table of contents
 =================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    usage
    api/index
@@ -53,14 +53,6 @@ All source code is available on `github under ichnaea
 
 The developers of ``ichnaea`` can frequently be found on the `Mozilla IRC
 network <https://wiki.mozilla.org/IRC>`_ in the #geo channel.
-
-
-Development CI Status
-=====================
-
-.. image:: https://travis-ci.org/mozilla/ichnaea.svg?branch=master
-    :alt: Travis CI build report
-    :target: https://travis-ci.org/mozilla/ichnaea
 
 
 License

@@ -16,12 +16,11 @@ class Config(ConfigParser):
     """
     A :class:`configparser.ConfigParser` subclass with added
     functionality.
+
+    :param filename: The path to a configuration file.
     """
 
     def __init__(self, filename):
-        """
-        :param filename: The path to a configuration file.
-        """
         ConfigParser.__init__(self)
         # let's read the file
         if isinstance(filename, string_types):
@@ -71,13 +70,12 @@ class Config(ConfigParser):
 class DummyConfig(object):
     """
     A stub implementation of :class:`ichnaea.config.Config` used in tests.
+
+    :param settings: A dict of dicts representing the parsed config
+                     settings.
     """
 
     def __init__(self, settings):
-        """
-        :param settings: A dict of dicts representing the parsed config
-                         settings.
-        """
         self.settings = settings
 
     def get(self, section, option, default=None):

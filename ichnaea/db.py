@@ -95,12 +95,12 @@ def db_tween_factory(handler, registry):
 
 
 class Database(object):
-    """A class representing an active database."""
+    """A class representing an active database.
+
+    :param uri: A database connection string.
+    """
 
     def __init__(self, uri):
-        """
-        :param uri: A database connection string.
-        """
         options = {
             'pool_recycle': 3600,
             'pool_size': 10,

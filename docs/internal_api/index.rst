@@ -22,6 +22,8 @@ Indices and Tables
    cache
    config
    constants
+   content/index
+   data/index
    db
    exceptions
    floatjson

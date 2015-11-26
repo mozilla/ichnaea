@@ -10,7 +10,7 @@ version = '1.4'
 # The full version, including alpha/beta/rc tags.
 release = '1.4'
 
-autoclass_content = 'both'
+autoclass_content = 'class'
 exclude_patterns = ['build/html/README.rst']
 html_static_path = []
 html_theme = 'sphinx_rtd_theme'

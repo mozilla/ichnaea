@@ -11,10 +11,11 @@ from ichnaea.models.base import _Model
 
 
 class ApiKey(_Model):
+    """ApiKey model."""
+
     __tablename__ = 'api_key'
 
-    valid_key = Column(String(40), primary_key=True)
-
+    valid_key = Column(String(40), primary_key=True)  #: UUID API key.
     maxreq = Column(Integer)  #: Maximum number of requests per day.
     log_locate = Column(Boolean)  #: Extended locate logging enabled?
     log_region = Column(Boolean)  #: Extended region logging enabled?

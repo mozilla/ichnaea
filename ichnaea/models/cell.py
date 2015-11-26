@@ -66,13 +66,14 @@ CELL_SHARDS = {}
 
 
 class Radio(IntEnum):
+    """An integer enum representing a radio type."""
     __order__ = 'gsm cdma wcdma umts lte'
 
-    gsm = 0
-    cdma = 1
-    wcdma = 2
-    umts = 2
-    lte = 3
+    gsm = 0  #: 0
+    cdma = 1  #: 1
+    wcdma = 2  #: 2
+    umts = 2  #: 2
+    lte = 3  #: 3
 
 
 def decode_cellarea(value, codec=None):
@@ -266,10 +267,6 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
 
 
 class ValidCellSignalSchema(colander.MappingSchema, ValidatorNode):
-    """
-    A schema which validates the fields related to cell signal
-    strength and quality.
-    """
 
     asu = DefaultNode(
         colander.Integer(),
@@ -376,10 +373,14 @@ class CellAreaMixin(PositionMixin, TimeTrackingMixin,
 
 
 class CellArea(CellAreaMixin, _Model):
+    """CellArea model."""
+
     __tablename__ = 'cell_area'
 
 
 class CellAreaOCID(CellAreaMixin, _Model):
+    """CellArea OCID model."""
+
     __tablename__ = 'cell_area_ocid'
 
 
@@ -422,7 +423,6 @@ class Cell(BboxMixin, PositionMixin, TimeTrackingMixin, _Model):  # BBB
 
 
 class ValidCellShardSchema(ValidCellKeySchema, ValidStationSchema):
-    """A schema which validates the fields present in a cell."""
 
     # adds a range validator
     radius = colander.SchemaNode(
@@ -476,6 +476,8 @@ class BaseCell(StationMixin):
 
 
 class CellOCID(BaseCell, _Model):
+    """Cell OCID model."""
+
     __tablename__ = 'cell_ocid'
 
     _indices = (
@@ -502,6 +504,7 @@ class CellOCID(BaseCell, _Model):
 
 
 class CellShard(BaseCell):
+    """Cell shard."""
 
     @declared_attr
     def __table_args__(cls):  # NOQA
@@ -563,18 +566,24 @@ class CellShard(BaseCell):
 
 
 class CellShardGsm(CellShard, _Model):
+    """Shard for GSM cells."""
+
     __tablename__ = 'cell_gsm'
 
 CELL_SHARDS[Radio.gsm.name] = CellShardGsm
 
 
 class CellShardWcdma(CellShard, _Model):
+    """Shard for WCDMA cells."""
+
     __tablename__ = 'cell_wcdma'
 
 CELL_SHARDS[Radio.wcdma.name] = CellShardWcdma
 
 
 class CellShardLte(CellShard, _Model):
+    """Shard for LTE cells."""
+
     __tablename__ = 'cell_lte'
 
 CELL_SHARDS[Radio.lte.name] = CellShardLte

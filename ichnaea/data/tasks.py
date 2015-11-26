@@ -1,3 +1,10 @@
+"""
+Contains all celery tasks.
+
+The task function names and this module's import path is used in generating
+automatic statsd timer metrics to track the runtime of each task.
+"""
+
 from ichnaea.async.app import celery_app
 from ichnaea.async.task import BaseTask
 from ichnaea.data import area

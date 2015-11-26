@@ -65,6 +65,7 @@ class ValidReportSchema(colander.MappingSchema, ValidatorNode):
 
 
 class Report(HashKey, CreationMixin, ValidationMixin):
+    """A class for report data."""
 
     _valid_schema = ValidReportSchema()
     _fields = (
@@ -106,6 +107,7 @@ class ValidCellReportSchema(ValidCellKeySchema, ValidCellSignalSchema):
 
 
 class CellReport(HashKey, CreationMixin, ValidationMixin):
+    """A class for cell report data."""
 
     _valid_schema = ValidCellReportSchema()
     _fields = (
@@ -181,6 +183,7 @@ class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
 
 
 class CellObservation(CellReport, Report):
+    """A class for cell observation data."""
 
     _valid_schema = ValidCellObservationSchema()
     _fields = CellReport._fields + Report._fields
@@ -199,6 +202,7 @@ class ValidWifiReportSchema(ValidWifiSignalSchema):
 
 
 class WifiReport(HashKey, CreationMixin, ValidationMixin):
+    """A class for wifi report data."""
 
     _valid_schema = ValidWifiReportSchema()
     _fields = (
@@ -240,6 +244,7 @@ class ValidWifiObservationSchema(ValidWifiReportSchema, ValidReportSchema):
 
 
 class WifiObservation(WifiReport, Report):
+    """A class for wifi observation data."""
 
     _valid_schema = ValidWifiObservationSchema()
     _fields = WifiReport._fields + Report._fields

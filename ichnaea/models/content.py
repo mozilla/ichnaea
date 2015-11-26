@@ -47,6 +47,8 @@ class ScoreKey(IntEnum):
 
 
 class StatKey(IntEnum):
+    """An integer enum representing a statistical value."""
+
     # location = 0
     cell = 1
     unique_cell = 2
@@ -109,10 +111,11 @@ class DataMapGridColumn(TypeDecorator):
 
 
 class DataMap(object):
+    """DataMap base shard model."""
 
-    grid = Column(DataMapGridColumn(8))
-    created = Column(Date)
-    modified = Column(Date)
+    grid = Column(DataMapGridColumn(8))  #:
+    created = Column(Date)  #:
+    modified = Column(Date)  #:
 
     @declared_attr
     def __table_args__(cls):  # NOQA
@@ -168,41 +171,51 @@ class DataMap(object):
 
 
 class DataMapNE(DataMap, _Model):
+    """DataMap north-east shard."""
+
     __tablename__ = 'datamap_ne'
 
 DATAMAP_SHARDS['ne'] = DataMapNE
 
 
 class DataMapNW(DataMap, _Model):
+    """DataMap north-west shard."""
+
     __tablename__ = 'datamap_nw'
 
 DATAMAP_SHARDS['nw'] = DataMapNW
 
 
 class DataMapSE(DataMap, _Model):
+    """DataMap south-east shard."""
+
     __tablename__ = 'datamap_se'
 
 DATAMAP_SHARDS['se'] = DataMapSE
 
 
 class DataMapSW(DataMap, _Model):
+    """DataMap south-west shard."""
+
     __tablename__ = 'datamap_sw'
 
 DATAMAP_SHARDS['sw'] = DataMapSW
 
 
 class RegionStat(_Model):
+    """RegionStat model."""
+
     __tablename__ = 'region_stat'
 
     _indices = (
         PrimaryKeyConstraint('region'),
     )
 
-    region = Column(String(2))
-    gsm = Column(Integer(unsigned=True))
-    wcdma = Column(Integer(unsigned=True))
-    lte = Column(Integer(unsigned=True))
-    wifi = Column(BigInteger(unsigned=True))
+    region = Column(String(2))  #:
+    gsm = Column(Integer(unsigned=True))  #:
+    wcdma = Column(Integer(unsigned=True))  #:
+    lte = Column(Integer(unsigned=True))  #:
+    wifi = Column(BigInteger(unsigned=True))  #:
 
 
 class ScoreHashKey(HashKey):
@@ -262,15 +275,17 @@ class StatCounter(object):
 
 
 class Stat(_Model):
+    """Stat model."""
+
     __tablename__ = 'stat'
 
     _indices = (
         PrimaryKeyConstraint('key', 'time'),
     )
 
-    key = Column(TinyIntEnum(StatKey), autoincrement=False)
-    time = Column(Date)
-    value = Column(BigInteger(unsigned=True))
+    key = Column(TinyIntEnum(StatKey), autoincrement=False)  #:
+    time = Column(Date)  #:
+    value = Column(BigInteger(unsigned=True))  #:
 
 
 class User(_Model):

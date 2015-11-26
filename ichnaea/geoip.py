@@ -212,19 +212,18 @@ class GeoIPWrapper(Reader):
     """
     A wrapper around the :class:`geoip2.database.Reader` class with a lookup
     function which returns `None` instead of raising exceptions.
+
+    Takes the absolute path to a geoip database on the local filesystem
+    and an additional mode, which defaults to
+    :data:`maxminddb.const.MODE_AUTO`.
+
+    :raises: :exc:`maxminddb.InvalidDatabaseError`
     """
 
     lookup_exceptions = (
         AddressNotFoundError, GeoIP2Error, InvalidDatabaseError, ValueError)
 
     def __init__(self, filename, mode=MODE_AUTO):
-        """
-        Takes the absolute path to a geoip database on the local filesystem
-        and an additional mode, which defaults to
-        :data:`maxminddb.const.MODE_AUTO`.
-
-        :raises: :exc:`maxminddb.InvalidDatabaseError`
-        """
         super(GeoIPWrapper, self).__init__(filename, mode=mode)
 
         if self.metadata().database_type != 'GeoIP2-City':
