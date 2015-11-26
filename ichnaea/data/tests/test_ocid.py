@@ -137,6 +137,15 @@ class TestImport(CeleryAppTestCase):
     def setUp(self):
         super(TestImport, self).setUp()
         self.cell = CellShardFactory.build(radio=Radio.wcdma)
+        self.today = util.utcnow().date()
+
+    def check_stat(self, stat_key, value, time=None):
+        if time is None:
+            time = self.today
+        stat = (self.session.query(Stat)
+                            .filter(Stat.key == stat_key)
+                            .filter(Stat.time == time)).first()
+        self.assertEqual(stat.value, value)
 
     @contextmanager
     def get_csv(self, lo=1, hi=10, time=1408604686):
@@ -190,9 +199,7 @@ class TestImport(CeleryAppTestCase):
             self.session.query(CellArea).count(), len(areaids))
 
         update_statcounter.delay(ago=0).get()
-        today = util.utcnow().date()
-        stat_key = Stat.to_hashkey(key=StatKey.unique_cell, time=today)
-        self.assertEqual(Stat.getkey(self.session, stat_key).value, 9)
+        self.check_stat(StatKey.unique_cell, 9)
 
     def test_import_local_ocid(self):
         self.import_csv()
@@ -204,23 +211,19 @@ class TestImport(CeleryAppTestCase):
             self.session.query(CellAreaOCID).count(), len(areaids))
 
         update_statcounter.delay(ago=0).get()
-        today = util.utcnow().date()
-        stat_key = Stat.to_hashkey(key=StatKey.unique_cell_ocid, time=today)
-        self.assertEqual(Stat.getkey(self.session, stat_key).value, 9)
+        self.check_stat(StatKey.unique_cell_ocid, 9)
 
     def test_import_local_delta(self):
         old_time = 1407000000
         new_time = 1408000000
         old_date = datetime.utcfromtimestamp(old_time).replace(tzinfo=UTC)
         new_date = datetime.utcfromtimestamp(new_time).replace(tzinfo=UTC)
-        today = util.utcnow().date()
 
         self.import_csv(time=old_time)
         cells = self.session.query(CellOCID).all()
         self.assertEqual(len(cells), 9)
         update_statcounter.delay(ago=0).get()
-        stat_key = Stat.to_hashkey(key=StatKey.unique_cell_ocid, time=today)
-        self.assertEqual(Stat.getkey(self.session, stat_key).value, 9)
+        self.check_stat(StatKey.unique_cell_ocid, 9)
 
         areaids = set([cell.areaid for cell in cells])
         self.assertEqual(
@@ -245,8 +248,7 @@ class TestImport(CeleryAppTestCase):
             self.session.query(CellAreaOCID).count(), len(areaids))
 
         update_statcounter.delay(ago=0).get()
-        stat_key = Stat.to_hashkey(key=StatKey.unique_cell_ocid, time=today)
-        self.assertEqual(Stat.getkey(self.session, stat_key).value, 12)
+        self.check_stat(StatKey.unique_cell_ocid, 12)
 
     def test_import_external(self):
         with self.get_csv() as path:

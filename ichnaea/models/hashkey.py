@@ -55,7 +55,7 @@ class HashKeyQueryMixin(object):
 
     _hashkey_cls = None  #:
     _insert_batch = 50  #:
-    _query_batch = 100  #:
+    _query_batch = 30  #:
 
     @classmethod
     def _to_hashkey(cls, obj=_sentinel, **kw):
@@ -100,27 +100,6 @@ class HashKeyQueryMixin(object):
             # prevent construction of queries without a key restriction
             raise ValueError('Model.joinkey called with empty key.')
         return criterion
-
-    @classmethod
-    def getkey(cls, session, key):
-        """
-        Given a database session, returns the row matching the passed
-        in hashkey.
-        """
-        if key is None:  # pragma: no cover
-            return None
-        return cls.querykey(session, key).first()
-
-    @classmethod
-    def querykey(cls, session, key):
-        """
-        Given a database session, returns a SQLAlchemy query object
-        with a filter set to return the row matching the passed in
-        hashkey.
-        """
-        if key is None:  # pragma: no cover
-            return None
-        return session.query(cls).filter(*cls.joinkey(key))
 
     @classmethod
     def _querykeys(cls, session, keys):

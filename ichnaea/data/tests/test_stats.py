@@ -34,8 +34,9 @@ class TestStatCounter(CeleryTestCase):
             stat_counter.incr(pipe, value)
 
     def check_stat(self, stat_key, time, value):
-        hashkey = Stat.to_hashkey(key=stat_key, time=time)
-        stat = Stat.getkey(self.session, hashkey)
+        stat = (self.session.query(Stat)
+                            .filter(Stat.key == stat_key)
+                            .filter(Stat.time == time)).first()
         self.assertEqual(stat.value, value)
 
     def test_first_run(self):

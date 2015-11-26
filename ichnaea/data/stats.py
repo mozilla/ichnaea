@@ -42,8 +42,17 @@ class StatCounterUpdater(DataTask):
         value = stat_counter.get(self.redis_client)
 
         # insert or update a new stat value
-        hashkey = Stat.to_hashkey(key=stat_key, time=day)
-        Stat.incr(self.session, hashkey, value, old=old_value)
+        query = (self.session.query(Stat)
+                             .filter(Stat.key == stat_key)
+                             .filter(Stat.time == day))
+        stat = query.first()
+        if stat is not None:
+            stat.value += value
+        else:
+            stmt = Stat.__table__.insert(
+                mysql_on_duplicate='value = value + %s' % value
+            ).values(key=stat_key, time=day, value=old_value + value)
+            self.session.execute(stmt)
 
         # queue the redis value to be decreased
         stat_counter.decr(self.pipe, value)

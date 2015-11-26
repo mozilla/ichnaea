@@ -228,7 +228,6 @@ class Score(HashKeyQueryMixin, _Model):
         PrimaryKeyConstraint('key', 'userid', 'time'),
     )
     _hashkey_cls = ScoreHashKey
-    _query_batch = 30
 
     # this is a foreign key to user.id
     userid = Column(Integer(unsigned=True), autoincrement=False)
@@ -262,36 +261,16 @@ class StatCounter(object):
         pipe.expire(self.redis_key, 172800)  # 2 days
 
 
-class StatHashKey(HashKey):
-
-    _fields = ('key', 'time')
-
-
-class Stat(HashKeyQueryMixin, _Model):
+class Stat(_Model):
     __tablename__ = 'stat'
 
     _indices = (
         PrimaryKeyConstraint('key', 'time'),
     )
-    _hashkey_cls = StatHashKey
-    _query_batch = 50
 
     key = Column(TinyIntEnum(StatKey), autoincrement=False)
     time = Column(Date)
     value = Column(BigInteger(unsigned=True))
-
-    @classmethod
-    def incr(cls, session, key, value, old=0):
-        stat = cls.getkey(session, key)
-        value = int(value)
-        if stat is not None:
-            stat.value += value
-        else:
-            stmt = cls.__table__.insert(
-                mysql_on_duplicate='value = value + %s' % value
-            ).values(key=key.key, time=key.time, value=old + value)
-            session.execute(stmt)
-        return value
 
 
 class User(_Model):
