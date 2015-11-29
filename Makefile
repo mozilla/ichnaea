@@ -13,10 +13,18 @@ MAXMINDDB_VERSION = 1.2.0
 MYSQL_DB = location
 MYSQL_TEST_DB = test_location
 
+DEV_HOST = ichnaea.dev
+
 ifeq ($(TRAVIS), true)
 	MYSQL_USER ?= travis
 	MYSQL_PWD ?=
-	SQLURI ?= mysql+pymysql://$(MYSQL_USER)@localhost/$(MYSQL_TEST_DB)
+	MYSQL_HOST ?= localhost
+	MYSQL_PORT ?= 3306
+	SQLURI ?= mysql+pymysql://$(MYSQL_USER)@$(MYSQL_HOST)/$(MYSQL_TEST_DB)
+
+	REDIS_HOST ?= localhost
+	REDIS_PORT ?= 6379
+	REDIS_URI ?= redis://$(REDIS_HOST):$(REDIS_PORT)/1
 
 	PYTHON = python
 	PIP = pip
@@ -26,7 +34,13 @@ ifeq ($(TRAVIS), true)
 else
 	MYSQL_USER ?= root
 	MYSQL_PWD ?= mysql
-	SQLURI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@localhost/$(MYSQL_TEST_DB)
+	MYSQL_HOST ?= $(DEV_HOST)
+	MYSQL_PORT ?= 33306
+	SQLURI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@$(MYSQL_HOST):$(MYSQL_PORT)/$(MYSQL_TEST_DB)
+
+	REDIS_HOST ?= $(DEV_HOST)
+	REDIS_PORT ?= 36379
+	REDIS_URI ?= redis://$(REDIS_HOST):$(REDIS_PORT)/1
 
 	PYTHON = $(BIN)/python
 	PIP = $(BIN)/pip
@@ -63,7 +77,7 @@ CLEANCSS = cd $(CSS_ROOT) && $(NODE_BIN)/cleancss -d --source-map
 UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
 
 
-.PHONY: all bower js mysql pip init_db css js test clean shell docs \
+.PHONY: all bower docker js mysql pip init_db css js test clean shell docs \
 	build build_dev build_req build_cython \
 	build_datamaps build_maxmind build_pngquant \
 	release release_install release_compile \
@@ -71,15 +85,22 @@ UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
 
 all: build init_db
 
-mysql:
+docker:
+ifneq ($(TRAVIS), true)
+	cd $(TOXINIDIR); docker-compose up -d
+endif
+
+mysql: docker
 ifeq ($(TRAVIS), true)
 	mysql -u$(MYSQL_USER) -h localhost -e \
 		"create database $(MYSQL_TEST_DB)" || echo
 else
-	mysql -u$(MYSQL_USER) -p$(MYSQL_PWD) -h localhost -e \
-		"create database $(MYSQL_DB)" || echo
-	mysql -u$(MYSQL_USER) -p$(MYSQL_PWD) -h localhost -e \
-		"create database $(MYSQL_TEST_DB)" || echo
+	mysql -u$(MYSQL_USER) -p$(MYSQL_PWD) \
+		--host="$(MYSQL_HOST)" --port="$(MYSQL_PORT)" \
+		-e \ "create database $(MYSQL_DB)" || echo
+	mysql -u$(MYSQL_USER) -p$(MYSQL_PWD) \
+		--host="$(MYSQL_HOST)" --port="$(MYSQL_PORT)" \
+		-e "create database $(MYSQL_TEST_DB)" || echo
 endif
 
 $(PYTHON):
@@ -234,7 +255,7 @@ clean:
 	rm -rf $(HERE)/ichnaea.egg-info
 
 test: mysql
-	SQLURI=$(SQLURI) CELERY_ALWAYS_EAGER=true \
+	SQLURI=$(SQLURI) REDIS_URI=$(REDIS_URI) CELERY_ALWAYS_EAGER=true \
 	LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(HERE)/lib \
 	$(NOSE) -s -d $(TEST_ARG)
 

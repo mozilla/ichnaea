@@ -21,7 +21,7 @@ Or run individual test modules or functions via for example:
 
 .. code-block:: bash
 
-    make test TESTS=ichnaea.tests.test_geoip
+    make test TESTS=ichnaea.tests.test_geoip:TestDatabase.test_open
 
 
 Testing Tasks

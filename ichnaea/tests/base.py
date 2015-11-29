@@ -53,7 +53,7 @@ GEOIP_BAD_FILE = os.path.join(
     DATA_DIRECTORY, 'GeoIP2-Connection-Type-Test.mmdb')
 
 SQLURI = os.environ.get('SQLURI')
-REDIS_URI = os.environ.get('REDIS_URI', 'redis://localhost:6379/1')
+REDIS_URI = os.environ.get('REDIS_URI')
 
 SESSION = {}
 

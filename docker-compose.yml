@@ -1,0 +1,11 @@
+mysql:
+    build: docker/mysql
+    container_name: ichnaea_mysql
+    ports:
+        - "33306:3306"
+
+redis:
+    build: docker/redis
+    container_name: ichnaea_redis
+    ports:
+        - "36379:6379"

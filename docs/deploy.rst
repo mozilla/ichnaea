@@ -16,7 +16,7 @@ just three changes you need to do. For example via the my.cnf:
     [mysqld]
     innodb_file_format=Barracuda
     innodb_strict_mode=on
-    sql-mode="STRICT_TRANS_TABLES"
+    sql-mode="NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES"
 
 
 Redis / Amazon ElastiCache
@@ -71,48 +71,3 @@ the other is `pngquant <http://pngquant.org/>`_. Make sure to install both
 of them and make their binaries available on your system path. The datamaps
 package includes the `encode`, `enumerate` and `render` tools and the
 pngquant package includes a tool called `pngquant`.
-
-
-Code
-====
-
-Run the following command to get the code:
-
-.. code-block:: bash
-
-    git clone https://github.com/mozilla/ichnaea
-    cd ichnaea
-
-In order to run the code you need to have Python 2.6, 2.7 or 3.4 installed
-on your system. The default Makefile also assumes a `virtualenv-2.6`
-command is globally available. If this isn't true for your system,
-please create a virtualenv manually inside the ichnaea folder before
-continuing (``/path/to/virtualenv .``).
-
-Specify the database connection string and run make:
-
-.. code-block:: bash
-
-    SQLURI=mysql+pymysql://root:mysql@localhost/location make
-
-Adjust the location.ini file with your database connection strings.
-You can use the same database for the read-write and read-only connections.
-
-For the celery broker, result backend and API rate limit tracking you need
-to setup a Redis server via a connection string like `redis://127.0.0.1/0`.
-
-Now you can run the web app on for example port 7001:
-
-.. code-block:: bash
-
-    ICHNAEA_CFG=location.ini bin/gunicorn -b 127.0.0.1:7001 \
-        -c ichnaea.webapp.settings ichnaea.webapp.app:wsgi_app
-
-The celery processes are started via:
-
-.. code-block:: bash
-
-    ICHNAEA_CFG=location.ini bin/celery -A ichnaea.async.app:celery_app beat
-
-    ICHNAEA_CFG=location.ini bin/celery -A ichnaea.async.app:celery_app worker \
-        -Ofair --no-execv --without-mingle --without-gossip

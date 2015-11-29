@@ -65,7 +65,7 @@ def configure_celery(celery_app):
 
     # testing settings
     always_eager = bool(os.environ.get('CELERY_ALWAYS_EAGER', False))
-    redis_uri = os.environ.get('REDIS_URI', 'redis://localhost:6379/1')
+    redis_uri = os.environ.get('REDIS_URI')
 
     if always_eager and redis_uri:
         broker_url = redis_uri

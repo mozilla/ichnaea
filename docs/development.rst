@@ -4,6 +4,89 @@
 Development
 ===========
 
+Requirements
+------------
+
+In order to install a development version of the service, you need to
+have a Linux or Mac OS X machine and
+`install docker <https://docs.docker.com/installation/>`_.
+
+If you are on Mac OS X you need to have a docker machine running,
+check it's status via:
+
+.. code-block:: bash
+
+    docker-machine ls
+
+This should list one active machine typically called `default`. If it
+is not running, start it and configure your shell:
+
+.. code-block:: bash
+
+    docker-machine start default
+    eval "$(docker-machine env default)"
+
+You also need to add an entry into your ``/etc/hosts`` file. On Mac OS X
+you need to specify the IP of the running docker machine, on Linux use
+`127.0.0.1`:
+
+.. code-block:: bash
+
+    docker-machine ip default
+
+Put the value into the hosts file, for example:
+
+.. code-block:: ini
+
+    192.168.99.100  ichnaea.dev
+
+
+Code
+----
+
+Now run the following command to get the code:
+
+.. code-block:: bash
+
+    git clone https://github.com/mozilla/ichnaea
+    cd ichnaea
+
+In order to run the code you need to have Python 2.6, 2.7 or 3.4 installed
+on your system. The default Makefile also assumes a `virtualenv-2.6`
+command is globally available. If this isn't true for your system,
+please create a virtualenv manually inside the ichnaea folder before
+continuing (``/path/to/virtualenv .``).
+
+The first time you need to download some shared docker images. You can
+manually trigger this by calling:
+
+.. code-block:: bash
+
+    docker-compose up -d
+
+Then run make:
+
+.. code-block:: bash
+
+    make
+
+Now you can run the web app on for example port 7001:
+
+.. code-block:: bash
+
+    ICHNAEA_CFG=location.ini bin/gunicorn -b 127.0.0.1:7001 \
+        -c ichnaea.webapp.settings ichnaea.webapp.app:wsgi_app
+
+The celery processes are started via:
+
+.. code-block:: bash
+
+    ICHNAEA_CFG=location.ini bin/celery -A ichnaea.async.app:celery_app beat
+
+    ICHNAEA_CFG=location.ini bin/celery -A ichnaea.async.app:celery_app worker \
+        -Ofair --no-execv --without-mingle --without-gossip
+
+
 Documentation
 -------------
 
