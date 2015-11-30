@@ -11,19 +11,31 @@ In order to install a development version of the service, you need to
 have a Linux or Mac OS X machine and
 `install docker <https://docs.docker.com/installation/>`_.
 
-If you are on Mac OS X you need to have a docker machine running,
-check it's status via:
+On Mac OS X you can use Homebrew to install docker:
 
 .. code-block:: bash
 
-    docker-machine ls
+    brew install caskroom/cask/brew-cask
+    brew cask install virtualbox
+    brew install docker
+    brew install docker-machine
+    brew install docker-compose
 
-This should list one active machine typically called `default`. If it
-is not running, start it and configure your shell:
+Then you need to create a docker machine:
 
 .. code-block:: bash
 
-    docker-machine start default
+    docker-machine create --driver virtualbox --virtualbox-memory 2048 \
+        --virtualbox-cpu-count -1 default
+
+You can check it is running via ``docker-machine ls`` and start it via
+``docker-machine start default``.
+
+Next configure your shell, so the docker command knows how to connect
+to the docker daemon:
+
+.. code-block:: bash
+
     eval "$(docker-machine env default)"
 
 You also need to add an entry into your ``/etc/hosts`` file. On Mac OS X

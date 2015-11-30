@@ -77,7 +77,8 @@ CLEANCSS = cd $(CSS_ROOT) && $(NODE_BIN)/cleancss -d --source-map
 UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
 
 
-.PHONY: all bower docker js mysql pip init_db css js test clean shell docs \
+.PHONY: all bower js mysql pip init_db css js test clean shell docs \
+	docker docker-images \
 	build build_dev build_req build_cython \
 	build_datamaps build_maxmind build_pngquant \
 	release release_install release_compile \
@@ -89,6 +90,13 @@ docker:
 ifneq ($(TRAVIS), true)
 	cd $(TOXINIDIR); docker-compose up -d
 endif
+
+docker-images:
+	cd docker/mysql; docker build -t mozilla-ichnaea-mysql:latest .
+	cd docker/redis; docker build -t mozilla-ichnaea-redis:latest .
+	cd docker/os; docker build -t mozilla-ichnaea-os:latest .
+	cd docker/python; docker build -t mozilla-ichnaea-python:latest .
+	docker build -t mozilla-ichnaea-dev:latest .
 
 mysql: docker
 ifeq ($(TRAVIS), true)
@@ -115,6 +123,7 @@ pip:
 
 datamaps/merge:
 	git clone --recursive git://github.com/ericfischer/datamaps
+	cd datamaps; git checkout 76e620adabbedabd6866b23b30c145b53bae751e
 	cd datamaps; make all
 
 build_datamaps: datamaps/merge
@@ -152,6 +161,7 @@ build_cython: ichnaea/geocalc.c
 	$(PYTHON) setup.py build_ext --inplace
 
 build_req: $(PYTHON) pip mysql build_datamaps build_maxmind build_pngquant
+	$(INSTALL) -r requirements/prod-slow.txt
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/dev.txt
 
@@ -162,6 +172,7 @@ build: build_req build_dev
 
 release_install:
 	$(PIP) install --no-deps -r requirements/build.txt
+	$(INSTALL) -r requirements/prod-slow.txt
 	$(INSTALL) -r requirements/prod.txt
 	$(PYTHON) setup.py install
 
