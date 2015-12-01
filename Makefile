@@ -99,6 +99,11 @@ endif
 
 docker-images-dev:
 	cd docker/os; docker build -t mozilla-ichnaea/os:latest .
+	cp requirements/prod-slow.txt docker/python/
+	cp .bowerrc docker/python/
+	cp bower.json docker/python/
+	cp npm-shrinkwrap.json docker/python/
+	cp package.json docker/python/
 	cd docker/python; docker build -t mozilla-ichnaea/python:latest .
 	docker build -t mozilla-ichnaea/dev:latest .
 
@@ -198,15 +203,7 @@ node_modules:
 bower: node_modules
 	$(BOWER) install
 
-css: bower
-	cp $(BOWER_ROOT)/bedrock/media/fonts/OpenSans* $(FONT_ROOT)/
-	cp $(BOWER_ROOT)/bedrock/media/img/sandstone/bg-stone.png $(IMG_ROOT)/
-	cp $(BOWER_ROOT)/bedrock/media/img/sandstone/footer-mozilla.png \
-		$(IMG_ROOT)/mozilla-logo.png
-	cp $(BOWER_ROOT)/bedrock/media/img/sandstone/footer-mozilla-high-res.png \
-		$(IMG_ROOT)/mozilla-logo@2x.png
-	cp $(BOWER_ROOT)/bedrock/media/img/sandstone/menu-current.png $(IMG_ROOT)/
-
+css:
 	cp $(BOWER_ROOT)/mozilla-tabzilla/css/tabzilla.css $(CSS_ROOT)/
 	mkdir -p $(CSS_ROOT)/../media/img/
 	cp $(BOWER_ROOT)/mozilla-tabzilla/media/img/* $(CSS_ROOT)/../media/img/
@@ -223,7 +220,7 @@ css: bower
 	cp -R $(BOWER_ROOT)/mapbox.js/images/*.png $(CSS_ROOT)/images/
 	$(CLEANCSS) -o bundle-map.css font-awesome.css mapbox.uncompressed.css
 
-js: bower
+js:
 	$(UGLIFYJS) \
 		privacy.js \
 		-o bundle-privacy.js -c --stats \

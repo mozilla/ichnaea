@@ -1,4 +1,7 @@
-.*
+.DS_Store
+.coverage
+.tox
+
 *~
 *.egg-info
 *.log
@@ -9,13 +12,12 @@ coverage.xml
 nosetests.xml
 pip-selfcheck.json
 pyvenv.cfg
+
 bin/
 bower_components/
 build/
 coverage/
-data/
 datamaps/
-docker/
 dist/
 docs/build/doctrees/
 docs/build/html/
@@ -33,6 +35,7 @@ shapely/
 src/
 
 # only works in docker 1.10+
+**/.DS_Store
 **/*.py[co]
 **/*.so
 

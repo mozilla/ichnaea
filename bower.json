@@ -19,7 +19,6 @@
     "leaflet.locatecontrol": "0.45.1",
     "leaflet-hash": "mlevans/leaflet-hash#d73fc84d8c",
     "mapbox.js": "2.2.3",
-    "mozilla-tabzilla": "0.5.1",
-    "bedrock": "mozilla/bedrock#cca786298f"
+    "mozilla-tabzilla": "0.5.1"
   }
 }

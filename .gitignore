@@ -20,6 +20,9 @@ coverage/
 datamaps/
 dist/
 docs/build/doctrees/
+docker/python/.bowerrc
+docker/python/*.json
+docker/python/*.txt
 ichnaea/content/static/tiles/
 include/
 lib/
