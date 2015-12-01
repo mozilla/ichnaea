@@ -9,7 +9,7 @@ RUN bin/pip install --no-cache-dir --no-deps --disable-pip-version-check \
 RUN bin/pip install --no-cache-dir --no-deps --disable-pip-version-check \
     -r requirements/dev.txt
 COPY . /data/ichnaea
+RUN bin/cython ichnaea/geocalc.pyx
 RUN bin/python setup.py install
-RUN bin/python compile.py
 
 CMD ["bash"]

@@ -6,7 +6,6 @@
 *.sublime-*
 celerybeat-schedule
 coverage.xml
-data/
 nosetests.xml
 pip-selfcheck.json
 pyvenv.cfg
@@ -14,10 +13,13 @@ bin/
 bower_components/
 build/
 coverage/
+data/
 datamaps/
+docker/
 dist/
 docs/build/doctrees/
 docs/build/html/
+ichnaea/geocalc.c
 ichnaea/content/static/tiles/
 include/
 lib/
