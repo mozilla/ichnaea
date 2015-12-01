@@ -23,26 +23,30 @@ RUN apt-get update && apt-get install -y \
     libspatialindex-dev \
     libssl-dev \
     vim \
+    zip \
     && apt-get -y clean \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /data
-RUN git clone --recursive git://github.com/ericfischer/datamaps
+RUN wget https://github.com/ericfischer/datamaps/archive/76e620adabbedabd6866b23b30c145b53bae751e.tar.gz \
+    -O datamaps.tar.gz
 WORKDIR /data/datamaps
-RUN git checkout 76e620adabbedabd6866b23b30c145b53bae751e
+RUN tar -xf ../datamaps.tar.gz --strip-components=1
 RUN make all
 ENV PATH $PATH:/data/datamaps
 
 WORKDIR /data
-RUN git clone --recursive git://github.com/maxmind/libmaxminddb
+RUN wget https://github.com/maxmind/libmaxminddb/releases/download/1.1.1/libmaxminddb-1.1.1.tar.gz \
+    -O libmaxminddb.tar.gz
 WORKDIR /data/libmaxminddb
-RUN git checkout 1.1.1; git submodule update --init --recursive
-RUN ./bootstrap; ./configure; make; make install
+RUN tar -xf ../libmaxminddb.tar.gz --strip-components=1
+RUN ./configure; make; make install
 
 WORKDIR /data
-RUN git clone --recursive git://github.com/pornel/pngquant
+RUN wget https://github.com/pornel/pngquant/archive/2.5.2.tar.gz \
+    -O pngquant.tar.gz
 WORKDIR /data/pngquant
-RUN git checkout 2.5.2
+RUN tar -xf ../pngquant.tar.gz --strip-components=1
 RUN ./configure; make; make install
 
 WORKDIR /data
