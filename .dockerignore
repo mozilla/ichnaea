@@ -1,12 +1,8 @@
 .*
 *~
-*.db
-*.dll
 *.egg-info
 *.log
 *.pid
-*.py[co]
-*.so
 *.sublime-*
 celerybeat-schedule
 coverage.xml
@@ -33,3 +29,22 @@ node_modules/
 pngquant/
 shapely/
 src/
+
+# only works in docker 1.10+
+**/*.py[co]
+**/*.so
+
+# until then, sigh!
+*.py[co]
+*/*.py[co]
+*/*/*.py[co]
+*/*/*/*.py[co]
+*/*/*/*/*.py[co]
+*/*/*/*/*/*.py[co]
+
+*.so
+*/*.so
+*/*/*.so
+*/*/*/*.so
+*/*/*/*/*.so
+*/*/*/*/*/*.so
