@@ -1,4 +1,4 @@
-FROM mozilla-ichnaea-python:latest
+FROM mozilla-ichnaea/python:latest
 MAINTAINER Mozilla Geolocation <dev-geolocation@lists.mozilla.org>
 ENV PYTHONUNBUFFERED 1
 

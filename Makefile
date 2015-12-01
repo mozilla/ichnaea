@@ -78,7 +78,7 @@ UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
 
 
 .PHONY: all bower js mysql pip init_db css js test clean shell docs \
-	docker docker-images \
+	docker docker-images docker-images-dev \
 	build build_dev build_req build_cython \
 	build_datamaps build_maxmind build_pngquant \
 	release release_install release_compile \
@@ -86,17 +86,21 @@ UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
 
 all: build init_db
 
-docker:
+docker: docker-images
 ifneq ($(TRAVIS), true)
 	cd $(TOXINIDIR); docker-compose up -d
 endif
 
 docker-images:
-	cd docker/mysql; docker build -t mozilla-ichnaea-mysql:latest .
-	cd docker/redis; docker build -t mozilla-ichnaea-redis:latest .
-	cd docker/os; docker build -t mozilla-ichnaea-os:latest .
-	cd docker/python; docker build -t mozilla-ichnaea-python:latest .
-	docker build -t mozilla-ichnaea-dev:latest .
+ifneq ($(TRAVIS), true)
+	cd docker/mysql; docker build -t mozilla-ichnaea/mysql:latest .
+	cd docker/redis; docker build -t mozilla-ichnaea/redis:latest .
+endif
+
+docker-images-dev:
+	cd docker/os; docker build -t mozilla-ichnaea/os:latest .
+	cd docker/python; docker build -t mozilla-ichnaea/python:latest .
+	docker build -t mozilla-ichnaea/dev:latest .
 
 mysql: docker
 ifeq ($(TRAVIS), true)

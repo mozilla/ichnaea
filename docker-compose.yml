@@ -1,11 +1,11 @@
 mysql:
-    build: docker/mysql
+    image: mozilla-ichnaea/mysql:latest
     container_name: mozilla-ichnaea-mysql
     ports:
         - "33306:3306"
 
 redis:
-    build: docker/redis
+    image: mozilla-ichnaea/redis:latest
     container_name: mozilla-ichnaea-redis
     ports:
         - "36379:6379"

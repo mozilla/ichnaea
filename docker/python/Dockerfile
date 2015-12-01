@@ -1,4 +1,4 @@
-FROM mozilla-ichnaea-os:latest
+FROM mozilla-ichnaea/os:latest
 MAINTAINER Mozilla Geolocation <dev-geolocation@lists.mozilla.org>
 ENV PYTHONUNBUFFERED 1
 
