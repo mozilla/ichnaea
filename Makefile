@@ -78,7 +78,7 @@ UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
 
 
 .PHONY: all bower js mysql pip init_db css js test clean shell docs \
-	docker docker-images docker-images-dev \
+	docker docker-images \
 	build build_dev build_req build_cython \
 	build_datamaps build_maxmind build_pngquant \
 	release release_install release_compile \
@@ -96,16 +96,6 @@ ifneq ($(TRAVIS), true)
 	cd docker/mysql; docker build -t mozilla-ichnaea/mysql:latest .
 	cd docker/redis; docker build -t mozilla-ichnaea/redis:latest .
 endif
-
-docker-images-dev:
-	cd docker/os; docker build -t mozilla-ichnaea/os:latest .
-	cp requirements/prod-slow.txt docker/python/
-	cp .bowerrc docker/python/
-	cp bower.json docker/python/
-	cp npm-shrinkwrap.json docker/python/
-	cp package.json docker/python/
-	cd docker/python; docker build -t mozilla-ichnaea/python:latest .
-	docker build -t mozilla-ichnaea/dev:latest .
 
 mysql: docker
 ifeq ($(TRAVIS), true)
@@ -203,7 +193,7 @@ node_modules:
 bower: node_modules
 	$(BOWER) install
 
-css:
+css: bower
 	cp $(BOWER_ROOT)/mozilla-tabzilla/css/tabzilla.css $(CSS_ROOT)/
 	mkdir -p $(CSS_ROOT)/../media/img/
 	cp $(BOWER_ROOT)/mozilla-tabzilla/media/img/* $(CSS_ROOT)/../media/img/
@@ -220,7 +210,7 @@ css:
 	cp -R $(BOWER_ROOT)/mapbox.js/images/*.png $(CSS_ROOT)/images/
 	$(CLEANCSS) -o bundle-map.css font-awesome.css mapbox.uncompressed.css
 
-js:
+js: bower
 	$(UGLIFYJS) \
 		privacy.js \
 		-o bundle-privacy.js -c --stats \
