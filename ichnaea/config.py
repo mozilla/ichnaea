@@ -4,7 +4,7 @@ Contains helper functionality for reading and parsing configuration files.
 
 import os
 
-from configparser import (
+from backports.configparser import (
     ConfigParser,
     NoOptionError,
     NoSectionError,

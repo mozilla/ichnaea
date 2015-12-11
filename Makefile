@@ -100,14 +100,14 @@ endif
 mysql: docker
 ifeq ($(TRAVIS), true)
 	mysql -u$(MYSQL_USER) -h localhost -e \
-		"create database $(MYSQL_TEST_DB)" || echo
+		"CREATE DATABASE IF NOT EXISTS $(MYSQL_TEST_DB)" || echo
 else
 	mysql -u$(MYSQL_USER) -p$(MYSQL_PWD) \
 		--host="$(MYSQL_HOST)" --port="$(MYSQL_PORT)" \
-		-e \ "create database $(MYSQL_DB)" || echo
+		-e \ "CREATE DATABASE IF NOT EXISTS $(MYSQL_DB)" || echo
 	mysql -u$(MYSQL_USER) -p$(MYSQL_PWD) \
 		--host="$(MYSQL_HOST)" --port="$(MYSQL_PORT)" \
-		-e "create database $(MYSQL_TEST_DB)" || echo
+		-e "CREATE DATABASE IF NOT EXISTS  $(MYSQL_TEST_DB)" || echo
 endif
 
 $(PYTHON):

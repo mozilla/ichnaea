@@ -20,7 +20,7 @@ Changes
 
 - Keep separate rate limits per API version.
 
-- Update to latest versions of certifi, cffi and cryptography.
+- Update to latest versions of dependencies.
 
 20151118134500
 **************
