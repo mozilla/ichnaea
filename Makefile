@@ -159,7 +159,7 @@ ichnaea/geocalc.c: ichnaea/geocalc.pyx
 build_cython: ichnaea/geocalc.c
 	$(PYTHON) setup.py build_ext --inplace
 
-build_req: $(PYTHON) pip mysql build_datamaps build_maxmind build_pngquant
+build_req: $(PYTHON) pip build_datamaps build_maxmind build_pngquant
 	$(INSTALL) -r requirements/prod-slow.txt
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/dev.txt
@@ -167,7 +167,7 @@ build_req: $(PYTHON) pip mysql build_datamaps build_maxmind build_pngquant
 build_dev: $(PYTHON) build_cython
 	$(PYTHON) setup.py develop
 
-build: build_req build_dev
+build: build_req build_dev mysql
 
 release_install:
 	$(PIP) install --no-deps -r requirements/build.txt
@@ -272,6 +272,7 @@ endif
 	rm -rf $(TOXENVDIR)/ichnaea
 	cp -f $(TOXINIDIR)/lib/libmaxminddb* $(TOXENVDIR)/lib/
 	cd $(TOXENVDIR); make build_req
+	cd $(TOXENVDIR); make mysql
 
 tox_test:
 ifeq ($(TOXBUILD),yes)
