@@ -42,7 +42,7 @@ Table of contents
    metrics
    internal_api/index
    glossary
-   changelog
+   changes/index
 
 
 Development
