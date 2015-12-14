@@ -24,7 +24,7 @@ def _db_creds(connection):
     return DBCreds(*result)
 
 
-def add_test_api_key(conn):
+def add_test_api_key(conn):  # pragma: no cover
     stmt = text('select valid_key from api_key')
     result = conn.execute(stmt).fetchall()
     if not ('test', ) in result:
@@ -33,7 +33,7 @@ def add_test_api_key(conn):
         conn.execute(stmt)
 
 
-def add_users(conn, location_cfg):
+def add_users(conn, location_cfg):  # pragma: no cover
     # We don't take into account hostname or database restrictions
     # the users / grants, but use global privileges.
     database_section = location_cfg.get_map('database')
@@ -57,7 +57,7 @@ def add_users(conn, location_cfg):
         conn.execute(text('CREATE USER lbcheck'))
 
 
-def create_schema(engine, alembic_cfg, location_cfg):
+def create_schema(engine, alembic_cfg, location_cfg):  # pragma: no cover
     old_version = False
     with engine.connect() as conn:
         trans = conn.begin()
@@ -83,7 +83,7 @@ def create_schema(engine, alembic_cfg, location_cfg):
     command.current(alembic_cfg)
 
 
-def main(argv, _db_rw=None, _raven_client=None):
+def main(argv, _db_rw=None, _raven_client=None):  # pragma: no cover
     parser = argparse.ArgumentParser(
         prog=argv[0], description='Initialize Ichnaea database')
 

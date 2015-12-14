@@ -2,11 +2,6 @@
 source = ichnaea
 concurrency = gevent
 plugins = Cython.Coverage
-omit =
-    ichnaea/scripts/initdb.py
-    ichnaea/webapp/app.py
-    ichnaea/webapp/settings.py
-    ichnaea/webapp/worker.py
 
 [report]
 skip_covered = true

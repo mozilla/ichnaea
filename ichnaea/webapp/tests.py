@@ -15,6 +15,10 @@ from ichnaea.webapp import renderers
 
 class TestApp(ConnectionTestCase):
 
+    def test_compiles(self):
+        from ichnaea.webapp import app
+        self.assertTrue(hasattr(app, 'wsgi_app'))
+
     def test_db_config(self):
         app_config = DummyConfig({
             'database': {
@@ -189,6 +193,13 @@ class TestRenderers(TestCase):
         self.assertEqual(render(None, {}), 'None')
 
 
+class TestSettings(TestCase):
+
+    def test_compiles(self):
+        from ichnaea.webapp import settings
+        self.assertEqual(type(settings.max_requests_jitter), int)
+
+
 class TestVersion(AppTestCase):
 
     def test_ok(self):
@@ -198,3 +209,10 @@ class TestVersion(AppTestCase):
         self.assertEqual(
             set(data.keys()), set(['commit', 'source', 'tag', 'version']))
         self.assertEqual(data['source'], 'https://github.com/mozilla/ichnaea')
+
+
+class TestWorker(TestCase):
+
+    def test_compiles(self):
+        from ichnaea.webapp import worker
+        self.assertTrue(hasattr(worker, 'LocationGeventWorker'))

@@ -1,6 +1,7 @@
 from collections import defaultdict
 import json
 import os
+import sys
 
 import genc
 import numpy
@@ -145,7 +146,7 @@ def guess_code(props):
     return code
 
 
-def simplify(features):
+def simplify(features):  # pragma: no cover
     regions = defaultdict(list)
     for feature in features:
         code = guess_code(feature['properties'])
@@ -178,7 +179,7 @@ def simplify(features):
     return regions
 
 
-def to_geojson(regions):
+def to_geojson(regions):  # pragma: no cover
     features = []
     for code, region in regions.items():
         # calculate the maximum radius of each polygon
@@ -214,7 +215,7 @@ def to_geojson(regions):
     return '{"type": "FeatureCollection", "features": [\n' + lines + '\n]}\n'
 
 
-def main():
+def main(argv):  # pragma: no cover
     os.system('ogr2ogr -f GeoJSON '
               '-select "%s" -segmentize 0.1 data/temp.geojson '
               'data/ne_50m_admin_0_map_subunits.dbf' % ', '.join(PROPERTIES))
@@ -228,5 +229,6 @@ def main():
                         'w', compresslevel=7) as fd:
         fd.write(output)
 
-if __name__ == '__main__':
-    main()
+
+def console_entry():  # pragma: no cover
+    main(sys.argv)

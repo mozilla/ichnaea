@@ -36,7 +36,7 @@ errorlog = '-'
 loglevel = 'warning'
 
 
-def post_worker_init(worker):
+def post_worker_init(worker):  # pragma: no cover
     # Actually initialize the application
     worker.load_wsgi()
     worker.wsgi(None, None)

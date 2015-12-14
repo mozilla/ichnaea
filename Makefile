@@ -288,7 +288,7 @@ docs: $(BIN)/sphinx-build
 	cd docs; SPHINXBUILD=$(SPHINXBUILD) make html
 
 region_json:
-	$(PYTHON) ichnaea/scripts/region_json.py
+	$(BIN)/location_region_json
 
 pypi_release:
 	rm -rf $(HERE)/dist
