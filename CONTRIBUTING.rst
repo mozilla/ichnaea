@@ -19,7 +19,7 @@ If you want to work on the code and sent us a
 `pull request <https://help.github.com/articles/using-pull-requests>`_,
 first fork the repository on github to your own account. Then clone
 your new repository and `follow the installation instructions
-<https://mozilla.github.io/ichnaea/deploy.html>`_.
+<https://mozilla.github.io/ichnaea/development.html>`_.
 While working on the code, the `testing instructions
 <https://mozilla.github.io/ichnaea/testing.html>`_
 should come in handy.
