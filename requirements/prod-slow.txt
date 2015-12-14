@@ -3,7 +3,7 @@ cryptography==1.1.2
 Cython==0.23.4
 enum34==1.0.4 ; python_version < '3.0'
 gevent==1.0.2 ; python_version < '3.0'
-gevent==1.1rc1 ; python_version >= '3.0'
+gevent==1.1rc2 ; python_version >= '3.0'
 greenlet==0.4.9
 idna==2.0
 ipaddress==1.0.14 ; python_version < '3.0'
