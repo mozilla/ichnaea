@@ -15,7 +15,7 @@ decorator==4.0.6
 filechunkio==1.6
 genc==0.2
 geoip2==2.2.0
-gunicorn==19.2.1  # rq.filter: !=19.3.0
+gunicorn==19.4.1
 hiredis==0.2.0
 importlib==1.0.3 ; python_version < '3.0'
 ipaddr==2.1.11 ; python_version < '3.0'

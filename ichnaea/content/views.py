@@ -97,6 +97,9 @@ def security_headers(event):
 
 
 def s3_list_downloads(assets_bucket, assets_url, raven_client):
+    if not assets_bucket:  # pragma: no cover
+        return []
+
     if not assets_url.endswith('/'):  # pragma: no cover
         assets_url = assets_url + '/'
 

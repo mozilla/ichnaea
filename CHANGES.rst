@@ -13,6 +13,9 @@ Migrations
 
 - 40d609897296: Add sharded cell tables.
 
+- The command line for starting gunicorn has changed. The `-c` option now
+  needs a `python:` prefix and has to be `-c python:ichnaea.webapp.settings`.
+
 Changes
 ~~~~~~~
 

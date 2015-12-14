@@ -5,7 +5,8 @@ This needs to be specified on the command line via the `-c` argument:
 
 .. code-block:: bash
 
-    bin/gunicorn -c ichnaea.webapp.settings ichnaea.webapp.app:wsgi_app
+    bin/gunicorn -c python:ichnaea.webapp.settings \
+        ichnaea.webapp.app:wsgi_app
 
 """
 
@@ -35,32 +36,7 @@ errorlog = '-'
 loglevel = 'warning'
 
 
-def _statsd_config():
-    from ichnaea.config import read_config
-
-    conf = read_config()
-    if conf.has_section('statsd'):
-        section = conf.get_map('statsd')
-    else:  # pragma: no cover
-        # happens while building docs locally and on rtfd.org
-        return (None, None)
-
-    url = None
-    host = section.get('host', None)
-    port = section.get('port', '8125')
-    if host:
-        url = '%s:%s' % (host, port)
-
-    return (
-        url,
-        section.get('metric_prefix', 'location'),
-    )
-
-# Set host and prefix for gunicorn's own statsd messages
-statsd_host, statsd_prefix = _statsd_config()
-del _statsd_config
-
-
 def post_worker_init(worker):
     # Actually initialize the application
+    worker.load_wsgi()
     worker.wsgi(None, None)

@@ -87,7 +87,7 @@ Now you can run the web app on for example port 7001:
 .. code-block:: bash
 
     ICHNAEA_CFG=location.ini bin/gunicorn -b 127.0.0.1:7001 \
-        -c ichnaea.webapp.settings ichnaea.webapp.app:wsgi_app
+        -c python:ichnaea.webapp.settings ichnaea.webapp.app:wsgi_app
 
 The celery processes are started via:
 

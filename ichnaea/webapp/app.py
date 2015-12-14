@@ -14,7 +14,8 @@ def wsgi_app(environ, start_response):  # pragma: no cover
 
     .. code-block:: bash
 
-        bin/gunicorn -c ichnaea.webapp.settings ichnaea.webapp.app:wsgi_app
+        bin/gunicorn -c python:ichnaea.webapp.settings \
+            ichnaea.webapp.app:wsgi_app
 
     At startup reads the app config and calls
     :func:`ichnaea.webapp.config.main` once to setup the web app stored
