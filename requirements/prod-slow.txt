@@ -8,7 +8,7 @@ greenlet==0.4.9
 idna==2.0
 ipaddress==1.0.14 ; python_version < '3.0'
 maxminddb==1.2.0  # optional C extension, version also in Makefile
-numpy==1.10.1
+numpy==1.10.2
 pyasn1==0.1.9
 pycparser==2.14
 pyopenssl==0.15.1
