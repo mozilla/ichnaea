@@ -160,7 +160,6 @@ build_cython: ichnaea/geocalc.c
 	$(PYTHON) setup.py build_ext --inplace
 
 build_req: $(PYTHON) pip build_datamaps build_maxmind build_pngquant
-	$(INSTALL) -r requirements/prod-slow.txt
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/dev.txt
 
@@ -171,7 +170,6 @@ build: build_req build_dev mysql
 
 release_install:
 	$(PIP) install --no-deps -r requirements/build.txt
-	$(INSTALL) -r requirements/prod-slow.txt
 	$(INSTALL) -r requirements/prod.txt
 	$(PYTHON) setup.py install
 

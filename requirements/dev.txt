@@ -2,6 +2,7 @@ alabaster==0.7.7
 Babel==2.2.0
 beautifulsoup4==4.4.1
 coverage==4.0.3
+Cython==0.23.4
 docutils==0.12
 factory_boy==2.6.0
 fake-factory==0.5.3
