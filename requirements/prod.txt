@@ -1,4 +1,4 @@
-alembic==0.8.3
+alembic==0.8.4
 amqp==1.4.8
 anyjson==0.3.3
 argparse==1.3.0 ; python_version < '2.7'
@@ -15,12 +15,12 @@ decorator==4.0.6
 filechunkio==1.6
 genc==0.2
 geoip2==2.2.0
-gunicorn==19.4.1
+gunicorn==19.4.5
 hiredis==0.2.0
 importlib==1.0.3 ; python_version < '3.0'
 ipaddr==2.1.11 ; python_version < '3.0'
 iso8601==0.1.11
-kombu==3.0.30
+kombu==3.0.31  # rq.filter: !=3.0.32
 linecache2==1.0.0 ; python_version < '3.0'
 Mako==1.0.3
 MarkupSafe==0.23
@@ -29,18 +29,18 @@ ndg-httpsclient==0.4.0
 ordereddict==1.1 ; python_version < '3.0'
 PasteDeploy==1.5.2
 PyMySQL==0.6.7
-pyramid==1.5.7
+pyramid==1.6.0
 pyramid-chameleon==0.3
 python-editor==0.5
 pytz==2015.7
-raven==5.9.0
+raven==5.9.2
 redis==2.10.5
 repoze.lru==0.6
-requests==2.8.1
+requests==2.9.1
 scandir==1.1 ; python_version < '3.5'
 setproctitle==1.1.9
 simplejson==3.8.1
-SQLAlchemy==1.0.10
+SQLAlchemy==1.0.11
 traceback2==1.4.0 ; python_version < '3.0'
 translationstring==1.3
 unittest2==1.1.0 ; python_version < '3.0'
