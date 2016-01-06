@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- d350610e27e: Shard cell table.
+
 - 40d609897296: Add sharded cell tables.
 
 - The command line for starting gunicorn has changed. The `-c` option now

@@ -55,4 +55,9 @@ CREATE TABLE `cell_{id}` (
 
 
 def downgrade():
-    pass
+    stmt = '''\
+DROP TABLE cell_{id}
+'''
+    shard_ids = ('gsm', 'wcdma', 'lte')
+    for shard_id in shard_ids:
+        op.execute(sa.text(stmt.format(id=shard_id)))
