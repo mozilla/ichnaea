@@ -68,10 +68,10 @@
     <h3>WiFi Networks</h3>
 
     <p class="text-justified">
-        The combination of a MAC address, a location and a timestamp is
-        considered personal data in some jurisdictions, as it contains
-        data about the owner of a WiFi network. The collection of this data
-        is legal as long as an effective <a href="/optout">opt-out</a>
+        The combination of a MAC address and a location is considered
+        personal data in some jurisdictions, as it contains data about
+        the owner of a WiFi network. The collection of this data is
+        legal as long as an effective <a href="/optout">opt-out</a>
         mechanism like the one we follow is provided. Lookups of individual
         WiFi records are prevented by the service by requiring a combination
         of two matching nearby WiFi networks in queries.

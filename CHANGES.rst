@@ -21,6 +21,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #471: Remove sentence about Firefox OS.
+
 - #477: Decrease cell maximum radius to 100 km.
 
 - Use sharded cell tables.

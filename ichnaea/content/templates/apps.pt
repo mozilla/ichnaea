@@ -70,21 +70,6 @@
         <pre>https://location.services.mozilla.com/v1/geolocate?key=%MOZILLA_API_KEY%</pre>
     </p>
 
-    <h3>Firefox OS</h3>
-
-    <p class="text-justified">
-        Integration of this service into Firefox OS is an ongoing process.
-        If the specific Firefox OS device uses this service depends on a
-        number of factors including which chipset is used in the device,
-        which manufacturer built the device and via what partner and channel
-        it was sold or given out.
-    </p>
-
-    <p class="text-justified">
-        In general client side code to talk to this service appeared in
-        Firefox OS version 1.3T and 1.4.
-    </p>
-
 </section>
 </tal:slot>
 

@@ -11,9 +11,8 @@
     </p>
 
     <p class="text-justified">
-        If you are developing a website or a web application (for example
-        a Firefox OS application) you don't interact with this location
-        service directly. Instead you use the
+        If you are developing a website or a web application you don't
+        interact with this location service directly. Instead you use the
         <a href="https://developer.mozilla.org/en-US/docs/WebAPI/Using_geolocation">
             HTML5 geolocation web api</a>. This will give you the best
         position estimate which the device can determine, based on all
@@ -71,10 +70,7 @@
             contact us via email</a> to obtain an API key.
         Please make sure to describe your use-case and intended use of
         the service. If you merely want to test out the service for a
-        small experiment, please use the literal "test" API key. We'll
-        switch to providing rotating public UUID based API keys soon,
-        so do not depend on this key for anything outside of initial
-        experiments.
+        small experiment, please use the literal "test" API key.
     </p>
 
     <p class="text-justified">
