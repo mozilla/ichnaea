@@ -50,11 +50,10 @@ class ExportScheduler(DataTask):
 class ExportQueue(DataTask):
 
     def __init__(self, task, session, pipe,
-                 api_key=None, email=None, ip=None, nickname=None):
+                 api_key=None, ip=None, nickname=None):
         DataTask.__init__(self, task, session)
         self.pipe = pipe
         self.api_key = api_key
-        self.email = email
         self.ip = ip
         self.nickname = nickname
         self.export_queues = task.app.export_queues
@@ -62,7 +61,7 @@ class ExportQueue(DataTask):
     def __call__(self, reports):
         metadata = {
             'api_key': self.api_key,
-            'email': self.email,
+            'email': None,
             'ip': self.ip,
             'nickname': self.nickname,
         }

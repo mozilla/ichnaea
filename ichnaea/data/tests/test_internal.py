@@ -18,7 +18,6 @@ from ichnaea.models import (
 class TestUploader(BaseExportTest):
 
     nickname = b'World Tr\xc3\xa4veler'.decode('utf-8')
-    email = b'world_tr\xc3\xa4veler@email.com'.decode('utf-8')
 
     def setUp(self):
         super(TestUploader, self).setUp()
@@ -45,8 +44,7 @@ class TestUploader(BaseExportTest):
         self.session.add(ApiKey(valid_key='e5444-794', log_submit=True))
         self.session.flush()
 
-        self.add_reports(3, email='secretemail@localhost',
-                         ip=self.geoip_data['London']['ip'])
+        self.add_reports(3, ip=self.geoip_data['London']['ip'])
         self.add_reports(6, api_key='e5444-794')
         self.add_reports(3, api_key=None)
         self._update_all()
@@ -220,7 +218,6 @@ class TestUploader(BaseExportTest):
         users = self.session.query(User).all()
         self.assertEqual(len(users), 1)
         self.assertEqual(users[0].nickname, self.nickname)
-        self.assertEqual(users[0].email, '')
 
     def test_nickname_too_short(self):
         self.add_reports(nickname=u'a')
@@ -229,26 +226,3 @@ class TestUploader(BaseExportTest):
         queue = self.celery_app.data_queues['update_score']
         self.assertEqual(queue.size(), 0)
         self.assertEqual(self.session.query(User).count(), 0)
-
-    def test_email_header_update(self):
-        user = User(nickname=self.nickname, email=self.email)
-        self.session.add(user)
-        self.session.commit()
-        self.add_reports(nickname=self.nickname,
-                         email=u'new' + self.email)
-        schedule_export_reports.delay().get()
-
-        users = self.session.query(User).all()
-        self.assertEqual(len(users), 1)
-        self.assertEqual(users[0].nickname, self.nickname)
-        self.assertEqual(users[0].email, u'new' + self.email)
-
-    def test_email_too_long(self):
-        self.add_reports(nickname=self.nickname,
-                         email=u'a' * 255 + u'@email.com')
-        schedule_export_reports.delay().get()
-
-        users = self.session.query(User).all()
-        self.assertEqual(len(users), 1)
-        self.assertEqual(users[0].nickname, self.nickname)
-        self.assertEqual(users[0].email, u'')

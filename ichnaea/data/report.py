@@ -20,17 +20,16 @@ from ichnaea.models.content import encode_datamap_grid
 class ReportQueue(DataTask):
 
     def __init__(self, task, session, pipe, api_key=None,
-                 email=None, ip=None, nickname=None):
+                 ip=None, nickname=None):
         DataTask.__init__(self, task, session)
         self.pipe = pipe
         self.api_key = api_key
-        self.email = email
         self.ip = ip
         self.nickname = nickname
         self.data_queues = self.task.app.data_queues
 
     def __call__(self, reports):
-        userid = self.process_user(self.nickname, self.email)
+        userid = self.process_user(self.nickname)
         self.process_reports(reports, userid=userid)
 
     def emit_stats(self, reports, malformed_reports, obs_count):
@@ -229,10 +228,8 @@ class ReportQueue(DataTask):
 
         queue.enqueue(scores)
 
-    def process_user(self, nickname, email):
+    def process_user(self, nickname):
         userid = None
-        if not email or len(email) > 255:
-            email = u''
         if nickname and (2 <= len(nickname) <= 128):
             # automatically create user objects and update nickname
             rows = self.session.query(User).filter(User.nickname == nickname)
@@ -240,15 +237,11 @@ class ReportQueue(DataTask):
             if not old:
                 user = User(
                     nickname=nickname,
-                    email=email
                 )
                 self.session.add(user)
                 self.session.flush()
                 userid = user.id
-            else:
+            else:  # pragma: no cover
                 userid = old.id
-                # update email column on existing user
-                if old.email != email:
-                    old.email = email
 
         return userid

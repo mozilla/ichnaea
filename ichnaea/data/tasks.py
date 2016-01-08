@@ -78,7 +78,6 @@ def insert_reports(self, reports=(),
             ReportQueue(
                 self, session, pipe,
                 api_key=api_key,
-                email=email,
                 ip=ip,
                 nickname=nickname,
             )(reports)
@@ -91,7 +90,6 @@ def queue_reports(self, reports=(),
         export.ExportQueue(
             self, None, pipe,
             api_key=api_key,
-            email=email,
             ip=ip,
             nickname=nickname,
         )(reports)

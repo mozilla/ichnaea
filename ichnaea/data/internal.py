@@ -156,7 +156,6 @@ class InternalUploader(ReportUploader):
             self._task().apply_async(
                 kwargs={
                     'api_key': group.api_key,
-                    'email': group.email,
                     'ip': group.ip,
                     'nickname': group.nickname,
                     'reports': reports,

@@ -18,7 +18,6 @@ class BaseSubmitTest(object):
     status = None
 
     nickname = b'World Tr\xc3\xa4veler'.decode('utf-8')
-    email = b'world_tr\xc3\xa4veler@email.com'.decode('utf-8')
 
     def setUp(self):
         super(BaseSubmitTest, self).setUp()
@@ -39,13 +38,11 @@ class BaseSubmitTest(object):
             url, {'items': items},
             status=status, extra_environ=extra, **kw)
 
-    def _post_one_cell(self, nickname=None, email=None, status=status):
+    def _post_one_cell(self, nickname=None, status=status):
         cell, query = self._one_cell_query()
         headers = {}
         if nickname:
             headers['X-Nickname'] = nickname.encode('utf-8')
-        if email:
-            headers['X-Email'] = email.encode('utf-8')
         return self._post([query], headers=headers, status=status)
 
     def test_gzip(self):
@@ -106,17 +103,10 @@ class BaseSubmitTest(object):
             ('request', [self.metric_path, 'method:post', 'status:503']),
         ])
 
-    def test_headers_email_without_nickname(self):
-        self._post_one_cell(nickname=None, email=self.email)
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        self.assertEqual(item['metadata']['nickname'], None)
-        self.assertEqual(item['metadata']['email'], self.email)
-
-    def test_headers_nickname_and_email(self):
-        self._post_one_cell(nickname=self.nickname, email=self.email)
+    def test_headers_nickname(self):
+        self._post_one_cell(nickname=self.nickname)
         item = self.queue.dequeue(self.queue.queue_key())[0]
         self.assertEqual(item['metadata']['nickname'], self.nickname)
-        self.assertEqual(item['metadata']['email'], self.email)
 
     def test_log_api_key_none(self):
         cell, query = self._one_cell_query()

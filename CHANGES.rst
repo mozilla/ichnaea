@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 5d245a440c6f: Remove unused user email field.
+
 - d350610e27e: Shard cell table.
 
 - 40d609897296: Add sharded cell tables.

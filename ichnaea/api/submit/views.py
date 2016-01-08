@@ -24,18 +24,13 @@ class BaseSubmitView(BaseAPIView):
 
     def __init__(self, request):
         super(BaseSubmitView, self).__init__(request)
-        self.email, self.nickname = self.get_request_user_data()
+        self.nickname = self.decode_request_header('X-Nickname')
 
     def decode_request_header(self, header_name):
         value = self.request.headers.get(header_name, None)
         if isinstance(value, str):  # pragma: no cover
             value = value.decode('utf-8', 'ignore')
         return value
-
-    def get_request_user_data(self):
-        email = self.decode_request_header('X-Email')
-        nickname = self.decode_request_header('X-Nickname')
-        return (email, nickname)
 
     def emit_upload_metrics(self, value, api_key):
         tags = None
@@ -72,7 +67,6 @@ class BaseSubmitView(BaseAPIView):
             queue_reports.apply_async(
                 kwargs={
                     'api_key': api_key.valid_key,
-                    'email': self.email,
                     'ip': self.request.client_addr,
                     'nickname': self.nickname,
                     'reports': batch,

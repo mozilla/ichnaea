@@ -39,7 +39,7 @@ def mock_s3(mock_keys):
 class BaseExportTest(CeleryTestCase):
 
     def add_reports(self, num=1, blue_factor=0, cell_factor=1, wifi_factor=2,
-                    api_key='test', email=None, ip=None, nickname=None,
+                    api_key='test', ip=None, nickname=None,
                     blue_key=None, cell_mcc=None, wifi_key=None,
                     lat=None, lon=None):
         reports = []
@@ -92,7 +92,7 @@ class BaseExportTest(CeleryTestCase):
             reports.append(report)
 
         queue_reports.delay(reports=reports, api_key=api_key,
-                            email=email, ip=ip, nickname=nickname).get()
+                            ip=ip, nickname=nickname).get()
         return reports
 
     def queue_length(self, redis_key):
@@ -190,8 +190,7 @@ class TestGeosubmitUploader(BaseExportTest):
         self.session.flush()
 
         reports = []
-        reports.extend(self.add_reports(1, email='secretemail@localhost',
-                                        ip=self.geoip_data['London']['ip']))
+        reports.extend(self.add_reports(1, ip=self.geoip_data['London']['ip']))
         reports.extend(self.add_reports(1, api_key='e5444e9f-7946'))
         reports.extend(self.add_reports(1, api_key=None))
 
@@ -209,8 +208,7 @@ class TestGeosubmitUploader(BaseExportTest):
 
         # check body
         body = util.decode_gzip(req.body)
-        # make sure we don't accidentally leak emails or IPs
-        self.assertFalse('secretemail' in body)
+        # make sure we don't accidentally leak IPs
         self.assertFalse(self.geoip_data['London']['ip'] in body)
 
         # make sure a standards based json can decode this data
@@ -254,8 +252,7 @@ class TestS3Uploader(BaseExportTest):
         self.session.add(ApiKey(valid_key='e5444-794', log_submit=True))
         self.session.flush()
 
-        reports = self.add_reports(3, email='secretemail@localhost',
-                                   ip=self.geoip_data['London']['ip'])
+        reports = self.add_reports(3, ip=self.geoip_data['London']['ip'])
         self.add_reports(6, api_key='e5444-794')
         self.add_reports(3, api_key=None)
 
@@ -287,8 +284,7 @@ class TestS3Uploader(BaseExportTest):
         uploaded_data = args[0]
         uploaded_text = util.decode_gzip(uploaded_data)
 
-        # make sure we don't accidentally leak emails or IPs
-        self.assertFalse('secretemail' in uploaded_text)
+        # make sure we don't accidentally leak IPs
         self.assertFalse(self.geoip_data['London']['ip'] in uploaded_text)
 
         send_reports = json.loads(uploaded_text)['items']
