@@ -1,3 +1,6 @@
+import warnings
+
+from pymysql import err
 from sqlalchemy import text
 
 from ichnaea.models.wifi import WifiShard0
@@ -32,9 +35,11 @@ class TestDatabase(DBTestCase):
         self.assertEqual(result, [(123, {'foo': 'bar'})])
 
     def test_show_warnings_backport(self):
-        # Backport from unreleased PyMySQL 0.6.7
+        # Fixed in PyMySQL 0.6.7
         stmt = text('DROP TABLE IF EXISTS a; DROP TABLE IF EXISTS b;')
-        self.session.execute(stmt)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', err.Warning)
+            self.session.execute(stmt)
 
     def test_executemany_backport(self):
         # Fixed in PyMySQL 0.6.7

@@ -3,8 +3,6 @@ import os.path
 import sys
 import warnings
 
-from pymysql import err
-
 # BBB: Workaround for https://github.com/celery/kombu/pull/540
 import uuid
 if not getattr(uuid, '_uuid_generate_random', None):  # pragma: no cover
@@ -13,7 +11,6 @@ del uuid
 
 warnings.simplefilter('ignore', DeprecationWarning)
 warnings.simplefilter('ignore', PendingDeprecationWarning)
-warnings.simplefilter('ignore', err.Warning)
 
 # Enable pyopenssl based SSL stack
 if sys.version_info < (3, 0):  # pragma: no cover
@@ -37,7 +34,6 @@ def setup_package(module):
     # enable all warnings in test mode
     warnings.resetwarnings()
     warnings.simplefilter('default')
-    warnings.simplefilter('ignore', err.Warning)
 
     from ichnaea.tests.base import setup_package
     return setup_package(module)
