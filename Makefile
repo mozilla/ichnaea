@@ -5,7 +5,6 @@ BUILD_DIRS = .tox bin bower_components build datamaps dist include \
 TESTS ?= ichnaea
 TRAVIS ?= false
 
-TOXBUILD ?= yes
 TOXENVDIR ?= $(HERE)/.tox/tmp
 TOXINIDIR ?= $(HERE)
 
@@ -273,9 +272,7 @@ endif
 	cd $(TOXENVDIR); make mysql
 
 tox_test:
-ifeq ($(TOXBUILD),yes)
 	make tox_install
-endif
 	cd $(TOXENVDIR); bin/pip install -e /opt/mozilla/ichnaea/ --no-compile
 	cd $(TOXENVDIR); PYTHONDONTWRITEBYTECODE=True make test
 

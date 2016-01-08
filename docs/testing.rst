@@ -70,14 +70,7 @@ You can also run a subset of all tests, the same way as via `make test`:
 
     bin/tox TESTS=ichnaea.tests.test_util
 
-Once the tox environment is built and no changes to dependencies have
-taken place, you can speed up the build by skipping the `make build` step:
-
-.. code-block:: bash
-
-    bin/tox TOXBUILD=no
-
-Or if the tox environment got into a weird state, just recreate it:
+If the tox environment got into a weird state, just recreate it:
 
 .. code-block:: bash
 
@@ -87,7 +80,7 @@ Of course these options can be combined, for example:
 
 .. code-block:: bash
 
-    bin/tox -e=py{34} TOXBUILD=no TESTS=ichnaea.tests.test_util
+    bin/tox -e=py{34} TESTS=ichnaea.tests.test_util
 
 Since the project relies on a number of non-Python dependencies, each
 tox environment is created from a full copy of the git repo. The ease
