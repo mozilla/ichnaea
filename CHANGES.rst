@@ -21,6 +21,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #477: Decrease cell maximum radius to 100 km.
+
 - Use sharded cell tables.
 
 - Keep separate rate limits per API version.

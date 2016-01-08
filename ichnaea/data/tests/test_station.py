@@ -207,7 +207,7 @@ class TestCell(StationTest):
         lat3, lon3 = (cell3.lat, cell3.lon)
         key3 = dict(radio=cell3.radio, lac=cell3.lac, cid=cell3.cid)
         for i in range(10):
-            obs_factory(lat=lat3 + 1.0, lon=lon3 + 1.0, **key3)
+            obs_factory(lat=lat3 + 0.5, lon=lon3 + 0.5, **key3)
 
         self.session.commit()
         self._queue_and_update(observations)
@@ -227,8 +227,8 @@ class TestCell(StationTest):
         shard = CellShard.shard_model(cell3.cellid)
         found = (self.session.query(shard)
                              .filter(shard.cellid == cell3.cellid)).one()
-        expected_lat = ((lat3 * 1000) + (lat3 + 1.0) * 10) / 1010
-        expected_lon = ((lon3 * 1000) + (lon3 + 1.0) * 10) / 1010
+        expected_lat = ((lat3 * 1000) + (lat3 + 0.5) * 10) / 1010
+        expected_lon = ((lon3 * 1000) + (lon3 + 0.5) * 10) / 1010
         self.assertAlmostEqual(found.lat, expected_lat, 7)
         self.assertAlmostEqual(found.lon, expected_lon, 7)
 

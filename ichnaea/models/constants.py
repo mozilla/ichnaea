@@ -22,7 +22,7 @@ MAX_HEADING = 360.0  #: Full 360 degrees.
 MAX_SPEED = 300.0  #: A bit less than speed of sound, in meters per second.
 
 CELLAREA_MAX_RADIUS = 20000000  #: Max radius of a cell area.
-CELL_MAX_RADIUS = 150000  #: Max radius of a single cell network.
+CELL_MAX_RADIUS = 100000  #: Max radius of a single cell network.
 WIFI_MAX_RADIUS = 5000  #: Max radius of a single WiFi network.
 
 WIFI_TEST_MAC = '01005e901000'
