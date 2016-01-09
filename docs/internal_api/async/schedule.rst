@@ -3,5 +3,4 @@
 
 .. automodule:: ichnaea.async.schedule
 
-.. autodata:: CELERYBEAT_SCHEDULE
-    :annotation:
+.. autofunction:: celerybeat_schedule

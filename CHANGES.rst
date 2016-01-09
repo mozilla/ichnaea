@@ -23,6 +23,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Register OCID import tasks based on the configuration file.
+
 - #471: Remove sentence about Firefox OS.
 
 - #477: Decrease cell maximum radius to 100 km.

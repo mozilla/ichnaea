@@ -7,7 +7,7 @@ import os
 from kombu import Queue
 from kombu.serialization import register
 
-from ichnaea.async.schedule import CELERYBEAT_SCHEDULE
+from ichnaea.async.schedule import celerybeat_schedule
 from ichnaea.cache import configure_redis
 from ichnaea.config import read_config
 from ichnaea import internaljson
@@ -79,7 +79,7 @@ def configure_celery(celery_app):
         BROKER_URL=broker_url,
         CELERY_RESULT_BACKEND=result_url,
         CELERY_QUEUES=CELERY_QUEUES,
-        CELERYBEAT_SCHEDULE=CELERYBEAT_SCHEDULE,
+        CELERYBEAT_SCHEDULE=celerybeat_schedule(celery_app, conf),
     )
 
 
