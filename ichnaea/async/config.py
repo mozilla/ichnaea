@@ -79,7 +79,7 @@ def configure_celery(celery_app):
         BROKER_URL=broker_url,
         CELERY_RESULT_BACKEND=result_url,
         CELERY_QUEUES=CELERY_QUEUES,
-        CELERYBEAT_SCHEDULE=celerybeat_schedule(celery_app, conf),
+        CELERYBEAT_SCHEDULE=celerybeat_schedule(conf),
     )
 
 

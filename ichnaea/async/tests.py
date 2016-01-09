@@ -23,14 +23,16 @@ class TestBeat(CeleryTestCase):
             # parses the schedule as a side-effect
             scheduler = beat.get_scheduler()
             registered_tasks = set(scheduler._store['entries'].keys())
-            configured_tasks = set(schedule.celerybeat_schedule(
-                celery_app, app_config))
+            configured_tasks = set(schedule.celerybeat_schedule(app_config))
             self.assertEqual(registered_tasks, configured_tasks)
         finally:
             shutil.rmtree(tmpdir)
 
     def test_schedule(self):
         app_config = DummyConfig({
+            'assets': {
+                'bucket': 'bucket',
+            },
             'export:internal': {
                 'url': 'internal://',
                 'metadata': 'True',
@@ -51,9 +53,18 @@ class TestBeat(CeleryTestCase):
                 'apikey': 'some_key',
             },
         })
-        tasks = set(schedule.celerybeat_schedule(celery_app, app_config))
-        self.assertTrue('monitor-ocid-import' in tasks)
-        self.assertTrue('cell-import-external' in tasks)
+
+        tasks = set(schedule.celerybeat_schedule(app_config))
+        for name in ('cell-export-full', 'cell-export-diff'):
+            self.assertTrue(name in tasks)
+        for name in ('cell-import-external', 'monitor-ocid-import'):
+            self.assertTrue(name in tasks)
+        for name in ('gsm', 'wcdma', 'lte'):
+            self.assertTrue('update-cell-' + name in tasks)
+        for name in ('ne', 'nw', 'se', 'sw'):
+            self.assertTrue('update-datamap-' + name in tasks)
+        for i in range(16):
+            self.assertTrue('update-wifi-%x' % i in tasks)
 
 
 class TestWorkerConfig(TestCase):
