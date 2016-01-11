@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 9743e7b8a17a: Add allow_locate column to API key table.
+
 - 5d245a440c6f: Remove unused user email field.
 
 - d350610e27e: Shard cell table.

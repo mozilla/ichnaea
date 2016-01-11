@@ -21,6 +21,7 @@ class ApiKey(_Model):
     log_region = Column(Boolean)  #: Extended region logging enabled?
     log_submit = Column(Boolean)  #: Extended submit logging enabled?
     allow_fallback = Column(Boolean)  #: Use the fallback source?
+    allow_locate = Column(Boolean)  #: Allow locate queries?
     shortname = Column(String(40))  #: A readable short name used in metrics.
 
     @property
