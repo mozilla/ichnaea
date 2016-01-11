@@ -1,7 +1,6 @@
 from datetime import timedelta
 from random import randint
 
-from ichnaea.models import ApiKey
 from ichnaea.data.tasks import (
     monitor_api_key_limits,
     monitor_api_users,
@@ -9,7 +8,10 @@ from ichnaea.data.tasks import (
     monitor_queue_size,
 )
 from ichnaea.tests.base import CeleryTestCase
-from ichnaea.tests.factories import CellOCIDFactory
+from ichnaea.tests.factories import (
+    ApiKeyFactory,
+    CellOCIDFactory,
+)
 from ichnaea import util
 
 
@@ -51,12 +53,9 @@ class TestMonitorTasks(CeleryTestCase):
                 rate_key = 'apilimit:%s:%s:%s' % (key, path, yesterday)
                 redis_client.incr(rate_key, value - 10)
 
-        api_keys = [
-            ApiKey(valid_key='no_key_1', shortname='shortname_1'),
-            ApiKey(valid_key='no_key_2'),
-            ApiKey(valid_key='no_key_3', shortname='shortname_3'),
-        ]
-        self.session.add_all(api_keys)
+        ApiKeyFactory(valid_key='no_key_1', shortname='shortname_1')
+        ApiKeyFactory(valid_key='no_key_2')
+        ApiKeyFactory(valid_key='no_key_3', shortname='shortname_3')
         self.session.flush()
 
         # add some other items into Redis

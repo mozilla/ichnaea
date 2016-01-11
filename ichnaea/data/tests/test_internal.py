@@ -7,12 +7,12 @@ from ichnaea.data.tasks import (
 )
 from ichnaea.data.tests.test_export import BaseExportTest
 from ichnaea.models import (
-    ApiKey,
     CellShard,
     ScoreKey,
     User,
     WifiShard,
 )
+from ichnaea.tests.factories import ApiKeyFactory
 
 
 class TestUploader(BaseExportTest):
@@ -41,7 +41,7 @@ class TestUploader(BaseExportTest):
             update_wifi.delay(shard_id=shard_id).get()
 
     def test_stats(self):
-        self.session.add(ApiKey(valid_key='e5444-794', log_submit=True))
+        ApiKeyFactory(valid_key='e5444-794', log_submit=True)
         self.session.flush()
 
         self.add_reports(3, ip=self.geoip_data['London']['ip'])

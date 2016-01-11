@@ -94,6 +94,7 @@ class ApiKeyFactory(BaseSQLFactory):
     log_region = True
     log_submit = True
     allow_fallback = False
+    allow_locate = True
 
     @factory.lazy_attribute
     def shortname(self):

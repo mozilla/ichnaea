@@ -417,7 +417,7 @@ class CommonPositionTest(BaseLocateTest):
 
     def test_api_key_limit(self):
         api_key = uuid.uuid1().hex
-        self.session.add(ApiKey(valid_key=api_key, maxreq=5, shortname='dis'))
+        ApiKeyFactory(valid_key=api_key, maxreq=5, shortname='dis')
         self.session.flush()
 
         # exhaust today's limit
@@ -428,6 +428,13 @@ class CommonPositionTest(BaseLocateTest):
 
         res = self._call(api_key=api_key, ip=self.test_ip, status=403)
         self.check_response(res, 'limit_exceeded')
+
+    def test_api_key_blocked(self):
+        api_key = uuid.uuid1().hex
+        ApiKeyFactory(valid_key=api_key, allow_locate=False)
+
+        res = self._call(api_key=api_key, ip=self.test_ip, status=400)
+        self.check_response(res, 'invalid_key')
 
     def test_cell_not_found(self):
         cell = CellShardFactory.build()

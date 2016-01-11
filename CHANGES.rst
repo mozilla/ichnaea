@@ -25,6 +25,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #478: Restrict some API keys from using the locate API.
+
 - Register OCID import tasks based on the configuration file.
 
 - #471: Remove sentence about Firefox OS.

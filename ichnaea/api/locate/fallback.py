@@ -391,7 +391,7 @@ class FallbackPositionSource(PositionSource):
 
     def should_search(self, query, results):
         return (
-            query.api_key.allow_fallback and
+            query.api_key.should_allow('fallback') and
             (bool(query.cell) or bool(query.wifi)) and
             not results.satisfies(query)
         )

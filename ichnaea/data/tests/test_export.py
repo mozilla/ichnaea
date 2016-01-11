@@ -12,9 +12,9 @@ from ichnaea.data.tasks import (
     schedule_export_reports,
     queue_reports,
 )
-from ichnaea.models import ApiKey
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
+    ApiKeyFactory,
     CellShardFactory,
     WifiShardFactory,
 )
@@ -129,7 +129,7 @@ class TestExporter(BaseExportTest):
         self.celery_app.export_queues = queues = configure_export(
             self.redis_client, config)
         self.test_queue_key = queues['test'].queue_key()
-        self.session.add(ApiKey(valid_key='test2', log_submit=True))
+        ApiKeyFactory(valid_key='test2', log_submit=True)
         self.session.flush()
 
     def test_enqueue_reports(self):
@@ -186,7 +186,7 @@ class TestGeosubmitUploader(BaseExportTest):
             self.redis_client, config)
 
     def test_upload(self):
-        self.session.add(ApiKey(valid_key='e5444-794', log_submit=True))
+        ApiKeyFactory(valid_key='e5444-794', log_submit=True)
         self.session.flush()
 
         reports = []
@@ -249,7 +249,7 @@ class TestS3Uploader(BaseExportTest):
         self.assertFalse(export_queue.monitor_name)
 
     def test_upload(self):
-        self.session.add(ApiKey(valid_key='e5444-794', log_submit=True))
+        ApiKeyFactory(valid_key='e5444-794', log_submit=True)
         self.session.flush()
 
         reports = self.add_reports(3, ip=self.geoip_data['London']['ip'])

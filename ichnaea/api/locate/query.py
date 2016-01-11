@@ -329,8 +329,9 @@ class Query(object):
         if not self.collect_metrics():
             return
 
-        allow_fallback = self.api_key and self.api_key.allow_fallback or False
-        allow_fallback = str(bool(allow_fallback)).lower()
+        allow_fallback = str(bool(self.api_key and
+                                  self.api_key.should_allow('fallback') or
+                                  False)).lower()
         status = self.result_status(result)
         tags = [
             'fallback_allowed:%s' % allow_fallback,

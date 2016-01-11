@@ -28,8 +28,15 @@ class ApiKey(_Model):
     def name(self):
         return self.shortname or self.valid_key
 
+    def should_allow(self, api_type):
+        if api_type in ('fallback', 'locate'):
+            return bool(getattr(self, 'allow_%s' % api_type, False))
+        return True
+
     def should_log(self, api_type):
-        return bool(getattr(self, 'log_%s' % api_type, False))
+        if api_type in ('locate', 'region', 'submit'):
+            return bool(getattr(self, 'log_%s' % api_type, False))
+        return False
 
     def __str__(self):  # pragma: no cover
         return '<ApiKey>: %s' % self.name

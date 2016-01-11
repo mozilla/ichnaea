@@ -84,7 +84,7 @@ class BaseAPIView(BaseView):
                 skip_check = True
                 self.raven_client.captureException()
 
-        if api_key is not None:
+        if api_key is not None and api_key.should_allow(self.view_type):
             self.log_count(api_key.name, api_key.should_log(self.view_type))
 
             rate_key = 'apilimit:{key}:{path}:{time}'.format(
