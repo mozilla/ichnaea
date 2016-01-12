@@ -67,7 +67,6 @@ class BaseSubmitView(BaseAPIView):
             queue_reports.apply_async(
                 kwargs={
                     'api_key': api_key.valid_key,
-                    'ip': self.request.client_addr,
                     'nickname': self.nickname,
                     'reports': batch,
                 },

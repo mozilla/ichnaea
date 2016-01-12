@@ -16,6 +16,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Stop forwarding client IP address to data pipeline.
 
 20160112143200
 **************

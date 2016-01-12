@@ -44,7 +44,7 @@ class TestUploader(BaseExportTest):
         ApiKeyFactory(valid_key='e5444-794', log_submit=True)
         self.session.flush()
 
-        self.add_reports(3, ip=self.geoip_data['London']['ip'])
+        self.add_reports(3)
         self.add_reports(6, api_key='e5444-794')
         self.add_reports(3, api_key=None)
         self._update_all()

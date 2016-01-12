@@ -71,26 +71,26 @@ def export_reports(self, export_queue_name, queue_key=None):
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_incoming')
 def insert_reports(self, reports=(),
-                   api_key=None, email=None, ip=None, nickname=None):
+                   api_key=None, ip=None, nickname=None):
+    # BBB ip argument
     with self.redis_pipeline() as pipe:
         with self.db_session() as session:
             api_key = api_key and session.query(ApiKey).get(api_key)
             ReportQueue(
                 self, session, pipe,
                 api_key=api_key,
-                ip=ip,
                 nickname=nickname,
             )(reports)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_reports')
 def queue_reports(self, reports=(),
-                  api_key=None, email=None, ip=None, nickname=None):
+                  api_key=None, ip=None, nickname=None):
+    # BBB ip argument
     with self.redis_pipeline() as pipe:
         export.ExportQueue(
             self, None, pipe,
             api_key=api_key,
-            ip=ip,
             nickname=nickname,
         )(reports)
 
