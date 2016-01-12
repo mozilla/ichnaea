@@ -61,13 +61,6 @@ def celerybeat_schedule(app_config):
             'options': {'expires': 15},
         },
 
-        'update-cell': {  # BBB
-            'task': 'ichnaea.data.tasks.update_cell',
-            'schedule': timedelta(seconds=57),
-            'args': (500, ),
-            'options': {'expires': 60},
-        },
-
         'update-cellarea': {
             'task': 'ichnaea.data.tasks.update_cellarea',
             'schedule': timedelta(seconds=8),

@@ -20,7 +20,7 @@ class TestDatabase(DBTestCase):
             self.db_ro_session.bind.engine is self.db_ro.engine)
 
     def test_table_creation(self):
-        result = self.session.execute('select * from cell;')
+        result = self.session.execute('select * from cell_gsm;')
         self.assertTrue(result.first() is None)
 
     def test_session_hook(self):

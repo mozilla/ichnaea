@@ -4,10 +4,8 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from ichnaea.models import StationSource
 from ichnaea.models.cell import (
-    Cell,
     CellArea,
     CellAreaOCID,
-    CellBlocklist,
     CellOCID,
     CellShard,
     CellShardGsm,
@@ -102,27 +100,6 @@ class TestCellCodec(TestCase):
         value = decode_cellid(b'AAAAAAAAAAAAAAA=', codec='base64')
         self.assertEqual(value, (Radio.gsm, 0, 0, 0, 0))
         self.assertEqual(type(value[0]), Radio)
-
-
-class TestCell(DBTestCase):
-
-    def test_fields(self):
-        # BBB
-        self.session.add(Cell(
-            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=1234, cid=23456,
-            lat=GB_LAT, lon=GB_LON, radius=10, samples=15))
-        self.session.flush()
-
-        result = self.session.query(Cell).first()
-        self.assertEqual(result.radio, Radio.gsm)
-        self.assertEqual(result.mcc, GB_MCC)
-        self.assertEqual(result.mnc, GB_MNC)
-        self.assertEqual(result.lac, 1234)
-        self.assertEqual(result.cid, 23456)
-        self.assertEqual(result.lat, GB_LAT)
-        self.assertEqual(result.lon, GB_LON)
-        self.assertEqual(result.radius, 10)
-        self.assertEqual(result.samples, 15)
 
 
 class TestCellShard(DBTestCase):
@@ -473,20 +450,3 @@ class TestCellAreaOCID(DBTestCase):
             radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2,
             created=now, modified=now, radius=0, num_cells=100)
         self.assertAlmostEqual(area.score(now), 0.1, 2)
-
-
-class TestCellBlocklist(DBTestCase):
-
-    def test_fields(self):
-        self.session.add(CellBlocklist(
-            radio=Radio.lte, mcc=GB_MCC, mnc=GB_MNC,
-            lac=1234, cid=23456, count=2))
-        self.session.flush()
-
-        result = self.session.query(CellBlocklist).first()
-        self.assertEqual(result.radio, Radio.lte)
-        self.assertEqual(result.mcc, GB_MCC)
-        self.assertEqual(result.mnc, GB_MNC)
-        self.assertEqual(result.lac, 1234)
-        self.assertEqual(result.cid, 23456)
-        self.assertEqual(result.count, 2)

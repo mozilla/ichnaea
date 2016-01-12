@@ -11,6 +11,7 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 44e1b53944ee: Remove old cell tables.
 
 Changes
 ~~~~~~~

@@ -47,21 +47,6 @@ class TestCell(StationTest):
             queue.enqueue(values)
             update_cell.delay(shard_id=shard_id).get()
 
-    def test_shard_queues(self):  # BBB
-        observations = CellObservationFactory.build_batch(3)
-        data_queues = self.celery_app.data_queues
-        single_queue = data_queues['update_cell']
-        single_queue.enqueue(observations)
-        update_cell.delay().get()
-
-        self.assertEqual(single_queue.size(), 0)
-
-        total = 0
-        for shard_id in CellShard.shards().keys():
-            total += data_queues['update_cell_' + shard_id].size()
-
-        self.assertEqual(total, 3)
-
     def test_blocklist(self):
         now = util.utcnow()
         today = now.date()

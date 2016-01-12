@@ -27,14 +27,12 @@ from ichnaea.models.base import (
 from ichnaea.models import constants
 from ichnaea.models.sa_types import (
     TinyIntEnum,
-    TZDateTime as DateTime,
 )
 from ichnaea.models.schema import (
     DefaultNode,
     ValidatorNode,
 )
 from ichnaea.models.station import (
-    BboxMixin,
     PositionMixin,
     ScoreMixin,
     StationMixin,
@@ -382,44 +380,6 @@ class CellAreaOCID(CellAreaMixin, _Model):
     """CellArea OCID model."""
 
     __tablename__ = 'cell_area_ocid'
-
-
-class CellBlocklist(_Model):
-    __tablename__ = 'cell_blacklist'
-
-    _indices = (
-        PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
-    )
-
-    radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
-    mcc = Column(SmallInteger, autoincrement=False, default=None)
-    mnc = Column(SmallInteger, autoincrement=False, default=None)
-    lac = Column(SmallInteger(unsigned=True),
-                 autoincrement=False, default=None)
-    cid = Column(Integer(unsigned=True), autoincrement=False, default=None)
-    time = Column(DateTime)
-    count = Column(Integer)
-
-
-class Cell(BboxMixin, PositionMixin, TimeTrackingMixin, _Model):  # BBB
-    __tablename__ = 'cell'
-
-    _indices = (
-        PrimaryKeyConstraint('radio', 'mcc', 'mnc', 'lac', 'cid'),
-        Index('cell_created_idx', 'created'),
-        Index('cell_modified_idx', 'modified'),
-    )
-
-    radio = Column(TinyIntEnum(Radio), autoincrement=False, default=None)
-    mcc = Column(SmallInteger, autoincrement=False, default=None)
-    mnc = Column(SmallInteger, autoincrement=False, default=None)
-    lac = Column(SmallInteger(unsigned=True),
-                 autoincrement=False, default=None)
-    cid = Column(Integer(unsigned=True), autoincrement=False, default=None)
-    psc = Column(SmallInteger, autoincrement=False)
-    radius = Column(Integer)
-    samples = Column(Integer(unsigned=True))
-    new_measures = Column(Integer(unsigned=True))
 
 
 class ValidCellShardSchema(ValidCellKeySchema, ValidStationSchema):

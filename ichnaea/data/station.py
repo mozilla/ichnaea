@@ -38,11 +38,7 @@ class StationUpdater(DataTask):
         self.utcnow = util.utcnow()
         self.today = self.utcnow.date()
         self.data_queues = self.task.app.data_queues
-        self.data_queue = None
-        if shard_id:
-            # BBB, remove if check
-            queue_name = self.queue_prefix + shard_id
-            self.data_queue = self.data_queues[queue_name]
+        self.data_queue = self.data_queues[self.queue_prefix + shard_id]
 
     def stat_count(self, action, count, reason=None):
         if count > 0:
@@ -343,17 +339,6 @@ class CellUpdater(StationUpdater):
     station_type = 'cell'
     stat_obs_key = StatKey.cell
     stat_station_key = StatKey.unique_cell
-
-    def shard_queues(self, batch=100):  # BBB
-        single_queue = self.data_queues['update_cell']
-        observations = single_queue.dequeue(batch=batch)
-
-        sharded_obs = defaultdict(list)
-        for ob in observations:
-            sharded_obs[ob.shard_id].append(ob)
-        for shard_id, values in sharded_obs.items():
-            cell_queue = self.data_queues['update_cell_' + shard_id]
-            cell_queue.enqueue(list(values), pipe=self.pipe)
 
     def add_area_update(self, key):
         self.updated_areas.add(encode_cellarea(*decode_cellid(key)[:4]))
