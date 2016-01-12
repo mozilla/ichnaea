@@ -28,7 +28,7 @@ importlib==1.0.3 ; python_version < '3.0'
 ipaddr==2.1.11 ; python_version < '3.0'
 ipaddress==1.0.14 ; python_version < '3.0'
 iso8601==0.1.11
-kombu==3.0.29  # rq.filter: <=3.0.29,>3.0.32
+kombu==3.0.33
 linecache2==1.0.0 ; python_version < '3.0'
 Mako==1.0.3
 MarkupSafe==0.23

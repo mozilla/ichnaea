@@ -3,12 +3,6 @@ import os.path
 import sys
 import warnings
 
-# BBB: Workaround for https://github.com/celery/kombu/pull/540
-import uuid
-if not getattr(uuid, '_uuid_generate_random', None):  # pragma: no cover
-    setattr(uuid, '_uuid_generate_random', None)
-del uuid
-
 warnings.simplefilter('ignore', DeprecationWarning)
 warnings.simplefilter('ignore', PendingDeprecationWarning)
 
