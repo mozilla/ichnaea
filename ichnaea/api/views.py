@@ -111,7 +111,9 @@ class BaseAPIView(BaseView):
 
         # If we failed to look up an ApiKey, create an empty one
         # rather than passing None through
-        api_key = api_key or ApiKey(valid_key=None)
+        api_key = api_key or ApiKey(valid_key=None,
+                                    allow_fallback=False,
+                                    allow_locate=True)
         return self.view(api_key)
 
     def preprocess_request(self):
@@ -149,6 +151,6 @@ class BaseAPIView(BaseView):
             return self.check()
         else:
             api_key = ApiKey(
-                valid_key=None, allow_fallback=False,
+                valid_key=None, allow_fallback=False, allow_locate=True,
                 log_locate=False, log_region=False, log_submit=False)
             return self.view(api_key)
