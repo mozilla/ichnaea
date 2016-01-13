@@ -10,9 +10,11 @@ def configure_api(config):
     from ichnaea.api.locate.region_v0.views import RegionV0JSView
     from ichnaea.api.locate.region_v0.views import RegionV0JSONView
     from ichnaea.api.locate.region_v1.views import RegionV1View
-    from ichnaea.api.submit.submit_v1.views import SubmitV1View
-    from ichnaea.api.submit.submit_v2.views import SubmitV2View
-    from ichnaea.api.submit.submit_v3.views import SubmitV3View
+    from ichnaea.api.submit.views import (
+        SubmitV1View,
+        SubmitV2View,
+        SubmitV3View,
+    )
 
     LocateV1View.configure(config)
     LocateV2View.configure(config)

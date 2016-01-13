@@ -4,7 +4,7 @@ import colander
 import pytz
 
 from ichnaea.api.exceptions import ParseError
-from ichnaea.api.submit.submit_v1.schema import SUBMIT_V1_SCHEMA
+from ichnaea.api.submit.schema_v1 import SUBMIT_V1_SCHEMA
 from ichnaea.api.submit.tests.base import BaseSubmitTest
 from ichnaea.models import Radio
 from ichnaea.tests.base import (

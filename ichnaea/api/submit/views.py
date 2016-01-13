@@ -8,7 +8,12 @@ from ichnaea.api.exceptions import (
     ParseError,
     ServiceUnavailable,
     UploadSuccess,
+    UploadSuccessV1,
 )
+from ichnaea.api.submit.schema_v1 import SUBMIT_V1_SCHEMA
+from ichnaea.api.submit.schema_v2 import SUBMIT_V2_SCHEMA
+from ichnaea.api.submit.schema_v3 import SUBMIT_V3_SCHEMA
+
 from ichnaea.api.views import BaseAPIView
 from ichnaea.data.tasks import queue_reports
 
@@ -81,6 +86,33 @@ class BaseSubmitView(BaseAPIView):
         try:
             self.submit(api_key)
         except RedisError:
-            raise ServiceUnavailable()
+            raise self.prepare_exception(ServiceUnavailable())
 
         return self.prepare_exception(self.success())
+
+
+class SubmitV1View(BaseSubmitView):
+    """"Submit version 1 view for `/v1/submit`."""
+
+    metric_path = 'v1.submit'  #:
+    route = '/v1/submit'  #:
+    schema = SUBMIT_V1_SCHEMA  #:
+
+    #: :exc:`ichnaea.api.exceptions.UploadSuccessV1`
+    success = UploadSuccessV1
+
+
+class SubmitV2View(BaseSubmitView):
+    """"Submit version 2 view for `/v1/geosubmit`."""
+
+    metric_path = 'v1.geosubmit'  #:
+    route = '/v1/geosubmit'  #:
+    schema = SUBMIT_V2_SCHEMA  #:
+
+
+class SubmitV3View(BaseSubmitView):
+    """"Submit version 3 view for `/v2/geosubmit`."""
+
+    metric_path = 'v2.geosubmit'  #:
+    route = '/v2/geosubmit'  #:
+    schema = SUBMIT_V3_SCHEMA  #:
