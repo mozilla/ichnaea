@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Enable `shapely.speedups` to speed up GeoJSON parsing.
+
 - Ship buffered region file with the code.
 
 - Stop forwarding client IP address to data pipeline.
