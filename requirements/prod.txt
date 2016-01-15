@@ -40,13 +40,13 @@ ordereddict==1.1 ; python_version < '3.0'
 PasteDeploy==1.5.2
 pyasn1==0.1.9
 pycparser==2.14
-PyMySQL==0.7.0
+PyMySQL==0.7.1
 pyopenssl==0.15.1
 pyramid==1.6.0
 pyramid-chameleon==0.3
 python-editor==0.5
 pytz==2015.7
-raven==5.9.2
+raven==5.10.0
 redis==2.10.5
 repoze.lru==0.6
 requests==2.9.1
