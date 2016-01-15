@@ -15,8 +15,10 @@ from rtree import index
 from ichnaea import geocalc
 from ichnaea import util
 
-JSON_FILE = os.path.join(os.path.abspath(
+REGIONS_FILE = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), 'regions.geojson.gz')
+REGIONS_BUFFER_FILE = os.path.join(os.path.abspath(
+    os.path.dirname(__file__)), 'regions_buffer.geojson.gz')
 
 DATELINE_EAST = geometry.box(180.0, -90.0, 270.0, 90.0)
 DATELINE_WEST = geometry.box(-270.0, -90.0, -180.0, 90.0)
@@ -43,18 +45,20 @@ class Geocoder(object):
     _valid_regions = None  #: Set of known and valid region codes
     _radii = None  #: A cache of region radii
 
-    def __init__(self, json_file=JSON_FILE):
+    def __init__(self,
+                 regions_file=REGIONS_FILE,
+                 buffer_file=REGIONS_BUFFER_FILE):
         self._buffered_shapes = {}
         self._prepared_shapes = {}
         self._shapes = {}
         self._tree_ids = {}
         self._radii = {}
 
-        with util.gzip_open(json_file, 'r') as fd:
-            data = simplejson.load(fd)
+        with util.gzip_open(regions_file, 'r') as fd:
+            regions_data = simplejson.load(fd)
 
         genc_regions = frozenset([rec.alpha2 for rec in genc.REGIONS])
-        for feature in data['features']:
+        for feature in regions_data['features']:
             code = feature['properties']['alpha2']
             if code in genc_regions:
                 shape = geometry.shape(feature['geometry'])
@@ -62,36 +66,31 @@ class Geocoder(object):
                 self._prepared_shapes[code] = prepared.prep(shape)
                 self._radii[code] = feature['properties']['radius']
 
+        with util.gzip_open(buffer_file, 'r') as fd:
+            buffer_data = simplejson.load(fd)
+
         i = 0
         envelopes = []
-        for code, shape in self._shapes.items():
-            # Build up region buffers, to create shapes that include all of
-            # the coastal areas and boundaries of the regions and anywhere
-            # a cell signal could still be recorded. The value is in decimal
-            # degrees (1.0 == ~100km) but calculations don't take projection
-            # / WSG84 into account.
-            # After buffering remove any parts that crosses the -180.0/+180.0
-            # longitude boundary to the east or west.
-            buffered = (shape.buffer(0.5)
-                             .difference(DATELINE_EAST)
-                             .difference(DATELINE_WEST))
-            self._buffered_shapes[code] = prepared.prep(buffered)
-
-            # Collect rtree index entries, and maintain a separate id to
-            # code mapping. We don't use index object support as it
-            # requires un/pickling the object entries on each lookup.
-            if isinstance(buffered, geometry.base.BaseMultipartGeometry):
-                # Index bounding box of individual polygons instead of
-                # the multipolygon, to avoid issues with regions crossing
-                # the -180.0/+180.0 longitude boundary.
-                for geom in buffered.geoms:
-                    envelopes.append((i, geom.envelope.bounds, None))
+        for feature in buffer_data['features']:
+            code = feature['properties']['alpha2']
+            if code in genc_regions:
+                shape = geometry.shape(feature['geometry'])
+                self._buffered_shapes[code] = prepared.prep(shape)
+                # Collect rtree index entries, and maintain a separate id to
+                # code mapping. We don't use index object support as it
+                # requires un/pickling the object entries on each lookup.
+                if isinstance(shape, geometry.base.BaseMultipartGeometry):
+                    # Index bounding box of individual polygons instead of
+                    # the multipolygon, to avoid issues with regions crossing
+                    # the -180.0/+180.0 longitude boundary.
+                    for geom in shape.geoms:
+                        envelopes.append((i, geom.envelope.bounds, None))
+                        self._tree_ids[i] = code
+                        i += 1
+                else:
+                    envelopes.append((i, shape.envelope.bounds, None))
                     self._tree_ids[i] = code
                     i += 1
-            else:
-                envelopes.append((i, buffered.envelope.bounds, None))
-                self._tree_ids[i] = code
-                i += 1
 
         props = index.Property()
         props.fill_factor = 0.9

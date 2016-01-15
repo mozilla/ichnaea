@@ -10,6 +10,7 @@ import shapely.geometry
 import shapely.ops
 
 from ichnaea import geocalc
+from ichnaea import geocode
 from ichnaea import util
 
 DATELINE_EAST = shapely.geometry.box(180.0, -90.0, 270.0, 90.0)
@@ -181,6 +182,8 @@ def simplify(features):  # pragma: no cover
 
 def to_geojson(regions):  # pragma: no cover
     features = []
+    features_buffered = []
+
     for code, region in regions.items():
         # calculate the maximum radius of each polygon
         boundary = region.boundary
@@ -206,13 +209,40 @@ def to_geojson(regions):  # pragma: no cover
             'geometry': shapely.geometry.mapping(region),
         })
 
+        # Build up region buffers, to create shapes that include all of
+        # the coastal areas and boundaries of the regions and anywhere
+        # a cell signal could still be recorded. The value is in decimal
+        # degrees (1.0 == ~100km) but calculations don't take projection
+        # / WSG84 into account.
+        # After buffering remove any parts that crosses the -180.0/+180.0
+        # longitude boundary to the east or west.
+        buffered = (region.buffer(0.5)
+                          .simplify(0.02)
+                          .difference(DATELINE_EAST)
+                          .difference(DATELINE_WEST))
+
+        features_buffered.append({
+            'type': 'Feature',
+            'properties': {
+                'alpha2': code,
+            },
+            'geometry': shapely.geometry.mapping(buffered),
+        })
+
     def _sort(value):
         return value['properties']['alpha2']
 
-    features = sorted(features, key=_sort)
-    lines = ',\n'.join([json.dumps(f, sort_keys=True, separators=(',', ':'))
-                        for f in features])
-    return '{"type": "FeatureCollection", "features": [\n' + lines + '\n]}\n'
+    def _to_collection(features):
+        # put each region on a single line to get a diffable output
+        lines = ',\n'.join([json.dumps(feature,
+                                       sort_keys=True,
+                                       separators=(',', ':'))
+                            for feature in sorted(features, key=_sort)])
+
+        return ('{"type": "FeatureCollection", '
+                '"features": [\n' + lines + '\n]}\n')
+
+    return (_to_collection(features), _to_collection(features_buffered))
 
 
 def main(argv):  # pragma: no cover
@@ -224,10 +254,15 @@ def main(argv):  # pragma: no cover
     os.remove('data/temp.geojson')
     data = json.loads(jsondata)
     simplified = simplify(data['features'])
-    output = to_geojson(simplified)
-    with util.gzip_open('ichnaea/regions.geojson.gz',
+    region_collection, buffer_collection = to_geojson(simplified)
+
+    with util.gzip_open(geocode.REGIONS_FILE,
                         'w', compresslevel=7) as fd:
-        fd.write(output)
+        fd.write(region_collection)
+
+    with util.gzip_open(geocode.REGIONS_BUFFER_FILE,
+                        'w', compresslevel=7) as fd:
+        fd.write(buffer_collection)
 
 
 def console_entry():  # pragma: no cover
