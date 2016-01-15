@@ -1,7 +1,7 @@
 """Remove CDMA networks.
 
 Revision ID: b24dbb9ccfe
-Revises: 18d72822fe20
+Revises: None
 Create Date: 2015-09-16 11:50:38.367525
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 log = logging.getLogger('alembic.migration')
 revision = 'b24dbb9ccfe'
-down_revision = '18d72822fe20'
+down_revision = None
 
 
 def upgrade():

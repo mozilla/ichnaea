@@ -28,8 +28,7 @@ _compare_attrs = {
     sqltypes.String: ('binary', 'charset', 'collation', 'length', 'unicode'),
 }
 
-SQL_BASE12 = os.path.join(DATA_DIRECTORY, 'base12.sql')
-SQL_BASE13 = os.path.join(DATA_DIRECTORY, 'base13.sql')
+SQL_BASE = os.path.join(DATA_DIRECTORY, 'base.sql')
 
 
 def db_compare_type(context, inspected_column,
@@ -57,20 +56,20 @@ def db_compare_type(context, inspected_column,
     raise AssertionError('Unsupported DB type comparison.')
 
 
-class MigrationTest(object):
+class TestMigration(TestCase):
 
-    base = None
+    base = SQL_BASE
     rev = None
 
     def setUp(self):
-        super(MigrationTest, self).setUp()
+        super(TestMigration, self).setUp()
         self.db = _make_db()
         # capture state of fresh database
         self.head_metadata = self.inspect_db()
         DBTestCase.cleanup_tables(self.db.engine)
 
     def tearDown(self):
-        super(MigrationTest, self).tearDown()
+        super(TestMigration, self).tearDown()
         self.db.engine.pool.dispose()
         del self.db
         # setup normal database schema again
@@ -149,15 +148,3 @@ class MigrationTest(object):
             metadata_diff = compare_metadata(context, self.head_metadata)
 
         self.assertEqual(metadata_diff, [])
-
-
-class TestMigration12(MigrationTest, TestCase):
-
-    base = SQL_BASE12
-    rev = None
-
-
-class TestMigration13(MigrationTest, TestCase):
-
-    base = SQL_BASE13
-    rev = 'b24dbb9ccfe'

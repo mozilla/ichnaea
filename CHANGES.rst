@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove migrations and tests for 1.2 to 1.3 upgrade.
+
 - Enable `shapely.speedups` to speed up GeoJSON parsing.
 
 - Ship buffered region file with the code.
