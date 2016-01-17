@@ -1,7 +1,7 @@
 import colander
 
 from ichnaea.api.exceptions import LocationNotFoundV1
-from ichnaea.api.locate.locate_v1.schema import LOCATE_V1_SCHEMA
+from ichnaea.api.locate.schema_v1 import LOCATE_V1_SCHEMA
 from ichnaea.api.locate.tests.base import (
     BaseLocateTest,
     CommonLocateErrorTest,

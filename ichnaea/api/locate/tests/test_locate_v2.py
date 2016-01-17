@@ -1,7 +1,7 @@
 import colander
 
 from ichnaea.models import Radio
-from ichnaea.api.locate.locate_v2.schema import LOCATE_V2_SCHEMA
+from ichnaea.api.locate.schema_v2 import LOCATE_V2_SCHEMA
 from ichnaea.api.locate.tests.base import (
     BaseLocateTest,
     CommonLocateErrorTest,
