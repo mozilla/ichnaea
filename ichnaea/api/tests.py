@@ -64,8 +64,8 @@ class TestExceptions(TestCase):
         response = self._check(error, 404)
         self.assertTrue('notFound' in response.text)
 
-    def test_location_not_found_v1(self):
-        error = api_exceptions.LocationNotFoundV1
+    def test_location_not_found_v0(self):
+        error = api_exceptions.LocationNotFoundV0
         response = self._check(error, 200)
         self.assertEqual(response.json, {'status': 'not_found'})
 

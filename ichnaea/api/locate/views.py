@@ -1,15 +1,15 @@
 """
-Implementation of a locate specific HTTP service view.
+Implementation of locate specific HTTP service views.
 """
 
 from ichnaea.api.exceptions import (
     LocationNotFound,
-    LocationNotFoundV1,
+    LocationNotFoundV0,
     RegionNotFoundV0,
     RegionNotFoundV0JS,
 )
+from ichnaea.api.locate.schema_v0 import LOCATE_V0_SCHEMA
 from ichnaea.api.locate.schema_v1 import LOCATE_V1_SCHEMA
-from ichnaea.api.locate.schema_v2 import LOCATE_V2_SCHEMA
 from ichnaea.api.locate.query import Query
 from ichnaea.api.views import BaseAPIView
 
@@ -63,12 +63,13 @@ class BasePositionView(BaseLocateView):
     view_type = 'locate'  #:
 
 
-class LocateV1View(BasePositionView):
+class LocateV0View(BasePositionView):
+    """View class for v1/search HTTP API."""
 
     metric_path = 'v1.search'  #:
-    not_found = LocationNotFoundV1  #:
+    not_found = LocationNotFoundV0  #:
     route = '/v1/search'  #:
-    schema = LOCATE_V1_SCHEMA  #:
+    schema = LOCATE_V0_SCHEMA  #:
 
     def prepare_response(self, result):
         response = {
@@ -84,11 +85,12 @@ class LocateV1View(BasePositionView):
         return response
 
 
-class LocateV2View(BasePositionView):
+class LocateV1View(BasePositionView):
+    """View class for v1/geolocate HTTP API."""
 
     metric_path = 'v1.geolocate'  #:
     route = '/v1/geolocate'  #:
-    schema = LOCATE_V2_SCHEMA  #:
+    schema = LOCATE_V1_SCHEMA  #:
 
     def prepare_response(self, result):
         response = {
@@ -136,6 +138,7 @@ class RegionV0BaseView(BaseLocateView):
 
 
 class RegionV0JSView(RegionV0BaseView):
+    """View class for country.js HTTP API."""
 
     not_found = RegionNotFoundV0JS  #:
     metric_path = 'v0.country_js'  #:
@@ -155,10 +158,11 @@ function geoip_country_name() { return '%s'; }
 
 
 class RegionV0JSONView(RegionV0BaseView):
+    """View class for country.json HTTP API."""
 
     not_found = RegionNotFoundV0  #:
     metric_path = 'v0.country_json'  #:
-    renderer = 'json'
+    renderer = 'json'  #:
     route = '/country.json'  #:
 
     def prepare_response(self, result):
@@ -168,12 +172,13 @@ class RegionV0JSONView(RegionV0BaseView):
         }
 
 
-class RegionV1View(LocateV2View):
+class RegionV1View(LocateV1View):
+    """View class for v1/country HTTP API."""
 
     check_api_key = False  #:
     error_on_invalidkey = False  #:
     metric_path = 'v1.country'  #:
-    renderer = 'json'
+    renderer = 'json'  #:
     route = '/v1/country'  #:
     searcher = 'region_searcher'  #:
     view_type = 'region'  #:

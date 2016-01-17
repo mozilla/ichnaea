@@ -1,3 +1,7 @@
+"""
+Colander schemata describing the public v2/geosubmit HTTP API.
+"""
+
 import colander
 
 from ichnaea.api.schema import (
@@ -6,54 +10,35 @@ from ichnaea.api.schema import (
     OptionalSequenceSchema,
 )
 from ichnaea.api.submit.schema import (
+    BluetoothBeaconsSchema,
     CellTowerSchema,
     PositionSchema,
     ReportSchema,
 )
 
 
-class ReportV2Schema(PositionSchema, ReportSchema):
+class CellTowersV2Schema(OptionalSequenceSchema):
 
-    _position_fields = (
-        'latitude',
-        'longitude',
-        'accuracy',
-        'altitude',
-        'altitudeAccuracy',
-        'age',
-        'heading',
-        'pressure',
-        'speed',
-        'source',
-    )
+    @colander.instantiate()
+    class SequenceItem(CellTowerSchema):
 
-    @colander.instantiate(missing=())
-    class cellTowers(OptionalSequenceSchema):  # NOQA
-
-        @colander.instantiate()
-        class SequenceItem(CellTowerSchema):
-
-            psc = OptionalIntNode(internal_name='primaryScramblingCode')
-
-    def deserialize(self, data):
-        data = super(ReportV2Schema, self).deserialize(data)
-        if data in (colander.drop, colander.null):
-            return data
-        position_data = {}
-        for field in self._position_fields:
-            if field in data:
-                position_data[field] = data[field]
-                del data[field]
-        if position_data:
-            data['position'] = position_data
-        return data
+        primaryScramblingCode = OptionalIntNode()
 
 
 class SubmitV2Schema(OptionalMappingSchema):
 
     @colander.instantiate()
     class items(OptionalSequenceSchema):  # NOQA
-        report = ReportV2Schema()
+
+        @colander.instantiate()
+        class SequenceItem(ReportSchema):
+
+            bluetoothBeacons = BluetoothBeaconsSchema(missing=())
+            cellTowers = CellTowersV2Schema(missing=())
+            position = PositionSchema(missing=None)
+
+            # connection is not mapped on purpose
+            # connection = ConnectionSchema(missing=None)
 
 
 SUBMIT_V2_SCHEMA = SubmitV2Schema()

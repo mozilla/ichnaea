@@ -14,6 +14,8 @@
    query
    result
    schema
+   schema_v0
+   schema_v1
    searcher
    source
    views

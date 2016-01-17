@@ -1,5 +1,6 @@
 """
-Contains helper functions for region related tasks.
+Contains a reverse geocoder to turn lat/lon and mcc data into region
+codes.
 """
 
 from collections import namedtuple

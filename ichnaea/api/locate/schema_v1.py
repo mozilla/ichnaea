@@ -1,3 +1,10 @@
+"""
+Colander schemata describing the public v1/geolocate HTTP API.
+
+This API is based on the `Google geolocation API
+<https://developers.google.com/maps/documentation/business/geolocation/>`_.
+"""
+
 import colander
 
 from ichnaea.api.schema import (
@@ -10,39 +17,54 @@ from ichnaea.api.locate.schema import (
     FallbackSchema,
 )
 
+RADIO_STRINGS = ['gsm', 'cdma', 'wcdma', 'lte']
 
-RADIO_STRINGS = ['gsm', 'cdma', 'umts', 'wcdma', 'lte']
 
-
-class CellsSchema(InternalSequenceSchema):
+class CellTowersSchema(InternalSequenceSchema):
 
     @colander.instantiate()
     class SequenceItem(InternalMappingSchema):
 
+        # radio is a FxOS specific undocumented workaround
         radio = InternalSchemaNode(
             colander.String(),
-            validator=colander.OneOf(RADIO_STRINGS), missing=None)
-        mcc = InternalSchemaNode(colander.Integer(), missing=None)
-        mnc = InternalSchemaNode(colander.Integer(), missing=None)
-        lac = InternalSchemaNode(colander.Integer(), missing=None)
-        cid = InternalSchemaNode(colander.Integer(), missing=None)
+            validator=colander.OneOf(RADIO_STRINGS), missing=colander.drop)
+        # radioType resolves to the internal field 'radio', so if both
+        # 'radio' and 'radioType' are provided, radioType should take
+        # precedence. colander respects the order that fields are defined
+        # and so radioType is defined after the 'radio' field.
+        radioType = InternalSchemaNode(
+            colander.String(), validator=colander.OneOf(RADIO_STRINGS),
+            missing=colander.drop, internal_name='radio')
+        mobileCountryCode = InternalSchemaNode(
+            colander.Integer(), missing=None, internal_name='mcc')
+        mobileNetworkCode = InternalSchemaNode(
+            colander.Integer(), missing=None, internal_name='mnc')
+        locationAreaCode = InternalSchemaNode(
+            colander.Integer(), missing=None, internal_name='lac')
+        cellId = InternalSchemaNode(
+            colander.Integer(), missing=None, internal_name='cid')
 
-        asu = InternalSchemaNode(colander.Integer(), missing=None)
+        age = InternalSchemaNode(colander.Integer(), missing=None)
         psc = InternalSchemaNode(colander.Integer(), missing=None)
-        signal = InternalSchemaNode(colander.Integer(), missing=None)
-        ta = InternalSchemaNode(colander.Integer(), missing=None)
+        signalStrength = InternalSchemaNode(
+            colander.Integer(), missing=None, internal_name='signal')
+        timingAdvance = InternalSchemaNode(
+            colander.Integer(), missing=None, internal_name='ta')
 
 
-class WifisSchema(InternalSequenceSchema):
+class WifiAccessPointsSchema(InternalSequenceSchema):
 
     @colander.instantiate()
     class SequenceItem(InternalMappingSchema):
 
-        key = InternalSchemaNode(
+        macAddress = InternalSchemaNode(
             colander.String(), missing=None, internal_name='mac')
-        frequency = InternalSchemaNode(colander.Integer(), missing=None)
+        age = InternalSchemaNode(colander.Integer(), missing=None)
         channel = InternalSchemaNode(colander.Integer(), missing=None)
-        signal = InternalSchemaNode(colander.Integer(), missing=None)
+        frequency = InternalSchemaNode(colander.Integer(), missing=None)
+        signalStrength = InternalSchemaNode(
+            colander.Integer(), missing=None, internal_name='signal')
         signalToNoiseRatio = InternalSchemaNode(
             colander.Integer(), missing=None, internal_name='snr')
         ssid = InternalSchemaNode(colander.String(), missing=None)
@@ -50,11 +72,29 @@ class WifisSchema(InternalSequenceSchema):
 
 class LocateV1Schema(BaseLocateSchema):
 
-    radio = InternalSchemaNode(
-        colander.String(),
-        validator=colander.OneOf(RADIO_STRINGS), missing=None)
-    cell = CellsSchema(missing=())
-    wifi = WifisSchema(missing=())
+    carrier = InternalSchemaNode(colander.String(), missing=None)
+    considerIp = InternalSchemaNode(colander.Boolean(), missing=True)
+    homeMobileCountryCode = InternalSchemaNode(
+        colander.Integer(), missing=None)
+    homeMobileNetworkCode = InternalSchemaNode(
+        colander.Integer(), missing=None)
+    radioType = InternalSchemaNode(
+        colander.String(), validator=colander.OneOf(RADIO_STRINGS),
+        missing=colander.drop, internal_name='radio')
+
+    cellTowers = CellTowersSchema(missing=(), internal_name='cell')
+    wifiAccessPoints = WifiAccessPointsSchema(missing=(), internal_name='wifi')
     fallbacks = FallbackSchema(missing=None)
+
+    def __init__(self, *args, **kw):
+        super(LocateV1Schema, self).__init__(*args, **kw)
+        self.fallback_defaults = self.get('fallbacks').deserialize({})
+
+    def deserialize(self, data):
+        data = super(LocateV1Schema, self).deserialize(data)
+        if data['fallbacks'] is None:
+            data['fallbacks'] = dict(self.fallback_defaults)
+            data['fallbacks']['ipf'] = data['considerIp']
+        return data
 
 LOCATE_V1_SCHEMA = LocateV1Schema()

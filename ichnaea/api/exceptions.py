@@ -54,10 +54,10 @@ class UploadSuccess(JSONException):
         return {}
 
 
-class UploadSuccessV1(UploadSuccess):
+class UploadSuccessV0(UploadSuccess):
     """
     A variant of :exc:`~ichnaea.api.exceptions.UploadSuccess` used
-    in earlier version 1 HTTP APIs.
+    in earlier version 0 HTTP APIs.
     """
 
     code = 204  #:
@@ -137,10 +137,10 @@ class LocationNotFound(BaseAPIClientError):
     message = 'Not found'  #:
 
 
-class LocationNotFoundV1(LocationNotFound):
+class LocationNotFoundV0(LocationNotFound):
     """
     A variant of :exc:`~ichnaea.api.exceptions.LocationNotFound` used
-    in earlier version 1 HTTP APIs.
+    in earlier version 0 HTTP APIs.
     """
 
     code = 200  #:

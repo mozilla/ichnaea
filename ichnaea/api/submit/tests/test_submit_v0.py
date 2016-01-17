@@ -4,7 +4,7 @@ import colander
 import pytz
 
 from ichnaea.api.exceptions import ParseError
-from ichnaea.api.submit.schema_v1 import SUBMIT_V1_SCHEMA
+from ichnaea.api.submit.schema_v0 import SUBMIT_V0_SCHEMA
 from ichnaea.api.submit.tests.base import BaseSubmitTest
 from ichnaea.models import Radio
 from ichnaea.tests.base import (
@@ -20,7 +20,7 @@ from ichnaea import util
 
 class TestSubmitSchema(TestCase):
 
-    schema = SUBMIT_V1_SCHEMA
+    schema = SUBMIT_V0_SCHEMA
 
     def test_empty(self):
         with self.assertRaises(colander.Invalid):
