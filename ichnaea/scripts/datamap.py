@@ -1,3 +1,9 @@
+"""
+Generate datamap image tiles and upload them to Amazon S3.
+
+Script is installed as `location_map`.
+"""
+
 import argparse
 import hashlib
 import os

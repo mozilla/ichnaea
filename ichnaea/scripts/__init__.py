@@ -1,0 +1,3 @@
+"""
+Contains console script logic.
+"""

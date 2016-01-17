@@ -1,3 +1,9 @@
+"""
+Load/import our own cell or OpenCellID's cell export data.
+
+Script is installed as `location_load`.
+"""
+
 import argparse
 import os
 import os.path
@@ -37,7 +43,7 @@ def main(argv, _db_rw=None, _redis_client=None):  # pragma: no cover
     parser = argparse.ArgumentParser(
         prog=argv[0], description='Load/import cell data.')
     parser.add_argument('--datatype', default='ocid',
-                        help='Type of the data file, e.g. ocid')
+                        help='Type of the data file, cell or ocid')
     parser.add_argument('--filename',
                         help='Path to the gzipped csv file.')
 

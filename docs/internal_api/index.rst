@@ -35,5 +35,6 @@ Indices and Tables
    log
    models/index
    queue
+   scripts/index
    util
    webapp/index

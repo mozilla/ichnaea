@@ -1,3 +1,14 @@
+"""
+Parse naturalearth 50m admin subunits dataset and generate minimal
+GeoJSON files for regions and buffered regions.
+
+Script is installed as `location_region_json`.
+
+It requires the `ogr2ogr` command line tool from the `gdal` package
+to be installed and available on the path.
+"""
+
+import argparse
 from collections import defaultdict
 import json
 import os
@@ -246,6 +257,12 @@ def to_geojson(regions):  # pragma: no cover
 
 
 def main(argv):  # pragma: no cover
+    parser = argparse.ArgumentParser(
+        prog=argv[0], description='Create region GeoJSON files.')
+
+    # implicitly parse and react to -h/--help
+    parser.parse_args(argv[1:])
+
     os.system('ogr2ogr -f GeoJSON '
               '-select "%s" -segmentize 0.1 data/temp.geojson '
               'data/ne_50m_admin_0_map_subunits.dbf' % ', '.join(PROPERTIES))

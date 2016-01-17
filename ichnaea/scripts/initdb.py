@@ -1,3 +1,9 @@
+"""
+Initialize Ichnaea database schema and users for the first time.
+
+Script is installed as `location_initdb`.
+"""
+
 import argparse
 from collections import namedtuple
 import os
@@ -85,14 +91,14 @@ def create_schema(engine, alembic_cfg, location_cfg):  # pragma: no cover
 
 def main(argv, _db_rw=None, _raven_client=None):  # pragma: no cover
     parser = argparse.ArgumentParser(
-        prog=argv[0], description='Initialize Ichnaea database')
+        prog=argv[0], description='Initialize Ichnaea database.')
 
     parser.add_argument('--alembic_ini',
                         help='Path to the alembic migration config.')
     parser.add_argument('--location_ini',
                         help='Path to the ichnaea app config.')
     parser.add_argument('--initdb', action='store_true',
-                        help='Initialize database')
+                        help='Initialize database.')
 
     args = parser.parse_args(argv[1:])
 
