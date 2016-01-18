@@ -3,6 +3,7 @@ from ichnaea.api.locate.tests.base import (
     CommonLocateErrorTest,
     CommonLocateTest,
 )
+from ichnaea.models import Radio
 from ichnaea.tests.base import AppTestCase
 from ichnaea.tests.factories import (
     CellShardFactory,
@@ -102,7 +103,7 @@ class TestView(RegionBase, CommonLocateTest):
 
     def test_cell(self):
         # cell with unique mcc to region mapping
-        cell = CellShardFactory.create(mcc=235)
+        cell = CellShardFactory(mcc=235)
         self.session.flush()
 
         query = self.model_query(cells=[cell])
@@ -112,7 +113,7 @@ class TestView(RegionBase, CommonLocateTest):
 
     def test_cell_ambiguous(self):
         # cell with ambiguous mcc to region mapping
-        cell = CellShardFactory.create(mcc=234)
+        cell = CellShardFactory(mcc=234)
         self.session.flush()
 
         query = self.model_query(cells=[cell])
@@ -121,7 +122,7 @@ class TestView(RegionBase, CommonLocateTest):
         self.check_db_calls(rw=0, ro=2)
 
     def test_cell_geoip_match(self):
-        cell = CellShardFactory.create(mcc=234)
+        cell = CellShardFactory(mcc=234)
         self.session.flush()
 
         query = self.model_query(cells=[cell])
@@ -132,7 +133,7 @@ class TestView(RegionBase, CommonLocateTest):
     def test_cell_geoip_mismatch(self):
         # UK GeoIP with ambiguous US mcc
         uk_cell = CellShardFactory.build(mcc=234)
-        us_cell = CellShardFactory.create(mcc=310)
+        us_cell = CellShardFactory(mcc=310)
         self.session.flush()
 
         query = self.model_query(cells=[us_cell])
@@ -142,7 +143,7 @@ class TestView(RegionBase, CommonLocateTest):
 
     def test_cell_over_geoip(self):
         # UK GeoIP with single DE cell
-        cell = CellShardFactory.create(mcc=262)
+        cell = CellShardFactory(mcc=262)
         self.session.flush()
 
         query = self.model_query(cells=[cell])
@@ -152,8 +153,8 @@ class TestView(RegionBase, CommonLocateTest):
 
     def test_cells_over_geoip(self):
         # UK GeoIP with multiple US cells
-        us_cell1 = CellShardFactory.create(mcc=310, samples=100)
-        us_cell2 = CellShardFactory.create(mcc=311, samples=100)
+        us_cell1 = CellShardFactory(radio=Radio.gsm, mcc=310, samples=100)
+        us_cell2 = CellShardFactory(radio=Radio.lte, mcc=311, samples=100)
         self.session.flush()
 
         query = self.model_query(cells=[us_cell1, us_cell2])
