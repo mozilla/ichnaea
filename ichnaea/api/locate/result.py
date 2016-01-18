@@ -58,9 +58,41 @@ class Result(object):
             all_fields.append(getattr(self, field, None))
         return None in all_fields
 
+    def as_list(self):
+        """Return a new result list including this result."""
+        return ResultList(self)
+
     def satisfies(self, query):
         """Does this result match the expected query accuracy?"""
         return False
+
+
+class Position(Result):
+    """The position returned by a position query."""
+
+    _required = ('lat', 'lon', 'accuracy', 'score')  #:
+
+    def as_list(self):
+        """Return a new position result list including this result."""
+        return PositionResultList(self)
+
+    def satisfies(self, query):
+        if self.data_accuracy <= query.expected_accuracy:
+            return True
+        return False
+
+
+class Region(Result):
+    """The region returned by a region query."""
+
+    _required = ('region_code', 'region_name', 'accuracy', 'score')  #:
+
+    def as_list(self):
+        """Return a new region result list including this result."""
+        return RegionResultList(self)
+
+    def satisfies(self, query):
+        return not self.empty()
 
 
 class ResultList(object):
@@ -131,21 +163,9 @@ class ResultList(object):
         return sorted_results[0]
 
 
-class Position(Result):
-    """The position returned by a position query."""
-
-    _required = ('lat', 'lon', 'accuracy', 'score')  #:
-
-    def satisfies(self, query):
-        if self.data_accuracy <= query.expected_accuracy:
-            return True
-        return False
+class PositionResultList(ResultList):
+    """A collection of position results."""
 
 
-class Region(Result):
-    """The region returned by a region query."""
-
-    _required = ('region_code', 'region_name', 'accuracy', 'score')  #:
-
-    def satisfies(self, query):
-        return not self.empty()
+class RegionResultList(ResultList):
+    """A collection of region results."""

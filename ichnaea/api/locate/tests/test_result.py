@@ -2,7 +2,9 @@ from ichnaea.api.locate.constants import DataAccuracy
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
     Position,
+    PositionResultList,
     Region,
+    RegionResultList,
     Result,
     ResultList,
 )
@@ -27,6 +29,9 @@ class TestResult(TestCase):
 
     def test_score(self):
         self.assertAlmostEqual(Result().score, 0.0, 4)
+
+    def test_as_list(self):
+        self.assertEqual(type(Result().as_list()), ResultList)
 
     def test_satisfies(self):
         self.assertFalse(Result().satisfies(Query()))
@@ -103,6 +108,9 @@ class TestRegion(TestCase):
             region_code='DE', region_name='Germany', accuracy=100000.0)
         self.assertFalse(region.empty())
 
+    def test_as_list(self):
+        self.assertEqual(type(Region().as_list()), RegionResultList)
+
     def test_satisfies(self):
         region = Region(
             region_code='DE', region_name='Germany', accuracy=100000.0)
@@ -141,6 +149,9 @@ class TestPosition(TestCase):
     def test_not_empty(self):
         self.assertFalse(Position(lat=1.0, lon=1.0, accuracy=1.0).empty())
         self.assertFalse(Position(lat=0.0, lon=0.0, accuracy=0.0).empty())
+
+    def test_as_list(self):
+        self.assertEqual(type(Position().as_list()), PositionResultList)
 
     def test_satisfies(self):
         wifis = WifiShardFactory.build_batch(2)

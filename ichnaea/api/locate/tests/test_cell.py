@@ -6,7 +6,7 @@ from ichnaea.api.locate.constants import (
     CELL_MAX_ACCURACY,
     CELLAREA_MIN_ACCURACY,
 )
-from ichnaea.api.locate.result import ResultList
+from ichnaea.api.locate.result import PositionResultList
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.tests.factories import (
     CellAreaFactory,
@@ -24,7 +24,8 @@ class TestCellPosition(BaseSourceTest):
     def test_check_empty(self):
         query = self.model_query()
         result = self.source.result_type()
-        self.assertFalse(self.source.should_search(query, ResultList(result)))
+        self.assertFalse(
+            self.source.should_search(query, PositionResultList(result)))
 
     def test_empty(self):
         query = self.model_query()
@@ -81,7 +82,7 @@ class TestCellPosition(BaseSourceTest):
             query = self.model_query(cells=cells)
             result = self.source.result_type()
             self.assertFalse(
-                self.source.should_search(query, ResultList(result)))
+                self.source.should_search(query, PositionResultList(result)))
             check_db_calls(rw=0, ro=0)
 
     def test_smallest_area(self):
@@ -116,7 +117,8 @@ class TestOCIDPositionSource(BaseSourceTest):
     def test_check_empty(self):
         query = self.model_query()
         result = self.source.result_type()
-        self.assertFalse(self.source.should_search(query, ResultList(result)))
+        self.assertFalse(
+            self.source.should_search(query, PositionResultList(result)))
 
     def test_empty(self):
         query = self.model_query()

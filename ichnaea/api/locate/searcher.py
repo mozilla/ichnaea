@@ -18,7 +18,6 @@ from ichnaea.api.locate.internal import (
 from ichnaea.api.locate.result import (
     Position,
     Region,
-    ResultList,
 )
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 
@@ -89,7 +88,7 @@ class Searcher(object):
         raise NotImplementedError()
 
     def _search(self, query):
-        results = ResultList(self.result_type())
+        results = self.result_type().as_list()
         for name, source in self.sources:
             if source.should_search(query, results):
                 results.add(source.search(query))

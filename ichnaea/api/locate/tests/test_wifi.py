@@ -3,7 +3,7 @@ from datetime import timedelta
 import numpy
 
 from ichnaea.api.locate.constants import MAX_WIFIS_IN_CLUSTER
-from ichnaea.api.locate.result import ResultList
+from ichnaea.api.locate.result import PositionResultList
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.api.locate.wifi import WifiPositionSource
 from ichnaea.constants import (
@@ -66,7 +66,8 @@ class TestWifi(BaseSourceTest):
     def test_check_empty(self):
         query = self.model_query()
         result = self.source.result_type()
-        self.assertFalse(self.source.should_search(query, ResultList(result)))
+        self.assertFalse(
+            self.source.should_search(query, PositionResultList(result)))
 
     def test_empty(self):
         query = self.model_query()

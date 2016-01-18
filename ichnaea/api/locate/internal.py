@@ -5,7 +5,9 @@ from ichnaea.api.locate.cell import (
     CellRegionMixin,
 )
 from ichnaea.api.locate.constants import DataSource
-from ichnaea.api.locate.result import ResultList
+from ichnaea.api.locate.result import (
+    RegionResultList,
+)
 from ichnaea.api.locate.source import (
     PositionSource,
     RegionSource,
@@ -27,9 +29,9 @@ class InternalRegionSource(CellRegionMixin, RegionSource):
         return True
 
     def search(self, query):
-        results = ResultList()
+        results = RegionResultList()
         for should, search in (
-                (self.should_search_cell, self.search_mcc), ):
+                (self.should_search_cell, self.search_cell), ):
 
             if should(query, results):
                 results.add(search(query))
@@ -62,7 +64,7 @@ class InternalPositionSource(CellPositionMixin,
         return True
 
     def search(self, query):
-        results = ResultList(self.result_type())
+        results = self.result_type().as_list()
         for should, search in (
                 (self.should_search_wifi, self.search_wifi),
                 (self.should_search_cell, self.search_cell)):

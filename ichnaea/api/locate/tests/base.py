@@ -23,7 +23,7 @@ from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
     Position,
     Region,
-    ResultList,
+    Result,
 )
 from ichnaea.models import (
     ApiKey,
@@ -132,15 +132,15 @@ class BaseSourceTest(ConnectionTestCase):
 
     def check_should_search(self, query, should, results=None):
         if results is None:
-            results = ResultList(self.source.result_type())
-        elif isinstance(results, list):
-            results = ResultList(results)
+            results = self.source.result_type().as_list()
+        elif isinstance(results, Result):
+            results = results.as_list()
         self.assertIs(self.source.should_search(query, results), should)
 
     def check_model_result(self, results, models, **kw):
         type_ = self.TestSource.result_type
-        if not isinstance(results, ResultList):
-            results = ResultList(results)
+        if isinstance(results, Result):
+            results = results.as_list()
 
         if not models:
             for result in results:

@@ -17,7 +17,7 @@ from ichnaea.api.locate.constants import (
 from ichnaea.api.locate.result import (
     Position,
     Region,
-    ResultList,
+    RegionResultList,
 )
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.constants import (
@@ -215,8 +215,8 @@ class CellRegionMixin(object):
             return False
         return True
 
-    def search_mcc(self, query):
-        results = ResultList()
+    def search_cell(self, query):
+        results = RegionResultList()
 
         codes = []
         for cell in list(query.cell) + list(query.cell_area):
