@@ -218,9 +218,9 @@ class CellRegionMixin(object):
     def search_mcc(self, query):
         results = ResultList()
 
-        codes = set()
+        codes = []
         for cell in list(query.cell) + list(query.cell_area):
-            codes.add(cell.mcc)
+            codes.append(cell.mcc)
 
         regions = []
         for code in codes:
@@ -230,7 +230,17 @@ class CellRegionMixin(object):
             for mcc_region in mcc_regions:
                 regions.append((mcc_region, score))
 
+        # group by region code
+        grouped_regions = {}
         for region, score in regions:
+            code = region.code
+            if code not in grouped_regions:
+                grouped_regions[code] = [region, score]
+            else:
+                # sum up scores of multiple matches
+                grouped_regions[code][1] += score
+
+        for region, score in grouped_regions.values():
             results.add(self.result_type(
                 region_code=region.code,
                 region_name=region.name,

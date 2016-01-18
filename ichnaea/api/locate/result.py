@@ -97,17 +97,38 @@ class ResultList(object):
                 return True
         return False
 
-    def best(self):
+    def best(self, expected_accuracy):
         """Return the best result in the collection."""
-        accurate_results = OrderedDict()
+        accurate_results = OrderedDict(matches=[], misses=[], empty=[])
+        # Group the results by whether or not they match the expected
+        # accuracy of the query.
         for result in self:
-            accuracy = result.data_accuracy
-            if accuracy in accurate_results:
-                accurate_results[accuracy].append(result)
+            if result.empty():
+                accurate_results['empty'].append(result)
+            elif result.data_accuracy <= expected_accuracy:
+                accurate_results['matches'].append(result)
             else:
-                accurate_results[accuracy] = [result]
-        best_accuracy = min(accurate_results.keys())
-        return accurate_results[best_accuracy][0]
+                accurate_results['misses'].append(result)
+
+        if accurate_results['matches']:
+            most_accurate_results = accurate_results['matches']
+        elif accurate_results['misses']:
+            most_accurate_results = accurate_results['misses']
+        else:
+            # only empty results, they are all equal
+            return accurate_results['empty'][0]
+
+        if len(most_accurate_results) == 1:
+            return most_accurate_results[0]
+
+        def best_result(result):
+            # sort descending, take higher score and
+            # break tie by using the larger accuracy/radius
+            return (result.score, (result.accuracy or 0.0))
+
+        sorted_results = sorted(
+            most_accurate_results, key=best_result, reverse=True)
+        return sorted_results[0]
 
 
 class Position(Result):

@@ -43,3 +43,13 @@ class DataAccuracyTest(TestCase):
             DataAccuracy.from_number(None)
         with self.assertRaises(ValueError):
             DataAccuracy.from_number('ab')
+
+    def test_hash(self):
+        accuracies = {
+            DataAccuracy.none: 0,
+            DataAccuracy.low: 1,
+            DataAccuracy.medium: 2,
+            DataAccuracy.high: 3,
+        }
+        self.assertEqual(set(accuracies.values()),
+                         set([0, 1, 2, 3]))

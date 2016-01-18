@@ -38,7 +38,8 @@ class InternalRegionSource(CellRegionMixin, RegionSource):
                     break
 
         if len(results):
-            query.emit_source_stats(self.source, results.best())
+            query.emit_source_stats(
+                self.source, results.best(query.expected_accuracy))
         else:
             results.add(self.result_type())
         return results
@@ -72,5 +73,6 @@ class InternalPositionSource(CellPositionMixin,
                     # If we have a good enough result, stop.
                     break
 
-        query.emit_source_stats(self.source, results.best())
+        query.emit_source_stats(
+            self.source, results.best(query.expected_accuracy))
         return results

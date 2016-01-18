@@ -1,3 +1,4 @@
+import operator
 import uuid
 
 import requests_mock
@@ -176,6 +177,9 @@ class BaseSourceTest(ConnectionTestCase):
                     'region_code': model.code,
                     'region_name': model.name,
                 })
+            # don't test ordering of region results
+            expected = sorted(expected, key=operator.itemgetter('region_code'))
+            results = sorted(results, key=operator.attrgetter('region_code'))
 
         for expect, result in zip(expected, results):
             self.assertFalse(result.empty())

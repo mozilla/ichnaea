@@ -85,7 +85,7 @@ class Searcher(object):
             )
             self.sources.append((name, source_instance))
 
-    def _best_result(self, results):
+    def _best_result(self, results, query):
         raise NotImplementedError()
 
     def _search(self, query):
@@ -94,7 +94,7 @@ class Searcher(object):
             if source.should_search(query, results):
                 results.add(source.search(query))
 
-        return self._best_result(results)
+        return self._best_result(results, query)
 
     def format_result(self, result):
         """
@@ -143,8 +143,8 @@ class PositionSearcher(Searcher):
             'fallback': result.fallback,
         }
 
-    def _best_result(self, results):
-        return results.best()
+    def _best_result(self, results, query):
+        return results.best(query.expected_accuracy)
 
 
 class RegionSearcher(Searcher):
@@ -165,7 +165,7 @@ class RegionSearcher(Searcher):
             'fallback': result.fallback,
         }
 
-    def _best_result(self, results):
+    def _best_result(self, results, query):
         found = [res for res in results if not res.empty()]
         if len(results) == 1 or len(found) == 0:
             return results[0]
@@ -181,11 +181,12 @@ class RegionSearcher(Searcher):
         regions = []
         for code, values in grouped.items():
             region = grouped[code][0]
-            regions.append(
-                (len(values), region.accuracy, region))
+            regions.append((
+                sum([value.score for value in values]),
+                region.accuracy,
+                region))
 
-        # pick the region with the most entries,
+        # pick the region with the highest combined score,
         # break tie by region with the largest radius
-        regions = sorted(regions, reverse=True)
-
-        return regions[0][2]
+        sorted_regions = sorted(regions, reverse=True)
+        return sorted_regions[0][2]

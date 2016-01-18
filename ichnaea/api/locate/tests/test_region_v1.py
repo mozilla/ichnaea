@@ -116,12 +116,37 @@ class TestView(RegionBase, CommonLocateTest):
         self.check_model_response(res, cell, region='GB')
         self.check_db_calls(rw=0, ro=0)
 
-    def test_cell_geoip_mismatch(self):
-        # UK GeoIP with US mcc
-        cell = CellShardFactory.create(mcc=310)
+    def test_cell_geoip_match(self):
+        cell = CellShardFactory.create(mcc=234)
         query = self.model_query(cells=[cell])
         res = self._call(body=query, ip=self.test_ip)
-        self.check_model_response(res, cell, region='US')
+        self.check_model_response(res, cell, region='GB')
+        self.check_db_calls(rw=0, ro=0)
+
+    def test_cell_geoip_mismatch(self):
+        # UK GeoIP with ambiguous US mcc
+        uk_cell = CellShardFactory.build(mcc=234)
+        us_cell = CellShardFactory.create(mcc=310)
+        query = self.model_query(cells=[us_cell])
+        res = self._call(body=query, ip=self.test_ip)
+        self.check_model_response(res, uk_cell, region='GB', fallback='ipf')
+        self.check_db_calls(rw=0, ro=0)
+
+    def test_cell_over_geoip(self):
+        # UK GeoIP with single DE cell
+        cell = CellShardFactory.create(mcc=262)
+        query = self.model_query(cells=[cell])
+        res = self._call(body=query, ip=self.test_ip)
+        self.check_model_response(res, cell, region='DE')
+        self.check_db_calls(rw=0, ro=0)
+
+    def test_cells_over_geoip(self):
+        # UK GeoIP with multiple US cells
+        us_cell1 = CellShardFactory.create(mcc=310, samples=100)
+        us_cell2 = CellShardFactory.create(mcc=311, samples=100)
+        query = self.model_query(cells=[us_cell1, us_cell2])
+        res = self._call(body=query, ip=self.test_ip)
+        self.check_model_response(res, us_cell1, region='US')
         self.check_db_calls(rw=0, ro=0)
 
     def test_wifi(self):
