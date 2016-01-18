@@ -233,7 +233,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
         wifis = WifiShardFactory.build_batch(2)
         query = Query(
             wifi=self.wifi_model_query(wifis), api_type='region')
-        self.assertEqual(query.expected_accuracy, DataAccuracy.none)
+        self.assertEqual(query.expected_accuracy, DataAccuracy.low)
 
     def test_mixed_cell_wifi(self):
         cells = CellShardFactory.build_batch(1)

@@ -72,7 +72,28 @@ class TestRegionSource(BaseSourceTest):
         self.check_model_result(results, None)
 
     def test_wifi(self):
-        wifis = WifiShardFactory.create_batch(2)
+        now = util.utcnow()
+        region = GEOCODER.regions_for_mcc(235, metadata=True)[0]
+        wifi1 = WifiShardFactory(samples=10)
+        wifi2 = WifiShardFactory(samples=20)
+        wifi3 = WifiShardFactory.build(region='DE', samples=100)
+        self.session.flush()
+
+        query = self.model_query(wifis=[wifi1, wifi2, wifi3])
+        results = self.source.search(query)
+        self.check_model_result(results, region)
+        best_result = results.best(query.expected_accuracy)
+        self.assertEqual(best_result.region_code, region.code)
+        self.assertAlmostEqual(
+            best_result.score, wifi1.score(now) + wifi2.score(now), 4)
+        self.check_stats(counter=[
+            (self.api_type + '.source',
+                ['key:test', 'region:none', 'source:internal',
+                 'accuracy:low', 'status:hit']),
+        ])
+
+    def test_wifi_miss(self):
+        wifis = WifiShardFactory.build_batch(2, samples=10)
         self.session.flush()
 
         query = self.model_query(wifis=wifis)

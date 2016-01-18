@@ -16,7 +16,11 @@ from ichnaea.api.locate.constants import (
     WIFI_MAX_ACCURACY,
     WIFI_MIN_ACCURACY,
 )
-from ichnaea.api.locate.result import Position
+from ichnaea.api.locate.result import (
+    Position,
+    Region,
+    RegionResultList,
+)
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.constants import (
     PERMANENT_BLOCKLIST_THRESHOLD,
@@ -26,6 +30,7 @@ from ichnaea.geocalc import (
     aggregate_position,
     distance,
 )
+from ichnaea.geocode import GEOCODER
 from ichnaea.models import WifiShard
 from ichnaea import util
 
@@ -170,8 +175,8 @@ def query_wifis(query, raven_client):
 
     try:
         # load all fields used in score calculation and those we
-        # need for the position
-        load_fields = ('lat', 'lon', 'radius',
+        # need for the position or region
+        load_fields = ('lat', 'lon', 'radius', 'region',
                        'created', 'modified', 'samples')
         shards = defaultdict(list)
         for mac in macs:
@@ -222,6 +227,39 @@ class WifiPositionMixin(object):
             result = aggregate_cluster_position(cluster, self.result_type)
 
         return result
+
+
+class WifiRegionMixin(object):
+    """
+    A WifiRegionMixin implements a region search using our wifi data.
+    """
+
+    raven_client = None
+    result_type = Region
+
+    def should_search_wifi(self, query, results):
+        return bool(query.wifi)
+
+    def search_wifi(self, query):
+        results = RegionResultList()
+
+        now = util.utcnow()
+        regions = defaultdict(int)
+        wifis = query_wifis(query, self.raven_client)
+        for wifi in wifis:
+            if wifi.region:
+                regions[wifi.region] += wifi.score(now)
+
+        for code, score in regions.items():
+            region = GEOCODER.region_for_code(code)
+            if region:
+                results.add(self.result_type(
+                    region_code=code,
+                    region_name=region.name,
+                    accuracy=region.radius,
+                    score=score))
+
+        return results
 
 
 class WifiPositionSource(WifiPositionMixin, PositionSource):

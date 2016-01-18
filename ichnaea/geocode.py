@@ -203,13 +203,28 @@ class Geocoder(object):
                 return True
         return False
 
+    def region_for_code(self, code):
+        """
+        Return a region instance with metadata for the code or None.
+
+        The return list is filtered by the set of recognized
+        region codes present in the GENC dataset.
+        """
+        if code in self._valid_regions:
+            region = genc.region_by_alpha2(code)
+            return Region(
+                code=region.alpha2,
+                name=region.name,
+                radius=self.region_max_radius(code))
+        return None
+
     def regions_for_mcc(self, mcc, metadata=False):
         """
         Return a list of region codes matching the passed in
         mobile country code.
 
         If the metadata argument is set to True, returns a list of
-        dictionaries containing additional metadata instead.
+        region instances containing additional metadata instead.
 
         The return list is filtered by the set of recognized
         region codes present in the GENC dataset.

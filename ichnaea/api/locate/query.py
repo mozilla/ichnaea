@@ -236,16 +236,15 @@ class Query(object):
     def expected_accuracy(self):
         accuracies = [DataAccuracy.none]
 
-        if self.wifi:
-            if self.api_type == 'region':
-                accuracies.append(DataAccuracy.none)
-            else:
-                accuracies.append(DataAccuracy.high)
-        if self.cell:
-            if self.api_type == 'region':
+        if self.api_type == 'region':
+            if self.cell or self.wifi:
                 accuracies.append(DataAccuracy.low)
-            else:
+        else:
+            if self.cell:
                 accuracies.append(DataAccuracy.medium)
+            if self.wifi:
+                accuracies.append(DataAccuracy.high)
+
         if ((self.cell_area and self.fallback.lacf) or
                 (self.ip and self.fallback.ipf)):
             accuracies.append(DataAccuracy.low)
