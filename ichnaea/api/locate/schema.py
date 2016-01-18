@@ -55,6 +55,10 @@ class BaseCellLookup(BaseLookup):
     )  #:
     _fields = _key_fields + _signal_fields  #:
 
+    @property
+    def areaid(self):
+        return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)
+
     def better(self, other):
         """Is self better than the other?"""
         comparators = [
@@ -86,10 +90,6 @@ class CellAreaLookup(BaseCellLookup):
 
     _valid_schema = ValidCellAreaLookupSchema()
     _fields = BaseCellLookup._fields
-
-    @property
-    def areaid(self):
-        return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)
 
 
 class ValidCellLookupSchema(ValidCellKeySchema, ValidCellSignalSchema):

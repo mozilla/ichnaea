@@ -117,7 +117,7 @@ def query_cells(query, lookups, model, raven_client):
 
     # load all fields used in score calculation and those we
     # need for the position
-    load_fields = ('lat', 'lon', 'radius',
+    load_fields = ('lat', 'lon', 'radius', 'region',
                    'created', 'modified', 'samples')
 
     today = util.utcnow().date()
@@ -147,8 +147,8 @@ def query_areas(query, lookups, model, raven_client):
         return []
 
     # load all fields used in score calculation and those we
-    # need for the position
-    load_fields = ('lat', 'lon', 'radius',
+    # need for the position or region
+    load_fields = ('lat', 'lon', 'radius', 'region',
                    'created', 'modified', 'num_cells')
     try:
         areas = (query.session.query(model)
@@ -208,6 +208,7 @@ class CellRegionMixin(object):
     A CellRegionMixin implements a region search using the cell models.
     """
 
+    area_model = CellArea
     result_type = Region
 
     def should_search_cell(self, query, results):
@@ -217,28 +218,40 @@ class CellRegionMixin(object):
 
     def search_cell(self, query):
         results = RegionResultList()
+        now = util.utcnow()
 
-        codes = []
-        for cell in list(query.cell) + list(query.cell_area):
-            codes.append(cell.mcc)
-
+        ambiguous_cells = []
         regions = []
-        for code in codes:
+        for cell in list(query.cell) + list(query.cell_area):
+            code = cell.mcc
             mcc_regions = GEOCODER.regions_for_mcc(code, metadata=True)
-            # divide score by number of possible regions for the mcc
+            # Divide score by number of possible regions for the mcc
             score = 1.0 / (len(mcc_regions) or 1.0)
             for mcc_region in mcc_regions:
                 regions.append((mcc_region, score))
+            if len(mcc_regions) > 1:
+                ambiguous_cells.append(cell)
 
-        # group by region code
+        # Group by region code
         grouped_regions = {}
         for region, score in regions:
             code = region.code
             if code not in grouped_regions:
                 grouped_regions[code] = [region, score]
             else:
-                # sum up scores of multiple matches
+                # Sum up scores of multiple matches
                 grouped_regions[code][1] += score
+
+        if ambiguous_cells:
+            # Only do a database query if the mcc is ambiguous.
+            # Use the area models for area and cell entries,
+            # as we are only interested in the region here.
+            areas = query_areas(
+                query, ambiguous_cells, self.area_model, self.raven_client)
+            for area in areas:
+                code = area.region
+                if code and code in grouped_regions:
+                    grouped_regions[code][1] += area.score(now)
 
         for region, score in grouped_regions.values():
             results.add(self.result_type(
@@ -246,6 +259,7 @@ class CellRegionMixin(object):
                 region_name=region.name,
                 accuracy=region.radius,
                 score=score))
+
         return results
 
 

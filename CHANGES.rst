@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Extend region API to use cell area data.
+
 - Choose best region result based on highest score.
 
 - Remove migrations and tests for 1.2 to 1.3 upgrade.

@@ -114,14 +114,14 @@ class TestView(RegionBase, CommonLocateTest):
         query = self.model_query(cells=[cell])
         res = self._call(body=query)
         self.check_model_response(res, cell, region='GB')
-        self.check_db_calls(rw=0, ro=0)
+        self.check_db_calls(rw=0, ro=1)
 
     def test_cell_geoip_match(self):
         cell = CellShardFactory.create(mcc=234)
         query = self.model_query(cells=[cell])
         res = self._call(body=query, ip=self.test_ip)
         self.check_model_response(res, cell, region='GB')
-        self.check_db_calls(rw=0, ro=0)
+        self.check_db_calls(rw=0, ro=1)
 
     def test_cell_geoip_mismatch(self):
         # UK GeoIP with ambiguous US mcc
@@ -130,7 +130,7 @@ class TestView(RegionBase, CommonLocateTest):
         query = self.model_query(cells=[us_cell])
         res = self._call(body=query, ip=self.test_ip)
         self.check_model_response(res, uk_cell, region='GB', fallback='ipf')
-        self.check_db_calls(rw=0, ro=0)
+        self.check_db_calls(rw=0, ro=1)
 
     def test_cell_over_geoip(self):
         # UK GeoIP with single DE cell
@@ -147,7 +147,7 @@ class TestView(RegionBase, CommonLocateTest):
         query = self.model_query(cells=[us_cell1, us_cell2])
         res = self._call(body=query, ip=self.test_ip)
         self.check_model_response(res, us_cell1, region='US')
-        self.check_db_calls(rw=0, ro=0)
+        self.check_db_calls(rw=0, ro=1)
 
     def test_wifi(self):
         wifis = WifiShardFactory.build_batch(2)
@@ -176,4 +176,4 @@ class TestError(RegionBase, CommonLocateErrorTest):
         }
 
     def test_database_error(self):
-        super(TestError, self).test_database_error(db_errors=0)
+        super(TestError, self).test_database_error(db_errors=1)
