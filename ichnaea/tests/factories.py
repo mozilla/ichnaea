@@ -160,6 +160,9 @@ class CellOCIDFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
 
     radius = CELL_MIN_ACCURACY / 2.0
     region = 'GB'
+    samples = 1
+    created = util.utcnow()
+    modified = util.utcnow()
 
     class Meta:
         model = CellOCID.create
@@ -169,6 +172,10 @@ class CellAreaFactory(CellAreaPositionFactory, BboxFactory, BaseSQLFactory):
 
     radius = CELLAREA_MIN_ACCURACY / 2.0
     region = 'GB'
+    avg_cell_radius = CELL_MIN_ACCURACY / 2.0
+    num_cells = 1
+    created = util.utcnow()
+    modified = util.utcnow()
 
     class Meta:
         model = CellArea.create
@@ -179,6 +186,10 @@ class CellAreaOCIDFactory(CellAreaPositionFactory,
 
     radius = CELLAREA_MIN_ACCURACY / 2.0
     region = 'GB'
+    avg_cell_radius = CELL_MIN_ACCURACY / 2.0
+    num_cells = 1
+    created = util.utcnow()
+    modified = util.utcnow()
 
     class Meta:
         model = CellAreaOCID.create

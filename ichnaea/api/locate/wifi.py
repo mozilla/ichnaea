@@ -147,6 +147,7 @@ def aggregate_cluster_position(cluster, result_type):
     # Reverse sort by signal, to pick the best sample of networks.
     cluster.sort(order='signal')
     cluster = numpy.flipud(cluster)
+    score = float(cluster['score'].sum())
 
     sample = cluster[:min(len(cluster), MAX_WIFIS_IN_CLUSTER)]
     circles = numpy.array(
@@ -155,7 +156,7 @@ def aggregate_cluster_position(cluster, result_type):
         dtype=numpy.double)
     lat, lon, accuracy = aggregate_position(circles, WIFI_MIN_ACCURACY)
     accuracy = min(accuracy, WIFI_MAX_ACCURACY)
-    return result_type(lat=lat, lon=lon, accuracy=accuracy)
+    return result_type(lat=lat, lon=lon, accuracy=accuracy, score=score)
 
 
 def query_wifis(query, raven_client):

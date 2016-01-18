@@ -56,6 +56,12 @@ class ExternalResult(namedtuple('ExternalResult',
                 return True
         return False
 
+    @property
+    def score(self):
+        if self.fallback:
+            return 5.0
+        return 10.0
+
 
 class ResultSchema(InternalMappingSchema):
 
@@ -414,6 +420,7 @@ class FallbackPositionSource(PositionSource):
                 lat=result_data.lat,
                 lon=result_data.lon,
                 accuracy=result_data.accuracy,
+                score=result_data.score,
                 fallback=result_data.fallback,
             )
         else:

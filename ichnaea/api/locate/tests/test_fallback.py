@@ -48,6 +48,14 @@ class TestExternalResult(TestCase):
         result = ExternalResult(1.0, 1.0, 10, 'lacf')
         self.assertFalse(result.not_found())
 
+    def test_score(self):
+        result = ExternalResult(1.0, 1.0, 10, None)
+        self.assertAlmostEqual(result.score, 10.0)
+
+    def test_score_fallback(self):
+        result = ExternalResult(1.0, 1.0, 10, 'lacf')
+        self.assertAlmostEqual(result.score, 5.0)
+
 
 class TestResultSchema(TestCase):
 
@@ -368,6 +376,7 @@ class TestSource(BaseSourceTest):
             )
             result = self.source.search(query)
             self.check_model_result(result, self.fallback_model)
+            self.assertAlmostEqual(result.score, 5.0, 4)
 
             request_json = mock_request.request_history[0].json()
 
@@ -628,6 +637,7 @@ class TestSource(BaseSourceTest):
             query.cell[0].signal = -77
             result = self.source.search(query)
             self.check_model_result(result, self.fallback_model)
+            self.assertAlmostEqual(result.score, 5.0, 4)
 
             self.assertEqual(mock_request.call_count, 1)
             self.check_stats(counter=[
@@ -641,6 +651,7 @@ class TestSource(BaseSourceTest):
             query.cell[0].signal = -82
             result = self.source.search(query)
             self.check_model_result(result, self.fallback_model)
+            self.assertAlmostEqual(result.score, 5.0, 4)
 
             self.assertEqual(mock_request.call_count, 1)
             self.check_stats(counter=[

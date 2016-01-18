@@ -57,7 +57,7 @@ def pick_best_area(areas):
     return areas[0]
 
 
-def aggregate_cell_position(cells, result_type):
+def aggregate_cell_position(cells, result_type, now):
     """
     Given a list of cells from a single cell cluster,
     return the aggregate position of the user inside the cluster.
@@ -67,17 +67,23 @@ def aggregate_cell_position(cells, result_type):
         dtype=numpy.double)
     lat, lon, accuracy = aggregate_position(circles, CELL_MIN_ACCURACY)
     accuracy = min(accuracy, CELL_MAX_ACCURACY)
-    return result_type(lat=lat, lon=lon, accuracy=accuracy)
+    score = sum([cell.score(now) for cell in cells])
+
+    return result_type(
+        lat=lat, lon=lon, accuracy=accuracy, score=score)
 
 
-def aggregate_area_position(area, result_type):
+def aggregate_area_position(area, result_type, now):
     """
     Given a single area, return the position of the user inside it.
     """
     accuracy = max(float(area.radius), CELLAREA_MIN_ACCURACY)
     accuracy = min(accuracy, CELLAREA_MAX_ACCURACY)
+    score = area.score(now)
+
     return result_type(
-        lat=area.lat, lon=area.lon, accuracy=accuracy, fallback='lacf')
+        lat=area.lat, lon=area.lon, accuracy=accuracy, score=score,
+        fallback='lacf')
 
 
 def query_cell_table(session, model, cellids, temp_blocked,
@@ -140,6 +146,8 @@ def query_areas(query, lookups, model, raven_client):
     if not areaids:  # pragma: no cover
         return []
 
+    # load all fields used in score calculation and those we
+    # need for the position
     load_fields = ('lat', 'lon', 'radius',
                    'created', 'modified', 'num_cells')
     try:
@@ -171,13 +179,15 @@ class CellPositionMixin(object):
 
     def search_cell(self, query):
         result = self.result_type()
+        now = util.utcnow()
 
         if query.cell:
             cells = query_cells(
                 query, query.cell, self.cell_model, self.raven_client)
             if cells:
                 best_cells = pick_best_cells(cells)
-                result = aggregate_cell_position(best_cells, self.result_type)
+                result = aggregate_cell_position(
+                    best_cells, self.result_type, now)
 
             if not result.empty():
                 return result
@@ -187,7 +197,8 @@ class CellPositionMixin(object):
                 query, query.cell_area, self.area_model, self.raven_client)
             if areas:
                 best_area = pick_best_area(areas)
-                result = aggregate_area_position(best_area, self.result_type)
+                result = aggregate_area_position(
+                    best_area, self.result_type, now)
 
         return result
 
@@ -213,14 +224,18 @@ class CellRegionMixin(object):
 
         regions = []
         for code in codes:
-            regions.extend(GEOCODER.regions_for_mcc(code, metadata=True))
+            mcc_regions = GEOCODER.regions_for_mcc(code, metadata=True)
+            # divide score by number of possible regions for the mcc
+            score = 1.0 / (len(mcc_regions) or 1.0)
+            for mcc_region in mcc_regions:
+                regions.append((mcc_region, score))
 
-        for region in regions:
-            region_code = region.code
+        for region, score in regions:
             results.add(self.result_type(
-                region_code=region_code,
+                region_code=region.code,
                 region_name=region.name,
-                accuracy=region.radius))
+                accuracy=region.radius,
+                score=score))
         return results
 
 

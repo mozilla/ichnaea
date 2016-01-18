@@ -18,15 +18,15 @@ class Result(object):
     _required = ()  #: The list of required attributes.
 
     def __init__(self, accuracy=None, region_code=None, region_name=None,
-                 fallback=None, lat=None, lon=None, source=None, score=1.0):
+                 fallback=None, lat=None, lon=None, source=None, score=0.0):
         self.accuracy = self._round(accuracy)
-        self.region_code = region_code
-        self.region_name = region_name
         self.fallback = fallback
         self.lat = self._round(lat)
         self.lon = self._round(lon)
-        self.source = source
+        self.region_code = region_code
+        self.region_name = region_name
         self.score = score
+        self.source = source
 
     def __repr__(self):
         values = []
@@ -113,7 +113,7 @@ class ResultList(object):
 class Position(Result):
     """The position returned by a position query."""
 
-    _required = ('lat', 'lon', 'accuracy')  #:
+    _required = ('lat', 'lon', 'accuracy', 'score')  #:
 
     def satisfies(self, query):
         if self.data_accuracy <= query.expected_accuracy:
@@ -124,7 +124,7 @@ class Position(Result):
 class Region(Result):
     """The region returned by a region query."""
 
-    _required = ('region_code', 'region_name', 'accuracy')  #:
+    _required = ('region_code', 'region_name', 'accuracy', 'score')  #:
 
     def satisfies(self, query):
         return not self.empty()

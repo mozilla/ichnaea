@@ -14,6 +14,7 @@ from ichnaea.tests.factories import (
     CellShardFactory,
     CellOCIDFactory,
 )
+from ichnaea import util
 
 
 class TestCellPosition(BaseSourceTest):
@@ -33,12 +34,14 @@ class TestCellPosition(BaseSourceTest):
             check_db_calls(rw=0, ro=0)
 
     def test_cell(self):
-        cell = CellShardFactory()
+        now = util.utcnow()
+        cell = CellShardFactory(samples=10)
         self.session.flush()
 
         query = self.model_query(cells=[cell])
         result = self.source.search(query)
         self.check_model_result(result, cell)
+        self.assertAlmostEqual(result.score, cell.score(now), 4)
 
     def test_cell_wrong_cid(self):
         cell = CellShardFactory()
@@ -50,10 +53,12 @@ class TestCellPosition(BaseSourceTest):
         self.check_model_result(result, None)
 
     def test_multiple_cells(self):
-        cell = CellShardFactory()
+        now = util.utcnow()
+        cell = CellShardFactory(samples=20)
         cell2 = CellShardFactory(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
                                  lac=cell.lac, cid=cell.cid + 1,
-                                 lat=cell.lat + 1.0, lon=cell.lon + 1.0)
+                                 lat=cell.lat + 1.0, lon=cell.lon + 1.0,
+                                 samples=10)
         self.session.flush()
 
         query = self.model_query(cells=[cell, cell2])
@@ -62,6 +67,8 @@ class TestCellPosition(BaseSourceTest):
             result, cell,
             lat=cell.lat + 0.5, lon=cell.lon + 0.5,
             accuracy=CELL_MAX_ACCURACY)
+        self.assertAlmostEqual(
+            result.score, cell.score(now) + cell2.score(now), 4)
 
     def test_incomplete_keys(self):
         cells = CellAreaFactory.build_batch(4)
@@ -78,13 +85,15 @@ class TestCellPosition(BaseSourceTest):
             check_db_calls(rw=0, ro=0)
 
     def test_smallest_area(self):
-        area = CellAreaFactory(radius=25000)
-        area2 = CellAreaFactory(radius=30000, lat=area.lat + 0.2)
+        now = util.utcnow()
+        area = CellAreaFactory(radius=25000, num_cells=8)
+        area2 = CellAreaFactory(radius=30000, lat=area.lat + 0.2, num_cells=6)
         self.session.flush()
 
         query = self.model_query(cells=[area, area2])
         result = self.source.search(query)
         self.check_model_result(result, area)
+        self.assertAlmostEqual(result.score, area.score(now), 4)
 
     def test_minimum_radius(self):
         areas = CellAreaFactory.create_batch(2)
@@ -117,15 +126,19 @@ class TestOCIDPositionSource(BaseSourceTest):
             check_db_calls(rw=0, ro=0)
 
     def test_cell(self):
-        cell = CellOCIDFactory()
+        now = util.utcnow()
+        cell = CellOCIDFactory(samples=10)
         self.session.flush()
         query = self.model_query(cells=[cell])
         result = self.source.search(query)
         self.check_model_result(result, cell)
+        self.assertAlmostEqual(result.score, cell.score(now), 4)
 
-    def test_cell_ara(self):
-        cell = CellAreaOCIDFactory()
+    def test_cell_area(self):
+        now = util.utcnow()
+        area = CellAreaOCIDFactory(num_cells=8)
         self.session.flush()
-        query = self.model_query(cells=[cell])
+        query = self.model_query(cells=[area])
         result = self.source.search(query)
-        self.check_model_result(result, cell)
+        self.check_model_result(result, area)
+        self.assertAlmostEqual(result.score, area.score(now), 4)

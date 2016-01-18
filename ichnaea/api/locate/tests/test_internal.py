@@ -18,6 +18,7 @@ class TestRegionSource(BaseSourceTest):
         query = self.model_query(cells=[cell])
         results = self.source.search(query)
         self.check_model_result(results, region)
+        self.assertAlmostEqual(results[0].score, 1.0, 4)
         self.check_stats(counter=[
             (self.api_type + '.source',
                 ['key:test', 'region:none', 'source:internal',
@@ -30,6 +31,8 @@ class TestRegionSource(BaseSourceTest):
         query = self.model_query(cells=[cell])
         results = self.source.search(query)
         self.check_model_result(results, regions)
+        for result in results:
+            self.assertAlmostEqual(result.score, 1.0 / len(regions), 4)
         self.check_stats(counter=[
             (self.api_type + '.source',
                 ['key:test', 'region:none', 'source:internal',

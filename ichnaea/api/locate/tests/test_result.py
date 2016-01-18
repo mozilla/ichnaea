@@ -19,14 +19,17 @@ class TestResult(TestCase):
         self.assertFalse('DE' in rep, rep)
         self.assertFalse('1.0' in rep, rep)
 
+    def test_data_accuracy(self):
+        self.assertEqual(Result().data_accuracy, DataAccuracy.none)
+
     def test_empty(self):
         self.assertTrue(Result().empty())
 
+    def test_score(self):
+        self.assertAlmostEqual(Result().score, 0.0, 4)
+
     def test_satisfies(self):
         self.assertFalse(Result().satisfies(Query()))
-
-    def test_data_accuracy(self):
-        self.assertEqual(Result().data_accuracy, DataAccuracy.none)
 
 
 class TestResultList(TestCase):
@@ -82,7 +85,7 @@ class TestRegion(TestCase):
         self.assertTrue(rep.startswith('Region'), rep)
         self.assertTrue('DE' in rep, rep)
         self.assertTrue('Germany' in rep, rep)
-        self.assertAlmostEqual(region.score, 2.0)
+        self.assertAlmostEqual(region.score, 2.0, 4)
 
     def test_empty(self):
         region = Region(
@@ -128,7 +131,7 @@ class TestPosition(TestCase):
         self.assertTrue('1.0' in rep, rep)
         self.assertTrue('-1.1' in rep, rep)
         self.assertTrue('100.0' in rep, rep)
-        self.assertAlmostEqual(position.score, 2.0)
+        self.assertAlmostEqual(position.score, 2.0, 4)
 
     def test_empty(self):
         self.assertTrue(Position(lat=1.0, lon=1.0, accuracy=None).empty())
