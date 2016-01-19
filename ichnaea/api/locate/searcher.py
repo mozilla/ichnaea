@@ -61,7 +61,7 @@ class Searcher(object):
     """
     A Searcher will use a collection of data sources
     to attempt to satisfy a user's query. It will loop over them
-    in the order they are specified and use the most accurate result.
+    in the order they are specified and use the best possible result.
     """
 
     result_type = None  #: :class:`ichnaea.api.locate.result.Result`
@@ -82,16 +82,13 @@ class Searcher(object):
             )
             self.sources.append((name, source_instance))
 
-    def _best_result(self, results, query):
-        raise NotImplementedError()
-
     def _search(self, query):
         results = self.result_type().new_list()
         for name, source in self.sources:
             if source.should_search(query, results):
                 results.add(source.search(query))
 
-        return self._best_result(results, query)
+        return results.best(query.expected_accuracy)
 
     def format_result(self, result):
         """
@@ -140,9 +137,6 @@ class PositionSearcher(Searcher):
             'fallback': result.fallback,
         }
 
-    def _best_result(self, results, query):
-        return results.best(query.expected_accuracy)
-
 
 class RegionSearcher(Searcher):
     """
@@ -161,6 +155,3 @@ class RegionSearcher(Searcher):
             'region_name': result.region_name,
             'fallback': result.fallback,
         }
-
-    def _best_result(self, results, query):
-        return results.best(query.expected_accuracy)

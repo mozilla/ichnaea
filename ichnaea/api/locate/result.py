@@ -138,12 +138,22 @@ class ResultList(object):
     def satisfies(self, query):
         """
         Is one of the results in the collection good enough to satisfy
-        the expected query data accuracy.
+        the expected query data accuracy?
         """
         for result in self:
             if result.satisfies(query):
                 return True
         return False
+
+    def best(self, expected_accuracy):
+        """Return the best result in the collection."""
+        raise NotImplementedError()
+
+
+class PositionResultList(ResultList):
+    """A collection of position results."""
+
+    result_type = Position  #:
 
     def best(self, expected_accuracy):
         """Return the best result in the collection."""
@@ -174,18 +184,12 @@ class ResultList(object):
 
         def best_result(result):
             # sort descending, take higher score and
-            # break tie by using the larger accuracy/radius
-            return (result.score, (result.accuracy or 0.0))
+            # break tie by using the smaller accuracy/radius
+            return (result.score, (result.accuracy or 0.0) * -1)
 
         sorted_results = sorted(
             most_accurate_results, key=best_result, reverse=True)
         return sorted_results[0]
-
-
-class PositionResultList(ResultList):
-    """A collection of position results."""
-
-    result_type = Position  #:
 
 
 class RegionResultList(ResultList):
