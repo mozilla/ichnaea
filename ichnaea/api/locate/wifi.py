@@ -31,10 +31,10 @@ from ichnaea.geocalc import (
 )
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import WifiShard
+from ichnaea.models.constants import MIN_WIFI_SIGNAL
 from ichnaea import util
 
 NETWORK_DTYPE = numpy.dtype([
-    ('mac', numpy.unicode_, 12),
     ('lat', numpy.double),
     ('lon', numpy.double),
     ('radius', numpy.double),
@@ -43,7 +43,24 @@ NETWORK_DTYPE = numpy.dtype([
 ])
 
 
-def cluster_wifis(networks):
+def cluster_wifis(wifis, lookups):
+    """
+    Given a list of wifi models and wifi lookups, return
+    a list of clusters of nearby wifi networks.
+    """
+    now = util.utcnow()
+
+    # Create a dict of WiFi macs mapped to their signal strength.
+    signals = {}
+    for lookup in lookups:
+        signals[lookup.mac] = lookup.signal or MIN_WIFI_SIGNAL
+
+    networks = numpy.array(
+        [(wifi.lat, wifi.lon, wifi.radius,
+          signals[wifi.mac], wifi.score(now))
+         for wifi in wifis],
+        dtype=NETWORK_DTYPE)
+
     # Only consider clusters that have at least 2 found networks
     # inside them. Otherwise someone could use a combination of
     # one real network and one fake and therefor not found network to
@@ -92,31 +109,7 @@ def cluster_wifis(networks):
     return clusters
 
 
-def get_clusters(wifis, lookups):
-    """
-    Given a list of wifi models and wifi lookups, return
-    a list of clusters of nearby wifi networks.
-    """
-    now = util.utcnow()
-
-    # Create a dict of WiFi macs mapped to their signal strength.
-    # Estimate signal strength at -100 dBm if none is provided,
-    # which is worse than the 99th percentile of wifi dBms we
-    # see in practice (-98).
-    signals = {}
-    for lookup in lookups:
-        signals[lookup.mac] = lookup.signal or -100
-
-    networks = numpy.array(
-        [(wifi.mac, wifi.lat, wifi.lon, wifi.radius,
-          signals[wifi.mac], wifi.score(now))
-         for wifi in wifis],
-        dtype=NETWORK_DTYPE)
-
-    return cluster_wifis(networks)
-
-
-def aggregate_cluster_position(cluster, result_type):
+def aggregate_wifi_position(cluster, result_type):
     """
     Given a single cluster, return the aggregate position of the user
     inside the cluster.
@@ -141,6 +134,7 @@ def aggregate_cluster_position(cluster, result_type):
         [(net[0], net[1], net[2])
          for net in sample[['lat', 'lon', 'radius']]],
         dtype=numpy.double)
+
     lat, lon, accuracy = aggregate_position(circles, WIFI_MIN_ACCURACY)
     accuracy = min(accuracy, WIFI_MAX_ACCURACY)
     score = float(cluster['score'].sum())
@@ -202,9 +196,8 @@ class WifiPositionMixin(object):
         results = self.result_type().new_list()
 
         wifis = query_wifis(query, self.raven_client)
-        clusters = get_clusters(wifis, query.wifi)
-        for cluster in clusters:
-            results.add(aggregate_cluster_position(cluster, self.result_type))
+        for cluster in cluster_wifis(wifis, query.wifi):
+            results.add(aggregate_wifi_position(cluster, self.result_type))
 
         return results
 

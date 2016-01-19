@@ -38,7 +38,7 @@ VALID_MAC_REGEX = re.compile('([0-9a-fA-F]{12})')
 MIN_WIFI_CHANNEL = 0  #: Minimum accepted WiFi channel.
 MAX_WIFI_CHANNEL = 166  #: Maximum accepted WiFi channel.
 
-MIN_WIFI_SIGNAL = -200  #: Minimum accepted WiFi signal strength value.
+MIN_WIFI_SIGNAL = -100  #: Minimum accepted WiFi signal strength value.
 MAX_WIFI_SIGNAL = -1  #: Maximum accepted WiFi signal strength value.
 
 MIN_MCC = 1  #: Minimum accepted network code.
@@ -71,3 +71,6 @@ MAX_CID_GSM = 2 ** 16 - 1  #: Maximum accepted GSM cell id.
 MIN_PSC = 0  #: Minimum accepted psc.
 MAX_PSC = 511  #: Maximum accepted psc.
 MAX_PSC_LTE = 503  #: Maximum accepted physical cell id.
+
+MIN_CELL_SIGNAL = -150  #: Minimum accepted cell signal strength value.
+MAX_CELL_SIGNAL = -1  #: Maximum accepted cell signal strength value.

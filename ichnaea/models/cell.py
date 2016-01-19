@@ -271,7 +271,8 @@ class ValidCellSignalSchema(colander.MappingSchema, ValidatorNode):
         missing=None, validator=colander.Range(0, 97))
     signal = DefaultNode(
         colander.Integer(),
-        missing=None, validator=colander.Range(-150, -1))
+        missing=None, validator=colander.Range(
+            constants.MIN_CELL_SIGNAL, constants.MAX_CELL_SIGNAL))
     ta = DefaultNode(
         colander.Integer(),
         missing=None, validator=colander.Range(0, 63))

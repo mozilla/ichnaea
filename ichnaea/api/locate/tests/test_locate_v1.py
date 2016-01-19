@@ -229,8 +229,8 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, cell)
 
     def test_inconsistent_cell_radio(self):
-        cell = CellShardFactory(radio=Radio.wcdma, radius=15000)
-        cell2 = CellShardFactory(radio=Radio.gsm, radius=35000,
+        cell = CellShardFactory(radio=Radio.wcdma, radius=15000, samples=10)
+        cell2 = CellShardFactory(radio=Radio.gsm, radius=35000, samples=5,
                                  lat=cell.lat + 0.0002, lon=cell.lon)
         self.session.flush()
 
@@ -245,8 +245,8 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, cell)
 
     def test_inconsistent_cell_radio_type(self):
-        cell = CellShardFactory(radio=Radio.wcdma, radius=15000)
-        cell2 = CellShardFactory(radio=Radio.gsm, radius=35000,
+        cell = CellShardFactory(radio=Radio.wcdma, radius=15000, samples=10)
+        cell2 = CellShardFactory(radio=Radio.gsm, radius=35000, samples=5,
                                  lat=cell.lat + 0.0002, lon=cell.lon)
         self.session.flush()
 

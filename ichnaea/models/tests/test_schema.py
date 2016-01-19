@@ -415,14 +415,14 @@ class TestWifi(ValidationTest):
             self.assertFalse('frequency' in wifi)
 
     def test_valid_signal(self):
-        valid_signals = [-200, -100, -1]
+        valid_signals = [-100, -99, -1]
 
         for signal in valid_signals:
             obs, wifi = self.get_sample(signal=signal)
             self.check_normalized_wifi(obs, wifi, dict(signal=signal))
 
     def test_invalid_signal(self):
-        invalid_signals = [-300, -201, 0, 10]
+        invalid_signals = [-300, -101, 0, 10]
 
         for signal in invalid_signals:
             obs, wifi = self.get_sample(signal=signal)

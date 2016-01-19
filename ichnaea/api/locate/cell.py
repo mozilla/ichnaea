@@ -1,7 +1,6 @@
 """Search implementation using a cell database."""
 
 from collections import defaultdict
-import operator
 
 import numpy
 from sqlalchemy.orm import load_only
@@ -26,63 +25,103 @@ from ichnaea.constants import (
 from ichnaea.geocalc import aggregate_position
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
+    encode_cellarea,
+    encode_cellid,
     CellArea,
     CellAreaOCID,
     CellOCID,
     CellShard,
 )
+from ichnaea.models.constants import MIN_CELL_SIGNAL
 from ichnaea import util
 
+NETWORK_DTYPE = numpy.dtype([
+    ('lat', numpy.double),
+    ('lon', numpy.double),
+    ('radius', numpy.double),
+    ('signal', numpy.int32),
+    ('score', numpy.double),
+])
 
-def pick_best_cells(cells):
+
+def cluster_cells(cells, lookups):
     """
-    Group cells by area, pick the best cell area. Either
-    the one with the most values or the smallest radius.
+    Cluster cells by area.
     """
+    now = util.utcnow()
+
+    # Create a dict of cell ids mapped to their signal strength.
+    signals = {}
+    for lookup in lookups:
+        signals[lookup.cellid] = lookup.signal or MIN_CELL_SIGNAL
+
     areas = defaultdict(list)
     for cell in cells:
         areas[cell.areaid].append(cell)
 
-    def sort_areas(areas):
-        return (len(areas), -min([cell.radius for cell in areas]))
+    clusters = []
+    for area_cells in areas.values():
+        clusters.append(numpy.array(
+            [(cell.lat, cell.lon, cell.radius,
+              signals[encode_cellid(*cell.cellid)], cell.score(now))
+             for cell in area_cells],
+            dtype=NETWORK_DTYPE))
 
-    areas = sorted(areas.values(), key=sort_areas, reverse=True)
-    return areas[0]
-
-
-def pick_best_area(areas):
-    """Sort areas by size, pick the smallest one."""
-    areas = sorted(areas, key=operator.attrgetter('radius'))
-    return areas[0]
+    return clusters
 
 
-def aggregate_cell_position(cells, result_type, now):
+def cluster_areas(areas, lookups):
     """
-    Given a list of cells from a single cell cluster,
-    return the aggregate position of the user inside the cluster.
+    Cluster areas, treat each area as its own cluster.
+    """
+    now = util.utcnow()
+
+    # Create a dict of area ids mapped to their signal strength.
+    signals = {}
+    for lookup in lookups:
+        signals[lookup.areaid] = lookup.signal or MIN_CELL_SIGNAL
+
+    clusters = []
+    for area in areas:
+        clusters.append(numpy.array(
+            [(area.lat, area.lon, area.radius,
+              signals[encode_cellarea(*area.areaid)], area.score(now))],
+            dtype=NETWORK_DTYPE))
+
+    return clusters
+
+
+def aggregate_cell_position(cluster, result_type):
+    """
+    Given a cell cluster, return the aggregate position of the user
+    inside the cluster.
     """
     circles = numpy.array(
-        [(cell.lat, cell.lon, cell.radius) for cell in cells],
+        [(net[0], net[1], net[2])
+         for net in cluster[['lat', 'lon', 'radius']]],
         dtype=numpy.double)
+
     lat, lon, accuracy = aggregate_position(circles, CELL_MIN_ACCURACY)
     accuracy = min(accuracy, CELL_MAX_ACCURACY)
-    score = sum([cell.score(now) for cell in cells])
-
-    return result_type(
-        lat=lat, lon=lon, accuracy=accuracy, score=score)
+    score = float(cluster['score'].sum())
+    return result_type(lat=lat, lon=lon, accuracy=accuracy, score=score)
 
 
-def aggregate_area_position(area, result_type, now):
+def aggregate_area_position(cluster, result_type):
     """
-    Given a single area, return the position of the user inside it.
+    Given an area cluster, return the aggregate position of the user
+    inside the cluster.
     """
-    accuracy = max(float(area.radius), CELLAREA_MIN_ACCURACY)
+    circles = numpy.array(
+        [(net[0], net[1], net[2])
+         for net in cluster[['lat', 'lon', 'radius']]],
+        dtype=numpy.double)
+
+    lat, lon, accuracy = aggregate_position(circles, CELLAREA_MIN_ACCURACY)
     accuracy = min(accuracy, CELLAREA_MAX_ACCURACY)
-    score = area.score(now)
-
-    return result_type(
-        lat=area.lat, lon=area.lon, accuracy=accuracy, score=score,
-        fallback='lacf')
+    score = float(cluster['score'].sum())
+    return result_type(lat=lat, lon=lon, accuracy=accuracy, score=score,
+                       fallback='lacf')
 
 
 def query_cell_table(session, model, cellids, temp_blocked,
@@ -178,15 +217,14 @@ class CellPositionMixin(object):
 
     def search_cell(self, query):
         results = self.result_type().new_list()
-        now = util.utcnow()
 
         if query.cell:
             cells = query_cells(
                 query, query.cell, self.cell_model, self.raven_client)
             if cells:
-                best_cells = pick_best_cells(cells)
-                results.add(aggregate_cell_position(
-                    best_cells, self.result_type, now))
+                for cluster in cluster_cells(cells, query.cell):
+                    results.add(aggregate_cell_position(
+                        cluster, self.result_type))
 
             if len(results):
                 return results
@@ -195,9 +233,9 @@ class CellPositionMixin(object):
             areas = query_areas(
                 query, query.cell_area, self.area_model, self.raven_client)
             if areas:
-                best_area = pick_best_area(areas)
-                results.add(aggregate_area_position(
-                    best_area, self.result_type, now))
+                for cluster in cluster_areas(areas, query.cell_area):
+                    results.add(aggregate_area_position(
+                        cluster, self.result_type))
 
         return results
 
