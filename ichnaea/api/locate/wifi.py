@@ -247,8 +247,7 @@ class WifiRegionMixin(object):
         regions = defaultdict(int)
         wifis = query_wifis(query, self.raven_client)
         for wifi in wifis:
-            if wifi.region:
-                regions[wifi.region] += wifi.score(now)
+            regions[wifi.region] += wifi.score(now)
 
         for code, score in regions.items():
             region = GEOCODER.region_for_code(code)

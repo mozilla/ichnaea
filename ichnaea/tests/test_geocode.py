@@ -50,6 +50,7 @@ class TestGeocoder(TestCase):
         self.assertEqual(func('GB').code, 'GB')
         self.assertEqual(func('CH').code, 'CH')
         self.assertEqual(func('XX'), None)
+        self.assertEqual(func(None), None)
 
     def test_max_radius(self):
         self.assertEqual(GEOCODER.region_max_radius('US'), 2971000.0)
@@ -64,8 +65,12 @@ class TestGeocoder(TestCase):
 class TestRegionsForMcc(TestCase):
 
     def test_no_match(self):
+        self.assertEqual(GEOCODER.regions_for_mcc(None), [])
+        self.assertEqual(GEOCODER.regions_for_mcc(None, metadata=True), [])
         self.assertEqual(GEOCODER.regions_for_mcc(1), [])
         self.assertEqual(GEOCODER.regions_for_mcc(1, metadata=True), [])
+        self.assertEqual(GEOCODER.regions_for_mcc(''), [])
+        self.assertEqual(GEOCODER.regions_for_mcc('1', metadata=True), [])
 
     def test_single(self):
         regions = GEOCODER.regions_for_mcc(262)

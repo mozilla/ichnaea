@@ -25,7 +25,7 @@ DATELINE_EAST = geometry.box(180.0, -90.0, 270.0, 90.0)
 DATELINE_WEST = geometry.box(-270.0, -90.0, -180.0, 90.0)
 
 # Palestine only exists as West Bank/Gaza in the GENC dataset
-MCC_GENC_SHAPEFILE_MAP = {
+MCC_TO_GENC_MAP = {
     'PS': 'XW',
 }
 
@@ -231,7 +231,7 @@ class Geocoder(object):
         """
         codes = [region.alpha2 for region in mobile_codes.mcc(str(mcc))]
         # map mcc region codes to genc region codes
-        codes = [MCC_GENC_SHAPEFILE_MAP.get(code, code) for code in codes]
+        codes = [MCC_TO_GENC_MAP.get(code, code) for code in codes]
         valid_codes = set(codes).intersection(self._valid_regions)
         if not metadata:
             return list(valid_codes)
