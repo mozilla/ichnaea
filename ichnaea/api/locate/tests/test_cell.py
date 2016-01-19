@@ -6,7 +6,6 @@ from ichnaea.api.locate.constants import (
     CELL_MAX_ACCURACY,
     CELLAREA_MIN_ACCURACY,
 )
-from ichnaea.api.locate.result import PositionResultList
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.tests.factories import (
     CellAreaFactory,
@@ -23,15 +22,14 @@ class TestCellPosition(BaseSourceTest):
 
     def test_check_empty(self):
         query = self.model_query()
-        result = self.source.result_type()
-        self.assertFalse(
-            self.source.should_search(query, PositionResultList(result)))
+        results = self.source.result_type().new_list()
+        self.assertFalse(self.source.should_search(query, results))
 
     def test_empty(self):
         query = self.model_query()
         with self.db_call_checker() as check_db_calls:
-            result = self.source.search(query)
-            self.check_model_result(result, None)
+            results = self.source.search(query)
+            self.check_model_results(results, None)
             check_db_calls(rw=0, ro=0)
 
     def test_cell(self):
@@ -40,9 +38,10 @@ class TestCellPosition(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(cells=[cell])
-        result = self.source.search(query)
-        self.check_model_result(result, cell)
-        self.assertAlmostEqual(result.score, cell.score(now), 4)
+        results = self.source.search(query)
+        self.check_model_results(results, [cell])
+        self.assertAlmostEqual(
+            results.best(query.expected_accuracy).score, cell.score(now), 4)
 
     def test_cell_wrong_cid(self):
         cell = CellShardFactory()
@@ -50,8 +49,8 @@ class TestCellPosition(BaseSourceTest):
         cell.cid += 1
 
         query = self.model_query(cells=[cell])
-        result = self.source.search(query)
-        self.check_model_result(result, None)
+        results = self.source.search(query)
+        self.check_model_results(results, None)
 
     def test_multiple_cells(self):
         now = util.utcnow()
@@ -63,13 +62,14 @@ class TestCellPosition(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(cells=[cell, cell2])
-        result = self.source.search(query)
-        self.check_model_result(
-            result, cell,
+        results = self.source.search(query)
+        self.check_model_results(
+            results, [cell],
             lat=cell.lat + 0.5, lon=cell.lon + 0.5,
             accuracy=CELL_MAX_ACCURACY)
         self.assertAlmostEqual(
-            result.score, cell.score(now) + cell2.score(now), 4)
+            results.best(query.expected_accuracy).score,
+            cell.score(now) + cell2.score(now), 4)
 
     def test_incomplete_keys(self):
         cells = CellAreaFactory.build_batch(4)
@@ -80,9 +80,8 @@ class TestCellPosition(BaseSourceTest):
 
         with self.db_call_checker() as check_db_calls:
             query = self.model_query(cells=cells)
-            result = self.source.result_type()
-            self.assertFalse(
-                self.source.should_search(query, PositionResultList(result)))
+            results = self.source.result_type().new_list()
+            self.assertFalse(self.source.should_search(query, results))
             check_db_calls(rw=0, ro=0)
 
     def test_smallest_area(self):
@@ -92,9 +91,10 @@ class TestCellPosition(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(cells=[area, area2])
-        result = self.source.search(query)
-        self.check_model_result(result, area)
-        self.assertAlmostEqual(result.score, area.score(now), 4)
+        results = self.source.search(query)
+        self.check_model_results(results, [area])
+        self.assertAlmostEqual(
+            results.best(query.expected_accuracy).score, area.score(now), 4)
 
     def test_minimum_radius(self):
         areas = CellAreaFactory.create_batch(2)
@@ -104,10 +104,9 @@ class TestCellPosition(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(cells=areas)
-        result = self.source.search(query)
-        self.check_model_result(
-            result, areas[0],
-            accuracy=CELLAREA_MIN_ACCURACY)
+        results = self.source.search(query)
+        self.check_model_results(
+            results, [areas[0]], accuracy=CELLAREA_MIN_ACCURACY)
 
 
 class TestOCIDPositionSource(BaseSourceTest):
@@ -116,15 +115,14 @@ class TestOCIDPositionSource(BaseSourceTest):
 
     def test_check_empty(self):
         query = self.model_query()
-        result = self.source.result_type()
-        self.assertFalse(
-            self.source.should_search(query, PositionResultList(result)))
+        results = self.source.result_type().new_list()
+        self.assertFalse(self.source.should_search(query, results))
 
     def test_empty(self):
         query = self.model_query()
         with self.db_call_checker() as check_db_calls:
-            result = self.source.search(query)
-            self.check_model_result(result, None)
+            results = self.source.search(query)
+            self.check_model_results(results, None)
             check_db_calls(rw=0, ro=0)
 
     def test_cell(self):
@@ -132,15 +130,17 @@ class TestOCIDPositionSource(BaseSourceTest):
         cell = CellOCIDFactory(samples=10)
         self.session.flush()
         query = self.model_query(cells=[cell])
-        result = self.source.search(query)
-        self.check_model_result(result, cell)
-        self.assertAlmostEqual(result.score, cell.score(now), 4)
+        results = self.source.search(query)
+        self.check_model_results(results, [cell])
+        self.assertAlmostEqual(
+            results.best(query.expected_accuracy).score, cell.score(now), 4)
 
     def test_cell_area(self):
         now = util.utcnow()
         area = CellAreaOCIDFactory(num_cells=8)
         self.session.flush()
         query = self.model_query(cells=[area])
-        result = self.source.search(query)
-        self.check_model_result(result, area)
-        self.assertAlmostEqual(result.score, area.score(now), 4)
+        results = self.source.search(query)
+        self.check_model_results(results, [area])
+        self.assertAlmostEqual(
+            results.best(query.expected_accuracy).score, area.score(now), 4)

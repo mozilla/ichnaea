@@ -88,7 +88,7 @@ class Searcher(object):
         raise NotImplementedError()
 
     def _search(self, query):
-        results = self.result_type().as_list()
+        results = self.result_type().new_list()
         for name, source in self.sources:
             if source.should_search(query, results):
                 results.add(source.search(query))
@@ -165,21 +165,18 @@ class RegionSearcher(Searcher):
         }
 
     def _best_result(self, results, query):
-        found = [res for res in results if not res.empty()]
-        if len(results) == 1 or len(found) == 0:
-            return results[0]
-
-        if len(found) == 1:
-            return found[0]
+        if len(results) < 2:
+            return results.best(query.expected_accuracy)
 
         # group by region code
         grouped = defaultdict(list)
-        for result in found:
-            grouped[result.region_code].append(result)
+        for result in results:
+            if not result.empty():
+                grouped[result.region_code].append(result)
 
         regions = []
         for code, values in grouped.items():
-            region = grouped[code][0]
+            region = values[0]
             regions.append((
                 sum([value.score for value in values]),
                 region.accuracy,

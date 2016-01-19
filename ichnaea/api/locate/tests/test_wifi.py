@@ -3,7 +3,6 @@ from datetime import timedelta
 import numpy
 
 from ichnaea.api.locate.constants import MAX_WIFIS_IN_CLUSTER
-from ichnaea.api.locate.result import PositionResultList
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.api.locate.wifi import WifiPositionSource
 from ichnaea.constants import (
@@ -25,9 +24,9 @@ class TestWifi(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2])
-        result = self.source.search(query)
-        self.check_model_result(result, wifi, lon=wifi.lon + 0.000005)
-        self.assertTrue(result.score > 1.0, result.score)
+        results = self.source.search(query)
+        self.check_model_results(results, [wifi], lon=wifi.lon + 0.000005)
+        self.assertTrue(results.best(query.expected_accuracy).score > 1.0)
 
     def test_wifi_no_position(self):
         wifi = WifiShardFactory()
@@ -36,8 +35,8 @@ class TestWifi(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2, wifi3])
-        result = self.source.search(query)
-        self.check_model_result(result, wifi)
+        results = self.source.search(query)
+        self.check_model_results(results, [wifi])
 
     def test_wifi_temp_blocked(self):
         today = util.utcnow().date()
@@ -49,8 +48,8 @@ class TestWifi(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2])
-        result = self.source.search(query)
-        self.check_model_result(result, None)
+        results = self.source.search(query)
+        self.check_model_results(results, None)
 
     def test_wifi_permanent_blocked(self):
         wifi = WifiShardFactory(radius=200)
@@ -60,20 +59,19 @@ class TestWifi(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2])
-        result = self.source.search(query)
-        self.check_model_result(result, None)
+        results = self.source.search(query)
+        self.check_model_results(results, None)
 
     def test_check_empty(self):
         query = self.model_query()
-        result = self.source.result_type()
-        self.assertFalse(
-            self.source.should_search(query, PositionResultList(result)))
+        results = self.source.result_type().new_list()
+        self.assertFalse(self.source.should_search(query, results))
 
     def test_empty(self):
         query = self.model_query()
         with self.db_call_checker() as check_db_calls:
-            result = self.source.search(query)
-            self.check_model_result(result, None)
+            results = self.source.search(query)
+            self.check_model_results(results, None)
             check_db_calls(rw=0, ro=0)
 
     def test_few_candidates(self):
@@ -81,8 +79,8 @@ class TestWifi(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifis[0]])
-        result = self.source.search(query)
-        self.check_model_result(result, None)
+        results = self.source.search(query)
+        self.check_model_results(results, None)
 
     def test_few_matches(self):
         wifis = WifiShardFactory.create_batch(3)
@@ -90,8 +88,8 @@ class TestWifi(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(wifis=wifis[:2])
-        result = self.source.search(query)
-        self.check_model_result(result, None)
+        results = self.source.search(query)
+        self.check_model_results(results, None)
 
     def test_ignore_outlier(self):
         wifi = WifiShardFactory()
@@ -102,9 +100,8 @@ class TestWifi(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi] + wifis)
-        result = self.source.search(query)
-        self.check_model_result(
-            result, wifi, lat=wifi.lat + 0.0001)
+        results = self.source.search(query)
+        self.check_model_results(results, [wifi], lat=wifi.lat + 0.0001)
 
     def test_cluster_size_over_better_signal(self):
         wifi11 = WifiShardFactory()
@@ -118,9 +115,8 @@ class TestWifi(BaseSourceTest):
         query.wifi[1].signal = -80
         query.wifi[2].signal = -100
         query.wifi[3].signal = -54
-        result = self.source.search(query)
-        self.check_model_result(
-            result, wifi21, lat=wifi21.lat + 0.0001)
+        results = self.source.search(query)
+        self.check_model_results(results, [wifi21], lat=wifi21.lat + 0.0001)
 
     def test_cluster_score_over_size(self):
         now = util.utcnow()
@@ -147,11 +143,11 @@ class TestWifi(BaseSourceTest):
 
         query = self.model_query(
             wifis=[wifi11, wifi12, wifi13, wifi21, wifi22])
-        result = self.source.search(query)
-        self.check_model_result(
-            result, wifi21, lat=wifi21.lat + 0.0001)
+        results = self.source.search(query)
+        self.check_model_results(results, [wifi21], lat=wifi21.lat + 0.0001)
         self.assertAlmostEqual(
-            result.score, wifi21.score(now) + wifi22.score(now), 4)
+            results.best(query.expected_accuracy).score,
+            wifi21.score(now) + wifi22.score(now), 4)
 
     def test_top_results_in_noisy_cluster(self):
         now = util.utcnow()
@@ -174,9 +170,10 @@ class TestWifi(BaseSourceTest):
         query = self.model_query(wifis=wifis)
         for i, entry in enumerate(query.wifi):
             entry.signal = -70 - i
-        result = self.source.search(query)
-        self.check_model_result(result, wifi1, lat=lat, lon=lon)
-        self.assertAlmostEqual(result.score, score, 4)
+        results = self.source.search(query)
+        self.check_model_results(results, [wifi1], lat=lat, lon=lon)
+        self.assertAlmostEqual(
+            results.best(query.expected_accuracy).score, score, 4)
 
     def test_wifi_not_closeby(self):
         wifi = WifiShardFactory()
@@ -188,5 +185,5 @@ class TestWifi(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifis[1]])
-        result = self.source.search(query)
-        self.check_model_result(result, None)
+        results = self.source.search(query)
+        self.check_model_results(results, None)

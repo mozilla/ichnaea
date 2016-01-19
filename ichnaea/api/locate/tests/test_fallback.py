@@ -374,9 +374,10 @@ class TestSource(BaseSourceTest):
                     'ipf': False,
                 },
             )
-            result = self.source.search(query)
-            self.check_model_result(result, self.fallback_model)
-            self.assertAlmostEqual(result.score, 5.0, 4)
+            results = self.source.search(query)
+            self.check_model_results(results, [self.fallback_model])
+            self.assertAlmostEqual(
+                results.best(query.expected_accuracy).score, 5.0, 4)
 
             request_json = mock_request.request_history[0].json()
 
@@ -398,8 +399,8 @@ class TestSource(BaseSourceTest):
                 'POST', requests_mock.ANY, json=raise_request_exception)
 
             query = self.model_query(cells=[cell])
-            result = self.source.search(query)
-            self.check_model_result(result, None)
+            results = self.source.search(query)
+            self.check_model_results(results, None)
 
     def test_invalid_json(self):
         cell = CellShardFactory.build()
@@ -409,8 +410,8 @@ class TestSource(BaseSourceTest):
                 'POST', requests_mock.ANY, json=['invalid json'])
 
             query = self.model_query(cells=[cell])
-            result = self.source.search(query)
-            self.check_model_result(result, None)
+            results = self.source.search(query)
+            self.check_model_results(results, None)
 
     def test_malformed_json(self):
         cell = CellShardFactory.build()
@@ -420,8 +421,8 @@ class TestSource(BaseSourceTest):
                 'POST', requests_mock.ANY, content=b'[invalid json')
 
             query = self.model_query(cells=[cell])
-            result = self.source.search(query)
-            self.check_model_result(result, None)
+            results = self.source.search(query)
+            self.check_model_results(results, None)
 
     def test_403_response(self):
         cell = CellShardFactory.build()
@@ -431,8 +432,8 @@ class TestSource(BaseSourceTest):
                 'POST', requests_mock.ANY, status_code=403)
 
             query = self.model_query(cells=[cell])
-            result = self.source.search(query)
-            self.check_model_result(result, None)
+            results = self.source.search(query)
+            self.check_model_results(results, None)
 
         self.check_raven([('HTTPError', 1)])
         self.check_stats(counter=[
@@ -449,8 +450,8 @@ class TestSource(BaseSourceTest):
                 status_code=404)
 
             query = self.model_query(cells=[cell])
-            result = self.source.search(query)
-            self.check_model_result(result, None)
+            results = self.source.search(query)
+            self.check_model_results(results, None)
 
         self.check_raven([('HTTPError', 0)])
         self.check_stats(counter=[
@@ -465,8 +466,8 @@ class TestSource(BaseSourceTest):
                 'POST', requests_mock.ANY, status_code=500)
 
             query = self.model_query(cells=[cell])
-            result = self.source.search(query)
-            self.check_model_result(result, None)
+            results = self.source.search(query)
+            self.check_model_results(results, None)
 
         self.check_raven([('HTTPError', 1)])
         self.check_stats(counter=[
@@ -517,22 +518,23 @@ class TestSource(BaseSourceTest):
     def test_check_geoip_result(self):
         london = self.london_model
         wifis = WifiShardFactory.build_batch(2)
-        geoip_pos = Position(
+        results = Position(
             source=DataSource.geoip,
             lat=london.lat,
             lon=london.lon,
-            accuracy=float(london.radius))
+            accuracy=float(london.radius)).as_list()
 
         query = self.model_query(wifis=wifis, ip=london.ip)
-        self.check_should_search(query, True, results=geoip_pos)
+        self.check_should_search(query, True, results=results)
 
     def test_check_already_good_result(self):
         wifis = WifiShardFactory.build_batch(2)
-        internal_pos = Position(
-            source=DataSource.internal, lat=1.0, lon=1.0, accuracy=1.0)
+        results = Position(
+            source=DataSource.internal,
+            lat=1.0, lon=1.0, accuracy=1.0).as_list()
 
         query = self.model_query(wifis=wifis)
-        self.check_should_search(query, False, results=internal_pos)
+        self.check_should_search(query, False, results=results)
 
     def test_rate_limit_allow(self):
         cell = CellShardFactory()
@@ -543,8 +545,8 @@ class TestSource(BaseSourceTest):
 
             for _ in range(self.source.ratelimit):
                 query = self.model_query(cells=[cell])
-                result = self.source.search(query)
-                self.check_model_result(result, self.fallback_model)
+                results = self.source.search(query)
+                self.check_model_results(results, [self.fallback_model])
 
     def test_rate_limit_blocks(self):
         cell = CellShardFactory()
@@ -557,8 +559,8 @@ class TestSource(BaseSourceTest):
             self.redis_client.set(ratelimit_key, self.source.ratelimit)
 
             query = self.model_query(cells=[cell])
-            result = self.source.search(query)
-            self.check_model_result(result, None)
+            results = self.source.search(query)
+            self.check_model_results(results, None)
 
     def test_rate_limit_redis_failure(self):
         cell = CellShardFactory.build()
@@ -572,8 +574,8 @@ class TestSource(BaseSourceTest):
             with mock.patch.object(self.source, 'redis_client',
                                    mock_redis_client):
                 query = self.model_query(cells=[cell])
-                result = self.source.search(query)
-                self.check_model_result(result, None)
+                results = self.source.search(query)
+                self.check_model_results(results, None)
 
             self.assertTrue(mock_redis_client.pipeline.called)
             self.assertFalse(mock_request.called)
@@ -590,8 +592,8 @@ class TestSource(BaseSourceTest):
             with mock.patch.object(self.source.cache, 'redis_client',
                                    mock_redis_client):
                 query = self.model_query(cells=[cell])
-                result = self.source.search(query)
-                self.check_model_result(result, self.fallback_model)
+                results = self.source.search(query)
+                self.check_model_results(results, [self.fallback_model])
 
             self.assertTrue(mock_redis_client.mget.called)
             self.assertTrue(mock_request.called)
@@ -615,8 +617,8 @@ class TestSource(BaseSourceTest):
             with mock.patch.object(self.source.cache, 'redis_client',
                                    mock_redis_client):
                 query = self.model_query(cells=[cell])
-                result = self.source.search(query)
-                self.check_model_result(result, self.fallback_model)
+                results = self.source.search(query)
+                self.check_model_results(results, [self.fallback_model])
 
             self.assertTrue(mock_redis_client.mget.called)
             self.assertTrue(mock_redis_client.mset.called)
@@ -635,9 +637,10 @@ class TestSource(BaseSourceTest):
 
             query = self.model_query(cells=[cell])
             query.cell[0].signal = -77
-            result = self.source.search(query)
-            self.check_model_result(result, self.fallback_model)
-            self.assertAlmostEqual(result.score, 5.0, 4)
+            results = self.source.search(query)
+            self.check_model_results(results, [self.fallback_model])
+            self.assertAlmostEqual(
+                results.best(query.expected_accuracy).score, 5.0, 4)
 
             self.assertEqual(mock_request.call_count, 1)
             self.check_stats(counter=[
@@ -649,9 +652,10 @@ class TestSource(BaseSourceTest):
 
             # vary the signal strength, not part of cache key
             query.cell[0].signal = -82
-            result = self.source.search(query)
-            self.check_model_result(result, self.fallback_model)
-            self.assertAlmostEqual(result.score, 5.0, 4)
+            results = self.source.search(query)
+            self.check_model_results(results, [self.fallback_model])
+            self.assertAlmostEqual(
+                results.best(query.expected_accuracy).score, 5.0, 4)
 
             self.assertEqual(mock_request.call_count, 1)
             self.check_stats(counter=[
@@ -673,8 +677,8 @@ class TestSource(BaseSourceTest):
             )
 
             query = self.model_query(cells=[cell])
-            result = self.source.search(query)
-            self.check_model_result(result, None)
+            results = self.source.search(query)
+            self.check_model_results(results, None)
 
             self.assertEqual(mock_request.call_count, 1)
             self.check_stats(counter=[
@@ -683,8 +687,8 @@ class TestSource(BaseSourceTest):
             ])
 
             query = self.model_query(cells=[cell])
-            result = self.source.search(query)
-            self.check_model_result(result, None)
+            results = self.source.search(query)
+            self.check_model_results(results, None)
 
             self.assertEqual(mock_request.call_count, 1)
             self.check_stats(counter=[
@@ -704,8 +708,8 @@ class TestSource(BaseSourceTest):
             with mock.patch.object(self.source.cache, 'redis_client',
                                    mock_redis_client):
                 query = self.model_query(cells=[cell])
-                result = self.source.search(query)
-                self.check_model_result(result, self.fallback_model)
+                results = self.source.search(query)
+                self.check_model_results(results, [self.fallback_model])
 
             self.assertTrue(mock_redis_client.mget.called)
             self.assertFalse(mock_redis_client.mset.called)

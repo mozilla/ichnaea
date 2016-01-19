@@ -5,9 +5,6 @@ from ichnaea.api.locate.cell import (
     CellRegionMixin,
 )
 from ichnaea.api.locate.constants import DataSource
-from ichnaea.api.locate.result import (
-    RegionResultList,
-)
 from ichnaea.api.locate.source import (
     PositionSource,
     RegionSource,
@@ -35,23 +32,25 @@ class InternalRegionSource(CellRegionMixin,
         return True
 
     def search(self, query):
-        results = RegionResultList()
+        results = self.result_type().new_list()
+        source_used = False
+
         for should, search in (
             # start with cell search, we don't need precise results
                 (self.should_search_cell, self.search_cell),
                 (self.should_search_wifi, self.search_wifi)):
 
             if should(query, results):
+                source_used = True
                 results.add(search(query))
                 if results.satisfies(query):
                     # If we have a good enough result, stop.
                     break
 
-        if len(results):
+        if source_used:
             query.emit_source_stats(
                 self.source, results.best(query.expected_accuracy))
-        else:
-            results.add(self.result_type())
+
         return results
 
 
@@ -72,18 +71,23 @@ class InternalPositionSource(CellPositionMixin,
         return True
 
     def search(self, query):
-        results = self.result_type().as_list()
+        results = self.result_type().new_list()
+        source_used = False
+
         for should, search in (
             # start with wifi search, we want precise results
                 (self.should_search_wifi, self.search_wifi),
                 (self.should_search_cell, self.search_cell)):
 
             if should(query, results):
+                source_used = True
                 results.add(search(query))
                 if results.satisfies(query):
                     # If we have a good enough result, stop.
                     break
 
-        query.emit_source_stats(
-            self.source, results.best(query.expected_accuracy))
+        if source_used:
+            query.emit_source_stats(
+                self.source, results.best(query.expected_accuracy))
+
         return results

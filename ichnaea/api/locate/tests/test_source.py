@@ -3,7 +3,6 @@ from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
     Position,
     Region,
-    ResultList,
 )
 from ichnaea.api.locate.source import (
     PositionSource,
@@ -45,8 +44,8 @@ class SourceTest(object):
 
     def test_should_search(self):
         query = self._make_query()
-        empty = self.source.result_type()
-        self.assertTrue(self.source.should_search(query, ResultList(empty)))
+        results = self.source.result_type().new_list()
+        self.assertTrue(self.source.should_search(query, results))
 
 
 class TestRegionSource(SourceTest, ConnectionTestCase):
@@ -56,11 +55,13 @@ class TestRegionSource(SourceTest, ConnectionTestCase):
         source = DataSource.geoip
 
         def search(self, query):
-            return self.result_type()
+            return self.result_type().as_list()
 
     def test_empty(self):
         query = self._make_query()
-        result = self.source.search(query)
+        results = self.source.search(query)
+        self.assertEqual(len(results), 1)
+        result = results[0]
         self.assertTrue(result.empty())
         self.assertTrue(isinstance(result, Region))
         self.assertEqual(result.fallback, 'ipf')
@@ -74,11 +75,13 @@ class TestPositionSource(SourceTest, ConnectionTestCase):
         source = DataSource.fallback
 
         def search(self, query):
-            return self.result_type()
+            return self.result_type().as_list()
 
     def test_empty(self):
         query = self._make_query()
-        result = self.source.search(query)
+        results = self.source.search(query)
+        self.assertEqual(len(results), 1)
+        result = results[0]
         self.assertTrue(isinstance(result, Position))
         self.assertTrue(result.empty())
         self.assertEqual(result.fallback, 'fallback')

@@ -16,20 +16,23 @@ class SourceTest(object):
 
     def test_unknown(self):
         query = self.make_query(ip='127.0.0.1')
-        result = self.source.search(query)
-        self.assertTrue(result.empty())
+        results = self.source.search(query)
+        self.assertFalse(len(results))
+        self.assertTrue(results.best(query.expected_accuracy).empty())
 
     def test_city(self):
         query = self.make_query(ip=self.london_model.ip)
-        result = self.source.search(query)
-        self.check_model_result(result, self.london_model)
-        self.assertTrue(0.5 < result.score < 1.0, result.score)
+        results = self.source.search(query)
+        self.check_model_results(results, [self.london_model])
+        self.assertTrue(
+            0.5 < results.best(query.expected_accuracy).score < 1.0)
 
     def test_region(self):
         query = self.make_query(ip=self.bhutan_model.ip)
-        result = self.source.search(query)
-        self.check_model_result(result, self.bhutan_model)
-        self.assertTrue(0.5 < result.score < 1.0, result.score)
+        results = self.source.search(query)
+        self.check_model_results(results, [self.bhutan_model])
+        self.assertTrue(
+            0.5 < results.best(query.expected_accuracy).score < 1.0)
 
 
 class TestPositionSource(SourceTest, BaseSourceTest):

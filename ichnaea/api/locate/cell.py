@@ -17,7 +17,6 @@ from ichnaea.api.locate.constants import (
 from ichnaea.api.locate.result import (
     Position,
     Region,
-    RegionResultList,
 )
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.constants import (
@@ -178,7 +177,7 @@ class CellPositionMixin(object):
         return True
 
     def search_cell(self, query):
-        result = self.result_type()
+        results = self.result_type().new_list()
         now = util.utcnow()
 
         if query.cell:
@@ -186,21 +185,21 @@ class CellPositionMixin(object):
                 query, query.cell, self.cell_model, self.raven_client)
             if cells:
                 best_cells = pick_best_cells(cells)
-                result = aggregate_cell_position(
-                    best_cells, self.result_type, now)
+                results.add(aggregate_cell_position(
+                    best_cells, self.result_type, now))
 
-            if not result.empty():
-                return result
+            if len(results):
+                return results
 
         if query.cell_area:
             areas = query_areas(
                 query, query.cell_area, self.area_model, self.raven_client)
             if areas:
                 best_area = pick_best_area(areas)
-                result = aggregate_area_position(
-                    best_area, self.result_type, now)
+                results.add(aggregate_area_position(
+                    best_area, self.result_type, now))
 
-        return result
+        return results
 
 
 class CellRegionMixin(object):
@@ -217,7 +216,7 @@ class CellRegionMixin(object):
         return True
 
     def search_cell(self, query):
-        results = RegionResultList()
+        results = self.result_type().new_list()
         now = util.utcnow()
 
         ambiguous_cells = []
@@ -278,9 +277,12 @@ class CellPositionSource(CellPositionMixin, PositionSource):
         return self.should_search_cell(query, results)
 
     def search(self, query):
-        result = self.search_cell(query)
-        query.emit_source_stats(self.source, result)
-        return result
+        results = self.search_cell(query)
+
+        query.emit_source_stats(
+            self.source, results.best(query.expected_accuracy))
+
+        return results
 
 
 class OCIDPositionSource(CellPositionSource):

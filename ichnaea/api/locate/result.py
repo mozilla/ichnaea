@@ -60,7 +60,11 @@ class Result(object):
 
     def as_list(self):
         """Return a new result list including this result."""
-        return ResultList(self)
+        raise NotImplementedError()
+
+    def new_list(self):
+        """Return a new empty result list."""
+        raise NotImplementedError()
 
     def satisfies(self, query):
         """Does this result match the expected query accuracy?"""
@@ -75,6 +79,10 @@ class Position(Result):
     def as_list(self):
         """Return a new position result list including this result."""
         return PositionResultList(self)
+
+    def new_list(self):
+        """Return a new empty result list."""
+        return PositionResultList()
 
     def satisfies(self, query):
         if self.data_accuracy <= query.expected_accuracy:
@@ -91,12 +99,18 @@ class Region(Result):
         """Return a new region result list including this result."""
         return RegionResultList(self)
 
+    def new_list(self):
+        """Return a new empty result list."""
+        return RegionResultList()
+
     def satisfies(self, query):
         return not self.empty()
 
 
 class ResultList(object):
     """A collection of query results."""
+
+    result_type = None  #:
 
     def __init__(self, result=None):
         self._results = []
@@ -146,9 +160,12 @@ class ResultList(object):
             most_accurate_results = accurate_results['matches']
         elif accurate_results['misses']:
             most_accurate_results = accurate_results['misses']
-        else:
+        elif accurate_results['empty']:
             # only empty results, they are all equal
             return accurate_results['empty'][0]
+        else:
+            # totally empty result list, return new empty result
+            return self.result_type()
 
         if len(most_accurate_results) == 1:
             return most_accurate_results[0]
@@ -166,6 +183,10 @@ class ResultList(object):
 class PositionResultList(ResultList):
     """A collection of position results."""
 
+    result_type = Position  #:
+
 
 class RegionResultList(ResultList):
     """A collection of region results."""
+
+    result_type = Region  #:

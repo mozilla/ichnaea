@@ -403,6 +403,8 @@ class FallbackPositionSource(PositionSource):
         )
 
     def search(self, query):
+        results = self.result_type().new_list()
+
         result_data = None
         cached_result = self.cache.get(query)
         if cached_result:
@@ -416,15 +418,15 @@ class FallbackPositionSource(PositionSource):
                 self.cache.set(query, result_data)
 
         if result_data is not None and not result_data.not_found():
-            result = self.result_type(
+            results.add(self.result_type(
                 lat=result_data.lat,
                 lon=result_data.lon,
                 accuracy=result_data.accuracy,
                 score=result_data.score,
                 fallback=result_data.fallback,
-            )
-        else:
-            result = self.result_type()
+            ))
 
-        query.emit_source_stats(self.source, result)
-        return result
+        query.emit_source_stats(
+            self.source, results.best(query.expected_accuracy))
+
+        return results

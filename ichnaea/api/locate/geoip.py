@@ -16,7 +16,7 @@ class GeoIPSource(Source):
     geoip_accuracy_field = 'radius'
 
     def search(self, query):
-        result = self.result_type()
+        results = self.result_type().new_list()
         source_used = False
 
         if query.ip:
@@ -26,19 +26,20 @@ class GeoIPSource(Source):
         # there's no need to do a lookup again.
         geoip = query.geoip
         if geoip:
-            result = self.result_type(
+            results.add(self.result_type(
                 lat=geoip['latitude'],
                 lon=geoip['longitude'],
                 accuracy=geoip[self.geoip_accuracy_field],
                 region_code=geoip['region_code'],
                 region_name=geoip['region_name'],
                 score=geoip['score'],
-            )
+            ))
 
         if source_used:
-            query.emit_source_stats(self.source, result)
+            query.emit_source_stats(
+                self.source, results.best(query.expected_accuracy))
 
-        return result
+        return results
 
 
 class GeoIPPositionSource(GeoIPSource, PositionSource):
