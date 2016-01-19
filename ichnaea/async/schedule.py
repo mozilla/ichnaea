@@ -49,8 +49,8 @@ def celerybeat_schedule(app_config):
         },
         'update-statregion': {
             'task': 'ichnaea.data.tasks.update_statregion',
-            'schedule': crontab(minute=5),
-            'options': {'expires': 2700},
+            'schedule': timedelta(seconds=3600 * 6),
+            'options': {'expires': 3600 * 5},
         },
 
         # Data Pipeline
